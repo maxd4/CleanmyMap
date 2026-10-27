@@ -24,6 +24,8 @@ const MESSAGE_ID = "11111111-1111-4111-8111-111111111111";
 const OPTION_YES = "33333333-3333-4333-8333-333333333333";
 const OPTION_NO = "44444444-4444-4444-8444-444444444444";
 const OTHER_OPTION = "55555555-5555-4555-8555-555555555555";
+type PollChannel = "community" | "admin_elu" | "territory" | "action" | "dm";
+type ActiveRole = "admin" | "elu" | "max" | "benevole";
 
 type VoteHandler = (
   request: Request,
@@ -57,15 +59,22 @@ async function deleteVote(handler: VoteHandler) {
   );
 }
 
-async function preparePollRoute(channelType?: "community" | "admin_elu" | "territory" | "action" | "dm") {
+async function preparePollRoute(
+  channelType: PollChannel = "community",
+  options: { activeRole?: ActiveRole; visible?: boolean; serviceVisible?: boolean } = {},
+) {
   const mock = buildChatPollVoteSupabaseMock({
     messageId: MESSAGE_ID,
     optionIds: [OPTION_YES, OPTION_NO],
     channelType,
+    visible: options.visible,
+    serviceVisible: options.serviceVisible,
   });
   getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
   getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
-  identityMock.mockResolvedValue({ activeRole: channelType === "admin_elu" ? "elu" : "benevole" });
+  identityMock.mockResolvedValue({
+    activeRole: options.activeRole ?? (channelType === "admin_elu" ? "elu" : "benevole"),
+  });
   return { mock, route: await import("./route") };
 }
 
@@ -138,14 +147,112 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   it.each(["admin_elu", "territory", "action", "dm"] as const)(
     "uses the same vote engine for a visible %s poll",
     async (channelType) => {
-    const { route: { PUT } } = await preparePollRoute(channelType);
+    const { mock, route: { PUT } } = await preparePollRoute(channelType);
 
     const response = await putVote(PUT, OPTION_YES);
 
     expect(response.status).toBe(200);
     expect((await response.json()).selectedOptionId).toBe(OPTION_YES);
+    if (channelType === "admin_elu") {
+      expect(mock.serviceVoteTable.upsert).toHaveBeenCalled();
+      expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+    } else {
+      expect(mock.voteTable.upsert).toHaveBeenCalled();
+      expect(mock.serviceVoteTable.upsert).not.toHaveBeenCalled();
+    }
     },
   );
+
+  it.each(["community", "territory", "action", "dm"] as const)(
+    "keeps a privileged actor on Clerk-RLS for an allowed ordinary %s poll",
+    async (channelType) => {
+      const { mock, route: { PUT } } = await preparePollRoute(channelType, { activeRole: "elu" });
+
+      const response = await putVote(PUT, OPTION_YES);
+
+      expect(response.status).toBe(200);
+      expect(mock.voteTable.upsert).toHaveBeenCalled();
+      expect(mock.serviceVoteTable.upsert).not.toHaveBeenCalled();
+      expect(mock.summaryRpc).toHaveBeenCalled();
+    },
+  );
+
+  it.each(["admin", "elu", "max"] as const)(
+    "refuses a privileged %s actor who is not visible on an ordinary poll",
+    async (activeRole) => {
+      const { mock, route: { PUT, POST, DELETE } } = await preparePollRoute("dm", {
+        activeRole,
+        visible: false,
+      });
+
+      const responses = await Promise.all([
+        putVote(PUT, OPTION_YES),
+        postVote(POST, OPTION_YES),
+        deleteVote(DELETE),
+      ]);
+
+      expect(responses.map((response) => response.status)).toEqual([404, 404, 404]);
+      expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+      expect(mock.voteTable.delete).not.toHaveBeenCalled();
+      expect(mock.serviceVoteTable.upsert).not.toHaveBeenCalled();
+      expect(mock.serviceVoteTable.delete).not.toHaveBeenCalled();
+      expect(mock.summaryRpc).not.toHaveBeenCalled();
+      expect(mock.serviceAppMessageQuery.eq).toHaveBeenCalledWith("channel_type", "admin_elu");
+    },
+  );
+
+  it.each(["action", "territory"] as const)(
+    "does not let an authorized role bypass an invisible %s poll",
+    async (channelType) => {
+      const { mock, route: { PUT } } = await preparePollRoute(channelType, {
+        activeRole: "elu",
+        visible: false,
+      });
+
+      const response = await putVote(PUT, OPTION_YES);
+
+      expect(response.status).toBe(404);
+      expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+      expect(mock.serviceVoteTable.upsert).not.toHaveBeenCalled();
+      expect(mock.summaryRpc).not.toHaveBeenCalled();
+    },
+  );
+
+  it("allows only Clerk-authorized admin_elu roles to use the scoped service path", async () => {
+    for (const activeRole of ["admin", "elu", "max"] as const) {
+      const { mock, route: { PUT, DELETE } } = await preparePollRoute("admin_elu", { activeRole });
+
+      const voteResponse = await putVote(PUT, OPTION_YES);
+      const deleteResponse = await deleteVote(DELETE);
+
+      expect(voteResponse.status).toBe(200);
+      expect(deleteResponse.status).toBe(200);
+      expect(mock.serviceVoteTable.upsert).toHaveBeenCalledWith(
+        { message_id: MESSAGE_ID, option_id: OPTION_YES, user_id: "user-1" },
+        { onConflict: "message_id,user_id" },
+      );
+      expect(mock.serviceVoteTable.delete).toHaveBeenCalled();
+      expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+    }
+  });
+
+  it("refuses an unauthorized actor on admin_elu without reading or writing through service_role", async () => {
+    const { mock, route: { PUT, POST, DELETE } } = await preparePollRoute("admin_elu", {
+      activeRole: "benevole",
+    });
+
+    const putResponse = await putVote(PUT, OPTION_YES);
+    const postResponse = await postVote(POST, OPTION_YES);
+    const deleteResponse = await deleteVote(DELETE);
+
+    expect(putResponse.status).toBe(404);
+    expect(postResponse.status).toBe(404);
+    expect(deleteResponse.status).toBe(404);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+    expect(mock.serviceVoteTable.upsert).not.toHaveBeenCalled();
+    expect(mock.summaryRpc).not.toHaveBeenCalled();
+  });
 
   it("rejects an option belonging to another poll before writing", async () => {
     const { mock, route: { PUT } } = await preparePollRoute();

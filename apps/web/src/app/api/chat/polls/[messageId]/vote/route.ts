@@ -34,6 +34,14 @@ type PollVoteResponse = {
 
 type VoteIdentity = NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>;
 
+const ADMIN_ELU_ROLES = ["admin", "elu", "max"] as const;
+const ORDINARY_POLL_CHANNELS = ["community", "territory", "action", "dm"] as const;
+
+type ResolvedVotePoll = {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  poll: { options: PollOptionRow[] };
+};
+
 async function requireVoteIdentity(request: Request): Promise<Response | { userId: string; identity: VoteIdentity }> {
   const rateLimitResponse = await guardVoteRequest(request);
   if (rateLimitResponse) return rateLimitResponse;
@@ -45,28 +53,53 @@ async function requireVoteIdentity(request: Request): Promise<Response | { userI
   return { userId, identity };
 }
 
-async function resolveVoteSupabase(identity: VoteIdentity): Promise<Response | ReturnType<typeof getSupabaseServerClient>> {
-  const supabase = await getSupabaseClerkRlsClient();
-  if (!supabase) {
+async function resolveVoteSupabase(
+  identity: VoteIdentity,
+  messageId: string,
+): Promise<Response | ResolvedVotePoll> {
+  const clerkRlsSupabase = await getSupabaseClerkRlsClient();
+  if (!clerkRlsSupabase) {
     return NextResponse.json(
       { error: "Connexion sécurisée indisponible" },
       { status: 503 },
     );
   }
-  return ["admin", "elu", "max"].includes(identity.activeRole)
-    ? getSupabaseServerClient(true)
-    : supabase;
+
+  const visibleOrdinaryPoll = await loadVisiblePoll(clerkRlsSupabase, messageId);
+  if (visibleOrdinaryPoll) {
+    return { supabase: clerkRlsSupabase, poll: visibleOrdinaryPoll };
+  }
+
+  if (!ADMIN_ELU_ROLES.some((role) => role === identity.activeRole)) {
+    return inaccessiblePollResponse();
+  }
+
+  // The privileged path is deliberately a separate, message-scoped exception.
+  // Clerk remains the authority for the role; service_role can only resolve an
+  // admin_elu poll and is never used to bypass ordinary-channel RLS.
+  const serviceSupabase = getSupabaseServerClient(true);
+  const adminEluPoll = await loadVisiblePoll(serviceSupabase, messageId, "admin_elu");
+  if (!adminEluPoll) {
+    return inaccessiblePollResponse();
+  }
+
+  return { supabase: serviceSupabase, poll: adminEluPoll };
 }
 
 async function loadVisiblePoll(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   messageId: string,
+  expectedChannelType?: "admin_elu",
 ): Promise<{ options: PollOptionRow[] } | null> {
-  const rawMessageResult: unknown = await supabase
+  let messageQuery = supabase
     .from("app_messages")
     .select("id, message_kind, channel_type")
     .eq("id", messageId)
-    .maybeSingle();
+    .eq("message_kind", "poll");
+  if (expectedChannelType) {
+    messageQuery = messageQuery.eq("channel_type", expectedChannelType);
+  }
+  const rawMessageResult: unknown = await messageQuery.maybeSingle();
 
   const messageResult = parseChatSupabaseResult(rawMessageResult);
   if (messageResult.error) throw messageResult.error;
@@ -75,11 +108,10 @@ async function loadVisiblePoll(
     (value): value is { id: string; message_kind: unknown; channel_type: string } =>
       isChatRecord(value) && typeof value.id === "string" && "message_kind" in value && typeof value.channel_type === "string",
   );
-  if (
-    !message ||
-    message.message_kind !== "poll" ||
-    !["community", "admin_elu", "territory", "action", "dm"].includes(message.channel_type)
-  ) {
+  const allowedChannels: readonly string[] = expectedChannelType
+    ? [expectedChannelType]
+    : ORDINARY_POLL_CHANNELS;
+  if (!message || message.message_kind !== "poll" || !allowedChannels.includes(message.channel_type)) {
     return null;
   }
 
@@ -97,21 +129,23 @@ async function loadVisiblePoll(
   return { options };
 }
 
+function inaccessiblePollResponse(): NextResponse {
+  return NextResponse.json(
+    { error: "Sondage introuvable ou inaccessible" },
+    { status: 404 },
+  );
+}
+
 async function withVisiblePoll(
-  supabase: ReturnType<typeof getSupabaseServerClient>,
+  identity: VoteIdentity,
   messageId: string,
-  operation: (poll: { options: PollOptionRow[] }) => Promise<Response>,
+  operation: (resolved: ResolvedVotePoll) => Promise<Response>,
   errorContext: string,
 ): Promise<Response> {
   try {
-    const poll = await loadVisiblePoll(supabase, messageId);
-    if (!poll) {
-      return NextResponse.json(
-        { error: "Sondage introuvable ou inaccessible" },
-        { status: 404 },
-      );
-    }
-    return await operation(poll);
+    const resolved = await resolveVoteSupabase(identity, messageId);
+    if (resolved instanceof Response) return resolved;
+    return await operation(resolved);
   } catch (error) {
     return handleApiError(error, errorContext);
   }
@@ -185,34 +219,31 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
   }
 
   const { messageId } = await context.params;
-  const messageSupabaseResult = await resolveVoteSupabase(identity);
-  if (messageSupabaseResult instanceof Response) return messageSupabaseResult;
-  const messageSupabase = messageSupabaseResult;
 
   return withVisiblePoll(
-    messageSupabase,
+    identity,
     messageId,
-    async (poll) => {
-    if (!poll.options.some((option) => option.id === parsed.data.optionId)) {
-      return NextResponse.json(
-        { error: "Cette option n'appartient pas à ce sondage" },
-        { status: 400 },
+    async ({ supabase: messageSupabase, poll }) => {
+      if (!poll.options.some((option) => option.id === parsed.data.optionId)) {
+        return NextResponse.json(
+          { error: "Cette option n'appartient pas à ce sondage" },
+          { status: 400 },
+        );
+      }
+
+      const { error } = await messageSupabase.from("chat_poll_votes").upsert(
+        {
+          message_id: messageId,
+          option_id: parsed.data.optionId,
+          user_id: userId,
+        },
+        { onConflict: "message_id,user_id" },
       );
-    }
+      if (error) {
+        throw error;
+      }
 
-    const { error } = await messageSupabase.from("chat_poll_votes").upsert(
-      {
-        message_id: messageId,
-        option_id: parsed.data.optionId,
-        user_id: userId,
-      },
-      { onConflict: "message_id,user_id" },
-    );
-    if (error) {
-      throw error;
-    }
-
-    return await buildPollVoteResponse(userId, messageId, poll.options);
+      return await buildPollVoteResponse(userId, messageId, poll.options);
     },
     "PUT /api/chat/polls/[messageId]/vote",
   );
@@ -232,24 +263,21 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
   const { userId, identity } = authContext;
 
   const { messageId } = await context.params;
-  const messageSupabaseResult = await resolveVoteSupabase(identity);
-  if (messageSupabaseResult instanceof Response) return messageSupabaseResult;
-  const messageSupabase = messageSupabaseResult;
 
   return withVisiblePoll(
-    messageSupabase,
+    identity,
     messageId,
-    async (poll) => {
-    const { error } = await messageSupabase
-      .from("chat_poll_votes")
-      .delete()
-      .eq("message_id", messageId)
-      .eq("user_id", userId);
-    if (error) {
-      throw error;
-    }
+    async ({ supabase: messageSupabase, poll }) => {
+      const { error } = await messageSupabase
+        .from("chat_poll_votes")
+        .delete()
+        .eq("message_id", messageId)
+        .eq("user_id", userId);
+      if (error) {
+        throw error;
+      }
 
-    return await buildPollVoteResponse(userId, messageId, poll.options);
+      return await buildPollVoteResponse(userId, messageId, poll.options);
     },
     "DELETE /api/chat/polls/[messageId]/vote",
   );

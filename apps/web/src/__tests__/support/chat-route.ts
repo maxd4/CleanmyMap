@@ -129,6 +129,7 @@ export type ChatPollVoteSupabaseMockOptions = {
   messageId: string;
   optionIds?: readonly [string, string];
   visible?: boolean;
+  serviceVisible?: boolean;
   messageKind?: string;
   channelType?: "community" | "admin_elu" | "territory" | "action" | "dm";
 };
@@ -137,6 +138,7 @@ export function buildChatPollVoteSupabaseMock({
   messageId,
   optionIds = ["option-yes", "option-no"],
   visible = true,
+  serviceVisible = true,
   messageKind = "poll",
   channelType = "community",
 }: ChatPollVoteSupabaseMockOptions) {
@@ -147,33 +149,56 @@ export function buildChatPollVoteSupabaseMock({
   ];
   const votes = new Map<string, string>();
 
-  const appMessageQuery = {
-    select: vi.fn(() => appMessageQuery),
-    eq: vi.fn(() => appMessageQuery),
-    maybeSingle: vi.fn().mockResolvedValue({
-      data: visible ? { id: messageId, message_kind: messageKind, channel_type: channelType } : null,
-      error: null,
-    }),
+  const createMessageQuery = (isVisible: boolean) => {
+    const filters = new Map<string, unknown>();
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn((field: string, value: unknown) => {
+        filters.set(field, value);
+        return query;
+      }),
+      maybeSingle: vi.fn(async () => {
+        const row = { id: messageId, message_kind: messageKind, channel_type: channelType };
+        const matches = isVisible && [...filters.entries()].every(([field, value]) => row[field as keyof typeof row] === value);
+        return { data: matches ? row : null, error: null };
+      }),
+    };
+    return query;
   };
-  const optionsQuery = {
-    select: vi.fn(() => optionsQuery),
-    eq: vi.fn(() => optionsQuery),
-    order: vi.fn(() => optionsQuery),
-    then: (resolve: (value: unknown) => unknown, reject: (reason?: unknown) => unknown) =>
-      Promise.resolve({ data: options, error: null }).then(resolve, reject),
+  const appMessageQuery = createMessageQuery(visible && channelType !== "admin_elu");
+  const serviceAppMessageQuery = createMessageQuery(serviceVisible);
+
+  const createOptionsQuery = () => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      order: vi.fn(() => query),
+      then: (resolve: (value: unknown) => unknown, reject: (reason?: unknown) => unknown) =>
+        Promise.resolve({ data: options, error: null }).then(resolve, reject),
+    };
+    return query;
   };
-  const voteTable = {
-    upsert: vi.fn(async (row: { message_id: string; option_id: string; user_id: string }): Promise<{ error: Error | null }> => {
-      votes.set(`${row.user_id}:${row.message_id}`, row.option_id);
-      return { error: null };
-    }),
-    delete: vi.fn(() => voteTable),
-    eq: vi.fn((field: string, value: string) => {
-      if (field === "user_id") votes.delete(`${value}:${messageId}`);
-      return voteTable;
-    }),
+  const optionsQuery = createOptionsQuery();
+  const serviceOptionsQuery = createOptionsQuery();
+
+  const createVoteTable = () => {
+    const table = {
+      upsert: vi.fn(async (row: { message_id: string; option_id: string; user_id: string }): Promise<{ error: Error | null }> => {
+        votes.set(`${row.user_id}:${row.message_id}`, row.option_id);
+        return { error: null };
+      }),
+      delete: vi.fn(() => table),
+      eq: vi.fn((field: string, value: string) => {
+        if (field === "user_id") votes.delete(`${value}:${messageId}`);
+        return table;
+      }),
+    };
+    return table;
   };
-  const summaryRpc = vi.fn().mockImplementation(
+  const voteTable = createVoteTable();
+  const serviceVoteTable = createVoteTable();
+
+  const createSummaryRpc = vi.fn().mockImplementation(
     async (_name: string, args: { p_message_ids: string[]; p_user_id: string }) => {
       const selected = votes.get(`${args.p_user_id}:${args.p_message_ids[0]}`) ?? null;
       return {
@@ -188,6 +213,8 @@ export function buildChatPollVoteSupabaseMock({
       };
     },
   );
+  const summaryRpc = createSummaryRpc;
+  const rlsSummaryRpc = createSummaryRpc;
   const supabase = {
     from: vi.fn((table: string) => {
       if (table === "app_messages") return appMessageQuery;
@@ -195,8 +222,30 @@ export function buildChatPollVoteSupabaseMock({
       if (table === "chat_poll_votes") return voteTable;
       throw new Error(`Unexpected table: ${table}`);
     }),
+    rpc: rlsSummaryRpc,
   };
-  const serviceSupabase = { from: supabase.from, rpc: summaryRpc };
+  const serviceSupabase = {
+    from: vi.fn((table: string) => {
+      if (table === "app_messages") return serviceAppMessageQuery;
+      if (table === "chat_poll_options") return serviceOptionsQuery;
+      if (table === "chat_poll_votes") return serviceVoteTable;
+      throw new Error(`Unexpected service table: ${table}`);
+    }),
+    rpc: summaryRpc,
+  };
 
-  return { supabase, serviceSupabase, summaryRpc, options, votes, appMessageQuery, optionsQuery, voteTable };
+  return {
+    supabase,
+    serviceSupabase,
+    summaryRpc,
+    rlsSummaryRpc,
+    options,
+    votes,
+    appMessageQuery,
+    serviceAppMessageQuery,
+    optionsQuery,
+    serviceOptionsQuery,
+    voteTable,
+    serviceVoteTable,
+  };
 }

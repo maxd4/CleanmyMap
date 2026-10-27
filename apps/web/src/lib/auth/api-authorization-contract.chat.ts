@@ -112,29 +112,29 @@ export const chatAuthorizationContract = {
   "chat/polls/[messageId]/vote": {
     POST: {
       expected:
-        "Authenticated community member votes on an existing community poll; the vote is owned by the current user",
+        "Authenticated actor votes on an existing visible poll in community, territory, action or DM; admin, elu and max may use the separately authorized admin_elu channel; the vote is owned by the current user",
       dimensions: ["authentication", "business permission", "ownership"],
       actual:
-        "upsertVote authenticates, loadVisiblePoll restricts the target to a community poll, and the upsert writes user_id from auth()",
-      evidence: ["auth()", "loadVisiblePoll", "userId"],
+        "upsertVote authenticates, resolves ordinary channels through Clerk-RLS, and only resolves admin_elu through a message-scoped service path after the Clerk active role check; the upsert writes user_id from auth()",
+      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "getSupabaseServerClient", "loadVisiblePoll", "userId"],
       evidenceScope: "module",
     },
     PUT: {
       expected:
-        "Authenticated community member changes their vote on an existing community poll; the vote is owned by the current user",
+        "Authenticated actor changes their vote on an existing visible poll in community, territory, action or DM; admin, elu and max may use the separately authorized admin_elu channel; the vote is owned by the current user",
       dimensions: ["authentication", "business permission", "ownership"],
       actual:
-        "upsertVote authenticates, validates the community poll and option, and upserts the current user's vote only",
-      evidence: ["auth()", "loadVisiblePoll", "userId"],
+        "upsertVote authenticates, validates the visible poll and option, and upserts the current user's vote only; ordinary channels remain on Clerk-RLS while admin_elu requires an allowed Clerk active role",
+      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "getSupabaseServerClient", "loadVisiblePoll", "userId"],
       evidenceScope: "module",
     },
     DELETE: {
       expected:
-        "Authenticated community member removes only their own vote from an existing community poll",
+        "Authenticated actor removes only their own vote from an existing visible poll in community, territory, action or DM; admin, elu and max may use the separately authorized admin_elu channel",
       dimensions: ["authentication", "business permission", "ownership"],
       actual:
-        "auth() + loadVisiblePoll; delete is filtered by message_id and user_id from the current session",
-      evidence: ["auth()", "loadVisiblePoll", "userId"],
+        "auth() + Clerk-RLS visibility for ordinary channels, or a Clerk-authorized message-scoped admin_elu lookup; delete is filtered by message_id and user_id from the current session",
+      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "getSupabaseServerClient", "loadVisiblePoll", "userId"],
       evidenceScope: "module",
     },
   },
