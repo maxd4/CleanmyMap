@@ -44,6 +44,7 @@ describe("GET historical scientific JSON", () => {
     expect(getSnapshotMock).toHaveBeenCalledWith(HISTORICAL_REPORT_ID, "user-1");
     expect(response.headers.get("Content-Type")).toContain("application/json");
     expect(response.headers.get("Content-Disposition")).toContain(".json");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     await expect(response.json()).resolves.toMatchObject({
       schemaVersion: "reports-scientific-export-v1",
       reference: { generationId: HISTORICAL_REPORT_ID },

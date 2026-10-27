@@ -50,6 +50,7 @@ describe("GET historical scientific CSV", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toContain("text/csv");
     expect(response.headers.get("Content-Disposition")).toContain(".csv");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     const body = await response.text();
     expect(body).toContain("generation_id");
     expect(body).toContain("DECLARED");
