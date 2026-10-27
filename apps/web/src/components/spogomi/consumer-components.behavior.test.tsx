@@ -30,6 +30,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 type ButtonProps = { onClick: () => void | Promise<void> };
 type InputProps = { onChange: (event: React.ChangeEvent<HTMLInputElement>) => void };
+type ImageProps = { loading?: string; priority?: boolean; onLoad?: () => void; onError?: () => void };
 
 function propsOf<Props>(node: ReactTestInstance): Props {
   return node.props as unknown as Props;
@@ -136,7 +137,7 @@ describe("SPOGOMI consumer components", () => {
     await act(async () => { await propsOf<ButtonProps>(thumbnails[0]!).onClick(); });
     expect(renderer.root.findByProps({ role: "dialog" })).toBeTruthy();
     expect(renderer.root.findAll((node) => node.type === "img")).toHaveLength(3);
-    expect(renderer.root.findAll((node) => node.props["aria-label"] === "Photo suivante")).toHaveLength(1);
+    expect(renderer.root.findAll((node) => String(node.props["aria-label"] ?? "").startsWith("Photo suivante"))).toHaveLength(1);
     renderer.unmount();
 
     const clipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
@@ -147,6 +148,48 @@ describe("SPOGOMI consumer components", () => {
     expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("Contribution SPOGOMI certifiée"));
     expect(clipboard.writeText.mock.calls[0]?.[0]).not.toContain("email");
     shareRenderer.unmount();
+  });
+
+  it("keeps image loading, priority and failure states explicit", () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPhotoGallery photos={[photo("one")]} />); });
+
+    const thumbnail = renderer.root.findByType("img");
+    expect(propsOf<ImageProps>(thumbnail).loading).toBe("lazy");
+    expect(propsOf<ImageProps>(thumbnail).priority).toBe(false);
+    expect(renderer.root.findAllByProps({ role: "status" })).toHaveLength(1);
+
+    act(() => { propsOf<ImageProps>(thumbnail).onLoad?.(); });
+    expect(renderer.root.findAllByProps({ role: "status" })).toHaveLength(0);
+
+    act(() => { propsOf<ImageProps>(thumbnail).onError?.(); });
+    expect(renderer.root.findByProps({ role: "img" }).props["aria-label"]).toContain("Photo indisponible");
+
+    renderer.unmount();
+  });
+
+  it("uses eager priority for the active photo and keeps single-photo navigation absent", () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPhotoGallery photos={[photo("one")]} />); });
+    const thumbnail = renderer.root.findByType("button");
+
+    act(() => { propsOf<ButtonProps>(thumbnail).onClick(); });
+    const activeImage = renderer.root.findAllByType("img").find((node) => propsOf<ImageProps>(node).priority);
+    expect(activeImage).toBeTruthy();
+    expect(propsOf<ImageProps>(activeImage!).loading).toBe("eager");
+    expect(renderer.root.findAll((node) => String(node.props["aria-label"] ?? "").startsWith("Photo précédente"))).toHaveLength(0);
+    expect(renderer.root.findAll((node) => String(node.props["aria-label"] ?? "").startsWith("Photo suivante"))).toHaveLength(0);
+
+    renderer.unmount();
+  });
+
+  it("keeps the gallery responsive and readable without motion", () => {
+    const markup = renderToStaticMarkup(<SpogomiPhotoGallery photos={[photo("one"), photo("two")]} />);
+
+    expect(markup).toContain("sm:grid-cols-3");
+    expect(markup).toContain("aspect-[4/3]");
+    expect(markup).toContain("motion-reduce");
+    expect(markup).toContain("Chargement");
   });
 
   it("exercises reviewer and team access mutations with scoped endpoints", async () => {
