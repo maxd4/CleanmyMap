@@ -15,7 +15,7 @@ vi.mock("@/lib/env", () => ({
   env: { CLERK_IMU_OWNER_USER_ID: "user_max" },
 }));
 
-import { syncClerkUserToSupabase } from "./sync";
+import { syncClerkUserToSupabase, trySyncClerkUserToSupabase } from "./sync";
 
 type MockState = {
   select: string | null;
@@ -133,6 +133,24 @@ afterEach(() => {
 });
 
 describe("syncClerkUserToSupabase", () => {
+  it("returns null without a privileged client when Clerk has no user", async () => {
+    getSupabaseAdminClientMock.mockClear();
+
+    await expect(syncClerkUserToSupabase(null)).resolves.toBeNull();
+    expect(getSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("does not use the privileged fallback when explicitly disabled", async () => {
+    getSupabaseAdminClientMock.mockClear();
+
+    await expect(
+      syncClerkUserToSupabase(clerkUser({}) as never, {
+        allowServiceRoleFallback: false,
+      }),
+    ).resolves.toBeNull();
+    expect(getSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
   it("preserves an existing handle on update", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: { id: "user_1", handle: "custom_handle" },
@@ -518,5 +536,24 @@ describe("syncClerkUserToSupabase", () => {
     );
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("trySyncClerkUserToSupabase", () => {
+  it("returns the delegated sync result and forwards options", async () => {
+    const user = clerkUser({ id: "user_safe" }) as never;
+    const result = { id: "user_safe" };
+    const sync = vi.fn().mockResolvedValue(result);
+
+    await expect(
+      trySyncClerkUserToSupabase(user, sync, { allowServiceRoleFallback: false }),
+    ).resolves.toBe(result);
+    expect(sync).toHaveBeenCalledWith(user, { allowServiceRoleFallback: false });
+  });
+
+  it("converts delegated sync errors into a null result", async () => {
+    const sync = vi.fn().mockRejectedValue(new Error("sync failed"));
+
+    await expect(trySyncClerkUserToSupabase(clerkUser({}) as never, sync)).resolves.toBeNull();
   });
 });
