@@ -31,7 +31,3 @@ export function buildReportScientificCsv(generation: ReportGenerationSnapshotRec
   }
   return `\uFEFF${lines.join("\r\n")}\r\n`;
 }
-
-export function buildReportScientificExportFilename(filename: string, extension: "json" | "csv"): string {
-  return filename.replace(/\.pdf$/i, `.${extension}`);
-}

@@ -18,7 +18,7 @@ const FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "validation",
   "full",
 );
-export const FULL_VALIDATION_LOCK_RELATIVE_PATH = path.join(
+const FULL_VALIDATION_LOCK_RELATIVE_PATH = path.join(
   FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT,
   "running.json",
 );
