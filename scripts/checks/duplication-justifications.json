@@ -2103,7 +2103,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les sections d'interface portent des libellés et callbacks voisins mais des responsabilités de formulaire distinctes ; aucune extraction cohésive n'est démontrée.",
       "evidence": "components/actions/action-declaration/before/action-before-sectioned-content.tsx:13-25 et components/actions/action-declaration/before/team-logistics-section.tsx:15-27 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {
       "scope": "runtime",
@@ -2111,7 +2111,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux sections du même composant affichent des champs d'identité différents avec des états distincts ; le clone est du JSX structurel sans owner autonome.",
       "evidence": "components/actions/action-declaration/before/identity-and-sharing-section.tsx:82-92 et components/actions/action-declaration/before/identity-and-sharing-section.tsx:219-229 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {
       "scope": "runtime",
@@ -2119,7 +2119,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les champs de localisation et de présentation ont des payloads différents malgré une structure JSX commune ; aucune centralisation sûre n'est démontrée.",
       "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-69 et components/actions/action-declaration/before/planned-action-presentation-section.tsx:38-45 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {
       "scope": "runtime",
@@ -2127,7 +2127,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Localisation et bénévolat exposent des champs métier différents ; la ressemblance est du bruit de composition de formulaire.",
       "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-71 et components/actions/action-declaration/before/planned-action-volunteer-section.tsx:41-50 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {
       "scope": "runtime",
@@ -2296,6 +2296,78 @@
       "reason": "Les deux cas de validation utilisent le même shape de résultat mais vérifient des erreurs métier différentes ; l'autonomie des assertions est intentionnelle.",
       "evidence": "lib/spogomi/validation.test.ts:76-82 et lib/spogomi/validation.test.ts:82-88 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "67fb3b69ea09875b",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les sections before exposent des champs de vérification et de préparation différents ; la similarité de contrôle ne démontre pas un owner commun sans fusionner deux parcours legacy distincts.",
+      "evidence": "components/actions/action-declaration/before/action-before-verification-section.tsx:47-56 et components/actions/action-declaration/before/preparation-equipment-fields.tsx:136-145 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "bf4514ccf5a4cda8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les imports et setup voisins couvrent deux composants de géométrie distincts ; conserver les suites autonomes garde chaque contrat comportemental diagnostiquable.",
+      "evidence": "components/actions/action-declaration/action-location-geometry-sections.behavior.test.tsx:3-8 et components/actions/action-drawing-map.behavior.test.tsx:3-9 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "414c1d19ab4efbae",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux tests du parcours before vérifient des transitions de logique distinctes ; le setup répété maintient la preuve locale de chaque branche.",
+      "evidence": "components/actions/action-declaration/before/form-logic.test.ts:19-30 et components/actions/action-declaration/before/form-logic.test.ts:36-47 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7527b4c476ff87f2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les fixtures de form.test couvrent des scénarios indépendants du parcours before ; un builder commun réduirait la lisibilité des assertions de contrat.",
+      "evidence": "components/actions/action-declaration/before/form.test.ts:125-136 et components/actions/action-declaration/before/form.test.ts:180-191 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "910697892112ae6e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les assertions de form.test restent attachées à des cas de parcours différents malgré une fixture de base similaire ; l'autonomie de diagnostic est intentionnelle.",
+      "evidence": "components/actions/action-declaration/before/form.test.ts:125-136 et components/actions/action-declaration/before/form.test.ts:312-323 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "edab44f06d41fa34",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les suites de récupération before et de soumission active couvrent des hooks et transitions différents ; partager le setup masquerait la frontière de cycle de vie.",
+      "evidence": "components/actions/action-declaration/before/use-before-action-recovery.test.tsx:8-15 et components/actions/action-declaration/hooks/use-action-declaration-submission.recovery.test.tsx:4-11 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8791cd83685635e4",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les cas de récupération before et de soumission active ont des contrats de reprise indépendants ; la répétition est nécessaire pour expliciter chaque owner.",
+      "evidence": "components/actions/action-declaration/before/use-before-action-recovery.test.tsx:15-21 et components/actions/action-declaration/hooks/use-action-declaration-submission.recovery.test.tsx:10-16 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f3cd4e6a22e389a2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les hooks draft et submission testent deux transitions de persistance différentes ; un harness partagé ne doit pas fusionner leurs invariants de reprise.",
+      "evidence": "components/actions/action-declaration/hooks/use-action-declaration-draft.recovery.test.tsx:14-19 et components/actions/action-declaration/hooks/use-action-declaration-submission.recovery.test.tsx:9-14 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "73c761b543afdef0",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas payload.geometry vérifient des projections géométriques distinctes ; garder les entrées près de chaque assertion évite une fixture générique ambiguë.",
+      "evidence": "components/actions/action-declaration/payload.geometry.test.ts:55-65 et components/actions/action-declaration/payload.geometry.test.ts:115-125 ; pair CURRENT relu.",
+      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     }
   ]
 }
