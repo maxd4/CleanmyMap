@@ -357,6 +357,96 @@ test("FULL reuses FAST evidence only for the exact unchanged candidate", async (
   }
 });
 
+test("FULL keeps one active execution and rejects a concurrent second FULL", async () => {
+  const root = makeRepository();
+  let firstCheck = true;
+  let startedResolve;
+  const started = new Promise((resolve) => {
+    startedResolve = resolve;
+  });
+  const firstRun = runValidationMode({
+    mode: "FULL",
+    candidateScope: "WORKTREE",
+    changedFiles: ["documentation/development/TESTING.md"],
+    maxParallel: 1,
+  }, {
+    repositoryRoot: root,
+    interactive: false,
+    runCheck: async () => {
+      if (firstCheck) {
+        firstCheck = false;
+        startedResolve();
+        await delay(100);
+      }
+      return { status: "PASS", exitCode: 0 };
+    },
+  });
+
+  try {
+    await started;
+    await assert.rejects(
+      () => runValidationMode({
+        mode: "FULL",
+        candidateScope: "WORKTREE",
+        changedFiles: ["documentation/development/TESTING.md"],
+        maxParallel: 1,
+      }, { repositoryRoot: root, interactive: false, runCheck: async () => ({ status: "PASS" }) }),
+      /Un seul FULL est autorisé par exécution/,
+    );
+  } finally {
+    await firstRun;
+    removeFixture(root);
+  }
+});
+
+test("FULL evidence remains bound to the SHA captured before main advances", async () => {
+  const root = makeRepository();
+  const lines = [];
+  let advanced = false;
+  try {
+    initializeGitFixture(root);
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const result = await runValidationMode({
+      mode: "FULL",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      log: (line) => lines.push(String(line)),
+      interactive: false,
+      runCheck: async () => {
+        if (!advanced) {
+          advanced = true;
+          fs.appendFileSync(path.join(root, "documentation", "development", "TESTING.md"), "main advanced\n");
+          execFileSync("git", ["add", "--", "documentation/development/TESTING.md"], { cwd: root, stdio: "ignore" });
+          execFileSync("git", [
+            "-c", "user.name=CleanMyMap fixture",
+            "-c", "user.email=fixture.invalid",
+            "commit", "--no-verify", "-m", "parallel main advance",
+          ], { cwd: root, stdio: "ignore" });
+        }
+        return { status: "PASS", exitCode: 0 };
+      },
+    });
+
+    assert.equal(result, 0);
+    const completionSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    assert.notEqual(completionSha, candidateSha);
+    const evidence = JSON.parse(fs.readFileSync(
+      path.join(root, "artifacts", "validation", "full", `${candidateSha}.json`),
+      "utf8",
+    ));
+    assert.equal(evidence.candidateSha, candidateSha);
+    assert.equal(evidence.completionSha, completionSha);
+    assert.equal(fs.existsSync(path.join(root, "artifacts", "validation", "full", `${completionSha}.json`)), false);
+    assert.ok(lines.includes(`CANDIDATE_SHA: ${candidateSha}`));
+    assert.ok(lines.includes(`HEAD_AT_COMPLETION: ${completionSha}`));
+  } finally {
+    removeFixture(root);
+  }
+});
+
 test("runner keeps unknown failures as FAIL and never turns verified foreign proof into PASS", async () => {
   const root = makeRepository();
   const options = {

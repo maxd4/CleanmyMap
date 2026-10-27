@@ -292,6 +292,11 @@ actionnable** du contrôle dans la même exécution, même préexistante ; un bl
 externe prouvé reste `BLOCKED_*`, jamais un faux succès. `RELEASE` exige la
 preuve FULL du SHA concerné ; ce n'est pas un déploiement.
 
+Une exécution ne lance qu'un seul `FULL`. Le runner capture le SHA candidat
+avant son premier contrôle et conserve le résultat sous ce SHA, même si `main`
+avance pendant l'exécution ; l'avance de `HEAD` est signalée séparément et ne
+déclenche ni second FULL ni réattribution de la preuve.
+
 `precommit:guard` échoué bloque commit/push : diagnostiquer et réparer dans le
 même lot si autorisé, puis relancer ; sinon signaler le blocage sans contourner.
 Les hooks s'appliquent au candidat exact selon `scripts/AGENTS.md`.

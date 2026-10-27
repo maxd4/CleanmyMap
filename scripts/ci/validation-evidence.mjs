@@ -18,6 +18,10 @@ const FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "validation",
   "full",
 );
+export const FULL_VALIDATION_LOCK_RELATIVE_PATH = path.join(
+  FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT,
+  "running.json",
+);
 
 function normalizePath(file) {
   return String(file).replaceAll("\\", "/").replace(/^\.\//, "");
@@ -88,6 +92,7 @@ export function createCandidateFingerprint({
   repositoryRoot = process.cwd(),
   candidateScope = "WORKTREE",
   changedFiles = [],
+  candidateSha,
 } = {}) {
   const scope = String(candidateScope).toUpperCase();
   const files = [...new Set(changedFiles.map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
@@ -96,7 +101,7 @@ export function createCandidateFingerprint({
     version: VALIDATION_EVIDENCE_VERSION,
     repositoryRoot: path.resolve(repositoryRoot),
     candidateScope: scope,
-    gitHead: gitHead(repositoryRoot),
+    gitHead: candidateSha ?? gitHead(repositoryRoot),
     files,
   }));
   for (const file of files) {
@@ -156,9 +161,75 @@ function fullEvidencePath(repositoryRoot, candidateSha) {
   return path.join(repositoryRoot, FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT, `${candidateSha}.json`);
 }
 
+function fullValidationLockPath(repositoryRoot) {
+  return path.join(repositoryRoot, FULL_VALIDATION_LOCK_RELATIVE_PATH);
+}
+
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+function readFullValidationLock(lockPath) {
+  try {
+    return JSON.parse(fs.readFileSync(lockPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export function acquireFullValidationLock({
+  repositoryRoot = process.cwd(),
+  candidateSha,
+} = {}) {
+  const lockPath = fullValidationLockPath(repositoryRoot);
+  const root = path.dirname(lockPath);
+  fs.mkdirSync(root, { recursive: true });
+  const executionId = `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const document = {
+    version: VALIDATION_EVIDENCE_VERSION,
+    executionId,
+    pid: process.pid,
+    candidateSha,
+    startedAt: new Date().toISOString(),
+  };
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const descriptor = fs.openSync(lockPath, "wx");
+      try {
+        fs.writeFileSync(descriptor, `${JSON.stringify(document, null, 2)}\n`, "utf8");
+      } finally {
+        fs.closeSync(descriptor);
+      }
+      return () => {
+        const current = readFullValidationLock(lockPath);
+        if (current?.executionId === executionId) removePathWithRetry(lockPath);
+      };
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      const current = readFullValidationLock(lockPath);
+      if (isProcessAlive(Number(current?.pid))) {
+        throw new Error(
+          `Un seul FULL est autorisé par exécution : un FULL est déjà actif (candidate=${current?.candidateSha ?? "unknown"}, pid=${current.pid}).`,
+        );
+      }
+      removePathWithRetry(lockPath);
+    }
+  }
+
+  throw new Error("Impossible d'acquérir le verrou FULL après récupération d'un verrou périmé.");
+}
+
 export function writeFullValidationEvidence({
   repositoryRoot = process.cwd(),
   candidateSha,
+  completionSha,
   candidateFingerprint,
   plan,
   passed = [],
@@ -177,6 +248,7 @@ export function writeFullValidationEvidence({
     `${JSON.stringify({
       version: VALIDATION_EVIDENCE_VERSION,
       candidateSha,
+      completionSha,
       candidateFingerprint,
       generatedAt: new Date().toISOString(),
       mode: plan?.mode,

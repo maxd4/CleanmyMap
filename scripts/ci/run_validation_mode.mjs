@@ -3,6 +3,7 @@
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 import {
+  acquireFullValidationLock,
   cleanupValidationEvidence,
   createCandidateFingerprint,
   createValidationEvidenceKey,
@@ -366,6 +367,7 @@ export async function runValidationMode(
   runtime = {},
 ) {
   const repositoryRoot = runtime.repositoryRoot ?? process.cwd();
+  const candidateSha = getCandidateSha(repositoryRoot);
   const changedFiles = options.changedFiles.length > 0
     ? options.changedFiles
     : getCandidateFiles(options.candidateScope, repositoryRoot);
@@ -374,164 +376,175 @@ export async function runValidationMode(
     repositoryRoot,
     candidateScope: plan.candidateScope,
     changedFiles,
+    candidateSha,
   });
-  const fastEvidence = plan.mode === "FULL"
-    ? readFastValidationEvidence({ repositoryRoot, candidateFingerprint })
-    : new Map();
-  const fastEvidenceEntries = plan.mode === "FAST"
-    ? readFastValidationEvidence({ repositoryRoot, candidateFingerprint })
-    : new Map();
-  const startedAt = performance.now();
-  const maxParallel = options.maxParallel ?? 2;
-  if (!Number.isInteger(maxParallel) || maxParallel < 1) {
-    throw new Error(`--max-parallel doit être un entier positif (reçu: ${maxParallel})`);
-  }
-  const log = runtime.log ?? console.log;
-  const progress = createProgressReporter({
-    plan,
-    candidateSha: getCandidateSha(repositoryRoot),
-    maxParallel,
-    log,
-    write: runtime.write,
-    interactive: runtime.interactive,
-  });
-  const passed = [];
-  const failed = [];
-  const blocked = [];
-  const notRun = [];
-  const reused = [];
-  const preexisting = [];
-  let timedOut = false;
-  let cleanupError;
-  const executeCheck = runtime.runCheck ?? runCheck;
+  const releaseFullValidationLock = plan.mode === "FULL"
+    ? acquireFullValidationLock({ repositoryRoot, candidateSha })
+    : () => {};
 
   try {
-    const evidenceKeys = new Map();
-    for (const check of plan.checks) {
-      const evidenceKey = createValidationEvidenceKey({
-        candidateFingerprint,
-        check,
-        candidateScope: plan.candidateScope,
-        configuration: check.evidenceConfiguration,
-      });
-      evidenceKeys.set(check.id, evidenceKey);
-      if (plan.mode === "FULL" && fastEvidence.has(evidenceKey)) {
-        reused.push({ id: check.id, reason: "preuve FAST du même candidat et de la même commande" });
-        progress.update(check, "REUSED", { durationSeconds: 0 });
-      }
+    const fastEvidence = plan.mode === "FULL"
+      ? readFastValidationEvidence({ repositoryRoot, candidateFingerprint })
+      : new Map();
+    const fastEvidenceEntries = plan.mode === "FAST"
+      ? readFastValidationEvidence({ repositoryRoot, candidateFingerprint })
+      : new Map();
+    const startedAt = performance.now();
+    const maxParallel = options.maxParallel ?? 2;
+    if (!Number.isInteger(maxParallel) || maxParallel < 1) {
+      throw new Error(`--max-parallel doit être un entier positif (reçu: ${maxParallel})`);
     }
-
-    const schedulerChecks = plan.checks.filter((check) => !reused.some((entry) => entry.id === check.id));
-    const schedulerResult = await runChecksWithScheduler({
-      checks: schedulerChecks,
-      maxParallel,
-      initialStates: new Map(reused.map((entry) => [entry.id, "REUSED"])),
-      getDecision: (check) => getBudgetDecision({
-        elapsedSeconds: (performance.now() - startedAt) / 1000,
-        estimatedSeconds: check.estimatedSeconds,
-        budgetSeconds: plan.budgetSeconds,
-      }),
-      onStart: (check, timing) => progress.update(check, "RUNNING", { elapsedSeconds: timing.elapsedSeconds }),
-      executeCheck: (check, remainingSeconds) => executeCheck(
-        check,
-        remainingSeconds,
-        repositoryRoot,
-        {
-          heartbeatMs: runtime.heartbeatMs ?? 15_000,
-          onHeartbeat: (elapsedSeconds) => progress.heartbeat(check, elapsedSeconds),
-        },
-      ),
-      onResult: (check, result, state) => {
-        const durationSeconds = Number(result.elapsedSeconds ?? 0);
-        progress.update(check, state, { durationSeconds });
-        if (state === "PASS") {
-          passed.push(check.id);
-          if (plan.mode === "FAST") {
-            fastEvidenceEntries.set(evidenceKeys.get(check.id), {
-              checkId: check.id,
-              command: check.command,
-              passedAt: new Date().toISOString(),
-            });
-            writeFastValidationEvidence({
-              repositoryRoot,
-              candidateFingerprint,
-              entries: fastEvidenceEntries,
-            });
-          }
-          return;
-        }
-        if (result.status === "TIME_BUDGET_EXCEEDED") {
-          timedOut = true;
-          failed.push(`${check.id}: TIME_BUDGET_EXCEEDED`);
-          return;
-        }
-        if (result.status === "NOT_RUN") {
-          notRun.push({ id: check.id, reason: result.reason ?? "NOT_RUN" });
-          return;
-        }
-        if (state === "BLOCKED") {
-          blocked.push(`${check.id}: ${result.controlStatus ?? result.reason ?? "BLOCKED_DECISION"}`);
-          return;
-        }
-        const classification = classifyValidationFailure({
-          candidateChangedFiles: changedFiles,
-          failureFiles: result.failureFiles ?? [],
-          preexistingProof: result.preexistingProof ?? check.preexistingProof,
-        });
-        if (classification === "PREEXISTING_PARALLEL_FAILURE") {
-          preexisting.push(`${check.id}: ${classification}`);
-        } else {
-          failed.push(`${check.id}: exit ${result.exitCode ?? 1}`);
-        }
-      },
-    });
-    timedOut ||= schedulerResult.timedOut;
-  } finally {
-    if (plan.mode === "FULL") {
-      try {
-        cleanupValidationEvidence({ repositoryRoot, candidateFingerprint });
-      } catch (error) {
-        cleanupError = error instanceof Error ? error : new Error(String(error));
-      }
-    }
-  }
-
-  const elapsedSeconds = (performance.now() - startedAt) / 1000;
-  const candidateSha = getCandidateSha(repositoryRoot);
-  const verdict = printReport({
-    plan,
-    elapsedSeconds,
-    candidateFingerprint,
-    passed,
-    failed,
-    blocked,
-    notRun,
-    timedOut,
-    reused,
-    preexisting,
-    cleanupError,
-    records: [...progress.records.values()],
-    log,
-  });
-  progress.finishInteractive();
-  if (plan.mode === "FULL") {
-    writeFullValidationEvidence({
-      repositoryRoot,
-      candidateSha,
-      candidateFingerprint,
+    const log = runtime.log ?? console.log;
+    const progress = createProgressReporter({
       plan,
+      candidateSha,
+      maxParallel,
+      log,
+      write: runtime.write,
+      interactive: runtime.interactive,
+    });
+    const passed = [];
+    const failed = [];
+    const blocked = [];
+    const notRun = [];
+    const reused = [];
+    const preexisting = [];
+    let timedOut = false;
+    let cleanupError;
+    const executeCheck = runtime.runCheck ?? runCheck;
+
+    try {
+      const evidenceKeys = new Map();
+      for (const check of plan.checks) {
+        const evidenceKey = createValidationEvidenceKey({
+          candidateFingerprint,
+          check,
+          candidateScope: plan.candidateScope,
+          configuration: check.evidenceConfiguration,
+        });
+        evidenceKeys.set(check.id, evidenceKey);
+        if (plan.mode === "FULL" && fastEvidence.has(evidenceKey)) {
+          reused.push({ id: check.id, reason: "preuve FAST du même candidat et de la même commande" });
+          progress.update(check, "REUSED", { durationSeconds: 0 });
+        }
+      }
+
+      const schedulerChecks = plan.checks.filter((check) => !reused.some((entry) => entry.id === check.id));
+      const schedulerResult = await runChecksWithScheduler({
+        checks: schedulerChecks,
+        maxParallel,
+        initialStates: new Map(reused.map((entry) => [entry.id, "REUSED"])),
+        getDecision: (check) => getBudgetDecision({
+          elapsedSeconds: (performance.now() - startedAt) / 1000,
+          estimatedSeconds: check.estimatedSeconds,
+          budgetSeconds: plan.budgetSeconds,
+        }),
+        onStart: (check, timing) => progress.update(check, "RUNNING", { elapsedSeconds: timing.elapsedSeconds }),
+        executeCheck: (check, remainingSeconds) => executeCheck(
+          check,
+          remainingSeconds,
+          repositoryRoot,
+          {
+            heartbeatMs: runtime.heartbeatMs ?? 15_000,
+            onHeartbeat: (elapsedSeconds) => progress.heartbeat(check, elapsedSeconds),
+          },
+        ),
+        onResult: (check, result, state) => {
+          const durationSeconds = Number(result.elapsedSeconds ?? 0);
+          progress.update(check, state, { durationSeconds });
+          if (state === "PASS") {
+            passed.push(check.id);
+            if (plan.mode === "FAST") {
+              fastEvidenceEntries.set(evidenceKeys.get(check.id), {
+                checkId: check.id,
+                command: check.command,
+                passedAt: new Date().toISOString(),
+              });
+              writeFastValidationEvidence({
+                repositoryRoot,
+                candidateFingerprint,
+                entries: fastEvidenceEntries,
+              });
+            }
+            return;
+          }
+          if (result.status === "TIME_BUDGET_EXCEEDED") {
+            timedOut = true;
+            failed.push(`${check.id}: TIME_BUDGET_EXCEEDED`);
+            return;
+          }
+          if (result.status === "NOT_RUN") {
+            notRun.push({ id: check.id, reason: result.reason ?? "NOT_RUN" });
+            return;
+          }
+          if (state === "BLOCKED") {
+            blocked.push(`${check.id}: ${result.controlStatus ?? result.reason ?? "BLOCKED_DECISION"}`);
+            return;
+          }
+          const classification = classifyValidationFailure({
+            candidateChangedFiles: changedFiles,
+            failureFiles: result.failureFiles ?? [],
+            preexistingProof: result.preexistingProof ?? check.preexistingProof,
+          });
+          if (classification === "PREEXISTING_PARALLEL_FAILURE") {
+            preexisting.push(`${check.id}: ${classification}`);
+          } else {
+            failed.push(`${check.id}: exit ${result.exitCode ?? 1}`);
+          }
+        },
+      });
+      timedOut ||= schedulerResult.timedOut;
+    } finally {
+      if (plan.mode === "FULL") {
+        try {
+          cleanupValidationEvidence({ repositoryRoot, candidateFingerprint });
+        } catch (error) {
+          cleanupError = error instanceof Error ? error : new Error(String(error));
+        }
+      }
+    }
+
+    const elapsedSeconds = (performance.now() - startedAt) / 1000;
+    const completionSha = getCandidateSha(repositoryRoot);
+    const verdict = printReport({
+      plan,
+      elapsedSeconds,
+      candidateFingerprint,
       passed,
       failed,
       blocked,
       notRun,
+      timedOut,
       reused,
       preexisting,
-      verdict,
+      cleanupError,
+      records: [...progress.records.values()],
+      log,
     });
-    log(`CANDIDATE_SHA: ${candidateSha}`);
-    log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" ? "YES" : "NO"}`);
+    progress.finishInteractive();
+    if (plan.mode === "FULL") {
+      writeFullValidationEvidence({
+        repositoryRoot,
+        candidateSha,
+        completionSha,
+        candidateFingerprint,
+        plan,
+        passed,
+        failed,
+        blocked,
+        notRun,
+        reused,
+        preexisting,
+        verdict,
+      });
+      log(`CANDIDATE_SHA: ${candidateSha}`);
+      if (completionSha !== candidateSha) log(`HEAD_AT_COMPLETION: ${completionSha}`);
+      log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" ? "YES" : "NO"}`);
+    }
+    return verdict === "PASS" ? 0 : verdict === "INCOMPLETE" ? 2 : 1;
+  } finally {
+    releaseFullValidationLock();
   }
-  return verdict === "PASS" ? 0 : verdict === "INCOMPLETE" ? 2 : 1;
 }
 
 if (process.argv[1] && process.argv[1].endsWith("run_validation_mode.mjs")) {

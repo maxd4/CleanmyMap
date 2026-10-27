@@ -233,6 +233,13 @@ peut pas être laissé rouge en le classant simplement
 décisionnels ou d'environnement restent `BLOCKED_*`, doivent conserver leur
 preuve et ne peuvent pas être masqués ni comptés comme un succès.
 
+Une exécution ne lance qu'un seul `FULL` : le runner refuse un second `FULL`
+concurrent et ne relance pas automatiquement la campagne lorsqu'une ref
+avance. Le SHA candidat est capturé avant le premier contrôle ; le rapport et
+la preuve sont conservés sous ce SHA immuable. Si `main` avance pendant la
+campagne, le SHA observé à la fin est signalé séparément et ne remplace jamais
+le candidat auquel le résultat est attribué.
+
 ### Orchestration et progression de `checks:full`
 
 Le runner affiche dès le démarrage le SHA observé, le scope, le mode, le
