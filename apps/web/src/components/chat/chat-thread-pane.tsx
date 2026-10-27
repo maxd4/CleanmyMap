@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { LucideIcon } from "lucide-react";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import type { ChatChannelType } from "@/lib/chat/channels";
+import type { Locale } from "@/lib/ui/preferences";
 import type {
   ChatRelatedEvent,
   CommunityAnnouncementTemplateKey,
@@ -58,6 +59,7 @@ export type ChatThreadPaneProps = {
   onLoadMoreSearch: () => void;
   selectedActionId: string | null;
   messages: ChatMessage[];
+  locale: Locale;
   scrollRef: RefObject<HTMLDivElement | null>;
   hasMoreMessages: boolean;
   isLoadingPrevious: boolean;
@@ -140,6 +142,7 @@ export function ChatThreadPane({
   onLoadMoreSearch,
   selectedActionId,
   messages,
+  locale,
   scrollRef,
   hasMoreMessages,
   isLoadingPrevious,
@@ -249,6 +252,7 @@ export function ChatThreadPane({
             onRetryMessages={onRetryMessages}
             messages={messages}
             userId={userId}
+            locale={locale}
             tone={tone}
             onPollVote={onPollVote}
             pollVoteStates={pollVoteStates}

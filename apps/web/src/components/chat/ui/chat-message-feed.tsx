@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
+import type { Locale } from "@/lib/ui/preferences";
 import type { ChatFeedState } from "../chat-feed-state";
 import type { ChatEmptyStateCopy } from "../chat-shell.utils";
 import type { ChatMessage } from "../chat-types";
@@ -28,6 +29,7 @@ export type ChatMessageFeedProps = {
   onRetryMessages: () => void;
   messages: ChatMessage[];
   userId?: string;
+  locale: Locale;
   tone: "light" | "dark";
   onPollVote: (messageId: string, optionId: string | null) => void;
   pollVoteStates: Record<string, PollVoteState>;
@@ -51,6 +53,7 @@ export function ChatMessageFeed({
   onRetryMessages,
   messages,
   userId,
+  locale,
   tone,
   onPollVote,
   pollVoteStates,
@@ -97,7 +100,7 @@ export function ChatMessageFeed({
           Le message demandé n’est plus disponible dans ce fil.
         </p>
       ) : null}
-      {feedState === "loading" && <ChatLoadingState tone={tone} />}
+      {feedState === "loading" && <ChatLoadingState locale={locale} tone={tone} />}
       {feedState === "degraded" && (
         <ChatDegradedState onRetry={onRetryMessages} tone={tone} />
       )}

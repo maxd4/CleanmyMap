@@ -94,6 +94,7 @@ export function ChatShellView({
     navigation,
     presentation,
     pathname,
+    locale,
     messagerieMode,
     announcementEventRequested,
     announcementEventLoading,

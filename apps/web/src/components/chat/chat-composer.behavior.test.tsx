@@ -1,5 +1,6 @@
 import { createRef } from "react";
 import { act, create, type ReactTestInstance } from "react-test-renderer";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./chat-composer";
 import { handleChatComposerFileSelection } from "./chat-composer-input";
@@ -17,8 +18,8 @@ function childrenText(node: ReactTestInstance): string {
   return String(propsOf<{ children?: React.ReactNode }>(node).children ?? "");
 }
 
-function renderComposer(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
-  const props: React.ComponentProps<typeof ChatComposer> = {
+function getComposerProps(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
+  return {
     activeChannelType: "community",
     composerPlaceholder: "Écrire dans la discussion",
     message: "Brouillon conservé",
@@ -37,12 +38,24 @@ function renderComposer(overrides: Partial<React.ComponentProps<typeof ChatCompo
     canSubmit: true,
     userId: "user-1",
     ...overrides,
-  };
+  } satisfies React.ComponentProps<typeof ChatComposer>;
+}
+
+function renderComposer(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
+  const props = getComposerProps(overrides);
   let renderer!: ReturnType<typeof create>;
   act(() => {
     renderer = create(<ChatComposer {...props} />);
   });
   return renderer;
+}
+
+function renderComposerMarkup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
+  return renderToStaticMarkup(<ChatComposer {...getComposerProps(overrides)} />);
+}
+
+function submitButtonTag(markup: string): string {
+  return markup.match(/<button[^>]*type="submit"[^>]*>/)?.[0] ?? "";
 }
 
 describe("ChatComposer interactive behavior", () => {
@@ -67,8 +80,27 @@ describe("ChatComposer interactive behavior", () => {
     expect(textareaProps.value).toBe("Brouillon conservé");
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(requestSubmit).toHaveBeenCalledOnce();
-    expect(renderer.root.findByProps({ "aria-label": "Envoyer le message" })).toBeTruthy();
+    expect(submitButtonTag(renderComposerMarkup())).toContain('aria-label="Envoyer le message"');
     act(() => renderer.unmount());
+  });
+
+  it("renders the accessible names for message and poll submission on the native button", () => {
+    expect(submitButtonTag(renderComposerMarkup())).toContain('aria-label="Envoyer le message"');
+    expect(submitButtonTag(renderComposerMarkup({ composerMode: "poll" }))).toContain('aria-label="Publier le sondage"');
+  });
+
+  it("preserves the native accessible name while sending or uploading", () => {
+    for (const scenario of [
+      { isSending: true, isUploading: false, label: "Envoyer le message" },
+      { isSending: false, isUploading: true, label: "Envoyer le message" },
+      { isSending: true, isUploading: false, composerMode: "poll" as const, label: "Publier le sondage" },
+    ]) {
+      const tag = submitButtonTag(renderComposerMarkup(scenario));
+      expect(tag).toContain(`aria-label="${scenario.label}"`);
+      expect(tag).toContain("disabled");
+      expect(tag).toContain('aria-busy="true"');
+      expect(tag).toContain('aria-disabled="true"');
+    }
   });
 
   it("does not submit while sending, uploading, unauthenticated or without a valid draft", () => {
@@ -88,6 +120,24 @@ describe("ChatComposer interactive behavior", () => {
       if (scenario.isSending || scenario.isUploading) {
         expect(sendButton.props.loading).toBe(true);
       }
+      act(() => renderer.unmount());
+    }
+  });
+
+  it("blocks the native send click while a send or upload is pending", () => {
+    for (const scenario of [{ isSending: true }, { isUploading: true }]) {
+      const renderer = renderComposer(scenario);
+      const nativeButton = renderer.root.findAllByType("button").find((node) => node.props.type === "submit");
+      expect(nativeButton).toBeTruthy();
+      const preventDefault = vi.fn();
+      const stopPropagation = vi.fn();
+
+      act(() => {
+        nativeButton?.props.onClick({ preventDefault, stopPropagation });
+      });
+
+      expect(preventDefault).toHaveBeenCalledOnce();
+      expect(stopPropagation).toHaveBeenCalledOnce();
       act(() => renderer.unmount());
     }
   });

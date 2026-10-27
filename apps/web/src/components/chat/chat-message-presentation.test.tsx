@@ -3,6 +3,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatEmptyStateCopy } from "./chat-shell.utils";
+import { ChatMessageFeed } from "./ui/chat-message-feed";
 import { ChatDegradedState, ChatEmptyState, ChatLoadingState } from "./ui/chat-feed-states";
 import { ChatMessageContent } from "./ui/chat-message-content";
 
@@ -123,16 +124,61 @@ describe("Chat message presentation", () => {
     expect(markup).toContain('class="cmm-button');
   });
 
-  it("announces chat loading once through the canonical loading region", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ChatLoadingState, { count: 2, tone: "light" }),
-    );
+  it("announces chat loading in the active locale independently of the visual theme", () => {
+    for (const scenario of [
+      { locale: "fr" as const, tone: "light" as const, label: "Chargement des messages" },
+      { locale: "fr" as const, tone: "dark" as const, label: "Chargement des messages" },
+      { locale: "en" as const, tone: "light" as const, label: "Loading messages" },
+      { locale: "en" as const, tone: "dark" as const, label: "Loading messages" },
+    ]) {
+      const markup = renderToStaticMarkup(
+        React.createElement(ChatLoadingState, { count: 2, locale: scenario.locale, tone: scenario.tone }),
+      );
 
-    expect(markup).toContain('role="status"');
-    expect(markup).toContain('aria-live="polite"');
-    expect(markup).toContain('aria-busy="true"');
-    expect(markup).toContain('aria-label="Chargement des messages"');
-    expect(markup).toContain('data-skeleton-variant="circular"');
+      expect(markup).toContain('role="status"');
+      expect(markup).toContain('aria-live="polite"');
+      expect(markup).toContain('aria-busy="true"');
+      expect(markup).toContain(`aria-label="${scenario.label}"`);
+      expect(markup.match(/role="status"/g)).toHaveLength(1);
+      expect(markup.match(/aria-live="polite"/g)).toHaveLength(1);
+      expect(markup).toContain('data-skeleton-variant="circular"');
+    }
+  });
+
+  it("threads the active locale through the rendered message feed loading region", () => {
+    for (const scenario of [
+      { locale: "fr" as const, label: "Chargement des messages" },
+      { locale: "en" as const, label: "Loading messages" },
+    ]) {
+      const markup = renderToStaticMarkup(
+        React.createElement(ChatMessageFeed, {
+          scrollRef: React.createRef<HTMLDivElement>(),
+          hasMoreMessages: false,
+          isLoadingPrevious: false,
+          loadPreviousError: null,
+          onLoadPreviousMessages: vi.fn(),
+          targetMessageId: null,
+          targetStatus: undefined,
+          feedState: "loading",
+          onRetryMessages: vi.fn(),
+          messages: [],
+          userId: "user-1",
+          locale: scenario.locale,
+          tone: "dark",
+          onPollVote: vi.fn(),
+          pollVoteStates: {},
+          highlightedMessageId: null,
+          emptyState,
+          activeChannelType: "community",
+          selectedRecipientId: null,
+          onStarterPrompt: vi.fn(),
+          isAuthenticated: true,
+        }),
+      );
+
+      expect(markup).toContain(`aria-label="${scenario.label}"`);
+      expect(markup.match(/role="status"/g)).toHaveLength(1);
+    }
   });
 
   it("uses a user-facing light deferred state", () => {

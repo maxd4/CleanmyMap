@@ -1,15 +1,17 @@
 import { MessageSquare } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import type { Locale } from "@/lib/ui/preferences";
 import type { ChatEmptyStateCopy } from "../chat-shell.utils";
 import type { ChatChannelType } from "@/lib/chat/channels";
 
 type ChatLoadingStateProps = {
   count?: number;
+  locale: Locale;
   tone?: "light" | "dark";
 };
 
-export function ChatLoadingState({ count = 3, tone = "dark" }: ChatLoadingStateProps) {
+export function ChatLoadingState({ count = 3, locale, tone = "dark" }: ChatLoadingStateProps) {
   const isLight = tone === "light";
   return (
     <div
@@ -17,7 +19,7 @@ export function ChatLoadingState({ count = 3, tone = "dark" }: ChatLoadingStateP
       role="status"
       aria-live="polite"
       aria-busy="true"
-      aria-label={isLight ? "Chargement des messages" : "Loading messages"}
+      aria-label={locale === "fr" ? "Chargement des messages" : "Loading messages"}
     >
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex items-start gap-4">

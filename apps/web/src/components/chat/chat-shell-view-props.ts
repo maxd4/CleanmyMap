@@ -75,6 +75,7 @@ export function buildChatShellThreadProps({
   navigation,
   presentation,
   pathname,
+  locale,
   announcementEventRequested,
   announcementEventLoading,
   announcementEventError,
@@ -87,6 +88,7 @@ export function buildChatShellThreadProps({
   navigation: ChatShellNavigation;
   presentation: ChatShellPresentation;
   pathname: string;
+  locale: ChatShellLayoutProps["threadProps"]["locale"];
   announcementEventRequested: boolean;
   announcementEventLoading: boolean;
   announcementEventError: Error | null;
@@ -129,6 +131,7 @@ export function buildChatShellThreadProps({
     onLoadMoreSearch: () => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ context.chatSearch.loadMore(); },
     selectedActionId: context.selectedActionId,
     messages: context.messages,
+    locale,
     scrollRef: context.scrollRef,
     hasMoreMessages: context.hasMoreMessages,
     isLoadingPrevious: context.isLoadingPrevious,
