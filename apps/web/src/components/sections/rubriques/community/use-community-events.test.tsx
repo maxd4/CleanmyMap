@@ -271,6 +271,105 @@ describe("useCommunityEvents inactive-tab contract", () => {
     act(() => renderer?.unmount());
   });
 
+  it("retries a failed reconciliation from the refreshed base when the previous chain is exhausted", async () => {
+    const first = makeEvent("future-1", "2099-09-10");
+    const firstUpdated = makeEvent("future-1", "2099-09-10", { myRsvpStatus: "maybe" });
+    const oldSecond = makeEvent("future-old-2", "2099-09-11");
+    const oldThird = makeEvent("future-old-3", "2099-09-12");
+    const newSecond = makeEvent("future-new-2", "2099-09-11");
+    const newThird = makeEvent("future-new-3", "2099-09-12");
+    let upcomingData: unknown = { status: "ok", count: 1, items: [first], hasMore: true, nextCursor: "cursor-old-1" };
+    configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldSecond], hasMore: true, nextCursor: "cursor-old-2" })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldThird], hasMore: false, nextCursor: null });
+
+    let result!: ReturnType<typeof useCommunityEvents>;
+    function Harness() { result = useCommunityEvents(true); return null; }
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => { renderer = create(React.createElement(Harness)); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    expect(result.hasMoreByPhase.upcoming).toBe(false);
+
+    const reconciliationError = new Error("new continuation unavailable");
+    upcomingData = { status: "ok", count: 1, items: [firstUpdated], hasMore: true, nextCursor: "cursor-new-1" };
+    fetchCommunityEventsMock.mockRejectedValueOnce(reconciliationError);
+    await act(async () => {
+      configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+
+    expect(result.eventsLoadErrorByPhase.upcoming?.message).toContain("new continuation unavailable");
+    expect(fetchCommunityEventsMock).toHaveBeenLastCalledWith({ limit: 120, phase: "upcoming", cursor: "cursor-new-1" });
+
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newSecond], hasMore: true, nextCursor: "cursor-new-2" })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newThird], hasMore: false, nextCursor: null });
+    await act(async () => { await result.retryEvents("upcoming"); });
+
+    expect(fetchCommunityEventsMock.mock.calls.slice(-3)).toEqual([
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-1" }],
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-1" }],
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-2" }],
+    ]);
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-1", "future-new-2", "future-new-3"]);
+    expect(result.eventsLoadErrorByPhase.upcoming).toBeNull();
+    act(() => renderer?.unmount());
+  });
+
+  it("restarts the refreshed cursor chain after a later reconciliation page fails", async () => {
+    const first = makeEvent("future-1", "2099-09-10");
+    const oldSecond = makeEvent("future-old-2", "2099-09-11");
+    const oldThird = makeEvent("future-old-3", "2099-09-12");
+    const newSecond = makeEvent("future-new-2", "2099-09-11");
+    const newThird = makeEvent("future-new-3", "2099-09-12");
+    let upcomingData: unknown = { status: "ok", count: 1, items: [first], hasMore: true, nextCursor: "cursor-old-1" };
+    configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldSecond], hasMore: true, nextCursor: "cursor-old-2" })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [oldThird], hasMore: false, nextCursor: null });
+
+    let result!: ReturnType<typeof useCommunityEvents>;
+    function Harness() { result = useCommunityEvents(true); return null; }
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => { renderer = create(React.createElement(Harness)); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+    await act(async () => { await result.loadMoreEvents("upcoming"); });
+
+    upcomingData = { status: "ok", count: 1, items: [first], hasMore: true, nextCursor: "cursor-new-1" };
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newSecond], hasMore: true, nextCursor: "cursor-new-2" })
+      .mockRejectedValueOnce(new Error("second refreshed continuation unavailable"));
+    await act(async () => {
+      configurePhaseData({ upcoming: upcomingData, past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null } });
+      renderer?.update(React.createElement(Harness));
+      await flushHookEffects();
+    });
+
+    expect(result.eventsLoadErrorByPhase.upcoming?.message).toContain("second refreshed continuation unavailable");
+    expect(fetchCommunityEventsMock.mock.calls.slice(-2)).toEqual([
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-1" }],
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-2" }],
+    ]);
+
+    fetchCommunityEventsMock
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newSecond], hasMore: true, nextCursor: "cursor-new-2" })
+      .mockResolvedValueOnce({ status: "ok", count: 1, items: [newThird], hasMore: false, nextCursor: null });
+    await act(async () => { await result.retryEvents("upcoming"); });
+
+    expect(fetchCommunityEventsMock.mock.calls.slice(-4)).toEqual([
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-1" }],
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-2" }],
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-1" }],
+      [{ limit: 120, phase: "upcoming", cursor: "cursor-new-2" }],
+    ]);
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["future-1", "future-new-2", "future-new-3"]);
+    expect(result.eventsLoadErrorByPhase.upcoming).toBeNull();
+    act(() => renderer?.unmount());
+  });
+
   it("ignores a late continuation response after a newer base revalidation", async () => {
     const first = makeEvent("future-1", "2099-09-10");
     const replacement = makeEvent("future-new", "2099-09-09");
@@ -300,19 +399,24 @@ describe("useCommunityEvents inactive-tab contract", () => {
     act(() => renderer?.unmount());
   });
 
-  it("keeps a deterministic order for equal dates and separates personal state by id", async () => {
-    const first = makeEvent("b", "2099-09-10", { createdAt: "2099-01-01T08:00:00.000Z", myRsvpStatus: "yes" });
-    const second = makeEvent("a", "2099-09-10", { createdAt: "2099-01-01T08:00:00.000Z", myRsvpStatus: null });
+  it("matches the server keyset order for equal dates and separates personal state by id", async () => {
+    const upcomingCreatedLater = makeEvent("upcoming-c", "2099-09-10", { createdAt: "2099-01-01T09:00:00.000Z" });
+    const upcomingTieB = makeEvent("upcoming-b", "2099-09-10", { createdAt: "2099-01-01T08:00:00.000Z", myRsvpStatus: "yes" });
+    const upcomingTieA = makeEvent("upcoming-a", "2099-09-10", { createdAt: "2099-01-01T08:00:00.000Z" });
+    const pastCreatedLater = makeEvent("past-c", "2020-09-10", { createdAt: "2020-01-01T09:00:00.000Z", myRsvpStatus: "maybe" });
+    const pastTieB = makeEvent("past-b", "2020-09-10", { createdAt: "2020-01-01T08:00:00.000Z" });
+    const pastTieA = makeEvent("past-a", "2020-09-10", { createdAt: "2020-01-01T08:00:00.000Z" });
     configurePhaseData({
-      upcoming: { status: "ok", count: 2, items: [first, second], hasMore: false, nextCursor: null },
-      past: { status: "ok", count: 0, items: [], hasMore: false, nextCursor: null },
+      upcoming: { status: "ok", count: 3, items: [upcomingTieA, upcomingCreatedLater, upcomingTieB], hasMore: false, nextCursor: null },
+      past: { status: "ok", count: 3, items: [pastTieA, pastCreatedLater, pastTieB], hasMore: false, nextCursor: null },
     });
     let result!: ReturnType<typeof useCommunityEvents>;
     function Harness() { result = useCommunityEvents(true); return null; }
     let renderer: ReturnType<typeof create> | undefined;
     act(() => { renderer = create(React.createElement(Harness)); });
-    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["a", "b"]);
-    expect(result.myEvents.map((event) => event.id)).toEqual(["b"]);
+    expect(result.upcomingEvents.map((event) => event.id)).toEqual(["upcoming-c", "upcoming-b", "upcoming-a"]);
+    expect(result.pastEvents.map((event) => event.id)).toEqual(["past-c", "past-b", "past-a"]);
+    expect(result.myEvents.map((event) => event.id)).toEqual(["upcoming-b", "past-c"]);
     act(() => renderer?.unmount());
   });
 });

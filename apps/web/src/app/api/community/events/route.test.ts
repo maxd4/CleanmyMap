@@ -283,6 +283,32 @@ describe("GET /api/community/events", () => {
     }
   });
 
+  it.each([
+    ["upcoming", true],
+    ["past", false],
+  ] as const)("requests the canonical keyset order for the %s phase", async (phase, ascendingEventDate) => {
+    const eventsQuery = {
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [event], error: null }),
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(eventsQuery) }),
+    });
+
+    const response = await GET(new Request(`http://localhost/api/community/events?limit=120&phase=${phase}`));
+
+    expect(response.status).toBe(200);
+    expect(eventsQuery.order.mock.calls).toEqual([
+      ["event_date", { ascending: ascendingEventDate }],
+      ["created_at", { ascending: false }],
+      ["id", { ascending: false }],
+    ]);
+  });
+
   it.each([0, 1, 120, 121, 300])("bounds a %s-record future dataset without losing deterministic continuation", async (count) => {
     const futureEvents = Array.from({ length: count }, (_, index) => ({
       ...event,
