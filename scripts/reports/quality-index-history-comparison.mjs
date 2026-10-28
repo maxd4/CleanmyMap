@@ -5,7 +5,7 @@ const IMMUTABLE_PROVENANCE = "COMMITTED_SNAPSHOT";
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+  return Object.fromEntries(Object.keys(value).sort((left, right) => left.localeCompare(right)).map((key) => [key, stableValue(value[key])]));
 }
 
 function stableJson(value) {
@@ -149,9 +149,10 @@ function metricComparison(previous, current, name) {
 function signalComparison(previous = [], current = []) {
   const previousSet = new Set(previous);
   const currentSet = new Set(current);
-  const added = [...currentSet].filter((value) => !previousSet.has(value)).sort();
-  const removed = [...previousSet].filter((value) => !currentSet.has(value)).sort();
-  return { state: "PRESENT", previous: [...previousSet].sort(), current: [...currentSet].sort(), added, removed };
+  const sortValues = (left, right) => left.localeCompare(right);
+  const added = [...currentSet].filter((value) => !previousSet.has(value)).sort(sortValues);
+  const removed = [...previousSet].filter((value) => !currentSet.has(value)).sort(sortValues);
+  return { state: "PRESENT", previous: [...previousSet].sort(sortValues), current: [...currentSet].sort(sortValues), added, removed };
 }
 
 function controlFlowComparison(previous, current) {
@@ -196,13 +197,13 @@ function functionComparison(previous, current, previousSignals, currentSignals, 
 function fileSignals(index, path) {
   const values = new Set();
   for (const [key, signals] of index.localSignals) if (key === `file\u0000${path}` || key.startsWith(`${path}\u0000`)) for (const signal of signals) values.add(signal);
-  return [...values].sort();
+  return [...values].sort((left, right) => left.localeCompare(right));
 }
 
 function compareComparableRuns(currentRun, previousRun, currentReport, previousReport) {
   const currentIndex = indexMetrics(currentRun);
   const previousIndex = indexMetrics(previousRun);
-  const keys = [...new Set([...currentIndex.metrics.keys(), ...previousIndex.metrics.keys()])].sort();
+  const keys = [...new Set([...currentIndex.metrics.keys(), ...previousIndex.metrics.keys()])].sort((left, right) => left.localeCompare(right));
   const functions = [];
   const unmatchedFunctions = [];
   for (const key of keys) {
@@ -224,7 +225,7 @@ function compareComparableRuns(currentRun, previousRun, currentReport, previousR
 
   const currentPaths = new Set([...currentIndex.metrics.values()].map((entry) => entry.path));
   const previousPaths = new Set([...previousIndex.metrics.values()].map((entry) => entry.path));
-  const filePaths = [...new Set([...currentPaths, ...previousPaths])].sort();
+  const filePaths = [...new Set([...currentPaths, ...previousPaths])].sort((left, right) => left.localeCompare(right));
   const files = filePaths.map((filePath) => {
     const matched = functions.filter((entry) => entry.path === filePath);
     const currentFile = currentPaths.has(filePath);

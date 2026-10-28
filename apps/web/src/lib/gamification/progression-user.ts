@@ -237,7 +237,7 @@ export function buildPersonalHistory(
   for (const evidence of terrainSpecializationEvidence) {
     const roles = validatedRolesByAction.get(evidence.actionId) ?? [];
     if (!roles.includes(evidence.roleCode)) roles.push(evidence.roleCode);
-    validatedRolesByAction.set(evidence.actionId, roles.sort());
+    validatedRolesByAction.set(evidence.actionId, roles.sort((left, right) => left.localeCompare(right)));
   }
   const rowsById = new Map<string, ActionRow | ActionTimelineRow>();
   for (const row of rows) rowsById.set(row.id, row);

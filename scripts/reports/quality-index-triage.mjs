@@ -223,7 +223,7 @@ function buildFunctionTriage(files, audits) {
   const fileByPath = new Map(files.map((file) => [file.path, file]));
   const candidates = [...byFile.values()].map((candidate) => ({
     ...candidate,
-    detail: [...candidate.detail].sort().join(", "),
+    detail: [...candidate.detail].sort((left, right) => left.localeCompare(right)).join(", "),
     functionSignals: functionSignalSummaries(fileByPath.get(candidate.path)),
   })).sort(sortTriageCandidates).slice(0, 10);
   const staleEvidenceCount = files.reduce((count, file) => count + [...(file.findings.complexity?.items ?? [])].filter((finding) => finding.type === "stale").length, 0);

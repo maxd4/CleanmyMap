@@ -390,7 +390,7 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
   const debtAvailability = structuralDebtAvailability(reports, coverageIndexes);
   const files = [...byFile.values()].map((entry) => {
     const commitCount = entry.commits.size;
-    const signals = [...(debtSignals.get(entry.file) ?? [])].sort();
+    const signals = [...(debtSignals.get(entry.file) ?? [])].sort((left, right) => left.localeCompare(right));
     const highActivity = commitCount >= HOTSPOT_HIGH_ACTIVITY_COMMIT_THRESHOLD;
     const fileAvailability = structuralDebtFileAvailability(entry.file, reports, debtAvailability, coverageIndexes);
     const structuralDebtState = signals.length > 0

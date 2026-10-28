@@ -137,8 +137,8 @@ function projectFile(file, reports, architecture, availability) {
   const hotspotMeasurement = buildHotspotMeasurement(file);
   return {
     path: file.path,
-    auditCategories: [...file.auditCategories].sort(),
-    functionalDomains: [...file.functionalDomains].sort(),
+    auditCategories: [...file.auditCategories].sort((left, right) => left.localeCompare(right)),
+    functionalDomains: [...file.functionalDomains].sort((left, right) => left.localeCompare(right)),
     metrics: buildMetrics(file, availability, architecture, typeSafety, hotspotMeasurement),
     findings: buildFindings(file, availability, typeSafety),
     architecture: file.architecture ?? {

@@ -428,7 +428,7 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
   }
 
   findings.sort((left, right) => `${left.file}:${left.line ?? 0}:${left.column ?? 0}:${left.ruleId}`.localeCompare(`${right.file}:${right.line ?? 0}:${right.column ?? 0}:${right.ruleId}`));
-  const findingsByRule = Object.fromEntries([...new Set(findings.map((finding) => finding.ruleId))].sort().map((ruleId) => [ruleId, findings.filter((finding) => finding.ruleId === ruleId).length]));
+  const findingsByRule = Object.fromEntries([...new Set(findings.map((finding) => finding.ruleId))].sort((left, right) => left.localeCompare(right)).map((ruleId) => [ruleId, findings.filter((finding) => finding.ruleId === ruleId).length]));
   const byFamily = Object.fromEntries(["TYPE_SAFETY", "ASYNC_SAFETY"].map((family) => [family, findings.filter((finding) => finding.family === family).length]));
   const elapsedMs = Math.round((performance.now() - startedAt) * 100) / 100;
   return {
@@ -459,7 +459,7 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
       filesWithTypedCoverage: coverage.filter((entry) => entry.effectiveCoverage === "TYPED").reduce((sum, entry) => sum + entry.filesMeasured, 0),
       filesFailed: coverage.reduce((sum, entry) => sum + entry.filesFailed, 0),
       filesIgnored: coverage.reduce((sum, entry) => sum + entry.filesIgnored, 0),
-      measuredFilePaths: coverage.flatMap((entry) => entry.measuredFilePaths ?? []).sort(),
+    measuredFilePaths: coverage.flatMap((entry) => entry.measuredFilePaths ?? []).sort((left, right) => left.localeCompare(right)),
       findings: findings.length,
       findingsByFamily: byFamily,
       findingsByRule,

@@ -71,7 +71,7 @@ function visitDecisions(functionNode) {
 
 function summarizeDecisions(decisions, sourceFile) {
   const byKind = Object.fromEntries([...new Set(decisions.map((decision) => decision.kind))]
-    .sort()
+    .sort((left, right) => left.localeCompare(right))
     .map((kind) => [kind, decisions.filter((decision) => decision.kind === kind).length]));
   return {
     decisionPoints: decisions.length,

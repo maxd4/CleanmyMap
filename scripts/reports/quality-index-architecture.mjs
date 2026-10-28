@@ -126,7 +126,7 @@ function architectureDomains(graph, files) {
     id: `${QUALITY_ARCHITECTURE_DOMAIN_PREFIX}${domain.domain}`,
     domain: domain.domain,
     responsibility: "couplage issu du graphe d'import TypeScript",
-    files: [...(domainFiles.get(domain.domain) ?? [])].sort(),
+    files: [...(domainFiles.get(domain.domain) ?? [])].sort((left, right) => left.localeCompare(right)),
     metrics: {
       layers: domain.layers,
       files: domain.files,

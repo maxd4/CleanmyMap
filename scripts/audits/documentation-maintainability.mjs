@@ -341,7 +341,7 @@ export function buildDocumentationMaintainabilityReport({ root = process.cwd(), 
   const files = new Set([...trackedFiles].filter(isDocumentationFile));
   const contents = new Map([...files].map((file) => [file, view.readBinary(file)]));
   const headingsByFile = new Map([...contents].map(([file, content]) => [file, parseMarkdownStructure(normalizeText(content))]));
-  const documents = [...files].sort().map((file) => analyzeDocument(file, contents.get(file), trackedFiles, headingsByFile));
+  const documents = [...files].sort((left, right) => left.localeCompare(right)).map((file) => analyzeDocument(file, contents.get(file), trackedFiles, headingsByFile));
   const ranking = [...documents].sort((left, right) => right.lines - left.lines || right.bytes - left.bytes || left.path.localeCompare(right.path));
   const summary = {
     trackedDocuments: documents.length,

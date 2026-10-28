@@ -240,15 +240,15 @@ export function auditSources({ sourceDir }) {
       groups.set(key, group);
       allRows.push(row);
     }
-    const categories = Object.fromEntries([...new Set(rows.map((row) => row.trash_type))].sort().map((value) => [
+    const categories = Object.fromEntries([...new Set(rows.map((row) => row.trash_type))].sort((left, right) => left.localeCompare(right)).map((value) => [
       value || "",
       rows.filter((row) => row.trash_type === value).length,
     ]));
-    const methods = Object.fromEntries([...new Set(rows.map((row) => row.tracking_mode))].sort().map((value) => [
+    const methods = Object.fromEntries([...new Set(rows.map((row) => row.tracking_mode))].sort((left, right) => left.localeCompare(right)).map((value) => [
       value || "",
       rows.filter((row) => row.tracking_mode === value).length,
     ]));
-    const validDates = dates.filter(Boolean).sort();
+    const validDates = dates.filter(Boolean).sort((left, right) => left.localeCompare(right));
     const report = {
       year: resource.year,
       filename: resource.filename,
@@ -307,8 +307,8 @@ export function auditSources({ sourceDir }) {
     exactDuplicateRows: allRows.length - allGroups.size,
     crossResourceExactDuplicateGroups,
     missingByField,
-    dateMin: files.flatMap((file) => file.report.dateMin ? [file.report.dateMin] : []).sort()[0] ?? null,
-    dateMax: files.flatMap((file) => file.report.dateMax ? [file.report.dateMax] : []).sort().at(-1) ?? null,
+    dateMin: files.flatMap((file) => file.report.dateMin ? [file.report.dateMin] : []).sort((left, right) => left.localeCompare(right))[0] ?? null,
+    dateMax: files.flatMap((file) => file.report.dateMax ? [file.report.dateMax] : []).sort((left, right) => left.localeCompare(right)).at(-1) ?? null,
     sourceCrsDeclared: SOURCE_DATASET.coordinateReferenceSystem !== null,
     allCoordinatesInBounds: files.every((file) => file.report.quality.coordinatesInBounds),
     allDatesParseable: files.every((file) => file.report.quality.datesParseable),

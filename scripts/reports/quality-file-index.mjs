@@ -637,7 +637,7 @@ function addCycles(report, files, domains, candidateGroups) {
   }
   const cycles = [];
   for (const cycle of report.cycleObjects ?? []) {
-    const cycleFiles = [...new Set((cycle.files ?? []).map(normalizePath).filter(Boolean))].sort();
+    const cycleFiles = [...new Set((cycle.files ?? []).map(normalizePath).filter(Boolean))].sort((left, right) => left.localeCompare(right));
     const cycleId = stableId("cycle", cycleFiles);
     const item = { id: cycleId, files: cycleFiles, cycle };
     cycles.push(item);
@@ -823,9 +823,9 @@ function finalizeAuditCategories(domains) {
   return [...domains.values()].map((domain) => ({
     id: domain.id,
     responsibility: domain.responsibility,
-    files: [...domain.files].sort(),
-    findingIds: [...domain.findingIds].sort(),
-    candidateGroups: [...domain.candidateGroups].sort(),
+    files: [...domain.files].sort((left, right) => left.localeCompare(right)),
+    findingIds: [...domain.findingIds].sort((left, right) => left.localeCompare(right)),
+    candidateGroups: [...domain.candidateGroups].sort((left, right) => left.localeCompare(right)),
     coupling: domain.coupling ?? null,
     testability: domain.testability ?? null,
   })).sort((left, right) => left.id.localeCompare(right.id));
@@ -840,12 +840,12 @@ function finalizeFunctionalDomains(domains, architecture) {
     items: [...domains.values()].map((domain) => ({
       id: domain.id,
       responsibility: domain.responsibility,
-      files: [...domain.files].sort(),
-      findingIds: [...domain.findingIds].sort(),
-      qualityFindingIds: [...(domain.qualityFindingIds ?? [])].sort(),
-      boundaryViolationIds: [...(domain.boundaryViolationIds ?? [])].sort(),
-      blockingBoundaryViolationIds: [...(domain.blockingBoundaryViolationIds ?? [])].sort(),
-      informativeRelationIds: [...(domain.informativeRelationIds ?? [])].sort(),
+      files: [...domain.files].sort((left, right) => left.localeCompare(right)),
+      findingIds: [...domain.findingIds].sort((left, right) => left.localeCompare(right)),
+      qualityFindingIds: [...(domain.qualityFindingIds ?? [])].sort((left, right) => left.localeCompare(right)),
+      boundaryViolationIds: [...(domain.boundaryViolationIds ?? [])].sort((left, right) => left.localeCompare(right)),
+      blockingBoundaryViolationIds: [...(domain.blockingBoundaryViolationIds ?? [])].sort((left, right) => left.localeCompare(right)),
+      informativeRelationIds: [...(domain.informativeRelationIds ?? [])].sort((left, right) => left.localeCompare(right)),
       findingReferences: [...(domain.findingReferences?.values() ?? [])].sort((left, right) => `${left.id}:${left.file}`.localeCompare(`${right.id}:${right.file}`)),
       informativeRelationReferences: [...(domain.informativeRelationReferences?.values() ?? [])].sort((left, right) => `${left.id}:${left.file}`.localeCompare(`${right.id}:${right.file}`)),
       candidateGroups: [...domain.candidateGroups].sort(),
@@ -864,8 +864,8 @@ function finalizeDocumentationDomains(domains, report) {
     items: [...domains.values()].map((domain) => ({
       id: domain.id,
       responsibility: domain.responsibility,
-      files: [...domain.files].sort(),
-      findingIds: [...domain.findingIds].sort(),
+      files: [...domain.files].sort((left, right) => left.localeCompare(right)),
+      findingIds: [...domain.findingIds].sort((left, right) => left.localeCompare(right)),
       lifecycleStatuses: Object.fromEntries([...domain.statuses.entries()].sort(([left], [right]) => left.localeCompare(right))),
       levels: Object.fromEntries([...domain.levels.entries()].sort(([left], [right]) => left.localeCompare(right))),
       invalidReferences: domain.invalidReferences,
@@ -908,7 +908,7 @@ function buildSourceProjection(run) {
 
 function projectCandidateGroups(candidateGroups) {
   return [...candidateGroups.values()]
-    .map((group) => ({ ...group, files: [...group.files].sort() }))
+    .map((group) => ({ ...group, files: [...group.files].sort((left, right) => left.localeCompare(right)) }))
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 

@@ -53,7 +53,7 @@ function normalizeScopedEventIds(eventIds: readonly string[]): string[] {
         .map((eventId) => eventId.trim())
         .filter((eventId) => UUID_SCHEMA.safeParse(eventId).success),
     ),
-  ].sort();
+  ].sort((left, right) => left.localeCompare(right));
 }
 
 function buildScopedReportCommunityEventsCacheKey(

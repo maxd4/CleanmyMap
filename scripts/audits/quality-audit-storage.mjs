@@ -525,7 +525,7 @@ export async function retainQualityAuditArtifacts({ root, now = () => new Date()
     return {
       status: diagnostics.length === 0 ? "PASS" : "INFORMATIVE",
       generatedAt: now(),
-      retainedSha: [...retained].sort(),
+      retainedSha: [...retained].sort((left, right) => left.localeCompare(right)),
       removedSha,
       migrated,
       protectedAll,

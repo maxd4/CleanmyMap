@@ -275,7 +275,7 @@ export async function analyzeMaintainabilitySources({ files = [], complexityRepo
   }
 
   const related = relateMaintainabilityReport({ metrics, findings, controlFlowProfiles }, complexityReport);
-  const findingsByRule = Object.fromEntries([...new Set(findings.map((finding) => finding.ruleId))].sort().map((ruleId) => [ruleId, findings.filter((finding) => finding.ruleId === ruleId).length]));
+  const findingsByRule = Object.fromEntries([...new Set(findings.map((finding) => finding.ruleId))].sort((left, right) => left.localeCompare(right)).map((ruleId) => [ruleId, findings.filter((finding) => finding.ruleId === ruleId).length]));
   const elapsedMs = Math.round((performance.now() - startedAt) * 100) / 100;
   const result = {
     schemaVersion: 1,
