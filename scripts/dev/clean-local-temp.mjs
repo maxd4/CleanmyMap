@@ -26,7 +26,7 @@ const privateQuarantineDirectoryName = "temp-cleanup";
 const quarantineDirectoryPrefix = "run-";
 
 function defaultTempRoot() {
-  return process.env.TEMP || process.env.TMP || os.tmpdir();
+  return os.tmpdir();
 }
 
 function isDirectChild(root, candidate) {
