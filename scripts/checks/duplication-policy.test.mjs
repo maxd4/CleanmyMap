@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -21,7 +23,7 @@ import {
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
-import { formatDuplicationReport, parseExecutedJscpdVersion, verifyExecutedJscpdVersion } from "./check-duplication.mjs";
+import { formatDuplicationReport, parseExecutedJscpdVersion, runDuplicationPolicy, verifyExecutedJscpdVersion } from "./check-duplication.mjs";
 
 const BASELINE = {
   schemaVersion: 2,
@@ -43,6 +45,7 @@ const NATIVE_BASELINES = {
   tests: { version: 1, fingerprints: { "b1c2d3e4f5061728": 1, "c1d2e3f405162738": 1 } },
   "fixtures/data": { version: 1, fingerprints: {} },
 };
+const CURRENT_JUSTIFICATIONS = JSON.parse(readFileSync(path.join(import.meta.dirname, "duplication-justifications.json"), "utf8"));
 
 test("stable duplication baseline passes and a lower percentage is accepted", () => {
   validateDuplicationMetricsBaseline(BASELINE);
@@ -185,6 +188,48 @@ test("fixtures/data remains strict against its zero baseline", () => {
   );
   assert.equal(comparison.status, "FAIL");
   assert.ok(comparison.failures.some((failure) => failure.includes("new clone fingerprints")));
+});
+
+test("jscpd execution failures survive qualification when reports remain usable", () => {
+  const runScenario = (scenario) => runDuplicationPolicy({
+    runScopeFn: (scopeName, baseline) => {
+      const scopeBaseline = baseline.scopes[scopeName];
+      const metrics = {
+        ...scopeBaseline,
+        newClones: 0,
+      };
+      if (scenario.mode === "grace" && scopeName === "runtime") {
+        metrics.duplicatedLines += 1;
+        metrics.duplicatedTokens += 1;
+      }
+      if (scenario.mode === "ratchet-fail" && scopeName === "runtime") {
+        metrics.duplicatedLines += 81;
+        metrics.duplicatedTokens += 801;
+      }
+      return {
+        scopeName,
+        metrics,
+        fingerprints: new Set(CURRENT_JUSTIFICATIONS.justifications.filter((justification) => justification.scope === scopeName).map((justification) => justification.fingerprint)),
+        occurrences: null,
+        executionFailures: scenario.executionFailuresByScope?.[scopeName] ?? [],
+        comparison: { status: "PASS", failures: [] },
+      };
+    },
+  }).results.find((result) => result.scopeName === "runtime").comparison;
+
+  assert.equal(
+    runScenario({ executionFailuresByScope: { runtime: ["jscpd execution failed (exit 1)"] } }).status,
+    "FAIL",
+  );
+  assert.equal(runScenario({}).status, "PASS");
+  assert.equal(
+    runScenario({ mode: "grace" }).status,
+    "PASS_WITH_GRACE",
+  );
+  assert.equal(
+    runScenario({ mode: "ratchet-fail" }).status,
+    "FAIL",
+  );
 });
 
 test("duplication reporting exposes status, fingerprints, and deltas by scope", () => {

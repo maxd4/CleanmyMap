@@ -7,11 +7,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  compareDuplicationMetrics,
   DUPLICATION_POLICY_FINGERPRINT,
   DUPLICATION_TARGET_PERCENTAGE,
   DUPLICATION_TOOL,
   DUPLICATION_TOOL_VERSION,
   evaluateDuplicationTarget,
+  nativeBaselineFingerprintCount,
+  readJscpdFingerprints,
+  readJscpdMetrics,
+  validateDuplicationJustificationsRegistry,
+  validateDuplicationMetricsBaseline,
 } from "../checks/duplication-policy.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
@@ -29,6 +35,11 @@ const SOURCE_FILES = Object.freeze([
   "scripts/checks/duplication-data-baseline.json",
   "scripts/checks/duplication-justifications.json",
 ]);
+const NATIVE_BASELINE_PATHS = Object.freeze({
+  runtime: "scripts/checks/duplication-runtime-baseline.json",
+  tests: "scripts/checks/duplication-tests-baseline.json",
+  "fixtures/data": "scripts/checks/duplication-data-baseline.json",
+});
 
 function normalizePath(value) {
   return String(value).replaceAll("\\", "/").replace(/^\.\//, "");
@@ -66,6 +77,15 @@ function candidateFileSha(repositoryRoot, candidateSha, relativePath) {
     stdio: ["ignore", "pipe", "ignore"],
   });
   return sha256(contents);
+}
+
+function candidateFileJson(repositoryRoot, candidateSha, relativePath) {
+  const contents = execFileSync(gitExecutable(), ["show", `${candidateSha}:${relativePath}`], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return JSON.parse(contents);
 }
 
 function candidateScope() {
@@ -163,6 +183,7 @@ function validateSourceManifest(repositoryRoot, candidateSha, proof) {
 }
 
 function validateReportManifest(proofDirectoryPath, proof) {
+  const reports = {};
   for (const scope of proof.scopes) {
     if (!scope.report || !HASH_PATTERN.test(scope.report.jsonSha256) || !HASH_PATTERN.test(scope.report.sarifSha256)) {
       throw new Error(`Duplication publication report manifest is incomplete for ${scope.name}.`);
@@ -181,7 +202,96 @@ function validateReportManifest(proofDirectoryPath, proof) {
     if (fileSha256(jsonPath) !== scope.report.jsonSha256 || fileSha256(sarifPath) !== scope.report.sarifSha256) {
       throw new Error(`Duplication publication report hash mismatch for ${scope.name}.`);
     }
+    reports[scope.name] = {
+      json: JSON.parse(fs.readFileSync(jsonPath, "utf8")),
+      sarif: JSON.parse(fs.readFileSync(sarifPath, "utf8")),
+    };
   }
+  return reports;
+}
+
+function assertJsonEqual(actual, expected, message) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);
+}
+
+function validateProofConsistency(repositoryRoot, candidateSha, proof, reports) {
+  const metricsBaseline = candidateFileJson(repositoryRoot, candidateSha, "scripts/checks/duplication-metrics-baseline.json");
+  validateDuplicationMetricsBaseline(metricsBaseline);
+  if (proof.baselineSourceCommit !== metricsBaseline.sourceCommit) {
+    throw new Error("Duplication publication baseline source commit is incoherent.");
+  }
+  const nativeBaselines = Object.fromEntries(Object.entries(NATIVE_BASELINE_PATHS).map(([scope, relativePath]) => {
+    const baseline = candidateFileJson(repositoryRoot, candidateSha, relativePath);
+    nativeBaselineFingerprintCount(baseline);
+    return [scope, baseline];
+  }));
+  const currentFingerprintsByScope = {};
+  for (const scope of proof.scopes) {
+    const report = reports[scope.name];
+    const reportMetrics = readJscpdMetrics(report.json);
+    const reportFingerprints = [...readJscpdFingerprints(report.sarif)].sort();
+    const declaredFingerprints = Array.isArray(scope.fingerprints) ? [...scope.fingerprints].sort() : null;
+    if (!declaredFingerprints || new Set(declaredFingerprints).size !== declaredFingerprints.length
+      || JSON.stringify(declaredFingerprints) !== JSON.stringify(reportFingerprints)) {
+      throw new Error(`Duplication publication fingerprints are incoherent for ${scope.name}.`);
+    }
+    const qualified = Array.isArray(scope.qualifiedNewFingerprints) ? [...scope.qualifiedNewFingerprints] : null;
+    if (!qualified || new Set(qualified).size !== qualified.length || qualified.some((fingerprint) => !declaredFingerprints.includes(fingerprint))) {
+      throw new Error(`Duplication publication qualified fingerprints are incoherent for ${scope.name}.`);
+    }
+    const declaredMetrics = scope.metrics;
+    if (!declaredMetrics || reportMetrics.files !== declaredMetrics.files || reportMetrics.lines !== declaredMetrics.lines
+      || reportMetrics.tokens !== declaredMetrics.tokens || reportMetrics.clones !== declaredMetrics.clones
+      || reportMetrics.duplicatedLines !== declaredMetrics.duplicatedLines
+      || reportMetrics.duplicatedTokens !== declaredMetrics.duplicatedTokens
+      || reportMetrics.percentage !== declaredMetrics.percentage
+      || reportMetrics.percentageTokens !== declaredMetrics.percentageTokens
+      || reportMetrics.newClones !== declaredMetrics.newClones + qualified.length) {
+      throw new Error(`Duplication publication metrics are incoherent for ${scope.name}.`);
+    }
+    const expectedBaseline = metricsBaseline.scopes[scope.name];
+    if (!scope.baseline || scope.baseline.sourceCommit !== metricsBaseline.sourceCommit) {
+      throw new Error(`Duplication publication baseline is incoherent for ${scope.name}.`);
+    }
+    for (const field of ["files", "lines", "tokens", "clones", "fingerprints", "duplicatedLines", "duplicatedTokens", "percentage", "percentageTokens"]) {
+      if (scope.baseline.scope?.[field] !== expectedBaseline[field]) {
+        throw new Error(`Duplication publication baseline is incoherent for ${scope.name}.`);
+      }
+    }
+    const comparison = compareDuplicationMetrics(declaredMetrics, expectedBaseline, scope.name);
+    if (scope.ratchetStatus !== comparison.status || JSON.stringify(scope.failures ?? []) !== JSON.stringify(comparison.failures)) {
+      throw new Error(`Duplication publication ratchet status is incoherent for ${scope.name}.`);
+    }
+    assertJsonEqual(scope.threePercent, evaluateDuplicationTarget(declaredMetrics), `Duplication publication target status is incoherent for ${scope.name}.`);
+    currentFingerprintsByScope[scope.name] = new Set(declaredFingerprints);
+  }
+  const justificationRegistry = candidateFileJson(repositoryRoot, candidateSha, "scripts/checks/duplication-justifications.json");
+  const justificationReport = validateDuplicationJustificationsRegistry(justificationRegistry, {
+    nativeBaselines,
+    currentFingerprintsByScope,
+  });
+  const expectedJustificationStatus = {
+    stale: justificationReport.stale,
+    keepIntentional: justificationReport.keepIntentional,
+    noActionNoise: justificationReport.noActionNoise,
+  };
+  assertJsonEqual(proof.justificationStatus, expectedJustificationStatus, "Duplication publication justification status is incoherent.");
+  const classified = new Set(Object.values(justificationReport.classifications).flat());
+  for (const scope of proof.scopes) {
+    const expectedQualified = [...currentFingerprintsByScope[scope.name]]
+      .filter((fingerprint) => !Object.hasOwn(nativeBaselines[scope.name].fingerprints, fingerprint)
+        && classified.has(`${scope.name}:${fingerprint}`))
+      .sort();
+    assertJsonEqual(scope.qualifiedNewFingerprints, expectedQualified, `Duplication publication qualified fingerprints are incoherent for ${scope.name}.`);
+  }
+  const statuses = proof.scopes.map((scope) => scope.ratchetStatus);
+  const expectedStatus = expectedJustificationStatus.stale.length > 0 || statuses.includes("FAIL")
+    ? "FAIL"
+    : statuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
+  if (proof.status !== expectedStatus) {
+    throw new Error(`Duplication publication global status is incoherent: declared ${proof.status ?? "<missing>"}, expected ${expectedStatus}.`);
+  }
+  if (expectedStatus === "FAIL") throw new Error("Duplication ratchet status is FAIL.");
 }
 
 export function validateDuplicationPublicationProof({ repositoryRoot = process.cwd(), candidateSha, publicationRoot = null } = {}) {
@@ -193,8 +303,8 @@ export function validateDuplicationPublicationProof({ repositoryRoot = process.c
       validateProofShape(proof, candidateSha);
       if (proof.candidateTreeSha !== candidateTreeSha(repositoryRoot, candidateSha)) throw new Error("Duplication publication candidate tree mismatch.");
       validateSourceManifest(repositoryRoot, candidateSha, proof);
-      validateReportManifest(path.dirname(proofFile), proof);
-      if (proof.status !== "PASS" && proof.status !== "PASS_WITH_GRACE") throw new Error(`Duplication ratchet status is ${proof.status ?? "NOT_RUN"}.`);
+      const reports = validateReportManifest(path.dirname(proofFile), proof);
+      validateProofConsistency(repositoryRoot, candidateSha, proof, reports);
       return { status: "PASS", proof, proofFile };
     } catch (error) {
       errors.push(error instanceof Error ? error.message : String(error));

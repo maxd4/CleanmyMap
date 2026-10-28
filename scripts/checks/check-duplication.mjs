@@ -106,8 +106,8 @@ function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
     const fingerprints = readJscpdFingerprints(sarifReport);
     const occurrences = readJscpdOccurrences(jscpdReport, sarifReport, scopeName);
     const comparison = compareDuplicationMetrics(metrics, baseline.scopes[scopeName], scopeName);
-    const failures = [...comparison.failures];
-    if (result.status !== 0) failures.push(`jscpd execution failed (exit ${result.status})`);
+    const executionFailures = result.status !== 0 ? [`jscpd execution failed (exit ${result.status})`] : [];
+    const failures = [...comparison.failures, ...executionFailures];
     const reportArtifacts = reportDirectory
       ? (() => {
         const scopeDirectory = path.join(reportDirectory, scopeName);
@@ -125,6 +125,7 @@ function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
       fingerprints,
       occurrences,
       reportArtifacts,
+      executionFailures,
       comparison: {
         ...comparison,
         status: failures.length > 0 ? "FAIL" : comparison.status,
@@ -136,7 +137,10 @@ function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
   }
 }
 
-export function runDuplicationPolicy({ publicationRoot = process.env.CMM_DUPLICATION_PUBLICATION_ROOT ?? null } = {}) {
+export function runDuplicationPolicy({
+  publicationRoot = process.env.CMM_DUPLICATION_PUBLICATION_ROOT ?? null,
+  runScopeFn = runScope,
+} = {}) {
   const baseline = JSON.parse(fs.readFileSync(metricsBaselinePath, "utf8"));
   assertBaselineFresh(baseline);
   const toolVersion = verifyExecutedJscpdVersion();
@@ -144,7 +148,7 @@ export function runDuplicationPolicy({ publicationRoot = process.env.CMM_DUPLICA
   const publicationDirectory = publicationRoot
     ? path.join(path.resolve(publicationRoot), auditedSha, `run-${Date.now()}-${process.pid}`)
     : null;
-  const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScope(scopeName, baseline, {
+  const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScopeFn(scopeName, baseline, {
     reportDirectory: publicationDirectory,
   }));
   if (!fs.existsSync(justificationsPath)) {
@@ -179,7 +183,14 @@ export function runDuplicationPolicy({ publicationRoot = process.env.CMM_DUPLICA
       ...result.metrics,
       newClones: Math.max(0, result.metrics.newClones - qualified.length),
     };
-    result.comparison = compareDuplicationMetrics(result.metrics, scopeBaseline, result.scopeName);
+    const comparison = compareDuplicationMetrics(result.metrics, scopeBaseline, result.scopeName);
+    const executionFailures = result.executionFailures ?? [];
+    const failures = [...comparison.failures, ...executionFailures];
+    result.comparison = {
+      ...comparison,
+      status: failures.length > 0 ? "FAIL" : comparison.status,
+      failures,
+    };
   }
   return { baseline, results, justificationReport, toolVersion, publicationDirectory };
 }
