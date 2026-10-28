@@ -118,4 +118,22 @@ describe("PATCH /api/actions/:actionId — audit et échecs partiels", () => {
     }));
   });
 
+  it("propagates a geometry response without running finalization", async () => {
+    configureAdminAction();
+    hasGpxGeometryContributionMock.mockReturnValueOnce(true);
+    const geometryResponse = new Response("geometry rejected", { status: 409 });
+    recordGpxGeometryContributionIfPresentMock.mockResolvedValueOnce(geometryResponse);
+
+    const response = await patchAction({
+      locationLabel: "Lieu",
+      geometrySource: "gpx_import",
+      derivedGeometryGeoJson: "{\"type\":\"LineString\",\"coordinates\":[[2,48],[2.1,48.1]]}",
+      preparationData: { routeObservedDistanceKm: 1 },
+    });
+
+    expect(response).toBe(geometryResponse);
+    expect(reconcileGeometryContributionProgressionIfNeededMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
 });

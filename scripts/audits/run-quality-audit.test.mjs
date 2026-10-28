@@ -798,6 +798,10 @@ test("all correlates the five current gate results after execution without rerun
         return fixtureResult(audit);
       },
     });
+    assert.deepEqual(
+      result.results.map((entry) => entry.audit),
+      ["dead-code", "duplication", "top-heavy", "complexity", "cycles", "maintainability", "type-safety", "hotspots", "testability", "coverage"],
+    );
     const topHeavy = result.results.find((entry) => entry.audit === "top-heavy").result;
     assert.equal(topHeavy.radarProjection.rows[0].signals.size.state, "PRESENT");
     assert.equal(topHeavy.radarProjection.rows[0].signals.complexity.state, "PRESENT");
