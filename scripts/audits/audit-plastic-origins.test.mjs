@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -54,14 +55,17 @@ test("normalizes documented source date formats without inventing a timezone", (
 test("audits coordinates, dates, missing values and exact duplicate grouping", () => {
   const sourceDir = fs.mkdtempSync(path.join(os.tmpdir(), "plastic-origins-audit-"));
   try {
+    let source2022Content = "";
     for (const resource of SOURCE_RESOURCES) {
       const delimiter = resource.year >= 2024 ? ";" : ",";
       const records = resource.year === 2022
         ? [row(), row()]
         : [row({ campaign_id: `campaign-${resource.year}`, date: `${resource.year}-01-01 10:00:00`, river_name: resource.year === 2023 ? "" : "Seine" })];
+      const content = csv(SOURCE_COLUMNS, records, delimiter);
+      if (resource.year === 2022) source2022Content = content;
       fs.writeFileSync(
         path.join(sourceDir, resource.filename),
-        csv(SOURCE_COLUMNS, records, delimiter),
+        content,
         "utf8",
       );
     }
@@ -80,8 +84,35 @@ test("audits coordinates, dates, missing values and exact duplicate grouping", (
     assert.equal(audit.allCoordinatesInBounds, true);
     assert.equal(audit.allDatesParseable, true);
     assert.equal(source2022.exactDuplicateRows, 1);
-    assert.match(source2022.sourceSha256, /^[0-9a-f]{64}$/i);
+    const expectedSourceSha256 = crypto.createHash("sha256").update(source2022Content, "utf8").digest("hex");
+    assert.equal(source2022.sourceSha256, expectedSourceSha256);
     assert.equal(source2022.sourceSha1, undefined);
+
+    const repeatedAudit = auditSources({ sourceDir });
+    assert.equal(repeatedAudit.files.find((file) => file.year === 2022).sourceSha256, expectedSourceSha256);
+
+    fs.writeFileSync(
+      path.join(sourceDir, "2022.csv"),
+      source2022Content.replace("Seine", "Loire"),
+      "utf8",
+    );
+    const changedAudit = auditSources({ sourceDir });
+    assert.notEqual(
+      changedAudit.files.find((file) => file.year === 2022).sourceSha256,
+      expectedSourceSha256,
+    );
+
+    const historicalSourceSha1 = "e8b9e2e2de1cd470266386881db340f9e153d1fb";
+    const historicalExport = buildExport({
+      ...audit,
+      files: audit.files.map((file) => file.year === 2022
+        ? { ...file, sourceSha1: historicalSourceSha1 }
+        : file),
+    }, "2026-10-23T00:00:00.000Z");
+    assert.equal(
+      historicalExport.sourceResources.find((resource) => resource.year === 2022).sourceSha1,
+      historicalSourceSha1,
+    );
     assert.deepEqual(grouped.properties.source.sourceRows, [2, 3]);
     assert.deepEqual(grouped.geometry.coordinates, [2.3522, 48.8566]);
     assert.deepEqual(
