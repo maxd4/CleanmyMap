@@ -18,6 +18,7 @@ const {
 
 function seedDeleteParticipants(
   statuses: Array<"pending" | "confirmed">,
+  errors?: Parameters<typeof createGroupJoinSupabaseMock>[0]["errors"],
 ): ReturnType<typeof createGroupJoinParticipant>[] {
   const participants = statuses.map((participationStatus, index) =>
     createGroupJoinParticipant({
@@ -39,6 +40,7 @@ function seedDeleteParticipants(
         groupJoinEnabled: true,
       }),
       participants,
+      errors,
     }),
   );
   return participants;
@@ -49,6 +51,7 @@ async function deleteAndReadResponse() {
     alreadyCancelled?: boolean;
     participationStatus?: string;
     participantsCount?: number;
+    status?: string;
   }>("DELETE");
 }
 
@@ -115,5 +118,15 @@ describe("DELETE /api/actions/:actionId/group-join", () => {
     expectSuccessfulDelete(response, body, 1);
     expect(participants[0]?.participation_status).toBe("cancelled");
     expect(participants[1]?.participation_status).toBe("confirmed");
+  }, 15000);
+
+  it("does not report success when the cancellation CAS loses a concurrent state change", async () => {
+    const participants = seedDeleteParticipants(["confirmed"], { participantUpdate: "0 rows" });
+
+    const { response, body } = await deleteAndReadResponse();
+
+    expect(response.status).toBe(409);
+    expect(body).toMatchObject({ status: "error" });
+    expect(participants[0]?.participation_status).toBe("confirmed");
   }, 15000);
 });

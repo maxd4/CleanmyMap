@@ -544,6 +544,12 @@ function createParticipantsChain(
               if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
                 return false;
               }
+              const normalizedStatus = table === "registrations"
+                ? (normalized as { registration_status?: string }).registration_status
+                : normalized.participation_status;
+              if (state.filters[statusField] && normalizedStatus !== state.filters[statusField]) {
+                return false;
+              }
               return true;
             }) ?? null;
         if (original) {

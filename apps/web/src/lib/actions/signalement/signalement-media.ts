@@ -18,6 +18,7 @@ import {
 } from "../query";
 import { SignalementMediaError } from "./signalement-media-error";
 import { mapCommonMediaRecord } from "../media/media-record-mapper";
+import { verifyMediaStorageObject } from "../media/media-storage-verification";
 
 export { SIGNALEMENT_EVIDENCE_BUCKET, SIGNALEMENT_EVIDENCE_MAX_MEDIA } from "./signalement-media-contract";
 export type { SignalementEvidenceMimeType } from "./signalement-media-contract";
@@ -205,6 +206,24 @@ function normalizeStorageError(message: string): SignalementMediaError {
   return new SignalementMediaError(message, "storage_error");
 }
 
+function storageVerificationError(
+  verification: Awaited<ReturnType<typeof verifyMediaStorageObject>>,
+): SignalementMediaError {
+  if (verification === "missing") {
+    return new SignalementMediaError(
+      "La photo n'a pas été reçue par le stockage.",
+      "storage_missing",
+    );
+  }
+  if (verification === "invalid") {
+    return new SignalementMediaError(
+      "Le contenu reçu ne correspond pas aux métadonnées de la preuve photo.",
+      "storage_invalid",
+    );
+  }
+  return normalizeStorageError("La preuve photo ne peut pas être vérifiée dans le stockage.");
+}
+
 async function retryFailedSignalementMediaRow(
   supabase: SupabaseClient,
   params: ValidatedSignalementMediaUploadParams,
@@ -223,6 +242,9 @@ async function retryFailedSignalementMediaRow(
       sort_order: params.sortOrder ?? row.sort_order,
     })
     .eq("id", row.id)
+    .eq("signalement_id", params.signalementId)
+    .eq("created_by_clerk_id", params.userId)
+    .eq("upload_state", "failed")
     .select("*")
     .single();
   const updateResult = parseActionSupabaseResult(rawUpdateResult);
@@ -341,7 +363,10 @@ export async function createSignalementMediaUploadIntent(
     await supabase
       .from("signalement_media")
       .update({ upload_state: "failed", failure_reason: "signed_upload_failed" })
-      .eq("id", row.id);
+      .eq("id", row.id)
+      .eq("signalement_id", validatedParams.signalementId)
+      .eq("created_by_clerk_id", validatedParams.userId)
+      .eq("upload_state", "pending");
     throw normalizeStorageError("La preuve photo ne peut pas recevoir son accès d'upload.");
   }
 
@@ -389,28 +414,73 @@ export async function finalizeSignalementMedia(
     throw new SignalementMediaError("Le chemin de preuve est invalide.", "validation");
   }
   if (row.upload_state === "ready") {
+    const readyVerification = await verifyMediaStorageObject(supabase, {
+      bucket: SIGNALEMENT_EVIDENCE_BUCKET,
+      storagePath: row.storage_path,
+      sizeBytes: row.size_bytes,
+      mimeType: row.mime_type,
+    });
+    if (readyVerification !== "valid") throw storageVerificationError(readyVerification);
     return { media: toRecord(row), alreadyReady: true };
   }
 
-  const objectInfo = await supabase.storage
-    .from(SIGNALEMENT_EVIDENCE_BUCKET)
-    .info(row.storage_path);
-  if (objectInfo.error || !objectInfo.data) {
+  const verification = await verifyMediaStorageObject(supabase, {
+    bucket: SIGNALEMENT_EVIDENCE_BUCKET,
+    storagePath: row.storage_path,
+    sizeBytes: row.size_bytes,
+    mimeType: row.mime_type,
+  });
+  if (verification !== "valid") {
     await supabase
       .from("signalement_media")
-      .update({ upload_state: "failed", failure_reason: "object_missing" })
-      .eq("id", row.id);
-    throw new SignalementMediaError("La photo n'a pas été reçue par le stockage.", "storage_missing");
+      .update({
+        upload_state: "failed",
+        failure_reason: verification === "missing" ? "object_missing" : "object_invalid",
+      })
+      .eq("id", row.id)
+      .eq("signalement_id", params.signalementId)
+      .eq("upload_state", "pending")
+      .eq("storage_path", row.storage_path);
+    throw storageVerificationError(verification);
   }
 
   const rawUpdated: unknown = await supabase
     .from("signalement_media")
     .update({ upload_state: "ready", failure_reason: null })
     .eq("id", row.id)
+    .eq("signalement_id", params.signalementId)
+    .eq("upload_state", "pending")
+    .eq("storage_path", row.storage_path)
     .select("*")
-    .single();
+    .maybeSingle();
   const updated = parseActionSupabaseResult(rawUpdated);
-  if (updated.error || !isSignalementMediaRow(updated.data)) {
+  if (updated.error) {
+    throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
+  }
+  if (!updated.data) {
+    const rawConcurrent: unknown = await supabase
+      .from("signalement_media")
+      .select("*")
+      .eq("id", row.id)
+      .eq("signalement_id", params.signalementId)
+      .maybeSingle();
+    const concurrent = parseActionSupabaseResult(rawConcurrent);
+    if (concurrent.error || !isSignalementMediaRow(concurrent.data)) {
+      throw normalizeStorageError("La preuve photo ne peut pas être relue après une concurrence.");
+    }
+    if (concurrent.data.upload_state === "ready") {
+      const concurrentVerification = await verifyMediaStorageObject(supabase, {
+        bucket: SIGNALEMENT_EVIDENCE_BUCKET,
+        storagePath: concurrent.data.storage_path,
+        sizeBytes: concurrent.data.size_bytes,
+        mimeType: concurrent.data.mime_type,
+      });
+      if (concurrentVerification !== "valid") throw storageVerificationError(concurrentVerification);
+      return { media: toRecord(concurrent.data), alreadyReady: true };
+    }
+    throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
+  }
+  if (!isSignalementMediaRow(updated.data)) {
     throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
   }
   return { media: toRecord(updated.data), alreadyReady: false };

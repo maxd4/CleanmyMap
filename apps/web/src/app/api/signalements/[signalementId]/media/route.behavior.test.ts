@@ -102,6 +102,11 @@ describe("signalement media HTTP boundaries", () => {
     const missing = await finalize(makeRequest("/api/signalements/signalement-1/media/media-1/finalize", { method: "POST" }), finalizeContext);
     expect(missing.status).toBe(422);
     expect(JSON.stringify(await missing.json())).not.toContain("object absent");
+
+    finalizeMedia.mockRejectedValueOnce(new MediaError("altered object", "storage_invalid"));
+    const altered = await finalize(makeRequest("/api/signalements/signalement-1/media/media-1/finalize", { method: "POST" }), finalizeContext);
+    expect(altered.status).toBe(422);
+    expect(JSON.stringify(await altered.json())).not.toContain("altered object");
   });
 
   it("returns safe forbidden, missing, and generic responses for reads/finalization", async () => {

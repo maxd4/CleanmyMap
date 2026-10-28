@@ -5,6 +5,7 @@ export type SignalementMediaErrorCode =
   | "not_found"
   | "limit_reached"
   | "storage_missing"
+  | "storage_invalid"
   | "storage_error";
 
 export class SignalementMediaError extends Error {

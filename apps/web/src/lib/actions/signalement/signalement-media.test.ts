@@ -29,10 +29,18 @@ type FakeQuery = {
   then: (resolve: (value: QueryResult) => unknown, reject?: (error: unknown) => unknown) => Promise<unknown>;
 };
 
-function makeQuery(result: QueryResult, queryOptions: { listData?: unknown[]; insertData?: unknown; updateData?: unknown; count?: number } = {}) {
+function makeQuery(result: QueryResult, queryOptions: {
+  listData?: unknown[];
+  insertData?: unknown;
+  updateData?: unknown;
+  afterUpdateMaybeSingleData?: unknown;
+  count?: number;
+} = {}) {
   const query = {} as FakeQuery;
   let currentResult = result;
   let listMode = false;
+  let updated = false;
+  let postUpdateReadUsed = false;
   query.select = vi.fn((_columns?: unknown, selectOptions?: { count?: string; head?: boolean }) => {
     if (selectOptions?.count) {
       currentResult = queryOptions.count === undefined ? result : { ...result, data: null, count: queryOptions.count };
@@ -52,10 +60,25 @@ function makeQuery(result: QueryResult, queryOptions: { listData?: unknown[]; in
     return query;
   });
   query.update = vi.fn(() => {
-    currentResult = { data: queryOptions.updateData ?? result.data, error: null };
+    updated = true;
+    currentResult = {
+      data: Object.prototype.hasOwnProperty.call(queryOptions, "updateData")
+        ? queryOptions.updateData
+        : result.data,
+      error: null,
+    };
     return query;
   });
-  query.maybeSingle = vi.fn(async () => currentResult);
+  query.maybeSingle = vi.fn(async () => {
+    if (updated && queryOptions.afterUpdateMaybeSingleData !== undefined) {
+      if (!postUpdateReadUsed) {
+        postUpdateReadUsed = true;
+        return currentResult;
+      }
+      return { data: queryOptions.afterUpdateMaybeSingleData, error: null };
+    }
+    return currentResult;
+  });
   query.single = vi.fn(async () => currentResult);
   query.then = (resolve: (value: QueryResult) => unknown, reject?: (error: unknown) => unknown) =>
     Promise.resolve(listMode ? { data: queryOptions.listData ?? [], error: null } : currentResult).then(resolve, reject);
@@ -67,7 +90,8 @@ function makeSupabase(params: {
   existingMedia?: Record<string, unknown> | null;
   activeCount?: number;
   insertedMedia?: Record<string, unknown>;
-  updatedMedia?: Record<string, unknown>;
+  updatedMedia?: Record<string, unknown> | null;
+  afterUpdateMaybeSingleData?: Record<string, unknown>;
   objectInfo?: Record<string, unknown> | null;
   signedUrl?: string;
 }) {
@@ -78,6 +102,7 @@ function makeSupabase(params: {
       listData: params.existingMedia ? [params.existingMedia] : [],
       insertData: params.insertedMedia,
       updateData: params.updatedMedia,
+      afterUpdateMaybeSingleData: params.afterUpdateMaybeSingleData,
       count: params.activeCount,
     },
   );
@@ -86,16 +111,22 @@ function makeSupabase(params: {
     if (table !== "signalement_media") throw new Error(`Unexpected table ${table}`);
     return mediaQuery;
   });
-  const mediaBuilder = {
-    from: vi.fn(() => ({
-      createSignedUploadUrl: vi.fn(async () => ({
-        data: { token: "upload-token" },
-        error: null,
-      })),
-      info: vi.fn(async () => ({ data: params.objectInfo, error: params.objectInfo ? null : new Error("missing") })),
-      createSignedUrl: vi.fn(async () => ({ data: { signedUrl: params.signedUrl ?? "https://signed.test/evidence" }, error: null })),
+  const info = vi.fn(async () => ({
+    data: params.objectInfo,
+    error: params.objectInfo ? null : new Error("missing"),
+  }));
+  const mediaStorage = {
+    createSignedUploadUrl: vi.fn(async () => ({
+      data: { token: "upload-token" },
+      error: null,
+    })),
+    info,
+    createSignedUrl: vi.fn(async () => ({
+      data: { signedUrl: params.signedUrl ?? "https://signed.test/evidence" },
+      error: null,
     })),
   };
+  const mediaBuilder = { from: vi.fn(() => mediaStorage) };
   return { from, storage: mediaBuilder, __queries: { mediaQuery } };
 }
 
@@ -264,14 +295,95 @@ describe("signalement media contract", () => {
   });
 
   it("finalization is idempotent for an already ready row", async () => {
-    const supabase = makeSupabase({ parent, existingMedia: readyMedia });
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: readyMedia,
+      objectInfo: { metadata: { size: readyMedia.size_bytes, mimetype: readyMedia.mime_type } },
+    });
     const result = await finalizeSignalementMedia(supabase as never, {
       userId: "user-1",
       signalementId: "signalement-1",
       mediaId: "media-1",
     });
     expect(result.alreadyReady).toBe(true);
-    expect(supabase.storage.from().info).not.toHaveBeenCalled();
+    expect(supabase.storage.from().info).toHaveBeenCalledWith(readyMedia.storage_path);
+  });
+
+  it("rejects a ready object whose storage metadata no longer matches the row", async () => {
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: readyMedia,
+      objectInfo: { metadata: { size: readyMedia.size_bytes + 1, mimetype: readyMedia.mime_type } },
+    });
+
+    await expect(
+      finalizeSignalementMedia(supabase as never, {
+        userId: "user-1",
+        signalementId: "signalement-1",
+        mediaId: "media-1",
+      }),
+    ).rejects.toMatchObject({ code: "storage_invalid" });
+  });
+
+  it("validates the uploaded object before marking a pending row ready", async () => {
+    const pendingMedia = { ...readyMedia, upload_state: "pending" as const };
+    const updatedMedia = { ...readyMedia, upload_state: "ready" as const };
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: pendingMedia,
+      updatedMedia,
+      objectInfo: { metadata: { size: pendingMedia.size_bytes, mimetype: pendingMedia.mime_type } },
+    });
+
+    const result = await finalizeSignalementMedia(supabase as never, {
+      userId: "user-1",
+      signalementId: "signalement-1",
+      mediaId: "media-1",
+    });
+
+    expect(result.alreadyReady).toBe(false);
+    expect(result.media.uploadState).toBe("ready");
+    const updateFilters = supabase.__queries.mediaQuery.eq.mock.calls.map((call) => call[0]);
+    expect(updateFilters).toEqual(expect.arrayContaining(["signalement_id", "upload_state", "storage_path"]));
+  });
+
+  it("fails closed when the uploaded object size or MIME is altered", async () => {
+    const pendingMedia = { ...readyMedia, upload_state: "pending" as const };
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: pendingMedia,
+      objectInfo: { metadata: { size: pendingMedia.size_bytes, mimetype: "image/png" } },
+    });
+
+    await expect(
+      finalizeSignalementMedia(supabase as never, {
+        userId: "user-1",
+        signalementId: "signalement-1",
+        mediaId: "media-1",
+      }),
+    ).rejects.toMatchObject({ code: "storage_invalid" });
+    expect(supabase.__queries.mediaQuery.update).toHaveBeenCalled();
+  });
+
+  it("returns the concurrently finalized row without a second state transition", async () => {
+    const pendingMedia = { ...readyMedia, upload_state: "pending" as const };
+    const concurrentReadyMedia = { ...readyMedia, upload_state: "ready" as const };
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: pendingMedia,
+      updatedMedia: null,
+      afterUpdateMaybeSingleData: concurrentReadyMedia,
+      objectInfo: { metadata: { size: pendingMedia.size_bytes, mimetype: pendingMedia.mime_type } },
+    });
+
+    const result = await finalizeSignalementMedia(supabase as never, {
+      userId: "user-1",
+      signalementId: "signalement-1",
+      mediaId: "media-1",
+    });
+
+    expect(result.alreadyReady).toBe(true);
+    expect(result.media.uploadState).toBe("ready");
   });
 
   it("does not sign media for a new parent to a non-owner", async () => {

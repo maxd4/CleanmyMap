@@ -18,6 +18,7 @@ import {
   resolveRegisteredAt,
   resolveRegistrationUpdatedAt,
   updateActionRegistrationRecord,
+  RegistrationStateConflictError,
   type ActionRegistrationStatusRow,
 } from "./registration-records";
 import {
@@ -45,6 +46,7 @@ async function updateRegistrationAndBuildResult(
     registrationStatus: ActionRegistrationStatusRow["registration_status"];
     registrationSource: ActionRegistrationStatusRow["registration_source"];
     alreadyJoined: boolean;
+    expectedRegistrationStatus?: ActionRegistrationStatusRow["registration_status"];
   },
 ): Promise<ActionParticipationMutationResult> {
   const updatedRecord = await updateActionRegistrationRecord(supabase, params);
@@ -58,6 +60,40 @@ async function updateRegistrationAndBuildResult(
     participationStatus: updatedRecord.registration_status,
     participationSource: updatedRecord.registration_source,
     participationUpdatedAt: resolveRegistrationUpdatedAt(updatedRecord),
+    participantsCount,
+  });
+}
+
+function isRegistrationStateConflict(error: unknown): error is RegistrationStateConflictError {
+  return error instanceof RegistrationStateConflictError;
+}
+
+class ParticipationStateConflictError extends Error {
+  constructor() {
+    super("Participation conflict: the registration changed concurrently.");
+    this.name = "ParticipationStateConflictError";
+  }
+}
+
+async function buildExistingRegistrationResult(
+  supabase: SupabaseClient,
+  params: { actionId: string },
+  existing: ActionRegistrationStatusRow,
+  desiredStatus: ActionRegistrationStatusRow["registration_status"],
+): Promise<ActionParticipationMutationResult | null> {
+  if (
+    existing.registration_status !== desiredStatus &&
+    !(existing.registration_status === ACTIVE_PARTICIPATION_STATUS && desiredStatus === PENDING_PARTICIPATION_STATUS)
+  ) {
+    return null;
+  }
+  const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
+  return buildMembershipResult({
+    alreadyJoined: existing.registration_status === ACTIVE_PARTICIPATION_STATUS,
+    joinedAt: resolveRegisteredAt(existing),
+    participationStatus: existing.registration_status,
+    participationSource: existing.registration_source,
+    participationUpdatedAt: resolveRegistrationUpdatedAt(existing),
     participantsCount,
   });
 }
@@ -97,21 +133,40 @@ export async function cancelActionParticipation(
     };
   }
 
-  const updatedRecord = await updateActionRegistrationRecord(supabase, {
-    actionId: params.actionId,
-    userId: params.userId,
-    registeredAt: resolveRegisteredAt(existing),
-    registrationStatus: "cancelled",
-    registrationSource: existing.registration_source,
-    registrationCancellationReason:
-      existing.registration_source !== "manual_add"
-        ? null
-        : existing.registration_status === "confirmed"
-          ? "accepted_cancelled"
-          : existing.registration_status === "pending"
-            ? "recipient_rejected"
-            : null,
-  });
+  let updatedRecord: ActionRegistrationStatusRow;
+  try {
+    updatedRecord = await updateActionRegistrationRecord(supabase, {
+      actionId: params.actionId,
+      userId: params.userId,
+      registeredAt: resolveRegisteredAt(existing),
+      registrationStatus: "cancelled",
+      registrationSource: existing.registration_source,
+      expectedRegistrationStatus: existing.registration_status,
+      registrationCancellationReason:
+        existing.registration_source !== "manual_add"
+          ? null
+          : existing.registration_status === "confirmed"
+            ? "accepted_cancelled"
+            : existing.registration_status === "pending"
+              ? "recipient_rejected"
+              : null,
+    });
+  } catch (error) {
+    if (!isRegistrationStateConflict(error)) throw error;
+    const latest = await readActionRegistrationRecord(supabase, params);
+    if (latest?.registration_status === "cancelled") {
+      return {
+        alreadyCancelled: true,
+        joinedAt: resolveRegisteredAt(latest),
+        participationStatus: latest.registration_status,
+        participationSource: latest.registration_source,
+        participationUpdatedAt: resolveRegistrationUpdatedAt(latest),
+        participantsCount: await countActiveRegistrationsForAction(supabase, params.actionId),
+      };
+    }
+    throw new ParticipationStateConflictError();
+  }
+  const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
 
   return {
     alreadyCancelled: false,
@@ -119,11 +174,7 @@ export async function cancelActionParticipation(
     participationStatus: updatedRecord.registration_status,
     participationSource: updatedRecord.registration_source,
     participationUpdatedAt: resolveRegistrationUpdatedAt(updatedRecord),
-    participantsCount: Math.max(
-      0,
-      currentParticipantsCount -
-    (existing.registration_status === ACTIVE_PARTICIPATION_STATUS ? 1 : 0),
-    ),
+    participantsCount,
   };
 }
 
@@ -206,16 +257,27 @@ async function resolveExistingRegistration(
     });
   }
   const joinedAt = new Date().toISOString();
-  return updateRegistrationAndBuildResult(supabase, {
-    actionId: params.actionId,
-    userId: params.userId,
-    registeredAt: joinedAt,
-    registrationStatus: desiredStatus,
-    registrationSource: desiredSource,
-    alreadyJoined:
-      desiredStatus === ACTIVE_PARTICIPATION_STATUS &&
-      existing.registration_status === ACTIVE_PARTICIPATION_STATUS,
-  });
+  try {
+    return await updateRegistrationAndBuildResult(supabase, {
+      actionId: params.actionId,
+      userId: params.userId,
+      registeredAt: joinedAt,
+      registrationStatus: desiredStatus,
+      registrationSource: desiredSource,
+      expectedRegistrationStatus: existing.registration_status,
+      alreadyJoined:
+        desiredStatus === ACTIVE_PARTICIPATION_STATUS &&
+        existing.registration_status === ACTIVE_PARTICIPATION_STATUS,
+    });
+  } catch (error) {
+    if (!isRegistrationStateConflict(error)) throw error;
+    const latest = await readActionRegistrationRecord(supabase, params);
+    const idempotentResult = latest
+      ? await buildExistingRegistrationResult(supabase, params, latest, desiredStatus)
+      : null;
+    if (idempotentResult) return idempotentResult;
+    throw new ParticipationStateConflictError();
+  }
 }
 
 async function insertRegistrationWithRecovery(
@@ -265,16 +327,27 @@ async function insertRegistrationWithRecovery(
         participantsCount,
       });
     }
-    return updateRegistrationAndBuildResult(supabase, {
-      actionId: params.actionId,
-      userId: params.userId,
-      registeredAt: joinedAt,
-      registrationStatus: desiredStatus,
-      registrationSource: desiredSource,
-      alreadyJoined:
-        desiredStatus === ACTIVE_PARTICIPATION_STATUS &&
-        duplicateRecord.registration_status === ACTIVE_PARTICIPATION_STATUS,
-    });
+    try {
+      return await updateRegistrationAndBuildResult(supabase, {
+        actionId: params.actionId,
+        userId: params.userId,
+        registeredAt: joinedAt,
+        registrationStatus: desiredStatus,
+        registrationSource: desiredSource,
+        expectedRegistrationStatus: duplicateRecord.registration_status,
+        alreadyJoined:
+          desiredStatus === ACTIVE_PARTICIPATION_STATUS &&
+          duplicateRecord.registration_status === ACTIVE_PARTICIPATION_STATUS,
+      });
+    } catch (updateError) {
+      if (!(updateError instanceof RegistrationStateConflictError)) throw updateError;
+      const latest = await readActionRegistrationRecord(supabase, params);
+      const idempotentResult = latest
+        ? await buildExistingRegistrationResult(supabase, params, latest, desiredStatus)
+        : null;
+      if (idempotentResult) return idempotentResult;
+      throw new ParticipationStateConflictError();
+    }
   }
 }
 

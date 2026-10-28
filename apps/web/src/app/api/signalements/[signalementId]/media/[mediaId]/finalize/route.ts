@@ -20,7 +20,7 @@ function errorResponse(error: unknown) {
     if (error.code === "not_found") {
       return NextResponse.json({ error: "Preuve photo introuvable." }, { status: 404 });
     }
-    if (error.code === "storage_missing") {
+    if (error.code === "storage_missing" || error.code === "storage_invalid") {
       return NextResponse.json({ error: "La photo n'a pas été reçue par le stockage." }, { status: 422 });
     }
   }

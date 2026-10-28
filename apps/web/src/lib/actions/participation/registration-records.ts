@@ -26,6 +26,20 @@ export type ActionRegistrationStatusRow = Pick<
   | "manual_invitation_version"
 >;
 
+export class RegistrationStateConflictError extends Error {
+  constructor(message = "The participation state changed concurrently.") {
+    super(message);
+    this.name = "RegistrationStateConflictError";
+  }
+}
+
+function isNoRowsUpdateError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  const message = typeof candidate.message === "string" ? candidate.message.toLowerCase() : "";
+  return candidate.code === "PGRST116" || message.includes("0 rows") || message.includes("no rows");
+}
+
 export type ActionRegistrationReviewRow = Pick<
   ActionRegistrationRow,
   | "id"
@@ -151,7 +165,13 @@ export async function updateActionRegistrationRecord(
   const result = await query.select(REGISTRATION_STATUS_COLUMNS).single();
 
   if (result.error) {
+    if (params.expectedRegistrationStatus && isNoRowsUpdateError(result.error)) {
+      throw new RegistrationStateConflictError();
+    }
     throw new Error(result.error.message);
+  }
+  if (!result.data) {
+    throw new RegistrationStateConflictError();
   }
 
   return result.data as ActionRegistrationStatusRow;
