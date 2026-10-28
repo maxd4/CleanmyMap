@@ -420,3 +420,20 @@ test("produit une référence déterministe pour les mêmes rapports et le même
   const second = buildReference({ args: fixture.args, now });
   assert.deepEqual(second, first);
 });
+
+test("refuse un SHA CLI invalide et une racine de couverture redirigée", (t) => {
+  const fixture = createFixture();
+  try {
+    assert.throws(() => buildReference({ args: { ...fixture.args, sha: "../HEAD" } }), /invalid|required argument/);
+    const linkedWebRoot = path.join(fixture.root, "linked-web-root");
+    try {
+      fs.symlinkSync(fixture.webRoot, linkedWebRoot, "junction");
+    } catch (error) {
+      t.skip(`symlink fixtures unavailable on this platform: ${error.message}`);
+      return;
+    }
+    assert.throws(() => buildReference({ args: { ...fixture.args, "web-root": linkedWebRoot } }), /symbolic-link|redirected/);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});

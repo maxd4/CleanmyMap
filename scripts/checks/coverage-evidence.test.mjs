@@ -11,6 +11,7 @@ import {
   MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH,
   MOBILE_COVERAGE_LCOV_RELATIVE_PATH,
   MOBILE_COVERAGE_SUMMARY_RELATIVE_PATH,
+  computeConfigurationFingerprint,
   computeCoverageEnvironmentFingerprint,
   validateCoverageEvidence,
   writeCoverageEvidence,
@@ -185,6 +186,31 @@ test("mobile coverage evidence binds the candidate, mobile configuration, summar
     }
 
     assert.equal(path.join("apps", "mobile", "coverage", "coverage-evidence.json"), MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("rejects unsafe Git refs and redirected external report roots", (t) => {
+  const root = fixture();
+  try {
+    assert.throws(
+      () => computeConfigurationFingerprint({ repositoryRoot: root, candidateRef: "--upload-pack=evil" }),
+      /Unsafe coverage candidate ref/,
+    );
+    const linkedRoot = path.join(path.dirname(root), `${path.basename(root)}-linked`);
+    try {
+      fs.symlinkSync(root, linkedRoot, "junction");
+    } catch (error) {
+      t.skip(`symlink fixtures unavailable on this platform: ${error.message}`);
+      return;
+    }
+    writeCoverageEvidence({ repositoryRoot: root });
+    assert.throws(
+      () => validateCoverageEvidence({ repositoryRoot: root, reportRoot: linkedRoot }),
+      /symbolic-link|redirected/,
+    );
+    fs.rmSync(linkedRoot, { recursive: true, force: true });
   } finally {
     cleanup(root);
   }

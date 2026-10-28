@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { assertSafeDirectoryRoot, assertSafeExternalPath, resolvePathWithinRoot } from "../ci/safe-paths.mjs";
 
 import { buildCoverageInsightsReport } from "../checks/check-coverage-insights.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
@@ -26,16 +27,41 @@ function parseArgs(argv) {
   const result = {};
   for (let index = 2; index < argv.length; index += 1) {
     const value = argv[index];
-    if (!value.startsWith("--")) continue;
-    const [key, inline] = value.slice(2).split("=", 2);
-    result[key] = inline ?? argv[++index];
+    if (typeof value !== "string" || !value.startsWith("--") || value === "--") {
+      throw new Error(`Invalid command-line argument: ${value ?? "<missing>"}.`);
+    }
+    const separator = value.indexOf("=");
+    const key = value.slice(2, separator < 0 ? undefined : separator);
+    const inline = separator < 0 ? undefined : value.slice(separator + 1);
+    if (!key || Object.hasOwn(result, key)) throw new Error(`Duplicate or empty command-line option: ${value}.`);
+    if (inline !== undefined) {
+      result[key] = inline;
+      continue;
+    }
+    const next = argv[index + 1];
+    if (typeof next !== "string" || next.startsWith("--")) throw new Error(`Missing value for --${key}.`);
+    result[key] = next;
+    index += 1;
   }
   return result;
 }
 
 function required(args, key) {
   if (!args[key]) throw new Error(`Missing required argument --${key}.`);
-  return path.resolve(args[key]);
+  return resolveCliRoot(args[key], key);
+}
+
+function resolveCliPath(value, label) {
+  const raw = String(value ?? "");
+  const normalized = raw.replaceAll("\\", "/");
+  if (!normalized || normalized.includes("\0") || normalized.split("/").includes("..")) {
+    throw new Error(`Unsafe path supplied for --${label}.`);
+  }
+  return assertSafeExternalPath(normalized, { label: `--${label}` });
+}
+
+function resolveCliRoot(value, label) {
+  return assertSafeDirectoryRoot(resolveCliPath(value, label), { label: `--${label}` });
 }
 
 function hashFile(file) {
@@ -48,7 +74,8 @@ function readJson(file) {
 
 function normalizeCiReport(value, scope) {
   if (typeof value !== "string") return value;
-  return value.replaceAll(CI_SOURCE_PREFIX, scope === "web" ? "" : "");
+  void scope;
+  return value.replaceAll(CI_SOURCE_PREFIX, "");
 }
 
 function reportFsApi(scope, summaryFile, lcovFile) {
@@ -96,7 +123,7 @@ function assertConsumedReportsMatchProof(reportRoot, proof, definition) {
       throw new Error(`Coverage proof does not attest the consumed ${definition.scope} report: ${source}.`);
     }
     const normalized = safeRelativeReportPath(source);
-    const file = path.join(reportRoot, ...normalized.split("/"));
+    const file = resolvePathWithinRoot(reportRoot, normalized, { label: `${definition.scope} consumed report` });
     const hash = hashFile(file);
     if (!hash || hash !== report.sha256) {
       throw new Error(`Consumed ${definition.scope} report differs from the publication proof: ${source}.`);
@@ -229,6 +256,7 @@ function fileRow(file, scope) {
 }
 
 function buildScope({ scope, root, repositoryRoot, summaryFile, lcovFile, definition, auditedSha, proofState, publicationRoot = null, attest = false }) {
+  assertSafeDirectoryRoot(root, { label: `${scope} coverage root` });
   if (!fs.existsSync(lcovFile) || (definition.format !== "cobertura" && !fs.existsSync(summaryFile))) {
     throw new Error(`${scope} coverage input is missing; refusing to emit a partial reference.`);
   }
@@ -472,35 +500,35 @@ function markdown(reference) {
 
 function publicationRootFor(scopeRoot, proofFile = null) {
   if (proofFile) {
-    const absolute = path.resolve(proofFile);
+    const absolute = assertSafeExternalPath(proofFile, { label: "coverage proof" });
     return path.dirname(path.dirname(path.dirname(absolute)));
   }
-  return path.join(scopeRoot, "artifacts", "coverage-publication");
+  return resolvePathWithinRoot(scopeRoot, "artifacts/coverage-publication", { label: "coverage publication" });
 }
 
 function optionalProofFile(args, key, scopeRoot, auditedSha, scope) {
   if (!scopeRoot) return null;
-  if (args[key]) return path.resolve(args[key]);
-  const candidate = path.join(scopeRoot, "artifacts", "coverage-publication", auditedSha, scope, "coverage-publication-proof.json");
+  if (args[key]) return resolveCliPath(args[key], key);
+  const candidate = resolvePathWithinRoot(scopeRoot, `artifacts/coverage-publication/${auditedSha}/${scope}/coverage-publication-proof.json`, { label: `${scope} proof` });
   return fs.existsSync(candidate) ? candidate : null;
 }
 
 export function buildReference({ args = parseArgs(process.argv), now = new Date() } = {}) {
   const auditedSha = args.sha;
-  if (!auditedSha) throw new Error("Missing required argument --sha.");
-  const repositoryRoot = args["repository-root"] ? path.resolve(args["repository-root"]) : process.cwd();
+  if (!/^[0-9a-f]{40}$/i.test(String(auditedSha ?? ""))) throw new Error("Missing or invalid required argument --sha.");
+  const repositoryRoot = args["repository-root"] ? resolveCliRoot(args["repository-root"], "repository-root") : assertSafeDirectoryRoot(process.cwd(), { label: "current repository root" });
   const webRoot = required(args, "web-root");
   const nodeRoot = required(args, "node-root");
-  const mobileRoot = args["mobile-root"] ? path.resolve(args["mobile-root"]) : null;
-  const pythonRoot = args["python-root"] ? path.resolve(args["python-root"]) : null;
-  const webEvidenceFile = args["web-evidence"] ? path.resolve(args["web-evidence"]) : path.join(webRoot, "apps/web/coverage/coverage-evidence.json");
-  const nodeProofFile = args["node-proof"] ? path.resolve(args["node-proof"]) : path.join(nodeRoot, "artifacts/coverage-publication", auditedSha, "node", "coverage-publication-proof.json");
+  const mobileRoot = args["mobile-root"] ? resolveCliRoot(args["mobile-root"], "mobile-root") : null;
+  const pythonRoot = args["python-root"] ? resolveCliRoot(args["python-root"], "python-root") : null;
+  const webEvidenceFile = args["web-evidence"] ? resolveCliPath(args["web-evidence"], "web-evidence") : resolvePathWithinRoot(webRoot, "apps/web/coverage/coverage-evidence.json", { label: "web evidence" });
+  const nodeProofFile = args["node-proof"] ? resolveCliPath(args["node-proof"], "node-proof") : resolvePathWithinRoot(nodeRoot, `artifacts/coverage-publication/${auditedSha}/node/coverage-publication-proof.json`, { label: "node proof" });
   const mobileProofFile = optionalProofFile(args, "mobile-proof", mobileRoot, auditedSha, "mobile");
   const pythonProofFile = optionalProofFile(args, "python-proof", pythonRoot, auditedSha, "python");
-  const webSummary = path.join(webRoot, "apps/web/coverage/coverage-summary.json");
-  const webLcov = path.join(webRoot, "apps/web/coverage/lcov.info");
-  const nodeSummary = path.join(nodeRoot, "scripts/coverage/coverage-summary.json");
-  const nodeLcov = path.join(nodeRoot, "scripts/coverage/lcov.info");
+  const webSummary = resolvePathWithinRoot(webRoot, "apps/web/coverage/coverage-summary.json", { label: "web coverage summary" });
+  const webLcov = resolvePathWithinRoot(webRoot, "apps/web/coverage/lcov.info", { label: "web LCOV" });
+  const nodeSummary = resolvePathWithinRoot(nodeRoot, "scripts/coverage/coverage-summary.json", { label: "Node coverage summary" });
+  const nodeLcov = resolvePathWithinRoot(nodeRoot, "scripts/coverage/lcov.info", { label: "Node LCOV" });
   const scopes = [buildScope({
     scope: "web", root: webRoot, repositoryRoot, summaryFile: webSummary, lcovFile: webLcov, auditedSha,
     proofState: "CI_EXACT_SHA",
@@ -515,14 +543,14 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
     definition: { scope: "node", lcovPath: "scripts/coverage/lcov.info", summaryPath: "scripts/coverage/coverage-summary.json", sourceRoot: "." },
   })];
   if (mobileRoot) scopes.push(buildScope({
-    scope: "mobile", root: mobileRoot, repositoryRoot, summaryFile: path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json"), lcovFile: path.join(mobileRoot, "apps/mobile/coverage/lcov.info"), auditedSha,
+    scope: "mobile", root: mobileRoot, repositoryRoot, summaryFile: resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/coverage-summary.json", { label: "mobile coverage summary" }), lcovFile: resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/lcov.info", { label: "mobile LCOV" }), auditedSha,
     proofState: "EVIDENCE_UNVERIFIED",
     publicationRoot: publicationRootFor(mobileRoot, mobileProofFile),
     attest: Boolean(mobileProofFile),
     definition: { scope: "mobile", lcovPath: "apps/mobile/coverage/lcov.info", summaryPath: "apps/mobile/coverage/coverage-summary.json", sourceRoot: "apps/mobile" },
   }));
   if (pythonRoot) scopes.push(buildScope({
-    scope: "python", root: pythonRoot, repositoryRoot, summaryFile: null, lcovFile: path.join(pythonRoot, "maintenance/python/coverage.xml"), auditedSha,
+    scope: "python", root: pythonRoot, repositoryRoot, summaryFile: null, lcovFile: resolvePathWithinRoot(pythonRoot, "maintenance/python/coverage.xml", { label: "Python coverage" }), auditedSha,
     proofState: "EVIDENCE_UNVERIFIED",
     publicationRoot: publicationRootFor(pythonRoot, pythonProofFile),
     attest: Boolean(pythonProofFile),
@@ -544,8 +572,8 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
     provenance: {
       web: readProvenance(webEvidenceFile, "web", { summary: webSummary, lcov: webLcov }, scopeByName.get("web")?.provenance),
       node: readProvenance(nodeProofFile, "node", { summary: nodeSummary, lcov: nodeLcov }, scopeByName.get("node")?.provenance),
-      mobile: readProvenance(args["mobile-evidence"] ? path.resolve(args["mobile-evidence"]) : null, "mobile", { summary: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/coverage-summary.json") : null, lcov: mobileRoot ? path.join(mobileRoot, "apps/mobile/coverage/lcov.info") : null }, scopeByName.get("mobile")?.provenance),
-      python: readProvenance(pythonProofFile, "python", { report: pythonRoot ? path.join(pythonRoot, "maintenance/python/coverage.xml") : null }, scopeByName.get("python")?.provenance),
+      mobile: readProvenance(args["mobile-evidence"] ? resolveCliPath(args["mobile-evidence"], "mobile-evidence") : null, "mobile", { summary: mobileRoot ? resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/coverage-summary.json", { label: "mobile coverage summary" }) : null, lcov: mobileRoot ? resolvePathWithinRoot(mobileRoot, "apps/mobile/coverage/lcov.info", { label: "mobile LCOV" }) : null }, scopeByName.get("mobile")?.provenance),
+      python: readProvenance(pythonProofFile, "python", { report: pythonRoot ? resolvePathWithinRoot(pythonRoot, "maintenance/python/coverage.xml", { label: "Python coverage" }) : null }, scopeByName.get("python")?.provenance),
     },
     limits: ["DB_SEMANTICS_NOT_EXECUTED", "NO_TARGET_DEFINED for mobile/node/python", "RISK_CLASSIFICATION_REQUIRED for Web unclassified", "no Web new-code-non-critical prefix is currently qualified"],
   };
@@ -555,8 +583,8 @@ export function buildReference({ args = parseArgs(process.argv), now = new Date(
 function main() {
   const args = parseArgs(process.argv);
   const reference = buildReference({ args });
-  const outputJson = path.resolve(args["output-json"] ?? `documentation/operations/audits/coverage-reference-${reference.date}.json`);
-  const outputMd = path.resolve(args["output-md"] ?? `documentation/operations/audits/coverage-reference-${reference.date}.md`);
+  const outputJson = resolveCliPath(args["output-json"] ?? `documentation/operations/audits/coverage-reference-${reference.date}.json`, "output-json");
+  const outputMd = resolveCliPath(args["output-md"] ?? `documentation/operations/audits/coverage-reference-${reference.date}.md`, "output-md");
   fs.writeFileSync(outputJson, `${JSON.stringify(reference, null, 2)}\n`, "utf8");
   fs.writeFileSync(outputMd, markdown(reference), "utf8");
   console.log(`COVERAGE_REFERENCE_WRITTEN: ${outputMd}`);

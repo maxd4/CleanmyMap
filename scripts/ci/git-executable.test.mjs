@@ -4,7 +4,7 @@ import test from "node:test";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { isTrustedGitPath, resolveGitExecutable } from "./git-executable.mjs";
+import { isTrustedGitPath, resolveGitExecutable, trustedCommandEnvironment } from "./git-executable.mjs";
 
 test("accepts the fixed Windows Git installation path without consulting PATH", () => {
   assert.equal(isTrustedGitPath("C:\\Program Files\\Git\\cmd\\git.exe", "win32"), true);
@@ -54,4 +54,11 @@ test("ignores a hostile PATH instead of resolving its Git binary", () => {
   } finally {
     rmSync(hostileRoot, { recursive: true, force: true });
   }
+});
+
+test("overrides a hostile child-process PATH with fixed executable directories", () => {
+  const additionalExecutable = process.platform === "win32" ? "C:\\Program Files\\Supabase\\supabase.cmd" : "/opt/supabase/bin/supabase";
+  const environment = trustedCommandEnvironment({ PATH: process.platform === "win32" ? "C:\\attacker\\bin" : "/tmp/attacker/bin", SystemRoot: "C:\\Windows" }, [additionalExecutable]);
+  assert.doesNotMatch(environment.PATH, /attacker/i);
+  assert.match(environment.PATH, process.platform === "win32" ? /Program Files\\Supabase/i : /opt\/supabase\/bin/);
 });

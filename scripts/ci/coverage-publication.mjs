@@ -18,7 +18,8 @@ import {
 import { runCoverageCheck } from "../checks/check-coverage.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { getCandidateSha, getWorktreeCandidateFiles } from "./validation-evidence.mjs";
-import { gitExecutable } from "./git-executable.mjs";
+import { assertSafeGitRef, gitExecutable } from "./git-executable.mjs";
+import { assertSafeDirectoryRoot, assertSafeExternalPath, resolvePathWithinRoot } from "./safe-paths.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const HASH_PATTERN = /^[0-9a-f]{64}$/i;
@@ -152,6 +153,7 @@ export function getCoveragePublicationRequirements({
 }
 
 function gitSha(repositoryRoot, ref) {
+  const normalizedRef = assertSafeGitRef(ref, "coverage Git ref");
   return execFileSync(gitExecutable(), ["rev-parse", "--verify", `${ref}^{commit}`], {
     cwd: repositoryRoot,
     encoding: "utf8",
@@ -160,6 +162,7 @@ function gitSha(repositoryRoot, ref) {
 }
 
 export function resolveCoverageCandidate({ repositoryRoot = process.cwd(), environment = process.env } = {}) {
+  assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
   const dynamicSha = String(environment.CMM_DYNAMIC_CANDIDATE_SHA ?? "").trim();
   const ciSha = String(environment.CANDIDATE_SHA ?? "").trim();
   const candidateSha = dynamicSha || ciSha || getCandidateSha(repositoryRoot);
@@ -183,9 +186,14 @@ function sha256(file) {
 }
 
 function proofRoot(repositoryRoot, candidateSha, scope, publicationRoot = null) {
+  if (!SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid coverage candidate SHA: ${candidateSha ?? "<missing>"}.`);
+  if (!["web", "mobile", "node", "python"].includes(scope)) throw new Error(`Unsupported coverage publication scope: ${scope}.`);
   const configured = publicationRoot ?? process.env.CMM_COVERAGE_PUBLICATION_ROOT;
-  const root = configured ? path.resolve(configured) : path.join(repositoryRoot, PUBLICATION_ROOT);
-  return path.join(root, candidateSha, scope);
+  const root = configured
+    ? assertSafeExternalPath(configured, { label: "coverage publication root" })
+    : path.join(repositoryRoot, PUBLICATION_ROOT);
+  const candidateRoot = resolvePathWithinRoot(root, candidateSha, { label: "coverage candidate" });
+  return resolvePathWithinRoot(candidateRoot, scope, { label: "coverage scope" });
 }
 
 function proofPath(repositoryRoot, candidateSha, scope, publicationRoot = null) {
@@ -194,7 +202,7 @@ function proofPath(repositoryRoot, candidateSha, scope, publicationRoot = null) 
 
 function assertSafeRelativePath(value) {
   const normalized = normalizePath(value);
-  if (!normalized || path.isAbsolute(normalized) || normalized.split("/").includes("..")) {
+  if (!normalized || path.isAbsolute(normalized) || path.win32.isAbsolute(normalized) || normalized.split("/").includes("..")) {
     throw new Error(`Coverage publication proof contains an unsafe report path: ${value}`);
   }
   return normalized;
@@ -234,7 +242,7 @@ function readProof(repositoryRoot, candidateSha, scope, publicationRoot = null) 
 function validateReportHashes(root, proof) {
   for (const report of proof.reports) {
     const relativePath = assertSafeRelativePath(report.path);
-    const absolutePath = path.join(root, relativePath);
+    const absolutePath = resolvePathWithinRoot(root, relativePath, { label: "coverage report" });
     if (!fs.existsSync(absolutePath) || sha256(absolutePath) !== report.sha256) {
       throw new Error(`Coverage report is missing, changed, or falsified: ${relativePath}.`);
     }
@@ -244,7 +252,7 @@ function validateReportHashes(root, proof) {
 function reportPath(proof, root, source) {
   const report = proof.reports.find((entry) => entry.source === source);
   if (!report) throw new Error(`Coverage proof does not contain ${source}.`);
-  return path.join(root, assertSafeRelativePath(report.path));
+  return resolvePathWithinRoot(root, assertSafeRelativePath(report.path), { label: "coverage report" });
 }
 
 export function validateCoveragePublicationProof({
@@ -253,6 +261,7 @@ export function validateCoveragePublicationProof({
   scope,
   publicationRoot = null,
 } = {}) {
+  assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
   if (!SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid coverage candidate SHA: ${candidateSha ?? "<missing>"}.`);
   if (gitSha(repositoryRoot, candidateSha) !== candidateSha) throw new Error(`Coverage candidate SHA cannot be resolved: ${candidateSha}.`);
   const { proof, root } = readProof(repositoryRoot, candidateSha, scope, publicationRoot);
@@ -322,9 +331,9 @@ function sourceReports(scope) {
 function copyReports(repositoryRoot, targetRoot, sources) {
   const reports = [];
   for (const source of sources) {
-    const sourcePath = path.join(repositoryRoot, ...source.split("/"));
+    const sourcePath = resolvePathWithinRoot(repositoryRoot, source, { label: "coverage source" });
     if (!fs.existsSync(sourcePath)) throw new Error(`Coverage report is missing: ${source}.`);
-    const targetPath = path.join(targetRoot, ...source.split("/"));
+    const targetPath = resolvePathWithinRoot(targetRoot, source, { label: "coverage publication" });
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     fs.copyFileSync(sourcePath, targetPath);
     reports.push({ source, path: source, sha256: sha256(targetPath) });
@@ -333,6 +342,7 @@ function copyReports(repositoryRoot, targetRoot, sources) {
 }
 
 export function writeCoveragePublicationProof({ repositoryRoot = process.cwd(), scope } = {}) {
+  assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
   const candidate = resolveCoverageCandidate({ repositoryRoot });
   const { candidateSha } = candidate;
   const targetRoot = proofRoot(repositoryRoot, candidateSha, scope);

@@ -1,10 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { gitExecutable } from "./git-executable.mjs";
+import { resolvePathWithinRoot } from "./safe-paths.mjs";
 
 const VALIDATION_EVIDENCE_VERSION = 2;
+const SHA256_PATTERN = /^[0-9a-f]{64}$/i;
+const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const WINDOWS_CLEANUP_RETRIES = 5;
 const WINDOWS_CLEANUP_RETRY_DELAY_MS = 50;
 const TRANSIENT_CLEANUP_ERRORS = new Set(["EBUSY", "ENOTEMPTY", "EPERM"]);
@@ -44,8 +47,9 @@ export function getCandidateSha(repositoryRoot = process.cwd()) {
 }
 
 function readStagedFile(repositoryRoot, relativePath) {
+  const safeRelativePath = normalizeCandidatePath(repositoryRoot, relativePath);
   try {
-    return execFileSync(gitExecutable(), ["show", `:${relativePath}`], {
+    return execFileSync(gitExecutable(), ["show", `:${safeRelativePath}`], {
       cwd: repositoryRoot,
       encoding: "buffer",
       stdio: ["ignore", "pipe", "ignore"],
@@ -56,13 +60,22 @@ function readStagedFile(repositoryRoot, relativePath) {
 }
 
 function readCandidateFile(repositoryRoot, relativePath, candidateScope) {
-  if (candidateScope === "STAGED") return readStagedFile(repositoryRoot, relativePath);
-  const absolutePath = path.join(repositoryRoot, ...relativePath.split("/"));
+  const safeRelativePath = normalizeCandidatePath(repositoryRoot, relativePath);
+  if (candidateScope === "STAGED") return readStagedFile(repositoryRoot, safeRelativePath);
+  const absolutePath = resolvePathWithinRoot(repositoryRoot, safeRelativePath, { label: "validation candidate" });
   try {
     return fs.readFileSync(absolutePath);
   } catch {
     return null;
   }
+}
+
+function normalizeCandidatePath(repositoryRoot, relativePath) {
+  const normalized = normalizePath(relativePath);
+  return path.relative(
+    path.resolve(repositoryRoot),
+    resolvePathWithinRoot(repositoryRoot, normalized, { label: "validation candidate" }),
+  ).replaceAll("\\", "/");
 }
 
 function readGitLines(repositoryRoot, args) {
@@ -95,7 +108,7 @@ export function createCandidateFingerprint({
   candidateSha,
 } = {}) {
   const scope = String(candidateScope).toUpperCase();
-  const files = [...new Set(changedFiles.map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
+  const files = [...new Set(changedFiles.map((file) => normalizeCandidatePath(repositoryRoot, file)))].sort((left, right) => left.localeCompare(right, "en"));
   const hash = createHash("sha256");
   hash.update(JSON.stringify({
     version: VALIDATION_EVIDENCE_VERSION,
@@ -150,19 +163,21 @@ export function createValidationEvidenceKey({
 }
 
 function evidenceRoot(repositoryRoot) {
-  return path.join(repositoryRoot, VALIDATION_EVIDENCE_RELATIVE_ROOT);
+  return resolvePathWithinRoot(repositoryRoot, VALIDATION_EVIDENCE_RELATIVE_ROOT, { label: "validation evidence" });
 }
 
 function evidencePath(repositoryRoot, candidateFingerprint) {
+  if (!SHA256_PATTERN.test(String(candidateFingerprint ?? ""))) throw new Error(`Invalid validation evidence fingerprint: ${candidateFingerprint ?? "<missing>"}`);
   return path.join(evidenceRoot(repositoryRoot), `${candidateFingerprint}.json`);
 }
 
 function fullEvidencePath(repositoryRoot, candidateSha) {
-  return path.join(repositoryRoot, FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT, `${candidateSha}.json`);
+  if (!COMMIT_SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid validation evidence candidate SHA: ${candidateSha ?? "<missing>"}`);
+  return resolvePathWithinRoot(repositoryRoot, `${FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT}/${candidateSha}.json`, { label: "full validation evidence" });
 }
 
 function fullValidationLockPath(repositoryRoot) {
-  return path.join(repositoryRoot, FULL_VALIDATION_LOCK_RELATIVE_PATH);
+  return resolvePathWithinRoot(repositoryRoot, FULL_VALIDATION_LOCK_RELATIVE_PATH, { label: "full validation lock" });
 }
 
 function isProcessAlive(pid) {
@@ -199,7 +214,7 @@ function readFullValidationLock(lockPath) {
 }
 
 function fullValidationRecoveryPath(lockPath) {
-  return `${lockPath}.${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.recovery`;
+  return `${lockPath}.${process.pid}-${Date.now()}-${randomUUID()}.recovery`;
 }
 
 function reclaimStaleFullValidationLock(lockPath, expected) {
@@ -235,7 +250,7 @@ export function acquireFullValidationLock({
   const lockPath = fullValidationLockPath(repositoryRoot);
   const root = path.dirname(lockPath);
   fs.mkdirSync(root, { recursive: true });
-  const executionId = `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const executionId = `${process.pid}-${Date.now()}-${randomUUID()}`;
   const document = {
     version: VALIDATION_EVIDENCE_VERSION,
     executionId,

@@ -367,6 +367,32 @@ test("coverage proof provenance distinguishes CI, dynamic and local candidates",
   );
 });
 
+test("rejects traversal-like candidate input and redirected publication roots", (t) => {
+  const sha = candidateSha();
+  assert.throws(
+    () => resolveCoverageCandidate({ repositoryRoot, environment: { CMM_DYNAMIC_CANDIDATE_SHA: "../HEAD" } }),
+    /full candidate SHA/,
+  );
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-publication-link-"));
+  const linkedRoot = `${temporaryRoot}-linked`;
+  try {
+    writeWebProof(temporaryRoot, sha);
+    try {
+      fs.symlinkSync(temporaryRoot, linkedRoot, "junction");
+    } catch (error) {
+      t.skip(`symlink fixtures unavailable on this platform: ${error.message}`);
+      return;
+    }
+    assert.throws(
+      () => validateCoveragePublicationProof({ repositoryRoot, candidateSha: sha, scope: "web", publicationRoot: linkedRoot }),
+      /symbolic-link|traversal|redirected/,
+    );
+  } finally {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+    fs.rmSync(linkedRoot, { recursive: true, force: true });
+  }
+});
+
 test("Web evidence rejects summary, configuration, or environment fingerprint mismatch", () => {
   const sha = candidateSha();
   for (const mismatch of ["summarySha256", "configurationFingerprint", "environmentFingerprint"]) {

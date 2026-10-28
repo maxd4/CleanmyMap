@@ -60,4 +60,38 @@ export function gitExecutable() {
   return cachedGitExecutable;
 }
 
+export function trustedCommandEnvironment(baseEnvironment = process.env, additionalExecutables = []) {
+  const directories = new Set([
+    path.dirname(gitExecutable()),
+    path.dirname(process.execPath),
+    ...additionalExecutables.filter(Boolean).map((executable) => path.dirname(executable)),
+  ]);
+  if (process.platform !== "win32") {
+    directories.add("/usr/bin");
+    directories.add("/bin");
+  } else if (typeof baseEnvironment.SystemRoot === "string" && path.win32.isAbsolute(baseEnvironment.SystemRoot)) {
+    directories.add(path.win32.join(baseEnvironment.SystemRoot, "System32"));
+  }
+  return { ...baseEnvironment, PATH: [...directories].join(path.delimiter) };
+}
+
+export function assertSafeGitRef(value, label = "Git ref") {
+  const ref = String(value ?? "").trim();
+  if (
+    !ref
+    || ref.startsWith("-")
+    || ref.includes("\0")
+    || /\s/.test(ref)
+    || ref.includes("..")
+    || ref.includes("@{")
+    || ref.endsWith(".")
+    || ref.endsWith("/")
+    || ref.includes("//")
+    || !/^[A-Za-z0-9._/~^-]+$/.test(ref)
+  ) {
+    throw new Error(`Unsafe ${label}: ${value}`);
+  }
+  return ref;
+}
+
 export { isTrustedGitPath, resolveGitExecutable };

@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gitExecutable, trustedCommandEnvironment } from "./git-executable.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const evidencePath = resolve(repositoryRoot, "artifacts/ci/supabase-sql-evidence.json");
@@ -41,7 +42,7 @@ export function inventorySqlProofs(root = repositoryRoot) {
   const pgtapFiles = readdirSync(resolve(root, pgtapDirectory), { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".pgtap.sql"))
     .map((entry) => normalizePath(`${pgtapDirectory}/${entry.name}`))
-    .sort();
+    .sort((left, right) => left.localeCompare(right));
   const applicationContracts = listFilesFromRoot(root, applicationContractDirectory, ".sql")
     .filter((filePath) => !filePath.endsWith(".pgtap.sql"));
   const e2eContracts = listFilesFromRoot(root, e2eContractDirectory, ".sql");
@@ -56,9 +57,9 @@ export function inventorySqlProofs(root = repositoryRoot) {
 
   return {
     pgtap: pgtapFiles,
-    contracts: [...applicationContracts, ...e2eContracts].sort(),
+    contracts: [...applicationContracts, ...e2eContracts].sort((left, right) => left.localeCompare(right)),
     multisession,
-    unregistered: [...unregistered, ...unregisteredMultisession].sort(),
+    unregistered: [...unregistered, ...unregisteredMultisession].sort((left, right) => left.localeCompare(right)),
   };
 }
 
@@ -66,7 +67,7 @@ function listFilesFromRoot(root, relativeDirectory, extension) {
   return readdirSync(resolve(root, relativeDirectory), { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
     .map((entry) => normalizePath(`${relativeDirectory}/${entry.name}`))
-    .sort();
+    .sort((left, right) => left.localeCompare(right));
 }
 
 export function extractPlan(sql) {
@@ -137,13 +138,13 @@ function parsePgProveSummary(output, expectedPlan) {
 export function parsePgTapOutput(output, expectedPlan) {
   if (expectedPlan === null) throw new Error("pgTAP source has no explicit plan() assertion");
 
-  if (/^\s*Bail out!(?:\s|$)/im.test(output)) {
+  if (/^[ \t]*Bail out!(?:[ \t]|$)/im.test(output)) {
     throw new Error("pgTAP output contains a Bail out! interruption");
   }
 
-  const planMatches = [...output.matchAll(/(?:^|\n)\s*1\.\.(\d+)\s*(?:\n|$)/gm)];
+  const planMatches = [...output.matchAll(/^[ \t]*1\.\.(\d+)[ \t]*$/gm)];
   if (planMatches.length > 1) throw new Error("pgTAP output contains multiple plans");
-  const assertions = [...output.matchAll(/(?:^|\n)\s*(ok|not ok)\s+(\d+)\b([^\n]*)/gi)]
+  const assertions = [...output.matchAll(/^[ \t]*(ok|not ok)[ \t]+(\d+)\b([^\r\n]*)/gim)]
     .map((match) => {
       const directive = match[3].match(/(?:^|\s)#\s*(skip|todo)(?:\s|$)/i);
       return { status: match[1].toLowerCase(), number: Number(match[2]), directive: directive?.[1].toUpperCase() ?? null };
@@ -196,7 +197,7 @@ function commandName() {
   return process.platform === "win32" ? resolve(repositoryRoot, "node_modules/.bin/supabase.cmd") : resolve(repositoryRoot, "node_modules/.bin/supabase");
 }
 
-function runCommand(command, args, { logName, env = process.env } = {}) {
+function runCommand(command, args, { logName, env = trustedCommandEnvironment(process.env, [command]) } = {}) {
   return new Promise((resolveResult, rejectResult) => {
     const child = spawn(command, args, { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
@@ -210,13 +211,16 @@ function runCommand(command, args, { logName, env = process.env } = {}) {
       writeFileSync(resolve(logDirectory, `${logName}.log`), output, "utf8");
       resolveResult({ code: code ?? 1, signal, stdout, stderr, output });
     });
+  }).catch((error) => {
+    console.error(error instanceof Error ? error.stack ?? error.message : String(error));
+    process.exitCode = 1;
   });
 }
 
 function candidateSha(explicitSha) {
-  const sha = String(explicitSha ?? process.env.CMM_SUPABASE_CANDIDATE_SHA ?? "").trim() || execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const sha = String(explicitSha ?? process.env.CMM_SUPABASE_CANDIDATE_SHA ?? "").trim() || execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
   if (!/^[0-9a-f]{40}$/i.test(sha)) throw new Error(`Invalid candidate SHA: ${sha}`);
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const head = execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
   if (head.toLowerCase() !== sha.toLowerCase()) throw new Error(`Candidate SHA ${sha} does not match checked-out HEAD ${head}`);
   return sha;
 }

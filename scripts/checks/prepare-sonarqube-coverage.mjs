@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertSafeDirectoryRoot, resolvePathWithinRoot } from "../ci/safe-paths.mjs";
 
 export const REPORT_DEFINITIONS = Object.freeze([
   Object.freeze({
@@ -33,7 +34,14 @@ export const REPORT_DEFINITIONS = Object.freeze([
 ]);
 
 function repositoryFile(root, relativePath) {
-  return path.join(root, ...relativePath.split("/"));
+  try {
+    return resolvePathWithinRoot(root, relativePath, { label: "repository" });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("escapes its repository root")) {
+      throw new Error(`Coverage path escapes the repository root: ${relativePath}`);
+    }
+    throw error;
+  }
 }
 
 function reportDefinition(scope, reports = REPORT_DEFINITIONS) {
@@ -302,6 +310,7 @@ function validateReport({ definition, root, write, fsApi = fs, sourceFsApi = fs,
 }
 
 export function validateSonarCoverageReports({ root = process.cwd(), reports = REPORT_DEFINITIONS, write = true, mode = "STRICT", fsApi = fs, sourceFsApi = fs, sourceRootDirectory = root } = {}) {
+  assertSafeDirectoryRoot(root, { label: "Sonar repository root" });
   if (mode === "STRICT") return reports.map((definition) => validateReport({ definition, root, write, fsApi, sourceFsApi, sourceRootDirectory }));
   if (mode !== "SONAR_PARTIAL") throw new Error(`Unknown SonarQube coverage validation mode: ${mode}`);
   return reports.map((definition) => {
@@ -320,18 +329,24 @@ export function validateSonarCoverageReports({ root = process.cwd(), reports = R
 }
 
 function safeOutputPath(outputRoot, relativePath) {
-  const root = path.resolve(outputRoot);
-  const target = path.resolve(root, ...relativePath.split("/"));
-  if (target !== root && !target.startsWith(`${root}${path.sep}`)) throw new Error(`SonarQube coverage output escapes its artifact root: ${relativePath}`);
-  return target;
+  try {
+    return resolvePathWithinRoot(outputRoot, relativePath, { label: "artifact" });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("escapes its artifact root")) {
+      throw new Error(`SonarQube coverage output escapes its artifact root: ${relativePath}`);
+    }
+    throw error;
+  }
 }
 
 export function stageSonarCoverageReport({ root = process.cwd(), scope, outputRoot, reports = REPORT_DEFINITIONS } = {}) {
+  assertSafeDirectoryRoot(root, { label: "Sonar repository root" });
   const definition = reportDefinition(scope, reports);
-  const validated = validateReport({ definition, root, write: true });
   const relativePaths = definition.format === "cobertura"
     ? [definition.coveragePath]
     : [definition.lcovPath, definition.summaryPath];
+  for (const relativePath of relativePaths) safeOutputPath(outputRoot, relativePath);
+  const validated = validateReport({ definition, root, write: true });
   for (const relativePath of relativePaths) {
     const source = repositoryFile(root, relativePath);
     const destination = safeOutputPath(outputRoot, relativePath);
@@ -416,7 +431,7 @@ function readProducerResults(directory, { analyzedSha, runId }) {
   };
 
   for (const fileName of fs.readdirSync(directory).filter((candidate) => candidate.endsWith(".json")).sort((left, right) => left.localeCompare(right, "en"))) {
-    const filePath = path.join(directory, fileName);
+    const filePath = resolvePathWithinRoot(directory, fileName, { label: "Sonar producer result" });
     const fileScope = resultScopeFromFile(fileName);
     let result = null;
     try {

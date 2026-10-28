@@ -2,6 +2,8 @@ import fs from "node:fs";
 import { Buffer } from "node:buffer";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { gitExecutable, trustedCommandEnvironment } from "../ci/git-executable.mjs";
+import { assertSafeDirectoryRoot, resolvePathWithinRoot } from "../ci/safe-paths.mjs";
 
 const DEFAULT_BATCH_CONTENT_TARGET_BYTES = 32 * 1024 * 1024;
 const BATCH_OUTPUT_MARGIN_BYTES = 1024;
@@ -55,10 +57,11 @@ function filterGitIgnoredPaths(root, paths) {
   if (paths.length === 0) return paths;
 
   try {
-    const output = execFileSync("git", ["check-ignore", "--stdin", "-z", "--"], {
+    const output = execFileSync(gitExecutable(), ["check-ignore", "--stdin", "-z", "--"], {
       cwd: root,
       input: Buffer.from(`${paths.join("\0")}\0`, "utf8"),
       maxBuffer: Math.max(1024 * 1024, paths.join("\0").length * 2),
+      env: trustedCommandEnvironment(),
     });
     const ignored = new Set(output.toString("utf8").split("\0").filter(Boolean));
     return paths.filter((relativePath) => !ignored.has(relativePath));
@@ -124,7 +127,7 @@ function createView({ files, directories = [], readBinary, mode }) {
 }
 
 export function createFilesystemRepositoryView(root = process.cwd(), { snapshotExtensions = [] } = {}) {
-  const repositoryRoot = path.resolve(root);
+  const repositoryRoot = assertSafeDirectoryRoot(root, { label: "filesystem repository root" });
   const filesystemFiles = listFilesystemFiles(repositoryRoot);
   const files = filterGitIgnoredPaths(repositoryRoot, filesystemFiles);
   const directories = [];
@@ -143,7 +146,7 @@ export function createFilesystemRepositoryView(root = process.cwd(), { snapshotE
   const extensions = new Set(snapshotExtensions.map((extension) => extension.toLowerCase()));
   for (const relativePath of files) {
     if (!extensions.has(path.extname(relativePath).toLowerCase())) continue;
-    const absolutePath = path.join(repositoryRoot, ...relativePath.split("/"));
+    const absolutePath = resolvePathWithinRoot(repositoryRoot, relativePath, { label: "filesystem repository path" });
     try {
       snapshot.set(relativePath, fs.readFileSync(absolutePath));
     } catch (error) {
@@ -161,7 +164,7 @@ export function createFilesystemRepositoryView(root = process.cwd(), { snapshotE
     readBinary(relativePath) {
       const normalizedPath = normalizeRepositoryPath(relativePath);
       if (snapshot.has(normalizedPath)) return snapshot.get(normalizedPath);
-      return fs.readFileSync(path.join(repositoryRoot, ...normalizedPath.split("/")));
+      return fs.readFileSync(resolvePathWithinRoot(repositoryRoot, normalizedPath, { label: "filesystem repository path" }));
     },
   });
 }

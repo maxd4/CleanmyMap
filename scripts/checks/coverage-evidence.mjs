@@ -13,7 +13,8 @@ import {
   createCandidateFingerprint,
   getWorktreeCandidateFiles,
 } from "../ci/validation-evidence.mjs";
-import { gitExecutable } from "../ci/git-executable.mjs";
+import { assertSafeGitRef, gitExecutable } from "../ci/git-executable.mjs";
+import { assertSafeDirectoryRoot, resolvePathWithinRoot } from "../ci/safe-paths.mjs";
 
 const COVERAGE_EVIDENCE_VERSION = 2;
 export const COVERAGE_SUMMARY_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-summary.json");
@@ -73,7 +74,7 @@ const RELEVANT_ENVIRONMENT_KEYS = Object.freeze([
 ]);
 
 function repositoryPath(repositoryRoot, relativePath) {
-  return path.join(repositoryRoot, ...relativePath.split("/"));
+  return resolvePathWithinRoot(repositoryRoot, relativePath, { label: "coverage evidence" });
 }
 
 function scopeReport(scope) {
@@ -108,7 +109,8 @@ function hashJson(value) {
 
 function readCandidateFile(repositoryRoot, relativePath, candidateRef = null) {
   if (candidateRef) {
-    return execFileSync(gitExecutable(), ["show", `${candidateRef}:${relativePath}`], {
+    const safeRef = assertSafeGitRef(candidateRef, "coverage candidate ref");
+    return execFileSync(gitExecutable(), ["show", `${safeRef}:${relativePath}`], {
       cwd: repositoryRoot,
       encoding: "buffer",
       stdio: ["ignore", "pipe", "ignore"],
@@ -118,6 +120,7 @@ function readCandidateFile(repositoryRoot, relativePath, candidateRef = null) {
 }
 
 export function computeConfigurationFingerprint({ repositoryRoot = process.cwd(), candidateRef = null, scope = "web" } = {}) {
+  assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
   const configurationFiles = SCOPE_CONFIGURATION_FILES[scope];
   if (!configurationFiles) throw new Error(`Coverage evidence is not implemented for scope: ${scope}.`);
   const hash = createHash("sha256");
@@ -208,6 +211,7 @@ function expectedEvidence(
 }
 
 export function writeCoverageEvidence({ repositoryRoot = process.cwd(), scope = "web" } = {}) {
+  assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
   const report = scopeReport(scope);
   const summaryPath = repositoryPath(repositoryRoot, report.summaryPath.replaceAll("\\", "/"));
   const summary = JSON.parse(fs.readFileSync(summaryPath, "utf8"));
@@ -230,6 +234,8 @@ export function validateCoverageEvidence({
   candidateRef = null,
   validateCandidateFingerprint = true,
 } = {}) {
+  assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
+  assertSafeDirectoryRoot(reportRoot, { label: "coverage report root" });
   const report = scopeReport(scope);
   const summaryPath = repositoryPath(reportRoot, report.summaryPath.replaceAll("\\", "/"));
   const evidencePath = repositoryPath(reportRoot, report.evidencePath.replaceAll("\\", "/"));
