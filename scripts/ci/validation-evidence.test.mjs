@@ -191,6 +191,13 @@ test("STAGED candidate fingerprints ignore a WORKTREE symlink replacing an index
 
     fs.writeFileSync(path.join(root, "candidate.txt"), "staged\n");
     git(root, ["add", "candidate.txt"]);
+    const candidateSha = getCandidateSha(root);
+    const indexedFingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: ["candidate.txt"],
+      candidateSha,
+    });
     fs.rmSync(path.join(root, "candidate.txt"));
     const target = path.join(root, "worktree-target.txt");
     fs.writeFileSync(target, "worktree target\n");
@@ -205,10 +212,10 @@ test("STAGED candidate fingerprints ignore a WORKTREE symlink replacing an index
       repositoryRoot: root,
       candidateScope: "STAGED",
       changedFiles: ["candidate.txt"],
-      candidateSha: getCandidateSha(root),
+      candidateSha,
     });
 
-    assert.match(stagedFingerprint, /^[0-9a-f]{64}$/);
+    assert.equal(stagedFingerprint, indexedFingerprint);
   } finally {
     removePathWithRetry(root, { recursive: true });
   }
