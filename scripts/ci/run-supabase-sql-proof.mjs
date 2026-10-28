@@ -136,20 +136,77 @@ function parsePgProveSummary(output, expectedPlan) {
   };
 }
 
+function isHorizontalWhitespace(character) {
+  return character === " " || character === "\t";
+}
+
+function trimHorizontalStart(value) {
+  let start = 0;
+  while (start < value.length && isHorizontalWhitespace(value[start])) start += 1;
+  return value.slice(start);
+}
+
+function trimHorizontal(value) {
+  const trimmed = trimHorizontalStart(value);
+  let end = trimmed.length;
+  while (end > 0 && isHorizontalWhitespace(trimmed[end - 1])) end -= 1;
+  return trimmed.slice(0, end);
+}
+
+function parsePlanLine(line) {
+  const trimmed = trimHorizontal(line);
+  if (!trimmed.startsWith("1..")) return null;
+  const digits = trimmed.slice(3);
+  if (!digits || [...digits].some((character) => character < "0" || character > "9")) return null;
+  return Number(digits);
+}
+
+function parseAssertionLine(line) {
+  const trimmed = trimHorizontalStart(line);
+  const lower = trimmed.toLowerCase();
+  let status;
+  let cursor;
+  if (lower.startsWith("not ok")) {
+    status = "not ok";
+    cursor = 6;
+  } else if (lower.startsWith("ok")) {
+    status = "ok";
+    cursor = 2;
+  } else {
+    return null;
+  }
+  if (!isHorizontalWhitespace(trimmed[cursor])) return null;
+  while (cursor < trimmed.length && isHorizontalWhitespace(trimmed[cursor])) cursor += 1;
+  const numberStart = cursor;
+  while (cursor < trimmed.length && trimmed[cursor] >= "0" && trimmed[cursor] <= "9") cursor += 1;
+  if (cursor === numberStart) return null;
+  const next = trimmed[cursor];
+  if (next && /[A-Za-z0-9_]/u.test(next)) return null;
+  const description = trimmed.slice(cursor);
+  const directive = description.match(/(?:^|\s)#\s*(skip|todo)(?:\s|$)/i);
+  return { status, number: Number(trimmed.slice(numberStart, cursor)), directive: directive?.[1].toUpperCase() ?? null };
+}
+
+function hasBailOut(lines) {
+  return lines.some((line) => {
+    const trimmed = trimHorizontalStart(line);
+    if (!trimmed.startsWith("Bail out!")) return false;
+    const next = trimmed[9];
+    return next === undefined || isHorizontalWhitespace(next);
+  });
+}
+
 export function parsePgTapOutput(output, expectedPlan) {
   if (expectedPlan === null) throw new Error("pgTAP source has no explicit plan() assertion");
 
-  if (/^[ \t]*Bail out!(?:[ \t]|$)/im.test(output)) {
+  const lines = String(output ?? "").split(/\r?\n/u);
+  if (hasBailOut(lines)) {
     throw new Error("pgTAP output contains a Bail out! interruption");
   }
 
-  const planMatches = [...output.matchAll(/^[ \t]*1\.\.(\d+)[ \t]*$/gm)];
+  const planMatches = lines.map(parsePlanLine).filter((plan) => plan !== null);
   if (planMatches.length > 1) throw new Error("pgTAP output contains multiple plans");
-  const assertions = [...output.matchAll(/^[ \t]*(ok|not ok)[ \t]+(\d+)\b([^\r\n]*)/gim)]
-    .map((match) => {
-      const directive = match[3].match(/(?:^|\s)#\s*(skip|todo)(?:\s|$)/i);
-      return { status: match[1].toLowerCase(), number: Number(match[2]), directive: directive?.[1].toUpperCase() ?? null };
-    });
+  const assertions = lines.map(parseAssertionLine).filter((assertion) => assertion !== null);
   const hasSummaryFields = /\b(?:Files|Tests)\s*=|\bResult\s*:/i.test(output);
 
   if (assertions.length === 0 && hasSummaryFields) {
@@ -160,7 +217,7 @@ export function parsePgTapOutput(output, expectedPlan) {
 
   const failures = assertions.filter((assertion) => assertion.status === "not ok").length;
   const passed = assertions.filter((assertion) => assertion.status === "ok").length;
-  const actualPlan = planMatches.length === 1 ? Number(planMatches[0][1]) : null;
+  const actualPlan = planMatches.length === 1 ? planMatches[0] : null;
   if (actualPlan !== expectedPlan) throw new Error(`pgTAP output plan mismatch: expected ${expectedPlan}, received ${actualPlan ?? "missing"}`);
   const duplicateOrOutOfRange = assertions.find((assertion, index) => assertion.number !== index + 1 || assertion.number < 1 || assertion.number > expectedPlan);
   if (duplicateOrOutOfRange) {

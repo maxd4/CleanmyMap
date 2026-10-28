@@ -307,7 +307,7 @@ export function isCompleteCycleReport(stdout = "") {
 }
 
 function hasStaleStatus(stdout = "") {
-  return /Status:\s*.*stale/i.test(stdout) || /Index incomplete reasons:/i.test(stdout);
+  return /Status:[^\r\n]*stale/i.test(stdout) || /Index incomplete reasons:/i.test(stdout);
 }
 
 export function acquireAuditLock(repoDirectory) {

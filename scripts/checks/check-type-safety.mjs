@@ -161,8 +161,13 @@ function findingStatus(file) {
 function suppressionReason(text) {
   const normalized = text.trim();
   if (!normalized) return null;
-  const marker = normalized.match(/(?:^|\s)(--|:)\s*(.+)$/);
-  if (marker) return `${marker[1]} ${marker[2].trim()}`;
+  for (let index = 0; index < normalized.length; index += 1) {
+    const isMarker = normalized[index] === ":" || normalized[index] === "-" && normalized[index + 1] === "-";
+    if (!isMarker || index > 0 && !/\s/u.test(normalized[index - 1])) continue;
+    const marker = normalized[index] === ":" ? ":" : "--";
+    const reason = normalized.slice(index + marker.length).trim();
+    if (reason) return `${marker} ${reason}`;
+  }
   return null;
 }
 

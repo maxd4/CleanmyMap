@@ -14,10 +14,10 @@ export const DOCUMENTATION_THRESHOLDS = Object.freeze({
 });
 
 const LIFECYCLE_STATUSES = Object.freeze(["CURRENT", "PLAN", "AUDIT", "HISTORY", "SNAPSHOT", "ADR", "GENERATED"]);
-const FENCE_PATTERN = /^\s{0,3}(`{3,}|~{3,})/;
-const ATX_HEADING_PATTERN = /^\s{0,3}(#{1,6})(?:\s+|$)(.*?)\s*$/;
-const SETEXT_HEADING_PATTERN = /^\s{0,3}(=+|-+)\s*$/;
-const LINK_PATTERN = /!?(\[([^\]]*)\])\(\s*(<[^>]+>|[^)\s]+)(?:\s+[^)]*)?\)/g;
+const FENCE_PATTERN = /^[ \t]{0,3}(`{3,}|~{3,})/;
+const ATX_HEADING_PATTERN = /^[ \t]{0,3}(#{1,6})(?:[ \t]+|$)(.*)$/;
+const SETEXT_HEADING_PATTERN = /^[ \t]{0,3}(=+|-+)[ \t]*$/;
+const GENERATED_MARKER_PATTERN = /^(?:generated|auto-generated|ne pas modifier)/i;
 const ANCHOR_ID_PATTERN = /\b(?:id|name)=["']([^"']+)["']/gi;
 const LOCAL_LINK_EXTENSIONS = new Set([".md", ".mdx", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf"]);
 const EXTERNAL_HOST_PATTERN = /^(?:www\.)?[^/#\s?:]+\.(?:com|org|net|edu|gov|mil|int|io|ai|app|dev|co|uk|fr|de|be|nl|es|it|ca|us|info|biz|xyz)(?:[/:?#]|$)/i;
@@ -28,6 +28,16 @@ function normalizePath(value) {
 
 function isDocumentationFile(file) {
   return DOCUMENTATION_EXTENSIONS.includes(path.posix.extname(file).toLowerCase());
+}
+
+function hasGeneratedMarker(lines) {
+  return lines.slice(0, 12).some((line) => {
+    const trimmed = line.trimStart();
+    const commentIndex = trimmed.indexOf("<!--");
+    if (commentIndex >= 0 && GENERATED_MARKER_PATTERN.test(trimmed.slice(commentIndex + 4).trimStart())) return true;
+    const withoutQuote = trimmed.startsWith(">") ? trimmed.slice(1).trimStart() : trimmed;
+    return GENERATED_MARKER_PATTERN.test(withoutQuote);
+  });
 }
 
 function normalizeText(content) {
@@ -49,7 +59,7 @@ function removeInlineHtmlTags(title) {
 }
 
 function stripHeadingMarkup(title) {
-  const withoutClosingHashes = title.replace(/\s+#+\s*$/, "");
+  const withoutClosingHashes = title.replace(/[ \t]+#+[ \t]*$/, "");
   return removeInlineHtmlTags(withoutClosingHashes).replace(/[`*_~]/g, "").trim();
 }
 
@@ -182,7 +192,7 @@ function documentLifecycle(file, lines) {
   }
   if (statuses.size === 0 && /(?:^|\/)architecture\/adr(?:\/|$)/i.test(normalized)) statuses.add("ADR");
   if (statuses.size === 0 && /(?:^|\/)sessions\/history(?:\/|$)/i.test(normalized)) statuses.add("HISTORY");
-  if (statuses.size === 0 && /(?:<!--|^\s*>?\s*)(?:generated|auto-generated|ne pas modifier)/i.test(lines.slice(0, 12).join("\n"))) statuses.add("GENERATED");
+  if (statuses.size === 0 && hasGeneratedMarker(lines)) statuses.add("GENERATED");
   return {
     statuses: LIFECYCLE_STATUSES.filter((status) => statuses.has(status)),
     source: statuses.size > 0
@@ -246,6 +256,56 @@ function resolveDocumentTarget(file, target, files) {
   return { targetFile, fragment, exists, verifiable };
 }
 
+function isHorizontalWhitespace(character) {
+  return character === " " || character === "\t";
+}
+
+function findMarkdownLinks(line) {
+  const matches = [];
+  let cursor = 0;
+  while (cursor < line.length) {
+    const openBracket = line.indexOf("[", cursor);
+    if (openBracket < 0) break;
+    let labelEnd = openBracket + 1;
+    while (labelEnd < line.length && line[labelEnd] !== "]") labelEnd += 1;
+    if (labelEnd >= line.length || line[labelEnd + 1] !== "(") {
+      cursor = labelEnd < line.length ? labelEnd + 1 : line.length;
+      continue;
+    }
+    const fullStart = openBracket > 0 && line[openBracket - 1] === "!" ? openBracket - 1 : openBracket;
+    let position = labelEnd + 2;
+    while (position < line.length && isHorizontalWhitespace(line[position])) position += 1;
+    let target = "";
+    if (line[position] === "<") {
+      const targetStart = position + 1;
+      position = targetStart;
+      while (position < line.length && line[position] !== ">") position += 1;
+      if (position >= line.length || position === targetStart) {
+        cursor = labelEnd + 1;
+        continue;
+      }
+      target = line.slice(targetStart, position);
+      position += 1;
+    } else {
+      const targetStart = position;
+      while (position < line.length && line[position] !== ")" && !isHorizontalWhitespace(line[position])) position += 1;
+      if (position === targetStart) {
+        cursor = labelEnd + 1;
+        continue;
+      }
+      target = line.slice(targetStart, position);
+    }
+    while (position < line.length && line[position] !== ")") position += 1;
+    if (position >= line.length) {
+      cursor = labelEnd + 1;
+      continue;
+    }
+    matches.push({ index: fullStart, text: line.slice(openBracket + 1, labelEnd), target });
+    cursor = position + 1;
+  }
+  return matches;
+}
+
 function inspectLinks(file, lines, files, headingsByFile) {
   const links = [];
   const invalid = [];
@@ -260,10 +320,10 @@ function inspectLinks(file, lines, files, headingsByFile) {
     }
     if (fence) continue;
     const inlineRanges = inlineCodeRanges(line);
-    for (const match of line.matchAll(LINK_PATTERN)) {
-      const rawTarget = match[3].startsWith("<") ? match[3].slice(1, -1) : match[3];
+    for (const match of findMarkdownLinks(line)) {
+      const rawTarget = match.target;
       if (isInsideInlineCode(inlineRanges, match.index ?? -1) || !isInternalLink(rawTarget, file, files)) continue;
-      const link = { text: match[2], target: rawTarget, line: index + 1 };
+      const link = { text: match.text, target: rawTarget, line: index + 1 };
       links.push(link);
       const resolved = resolveDocumentTarget(file, rawTarget, files);
       if (!resolved.verifiable) {

@@ -38,6 +38,58 @@ export async function walkFiles(root, predicate) {
 }
 
 /** Contrôle non destructif des liens locaux des fiches CURRENT. */
+function isHorizontalWhitespace(character) {
+  return character === " " || character === "\t";
+}
+
+function markdownLinkTargets(line) {
+  const targets = [];
+  let cursor = 0;
+  while (cursor < line.length) {
+    const openBracket = line.indexOf("[", cursor);
+    if (openBracket < 0) break;
+    let labelEnd = openBracket + 1;
+    while (labelEnd < line.length && line[labelEnd] !== "]") labelEnd += 1;
+    if (labelEnd >= line.length || line[labelEnd + 1] !== "(") {
+      cursor = labelEnd < line.length ? labelEnd + 1 : line.length;
+      continue;
+    }
+    let position = labelEnd + 2;
+    while (position < line.length && isHorizontalWhitespace(line[position])) position += 1;
+    const targetStart = position;
+    if (line[position] === "<") {
+      position += 1;
+      while (position < line.length && line[position] !== ">") position += 1;
+      if (position >= line.length) {
+        cursor = labelEnd + 1;
+        continue;
+      }
+      position += 1;
+    } else {
+      while (position < line.length && line[position] !== ")" && !isHorizontalWhitespace(line[position])) position += 1;
+      if (position === targetStart) {
+        cursor = labelEnd + 1;
+        continue;
+      }
+    }
+    while (position < line.length && line[position] !== ")") position += 1;
+    if (position >= line.length) {
+      cursor = labelEnd + 1;
+      continue;
+    }
+    targets.push(line.slice(targetStart, position));
+    cursor = position + 1;
+  }
+  return targets;
+}
+
+function markdownDestination(raw) {
+  for (let index = 0; index < raw.length - 1; index += 1) {
+    if (isHorizontalWhitespace(raw[index]) && (raw[index + 1] === "\"" || raw[index + 1] === "'")) return raw.slice(0, index);
+  }
+  return raw;
+}
+
 export async function findBrokenCanonicalMarkdownLinks({ repoRoot, routesRoot }) {
   const docs = await walkFiles(
     routesRoot,
@@ -47,8 +99,8 @@ export async function findBrokenCanonicalMarkdownLinks({ repoRoot, routesRoot })
   for (const absolute of docs) {
     const lines = (await fs.readFile(absolute, "utf8")).split(/\r?\n/u);
     for (const [index, line] of lines.entries()) {
-      for (const match of line.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/gu)) {
-        const raw = match[1].trim().split(/\s+(?=["'])/u, 1)[0];
+      for (const rawTarget of markdownLinkTargets(line)) {
+        const raw = markdownDestination(rawTarget.trim());
         const target = raw.replace(/^<|>$/gu, "").split(/[?#]/u, 1)[0];
         if (!target || target.startsWith("/") || /^[a-z][a-z0-9+.-]*:/iu.test(target)) continue;
         const resolved = path.resolve(path.dirname(absolute), target);

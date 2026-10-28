@@ -105,4 +105,12 @@ describe("sanitize analytics payload", () => {
     expect(JSON.stringify(sanitized)).not.toContain(missionId);
     expect(JSON.stringify(sanitized)).not.toContain("external.example");
   });
+
+  it("removes embedded emails from long generic values without regex backtracking", () => {
+    const sanitized = sanitizeAnalyticsProperties({
+      customValue: `${"x".repeat(200_000)} personne@example.com`,
+    });
+
+    expect(sanitized).toEqual({});
+  });
 });

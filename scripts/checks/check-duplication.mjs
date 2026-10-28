@@ -42,7 +42,7 @@ function assertBaselineFresh(baseline) {
 }
 
 export function parseExecutedJscpdVersion(output) {
-  const match = String(output ?? "").match(/^\s*jscpd\s+(\d+\.\d+\.\d+)\s*$/m);
+  const match = String(output ?? "").match(/^[ \t]*jscpd[ \t]+(\d+\.\d+\.\d+)[ \t]*$/m);
   if (!match) {
     throw new Error("DUPLICATION_TOOL_VERSION_INVALID: jscpd --version did not return a semantic version.");
   }

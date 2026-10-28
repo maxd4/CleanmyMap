@@ -1,8 +1,7 @@
-const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/iu;
 const COORDINATE_PATTERN = /-?\d{1,3}(?:\.\d+)?\s*[,;]\s*-?\d{1,3}(?:\.\d+)?/u;
 
-const PRIVATE_IDENTIFIER_KEY_PATTERN =
-  /(?:^|[_-])(?:id|uuid|identifier|token)(?:$|[_-])|(?:Id|ID|Uuid|UUID|Identifier|Token)$/u;
+const PRIVATE_IDENTIFIER_KEY_SEGMENT_PATTERN = /(?:^|[_-])(?:id|uuid|identifier|token)(?:$|[_-])/u;
+const PRIVATE_IDENTIFIER_KEY_SUFFIX_PATTERN = /(?:Id|ID|Uuid|UUID|Identifier|Token)$/u;
 const SENSITIVE_KEY_PATTERN =
   /(?:email|phone|telephone|password|secret|token|address|location|coordinate|latitude|longitude|keystroke|form.?value|input.?value|message|description|notes?|content|user.?name|display.?name|first.?name|last.?name)/iu;
 const URL_KEY_PATTERN = /(?:^|[$_.-])(?:url|href|referrer|path|pathname)$/iu;
@@ -147,6 +146,29 @@ function decodePathSegment(segment: string): string {
   }
 }
 
+function isEmailWhitespace(character: string | undefined): boolean {
+  return character === " " || character === "\t" || character === "\r" || character === "\n" || character === "\f" || character === "\v";
+}
+
+function containsEmail(value: string): boolean {
+  let tokenStart = 0;
+  for (let index = 0; index <= value.length; index += 1) {
+    const character = value[index];
+    if (character === "@") {
+      const localPart = value.slice(tokenStart, index);
+      let domainEnd = index + 1;
+      while (domainEnd < value.length && !isEmailWhitespace(value[domainEnd]) && value[domainEnd] !== "@") domainEnd += 1;
+      const domain = value.slice(index + 1, domainEnd);
+      const dotIndex = domain.lastIndexOf(".");
+      if (localPart.length > 0 && dotIndex > 0 && dotIndex < domain.length - 1) return true;
+      tokenStart = index + 1;
+    } else if (isEmailWhitespace(character)) {
+      tokenStart = index + 1;
+    }
+  }
+  return false;
+}
+
 function isPathLikeKey(key: string): boolean {
   return key === "pagePath" || key === "routePath" || URL_KEY_PATTERN.test(key);
 }
@@ -161,7 +183,8 @@ function isSensitiveKey(key: string): boolean {
       key.toLowerCase() as (typeof POSTHOG_PROPERTY_DENYLIST)[number],
     ) ||
     CAMPAIGN_KEY_PATTERN.test(key) ||
-    PRIVATE_IDENTIFIER_KEY_PATTERN.test(key) ||
+    PRIVATE_IDENTIFIER_KEY_SEGMENT_PATTERN.test(key) ||
+    PRIVATE_IDENTIFIER_KEY_SUFFIX_PATTERN.test(key) ||
     SENSITIVE_KEY_PATTERN.test(key)
   );
 }
@@ -269,7 +292,7 @@ function sanitizeValue(key: string, value: unknown): unknown {
     if (FUNNEL_CATEGORY_VALUES[key]) {
       return sanitizeCategory(key, value);
     }
-    if (EMAIL_PATTERN.test(value) || COORDINATE_PATTERN.test(value)) {
+    if (containsEmail(value) || COORDINATE_PATTERN.test(value)) {
       return undefined;
     }
     return value;

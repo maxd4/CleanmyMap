@@ -23,11 +23,30 @@ export function collectLocalModuleSources(
   visited.add(path);
   moduleSources.set(path, source);
 
-  const imports = source.matchAll(
-    /(?:import|export)(?:[\s\S]*?from\s*)?\(?\s*["'](\.{1,2}\/[^"']+)["']\s*\)?/g,
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
   );
-  for (const match of imports) {
-    const targetPath = resolveLocalModulePath(path, match[1] ?? "");
+  const localSpecifiers: string[] = sourceFile.statements.flatMap((statement) => {
+    if (ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)) {
+      return [statement.moduleSpecifier.text];
+    }
+    if (ts.isExportDeclaration(statement) && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)) {
+      return [statement.moduleSpecifier.text];
+    }
+    return [];
+  });
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.JSX, source);
+  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+    if (token !== ts.SyntaxKind.ImportKeyword) continue;
+    if (scanner.scan() !== ts.SyntaxKind.OpenParenToken) continue;
+    if (scanner.scan() === ts.SyntaxKind.StringLiteral) localSpecifiers.push(scanner.getTokenValue());
+  }
+  for (const specifier of localSpecifiers) {
+    const targetPath = resolveLocalModulePath(path, specifier);
     if (!targetPath) continue;
     collectLocalModuleSources(
       targetPath,

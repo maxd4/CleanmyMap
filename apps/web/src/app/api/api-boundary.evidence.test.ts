@@ -1,12 +1,33 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ApiAuthorizationContractEntry } from "@/lib/auth/api-authorization-contract";
 import {
   buildInlineRouteEntry,
+  collectLocalModuleSources,
   missingEvidence,
 } from "./api-boundary-evidence-analysis";
 import { extractRouteMethods } from "./api-boundary-analysis";
 
 describe("API security evidence analysis", () => {
+  it("follows literal dynamic imports without regex backtracking", () => {
+    const root = mkdtempSync(join(tmpdir(), "cleanmymap-api-evidence-"));
+    try {
+      const routePath = join(root, "route.ts");
+      const helperPath = join(root, "helper.ts");
+      writeFileSync(routePath, 'export async function GET() { return import("./helper"); }');
+      writeFileSync(helperPath, "export const helperEvidence = true;");
+      const sources = new Map<string, string>();
+
+      collectLocalModuleSources(routePath, readFileSync(routePath, "utf8"), sources, new Set());
+
+      expect(sources.has(helperPath)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not let an import or a different HTTP method satisfy method evidence", () => {
     const fixture = `
       import { requireCreatorAccess } from "@/lib/authz";

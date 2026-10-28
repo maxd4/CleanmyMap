@@ -96,7 +96,8 @@ function readHistory(root, auditedSha, windowDays) {
     if (!match) continue;
     const added = match[1] === "-" ? 0 : Number(match[1]);
     const deleted = match[2] === "-" ? 0 : Number(match[2]);
-    const rawPath = match[3].includes(" => ") ? match[3].replace(/^.*\{(.+) => (.+)\}.*$/, "$2") : match[3];
+    const rename = match[3].includes(" => ") ? match[3].match(/\{([^{}]*) => ([^{}]*)\}/) : null;
+    const rawPath = rename ? rename[2] : match[3];
     current.files.push({ path: normalize(rawPath), added, deleted, substantive: added + deleted >= HOTSPOT_SUBSTANTIVE_LINE_THRESHOLD });
   }
   return { auditedAt, windowStart, windowEnd: auditedAt, commits };
