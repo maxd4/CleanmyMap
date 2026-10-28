@@ -41,6 +41,7 @@ export type GpxSerializerInput = {
   description?: string;
 };
 
+// GPX 1.1 requires this URI as its schema namespace; it is not a network request.
 const GPX_1_1_NAMESPACE = "http://www.topografix.com/GPX/1/1";
 
 const PERSONAL_DATA_PATTERNS = [

@@ -81,6 +81,7 @@ describe("serializeActionGeometryToGpx", () => {
     assertWellFormedXml(xml);
     expect(xml).toContain('version="1.1"');
     expect(xml).toContain('xmlns="http://www.topografix.com/GPX/1/1"');
+    expect(xml).toContain('xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"');
     expect(xml).toContain("Itinéraire &amp; &lt;CleanMyMap&gt;");
     expect(xml).toContain("Départ &amp; accueil");
     expect(xml).toContain('lat="48.85" lon="2.35"');

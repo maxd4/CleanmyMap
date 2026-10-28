@@ -40,7 +40,10 @@ type PlasticOriginsResourceAudit = {
   filename: string;
   resourceId: string;
   sourceUrl: string;
-  sourceSha1: string;
+  /** Current audit attestations use SHA-256. */
+  sourceSha256?: string;
+  /** @deprecated Legacy generated datasets retain this field for compatibility. */
+  sourceSha1?: string;
   delimiter: "," | ";";
   headers: string[];
   rows: number;

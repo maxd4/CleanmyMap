@@ -97,3 +97,24 @@ test("atomically reclaims a stale FULL lock so concurrent recovery has one owner
     removePathWithRetry(root, { recursive: true });
   }
 });
+
+test("uses distinct cryptographic identifiers for sequential FULL lock executions", () => {
+  const root = makeRoot();
+  try {
+    const releaseFirst = acquireFullValidationLock({ repositoryRoot: root, candidateSha });
+    const first = JSON.parse(fs.readFileSync(lockPath(root), "utf8"));
+    releaseFirst();
+
+    const releaseSecond = acquireFullValidationLock({ repositoryRoot: root, candidateSha });
+    const second = JSON.parse(fs.readFileSync(lockPath(root), "utf8"));
+    releaseSecond();
+
+    assert.notEqual(first.executionId, second.executionId);
+    assert.match(
+      second.executionId,
+      /^\d+-\d+-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});

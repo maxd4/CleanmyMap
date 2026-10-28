@@ -80,6 +80,8 @@ test("audits coordinates, dates, missing values and exact duplicate grouping", (
     assert.equal(audit.allCoordinatesInBounds, true);
     assert.equal(audit.allDatesParseable, true);
     assert.equal(source2022.exactDuplicateRows, 1);
+    assert.match(source2022.sourceSha256, /^[0-9a-f]{64}$/i);
+    assert.equal(source2022.sourceSha1, undefined);
     assert.deepEqual(grouped.properties.source.sourceRows, [2, 3]);
     assert.deepEqual(grouped.geometry.coordinates, [2.3522, 48.8566]);
     assert.deepEqual(

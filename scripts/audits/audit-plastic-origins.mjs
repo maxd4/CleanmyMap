@@ -76,8 +76,8 @@ const REQUIRED_COLUMNS = Object.freeze([
   "lon",
 ]);
 
-function sha1(content) {
-  return crypto.createHash("sha1").update(content).digest("hex");
+function sha256(content) {
+  return crypto.createHash("sha256").update(content).digest("hex");
 }
 
 function detectDelimiter(header) {
@@ -254,7 +254,7 @@ export function auditSources({ sourceDir }) {
       filename: resource.filename,
       resourceId: resource.resourceId,
       sourceUrl: resource.url,
-      sourceSha1: sha1(content),
+      sourceSha256: sha256(content),
       delimiter: parsed.delimiter,
       headers: parsed.headers,
       rows: rows.length,
