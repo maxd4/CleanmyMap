@@ -288,6 +288,34 @@ function Invoke-GuardStep {
         }).Count -gt 0
     }
 
+    function Test-DuplicationRelevantPath {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$Path
+        )
+
+        $normalized = $Path.Replace("\\", "/")
+        if ($normalized -match "^(apps/web/src|apps/mobile|scripts)/") {
+            return $normalized -match "\.(js|jsx|ts|tsx|mjs|cjs)$" -or
+                $normalized -match "/duplication-" -or
+                $normalized.EndsWith("/check-duplication.mjs")
+        }
+        return @(
+            "scripts/checks/duplication-policy.mjs",
+            "scripts/checks/check-duplication.mjs",
+            "scripts/checks/duplication-metrics-baseline.json",
+            "scripts/checks/duplication-runtime-baseline.json",
+            "scripts/checks/duplication-tests-baseline.json",
+            "scripts/checks/duplication-data-baseline.json",
+            "scripts/checks/duplication-justifications.json",
+            "scripts/ci/duplication-publication.mjs",
+            "package.json",
+            "package-lock.json",
+            "apps/web/package.json",
+            "apps/web/package-lock.json"
+        ) -contains $normalized
+    }
+
     function Invoke-VercelBuildGuard {
         param(
             [Parameter(Mandatory = $true)]
@@ -459,6 +487,42 @@ function Invoke-GuardStep {
         Invoke-GuardStep "coverage publication proof ($CandidateRef)" { & node @coverageArguments }
     }
 
+    function Invoke-DuplicationPublicationGuard {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef,
+            [Parameter(Mandatory = $false)]
+            [string]$BaseRef,
+            [Parameter(Mandatory = $true)]
+            [AllowEmptyCollection()]
+            [string[]]$ChangedFiles
+        )
+
+        if (@($ChangedFiles | Where-Object { Test-DuplicationRelevantPath -Path $_ }).Count -eq 0) {
+            Write-SkippedGuardStep "duplication publication proof ($CandidateRef)" "no duplication-relevant files in this candidate"
+            return
+        }
+
+        $duplicationRoot = Join-Path $RepoRoot "artifacts/duplication-publication"
+        $previousDuplicationRoot = $env:CMM_DUPLICATION_PUBLICATION_ROOT
+        $env:CMM_DUPLICATION_PUBLICATION_ROOT = $duplicationRoot
+        try {
+            $arguments = @(
+                "scripts/ci/run-static-candidate-check.mjs",
+                "--ref=$CandidateRef",
+                "--script=scripts/ci/duplication-publication.mjs",
+                "--",
+                "--candidate-ref=$CandidateRef"
+            )
+            if (-not [string]::IsNullOrWhiteSpace($BaseRef)) { $arguments += "--base-ref=$BaseRef" }
+            foreach ($file in @($ChangedFiles | Sort-Object -Unique)) { $arguments += "--changed-file=$file" }
+            Invoke-GuardStep "duplication publication proof ($CandidateRef)" { & node @arguments }
+        } finally {
+            if ($null -eq $previousDuplicationRoot) { Remove-Item Env:CMM_DUPLICATION_PUBLICATION_ROOT -ErrorAction SilentlyContinue }
+            else { $env:CMM_DUPLICATION_PUBLICATION_ROOT = $previousDuplicationRoot }
+        }
+    }
+
     function Invoke-DynamicCoverageCommand {
         param(
             [Parameter(Mandatory = $true)]
@@ -476,6 +540,24 @@ function Invoke-GuardStep {
         } finally {
             if ($null -eq $previousCoverageRoot) { Remove-Item Env:CMM_COVERAGE_PUBLICATION_ROOT -ErrorAction SilentlyContinue }
             else { $env:CMM_COVERAGE_PUBLICATION_ROOT = $previousCoverageRoot }
+        }
+    }
+
+    function Invoke-DynamicDuplicationCommand {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef,
+            [Parameter(Mandatory = $true)]
+            [string]$Label
+        )
+
+        $previousDuplicationRoot = $env:CMM_DUPLICATION_PUBLICATION_ROOT
+        $env:CMM_DUPLICATION_PUBLICATION_ROOT = Join-Path $RepoRoot "artifacts/duplication-publication"
+        try {
+            Invoke-DynamicCandidateCommand -CandidateRef $CandidateRef -Label $Label -Command "npm" -DependencyMode "reuse" -CommandArguments @("run", "quality:duplication")
+        } finally {
+            if ($null -eq $previousDuplicationRoot) { Remove-Item Env:CMM_DUPLICATION_PUBLICATION_ROOT -ErrorAction SilentlyContinue }
+            else { $env:CMM_DUPLICATION_PUBLICATION_ROOT = $previousDuplicationRoot }
         }
     }
 
@@ -554,6 +636,7 @@ function Invoke-GuardStep {
             $candidateRanges = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef } | Select-Object -ExpandProperty Range -Unique)
             $candidateFiles = if ($candidateRanges.Count -gt 0) { @(Get-ChangedFilesFromRanges -Ranges $candidateRanges) } else { @($changedFiles) }
             Invoke-CoveragePublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
+            Invoke-DuplicationPublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
         }
 
         Write-Host ""
@@ -587,6 +670,7 @@ function Invoke-GuardStep {
             MobileCoverageRelevant = @($candidateFiles | Where-Object { $_.StartsWith("apps/mobile/", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.EndsWith(".md", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.EndsWith(".mdx", [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
             NodeCoverageRelevant = (@($candidateFiles | Where-Object { ($_.StartsWith("scripts/", [System.StringComparison]::OrdinalIgnoreCase) -or $_.StartsWith("apps/web/scripts/", [System.StringComparison]::OrdinalIgnoreCase)) -and -not $_.EndsWith(".md", [System.StringComparison]::OrdinalIgnoreCase) -and -not $_.EndsWith(".mdx", [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0)
             PythonCoverageRelevant = @($candidateFiles | Where-Object { $_ -match "^maintenance/python/(src|scripts)/.*\.py$" }).Count -gt 0
+            DuplicationRelevant = @($candidateFiles | Where-Object { Test-DuplicationRelevantPath -Path $_ }).Count -gt 0
         }
     }
 
@@ -605,6 +689,7 @@ function Invoke-GuardStep {
                 MobileCoverageRelevant = $true
                 NodeCoverageRelevant = $true
                 PythonCoverageRelevant = $true
+                DuplicationRelevant = $true
             })
     }
 
@@ -667,8 +752,15 @@ function Invoke-GuardStep {
             Write-SkippedGuardStep "Python coverage ($($plan.CandidateRef))" "no Python source changes in this candidate"
         }
 
+        if ([bool]$plan.DuplicationRelevant) {
+            Invoke-DynamicDuplicationCommand -CandidateRef $plan.CandidateRef -Label "Duplication ratchet"
+        } else {
+            Write-SkippedGuardStep "Duplication ratchet ($($plan.CandidateRef))" "no duplication-relevant files in this candidate"
+        }
+
         $candidateBaseRef = @($plan.Ranges | ForEach-Object { if ($_ -match "^([^\.]+)\.\.\.(.+)$") { $Matches[1] } } | Select-Object -First 1)
         Invoke-CoveragePublicationGuard -CandidateRef $plan.CandidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $plan.ChangedFiles
+        Invoke-DuplicationPublicationGuard -CandidateRef $plan.CandidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $plan.ChangedFiles
     }
 
     if ($SkipVercel) {

@@ -13,6 +13,20 @@ encore contenir des clones actionnables ; un scope au-dessus de 3 % expose un
 la plus récente est
 [`duplication-reference-2026-10-26.md`](../operations/audits/duplication-reference-2026-10-26.md).
 
+La preuve de publication jscpd est produite par le même moteur via
+`scripts/ci/duplication-publication.mjs` lorsqu'un candidat complet est
+préparé. Elle lie le SHA et l'arbre Git du candidat, l'empreinte de politique,
+la version jscpd, les trois rapports JSON/SARIF hashés, les baselines et l'état
+des justifications. Le pré-push rapide ne relance pas jscpd : il rejette toute
+preuve absente, stale, falsifiée, partielle ou `FAIL` pour un candidat qui
+touche un scope de duplication. La production relève de la préparation
+`DYNAMIC_CANDIDATE` (`prepush:guard -- -Full`) et la vérification s'exécute sur
+le `PUSH_CANDIDATE` exact. Une preuve `TARGET_MET` à 3 % ne devient pas pour
+autant une protection `ENFORCE` ; chaque scope doit rester
+`NOT_READY_FOR_3_PERCENT_ENFORCEMENT` tant que le ratio brut lignes et tokens,
+le ratchet historique et les justifications ne sont pas simultanément
+ratifiables.
+
 La duplication est mesurée par `jscpd` 5.3.0 avec des baselines natives
 séparées pour le runtime, les tests et les data/fixtures, ainsi qu'une baseline
 métrique dans `scripts/checks/duplication-metrics-baseline.json`. Cette dernière

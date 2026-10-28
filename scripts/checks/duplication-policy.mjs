@@ -6,6 +6,7 @@ export const DUPLICATION_TOOL_VERSION = "5.3.0";
 export const DUPLICATION_MIN_LINES = 5;
 export const DUPLICATION_MIN_TOKENS = 50;
 export const DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING = true;
+export const DUPLICATION_TARGET_PERCENTAGE = 0.03;
 const DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION = 1;
 const DUPLICATION_DURABLE_CLASSIFICATIONS = Object.freeze([
   "KEEP_INTENTIONAL",
@@ -200,6 +201,29 @@ export function compareDuplicationMetrics(current, baseline, scopeName = "runtim
     status: failures.length > 0 ? "FAIL" : hasRegression ? "PASS_WITH_GRACE" : "PASS",
     failures,
     deltas,
+  };
+}
+
+export function evaluateDuplicationTarget(metrics, target = DUPLICATION_TARGET_PERCENTAGE) {
+  const lines = Number(metrics?.lines);
+  const tokens = Number(metrics?.tokens);
+  const duplicatedLines = Number(metrics?.duplicatedLines);
+  const duplicatedTokens = Number(metrics?.duplicatedTokens);
+  if (![lines, tokens, duplicatedLines, duplicatedTokens].every((value) => Number.isInteger(value) && value >= 0)) {
+    throw new Error("duplication target evaluation requires non-negative integer metrics.");
+  }
+  if (lines === 0 || tokens === 0 || duplicatedLines > lines || duplicatedTokens > tokens) {
+    throw new Error("duplication target evaluation requires positive totals and valid duplicated counts.");
+  }
+  const lineRatio = duplicatedLines / lines;
+  const tokenRatio = duplicatedTokens / tokens;
+  return {
+    targetPercentage: target * 100,
+    lineRatio,
+    tokenRatio,
+    lineStatus: lineRatio <= target ? "TARGET_MET" : "NOT_READY_FOR_3_PERCENT_ENFORCEMENT",
+    tokenStatus: tokenRatio <= target ? "TARGET_MET" : "NOT_READY_FOR_3_PERCENT_ENFORCEMENT",
+    status: lineRatio <= target && tokenRatio <= target ? "TARGET_MET" : "NOT_READY_FOR_3_PERCENT_ENFORCEMENT",
   };
 }
 

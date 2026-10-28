@@ -11,8 +11,10 @@ import {
   DUPLICATION_POLICY_FINGERPRINT,
   DUPLICATION_POLICY_VERSION,
   DUPLICATION_SCOPES,
+  DUPLICATION_TARGET_PERCENTAGE,
   DUPLICATION_TOOL,
   DUPLICATION_TOOL_VERSION,
+  evaluateDuplicationTarget,
   readJscpdFingerprints,
   readJscpdMetrics,
   readJscpdOccurrences,
@@ -48,6 +50,18 @@ test("stable duplication baseline passes and a lower percentage is accepted", ()
     compareDuplicationMetrics({ clones: 2, lines: 1000, tokens: 10000, duplicatedLines: 20, duplicatedTokens: 200 }, BASELINE.scopes.runtime).status,
     "PASS",
   );
+});
+
+test("the three percent target uses raw line and token fractions", () => {
+  const exact = evaluateDuplicationTarget({ lines: 100, tokens: 200, duplicatedLines: 3, duplicatedTokens: 6 });
+  assert.equal(exact.status, "TARGET_MET");
+  assert.equal(exact.lineRatio, 0.03);
+  assert.equal(exact.tokenRatio, 0.03);
+  const above = evaluateDuplicationTarget({ lines: 100, tokens: 200, duplicatedLines: 4, duplicatedTokens: 6 });
+  assert.equal(above.status, "NOT_READY_FOR_3_PERCENT_ENFORCEMENT");
+  assert.equal(above.lineStatus, "NOT_READY_FOR_3_PERCENT_ENFORCEMENT");
+  assert.equal(above.tokenStatus, "TARGET_MET");
+  assert.equal(exact.targetPercentage, DUPLICATION_TARGET_PERCENTAGE * 100);
 });
 
 test("current policy fingerprint is persisted and accepted", () => {

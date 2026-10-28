@@ -183,6 +183,9 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
     "scripts/checks/check-9c-public-facades.mjs",
     "scripts/checks/check-doc-visuals.mjs",
     "scripts/audits/audit-supabase-migration-trees.mjs",
+    "scripts/ci/duplication-publication.mjs",
+    "Invoke-DuplicationPublicationGuard",
+    "DUPLICATION_PUBLICATION_ROOT",
     "run-dynamic-candidate-check.mjs",
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

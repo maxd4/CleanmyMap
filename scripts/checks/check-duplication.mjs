@@ -18,6 +18,7 @@ import {
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
+import { writeDuplicationPublicationProof } from "../ci/duplication-publication.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -77,7 +78,7 @@ export function verifyExecutedJscpdVersion({
   return { expected: DUPLICATION_TOOL_VERSION, actual, runnerPath };
 }
 
-function runScope(scopeName, baseline) {
+function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
   const baselineFileName = scopeName === "fixtures/data" ? "duplication-data-baseline.json" : `duplication-${scopeName}-baseline.json`;
   const nativeBaselinePath = path.join(nativeBaselineDirectory, baselineFileName);
   if (!fs.existsSync(nativeBaselinePath)) throw new Error(`duplication baseline missing: ${nativeBaselinePath}`);
@@ -107,11 +108,23 @@ function runScope(scopeName, baseline) {
     const comparison = compareDuplicationMetrics(metrics, baseline.scopes[scopeName], scopeName);
     const failures = [...comparison.failures];
     if (result.status !== 0) failures.push(`jscpd execution failed (exit ${result.status})`);
+    const reportArtifacts = reportDirectory
+      ? (() => {
+        const scopeDirectory = path.join(reportDirectory, scopeName);
+        fs.mkdirSync(scopeDirectory, { recursive: true });
+        const persistentJsonPath = path.join(scopeDirectory, "jscpd-report.json");
+        const persistentSarifPath = path.join(scopeDirectory, "jscpd-report.sarif");
+        fs.copyFileSync(reportPath, persistentJsonPath);
+        fs.copyFileSync(sarifPath, persistentSarifPath);
+        return { jsonPath: persistentJsonPath, sarifPath: persistentSarifPath };
+      })()
+      : null;
     return {
       scopeName,
       metrics,
       fingerprints,
       occurrences,
+      reportArtifacts,
       comparison: {
         ...comparison,
         status: failures.length > 0 ? "FAIL" : comparison.status,
@@ -123,12 +136,17 @@ function runScope(scopeName, baseline) {
   }
 }
 
-export function runDuplicationPolicy() {
+export function runDuplicationPolicy({ publicationRoot = process.env.CMM_DUPLICATION_PUBLICATION_ROOT ?? null } = {}) {
   const baseline = JSON.parse(fs.readFileSync(metricsBaselinePath, "utf8"));
   assertBaselineFresh(baseline);
   const toolVersion = verifyExecutedJscpdVersion();
   const auditedSha = git(["rev-parse", "HEAD"]);
-  const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScope(scopeName, baseline));
+  const publicationDirectory = publicationRoot
+    ? path.join(path.resolve(publicationRoot), auditedSha, `run-${Date.now()}-${process.pid}`)
+    : null;
+  const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScope(scopeName, baseline, {
+    reportDirectory: publicationDirectory,
+  }));
   if (!fs.existsSync(justificationsPath)) {
     throw new Error(`duplication justifications missing: ${justificationsPath}`);
   }
@@ -163,7 +181,7 @@ export function runDuplicationPolicy() {
     };
     result.comparison = compareDuplicationMetrics(result.metrics, scopeBaseline, result.scopeName);
   }
-  return { baseline, results, justificationReport, toolVersion };
+  return { baseline, results, justificationReport, toolVersion, publicationDirectory };
 }
 
 export function formatDuplicationReport({ results, justificationReport = null, toolVersion = null }) {
@@ -230,6 +248,19 @@ async function main() {
         },
         details: { failures: comparison.failures, toolVersion: report.toolVersion },
       });
+    }
+    if (report.publicationDirectory) {
+      const publication = writeDuplicationPublicationProof({
+        repositoryRoot,
+        candidateSha,
+        results: report.results,
+        baseline: report.baseline,
+        justificationReport: report.justificationReport,
+        toolVersion: report.toolVersion,
+        publicationRoot: path.dirname(path.dirname(report.publicationDirectory)),
+        runId: path.basename(report.publicationDirectory),
+      });
+      console.log(`DUPLICATION_PUBLICATION_PROOF_WRITTEN: ${publication.proofPath}`);
     }
     console.log(formatDuplicationReport(report));
     const statuses = report.results.map((result) => result.comparison.status);
