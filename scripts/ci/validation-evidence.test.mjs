@@ -181,6 +181,65 @@ test("STAGED candidate fingerprints use the index rather than WORKTREE file list
   }
 });
 
+test("STAGED candidate fingerprints ignore a WORKTREE symlink replacing an indexed file", (t) => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    fs.writeFileSync(path.join(root, "candidate.txt"), "committed\n");
+    git(root, ["add", "candidate.txt"]);
+    git(root, ["commit", "--quiet", "-m", "baseline"]);
+
+    fs.writeFileSync(path.join(root, "candidate.txt"), "staged\n");
+    git(root, ["add", "candidate.txt"]);
+    fs.rmSync(path.join(root, "candidate.txt"));
+    const target = path.join(root, "worktree-target.txt");
+    fs.writeFileSync(target, "worktree target\n");
+    try {
+      fs.symlinkSync(target, path.join(root, "candidate.txt"), "file");
+    } catch (error) {
+      t.skip(`symlink fixtures unavailable on this platform: ${error.message}`);
+      return;
+    }
+
+    const stagedFingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: ["candidate.txt"],
+      candidateSha: getCandidateSha(root),
+    });
+
+    assert.match(stagedFingerprint, /^[0-9a-f]{64}$/);
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("WORKTREE_LIVE candidate fingerprints refuse a symlink path", (t) => {
+  const root = makeRoot();
+  try {
+    const target = path.join(root, "outside.txt");
+    fs.writeFileSync(target, "outside\n");
+    try {
+      fs.symlinkSync(target, path.join(root, "candidate.txt"), "file");
+    } catch (error) {
+      t.skip(`symlink fixtures unavailable on this platform: ${error.message}`);
+      return;
+    }
+
+    assert.throws(
+      () => createCandidateFingerprint({
+        repositoryRoot: root,
+        candidateScope: "WORKTREE_LIVE",
+        changedFiles: ["candidate.txt"],
+        candidateSha,
+      }),
+      /symbolic-link|symlink/i,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("STAGED candidate fingerprints fail closed when the index cannot be read", () => {
   const root = makeRoot();
   try {

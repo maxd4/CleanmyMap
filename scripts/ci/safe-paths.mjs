@@ -55,8 +55,8 @@ export function assertSafeDirectoryRoot(value, { label = "directory root" } = {}
   return absolute;
 }
 
-export function resolvePathWithinRoot(root, relativePath, { label = "relative path" } = {}) {
-  const normalizedRoot = assertNoSymlinkInPath(root, { label: `${label} root` });
+export function resolveLexicalPathWithinRoot(root, relativePath, { label = "relative path" } = {}) {
+  const normalizedRoot = path.resolve(root);
   const normalized = validatePathValue(relativePath, label);
   const segments = normalized.split("/");
   if (isPortableAbsolute(normalized) || segments.includes("..")) {
@@ -67,6 +67,12 @@ export function resolvePathWithinRoot(root, relativePath, { label = "relative pa
   if (relative.startsWith("..") || path.isAbsolute(relative)) {
     throw new Error(`Path escapes its ${label} root: ${relativePath}`);
   }
+  return candidate;
+}
+
+export function resolvePathWithinRoot(root, relativePath, { label = "relative path" } = {}) {
+  const normalizedRoot = assertNoSymlinkInPath(root, { label: `${label} root` });
+  const candidate = resolveLexicalPathWithinRoot(normalizedRoot, relativePath, { label });
   return assertNoSymlinkInPath(candidate, { label });
 }
 

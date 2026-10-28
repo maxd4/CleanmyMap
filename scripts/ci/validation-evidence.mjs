@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { gitExecutable } from "./git-executable.mjs";
-import { resolvePathWithinRoot } from "./safe-paths.mjs";
+import { resolveLexicalPathWithinRoot, resolvePathWithinRoot } from "./safe-paths.mjs";
 
 const VALIDATION_EVIDENCE_VERSION = 2;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/i;
@@ -47,7 +47,7 @@ export function getCandidateSha(repositoryRoot = process.cwd()) {
 }
 
 function readStagedFile(repositoryRoot, relativePath) {
-  const safeRelativePath = normalizeCandidatePath(repositoryRoot, relativePath);
+  const safeRelativePath = normalizeCandidatePath(repositoryRoot, relativePath, "STAGED");
   try {
     return execFileSync(gitExecutable(), ["show", `:${safeRelativePath}`], {
       cwd: repositoryRoot,
@@ -70,7 +70,7 @@ function readStagedFile(repositoryRoot, relativePath) {
 }
 
 function readCandidateFile(repositoryRoot, relativePath, candidateScope) {
-  const safeRelativePath = normalizeCandidatePath(repositoryRoot, relativePath);
+  const safeRelativePath = normalizeCandidatePath(repositoryRoot, relativePath, candidateScope);
   if (candidateScope === "STAGED") return readStagedFile(repositoryRoot, safeRelativePath);
   const absolutePath = resolvePathWithinRoot(repositoryRoot, safeRelativePath, { label: "validation candidate" });
   try {
@@ -80,11 +80,14 @@ function readCandidateFile(repositoryRoot, relativePath, candidateScope) {
   }
 }
 
-function normalizeCandidatePath(repositoryRoot, relativePath) {
+function normalizeCandidatePath(repositoryRoot, relativePath, candidateScope = "WORKTREE_LIVE") {
   const normalized = normalizePath(relativePath);
+  const resolveCandidatePath = candidateScope === "STAGED"
+    ? resolveLexicalPathWithinRoot
+    : resolvePathWithinRoot;
   return path.relative(
     path.resolve(repositoryRoot),
-    resolvePathWithinRoot(repositoryRoot, normalized, { label: "validation candidate" }),
+    resolveCandidatePath(repositoryRoot, normalized, { label: "validation candidate" }),
   ).replaceAll("\\", "/");
 }
 
@@ -236,7 +239,7 @@ export function createCandidateFingerprint({
   const candidateFiles = scope === "STAGED"
     ? getStagedCandidateFiles(repositoryRoot)
     : changedFiles;
-  const files = [...new Set(candidateFiles.map((file) => normalizeCandidatePath(repositoryRoot, file)))].sort((left, right) => left.localeCompare(right, "en"));
+  const files = [...new Set(candidateFiles.map((file) => normalizeCandidatePath(repositoryRoot, file, scope)))].sort((left, right) => left.localeCompare(right, "en"));
   const hash = createHash("sha256");
   hash.update(JSON.stringify({
     version: VALIDATION_EVIDENCE_VERSION,
