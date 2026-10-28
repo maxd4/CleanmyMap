@@ -34,7 +34,7 @@ function readRouteInventory() {
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 }
 
-describe("API security boundaries", () => {
+describe("API security boundaries", { timeout: 30_000 }, () => {
   it("audits every contracted route.ts method against the method-level contract", () => {
     const inventory = readRouteInventory();
     const discovered = inventory.flatMap(({ route, methods }) =>

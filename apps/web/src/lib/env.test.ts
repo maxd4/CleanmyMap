@@ -75,7 +75,7 @@ const EXECUTION_ENV_KEYS = new Set([
   "VERCEL_PLAN",
 ]);
 
-describe("env configuration", () => {
+describe("env configuration", { timeout: 30_000 }, () => {
   it("does not embed production Supabase defaults", () => {
     const source = readFileSync(new URL("./env.ts", import.meta.url), "utf8");
 

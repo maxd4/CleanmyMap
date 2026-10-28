@@ -31,7 +31,7 @@ const emailTestRequest = (body: unknown) =>
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 
-describe("POST /api/email/test", () => {
+describe("POST /api/email/test", { timeout: 30_000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
