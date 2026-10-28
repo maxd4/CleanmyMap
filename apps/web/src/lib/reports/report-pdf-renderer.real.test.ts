@@ -17,7 +17,7 @@ vi.mock("@sparticuz/chromium", () => ({
 
 import { renderOfficialReportPdf } from "./report-pdf-renderer";
 
-const runRealPdfTest = process.env.CI === "reports-05-real" && existsSync(browserPath) ? it : it.skip;
+const shouldRunRealPdfTest = process.env.CI === "reports-05-real" && existsSync(browserPath);
 
 const payload: PdfReportPayload = {
   title: "Rapport A4 réel — Corpus déterministe",
@@ -69,7 +69,7 @@ const payload: PdfReportPayload = {
 };
 
 describe("real official PDF rendering", () => {
-  runRealPdfTest("generates A4 PDFs for both official themes without changing document content", async () => {
+  it.skipIf(!shouldRunRealPdfTest)("generates A4 PDFs for both official themes without changing document content", async () => {
     const outputDirectory = resolve(process.cwd(), "../../artifacts/reports-05");
     await mkdir(outputDirectory, { recursive: true });
 
