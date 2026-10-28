@@ -129,7 +129,7 @@ function createDocumentationFixture() {
   git(fixtureRoot, ["add", "."]);
   git(fixtureRoot, ["commit", "--quiet", "-m", "candidate documentation checker"]);
 
-  return { fixtureRoot, checkerSource, checkerRelativePath };
+  return { fixtureRoot, checkerSource, checkerRelativePath, safePathsRelativePath };
 }
 
 test("candidate runner ignores a dirty checker and its dependency comes from the candidate", () => {
@@ -252,7 +252,7 @@ test("grouped candidate runner propagates first, middle and last checker failure
 });
 
 test("candidate documentation checker scans ai-guides while a dirty checker cannot change the verdict", () => {
-  const { fixtureRoot, checkerSource, checkerRelativePath } = createDocumentationFixture();
+  const { fixtureRoot, checkerSource, checkerRelativePath, safePathsRelativePath } = createDocumentationFixture();
   try {
     assert.doesNotMatch(checkerSource, /documentation\/ai-guides\//);
     const candidateRef = git(fixtureRoot, ["rev-parse", "HEAD"]);
@@ -264,6 +264,10 @@ test("candidate documentation checker scans ai-guides while a dirty checker cann
     writeFileSync(
       checkerPath,
       "console.error('dirty documentation checker failure');\nprocess.exitCode = 1;\n",
+    );
+    writeFileSync(
+      join(fixtureRoot, ...safePathsRelativePath.split("/")),
+      "throw new Error('dirty safe-paths dependency must be invisible to the candidate');\n",
     );
 
     const result = runRunner(fixtureRoot, candidateRef, checkerRelativePath);
