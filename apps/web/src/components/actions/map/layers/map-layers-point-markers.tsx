@@ -10,6 +10,11 @@ import {
   mapItemCoordinates,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
+import type {
+  CurrentPlaceState,
+  CurrentPlaceStateMode,
+} from "@/lib/actions/pollution/current-place-state";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
 import { ActionPopupContent } from "../popup/action-popup-content";
 import {
@@ -70,6 +75,38 @@ function createActionMarkerClusterIcon(
     popupAnchor: [0, -(size / 2)],
     tooltipAnchor: [0, -(size / 2)],
   });
+}
+
+type ActionMarkerPopupProps = {
+  item: ActionPointLayerProps["items"][number];
+  color: string;
+  coords: ReturnType<typeof mapItemCoordinates>;
+  displayMode: CurrentPlaceStateMode;
+  currentPlaceState: CurrentPlaceState | null;
+  scoreScope: PollutionScoreScope;
+};
+
+function ActionMarkerPopup({
+  item,
+  color,
+  coords,
+  displayMode,
+  currentPlaceState,
+  scoreScope,
+}: ActionMarkerPopupProps) {
+  return (
+    <Popup className="glass-popup custom-popup">
+      <ActionPopupContent
+        key={item.id}
+        item={item}
+        color={color}
+        coords={coords}
+        displayMode={displayMode}
+        currentPlaceState={currentPlaceState}
+        scoreScope={scoreScope}
+      />
+    </Popup>
+  );
 }
 
 export function SignalementMarkers({
@@ -149,17 +186,14 @@ export function SignalementMarkers({
                 : renderStyle.pointOpacity ?? (isFallbackPoint ? 0.7 : 0.95),
             }}
           >
-            <Popup className="glass-popup custom-popup">
-              <ActionPopupContent
-                key={item.id}
-                item={item}
-                color={color}
-                coords={coords}
-                displayMode={displayMode}
-                currentPlaceState={currentPlaceState}
-                scoreScope={scoreScope}
-              />
-            </Popup>
+            <ActionMarkerPopup
+              item={item}
+              color={color}
+              coords={coords}
+              displayMode={displayMode}
+              currentPlaceState={currentPlaceState}
+              scoreScope={scoreScope}
+            />
           </CircleMarker>
         );
       })}
@@ -241,17 +275,14 @@ export function TrashSpotterMarkers({
               opacity: 1,
             }}
           >
-            <Popup className="glass-popup custom-popup">
-              <ActionPopupContent
-                key={item.id}
-                item={item}
-                color={color}
-                coords={coords}
-                displayMode={displayMode}
-                currentPlaceState={currentPlaceState}
-                scoreScope={scoreScope}
-              />
-            </Popup>
+            <ActionMarkerPopup
+              item={item}
+              color={color}
+              coords={coords}
+              displayMode={displayMode}
+              currentPlaceState={currentPlaceState}
+              scoreScope={scoreScope}
+            />
           </CircleMarker>
         );
       })}

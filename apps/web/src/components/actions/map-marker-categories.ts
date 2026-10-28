@@ -1,7 +1,7 @@
 import type { ActionMapItem } from"@/lib/actions/types";
-import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
  mapItemCigaretteButts,
+ mapItemObservedPollutionScore,
  mapItemType,
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
@@ -127,11 +127,7 @@ function resolveCategoryScore(
  }
 
  if (itemType === "spot") {
-   const contractScore = (item.contract as unknown as ActionDataContract | undefined)
-     ?.metadata.observedPollutionScore;
-   return typeof contractScore === "number" && Number.isFinite(contractScore)
-     ? contractScore
-     : null;
+   return mapItemObservedPollutionScore(item);
  }
 
  return resolveActionPollutionScore(item, references, {

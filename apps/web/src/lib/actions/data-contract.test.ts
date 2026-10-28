@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
   buildActionDataContract,
   mapItemDrawing,
+  mapItemObservedPollutionScore,
   mapItemShouldRenderPoint,
   mapItemVolunteersCount,
   normalizeCreatePayload,
@@ -128,6 +129,50 @@ it("keeps missing measurements nullable across the unified contract", () => {
   const mapItem = toActionMapItem(contract);
   expect(mapItem.waste_kg).toBeNull();
   expect(mapItem.cigarette_butts).toBeNull();
+});
+
+it("reads only finite observed contract scores without changing zero or missing values", () => {
+  const measured = toActionMapItem(
+    buildActionDataContract({
+      id: "observed-score-zero",
+      type: "spot",
+      status: "approved",
+      source: "trash_spotter_spots",
+      observedAt: "2026-04-08",
+      locationLabel: "Quai mesuré",
+      latitude: 48.87,
+      longitude: 2.36,
+      observedPollutionScore: 0,
+    }),
+  );
+  const missing = toActionMapItem(
+    buildActionDataContract({
+      id: "observed-score-missing",
+      type: "spot",
+      status: "approved",
+      source: "trash_spotter_spots",
+      observedAt: "2026-04-08",
+      locationLabel: "Quai non mesuré",
+      latitude: 48.87,
+      longitude: 2.36,
+    }),
+  );
+  const nonFinite = {
+    ...measured,
+    contract: measured.contract
+      ? {
+          ...measured.contract,
+          metadata: {
+            ...measured.contract.metadata,
+            observedPollutionScore: Number.NaN,
+          },
+        }
+      : undefined,
+  };
+
+  expect(mapItemObservedPollutionScore(measured)).toBe(0);
+  expect(mapItemObservedPollutionScore(missing)).toBeNull();
+  expect(mapItemObservedPollutionScore(nonFinite)).toBeNull();
 });
 
 it("keeps department attribution nullable and treats codes as strings", () => {

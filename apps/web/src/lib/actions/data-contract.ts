@@ -18,6 +18,7 @@ export {
   mapItemCoordinates,
   mapItemObservedAt,
   mapItemPostActionPollutionScore,
+  mapItemObservedPollutionScore,
   mapItemDrawing,
   mapItemShouldRenderPoint,
 } from "./contracts/contract-mappers";

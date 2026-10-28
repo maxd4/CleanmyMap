@@ -27,6 +27,10 @@ type ContractMetadataWithProvided = {
   provided?: string[];
 };
 
+type ContractMetadataWithObservedScore = {
+  observedPollutionScore?: unknown;
+};
+
 export function buildActionLocationAndMeasuresFields(contract: ActionDataContract) {
   return {
     id: contract.id,
@@ -271,6 +275,15 @@ export function mapItemPostActionPollutionScore(
   );
 
   return measured ?? null;
+}
+
+export function mapItemObservedPollutionScore(
+  item: ActionMapItem,
+): number | null {
+  const value = (
+    item.contract?.metadata as ContractMetadataWithObservedScore | undefined
+  )?.observedPollutionScore;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export function mapItemDrawing(item: ActionMapItem): ActionDrawing | null {

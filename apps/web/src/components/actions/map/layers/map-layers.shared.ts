@@ -1,7 +1,6 @@
 import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
-import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
-import { mapItemType } from "@/lib/actions/data-contract";
+import { mapItemObservedPollutionScore, mapItemType } from "@/lib/actions/data-contract";
 import { isTrashSpotterActionableItem } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 import type {
@@ -158,16 +157,12 @@ export function resolvePointPollutionScore(
   }
 
   if (itemType === "spot") {
-    const contractScore = (
-      item.contract as unknown as ActionDataContract | undefined
-    )?.metadata.observedPollutionScore;
-    return typeof contractScore === "number" && Number.isFinite(contractScore)
-      ? contractScore
-      : currentPlaceState?.scoreKind === "measured" &&
+    return mapItemObservedPollutionScore(item) ??
+      (currentPlaceState?.scoreKind === "measured" &&
           typeof currentPlaceState.score === "number" &&
           Number.isFinite(currentPlaceState.score)
         ? currentPlaceState.score
-        : null;
+        : null);
   }
 
   return resolveActionPollutionScore(item, references, {
