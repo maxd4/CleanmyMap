@@ -8,6 +8,13 @@ function readMigration(name: string): string {
     .toLowerCase();
 }
 
+function readSqlProof(name: string): string {
+  return readFileSync(new URL(`../../../../supabase/tests/${name}`, import.meta.url), "utf8")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 describe("ML4 progression and impact migration contracts", () => {
   it("serializes quiz progress and persists only threshold transitions", () => {
     const migration = readMigration("20261028000000_quiz_progression_atomicity.sql");
@@ -23,5 +30,20 @@ describe("ML4 progression and impact migration contracts", () => {
     const migration = readMigration("20261028000001_codex_usage_na_contract.sql");
     expect(migration).toContain("alter column estimated_kg_co2e_proxy drop not null");
     expect(migration).toContain("alter column estimated_kg_co2e_proxy drop default");
+  });
+
+  it("keeps the pgTAP fixtures aligned with the published RPC transitions", () => {
+    const proof = readSqlProof("quiz-progression-rpc-boundary.pgtap.sql");
+    const plan = proof.match(/select plan\((\d+)\)/)?.[1];
+    const assertionCount = [...proof.matchAll(/select (?:ok|is|throws_ok|lives_ok)\(/g)].length;
+
+    expect(plan).toBe("39");
+    expect(assertionCount).toBe(39);
+    expect(proof).toContain("the balanced milestone is not inserted while the minimum remains nine");
+    expect(proof).toContain("the second balanced transition observes nine");
+    expect(proof).toContain("the balanced milestone is persisted once under its full identity");
+    expect(proof).toContain("replaying the balanced candidate does not create a second event");
+    expect(proof).toMatch(/quiz-rpc-rollback.*threshold\":1.*source_id\":null/);
+    expect(proof).not.toMatch(/quiz-rpc-balanced.*quiz-b.*\[\]\:\:jsonb/);
   });
 });

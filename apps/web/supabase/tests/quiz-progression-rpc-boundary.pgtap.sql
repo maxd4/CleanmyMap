@@ -1,6 +1,6 @@
 begin;
 
-select plan(36);
+select plan(39);
 
 select ok(has_function_privilege('service_role', 'public.record_quiz_progression(text, text, text[], jsonb)', 'EXECUTE'), 'service_role can execute quiz progression RPC');
 select ok(not has_function_privilege('authenticated', 'public.record_quiz_progression(text, text, text[], jsonb)', 'EXECUTE'), 'authenticated cannot execute quiz progression RPC');
@@ -61,14 +61,32 @@ select is((public.record_quiz_progression(
   'quiz-rpc-balanced', 'quiz-a', array['quiz-a', 'quiz-b'],
   '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
 ) ->> 'previous_balanced_count')::integer, 9, 'balanced progression observes nine');
+select is(jsonb_array_length(public.record_quiz_progression(
+  'quiz-rpc-balanced', 'quiz-a', array['quiz-a', 'quiz-b'],
+  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
+) -> 'inserted_events'), 0, 'the balanced milestone is not inserted while the minimum remains nine');
 select is((public.record_quiz_progression(
-  'quiz-rpc-balanced', 'quiz-b', array['quiz-a', 'quiz-b'], '[]'::jsonb
+  'quiz-rpc-balanced', 'quiz-b', array['quiz-a', 'quiz-b'],
+  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
+) ->> 'previous_balanced_count')::integer, 9, 'the second balanced transition observes nine');
+select is((public.record_quiz_progression(
+  'quiz-rpc-balanced', 'quiz-b', array['quiz-a', 'quiz-b'],
+  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
 ) ->> 'balanced_count')::integer, 10, 'balanced progression reaches ten');
-select is((select count(*)::integer from public.progression_events where user_id = 'quiz-rpc-balanced' and source_id = 'quiz-rpc-balanced-10'), 1, 'the balanced milestone is persisted');
+select is((select count(*)::integer from public.progression_events
+  where user_id = 'quiz-rpc-balanced'
+    and event_type = 'quiz_question_type_balance_milestone'
+    and source_table = 'quiz_type_balance_progress'
+    and source_id = 'quiz-rpc-balanced-10'
+    and status_phase = 'validated'), 1, 'the balanced milestone is persisted once under its full identity');
 select is((select xp_awarded from public.progression_events where user_id = 'quiz-rpc-balanced' and source_id = 'quiz-rpc-balanced-10'), 2, 'the balanced milestone keeps XP');
 select is((select metadata from public.progression_events where user_id = 'quiz-rpc-balanced' and source_id = 'quiz-rpc-balanced-10'), '{"case":"balanced-9-to-10"}'::jsonb, 'the balanced milestone keeps metadata');
 select is((select correct_count from public.quiz_type_progress where user_id = 'quiz-rpc-balanced' and question_type = 'quiz-a'), 10, 'balanced first type is ten');
 select is((select correct_count from public.quiz_type_progress where user_id = 'quiz-rpc-balanced' and question_type = 'quiz-b'), 10, 'balanced second type is ten');
+select is(jsonb_array_length(public.record_quiz_progression(
+  'quiz-rpc-balanced', 'quiz-b', array['quiz-a', 'quiz-b'],
+  '[{"metric":"balance","threshold":10,"user_id":"quiz-rpc-balanced","event_type":"quiz_question_type_balance_milestone","source_table":"quiz_type_balance_progress","source_id":"quiz-rpc-balanced-10","status_phase":"validated","weight":1,"xp_base":2,"xp_awarded":2,"occurred_on":"2026-10-28","metadata":{"case":"balanced-9-to-10"}}]'::jsonb
+) -> 'inserted_events'), 0, 'replaying the balanced candidate does not create a second event');
 
 select throws_ok($$select public.record_quiz_progression(
   'quiz-rpc-invalid', 'quiz-a', array['quiz-a'],
@@ -83,7 +101,7 @@ select throws_ok($$select public.record_quiz_progression(
 
 select throws_ok($$select public.record_quiz_progression(
   'quiz-rpc-rollback', 'quiz-a', array['quiz-a'],
-  '[{"metric":"type","threshold":0,"user_id":"quiz-rpc-rollback","event_type":"quiz_question_type_milestone","source_table":"quiz_type_progress","source_id":null,"status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-28","metadata":{}}]'::jsonb
+  '[{"metric":"type","threshold":1,"user_id":"quiz-rpc-rollback","event_type":"quiz_question_type_milestone","source_table":"quiz_type_progress","source_id":null,"status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-28","metadata":{}}]'::jsonb
 )$$, '23502', null, 'an insertion error aborts the transaction');
 select is((select correct_count from public.quiz_type_progress where user_id = 'quiz-rpc-rollback' and question_type = 'quiz-a'), 0, 'an insertion error rolls back the counter');
 select is((select count(*)::integer from public.progression_events where user_id = 'quiz-rpc-rollback'), 0, 'an insertion error leaves no event');
