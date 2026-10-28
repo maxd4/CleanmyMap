@@ -64,6 +64,8 @@ export function runNodeCoverage({
   const executionEnvironment = { ...process.env };
   if (identity?.verified) {
     executionEnvironment.CMM_COVERAGE_CANDIDATE_IDENTITY = JSON.stringify(identity);
+  } else {
+    delete executionEnvironment.CMM_COVERAGE_CANDIDATE_IDENTITY;
   }
   console.log(`COVERAGE_CANDIDATE_PREFLIGHT: ${identity?.verified ? "PASS" : "DIAGNOSTIC_WORKTREE_LIVE"} (node)`);
 

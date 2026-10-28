@@ -344,10 +344,12 @@ test("exact Python publication records the verified candidate identity", async (
   const publicationRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-identity-exact-"));
   const previousCandidate = process.env.CANDIDATE_SHA;
   const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  const previousIdentity = process.env.CMM_COVERAGE_CANDIDATE_IDENTITY;
   try {
     fs.writeFileSync(path.join(fixture.root, "maintenance", "python", "coverage.xml"), "<coverage line-rate=\"1\" branch-rate=\"1\" />\n", "utf8");
     process.env.CANDIDATE_SHA = fixture.sha;
     process.env.CMM_COVERAGE_PUBLICATION_ROOT = publicationRoot;
+    delete process.env.CMM_COVERAGE_CANDIDATE_IDENTITY;
     const { writeCoveragePublicationProof } = await import("./coverage-publication.mjs");
     const proof = writeCoveragePublicationProof({ repositoryRoot: fixture.root, scope: "python" });
     assert.equal(proof.candidateScope, "CI_CANDIDATE");
@@ -359,6 +361,8 @@ test("exact Python publication records the verified candidate identity", async (
     else process.env.CANDIDATE_SHA = previousCandidate;
     if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
     else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    if (previousIdentity === undefined) delete process.env.CMM_COVERAGE_CANDIDATE_IDENTITY;
+    else process.env.CMM_COVERAGE_CANDIDATE_IDENTITY = previousIdentity;
     fs.rmSync(fixture.root, { recursive: true, force: true });
     fs.rmSync(publicationRoot, { recursive: true, force: true });
   }
