@@ -267,4 +267,67 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     })).resolves.toMatchObject({ status: 500 });
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
+
+  it("rejects an empty cigarette-butts measurement before touching persistence", async () => {
+    configureParticipantImpactSupabase([createParticipantWithStatus("confirmed")]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: null, massKg: null, condition: "propre" },
+    });
+
+    expect(response.status).toBe(422);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("reuses existing measurements when the payload supplies only the other measure", async () => {
+    const participantWithWaste = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_waste_kg: 8,
+      individual_waste_condition: null,
+      individual_waste_measurement_method: null,
+    });
+    configureParticipantImpactSupabase([participantWithWaste]);
+    const wasteFallbackResponse = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: 3, massKg: null, condition: "propre" },
+    });
+    expect(wasteFallbackResponse.status).toBe(200);
+    expect(participantWithWaste).toMatchObject({
+      individual_waste_kg: 8,
+      individual_waste_condition: "sec",
+      individual_waste_measurement_method: "inconnue",
+    });
+
+    const participantWithButts = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: 2,
+      individual_cigarette_butts_condition: null,
+    });
+    configureParticipantImpactSupabase([participantWithButts]);
+    const buttsFallbackResponse = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+    expect(buttsFallbackResponse.status).toBe(200);
+    expect(participantWithButts).toMatchObject({
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: 2,
+      individual_cigarette_butts_condition: "propre",
+    });
+  });
+
+  it("keeps a cleared measurement explicitly empty and does not stamp an actor", async () => {
+    const participant = createParticipantWithStatus("confirmed");
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({ participantId: "participant-1", waste: null });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact).toBeNull();
+    expect(participant).toMatchObject({
+      individual_impact_measured_by: null,
+      individual_impact_measured_at: null,
+    });
+  });
 });

@@ -299,4 +299,62 @@ describe("role attestation route boundaries", () => {
     mocks.server.mockReturnValueOnce({ from: vi.fn(() => query(null, { message: "participant read failed" })) });
     await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }) }), context())).resolves.toMatchObject({ status: 500 });
   });
+
+  it("keeps optional identity and organizer values fail-closed on reads", async () => {
+    mocks.access.mockResolvedValueOnce({ ok: true, userId: "participant-1" });
+    mocks.identity.mockResolvedValueOnce(null);
+    mocks.organizers.mockResolvedValueOnce([{ organizer_clerk_id: " " }]);
+    mocks.canManage.mockReturnValueOnce(false);
+    mocks.canManageGlobal.mockReturnValueOnce(false);
+    const { GET } = await import("./route");
+    const response = await GET(request("/api/actions/action-1/role-attestations"), context());
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).canReview).toBe(false);
+    expect(mocks.canManage).toHaveBeenCalledWith(
+      expect.objectContaining({ role: null, activeRole: null }),
+      expect.anything(),
+      [],
+    );
+  });
+
+  it("requires a reason for a rejection before policy evaluation", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "reject" }),
+    }), context());
+
+    expect(response.status).toBe(422);
+    expect(mocks.policy).not.toHaveBeenCalled();
+    expect(mocks.review).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["forbidden", 403],
+    ["reason_required", 400],
+    ["input_invalid", 400],
+    ["role_invalid", 400],
+  ] as const)("maps delegated %s errors without exposing details", async (message, status) => {
+    mocks.review.mockRejectedValueOnce(new Error(message));
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }),
+    }), context());
+
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.not.toHaveProperty("details");
+  });
+
+  it("maps a non-Error delegated failure through the generic API error boundary", async () => {
+    mocks.review.mockRejectedValueOnce("unexpected review failure");
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }),
+    }), context());
+
+    expect(response.status).toBe(500);
+  });
 });

@@ -108,4 +108,23 @@ describe("api/actions query resolution and projections", () => {
 
     expect(payload.items).toEqual([{ id: "kept", quality_grade: "A", to_fix_priority: false, impact_level: "fort" }]);
   });
+
+  it("covers deterministic type ordering and association scope fallbacks", async () => {
+    const { buildActionsRoutePayload, resolveActionListQuery } = await import("./route.query");
+    const ascending = resolveActionListQuery(new URL("http://localhost/api/actions?types=action,spot"));
+    const duplicate = resolveActionListQuery(new URL("http://localhost/api/actions?types=action,action"));
+    expect(JSON.parse(ascending.snapshotKey).types).toBe("action,spot");
+    expect(JSON.parse(duplicate.snapshotKey).types).toBe("action,action");
+
+    const association = resolveActionListQuery(new URL("http://localhost/api/actions?scope=association&association=asso"));
+    fetchUnifiedActionContractsMock.mockResolvedValue({ items: [], sourceHealth: { partial: false } });
+    filterActionContractsByScopeMock.mockImplementation((items: unknown[]) => items);
+    const payload = await buildActionsRoutePayload(association, vi.fn() as never);
+
+    expect(payload).toMatchObject({ count: 0, items: [], partialSource: false });
+    expect(fetchUnifiedActionContractsMock).toHaveBeenLastCalledWith(
+      { client: true },
+      expect.objectContaining({ status: "approved", includeFuturePublicActions: false }),
+    );
+  });
 });
