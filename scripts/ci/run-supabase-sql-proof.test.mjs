@@ -7,6 +7,7 @@ import {
   attestProofResult,
   main,
   parsePgTapOutput,
+  runSupabaseSqlProof,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
 
@@ -260,6 +261,23 @@ test("rejected proof reaches the runner failure exit code", async () => {
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+test("process spawn rejections reach the report as an unexecuted database proof", async () => {
+  let report;
+  await assert.rejects(
+    () => runSupabaseSqlProof({
+      commandRunner: async () => { throw new Error("spawn failed"); },
+      writeReportImpl: (nextReport) => { report = nextReport; },
+    }),
+    /spawn failed/,
+  );
+  assert.equal(report.outcome, "FAIL");
+  const failedRecord = report.records.find((record) => record.category === "PGTAP");
+  assert.equal(failedRecord.status, "DB_SEMANTICS_NOT_EXECUTED");
+  assert.equal(failedRecord.outcome, "FAIL");
+  assert.match(failedRecord.reason, /spawn failed/);
+  assert.ok(report.records.filter((record) => record.status === "NOT_RUN").every((record) => /not reached after failure/.test(record.reason)));
 });
 
 test("SQL completion markers cannot precede a later assertion", () => {

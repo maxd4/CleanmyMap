@@ -74,13 +74,18 @@ function createDocumentationFixture() {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "cleanmymap-doc-candidate-"));
   const checkerRelativePath = "scripts/checks/check-documentation-governance.mjs";
   const viewRelativePath = "scripts/checks/repository-view.mjs";
+  const gitExecutableRelativePath = "scripts/ci/git-executable.mjs";
+  const safePathsRelativePath = "scripts/ci/safe-paths.mjs";
   const checkerSource = readFileSync(join(REPO_ROOT, ...checkerRelativePath.split("/")), "utf8");
   const viewSource = readFileSync(join(REPO_ROOT, ...viewRelativePath.split("/")), "utf8").replace(
     '["ls-tree", "-r", "-z", ref, "--"]',
     '["ls-tree", "--full-tree", "-r", "-z", ref, "--"]',
   );
+  const gitExecutableSource = readFileSync(join(REPO_ROOT, ...gitExecutableRelativePath.split("/")), "utf8");
+  const safePathsSource = readFileSync(join(REPO_ROOT, ...safePathsRelativePath.split("/")), "utf8");
 
   mkdirSync(join(fixtureRoot, "scripts", "checks"), { recursive: true });
+  mkdirSync(join(fixtureRoot, "scripts", "ci"), { recursive: true });
   mkdirSync(join(fixtureRoot, "documentation", "security"), { recursive: true });
   mkdirSync(join(fixtureRoot, "documentation", "ai-guides"), { recursive: true });
   git(fixtureRoot, ["init", "--quiet"]);
@@ -89,6 +94,8 @@ function createDocumentationFixture() {
 
   writeFileSync(join(fixtureRoot, "scripts", "checks", "repository-view.mjs"), viewSource);
   writeFileSync(join(fixtureRoot, "scripts", "checks", "check-documentation-governance.mjs"), checkerSource);
+  writeFileSync(join(fixtureRoot, "scripts", "ci", "git-executable.mjs"), gitExecutableSource);
+  writeFileSync(join(fixtureRoot, "scripts", "ci", "safe-paths.mjs"), safePathsSource);
   writeFileSync(
     join(fixtureRoot, "documentation", "security", "dependency-advisory-governance.md"),
     [

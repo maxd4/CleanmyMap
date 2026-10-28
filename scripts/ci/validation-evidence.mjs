@@ -54,8 +54,18 @@ function readStagedFile(repositoryRoot, relativePath) {
       encoding: "buffer",
       stdio: ["ignore", "pipe", "ignore"],
     });
-  } catch {
-    return null;
+  } catch (error) {
+    try {
+      execFileSync(gitExecutable(), ["ls-files", "--cached", "--error-unmatch", "--", safeRelativePath], {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+    } catch (indexError) {
+      if (indexError?.status === 1) return null;
+      throw new Error(`Unable to inspect staged candidate path ${safeRelativePath}: ${indexError instanceof Error ? indexError.message : String(indexError)}`);
+    }
+    throw new Error(`Unable to read staged candidate path ${safeRelativePath}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -78,7 +88,7 @@ function normalizeCandidatePath(repositoryRoot, relativePath) {
   ).replaceAll("\\", "/");
 }
 
-function readGitLines(repositoryRoot, args) {
+function readGitLines(repositoryRoot, args, { allowFailure = true } = {}) {
   try {
     return execFileSync(gitExecutable(), args, {
       cwd: repositoryRoot,
@@ -88,7 +98,8 @@ function readGitLines(repositoryRoot, args) {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
-  } catch {
+  } catch (error) {
+    if (!allowFailure) throw error;
     return [];
   }
 }
@@ -99,6 +110,16 @@ export function getWorktreeCandidateFiles(repositoryRoot = process.cwd()) {
     ...readGitLines(repositoryRoot, ["diff", "--cached", "--name-only", "--"]),
     ...readGitLines(repositoryRoot, ["ls-files", "--others", "--exclude-standard"]),
   ].map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
+}
+
+function getStagedCandidateFiles(repositoryRoot = process.cwd()) {
+  try {
+    return [...new Set(
+      readGitLines(repositoryRoot, ["diff", "--cached", "--name-only", "--"], { allowFailure: false }).map(normalizePath),
+    )].sort((left, right) => left.localeCompare(right, "en"));
+  } catch (error) {
+    throw new Error(`STAGED candidate files could not be read: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 const COVERAGE_IDENTITY_VERSION = 1;
@@ -212,7 +233,10 @@ export function createCandidateFingerprint({
   candidateSha,
 } = {}) {
   const scope = String(candidateScope).toUpperCase();
-  const files = [...new Set(changedFiles.map((file) => normalizeCandidatePath(repositoryRoot, file)))].sort((left, right) => left.localeCompare(right, "en"));
+  const candidateFiles = scope === "STAGED"
+    ? getStagedCandidateFiles(repositoryRoot)
+    : changedFiles;
+  const files = [...new Set(candidateFiles.map((file) => normalizeCandidatePath(repositoryRoot, file)))].sort((left, right) => left.localeCompare(right, "en"));
   const hash = createHash("sha256");
   hash.update(JSON.stringify({
     version: VALIDATION_EVIDENCE_VERSION,

@@ -269,9 +269,6 @@ function runCommand(command, args, { logName, env = trustedCommandEnvironment(pr
       writeFileSync(resolve(logDirectory, `${logName}.log`), output, "utf8");
       resolveResult({ code: code ?? 1, signal, stdout, stderr, output });
     });
-  }).catch((error) => {
-    console.error(error instanceof Error ? error.stack ?? error.message : String(error));
-    process.exitCode = 1;
   });
 }
 
@@ -306,10 +303,10 @@ export function attestProofResult(record, result, validate) {
   }
 }
 
-async function runProof(record, command, args, validate) {
+async function runProof(record, command, args, validate, commandRunner = runCommand) {
   let result;
   try {
-    result = await runCommand(command, args, { logName: record.path.replaceAll("/", "__").replaceAll(".", "_") });
+    result = await commandRunner(command, args, { logName: record.path.replaceAll("/", "__").replaceAll(".", "_") });
   } catch (error) {
     record.status = "DB_SEMANTICS_NOT_EXECUTED";
     record.outcome = "FAIL";
@@ -328,7 +325,7 @@ function writeReport(report) {
   writeFileSync(evidencePath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
-export async function runSupabaseSqlProof({ sha, run = true } = {}) {
+export async function runSupabaseSqlProof({ sha, run = true, commandRunner = runCommand, writeReportImpl = writeReport } = {}) {
   const candidate = candidateSha(sha);
   const inventory = inventorySqlProofs();
   const records = [
@@ -351,12 +348,12 @@ export async function runSupabaseSqlProof({ sha, run = true } = {}) {
     records,
   };
   if (!run) {
-    writeReport(report);
+    writeReportImpl(report);
     return report;
   }
   if (inventory.unregistered.length > 0) {
     report.outcome = "FAIL";
-    writeReport(report);
+    writeReportImpl(report);
     throw new Error(`Unregistered SQL proof files: ${inventory.unregistered.join(", ")}`);
   }
 
@@ -366,7 +363,7 @@ export async function runSupabaseSqlProof({ sha, run = true } = {}) {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const expectedPlan = extractPlan(sql);
         record.expectedAssertions = expectedPlan;
-        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan));
+        await runProof(record, commandName(), ["test", "db", "--workdir", "apps/web", "--local", `supabase/tests/${record.path.split("/").at(-1)}`], (output) => parsePgTapOutput(output, expectedPlan), commandRunner);
       } else if (record.category === "SQL_CONTRACT") {
         const sql = readFileSync(resolve(repositoryRoot, record.path), "utf8");
         const marker = CONTRACT_MARKERS.get(record.path);
@@ -382,13 +379,13 @@ export async function runSupabaseSqlProof({ sha, run = true } = {}) {
         await runProof(record, commandName(), ["db", "query", "--workdir", "apps/web", "--local", sql], (output) => {
           if (!output.includes(marker)) throw new Error("completion marker is absent from the PostgreSQL output");
           return { marker };
-        });
+        }, commandRunner);
       } else if (record.category === "MULTISESSION") {
         const expectedOutput = MULTISESSION_PROOFS.get(record.path);
         await runProof(record, process.execPath, [record.path], (output) => {
           if (!expectedOutput.test(output)) throw new Error("completion marker is absent from the multi-session output");
           return { marker: expectedOutput.source };
-        });
+        }, commandRunner);
       }
     }
     report.outcome = "PASS";
@@ -398,10 +395,10 @@ export async function runSupabaseSqlProof({ sha, run = true } = {}) {
     for (const record of records) {
       if (record.status === "NOT_RUN") record.reason = `not reached after failure in ${failedPath}`;
     }
-    writeReport(report);
+    writeReportImpl(report);
     throw error;
   }
-  writeReport(report);
+  writeReportImpl(report);
   return report;
 }
 

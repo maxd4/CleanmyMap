@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -8,8 +9,11 @@ import { test } from "node:test";
 
 import {
   acquireFullValidationLock,
+  createCandidateFingerprint,
+  getCandidateSha,
   removePathWithRetry,
 } from "./validation-evidence.mjs";
+import { gitExecutable } from "./git-executable.mjs";
 
 const candidateSha = "a".repeat(40);
 
@@ -30,6 +34,10 @@ function writeStaleLock(root) {
     candidateSha,
     startedAt: "2020-01-01T00:00:00.000Z",
   })}\n`);
+}
+
+function git(root, args) {
+  return execFileSync(gitExecutable(), args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 function runConcurrentOwner(root) {
@@ -113,6 +121,90 @@ test("uses distinct cryptographic identifiers for sequential FULL lock execution
     assert.match(
       second.executionId,
       /^\d+-\d+-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("STAGED candidate fingerprints use the index rather than WORKTREE file lists", () => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    git(root, ["config", "user.email", "validation-test.local"]);
+    git(root, ["config", "user.name", "Validation Evidence Test"]);
+    fs.writeFileSync(path.join(root, "candidate.txt"), "committed\n");
+    git(root, ["add", "candidate.txt"]);
+    git(root, ["commit", "--quiet", "-m", "baseline"]);
+
+    fs.writeFileSync(path.join(root, "candidate.txt"), "staged\n");
+    git(root, ["add", "candidate.txt"]);
+    fs.writeFileSync(path.join(root, "worktree-only.txt"), "dirty\n");
+
+    const candidateSha = getCandidateSha(root);
+    const stagedFingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: ["candidate.txt"],
+      candidateSha,
+    });
+    const stagedFingerprintWithWorktreeList = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      changedFiles: ["candidate.txt", "worktree-only.txt"],
+      candidateSha,
+    });
+
+    assert.equal(stagedFingerprintWithWorktreeList, stagedFingerprint);
+    fs.writeFileSync(path.join(root, "candidate.txt"), "different worktree content\n");
+    assert.equal(
+      createCandidateFingerprint({
+        repositoryRoot: root,
+        candidateScope: "STAGED",
+        changedFiles: ["candidate.txt", "worktree-only.txt"],
+        candidateSha,
+      }),
+      stagedFingerprint,
+    );
+    fs.writeFileSync(path.join(root, "worktree-only.txt"), "changed dirty content\n");
+    assert.equal(
+      createCandidateFingerprint({
+        repositoryRoot: root,
+        candidateScope: "STAGED",
+        changedFiles: ["candidate.txt", "worktree-only.txt"],
+        candidateSha,
+      }),
+      stagedFingerprint,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("STAGED candidate fingerprints fail closed when the index cannot be read", () => {
+  const root = makeRoot();
+  try {
+    assert.throws(
+      () => createCandidateFingerprint({ repositoryRoot: root, candidateScope: "STAGED" }),
+      /STAGED candidate files could not be read/,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("STAGED candidate fingerprints fail closed when an indexed object cannot be read", () => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    fs.writeFileSync(path.join(root, "candidate.txt"), "staged object\n");
+    git(root, ["add", "candidate.txt"]);
+    const objectId = git(root, ["ls-files", "--stage", "--", "candidate.txt"]).split(/\s+/)[1];
+    fs.rmSync(path.join(root, ".git", "objects", objectId.slice(0, 2), objectId.slice(2)));
+
+    assert.throws(
+      () => createCandidateFingerprint({ repositoryRoot: root, candidateScope: "STAGED" }),
+      /Unable to read staged candidate path candidate\.txt/,
     );
   } finally {
     removePathWithRetry(root, { recursive: true });
