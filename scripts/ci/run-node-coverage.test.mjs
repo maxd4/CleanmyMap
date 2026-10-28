@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 
 import { nodeCoverageCommands, runNodeCoverage } from "./run-node-coverage.mjs";
@@ -22,6 +23,11 @@ test("Node coverage preflight runs before c8 and publication with the canonical 
       "test:scripts",
     ],
   }]);
+  if (process.platform === "win32") {
+    const [defaultCommand] = nodeCoverageCommands();
+    assert.equal(defaultCommand.executable, process.execPath);
+    assert.equal(defaultCommand.args[0], path.resolve(import.meta.dirname, "../../node_modules/c8/bin/c8.js"));
+  }
 });
 
 test("Node coverage failure in preflight prevents c8, test:scripts, and publication", () => {

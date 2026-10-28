@@ -9,14 +9,18 @@ import { assertCoverageCandidateIdentity } from "./validation-evidence.mjs";
 import { resolveCoverageCandidate } from "./coverage-publication.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const defaultC8Executable = process.platform === "win32" ? process.execPath : "c8";
+const defaultC8Script = path.join(repositoryRoot, "node_modules", "c8", "bin", "c8.js");
 
 export function nodeCoverageCommands({
-  c8Executable = process.platform === "win32" ? "c8.cmd" : "c8",
+  c8Executable = defaultC8Executable,
   npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm",
+  c8Script = c8Executable === process.execPath && process.platform === "win32" ? defaultC8Script : null,
 } = {}) {
   return [{
     executable: c8Executable,
     args: [
+      ...(c8Script ? [c8Script] : []),
       "--all",
       "--src", "scripts",
       "--src", "apps/web/scripts",
@@ -37,7 +41,7 @@ export function nodeCoverageCommands({
 export function runNodeCoverage({
   spawn = spawnSync,
   nodeExecutable = process.execPath,
-  c8Executable = process.platform === "win32" ? "c8.cmd" : "c8",
+  c8Executable = defaultC8Executable,
   npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm",
   candidateIdentity = ({ repositoryRoot: root, scope }) => {
     const candidate = resolveCoverageCandidate({ repositoryRoot: root });
