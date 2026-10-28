@@ -1,6 +1,6 @@
 begin;
 
-select plan(35);
+select plan(36);
 
 select ok(has_function_privilege('service_role', 'public.record_quiz_progression(text, text, text[], jsonb)', 'EXECUTE'), 'service_role can execute quiz progression RPC');
 select ok(not has_function_privilege('authenticated', 'public.record_quiz_progression(text, text, text[], jsonb)', 'EXECUTE'), 'authenticated cannot execute quiz progression RPC');
@@ -21,6 +21,7 @@ select is((public.record_quiz_progression(
   'quiz-rpc-zero', 'quiz-a', array['quiz-a', 'quiz-b'],
   '[{"metric":"type","threshold":50,"user_id":"quiz-rpc-zero","event_type":"quiz_question_type_milestone","source_table":"quiz_type_progress","source_id":"quiz-rpc-zero-50","status_phase":"validated","weight":1,"xp_base":1,"xp_awarded":1,"occurred_on":"2026-10-28","metadata":{"case":"zero-to-one"}}]'::jsonb
 ) ->> 'previous_count')::integer, 0, 'the first answer starts at zero');
+select is((select correct_count from public.quiz_type_progress where user_id = 'quiz-rpc-zero' and question_type = 'quiz-a'), 1, 'the first answer advances the counter to one');
 select is((public.record_quiz_progression(
   'quiz-rpc-zero', 'quiz-a', array['quiz-a', 'quiz-b'], '[]'::jsonb
 ) ->> 'correct_count')::integer, 2, 'the second answer advances the counter to two');
