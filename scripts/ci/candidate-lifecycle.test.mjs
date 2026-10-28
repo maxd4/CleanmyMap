@@ -31,7 +31,7 @@ test("creates and cleans a prepush candidate in the canonical root", () => {
 
     assert.equal(
       materialization.materializedRoot.startsWith(
-        path.join(root, ".artifacts", "validation", "prepush-candidate"),
+        path.join(root, "artifacts", "validation", "prepush-candidate"),
       ),
       true,
     );

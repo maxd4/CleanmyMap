@@ -13,6 +13,19 @@ import {
   validateBugReportScreenshotInput,
   BugReportScreenshotError,
 } from "./bug-report-screenshot";
+import {
+  assertBugReport,
+  assertOwnerOrAdmin,
+  claimScreenshotUpload,
+  clearScreenshotColumns,
+  loadReport,
+  loadReportForAttempt,
+  markScreenshotFailed,
+  removeAllBugReportScreenshotObjects,
+  removeStorageObject,
+  toRecord,
+  validateStoredObject,
+} from "./bug-report-screenshot-storage";
 import { BUG_REPORT_SCREENSHOT_BUCKET } from "./bug-report-screenshot-contract";
 
 const feedbackId = "11111111-1111-4111-8111-111111111111";
@@ -46,6 +59,18 @@ function deferred<T = void>() {
     resolve = resolvePromise;
   });
   return { promise, resolve };
+}
+
+function makeFailingQuery(message: string) {
+  const query = {} as Record<string, ReturnType<typeof vi.fn>>;
+  query.select = vi.fn(() => query);
+  query.eq = vi.fn(() => query);
+  query.is = vi.fn(() => query);
+  query.update = vi.fn(() => query);
+  query.maybeSingle = vi.fn(async () => ({ data: null, error: new Error(message) }));
+  query.then = vi.fn((resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
+    Promise.resolve({ data: null, error: new Error(message) }).then(resolve, reject));
+  return query;
 }
 
 function makeSupabase(overrides: {
@@ -307,6 +332,176 @@ describe("bug report screenshot security contract", () => {
       userId: "other-user",
       feedbackId,
     })).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("fails closed on incomplete records and enforces Bug ownership at the storage boundary", async () => {
+    expect(() => toRecord({
+      ...screenshotRow(),
+      id: feedbackId,
+      screenshot_size_bytes: 0,
+    } as never)).toThrowError(BugReportScreenshotError);
+    expect(() => assertBugReport({ ...screenshotRow(), report_type: "feature" } as never)).toThrowError(BugReportScreenshotError);
+    await expect(assertOwnerOrAdmin("other-user", { submitted_by_user_id: "owner-1" } as never)).rejects.toMatchObject({ code: "forbidden" });
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin-1" });
+    await expect(assertOwnerOrAdmin("admin-1", { submitted_by_user_id: "owner-1" } as never)).resolves.toBeUndefined();
+  });
+
+  it("covers storage state transitions, conditional cleanup and provider failures", async () => {
+    const supabase = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "pending" }) });
+    expect(await removeStorageObject(supabase as never, attemptPath(attemptA))).toBe(true);
+    supabase.storageApi.remove.mockResolvedValueOnce({ data: null, error: new Error("remove failed") });
+    expect(await removeStorageObject(supabase as never, attemptPath(attemptA))).toBe(false);
+
+    expect(await markScreenshotFailed(supabase as never, feedbackId, attemptPath(attemptA))).toBe(true);
+    expect(await markScreenshotFailed(supabase as never, feedbackId, attemptPath(attemptA))).toBe(false);
+    const cleared = await clearScreenshotColumns(supabase as never, feedbackId, { path: attemptPath(attemptA), state: "failed" });
+    expect(cleared).toBe(true);
+
+    const failedClaim = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "failed" }) });
+    await expect(claimScreenshotUpload(failedClaim as never, {
+      feedbackId,
+      expectedState: "failed",
+      path: attemptPath(attemptB),
+      originalName: "retry.png",
+      mimeType: "image/png",
+      sizeBytes: 8,
+    })).resolves.toMatchObject({ screenshot_upload_state: "pending" });
+
+    const empty = makeSupabase();
+    await expect(removeAllBugReportScreenshotObjects(empty as never, feedbackId)).resolves.toBe(true);
+    empty.storageApi.list.mockResolvedValueOnce({ data: null, error: new Error("list failed") });
+    await expect(removeAllBugReportScreenshotObjects(empty as never, feedbackId)).resolves.toBe(false);
+  });
+
+  it("rejects malformed stored objects and missing report/attempt rows", async () => {
+    const malformed = makeSupabase({ row: screenshotRow({ screenshot_storage_path: null }) });
+    await expect(validateStoredObject(malformed as never, malformed.state.row as never)).rejects.toMatchObject({ code: "storage_invalid" });
+
+    const infoFailure = makeSupabase({ row: screenshotRow({ screenshot_size_bytes: 8 }), info: null });
+    infoFailure.storageApi.info.mockResolvedValueOnce({ data: null, error: new Error("info failed") });
+    await expect(validateStoredObject(infoFailure as never, infoFailure.state.row as never)).rejects.toMatchObject({ code: "storage_missing" });
+
+    const sizeMismatch = makeSupabase({ row: screenshotRow({ screenshot_size_bytes: 8 }), info: { size: 7 } });
+    await expect(validateStoredObject(sizeMismatch as never, sizeMismatch.state.row as never)).rejects.toMatchObject({ code: "storage_invalid" });
+
+    const downloadFailure = makeSupabase({ row: screenshotRow({ screenshot_size_bytes: 8 }), info: { size: 8 } });
+    downloadFailure.storageApi.download.mockResolvedValueOnce({ data: null, error: new Error("download failed") });
+    await expect(validateStoredObject(downloadFailure as never, downloadFailure.state.row as never)).rejects.toMatchObject({ code: "storage_missing" });
+
+    const invalidId = makeSupabase();
+    await expect(loadReport(invalidId as never, " ")).rejects.toMatchObject({ code: "validation" });
+    const missingQuery = {
+      select: vi.fn(() => missingQuery),
+      eq: vi.fn(() => missingQuery),
+      maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+    };
+    invalidId.from = vi.fn(() => missingQuery) as never;
+    await expect(loadReport(invalidId as never, feedbackId)).rejects.toMatchObject({ code: "not_found" });
+    await expect(loadReportForAttempt(invalidId as never, feedbackId, attemptA)).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("keeps ready and pending intent states idempotent and exclusive", async () => {
+    const ready = makeSupabase({ row: { screenshot_upload_state: "ready", screenshot_storage_path: attemptPath(attemptA) } });
+    await expect(createBugReportScreenshotUploadIntent(ready as never, {
+      userId: "owner-1", feedbackId, originalName: "capture.png", mimeType: "image/png", sizeBytes: 8,
+    })).resolves.toEqual({ feedbackId, uploadState: "ready" });
+
+    const pending = makeSupabase({ row: { screenshot_upload_state: "pending", screenshot_storage_path: attemptPath(attemptA) } });
+    await expect(createBugReportScreenshotUploadIntent(pending as never, {
+      userId: "owner-1", feedbackId, originalName: "capture.png", mimeType: "image/png", sizeBytes: 8,
+    })).rejects.toMatchObject({ code: "storage_error" });
+  });
+
+  it("cleans up a failed upload-intent transition when signing fails", async () => {
+    const supabase = makeSupabase();
+    supabase.storageApi.createSignedUploadUrl.mockResolvedValueOnce({ data: null, error: new Error("sign failed") });
+    await expect(createBugReportScreenshotUploadIntent(supabase as never, {
+      userId: "owner-1", feedbackId, originalName: "capture.png", mimeType: "image/png", sizeBytes: 8,
+    })).rejects.toMatchObject({ code: "storage_error" });
+    expect(supabase.state.row.screenshot_upload_state).toBeNull();
+  });
+
+  it("handles finalized, absent and superseded attempts without overwriting the winner", async () => {
+    const ready = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "ready" }) });
+    await expect(finalizeBugReportScreenshot(ready as never, { userId: "owner-1", feedbackId, attemptId: attemptA }))
+      .resolves.toMatchObject({ alreadyReady: true });
+
+    const absent = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "failed", screenshot_storage_path: null }) });
+    await expect(finalizeBugReportScreenshot(absent as never, { userId: "owner-1", feedbackId, attemptId: attemptA }))
+      .rejects.toMatchObject({ code: "not_found" });
+
+    const superseded = makeSupabase({
+      row: screenshotRow({ screenshot_storage_path: attemptPath(attemptA), screenshot_size_bytes: 8 }),
+      beforeUpdate: ({ payload }) => {
+        if (payload.screenshot_upload_state === "ready") superseded.state.row.screenshot_storage_path = attemptPath(attemptB);
+      },
+    });
+    const oldPath = attemptPath(attemptA);
+    superseded.storageApi.info.mockResolvedValueOnce({ data: { size: 8 }, error: null });
+    superseded.storageApi.download.mockResolvedValueOnce({ data: new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])]), error: null });
+    await expect(finalizeBugReportScreenshot(superseded as never, { userId: "owner-1", feedbackId, attemptId: attemptA }))
+      .rejects.toMatchObject({ code: "storage_error" });
+    expect(superseded.storageApi.remove).toHaveBeenCalledWith([oldPath]);
+  });
+
+  it("maps signed-read, delete and cleanup failures without a false success", async () => {
+    const ready = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "ready" }) });
+    ready.storageApi.createSignedUrl.mockResolvedValueOnce({ data: null, error: new Error("signed read failed") });
+    await expect(getBugReportScreenshot(ready as never, { userId: "owner-1", feedbackId })).rejects.toMatchObject({ code: "storage_error" });
+
+    const deletion = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "ready" }) });
+    deletion.storageApi.list.mockResolvedValueOnce({ data: [], error: null });
+    deletion.storageApi.remove.mockResolvedValueOnce({ data: null, error: new Error("delete failed") });
+    await expect(deleteBugReportScreenshot(deletion as never, { userId: "owner-1", feedbackId })).rejects.toMatchObject({ code: "storage_error" });
+
+    const readyCleanup = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "ready" }) });
+    await expect(cleanupBugReportScreenshotAttempt(readyCleanup as never, { userId: "owner-1", feedbackId, attemptId: attemptA })).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("fails closed for storage query errors and invalid provider metadata", async () => {
+    const failing = makeSupabase();
+    const query = makeFailingQuery("database unavailable");
+    failing.from = vi.fn(() => query) as never;
+    await expect(loadReport(failing as never, feedbackId)).rejects.toMatchObject({ code: "storage_error" });
+    await expect(loadReportForAttempt(failing as never, feedbackId, attemptA)).rejects.toMatchObject({ code: "storage_error" });
+    await expect(clearScreenshotColumns(failing as never, feedbackId)).rejects.toMatchObject({ code: "storage_error" });
+    await expect(markScreenshotFailed(failing as never, feedbackId, attemptPath(attemptA))).rejects.toMatchObject({ code: "storage_error" });
+    await expect(claimScreenshotUpload(failing as never, {
+      feedbackId,
+      expectedState: null,
+      path: attemptPath(attemptA),
+      originalName: "capture.png",
+      mimeType: "image/png",
+      sizeBytes: 8,
+    })).rejects.toMatchObject({ code: "storage_error" });
+
+    const invalidInfo = makeSupabase({ row: screenshotRow({ screenshot_size_bytes: 8 }), info: { size: 0 } });
+    await expect(validateStoredObject(invalidInfo as never, invalidInfo.state.row as never)).rejects.toMatchObject({ code: "storage_invalid" });
+    const invalidDownload = makeSupabase({ row: screenshotRow({ screenshot_size_bytes: 8 }), info: { size: 8 } });
+    invalidDownload.storageApi.download.mockResolvedValueOnce({ data: new Blob([]), error: null });
+    await expect(validateStoredObject(invalidDownload as never, invalidDownload.state.row as never)).rejects.toMatchObject({ code: "storage_invalid" });
+  });
+
+  it("does not delete an active replacement and handles cleanup races explicitly", async () => {
+    const replacement = makeSupabase({
+      row: screenshotRow({ screenshot_upload_state: "failed", screenshot_storage_path: attemptPath(attemptB) }),
+    });
+    replacement.storageApi.remove.mockResolvedValueOnce({ data: [], error: null });
+    await expect(cleanupBugReportScreenshotAttempt(replacement as never, {
+      userId: "owner-1", feedbackId, attemptId: attemptA,
+    })).rejects.toMatchObject({ code: "not_found" });
+    expect(replacement.storageApi.remove).not.toHaveBeenCalledWith([attemptPath(attemptB)]);
+
+    const noLongerPresent = makeSupabase({ row: screenshotRow({ screenshot_upload_state: "pending" }) });
+    noLongerPresent.from = vi.fn(() => {
+      const query = makeFailingQuery("gone");
+      query.maybeSingle = vi.fn(async () => ({ data: null, error: null }));
+      query.then = vi.fn((resolve: (value: unknown) => unknown) => Promise.resolve({ data: null, error: null }).then(resolve));
+      return query;
+    }) as never;
+    await expect(cleanupBugReportScreenshotAttempt(noLongerPresent as never, {
+      userId: "owner-1", feedbackId, attemptId: attemptA,
+    })).rejects.toMatchObject({ code: "not_found" });
   });
 
 });

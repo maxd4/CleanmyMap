@@ -86,7 +86,7 @@ Add-GitLinesToSet -Set $tracked -Lines @(Invoke-GitLines -Repository $repo -Argu
 Add-GitLinesToSet -Set $untracked -Lines @(Invoke-GitLines -Repository $repo -Arguments @("ls-files", "--others", "--exclude-standard") -Errors $scanErrors)
 
 # Evite de materialiser des dizaines de milliers de chemins ignored venant de
-# node_modules/.next/.artifacts uniquement pour les exclure ensuite du detail.
+# node_modules/.next/artifacts uniquement pour les exclure ensuite du detail.
 $ignoredArgs = [System.Collections.Generic.List[string]]::new()
 foreach ($arg in @("ls-files", "--others", "--ignored", "--exclude-standard", "--", ".")) { $ignoredArgs.Add($arg) }
 foreach ($name in $script:AggregateOnlyDirectoryReasons.Keys) {

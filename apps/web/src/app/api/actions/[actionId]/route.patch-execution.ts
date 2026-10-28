@@ -224,7 +224,6 @@ async function persistPreparedActionExecution({
       state,
     })
     : false;
-  if (geometryAccepted instanceof Response) return geometryAccepted;
   return geometryAccepted;
 }
 

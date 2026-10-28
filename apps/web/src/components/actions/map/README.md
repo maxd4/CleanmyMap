@@ -65,7 +65,7 @@ Les CSV indiquent des latitudes et longitudes décimales relevées par télépho
 mais ne déclarent pas de système de référence : l'export ne fabrique pas de
 CRS et ne reprojette pas les coordonnées. Le contrôle reproductible se lance
 avec `npm run audit:plastic-origins` après téléchargement des ressources dans
-`.artifacts/plastic-origins-audit`.
+`artifacts/plastic-origins-audit`.
 
 ## Validation
 

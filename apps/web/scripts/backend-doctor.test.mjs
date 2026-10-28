@@ -17,7 +17,7 @@ const completeLocalEnv = [
 ].join("\n");
 
 function createFixture({ localEnv = completeLocalEnv, vercelEnv = null, links = true } = {}) {
-  const validationRoot = join(repoRoot, ".artifacts", "validation");
+  const validationRoot = join(repoRoot, "artifacts", "validation");
   mkdirSync(validationRoot, { recursive: true });
   const appRoot = mkdtempSync(join(validationRoot, "backend-doctor-fixture-"));
   fixtureRoots.push(appRoot);

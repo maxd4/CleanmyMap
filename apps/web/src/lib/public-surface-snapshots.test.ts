@@ -158,6 +158,7 @@ import {
   isPublicSurfaceSnapshotFresh,
   readLatestPublicSurfaceSnapshot,
   requirePersistedPublicSurfaceSnapshot,
+  toPersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
 } from "./public-surface-snapshots";
 
@@ -167,6 +168,8 @@ beforeEach(() => {
   queryEvents.length = 0;
   beforeUpsertMock.mockReset();
   vi.clearAllMocks();
+  canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+  allowLocalFileStoreFallbackMock.mockReturnValue(false);
   getSupabaseServerClientMock.mockReturnValue(fakeSupabaseClient as never);
 });
 
@@ -174,6 +177,32 @@ describe("public surface snapshots", () => {
   it("formats the snapshot date from the generation timestamp", () => {
     expect(getPublicSurfaceSnapshotDate("2026-06-27T10:15:00.000Z")).toBe("2026-06-27");
     expect(getPublicSurfaceSnapshotDate("not-a-date")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("serializes the persisted shape without carrying a local id and normalizes malformed metadata", async () => {
+    const snapshot = {
+      id: "local-id",
+      snapshotKey: "meta-shape",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Meta",
+      payload: { value: 1 },
+      meta: { source: "test" },
+    };
+    expect(toPersistedPublicSurfaceSnapshot(snapshot)).toEqual({
+      snapshotKey: "meta-shape",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Meta",
+      payload: { value: 1 },
+      meta: { source: "test" },
+    });
+
+    await upsertPublicSurfaceSnapshot(snapshot);
+    fakeRow = { ...fakeRow!, meta: [] };
+    await expect(readLatestPublicSurfaceSnapshot("meta-shape")).resolves.toMatchObject({ meta: {} });
   });
 
   it("detects freshness within the configured ttl", () => {
@@ -503,6 +532,101 @@ describe("public surface snapshots", () => {
       meta: {},
     })).resolves.toBe("applied");
     expect(writeLocalRecordStoreMock).toHaveBeenCalled();
+  });
+
+  it("uses the local fallback after a Supabase read exception and invalidates legacy keys safely", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    getSupabaseServerClientMock.mockImplementation(() => {
+      throw new Error("supabase client unavailable");
+    });
+    readLocalRecordStoreMock.mockResolvedValue({
+      records: [{
+        id: "legacy",
+        snapshotKey: "legacy/api/actions/snapshot",
+        snapshotDate: "2026-10-13",
+        generatedAt: "2026-10-13T10:00:00.000Z",
+        version: "v1",
+        title: "Legacy",
+        payload: { source: "local" },
+        meta: {},
+      }],
+    });
+    writeLocalRecordStoreMock.mockResolvedValue(undefined);
+
+    await expect(readLatestPublicSurfaceSnapshot("legacy/api/actions/snapshot")).resolves.toMatchObject({ id: "legacy" });
+    await expect(invalidatePublicSurfaceSnapshotsByRoute(["api/actions"])).resolves.toBeUndefined();
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledWith(
+      expect.stringContaining("public_surface_snapshots.json"),
+      expect.arrayContaining([expect.objectContaining({ version: "__public_surface_snapshot_invalidated__" })]),
+    );
+  });
+
+  it("fails on a Supabase insert error and on a retry update error without a local fallback", async () => {
+    const snapshot = {
+      snapshotKey: "write-error",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Write error",
+      payload: {},
+      meta: {},
+    };
+    const makeQuery = (kind: "update" | "upsert") => {
+      const query = {
+        eq: vi.fn(() => query),
+        neq: vi.fn(() => query),
+        lt: vi.fn(() => query),
+        select: vi.fn(() => query),
+        maybeSingle: vi.fn(async () => {
+          if (kind === "upsert") return { data: null, error: { message: "insert failed" } };
+          return { data: null, error: null };
+        }),
+      };
+      return query;
+    };
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn(() => ({
+        update: () => makeQuery("update"),
+        upsert: () => makeQuery("upsert"),
+      })),
+    });
+    await expect(upsertPublicSurfaceSnapshot(snapshot)).rejects.toThrow("insert failed");
+
+    let retryUpdateInvocation = 0;
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn(() => ({
+        update: () => {
+          const query = makeQuery("update");
+          retryUpdateInvocation += 1;
+          query.maybeSingle.mockImplementation(async () => retryUpdateInvocation === 2
+            ? { data: null, error: { message: "retry failed" } }
+            : { data: null, error: null });
+          return query;
+        },
+        upsert: () => {
+          const query = makeQuery("upsert");
+          query.maybeSingle.mockImplementation(async () => ({ data: null, error: null }));
+          return query;
+        },
+      })),
+    });
+    await expect(upsertPublicSurfaceSnapshot(snapshot)).rejects.toThrow("retry failed");
+    expect(retryUpdateInvocation).toBe(2);
+  });
+
+  it("keeps the newest local row for equal dates and leaves unrelated invalidations untouched", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(false);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    readLocalRecordStoreMock.mockResolvedValue({
+      records: [
+        { id: "older", snapshotKey: "same", snapshotDate: "2026-10-13", generatedAt: "2026-10-13T09:00:00.000Z", version: "v1", title: "Older", payload: {}, meta: {} },
+        { id: "newer", snapshotKey: "same", snapshotDate: "2026-10-13", generatedAt: "2026-10-13T10:00:00.000Z", version: "v1", title: "Newer", payload: {}, meta: {} },
+      ],
+    });
+    await expect(readLatestPublicSurfaceSnapshot("same")).resolves.toMatchObject({ id: "newer" });
+    await expect(invalidatePublicSurfaceSnapshotsByRoute(["unrelated"])).resolves.toBeUndefined();
+    expect(writeLocalRecordStoreMock).not.toHaveBeenCalled();
   });
 });
 

@@ -23,8 +23,8 @@ function Test-GeneratedUntrackedPath([string]$Path) {
     $normalized = $Path.Replace('\', '/')
     return (
         $normalized -match '(^|/)\.next-codex-[^/]+(/|$)' -or
-        $normalized -eq '.artifacts/apps-web-node_modules-incomplete-0830' -or
-        $normalized -like '.artifacts/apps-web-node_modules-incomplete-0830/*'
+        $normalized -eq 'artifacts/apps-web-node_modules-incomplete-0830' -or
+        $normalized -like 'artifacts/apps-web-node_modules-incomplete-0830/*'
     )
 }
 
@@ -45,7 +45,7 @@ function Get-ChangedFiles {
     $untrackedPathspecs = @(
         '.',
         ':(exclude,glob)**/.next-codex-*/**',
-        ':(exclude,glob).artifacts/apps-web-node_modules-incomplete-0830/**'
+        ':(exclude,glob)artifacts/apps-web-node_modules-incomplete-0830/**'
     )
     $untracked = @(git ls-files --others --exclude-standard -- $untrackedPathspecs)
     $changed += $untracked | Where-Object { -not (Test-GeneratedUntrackedPath $_) }

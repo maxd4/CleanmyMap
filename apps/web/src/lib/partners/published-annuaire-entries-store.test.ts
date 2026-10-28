@@ -430,4 +430,70 @@ describe("normalizePublishedRecord", () => {
     expect(serialized.public_data).not.toHaveProperty("internalAdminContact");
     expect(serialized.public_data).not.toHaveProperty("sourceRequestId");
   });
+
+  it("keeps only verified numeric coordinates and explicit public engagement metadata", () => {
+    const accepted = normalizePublishedRecord({
+      ...baseRecord,
+      publicationStatus: "accepted",
+      engagementTypesSource: "partner_declaration",
+      lat: "48.85",
+      lng: null,
+      associationProfile: {
+        usefulResources: [
+          null,
+          { label: "Téléphone", url: "tel:+331" },
+          { label: "Ressource publique", url: "https://public.example" },
+        ],
+        impactHistory: { note: "Observation", provenance: { source: "partner" } },
+      },
+      primaryChannel: { url: "https://public.example" },
+    } as never);
+
+    expect(accepted).toMatchObject({
+      publicationStatus: "accepted",
+      lat: null,
+      lng: null,
+      coordinatesSource: "verified",
+      engagementTypesSource: "partner_declaration",
+      primaryChannel: { label: "Contact direct", url: "https://public.example" },
+    });
+    expect(accepted.associationProfile?.usefulResources).toEqual([
+      { label: "Ressource publique", url: "https://public.example" },
+    ]);
+    expect(accepted.associationProfile?.impactHistory).toEqual({
+      note: "Observation",
+      provenance: { source: "partner" },
+    });
+
+    const rejected = normalizePublishedRecord({
+      ...baseRecord,
+      publicationStatus: "rejected",
+      coordinatesSource: "unexpected",
+      lat: 48.85,
+      lng: 2.35,
+      associationProfile: null,
+    } as never);
+    expect(rejected).toMatchObject({ publicationStatus: "rejected", coordinatesSource: "unknown", lat: null, lng: null });
+    expect(rejected.associationProfile).toBeUndefined();
+  });
+
+  it("does not discard observed activity when the synthetic marker is absent", () => {
+    const normalized = normalizePublishedRecord({
+      ...baseRecord,
+      publicationStatus: "unknown-status",
+      associationProfile: {
+        usefulResources: [],
+        impactHistory: { actionCount: 3, lastActionAt: "2026-09-01T00:00:00.000Z", note: "Mesure confirmée" },
+      },
+      recentActivityAt: "2026-09-01T00:00:00.000Z",
+    } as never);
+
+    expect(normalized.publicationStatus).toBe("accepted");
+    expect(normalized.recentActivityAt).toBe("2026-09-01T00:00:00.000Z");
+    expect(normalized.associationProfile?.impactHistory).toEqual({
+      actionCount: 3,
+      lastActionAt: "2026-09-01T00:00:00.000Z",
+      note: "Mesure confirmée",
+    });
+  });
 });

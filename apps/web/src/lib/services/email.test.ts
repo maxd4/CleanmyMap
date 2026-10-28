@@ -200,4 +200,100 @@ describe("email service", () => {
     expect(JSON.stringify(logFailureMock.mock.calls)).not.toContain("secret-token");
     expect(JSON.stringify(logFailureMock.mock.calls)).not.toContain("private payload");
   });
+
+  it("fails closed to a recorded mock when the provider key is unavailable", async () => {
+    getResendClientMock.mockReturnValue(null);
+    const { sendEmail } = await import("./email");
+
+    await expect(sendEmail({
+      actorUserId: "user_123",
+      to: ["one@example.com", "two@example.com"],
+      subject: "Provider absent",
+      html: "<p>Test</p>",
+    })).resolves.toEqual({ id: "mock_id", status: "mocked" });
+    expect(appendServiceEmailEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "mock",
+      recipientCount: 2,
+      status: "mocked",
+      messageId: "mock_id",
+    }));
+  });
+
+  it("records missing sender configuration without attempting the provider", async () => {
+    resolveEmailFromMock.mockReturnValue("");
+    const { sendEmail } = await import("./email");
+
+    await expect(sendEmail({
+      to: "recipient@example.com",
+      subject: "Sender absent",
+      html: "<p>Test</p>",
+    })).resolves.toEqual({ id: null, status: "missing_config" });
+    expect(getResendClientMock).not.toHaveBeenCalled();
+    expect(appendServiceEmailEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "mock",
+      status: "missing_config",
+      messageId: null,
+    }));
+  });
+
+  it("does not turn event-recording failure into a false delivery failure", async () => {
+    appendServiceEmailEventMock.mockRejectedValueOnce(new Error("event store unavailable"));
+    const { sendEmail } = await import("./email");
+
+    await expect(sendEmail({
+      to: "recipient@example.com",
+      subject: "Recorded best effort",
+      html: "<p>Test</p>",
+    })).resolves.toEqual({ id: "email_123", status: "sent" });
+    expect(logWarningMock).toHaveBeenCalledWith(
+      "EmailService",
+      "Failed to record email event",
+      expect.objectContaining({ reason: "event store unavailable" }),
+    );
+  });
+
+  it("redacts string and hostile provider diagnostics while preserving the original rejection", async () => {
+    const providerError = "Authorization: Bearer top-secret-token; password=secret-value";
+    getResendClientMock.mockReturnValue({
+      emails: { send: vi.fn().mockResolvedValue({ data: null, error: providerError }) },
+    });
+    const { sendEmail, isEmailQuotaExceededError } = await import("./email");
+
+    await expect(sendEmail({ to: "recipient@example.com", subject: "String failure", html: "<p>Test</p>" }))
+      .rejects.toBe(providerError);
+    const diagnostic = JSON.stringify(appendServiceEmailEventMock.mock.calls[0]?.[0]);
+    expect(diagnostic).toContain("Authorization: [redacted]");
+    expect(diagnostic).not.toContain("top-secret-token");
+    expect(diagnostic).not.toContain("secret-value");
+    expect(isEmailQuotaExceededError(new Error("other"))).toBe(false);
+  });
+
+  it("handles empty provider responses and non-readable diagnostic fields safely", async () => {
+    const { sendEmail, ensureEmailQuotaAvailable } = await import("./email");
+    await expect(ensureEmailQuotaAvailable("user_123", 2)).resolves.toBeUndefined();
+
+    getResendClientMock.mockReturnValue({
+      emails: { send: vi.fn().mockResolvedValue({ data: null, error: null }) },
+    });
+    await expect(sendEmail({ to: "recipient@example.com", subject: "No provider id", html: "<p>Test</p>" }))
+      .resolves.toEqual({ id: undefined, status: "sent" });
+
+    const unreadable = {} as Record<string, unknown>;
+    Object.defineProperties(unreadable, {
+      name: { get: () => { throw new Error("unreadable"); } },
+      message: { value: "" },
+      statusCode: { value: Number.NaN },
+      status: { value: {} },
+      code: { value: 0 },
+    });
+    getResendClientMock.mockReturnValue({
+      emails: { send: vi.fn().mockResolvedValue({ data: null, error: unreadable }) },
+    });
+    await expect(sendEmail({ to: "recipient@example.com", subject: "Unreadable failure", html: "<p>Test</p>" }))
+      .rejects.toBe(unreadable);
+    expect(appendServiceEmailEventMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: "error",
+      meta: { error: "code=0" },
+    }));
+  });
 });

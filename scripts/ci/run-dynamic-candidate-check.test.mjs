@@ -82,7 +82,7 @@ test("executes a committed tree without seeing dirty worktree files", () => {
     const ref = git(root, ["rev-parse", "HEAD"]);
     const result = runRunner(root, ref, "node", ["scripts/checks/dynamic-check.mjs"]);
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(root, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -94,7 +94,7 @@ test("forwards a candidate failure", () => {
     const ref = git(root, ["rev-parse", "HEAD"]);
     const result = runRunner(root, ref, "node", ["-e", "process.exitCode = 7"]);
     assert.equal(result.status, 7, result.stderr);
-    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(root, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -144,7 +144,7 @@ test("resolves npm packages from the canonical checkout for a linked worktree", 
     assert.match(result.stdout, /node_modules[\\/]eslint[\\/]package\.json/);
     assert.match(result.stdout, /workspace-only[\\/]package\.json/);
     assert.match(result.stdout, /mobile-only[\\/]package\.json/);
-    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(root, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
     rmSync(root, { recursive: true, force: true });
@@ -157,7 +157,7 @@ test("cleans the candidate after materialization fails", () => {
   try {
     const result = runRunner(root, "missing-candidate-ref", "node");
     assert.notEqual(result.status, 0);
-    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(root, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -175,7 +175,7 @@ test("cleans an isolated dependency candidate when npm ci fails", () => {
     const ref = git(linked, ["rev-parse", "HEAD"]);
     const result = runRunner(linked, ref, "node", ["-e", "process.exitCode = 0"], "isolated");
     assert.notEqual(result.status, 0);
-    assert.equal(existsSync(join(linked, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(linked, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
     rmSync(root, { recursive: true, force: true });
@@ -209,7 +209,7 @@ test("isolated mode runs npm ci inside the candidate without canonical node_modu
     ].join(" ")], "isolated");
     assert.equal(result.status, 0, result.stderr + result.stdout);
     assert.match(result.stdout, /isolated candidate dependencies passed/);
-    assert.equal(existsSync(join(linked, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(linked, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
     rmSync(root, { recursive: true, force: true });
@@ -225,7 +225,7 @@ test("isolated mode cleans the candidate after the build command fails", () => {
     const ref = git(linked, ["rev-parse", "HEAD"]);
     const result = runRunner(linked, ref, "node", ["-e", "process.exitCode = 17"], "isolated");
     assert.equal(result.status, 17, result.stderr + result.stdout);
-    assert.equal(existsSync(join(linked, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(linked, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
     rmSync(root, { recursive: true, force: true });

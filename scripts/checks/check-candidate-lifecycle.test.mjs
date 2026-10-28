@@ -71,10 +71,10 @@ test("a marked candidate residue fails strict policy", () => {
 test("a new feature-candidate entry fails strict policy", () => {
   const root = createFixture();
   try {
-    writeEntry(root, ".artifacts/validation/feature-candidate/provenance.txt");
+    writeEntry(root, "artifacts/validation/feature-candidate/provenance.txt");
     const report = buildCandidateLifecycleReport(root, BASELINE);
     assert.deepEqual(getStrictViolations(report).adHocEntries, [
-      ".artifacts/validation/feature-candidate",
+      "artifacts/validation/feature-candidate",
     ]);
   } finally {
     removeFixture(root);
@@ -87,13 +87,13 @@ test("a new unknown entry under a canonical family fails strict policy", () => {
     fs.mkdirSync(
       path.join(
         root,
-        ".artifacts/validation/prepush-candidate/unknown-canonical-entry",
+        "artifacts/validation/prepush-candidate/unknown-canonical-entry",
       ),
       { recursive: true },
     );
     const report = buildCandidateLifecycleReport(root, BASELINE);
     assert.deepEqual(getStrictViolations(report).unknownCanonicalEntries, [
-      ".artifacts/validation/prepush-candidate/unknown-canonical-entry",
+      "artifacts/validation/prepush-candidate/unknown-canonical-entry",
     ]);
   } finally {
     removeFixture(root);
@@ -103,8 +103,8 @@ test("a new unknown entry under a canonical family fails strict policy", () => {
 test("normal validation evidence does not create a false positive", () => {
   const root = createFixture();
   try {
-    writeEntry(root, ".artifacts/validation/repository-inventory/run.json");
-    writeEntry(root, ".artifacts/validation/test-reports/summary.json");
+    writeEntry(root, "artifacts/validation/repository-inventory/run.json");
+    writeEntry(root, "artifacts/validation/test-reports/summary.json");
     const report = buildCandidateLifecycleReport(root, BASELINE);
     assert.deepEqual(getStrictViolations(report), {
       generatedCandidates: [],

@@ -101,15 +101,16 @@ export async function persistChatPostAndNotify(
   context: ChatPostPersistenceContext,
 ): Promise<ChatMessageRow | Response> {
   const message = await persistChatPostMessage(context);
-  if (message instanceof Response) return message;
-  try {
-    await createChatNotificationsForMessage(
-      context.serviceSupabase,
-      message.id,
-      context.userId,
-    );
-  } catch (error) {
-    console.warn("[POST /api/chat] Notification fan-out failed:", error);
+  if (!(message instanceof Response)) {
+    try {
+      await createChatNotificationsForMessage(
+        context.serviceSupabase,
+        message.id,
+        context.userId,
+      );
+    } catch (error) {
+      console.warn("[POST /api/chat] Notification fan-out failed:", error);
+    }
   }
   return message;
 }

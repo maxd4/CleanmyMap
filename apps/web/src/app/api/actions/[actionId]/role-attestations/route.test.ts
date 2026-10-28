@@ -29,7 +29,11 @@ vi.mock("@/lib/actions/permissions", () => ({
   canManageAction: mocks.canManage,
   canManageActionsGlobally: mocks.canManageGlobal,
 }));
-vi.mock("@/lib/actions/role-attestation-policy", () => ({ evaluateRoleAttestationPolicy: mocks.policy }));
+vi.mock("@/lib/actions/role-attestation-policy", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/actions/role-attestation-policy")>("@/lib/actions/role-attestation-policy");
+  mocks.policy = vi.fn(actual.evaluateRoleAttestationPolicy);
+  return { ...actual, evaluateRoleAttestationPolicy: mocks.policy };
+});
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.server }));
 
 const action = {
@@ -84,7 +88,6 @@ beforeEach(() => {
     hasMore: false,
     nextOffset: null,
   });
-  mocks.policy.mockReturnValue({ allowed: true, status: "allowed" });
   mocks.review.mockResolvedValue({ verification_status: "confirmed" });
   mocks.server.mockReturnValue({ from: vi.fn(() => query()) });
 });
@@ -152,13 +155,133 @@ describe("role attestation route boundaries", () => {
     mocks.finalized.mockReturnValueOnce(false);
     await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify(body) }), context())).resolves.toMatchObject({ status: 409 });
 
-    mocks.participation.mockResolvedValueOnce({ data: null, error: null });
-    mocks.state.mockResolvedValueOnce({ ...state, assignments: [], attestations: [] });
-    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify({ ...body, decision: "reject" }) }), context())).resolves.toMatchObject({ status: 422 });
-
-    mocks.policy.mockReturnValueOnce({ allowed: false, status: "denied" });
-    await expect(POST(request("/api/actions/action-1/role-attestations", { method: "POST", body: JSON.stringify(body) }), context())).resolves.toMatchObject({ status: 409 });
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query({ participation_status: "pending" })) });
+    mocks.state.mockResolvedValueOnce(state);
+    await expect(POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ ...body, reason: "Participation à vérifier" }),
+    }), context())).resolves.toMatchObject({ status: 409 });
+    expect(mocks.policy).toHaveBeenLastCalledWith(expect.objectContaining({
+      actionFinalized: true,
+      participationStatus: "pending",
+      reviewerAuthorized: true,
+      reviewerIsGlobalAdmin: true,
+      reviewerUserId: "reviewer-1",
+      targetUserId: "participant-1",
+      hasPlannedAssignment: true,
+      decision: "confirm",
+      reason: "Participation à vérifier",
+      currentStatus: "pending",
+      currentReviewerUserId: "reviewer-old",
+      currentDecisionReason: null,
+    }));
     expect(mocks.review).not.toHaveBeenCalled();
+  });
+
+  it("keeps a non-privileged self-review pending and delegates that pending state", async () => {
+    mocks.canManageGlobal.mockReturnValue(false);
+    mocks.access.mockResolvedValue({ ok: true, userId: "participant-1" });
+    mocks.identity.mockResolvedValue({ userId: "participant-1", role: "benevole", activeRole: "benevole" });
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query({ participation_status: "confirmed" })) });
+    mocks.review.mockResolvedValueOnce({ verification_status: "pending" });
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }),
+    }), context());
+    expect(response.status).toBe(200);
+    expect(mocks.policy).toHaveBeenCalledWith(expect.objectContaining({
+      participationStatus: "confirmed",
+      reviewerAuthorized: true,
+      reviewerIsGlobalAdmin: false,
+      reviewerUserId: "participant-1",
+      targetUserId: "participant-1",
+    }));
+    expect(await response.json()).toMatchObject({ attestation: { verification_status: "pending" } });
+  });
+
+  it.each([
+    ["pending", { participation_status: "pending" }],
+    ["cancelled", { participation_status: "cancelled" }],
+    ["absent", null],
+  ])("refuses a %s participation before the review RPC", async (_label, participation) => {
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query(participation)) });
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }),
+    }), context());
+    expect(response.status).toBe(409);
+    expect(mocks.policy).toHaveBeenLastCalledWith(expect.objectContaining({
+      participationStatus: participation?.participation_status ?? undefined,
+    }));
+    expect(mocks.review).not.toHaveBeenCalled();
+  });
+
+  it("allows an identical terminal confirmation retry through the idempotent owner", async () => {
+    mocks.state.mockResolvedValueOnce({
+      assignments: [{ user_id: "participant-1", role_code: "group_lead" }],
+      attestations: [{
+        ...state.attestations[0],
+        verification_status: "confirmed",
+        reviewer_clerk_id: "reviewer-1",
+        decision_reason: null,
+      }],
+    });
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query({ participation_status: "confirmed" })) });
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }),
+    }), context());
+    expect(response.status).toBe(200);
+    expect(mocks.policy).toHaveBeenLastCalledWith(expect.objectContaining({
+      currentStatus: "confirmed",
+      currentReviewerUserId: "reviewer-1",
+      currentDecisionReason: null,
+    }));
+    expect(mocks.review).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a non-idempotent terminal correction without a reason before the RPC", async () => {
+    mocks.state.mockResolvedValueOnce({
+      assignments: [{ user_id: "participant-1", role_code: "group_lead" }],
+      attestations: [{
+        ...state.attestations[0],
+        verification_status: "confirmed",
+        reviewer_clerk_id: "reviewer-2",
+        decision_reason: null,
+      }],
+    });
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query({ participation_status: "confirmed" })) });
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm" }),
+    }), context());
+    expect(response.status).toBe(409);
+    expect(mocks.policy).toHaveBeenLastCalledWith(expect.objectContaining({ currentReviewerUserId: "reviewer-2", reason: null }));
+    expect(mocks.review).not.toHaveBeenCalled();
+  });
+
+  it("delegates a motivated authorized terminal correction to the owner", async () => {
+    mocks.state.mockResolvedValueOnce({
+      assignments: [{ user_id: "participant-1", role_code: "group_lead" }],
+      attestations: [{
+        ...state.attestations[0],
+        verification_status: "confirmed",
+        reviewer_clerk_id: "reviewer-2",
+        decision_reason: null,
+      }],
+    });
+    mocks.server.mockReturnValueOnce({ from: vi.fn(() => query({ participation_status: "confirmed" })) });
+    const { POST } = await import("./route");
+    const response = await POST(request("/api/actions/action-1/role-attestations", {
+      method: "POST",
+      body: JSON.stringify({ userId: "participant-1", roleCode: "group_lead", decision: "confirm", reason: "Correction auditée" }),
+    }), context());
+    expect(response.status).toBe(200);
+    expect(mocks.review).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ reason: "Correction auditée" }));
   });
 
   it("persists an allowed confirmation and maps dependency failures safely", async () => {

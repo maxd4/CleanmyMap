@@ -6,6 +6,7 @@ import {
 import {
   buildPlannerWeatherRequest,
   fetchPlannerWeatherContext,
+  isPlannerWeatherContext,
   isPlannerWeatherContextCompatible,
   plannerWeatherOperationalAssessment,
   PLANNER_WEATHER_FORECAST_DAYS,
@@ -267,5 +268,78 @@ describe("planner weather context", () => {
     expect(isPlannerWeatherContextCompatible({ ...context, version: "bad" } as never, buildPlannerWeatherRequest({ latitude: 48.8566, longitude: 2.3522, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "12:00", now: NOW }))).toBe(false);
     expect(isPlannerWeatherContextCompatible(context, null)).toBe(false);
     expect(isPlannerWeatherContextCompatible({ ...context, fetchedAt: "invalid" }, buildPlannerWeatherRequest({ latitude: 48.8566, longitude: 2.3522, actionDate: "2026-09-15", scheduledStartTime: "10:00", scheduledEndTime: "12:00", now: NOW }))).toBe(false);
+  });
+
+  it("normalizes string coordinates and rejects malformed civil times", () => {
+    expect(buildPlannerWeatherRequest({
+      latitude: " 48.8566 ",
+      longitude: "2.3522",
+      actionDate: "2026-09-15",
+      scheduledStartTime: "10:00:30",
+      scheduledEndTime: "12:00",
+    })).toMatchObject({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      scheduledStartAt: "2026-09-15T10:00",
+      scheduledEndAt: "2026-09-15T12:00",
+    });
+    for (const time of ["", "25:00", "10", null, 10]) {
+      expect(buildPlannerWeatherRequest({
+        latitude: 48,
+        longitude: 2,
+        actionDate: "2026-09-15",
+        scheduledStartTime: time,
+        scheduledEndTime: "12:00",
+      })).toBeNull();
+    }
+    expect(buildPlannerWeatherRequest({
+      latitude: 48,
+      longitude: 2,
+      actionDate: "2026-02-30",
+      scheduledStartTime: "10:00",
+      scheduledEndTime: "12:00",
+    })).toBeNull();
+  });
+
+  it("validates stored context shape and recomputes missing operational assessment", async () => {
+    const context = await fetchPlannerWeatherContext({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      scheduledStartAt: "2026-09-15T10:00",
+      scheduledEndAt: "2026-09-15T12:00",
+      now: NOW,
+      client: { fetcher: async () => response(forecast()) },
+    });
+    expect(isPlannerWeatherContext(context)).toBe(true);
+    expect(isPlannerWeatherContext({ ...context, weatherStatus: "unavailable" } as never)).toBe(false);
+    expect(isPlannerWeatherContext({ ...context, location: { ...context.location, latitude: Number.NaN } } as never)).toBe(false);
+    expect(isPlannerWeatherContext({ ...context, hourly: "invalid" } as never)).toBe(false);
+
+    const withoutAssessment = { ...context, operationalRisk: undefined };
+    expect(plannerWeatherOperationalAssessment(withoutAssessment)).toMatchObject({ status: "limited", riskLevel: "orange" });
+    expect(plannerWeatherOperationalAssessment({ ...withoutAssessment, hourly: [] })).toMatchObject({ status: "fallback", riskLevel: null });
+  });
+
+  it("rejects stale, future and incomplete cached contexts without using them", async () => {
+    const context = await fetchPlannerWeatherContext({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      scheduledStartAt: "2026-09-15T10:00",
+      scheduledEndAt: "2026-09-15T12:00",
+      now: NOW,
+      client: { fetcher: async () => response(forecast()) },
+    });
+    const request = buildPlannerWeatherRequest({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      actionDate: "2026-09-15",
+      scheduledStartTime: "10:00",
+      scheduledEndTime: "12:00",
+      now: NOW,
+    });
+    expect(isPlannerWeatherContextCompatible({ ...context, fetchedAt: "2026-09-13T00:00:00.000Z" }, request)).toBe(false);
+    expect(isPlannerWeatherContextCompatible({ ...context, fetchedAt: "2026-09-14T09:00:00.000Z" }, { ...request!, now: new Date("2026-09-14T08:00:00.000Z") })).toBe(false);
+    expect(isPlannerWeatherContextCompatible({ ...context, hourly: [] }, request)).toBe(false);
+    expect(isPlannerWeatherContextCompatible({ ...context, coveredWindow: null }, request)).toBe(false);
   });
 });

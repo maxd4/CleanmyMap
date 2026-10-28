@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const governanceReportRow = {
   id: 1,
@@ -13,6 +13,8 @@ const governanceReportRow = {
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn(() => true));
 const allowLocalFileStoreFallbackMock = vi.hoisted(() => vi.fn(() => false));
+const readLocalRecordStoreMock = vi.hoisted(() => vi.fn());
+const writeLocalRecordStoreMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -22,6 +24,10 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/persistence/runtime-store", () => ({
   canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,
   allowLocalFileStoreFallback: allowLocalFileStoreFallbackMock,
+}));
+vi.mock("@/lib/persistence/local-record-store", () => ({
+  readLocalRecordStore: readLocalRecordStoreMock,
+  writeLocalRecordStore: writeLocalRecordStoreMock,
 }));
 
 import {
@@ -52,6 +58,14 @@ function mockSupabaseClient(queryBuilder: ReturnType<typeof makeQueryBuilder>, u
 }
 
 describe("governance monthly report store", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    allowLocalFileStoreFallbackMock.mockReturnValue(false);
+    readLocalRecordStoreMock.mockResolvedValue({ updatedAt: "2026-05-01T00:00:00.000Z", records: [] });
+    writeLocalRecordStoreMock.mockResolvedValue(undefined);
+  });
+
   it("loads a specific month with a single Supabase row", async () => {
     const queryBuilder = makeQueryBuilder([governanceReportRow]);
 
@@ -300,5 +314,51 @@ describe("governance monthly report store", () => {
 
     getSupabaseServerClientMock.mockImplementation(() => { throw new Error("client unavailable"); });
     await expect(loadGovernanceMonthlyReport()).resolves.toBeNull();
+  });
+
+  it("uses the authorized local fallback for list, load and upsert after provider failures", async () => {
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+    allowLocalFileStoreFallbackMock.mockReturnValue(true);
+    getSupabaseServerClientMock.mockImplementation(() => {
+      throw new Error("governance provider unavailable");
+    });
+    const localRecord = {
+      id: "local-report",
+      reportKey: "cleanmymap-governance",
+      reportMonth: "2026-05-01",
+      generatedAt: "2026-05-20T12:00:00.000Z",
+      version: "local-v1",
+      title: "Local report",
+      payload: {
+        ...({} as never),
+        reportMonth: "2026-05-01",
+        generatedAt: "2026-05-20T12:00:00.000Z",
+        projectSignals: null,
+        impact: null,
+        storage: null,
+        serviceThresholdAlerts: null,
+      },
+    };
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-05-01T00:00:00.000Z",
+      records: [localRecord],
+    });
+
+    await expect(listGovernanceMonthlyReports(1)).resolves.toMatchObject([{ id: "local-report" }]);
+    await expect(loadGovernanceMonthlyReport("2026-05-17")).resolves.toMatchObject({ id: "local-report" });
+    await expect(upsertGovernanceMonthlyReport({
+      ...governanceReportRow,
+      id: "new-report",
+      reportKey: "cleanmymap-governance",
+      reportMonth: "2026-06-01",
+      generatedAt: "2026-06-20T12:00:00.000Z",
+      version: "local-v2",
+      title: "New local report",
+      payload: {} as never,
+    } as never)).resolves.toBeUndefined();
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledWith(
+      expect.stringContaining("governance_monthly_reports.json"),
+      expect.arrayContaining([expect.objectContaining({ id: "new-report" })]),
+    );
   });
 });

@@ -23,12 +23,12 @@ Ne pas créer ni conserver hors de cette racine :
 
 Cette règle couvre aussi `%TEMP%`, `%TMP%`, `%LOCALAPPDATA%`, le dossier parent
 `business` et les dossiers frères. Utiliser uniquement les emplacements
-canoniques prévus dans le dépôt (`work/`, `artifacts/` ou `.artifacts/`) pour
+canoniques prévus dans le dépôt (`work/` ou `artifacts/`) pour
 les artefacts locaux et les candidates de validation ; les preuves durables
 relèvent de `documentation/`.
 
 Une candidate de validation dynamique doit rester sous
-`.artifacts/validation/prepush-candidate/<sha>/`. Une contrainte technique
+`artifacts/validation/prepush-candidate/<sha>/`. Une contrainte technique
 imposée par un outil ne vaut pas autorisation générale de dupliquer le projet.
 Avant la clôture, vérifier qu'aucune copie externe n'a été créée par le lot.
 

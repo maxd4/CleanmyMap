@@ -116,7 +116,7 @@ function PreferenceToggle({
 }) {
   return (
     <label htmlFor={id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-sky-100 bg-white/80 p-3 transition-colors hover:border-sky-200">
-      <input id={id} type="checkbox" checked={checked} disabled={disabled} onChange={onChange} className="mt-1 h-4 w-4 accent-sky-600" />
+      <input id={id} type="checkbox" aria-label={label} checked={checked} disabled={disabled} onChange={onChange} className="mt-1 h-4 w-4 accent-sky-600" />
       <span className="min-w-0">
         <span className="block text-sm font-bold text-slate-900">{label}</span>
         <span className="mt-1 block text-sm leading-relaxed text-slate-800">{saving ?? description}</span>

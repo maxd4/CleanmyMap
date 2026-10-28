@@ -184,7 +184,7 @@ projection offline.
 - les gates dynamiques lourdes du pre-push complet (`test:scripts`, lint,
   typecheck, Vitest et build) utilisent `DYNAMIC_CANDIDATE` et un arbre
   éphémère construit exclusivement depuis le SHA candidat sous
-  `.artifacts/validation/prepush-candidate/<sha>/`. Elles ne doivent jamais
+  `artifacts/validation/prepush-candidate/<sha>/`. Elles ne doivent jamais
   lire le WORKTREE ni ses fichiers étrangers ; les gates compatibles invoquent
   le matérialiseur avec `--dependency-mode=reuse`, tandis que les builds
   npm/Vercel utilisent explicitement `--dependency-mode=isolated`. Cette voie
@@ -196,12 +196,12 @@ projection offline.
   Python dans un `DYNAMIC_CANDIDATE` avant de vérifier le SHA exact. Une preuve
   absente, périmée, falsifiée ou appartenant à un autre candidat est bloquante
   pour `ENFORCE` et ne peut jamais être reclassée `PASS` ;
-- `.artifacts/` est ignoré par Git et réservé aux candidates et sorties
-  locales de validation ; une preuve durable doit être déplacée vers
+- `artifacts/` est ignoré par Git et porte les sorties générées ainsi que les
+  candidates temporaires de validation ; une preuve durable doit être déplacée vers
   `documentation/` avant d'être versionnée ;
 - les lifecycle de candidates doivent réutiliser le helper
   `scripts/ci/candidate-lifecycle.mjs` et la seule racine
-  `.artifacts/validation/prepush-candidate/<sha>/`. Toute candidate porte un
+  `artifacts/validation/prepush-candidate/<sha>/`. Toute candidate porte un
   marqueur généré, est supprimée dans `finally` sur succès comme sur erreur,
   détache ses junctions/liens avant la racine et vérifie son absence ;
 - aucun `publication-candidate`, clone, worktree ou copie persistante n'est

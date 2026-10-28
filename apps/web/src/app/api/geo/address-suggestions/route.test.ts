@@ -124,4 +124,58 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.items).toEqual([]);
   });
+
+  it("uses bounded limits and skips the remote provider when local results already fill the page", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Rivoli&limit=1"),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.items).toHaveLength(1);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates valid remote labels and preserves safe fallbacks", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [
+          { x: 2.35, y: 48.85, names: ["  Point utile  "], city: "Paris", oldcity: "Ancien Paris", kind: "poi", poiType: ["service", ""], classification: 0 },
+          { x: 2.35, y: 48.85, fulltext: "point utile", country: "France" },
+          { x: 2.36, y: 48.86, city: "Paris", kind: "Paris", country: "France" },
+          { x: 2.37, y: 48.87, country: "France" },
+          { x: Number.NaN, y: 48.87, fulltext: "invalid" },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(new Request("http://localhost/api/geo/address-suggestions?q=Remote&limit=8"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "Point utile", subtitle: "Paris · poi · service", importance: 1 }),
+      expect.objectContaining({ label: "Paris", subtitle: "Paris", importance: null }),
+      expect.objectContaining({ label: "Lieu sans libellé", subtitle: "France", importance: null }),
+    ]));
+    expect(body.items.filter((item: { label: string }) => item.label.toLowerCase() === "point utile")).toHaveLength(1);
+  });
+
+  it("returns a safe empty response when the remote provider fails or returns a non-success status", async () => {
+    const fetchMock = vi.fn().mockRejectedValueOnce(new Error("remote provider detail"));
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+    const failed = await GET(new Request("http://localhost/api/geo/address-suggestions?q=Unknown&limit=3"));
+    expect(failed.status).toBe(200);
+    expect(await failed.json()).toMatchObject({ status: "ok", query: "Unknown", items: [] });
+
+    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({ results: [] }) });
+    const nonSuccess = await GET(new Request("http://localhost/api/geo/address-suggestions?q=Remote&limit=3"));
+    expect(nonSuccess.status).toBe(200);
+    expect((await nonSuccess.json()).items).toEqual([]);
+  });
 });

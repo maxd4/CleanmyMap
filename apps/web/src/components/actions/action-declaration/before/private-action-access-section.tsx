@@ -86,11 +86,11 @@ export function PrivateActionAccessSection({
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <FieldShell label="Mode d’accès">
           <label className="flex cursor-pointer gap-3 rounded-2xl border border-emerald-200/70 bg-white/80 p-3 text-sm text-emerald-950">
-            <input type="radio" name="before-access-mode" checked={accessMode === "public"} onChange={() => onChange("public")} />
+            <input type="radio" name="before-access-mode" aria-label="Publique" checked={accessMode === "public"} onChange={() => onChange("public")} />
             <span><strong className="block">Publique</strong><span className="text-xs text-emerald-900/65">Le parcours public actuel reste disponible.</span></span>
           </label>
           <label className="mt-2 flex cursor-pointer gap-3 rounded-2xl border border-emerald-200/70 bg-white/80 p-3 text-sm text-emerald-950">
-            <input type="radio" name="before-access-mode" checked={accessMode === "invite_link"} onChange={() => onChange("invite_link")} />
+            <input type="radio" name="before-access-mode" aria-label="Privée, sur invitation" checked={accessMode === "invite_link"} onChange={() => onChange("invite_link")} />
             <span><strong className="block">Privée, sur invitation</strong><span className="text-xs text-emerald-900/65">Invisible dans les cartes, recherches, rapports et exports publics.</span></span>
           </label>
         </FieldShell>

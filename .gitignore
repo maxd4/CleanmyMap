@@ -35,7 +35,8 @@ cache/
 tmp/
 output/
 # CleanMyMap local validation workspaces and generated outputs.
-# Durable audits belong under documentation/; candidates stay below this ignored path.
+# Durable audits belong under documentation/; all local outputs share artifacts/.
+# Keep the former root ignored as a legacy safety net; no generator writes there.
 /.artifacts/
 /.local/
 /artifacts/

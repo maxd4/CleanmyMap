@@ -123,21 +123,22 @@ function normalizeInsertPreparationData(
     ...(payload.preparationData ?? {}),
     ...(routeTopology ? { routeTopology } : {}),
   }));
-  if (routeTopology !== undefined) return preparation;
-  for (const key of [
-    "routeTopology",
-    "routeTargetDistanceKm",
-    "routeTargetDistanceSource",
-    "routeTargetDistancePolicyVersion",
-    "routeCalibrationContext",
-    "operationalRoute",
-    "gpxImport",
-    "routeObservedDistanceKm",
-    "routeNetworkDistanceKm",
-    "routeGeometryMode",
-    "routeGeometryProvider",
-  ] as const) {
-    delete preparation[key];
+  if (routeTopology === undefined) {
+    for (const key of [
+      "routeTopology",
+      "routeTargetDistanceKm",
+      "routeTargetDistanceSource",
+      "routeTargetDistancePolicyVersion",
+      "routeCalibrationContext",
+      "operationalRoute",
+      "gpxImport",
+      "routeObservedDistanceKm",
+      "routeNetworkDistanceKm",
+      "routeGeometryMode",
+      "routeGeometryProvider",
+    ] as const) {
+      delete preparation[key];
+    }
   }
   return preparation;
 }

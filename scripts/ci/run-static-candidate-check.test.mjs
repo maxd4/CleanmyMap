@@ -138,7 +138,7 @@ test("candidate runner ignores a dirty checker and its dependency comes from the
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /candidate-check: PASS/);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(fixtureRoot, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -159,7 +159,7 @@ test("candidate runner fails when the candidate checker itself fails", () => {
 
     assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /candidate-check: PASS/);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(fixtureRoot, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -182,7 +182,7 @@ test("grouped candidate runner materializes once and preserves checker order", (
     assert.match(output, /STATIC_CANDIDATE_CHECKS: 3/);
     assert.match(output, /STATIC_CANDIDATE_CHECKS_EXECUTED: 3/);
     assert.match(output, /STATIC_CANDIDATE_MATERIALIZATIONS: 1/);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(fixtureRoot, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -207,7 +207,7 @@ test("grouped candidate runner stops before a following checker when a checker m
     assert.match(result.stderr, /mutated the candidate source tree/);
     assert.match(result.stdout, /candidate-check: MUTATED/);
     assert.doesNotMatch(result.stdout, /candidate-check: SECOND/);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(fixtureRoot, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -237,7 +237,7 @@ test("grouped candidate runner propagates first, middle and last checker failure
         const following = cases[index + 1].marker;
         assert.doesNotMatch(output, new RegExp(`candidate-check: ${following}`));
       }
-      assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+      assert.equal(existsSync(join(fixtureRoot, "artifacts", "validation", "prepush-candidate")), false);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
@@ -262,7 +262,7 @@ test("candidate documentation checker scans ai-guides while a dirty checker cann
     const result = runRunner(fixtureRoot, candidateRef, checkerRelativePath);
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+    assert.equal(existsSync(join(fixtureRoot, "artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }

@@ -49,7 +49,6 @@ export const trackedTransitionalRootDirectories = [];
 
 export const localOnlyRootDirectories = [
   "artifacts",
-  ".artifacts",
   ".local",
   "backups",
   "scratch",

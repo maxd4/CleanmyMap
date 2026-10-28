@@ -399,8 +399,12 @@ async function executeChatPage({
     });
   } catch (error) {
     console.error("[GET /api/chat] Database Error:", error);
-    const dbError = error as { message?: string; code?: string; details?: string };
-    return NextResponse.json({ error: "Erreur Base de Données", message: dbError.message ?? "Erreur inconnue", code: dbError.code, details: dbError.details, hint: channelType === "territory" && !hasValidZone ? "Choisissez un arrondissement parisien ou une commune de la région." : "Vérifiez que la table 'app_messages' existe et que les profils sont synchronisés." }, { status: 500 });
+    return NextResponse.json({
+      error: "Erreur Base de Données",
+      hint: channelType === "territory" && !hasValidZone
+        ? "Choisissez un arrondissement parisien ou une commune de la région."
+        : "Vérifiez que la table 'app_messages' existe et que les profils sont synchronisés.",
+    }, { status: 500 });
   }
 }
 

@@ -33,11 +33,11 @@ const SCANNED_EXTENSIONS = new Set([
 const EXACT_SCANNED_FILES = new Set([".env.example", ".env.local.example"]);
 const GENERATED_UNTRACKED_PATHS = [
   /(^|\/)\.next-codex-[^/]+(?:\/|$)/,
-  /(^|\/)\.artifacts\/apps-web-node_modules-incomplete-0830(?:\/|$)/,
+  /(^|\/)artifacts\/apps-web-node_modules-incomplete-0830(?:\/|$)/,
 ];
 const UNTRACKED_PATHSPEC_EXCLUDES = [
   ":(exclude,glob)**/.next-codex-*/**",
-  ":(exclude,glob).artifacts/apps-web-node_modules-incomplete-0830/**",
+  ":(exclude,glob)artifacts/apps-web-node_modules-incomplete-0830/**",
 ];
 const IGNORED_SEGMENTS = new Set([
   ".git",

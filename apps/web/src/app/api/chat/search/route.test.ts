@@ -89,10 +89,12 @@ function buildSupabaseMock({
   rows,
   arrondissement = null,
   metadata = null,
+  errors = {},
 }: {
   rows: SearchRow[];
   arrondissement?: number | null;
   metadata?: Record<string, unknown> | null;
+  errors?: { profile?: string; messages?: string };
 }) {
   const profileQuery = {
     select: vi.fn(() => profileQuery),
@@ -106,7 +108,7 @@ function buildSupabaseMock({
         role_label: null,
         metadata,
       },
-      error: null,
+      error: errors.profile ? { message: errors.profile } : null,
     }),
   };
   const table = {
@@ -172,7 +174,10 @@ function buildSupabaseMock({
           });
           return matchesEq && matchesIn && matchesLike && matchesKeyset;
         });
-        return Promise.resolve({ data: filtered, error: null }).then(resolve, reject);
+        return Promise.resolve({
+          data: errors.messages ? [] : filtered,
+          error: errors.messages ? { message: errors.messages } : null,
+        }).then(resolve, reject);
       },
     };
     return query;
@@ -252,6 +257,59 @@ describe("GET /api/chat/search", () => {
     const missingRecipient = await GET(new Request("http://localhost/api/chat/search?channelType=dm&q=message"));
     expect(missingRecipient.status).toBe(400);
     expect(supabaseMock.calls.ilike).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty, stable result for an authorized search with no matches", async () => {
+    const supabaseMock = buildSupabaseMock({ rows: [] });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
+
+    const response = await GET(new Request("http://localhost/api/chat/search?channelType=community&q=absent"));
+    const body = await readSearchResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ results: [], nextCursor: null, hasMore: false, query: "absent" });
+  });
+
+  it("normalizes incomplete sender and message metadata without disclosing provider errors", async () => {
+    const supabaseMock = buildSupabaseMock({
+      rows: [{
+        ...buildRow(1, { content: "Donnée publique", topic_id: "not-a-topic", message_kind: "unexpected" }),
+        sender: [],
+      }],
+    });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
+
+    const response = await GET(new Request("http://localhost/api/chat/search?channelType=community&q=publique"));
+    const body = await readSearchResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(body.results[0]).toMatchObject({
+      messageKind: "message",
+      topicId: null,
+      author: { displayName: "Membre", handle: "membre", avatarUrl: null },
+    });
+
+    const failedSupabase = buildSupabaseMock({ rows: [], errors: { messages: "search provider detail" } });
+    rlsClientMock.mockResolvedValue(failedSupabase.supabase);
+    serverClientMock.mockReturnValue(failedSupabase.supabase);
+    const failed = await GET(new Request("http://localhost/api/chat/search?channelType=community&q=publique"));
+    expect(failed.status).toBe(500);
+    const failedBody = await failed.json();
+    expect(JSON.stringify(failedBody)).not.toContain("search provider detail");
+  });
+
+  it("fails closed when the profile dependency returns an error", async () => {
+    const supabaseMock = buildSupabaseMock({ rows: [], errors: { profile: "profile provider detail" } });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
+
+    const response = await GET(new Request("http://localhost/api/chat/search?channelType=community&q=message"));
+
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(JSON.stringify(body)).not.toContain("profile provider detail");
   });
 
   it("fails closed when the identity or Clerk RLS client is unavailable", async () => {

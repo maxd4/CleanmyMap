@@ -20,7 +20,7 @@ export async function postChatPayload(payload: Record<string, unknown>) {
 }
 
 type ChatMessageFilter = { kind: "eq" | "in"; field: string; value: unknown } | { kind: "keyset"; expression: string };
-type MessageQueryResult = { data: ChatMessageRow[]; error: null };
+type MessageQueryResult = { data: ChatMessageRow[]; error: null | { message: string } };
 type MessageQuery = Promise<MessageQueryResult> & {
   select: (...args: unknown[]) => MessageQuery;
   order: (...args: unknown[]) => MessageQuery;
@@ -52,6 +52,7 @@ type SupabaseMockOptions = {
   relatedEvent?: { id: string; title: string; event_date: string; location_label: string } | null;
   pollMessage?: ChatMessageRow; actionConversation?: { id: string; action_id: string } | null;
   dmRows?: Array<{ peer_id: string; peer_display_name: string | null; peer_handle: string | null }>;
+  errors?: { messages?: string; actionConversation?: string; relatedEvent?: string };
 };
 
 function createStaticQueries(options: SupabaseMockOptions) {
@@ -61,11 +62,21 @@ function createStaticQueries(options: SupabaseMockOptions) {
     eq: vi.fn(() => relatedEventQuery),
     in: vi.fn().mockResolvedValue({
       data: options.relatedEvent ? [options.relatedEvent] : [],
-      error: null,
+      error: options.errors?.relatedEvent ? { message: options.errors.relatedEvent } : null,
     }),
-    maybeSingle: vi.fn().mockResolvedValue({ data: options.relatedEvent ?? null, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: options.relatedEvent ?? null,
+      error: options.errors?.relatedEvent ? { message: options.errors.relatedEvent } : null,
+    }),
   };
-  const actionConversationQuery = { select: vi.fn(() => actionConversationQuery), eq: vi.fn(() => actionConversationQuery), maybeSingle: vi.fn().mockResolvedValue({ data: options.actionConversation ?? null, error: null }) };
+  const actionConversationQuery = {
+    select: vi.fn(() => actionConversationQuery),
+    eq: vi.fn(() => actionConversationQuery),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: options.actionConversation ?? null,
+      error: options.errors?.actionConversation ? { message: options.errors.actionConversation } : null,
+    }),
+  };
   return { profileQuery, relatedEventQuery, actionConversationQuery };
 }
 
@@ -76,7 +87,10 @@ function createMessageHarness(options: SupabaseMockOptions) {
     const filterMessages = () => filterChatMessages(options.messages, filters);
     // Supabase builders are awaitable and chainable; a real Promise preserves both behaviors without a manual thenable.
     const query = Object.assign(
-      Promise.resolve().then<MessageQueryResult>(() => ({ data: filterMessages(), error: null })),
+      Promise.resolve().then<MessageQueryResult>(() => ({
+        data: options.errors?.messages ? [] : filterMessages(),
+        error: options.errors?.messages ? { message: options.errors.messages } : null,
+      })),
       {
         select: vi.fn(() => query),
         order: vi.fn((...args: unknown[]) => { messagesQuery.order(...args); return query; }),

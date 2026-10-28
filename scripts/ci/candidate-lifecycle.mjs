@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const CANDIDATE_MARKER = ".cleanmymap-candidate.json";
-const VALIDATION_ROOT = [".artifacts", "validation"];
+const VALIDATION_ROOT = ["artifacts", "validation"];
 export const CANDIDATE_FAMILIES = Object.freeze({
   PREPUSH: "prepush-candidate",
 });

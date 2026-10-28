@@ -293,6 +293,7 @@ export function ReportsModuleControls(props: {
               <input
                 id={`reports-web-document-module-${option.id}`}
                 type="checkbox"
+                aria-label={option.label}
                 checked={checked}
                 onChange={() => props.onModuleToggle(option.id)}
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-400"

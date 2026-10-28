@@ -86,7 +86,7 @@ function functionForLine(functions, line) {
 }
 
 function cognitiveValue(message) {
-  return Number(message.message.match(/Cognitive Complexity from (\d+)/i)?.[1] ?? NaN);
+  return Number(message.message.match(/Cognitive Complexity from (\d+)/i)?.[1] ?? Number.NaN);
 }
 
 function localMeasure(ruleId) {
@@ -207,9 +207,7 @@ export async function analyzeMaintainabilitySources({ files = [], complexityRepo
     const measuredFunctions = parserFailed ? [] : functions;
     const measuredControlFlow = parserFailed ? [] : controlFlow.functions;
     const measurementStatus = parserFailed ? "NOT_MEASURED" : "PRESENT";
-    const measurementReason = parserFailed
-      ? (controlFlow.reason ?? (lintParseFailed ? "PARSER_FAILED" : "PARSER_FAILED"))
-      : null;
+    const measurementReason = parserFailed ? (controlFlow.reason ?? "PARSER_FAILED") : null;
     functionCount += measuredFunctions.length;
     controlFlowStatuses.push({ path: file.path, status: measurementStatus, reason: measurementReason });
     maintainabilityStatuses.push({

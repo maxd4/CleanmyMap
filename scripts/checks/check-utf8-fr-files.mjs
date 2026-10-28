@@ -15,7 +15,6 @@ const IGNORED_PATH_SEGMENTS = new Set([
   ".git",
   ".next",
   ".cache",
-  ".artifacts",
   ".expo",
   ".playwright-mcp",
   ".turbo",

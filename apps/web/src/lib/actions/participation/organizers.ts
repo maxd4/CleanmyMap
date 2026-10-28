@@ -350,16 +350,13 @@ export async function syncActionManualParticipants(params: ActionAccountResoluti
   // A partial or failed account resolution must not be interpreted as an
   // explicit removal. Resolve the complete requested set before changing any
   // existing registration.
-  if (resolution.unresolvedTokens.length > 0) {
-    return resolution;
+  if (resolution.unresolvedTokens.length === 0) {
+    await persistManualParticipantDiff({
+      supabase: params.supabase,
+      actionId: params.actionId,
+      participants: resolution.participants,
+    });
   }
-
-  await persistManualParticipantDiff({
-    supabase: params.supabase,
-    actionId: params.actionId,
-    participants: resolution.participants,
-  });
-
   return resolution;
 }
 

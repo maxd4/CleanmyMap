@@ -572,7 +572,7 @@ function Invoke-EndToEndSelfTest {
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo ".venv")) | Out-Null
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "node_modules/pkg")) | Out-Null
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "src/.next/cache")) | Out-Null
-        [System.IO.Directory]::CreateDirectory((Join-Path $testRepo ".artifacts/old-run")) | Out-Null
+        [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "artifacts/old-run")) | Out-Null
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "artifacts/local-output")) | Out-Null
 
         [System.IO.File]::WriteAllText((Join-Path $testRepo ".gitignore"), ".venv/`nnode_modules/`n.next/`nartifacts/`nignored.txt`n")
@@ -584,14 +584,14 @@ function Invoke-EndToEndSelfTest {
         [System.IO.File]::WriteAllText((Join-Path $testRepo ".venv/dummy.bin"), "excluded`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "node_modules/pkg/index.js"), "generated vendor`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "src/.next/cache/chunk.bin"), "generated next cache`n")
-        [System.IO.File]::WriteAllText((Join-Path $testRepo ".artifacts/old-run/report.txt"), "old artifact`n")
+        [System.IO.File]::WriteAllText((Join-Path $testRepo "artifacts/old-run/report.txt"), "old artifact`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "artifacts/local-output/generated.txt"), "local output`n")
 
         & git -C $testRepo init -q
         if ($LASTEXITCODE -ne 0) { throw "self-test: git init failed" }
         & git -C $testRepo config user.email "repository-inventory-selftest@example.invalid"
         & git -C $testRepo config user.name "Repository Inventory Self Test"
-        & git -C $testRepo add -- .gitignore tracked.txt .artifacts/old-run/report.txt
+        & git -C $testRepo add -f -- .gitignore tracked.txt artifacts/old-run/report.txt
         if ($LASTEXITCODE -ne 0) { throw "self-test: git add failed" }
         & git -C $testRepo commit -q -m "self-test baseline"
         if ($LASTEXITCODE -ne 0) { throw "self-test: git commit failed" }
@@ -634,7 +634,7 @@ function Invoke-EndToEndSelfTest {
         $inventory = @(Import-Csv -LiteralPath (Join-Path $runDir.FullName "inventory.csv"))
         $expectedStatuses = @{
             "tracked.txt" = "tracked"
-            ".artifacts/old-run/report.txt" = "tracked"
+            "artifacts/old-run/report.txt" = "tracked"
             "ignored.txt" = "ignored"
             "untracked.txt" = "untracked"
         }
@@ -658,11 +658,11 @@ function Invoke-EndToEndSelfTest {
             }
         }
 
-        if (-not ($inventory | Where-Object { $_.path -eq ".artifacts" -and $_.type -eq "directory" })) {
-            throw "self-test: versioned .artifacts directory missing from detailed inventory"
+        if (-not ($inventory | Where-Object { $_.path -eq "artifacts" -and $_.type -eq "directory" })) {
+            throw "self-test: versioned artifacts directory missing from detailed inventory"
         }
-        if (-not ($inventory | Where-Object { $_.path -eq ".artifacts/old-run/report.txt" -and $_.git_status -eq "tracked" })) {
-            throw "self-test: versioned .artifacts evidence missing from detailed inventory"
+        if (-not ($inventory | Where-Object { $_.path -eq "artifacts/old-run/report.txt" -and $_.git_status -eq "tracked" })) {
+            throw "self-test: versioned artifacts evidence missing from detailed inventory"
         }
         if (-not (Test-Path -LiteralPath $testOutput -PathType Container)) {
             throw "self-test: local output directory was not created"

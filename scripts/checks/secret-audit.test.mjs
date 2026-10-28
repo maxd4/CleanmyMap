@@ -175,7 +175,7 @@ test("generated path exclusions remain effective for Python files", () => {
     mode: "ref",
     candidatePath: ".next-codex-secret/sentinel.py",
     candidateContent: `AWS_ACCESS_KEY_ID=${syntheticAccessKey}\n`,
-    foreignPath: ".artifacts/apps-web-node_modules-incomplete-0830/sentinel.py",
+    foreignPath: "artifacts/apps-web-node_modules-incomplete-0830/sentinel.py",
     foreignContent: `AWS_ACCESS_KEY_ID=${syntheticAccessKey}\n`,
   });
 

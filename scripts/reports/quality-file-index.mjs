@@ -848,7 +848,7 @@ function finalizeFunctionalDomains(domains, architecture) {
       informativeRelationIds: [...(domain.informativeRelationIds ?? [])].sort((left, right) => left.localeCompare(right)),
       findingReferences: [...(domain.findingReferences?.values() ?? [])].sort((left, right) => `${left.id}:${left.file}`.localeCompare(`${right.id}:${right.file}`)),
       informativeRelationReferences: [...(domain.informativeRelationReferences?.values() ?? [])].sort((left, right) => `${left.id}:${left.file}`.localeCompare(`${right.id}:${right.file}`)),
-      candidateGroups: [...domain.candidateGroups].sort(),
+      candidateGroups: [...domain.candidateGroups].sort((left, right) => left.localeCompare(right)),
       coupling: domain.coupling ?? null,
     })).sort((left, right) => left.id.localeCompare(right.id)),
   };

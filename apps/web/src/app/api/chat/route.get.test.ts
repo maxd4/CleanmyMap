@@ -369,6 +369,103 @@ describe("GET /api/chat", () => {
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
+  it("returns an empty page when the authorized scope has no messages", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "community", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/chat?channelType=community&messageId=00000000-0000-4000-8000-000000000001"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({ messages: [], previousCursor: null, hasMore: false, targetStatus: "unavailable" });
+    expect(body.targetMessageId).toBe("00000000-0000-4000-8000-000000000001");
+  }, 15000);
+
+  it("rejects a territory request without a usable zone before reading messages", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "territory", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/chat?channelType=territory"));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: "Zone manquante" });
+    expect(supabaseMock.messagesQuery.limit).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("distinguishes an explicitly invalid territory from a missing one and applies zone/topic scopes", async () => {
+    const invalid = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "territory", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(invalid.supabase);
+    getSupabaseServerClientMock.mockReturnValue(invalid.serviceSupabase);
+    const { GET } = await import("./route");
+
+    const invalidResponse = await GET(new Request("http://localhost/api/chat?channelType=territory&zoneName=zone-inconnue"));
+    expect(invalidResponse.status).toBe(400);
+    await expect(invalidResponse.json()).resolves.toMatchObject({ error: "Zone invalide" });
+
+    resetChatRouteMocks();
+    const scoped = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [{ id: "scoped", created_at: "2026-05-01T09:00:00.000Z", content: "Zone", channel_type: "territory", sender_id: "user-2", recipient_id: null, arrondissement_id: 11, zone_name: "11e arrondissement", topic_id: "mon_territoire" }],
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "territory", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(scoped.supabase);
+    getSupabaseServerClientMock.mockReturnValue(scoped.serviceSupabase);
+    const response = await GET(new Request("http://localhost/api/chat?channelType=territory&zoneName=11e%20arrondissement&topicId=mon_territoire"));
+    await expectChatMessages(response, ["scoped"]);
+    expect(scoped.messagesQuery.eq).toHaveBeenCalledWith("zone_name", "11e arrondissement");
+    expect(scoped.messagesQuery.eq).toHaveBeenCalledWith("topic_id", "mon_territoire");
+  }, 15000);
+
+  it("maps message and action-conversation dependency failures without leaking internals", async () => {
+    const messageFailure = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      errors: { messages: "private message query failure" },
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "community", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(messageFailure.supabase);
+    getSupabaseServerClientMock.mockReturnValue(messageFailure.serviceSupabase);
+    const { GET } = await import("./route");
+
+    const failedMessages = await GET(new Request("http://localhost/api/chat?channelType=community"));
+    expect(failedMessages.status).toBe(500);
+    const failedBody = await failedMessages.json();
+    expect(failedBody).toMatchObject({ error: "Erreur Base de Données" });
+    expect(JSON.stringify(failedBody)).not.toContain("private message query failure");
+
+    const actionFailure = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      actionConversation: null,
+      errors: { actionConversation: "private action conversation failure" },
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "action", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    resolveActionDiscussionAccessMock.mockResolvedValueOnce({ state: "allowed" });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(actionFailure.supabase);
+    getSupabaseServerClientMock.mockReturnValue(actionFailure.serviceSupabase);
+    const failedAction = await GET(new Request("http://localhost/api/chat?channelType=action&actionId=action-1"));
+    expect(failedAction.status).toBe(500);
+    const failedActionBody = await failedAction.json();
+    expect(failedActionBody).toMatchObject({ error: "Erreur Base de Données" });
+    expect(JSON.stringify(failedActionBody)).not.toContain("private action conversation failure");
+  }, 15000);
+
   it("fails closed when authentication or the Clerk RLS client is unavailable", async () => {
     authMock.mockResolvedValueOnce({ userId: null });
     const { GET } = await import("./route");
@@ -377,6 +474,10 @@ describe("GET /api/chat", () => {
     authMock.mockResolvedValue({ userId: "user-1" });
     getSupabaseClerkRlsClientMock.mockResolvedValueOnce(null);
     expect((await GET(new Request("http://localhost/api/chat?channelType=community"))).status).toBe(503);
+
+    authMock.mockResolvedValue({ userId: "user-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce(null);
+    expect((await GET(new Request("http://localhost/api/chat?channelType=community"))).status).toBe(401);
   });
 
   it("uses the territory, admin-elu and bug-report scopes without crossing users", async () => {
@@ -422,6 +523,23 @@ describe("GET /api/chat", () => {
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/chat?channelType=action&actionId=action-1"));
     expect(response.status).toBe(status);
+    expect(supabaseMock.messagesQuery.limit).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("returns not found when an authorized action has no persisted conversation", async () => {
+    resolveActionDiscussionAccessMock.mockResolvedValueOnce({ state: "allowed" });
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      actionConversation: null,
+      insertedMessage: { id: "unused", created_at: "2026-05-01T11:00:00.000Z", content: "", channel_type: "action", sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat?channelType=action&actionId=action-1"));
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({ error: "Discussion d'action introuvable." });
     expect(supabaseMock.messagesQuery.limit).not.toHaveBeenCalled();
   }, 15000);
 });

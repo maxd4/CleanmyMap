@@ -153,13 +153,13 @@ Les sorties locales et les candidates de contrôle ne sont pas des sources
 documentaires :
 
 - `artifacts/` contient les sorties générées ou régénérables ;
-- `.artifacts/validation/prepush-candidate/<sha>/` contient les candidates
+- `artifacts/validation/prepush-candidate/<sha>/` contient les candidates
   temporaires matérialisées pour la validation dynamique et doit être nettoyé
   par son owner ;
 - les audits durables sont conservés sous `documentation/`, dans le domaine
-  concerné, et non dans `.artifacts/`.
+  concerné, et non dans `artifacts/`.
 
-Ne jamais versionner une preuve dans `.artifacts/` par commodité. Vérifier sa
+Ne jamais versionner une preuve dans `artifacts/` par commodité. Vérifier sa
 provenance, sa reproductibilité et son emplacement documentaire avant de la
 conserver.
 

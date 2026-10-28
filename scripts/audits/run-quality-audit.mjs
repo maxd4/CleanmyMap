@@ -551,15 +551,16 @@ async function executeAuditBatch(audits, { engine, root, snapshot }) {
 function addRadarProjection(results) {
   const resultsByAudit = Object.fromEntries(results.map(({ audit, result }) => [audit, result]));
   const topHeavy = results.find((entry) => entry.audit === "top-heavy");
-  if (!topHeavy?.result?.rows) return results;
-  const correlations = createCorrelationSignalsFromAuditResults(resultsByAudit);
-  topHeavy.result = {
-    ...topHeavy.result,
-    radarProjection: {
-      rows: createRadarRows(topHeavy.result.rows, correlations),
-      evidence: { measured: correlations.measured, detail: correlations.detail },
-    },
-  };
+  if (topHeavy?.result?.rows) {
+    const correlations = createCorrelationSignalsFromAuditResults(resultsByAudit);
+    topHeavy.result = {
+      ...topHeavy.result,
+      radarProjection: {
+        rows: createRadarRows(topHeavy.result.rows, correlations),
+        evidence: { measured: correlations.measured, detail: correlations.detail },
+      },
+    };
+  }
   return results;
 }
 

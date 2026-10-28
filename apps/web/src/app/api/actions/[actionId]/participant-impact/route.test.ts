@@ -107,6 +107,39 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     }));
   });
 
+  it("records a counted-butts-only measurement and tolerates a progression refresh failure", async () => {
+    const participant = createGroupJoinParticipant({
+      id: "participant-1",
+      action_id: "action-1",
+      user_id: "participant-user",
+      created_at: "2026-09-26T10:00:00.000Z",
+      updated_at: "2026-09-27T10:00:00.000Z",
+      participation_status: "confirmed",
+    });
+    configureParticipantImpactSupabase([participant], "user-1");
+    groupJoinMocks.refreshProgressionProfileMock.mockRejectedValueOnce(new Error("refresh unavailable"));
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: 12, massKg: null, condition: "humide" },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact).toMatchObject({
+      cigaretteButtsCount: 12,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsCondition: "humide",
+      wasteKg: null,
+    });
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_count: 12,
+      individual_cigarette_butts_mass_kg: null,
+      individual_cigarette_butts_condition: "humide",
+      individual_impact_measured_by: "user-1",
+    });
+  });
+
   it("allows an administrator and refuses a non-confirmed participant", async () => {
     authMock.mockResolvedValue({ userId: "admin-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ userId: "admin-1", role: "admin", activeRole: "admin" });

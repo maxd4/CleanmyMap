@@ -31,7 +31,7 @@ test("root directory contract accepts canonical directories", () => {
     findForbiddenRootDirectories(trackedTransitionalRootDirectories),
     [],
   );
-  assert.ok(allowedRootDirectories.includes(".artifacts"));
+  assert.ok(allowedRootDirectories.includes("artifacts"));
   assert.ok(allowedRootDirectories.includes(".local"));
   assert.ok(allowedRootDirectories.includes("apps"));
   assert.equal(allowedRootDirectories.includes("companion-app"), false);
@@ -119,6 +119,7 @@ test("root directory contract accepts local-only directories when untracked", ()
 
 test("root directory contract rejects an unknown directory", () => {
   assert.deepEqual(findForbiddenRootDirectories([".artifacts", "unknown-root"]), [
+    ".artifacts",
     "unknown-root",
   ]);
 });
@@ -132,7 +133,7 @@ test("local-only tracking guard rejects every local-only root directory", () => 
   assert.deepEqual(
     findForbiddenTrackedPaths([
       "README.md",
-      ".artifacts/validation/report.json",
+      "artifacts/validation/report.json",
       ".local/root-wrappers/TESTER_APP_MOBILE.bat",
       "backups/example.json",
       "scratch/tool.py",
@@ -145,7 +146,7 @@ test("local-only tracking guard rejects every local-only root directory", () => 
       "scripts/checks/check-root-file-hygiene.mjs",
     ]),
     [
-      ".artifacts/validation/report.json",
+      "artifacts/validation/report.json",
       ".local/root-wrappers/TESTER_APP_MOBILE.bat",
       "backups/example.json",
       "scratch/tool.py",
