@@ -28,7 +28,6 @@ import {
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const auditedSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
-const auditedTreeSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD^{tree}"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
 const ciSourcePrefix = "/home/runner/work/CleanmyMap/CleanmyMap/";
 
 const metrics = (values) => Object.fromEntries(Object.entries(values).map(([name, covered]) => [name, { covered, total: 10, pct: covered * 10 }]));
@@ -137,6 +136,18 @@ function sha256(file) {
   return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
+function gitTreeSha(candidate) {
+  try {
+    return execFileSync(gitExecutable(), ["rev-parse", `${candidate}^{tree}`], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
 function writeWebEvidence(root, report, { candidate = auditedSha, ciPaths = false } = {}) {
   const evidencePath = path.join(root, "apps/web/coverage/coverage-evidence.json");
   const summaryPath = report.summaryPath;
@@ -191,6 +202,7 @@ function writePublicationProof(scopeRoot, scope, { candidate = auditedSha, candi
   for (const source of sources) copyReport(scopeRoot, proofRoot, source);
   if (mutateProof) mutateProof(proofRoot);
   const reports = sources.map((source) => ({ source, path: source, sha256: sha256(path.join(proofRoot, ...source.split("/"))) }));
+  const sourceTreeSha = gitTreeSha(candidate);
   const proof = {
     schemaVersion: 1,
     kind: "cleanmymap-coverage-publication-proof",
@@ -206,9 +218,9 @@ function writePublicationProof(scopeRoot, scope, { candidate = auditedSha, candi
         candidateSha: candidate,
         candidateScope,
         scope,
-        sourceTreeSha: auditedTreeSha,
+        sourceTreeSha,
         relevantDirtyFiles: [],
-        verified: candidateScope !== "WORKTREE",
+        verified: candidateScope !== "WORKTREE" && Boolean(sourceTreeSha),
       },
     } : {}),
     reports,
@@ -241,6 +253,7 @@ function createFixture({ mobile = false, python = false, attestMobile = false, a
     pythonRoot,
     webProof,
     nodeProof,
+    pythonProof,
     args: {
       sha: auditedSha,
       "repository-root": repositoryRoot,
@@ -321,6 +334,38 @@ test("refuse une preuve absente ou mal formée et conserve le fail-closed", () =
   fs.writeFileSync(malformed.webProof.proofPath, "{not-json", "utf8");
   const malformedReference = buildReference({ args: malformed.args });
   assert.equal(malformedReference.scopes.find((scope) => scope.scope === "web").state, "EVIDENCE_UNVERIFIED");
+});
+
+test("un manifest Node ou Python sans candidateIdentity reste EVIDENCE_UNVERIFIED", () => {
+  const cases = [
+    { fixture: createFixture(), proof: "nodeProof", scope: "node" },
+    { fixture: createFixture({ python: true, attestPython: true }), proof: "pythonProof", scope: "python" },
+  ];
+  for (const { fixture, proof: proofKey, scope } of cases) {
+    const proof = JSON.parse(fs.readFileSync(fixture[proofKey].proofPath, "utf8"));
+    delete proof.candidateIdentity;
+    fs.writeFileSync(fixture[proofKey].proofPath, JSON.stringify(proof), "utf8");
+    const reference = buildReference({ args: fixture.args });
+    assert.equal(reference.scopes.find((entry) => entry.scope === scope).state, "EVIDENCE_UNVERIFIED", scope);
+    assert.equal(reference.provenance[scope].validation.state, "EVIDENCE_UNVERIFIED", scope);
+  }
+});
+
+test("une candidateIdentity Node incohérente ne devient jamais CI_EXACT_SHA", () => {
+  for (const [field, value] of [
+    ["candidateSha", "0".repeat(40)],
+    ["scope", "python"],
+    ["sourceTreeSha", "0".repeat(40)],
+  ]) {
+    const fixture = createFixture();
+    const proof = JSON.parse(fs.readFileSync(fixture.nodeProof.proofPath, "utf8"));
+    proof.candidateIdentity[field] = value;
+    fs.writeFileSync(fixture.nodeProof.proofPath, JSON.stringify(proof), "utf8");
+    const reference = buildReference({ args: fixture.args });
+    const node = reference.scopes.find((entry) => entry.scope === "node");
+    assert.equal(node.state, "EVIDENCE_UNVERIFIED", field);
+    assert.notEqual(node.state, "CI_EXACT_SHA", field);
+  }
 });
 
 test("refuse une empreinte d'evidence divergente même si le hash du fichier est republié dans la preuve", () => {
