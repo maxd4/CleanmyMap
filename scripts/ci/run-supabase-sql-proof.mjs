@@ -190,7 +190,7 @@ function parseAssertionLine(line) {
 function hasBailOut(lines) {
   return lines.some((line) => {
     const trimmed = trimHorizontalStart(line);
-    if (!trimmed.startsWith("Bail out!")) return false;
+    if (trimmed.slice(0, 9).toLowerCase() !== "bail out!") return false;
     const next = trimmed[9];
     return next === undefined || isHorizontalWhitespace(next);
   });

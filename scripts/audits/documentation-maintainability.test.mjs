@@ -148,6 +148,37 @@ test("ne crée des plages inline que pour des longueurs appariées", () => {
   assert.equal(document.internalLinks.invalid.length, 3);
 });
 
+test("scanne les liens Markdown valides et récupère après une ouverture malformée", () => {
+  const report = run({
+    "docs/index.md": [
+      "# Section",
+      "[Guide](./guide.md#target \"title\") [Dossier](./guide) ![Image](<./image.svg> \"preview\") [Ancre](#section)",
+      "[Malformé](a [Guide](./guide.md#target)",
+    ].join("\n"),
+    "docs/guide.md": "# Target\n",
+    "docs/image.svg": "<svg />\n",
+  });
+  const document = report.documents.find((entry) => entry.path === "docs/index.md");
+
+  assert.deepEqual(document.internalLinks.items.map((link) => link.target), [
+    "./guide.md#target",
+    "./guide",
+    "./image.svg",
+    "#section",
+    "./guide.md#target",
+  ]);
+});
+
+test("les ouvertures Markdown malformées sont parcourues sans rescanner leur suffixe", () => {
+  const malformed = "[x](a ".repeat(4_000);
+  const longDestination = `[long](${"a".repeat(4_000)}`;
+  const document = run({ "docs/adversarial.md": `${malformed}\n${longDestination}\n` }).documents[0];
+
+  assert.deepEqual(document.internalLinks.items, []);
+  assert.deepEqual(document.internalLinks.invalid, []);
+  assert.deepEqual(document.internalLinks.unverified, []);
+});
+
 test("classe un document de 2 000 lignes en ARCHITECTURE_REVIEW", () => {
   const content = ["# Long document", ...Array.from({ length: 1_999 }, (_, index) => `line ${index + 1}`)].join("\n");
   const document = run({ "documentation/long.md": content }).documents[0];

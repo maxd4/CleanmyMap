@@ -236,7 +236,19 @@ function decodeFragment(fragment) {
   return decodePath(fragment);
 }
 
-function resolveDocumentTarget(file, target, files) {
+function buildDirectoryIndex(files) {
+  const directories = new Set();
+  for (const file of files) {
+    let slash = file.indexOf("/");
+    while (slash >= 0) {
+      directories.add(file.slice(0, slash));
+      slash = file.indexOf("/", slash + 1);
+    }
+  }
+  return directories;
+}
+
+function resolveDocumentTarget(file, target, files, directories) {
   const hashIndex = target.indexOf("#");
   const beforeFragment = hashIndex >= 0 ? target.slice(0, hashIndex) : target;
   const rawFragment = hashIndex >= 0 ? target.slice(hashIndex + 1) : null;
@@ -249,7 +261,7 @@ function resolveDocumentTarget(file, target, files) {
     ? rawPath.startsWith("/") ? normalizePath(path.posix.normalize(decodedPath.slice(1))) : normalizePath(path.posix.normalize(path.posix.join(path.posix.dirname(file), decodedPath)))
     : normalizePath(file);
   const existsAsFile = (candidate) => files.has(candidate);
-  const existsAsDirectory = (candidate) => [...files].some((entry) => entry.startsWith(`${candidate}/`));
+  const existsAsDirectory = (candidate) => directories.has(candidate);
   const targetFile = candidate;
   const exists = existsAsFile(targetFile) || existsAsDirectory(targetFile);
   const verifiable = exists || Boolean(path.posix.extname(decodedPath)) || !rawPath;
@@ -260,14 +272,40 @@ function isHorizontalWhitespace(character) {
   return character === " " || character === "\t";
 }
 
+function scanMarkdownUntil(line, start, delimiter) {
+  let position = start;
+  while (position < line.length) {
+    if (line[position] === delimiter) return { position, recoverAt: -1 };
+    if (line[position] === "[") {
+      let labelEnd = position + 1;
+      while (
+        labelEnd < line.length
+        && line[labelEnd] !== "]"
+        && line[labelEnd] !== delimiter
+      ) labelEnd += 1;
+      if (labelEnd < line.length && line[labelEnd] === "]" && line[labelEnd + 1] === "(") {
+        return { position: line.length, recoverAt: position };
+      }
+      position = labelEnd;
+      continue;
+    }
+    position += 1;
+  }
+  return { position: line.length, recoverAt: -1 };
+}
+
 function findMarkdownLinks(line) {
   const matches = [];
   let cursor = 0;
   while (cursor < line.length) {
     const openBracket = line.indexOf("[", cursor);
     if (openBracket < 0) break;
-    let labelEnd = openBracket + 1;
-    while (labelEnd < line.length && line[labelEnd] !== "]") labelEnd += 1;
+    const labelScan = scanMarkdownUntil(line, openBracket + 1, "]");
+    if (labelScan.recoverAt >= 0) {
+      cursor = labelScan.recoverAt;
+      continue;
+    }
+    const labelEnd = labelScan.position;
     if (labelEnd >= line.length || line[labelEnd + 1] !== "(") {
       cursor = labelEnd < line.length ? labelEnd + 1 : line.length;
       continue;
@@ -278,12 +316,13 @@ function findMarkdownLinks(line) {
     let target = "";
     if (line[position] === "<") {
       const targetStart = position + 1;
-      position = targetStart;
-      while (position < line.length && line[position] !== ">") position += 1;
-      if (position >= line.length || position === targetStart) {
-        cursor = labelEnd + 1;
+      const targetScan = scanMarkdownUntil(line, targetStart, ">");
+      if (targetScan.recoverAt >= 0) {
+        cursor = targetScan.recoverAt;
         continue;
       }
+      position = targetScan.position;
+      if (position >= line.length || position === targetStart) break;
       target = line.slice(targetStart, position);
       position += 1;
     } else {
@@ -295,10 +334,14 @@ function findMarkdownLinks(line) {
       }
       target = line.slice(targetStart, position);
     }
-    while (position < line.length && line[position] !== ")") position += 1;
-    if (position >= line.length) {
-      cursor = labelEnd + 1;
+    const closingScan = scanMarkdownUntil(line, position, ")");
+    if (closingScan.recoverAt >= 0) {
+      cursor = closingScan.recoverAt;
       continue;
+    }
+    position = closingScan.position;
+    if (position >= line.length) {
+      break;
     }
     matches.push({ index: fullStart, text: line.slice(openBracket + 1, labelEnd), target });
     cursor = position + 1;
@@ -310,6 +353,7 @@ function inspectLinks(file, lines, files, headingsByFile) {
   const links = [];
   const invalid = [];
   const unverified = [];
+  const directories = buildDirectoryIndex(files);
   let fence = null;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -325,7 +369,7 @@ function inspectLinks(file, lines, files, headingsByFile) {
       if (isInsideInlineCode(inlineRanges, match.index ?? -1) || !isInternalLink(rawTarget, file, files)) continue;
       const link = { text: match.text, target: rawTarget, line: index + 1 };
       links.push(link);
-      const resolved = resolveDocumentTarget(file, rawTarget, files);
+      const resolved = resolveDocumentTarget(file, rawTarget, files, directories);
       if (!resolved.verifiable) {
         unverified.push({ ...link, reason: resolved.reason ?? "UNVERIFIED_REFERENCE" });
         continue;

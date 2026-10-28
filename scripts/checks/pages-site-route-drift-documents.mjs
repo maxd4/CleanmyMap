@@ -42,14 +42,40 @@ function isHorizontalWhitespace(character) {
   return character === " " || character === "\t";
 }
 
+function scanMarkdownUntil(line, start, delimiter) {
+  let position = start;
+  while (position < line.length) {
+    if (line[position] === delimiter) return { position, recoverAt: -1 };
+    if (line[position] === "[") {
+      let labelEnd = position + 1;
+      while (
+        labelEnd < line.length
+        && line[labelEnd] !== "]"
+        && line[labelEnd] !== delimiter
+      ) labelEnd += 1;
+      if (labelEnd < line.length && line[labelEnd] === "]" && line[labelEnd + 1] === "(") {
+        return { position: line.length, recoverAt: position };
+      }
+      position = labelEnd;
+      continue;
+    }
+    position += 1;
+  }
+  return { position: line.length, recoverAt: -1 };
+}
+
 function markdownLinkTargets(line) {
   const targets = [];
   let cursor = 0;
   while (cursor < line.length) {
     const openBracket = line.indexOf("[", cursor);
     if (openBracket < 0) break;
-    let labelEnd = openBracket + 1;
-    while (labelEnd < line.length && line[labelEnd] !== "]") labelEnd += 1;
+    const labelScan = scanMarkdownUntil(line, openBracket + 1, "]");
+    if (labelScan.recoverAt >= 0) {
+      cursor = labelScan.recoverAt;
+      continue;
+    }
+    const labelEnd = labelScan.position;
     if (labelEnd >= line.length || line[labelEnd + 1] !== "(") {
       cursor = labelEnd < line.length ? labelEnd + 1 : line.length;
       continue;
@@ -58,13 +84,13 @@ function markdownLinkTargets(line) {
     while (position < line.length && isHorizontalWhitespace(line[position])) position += 1;
     const targetStart = position;
     if (line[position] === "<") {
-      position += 1;
-      while (position < line.length && line[position] !== ">") position += 1;
-      if (position >= line.length) {
-        cursor = labelEnd + 1;
+      const targetScan = scanMarkdownUntil(line, position + 1, ">");
+      if (targetScan.recoverAt >= 0) {
+        cursor = targetScan.recoverAt;
         continue;
       }
-      position += 1;
+      position = targetScan.position;
+      if (position >= line.length) break;
     } else {
       while (position < line.length && line[position] !== ")" && !isHorizontalWhitespace(line[position])) position += 1;
       if (position === targetStart) {
@@ -72,10 +98,14 @@ function markdownLinkTargets(line) {
         continue;
       }
     }
-    while (position < line.length && line[position] !== ")") position += 1;
-    if (position >= line.length) {
-      cursor = labelEnd + 1;
+    const closingScan = scanMarkdownUntil(line, position, ")");
+    if (closingScan.recoverAt >= 0) {
+      cursor = closingScan.recoverAt;
       continue;
+    }
+    position = closingScan.position;
+    if (position >= line.length) {
+      break;
     }
     targets.push(line.slice(targetStart, position));
     cursor = position + 1;

@@ -311,3 +311,39 @@ test("les fichiers compagnons d'une route sont facultatifs, les liens restent co
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("les liens Markdown valides, images, ancres et titres restent reconnus", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmm-pages-markdown-valid-"));
+  const routesRoot = path.join(root, "documentation", "pages_site", "routes");
+  const folder = path.join(routesRoot, "02-agir", "demo");
+  try {
+    await mkdir(folder, { recursive: true });
+    await writeFile(path.join(folder, "demo-README.md"), [
+      "# Demo",
+      "[Guide](./guide.md \"title\") ![Image](<./image.svg> \"preview\") [Ancre](#demo)",
+      "[Malformé](a [Guide](./guide.md))",
+    ].join("\n"), "utf8");
+    await writeFile(path.join(folder, "guide.md"), "# Guide\n", "utf8");
+    await writeFile(path.join(folder, "image.svg"), "<svg />", "utf8");
+
+    assert.deepEqual(await findBrokenCanonicalMarkdownLinks({ repoRoot: root, routesRoot }), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("les ouvertures Markdown malformées adversariales ne provoquent pas de rescans quadratiques", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmm-pages-markdown-adversarial-"));
+  const routesRoot = path.join(root, "documentation", "pages_site", "routes");
+  const folder = path.join(routesRoot, "02-agir", "demo");
+  try {
+    await mkdir(folder, { recursive: true });
+    const malformed = "[x](a ".repeat(4_000);
+    const longDestination = `[long](${"a".repeat(4_000)}`;
+    await writeFile(path.join(folder, "demo-README.md"), `${malformed}\n${longDestination}\n`, "utf8");
+
+    assert.deepEqual(await findBrokenCanonicalMarkdownLinks({ repoRoot: root, routesRoot }), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

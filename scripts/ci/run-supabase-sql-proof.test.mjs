@@ -156,6 +156,35 @@ test("pgTAP parser rejects missing, failing, incomplete or ambiguous proof", () 
   assert.throws(() => parsePgTapOutput("1..2\nok 1 - first\nok 2 - second\nBail out! Connection lost\nFiles=1, Tests=2, 0 Failed\nResult: PASS\n", 2), /Bail out/);
 });
 
+test("pgTAP parser rejects Bail out interruptions regardless of case", () => {
+  for (const marker of ["Bail out!", "BAIL OUT!", "bail out!", "bAiL oUt!"]) {
+    const output = [
+      "1..2",
+      "ok 1 - first",
+      "ok 2 - second",
+      `${marker} Connection lost`,
+      "Files=1, Tests=2, 0 Failed, 0 Ignored, 0 Todo, 0 Skipped",
+      "Result: PASS",
+    ].join("\n");
+    assert.throws(() => parsePgTapOutput(output, 2), /Bail out/);
+  }
+});
+
+test("pgTAP parser keeps an embedded ordinary phrase distinct from a bailout marker", () => {
+  assert.deepEqual(parsePgTapOutput(
+    "1..1\nok 1 - documentation mentions Bail out! as ordinary text\n",
+    1,
+  ), {
+    expectedPlan: 1,
+    actualPlan: 1,
+    planned: 1,
+    executed: 1,
+    passed: 1,
+    failures: 0,
+    verificationMode: "tap-detailed",
+  });
+});
+
 test("pgTAP parser rejects detailed and summary divergence", () => {
   const output = [
     "ok 1 - first",
