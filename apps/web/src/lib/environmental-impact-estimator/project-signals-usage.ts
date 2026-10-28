@@ -17,11 +17,12 @@ import type {
 
 export function calculateCodexMonthlyUsageInput(
   snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
+  generatedAt = new Date().toISOString(),
 ): {
   codexUsage: EnvironmentalImpactCodexUsageMonthlyEstimate;
   usage: EnvironmentalImpactInfrastructureInput["usage"];
 } {
-  const codexUsage = buildCodexMonthlyUsageEstimate(snapshots);
+  const codexUsage = buildCodexMonthlyUsageEstimate(snapshots, generatedAt);
   if (codexUsage.weekCount === 0) {
     return {
       codexUsage,

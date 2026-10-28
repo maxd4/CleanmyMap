@@ -8,10 +8,11 @@ import {
 import {
   normalizeCanonicalSpotRows,
 } from "./project-signals.calculations";
+import { buildCodexUsageWeeklySnapshot } from "./codex-usage-store";
 import { buildProjectSignalsHighlights } from "./project-signals-highlights";
 import { summarizeFunnelRows } from "./project-signals-funnel";
 import { buildScopeInputFromRows } from "./project-signals-timeline";
-import { calculateMonthlyUsageInput } from "./project-signals-usage";
+import { calculateCodexMonthlyUsageInput, calculateMonthlyUsageInput } from "./project-signals-usage";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 vi.mock("./codex-usage-store", async () => {
@@ -251,6 +252,75 @@ it("anchors monthly projections to generatedAt instead of the process clock", ()
     monthlyApiRequests: 1,
   });
   expect(calculateMonthlyUsageInput(rows, "2026-10-28T12:00:00.000Z")?.monthlyMapViews).toBeNull();
+});
+
+it("anchors Codex projections, usage, highlights and notes to the public generatedAt", () => {
+  const rows = {
+    profiles: [], actions: [], spots: [], funnelEvents: [], progressionEvents: [], reports: [],
+    trainingExamples: [], serviceEmails: [], communityEvents: [], eventRsvps: [], appNotifications: [],
+  };
+  const snapshots = [
+    buildCodexUsageWeeklySnapshot({
+      weekStart: "2026-05-18",
+      weekEnd: "2026-05-24",
+      sessionCount: 5,
+      conversationCount: 7,
+      source: "manual",
+    }),
+    buildCodexUsageWeeklySnapshot({
+      weekStart: "2026-10-19",
+      weekEnd: "2026-10-25",
+      sessionCount: 50,
+      conversationCount: 70,
+      source: "manual",
+    }),
+  ];
+
+  const historical = buildEnvironmentalImpactProjectSignals(rows, {
+    generatedAt: "2026-05-20T12:00:00.000Z",
+    userId: null,
+  }, snapshots);
+  const current = buildEnvironmentalImpactProjectSignals(rows, {
+    generatedAt: "2026-10-28T12:00:00.000Z",
+    userId: null,
+  }, snapshots);
+
+  expect(historical.codexUsage).toMatchObject({
+    generatedAt: "2026-05-20T12:00:00.000Z",
+    weekCount: 1,
+    sessionCount: 5,
+    estimatedKgCo2eProxy: null,
+  });
+  expect(current.codexUsage).toMatchObject({
+    generatedAt: "2026-10-28T12:00:00.000Z",
+    weekCount: 2,
+    sessionCount: 55,
+    estimatedKgCo2eProxy: null,
+  });
+  expect(historical.infrastructureInput.usage?.monthlyCodexSessions)
+    .toBe(historical.codexUsage?.monthlyEquivalent.sessionCount);
+  expect(current.infrastructureInput.usage?.monthlyCodexSessions)
+    .toBe(current.codexUsage?.monthlyEquivalent.sessionCount);
+  expect(historical.highlights.find((item) => item.label === "Codex CleanMyMap")?.detail)
+    .toContain("1 semaine");
+  expect(current.highlights.find((item) => item.label === "Codex CleanMyMap")?.detail)
+    .toContain("2 semaines");
+  expect(historical.notes).toEqual(expect.arrayContaining(historical.codexUsage?.notes ?? []));
+  expect(current.notes).toEqual(expect.arrayContaining(current.codexUsage?.notes ?? []));
+});
+
+it("keeps the Codex usage default deterministic under a historical clock", () => {
+  vi.setSystemTime(new Date("2026-05-20T12:00:00.000Z"));
+  const snapshots = [
+    buildCodexUsageWeeklySnapshot({ weekStart: "2026-05-18", sessionCount: 5 }),
+    buildCodexUsageWeeklySnapshot({ weekStart: "2026-10-19", sessionCount: 50 }),
+  ];
+
+  expect(calculateCodexMonthlyUsageInput(snapshots).codexUsage).toMatchObject({
+    generatedAt: "2026-05-20T12:00:00.000Z",
+    weekCount: 1,
+    sessionCount: 5,
+  });
 });
 
 it("builds project-specific site, user and monthly usage inputs", () => {

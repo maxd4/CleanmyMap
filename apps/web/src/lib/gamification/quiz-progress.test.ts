@@ -60,6 +60,19 @@ describe("quiz progress awards", () => {
     expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
   });
 
+  it("does not announce or refresh when the progression RPC fails", async () => {
+    recordQuizProgressionMock.mockRejectedValueOnce(new Error("transaction failed"));
+
+    await expect(syncQuizQuestionTypeProgress({ rpc: vi.fn() } as never, {
+      userId: "user-1",
+      questionType: "vrai-faux-piegeux",
+      questionId: "question-rpc-error",
+    })).rejects.toThrow("transaction failed");
+
+    expect(broadcastGamificationAnnouncementMock).not.toHaveBeenCalled();
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+  });
+
   it("awards the 50th answer milestone", () => {
     expect(computeQuizProgressAwards({ previousCount: 49, nextCount: 50, questionType: "vrai-faux-piegeux" })).toEqual([
       expect.objectContaining({ threshold: 50, milestone: 50, xp: 1, badgeId: "quiz-type-50", sourceId: "quiz:vrai-faux-piegeux:50" }),

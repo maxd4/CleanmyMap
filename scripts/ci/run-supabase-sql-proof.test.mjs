@@ -22,12 +22,14 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/gps-point-lifecycle-boundary.pgtap.sql",
     "apps/web/supabase/tests/newsletter-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/notifications-decision-boundary.pgtap.sql",
+    "apps/web/supabase/tests/quiz-progression-rpc-boundary.pgtap.sql",
     "apps/web/supabase/tests/user-data-boundaries.pgtap.sql",
   ]);
   assert.equal(inventory.contracts.length, 9);
   assert.deepEqual(inventory.multisession, [
     "e2e/action-role-attestation-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
+    "e2e/quiz-progression-concurrency.mjs",
     "e2e/reports-postgres-concurrency.mjs",
     "e2e/security-02-two-sessions.mjs",
     "e2e/spogomi-concurrency.mjs",
@@ -39,6 +41,7 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   const entries = new Set(knipConfig.workspaces["."].entry);
   for (const entrypoint of [
     "e2e/gamification-reconciliation-concurrency.mjs",
+    "e2e/quiz-progression-concurrency.mjs",
     "e2e/reports-postgres-concurrency.mjs",
   ]) {
     assert.equal(entries.has(entrypoint), true, `missing Knip entrypoint: ${entrypoint}`);

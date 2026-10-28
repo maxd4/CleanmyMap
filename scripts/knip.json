@@ -11,6 +11,7 @@
         "e2e/global.teardown.ts",
         "e2e/run-*.mjs",
         "e2e/gamification-reconciliation-concurrency.mjs",
+        "e2e/quiz-progression-concurrency.mjs",
         "e2e/reports-postgres-concurrency.mjs",
         "scripts/ci/run-static-candidate-check.mjs",
         "scripts/ci/run-dynamic-candidate-check.mjs",

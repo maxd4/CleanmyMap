@@ -24,7 +24,7 @@ export function buildEnvironmentalImpactProjectSignals(
   const accountCreatedAt = params.userId
     ? findAccountCreatedAt(rows, params.userId, params.accountCreatedAt ?? null)
     : null;
-  const codexUsage = calculateCodexMonthlyUsageInput(codexSnapshots);
+  const codexUsage = calculateCodexMonthlyUsageInput(codexSnapshots, params.generatedAt);
   const githubWorkflowRunsCount30d = githubRepositoryStats?.workflowRunsCount30d ?? null;
   const siteInput = calculateAllTimeScopeInput(rows, {
     userId: null,
