@@ -13,6 +13,7 @@ import {
   readOfflineQualityRun,
 } from "./quality-file-index.mjs";
 import { createAuditPaths, listFlatQualityProjectionArtifacts } from "../audits/quality-audit-storage.mjs";
+import { stableId } from "./quality-index-primitives.mjs";
 
 const sha = "c".repeat(40);
 const runId = "projection-run";
@@ -258,6 +259,25 @@ test("construit un index exhaustif sans confondre complexity et functionLength",
   assert.equal(index.audits.documentation.reason, "HISTORICAL_ABSENCE");
   assert.equal(index.documentationDomains.state, "NOT_MEASURED");
   assert.equal(index.documentationDomains.reason, "HISTORICAL_ABSENCE");
+});
+
+test("préserve l'identifiant historique d'un cycle indépendant de la casse et de la permutation", () => {
+  const expectedId = "27ae585ac6925adce9b659b5";
+  const buildCycleIndex = (cycleFiles) => {
+    const run = buildRun();
+    run.reports.cycles = {
+      status: "PASS",
+      cycleObjects: [{ files: cycleFiles, edges: [] }],
+      comparison: { added: [], stale: [] },
+    };
+    return buildQualityFileIndex({ run, mode: "OFFLINE" });
+  };
+
+  const first = buildCycleIndex(["A.ts", "a.ts"]);
+  const permuted = buildCycleIndex(["a.ts", "A.ts"]);
+  assert.equal(stableId("cycle", ["A.ts", "a.ts"]), expectedId);
+  assert.equal(first.audits.cycles.cycles[0].id, expectedId);
+  assert.equal(permuted.audits.cycles.cycles[0].id, expectedId);
 });
 
 test("projette un triage borné sans inventer une décision architecturale", () => {

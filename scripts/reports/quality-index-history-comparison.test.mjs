@@ -10,7 +10,7 @@ const engine = { name: "eslint-plugin-sonarjs", version: "3.0.0", eslint: "9.0.0
 const rules = { "sonarjs/cognitive-complexity": { thresholdTarget: 15, enforcement: "informational" } };
 const policy = { controlFlowStructure: "descriptive" };
 
-function run({ sha, runId, functions = [], measurementStatus = "MEASURED_NOT_RATCHETED", provenance = "COMMITTED_SNAPSHOT", schemaVersion = 1 } = {}) {
+function run({ sha, runId, functions = [], measurementStatus = "MEASURED_NOT_RATCHETED", provenance = "COMMITTED_SNAPSHOT", schemaVersion = 1, engineOverride = engine, rulesOverride = rules, policyOverride = policy, sourceRoots = ["scripts"] } = {}) {
   const metrics = [];
   const cognitive = [];
   const profiles = [];
@@ -41,10 +41,10 @@ function run({ sha, runId, functions = [], measurementStatus = "MEASURED_NOT_RAT
     status: "PASS",
     measurementStatus,
     readProvenance: provenance,
-    engine,
-    sourceRoots: ["scripts"],
-    rules,
-    policy,
+    engine: engineOverride,
+    sourceRoots,
+    rules: rulesOverride,
+    policy: policyOverride,
     metrics: cognitive,
     findings,
     controlFlowProfiles: profiles,
@@ -113,6 +113,26 @@ test("refuse le même SHA, les schémas incompatibles et WORKTREE_LIVE comme pre
   assert.equal(buildQualityAuditHistoryComparison({ currentRun: current, previousRun: run({ sha: currentSha, runId: "old", functions: [{ identity: "named:one#1", name: "one", complexity: 1, cognitive: 1, length: 2 }] }), requested: true }).reason, "SAME_SHA");
   assert.equal(buildQualityAuditHistoryComparison({ currentRun: current, previousRun: run({ sha: previousSha, runId: "old", schemaVersion: 2, functions: [{ identity: "named:one#1", name: "one", complexity: 1, cognitive: 1, length: 2 }] }), requested: true }).reason, "SCHEMA_NOT_COMPARABLE");
   assert.equal(buildQualityAuditHistoryComparison({ currentRun: current, previousRun: run({ sha: previousSha, runId: "old", provenance: "WORKTREE_LIVE", functions: [{ identity: "named:one#1", name: "one", complexity: 1, cognitive: 1, length: 2 }] }), requested: true }).reason, "WORKTREE_LIVE_NOT_IMMUTABLE_PROOF");
+});
+
+test("canonicalise les clés Unicode indépendamment de leur ordre d'insertion", () => {
+  const firstEngine = Object.fromEntries([["é", "same"], ["e\u0301", "same"]]);
+  const secondEngine = Object.fromEntries([["e\u0301", "same"], ["é", "same"]]);
+  const functions = [{ identity: "named:stable#1", name: "stable", complexity: 1, cognitive: 1, length: 2 }];
+  const current = run({ sha: currentSha, runId: "new", engineOverride: firstEngine, functions });
+  const previous = run({ sha: previousSha, runId: "old", engineOverride: secondEngine, functions });
+
+  const comparison = buildQualityAuditHistoryComparison({ currentRun: current, previousRun: previous, requested: true });
+  assert.equal(comparison.comparability, "FULL");
+});
+
+test("conserve les incompatibilités réelles de version et de politique", () => {
+  const baseline = run({ sha: previousSha, runId: "old" });
+  const engineChanged = run({ sha: currentSha, runId: "new", engineOverride: { ...engine, version: "3.1.0" } });
+  const policyChanged = run({ sha: currentSha, runId: "new", policyOverride: { ...policy, controlFlowStructure: "changed" } });
+
+  assert.equal(buildQualityAuditHistoryComparison({ currentRun: engineChanged, previousRun: baseline, requested: true }).reason, "ENGINE_VERSION_NOT_COMPARABLE");
+  assert.equal(buildQualityAuditHistoryComparison({ currentRun: policyChanged, previousRun: baseline, requested: true }).reason, "POLICY_DEFINITIONS_NOT_COMPARABLE");
 });
 
 test("reste déterministe et conserve NOT_MEASURED pour une mesure partielle", () => {

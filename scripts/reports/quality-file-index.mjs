@@ -33,6 +33,7 @@ import {
   QUALITY_INDEX_AUDITS,
   QUALITY_ARCHITECTURE_DOMAIN_PREFIX,
   REPOSITORY_ROOT,
+  compareLexical,
   normalizePath,
   stableId,
 } from "./quality-index-primitives.mjs";
@@ -637,7 +638,7 @@ function addCycles(report, files, domains, candidateGroups) {
   }
   const cycles = [];
   for (const cycle of report.cycleObjects ?? []) {
-    const cycleFiles = [...new Set((cycle.files ?? []).map(normalizePath).filter(Boolean))].sort((left, right) => left.localeCompare(right));
+    const cycleFiles = [...new Set((cycle.files ?? []).map(normalizePath).filter(Boolean))].sort(compareLexical);
     const cycleId = stableId("cycle", cycleFiles);
     const item = { id: cycleId, files: cycleFiles, cycle };
     cycles.push(item);

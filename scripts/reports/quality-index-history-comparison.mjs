@@ -1,3 +1,5 @@
+import { compareLexical } from "./quality-index-primitives.mjs";
+
 const HISTORY_COMPARISON_SCHEMA_VERSION = 1;
 
 const IMMUTABLE_PROVENANCE = "COMMITTED_SNAPSHOT";
@@ -5,7 +7,7 @@ const IMMUTABLE_PROVENANCE = "COMMITTED_SNAPSHOT";
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.keys(value).sort((left, right) => left.localeCompare(right)).map((key) => [key, stableValue(value[key])]));
+  return Object.fromEntries(Object.keys(value).sort(compareLexical).map((key) => [key, stableValue(value[key])]));
 }
 
 function stableJson(value) {

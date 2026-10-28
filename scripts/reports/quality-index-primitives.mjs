@@ -17,6 +17,10 @@ export function normalizePath(value) {
   return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
+export function compareLexical(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export function stableId(scope, value) {
   return crypto.createHash("sha256").update(`${scope}:${JSON.stringify(value)}`).digest("hex").slice(0, 24);
 }
