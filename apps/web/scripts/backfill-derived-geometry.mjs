@@ -54,6 +54,18 @@ const SOURCE_CONFIDENCE = {
   fallback_point: GEOMETRY_CONFIDENCE.POINT_FALLBACK,
 };
 
+const DRAWING_KIND_HINTS = new Set(["polyline", "polygon"]);
+
+/**
+ * Only stored line and area kinds may recover a missing GeoJSON type.
+ * Point and multiline values remain invalid hints for this drawing parser.
+ * @param {unknown} kindHint
+ * @returns {"polyline" | "polygon" | null}
+ */
+function normalizeDrawingKindHint(kindHint) {
+  return DRAWING_KIND_HINTS.has(kindHint) ? kindHint : null;
+}
+
 function parseArgs(argv) {
   const args = new Set(argv.slice(2));
   return {
@@ -176,6 +188,7 @@ export function parseDrawingFromGeoJson(geojson, kindHint = null) {
     if (!parsed || typeof parsed !== "object") return null;
     const geometryType = typeof parsed.type === "string" ? parsed.type : null;
     const hasExplicitType = parsed.type !== undefined && parsed.type !== null;
+    const normalizedKindHint = normalizeDrawingKindHint(kindHint);
     const drawingKind =
       geometryType === "LineString"
         ? "polyline"
@@ -183,9 +196,7 @@ export function parseDrawingFromGeoJson(geojson, kindHint = null) {
           ? "polygon"
           : hasExplicitType
             ? null
-            : kindHint === "polyline" || kindHint === "polygon"
-              ? kindHint
-              : null;
+            : normalizedKindHint;
     if (!drawingKind) return null;
     const isPolygon = drawingKind === "polygon";
     const points = isPolygon ? parsed.coordinates?.[0] : parsed.coordinates;

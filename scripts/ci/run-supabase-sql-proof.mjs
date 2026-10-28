@@ -408,13 +408,20 @@ export async function main(run = runSupabaseSqlProof) {
     console.log(`SUPABASE_SQL_EVIDENCE: ${report.outcome} candidate=${report.candidateSha} records=${report.records.length}`);
     return 0;
   } catch (error) {
-    console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`SUPABASE_SQL_EVIDENCE: FAIL ${error instanceof Error ? error.name : "non-error rejection"}`);
     return 1;
   }
 }
 
+export function reportMainRejection(error) {
+  console.error(`SUPABASE_SQL_EVIDENCE: FAIL main rejected (${error instanceof Error ? error.name : "non-error rejection"})`);
+  return 1;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   main().then((exitCode) => {
-    if (exitCode !== 0) process.exitCode = exitCode;
+    process.exitCode = exitCode;
+  }).catch((error) => {
+    process.exitCode = reportMainRejection(error);
   });
 }

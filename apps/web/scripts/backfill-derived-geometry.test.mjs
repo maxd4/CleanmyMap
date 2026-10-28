@@ -58,6 +58,8 @@ test("uses kindHint only when the observed GeoJSON type is absent", () => {
   const noHint = parseDrawingFromGeoJson(hintedLine);
   assert.equal(line?.kind, "polyline");
   assert.equal(noHint, null);
+  assert.equal(parseDrawingFromGeoJson(hintedLine, "point"), null);
+  assert.equal(parseDrawingFromGeoJson(hintedLine, "multiline"), null);
 
   const action = classifyGeometryRow(row({
     derived_geometry_kind: "polyline",

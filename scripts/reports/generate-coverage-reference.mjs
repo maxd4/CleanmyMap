@@ -72,20 +72,19 @@ function readJson(file) {
   return file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
 }
 
-function normalizeCiReport(value, scope) {
+function normalizeCiReport(value) {
   if (typeof value !== "string") return value;
-  void scope;
   return value.replaceAll(CI_SOURCE_PREFIX, "");
 }
 
-function reportFsApi(scope, summaryFile, lcovFile) {
+function reportFsApi(summaryFile, lcovFile) {
   return {
     readFileSync(file, encoding) {
       const normalized = String(file).replaceAll("\\", "/");
       if (summaryFile && normalized.endsWith("coverage-summary.json")) {
         const summary = JSON.parse(fs.readFileSync(summaryFile, "utf8"));
         const transformed = Object.fromEntries(Object.entries(summary).map(([key, value]) => [
-          key === "total" ? key : normalizeCiReport(key, scope),
+          key === "total" ? key : normalizeCiReport(key),
           value,
         ]));
         return encoding === "utf8" ? JSON.stringify(transformed) : Buffer.from(JSON.stringify(transformed));
@@ -271,7 +270,7 @@ function buildScope({ scope, root, repositoryRoot, summaryFile, lcovFile, defini
       diagnostics: [{ code: "PRESENT_NOT_ATTESTED", message: `${scope} report is present but no exact candidate publication proof is claimed.` }],
       error: null,
     };
-  const validationFsApi = reportFsApi(scope, summaryFile, lcovFile);
+  const validationFsApi = reportFsApi(summaryFile, lcovFile);
   const report = buildCoverageInsightsReport({
     root,
     auditedSha,

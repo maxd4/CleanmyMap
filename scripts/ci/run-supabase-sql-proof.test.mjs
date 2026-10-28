@@ -7,6 +7,7 @@ import {
   attestProofResult,
   main,
   parsePgTapOutput,
+  reportMainRejection,
   runSupabaseSqlProof,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
@@ -261,6 +262,19 @@ test("rejected proof reaches the runner failure exit code", async () => {
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+test("main rejection returns failure without logging rejected secret details", () => {
+  const originalConsoleError = console.error;
+  const diagnostics = [];
+  console.error = (...args) => diagnostics.push(args.join(" "));
+  try {
+    assert.equal(reportMainRejection(new Error("token=super-secret-value")), 1);
+  } finally {
+    console.error = originalConsoleError;
+  }
+  assert.match(diagnostics.join("\n"), /SUPABASE_SQL_EVIDENCE: FAIL main rejected/);
+  assert.doesNotMatch(diagnostics.join("\n"), /super-secret-value/);
 });
 
 test("process spawn rejections reach the report as an unexecuted database proof", async () => {

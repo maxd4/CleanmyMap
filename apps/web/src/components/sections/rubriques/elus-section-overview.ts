@@ -17,6 +17,12 @@ export type ElusOverviewIdentity = {
 
 type PilotageOverviewKey = readonly ["/api/pilotage/overview", string];
 
+const DEFAULT_IDENTITY: ElusOverviewIdentity = {
+  isLoaded: false,
+  isSignedIn: false,
+  userId: null,
+};
+
 export const fetchPilotageOverview = async (
   url: string,
 ): Promise<PilotageOverviewResponse> => {
@@ -33,11 +39,7 @@ export const fetchPilotageOverview = async (
 
 export function useElusOverview(
   activeTab: ElusSectionTab = "overview",
-  identity: ElusOverviewIdentity = {
-    isLoaded: false,
-    isSignedIn: false,
-    userId: null,
-  },
+  identity: ElusOverviewIdentity = DEFAULT_IDENTITY,
 ) {
   const identityKey =
     identity.isLoaded && identity.isSignedIn === true && identity.userId
