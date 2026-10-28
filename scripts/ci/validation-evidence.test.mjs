@@ -183,6 +183,37 @@ test("STAGED candidate fingerprints use the index rather than WORKTREE file list
   }
 });
 
+test("STAGED candidate fingerprints change when the indexed blob changes", () => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    fs.writeFileSync(path.join(root, "candidate.txt"), "committed\n");
+    git(root, ["add", "candidate.txt"]);
+    git(root, ["commit", "--quiet", "-m", "baseline"]);
+
+    fs.writeFileSync(path.join(root, "candidate.txt"), "first staged blob\n");
+    git(root, ["add", "candidate.txt"]);
+    const firstFingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      candidateSha: getCandidateSha(root),
+    });
+
+    fs.writeFileSync(path.join(root, "candidate.txt"), "second staged blob\n");
+    git(root, ["add", "candidate.txt"]);
+    fs.writeFileSync(path.join(root, "candidate.txt"), "unrelated WORKTREE content\n");
+    const secondFingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      candidateSha: getCandidateSha(root),
+    });
+
+    assert.notEqual(secondFingerprint, firstFingerprint);
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("STAGED candidate fingerprints ignore a WORKTREE symlink replacing an indexed file", (t) => {
   const root = makeRoot();
   try {
@@ -223,6 +254,39 @@ test("STAGED candidate fingerprints ignore a WORKTREE symlink replacing an index
   }
 });
 
+test("STAGED candidate fingerprints read a symlink blob without following its WORKTREE target", (t) => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    fs.writeFileSync(path.join(root, "target.txt"), "target one\n");
+    try {
+      fs.symlinkSync("target.txt", path.join(root, "candidate-link.txt"), "file");
+    } catch (error) {
+      t.skip(`symlink fixtures unavailable on this platform: ${error.message}`);
+      return;
+    }
+    git(root, ["add", "candidate-link.txt"]);
+
+    const indexedFingerprint = createCandidateFingerprint({
+      repositoryRoot: root,
+      candidateScope: "STAGED",
+      candidateSha: getCandidateSha(root),
+    });
+    fs.writeFileSync(path.join(root, "target.txt"), "target two\n");
+
+    assert.equal(
+      createCandidateFingerprint({
+        repositoryRoot: root,
+        candidateScope: "STAGED",
+        candidateSha: getCandidateSha(root),
+      }),
+      indexedFingerprint,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("WORKTREE_LIVE candidate fingerprints refuse a symlink path", (t) => {
   const root = makeRoot();
   try {
@@ -244,6 +308,25 @@ test("WORKTREE_LIVE candidate fingerprints refuse a symlink path", (t) => {
       }),
       /symbolic-link|symlink/i,
     );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("candidate fingerprints reject traversal and absolute WORKTREE paths", () => {
+  const root = makeRoot();
+  try {
+    for (const changedFile of ["../outside.txt", path.resolve(root, "outside.txt")]) {
+      assert.throws(
+        () => createCandidateFingerprint({
+          repositoryRoot: root,
+          candidateScope: "WORKTREE_LIVE",
+          changedFiles: [changedFile],
+          candidateSha,
+        }),
+        /escapes its validation candidate root/,
+      );
+    }
   } finally {
     removePathWithRetry(root, { recursive: true });
   }
