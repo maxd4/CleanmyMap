@@ -107,11 +107,21 @@ function readGitLines(repositoryRoot, args, { allowFailure = true } = {}) {
   }
 }
 
-export function getWorktreeCandidateFiles(repositoryRoot = process.cwd()) {
+export function getWorktreeCandidateFiles(repositoryRoot = process.cwd(), { strict = false, readGitLinesFn = readGitLines } = {}) {
+  const readInventory = (args, label) => {
+    try {
+      return readGitLinesFn(repositoryRoot, args, { allowFailure: !strict });
+    } catch (error) {
+      throw new Error(
+        `Git worktree candidate inventory failed while reading ${label}: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
+  };
   return [...new Set([
-    ...readGitLines(repositoryRoot, ["diff", "--name-only", "HEAD", "--"]),
-    ...readGitLines(repositoryRoot, ["diff", "--cached", "--name-only", "--"]),
-    ...readGitLines(repositoryRoot, ["ls-files", "--others", "--exclude-standard"]),
+    ...readInventory(["diff", "--name-only", "HEAD", "--"], "unstaged tracked files"),
+    ...readInventory(["diff", "--cached", "--name-only", "--"], "staged files"),
+    ...readInventory(["ls-files", "--others", "--exclude-standard"], "untracked files"),
   ].map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
 }
 
@@ -195,7 +205,9 @@ export function assertCoverageCandidateIdentity({
     throw new Error(`Coverage candidate identity is not attached to the declared Git SHA: ${candidateSha ?? "<missing>"}.`);
   }
 
-  const relevantDirtyFiles = getWorktreeCandidateFiles(repositoryRoot)
+  const relevantDirtyFiles = getWorktreeCandidateFiles(repositoryRoot, {
+    strict: normalizedCandidateScope !== "WORKTREE",
+  })
     .filter((file) => isCoveragePathForScope(file, normalizedScope));
   const identity = {
     version: COVERAGE_IDENTITY_VERSION,

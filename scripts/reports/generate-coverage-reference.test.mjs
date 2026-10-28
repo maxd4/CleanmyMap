@@ -28,6 +28,7 @@ import {
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const auditedSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+const auditedTreeSha = execFileSync(gitExecutable(), ["rev-parse", "HEAD^{tree}"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
 const ciSourcePrefix = "/home/runner/work/CleanmyMap/CleanmyMap/";
 
 const metrics = (values) => Object.fromEntries(Object.entries(values).map(([name, covered]) => [name, { covered, total: 10, pct: covered * 10 }]));
@@ -198,6 +199,18 @@ function writePublicationProof(scopeRoot, scope, { candidate = auditedSha, candi
     scope,
     scopeFingerprint: scope === "web" ? COVERAGE_SCOPE_FINGERPRINT : scope === "mobile" ? MOBILE_COVERAGE_SCOPE_FINGERPRINT : null,
     policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
+    ...(scope === "node" || scope === "python" ? {
+      candidateIdentity: {
+        version: 1,
+        method: "git-tree-v1",
+        candidateSha: candidate,
+        candidateScope,
+        scope,
+        sourceTreeSha: auditedTreeSha,
+        relevantDirtyFiles: [],
+        verified: candidateScope !== "WORKTREE",
+      },
+    } : {}),
     reports,
   };
   fs.writeFileSync(path.join(proofRoot, "coverage-publication-proof.json"), JSON.stringify(proof), "utf8");

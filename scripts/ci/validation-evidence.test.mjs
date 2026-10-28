@@ -9,8 +9,10 @@ import { test } from "node:test";
 
 import {
   acquireFullValidationLock,
+  assertCoverageCandidateIdentity,
   createCandidateFingerprint,
   getCandidateSha,
+  getWorktreeCandidateFiles,
   removePathWithRetry,
 } from "./validation-evidence.mjs";
 import { gitExecutable } from "./git-executable.mjs";
@@ -272,6 +274,60 @@ test("STAGED candidate fingerprints fail closed when an indexed object cannot be
       () => createCandidateFingerprint({ repositoryRoot: root, candidateScope: "STAGED" }),
       /Unable to read staged candidate path candidate\.txt/,
     );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("exact coverage identity rejects an unreadable Git index instead of treating it as clean", () => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    git(root, ["config", "user.email", "validation-test.local"]);
+    git(root, ["config", "user.name", "Validation Evidence Test"]);
+    fs.mkdirSync(path.join(root, "scripts", "ci"), { recursive: true });
+    fs.writeFileSync(path.join(root, "scripts", "ci", "producer.mjs"), "export const producer = true;\n");
+    git(root, ["add", "."]);
+    git(root, ["commit", "--quiet", "-m", "baseline"]);
+    const unreadableIndex = path.join(root, "unreadable-index");
+    fs.mkdirSync(unreadableIndex);
+    const previousIndex = process.env.GIT_INDEX_FILE;
+    process.env.GIT_INDEX_FILE = unreadableIndex;
+    try {
+      assert.throws(
+        () => assertCoverageCandidateIdentity({
+          repositoryRoot: root,
+          candidateSha: getCandidateSha(root),
+          candidateScope: "CI_CANDIDATE",
+          scope: "node",
+        }),
+        /Git worktree candidate inventory failed/,
+      );
+    } finally {
+      if (previousIndex === undefined) delete process.env.GIT_INDEX_FILE;
+      else process.env.GIT_INDEX_FILE = previousIndex;
+    }
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("exact coverage identity rejects a single failed Git inventory command", () => {
+  const root = makeRoot();
+  try {
+    const calls = [];
+    assert.throws(
+      () => getWorktreeCandidateFiles(root, {
+        strict: true,
+        readGitLinesFn: (_repositoryRoot, args) => {
+          calls.push(args);
+          if (args[0] === "ls-files") throw new Error("simulated untracked inventory failure");
+          return [];
+        },
+      }),
+      /Git worktree candidate inventory failed while reading untracked files/,
+    );
+    assert.deepEqual(calls.map((args) => args[0]), ["diff", "diff", "ls-files"]);
   } finally {
     removePathWithRetry(root, { recursive: true });
   }

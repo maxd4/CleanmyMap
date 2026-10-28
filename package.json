@@ -122,7 +122,7 @@
     "modularize:report": "node scripts/reports/generate-modularization-report.mjs",
     "test": "npm run test -w apps/web",
     "test:coverage": "npm run test:coverage -w apps/web && node scripts/checks/write-coverage-evidence.mjs",
-    "test:coverage:node": "c8 --all --src scripts --src apps/web/scripts --exclude \"scripts/**/*.test.*\" --exclude \"apps/web/scripts/**/*.test.*\" --exclude \"scripts/coverage/**\" --exclude \"apps/web/scripts/coverage/**\" --reporter=lcov --reporter=json-summary --reports-dir=scripts/coverage npm run test:scripts && node scripts/checks/write-coverage-publication-proof.mjs --scope=node",
+    "test:coverage:node": "node scripts/ci/run-node-coverage.mjs",
     "test:coverage:python": "node scripts/ci/run-python-coverage.mjs",
     "quality:coverage": "node scripts/checks/run-coverage-quality.mjs",
     "test:scripts": "node --test --test-concurrency=1 --test-timeout=300000 scripts/**/*.test.mjs scripts/**/*.test.js apps/web/scripts/**/*.test.mjs apps/web/scripts/**/*.test.js",

@@ -19,7 +19,7 @@ test("Vitest keeps JSON summaries and emits LCOV for both workspaces", () => {
 
 test("Node and Python generators use the locked coverage tools", () => {
   const packageJson = JSON.parse(read("package.json"));
-  assert.match(packageJson.scripts["test:coverage:node"], /^c8 .*npm run test:scripts(?:$| && )/);
+  assert.equal(packageJson.scripts["test:coverage:node"], "node scripts/ci/run-node-coverage.mjs");
   assert.equal(packageJson.scripts["test:coverage:python"], "node scripts/ci/run-python-coverage.mjs");
   assert.equal(packageJson.devDependencies.c8, "12.0.0");
   const pythonRequirements = read("maintenance/python/requirements-dev.txt");

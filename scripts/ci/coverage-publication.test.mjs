@@ -232,6 +232,24 @@ test("a tracked source modified without commit cannot be attested as CI_CANDIDAT
   }
 });
 
+test("a relevant untracked source cannot be attested as CI_CANDIDATE", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    fs.writeFileSync(path.join(fixture.root, "scripts", "ci", "untracked.mjs"), "export const untracked = true;\n", "utf8");
+    assert.throws(
+      () => assertCoverageCandidateIdentity({
+        repositoryRoot: fixture.root,
+        candidateSha: fixture.sha,
+        candidateScope: "CI_CANDIDATE",
+        scope: "node",
+      }),
+      /dirty relevant files: scripts\/ci\/untracked\.mjs/,
+    );
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test("a staged source modification is refused by the same CI identity check", () => {
   const fixture = createCoverageIdentityFixture();
   try {
@@ -301,12 +319,14 @@ test("publication refuses a CI proof when a relevant Node file is dirty", async 
   const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
   try {
     fs.appendFileSync(path.join(fixture.root, "scripts", "ci", "producer.mjs"), "export const changed = true;\n", "utf8");
-    fs.writeFileSync(path.join(fixture.root, "maintenance", "python", "coverage.xml"), "<coverage line-rate=\"1\" branch-rate=\"1\" />\n", "utf8");
+    fs.mkdirSync(path.join(fixture.root, "scripts", "coverage"), { recursive: true });
+    fs.writeFileSync(path.join(fixture.root, "scripts", "coverage", "coverage-summary.json"), "{}\n", "utf8");
+    fs.writeFileSync(path.join(fixture.root, "scripts", "coverage", "lcov.info"), "TN:\n", "utf8");
     process.env.CANDIDATE_SHA = fixture.sha;
     process.env.CMM_COVERAGE_PUBLICATION_ROOT = publicationRoot;
     const { writeCoveragePublicationProof } = await import("./coverage-publication.mjs");
     assert.throws(
-      () => writeCoveragePublicationProof({ repositoryRoot: fixture.root, scope: "python" }),
+      () => writeCoveragePublicationProof({ repositoryRoot: fixture.root, scope: "node" }),
       /dirty relevant files: scripts\/ci\/producer\.mjs/,
     );
   } finally {
