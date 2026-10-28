@@ -200,6 +200,13 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.match(guard, /Pre-push quick guardrail passed/);
   assert.match(guard, /Invoke-CriticalStaticCandidateChecks/);
   assert.match(guard, /if \(-not \$Full\)/);
+  const quickChecks = guard.match(/if \(-not \$Full\) \{[\s\S]*?\n    \}\n\n    Write-Host ""\n    Write-Host "Full PUSH_CANDIDATE checks \(-Full\)"/)?.[0] ?? "";
+  assert.notEqual(quickChecks, "", "quick PUSH_CANDIDATE block must remain discoverable");
+  assert.doesNotMatch(quickChecks, /Invoke-DuplicationPublicationGuard/);
+  const fullChecks = guard.match(/Write-Host "Full PUSH_CANDIDATE checks \(-Full\)"[\s\S]*?\n    if \(\$SkipVercel\)/)?.[0] ?? "";
+  assert.notEqual(fullChecks, "", "full PUSH_CANDIDATE block must remain discoverable");
+  assert.match(fullChecks, /Invoke-DynamicDuplicationCommand/);
+  assert.match(fullChecks, /Invoke-DuplicationPublicationGuard/);
   for (const criticalCheck of [
     "scripts/checks/check-env-contract.mjs",
     "scripts/checks/check-root-file-hygiene.mjs",

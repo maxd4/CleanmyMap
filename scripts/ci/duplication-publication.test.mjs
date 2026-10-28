@@ -126,6 +126,33 @@ test("publication proof rejects a modified report and an incompatible policy fin
   }
 });
 
+test("publication proof rejects a ratchet FAIL instead of promoting it to PASS", () => {
+  const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-fail-"));
+  try {
+    const candidateSha = git(["rev-parse", "HEAD"]);
+    const results = fixtureResults(root);
+    results[0].comparison = { status: "FAIL", failures: ["new clone fingerprints"] };
+    const { proof } = writeDuplicationPublicationProof({
+      repositoryRoot: REPOSITORY_ROOT,
+      candidateSha,
+      results,
+      baseline: fixtureBaseline(),
+      justificationReport: fixtureJustifications(),
+      toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+      candidateScope: "DYNAMIC_CANDIDATE",
+      publicationRoot: root,
+      runId: "run-test-fail",
+    });
+    assert.equal(proof.status, "FAIL");
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /Duplication ratchet status is FAIL/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("the publication gate is required only for duplication-relevant candidates", () => {
   assert.equal(isDuplicationRelevantFile("documentation/development/testing-quality-structure.md"), false);
   assert.equal(isDuplicationRelevantFile("apps/web/src/lib/example.ts"), true);

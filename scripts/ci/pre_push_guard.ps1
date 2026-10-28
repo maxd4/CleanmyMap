@@ -636,7 +636,6 @@ function Invoke-GuardStep {
             $candidateRanges = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef } | Select-Object -ExpandProperty Range -Unique)
             $candidateFiles = if ($candidateRanges.Count -gt 0) { @(Get-ChangedFilesFromRanges -Ranges $candidateRanges) } else { @($changedFiles) }
             Invoke-CoveragePublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
-            Invoke-DuplicationPublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
         }
 
         Write-Host ""

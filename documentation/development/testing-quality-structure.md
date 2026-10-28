@@ -17,12 +17,14 @@ La preuve de publication jscpd est produite par le même moteur via
 `scripts/ci/duplication-publication.mjs` lorsqu'un candidat complet est
 préparé. Elle lie le SHA et l'arbre Git du candidat, l'empreinte de politique,
 la version jscpd, les trois rapports JSON/SARIF hashés, les baselines et l'état
-des justifications. Le pré-push rapide ne relance pas jscpd : il rejette toute
-preuve absente, stale, falsifiée, partielle ou `FAIL` pour un candidat qui
-touche un scope de duplication. La production relève de la préparation
-`DYNAMIC_CANDIDATE` (`prepush:guard -- -Full`) et la vérification s'exécute sur
-le `PUSH_CANDIDATE` exact. Une preuve `TARGET_MET` à 3 % ne devient pas pour
-autant une protection `ENFORCE` ; chaque scope doit rester
+des justifications. Le pré-push rapide ne lance ni jscpd ni la validation de sa
+preuve : une dette historique de duplication reste visible et `FAIL`, mais ne
+devient pas un audit global implicite du chemin rapide. La production et la
+validation de la preuve relèvent exclusivement de la préparation
+`DYNAMIC_CANDIDATE` (`prepush:guard -- -Full`) et s'exécutent sur le
+`PUSH_CANDIDATE` exact ; une preuve absente, stale, falsifiée, partielle ou
+`FAIL` bloque alors le candidat. Une preuve `TARGET_MET` à 3 % ne devient pas
+pour autant une protection `ENFORCE` ; chaque scope doit rester
 `NOT_READY_FOR_3_PERCENT_ENFORCEMENT` tant que le ratio brut lignes et tokens,
 le ratchet historique et les justifications ne sont pas simultanément
 ratifiables.

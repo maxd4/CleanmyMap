@@ -277,6 +277,7 @@ test("web push keeps only quick candidate gates by default", () => {
   assertNoCommand(result.log, "npm run test:scripts");
   assertNoCommand(result.log, "scripts/checks/validation-policy.mjs");
   assertNoCommand(result.log, "vercel build");
+  assert.doesNotMatch(result.log, /duplication-publication\.mjs/);
 });
 
 test("web candidate ignores a foreign artifact lockfile during quick checks", () => {

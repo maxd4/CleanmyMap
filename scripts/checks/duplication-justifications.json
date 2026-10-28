@@ -1555,14 +1555,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "045c776a7c00ea27",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/environmental-impact-estimator/project-signals.test.ts:205-217 ; symboles: profiles, spots, funnelEvents, progressionEvents et lib/environmental-impact-estimator/project-signals.test.ts:482-494 ; symboles: rows, profiles, spots, funnelEvents restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/environmental-impact-estimator/project-signals.test.ts:205-217 et lib/environmental-impact-estimator/project-signals.test.ts:482-494 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "b1469b8bff3a944c",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT lib/environmental-impact-estimator/project-signals.test.ts:625-642 ; symboles: createProjectSignalsQueryChain, orderingsByTable, table, user_id et lib/environmental-impact-estimator/project-signals.test.ts:655-672 ; symboles: rows, user_id, user, session_id restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
