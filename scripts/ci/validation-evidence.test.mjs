@@ -187,6 +187,8 @@ test("STAGED candidate fingerprints change when the indexed blob changes", () =>
   const root = makeRoot();
   try {
     git(root, ["init", "--quiet"]);
+    git(root, ["config", "user.email", "validation-test.local"]);
+    git(root, ["config", "user.name", "Validation Evidence Test"]);
     fs.writeFileSync(path.join(root, "candidate.txt"), "committed\n");
     git(root, ["add", "candidate.txt"]);
     git(root, ["commit", "--quiet", "-m", "baseline"]);
@@ -218,6 +220,8 @@ test("STAGED candidate fingerprints ignore a WORKTREE symlink replacing an index
   const root = makeRoot();
   try {
     git(root, ["init", "--quiet"]);
+    git(root, ["config", "user.email", "validation-test.local"]);
+    git(root, ["config", "user.name", "Validation Evidence Test"]);
     fs.writeFileSync(path.join(root, "candidate.txt"), "committed\n");
     git(root, ["add", "candidate.txt"]);
     git(root, ["commit", "--quiet", "-m", "baseline"]);
