@@ -58,7 +58,7 @@ export function buildEnvironmentalImpactProjectSignals(
             }
           : undefined,
       usage: {
-        ...calculateMonthlyUsageInput(rows),
+        ...calculateMonthlyUsageInput(rows, params.generatedAt),
         ...codexUsage.usage,
         ...(githubWorkflowRunsCount30d !== null
           ? { monthlyDeployments: githubWorkflowRunsCount30d }

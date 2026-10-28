@@ -1,16 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
-import { insertProgressionEvent } from "./progression-data";
-import { refreshProgressionProfile } from "./progression-tracking";
+import { listQuizQuestionFormatIds } from "@/lib/learning/quiz/quiz-question-formats";
 import { broadcastGamificationAnnouncement } from "./announcements";
-import { computeQuizMilestoneAwards, QUIZ_PROGRESS_MILESTONES, type QuizMilestoneAward } from "./quiz-milestones";
-
-type QuizTypeProgressRow = {
-  user_id: string;
-  question_type: string;
-  correct_count: number;
-  updated_at?: string;
-};
+import {
+  buildQuizBalanceEventCandidates,
+  computeQuizBalanceAwards,
+  type QuizBalanceAward,
+} from "./quiz-balance-progress";
+import {
+  computeQuizMilestoneAwards,
+  QUIZ_PROGRESS_MILESTONES,
+  type QuizMilestoneAward,
+} from "./quiz-milestones";
+import {
+  recordQuizProgression,
+  type QuizProgressionEventCandidate,
+} from "./progression-event-writer";
+import { refreshProgressionProfile } from "./progression-tracking";
 
 export type QuizProgressAward = QuizMilestoneAward<(typeof QUIZ_PROGRESS_MILESTONES)[number]>;
 
@@ -27,26 +33,10 @@ export type QuizProgressSyncResult = {
   correctCount: number;
   awards: QuizProgressAward[];
   totalXpAwarded: number;
-};
-
-type QuizProgressTableClient = {
-  from(table: "quiz_type_progress"): {
-    select(columns: string): {
-      eq(column: "user_id", value: string): {
-        eq(column: "question_type", value: string): {
-          maybeSingle(): Promise<{ data: QuizTypeProgressRow | null; error: unknown }>;
-        };
-      };
-    };
-    upsert(
-      value: {
-        user_id: string;
-        question_type: string;
-        correct_count: number;
-      },
-      options: { onConflict: string },
-    ): Promise<{ error: unknown }>;
-  };
+  previousBalancedCount: number;
+  balancedCount: number;
+  balancedAwards: QuizBalanceAward[];
+  balancedTotalXpAwarded: number;
 };
 
 export function computeQuizProgressAwards(params: {
@@ -62,115 +52,129 @@ export function computeQuizProgressAwards(params: {
   });
 }
 
+export function buildQuizProgressEventCandidates(params: {
+  userId: string;
+  questionType: string;
+  questionId: string;
+}): QuizProgressionEventCandidate[] {
+  const questionTypeLabel = getQuizPedagogicalTypeLabel(params.questionType);
+  return QUIZ_PROGRESS_MILESTONES.map((milestone) => ({
+    metric: "type" as const,
+    threshold: milestone.threshold,
+    userId: params.userId,
+    eventType: "quiz_question_type_milestone" as const,
+    sourceTable: "quiz_type_progress",
+    sourceId: `quiz:${params.questionType}:${milestone.threshold}`,
+    statusPhase: "validated" as const,
+    weight: 1,
+    xpBase: milestone.xp,
+    xpAwarded: milestone.xp,
+    occurredOn: new Date().toISOString().slice(0, 10),
+    metadata: {
+      questionType: params.questionType,
+      questionTypeLabel,
+      milestone: milestone.threshold,
+      step: milestone.threshold,
+      threshold: milestone.threshold,
+      badgeId: milestone.badgeId,
+      questionId: params.questionId,
+    },
+  }));
+}
+
 export async function syncQuizQuestionTypeProgress(
   supabase: SupabaseClient,
   params: SyncQuizQuestionTypeProgressParams,
 ): Promise<QuizProgressSyncResult> {
-  const client = supabase as unknown as QuizProgressTableClient;
-  const state = await loadQuizProgressState(client, params);
-  const persistedAwards = await persistQuizProgressAwards(supabase, params, state);
-  await announceQuizProgressAwards(supabase, params, state, persistedAwards);
+  const questionTypes = listQuizQuestionFormatIds();
+  const typeCandidates = buildQuizProgressEventCandidates(params);
+  const balanceCandidates = buildQuizBalanceEventCandidates({
+    ...params,
+    questionTypes,
+  });
+  const commit = await recordQuizProgression(supabase, {
+    userId: params.userId,
+    questionType: params.questionType,
+    questionTypes,
+    events: [...typeCandidates, ...balanceCandidates],
+  });
 
-  const updated = await client.from("quiz_type_progress").upsert(
-    {
-      user_id: params.userId,
-      question_type: params.questionType,
-      correct_count: state.correctCount,
-    },
-    { onConflict: "user_id,question_type" },
-  );
+  const insertedSourceIds = new Set(commit.insertedEvents.map((event) => event.sourceId));
+  const typeAwards = computeQuizProgressAwards({
+    previousCount: commit.previousCount,
+    nextCount: commit.correctCount,
+    questionType: params.questionType,
+  }).filter((award) => insertedSourceIds.has(award.sourceId));
+  const balanceAwards = computeQuizBalanceAwards({
+    previousBalancedCount: commit.previousBalancedCount,
+    nextBalancedCount: commit.balancedCount,
+  }).filter((award) => insertedSourceIds.has(award.sourceId));
 
-  if (updated.error) {
-    throw updated.error;
-  }
+  await announceQuizProgressAwards(supabase, params, typeAwards);
+  await announceQuizBalanceAwards(supabase, params, balanceAwards, commit.balancedCount);
 
-  if (persistedAwards.length > 0) {
+  if (commit.insertedEvents.length > 0) {
     await refreshProgressionProfile(supabase, params.userId);
   }
 
   return {
     questionType: params.questionType,
-    questionTypeLabel: state.questionTypeLabel,
-    previousCount: state.previousCount,
-    correctCount: state.correctCount,
-    awards: persistedAwards,
-    totalXpAwarded: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
-  };
-}
-
-async function loadQuizProgressState(
-  client: QuizProgressTableClient,
-  params: SyncQuizQuestionTypeProgressParams,
-) {
-  const current = await client
-    .from("quiz_type_progress")
-    .select("user_id, question_type, correct_count")
-    .eq("user_id", params.userId)
-    .eq("question_type", params.questionType)
-    .maybeSingle();
-  if (current.error) throw current.error;
-  const previousCount = current.data?.correct_count ?? 0;
-  const correctCount = previousCount + 1;
-  return {
     questionTypeLabel: getQuizPedagogicalTypeLabel(params.questionType),
-    previousCount,
-    correctCount,
-    awards: computeQuizProgressAwards({ previousCount, nextCount: correctCount, questionType: params.questionType }),
+    previousCount: commit.previousCount,
+    correctCount: commit.correctCount,
+    awards: typeAwards,
+    totalXpAwarded: typeAwards.reduce((sum, award) => sum + award.xp, 0),
+    previousBalancedCount: commit.previousBalancedCount,
+    balancedCount: commit.balancedCount,
+    balancedAwards: balanceAwards,
+    balancedTotalXpAwarded: balanceAwards.reduce((sum, award) => sum + award.xp, 0),
   };
-}
-
-async function persistQuizProgressAwards(
-  supabase: SupabaseClient,
-  params: SyncQuizQuestionTypeProgressParams,
-  state: Awaited<ReturnType<typeof loadQuizProgressState>>,
-): Promise<QuizProgressAward[]> {
-  const persistedAwards: QuizProgressAward[] = [];
-  for (const award of state.awards) {
-    const inserted = await insertProgressionEvent(supabase, {
-      userId: params.userId,
-      eventType: "quiz_question_type_milestone",
-      sourceTable: "quiz_type_progress",
-      sourceId: award.sourceId,
-      statusPhase: "validated",
-      weight: 1,
-      xpBase: award.xp,
-      xpAwarded: award.xp,
-      occurredOn: new Date().toISOString().slice(0, 10),
-      metadata: {
-        questionType: params.questionType,
-        questionTypeLabel: state.questionTypeLabel,
-        milestone: award.milestone,
-        step: award.step,
-        threshold: award.threshold,
-        badgeId: award.badgeId,
-        questionId: params.questionId,
-      },
-    });
-    if (inserted) persistedAwards.push(award);
-  }
-  return persistedAwards;
 }
 
 async function announceQuizProgressAwards(
   supabase: SupabaseClient,
   params: SyncQuizQuestionTypeProgressParams,
-  state: Awaited<ReturnType<typeof loadQuizProgressState>>,
-  persistedAwards: QuizProgressAward[],
+  awards: QuizProgressAward[],
 ): Promise<void> {
-  if (persistedAwards.length === 0) return;
+  if (awards.length === 0) return;
+  const questionTypeLabel = getQuizPedagogicalTypeLabel(params.questionType);
   await broadcastGamificationAnnouncement(supabase, {
     type: "quiz_question_type_milestone",
     source: "quiz",
     userId: params.userId,
-    title: `+${persistedAwards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz`,
-    message: persistedAwards.length === 1
-      ? `${state.questionTypeLabel} : ${persistedAwards[0]?.milestone ?? 0} bonnes réponses atteintes.`
-      : `${state.questionTypeLabel} : ${persistedAwards.map((award) => award.milestone).join(" / ")} bonnes réponses atteintes.`,
+    title: `+${awards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz`,
+    message: awards.length === 1
+      ? `${questionTypeLabel} : ${awards[0]?.milestone ?? 0} bonnes réponses atteintes.`
+      : `${questionTypeLabel} : ${awards.map((award) => award.milestone).join(" / ")} bonnes réponses atteintes.`,
     icon: "🧠",
     questionType: params.questionType,
-    milestones: persistedAwards.map((award) => award.milestone),
-    steps: persistedAwards.map((award) => award.step),
-    xp: persistedAwards.reduce((sum, award) => sum + award.xp, 0),
-    dedupeKey: `quiz_question_type_milestone:${params.userId}:${params.questionType}:${state.correctCount}`,
+    milestones: awards.map((award) => award.milestone),
+    steps: awards.map((award) => award.step),
+    xp: awards.reduce((sum, award) => sum + award.xp, 0),
+    dedupeKey: `quiz_question_type_milestone:${params.userId}:${params.questionType}:${awards.map((award) => award.milestone).join("-")}`,
+  });
+}
+
+async function announceQuizBalanceAwards(
+  supabase: SupabaseClient,
+  params: SyncQuizQuestionTypeProgressParams,
+  awards: QuizBalanceAward[],
+  balancedCount: number,
+): Promise<void> {
+  if (awards.length === 0) return;
+  await broadcastGamificationAnnouncement(supabase, {
+    type: "quiz_question_type_balance_milestone",
+    source: "quiz",
+    userId: params.userId,
+    title: `+${awards.reduce((sum, award) => sum + award.xp, 0)} XP sur le quiz équilibré`,
+    message: awards.length === 1
+      ? `Quiz équilibré : ${awards[0]?.milestone ?? 0} bonnes réponses sur chaque type atteintes.`
+      : `Quiz équilibré : ${awards.map((award) => award.milestone).join(" / ")} bonnes réponses sur chaque type atteintes.`,
+    icon: "🧩",
+    questionType: params.questionType,
+    milestones: awards.map((award) => award.milestone),
+    steps: awards.map((award) => award.step),
+    xp: awards.reduce((sum, award) => sum + award.xp, 0),
+    dedupeKey: `quiz_question_type_balance_milestone:${params.userId}:${balancedCount}`,
   });
 }

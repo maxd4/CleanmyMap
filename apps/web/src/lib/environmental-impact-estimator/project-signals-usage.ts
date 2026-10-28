@@ -55,14 +55,16 @@ export function calculateCodexMonthlyUsageInput(
 
 export function calculateMonthlyUsageInput(
   rows: ProjectSignalRows,
+  generatedAt = new Date().toISOString(),
 ): EnvironmentalImpactInfrastructureInput["usage"] {
-  const now = new Date();
-  const currentWindowFrom = subDays(now, 30).getTime();
-  const previousWindowFrom = subDays(now, 60).getTime();
+  const now = new Date(generatedAt);
+  const referenceDate = Number.isNaN(now.getTime()) ? new Date() : now;
+  const currentWindowFrom = subDays(referenceDate, 30).getTime();
+  const previousWindowFrom = subDays(referenceDate, 60).getTime();
   const currentRows = buildProjectSignalRows(
     rows,
     currentWindowFrom,
-    now.getTime(),
+    referenceDate.getTime(),
   );
   const previousRows = buildProjectSignalRows(
     rows,

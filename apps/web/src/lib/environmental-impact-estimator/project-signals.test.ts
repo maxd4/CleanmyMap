@@ -11,6 +11,7 @@ import {
 import { buildProjectSignalsHighlights } from "./project-signals-highlights";
 import { summarizeFunnelRows } from "./project-signals-funnel";
 import { buildScopeInputFromRows } from "./project-signals-timeline";
+import { calculateMonthlyUsageInput } from "./project-signals-usage";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 vi.mock("./codex-usage-store", async () => {
@@ -227,6 +228,29 @@ it("documents the explicit row cap in the notes", () => {
       note.includes(new Intl.NumberFormat("fr-FR").format(PROJECT_SIGNAL_ROW_LIMIT)),
     ),
   ).toBe(true);
+});
+
+it("anchors monthly projections to generatedAt instead of the process clock", () => {
+  vi.setSystemTime(new Date("2026-10-28T12:00:00.000Z"));
+  const rows = {
+    profiles: [],
+    actions: [{
+      id: "historical-action",
+      created_at: "2026-05-10T12:00:00.000Z",
+      created_by_clerk_id: "user-1",
+      latitude: 48.85,
+      longitude: 2.35,
+      status: "approved",
+    }],
+    spots: [], funnelEvents: [], progressionEvents: [], reports: [], trainingExamples: [],
+    serviceEmails: [], communityEvents: [], eventRsvps: [], appNotifications: [],
+  };
+
+  expect(calculateMonthlyUsageInput(rows, "2026-05-20T12:00:00.000Z")).toMatchObject({
+    monthlyMapViews: 1,
+    monthlyApiRequests: 1,
+  });
+  expect(calculateMonthlyUsageInput(rows, "2026-10-28T12:00:00.000Z")?.monthlyMapViews).toBeNull();
 });
 
 it("builds project-specific site, user and monthly usage inputs", () => {

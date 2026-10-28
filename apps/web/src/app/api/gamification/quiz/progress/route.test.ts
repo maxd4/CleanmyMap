@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const syncQuizQuestionTypeProgressMock = vi.hoisted(() => vi.fn());
-const syncQuizQuestionTypeBalanceProgressMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -17,10 +16,6 @@ vi.mock("@/lib/gamification/quiz-progress", () => ({
   syncQuizQuestionTypeProgress: syncQuizQuestionTypeProgressMock,
 }));
 
-vi.mock("@/lib/gamification/quiz-balance-progress", () => ({
-  syncQuizQuestionTypeBalanceProgress: syncQuizQuestionTypeBalanceProgressMock,
-}));
-
 import { POST } from "./route";
 
 const progressResult = {
@@ -30,13 +25,10 @@ const progressResult = {
   correctCount: 1,
   awards: [],
   totalXpAwarded: 0,
-};
-
-const balanceResult = {
   previousBalancedCount: 0,
   balancedCount: 0,
-  awards: [],
-  totalXpAwarded: 0,
+  balancedAwards: [],
+  balancedTotalXpAwarded: 0,
 };
 
 function request(body: unknown) {
@@ -53,7 +45,6 @@ describe("POST /api/gamification/quiz/progress", () => {
     authMock.mockResolvedValue({ userId: "user-1" });
     getSupabaseServerClientMock.mockReturnValue({});
     syncQuizQuestionTypeProgressMock.mockResolvedValue(progressResult);
-    syncQuizQuestionTypeBalanceProgressMock.mockResolvedValue(balanceResult);
   });
 
   it("preserves the existing anonymous refusal without creating a privileged client", async () => {
@@ -72,7 +63,6 @@ describe("POST /api/gamification/quiz/progress", () => {
     expect(response.status).toBe(422);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     expect(syncQuizQuestionTypeProgressMock).not.toHaveBeenCalled();
-    expect(syncQuizQuestionTypeBalanceProgressMock).not.toHaveBeenCalled();
   });
 
   it("requires a question id instead of accepting a client-only correctness claim", async () => {
@@ -98,10 +88,6 @@ describe("POST /api/gamification/quiz/progress", () => {
       {},
       { userId: "user-1", questionType: "true-false", questionId: "e1" },
     );
-    expect(syncQuizQuestionTypeBalanceProgressMock).toHaveBeenCalledWith(
-      {},
-      { userId: "user-1", questionType: "true-false", questionId: "e1" },
-    );
   });
 
   it("does not progress for a wrong answer even when the client declares it correct", async () => {
@@ -114,7 +100,6 @@ describe("POST /api/gamification/quiz/progress", () => {
     expect(payload).toMatchObject({ status: "ok", questionType: "true-false", totalXpAwarded: 0 });
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     expect(syncQuizQuestionTypeProgressMock).not.toHaveBeenCalled();
-    expect(syncQuizQuestionTypeBalanceProgressMock).not.toHaveBeenCalled();
   });
 
   it("awards normal progression for a verified correct answer", async () => {
@@ -123,7 +108,6 @@ describe("POST /api/gamification/quiz/progress", () => {
     expect(response.status).toBe(200);
     expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
     expect(syncQuizQuestionTypeProgressMock).toHaveBeenCalledTimes(1);
-    expect(syncQuizQuestionTypeBalanceProgressMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps replay responses within the existing milestone contract", async () => {
@@ -145,12 +129,6 @@ describe("POST /api/gamification/quiz/progress", () => {
       awards: [],
       totalXpAwarded: 0,
     });
-    syncQuizQuestionTypeBalanceProgressMock.mockResolvedValue({
-      ...balanceResult,
-      awards: [],
-      totalXpAwarded: 0,
-    });
-
     const response = await POST(request({ questionId: "e1", answer: "Faux" }));
     const payload = await response.json();
 

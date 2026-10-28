@@ -67,4 +67,24 @@ describe("codex usage store", () => {
     expect(aggregate.monthlyEquivalent.sessionCount).toBeGreaterThan(0);
     expect(aggregate.notes.length).toBeGreaterThan(0);
   });
+
+  it("does not include a future weekly snapshot in a historical projection", () => {
+    const aggregate = buildCodexMonthlyUsageEstimate([
+      buildCodexUsageWeeklySnapshot({
+        weekStart: "2026-05-19",
+        weekEnd: "2026-05-25",
+        sessionCount: 5,
+        source: "manual",
+      }),
+      buildCodexUsageWeeklySnapshot({
+        weekStart: "2026-10-19",
+        weekEnd: "2026-10-25",
+        sessionCount: 50,
+        source: "manual",
+      }),
+    ], "2026-05-20T12:00:00.000Z");
+
+    expect(aggregate.weekCount).toBe(1);
+    expect(aggregate.sessionCount).toBe(5);
+  });
 });

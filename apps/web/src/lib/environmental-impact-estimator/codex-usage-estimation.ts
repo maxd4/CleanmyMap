@@ -123,8 +123,14 @@ export function buildCodexMonthlyUsageEstimate(
   snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
   generatedAt = new Date().toISOString(),
 ): EnvironmentalImpactCodexUsageMonthlyEstimate {
+  const generatedAtMs = new Date(generatedAt).getTime();
   const sortedSnapshots = [...snapshots]
-    .filter((snapshot) => Boolean(snapshot.weekStart))
+    .filter((snapshot) => {
+      if (!snapshot.weekStart) return false;
+      if (!Number.isFinite(generatedAtMs)) return true;
+      const weekStartMs = new Date(`${snapshot.weekStart}T00:00:00.000Z`).getTime();
+      return Number.isFinite(weekStartMs) && weekStartMs <= generatedAtMs;
+    })
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
   const recentSnapshots = sortedSnapshots.slice(-4);
 

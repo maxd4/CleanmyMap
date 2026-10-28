@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleApiError, parseAuthenticatedJsonRequest, validationErrorResponse } from "@/lib/http/api-errors";
 import { syncQuizQuestionTypeProgress } from "@/lib/gamification/quiz-progress";
-import { syncQuizQuestionTypeBalanceProgress } from "@/lib/gamification/quiz-balance-progress";
 import {
   isQuizAnswerCorrect,
   normalizeQuizAnswer,
@@ -69,20 +68,11 @@ export async function POST(request: Request) {
       questionType,
       questionId: question.id,
     });
-    const balanceResult = await syncQuizQuestionTypeBalanceProgress(supabase, {
-      userId,
-      questionType,
-      questionId: question.id,
-    });
 
     return NextResponse.json({
       status: "ok",
       ...result,
-      balancedAwards: balanceResult.awards,
-      balancedCount: balanceResult.balancedCount,
-      previousBalancedCount: balanceResult.previousBalancedCount,
-      balancedTotalXpAwarded: balanceResult.totalXpAwarded,
-      totalXpAwarded: result.totalXpAwarded + balanceResult.totalXpAwarded,
+      totalXpAwarded: result.totalXpAwarded + result.balancedTotalXpAwarded,
     });
   } catch (error) {
     return handleApiError(error, "POST /api/gamification/quiz/progress");
