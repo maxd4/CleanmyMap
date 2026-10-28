@@ -201,7 +201,7 @@ describe("public surface snapshots", () => {
     });
 
     await upsertPublicSurfaceSnapshot(snapshot);
-    fakeRow = { ...fakeRow!, meta: [] };
+    fakeRow = { ...fakeRow!, meta: [] as never };
     await expect(readLatestPublicSurfaceSnapshot("meta-shape")).resolves.toMatchObject({ meta: {} });
   });
 

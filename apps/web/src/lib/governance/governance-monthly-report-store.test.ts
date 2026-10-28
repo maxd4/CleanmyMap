@@ -330,7 +330,6 @@ describe("governance monthly report store", () => {
       version: "local-v1",
       title: "Local report",
       payload: {
-        ...({} as never),
         reportMonth: "2026-05-01",
         generatedAt: "2026-05-20T12:00:00.000Z",
         projectSignals: null,

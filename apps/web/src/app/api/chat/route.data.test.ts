@@ -129,7 +129,7 @@ describe("chat data loaders", () => {
 
     await expect(loadCurrentProfile(supabase as never, "user-1")).resolves.toEqual(profile);
     await expect(loadRelatedCommunityEvent(supabase as never, "event-1")).resolves.toEqual(event);
-    eventQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    eventQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null } as never);
     await expect(loadRelatedCommunityEvent(supabase as never, "missing")).resolves.toBeNull();
   });
 
@@ -213,7 +213,7 @@ describe("chat data loaders", () => {
       options: [{ optionId: "yes", voteCount: 2 }],
       totalVotes: 2,
       selectedOptionId: "yes",
-    }]);
+    }] as never);
     const visibleQuery = {
       select: vi.fn(() => visibleQuery),
       in: vi.fn(() => visibleQuery),

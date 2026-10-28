@@ -76,9 +76,9 @@ describe("shared Open-Meteo client", () => {
       daily: ["weather_code"] as const,
     };
 
-    const first = await fetchOpenMeteoForecast(request, { fetcher, now: () => now, cacheTtlMs: 100 });
+    const first = await fetchOpenMeteoForecast(request, { fetcher: fetcher as unknown as typeof fetch, now: () => now, cacheTtlMs: 100 });
     now = 1_050;
-    const second = await fetchOpenMeteoForecast(request, { fetcher, now: () => now, cacheTtlMs: 100 });
+    const second = await fetchOpenMeteoForecast(request, { fetcher: fetcher as unknown as typeof fetch, now: () => now, cacheTtlMs: 100 });
 
     expect(second).toBe(first);
     expect(fetcher).toHaveBeenCalledOnce();
@@ -126,7 +126,7 @@ describe("shared Open-Meteo client", () => {
     const timeoutFetcher = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
     }));
-    await expect(fetchOpenMeteoForecast({ latitude: 48.85, longitude: 2.35 }, { fetcher: timeoutFetcher, timeoutMs: 1 })).rejects.toMatchObject({
+    await expect(fetchOpenMeteoForecast({ latitude: 48.85, longitude: 2.35 }, { fetcher: timeoutFetcher as unknown as typeof fetch, timeoutMs: 1 })).rejects.toMatchObject({
       reason: "timeout",
     });
   });

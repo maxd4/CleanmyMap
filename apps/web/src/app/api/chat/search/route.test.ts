@@ -153,7 +153,7 @@ function buildSupabaseMock({
         return query;
       }),
       then: (
-        resolve: (value: { data: SearchRow[]; error: null }) => unknown,
+        resolve: (value: { data: SearchRow[]; error: { message: string } | null }) => unknown,
         reject: (reason?: unknown) => unknown,
       ) => {
         const filtered = rows.filter((row) => {
