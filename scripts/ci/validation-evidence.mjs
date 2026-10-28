@@ -101,6 +101,110 @@ export function getWorktreeCandidateFiles(repositoryRoot = process.cwd()) {
   ].map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
 }
 
+const COVERAGE_IDENTITY_VERSION = 1;
+const COVERAGE_CONTROL_PATHS = Object.freeze([
+  "scripts/ci/",
+  "scripts/checks/coverage-",
+  "scripts/checks/check-coverage",
+  "scripts/checks/write-coverage",
+]);
+const NODE_COVERAGE_PATHS = Object.freeze([
+  "scripts/",
+  "apps/web/scripts/",
+  "package.json",
+  "package-lock.json",
+  "apps/web/package.json",
+  "apps/web/package-lock.json",
+]);
+const PYTHON_COVERAGE_PATHS = Object.freeze([
+  "maintenance/python/src/",
+  "maintenance/python/scripts/",
+  "maintenance/python/tests/",
+  "maintenance/python/pyproject.toml",
+  "maintenance/python/setup.cfg",
+  "maintenance/python/pytest.ini",
+  "maintenance/python/tox.ini",
+  "maintenance/python/requirements",
+  ...COVERAGE_CONTROL_PATHS,
+]);
+
+function isCoveragePathForScope(file, scope) {
+  const normalized = normalizePath(file);
+  const prefixes = scope === "node" ? NODE_COVERAGE_PATHS : scope === "python" ? PYTHON_COVERAGE_PATHS : [];
+  return prefixes.some((prefix) => normalized === prefix || normalized.startsWith(prefix));
+}
+
+function gitTreeSha(repositoryRoot, candidateSha) {
+  try {
+    return execFileSync(gitExecutable(), ["rev-parse", `${candidateSha}^{tree}`], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+export function getCoverageCandidateTreeSha(repositoryRoot = process.cwd(), candidateSha) {
+  return gitTreeSha(repositoryRoot, candidateSha);
+}
+
+export function assertCoverageCandidateIdentity({
+  repositoryRoot = process.cwd(),
+  candidateSha,
+  candidateScope,
+  scope,
+  expectedIdentity = null,
+} = {}) {
+  const normalizedScope = String(scope ?? "").toLowerCase();
+  if (!["node", "python"].includes(normalizedScope)) {
+    throw new Error(`Coverage candidate identity is unsupported for scope: ${scope ?? "<missing>"}.`);
+  }
+  const normalizedCandidateScope = String(candidateScope ?? "").toUpperCase();
+  if (!["WORKTREE", "DYNAMIC_CANDIDATE", "CI_CANDIDATE"].includes(normalizedCandidateScope)) {
+    throw new Error(`Coverage candidate identity has an unsupported candidate scope: ${candidateScope ?? "<missing>"}.`);
+  }
+  const currentSha = getCandidateSha(repositoryRoot);
+  const treeSha = gitTreeSha(repositoryRoot, candidateSha);
+  if (!COMMIT_SHA_PATTERN.test(String(candidateSha ?? "")) || currentSha !== candidateSha || !/^[0-9a-f]{40}$/i.test(treeSha)) {
+    throw new Error(`Coverage candidate identity is not attached to the declared Git SHA: ${candidateSha ?? "<missing>"}.`);
+  }
+
+  const relevantDirtyFiles = getWorktreeCandidateFiles(repositoryRoot)
+    .filter((file) => isCoveragePathForScope(file, normalizedScope));
+  const identity = {
+    version: COVERAGE_IDENTITY_VERSION,
+    method: "git-tree-v1",
+    candidateSha,
+    candidateScope: normalizedCandidateScope,
+    scope: normalizedScope,
+    sourceTreeSha: treeSha,
+    relevantDirtyFiles,
+    verified: normalizedCandidateScope !== "WORKTREE" && relevantDirtyFiles.length === 0,
+  };
+
+  if (normalizedCandidateScope !== "WORKTREE" && relevantDirtyFiles.length > 0) {
+    throw new Error(
+      `Coverage candidate identity is not exact for ${normalizedScope}/${candidateSha}; dirty relevant files: ${relevantDirtyFiles.join(", ")}.`,
+    );
+  }
+  if (expectedIdentity !== null) {
+    const expected = typeof expectedIdentity === "string" ? JSON.parse(expectedIdentity) : expectedIdentity;
+    if (
+      expected?.version !== identity.version
+      || expected?.method !== identity.method
+      || expected?.candidateSha !== identity.candidateSha
+      || expected?.candidateScope !== identity.candidateScope
+      || expected?.scope !== identity.scope
+      || expected?.sourceTreeSha !== identity.sourceTreeSha
+    ) {
+      throw new Error(`Coverage candidate identity changed during ${normalizedScope} execution.`);
+    }
+  }
+  return identity;
+}
+
 export function createCandidateFingerprint({
   repositoryRoot = process.cwd(),
   candidateScope = "WORKTREE",

@@ -51,7 +51,7 @@ test("Python coverage runs both reports before publication", () => {
     calls.push({ executable, args });
     return { status: 0 };
   };
-  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 0);
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test", candidateIdentity: () => null }), 0);
   assert.deepEqual(calls, [
     { executable: "python-test", args: pythonCoverageCommands({ pythonExecutable: "python-test" })[0].args },
     { executable: "python-test", args: pythonCoverageCommands({ pythonExecutable: "python-test" })[1].args },
@@ -66,7 +66,7 @@ test("Python coverage stops before XML and publication when pytest fails", () =>
     return { status: 3 };
   };
 
-  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 3);
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test", candidateIdentity: () => null }), 3);
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0], {
     executable: "python-test",
@@ -81,7 +81,7 @@ test("Python coverage reports a missing interpreter without publishing partial e
     return { status: null, error: new Error("interpreter unavailable") };
   };
 
-  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "missing-python", nodeExecutable: "node-test" }), 1);
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "missing-python", nodeExecutable: "node-test", candidateIdentity: () => null }), 1);
   assert.equal(calls.length, 1);
 });
 
@@ -92,7 +92,7 @@ test("Python coverage stops before publication when XML generation fails", () =>
     return { status: calls.length === 1 ? 0 : 4 };
   };
 
-  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 4);
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test", candidateIdentity: () => null }), 4);
   assert.equal(calls.length, 2);
 });
 
@@ -103,6 +103,43 @@ test("Python coverage propagates a publication failure", () => {
     return { status: calls.length === 3 ? 7 : 0 };
   };
 
-  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 7);
+  assert.equal(runPythonCoverage({ spawn, pythonExecutable: "python-test", nodeExecutable: "node-test", candidateIdentity: () => null }), 7);
   assert.equal(calls.length, 3);
+});
+
+test("Python coverage stops before instrumentation when the declared candidate is dirty", () => {
+  let spawnCalls = 0;
+  const result = runPythonCoverage({
+    spawn: () => {
+      spawnCalls += 1;
+      return { status: 0 };
+    },
+    candidateIdentity: () => {
+      throw new Error("dirty relevant source");
+    },
+    pythonExecutable: "python-test",
+    nodeExecutable: "node-test",
+  });
+  assert.equal(result, 1);
+  assert.equal(spawnCalls, 0);
+});
+
+test("Python coverage carries the verified candidate identity through publication", () => {
+  const calls = [];
+  const identity = {
+    version: 1,
+    method: "git-tree-v1",
+    candidateSha: "a".repeat(40),
+    candidateScope: "CI_CANDIDATE",
+    scope: "python",
+    sourceTreeSha: "b".repeat(40),
+    relevantDirtyFiles: [],
+    verified: true,
+  };
+  const spawn = (executable, args, options) => {
+    calls.push({ executable, args, options });
+    return { status: 0 };
+  };
+  assert.equal(runPythonCoverage({ spawn, candidateIdentity: () => identity, pythonExecutable: "python-test", nodeExecutable: "node-test" }), 0);
+  assert.equal(JSON.parse(calls[2].options.env.CMM_COVERAGE_CANDIDATE_IDENTITY).sourceTreeSha, identity.sourceTreeSha);
 });

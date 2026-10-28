@@ -5,6 +5,8 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertCoverageCandidateIdentity } from "./validation-evidence.mjs";
+import { resolveCoverageCandidate } from "./coverage-publication.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -42,12 +44,33 @@ export function runPythonCoverage({
   spawn = spawnSync,
   pythonExecutable = resolvePythonExecutable(),
   nodeExecutable = process.execPath,
+  candidateIdentity = ({ repositoryRoot: root, scope }) => {
+    const candidate = resolveCoverageCandidate({ repositoryRoot: root });
+    return assertCoverageCandidateIdentity({
+      repositoryRoot: root,
+      candidateSha: candidate.candidateSha,
+      candidateScope: candidate.candidateScope,
+      scope,
+    });
+  },
 } = {}) {
+  let identity;
+  try {
+    identity = candidateIdentity({ repositoryRoot, scope: "python" });
+  } catch (error) {
+    console.error(`Python coverage candidate identity is not exact: ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
+  const executionEnvironment = { ...process.env };
+  if (identity?.verified) {
+    executionEnvironment.CMM_COVERAGE_CANDIDATE_IDENTITY = JSON.stringify(identity);
+  }
   for (const command of pythonCoverageCommands({ pythonExecutable })) {
     const result = spawn(command.executable, command.args, {
       cwd: repositoryRoot,
       stdio: "inherit",
       windowsHide: true,
+      env: executionEnvironment,
     });
     if (result.error) {
       console.error(`Python coverage producer could not start: ${result.error.message}`);
@@ -59,6 +82,7 @@ export function runPythonCoverage({
     cwd: repositoryRoot,
     stdio: "inherit",
     windowsHide: true,
+    env: executionEnvironment,
   });
   if (proof.error) {
     console.error(`Python coverage publication could not start: ${proof.error.message}`);

@@ -24,10 +24,35 @@ import {
   runCoveragePublicationGate,
   validateCoveragePublicationProof,
 } from "./coverage-publication.mjs";
+import { assertCoverageCandidateIdentity } from "./validation-evidence.mjs";
 import { runCoverageCheck } from "../checks/check-coverage.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
+
+function gitAt(root, args) {
+  return execFileSync(gitExecutable(), args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function createCoverageIdentityFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-identity-"));
+  fs.mkdirSync(path.join(root, "scripts", "ci"), { recursive: true });
+  fs.mkdirSync(path.join(root, "maintenance", "python", "src"), { recursive: true });
+  fs.mkdirSync(path.join(root, "maintenance", "python", "tests"), { recursive: true });
+  fs.writeFileSync(path.join(root, "scripts", "ci", "producer.mjs"), "export const producer = true;\n", "utf8");
+  fs.writeFileSync(path.join(root, "maintenance", "python", "src", "module.py"), "VALUE = 1\n", "utf8");
+  fs.writeFileSync(path.join(root, "maintenance", "python", "tests", "test_module.py"), "def test_module():\n    assert True\n", "utf8");
+  gitAt(root, ["init", "--quiet"]);
+  gitAt(root, ["config", "user.email", "coverage-user"]);
+  gitAt(root, ["config", "user.name", "Coverage Identity"]);
+  gitAt(root, ["add", "."]);
+  gitAt(root, ["commit", "--quiet", "-m", "candidate"]);
+  return { root, sha: gitAt(root, ["rev-parse", "HEAD"]) };
+}
 
 function candidateSha() {
   return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
@@ -162,6 +187,162 @@ function writeMobileProof(root, sha, { candidate = sha, proofCandidate = sha, co
     reports: proofReports,
   }), "utf8");
 }
+
+test("exact Node and Python candidates expose a verified Git-tree identity", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    for (const scope of ["node", "python"]) {
+      const identity = assertCoverageCandidateIdentity({
+        repositoryRoot: fixture.root,
+        candidateSha: fixture.sha,
+        candidateScope: "CI_CANDIDATE",
+        scope,
+      });
+      assert.equal(identity.verified, true);
+      assert.equal(identity.candidateSha, fixture.sha);
+      assert.match(identity.sourceTreeSha, /^[0-9a-f]{40}$/);
+    }
+    const dynamicIdentity = assertCoverageCandidateIdentity({
+      repositoryRoot: fixture.root,
+      candidateSha: fixture.sha,
+      candidateScope: "DYNAMIC_CANDIDATE",
+      scope: "node",
+    });
+    assert.equal(dynamicIdentity.verified, true);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("a tracked source modified without commit cannot be attested as CI_CANDIDATE", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    fs.appendFileSync(path.join(fixture.root, "maintenance", "python", "src", "module.py"), "VALUE = 2\n", "utf8");
+    assert.throws(
+      () => assertCoverageCandidateIdentity({
+        repositoryRoot: fixture.root,
+        candidateSha: fixture.sha,
+        candidateScope: "CI_CANDIDATE",
+        scope: "python",
+      }),
+      /dirty relevant files: maintenance\/python\/src\/module\.py/,
+    );
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("a staged source modification is refused by the same CI identity check", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    const source = path.join(fixture.root, "scripts", "ci", "producer.mjs");
+    fs.appendFileSync(source, "export const changed = true;\n", "utf8");
+    gitAt(fixture.root, ["add", source]);
+    assert.throws(
+      () => assertCoverageCandidateIdentity({
+        repositoryRoot: fixture.root,
+        candidateSha: fixture.sha,
+        candidateScope: "CI_CANDIDATE",
+        scope: "node",
+      }),
+      /dirty relevant files: scripts\/ci\/producer\.mjs/,
+    );
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("a dirty checkout remains available for diagnostics but is not verified exact", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    fs.appendFileSync(path.join(fixture.root, "maintenance", "python", "src", "module.py"), "VALUE = 2\n", "utf8");
+    const identity = assertCoverageCandidateIdentity({
+      repositoryRoot: fixture.root,
+      candidateSha: fixture.sha,
+      candidateScope: "WORKTREE",
+      scope: "python",
+    });
+    assert.equal(identity.verified, false);
+    assert.deepEqual(identity.relevantDirtyFiles, ["maintenance/python/src/module.py"]);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("candidate evolution after the preflight identity is refused before publication", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    const before = assertCoverageCandidateIdentity({
+      repositoryRoot: fixture.root,
+      candidateSha: fixture.sha,
+      candidateScope: "CI_CANDIDATE",
+      scope: "python",
+    });
+    fs.appendFileSync(path.join(fixture.root, "maintenance", "python", "src", "module.py"), "VALUE = 2\n", "utf8");
+    assert.throws(
+      () => assertCoverageCandidateIdentity({
+        repositoryRoot: fixture.root,
+        candidateSha: fixture.sha,
+        candidateScope: "CI_CANDIDATE",
+        scope: "python",
+        expectedIdentity: before,
+      }),
+      /dirty relevant files/,
+    );
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("publication refuses a CI proof when a relevant Node file is dirty", async () => {
+  const fixture = createCoverageIdentityFixture();
+  const publicationRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-identity-publication-"));
+  const previousCandidate = process.env.CANDIDATE_SHA;
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  try {
+    fs.appendFileSync(path.join(fixture.root, "scripts", "ci", "producer.mjs"), "export const changed = true;\n", "utf8");
+    fs.writeFileSync(path.join(fixture.root, "maintenance", "python", "coverage.xml"), "<coverage line-rate=\"1\" branch-rate=\"1\" />\n", "utf8");
+    process.env.CANDIDATE_SHA = fixture.sha;
+    process.env.CMM_COVERAGE_PUBLICATION_ROOT = publicationRoot;
+    const { writeCoveragePublicationProof } = await import("./coverage-publication.mjs");
+    assert.throws(
+      () => writeCoveragePublicationProof({ repositoryRoot: fixture.root, scope: "python" }),
+      /dirty relevant files: scripts\/ci\/producer\.mjs/,
+    );
+  } finally {
+    if (previousCandidate === undefined) delete process.env.CANDIDATE_SHA;
+    else process.env.CANDIDATE_SHA = previousCandidate;
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+    fs.rmSync(publicationRoot, { recursive: true, force: true });
+  }
+});
+
+test("exact Python publication records the verified candidate identity", async () => {
+  const fixture = createCoverageIdentityFixture();
+  const publicationRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-identity-exact-"));
+  const previousCandidate = process.env.CANDIDATE_SHA;
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  try {
+    fs.writeFileSync(path.join(fixture.root, "maintenance", "python", "coverage.xml"), "<coverage line-rate=\"1\" branch-rate=\"1\" />\n", "utf8");
+    process.env.CANDIDATE_SHA = fixture.sha;
+    process.env.CMM_COVERAGE_PUBLICATION_ROOT = publicationRoot;
+    const { writeCoveragePublicationProof } = await import("./coverage-publication.mjs");
+    const proof = writeCoveragePublicationProof({ repositoryRoot: fixture.root, scope: "python" });
+    assert.equal(proof.candidateScope, "CI_CANDIDATE");
+    assert.equal(proof.candidateIdentity.verified, true);
+    assert.equal(proof.candidateIdentity.candidateSha, fixture.sha);
+    assert.equal(proof.candidateIdentity.scope, "python");
+  } finally {
+    if (previousCandidate === undefined) delete process.env.CANDIDATE_SHA;
+    else process.env.CANDIDATE_SHA = previousCandidate;
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+    fs.rmSync(publicationRoot, { recursive: true, force: true });
+  }
+});
 
 test("documentation-only candidates do not request a coverage suite", () => {
   const result = getCoveragePublicationRequirements({ changedFiles: ["documentation/development/testing-execution.md"] });

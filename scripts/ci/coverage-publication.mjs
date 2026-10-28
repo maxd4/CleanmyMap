@@ -17,7 +17,12 @@ import {
 } from "../checks/coverage-policy.mjs";
 import { runCoverageCheck } from "../checks/check-coverage.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
-import { getCandidateSha, getWorktreeCandidateFiles } from "./validation-evidence.mjs";
+import {
+  assertCoverageCandidateIdentity,
+  getCoverageCandidateTreeSha,
+  getCandidateSha,
+  getWorktreeCandidateFiles,
+} from "./validation-evidence.mjs";
 import { assertSafeGitRef, gitExecutable } from "./git-executable.mjs";
 import { assertSafeDirectoryRoot, assertSafeExternalPath, resolvePathWithinRoot } from "./safe-paths.mjs";
 
@@ -274,6 +279,34 @@ export function validateCoveragePublicationProof({
       throw new Error("Coverage WORKTREE proof does not match a clean exact candidate tree.");
     }
   }
+  if (["node", "python"].includes(scope)) {
+    const identity = proof.candidateIdentity;
+    if (
+      !identity
+      || identity.version !== 1
+      || identity.method !== "git-tree-v1"
+      || identity.candidateSha !== candidateSha
+      || identity.candidateScope !== proof.candidateScope
+      || identity.scope !== scope
+      || identity.verified !== (proof.candidateScope !== "WORKTREE")
+      || !/^[0-9a-f]{40}$/i.test(String(identity.sourceTreeSha ?? ""))
+    ) {
+      throw new Error(`Coverage ${scope} proof has no verified candidate identity.`);
+    }
+    if (proof.candidateScope === "CI_CANDIDATE") {
+      assertCoverageCandidateIdentity({
+        repositoryRoot,
+        candidateSha,
+        candidateScope: proof.candidateScope,
+        scope,
+        expectedIdentity: identity,
+      });
+    } else if (proof.candidateScope === "DYNAMIC_CANDIDATE") {
+      if (getCoverageCandidateTreeSha(repositoryRoot, candidateSha) !== identity.sourceTreeSha) {
+        throw new Error(`Coverage ${scope} proof candidate tree identity is incompatible.`);
+      }
+    }
+  }
   if (scope === "web") {
     const evidencePath = reportPath(proof, root, "apps/web/coverage/coverage-evidence.json");
     if (!fs.existsSync(evidencePath)) throw new Error("Web coverage evidence is missing from the publication proof.");
@@ -345,6 +378,15 @@ export function writeCoveragePublicationProof({ repositoryRoot = process.cwd(), 
   assertSafeDirectoryRoot(repositoryRoot, { label: "coverage repository root" });
   const candidate = resolveCoverageCandidate({ repositoryRoot });
   const { candidateSha } = candidate;
+  const candidateIdentity = ["node", "python"].includes(scope)
+    ? assertCoverageCandidateIdentity({
+      repositoryRoot,
+      candidateSha,
+      candidateScope: candidate.candidateScope,
+      scope,
+      expectedIdentity: process.env.CMM_COVERAGE_CANDIDATE_IDENTITY ?? null,
+    })
+    : null;
   const targetRoot = proofRoot(repositoryRoot, candidateSha, scope);
   fs.mkdirSync(targetRoot, { recursive: true });
   const reports = copyReports(repositoryRoot, targetRoot, sourceReports(scope));
@@ -356,6 +398,7 @@ export function writeCoveragePublicationProof({ repositoryRoot = process.cwd(), 
     scope,
     scopeFingerprint: scope === "web" ? COVERAGE_SCOPE_FINGERPRINT : scope === "mobile" ? MOBILE_COVERAGE_SCOPE_FINGERPRINT : null,
     policyFingerprint: COVERAGE_ENFORCEMENT_POLICY_FINGERPRINT,
+    ...(candidateIdentity ? { candidateIdentity } : {}),
     reports,
     generatedAt: new Date().toISOString(),
   };
