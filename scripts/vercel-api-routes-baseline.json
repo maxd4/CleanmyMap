@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 192,
+  "apiRouteCount": 193,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -274,6 +274,13 @@
       "reason": "Téléchargement public d'un PDF via un token temporaire opaque, révocable et vérifié contre l'artifact owner-scoped.",
       "costContract": "GET borné à un token de 43 caractères, rate limité, hashé avant recherche ; expiration, révocation, cohérence generation/theme/renderer et absence Storage sont vérifiées, avec private/no-store et no-referrer.",
       "reviewedAt": "2026-10-18"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/school-attestation/route.ts",
+      "introducedBy": "6811f0de7fbf550c5c776503246e77daa8396dd8",
+      "reason": "Lecture publique bornée de l'attestation scolaire d'une action approuvée, terminée, publiée, visible et publique, après validation UUID et éligibilité scolaire confirmée ; la projection n'expose aucune identité individuelle.",
+      "costContract": "GET borné à un actionId UUID validé ; une lecture de l'action puis une lecture des organisateurs canoniques relisent côté serveur les conditions approved/post_action_complete/published_at/visible/public et l'éligibilité scolaire confirmée avant projection sans identité individuelle ; cache HTTP public limité à max-age=60 et stale-while-revalidate=300.",
+      "reviewedAt": "2026-10-30"
     }
   ],
   "apiRoutes": [
@@ -305,6 +312,7 @@
     "apps/web/src/app/api/actions/[actionId]/role-attestations/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route-version/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/school-attestation/route.ts",
     "apps/web/src/app/api/actions/account-options/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",

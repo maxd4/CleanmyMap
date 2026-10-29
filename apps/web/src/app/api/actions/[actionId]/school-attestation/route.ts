@@ -8,6 +8,7 @@ import {
 } from "@/lib/gamification/school-action-recognition";
 
 export const runtime = "nodejs";
+// Justification Vercel : l’éligibilité et la visibilité de l’action sont relues côté serveur avant de produire l’attestation publique ; le cache de réponse reste limité au contrat HTTP existant (public, max-age=60, stale-while-revalidate=300).
 export const dynamic = "force-dynamic";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
