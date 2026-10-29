@@ -209,11 +209,12 @@ identités canoniques attribuables par `organizer_id`.
 
 - la gamification active reste centrée sur les **données utilisateur individuelles** (niveau, progression, qualité, régularité personnelle et badges personnels) ;
 - une exception limitée autorise une reconnaissance **non compétitive, descriptive et attachée à une action scolaire précise** : `school_first_mission`, `school_documented_sorting` et `school_field_debrief` ;
-- ces reconnaissances exigent une action explicitement confirmée comme scolaire par un organisateur autorisé, puis approuvée et finalisée. Une simple détection automatique, un formulaire ouvert, un quiz affiché, une photo ou une majorité d’enfants ne suffisent pas ;
+- ces reconnaissances exigent une action explicitement confirmée comme scolaire par le créateur ou un organisateur canonique autorisé, puis approuvée, finalisée, publiée, visible et publique. Une simple détection automatique, un formulaire ouvert, un quiz affiché, une photo ou une majorité d’enfants ne suffisent pas ;
+- après finalisation, la composition canonique vient exclusivement des métadonnées du bilan : la prévision de préparation n’est jamais utilisée comme mesure finale. Une valeur absente ou incohérente reste inconnue ; les états devenus rejetés, annulés, dépubliés, masqués, privés ou reclassés sont invalidés sans effacer leur trace, avec une réconciliation transactionnelle protégée contre les révisions périmées ;
 - elles sont réconciliables, valent toujours `0 XP`, ne modifient pas la progression personnelle et n’exposent ni podium, ni classement d’élèves, ni objectif général de quantité ;
 - les classements autorisés restent des lectures de profil. La reconnaissance scolaire ne devient pas une cible communautaire globale.
 
-Le parcours relié réutilise `/learn/ecole` et ses formats `quiz-30` / `atelier-60` sans compte élève ni persistance de réponses. L’attestation d’action est une projection descriptive, non une certification officielle de l’Éducation nationale ; elle ne contient pas de nom d’élève, résultat de quiz, note, âge, photo obligatoire ou donnée de santé.
+Le parcours relié réutilise `/learn/ecole` et ses formats `quiz-30` / `atelier-60` sans compte élève ni persistance de réponses. L’attestation d’action est une projection descriptive, non une certification officielle de l’Éducation nationale ; la présence d’un organisateur structuré n’est pas une vérification externe et elle ne contient pas de nom d’élève, résultat de quiz, note, âge, photo obligatoire ou donnée de santé.
 
 ### Regle de base
 

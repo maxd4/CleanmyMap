@@ -71,6 +71,12 @@ describe("GET /api/actions/[actionId]/school-attestation", () => {
     for (const overrides of [
       { access_mode: "invite_link" },
       { published_at: null },
+      { moderation_visibility: "hidden" },
+      { status: "rejected" },
+      { status: "cancelled" },
+      { action_phase: "pre_action" },
+      { action_context: "citizen" },
+      { school_context_confirmed_by_clerk_id: "unrelated-user" },
       { school_context_confirmed: false },
     ]) {
       mocks.loadActionById.mockResolvedValue(buildAction(overrides));

@@ -221,6 +221,8 @@ ne doit être inventée et aucune invitation externe n'est envoyée.
 - Le passage vers le formulaire complet doit réutiliser les données déjà saisies et n'exige pas de recommencer la préparation.
 - `/actions/new?actionId=...` reprend la même action dans l'onglet correspondant à sa phase ; la navigation du shell ne crée ni action ni moteur météo parallèle.
 - La préparation avant action n'est jamais traitée comme une collecte validée tant que la déclaration finale n'a pas complété les champs de récolte.
+- La prévision de composition de la préparation reste distincte de la composition finale : après `post_action_complete`, les reconnaissances scolaires et leur attestation utilisent uniquement le bilan canonique. Une composition finale absente ou incohérente reste inconnue et ne peut pas être reconstruite depuis la prévision.
+- Une reconnaissance scolaire active exige en plus une confirmation attribuable au créateur ou à un organisateur canonique, une action approuvée, publiée, visible et publique. Rejet, annulation, dépublication, masquage, privatisation ou reclassification invalident la projection sans effacer sa trace.
 - L'absence de valeur pour `groupJoinEnabled` est interprétée comme une fermeture de la visibilité publique.
 - Toute soumission d'action reste `pending` jusqu'au parcours explicite de validation, quel que soit le rôle actif de son auteur.
 - Les corrections admin d'impact exigent un motif, journalisent les valeurs avant/après et recalculent la progression de manière idempotente pour les organisateurs concernés.

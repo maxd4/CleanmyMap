@@ -27,12 +27,13 @@ export type SchoolActionRecognitionAssessment = {
 
 export type SchoolActionAttestation = {
   kind: "school_action_attestation";
-  version: "school-action-attestation-2026.10-v1";
+  version: "school-action-attestation-2026.10-v2";
   actionId: string;
   status: "eligible" | "ineligible";
   isOfficialEducationCertification: false;
   context: "school" | "citizen" | "company" | "unknown";
   verifiedOrganizer: boolean;
+  organizerPresence: "structured" | "not_provided";
   action: {
     date: string;
     locationLabel: string;
@@ -57,10 +58,12 @@ function isNonNegativeInteger(value: unknown): value is number {
 }
 
 function getParticipation(
-  action: ActionRow,
+  _action: ActionRow,
   metadata: ReturnType<typeof extractActionMetadataFromNotes>,
 ): ActionVolunteerParticipation | null {
-  return action.preparation_data?.volunteerParticipation ?? metadata.volunteerParticipation;
+  // The preparation split is a forecast. Once the action is finalized, only
+  // the canonical composition persisted in the final metadata may qualify.
+  return metadata.volunteerParticipation;
 }
 
 function hasValidParticipation(
@@ -92,6 +95,23 @@ export function isConfirmedSchoolAction(
   return confirmer === action.created_by_clerk_id || canonicalOrganizerIds.includes(confirmer);
 }
 
+/**
+ * Single active-projection predicate for school recognitions.
+ * The route keeps its own public boundary, while every qualification path
+ * reuses this exact lifecycle and visibility contract.
+ */
+export function isEligibleForSchoolActionRecognition(
+  action: ActionRow,
+  canonicalOrganizerIds: readonly string[] = [],
+): boolean {
+  return isConfirmedSchoolAction(action, canonicalOrganizerIds) &&
+    action.status === "approved" &&
+    action.action_phase === "post_action_complete" &&
+    Boolean(action.published_at) &&
+    action.moderation_visibility === "visible" &&
+    action.access_mode === "public";
+}
+
 export function assessSchoolActionRecognitions(input: {
   action: ActionRow;
   canonicalOrganizerIds?: readonly string[];
@@ -100,11 +120,12 @@ export function assessSchoolActionRecognitions(input: {
   const metadata = extractActionMetadataFromNotes(action.notes);
   const confirmedSchoolFrame = isConfirmedSchoolAction(action, canonicalOrganizerIds);
   const validatedAction = isCurrentActionValidated(action);
+  const eligibleAction = isEligibleForSchoolActionRecognition(action, canonicalOrganizerIds);
   const participation = getParticipation(action, metadata);
   const validParticipation = hasValidParticipation(action, participation);
   const documentedSorting = hasDocumentedSorting(metadata);
   const traceableMeasurement = hasTraceableMeasurement(action, metadata);
-  const base = confirmedSchoolFrame && validatedAction;
+  const base = eligibleAction;
 
   const results: Record<CurrentSchoolCollectiveRecognitionId, boolean> = {
     school_first_mission: base,
@@ -119,7 +140,7 @@ export function assessSchoolActionRecognitions(input: {
     reason: results[definition.id]
       ? definition.description
       : definition.id === "school_first_mission"
-        ? "Une confirmation scolaire autorisée et une action approuvée et finalisée sont nécessaires."
+        ? "Une confirmation scolaire autorisée, une action publique publiée, approuvée et finalisée sont nécessaires."
         : definition.id === "school_documented_sorting"
           ? "Une ventilation canonique multi-flux réellement documentée est nécessaire."
           : "Une répartition de participation valide et une mesure traçable sont nécessaires.",
@@ -155,8 +176,6 @@ export function buildSchoolActionAttestation(input: {
   const metadata = extractActionMetadataFromNotes(action.notes);
   const participation = getParticipation(action, metadata);
   const validParticipation = hasValidParticipation(action, participation);
-  const confirmedSchoolFrame = isConfirmedSchoolAction(action, canonicalOrganizerIds);
-  const validatedAction = isCurrentActionValidated(action);
   const recognitions = assessSchoolActionRecognitions(input);
   const measuredButts = hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements)
     ? metadata.cigaretteButtsMeasurements?.cigaretteButtsCount ?? null
@@ -171,12 +190,13 @@ export function buildSchoolActionAttestation(input: {
 
   return {
     kind: "school_action_attestation",
-    version: "school-action-attestation-2026.10-v1",
+    version: "school-action-attestation-2026.10-v2",
     actionId: action.id,
-    status: confirmedSchoolFrame && validatedAction ? "eligible" : "ineligible",
+    status: isEligibleForSchoolActionRecognition(action, canonicalOrganizerIds) ? "eligible" : "ineligible",
     isOfficialEducationCertification: false,
     context: action.action_context ?? "unknown",
-    verifiedOrganizer: Boolean(action.organizer_id && action.organizer_type),
+    verifiedOrganizer: false,
+    organizerPresence: action.organizer_id && action.organizer_type ? "structured" : "not_provided",
     action: {
       date: action.action_date,
       locationLabel: action.location_label,
@@ -192,7 +212,7 @@ export function buildSchoolActionAttestation(input: {
         : null,
       cigaretteButtsCount: measuredButts,
       categories: measuredCategories(metadata),
-      observationsProvided: Boolean(action.notes?.trim()),
+      observationsProvided: Boolean(metadata.cleanNotes?.trim()),
     },
     limits,
     recognitions: recognitions.filter((recognition) => recognition.qualified),

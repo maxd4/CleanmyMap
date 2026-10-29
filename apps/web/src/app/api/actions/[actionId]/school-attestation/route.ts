@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { loadActionById } from "@/lib/actions/store";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { buildSchoolActionAttestation } from "@/lib/gamification/school-action-recognition";
+import {
+  buildSchoolActionAttestation,
+  isEligibleForSchoolActionRecognition,
+} from "@/lib/gamification/school-action-recognition";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +37,9 @@ export async function GET(
   }
 
   const canonicalOrganizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
+  if (!isEligibleForSchoolActionRecognition(action, canonicalOrganizerIds)) {
+    return NextResponse.json({ error: "Attestation indisponible." }, { status: 404 });
+  }
   const attestation = buildSchoolActionAttestation({ action, canonicalOrganizerIds });
   if (attestation.status !== "eligible") {
     return NextResponse.json({ error: "Cette action ne remplit pas le cadre scolaire confirmé." }, { status: 404 });

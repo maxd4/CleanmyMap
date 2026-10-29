@@ -164,14 +164,20 @@ l’attestation de l’action et dans les projections autorisées de cette actio
 jamais dans l’inventaire ou le solde XP d’un élève.
 
 Une reconnaissance n’est active que si le cadre `school` est explicitement
-confirmé par un organisateur autorisé et que l’action est approuvée et
-finalisée. La détection automatique de la composition, un quiz affiché, une
-photo ou une action simplement commencée ne prouvent pas ce cadre. Les trois
-jalons sont descriptifs, idempotents, réconciliables et valent `0 XP` : aucune
-récompense n’est calculée à partir du nombre d’enfants, de la masse, des
-mégots, d’un rendement estimé ou d’un classement. Une correction, un rejet,
-une annulation, une dépublication ou une reclassification hors scolaire
-désactive la projection sans effacer l’audit.
+confirmé par le créateur ou un organisateur canonique autorisé et que l’action
+est `approved`, `post_action_complete`, publiée, visible et `public`. La
+détection automatique de la composition, un quiz affiché, une photo ou une
+action simplement commencée ne prouvent pas ce cadre. La composition utilisée
+après finalisation est exclusivement celle du bilan canonique ; la prévision
+de préparation ne la remplace jamais et une composition finale absente ou
+incohérente reste inconnue. Les trois jalons sont descriptifs, idempotents,
+réconciliables et valent `0 XP` : aucune récompense n’est calculée à partir du
+nombre d’enfants, de la masse, des mégots, d’un rendement estimé ou d’un
+classement. Une correction, un rejet, une annulation, une dépublication, un
+masquage, une privatisation ou une reclassification hors scolaire désactive la
+projection sans effacer l’audit ; la réconciliation vérifie la révision de
+l’action dans une transaction PostgreSQL bornée pour éviter la réactivation
+d’un état périmé.
 
 Les jalons CURRENT ont chacun leur identité `milestone:<id>` dans le même
 catalogue : `premiere_trace_utile`, `trace_fondatrice`, `boucle_bouclee`,
