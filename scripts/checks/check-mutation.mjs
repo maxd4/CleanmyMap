@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import strykerConfig from "../../apps/web/stryker.config.mjs";
@@ -34,6 +35,60 @@ function mutationReportProvenance() {
   };
 }
 
+function temporaryReportPath(targetPath, purpose) {
+  return path.join(
+    path.dirname(targetPath),
+    `.${path.basename(targetPath)}.${purpose}.${process.pid}.${randomUUID()}.tmp`,
+  );
+}
+
+function readMutationReport(reportPath) {
+  const stagedPath = temporaryReportPath(reportPath, "read");
+  try {
+    fs.copyFileSync(reportPath, stagedPath, fs.constants.COPYFILE_EXCL);
+    const descriptor = fs.openSync(stagedPath, fs.constants.O_RDONLY);
+    try {
+      return JSON.parse(fs.readFileSync(descriptor, { encoding: "utf8" }));
+    } finally {
+      fs.closeSync(descriptor);
+    }
+  } finally {
+    fs.rmSync(stagedPath, { force: true });
+  }
+}
+
+function writeMutationReportAtomically(reportPath, report) {
+  const temporaryPath = temporaryReportPath(reportPath, "write");
+  let descriptor;
+  try {
+    descriptor = fs.openSync(
+      temporaryPath,
+      fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL,
+      0o600,
+    );
+    fs.writeFileSync(descriptor, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    fs.fsyncSync(descriptor);
+    fs.closeSync(descriptor);
+    descriptor = undefined;
+    fs.renameSync(temporaryPath, reportPath);
+  } finally {
+    if (descriptor !== undefined) {
+      fs.closeSync(descriptor);
+    }
+    fs.rmSync(temporaryPath, { force: true });
+  }
+}
+
+export function enrichAndPublishMutationReport(
+  reportPath,
+  provenanceFactory = mutationReportProvenance,
+) {
+  const report = readMutationReport(reportPath);
+  const enriched = { ...report, ...provenanceFactory() };
+  writeMutationReportAtomically(reportPath, enriched);
+  return enriched;
+}
+
 function runMutation() {
   if (!fs.existsSync(runnerPath)) throw new Error("HOST_ENVIRONMENT: Stryker 10.0.0 is not installed.");
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
@@ -45,11 +100,14 @@ function runMutation() {
   if (result.status !== 0) {
     throw new Error(`Mutation runner failed with exit ${result.status}: ${result.stderr || result.stdout || "no output"}`);
   }
-  if (!fs.existsSync(reportPath)) throw new Error("Mutation report missing after Stryker run.");
-  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
-  const enriched = { ...report, ...mutationReportProvenance() };
-  fs.writeFileSync(reportPath, `${JSON.stringify(enriched, null, 2)}\n`, "utf8");
-  return enriched;
+  try {
+    return enrichAndPublishMutationReport(reportPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      throw new Error("Mutation report missing after Stryker run.", { cause: error });
+    }
+    throw error;
+  }
 }
 
 export function runMutationPolicy() {

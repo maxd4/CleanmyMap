@@ -113,4 +113,19 @@ describe("sanitize analytics payload", () => {
 
     expect(sanitized).toEqual({});
   });
+
+  it("keeps empty, malformed, and encoded values while removing an email at the end", () => {
+    const sanitized = sanitizeAnalyticsProperties({
+      empty: "",
+      malformed: "personne@example",
+      encoded: "personne%40example.com",
+      terminal: "personne@example.com",
+    });
+
+    expect(sanitized).toEqual({
+      empty: "",
+      malformed: "personne@example",
+      encoded: "personne%40example.com",
+    });
+  });
 });

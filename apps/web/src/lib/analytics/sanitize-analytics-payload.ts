@@ -152,7 +152,7 @@ function isEmailWhitespace(character: string | undefined): boolean {
 
 function containsEmail(value: string): boolean {
   let tokenStart = 0;
-  for (let index = 0; index <= value.length; index += 1) {
+  for (let index = 0; index < value.length; index += 1) {
     const character = value[index];
     if (character === "@") {
       const localPart = value.slice(tokenStart, index);
