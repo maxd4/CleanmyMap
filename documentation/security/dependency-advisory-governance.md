@@ -332,3 +332,27 @@ backport local.
 - Le runtime mobile n'expose pas directement `image-size` et n'utilise pas
   d'upload photo natif dans la V1 courante. `expo-image-picker` et la capacité
   d'upload photo mobile ne font pas partie du graphe runtime publié.
+
+## Alertes Dependabot #246, #247 et #248
+
+Le graphe courant traite les deux correctifs upstream publiés sans modifier
+les seuils de l'audit :
+
+- `GHSA-j586-36cw-2gc2` / `CVE-2026-114613` (`msgpack`) est atteint par
+  `librosa` dans `.agents/skills/brag/scripts/uv.lock`. Le projet UV impose
+  désormais `msgpack>=1.2.3` dans son override de résolution, et le lockfile
+  doit rester à une version résolue au moins égale à `1.2.3`.
+- `GHSA-6pq8-jhm2-2vcw` / `CVE-2026-110816` (`qs`) est traité par l'override
+  npm racine `qs: 6.16.1`. La résolution du lockfile doit rester exactement
+  `6.16.1` pour ce chemin contrôlé.
+
+`GHSA-gcqx-w48m-w2h4` / `CVE-2026-93753` (`deepmerge`) reste ouvert. La seule
+  utilisation résolue est transitive via `@expo/config@57.0.10`, qui déclare
+  `deepmerge: ^4.3.1`; aucun import applicatif CleanMyMap de `deepmerge` n'a été
+  trouvé. Le registre npm upstream ne publie pas de version supérieure à
+  `4.3.1`, et l'issue mainteneur décrit encore le correctif comme à appliquer,
+  sans release upstream corrigée. Un alias communautaire ou un override global
+  changerait le contrat du tooling Expo sans preuve de compatibilité ; il n'est
+  donc pas adopté. L'alerte reste visible et bloquante jusqu'à une release
+  upstream compatible, ou jusqu'à une mitigation locale séparée avec
+  provenance, tests de surface et validation Expo dédiés.
