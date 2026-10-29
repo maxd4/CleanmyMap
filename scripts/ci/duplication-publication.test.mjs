@@ -46,14 +46,30 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function fixtureResults(root, metricsByScope = {}) {
+function evidencePaths(evidence) {
+  const lineReferences = [...evidence.matchAll(/(?:^| et )([^:;]+):\d+-\d+/g)]
+    .map((match) => match[1].trim());
+  if (lineReferences.length >= 2) return lineReferences;
+  return [...evidence.matchAll(/[A-Za-z0-9_.\[\]-]+(?:\/[A-Za-z0-9_.\[\]-]+)+/g)]
+    .map((match) => match[0].replace(/[.,;]+$/, ""));
+}
+
+function fixtureResults(root, metricsByScope = {}, executionByScope = {}) {
   return SCOPES.map((scope, index) => {
-    const fingerprints = CANONICAL_JUSTIFICATIONS.justifications
-      .filter((justification) => justification.scope === scope)
-      .map((justification) => justification.fingerprint);
+    const justifications = CANONICAL_JUSTIFICATIONS.justifications.filter((justification) => justification.scope === scope);
+    const fingerprints = justifications.map((justification) => justification.fingerprint);
     const qualifiedNewFingerprints = fingerprints
       .filter((fingerprint) => !Object.hasOwn(CANONICAL_NATIVE_BASELINES[scope].fingerprints, fingerprint))
       .sort();
+    const occurrences = justifications.map((justification, occurrenceIndex) => {
+      const paths = evidencePaths(justification.evidence);
+      assert.ok(paths.length >= 2, `fixture evidence must expose two source paths for ${justification.fingerprint}`);
+      return {
+        fingerprint: justification.fingerprint,
+        occurrenceA: { path: paths[0], startLine: 10 + occurrenceIndex, endLine: 14 + occurrenceIndex },
+        occurrenceB: { path: paths[1], startLine: 31 + occurrenceIndex, endLine: 35 + occurrenceIndex },
+      };
+    });
     const reportRoot = join(root, "reports", scope);
     mkdirSync(reportRoot, { recursive: true });
     const jsonPath = join(reportRoot, "jscpd-report.json");
@@ -71,19 +87,56 @@ function fixtureResults(root, metricsByScope = {}) {
       ...metricsByScope[scope],
     };
     const reportMetrics = { ...metrics, newClones: metrics.newClones + qualifiedNewFingerprints.length };
-    writeFileSync(jsonPath, JSON.stringify({ statistics: { total: { sources: reportMetrics.files, ...reportMetrics } }, duplicates: [], scope, index }));
+    writeFileSync(jsonPath, JSON.stringify({
+      statistics: { total: { sources: reportMetrics.files, ...reportMetrics } },
+      duplicates: occurrences.map((occurrence) => ({
+        firstFile: { name: occurrence.occurrenceA.path, start: occurrence.occurrenceA.startLine, end: occurrence.occurrenceA.endLine },
+        secondFile: { name: occurrence.occurrenceB.path, start: occurrence.occurrenceB.startLine, end: occurrence.occurrenceB.endLine },
+      })),
+      scope,
+      index,
+    }));
     writeFileSync(sarifPath, JSON.stringify({
-      runs: [{ results: fingerprints.map((fingerprint) => ({ partialFingerprints: { "jscpdCloneHash/v1": fingerprint } })) }],
+      runs: [{ results: occurrences.map((occurrence) => ({
+        partialFingerprints: { "jscpdCloneHash/v1": occurrence.fingerprint },
+        locations: [
+          { physicalLocation: { artifactLocation: { uri: occurrence.occurrenceA.path }, region: { startLine: occurrence.occurrenceA.startLine, endLine: occurrence.occurrenceA.endLine } } },
+          { physicalLocation: { artifactLocation: { uri: occurrence.occurrenceB.path }, region: { startLine: occurrence.occurrenceB.startLine, endLine: occurrence.occurrenceB.endLine } } },
+        ],
+      })) }],
     }));
     return {
       scopeName: scope,
       metrics,
       fingerprints: new Set(fingerprints),
+      occurrences,
       qualifiedNewFingerprints,
+      execution: executionByScope[scope] ?? { status: "PASS", exitCode: 0, signal: null },
       comparison: { status: "PASS", failures: [] },
       reportArtifacts: { jsonPath, sarifPath },
     };
   });
+}
+
+function rewriteJsonReportAndRefreshHash(root, candidateSha, runId, scopeName, mutate, mutateSarif = null) {
+  const proofPath = join(root, candidateSha, runId, "duplication-publication-proof.json");
+  const proofDirectory = join(root, candidateSha, runId);
+  const reportPath = join(proofDirectory, scopeName, "jscpd-report.json");
+  const report = JSON.parse(readFileSync(reportPath, "utf8"));
+  mutate(report);
+  writeFileSync(reportPath, JSON.stringify(report));
+  const proof = JSON.parse(readFileSync(proofPath, "utf8"));
+  const proofScope = proof.scopes.find((scope) => scope.name === scopeName);
+  proofScope.report.jsonSha256 = sha256(readFileSync(reportPath));
+  if (mutateSarif) {
+    const sarifPath = join(proofDirectory, scopeName, "jscpd-report.sarif");
+    const sarif = JSON.parse(readFileSync(sarifPath, "utf8"));
+    mutateSarif(sarif);
+    writeFileSync(sarifPath, JSON.stringify(sarif));
+    proofScope.report.sarifSha256 = sha256(readFileSync(sarifPath));
+  }
+  writeFileSync(proofPath, JSON.stringify(proof));
+  return proofPath;
 }
 
 function fixtureBaseline() {
@@ -120,6 +173,161 @@ test("publication proof binds all scopes, reports, source files and candidate tr
     assert.equal(proof.policyFingerprint, DUPLICATION_POLICY_FINGERPRINT);
     assert.deepEqual(proof.scopes.map((scope) => scope.name).sort(), SCOPES.slice().sort());
     assert.equal(validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }).proofFile, proofPath);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("publication proof revalidates JSON/SARIF occurrence count after report hashes pass", () => {
+  const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-occurrence-count-"));
+  try {
+    const candidateSha = git(["rev-parse", "HEAD"]);
+    const results = fixtureResults(root);
+    const { proofPath } = writeDuplicationPublicationProof({
+      repositoryRoot: REPOSITORY_ROOT,
+      candidateSha,
+      results,
+      baseline: fixtureBaseline(),
+      justificationReport: fixtureJustifications(),
+      toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+      candidateScope: "DYNAMIC_CANDIDATE",
+      publicationRoot: root,
+      runId: "run-test-occurrence-count",
+    });
+    rewriteJsonReportAndRefreshHash(root, candidateSha, "run-test-occurrence-count", "runtime", (report) => {
+      report.duplicates = [];
+    });
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /occurrence projection mismatch/,
+    );
+    assert.ok(proofPath);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("publication proof rejects invalid and incoherent occurrence locations", () => {
+  const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-occurrence-location-"));
+  try {
+    const candidateSha = git(["rev-parse", "HEAD"]);
+    const results = fixtureResults(root);
+    writeDuplicationPublicationProof({
+      repositoryRoot: REPOSITORY_ROOT,
+      candidateSha,
+      results,
+      baseline: fixtureBaseline(),
+      justificationReport: fixtureJustifications(),
+      toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+      candidateScope: "DYNAMIC_CANDIDATE",
+      publicationRoot: root,
+      runId: "run-test-occurrence-location",
+    });
+    rewriteJsonReportAndRefreshHash(root, candidateSha, "run-test-occurrence-location", "runtime", (report) => {
+      report.duplicates[0].firstFile.start = 0;
+    });
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /invalid JSON source location/,
+    );
+
+    const secondRoot = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-occurrence-incoherent-"));
+    try {
+      writeDuplicationPublicationProof({
+        repositoryRoot: REPOSITORY_ROOT,
+        candidateSha,
+        results: fixtureResults(secondRoot),
+        baseline: fixtureBaseline(),
+        justificationReport: fixtureJustifications(),
+        toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+        candidateScope: "DYNAMIC_CANDIDATE",
+        publicationRoot: secondRoot,
+        runId: "run-test-occurrence-incoherent",
+      });
+      rewriteJsonReportAndRefreshHash(secondRoot, candidateSha, "run-test-occurrence-incoherent", "runtime", (report) => {
+        report.duplicates[0].firstFile.name = "apps/web/src/incoherent.ts";
+      });
+      assert.throws(
+        () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: secondRoot }),
+        /first source location differs between JSON and SARIF/,
+      );
+    } finally {
+      rmSync(secondRoot, { recursive: true, force: true });
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("publication proof rejects justification evidence that does not cover both current occurrences", () => {
+  const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-occurrence-evidence-"));
+  try {
+    const candidateSha = git(["rev-parse", "HEAD"]);
+    writeDuplicationPublicationProof({
+      repositoryRoot: REPOSITORY_ROOT,
+      candidateSha,
+      results: fixtureResults(root),
+      baseline: fixtureBaseline(),
+      justificationReport: fixtureJustifications(),
+      toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+      candidateScope: "DYNAMIC_CANDIDATE",
+      publicationRoot: root,
+      runId: "run-test-occurrence-evidence",
+    });
+    rewriteJsonReportAndRefreshHash(root, candidateSha, "run-test-occurrence-evidence", "runtime", (report) => {
+      report.duplicates[0].firstFile.name = "apps/web/src/not-reviewed-a.ts";
+      report.duplicates[0].secondFile.name = "apps/web/src/not-reviewed-b.ts";
+    }, (sarif) => {
+      const locations = sarif.runs[0].results[0].locations;
+      locations[0].physicalLocation.artifactLocation.uri = "apps/web/src/not-reviewed-a.ts";
+      locations[1].physicalLocation.artifactLocation.uri = "apps/web/src/not-reviewed-b.ts";
+    });
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /CURRENT occurrence pair/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("publication proof records jscpd execution and rejects non-successful execution metadata", () => {
+  const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-execution-"));
+  try {
+    const candidateSha = git(["rev-parse", "HEAD"]);
+    const results = fixtureResults(root, {}, { runtime: { status: "FAIL", exitCode: 1, signal: null } });
+    const { proofPath } = writeDuplicationPublicationProof({
+      repositoryRoot: REPOSITORY_ROOT,
+      candidateSha,
+      results,
+      baseline: fixtureBaseline(),
+      justificationReport: fixtureJustifications(),
+      toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+      candidateScope: "DYNAMIC_CANDIDATE",
+      publicationRoot: root,
+      runId: "run-test-execution",
+    });
+    const proof = JSON.parse(readFileSync(proofPath, "utf8"));
+    assert.deepEqual(proof.scopes[0].execution, { status: "FAIL", exitCode: 1, signal: null });
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /execution status contradicts the scope ratchet status/,
+    );
+
+    proof.scopes[0].ratchetStatus = "FAIL";
+    proof.scopes[0].failures = ["jscpd execution failed (exit 1)"];
+    writeFileSync(proofPath, JSON.stringify(proof));
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /jscpd execution was not successful/,
+    );
+
+    proof.scopes[0].execution = null;
+    writeFileSync(proofPath, JSON.stringify(proof));
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /execution metadata is incomplete/,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

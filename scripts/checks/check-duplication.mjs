@@ -106,7 +106,14 @@ function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
     const fingerprints = readJscpdFingerprints(sarifReport);
     const occurrences = readJscpdOccurrences(jscpdReport, sarifReport, scopeName);
     const comparison = compareDuplicationMetrics(metrics, baseline.scopes[scopeName], scopeName);
-    const executionFailures = result.status !== 0 ? [`jscpd execution failed (exit ${result.status})`] : [];
+    const execution = {
+      status: result.status === 0 && result.signal === null && !result.error ? "PASS" : "FAIL",
+      exitCode: Number.isInteger(result.status) ? result.status : null,
+      signal: result.signal ?? null,
+    };
+    const executionFailures = execution.status === "PASS"
+      ? []
+      : [`jscpd execution failed (exit ${execution.exitCode ?? "unknown"}${execution.signal ? `, signal ${execution.signal}` : ""})`];
     const failures = [...comparison.failures, ...executionFailures];
     const reportArtifacts = reportDirectory
       ? (() => {
@@ -125,6 +132,7 @@ function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
       fingerprints,
       occurrences,
       reportArtifacts,
+      execution,
       executionFailures,
       comparison: {
         ...comparison,

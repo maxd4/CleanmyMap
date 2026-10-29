@@ -286,7 +286,7 @@ function readJscpdOccurrence(location) {
   const sourcePath = firstString(location.name, location.path, location.file, location.fileName, location.uri);
   const startLine = firstInteger(location.start, location.startLine, location.startLoc?.line, location.region?.startLine);
   const endLine = firstInteger(location.end, location.endLine, location.endLoc?.line, location.region?.endLine);
-  if (!sourcePath || startLine === null || endLine === null) return null;
+  if (!sourcePath || startLine === null || endLine === null || startLine < 1 || endLine < startLine) return null;
   return { path: normalizeOccurrencePath(sourcePath), startLine, endLine };
 }
 
@@ -320,8 +320,25 @@ export function readJscpdOccurrences(report, sarifReport, scopeName) {
     if (typeof fingerprint !== "string" || fingerprint.length === 0) {
       throw new Error("jscpd SARIF report malformed: jscpdCloneHash/v1 is required for occurrence projection.");
     }
-    const occurrenceA = readJscpdOccurrence(duplicate?.firstFile) ?? readSarifOccurrence(results[index], 0);
-    const occurrenceB = readJscpdOccurrence(duplicate?.secondFile) ?? readSarifOccurrence(results[index], 1);
+    const jsonOccurrenceA = readJscpdOccurrence(duplicate?.firstFile);
+    const jsonOccurrenceB = readJscpdOccurrence(duplicate?.secondFile);
+    const sarifOccurrenceA = readSarifOccurrence(results[index], 0);
+    const sarifOccurrenceB = readSarifOccurrence(results[index], 1);
+    if ((duplicate?.firstFile && !jsonOccurrenceA) || (duplicate?.secondFile && !jsonOccurrenceB)) {
+      throw new Error(`jscpd occurrence projection malformed at clone ${index + 1}: invalid JSON source location.`);
+    }
+    if (Array.isArray(results[index]?.locations) && results[index].locations.length > 0
+      && (!sarifOccurrenceA || !sarifOccurrenceB)) {
+      throw new Error(`jscpd occurrence projection malformed at clone ${index + 1}: invalid SARIF source location.`);
+    }
+    if (jsonOccurrenceA && sarifOccurrenceA && JSON.stringify(jsonOccurrenceA) !== JSON.stringify(sarifOccurrenceA)) {
+      throw new Error(`jscpd occurrence projection incoherent at clone ${index + 1}: first source location differs between JSON and SARIF.`);
+    }
+    if (jsonOccurrenceB && sarifOccurrenceB && JSON.stringify(jsonOccurrenceB) !== JSON.stringify(sarifOccurrenceB)) {
+      throw new Error(`jscpd occurrence projection incoherent at clone ${index + 1}: second source location differs between JSON and SARIF.`);
+    }
+    const occurrenceA = jsonOccurrenceA ?? sarifOccurrenceA;
+    const occurrenceB = jsonOccurrenceB ?? sarifOccurrenceB;
     if (!occurrenceA || !occurrenceB) {
       throw new Error(`jscpd occurrence projection malformed at clone ${index + 1}: two source locations are required.`);
     }
@@ -377,6 +394,7 @@ export function validateDuplicationJustificationsRegistry(
   const classifications = Object.fromEntries(DUPLICATION_DURABLE_CLASSIFICATIONS.map((classification) => [classification, []]));
   const stale = [];
   const staleByClassification = Object.fromEntries(DUPLICATION_DURABLE_CLASSIFICATIONS.map((classification) => [classification, []]));
+  const reviewedRefChecks = new Map();
   for (const [index, justification] of registry.justifications.entries()) {
     if (!justification || typeof justification !== "object") {
       justificationError(`entry ${index} must be an object.`);
@@ -413,14 +431,28 @@ export function validateDuplicationJustificationsRegistry(
       if (typeof gitRunner !== "function") {
         justificationError("reviewedRef validation requires a Git runner.");
       }
-      try {
-        gitRunner(["cat-file", "-e", `${reviewedRef}^{commit}`]);
-      } catch {
+      const cacheKey = `${reviewedRef}:${auditedSha}`;
+      let reviewedRefCheck = reviewedRefChecks.get(cacheKey);
+      if (reviewedRefCheck === undefined) {
+        try {
+          gitRunner(["cat-file", "-e", `${reviewedRef}^{commit}`]);
+        } catch {
+          reviewedRefCheck = "missing";
+        }
+        if (reviewedRefCheck === undefined) {
+          try {
+            gitRunner(["merge-base", "--is-ancestor", reviewedRef, auditedSha]);
+          } catch {
+            reviewedRefCheck = "not-ancestor";
+          }
+        }
+        if (reviewedRefCheck === undefined) reviewedRefCheck = "valid";
+        reviewedRefChecks.set(cacheKey, reviewedRefCheck);
+      }
+      if (reviewedRefCheck === "missing") {
         justificationError(`entry ${index} reviewedRef does not resolve to a Git commit.`);
       }
-      try {
-        gitRunner(["merge-base", "--is-ancestor", reviewedRef, auditedSha]);
-      } catch {
+      if (reviewedRefCheck === "not-ancestor") {
         justificationError(`entry ${index} reviewedRef ${reviewedRef} is not an ancestor of audited SHA ${auditedSha}.`);
       }
     }

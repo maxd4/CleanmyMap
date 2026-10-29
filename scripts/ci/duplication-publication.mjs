@@ -16,12 +16,13 @@ import {
   nativeBaselineFingerprintCount,
   readJscpdFingerprints,
   readJscpdMetrics,
+  readJscpdOccurrences,
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "../checks/duplication-policy.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
-export const DUPLICATION_PUBLICATION_SCHEMA_VERSION = 1;
+export const DUPLICATION_PUBLICATION_SCHEMA_VERSION = 2;
 export const DUPLICATION_PUBLICATION_ROOT = path.join("artifacts", "duplication-publication");
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const HASH_PATTERN = /^[0-9a-f]{64}$/i;
@@ -214,6 +215,21 @@ function assertJsonEqual(actual, expected, message) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);
 }
 
+function validateJscpdExecution(scopeName, execution, ratchetStatus) {
+  if (!execution || typeof execution !== "object"
+    || !["PASS", "FAIL"].includes(execution.status)
+    || (execution.exitCode !== null && !Number.isInteger(execution.exitCode))
+    || (execution.signal !== null && typeof execution.signal !== "string")) {
+    throw new Error(`Duplication publication execution metadata is incomplete for ${scopeName}.`);
+  }
+  if (execution.status === "FAIL" && ratchetStatus !== "FAIL") {
+    throw new Error(`Duplication publication execution status contradicts the scope ratchet status for ${scopeName}.`);
+  }
+  if (execution.status !== "PASS" || execution.exitCode !== 0 || execution.signal !== null) {
+    throw new Error(`Duplication publication jscpd execution was not successful for ${scopeName}.`);
+  }
+}
+
 function validateProofConsistency(repositoryRoot, candidateSha, proof, reports) {
   const metricsBaseline = candidateFileJson(repositoryRoot, candidateSha, "scripts/checks/duplication-metrics-baseline.json");
   validateDuplicationMetricsBaseline(metricsBaseline);
@@ -226,10 +242,13 @@ function validateProofConsistency(repositoryRoot, candidateSha, proof, reports) 
     return [scope, baseline];
   }));
   const currentFingerprintsByScope = {};
+  const currentOccurrencesByScope = {};
   for (const scope of proof.scopes) {
+    validateJscpdExecution(scope.name, scope.execution, scope.ratchetStatus);
     const report = reports[scope.name];
     const reportMetrics = readJscpdMetrics(report.json);
     const reportFingerprints = [...readJscpdFingerprints(report.sarif)].sort();
+    const reportOccurrences = readJscpdOccurrences(report.json, report.sarif, scope.name);
     const declaredFingerprints = Array.isArray(scope.fingerprints) ? [...scope.fingerprints].sort() : null;
     if (!declaredFingerprints || new Set(declaredFingerprints).size !== declaredFingerprints.length
       || JSON.stringify(declaredFingerprints) !== JSON.stringify(reportFingerprints)) {
@@ -264,11 +283,20 @@ function validateProofConsistency(repositoryRoot, candidateSha, proof, reports) 
     }
     assertJsonEqual(scope.threePercent, evaluateDuplicationTarget(declaredMetrics), `Duplication publication target status is incoherent for ${scope.name}.`);
     currentFingerprintsByScope[scope.name] = new Set(declaredFingerprints);
+    currentOccurrencesByScope[scope.name] = reportOccurrences;
   }
   const justificationRegistry = candidateFileJson(repositoryRoot, candidateSha, "scripts/checks/duplication-justifications.json");
   const justificationReport = validateDuplicationJustificationsRegistry(justificationRegistry, {
     nativeBaselines,
     currentFingerprintsByScope,
+    currentOccurrencesByScope,
+    reviewedRefValidation: {
+      auditedSha: candidateSha,
+      gitRunner: (args) => execFileSync(gitExecutable(), args, {
+        cwd: repositoryRoot,
+        stdio: "ignore",
+      }),
+    },
   });
   const expectedJustificationStatus = {
     stale: justificationReport.stale,
@@ -334,6 +362,11 @@ export function writeDuplicationPublicationProof({
     if (!result.reportArtifacts?.jsonPath || !result.reportArtifacts?.sarifPath) {
       throw new Error(`Duplication publication cannot attest reports for ${result.scopeName}.`);
     }
+    if (!result.execution || !["PASS", "FAIL"].includes(result.execution.status)
+      || (result.execution.exitCode !== null && !Number.isInteger(result.execution.exitCode))
+      || (result.execution.signal !== null && typeof result.execution.signal !== "string")) {
+      throw new Error(`Duplication publication execution metadata is incomplete for ${result.scopeName}.`);
+    }
     const jsonPath = path.join(scopeDirectory, "jscpd-report.json");
     const sarifPath = path.join(scopeDirectory, "jscpd-report.sarif");
     if (path.resolve(result.reportArtifacts.jsonPath) !== path.resolve(jsonPath)) fs.copyFileSync(result.reportArtifacts.jsonPath, jsonPath);
@@ -344,6 +377,7 @@ export function writeDuplicationPublicationProof({
       metrics: result.metrics,
       ratchetStatus: result.comparison.status,
       failures: result.comparison.failures,
+      execution: result.execution,
       fingerprints: [...result.fingerprints].sort(),
       qualifiedNewFingerprints: result.qualifiedNewFingerprints ?? [],
       threePercent: target,
