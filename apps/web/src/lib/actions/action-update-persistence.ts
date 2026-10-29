@@ -21,6 +21,7 @@ import {
   getVolunteerActionCompositionValidationMessage,
   getVolunteerForecastValidationMessage,
 } from "./volunteer-participation";
+import { resolveActionContext } from "./action-context";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -37,6 +38,60 @@ export type PreparedActionUpdate = {
   currentMetadata: ActionMetadata;
   updateData: Record<string, unknown>;
 };
+
+function buildActionContextUpdate(params: {
+  current: ActionRow;
+  body: ActionUpdateInput;
+  nextActionPhase: ActionRow["action_phase"];
+  nextParticipation: ReturnType<typeof buildActionUpdateMeasurements>["nextVolunteerParticipation"];
+  nextVolunteersCount: number | null;
+  userId?: string;
+}): Record<string, unknown> {
+  const { current, body, nextActionPhase, nextParticipation, nextVolunteersCount, userId } = params;
+  const preparationContextProvided =
+    body.preparationData !== undefined &&
+    Object.prototype.hasOwnProperty.call(body.preparationData ?? {}, "actionContextSelection");
+  const explicitContextProvided =
+    Object.prototype.hasOwnProperty.call(body, "actionContext") || preparationContextProvided;
+  const explicitContext =
+    body.actionContext !== undefined
+      ? body.actionContext
+      : preparationContextProvided
+        ? body.preparationData?.actionContextSelection
+        : undefined;
+  const participationChanged =
+    body.volunteersCount !== undefined || body.volunteerParticipation !== undefined;
+  const shouldResolve =
+    explicitContextProvided ||
+    (nextActionPhase === "post_action_complete" &&
+      (current.action_phase !== "post_action_complete" || participationChanged));
+
+  if (!shouldResolve) return {};
+  if (!explicitContextProvided && current.action_context_source === "explicit") return {};
+
+  const classification =
+    nextActionPhase === "pre_action" && explicitContext === null
+      ? { context: null, source: null }
+      : nextActionPhase === "pre_action" && explicitContext === undefined
+        ? { context: null, source: null }
+        : resolveActionContext({
+            composition: {
+              volunteersCount: nextVolunteersCount,
+              childrenCount: nextParticipation?.childrenCount,
+              retiredCount: nextParticipation?.retiredCount,
+            },
+            explicitContext,
+          });
+  const explicitSchool = classification.source === "explicit" && classification.context === "school";
+  return {
+    action_context: classification.context,
+    action_context_source: classification.source,
+    school_context_confirmed: explicitSchool ? true : null,
+    school_context_confirmed_at: explicitSchool ? new Date().toISOString() : null,
+    school_context_confirmed_by_clerk_id:
+      explicitSchool ? userId ?? current.created_by_clerk_id : null,
+  };
+}
 
 function isNewFinalization(
   current: ActionRow,
@@ -128,8 +183,9 @@ export async function persistActionUpdate(params: {
 export async function prepareActionUpdate(params: {
   current: ActionRow;
   parsedBody: ActionUpdateInput;
+  userId?: string;
 }): Promise<PreparedActionUpdate> {
-  const { current, parsedBody } = params;
+  const { current, parsedBody, userId } = params;
   let body: ActionUpdateInput;
   try {
     body = prepareActionUpdateBody(current, parsedBody);
@@ -225,6 +281,20 @@ export async function prepareActionUpdate(params: {
     currentMetadata,
   });
   Object.assign(updateData, measurements.updateData);
+  Object.assign(
+    updateData,
+    buildActionContextUpdate({
+      current,
+      body,
+      nextActionPhase,
+      nextParticipation: measurements.nextVolunteerParticipation,
+      nextVolunteersCount:
+        typeof measurements.updateData.volunteers_count === "number"
+          ? measurements.updateData.volunteers_count
+          : current.volunteers_count,
+      userId,
+    }),
+  );
 
   const notes = buildActionUpdateNotes({
     body,

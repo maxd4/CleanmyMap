@@ -137,7 +137,16 @@ Le module privé [`volunteer-participation-research.ts`](../../apps/web/src/lib/
 permet de comparer déterministiquement trois modèles de recherche. Il ne
 persiste rien, n'est appelé par aucun scorer, RPC, système de récompense ou
 indicateur de production et ne modifie pas `effective-volunteer-units-v1`.
-La configuration (`ordinary`, `family` ou `school`) est une entrée explicite :
+Le contexte métier persistant de l’action est indépendant de cette configuration
+de recherche : il ne connaît que `citizen`, `company` et `school`, et une famille
+reste `citizen`. En production, sans choix explicite, la finalisation valide
+propose `school` seulement si `3 * childrenCount > 2 * volunteersCount` ; une
+égalité reste `citizen`. Cette règle ne remplace ni `organizer_type`, ni
+`record_type`, ni `action_phase`, et ne constitue pas une preuve d’organisation
+scolaire ou une condition de récompense.
+
+La configuration (`ordinary`, `family` ou `school`) est une entrée explicite de
+ce simulateur de recherche :
 le moteur ne choisit jamais un modèle à partir de la taille du groupe.
 
 | Modèle | Déchets hors mégots | Mégots | Configurations | Statut |

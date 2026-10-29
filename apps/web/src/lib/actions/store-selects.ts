@@ -7,6 +7,11 @@ const ACTION_BASE_SELECT_FIELDS = [
   "organizer_type",
   "organizer_id",
   "organizer_name",
+  "action_context",
+  "action_context_source",
+  "school_context_confirmed",
+  "school_context_confirmed_at",
+  "school_context_confirmed_by_clerk_id",
   "action_date",
   "location_label",
   "department_code",
@@ -58,7 +63,9 @@ const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
       field !== "cancelled_at" &&
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
-      field !== "cancelled_from_status",
+      field !== "cancelled_from_status" &&
+      !field.startsWith("action_context") &&
+      !field.startsWith("school_context_confirmed"),
   )
   .join(", ");
 
@@ -73,7 +80,9 @@ const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
       field !== "cancelled_at" &&
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
-      field !== "cancelled_from_status",
+      field !== "cancelled_from_status" &&
+      !field.startsWith("action_context") &&
+      !field.startsWith("school_context_confirmed"),
   )
   .join(", ");
 
@@ -106,6 +115,11 @@ const ACTION_COLUMN_MARKERS = [
   "cancelled_by_clerk_id",
   "cancellation_reason",
   "cancelled_from_status",
+  "action_context",
+  "action_context_source",
+  "school_context_confirmed",
+  "school_context_confirmed_at",
+  "school_context_confirmed_by_clerk_id",
 ] as const;
 
 function getActionColumnErrorMessage(error: unknown): string {

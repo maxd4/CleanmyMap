@@ -20,6 +20,7 @@ import { normalizeClockTime } from "../time-contract";
 import type { ActionWasteMeasurementMethod } from "@/lib/waste/measurement";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "../organizer-type";
+import type { ActionContext, ActionContextSource } from "../action-context";
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "../volunteer-participation";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
@@ -57,6 +58,9 @@ type ActionDataMetadata = {
   actorName: string | null;
   associationName: string | null;
   organizerType: OrganizerType | null;
+  actionContext?: ActionContext | null;
+  actionContextSource?: ActionContextSource | null;
+  schoolContextConfirmed?: boolean | null;
   groupJoinEnabled: boolean;
   actionPhase: ActionPhase;
   preparationData: ActionPreparationData | null;
@@ -135,6 +139,9 @@ export type BuildActionContractParams = {
   actorName?: string | null;
   associationName?: string | null;
   organizerType?: OrganizerType | null;
+  actionContext?: ActionContext | null;
+  actionContextSource?: ActionContextSource | null;
+  schoolContextConfirmed?: boolean | null;
   groupJoinEnabled?: boolean | null;
   actionPhase?: ActionPhase | null;
   preparationData?: ActionPreparationData | null;
@@ -224,12 +231,15 @@ function buildActionIdentityMetadata(
   params: BuildActionContractParams,
 ): Pick<
   ActionDataMetadata,
-  "actorName" | "associationName" | "organizerType" | "groupJoinEnabled" | "actionPhase" | "preparationData"
+  "actorName" | "associationName" | "organizerType" | "actionContext" | "actionContextSource" | "schoolContextConfirmed" | "groupJoinEnabled" | "actionPhase" | "preparationData"
 > {
   return {
     actorName: params.actorName ?? null,
     associationName: params.associationName ?? null,
     organizerType: params.organizerType ?? null,
+    actionContext: params.actionContext ?? null,
+    actionContextSource: params.actionContextSource ?? null,
+    schoolContextConfirmed: params.schoolContextConfirmed ?? null,
     groupJoinEnabled: params.groupJoinEnabled ?? false,
     actionPhase: params.actionPhase ?? "post_action_complete",
     preparationData: params.preparationData

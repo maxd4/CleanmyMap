@@ -50,6 +50,9 @@ export type ActionsMapFeedRow = {
   derived_geometry_geojson: string | null;
   geometry_confidence: number | string | null;
   geometry_source: string | null;
+  action_context?: "citizen" | "company" | "school" | null;
+  action_context_source?: "explicit" | "automatic_children_ratio" | null;
+  school_context_confirmed?: boolean | null;
   observed_coverage?: unknown;
   public_preparation_data?: unknown;
 };
@@ -172,6 +175,9 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     derivedGeometryGeoJson: row.derived_geometry_geojson,
     geometryConfidence: toFiniteNumber(row.geometry_confidence),
     geometrySource: row.geometry_source as ActionGeometrySource | null,
+    actionContext: row.action_context ?? null,
+    actionContextSource: row.action_context_source ?? null,
+    schoolContextConfirmed: row.school_context_confirmed ?? null,
   });
 }
 

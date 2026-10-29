@@ -110,6 +110,8 @@ function buildPreparationParticipationFields(
       undefined,
     volunteerParticipation:
       volunteerParticipationInput as ActionPreparationData["volunteerParticipation"],
+    actionContextSelection: form.actionContext || null,
+    schoolContextConfirmed: form.schoolContextConfirmed,
     groupJoinEnabled: form.groupJoinEnabled,
     expectedWasteCategories:
       form.wasteCategories && form.wasteCategories.length > 0
@@ -304,6 +306,15 @@ function buildHydratedParticipationFields(
         ? preparationData.groupJoinEnabled
         : form.groupJoinEnabled,
     wasteCategories: preparationData.expectedWasteCategories ?? form.wasteCategories,
+    actionContext:
+      preparationData.actionContextSelection === null ||
+      preparationData.actionContextSelection === undefined
+        ? form.actionContext
+        : preparationData.actionContextSelection,
+    schoolContextConfirmed:
+      typeof preparationData.schoolContextConfirmed === "boolean"
+        ? preparationData.schoolContextConfirmed
+        : form.schoolContextConfirmed,
   };
 }
 

@@ -106,7 +106,7 @@ export async function preparePatchMutation({
   if (parsedBodyResult instanceof Response) return parsedBodyResult;
   const parsedBody = parsedBodyResult;
 
-  const preparedUpdate = await prepareActionUpdate({ current, parsedBody }).catch((error: unknown) => {
+  const preparedUpdate = await prepareActionUpdate({ current, parsedBody, userId }).catch((error: unknown) => {
     if (error instanceof ActionUpdateValidationError) {
       return validationErrorResponse({ [error.field]: [error.message] });
     }

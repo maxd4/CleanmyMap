@@ -64,6 +64,12 @@ function buildIdentityFields(
     organizerName:
       action.organizerName ?? action.associationName ?? preparedForm.organizerName,
     organizerType: action.organizerType ?? preparedForm.organizerType,
+    actionContext:
+      action.actionContext === null || action.actionContext === undefined
+        ? preparedForm.actionContext
+        : action.actionContext,
+    schoolContextConfirmed:
+      action.schoolContextConfirmed ?? preparedForm.schoolContextConfirmed,
     organizerAccounts: parseOrganizerAccounts(
       action.organizerAccounts?.join(", ") ?? preparedForm.organizerAccounts,
     ).join(", "),

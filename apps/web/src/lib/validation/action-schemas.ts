@@ -36,6 +36,7 @@ const actionPhaseSchema = z.enum([
   "post_action_draft",
   "post_action_complete",
 ]);
+const actionContextSchema = z.enum(["citizen", "company", "school"]);
 
 const eventTimeSchema = z
   .string()
@@ -144,6 +145,8 @@ const createActionLegacyBaseSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   actionPhase: actionPhaseSchema.optional(),
+  actionContext: actionContextSchema.nullable().optional(),
+  schoolContextConfirmed: z.boolean().optional(),
   accessMode: z.enum(["public", "invite_link"]).optional(),
   preparationData: preparationDataSchema.nullable().optional(),
   routeCalibrationContext: routeCalibrationContextSchema.nullable().optional(),
@@ -205,6 +208,8 @@ const createActionContractSchema = z.object({
     arrivalLocationLabel: z.string().min(2).max(200).optional(),
     submissionMode: z.enum(["quick", "complete"]).optional(),
     actionPhase: actionPhaseSchema.optional(),
+    actionContext: actionContextSchema.nullable().optional(),
+    schoolContextConfirmed: z.boolean().optional(),
     accessMode: z.enum(["public", "invite_link"]).optional(),
     preparationData: preparationDataSchema.nullable().optional(),
     plannerSnapshotProof: routePlannerProofSchema,

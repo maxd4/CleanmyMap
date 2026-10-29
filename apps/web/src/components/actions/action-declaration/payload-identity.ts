@@ -49,6 +49,8 @@ export function buildCreateActionPayloadIdentityFields(
     actorName: form.actorName.trim() || undefined,
     associationName: parts.associationName,
     ...buildOrganizerPayloadFields(form, parts.organizerName),
+    actionContext: form.actionContext || undefined,
+    schoolContextConfirmed: form.schoolContextConfirmed,
     groupJoinEnabled: form.groupJoinEnabled,
     accessMode: form.accessMode,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",

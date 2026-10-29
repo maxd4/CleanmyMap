@@ -13,6 +13,7 @@ import type {
 import type { CigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { ActionContext } from "@/lib/actions/action-context";
 import type { ActionInterventionModeSelection } from "@/lib/actions/intervention-mode";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
@@ -33,6 +34,9 @@ export type FormState = {
  organizerType: OrganizerType | "";
  organizerId: string | null;
  organizerName: string;
+  /** Empty means automatic final classification; a value is an explicit choice. */
+  actionContext: ActionContext | "";
+  schoolContextConfirmed: boolean;
  organizerAccounts: string;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
@@ -131,6 +135,8 @@ export const initialState: FormState = {
  organizerType:"",
  organizerId: null,
  organizerName:"",
+ actionContext:"",
+ schoolContextConfirmed: false,
  organizerAccounts:"",
  participantAccounts:[],
  groupJoinEnabled: false,

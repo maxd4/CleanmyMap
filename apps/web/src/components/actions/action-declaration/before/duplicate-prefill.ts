@@ -44,6 +44,8 @@ export function applyDuplicatePrefillToForm(form: FormState, prefill: ActionDupl
     organizerId: prefill.organizerId,
     organizerName: prefill.organizerName,
     associationName: prefill.associationName || form.associationName,
+    actionContext: prefill.actionContext ?? "",
+    schoolContextConfirmed: prefill.actionContext === "school",
     organizerAccounts: "",
     participantAccounts: [],
     groupJoinEnabled: false,

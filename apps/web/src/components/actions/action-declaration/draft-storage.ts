@@ -48,6 +48,8 @@ const FORM_STATE_KEYS = [
   "organizerType",
   "organizerId",
   "organizerName",
+  "actionContext",
+  "schoolContextConfirmed",
   "organizerAccounts",
   "participantAccounts",
   "groupJoinEnabled",

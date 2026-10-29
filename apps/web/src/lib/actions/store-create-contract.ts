@@ -30,6 +30,7 @@ import {
 } from "./store-notes";
 import { resolveParticipantsCount } from "@/lib/actions/volunteer-participation";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
+import { resolveActionContext } from "@/lib/actions/action-context";
 
 function stripLegacyPreparationState(
   preparationData: ActionPreparationData,
@@ -236,6 +237,35 @@ function buildActionInsertRecord(
     organizer_type: params.payload.organizerType ?? null,
     organizer_id: params.payload.organizerId ?? null,
     organizer_name: params.payload.organizerName ?? params.payload.associationName ?? null,
+    ...(() => {
+      const explicitContext =
+        params.payload.actionContext !== undefined
+          ? params.payload.actionContext
+          : preparationData.actionContextSelection;
+      const classification =
+        params.payload.actionPhase === "pre_action" &&
+        (explicitContext === undefined || explicitContext === null)
+          ? { context: null, source: null, isVerifiedFinalComposition: false, isSchoolAutoActivated: false }
+          : resolveActionContext({
+              composition: {
+                volunteersCount: resolveParticipantsCount({
+                  volunteerParticipation: params.payload.volunteerParticipation,
+                  legacyVolunteersCount: params.payload.volunteersCount,
+                }),
+                childrenCount: params.payload.volunteerParticipation?.childrenCount,
+                retiredCount: params.payload.volunteerParticipation?.retiredCount,
+              },
+              explicitContext,
+            });
+      const explicitSchool = classification.source === "explicit" && classification.context === "school";
+      return {
+        action_context: classification.context,
+        action_context_source: classification.source,
+        school_context_confirmed: explicitSchool ? true : null,
+        school_context_confirmed_at: explicitSchool ? new Date().toISOString() : null,
+        school_context_confirmed_by_clerk_id: explicitSchool ? params.userId : null,
+      };
+    })(),
     action_date: params.payload.actionDate,
     location_label: params.payload.locationLabel,
     department_code: params.payload.departmentCode ?? null,

@@ -6,6 +6,7 @@ import type {
 } from "@/lib/actions/types";
 import type { CommunityEventLocationSource } from "@/lib/community/event-location";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { ActionContext, ActionContextSource } from "@/lib/actions/action-context";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -87,6 +88,11 @@ export type ActionRow = {
   organizer_type?: OrganizerType | null;
   organizer_id?: string | null;
   organizer_name?: string | null;
+  action_context?: ActionContext | null;
+  action_context_source?: ActionContextSource | null;
+  school_context_confirmed?: boolean | null;
+  school_context_confirmed_at?: string | null;
+  school_context_confirmed_by_clerk_id?: string | null;
   action_date: string;
   location_label: string;
   department_code?: string | null;

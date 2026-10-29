@@ -1,5 +1,6 @@
 import type { ActionRow } from "@/types/database";
 import type { ActionPreparationData } from "./types";
+import type { ActionContext } from "./action-context";
 import { normalizeActionPreparationData, normalizeOperationalRoute } from "@/lib/route/route-operational";
 import { isRouteCalibrationContext, isServerVerifiedPlannerSnapshotContext } from "@/lib/route/route-calibration";
 
@@ -40,6 +41,7 @@ export type ActionDuplicatePrefill = {
   organizerId: string | null;
   organizerName: string;
   associationName: string;
+  actionContext: ActionContext | null;
 };
 
 function text(value: unknown): string {
@@ -121,13 +123,14 @@ function buildDuplicatePreparationFields(
 function buildDuplicateOrganizerFields(
   action: ActionRow,
   preparation: ActionPreparationData,
-): Pick<ActionDuplicatePrefill, "organizerType" | "organizerId" | "organizerName" | "associationName"> {
+): Pick<ActionDuplicatePrefill, "organizerType" | "organizerId" | "organizerName" | "associationName" | "actionContext"> {
   const organizerName = text(action.organizer_name);
   return {
     organizerType: action.organizer_type ?? null,
     organizerId: action.organizer_id ?? null,
     organizerName,
     associationName: organizerName || text(preparation.communeZoneLabel),
+    actionContext: action.action_context_source === "explicit" ? action.action_context ?? null : null,
   };
 }
 

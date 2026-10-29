@@ -192,7 +192,15 @@ n'est pas exposé par une route ou une persistance.
 Les modèles B (`0,60` enfant et `0,80` retraité pour les déchets ; `0,40` et
 `0,50` pour les mégots) et C (`0,45` enfant pour les déchets ; adultes
 explicitement affectés aux mégots) sont des hypothèses non calibrées. La
-configuration ordinaire, familiale ou scolaire doit être déclarée. Le modèle C
+Le contexte métier persistant reste distinct de la configuration scientifique :
+il utilise `citizen`, `company` ou `school`, sans catégorie familiale séparée.
+Une finalisation valide active automatiquement `school` uniquement lorsque
+`3 * childrenCount > 2 * volunteersCount`; l’égalité reste `citizen`. Un choix
+explicite autorisé prime sur cette règle et la provenance est conservée. Cette
+classification ne constitue ni une preuve d’organisation scolaire ni une
+preuve pédagogique, et ne déclenche pas à elle seule une récompense.
+
+La configuration ordinaire, familiale ou scolaire du simulateur doit être déclarée. Le modèle C
 est non applicable en présence de retraités et ne déduit jamais les collecteurs
 de mégots de la seule présence des adultes. Les coefficients historiques
 `0,60/0,70` et `0,25/0,40` restent conservés séparément dans la méthodologie :

@@ -110,6 +110,8 @@ export const preparationDataSchema = z
     checklistBeforeDeparture: z.string().max(2000).optional(),
     volunteersExpected: z.number().int().min(0).max(500).optional(),
     volunteerParticipation: volunteerParticipationSchema,
+    actionContextSelection: z.enum(["citizen", "company", "school"]).nullable().optional(),
+    schoolContextConfirmed: z.boolean().optional(),
     groupJoinEnabled: z.boolean().optional(),
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
     midRouteLocationLabel: z.string().max(200).optional(),

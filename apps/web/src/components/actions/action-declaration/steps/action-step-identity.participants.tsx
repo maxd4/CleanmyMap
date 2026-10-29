@@ -12,6 +12,7 @@ import {
   compactInputCls,
 } from "./action-step-identity.ui";
 import { Users } from "lucide-react";
+import { suggestPreActionContext } from "@/lib/actions/action-context";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -69,6 +70,47 @@ function ParticipantCounts({
       })
     : null;
   const inputClassName = compact ? compactInputCls : inputCls;
+  const contextSuggestion = suggestPreActionContext({
+    volunteersCount,
+    childrenCount,
+    retiredCount,
+  });
+  const contextControl = (
+    <div className="space-y-1.5 rounded-xl border border-emerald-900/10 bg-emerald-50/60 p-3">
+      <label htmlFor="action-context" className="block text-xs font-semibold text-emerald-950">
+        Contexte de l’action
+      </label>
+      <select
+        id="action-context"
+        className={inputClassName}
+        value={form.actionContext}
+        onChange={(event) => {
+          const next = event.target.value as FormState["actionContext"];
+          updateField("actionContext", next);
+          updateField("schoolContextConfirmed", next === "school");
+        }}
+      >
+        <option value="">Automatique selon la composition finale</option>
+        <option value="citizen">Citoyenne</option>
+        <option value="company">Entreprise</option>
+        <option value="school">Scolaire</option>
+      </select>
+      <p className="text-xs text-emerald-900/65">
+        Le contexte est indépendant du type d’organisateur. La famille reste un cas citoyen.
+      </p>
+      {form.actionContext === "" && contextSuggestion.context === "school" ? (
+        <p className="text-xs font-semibold text-emerald-800" role="status">
+          Proposition automatique : scolaire, car les enfants représentent strictement plus des deux tiers du groupe déclaré.
+          Cette proposition n’est pas une preuve d’organisation scolaire et sera recalculée à la finalisation.
+        </p>
+      ) : null}
+      {form.actionContext !== "" ? (
+        <p className="text-xs font-semibold text-emerald-800" role="status">
+          Choix explicite conservé jusqu’à une remise en mode automatique.
+        </p>
+      ) : null}
+    </div>
+  );
   const totalInput = (
     <label htmlFor="action-volunteers-count" className="space-y-1.5">
       <span className="block text-sm font-semibold text-emerald-950">
@@ -136,6 +178,7 @@ function ParticipantCounts({
               {compositionMessage}
             </p>
           ) : null}
+          {contextControl}
         </fieldset>
       </div>
     );
@@ -164,6 +207,7 @@ function ParticipantCounts({
             {compositionMessage}
           </p>
         ) : null}
+        {contextControl}
       </fieldset>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-semibold text-emerald-900/65">
         <span>Total déclaré : {form.volunteersCount.trim() || "—"} participant(s)</span>

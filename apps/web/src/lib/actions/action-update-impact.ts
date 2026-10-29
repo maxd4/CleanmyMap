@@ -14,6 +14,7 @@ const ACTION_IMPACT_FIELDS = [
   "volunteerParticipation",
   "volunteersCount",
   "durationMinutes",
+  "actionContext",
 ] as const satisfies ReadonlyArray<keyof ActionUpdateInput>;
 
 export function hasActionImpactUpdate(body: ActionUpdateInput): boolean {

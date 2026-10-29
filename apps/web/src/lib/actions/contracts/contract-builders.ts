@@ -60,6 +60,8 @@ export type ActionContractCreatePayload = {
     | "accessMode"
     | "actionPhase"
     | "preparationData"
+    | "actionContext"
+    | "schoolContextConfirmed"
   > & {
     plannerSnapshotProof?: RoutePlannerProof | null;
     placeType?: string;
@@ -133,6 +135,8 @@ function buildContractMetadata(
     groupJoinEnabled: payload.groupJoinEnabled,
     accessMode: payload.accessMode,
     actionPhase: payload.actionPhase,
+    actionContext: payload.actionContext,
+    schoolContextConfirmed: payload.schoolContextConfirmed,
     preparationData: withRouteCalibrationContext(
       payload.preparationData,
       payload.routeCalibrationContext,
@@ -291,6 +295,8 @@ function buildNormalizedIdentityFields(
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     accessMode: payload.metadata.accessMode ?? "public",
     actionPhase: payload.metadata.actionPhase ?? undefined,
+    actionContext: payload.metadata.actionContext ?? undefined,
+    schoolContextConfirmed: payload.metadata.schoolContextConfirmed ?? undefined,
     preparationData: context.preparationData,
     plannerSnapshotProof: payload.metadata.plannerSnapshotProof ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,

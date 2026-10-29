@@ -60,6 +60,8 @@ type BeforeActionIdentityFields = Pick<
   | "organizerType"
   | "organizerId"
   | "organizerName"
+  | "actionContext"
+  | "schoolContextConfirmed"
   | "organizerAccounts"
   | "participantAccounts"
   | "groupJoinEnabled"
@@ -80,6 +82,8 @@ function buildBeforeActionIdentityFields(
       (action.organizerType === "spontaneous"
         ? hydrated.organizerName
         : action.associationName ?? hydrated.organizerName),
+    actionContext: action.actionContext ?? hydrated.actionContext,
+    schoolContextConfirmed: action.schoolContextConfirmed ?? hydrated.schoolContextConfirmed,
     organizerAccounts: parseOrganizerAccounts(
       action.organizerAccounts?.join(", ") ?? hydrated.organizerAccounts,
     ).join(", "),

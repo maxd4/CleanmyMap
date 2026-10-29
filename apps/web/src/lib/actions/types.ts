@@ -26,6 +26,7 @@ import type {
 } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
+import type { ActionContext, ActionContextSource } from "./action-context";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type {
   OperationalRoute,
@@ -145,6 +146,10 @@ export type ActionPreparationData = {
   checklistBeforeDeparture?: string;
   volunteersExpected?: number;
   volunteerParticipation?: ActionVolunteerParticipation | null;
+  /** Optional explicit context selection kept with drafts and pre-actions. */
+  actionContextSelection?: ActionContext | null;
+  /** Explicit school confirmation is traceable without children identities. */
+  schoolContextConfirmed?: boolean;
   groupJoinEnabled?: boolean;
   expectedWasteCategories?: WasteCategorySlug[];
   midRouteLocationLabel?: string;
@@ -266,6 +271,9 @@ export type ActionListItem = {
   actor_name: string | null;
   association_name?: string | null;
   organizer_type?: OrganizerType | null;
+  action_context?: ActionContext | null;
+  action_context_source?: ActionContextSource | null;
+  school_context_confirmed?: boolean | null;
   action_date: string;
   location_label: string;
   latitude: number | null;
@@ -335,6 +343,9 @@ export type ActionListItem = {
       organizerType?: OrganizerType | null;
       organizerId?: string | null;
       organizerName?: string | null;
+      actionContext?: ActionContext | null;
+      actionContextSource?: ActionContextSource | null;
+      schoolContextConfirmed?: boolean | null;
       notes: string | null;
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
@@ -391,6 +402,9 @@ export type CreateActionPayload = {
   organizerType?: OrganizerType | null;
   organizerId?: string | null;
   organizerName?: string | null;
+  /** Explicit context selection; null/omission keeps automatic resolution. */
+  actionContext?: ActionContext | null;
+  schoolContextConfirmed?: boolean;
   organizerAccounts?: string[];
   participantAccounts?: string[];
   groupJoinEnabled?: boolean;
@@ -456,6 +470,9 @@ type OptionalActionMapFields = Partial<
     | "notes_plain"
     | "source"
     | "organizer_type"
+    | "action_context"
+    | "action_context_source"
+    | "school_context_confirmed"
     | "geometry_kind"
     | "geometry_geojson"
     | "geometry_confidence"
