@@ -34,7 +34,8 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - carte immersive ;
 - barre de contrôles directement sur la carte : `Filtrer`, `Affichage`, `Légende` et `Recentrer` ;
 - `Filtrer` regroupe la recherche locale dans les éléments chargés, la période,
-  les catégories réellement filtrables et la réinitialisation ;
+  le contexte d'action, les catégories réellement filtrables et la
+  réinitialisation ;
 - `Affichage` regroupe la référence `Global`/`Département`, le mode
   `Observé`/`Projeté`, les calques et le fond clair/contrasté ;
 - sélection d'action ;
@@ -63,6 +64,14 @@ externe. `impactFilter` et `qualityMin` restent des paramètres internes du feed
 partagé, mais ne font plus partie de l'état utilisateur persistant de cette
 carte : les anciennes clés sont ignorées à la lecture du localStorage.
 
+Le contexte d'action est une dimension métier persistée indépendante de
+`action`, `clean_place` et `spot` : `citizen`, `company` ou `school`, avec une
+valeur absente affichée comme `Non classée`. Une cleanwalk familiale reste
+`citizen` ; aucune majorité d'enfants, adresse, nom d'organisateur ou type de
+marqueur n'est recalculé par la carte. La carte affiche un pictogramme distinct
+(`👥`, `🏢`, `🎓` ou `?`) dans les tooltips de marqueur, les popups, la sélection
+et le journal. Cette information ne remplace jamais la couleur de pollution.
+
 ## Feed public partagé avec la homepage
 
 La carte de la homepage est une preview du même feed cartographique public que
@@ -77,6 +86,12 @@ La carte de la homepage est une preview du même feed cartographique public que
 - références de score fournies par
   `ActionPollutionScoreReferencesProvider` →
   `/api/actions/map/pollution-score-references` (snapshot V6, fallback RPC V2).
+
+Le filtre de contexte est transmis à `/api/actions/map` et appliqué aussi dans
+le fallback direct `actions_map_feed` : `Tous`, `Citoyenne`, `Entreprise`,
+`Scolaire` ou `Non classée`. Il se combine avec la période, le viewport, la
+zone, le type d'entité et les catégories de pollution. La réinitialisation et
+la persistance locale suivent le contrat existant des filtres.
 
 `homepage-preview` peut utiliser un viewport et une limite plus petits, ainsi
 qu'une présentation compacte et des contrôles masqués. Ces différences sont
@@ -209,15 +224,20 @@ Le flux public de cette route est limité aux actions `approved` visibles et aux
 pré-actions futures valides (`pending`, `actionPhase = pre_action`, date
 strictement future). Ces pré-actions sont exposées comme `approved` dans la
 projection de carte uniquement ; leur statut persisté reste `pending` et elles
-ne contribuent pas aux KPI Impact. Les autres actions `pending`, `rejected` ou
-masquées restent exclues. Ce contrat est appliqué par la requête de la page ;
-il n'est pas exposé comme un choix utilisateur.
+ne contribuent pas aux KPI Impact. Une pré-action future classée `school` est
+cependant exclue de la carte et de `actions_map_feed` tant qu'aucune projection
+géographique généralisée et sécurisée n'est définie : aucune coordonnée
+scolaire future protégée ne doit traverser la frontière publique. Les actions
+scolaires approuvées et finalisées restent visibles. Les autres actions
+`pending`, `rejected` ou masquées restent exclues. Ce contrat est appliqué par
+l'API, le fallback RPC et la projection SQL, pas uniquement par l'interface.
 
 Les seuls contrôles de filtrage affichés sont ceux qui modifient effectivement
 la vue :
 
 - recherche par zone ou lieu ;
 - période (`Année en cours` ou `Depuis la création`) ;
+- contexte d'action (`Tous`, `Citoyenne`, `Entreprise`, `Scolaire`, `Non classée`) ;
 - catégories visibles ;
 - réinitialisation des filtres.
 

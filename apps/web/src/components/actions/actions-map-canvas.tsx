@@ -6,6 +6,7 @@ import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-scor
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import type {ActionsMapDateScope,ActionsMapFilters} from "./map/filters/actions-map-filters.utils";
 import { type MarkerCategory } from "./map-marker-categories";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 import type {MapViewportState} from "@/lib/geo/map-viewport";
 import type {ActionsMapPresentation} from "./map-feed/map-feed.types";
 import { ActionsMapCanvasView } from "./actions-map-canvas-view";
@@ -38,6 +39,7 @@ type ActionsMapCanvasProps = {
   onZoneQueryChange?: (zoneQuery: string) => void;
   onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle?: (category: MarkerCategory) => void;
+  onContextFilterChange?: (contextFilter: ActionContextFilter) => void;
   onResetFilters?: () => void;
 };
 
@@ -68,6 +70,7 @@ export function ActionsMapCanvas({
   onZoneQueryChange,
   onDateScopeChange,
   onCategoryToggle,
+  onContextFilterChange,
   onResetFilters,
 }: ActionsMapCanvasProps) {
   const isEmerald = tone === "emerald";
@@ -90,6 +93,7 @@ export function ActionsMapCanvas({
         onZoneQueryChange,
         onDateScopeChange,
         onCategoryToggle,
+        onContextFilterChange,
         onResetFilters,
         categoryCounts,
         scoreScope,

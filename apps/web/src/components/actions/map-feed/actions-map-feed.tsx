@@ -24,6 +24,7 @@ import type {
   ActionsMapFilters,
 } from "@/components/actions/map/filters/actions-map-filters.utils";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
@@ -57,6 +58,7 @@ type ActionsMapFeedContentProps = {
   onZoneQueryChange?: (zoneQuery: string) => void;
   onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle?: (category: MarkerCategory) => void;
+  onContextFilterChange?: (contextFilter: ActionContextFilter) => void;
 };
 
 export function ActionsMapFeedContent({
@@ -91,6 +93,7 @@ export function ActionsMapFeedContent({
   onZoneQueryChange,
   onDateScopeChange,
   onCategoryToggle,
+  onContextFilterChange,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -215,6 +218,7 @@ export function ActionsMapFeedContent({
     onZoneQueryChange,
     onDateScopeChange,
     onCategoryToggle,
+    onContextFilterChange,
   };
 
   return (
@@ -279,6 +283,7 @@ function ActionsMapFeedWithReferences({
   statusFilter,
   impactFilter,
   qualityMin,
+  contextFilter = "all",
   zoneQuery,
   limit = 120,
   presentation = "default",
@@ -326,6 +331,7 @@ function ActionsMapFeedWithReferences({
     statusFilter,
     impactFilter,
     qualityMin,
+    contextFilter,
     zoneQuery,
     visibleCategories,
     limit,

@@ -8,6 +8,7 @@ import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-scor
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { ActionsMapDateScope, ActionsMapFilters } from "./map/filters/actions-map-filters.utils";
 import type { MarkerCategory } from "./map-marker-categories";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 import type { VisibleMapLayers, VisibleMapLayerKey } from "./actions-map-canvas.layers";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/controls/map-controls";
@@ -31,6 +32,7 @@ type ActionsMapCanvasControlsProps = {
   onZoneQueryChange?: (zoneQuery: string) => void;
   onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle?: (category: MarkerCategory) => void;
+  onContextFilterChange?: (contextFilter: ActionContextFilter) => void;
   onResetFilters?: () => void;
   categoryCounts: Partial<Record<MarkerCategory, number>>;
   scoreScope: PollutionScoreScope;
@@ -56,7 +58,7 @@ function ActionsMapCanvasDisplayPanel({
   basemapMode,
   setBasemapMode,
   plasticOriginsData,
-}: Omit<ActionsMapCanvasControlsProps, "isMinimalPreview" | "activePanel" | "setActivePanel" | "filters" | "onZoneQueryChange" | "onDateScopeChange" | "onCategoryToggle" | "onResetFilters" | "categoryCounts">) {
+}: Omit<ActionsMapCanvasControlsProps, "isMinimalPreview" | "activePanel" | "setActivePanel" | "filters" | "onZoneQueryChange" | "onDateScopeChange" | "onCategoryToggle" | "onContextFilterChange" | "onResetFilters" | "categoryCounts">) {
   const layers = [
     { key: "points" as const, label: "Points" },
     { key: "shapes" as const, label: "Parcours & zones" },
@@ -126,8 +128,8 @@ function ActionsMapCanvasDisplayPanel({
 }
 
 function ActionsMapCanvasControls(props: ActionsMapCanvasControlsProps) {
-  const { isMinimalPreview, activePanel, setActivePanel, filters, onZoneQueryChange, onDateScopeChange, onCategoryToggle, onResetFilters, categoryCounts, ...displayPanelProps } = props;
-  const hasFilters = Boolean(filters && onZoneQueryChange && onDateScopeChange && onCategoryToggle && onResetFilters);
+  const { isMinimalPreview, activePanel, setActivePanel, filters, onZoneQueryChange, onDateScopeChange, onCategoryToggle, onContextFilterChange, onResetFilters, categoryCounts, ...displayPanelProps } = props;
+  const hasFilters = Boolean(filters && onZoneQueryChange && onDateScopeChange && onCategoryToggle && onContextFilterChange && onResetFilters);
   return (
     <>
       {!isMinimalPreview ? (
@@ -149,7 +151,7 @@ function ActionsMapCanvasControls(props: ActionsMapCanvasControlsProps) {
       ) : null}
       {!isMinimalPreview && activePanel === "filter" && hasFilters ? (
         <div id="actions-map-filter-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl sm:left-3 sm:top-16 sm:max-w-2xl" role="region" aria-label="Filtres de la carte">
-          <ActionsMapFilterControls filters={filters!} categoryCounts={categoryCounts} onZoneQueryChange={onZoneQueryChange!} onDateScopeChange={onDateScopeChange!} onCategoryToggle={onCategoryToggle!} onReset={onResetFilters!} />
+          <ActionsMapFilterControls filters={filters!} categoryCounts={categoryCounts} onZoneQueryChange={onZoneQueryChange!} onDateScopeChange={onDateScopeChange!} onCategoryToggle={onCategoryToggle!} onContextFilterChange={onContextFilterChange!} onReset={onResetFilters!} />
         </div>
       ) : null}
       {!isMinimalPreview && activePanel === "display" ? <ActionsMapCanvasDisplayPanel {...displayPanelProps} /> : null}

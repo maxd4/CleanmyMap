@@ -11,6 +11,7 @@ import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-scor
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 import { useActionsMapFilters } from "@/components/actions/map/filters/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ function ActionsMapPageContent({
     filters,
     setDateScope,
     setZoneQuery,
+    setContextFilter,
     toggleCategory,
     resetFilters,
   } = useActionsMapFilters(getActionsMapCurrentYearDays());
@@ -61,6 +63,7 @@ function ActionsMapPageContent({
     days,
     dateScope,
     zoneQuery,
+    contextFilter,
     visibleCategories,
   } = filters;
 
@@ -110,6 +113,11 @@ function ActionsMapPageContent({
     setZoneQuery(zoneQueryValue);
   }, [setZoneQuery, updateSelectionUrl]);
 
+  const handleContextFilterChange = useCallback((contextFilterValue: ActionContextFilter) => {
+    updateSelectionUrl(null);
+    setContextFilter(contextFilterValue);
+  }, [setContextFilter, updateSelectionUrl]);
+
   const handleCategoryToggle = useCallback((category: MarkerCategory) => {
     updateSelectionUrl(null);
     toggleCategory(category);
@@ -128,6 +136,7 @@ function ActionsMapPageContent({
     impactFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter,
     qualityMin: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin,
     zoneQuery,
+    contextFilter,
     visibleCategories,
     limit: 300,
     viewport: mapViewport,
@@ -222,6 +231,7 @@ function ActionsMapPageContent({
             onResetFilters={handleResetFilters}
             filters={filters}
             onZoneQueryChange={handleZoneQueryChange}
+            onContextFilterChange={handleContextFilterChange}
             onDateScopeChange={handleDateScopeChange}
             onCategoryToggle={handleCategoryToggle}
             mapExportTargetRef={mapExportTargetRef}

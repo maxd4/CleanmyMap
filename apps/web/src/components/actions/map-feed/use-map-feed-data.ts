@@ -17,6 +17,7 @@ import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { formatMapFreshnessLabel } from "../actions-map-freshness.utils";
 import {
   matchesZoneQuery,
+  matchesContextFilter,
   normalizeZoneQuery,
   type ActionsMapDateScope,
 } from "@/components/actions/map/filters/actions-map-filters.utils";
@@ -25,6 +26,7 @@ import { useActionPollutionScoreReferences } from "@/components/actions/map/scor
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 
 function resolveMapSourceCompleteness(
   data: Pick<ActionMapResponse, "partialSource" | "isTruncated"> | undefined,
@@ -40,6 +42,7 @@ type UseMapFeedDataParams = {
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
   zoneQuery?: string;
+  contextFilter: ActionContextFilter;
   visibleCategories: Record<MarkerCategory, boolean>;
   limit?: number;
   viewport?: MapViewportState | null;
@@ -56,6 +59,7 @@ export function useMapFeedData({
   impactFilter,
   qualityMin,
   zoneQuery,
+  contextFilter,
   visibleCategories,
   limit = 120,
   viewport = null,
@@ -82,6 +86,7 @@ export function useMapFeedData({
       statusFilter,
       serializedTypes,
       impactFilter,
+      contextFilter,
       String(qualityMin),
       viewport
         ? [
@@ -99,6 +104,7 @@ export function useMapFeedData({
       statusFilter,
       serializedTypes,
       impactFilter,
+      contextFilter,
       qualityMin,
       viewport,
       enabled,
@@ -115,6 +121,7 @@ export function useMapFeedData({
         days: dateScope === "current_year" ? days : undefined,
         floorDate: dateScope === "all_time" ? null : buildDateFloor(days),
         impact: impactFilter === "all" ? undefined : impactFilter,
+        contextFilter,
         qualityMin: qualityMin > 0 ? qualityMin : undefined,
         limit,
         types,
@@ -141,7 +148,9 @@ export function useMapFeedData({
             visibleCategories,
             pollutionScoreReferences,
             { scoreScope, displayMode },
-          ) && matchesZoneQuery(item, normalizedZoneQuery),
+          ) &&
+          matchesZoneQuery(item, normalizedZoneQuery) &&
+          matchesContextFilter(item, contextFilter),
       ),
     [
       allItems,
@@ -149,6 +158,7 @@ export function useMapFeedData({
       normalizedZoneQuery,
       pollutionScoreReferences,
       scoreScope,
+      contextFilter,
       visibleCategories,
     ],
   );

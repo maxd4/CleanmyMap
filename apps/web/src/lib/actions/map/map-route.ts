@@ -16,6 +16,11 @@ import type {
 } from "@/lib/actions/types";
 import { buildDateFloor, parsePositiveInteger, resolveReportScopeFromQuery } from "@/lib/reports/csv";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
+import {
+  matchesActionContextFilter,
+  normalizeActionContextFilter,
+  type ActionContextFilter,
+} from "@/lib/actions/action-context";
 import type { ReportScope } from "@/lib/reports/scope";
 
 type ActionInsightsLike = {
@@ -52,6 +57,12 @@ function isPublicFutureActionContract(
 
 export function isPublicMapContract(contract: ActionDataContract, now: Date): boolean {
   if (contract.metadata?.actionPhase === "pre_action") {
+    // No generalized secure geo projection exists for future school actions.
+    // Keep their coordinates out of every public map projection until one is
+    // introduced as an explicit contract.
+    if (contract.metadata.actionContext === "school") {
+      return false;
+    }
     return (
       Boolean(contract.publishedAt) &&
       (contract.status === "pending" || contract.status === "approved") &&
@@ -86,6 +97,7 @@ export type ParseMapActionsParams = {
   types: ActionRecordType[] | null;
   qualityMin: number | null;
   impact: ActionImpactLevel | null;
+  contextFilter: ActionContextFilter;
   scope: ReportScope;
   viewport?: ActionMapViewportQuery;
 };
@@ -165,6 +177,10 @@ function parseImpactParam(raw: string | null): ActionImpactLevel | null {
     : null;
 }
 
+function parseContextFilterParam(raw: string | null): ActionContextFilter {
+  return normalizeActionContextFilter(raw);
+}
+
 function parseFloorDateParam(url: URL, days: number): string | null {
   const rawFloorDate = url.searchParams.get("floorDate");
   if (rawFloorDate === "all") {
@@ -223,6 +239,7 @@ export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapAction
     types: parseEntityTypesParam(url.searchParams.get("types")),
     qualityMin: parseQualityMin(url.searchParams.get("qualityMin")),
     impact: parseImpactParam(url.searchParams.get("impact")),
+    contextFilter: parseContextFilterParam(url.searchParams.get("context")),
     scope: resolveReportScopeFromQuery(url),
     viewport: actionId ? undefined : parseViewportParam(url),
   };
@@ -264,6 +281,9 @@ export async function buildMapActionsRouteResult(
     .filterActionContractsByScope(
       result.items
         .filter((contract) => isPublicMapContract(contract, now))
+        .filter((contract) =>
+          matchesActionContextFilter(contract.metadata?.actionContext, params.contextFilter),
+        )
         .map((contract) => toPublicMapContract(contract, now)),
       params.scope,
     )

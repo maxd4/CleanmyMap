@@ -184,7 +184,7 @@ describe("GET /api/actions/map persistence boundary", () => {
     await GET(new Request("http://localhost/api/actions/map?days=30"));
 
     const snapshotInput = firstMockArgument(loadOrRefreshPublicSurfaceSnapshotMock);
-    expect(snapshotInput).toMatchObject({ version: "public-map-actions-v4" });
+    expect(snapshotInput).toMatchObject({ version: "public-map-actions-v5" });
   });
 
   it("keeps explicit public type filters in the snapshot key", async () => {

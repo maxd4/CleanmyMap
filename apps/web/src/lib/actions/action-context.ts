@@ -4,6 +4,37 @@ import {
 
 export const ACTION_CONTEXT_VALUES = ["citizen", "company", "school"] as const;
 export type ActionContext = (typeof ACTION_CONTEXT_VALUES)[number];
+export const ACTION_CONTEXT_FILTER_VALUES = [
+  "all",
+  ...ACTION_CONTEXT_VALUES,
+  "unknown",
+] as const;
+export type ActionContextFilter = (typeof ACTION_CONTEXT_FILTER_VALUES)[number];
+
+export const ACTION_CONTEXT_PRESENTATIONS: Record<
+  Exclude<ActionContextFilter, "all">,
+  { label: string; glyph: string }
+> = {
+  citizen: { label: "Citoyenne", glyph: "👥" },
+  company: { label: "Entreprise", glyph: "🏢" },
+  school: { label: "Scolaire", glyph: "🎓" },
+  unknown: { label: "Non classée", glyph: "?" },
+};
+
+export function normalizeActionContextFilter(value: unknown): ActionContextFilter {
+  return typeof value === "string" && ACTION_CONTEXT_FILTER_VALUES.includes(value as ActionContextFilter)
+    ? (value as ActionContextFilter)
+    : "all";
+}
+
+export function matchesActionContextFilter(
+  context: ActionContext | null | undefined,
+  filter: ActionContextFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "unknown") return context === null || context === undefined;
+  return context === filter;
+}
 
 export const ACTION_CONTEXT_SOURCE_VALUES = [
   "explicit",

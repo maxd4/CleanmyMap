@@ -4,6 +4,7 @@ import {
   ACTIONS_MAP_FILTERS_STORAGE_KEY,
   buildDefaultActionsMapFilters,
   matchesZoneQuery,
+  matchesContextFilter,
   normalizeActionsMapFilters,
   normalizeZoneQuery,
   readActionsMapFiltersFromStorage,
@@ -41,6 +42,7 @@ describe("actions map filters utils", () => {
     expect(filters.days).toBe(120);
     expect(filters.dateScope).toBe("current_year");
     expect(filters.zoneQuery).toBe("");
+    expect(filters.contextFilter).toBe("all");
     expect(filters.visibleCategories.blue).toBe(true);
   });
 
@@ -77,6 +79,28 @@ describe("actions map filters utils", () => {
     );
     expect(currentYear.dateScope).toBe("current_year");
     expect(currentYear.days).toBe(90);
+  });
+
+  it("persists a valid context filter and resets invalid values to all", () => {
+    expect(normalizeActionsMapFilters({ contextFilter: "school" }, 90).contextFilter).toBe("school");
+    expect(normalizeActionsMapFilters({ contextFilter: "family" }, 90).contextFilter).toBe("all");
+  });
+
+  it("filters only by the persisted context and keeps an absent value neutral", () => {
+    const family = buildMapItem({
+      notes_plain: "Cleanwalk familiale",
+      contract: { metadata: { actionContext: "citizen" } } as ActionMapItem["contract"],
+    });
+    const company = buildMapItem({
+      contract: { metadata: { actionContext: "company" } } as ActionMapItem["contract"],
+    });
+    const unknown = buildMapItem();
+
+    expect(matchesContextFilter(family, "citizen")).toBe(true);
+    expect(matchesContextFilter(family, "company")).toBe(false);
+    expect(matchesContextFilter(company, "company")).toBe(true);
+    expect(matchesContextFilter(unknown, "unknown")).toBe(true);
+    expect(matchesContextFilter(unknown, "school")).toBe(false);
   });
 
   it("ignores legacy persisted status and hidden quality filters", () => {

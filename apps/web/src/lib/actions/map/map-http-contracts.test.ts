@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapFeedRowsToPublicContracts } from "./map-http-contracts";
+import { buildMapResponseItems, mapFeedRowsToPublicContracts } from "./map-http-contracts";
 
 function row(overrides: Record<string, unknown> = {}) {
   return {
@@ -61,5 +61,26 @@ describe("public action map classification hydration", () => {
 
   it("keeps the application mapper bound to the public status projection", () => {
     expect(mapFeedRowsToPublicContracts([row({ status: "pending" })])).toEqual([]);
+  });
+
+  it("applies the same persisted context filter to the direct RPC fallback", () => {
+    const contracts = mapFeedRowsToPublicContracts([
+      row({ id: "citizen", action_context: "citizen" }),
+      row({ id: "company", action_context: "company" }),
+      row({ id: "unknown", action_context: null }),
+    ]);
+
+    const items = buildMapResponseItems({
+      remoteContracts: contracts,
+      scope: { kind: "global", value: null },
+      types: null,
+      pollutionScoreReferences: null,
+      impact: null,
+      qualityMin: null,
+      contextFilter: "company",
+      limit: 20,
+    });
+
+    expect(items.map((item) => item.id)).toEqual(["company"]);
   });
 });

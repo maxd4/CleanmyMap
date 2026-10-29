@@ -56,6 +56,18 @@ function buildActionItem(
 }
 
 describe("action popup presentation", () => {
+  it("shows the persisted context with its neutral pictogram channel", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentBody, popupBodyProps({
+        actionContextLabel: "Scolaire",
+        actionContextGlyph: "🎓",
+      })),
+    );
+
+    expect(markup).toContain("Contexte : Scolaire");
+    expect(markup).toContain("🎓");
+  });
+
   it("keeps the existing single-action popup without corridor tabs", () => {
     const item = toActionMapItem(
       buildActionDataContract({

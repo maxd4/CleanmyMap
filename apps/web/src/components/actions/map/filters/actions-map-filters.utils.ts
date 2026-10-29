@@ -1,4 +1,9 @@
 import type { ActionMapItem } from "@/lib/actions/types";
+import {
+  matchesActionContextFilter,
+  normalizeActionContextFilter,
+  type ActionContextFilter,
+} from "@/lib/actions/action-context";
 import { extractArrondissement } from "@/components/sections/rubriques/helpers";
 import {
   DEFAULT_VISIBLE_CATEGORIES,
@@ -24,6 +29,7 @@ export type ActionsMapFilters = {
   days: number;
   dateScope: ActionsMapDateScope;
   zoneQuery: string;
+  contextFilter: ActionContextFilter;
   visibleCategories: Record<MarkerCategory, boolean>;
 };
 
@@ -131,6 +137,16 @@ export function matchesZoneQuery(item: ActionMapItem, zoneQuery: string): boolea
   return buildZoneSearchIndex(item).includes(normalizedQuery);
 }
 
+export function matchesContextFilter(
+  item: ActionMapItem,
+  contextFilter: ActionContextFilter,
+): boolean {
+  return matchesActionContextFilter(
+    item.contract?.metadata.actionContext,
+    contextFilter,
+  );
+}
+
 export function buildDefaultActionsMapFilters(
   initialDays: number,
 ): ActionsMapFilters {
@@ -138,6 +154,7 @@ export function buildDefaultActionsMapFilters(
     days: clampInteger(initialDays, 1, 3650, 90),
     dateScope: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope,
     zoneQuery: "",
+    contextFilter: "all",
     visibleCategories: { ...DEFAULT_VISIBLE_CATEGORIES },
   };
 }
@@ -166,6 +183,7 @@ export function normalizeActionsMapFilters(
     days: defaults.days,
     dateScope: normalizedDateScope,
     zoneQuery: normalizeZoneQuery(source.zoneQuery),
+    contextFilter: normalizeActionContextFilter(source.contextFilter),
     visibleCategories: normalizeVisibleCategories(source.visibleCategories),
   };
 }

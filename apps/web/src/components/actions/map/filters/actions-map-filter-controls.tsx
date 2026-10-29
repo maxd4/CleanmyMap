@@ -2,6 +2,11 @@
 
 import { RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import {
+  ACTION_CONTEXT_PRESENTATIONS,
+  ACTION_CONTEXT_FILTER_VALUES,
+  type ActionContextFilter,
+} from "@/lib/actions/action-context";
 import type {
   ActionsMapFilters,
   ActionsMapDateScope,
@@ -26,6 +31,7 @@ type ActionsMapFilterControlsProps = {
   onZoneQueryChange: (zoneQuery: string) => void;
   onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
+  onContextFilterChange?: (contextFilter: ActionContextFilter) => void;
   onReset: () => void;
 };
 
@@ -35,6 +41,7 @@ export function ActionsMapFilterControls({
   onZoneQueryChange,
   onDateScopeChange,
   onCategoryToggle,
+  onContextFilterChange,
   onReset,
 }: ActionsMapFilterControlsProps) {
   return (
@@ -86,6 +93,29 @@ export function ActionsMapFilterControls({
             <option value="current_year">Année en cours</option>
             <option value="all_time">Depuis la création</option>
           </select>
+        </label>
+
+        <label className="min-w-0 flex flex-col gap-1">
+          <span className="text-sm font-semibold text-slate-800">
+            Contexte d&apos;action
+          </span>
+          <select
+            value={filters.contextFilter}
+            onChange={(event) =>
+              onContextFilterChange?.(event.target.value as ActionContextFilter)
+            }
+            className="h-11 w-full min-w-0 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12 focus-visible:ring-4 focus-visible:ring-sky-400/20"
+          >
+            <option value="all">Tous les contextes</option>
+            {ACTION_CONTEXT_FILTER_VALUES.filter((value) => value !== "all").map((value) => (
+              <option key={value} value={value}>
+                {ACTION_CONTEXT_PRESENTATIONS[value].glyph} {ACTION_CONTEXT_PRESENTATIONS[value].label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs font-medium text-slate-500">
+            Le contexte est la classification persistée de l&apos;action ; une absence reste non classée.
+          </span>
         </label>
 
         <button

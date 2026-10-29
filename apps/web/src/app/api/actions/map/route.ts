@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAP_ACTIONS_SNAPSHOT_TTL_MINUTES = 15;
-const MAP_ACTIONS_SNAPSHOT_VERSION = "public-map-actions-v4";
+const MAP_ACTIONS_SNAPSHOT_VERSION = "public-map-actions-v5";
 
 function buildMapActionsSnapshotKey(url: URL): string {
   const parsed = parseMapActionsParams(url, parseEntityTypesParam);
@@ -33,6 +33,7 @@ function buildMapActionsSnapshotKey(url: URL): string {
       : "all",
     qualityMin: parsed.qualityMin ?? "all",
     impact: parsed.impact ?? "all",
+    context: parsed.contextFilter,
     scopeKind: parsed.scope.kind,
     scopeValue: parsed.scope.value ?? "all",
     viewport: "global",

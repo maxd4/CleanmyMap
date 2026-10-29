@@ -13,6 +13,7 @@ import { classifyPollutionColor } from"@/components/actions/map-marker-categorie
 import { useActionPollutionScoreReferences } from"./map/scores/action-pollution-score-references-context";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import { ACTION_CONTEXT_PRESENTATIONS } from "@/lib/actions/action-context";
 
 function formatDate(value: string): string {
  const parsed = new Date(value);
@@ -159,6 +160,7 @@ export function ActionsMapTable({
  <tr>
  <th scope="col">Date</th>
  <th scope="col">Lieu</th>
+ <th scope="col">Contexte</th>
  <th scope="col">Type</th>
  <th scope="col">Tracé</th>
  <th scope="col">Lecture</th>
@@ -185,6 +187,12 @@ export function ActionsMapTable({
             </td>
             <td className="font-medium">
               {mapItemLocationLabel(item)}
+ </td>
+ <td>
+ <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 cmm-text-caption font-bold text-slate-700" aria-label={`Contexte ${ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"].label}`}>
+ {ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"].glyph}
+ <span>{ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"].label}</span>
+ </span>
  </td>
  <td>
  <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-bold uppercase tracking-wide text-slate-700">

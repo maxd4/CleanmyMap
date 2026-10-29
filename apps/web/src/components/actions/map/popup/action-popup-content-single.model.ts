@@ -15,6 +15,7 @@ import type {
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import type { ActionMapItem } from "@/lib/actions/types";
+import { ACTION_CONTEXT_PRESENTATIONS } from "@/lib/actions/action-context";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
   formatObservedDate,
@@ -49,6 +50,10 @@ function buildSingleActionPopupContext(item: ActionMapItem) {
 
   return {
     associationName: metadata?.associationName?.trim() ?? null,
+    actionContextLabel:
+      ACTION_CONTEXT_PRESENTATIONS[metadata?.actionContext ?? "unknown"].label,
+    actionContextGlyph:
+      ACTION_CONTEXT_PRESENTATIONS[metadata?.actionContext ?? "unknown"].glyph,
     notes: metadata?.notesPlain?.trim() || metadata?.notes?.trim() || null,
     departure: metadata?.departureLocationLabel?.trim() ?? null,
     arrival: metadata?.arrivalLocationLabel?.trim() ?? null,

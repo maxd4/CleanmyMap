@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildMapActionsRouteResult, parseMapActionsParams } from "./map-route";
+import { buildMapActionsRouteResult, isPublicMapContract, parseMapActionsParams } from "./map-route";
 
 function buildDeps(overrides?: Partial<Parameters<typeof buildMapActionsRouteResult>[1]>) {
   const fetchUnifiedActionContracts = vi.fn().mockResolvedValue({
@@ -127,6 +127,28 @@ describe("parseMapActionsParams", () => {
     expect(params.status).toBe("approved");
     expect(params.days).toBe(30);
     expect(params.floorDate).toBeTruthy();
+    expect(params.contextFilter).toBe("all");
+  });
+
+  it.each(["citizen", "company", "school", "unknown", "all"])(
+    "parses the public context filter %s",
+    (context) => {
+      expect(
+        parseMapActionsParams(
+          new URL(`http://localhost/api/actions/map?context=${context}`),
+          () => null,
+        ).contextFilter,
+      ).toBe(context);
+    },
+  );
+
+  it("fails closed for an unknown public context filter", () => {
+    expect(
+      parseMapActionsParams(
+        new URL("http://localhost/api/actions/map?context=family"),
+        () => null,
+      ).contextFilter,
+    ).toBe("all");
   });
 
   it.each(["pending", "rejected", "all"])(
@@ -357,6 +379,43 @@ describe("buildMapActionsRouteResult", () => {
 
     expect(result.body.items.map((item) => item.id)).toEqual(["future-action"]);
     expect(result.body.items[0]?.status).toBe("approved");
+  });
+
+  it("keeps school future pre-actions out of public map coordinates", () => {
+    expect(
+      isPublicMapContract(
+        {
+          id: "future-school",
+          type: "action",
+          source: "actions",
+          status: "pending",
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          dates: { observedAt: "2999-01-01", eventStartTime: "10:00" },
+          metadata: { actionPhase: "pre_action", actionContext: "school" },
+        } as never,
+        new Date("2026-10-30T10:00:00.000Z"),
+      ),
+    ).toBe(false);
+  });
+
+  it("applies the same context classification to the server map response", async () => {
+    const deps = buildDeps({
+      fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
+        items: [
+          { id: "citizen", status: "approved", metadata: { actionContext: "citizen" } },
+          { id: "company", status: "approved", metadata: { actionContext: "company" } },
+          { id: "unknown", status: "approved", metadata: { actionContext: null } },
+        ],
+        sourceHealth: buildHealthySourceHealth(),
+      }),
+    });
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?context=company"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["company"]);
   });
 
   it("adds a partial-data warning header when needed", async () => {

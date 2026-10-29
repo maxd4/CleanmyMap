@@ -179,7 +179,10 @@ approuvées visibles ainsi que les pré-actions futures explicitement publiées
 `pending` (avec un statut de projection `approved`) et les lignes
 `trash_spotter_spots.status IN ('validated', 'cleaned')`. La RLS de cette table
 interdit également la lecture directe des lignes `new` aux rôles anon et
-authenticated.
+authenticated. Une pré-action future dont le contexte persisté est `school` est
+exclue de la RPC et de l'API tant qu'aucune projection géographique publique
+généralisée et sécurisée n'existe ; ses coordonnées ne sont donc pas exposées.
+Une action scolaire approuvée et finalisée suit la projection publique normale.
 
 Les projections publiques de `GET /api/actions`, `GET /api/actions/map` et
 `GET /api/actions/map/initial-nearest` ne contiennent aucun identifiant interne

@@ -3,6 +3,7 @@
 import {
   CircleMarker,
   Popup,
+  Tooltip,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { divIcon } from "leaflet";
@@ -28,6 +29,7 @@ import { resolveActionMapGeometryViewModel } from "./actions-map-geometry.utils"
 import { resolveGeometryRenderStyle } from "./actions-map-geometry-render";
 import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-state";
 import { useMapSelectableLayerRefs } from "./map-layers-selection";
+import { ACTION_CONTEXT_PRESENTATIONS } from "@/lib/actions/action-context";
 import {
   isTrashSpotterItem,
   resolvePointColor,
@@ -161,6 +163,9 @@ export function SignalementMarkers({
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const isFallbackPoint = geometry.presentation.strokeStyle === "point";
         const isSelected = selectedActionId === item.id;
+        const contextPresentation = ACTION_CONTEXT_PRESENTATIONS[
+          item.contract?.metadata.actionContext ?? "unknown"
+        ];
 
         return (
           <CircleMarker
@@ -186,6 +191,11 @@ export function SignalementMarkers({
                 : renderStyle.pointOpacity ?? (isFallbackPoint ? 0.7 : 0.95),
             }}
           >
+            <Tooltip direction="top" sticky>
+              <span aria-label={`Contexte ${contextPresentation.label}`}>
+                {contextPresentation.glyph} {contextPresentation.label}
+              </span>
+            </Tooltip>
             <ActionMarkerPopup
               item={item}
               color={color}

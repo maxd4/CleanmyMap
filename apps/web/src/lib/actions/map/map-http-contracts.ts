@@ -18,6 +18,11 @@ import { extractActionMetadataFromNotes } from "../metadata";
 import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
 import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
+import {
+  matchesActionContextFilter,
+  normalizeActionContextFilter,
+  type ActionContextFilter,
+} from "@/lib/actions/action-context";
 import { buildPublicMapItems } from "./public-map-items";
 import { parsePublicObservedPreparationData } from "./public-observed-coverage";
 import {
@@ -79,6 +84,7 @@ export type MapFetchConfig = {
   status: ActionStatus | null;
   impact: ActionImpactLevel | null;
   qualityMin: number | null;
+  contextFilter: ActionContextFilter;
 };
 
 function normalizeMapTypes(raw: ActionTypeFilter | undefined): ActionEntityType[] | null {
@@ -228,6 +234,7 @@ export function resolveMapFetchConfig(params: {
   status?: ActionStatus | "all";
   impact?: ActionImpactLevel;
   qualityMin?: number;
+  contextFilter?: ActionContextFilter;
   viewport?: MapViewportState | null;
 }): MapFetchConfig {
   const limit = clampInteger(params.limit, 1, 300, 80);
@@ -244,6 +251,7 @@ export function resolveMapFetchConfig(params: {
     status: resolveMapStatus(params.status),
     impact: params.impact ?? null,
     qualityMin: normalizeQualityMin(params.qualityMin),
+    contextFilter: normalizeActionContextFilter(params.contextFilter),
   };
 }
 
@@ -258,9 +266,13 @@ export function buildMapResponseItems(params: {
   pollutionScoreReferences: Parameters<typeof buildPublicMapItems>[1];
   impact: ActionImpactLevel | null;
   qualityMin: number | null;
+  contextFilter: ActionContextFilter;
   limit: number;
 }) {
-  const mergedContracts = buildMapContracts(params.remoteContracts, [], params.scope, params.types);
+  const mergedContracts = buildMapContracts(params.remoteContracts, [], params.scope, params.types)
+    .filter((contract) =>
+      matchesActionContextFilter(contract.metadata.actionContext, params.contextFilter),
+    );
   return buildPublicMapItems(
     mergedContracts,
     params.pollutionScoreReferences,

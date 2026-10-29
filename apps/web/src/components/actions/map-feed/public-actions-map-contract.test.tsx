@@ -87,4 +87,33 @@ describe("public actions map contract", () => {
       POLLUTION_SCORE_UNAVAILABLE_COLOR,
     );
   });
+
+  it("keeps pollution colors independent from the persisted action context", () => {
+    const now = new Date("2026-09-17T12:00:00Z");
+    const colors = (["citizen", "company", "school"] as const).map((actionContext) =>
+      resolvePointColor(
+        toActionMapItem(
+          buildActionDataContract({
+            id: `context-${actionContext}`,
+            type: "action",
+            status: "approved",
+            source: "actions",
+            observedAt: "2026-09-01",
+            locationLabel: "75001 Paris",
+            latitude: 48.8566,
+            longitude: 2.3522,
+            wasteKg: 1,
+            cigaretteButts: 100,
+            volunteersCount: 1,
+            durationMinutes: 60,
+            actionContext,
+          }),
+        ),
+        V6_REFERENCES,
+        now,
+      ),
+    );
+
+    expect(new Set(colors).size).toBe(1);
+  });
 });

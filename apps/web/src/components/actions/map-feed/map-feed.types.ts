@@ -11,6 +11,7 @@ import type { RefObject } from "react";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 import type {
   ActionsMapDateScope,
   ActionsMapFilters,
@@ -44,6 +45,7 @@ type ActionsMapCanvasProps = {
   onZoneQueryChange?: (zoneQuery: string) => void;
   onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle?: (category: MarkerCategory) => void;
+  onContextFilterChange?: (contextFilter: ActionContextFilter) => void;
   onResetFilters?: () => void;
 };
 
@@ -60,6 +62,7 @@ export type ActionsMapLayoutCommonProps = Pick<
   | "onZoneQueryChange"
   | "onDateScopeChange"
   | "onCategoryToggle"
+  | "onContextFilterChange"
 > & {
   items: ActionMapItem[];
   allItems: ActionMapItem[];
@@ -109,6 +112,7 @@ export type ActionsMapFeedProps = Partial<Pick<
   statusFilter: ActionStatus | "all";
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
+  contextFilter?: ActionContextFilter;
   limit?: number;
   presentation?: ActionsMapPresentation;
   showIntro?: boolean;

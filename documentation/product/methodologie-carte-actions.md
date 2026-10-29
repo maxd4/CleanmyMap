@@ -537,6 +537,12 @@ chargement dédié.
 
 La couleur d'une action représente la pollution projetée, pas l'identité du type `action`.
 
+Le contexte métier (`citizen`, `company`, `school` ou inconnu) est une dimension
+descriptive indépendante : son pictogramme et son filtre ne changent ni le
+score, ni la sévérité, ni l'impact, ni les références de collecte, ni les
+couleurs. Une famille reste classée dans `citizen` ; le runtime ne déduit pas
+un contexte depuis un organisateur, une rue ou un marqueur.
+
 La progression visuelle est :
 
 `bleu → orange → rouge → violet → noir`

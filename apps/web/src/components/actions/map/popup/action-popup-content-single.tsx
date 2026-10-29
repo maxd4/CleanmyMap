@@ -164,6 +164,8 @@ function SingleActionPopupView({
         durationMinutes={metrics.durationMinutes}
         operationalEngagementHours={context.operationalEngagementHours}
         associationName={context.associationName}
+        actionContextLabel={context.actionContextLabel}
+        actionContextGlyph={context.actionContextGlyph}
         departure={context.departure}
         arrival={context.arrival}
         notes={context.notes}

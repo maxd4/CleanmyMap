@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 import {
   buildDefaultActionsMapFilters,
   readActionsMapFiltersFromStorage,
@@ -32,6 +33,8 @@ export function useActionsMapFilters(initialDays: number) {
       setFilters((current) => ({ ...current, dateScope })),
     setZoneQuery: (zoneQuery: string) =>
       setFilters((current) => ({ ...current, zoneQuery })),
+    setContextFilter: (contextFilter: ActionContextFilter) =>
+      setFilters((current) => ({ ...current, contextFilter })),
     toggleCategory: (category: MarkerCategory) =>
       setFilters((current) => ({
         ...current,

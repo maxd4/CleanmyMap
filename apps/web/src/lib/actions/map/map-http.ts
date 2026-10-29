@@ -3,6 +3,7 @@ import type {
   ActionMapResponse,
   ActionStatus,
 } from "@/lib/actions/types";
+import type { ActionContextFilter } from "@/lib/actions/action-context";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { ReportScopeKind } from "@/lib/reports/scope";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -37,6 +38,7 @@ export type FetchMapActionsParams = {
   scopeValue?: string | null;
   impact?: ActionImpactLevel;
   qualityMin?: number;
+  contextFilter?: ActionContextFilter;
   viewport?: MapViewportState | null;
 };
 
@@ -109,6 +111,7 @@ export function buildMapActionsQueryString(
   setScopeQueryParams(query, params);
 
   if (params.impact) query.set("impact", params.impact);
+  if (config.contextFilter !== "all") query.set("context", config.contextFilter);
   if (params.actionId) query.set("actionId", params.actionId);
   if (params.viewport) {
     query.set("south", String(params.viewport.bounds.south));
@@ -158,6 +161,7 @@ export async function fetchMapActions(
     pollutionScoreReferences,
     impact: config.impact,
     qualityMin: config.qualityMin,
+    contextFilter: config.contextFilter,
     limit: config.limit,
   });
   const isTruncated = sourceIsTruncated || boundedCandidateItems.length > config.limit;
