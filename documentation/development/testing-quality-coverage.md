@@ -433,9 +433,10 @@ bloque ni CI, ni FULL, ni le scan SonarQube ; l'échec des tests, de la
 production du rapport ou de sa validation reste bloquant lorsqu'un périmètre
 est activé.
 
-Les pourcentages V8 Web, mobile, Node et Python sont des mesures de leurs
-propres périmètres instrumentés ; ils ne sont pas additionnés pour fabriquer
-un taux monorepo. Ainsi, une couverture Web de `75–76 %` ne signifie pas que la
+Les couvertures Web et mobile produites par Vitest/V8, Node par c8/V8 et Python
+par coverage.py mesurent chacune leur propre périmètre instrumenté ; leurs
+pourcentages ne sont pas additionnés pour fabriquer un taux monorepo. Ainsi,
+une couverture Web de `75–76 %` ne signifie pas que la
 couverture globale SonarQube Cloud vaut `75–76 %` : SonarQube recalcule ses
 propres dénominateurs sur les fichiers effectivement analysés et les rapports
 effectivement importés. L'absence du rapport Web peut donc réduire la mesure
