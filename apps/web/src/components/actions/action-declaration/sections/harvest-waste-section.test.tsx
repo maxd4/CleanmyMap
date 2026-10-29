@@ -36,7 +36,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(markup).toContain('id="harvest-waste-kg"');
     expect(markup).toContain('data-testid="waste-comparison-visual"');
     expect(markup).toContain("Comparaison visuelle");
-    expect(markup.match(/data-testid="waste-comparison-bin"/g)).toHaveLength(3);
+    expect(markup.match(/data-testid="waste-comparison-visual-icon"/g)).toHaveLength(3);
   });
 
   it("hides the comparison without a valid benchmark while preserving the input", () => {

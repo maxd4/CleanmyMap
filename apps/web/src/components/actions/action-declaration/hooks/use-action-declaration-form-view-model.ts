@@ -35,6 +35,7 @@ function buildActionDeclarationSectionProps(
   const harvest = {
     form,
     updateField,
+    updateFields,
     recordType: form.recordType,
     photoAssets,
     visionEstimate,

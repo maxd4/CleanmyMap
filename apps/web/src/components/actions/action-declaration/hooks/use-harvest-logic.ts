@@ -1,40 +1,21 @@
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import {
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   MAX_CIGARETTE_BUTTS_COUNT,
   normalizeCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
-import { clamp, deriveWasteComparison, type WasteComparisonTone } from "../utils/harvest-utils";
-import { useCallback, useMemo } from "react";
+import { deriveWasteComparison, type WasteComparisonTone } from "../utils/harvest-utils";
+import { useCallback, useMemo, useState } from "react";
 import { useActionPollutionScoreReferences } from "../../map/scores/action-pollution-score-references-context";
 
 import type { FormState } from "../model";
-import type { UpdateFormField } from "../types";
 
 type UseHarvestLogicParams = {
   form: FormState;
-  updateField: UpdateFormField;
+  updateFields: (updates: Partial<FormState>) => void;
 };
 
-function toFiniteNumber(rawValue: string, fallback = 0): number {
-  const parsed = Number(rawValue);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function readBoundedNumber(
-  rawValue: string,
-  min: number,
-  max: number,
-  fallback = min,
-): number {
-  return clamp(toFiniteNumber(rawValue, fallback), min, max);
-}
-
-function readOptionalNumber(rawValue: string, min: number, max: number): number | null {
-  if (rawValue.trim() === "") {
-    return null;
-  }
-  return readBoundedNumber(rawValue, min, max, min);
-}
+type MegotsInputSource = "count" | "mass" | null;
 
 function readValidComparisonNumber(rawValue: string, min: number, max: number): number | null {
   if (rawValue.trim() === "") {
@@ -45,6 +26,31 @@ function readValidComparisonNumber(rawValue: string, min: number, max: number): 
   return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
 }
 
+function readValidCount(rawValue: string): number | null {
+  if (rawValue.trim() === "") {
+    return null;
+  }
+  const parsed = Number(rawValue);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= MAX_CIGARETTE_BUTTS_COUNT
+    ? parsed
+    : null;
+}
+
+function readValidMass(rawValue: string): number | null {
+  if (rawValue.trim() === "") {
+    return null;
+  }
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100 ? parsed : null;
+}
+
+function formatDerivedNumber(value: number): string {
+  if (!Number.isFinite(value) || value < 0) {
+    return "";
+  }
+  return Number(value.toFixed(6)).toString();
+}
+
 export type UseHarvestLogicResult = {
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
@@ -52,6 +58,10 @@ export type UseHarvestLogicResult = {
   comparisonTone: WasteComparisonTone;
   megotsKg: number | null;
   megotsCount: number | null;
+  megotsCurrentPerVolunteer: number | null;
+  megotsBenchmarkPerVolunteer: number | null;
+  megotsDeltaPercent: number | null;
+  megotsComparisonTone: WasteComparisonTone;
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
   cigaretteButtsConversionFormulaVersion: string | null;
@@ -62,9 +72,10 @@ export type UseHarvestLogicResult = {
 
 export function useHarvestLogic({
   form,
-  updateField,
+  updateFields,
 }: UseHarvestLogicParams): UseHarvestLogicResult {
   const { references } = useActionPollutionScoreReferences();
+  const [lastMegotsInputSource, setLastMegotsInputSource] = useState<MegotsInputSource>(null);
 
   const derived = useMemo(() => {
     const wasteKg = readValidComparisonNumber(form.wasteKg, 0, 100);
@@ -76,10 +87,25 @@ export function useHarvestLogic({
       benchmarkSourceCount: references?.global.wasteSourceCount ?? 0,
     });
     const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
-      cigaretteButtsCount: readOptionalNumber(form.cigaretteButtsCount, 0, MAX_CIGARETTE_BUTTS_COUNT),
-      cigaretteButtsMassKg: readOptionalNumber(form.wasteMegotsKg, 0, 100),
+      cigaretteButtsCount: readValidCount(form.cigaretteButtsCount),
+      cigaretteButtsMassKg: readValidMass(form.wasteMegotsKg),
       cigaretteButtsCondition: form.wasteMegotsCondition,
+      cigaretteButtsCountProvenance:
+        lastMegotsInputSource === "mass" ? "weight_converted" : undefined,
+      cigaretteButtsMassProvenance:
+        lastMegotsInputSource === "count" ? "weight_converted" : undefined,
+      cigaretteButtsConversionFormulaVersion:
+        (lastMegotsInputSource === "count" && readValidCount(form.cigaretteButtsCount) !== null) ||
+        (lastMegotsInputSource === "mass" && readValidMass(form.wasteMegotsKg) !== null)
+          ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
+          : null,
       deriveMissingFromMassOrCount: true,
+    });
+    const megotsComparison = deriveWasteComparison({
+      wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
+      volunteersCount,
+      benchmarkPerVolunteer: references?.global.buttsPerVolunteer ?? null,
+      benchmarkSourceCount: references?.global.buttsSourceCount ?? 0,
     });
 
     return {
@@ -89,6 +115,10 @@ export function useHarvestLogic({
       comparisonTone: wasteComparison.tone,
       megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
       megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
+      megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer,
+      megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer,
+      megotsDeltaPercent: megotsComparison.deltaPercent,
+      megotsComparisonTone: megotsComparison.tone,
       cigaretteButtsCountProvenance:
         cigaretteButtsMeasurements.cigaretteButtsCountProvenance,
       cigaretteButtsMassProvenance:
@@ -102,28 +132,87 @@ export function useHarvestLogic({
     form.wasteMegotsCondition,
     form.wasteMegotsKg,
     form.wasteKg,
+    lastMegotsInputSource,
     references,
   ]);
 
   const syncMegotsWeightFromWeight = useCallback(
     (rawValue: string) => {
-      updateField("wasteMegotsKg", rawValue);
+      setLastMegotsInputSource(rawValue.trim() === "" ? null : "mass");
+      const mass = rawValue.trim() === "" ? null : readValidMass(rawValue);
+      const normalized = mass === null
+        ? null
+        : normalizeCigaretteButtsMeasurements({
+            cigaretteButtsMassKg: mass,
+            cigaretteButtsCondition: form.wasteMegotsCondition,
+            deriveMissingFromMassOrCount: true,
+          });
+      updateFields({
+        wasteMegotsKg: rawValue,
+        cigaretteButtsCount: normalized?.cigaretteButtsCount === null || normalized === null
+          ? ""
+          : String(normalized.cigaretteButtsCount),
+      });
     },
-    [updateField],
+    [form.wasteMegotsCondition, updateFields],
   );
 
   const syncMegotsWeightFromCount = useCallback(
     (rawValue: string) => {
-      updateField("cigaretteButtsCount", rawValue);
+      setLastMegotsInputSource(rawValue.trim() === "" ? null : "count");
+      const count = rawValue.trim() === "" ? null : readValidCount(rawValue);
+      const normalized = count === null
+        ? null
+        : normalizeCigaretteButtsMeasurements({
+            cigaretteButtsCount: count,
+            cigaretteButtsCondition: form.wasteMegotsCondition,
+            deriveMissingFromMassOrCount: true,
+          });
+      updateFields({
+        cigaretteButtsCount: rawValue,
+        wasteMegotsKg: normalized?.cigaretteButtsMassKg === null || normalized === null
+          ? ""
+          : formatDerivedNumber(normalized.cigaretteButtsMassKg),
+      });
     },
-    [updateField],
+    [form.wasteMegotsCondition, updateFields],
   );
 
   const syncMegotsCondition = useCallback(
     (rawValue: ActionMegotsCondition) => {
-      updateField("wasteMegotsCondition", rawValue);
+      const source = lastMegotsInputSource ?? (
+        form.cigaretteButtsCount.trim() !== ""
+          ? "count"
+          : form.wasteMegotsKg.trim() !== ""
+            ? "mass"
+            : null
+      );
+      const count = source === "count" ? readValidCount(form.cigaretteButtsCount) : null;
+      const mass = source === "mass" ? readValidMass(form.wasteMegotsKg) : null;
+      const normalized = source === "count" && count !== null
+        ? normalizeCigaretteButtsMeasurements({
+            cigaretteButtsCount: count,
+            cigaretteButtsCondition: rawValue,
+            deriveMissingFromMassOrCount: true,
+          })
+        : source === "mass" && mass !== null
+          ? normalizeCigaretteButtsMeasurements({
+              cigaretteButtsMassKg: mass,
+              cigaretteButtsCondition: rawValue,
+              deriveMissingFromMassOrCount: true,
+            })
+          : null;
+
+      updateFields({
+        wasteMegotsCondition: rawValue,
+        ...(source === "count"
+          ? { wasteMegotsKg: normalized ? formatDerivedNumber(normalized.cigaretteButtsMassKg ?? 0) : "" }
+          : source === "mass"
+            ? { cigaretteButtsCount: normalized?.cigaretteButtsCount === null || normalized === null ? "" : String(normalized.cigaretteButtsCount) }
+            : {}),
+      });
     },
-    [updateField],
+    [form.cigaretteButtsCount, form.wasteMegotsKg, lastMegotsInputSource, updateFields],
   );
 
   return {

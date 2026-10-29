@@ -15,6 +15,7 @@ function renderHarvest(mode: "essentials" | "collection" | "details") {
       mode,
       form,
       updateField: () => undefined,
+      updateFields: () => undefined,
       recordType: "action",
       photoAssets: [],
       visionEstimate: null,

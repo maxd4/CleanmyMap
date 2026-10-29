@@ -12,9 +12,13 @@ function renderMegots(overrides: Partial<React.ComponentProps<typeof HarvestMego
       cigaretteButtsCount: "",
       megotsKg: 1.2,
       megotsCount: 3000,
+      megotsCurrentPerVolunteer: 3000,
+      megotsBenchmarkPerVolunteer: 4000,
+      megotsDeltaPercent: -25,
+      megotsComparisonTone: "emerald",
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",
-      cigaretteButtsConversionFormulaVersion: "cigarette-butts-mass-v1",
+      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
       onMegotsWeightChange: () => undefined,
       onMegotsVolumeChange: () => undefined,
       onMegotsCountChange: () => undefined,
@@ -32,7 +36,13 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain('value=""');
     expect(markup).toContain("dérivé par conversion de masse");
     expect(markup).toContain("Provenance : mesuré");
-    expect(markup).toContain("Formule : cigarette-butts-mass-v1");
+    expect(markup).toContain("Formule : impact-terrain-2026-butts-mass-v1");
+    expect(markup).toContain('id="harvest-megots-condition"');
+    expect(markup).toContain('data-testid="butts-comparison-visual"');
+    expect(markup.match(/data-testid="butts-comparison-visual-icon"/g)).toHaveLength(3);
+    expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Nombre de mégots"));
+    expect(markup.indexOf("Nombre de mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
+    expect(markup.indexOf("Masse de mégots")).toBeLessThan(markup.indexOf("Comparaison visuelle des mégots"));
     expect(markup).not.toContain("Référence moyenne");
   });
 
@@ -42,6 +52,10 @@ describe("HarvestMegotsSection", () => {
       cigaretteButtsCount: "0",
       megotsKg: 0,
       megotsCount: 0,
+      megotsCurrentPerVolunteer: 0,
+      megotsBenchmarkPerVolunteer: 4000,
+      megotsDeltaPercent: -100,
+      megotsComparisonTone: "emerald",
       cigaretteButtsCountProvenance: "counted",
       cigaretteButtsMassProvenance: "measured",
       cigaretteButtsConversionFormulaVersion: null,
@@ -50,5 +64,15 @@ describe("HarvestMegotsSection", () => {
     expect(zeroMarkup).toContain("0 mégots");
     expect(zeroMarkup).toContain("0 kg");
     expect(zeroMarkup).not.toContain("Non renseigné");
+  });
+
+  it("hides the butts comparison when its reference is unavailable", () => {
+    const markup = renderMegots({
+      megotsCurrentPerVolunteer: null,
+      megotsBenchmarkPerVolunteer: null,
+      megotsDeltaPercent: null,
+    });
+
+    expect(markup).not.toContain('data-testid="butts-comparison-visual"');
   });
 });

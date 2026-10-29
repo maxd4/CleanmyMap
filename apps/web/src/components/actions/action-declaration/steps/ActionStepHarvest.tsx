@@ -18,6 +18,7 @@ import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 interface ActionStepHarvestProps {
   form: FormState;
   updateField: UpdateFormField;
+  updateFields: (updates: Partial<FormState>) => void;
   recordType: FormState["recordType"];
   photoAssets: ActionPhotoAsset[];
   visionEstimate: ActionVisionEstimate | null;
@@ -31,6 +32,7 @@ interface ActionStepHarvestProps {
 export function ActionStepHarvest({
   form,
   updateField,
+  updateFields,
   recordType,
   photoAssets,
   visionEstimate,
@@ -44,7 +46,7 @@ export function ActionStepHarvest({
   const hasPhotos = photoAssets.length > 0;
   const harvest = useHarvestLogic({
     form,
-    updateField,
+    updateFields,
   });
   const {
     wasteCurrentPerVolunteer,
@@ -53,6 +55,10 @@ export function ActionStepHarvest({
     comparisonTone,
     megotsKg,
     megotsCount,
+    megotsCurrentPerVolunteer,
+    megotsBenchmarkPerVolunteer,
+    megotsDeltaPercent,
+    megotsComparisonTone,
     cigaretteButtsCountProvenance,
     cigaretteButtsMassProvenance,
     cigaretteButtsConversionFormulaVersion,
@@ -173,6 +179,10 @@ export function ActionStepHarvest({
             cigaretteButtsCount={form.cigaretteButtsCount}
             megotsKg={megotsKg}
             megotsCount={megotsCount}
+            megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
+            megotsBenchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+            megotsDeltaPercent={megotsDeltaPercent}
+            megotsComparisonTone={megotsComparisonTone}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
             cigaretteButtsConversionFormulaVersion={cigaretteButtsConversionFormulaVersion}

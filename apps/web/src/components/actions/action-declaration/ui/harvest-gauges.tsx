@@ -1,12 +1,13 @@
 "use client";
 
-import { Minus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { Droplets, Minus, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 import {
   clamp,
   deriveGaugeMax,
+  formatCount,
   formatKg,
   formatSignedPercent,
   type WasteComparisonTone,
@@ -130,11 +131,17 @@ export function TrashBinGauge({
   );
 }
 
-type WasteComparisonVisualProps = {
+type ComparisonVisualProps = {
   currentPerVolunteer: number | null;
   benchmarkPerVolunteer: number | null;
   deltaPercent: number | null;
   comparisonTone: WasteComparisonTone;
+  icon: LucideIcon;
+  title: string;
+  contextLabel: string;
+  currentLabel: string;
+  benchmarkLabel: string;
+  testId: string;
 };
 
 function getWasteComparisonColors(tone: WasteComparisonTone) {
@@ -159,12 +166,18 @@ function getWasteComparisonColors(tone: WasteComparisonTone) {
   };
 }
 
-export function WasteComparisonVisual({
+function ComparisonVisual({
   currentPerVolunteer,
   benchmarkPerVolunteer,
   deltaPercent,
   comparisonTone,
-}: WasteComparisonVisualProps) {
+  icon: ComparisonIcon,
+  title,
+  contextLabel,
+  currentLabel,
+  benchmarkLabel,
+  testId,
+}: ComparisonVisualProps) {
   if (
     currentPerVolunteer === null ||
     benchmarkPerVolunteer === null ||
@@ -196,12 +209,12 @@ export function WasteComparisonVisual({
     <div
       className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
       data-trend={deltaPercent > 5 ? "up" : deltaPercent < -5 ? "down" : "neutral"}
-      data-testid="waste-comparison-visual"
+      data-testid={testId}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-slate-700">Comparaison visuelle</p>
-          <p className="mt-0.5 text-xs text-slate-400">vs référence observée des autres actions</p>
+          <p className="text-xs font-semibold text-slate-700">{title}</p>
+          <p className="mt-0.5 text-xs text-slate-400">{contextLabel}</p>
         </div>
         <div className={cn("flex shrink-0 items-center gap-1 text-xs font-bold", colors.accent)}>
           <TrendIcon size={14} aria-hidden="true" />
@@ -221,16 +234,16 @@ export function WasteComparisonVisual({
             <div
               key={index}
               className="relative h-9 w-9"
-              data-testid="waste-comparison-bin"
+              data-testid={`${testId}-icon`}
               data-fill-percent={Math.round(fill)}
             >
-              <Trash2 size={36} strokeWidth={1.6} className="absolute inset-0 text-slate-200" aria-hidden="true" />
+              <ComparisonIcon size={36} strokeWidth={1.6} className="absolute inset-0 text-slate-200" aria-hidden="true" />
               <div
                 className="absolute inset-0 overflow-hidden"
                 style={{ clipPath: `inset(${100 - fill}% 0 0 0)` }}
                 aria-hidden="true"
               >
-                <Trash2 size={36} strokeWidth={1.6} className={cn(colors.fill, "fill-current")} />
+                <ComparisonIcon size={36} strokeWidth={1.6} className={cn(colors.fill, "fill-current")} />
               </div>
             </div>
           );
@@ -246,10 +259,54 @@ export function WasteComparisonVisual({
           />
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
-          <span>{formatKg(currentPerVolunteer)} kg / bénévole</span>
-          <span>repère : {formatKg(benchmarkPerVolunteer)} kg</span>
+          <span>{currentLabel}</span>
+          <span>{benchmarkLabel}</span>
         </div>
       </div>
     </div>
+  );
+}
+
+export function WasteComparisonVisual({
+  currentPerVolunteer,
+  benchmarkPerVolunteer,
+  deltaPercent,
+  comparisonTone,
+}: Omit<ComparisonVisualProps, "icon" | "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
+  return (
+    <ComparisonVisual
+      currentPerVolunteer={currentPerVolunteer}
+      benchmarkPerVolunteer={benchmarkPerVolunteer}
+      deltaPercent={deltaPercent}
+      comparisonTone={comparisonTone}
+      icon={Trash2}
+      title="Comparaison visuelle"
+      contextLabel="vs référence observée des autres actions"
+      currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / bénévole`}
+      benchmarkLabel={`repère : ${formatKg(benchmarkPerVolunteer ?? 0)} kg`}
+      testId="waste-comparison-visual"
+    />
+  );
+}
+
+export function ButtsComparisonVisual({
+  currentPerVolunteer,
+  benchmarkPerVolunteer,
+  deltaPercent,
+  comparisonTone,
+}: Omit<ComparisonVisualProps, "icon" | "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
+  return (
+    <ComparisonVisual
+      currentPerVolunteer={currentPerVolunteer}
+      benchmarkPerVolunteer={benchmarkPerVolunteer}
+      deltaPercent={deltaPercent}
+      comparisonTone={comparisonTone}
+      icon={Droplets}
+      title="Comparaison visuelle des mégots"
+      contextLabel="vs référence observée des autres actions"
+      currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / bénévole`}
+      benchmarkLabel={`repère : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots`}
+      testId="butts-comparison-visual"
+    />
   );
 }

@@ -4,6 +4,7 @@ import { Cigarette } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
+import { ButtsComparisonVisual } from "../ui/harvest-gauges";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 
 type HarvestMegotsSectionProps = {
@@ -13,6 +14,10 @@ type HarvestMegotsSectionProps = {
   cigaretteButtsCount: string;
   megotsKg: number | null;
   megotsCount: number | null;
+  megotsCurrentPerVolunteer: number | null;
+  megotsBenchmarkPerVolunteer: number | null;
+  megotsDeltaPercent: number | null;
+  megotsComparisonTone: "emerald" | "orange" | "slate";
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
   cigaretteButtsConversionFormulaVersion: string | null;
@@ -30,6 +35,10 @@ export function HarvestMegotsSection({
   cigaretteButtsCount,
   megotsKg,
   megotsCount,
+  megotsCurrentPerVolunteer,
+  megotsBenchmarkPerVolunteer,
+  megotsDeltaPercent,
+  megotsComparisonTone,
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
   cigaretteButtsConversionFormulaVersion,
@@ -58,7 +67,6 @@ export function HarvestMegotsSection({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -66,102 +74,79 @@ export function HarvestMegotsSection({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">Mégots collectés</p>
-            <p className="text-xs text-slate-500">Les mesures brutes et les dérivés restent tracés séparément</p>
+            <p className="text-xs text-slate-500">Nombre et masse restent tracés séparément</p>
           </div>
         </div>
-        {megotsCount !== null && (
+        {megotsCount !== null ? (
           <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
             {cigaretteButtsCountProvenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots
           </span>
-        )}
+        ) : null}
       </div>
 
-      {/* Inputs */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {!hidePrimaryMeasurements ? (
+      <label className="block space-y-1.5">
+        <span className="text-xs font-medium text-slate-500">État des mégots</span>
+        <select
+          id="harvest-megots-condition"
+          className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 appearance-none cursor-pointer"
+          value={wasteMegotsCondition}
+          onChange={(e) => onMegotsConditionChange(e.target.value as ActionMegotsCondition)}
+        >
+          <option value="propre">Sec / Propre</option>
+          <option value="humide">Humide</option>
+          <option value="mouille">Très mouillé</option>
+        </select>
+        <span className="block text-xs leading-snug text-slate-400">
+          L’état modifie uniquement la conversion proxy entre nombre et masse.
+        </span>
+      </label>
+
+      <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+        Renseignez le nombre ou la masse, selon ce que vous avez mesuré. La dernière valeur modifiée recalcule l’autre champ.
+      </p>
+
+      {!hidePrimaryMeasurements ? (
+        <>
+          <CmmField
+            label={(
+              <span className="flex items-center justify-between gap-3">
+                <span>Nombre de mégots</span>
+                <span className="text-sm font-bold text-slate-900">{cigaretteButtsCount.trim() || "Non renseigné"}</span>
+              </span>
+            )}
+            hint={`Limite maximale : ${MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")} mégots.`}
+          >
+            <CmmInput
+              id="harvest-megots-count"
+              inputMode="numeric"
+              type="number"
+              min={0}
+              max={MAX_CIGARETTE_BUTTS_COUNT}
+              step={1}
+              value={cigaretteButtsCount}
+              onChange={(e) => onMegotsCountChange(e.target.value)}
+              className="!h-12 !w-full !rounded-xl !border-slate-200 !bg-white !px-4 !text-base !font-bold !text-slate-900 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-500/15"
+            />
+          </CmmField>
+
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">Masse déclarée (kg)</span>
+            <span className="text-xs font-medium text-slate-500">Masse de mégots (kg)</span>
             <input
               id="harvest-megots-kg"
               inputMode="decimal"
               type="number"
               step="0.01"
               min="0"
+              max="100"
               className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
               value={wasteMegotsKg}
               onChange={(e) => onMegotsWeightChange(e.target.value)}
               placeholder="Ex : 0,25"
             />
-            <span className="block text-xs leading-snug text-slate-400">
-              Saisie manuelle possible. Le nombre reste séparé ; un dérivé est calculé seulement s’il manque.
-            </span>
           </label>
-        ) : null}
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-slate-500">Volume (L)</span>
-          <input
-            id="harvest-megots-volume"
-            inputMode="decimal"
-            type="number"
-            step="0.01"
-            min="0"
-            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
-            value={cigaretteButtsVolumeLiters}
-            onChange={(e) => onMegotsVolumeChange(e.target.value)}
-            placeholder="Ex : 1,5"
-          />
-          <span className="block text-xs leading-snug text-slate-400">
-            Conservé comme mesure brute ; aucune conversion automatique sans relation documentée.
-          </span>
-        </label>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-slate-500">État</span>
-          <select
-            id="harvest-megots-condition"
-            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 appearance-none cursor-pointer"
-            value={wasteMegotsCondition}
-            onChange={(e) => onMegotsConditionChange(e.target.value as ActionMegotsCondition)}
-          >
-            <option value="propre">Sec / Propre</option>
-            <option value="humide">Humide</option>
-            <option value="mouille">Très mouillé</option>
-          </select>
-          <span className="block text-xs leading-snug text-slate-400">
-            L’état intervient seulement dans la conversion dérivée lorsqu’une des deux valeurs manque.
-          </span>
-        </label>
-      </div>
-
-      {!hidePrimaryMeasurements ? (
-        <CmmField
-          label={(
-            <span className="flex items-center justify-between gap-3">
-              <span>Nombre de mégots</span>
-              <span className="text-sm font-bold text-slate-900">{cigaretteButtsCount.trim() || "Non renseigné"}</span>
-            </span>
-          )}
-          hint={(
-            <>
-              Saisissez le nombre brut précisément. Limite maximale : {MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")} mégots ; la masse dérivée reste distincte pour l’envoi.
-            </>
-          )}
-        >
-          <CmmInput
-            id="harvest-megots-count"
-            inputMode="numeric"
-            type="number"
-            min={0}
-            max={MAX_CIGARETTE_BUTTS_COUNT}
-            step={1}
-            value={cigaretteButtsCount}
-            onChange={(e) => onMegotsCountChange(e.target.value)}
-            className="!h-12 !w-full !rounded-xl !border-slate-200 !bg-white !px-4 !text-base !font-bold !text-slate-900 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-500/15"
-          />
-        </CmmField>
+        </>
       ) : null}
 
-      {/* Valeurs résolues et provenance */}
       {megotsCount !== null || megotsKg !== null ? (
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
           <div className="grid gap-2 sm:grid-cols-2">
@@ -189,6 +174,30 @@ export function HarvestMegotsSection({
         </div>
       ) : null}
 
+      <ButtsComparisonVisual
+        currentPerVolunteer={megotsCurrentPerVolunteer}
+        benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+        deltaPercent={megotsDeltaPercent}
+        comparisonTone={megotsComparisonTone}
+      />
+
+      <label className="block space-y-1.5">
+        <span className="text-xs font-medium text-slate-500">Volume (L), facultatif</span>
+        <input
+          id="harvest-megots-volume"
+          inputMode="decimal"
+          type="number"
+          step="0.01"
+          min="0"
+          className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
+          value={cigaretteButtsVolumeLiters}
+          onChange={(e) => onMegotsVolumeChange(e.target.value)}
+          placeholder="Ex : 1,5"
+        />
+        <span className="block text-xs leading-snug text-slate-400">
+          Mesure complémentaire conservée séparément ; elle ne remplace ni le nombre ni la masse.
+        </span>
+      </label>
     </section>
   );
 }
