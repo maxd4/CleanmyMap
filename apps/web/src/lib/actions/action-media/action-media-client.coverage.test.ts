@@ -10,7 +10,7 @@ const asset = (id = "photo-1") => ({ id, name: "photo.jpg", mimeType: "image/jpe
 const response = (body: unknown, ok = true): Response => ({ ok, json: vi.fn(async () => body) } as unknown as Response);
 
 describe("action media client boundary", () => {
-  beforeEach(() => { vi.restoreAllMocks(); uploadToSignedUrlMock.mockResolvedValue({ error: null }); });
+  beforeEach(() => { vi.restoreAllMocks(); uploadToSignedUrlMock.mockReset().mockResolvedValue({ error: null }); });
 
   it("uploads a pending intent, finalizes it and skips an already-ready intent", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch")
@@ -36,6 +36,28 @@ describe("action media client boundary", () => {
     expect(result.failed).toHaveLength(4);
     expect(result.failed.map(({ message }) => message)).toEqual(expect.arrayContaining(["intent denied", "La réponse d'upload est incomplète.", "Le bucket photo retourné est invalide."]));
     expect(result.failed.map(({ message }) => message)).toContain("La limite de 3 photos est dépassée.");
+  });
+
+  it("preserves the original sort order and identity when retrying a failed upload", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(response({ intent: { mediaId: "m-a", bucket: "action-photos", path: "a", token: "ta", uploadState: "pending" } }))
+      .mockResolvedValueOnce(response({ ok: true }))
+      .mockResolvedValueOnce(response({ error: "temporary failure" }, false))
+      .mockResolvedValueOnce(response({ intent: { mediaId: "m-c", bucket: "action-photos", path: "c", token: "tc", uploadState: "pending" } }))
+      .mockResolvedValueOnce(response({ ok: true }));
+
+    const initial = await uploadActionMedia("a1", [asset("a"), asset("b"), asset("c")]);
+    expect(initial.failed).toHaveLength(1);
+    expect(initial.failed[0]).toMatchObject({ sortOrder: 1, asset: { id: "b" } });
+
+    fetchMock.mockResolvedValueOnce(
+      response({ intent: { mediaId: "m-b", bucket: "action-photos", path: "b", token: "tb", uploadState: "ready" } }),
+    );
+    const retry = await uploadActionMedia("a1", initial.failed);
+
+    expect(retry).toMatchObject({ uploadedCount: 1, failed: [] });
+    const retryBody = JSON.parse(String(fetchMock.mock.calls[5]?.[1]?.body));
+    expect(retryBody).toMatchObject({ clientUploadId: "b", sortOrder: 1 });
   });
 
   it("tracks empty, ready, error and retry states in the read controller", async () => {

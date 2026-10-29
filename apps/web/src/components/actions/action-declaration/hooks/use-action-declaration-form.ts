@@ -34,7 +34,7 @@ function buildActionDeclarationFormResult({
   isCleanPlaceMode: boolean;
 }) {
   const { form, setForm, manualDrawing, manualDrawingSource, gpxError, hasAttemptedSubmit, setManualDrawing, hydration, draft, resolvedDefaultActorName } = lifecycle;
-  const { photoAssets, visionEstimate, visionStatus, photoError, handlePhotoUpload, handlePhotoReplace, removePhoto, clearPhotos } = media;
+  const { photoAssets, visionEstimate, visionStatus, photoError, photoPreparationPending, handlePhotoUpload, handlePhotoReplace, removePhoto, clearPhotos } = media;
   const { submission, updates } = execution;
 
   return {
@@ -50,6 +50,7 @@ function buildActionDeclarationFormResult({
     visionEstimate,
     visionStatus,
     photoError,
+    photoPreparationPending,
     submissionState: submission.submissionState,
     errorMessage: submission.errorMessage,
     createdId: submission.createdId,
@@ -118,7 +119,7 @@ export function useActionDeclarationForm({
   } = lifecycle;
   const isCleanPlaceMode = form.recordType === "clean_place";
   const media = useActionDeclarationFormMedia();
-  const { photoAssets, visionEstimate } = media;
+  const { photoAssets, visionEstimate, photoPreparationPending } = media;
 
   const geometry = resolveActionDeclarationGeometryState({
     form,
@@ -142,6 +143,7 @@ export function useActionDeclarationForm({
     manualDrawing,
     manualDrawingSource,
     photoAssets,
+    photoPreparationPending,
     visionEstimate,
     geometry,
     isCleanPlaceMode,

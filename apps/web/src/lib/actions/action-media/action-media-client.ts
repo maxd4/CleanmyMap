@@ -10,8 +10,10 @@ import {
 } from "./action-media-contract";
 import type { ActionPhotoAsset } from "@/lib/actions/types";
 
-export type ActionMediaUploadFailure = { asset: ActionPhotoAsset; message: string };
+export type ActionMediaUploadAttempt = { asset: ActionPhotoAsset; sortOrder: number };
+export type ActionMediaUploadFailure = ActionMediaUploadAttempt & { message: string };
 export type ActionMediaUploadResult = { uploadedCount: number; failed: ActionMediaUploadFailure[] };
+type ActionMediaUploadInput = ActionPhotoAsset | ActionMediaUploadAttempt;
 
 async function parseError(response: Response, fallback: string): Promise<string> {
   try {
@@ -69,19 +71,30 @@ async function uploadOne(actionId: string, asset: ActionPhotoAsset, sortOrder: n
   if (!finalizeResponse.ok) throw new Error(await parseError(finalizeResponse, "La finalisation de la photo a échoué."));
 }
 
-export async function uploadActionMedia(actionId: string, assets: ActionPhotoAsset[]): Promise<ActionMediaUploadResult> {
-  const acceptedAssets = assets.slice(0, ACTION_MEDIA_MAX_MEDIA);
-  const failed: ActionMediaUploadFailure[] = assets.slice(ACTION_MEDIA_MAX_MEDIA).map((asset) => ({
-    asset,
+function toUploadAttempt(input: ActionMediaUploadInput, index: number): ActionMediaUploadAttempt {
+  return "asset" in input ? input : { asset: input, sortOrder: index };
+}
+
+export async function uploadActionMedia(
+  actionId: string,
+  inputs: ActionMediaUploadInput[],
+): Promise<ActionMediaUploadResult> {
+  const attempts = inputs.map(toUploadAttempt);
+  const acceptedAttempts = attempts.slice(0, ACTION_MEDIA_MAX_MEDIA);
+  const failed: ActionMediaUploadFailure[] = attempts.slice(ACTION_MEDIA_MAX_MEDIA).map((attempt) => ({
+    ...attempt,
     message: `La limite de ${ACTION_MEDIA_MAX_MEDIA} photos est dépassée.`,
   }));
   let uploadedCount = 0;
-  for (const [index, asset] of acceptedAssets.entries()) {
+  for (const attempt of acceptedAttempts) {
     try {
-      await uploadOne(actionId, asset, index);
+      await uploadOne(actionId, attempt.asset, attempt.sortOrder);
       uploadedCount += 1;
     } catch (error) {
-      failed.push({ asset, message: error instanceof Error ? error.message : "La transmission de la photo a échoué." });
+      failed.push({
+        ...attempt,
+        message: error instanceof Error ? error.message : "La transmission de la photo a échoué.",
+      });
     }
   }
   return { uploadedCount, failed };

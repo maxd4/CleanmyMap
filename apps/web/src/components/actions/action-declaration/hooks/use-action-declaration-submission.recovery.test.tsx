@@ -53,6 +53,7 @@ describe("action declaration draft recovery", () => {
         creationRequestId: "action-create-new",
         setLoadedActionPhase: vi.fn(),
         setHasAttemptedSubmit: vi.fn(),
+        photoPreparationPending: false,
       });
       latest = value;
       submit = value.handleConfirmSubmit;
@@ -68,5 +69,48 @@ describe("action declaration draft recovery", () => {
     expect(createActionMock).not.toHaveBeenCalled();
     expect(latest.submissionState).toBe("error");
     expect(latest.errorMessage).toContain("lecture du brouillon");
+  });
+
+  it("does not submit a partially prepared photo state", async () => {
+    let submit!: () => Promise<void>;
+    let latest!: ReturnType<typeof useActionDeclarationSubmission>;
+    function Harness() {
+      const value = useActionDeclarationSubmission({
+        form: createInitialFormState("Test"),
+        declarationMode: "complete",
+        isAuthenticated: true,
+        draftStorageReadError: false,
+        initialActionId: null,
+        loadedActionPhase: null,
+        manualDrawingEnabled: true,
+        manualDrawing: null,
+        manualDrawingSource: null,
+        drawingIsValid: false,
+        effectiveRoutePreviewDrawing: null,
+        routePreviewSource: null,
+        hasValidDrawing: false,
+        hasServerRouteInput: false,
+        isCleanPlaceMode: false,
+        payload: {} as never,
+        photoAssets: [],
+        photoPreparationPending: true,
+        visionEstimate: null,
+        userMetadata: { userId: "user-1" },
+        clearDraft: vi.fn(),
+        creationRequestId: "action-create-pending-photo",
+        setLoadedActionPhase: vi.fn(),
+        setHasAttemptedSubmit: vi.fn(),
+      });
+      latest = value;
+      submit = value.handleConfirmSubmit;
+      return null;
+    }
+
+    act(() => { create(<Harness />); });
+    await act(async () => { await submit(); });
+
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(latest.submissionState).toBe("error");
+    expect(latest.errorMessage).toContain("préparation des photos");
   });
 });

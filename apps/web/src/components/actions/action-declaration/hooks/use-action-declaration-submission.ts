@@ -64,6 +64,7 @@ type UseActionDeclarationSubmissionParams = {
   payload: CreateActionPayload;
   linkedEventId?: string;
   photoAssets: ActionPhotoAsset[];
+  photoPreparationPending?: boolean;
   visionEstimate: ActionVisionEstimate | null;
   userMetadata: ActionDeclarationUserMetadata;
   clearDraft: () => void;
@@ -159,7 +160,7 @@ async function retryActionMediaUploadBatch(
   createdId: string,
   failed: ActionMediaUploadFailure[],
 ): Promise<Awaited<ReturnType<typeof uploadActionMedia>>> {
-  return uploadActionMedia(createdId, failed.map(({ asset }) => asset));
+  return uploadActionMedia(createdId, failed);
 }
 
 function submissionErrorMessage(error: unknown): string {
@@ -182,6 +183,12 @@ type ConfirmSubmitParams = UseActionDeclarationSubmissionParams & {
 
 async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> {
   if (params.submissionState === "pending") return;
+  if (params.photoPreparationPending) {
+    params.setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
+    params.setSubmissionState("error");
+    params.setShowConfirmation(false);
+    return;
+  }
   if (params.draftStorageReadError && !params.initialActionId) {
     params.setErrorMessage(
       "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
@@ -270,6 +277,7 @@ export function useActionDeclarationSubmission(
   payload,
   linkedEventId,
   photoAssets,
+  photoPreparationPending,
   visionEstimate,
   userMetadata,
   clearDraft,
@@ -335,6 +343,7 @@ export function useActionDeclarationSubmission(
     payload,
     linkedEventId,
     photoAssets,
+    photoPreparationPending,
     visionEstimate,
     userMetadata,
     clearDraft,

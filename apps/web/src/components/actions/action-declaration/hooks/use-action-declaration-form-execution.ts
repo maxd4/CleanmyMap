@@ -29,6 +29,7 @@ type ActionDeclarationFormExecutionParams = {
   manualDrawing: ActionDrawing | null;
   manualDrawingSource: ActionGeometrySource | null;
   photoAssets: ActionPhotoAsset[];
+  photoPreparationPending: boolean;
   visionEstimate: ActionVisionEstimate | null;
   geometry: ActionDeclarationGeometryState;
   isCleanPlaceMode: boolean;
@@ -59,6 +60,7 @@ export function useActionDeclarationFormExecution({
   manualDrawing,
   manualDrawingSource,
   photoAssets,
+  photoPreparationPending,
   visionEstimate,
   geometry,
   isCleanPlaceMode,
@@ -123,6 +125,7 @@ export function useActionDeclarationFormExecution({
     payload,
     linkedEventId,
     photoAssets,
+    photoPreparationPending,
     visionEstimate,
     userMetadata,
     clearDraft,

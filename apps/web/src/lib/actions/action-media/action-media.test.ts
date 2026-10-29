@@ -281,6 +281,18 @@ describe("action media contract", () => {
     expect(supabase.__queries.mediaQuery.update).not.toHaveBeenCalled();
   });
 
+  it("accepts a compatible retry with a non-zero original sort order", async () => {
+    const failedMedia = { ...readyMedia, sort_order: 1, upload_state: "failed" };
+    const supabase = makeSupabase({ action, existingMedia: failedMedia });
+
+    const intent = await createActionMediaUploadIntent(supabase as never, uploadParams({
+      sortOrder: 1,
+      clientUploadId: failedMedia.client_upload_id,
+    }));
+
+    expect(intent).toMatchObject({ mediaId: failedMedia.id, uploadState: "pending" });
+  });
+
   it("finalizes an already transmitted object without issuing another upload", async () => {
     const supabase = makeSupabase({
       action,

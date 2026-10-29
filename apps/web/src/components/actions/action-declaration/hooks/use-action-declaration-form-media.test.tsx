@@ -18,6 +18,24 @@ import { useActionDeclarationFormMedia } from "./use-action-declaration-form-med
 
 type MediaSnapshot = ReturnType<typeof useActionDeclarationFormMedia>;
 
+function photoAsset(id: string): ActionPhotoAsset {
+  return {
+    id,
+    name: `${id}.jpg`,
+    mimeType: "image/jpeg",
+    dataUrl: "data:image/jpeg;base64,AAA",
+    size: 42,
+    width: 120,
+    height: 80,
+  };
+}
+
+function controlledPromise<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => { resolve = nextResolve; });
+  return { promise, resolve };
+}
+
 function Harness({ onSnapshot }: { onSnapshot: (snapshot: MediaSnapshot) => void }) {
   const media = useActionDeclarationFormMedia();
   onSnapshot(media);
@@ -161,6 +179,129 @@ describe("useActionDeclarationFormMedia", () => {
 
     expect(latest.photoAssets).toHaveLength(0);
     expect(latest.photoError).toContain("Format photo non pris en charge");
+    renderer.unmount();
+  });
+
+  it("reserves concurrent slots and reports the fourth prepared photo explicitly", async () => {
+    const preparations = new Map<string, ReturnType<typeof controlledPromise<ActionPhotoAsset[]>>>();
+    normalizeActionPhotosMock.mockImplementation(([file]: [File]) => {
+      const preparation = controlledPromise<ActionPhotoAsset[]>();
+      preparations.set(file.name, preparation);
+      return preparation.promise;
+    });
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(React.createElement(Harness, { onSnapshot: (snapshot) => { latest = snapshot; } }));
+    });
+
+    const file = (name: string) => ({ name } as unknown as File);
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    await act(async () => {
+      first = latest.handlePhotoUpload([file("a"), file("b")] as unknown as FileList);
+      second = latest.handlePhotoUpload([file("c"), file("d")] as unknown as FileList);
+      const resolvePreparation = async (name: string, id: string) => {
+        while (!preparations.has(name)) await Promise.resolve();
+        preparations.get(name)?.resolve([photoAsset(id)]);
+      };
+      await resolvePreparation("a", "a");
+      await resolvePreparation("b", "b");
+      await resolvePreparation("c", "c");
+      await Promise.all([first, second]);
+    });
+
+    expect(latest.photoAssets.map(({ id }) => id)).toEqual(["a", "b", "c"]);
+    expect(latest.photoError).toContain("photo(s) refusée(s)");
+    expect(normalizeActionPhotosMock).toHaveBeenCalledTimes(3);
+    renderer.unmount();
+  });
+
+  it("does not reintroduce a photo when compression finishes after clearing", async () => {
+    const preparation = controlledPromise<ActionPhotoAsset[]>();
+    normalizeActionPhotosMock.mockReturnValueOnce(preparation.promise);
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(React.createElement(Harness, { onSnapshot: (snapshot) => { latest = snapshot; } }));
+    });
+
+    let upload!: Promise<void>;
+    await act(async () => {
+      upload = latest.handlePhotoUpload([{} as File] as unknown as FileList);
+      await Promise.resolve();
+      latest.clearPhotos();
+      preparation.resolve([photoAsset("late")]);
+      await upload;
+    });
+
+    expect(latest.photoAssets).toEqual([]);
+    expect(latest.photoPreparationPending).toBe(false);
+    renderer.unmount();
+  });
+
+  it("does not let a replacement finishing after removal restore the removed photo", async () => {
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(React.createElement(Harness, { onSnapshot: (snapshot) => { latest = snapshot; } }));
+    });
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File] as unknown as FileList);
+    });
+
+    const replacement = controlledPromise<ActionPhotoAsset[]>();
+    normalizeActionPhotosMock.mockReturnValueOnce(replacement.promise);
+    let replace!: Promise<void>;
+    await act(async () => {
+      replace = latest.handlePhotoReplace("photo-1", {} as File);
+      latest.removePhoto("photo-1");
+      replacement.resolve([photoAsset("replacement")]);
+      await replace;
+    });
+
+    expect(latest.photoAssets).toEqual([]);
+    renderer.unmount();
+  });
+
+  it("keeps three sequentially prepared photos with distinct stable identifiers", async () => {
+    normalizeActionPhotosMock
+      .mockResolvedValueOnce([photoAsset("one")])
+      .mockResolvedValueOnce([photoAsset("two")])
+      .mockResolvedValueOnce([photoAsset("three")]);
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(React.createElement(Harness, { onSnapshot: (snapshot) => { latest = snapshot; } }));
+    });
+
+    await act(async () => { await latest.handlePhotoUpload([{} as File] as unknown as FileList); });
+    await act(async () => { await latest.handlePhotoUpload([{} as File] as unknown as FileList); });
+    await act(async () => { await latest.handlePhotoUpload([{} as File] as unknown as FileList); });
+
+    expect(latest.photoAssets.map(({ id }) => id)).toEqual(["one", "two", "three"]);
+    renderer.unmount();
+  });
+
+  it("preserves valid photos around an invalid file and reports its failure", async () => {
+    normalizeActionPhotosMock
+      .mockResolvedValueOnce([photoAsset("first")])
+      .mockRejectedValueOnce(new Error("Compression impossible."))
+      .mockResolvedValueOnce([photoAsset("third")]);
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(React.createElement(Harness, { onSnapshot: (snapshot) => { latest = snapshot; } }));
+    });
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{}, {}, {}] as unknown as FileList);
+    });
+
+    expect(latest.photoAssets.map(({ id }) => id)).toEqual(["first", "third"]);
+    expect(latest.photoError).toContain("Compression impossible.");
     renderer.unmount();
   });
 });
