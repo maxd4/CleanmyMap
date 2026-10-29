@@ -284,6 +284,116 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
   });
 
+  it("rejects a future effective date when finalizing an action", async () => {
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}, { action_date: "2999-01-01" }),
+        parsedBody: ({
+          actionPhase: "post_action_complete",
+          volunteersCount: 12,
+          volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+        } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "actionDate" });
+  });
+
+  it("rejects an explicit future date on an already completed action", async () => {
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}, { action_phase: "post_action_complete" }),
+        parsedBody: ({ actionDate: "2999-01-01" } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "actionDate" });
+  });
+
+  it("keeps future dates available for pre-action planning", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}),
+      parsedBody: ({ actionDate: "2999-01-01" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.action_date).toBe("2999-01-01");
+  });
+
+  it("does not revalidate an unchanged historical date on a completed action", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, {
+        action_phase: "post_action_complete",
+        action_date: "2999-01-01",
+      }),
+      parsedBody: ({ notes: "Correction indépendante" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).not.toHaveProperty("action_date");
+  });
+
+  it("rejects a partial coordinate patch when the effective pair is incomplete", async () => {
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}),
+        parsedBody: ({ latitude: 48.8566 } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "latitude" });
+  });
+
+  it("accepts changing one coordinate when the effective pair remains complete", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, { latitude: 48.8566, longitude: 2.3522 }),
+      parsedBody: ({ latitude: 48.9 } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).toMatchObject({ latitude: 48.9 });
+    expect(prepared.updateData.longitude).toBeUndefined();
+  });
+
+  it("completes a historical partial coordinate pair", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, { latitude: 48.8566, longitude: null }),
+      parsedBody: ({ longitude: 2.3522 } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.longitude).toBe(2.3522);
+  });
+
+  it("preserves historical partial coordinates when no geo field is submitted", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, { latitude: 48.8566, longitude: null }),
+      parsedBody: ({ notes: "Sans changement de localisation" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).not.toHaveProperty("latitude");
+    expect(prepared.updateData).not.toHaveProperty("longitude");
+  });
+
+  it("rejects out-of-bounds coordinates before building persistence fields", async () => {
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}),
+        parsedBody: ({ latitude: 91, longitude: 2 } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "latitude" });
+  });
+
   it.each([
     ["pre-action", "pre_action"],
     ["post-action draft", "post_action_draft"],

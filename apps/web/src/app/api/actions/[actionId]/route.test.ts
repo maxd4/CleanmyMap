@@ -186,6 +186,28 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
+  it("refuses an explicit future date on an already completed action", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      action_phase: "post_action_complete",
+      action_date: "2026-09-20",
+      duration_minutes: 30,
+      event_start_time: "09:00:00",
+      event_end_time: "10:00:00",
+    }));
+
+    const response = await patchAction({ actionDate: "2999-01-01" });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a partial coordinate pair at the PATCH boundary", async () => {
+    const response = await patchAction({ latitude: 48.8566 });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it("rejects a forged preparation state before loading the action", async () => {
     const { PATCH } = await import("./route");
 

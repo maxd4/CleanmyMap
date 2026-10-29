@@ -554,4 +554,19 @@ describe("pre-action temporal contract", () => {
       }).success,
     ).toBe(true);
   });
+
+  it("rejects a future date on an explicit completed PATCH", () => {
+    expect(
+      updateActionSchema.safeParse({
+        actionDate: "2999-01-01",
+        actionPhase: "post_action_complete",
+      }).success,
+    ).toBe(false);
+    expect(
+      updateActionSchema.safeParse({
+        actionDate: "2999-01-01",
+        actionPhase: "pre_action",
+      }).success,
+    ).toBe(true);
+  });
 });

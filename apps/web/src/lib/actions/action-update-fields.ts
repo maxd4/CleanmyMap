@@ -53,7 +53,7 @@ function buildScalarFields(body: ActionUpdateInput): Record<string, unknown> {
   return updateData;
 }
 
-function explicitDrawing(body: ActionUpdateInput) {
+export function getExplicitDrawing(body: ActionUpdateInput) {
   return body.manualDrawing &&
     (body.geometrySource === "manual" || body.geometrySource === "gpx_import")
     ? body.manualDrawing
@@ -61,7 +61,7 @@ function explicitDrawing(body: ActionUpdateInput) {
 }
 
 function geometryCoordinates(body: ActionUpdateInput) {
-  return geometryRepresentativeCoordinates(explicitDrawing(body));
+  return geometryRepresentativeCoordinates(getExplicitDrawing(body));
 }
 
 async function buildDepartmentFields(
@@ -135,7 +135,7 @@ export async function buildActionUpdateFields(params: {
   Object.assign(updateData, buildTimingFields(current, body));
   if (body.accessMode !== undefined) updateData["access_mode"] = body.accessMode;
 
-  const drawing = explicitDrawing(body);
+  const drawing = getExplicitDrawing(body);
   if (drawing) {
     const geometryUpdate =
       body.geometrySource === "gpx_import"

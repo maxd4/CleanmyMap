@@ -273,6 +273,7 @@ export const updateActionSchema = createActionLegacyBaseSchema
     reason: z.string().trim().max(500).optional(),
   })
   .superRefine((value, ctx) => {
+    addCompletedActionFutureDateIssue(value, ctx);
     addTemporalContractIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
   });

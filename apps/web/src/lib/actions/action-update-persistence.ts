@@ -2,15 +2,17 @@ import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { extractActionMetadataFromNotes } from "./metadata";
+import { isActionDateInFuture } from "./temporal";
 import { getTimeContractValidationMessage } from "./time-contract";
 import { prepareActionUpdateBody } from "./action-update-preparation";
-import { buildActionUpdateFields } from "./action-update-fields";
+import { buildActionUpdateFields, getExplicitDrawing } from "./action-update-fields";
 import { buildActionUpdateMeasurements } from "./action-update-measurements";
 import {
   buildActionUpdateNotes,
   preserveManualDrawing,
 } from "./action-update-notes";
 import { preserveObservedRouteGeometry } from "./action-update-geometry";
+import { geometryRepresentativeCoordinates } from "./action-observed-geometry";
 import {
   getVolunteerActionCompositionValidationMessage,
   getVolunteerForecastValidationMessage,
@@ -40,6 +42,56 @@ function isNewFinalization(
     nextActionPhase === "post_action_complete" &&
     current.action_phase !== "post_action_complete"
   );
+}
+
+function isBoundedCoordinatePair(latitude: unknown, longitude: unknown): boolean {
+  return (
+    typeof latitude === "number" &&
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    typeof longitude === "number" &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+function validateEffectiveActionDate(
+  current: ActionRow,
+  body: ActionUpdateInput,
+  nextActionPhase: ActionRow["action_phase"],
+): void {
+  const isCompletedActionDateChange =
+    current.action_phase === "post_action_complete" &&
+    body.actionDate !== undefined;
+  if (
+    (isNewFinalization(current, nextActionPhase) || isCompletedActionDateChange) &&
+    isActionDateInFuture(body.actionDate ?? current.action_date)
+  ) {
+    throw new ActionUpdateValidationError(
+      "actionDate",
+      "Une déclaration finale doit concerner une date déjà passée ou aujourd’hui.",
+    );
+  }
+}
+
+function validateEffectiveActionCoordinates(
+  current: ActionRow,
+  body: ActionUpdateInput,
+): void {
+  const representative = geometryRepresentativeCoordinates(getExplicitDrawing(body));
+  const hasCoordinatePatch = body.latitude !== undefined || body.longitude !== undefined;
+  if (!hasCoordinatePatch && !representative) return;
+
+  const nextLatitude = representative?.latitude ?? body.latitude ?? current.latitude;
+  const nextLongitude = representative?.longitude ?? body.longitude ?? current.longitude;
+  if (!isBoundedCoordinatePair(nextLatitude, nextLongitude)) {
+    throw new ActionUpdateValidationError(
+      "latitude",
+      "Une latitude et une longitude valides doivent être renseignées ensemble.",
+    );
+  }
 }
 
 export async function persistActionUpdate(params: {
@@ -82,6 +134,8 @@ export async function prepareActionUpdate(params: {
   }
 
   const nextActionPhase = body.actionPhase ?? current.action_phase;
+  validateEffectiveActionDate(current, body, nextActionPhase);
+  validateEffectiveActionCoordinates(current, body);
   if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
     throw new ActionUpdateValidationError(
       "accessMode",
