@@ -137,8 +137,10 @@ La dernière analyse SonarQube Cloud réellement publiée est celle du
 [workflow manuel GitHub 40952480989](https://github.com/maxd4/CleanMyMap/actions/runs/40952480989),
 terminée le 29 octobre 2026 à 20:56:48 UTC, sur le SHA
 `e30923fed0eb0c1086b70f48570b6bcb72f743e6`. Elle ne décrit pas le `main`
-actuel, qui est `9a4b7a0c8970da37da3d7ba30f02c0d4e69d64ff`, et le run a échoué
-après avoir néanmoins transmis une analyse au projet
+observé avant ce lot (`9a4b7a0c8970da37da3d7ba30f02c0d4e69d64ff`) ;
+l'actualisation documentaire est publiée sous le commit
+`1aacbe31a7c9e3a5a2b4de8beeea485fbaa3b85c`. Le run a échoué après avoir
+néanmoins transmis une analyse au projet
 [`maxd4_CleanmyMap`](https://sonarcloud.io/project/overview?id=maxd4_CleanmyMap).
 
 Les mesures ci-dessous proviennent de l'API publique SonarQube Cloud relue le
