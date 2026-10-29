@@ -8,7 +8,6 @@ import {
 } from "./school-action-recognition";
 
 const RECONCILIATION_RPC = "reconcile_school_action_collective_recognitions";
-const RECOGNITION_TABLE = "action_school_collective_recognitions";
 const MAX_RECONCILIATION_ATTEMPTS = 2;
 
 type ReconciliationRpcRow = {
@@ -16,9 +15,7 @@ type ReconciliationRpcRow = {
 };
 
 function isMissingRecognitionPersistence(error: { code?: string | null; message?: string | null } | null): boolean {
-  return error?.code === "42P01" || error?.code === "42883" || error?.code === "PGRST202" ||
-    error?.message?.toLowerCase().includes(RECOGNITION_TABLE) === true ||
-    error?.message?.toLowerCase().includes(RECONCILIATION_RPC) === true;
+  return error?.code === "42P01" || error?.code === "42883" || error?.code === "PGRST202";
 }
 
 function firstRpcRow(data: unknown): ReconciliationRpcRow | null {

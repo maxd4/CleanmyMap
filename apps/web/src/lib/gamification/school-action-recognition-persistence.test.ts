@@ -129,6 +129,38 @@ describe("school recognition atomic reconciliation", () => {
     expect(mocks.logFailure).not.toHaveBeenCalled();
   });
 
+  it("logs an unexpected unique violation even when its message names the recognition table", async () => {
+    mocks.loadActionById.mockResolvedValue(buildAction());
+    const error = {
+      code: "23505",
+      message: "duplicate key in action_school_collective_recognitions",
+    };
+    mocks.rpc.mockResolvedValue({ data: null, error });
+
+    await expect(reconcileSchoolActionRecognitions({
+      supabase: buildSupabase(),
+      actionId: ACTION_ID,
+    })).resolves.toEqual({ status: "unavailable", activeIds: [] });
+    expect(mocks.logFailure).toHaveBeenCalledWith(
+      "Gamification",
+      "School recognition reconciliation failed",
+      error,
+      { actionId: ACTION_ID },
+    );
+  });
+
+  it("logs an unexpected check violation instead of treating it as missing persistence", async () => {
+    mocks.loadActionById.mockResolvedValue(buildAction());
+    const error = { code: "23514", message: "recognition status check failed" };
+    mocks.rpc.mockResolvedValue({ data: null, error });
+
+    await expect(reconcileSchoolActionRecognitions({
+      supabase: buildSupabase(),
+      actionId: ACTION_ID,
+    })).resolves.toEqual({ status: "unavailable", activeIds: [] });
+    expect(mocks.logFailure).toHaveBeenCalledTimes(1);
+  });
+
   it("does not reconcile an action without a revision token", async () => {
     mocks.loadActionById.mockResolvedValue(buildAction({ updated_at: undefined }));
 
