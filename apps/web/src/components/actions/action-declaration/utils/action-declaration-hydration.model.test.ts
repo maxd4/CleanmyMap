@@ -69,6 +69,9 @@ describe("action declaration hydration model", () => {
     expect(form.wasteRecyclablesKg).toBe("");
     expect(form.cigaretteButtsCount).toBe("");
     expect(form.wasteMegotsKg).toBe("");
+    expect(form.cigaretteButtsCountProvenance).toBe("unknown");
+    expect(form.cigaretteButtsMassProvenance).toBe("unknown");
+    expect(form.cigaretteButtsVolumeProvenance).toBe("unknown");
   });
 
   it("preserves legacy measurements, participation and derived route target", () => {
@@ -109,6 +112,10 @@ describe("action declaration hydration model", () => {
     expect(result.form.wasteRecyclablesKg).toBe("1.5");
     expect(result.form.wasteMegotsKg).toBe("0.3");
     expect(result.form.cigaretteButtsInputSource).toBe("mass");
+    expect(result.form.cigaretteButtsCountProvenance).toBe("weight_converted");
+    expect(result.form.cigaretteButtsMassProvenance).toBe("measured");
+    expect(result.form.cigaretteButtsVolumeProvenance).toBe("unknown");
+    expect(result.form.cigaretteButtsConversionFormulaVersion).toBeNull();
     expect(result.form.cigaretteButtsCondition).toBe("humide");
     expect(result.form.wasteMegotsCondition).toBe("humide");
     expect(result.form.childrenCount).toBe("1");
@@ -160,5 +167,7 @@ describe("action declaration hydration model", () => {
     );
 
     expect(result.cigaretteButtsInputSource).toBe("unknown");
+    expect(result.cigaretteButtsCountProvenance).toBe("counted");
+    expect(result.cigaretteButtsMassProvenance).toBe("measured");
   });
 });

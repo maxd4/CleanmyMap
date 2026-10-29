@@ -189,6 +189,35 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
       input.cigaretteButtsMassKg === null &&
       existingMeasurements.cigaretteButtsMassKg !== null,
   );
+  const volumeExplicitlyCleared = Boolean(
+    existingMeasurements &&
+      input.cigaretteButtsVolumeLiters === null &&
+      existingMeasurements.cigaretteButtsVolumeLiters !== null,
+  );
+
+  if (
+    existingMeasurements &&
+    volumeExplicitlyCleared &&
+    !countExplicitlyCleared &&
+    !massExplicitlyCleared
+  ) {
+    const volumeCleared = normalizeCigaretteButtsMeasurements({
+      ...effectiveInput,
+      deriveMissingFromMassOrCount: false,
+    });
+    if (volumeCleared.cigaretteButtsCount === existingMeasurements.cigaretteButtsCount) {
+      volumeCleared.cigaretteButtsCountProvenance =
+        existingMeasurements.cigaretteButtsCountProvenance;
+    }
+    if (volumeCleared.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg) {
+      volumeCleared.cigaretteButtsMassProvenance =
+        existingMeasurements.cigaretteButtsMassProvenance;
+    }
+    volumeCleared.cigaretteButtsVolumeProvenance = "unknown";
+    volumeCleared.cigaretteButtsConversionFormulaVersion =
+      existingMeasurements.cigaretteButtsConversionFormulaVersion;
+    return volumeCleared;
+  }
 
   if (existingMeasurements && (countExplicitlyCleared || massExplicitlyCleared)) {
     const persistedSource = inferCigaretteButtsInputSource(existingMeasurements);
@@ -216,6 +245,11 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
         partiallyCleared.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg) {
       partiallyCleared.cigaretteButtsMassProvenance =
         existingMeasurements.cigaretteButtsMassProvenance;
+    }
+    if (!volumeExplicitlyCleared &&
+        partiallyCleared.cigaretteButtsVolumeLiters === existingMeasurements.cigaretteButtsVolumeLiters) {
+      partiallyCleared.cigaretteButtsVolumeProvenance =
+        existingMeasurements.cigaretteButtsVolumeProvenance;
     }
     partiallyCleared.cigaretteButtsConversionFormulaVersion = null;
     return partiallyCleared;

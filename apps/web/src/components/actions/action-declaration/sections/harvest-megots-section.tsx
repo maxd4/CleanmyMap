@@ -22,6 +22,7 @@ type HarvestMegotsSectionProps = {
   megotsComparisonTone: "emerald" | "orange" | "slate";
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
+  cigaretteButtsVolumeProvenance: string;
   cigaretteButtsConversionFormulaVersion: string | null;
   onMegotsWeightChange: (value: string) => void;
   onMegotsVolumeChange: (value: string) => void;
@@ -44,6 +45,7 @@ export function HarvestMegotsSection({
   megotsComparisonTone,
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
+  cigaretteButtsVolumeProvenance,
   cigaretteButtsConversionFormulaVersion,
   onMegotsWeightChange,
   onMegotsVolumeChange,
@@ -63,6 +65,8 @@ export function HarvestMegotsSection({
         return "dérivé par conversion de volume";
       case "estimated":
         return "estimé";
+      case "unknown":
+        return "historique conservé, origine non qualifiée";
       default:
         return "non renseigné";
     }
@@ -202,6 +206,11 @@ export function HarvestMegotsSection({
         <span className="block text-xs leading-snug text-slate-400">
           Mesure complémentaire conservée séparément ; elle ne remplace ni le nombre ni la masse.
         </span>
+        {cigaretteButtsVolumeLiters.trim() ? (
+          <span className="block text-xs leading-snug text-slate-500">
+            Provenance : {formatProvenance(cigaretteButtsVolumeProvenance)}.
+          </span>
+        ) : null}
       </label>
     </section>
   );

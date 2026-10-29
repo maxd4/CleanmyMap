@@ -70,6 +70,7 @@ export function ActionStepHarvest({
     megotsComparisonTone,
     cigaretteButtsCountProvenance,
     cigaretteButtsMassProvenance,
+    cigaretteButtsVolumeProvenance,
     cigaretteButtsConversionFormulaVersion,
     syncMegotsWeightFromWeight,
     syncMegotsWeightFromCount,
@@ -200,9 +201,10 @@ export function ActionStepHarvest({
             megotsComparisonTone={megotsComparisonTone}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
+            cigaretteButtsVolumeProvenance={cigaretteButtsVolumeProvenance}
             cigaretteButtsConversionFormulaVersion={cigaretteButtsConversionFormulaVersion}
             onMegotsWeightChange={syncMegotsWeightFromWeight}
-            onMegotsVolumeChange={(value) => updateField("cigaretteButtsVolumeLiters", value)}
+            onMegotsVolumeChange={harvest.syncMegotsVolume}
             onMegotsCountChange={syncMegotsWeightFromCount}
             onMegotsConditionChange={syncMegotsCondition}
             hidePrimaryMeasurements={mode === "collection" || mode === "details"}

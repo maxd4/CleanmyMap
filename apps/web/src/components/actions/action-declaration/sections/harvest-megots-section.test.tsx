@@ -19,6 +19,7 @@ function renderMegots(overrides: Partial<React.ComponentProps<typeof HarvestMego
       megotsComparisonTone: "emerald",
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsVolumeProvenance: "unknown",
       cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
       onMegotsWeightChange: () => undefined,
       onMegotsVolumeChange: () => undefined,
@@ -45,6 +46,17 @@ describe("HarvestMegotsSection", () => {
     expect(markup.indexOf("Nombre de mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
     expect(markup.indexOf("Masse de mégots")).toBeLessThan(markup.indexOf("Comparaison visuelle des mégots"));
     expect(markup).not.toContain("Référence moyenne");
+  });
+
+  it("does not present an unqualified historical value as measured", () => {
+    const markup = renderMegots({
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsVolumeProvenance: "unknown",
+    });
+
+    expect(markup).toContain("Provenance : historique conservé, origine non qualifiée");
+    expect(markup).not.toContain("Provenance : mesuré");
   });
 
   it("shows an explicit zero but does not manufacture one for an absent value", () => {

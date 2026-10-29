@@ -210,6 +210,53 @@ describe("cigarette-butt raw and derived measurements", () => {
     });
   });
 
+  it("preserves volume provenance when count or mass is cleared", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+    }, {
+      existingMeasurements: buildExistingMeasurements({
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsVolumeProvenance: "volume_converted",
+      }),
+    });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsVolumeProvenance: "volume_converted",
+    });
+  });
+
+  it("clears volume explicitly without changing the independent pair or formula", () => {
+    const existing = buildExistingMeasurements({
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsVolumeProvenance: "unknown",
+      cigaretteButtsConversionFormulaVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    });
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: null,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+    }, { existingMeasurements: existing });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: null,
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsVolumeProvenance: "unknown",
+      cigaretteButtsConversionFormulaVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    });
+  });
+
   it("preserves a counted value when a measured mass is cleared independently", () => {
     const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
       cigaretteButtsCount: 1_700,

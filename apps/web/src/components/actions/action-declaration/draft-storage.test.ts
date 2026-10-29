@@ -155,6 +155,10 @@ describe("action declaration draft storage", () => {
     draft.wasteMegotsKg = "1";
     draft.cigaretteButtsCount = "1750";
     draft.cigaretteButtsInputSource = "mass";
+    draft.cigaretteButtsCountProvenance = "weight_converted";
+    draft.cigaretteButtsMassProvenance = "measured";
+    draft.cigaretteButtsVolumeProvenance = "unknown";
+    draft.cigaretteButtsConversionFormulaVersion = "impact-terrain-2026-butts-mass-v1";
     draft.wasteMegotsCondition = "humide";
     draft.cigaretteButtsCondition = "humide";
 
@@ -164,6 +168,12 @@ describe("action declaration draft storage", () => {
     expect(restored?.cigaretteButtsInputSource).toBe("mass");
     expect(restored?.wasteMegotsKg).toBe("1");
     expect(restored?.cigaretteButtsCount).toBe("1750");
+    expect(restored?.cigaretteButtsCountProvenance).toBe("weight_converted");
+    expect(restored?.cigaretteButtsMassProvenance).toBe("measured");
+    expect(restored?.cigaretteButtsVolumeProvenance).toBe("unknown");
+    expect(restored?.cigaretteButtsConversionFormulaVersion).toBe(
+      "impact-terrain-2026-butts-mass-v1",
+    );
   });
 
   it("keeps legacy checklist prose without marking a structured item", () => {

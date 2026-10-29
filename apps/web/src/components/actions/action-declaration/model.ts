@@ -10,7 +10,10 @@ import type {
  ActionAccessMode,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
-import type { CigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
+import type {
+  CigaretteButtsInputSource,
+  CigaretteButtsProvenance,
+} from "@/lib/waste/cigarette-butts";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext } from "@/lib/actions/action-context";
@@ -85,6 +88,11 @@ export type FormState = {
  cigaretteButts: string;
  cigaretteButtsCount: string; // Nouveau champ pour le nombre de mégots
  cigaretteButtsInputSource: CigaretteButtsInputSource;
+  /** Read-only context hydrated from the canonical persisted measurement metadata. */
+  cigaretteButtsCountProvenance: CigaretteButtsProvenance;
+  cigaretteButtsMassProvenance: CigaretteButtsProvenance;
+  cigaretteButtsVolumeProvenance: CigaretteButtsProvenance;
+  cigaretteButtsConversionFormulaVersion: string | null;
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
  cigaretteButtsVolumeLiters: string;
  volunteersCount: string;
@@ -125,6 +133,10 @@ export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
  cigaretteButts: "",
  cigaretteButtsCount: "",
  cigaretteButtsInputSource: null,
+  cigaretteButtsCountProvenance: "unknown",
+  cigaretteButtsMassProvenance: "unknown",
+  cigaretteButtsVolumeProvenance: "unknown",
+  cigaretteButtsConversionFormulaVersion: null,
  cigaretteButtsCondition: "propre",
  cigaretteButtsVolumeLiters: "",
 } as const;

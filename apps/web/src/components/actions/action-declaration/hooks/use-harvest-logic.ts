@@ -2,6 +2,7 @@ import type { ActionMegotsCondition } from "@/lib/actions/types";
 import {
   MAX_CIGARETTE_BUTTS_COUNT,
   normalizeCigaretteButtsMeasurementsFromUserInput,
+  type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
 import { deriveWasteComparison, type WasteComparisonTone } from "../utils/harvest-utils";
 import { useCallback, useMemo } from "react";
@@ -49,6 +50,47 @@ function formatDerivedNumber(value: number): string {
   return Number(value.toFixed(6)).toString();
 }
 
+function buildExistingMeasurements(form: FormState): ActionCigaretteButtsMeasurements | null {
+  const count = readValidCount(form.cigaretteButtsCount);
+  const mass = readValidMass(form.wasteMegotsKg);
+  const volume = readValidMass(form.cigaretteButtsVolumeLiters);
+  const hasContext =
+    count !== null ||
+    mass !== null ||
+    volume !== null ||
+    form.cigaretteButtsInputSource !== null ||
+    form.cigaretteButtsCountProvenance !== "unknown" ||
+    form.cigaretteButtsMassProvenance !== "unknown" ||
+    form.cigaretteButtsVolumeProvenance !== "unknown" ||
+    form.cigaretteButtsConversionFormulaVersion !== null;
+
+  return hasContext
+    ? {
+        cigaretteButtsCount: count,
+        cigaretteButtsMassKg: mass,
+        cigaretteButtsVolumeLiters: volume,
+        cigaretteButtsCondition: form.wasteMegotsCondition,
+        cigaretteButtsCountProvenance: form.cigaretteButtsCountProvenance,
+        cigaretteButtsMassProvenance: form.cigaretteButtsMassProvenance,
+        cigaretteButtsVolumeProvenance: form.cigaretteButtsVolumeProvenance,
+        cigaretteButtsConversionFormulaVersion:
+          form.cigaretteButtsConversionFormulaVersion,
+      }
+    : null;
+}
+
+function buildMeasurementContextUpdates(
+  measurements: ActionCigaretteButtsMeasurements,
+): Partial<FormState> {
+  return {
+    cigaretteButtsCountProvenance: measurements.cigaretteButtsCountProvenance,
+    cigaretteButtsMassProvenance: measurements.cigaretteButtsMassProvenance,
+    cigaretteButtsVolumeProvenance: measurements.cigaretteButtsVolumeProvenance,
+    cigaretteButtsConversionFormulaVersion:
+      measurements.cigaretteButtsConversionFormulaVersion,
+  };
+}
+
 export type UseHarvestLogicResult = {
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
@@ -64,9 +106,11 @@ export type UseHarvestLogicResult = {
   megotsComparisonTone: WasteComparisonTone;
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
+  cigaretteButtsVolumeProvenance: string;
   cigaretteButtsConversionFormulaVersion: string | null;
   syncMegotsWeightFromWeight: (rawValue: string) => void;
   syncMegotsWeightFromCount: (rawValue: string) => void;
+  syncMegotsVolume: (rawValue: string) => void;
   syncMegotsCondition: (rawValue: ActionMegotsCondition) => void;
 };
 
@@ -88,8 +132,11 @@ export function useHarvestLogic({
     const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput({
       cigaretteButtsCount: readValidCount(form.cigaretteButtsCount),
       cigaretteButtsMassKg: readValidMass(form.wasteMegotsKg),
+      cigaretteButtsVolumeLiters: readValidMass(form.cigaretteButtsVolumeLiters),
       cigaretteButtsCondition: form.wasteMegotsCondition,
       cigaretteButtsInputSource: form.cigaretteButtsInputSource,
+    }, {
+      existingMeasurements: buildExistingMeasurements(form),
     });
     const megotsComparison = deriveWasteComparison({
       wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
@@ -115,59 +162,66 @@ export function useHarvestLogic({
         cigaretteButtsMeasurements.cigaretteButtsCountProvenance,
       cigaretteButtsMassProvenance:
         cigaretteButtsMeasurements.cigaretteButtsMassProvenance,
+      cigaretteButtsVolumeProvenance:
+        cigaretteButtsMeasurements.cigaretteButtsVolumeProvenance,
       cigaretteButtsConversionFormulaVersion:
         cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion,
     };
-  }, [
-    form.cigaretteButtsCount,
-    form.volunteersCount,
-    form.wasteMegotsCondition,
-    form.wasteMegotsKg,
-    form.wasteKg,
-    form.cigaretteButtsInputSource,
-    collectionReferences,
-  ]);
+  }, [form, collectionReferences]);
 
   const syncMegotsWeightFromWeight = useCallback(
     (rawValue: string) => {
       const mass = rawValue.trim() === "" ? null : readValidMass(rawValue);
-      const normalized = mass === null
-        ? null
-        : normalizeCigaretteButtsMeasurementsFromUserInput({
-            cigaretteButtsMassKg: mass,
-            cigaretteButtsCondition: form.wasteMegotsCondition,
-            cigaretteButtsInputSource: "mass",
-          });
+      const normalized = normalizeCigaretteButtsMeasurementsFromUserInput({
+        cigaretteButtsMassKg: mass,
+        cigaretteButtsCondition: form.wasteMegotsCondition,
+        cigaretteButtsInputSource: rawValue.trim() === "" ? null : "mass",
+      }, {
+        existingMeasurements: buildExistingMeasurements(form),
+      });
       updateFields({
         wasteMegotsKg: rawValue,
         cigaretteButtsInputSource: rawValue.trim() === "" ? null : "mass",
-        cigaretteButtsCount: normalized?.cigaretteButtsCount === null || normalized === null
+        cigaretteButtsCount: normalized.cigaretteButtsCount === null
           ? ""
           : String(normalized.cigaretteButtsCount),
+        ...buildMeasurementContextUpdates(normalized),
       });
     },
-    [form.wasteMegotsCondition, updateFields],
+    [form, updateFields],
   );
 
   const syncMegotsWeightFromCount = useCallback(
     (rawValue: string) => {
       const count = rawValue.trim() === "" ? null : readValidCount(rawValue);
-      const normalized = count === null
-        ? null
-        : normalizeCigaretteButtsMeasurementsFromUserInput({
-            cigaretteButtsCount: count,
-            cigaretteButtsCondition: form.wasteMegotsCondition,
-            cigaretteButtsInputSource: "count",
-          });
+      const normalized = normalizeCigaretteButtsMeasurementsFromUserInput({
+        cigaretteButtsCount: count,
+        cigaretteButtsCondition: form.wasteMegotsCondition,
+        cigaretteButtsInputSource: rawValue.trim() === "" ? null : "count",
+      }, {
+        existingMeasurements: buildExistingMeasurements(form),
+      });
       updateFields({
         cigaretteButtsCount: rawValue,
         cigaretteButtsInputSource: rawValue.trim() === "" ? null : "count",
-        wasteMegotsKg: normalized?.cigaretteButtsMassKg === null || normalized === null
+        wasteMegotsKg: normalized.cigaretteButtsMassKg === null
           ? ""
           : formatDerivedNumber(normalized.cigaretteButtsMassKg),
+        ...buildMeasurementContextUpdates(normalized),
       });
     },
-    [form.wasteMegotsCondition, updateFields],
+    [form, updateFields],
+  );
+
+  const syncMegotsVolume = useCallback(
+    (rawValue: string) => {
+      updateFields({
+        cigaretteButtsVolumeLiters: rawValue,
+        cigaretteButtsVolumeProvenance:
+          readValidMass(rawValue) === null ? "unknown" : "measured",
+      });
+    },
+    [updateFields],
   );
 
   const syncMegotsCondition = useCallback(
@@ -180,18 +234,19 @@ export function useHarvestLogic({
             cigaretteButtsCount: count,
             cigaretteButtsCondition: rawValue,
             cigaretteButtsInputSource: "count",
-          })
+          }, { existingMeasurements: buildExistingMeasurements(form) })
         : source === "mass" && mass !== null
           ? normalizeCigaretteButtsMeasurementsFromUserInput({
               cigaretteButtsMassKg: mass,
               cigaretteButtsCondition: rawValue,
               cigaretteButtsInputSource: "mass",
-            })
+            }, { existingMeasurements: buildExistingMeasurements(form) })
           : null;
 
       updateFields({
         wasteMegotsCondition: rawValue,
         cigaretteButtsCondition: rawValue,
+        ...(normalized ? buildMeasurementContextUpdates(normalized) : {}),
         ...(source === "count"
           ? { wasteMegotsKg: normalized ? formatDerivedNumber(normalized.cigaretteButtsMassKg ?? 0) : "" }
           : source === "mass"
@@ -199,13 +254,14 @@ export function useHarvestLogic({
             : {}),
       });
     },
-    [form.cigaretteButtsCount, form.cigaretteButtsInputSource, form.wasteMegotsKg, updateFields],
+    [form, updateFields],
   );
 
   return {
     ...derived,
     syncMegotsWeightFromWeight,
     syncMegotsWeightFromCount,
+    syncMegotsVolume,
     syncMegotsCondition,
   };
 }

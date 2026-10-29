@@ -107,6 +107,39 @@ describe("action declaration payload mesures", () => {
     expect(payload.cigaretteButtsKg).toBe(1.2);
   });
 
+  it("serializes only the requested clear from an independent pair", () => {
+    const form = buildBaseForm();
+    form.cigaretteButtsCount = "";
+    form.wasteMegotsKg = "1";
+    form.cigaretteButtsVolumeLiters = "2.5";
+    form.cigaretteButtsInputSource = "unknown";
+    form.cigaretteButtsCountProvenance = "unknown";
+    form.cigaretteButtsMassProvenance = "unknown";
+    form.cigaretteButtsVolumeProvenance = "volume_converted";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsInputSource: "unknown",
+    });
+    expect(payload.cigaretteButtsMeasurements).not.toHaveProperty(
+      "cigaretteButtsCountProvenance",
+    );
+    expect(payload.cigaretteButtsKg).toBe(1);
+    expect(payload.cigaretteButts).toBeNull();
+  });
+
   it("does not replace a counted value when a raw mass is also present", () => {
     const form = buildBaseForm();
     form.cigaretteButtsCount = "2500";

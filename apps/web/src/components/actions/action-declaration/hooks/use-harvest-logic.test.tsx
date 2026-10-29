@@ -133,6 +133,10 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       wasteMegotsCondition: "humide",
       cigaretteButtsCondition: "humide",
       cigaretteButtsInputSource: "mass",
+      cigaretteButtsCountProvenance: "weight_converted",
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsVolumeProvenance: "unknown",
+      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
     });
 
     act(() => {
@@ -155,6 +159,10 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       wasteMegotsCondition: "humide",
       cigaretteButtsCondition: "humide",
       cigaretteButtsInputSource: "unknown",
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsVolumeProvenance: "unknown",
+      cigaretteButtsConversionFormulaVersion: null,
     });
 
     act(() => {
@@ -164,6 +172,133 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
     expect(harness.latest.form.cigaretteButtsCount).toBe("1700");
     expect(harness.latest.form.cigaretteButtsInputSource).toBe("unknown");
+
+    harness.renderer.unmount();
+  });
+
+  it("preserves the other value and historical provenance when an ambiguous count is cleared", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsKg: "1",
+      cigaretteButtsCount: "1700",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsWeightFromCount("");
+    });
+
+    expect(harness.latest.form.cigaretteButtsCount).toBe("");
+    expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.logic.megotsCount).toBeNull();
+    expect(harness.latest.logic.megotsKg).toBe(1);
+    expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("unknown");
+
+    harness.renderer.unmount();
+  });
+
+  it("preserves the other value and historical provenance when an ambiguous mass is cleared", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsKg: "1",
+      cigaretteButtsCount: "1700",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsWeightFromWeight("");
+    });
+
+    expect(harness.latest.form.cigaretteButtsCount).toBe("1700");
+    expect(harness.latest.form.wasteMegotsKg).toBe("");
+    expect(harness.latest.logic.megotsCount).toBe(1700);
+    expect(harness.latest.logic.megotsKg).toBeNull();
+    expect(harness.latest.logic.cigaretteButtsCountProvenance).toBe("unknown");
+
+    harness.renderer.unmount();
+  });
+
+  it("preserves an independent measured mass when the counted value is cleared", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsKg: "1",
+      cigaretteButtsCount: "1700",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+      cigaretteButtsCountProvenance: "counted",
+      cigaretteButtsMassProvenance: "measured",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsWeightFromCount("");
+    });
+
+    expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("measured");
+
+    harness.renderer.unmount();
+  });
+
+  it("keeps a measured source when only its derived counterpart is cleared", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsKg: "1",
+      cigaretteButtsCount: "1750",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "mass",
+      cigaretteButtsCountProvenance: "weight_converted",
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsWeightFromCount("");
+    });
+
+    expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("");
+    expect(harness.latest.logic.megotsKg).toBe(1);
+    expect(harness.latest.logic.megotsCount).toBeNull();
+    expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("measured");
+
+    harness.renderer.unmount();
+  });
+
+  it("tracks an explicit zero and an independently entered volume without conversion", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsCondition: "propre",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsWeightFromCount("0");
+      harness.latest.logic.syncMegotsVolume("0");
+    });
+
+    expect(harness.latest.form.cigaretteButtsCount).toBe("0");
+    expect(harness.latest.form.wasteMegotsKg).toBe("0");
+    expect(harness.latest.form.cigaretteButtsVolumeLiters).toBe("0");
+    expect(harness.latest.logic.megotsCount).toBe(0);
+    expect(harness.latest.logic.megotsKg).toBe(0);
+    expect(harness.latest.logic.cigaretteButtsVolumeProvenance).toBe("measured");
+
+    act(() => {
+      harness.latest.logic.syncMegotsVolume("");
+    });
+
+    expect(harness.latest.form.cigaretteButtsVolumeLiters).toBe("");
+    expect(harness.latest.logic.cigaretteButtsVolumeProvenance).toBe("unknown");
+    expect(harness.latest.logic.megotsCount).toBe(0);
 
     harness.renderer.unmount();
   });
