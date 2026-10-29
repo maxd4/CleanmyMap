@@ -19,6 +19,10 @@ function actionRow(id = actionId, createdAt = "2026-10-01T10:00:00.000Z") {
     action_phase: "post_action_complete",
     preparation_data: {},
     published_at: null,
+    volunteers_count: 3,
+    children_count: 1,
+    adult_count: 2,
+    retired_count: 0,
   };
 }
 
@@ -114,6 +118,9 @@ test("paginates root actions after a short page with a total stable order", asyn
   assert.equal(backup.counts.actions, 1201);
   assert.equal(backup.counts.action_organizers, 1201);
   assert.equal(new Set(backup.tables.action_organizers.map((row) => row.action_id)).size, 1201);
+  assert.equal(backup.tables.actions[0].children_count, 1);
+  assert.equal(backup.tables.actions[0].adult_count, 2);
+  assert.equal(backup.tables.actions[0].retired_count, 0);
   assert.ok(organizerPages.every(({ filters }) => filters.length === 1 && filters[0].column === "action_id"));
   assert.equal(organizerPages[0].filters[0].values.length, 500);
 });

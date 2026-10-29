@@ -58,6 +58,9 @@ describe("action context update persistence", () => {
       action_context: "school",
       action_context_source: "automatic_children_ratio",
       school_context_confirmed: null,
+      children_count: 11,
+      adult_count: 4,
+      retired_count: 0,
     });
   });
 

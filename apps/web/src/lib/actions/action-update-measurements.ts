@@ -5,6 +5,8 @@ import {
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import {
   normalizeActionVolunteerParticipationFromTotal,
+  normalizePersistedVolunteerComposition,
+  resolvePersistedVolunteerComposition,
   normalizeVolunteerParticipation,
   resolveParticipantsCount,
   type ActionVolunteerParticipation,
@@ -160,6 +162,11 @@ function buildVolunteerMeasurementUpdate(params: {
   const resolveFromActionTotal =
     current.action_phase !== "pre_action" ||
     body.actionPhase === "post_action_complete";
+  const currentPersistedParticipation = normalizePersistedVolunteerComposition({
+    childrenCount: current.children_count,
+    adultCount: current.adult_count,
+    retiredCount: current.retired_count,
+  });
   const participation = hasUpdate
     ? body.volunteerParticipation === null || body.volunteerParticipation === undefined
       ? null
@@ -169,7 +176,7 @@ function buildVolunteerMeasurementUpdate(params: {
             volunteerParticipation: body.volunteerParticipation,
           })
         : normalizeVolunteerParticipation(body.volunteerParticipation)
-    : currentMetadata.volunteerParticipation;
+    : currentPersistedParticipation ?? currentMetadata.volunteerParticipation;
   const normalizedParticipation =
     !resolveFromActionTotal ||
     participation === null ||
@@ -183,12 +190,19 @@ function buildVolunteerMeasurementUpdate(params: {
     participation: normalizedParticipation,
     updateData:
       hasUpdate || body.volunteersCount !== undefined
-        ? {
-            volunteers_count: resolveParticipantsCount({
+        ? (() => {
+            const volunteersCount = resolveParticipantsCount({
               volunteerParticipation: normalizedParticipation,
               legacyVolunteersCount: body.volunteersCount ?? current.volunteers_count,
-            }),
-          }
+            });
+            return {
+              volunteers_count: volunteersCount,
+              ...resolvePersistedVolunteerComposition({
+                participation: normalizedParticipation,
+                volunteersCount,
+              }),
+            };
+          })()
         : {},
   };
 }

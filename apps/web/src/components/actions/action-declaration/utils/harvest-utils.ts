@@ -45,7 +45,8 @@ export type WasteComparison = {
 
 export function deriveWasteComparison(params: {
   wasteKg: number | null;
-  volunteersCount: number | null;
+  volunteersCount?: number | null;
+  operationalUnits?: number | null;
   benchmarkPerVolunteer: number | null;
   benchmarkSourceCount: number;
 }): WasteComparison {
@@ -53,10 +54,11 @@ export function deriveWasteComparison(params: {
     params.wasteKg !== null &&
     Number.isFinite(params.wasteKg) &&
     params.wasteKg >= 0;
+  const denominator = params.operationalUnits ?? params.volunteersCount ?? null;
   const hasValidVolunteers =
-    params.volunteersCount !== null &&
-    Number.isFinite(params.volunteersCount) &&
-    params.volunteersCount >= 1;
+    denominator !== null &&
+    Number.isFinite(denominator) &&
+    denominator >= 1;
   const hasValidBenchmark =
     params.benchmarkSourceCount >= 2 &&
     params.benchmarkPerVolunteer !== null &&
@@ -65,7 +67,7 @@ export function deriveWasteComparison(params: {
 
   const currentPerVolunteer =
     hasValidWaste && hasValidVolunteers
-      ? params.wasteKg! / params.volunteersCount!
+      ? params.wasteKg! / denominator!
       : null;
   const benchmarkPerVolunteer = hasValidBenchmark ? params.benchmarkPerVolunteer : null;
   const deltaPercent =

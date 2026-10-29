@@ -191,7 +191,7 @@ n'est pas exposé par une route ou une persistance.
 
 Les modèles B (`0,60` enfant et `0,80` retraité pour les déchets ; `0,40` et
 `0,50` pour les mégots) et C (`0,45` enfant pour les déchets ; adultes
-explicitement affectés aux mégots) sont des hypothèses non calibrées. La
+explicitement affectés aux mégots) sont des hypothèses non calibrées.
 Le contexte métier persistant reste distinct de la configuration scientifique :
 il utilise `citizen`, `company` ou `school`, sans catégorie familiale séparée.
 Une finalisation valide active automatiquement `school` uniquement lorsque
@@ -233,6 +233,34 @@ Les mécanismes de supervision, familiarité, équipements, répartition spatial
 disponibilité initiale des déchets et saturation restent non quantifiés. Une
 ville, la taille du groupe, la proximité familiale, la discussion, l'âge exact
 ou le statut de retraité ne fournissent aucun facteur automatique.
+
+### Références contextuelles de collecte — `contextual-effective-units-v1`
+
+Le formulaire peut afficher une référence descriptive par contexte métier,
+uniquement lorsque `action_context` est connu : `citizen`, `company` ou
+`school`. Les familles restent dans `citizen` et les actions d’entreprise ne
+sont jamais mélangées aux actions citoyennes. La référence est une moyenne
+arithmétique de ratios par action individuelle, et non un ratio de sommes :
+
+`M_D(C) = moyenne(waste_kg / U_D)` et `M_M(C) = moyenne(cigarette_butts / U_M)`.
+
+Pour `citizen` et `company`, `U_D = U_M = A + 0,50 E + 0,50 R`. Pour `school`,
+`U_D = A + 0,45 E` et `U_M = A`. Une action scolaire avec des retraités est
+exclue de cette référence faute d'hypothèse documentée ; avec zéro adulte,
+son ratio mégots est `NA`, tandis que son ratio déchets peut rester calculable.
+Les personnes physiques et les unités opérationnelles estimées restent deux
+mesures distinctes. Les zéros déclarés sont valides, les valeurs absentes sont
+exclues métrique par métrique et le nombre de sources est exposé séparément.
+L'interface affiche `Référence insuffisante` sous deux sources pour la métrique
+concernée. Cette règle est descriptive, non calibrée et ne modifie ni le score
+cartographique, ni la collecte brute, ni la RPC globale historique
+`action_collection_reference_averages_v1()`.
+
+La composition connue est stockée dans `children_count`, `adult_count` et
+`retired_count`, avec cohérence atomique avec `volunteers_count`. Les actions
+historiques ambiguës restent `NULL` ; l'ancien `[cmm-meta]` n'est utilisé que
+pour la compatibilité de lecture et un backfill complet et vérifiable. Aucune
+valeur adulte n'est déduite du seul total.
 
 Une revue de contexte supplémentaire est : Cook, E., Cano, N. S. de S. L. et
 Velis, C. A. (2024), « Informal recycling sector contribution to plastic

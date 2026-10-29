@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
-import { loadActionCollectionReferenceAverages } from "@/lib/actions/action-collection-reference-averages";
+import {
+  loadActionCollectionContextReferenceAverages,
+  loadActionCollectionReferenceAverages,
+} from "@/lib/actions/action-collection-reference-averages";
 import { loadPollutionScoreReferencesForMap } from "@/lib/actions/pollution/pollution-score-reference-snapshot";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const [pollutionResult, collectionResult] = await Promise.allSettled([
+    const [pollutionResult, collectionResult, contextualCollectionResult] = await Promise.allSettled([
       loadPollutionScoreReferencesForMap(),
       loadActionCollectionReferenceAverages(),
+      loadActionCollectionContextReferenceAverages(),
     ]);
     if (pollutionResult.status === "rejected") {
       throw pollutionResult.reason;
@@ -18,8 +22,11 @@ export async function GET() {
     const collectionReferences = collectionResult.status === "fulfilled"
       ? collectionResult.value
       : null;
+    const contextualCollectionReferences = contextualCollectionResult.status === "fulfilled"
+      ? contextualCollectionResult.value
+      : {};
 
-    return NextResponse.json({ ...result, collectionReferences }, {
+    return NextResponse.json({ ...result, collectionReferences, contextualCollectionReferences }, {
       headers: {
         "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
       },

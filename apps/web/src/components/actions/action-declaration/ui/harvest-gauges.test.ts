@@ -80,7 +80,7 @@ describe("WasteComparisonVisual", () => {
     expect(aboveMarkup).toContain("+50%");
     expect(aboveMarkup.match(/data-fill-percent="100"/g)).toHaveLength(3);
     expect(zeroMarkup).toContain('data-trend="down"');
-    expect(zeroMarkup).toContain("0,00 kg / bénévole");
+    expect(zeroMarkup).toContain("0,00 kg / unité opérationnelle");
     expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
   });
 
@@ -107,7 +107,7 @@ describe("ButtsComparisonVisual", () => {
     expect(markup.match(/data-testid="butts-comparison-visual-icon"/g)).toHaveLength(3);
     expect(markup).toContain('data-trend="down"');
     expect(markup).toContain("-25%");
-    expect(markup).toContain("3 000 mégots / bénévole");
+    expect(markup).toContain("3 000 mégots / unité opérationnelle");
     expect(markup).toContain("lucide-droplet");
   });
 
@@ -122,6 +122,6 @@ describe("ButtsComparisonVisual", () => {
       }),
     );
 
-    expect(markup).toBe("");
+    expect(markup).toContain("Référence insuffisante");
   });
 });

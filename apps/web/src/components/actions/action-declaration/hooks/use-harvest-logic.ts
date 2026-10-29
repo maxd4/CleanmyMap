@@ -8,6 +8,9 @@ import { deriveWasteComparison, type WasteComparisonTone } from "../utils/harves
 import { useCallback, useMemo } from "react";
 import { useActionPollutionScoreReferences } from "../../map/scores/action-pollution-score-references-context";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
+import {
+  deriveContextualCollectionUnits,
+} from "@/lib/actions/action-collection-reference-averages";
 
 import type { FormState } from "../model";
 
@@ -118,15 +121,29 @@ export function useHarvestLogic({
   form,
   updateFields,
 }: UseHarvestLogicParams): UseHarvestLogicResult {
-  const { collectionReferences } = useActionPollutionScoreReferences();
+  const { contextualCollectionReferences = {} } = useActionPollutionScoreReferences();
 
   const derived = useMemo(() => {
     const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
-    const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 1000);
+    const parseParticipantCount = (value: string) => {
+      const parsed = Number(value);
+      return value.trim() !== "" && Number.isInteger(parsed) && parsed >= 0 && parsed <= 500
+        ? parsed
+        : null;
+    };
+    const contextualUnits = deriveContextualCollectionUnits({
+      actionContext: form.actionContext || null,
+      childrenCount: parseParticipantCount(form.childrenCount),
+      adultCount: parseParticipantCount(form.adultCount),
+      retiredCount: parseParticipantCount(form.retiredCount),
+    });
+    const collectionReferences = form.actionContext
+      ? contextualCollectionReferences[form.actionContext]
+      : undefined;
     const wasteComparison = deriveWasteComparison({
       wasteKg,
-      volunteersCount,
-      benchmarkPerVolunteer: collectionReferences?.wastePerVolunteer ?? null,
+      operationalUnits: contextualUnits.wasteUnits,
+      benchmarkPerVolunteer: collectionReferences?.wastePerEffectiveUnit ?? null,
       benchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
     });
     const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput({
@@ -140,8 +157,8 @@ export function useHarvestLogic({
     });
     const megotsComparison = deriveWasteComparison({
       wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
-      volunteersCount,
-      benchmarkPerVolunteer: collectionReferences?.buttsPerVolunteer ?? null,
+      operationalUnits: contextualUnits.buttsUnits,
+      benchmarkPerVolunteer: collectionReferences?.buttsPerEffectiveUnit ?? null,
       benchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
     });
 
@@ -167,7 +184,7 @@ export function useHarvestLogic({
       cigaretteButtsConversionFormulaVersion:
         cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion,
     };
-  }, [form, collectionReferences]);
+  }, [form, contextualCollectionReferences]);
 
   const syncMegotsWeightFromWeight = useCallback(
     (rawValue: string) => {

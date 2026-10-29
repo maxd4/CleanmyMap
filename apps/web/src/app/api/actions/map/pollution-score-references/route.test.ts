@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadReferencesMock = vi.hoisted(() => vi.fn());
 const loadCollectionReferencesMock = vi.hoisted(() => vi.fn());
+const loadContextualCollectionReferencesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/pollution/pollution-score-reference-snapshot", () => ({
   loadPollutionScoreReferencesForMap: loadReferencesMock,
 }));
 vi.mock("@/lib/actions/action-collection-reference-averages", () => ({
   loadActionCollectionReferenceAverages: loadCollectionReferencesMock,
+  loadActionCollectionContextReferenceAverages: loadContextualCollectionReferencesMock,
 }));
 
 import { GET } from "./route";
@@ -15,6 +17,7 @@ import { GET } from "./route";
 describe("map pollution score references route", () => {
   beforeEach(() => {
     loadCollectionReferencesMock.mockResolvedValue(null);
+    loadContextualCollectionReferencesMock.mockResolvedValue({});
   });
 
   it("retourne la source du snapshot ou du fallback", async () => {
@@ -71,6 +74,24 @@ describe("map pollution score references route", () => {
     expect(await response.json()).toMatchObject({
       references: { wastePerVolunteer: 12, buttsPerVolunteer: 345 },
       collectionReferences: null,
+    });
+  });
+
+  it("conserve les autres références si la moyenne contextuelle est indisponible", async () => {
+    loadReferencesMock.mockResolvedValueOnce({
+      references: { wastePerVolunteer: 12, buttsPerVolunteer: 345 },
+      source: "weekly_snapshot",
+      snapshotDate: "2026-09-07",
+      generatedAt: "2026-09-07T03:00:00.000Z",
+      warning: null,
+    });
+    loadContextualCollectionReferencesMock.mockRejectedValueOnce(new Error("unavailable"));
+
+    const response = await GET();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      references: { wastePerVolunteer: 12, buttsPerVolunteer: 345 },
+      contextualCollectionReferences: {},
     });
   });
 

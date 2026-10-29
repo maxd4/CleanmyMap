@@ -28,6 +28,12 @@ export type VolunteerParticipationFormInput = {
   retiredCount: string;
 };
 
+export type PersistedVolunteerComposition = {
+  children_count: number | null;
+  adult_count: number | null;
+  retired_count: number | null;
+};
+
 export type ActionVolunteerCompositionInput = {
   volunteersCount: number | null | undefined;
   childrenCount: number | null | undefined;
@@ -310,4 +316,55 @@ export function resolveEffectiveVolunteerUnits(
     ? normalizeVolunteerParticipation(participation).effectiveVolunteerUnits
     : null;
   return typeof units === "number" && Number.isFinite(units) ? units : null;
+}
+
+/**
+ * Projects the complete, validated composition to the typed action columns.
+ * Incomplete or inconsistent legacy/form states remain NULL instead of
+ * inventing an adult count from the total.
+ */
+export function resolvePersistedVolunteerComposition(params: {
+  participation: ActionVolunteerParticipation | null | undefined;
+  volunteersCount: number | null | undefined;
+}): PersistedVolunteerComposition {
+  const participation = params.participation
+    ? normalizeVolunteerParticipation(params.participation)
+    : null;
+  const volunteersCount = normalizeIntegerCount(params.volunteersCount);
+  if (
+    !participation ||
+    participation.childrenCount === null ||
+    participation.adultCount === null ||
+    participation.retiredCount === null ||
+    volunteersCount === null
+  ) {
+    return { children_count: null, adult_count: null, retired_count: null };
+  }
+
+  const childrenCount = participation.childrenCount as number;
+  const adultCount = participation.adultCount as number;
+  const retiredCount = participation.retiredCount as number;
+  if (childrenCount + adultCount + retiredCount !== volunteersCount) {
+    return { children_count: null, adult_count: null, retired_count: null };
+  }
+
+  return {
+    children_count: childrenCount,
+    adult_count: adultCount,
+    retired_count: retiredCount,
+  };
+}
+
+export function normalizePersistedVolunteerComposition(params: {
+  childrenCount: number | null | undefined;
+  adultCount: number | null | undefined;
+  retiredCount: number | null | undefined;
+}): ActionVolunteerParticipation | null {
+  const childrenCount = normalizeIntegerCount(params.childrenCount);
+  const adultCount = normalizeIntegerCount(params.adultCount);
+  const retiredCount = normalizeIntegerCount(params.retiredCount);
+  if (childrenCount === null || adultCount === null || retiredCount === null) {
+    return null;
+  }
+  return normalizeVolunteerParticipation({ childrenCount, adultCount, retiredCount });
 }

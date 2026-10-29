@@ -2,7 +2,10 @@ import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-but
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { parseDrawingFromNotes } from "./geometry/drawing";
 import { buildPersistedNotes } from "./store-notes";
-import type { ActionVolunteerParticipation } from "./volunteer-participation";
+import {
+  resolvePersistedVolunteerComposition,
+  type ActionVolunteerParticipation,
+} from "./volunteer-participation";
 
 type PersistedNotesPayload = Parameters<typeof buildPersistedNotes>[0];
 
@@ -118,6 +121,7 @@ export function buildActionUpdateNotes(params: {
   hasButtsMeasurementUpdate: boolean;
   nextCigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   nextVolunteerParticipation: ActionVolunteerParticipation | null;
+  nextVolunteersCount?: number | null;
 }): string | null | undefined {
   const {
     body,
@@ -125,6 +129,7 @@ export function buildActionUpdateNotes(params: {
     hasButtsMeasurementUpdate,
     nextCigaretteButtsMeasurements,
     nextVolunteerParticipation,
+    nextVolunteersCount,
   } = params;
   if (!shouldRefreshNotes(body)) return undefined;
 
@@ -139,11 +144,17 @@ export function buildActionUpdateNotes(params: {
     }),
     ...buildMediaNotesPayload(body, currentMetadata),
   } satisfies PersistedNotesPayload;
+  const persistedVolunteerComposition = resolvePersistedVolunteerComposition({
+    participation: nextVolunteerParticipation,
+    volunteersCount: nextVolunteersCount,
+  });
   return buildPersistedNotes(persistedPayload, {
     resolvedCigaretteButtsMeasurements:
       hasButtsMeasurementUpdate || currentMetadata.cigaretteButtsMeasurements
         ? nextCigaretteButtsMeasurements
         : undefined,
+    persistVolunteerParticipationMetadata:
+      persistedVolunteerComposition.children_count === null,
   });
 }
 

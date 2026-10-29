@@ -39,6 +39,21 @@ describe("deriveWasteComparison", () => {
     });
   });
 
+  it("uses the contextual operational-unit denominator when provided", () => {
+    expect(
+      deriveWasteComparison({
+        wasteKg: 24,
+        volunteersCount: 12,
+        operationalUnits: 4,
+        ...reference,
+      }),
+    ).toMatchObject({
+      currentPerVolunteer: 6,
+      benchmarkPerVolunteer: 8,
+      deltaPercent: -25,
+    });
+  });
+
   it("keeps an explicit zero as a valid comparison value", () => {
     expect(
       deriveWasteComparison({ wasteKg: 0, volunteersCount: 2, ...reference }),

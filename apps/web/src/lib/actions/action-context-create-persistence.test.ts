@@ -42,6 +42,9 @@ describe("action context create persistence contract", () => {
       school_context_confirmed: null,
       school_context_confirmed_at: null,
       school_context_confirmed_by_clerk_id: null,
+      children_count: 11,
+      adult_count: 4,
+      retired_count: 0,
     });
   });
 

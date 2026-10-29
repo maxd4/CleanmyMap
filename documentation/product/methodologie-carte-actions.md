@@ -202,8 +202,11 @@ la composition des groupes ; elle ne remplace ni le nombre réel de participants
 ni une analyse démographique exhaustive, et ne doit pas être utilisée pour
 inférer une efficacité individuelle.
 
-Les catégories sources restent persistées séparément dans les métadonnées
-canoniques ; aucune répartition n'est reconstruite pour une action historique.
+Les catégories sources sont persistées dans les colonnes typées
+`children_count`, `adult_count` et `retired_count`, atomiquement avec
+`volunteers_count`. `[cmm-meta]` reste un repli de lecture et une source de
+backfill historique strictement limité aux compositions complètes et cohérentes;
+aucune répartition n'est reconstruite pour une action ambiguë.
 Pour une ancienne action qui ne possède que `volunteersCount`, ce nombre reste
 le nombre historique de participants, les trois catégories et les unités
 opérationnelles restent inconnues (`NULL`). Il est interdit de supposer que ces
@@ -242,17 +245,20 @@ doit être lue directement dans :
 
 `apps/web/src/lib/actions/pollution/pollution-score.ts`
 
-Cette référence maximale du score cartographique ne doit pas être confondue
-avec le repère visuel du formulaire de déclaration finale. Ce dernier utilise
-la RPC indépendante `action_collection_reference_averages_v1()`, qui calcule
-séparément la moyenne arithmétique de chaque ratio `waste_kg /
-volunteers_count` et `cigarette_butts / volunteers_count` sur les actions
-approuvées, publiques, terminées et datées. Les valeurs absentes ne contribuent
-pas à leur métrique ; un zéro déclaré y contribue. Le nombre d'actions sources
-est conservé pour chaque moyenne et une comparaison n'est rendue qu'à partir
-de deux sources. Cette lecture reste descriptive : elle n'utilise pas les
-unités pondérées `effective-volunteer-units-v1` et ne transforme pas une flèche
-au-dessus ou en dessous de la moyenne en jugement de qualité.
+Cette référence maximale du score cartographique ne doit être confondue ni avec
+le repère visuel du formulaire ni avec la RPC globale historique
+`action_collection_reference_averages_v1()`. Le formulaire utilise la RPC
+append-only `action_collection_context_reference_averages_v1()`, qui sépare
+`citizen`, `company` et `school` et calcule, par action, la moyenne
+arithmétique de `waste_kg / U_D` et `cigarette_butts / U_M`. Les contextes ne
+sont jamais mélangés. `citizen` et `company` utilisent `A + 0,50 E + 0,50 R`;
+`school` utilise `U_D = A + 0,45 E` et `U_M = A`, sans coefficient automatique
+pour les retraités. Les zéros valides sont conservés, les `NULL` sont exclus
+indépendamment pour chaque métrique, les comptes de sources sont séparés et
+`Référence insuffisante` est affiché sous deux sources. Le libellé d'unité est
+`Moyenne par unité opérationnelle estimée`; il ne s'agit ni de kg/personne ni
+d'un rendement horaire. Cette lecture descriptive ne modifie ni le score
+cartographique, ni les mesures brutes, ni la RPC globale historique.
 
 Le score doit être présenté comme :
 

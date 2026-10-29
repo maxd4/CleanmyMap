@@ -7,7 +7,10 @@ import useSWR from "swr";
 import {
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution/pollution-score";
-import type { ActionCollectionReferenceAverages } from "@/lib/actions/action-collection-reference-averages";
+import type {
+  ActionCollectionContextReferences,
+  ActionCollectionReferenceAverages,
+} from "@/lib/actions/action-collection-reference-averages";
 import {
   ACTION_POLLUTION_SCORE_REFERENCES_INVALIDATED_EVENT,
 } from "@/lib/actions/pollution/pollution-score-references-events";
@@ -16,6 +19,7 @@ import { swrSupervisionOptions } from "@/lib/swr-config";
 type ActionPollutionScoreReferencesContextValue = {
   references: PollutionScoreReferences | null;
   collectionReferences: ActionCollectionReferenceAverages | null;
+  contextualCollectionReferences: ActionCollectionContextReferences;
   isLoading: boolean;
   error: string | null;
   reload: () => void;
@@ -24,11 +28,13 @@ type ActionPollutionScoreReferencesContextValue = {
 type ActionPollutionScoreReferencePayload = {
   references: PollutionScoreReferences | null;
   collectionReferences: ActionCollectionReferenceAverages | null;
+  contextualCollectionReferences: ActionCollectionContextReferences;
 };
 
 const DEFAULT_ACTION_POLLUTION_SCORE_REFERENCES_CONTEXT: ActionPollutionScoreReferencesContextValue = {
   references: null,
   collectionReferences: null,
+  contextualCollectionReferences: {},
   isLoading: false,
   error: null,
   reload: () => {},
@@ -47,10 +53,12 @@ async function fetchPollutionScoreReferences(): Promise<ActionPollutionScoreRefe
   const payload = (await response.json()) as {
     references?: PollutionScoreReferences | null;
     collectionReferences?: ActionCollectionReferenceAverages | null;
+    contextualCollectionReferences?: ActionCollectionContextReferences;
   };
   return {
     references: payload.references ?? null,
     collectionReferences: payload.collectionReferences ?? null,
+    contextualCollectionReferences: payload.contextualCollectionReferences ?? {},
   };
 }
 
@@ -73,6 +81,7 @@ export function ActionPollutionScoreReferencesProvider({
 
   const references = data?.references ?? null;
   const collectionReferences = data?.collectionReferences ?? null;
+  const contextualCollectionReferences = data?.contextualCollectionReferences;
   const error = fetchError
     ? fetchError instanceof Error && fetchError.message
       ? fetchError.message
@@ -109,11 +118,12 @@ export function ActionPollutionScoreReferencesProvider({
     () => ({
       references,
       collectionReferences,
+      contextualCollectionReferences: contextualCollectionReferences ?? {},
       isLoading,
       error,
       reload,
     }),
-    [collectionReferences, error, isLoading, references, reload],
+    [collectionReferences, contextualCollectionReferences, error, isLoading, references, reload],
   );
 
   return (

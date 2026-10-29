@@ -302,6 +302,10 @@ export async function prepareActionUpdate(params: {
     hasButtsMeasurementUpdate: measurements.hasButtsMeasurementUpdate,
     nextCigaretteButtsMeasurements: measurements.nextCigaretteButtsMeasurements,
     nextVolunteerParticipation: measurements.nextVolunteerParticipation,
+    nextVolunteersCount:
+      typeof measurements.updateData.volunteers_count === "number"
+        ? measurements.updateData.volunteers_count
+        : current.volunteers_count,
   });
   if (notes !== undefined) {
     const replacementDrawing = getAcceptedActionDrawing({

@@ -165,7 +165,15 @@ function ComparisonVisual({
   currentLabel,
   benchmarkLabel,
   testId,
+  benchmarkSourceCount,
 }: ComparisonVisualProps) {
+  if (benchmarkSourceCount < 2) {
+    return (
+      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-500" role="status">
+        Référence insuffisante
+      </p>
+    );
+  }
   if (
     currentPerVolunteer === null ||
     benchmarkPerVolunteer === null ||
@@ -270,9 +278,9 @@ export function WasteComparisonVisual({
       comparisonTone={comparisonTone}
       icon={ShoppingBag}
       title="Comparaison visuelle"
-      contextLabel={`Moyenne historique des actions comparables · ${benchmarkSourceCount} action(s)`}
-      currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / bénévole`}
-      benchmarkLabel={`moyenne : ${formatKg(benchmarkPerVolunteer ?? 0)} kg`}
+      contextLabel={`Moyenne par unité opérationnelle estimée · ${benchmarkSourceCount} action(s)`}
+      currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / unité opérationnelle`}
+      benchmarkLabel={`moyenne : ${formatKg(benchmarkPerVolunteer ?? 0)} kg / unité`}
       benchmarkSourceCount={benchmarkSourceCount}
       testId="waste-comparison-visual"
     />
@@ -294,9 +302,9 @@ export function ButtsComparisonVisual({
       comparisonTone={comparisonTone}
       icon={Droplet}
       title="Comparaison visuelle des mégots"
-      contextLabel={`Moyenne historique des actions comparables · ${benchmarkSourceCount} action(s)`}
-      currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / bénévole`}
-      benchmarkLabel={`moyenne : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots`}
+      contextLabel={`Moyenne par unité opérationnelle estimée · ${benchmarkSourceCount} action(s)`}
+      currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / unité opérationnelle`}
+      benchmarkLabel={`moyenne : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots / unité`}
       benchmarkSourceCount={benchmarkSourceCount}
       testId="butts-comparison-visual"
     />

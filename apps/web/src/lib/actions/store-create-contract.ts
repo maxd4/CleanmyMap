@@ -28,7 +28,10 @@ import {
   buildPersistedNotes,
   resolvePersistedCigaretteButts,
 } from "./store-notes";
-import { resolveParticipantsCount } from "@/lib/actions/volunteer-participation";
+import {
+  resolveParticipantsCount,
+  resolvePersistedVolunteerComposition,
+} from "@/lib/actions/volunteer-participation";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { resolveActionContext } from "@/lib/actions/action-context";
 
@@ -231,6 +234,14 @@ function buildActionInsertRecord(
     ...params.payload,
     arrivalLocationLabel: recordType === "action" && routeTopology === "loop" ? undefined : params.payload.arrivalLocationLabel,
   };
+  const volunteersCount = resolveParticipantsCount({
+    volunteerParticipation: params.payload.volunteerParticipation,
+    legacyVolunteersCount: params.payload.volunteersCount,
+  });
+  const persistedVolunteerComposition = resolvePersistedVolunteerComposition({
+    participation: params.payload.volunteerParticipation,
+    volunteersCount,
+  });
   return {
     created_by_clerk_id: params.userId,
     actor_name: params.payload.actorName ?? null,
@@ -278,14 +289,21 @@ function buildActionInsertRecord(
     geometry_source: params.persistedGeometry.geometrySource,
     waste_kg: params.payload.wasteKg,
     cigarette_butts: resolvePersistedCigaretteButts(params.payload),
-    volunteers_count: resolveParticipantsCount({ volunteerParticipation: params.payload.volunteerParticipation, legacyVolunteersCount: params.payload.volunteersCount }),
+    volunteers_count: volunteersCount,
+    ...persistedVolunteerComposition,
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
     published_at: null,
     preparation_data: preparationData,
     access_mode: params.payload.accessMode ?? "public",
-    notes: buildPersistedNotes({ ...persistedPayload, manualDrawing: params.finalDrawing ?? undefined }),
+    notes: buildPersistedNotes(
+      { ...persistedPayload, manualDrawing: params.finalDrawing ?? undefined },
+      {
+        persistVolunteerParticipationMetadata:
+          persistedVolunteerComposition.children_count === null,
+      },
+    ),
     status: params.status ?? "pending",
   };
 }

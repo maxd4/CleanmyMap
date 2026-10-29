@@ -25,6 +25,9 @@ const ACTION_BASE_SELECT_FIELDS = [
   "waste_kg",
   "cigarette_butts",
   "volunteers_count",
+  "children_count",
+  "adult_count",
+  "retired_count",
   "duration_minutes",
   "event_start_time",
   "event_end_time",
@@ -64,6 +67,9 @@ const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
       field !== "cancelled_from_status" &&
+      field !== "children_count" &&
+      field !== "adult_count" &&
+      field !== "retired_count" &&
       !field.startsWith("action_context") &&
       !field.startsWith("school_context_confirmed"),
   )
@@ -81,6 +87,9 @@ const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
       field !== "cancelled_from_status" &&
+      field !== "children_count" &&
+      field !== "adult_count" &&
+      field !== "retired_count" &&
       !field.startsWith("action_context") &&
       !field.startsWith("school_context_confirmed"),
   )
@@ -120,6 +129,9 @@ const ACTION_COLUMN_MARKERS = [
   "school_context_confirmed",
   "school_context_confirmed_at",
   "school_context_confirmed_by_clerk_id",
+  "children_count",
+  "adult_count",
+  "retired_count",
 ] as const;
 
 function getActionColumnErrorMessage(error: unknown): string {

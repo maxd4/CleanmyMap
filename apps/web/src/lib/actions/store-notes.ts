@@ -48,6 +48,8 @@ type PersistedActionNotesPayload = Partial<Pick<
 type PersistedActionNotesOptions = {
   /** Internal server resolution; never sourced from an HTTP payload. */
   resolvedCigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  /** Keep the legacy metadata only when typed participant columns are unavailable. */
+  persistVolunteerParticipationMetadata?: boolean;
 };
 
 export function buildPersistedNotes(
@@ -64,7 +66,10 @@ export function buildPersistedNotes(
     wasteMeasurementMethod: payload.wasteMeasurementMethod ?? undefined,
     cigaretteButtsKg: payload.cigaretteButtsKg,
     cigaretteButtsMeasurements,
-    volunteerParticipation: resolveActionVolunteerParticipation(payload),
+    volunteerParticipation:
+      options.persistVolunteerParticipationMetadata === false
+        ? undefined
+        : resolveActionVolunteerParticipation(payload),
     associationName: payload.associationName,
     groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,
