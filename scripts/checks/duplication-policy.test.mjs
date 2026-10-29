@@ -318,6 +318,8 @@ test("jscpd JSON and SARIF project CURRENT clone occurrences with scope and fing
       }],
     }, {
       runs: [{ results: [{
+        locations: [{ physicalLocation: { artifactLocation: { uri: "apps\\web\\src\\first.ts" }, region: { startLine: 10, endLine: 14 } } }],
+        relatedLocations: [{ physicalLocation: { artifactLocation: { uri: "apps\\web\\src\\second.ts" }, region: { startLine: 31, endLine: 35 } } }],
         partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" },
       }] }],
     }, "runtime"),
@@ -328,6 +330,57 @@ test("jscpd JSON and SARIF project CURRENT clone occurrences with scope and fing
       occurrenceB: { path: "apps/web/src/second.ts", startLine: 31, endLine: 35 },
     }],
   );
+});
+
+test("jscpd SARIF may carry only the primary location when JSON carries both occurrences", () => {
+  assert.deepEqual(
+    readJscpdOccurrences({
+      duplicates: [{
+        firstFile: { name: "apps/first.ts", start: 10, end: 14 },
+        secondFile: { name: "apps/second.ts", start: 31, end: 35 },
+      }],
+    }, {
+      runs: [{ results: [{
+        locations: [{ physicalLocation: { artifactLocation: { uri: "apps/first.ts" }, region: { startLine: 10, endLine: 14 } } }],
+        partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" },
+      }] }],
+    }, "runtime"),
+    [{
+      scope: "runtime",
+      fingerprint: "a1b2c3d4e5f60718",
+      occurrenceA: { path: "apps/first.ts", startLine: 10, endLine: 14 },
+      occurrenceB: { path: "apps/second.ts", startLine: 31, endLine: 35 },
+    }],
+  );
+});
+
+test("jscpd occurrence projection rejects an invalid related SARIF location", () => {
+  assert.throws(() => readJscpdOccurrences({
+    duplicates: [{
+      firstFile: { name: "apps/first.ts", start: 10, end: 14 },
+      secondFile: { name: "apps/second.ts", start: 31, end: 35 },
+    }],
+  }, {
+    runs: [{ results: [{
+      locations: [{ physicalLocation: { artifactLocation: { uri: "apps/first.ts" }, region: { startLine: 10, endLine: 14 } } }],
+      relatedLocations: [{ physicalLocation: { artifactLocation: { uri: "apps/second.ts" }, region: { startLine: 35, endLine: 31 } } }],
+      partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" },
+    }] }],
+  }, "runtime"), /invalid SARIF source location/);
+});
+
+test("jscpd occurrence projection rejects contradictory primary SARIF and JSON locations", () => {
+  assert.throws(() => readJscpdOccurrences({
+    duplicates: [{
+      firstFile: { name: "apps/first.ts", start: 10, end: 14 },
+      secondFile: { name: "apps/second.ts", start: 31, end: 35 },
+    }],
+  }, {
+    runs: [{ results: [{
+      locations: [{ physicalLocation: { artifactLocation: { uri: "apps/other.ts" }, region: { startLine: 10, endLine: 14 } } }],
+      partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" },
+    }] }],
+  }, "runtime"), /first source location differs/);
 });
 
 test("occurrence projection rejects JSON/SARIF clone count drift", () => {

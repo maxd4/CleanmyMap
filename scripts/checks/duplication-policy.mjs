@@ -291,12 +291,22 @@ function readJscpdOccurrence(location) {
 }
 
 function readSarifOccurrence(result, index) {
-  const location = result?.locations?.[index]?.physicalLocation;
+  const locationEntry = index === 0
+    ? result?.locations?.[0]
+    : result?.relatedLocations?.[0] ?? result?.locations?.[1];
+  const location = locationEntry?.physicalLocation;
   if (!location) return null;
   return readJscpdOccurrence({
     uri: location.artifactLocation?.uri,
     region: location.region,
   });
+}
+
+function hasSarifOccurrence(result, index) {
+  return index === 0
+    ? Array.isArray(result?.locations) && result.locations.length > 0
+    : (Array.isArray(result?.relatedLocations) && result.relatedLocations.length > 0)
+      || (Array.isArray(result?.locations) && result.locations.length > 1);
 }
 
 export function readJscpdOccurrences(report, sarifReport, scopeName) {
@@ -327,8 +337,8 @@ export function readJscpdOccurrences(report, sarifReport, scopeName) {
     if ((duplicate?.firstFile && !jsonOccurrenceA) || (duplicate?.secondFile && !jsonOccurrenceB)) {
       throw new Error(`jscpd occurrence projection malformed at clone ${index + 1}: invalid JSON source location.`);
     }
-    if (Array.isArray(results[index]?.locations) && results[index].locations.length > 0
-      && (!sarifOccurrenceA || !sarifOccurrenceB)) {
+    if ((hasSarifOccurrence(results[index], 0) && !sarifOccurrenceA)
+      || (hasSarifOccurrence(results[index], 1) && !sarifOccurrenceB)) {
       throw new Error(`jscpd occurrence projection malformed at clone ${index + 1}: invalid SARIF source location.`);
     }
     if (jsonOccurrenceA && sarifOccurrenceA && JSON.stringify(jsonOccurrenceA) !== JSON.stringify(sarifOccurrenceA)) {

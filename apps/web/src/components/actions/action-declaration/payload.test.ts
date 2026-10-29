@@ -2,6 +2,21 @@ import { describe, expect, it } from "vitest";
 import { buildCreateActionPayload, parseOrganizerAccounts } from "./payload";
 import { buildBaseForm } from "./payload.test-fixtures";
 
+type PayloadUserMetadata = Parameters<typeof buildCreateActionPayload>[0]["userMetadata"];
+
+function buildPayload(form: ReturnType<typeof buildBaseForm>, userMetadata?: PayloadUserMetadata) {
+  return buildCreateActionPayload({
+    form,
+    declarationMode: "complete",
+    effectiveManualDrawingEnabled: false,
+    drawingIsValid: false,
+    manualDrawing: null,
+    isEntrepriseMode: false,
+    linkedEventId: undefined,
+    ...(userMetadata ? { userMetadata } : {}),
+  });
+}
+
 describe("action declaration payload identity and organisation", () => {
   it("uses category sources for participants and keeps operational units separate", () => {
     const form = buildBaseForm();
@@ -10,15 +25,7 @@ describe("action declaration payload identity and organisation", () => {
     form.volunteersCount = "8";
     form.adultCount = "999";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.volunteersCount).toBe(8);
     expect(payload.volunteerParticipation).toMatchObject({
@@ -42,15 +49,7 @@ describe("action declaration payload identity and organisation", () => {
     form.adultCount = "";
     form.retiredCount = "";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.volunteersCount).toBe(7);
     expect(payload.volunteerParticipation).toEqual({
@@ -67,15 +66,7 @@ describe("action declaration payload identity and organisation", () => {
     form.retiredCount = "0";
     form.adultCount = "1";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.volunteerParticipation).toMatchObject({
       childrenCount: 1,
@@ -100,15 +91,7 @@ describe("action declaration payload identity and organisation", () => {
     form.associationName = "Association Sans Murs Paris 15";
     form.organizerAccounts = "alice, bob, alice";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.organizerAccounts).toEqual(["alice", "bob"]);
   });
@@ -122,16 +105,7 @@ describe("action declaration payload identity and organisation", () => {
       email: "alice@example.com",
     };
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-      userMetadata,
-    });
+    const payload = buildPayload(form, userMetadata);
 
     expect(payload.userMetadata).toEqual(userMetadata);
   });
@@ -142,15 +116,7 @@ describe("action declaration payload identity and organisation", () => {
     form.routeTopology = "point_to_point";
     form.arrivalLocationLabel = "Complément du lieu";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.recordType).toBe("clean_place");
     expect(payload.routeTopology).toBe("loop");
@@ -165,15 +131,7 @@ describe("action declaration payload identity and organisation", () => {
     form.organizerType = "student_association";
     form.organizerAccounts = "club-etudiant";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.organizerType).toBe("student_association");
     expect(payload.associationName).toBe("Action spontanée");
@@ -184,15 +142,7 @@ describe("action declaration payload identity and organisation", () => {
     form.actorName = "Bénévole invité";
     form.associationName = "__autre_benevole__";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.actorName).toBe("Bénévole invité");
     expect(payload.associationName).toBe("Action spontanée");
@@ -203,15 +153,7 @@ describe("action declaration payload identity and organisation", () => {
     form.associationName = "Action spontanée";
     form.organizerAccounts = "alice, bob";
 
-    const payload = buildCreateActionPayload({
-      form,
-      declarationMode: "complete",
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      isEntrepriseMode: false,
-      linkedEventId: undefined,
-    });
+    const payload = buildPayload(form);
 
     expect(payload.associationName).toBe("Action spontanée");
     expect(payload.organizerAccounts).toEqual(["alice", "bob"]);

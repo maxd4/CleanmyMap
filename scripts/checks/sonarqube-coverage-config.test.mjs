@@ -12,6 +12,16 @@ const workflow = () => yaml.load(read(".github/workflows/sonarqube-manual.yml"))
 const ciWorkflow = () => yaml.load(read(".github/workflows/ci.yml"));
 const step = (steps, name) => steps.find((candidate) => candidate.name === name);
 
+test("CI isolates manual FULL runs from cancellable DEVELOPMENT runs", () => {
+  const parsed = ciWorkflow();
+  assert.match(parsed.concurrency.group, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(parsed.concurrency.group, /inputs\.validation_mode == 'FULL'/);
+  assert.match(parsed.concurrency.group, /'FULL'/);
+  assert.match(parsed.concurrency.group, /'DEVELOPMENT'/);
+  assert.match(parsed.concurrency["cancel-in-progress"], /workflow_dispatch/);
+  assert.match(parsed.concurrency["cancel-in-progress"], /validation_mode == 'FULL'/);
+});
+
 test("Vitest keeps JSON summaries and emits LCOV for both workspaces", () => {
   for (const configPath of ["apps/web/vitest.config.ts", "apps/mobile/vitest.config.ts"]) {
     const config = read(configPath);

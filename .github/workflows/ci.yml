@@ -3,8 +3,8 @@ name: ci
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL' && 'FULL' || 'DEVELOPMENT' }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL') }}
 
 on:
   push:

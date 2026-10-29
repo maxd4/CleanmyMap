@@ -2067,10 +2067,10 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "30314083349d29ba",
+      "fingerprint": "7ec4792e91883d08",
       "classification": "NO_ACTION_NOISE",
       "reason": "Localisation et bénévolat exposent des champs métier différents ; la ressemblance est du bruit de composition de formulaire.",
-      "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-71 et components/actions/action-declaration/before/planned-action-volunteer-section.tsx:41-50 ; pair CURRENT relu.",
+      "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:65-74 et components/actions/action-declaration/before/planned-action-volunteer-section.tsx:35-44 ; pair CURRENT relu.",
       "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {

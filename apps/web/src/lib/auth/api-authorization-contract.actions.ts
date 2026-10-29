@@ -1,6 +1,7 @@
 import type { ApiAuthorizationContract } from "./api-authorization-contract.types";
 import { actionMediaAuthorizationContract } from "./api-authorization-contract.action-media";
 import { actionRoleAttestationsAuthorizationContract } from "./api-authorization-contract.role-attestations";
+import { schoolAttestationAuthorizationContract } from "./api-authorization-contract.school-attestation";
 
 export const actionsAuthorizationContract = {
   "actions/group-join": {
@@ -255,22 +256,7 @@ export const actionsAuthorizationContract = {
       ],
     },
   },
-  "actions/[actionId]/school-attestation": {
-    GET: {
-      expected: "Publicly readable bounded school-action attestation only for a published, visible, public, completed and confirmed action",
-      dimensions: ["public-safe"],
-      actual: "UUID validation + handler-level lifecycle/publicity guard + canonical organizer resolution + isEligibleForSchoolActionRecognition + buildSchoolActionAttestation; response excludes student identity, notes, quiz results and photos",
-      evidence: [
-        "loadActionById",
-        "loadCanonicalActionOrganizerIdsForAction",
-        "isEligibleForSchoolActionRecognition",
-        "buildSchoolActionAttestation",
-        "access_mode",
-        "moderation_visibility",
-      ],
-      evidenceScope: "method",
-    },
-  },
+  ...schoolAttestationAuthorizationContract,
   "actions/[actionId]/formalities": {
     GET: {
       expected: "Authenticated owner/organizer or admin/max action-management read of the local-formalities workflow",
