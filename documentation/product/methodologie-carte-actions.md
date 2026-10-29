@@ -75,6 +75,67 @@ engagement ou de leur performance individuelle. Une modification de cette
 hypothèse doit faire évoluer la version de la formule et être motivée par une
 décision métier documentée.
 
+Ce proxy `CURRENT` est identique pour les deux familles de collecte. À titre
+théorique seulement, lorsque la mesure nécessaire est connue et que `U` est
+strictement positif, une intensité par unité opérationnelle pourrait être
+décrite ainsi :
+
+`I_dechets = masse_dechets_hors_megots_kg / U`
+
+`I_megots = nombre_megots / U`
+
+Ces deux ratios sont des applications possibles du proxy de capacité ; ils ne
+signifient pas que ces intensités sont déjà utilisées partout dans le runtime.
+Une mesure absente, une répartition démographique inconnue ou un dénominateur
+`U` nul rendent le ratio `NA`. Les références historiques du score de pollution
+restent strictement normalisées par `max(1, volunteersCount)` : le nombre réel
+de personnes n'est pas remplacé par `U`, et cette documentation ne modifie ni
+les comparaisons cartographiques, ni les RPC, ni les références départementales,
+ni les agrégats historiques.
+
+#### Modèles candidats — `RESEARCH / NON NORMATIF`
+
+Des modèles différenciés selon la tâche peuvent être étudiés, mais ils ne sont
+pas implémentés, calibrés ni validés scientifiquement. Ils ne constituent pas
+des coefficients runtime, une nouvelle version du contrat, un benchmark de
+production ou une prévision de collecte.
+
+Pour les déchets hors mégots, un modèle candidat pourrait être :
+
+`U_dechets_candidat = A + 0,60 × E + 0,70 × R`
+
+Pour les mégots, un autre modèle candidat pourrait être :
+
+`U_megots_candidat = A + 0,25 × E + 0,40 × R`
+
+Par exemple, pour deux adultes et trois enfants, le modèle `CURRENT` donne
+`3,5` unités pour les deux familles. Les modèles candidats donneraient
+respectivement `3,8` unités pour les déchets et `2,75` unités pour les mégots.
+Ces nombres expriment uniquement des capacités relatives hypothétiques par
+rapport à cinq adultes de référence ; ils ne prédisent ni une masse de déchets
+ni un nombre de mégots effectivement collectés.
+
+Une recherche future pourrait aussi distinguer la contribution individuelle et
+un coût collectif de supervision :
+
+`U_tache = A + w_E × E + w_R × R - S_tache`
+
+où `S_tache` serait un éventuel coût de supervision exprimé en unités adultes
+équivalentes. Cette expression est une piste de recherche uniquement. Il ne
+faut pas combiner les coefficients nets candidats avec une pénalité de
+supervision sans données, au risque de compter deux fois le même effet. Les
+variables potentiellement pertinentes — temps de supervision, familiarité et
+coordination, discussions, disponibilité initiale des déchets, saturation d'un
+secteur, recherche et mobilité, sécurité, équipements et formation de
+sous-groupes — ne sont pas calculables à partir des seules données actuelles.
+La variabilité individuelle interdit également d'attribuer automatiquement une
+performance réduite à une personne du seul fait de son statut de retraité.
+
+Le statut de lecture est donc explicite : `CURRENT` pour la pondération
+`1 / 0,5 / 0,5`, `RESEARCH / NON NORMATIF` pour les modèles différenciés et les
+mécanismes futurs, et `NA` lorsque la mesure ou la répartition nécessaire est
+réellement inconnue.
+
 Les trois catégories ont aussi une fonction descriptive : elles permettent
 d'estimer la répartition des générations de bénévoles mobilisées sur les actions
 de dépollution lorsque les trois valeurs sont connues. Cette répartition décrit
