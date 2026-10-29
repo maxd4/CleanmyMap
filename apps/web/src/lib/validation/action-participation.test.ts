@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createActionSchema } from "./action";
+import { createActionSchema, updateActionSchema } from "./action";
 
 const basePayload = {
   actorName: "Alice",
@@ -30,5 +30,12 @@ describe("action participant total validation", () => {
       adultCount: 11,
       retiredCount: 0,
     });
+  });
+
+  it("does not apply create defaults to an ordinary partial update", () => {
+    const parsed = updateActionSchema.parse({ notes: "Correction indépendante" });
+
+    expect(parsed).not.toHaveProperty("volunteersCount");
+    expect(parsed).not.toHaveProperty("durationMinutes");
   });
 });

@@ -55,7 +55,11 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       },
     }));
 
-    const response = await patchAction({ actionPhase: "post_action_complete" });
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(
@@ -64,6 +68,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
         status: "pending",
       }),
     );
+    expect(syncActionManualParticipantsMock).not.toHaveBeenCalled();
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
   });
 
@@ -131,7 +136,11 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     const response = await PATCH(
       new Request("http://localhost/api/actions/action-test-1", {
         method: "PATCH",
-        body: JSON.stringify({ actionPhase: "post_action_complete" }),
+        body: JSON.stringify({
+          actionPhase: "post_action_complete",
+          volunteersCount: 12,
+          volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+        }),
       }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );

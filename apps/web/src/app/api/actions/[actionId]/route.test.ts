@@ -154,7 +154,11 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   });
 
   it("allows retrospective finalization while administrative requirements are pending", async () => {
-    const response = await patchAction({ actionPhase: "post_action_complete" });
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(
@@ -162,6 +166,24 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
         action_phase: "post_action_complete",
       }),
     );
+  });
+
+  it("refuses finalization without an explicit participant composition", async () => {
+    const response = await patchAction({ actionPhase: "post_action_complete" });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses finalization of a post-action draft without an explicit composition", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      action_phase: "post_action_draft",
+    }));
+
+    const response = await patchAction({ actionPhase: "post_action_complete" });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("rejects a forged preparation state before loading the action", async () => {
@@ -208,7 +230,11 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
         },
       },
     }));
-    const response = await patchAction({ actionPhase: "post_action_complete" });
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(
@@ -278,6 +304,8 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
           organizerType: "spontaneous",
           organizerAccounts: ["user-associated-1"],
           actionPhase: "post_action_complete",
+          volunteersCount: 12,
+          volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
         }),
       }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
@@ -345,6 +373,10 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
       action_phase: "post_action_complete",
       preparation_data: {},
       created_by_clerk_id: "user-test-1",
+      action_date: "2026-09-13",
+      duration_minutes: 30,
+      event_start_time: "09:00:00",
+      event_end_time: "09:30:00",
       cigarette_butts: 3_000,
       notes: "Anciennes notes",
     });

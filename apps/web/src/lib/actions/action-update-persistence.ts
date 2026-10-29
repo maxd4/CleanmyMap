@@ -32,6 +32,16 @@ export type PreparedActionUpdate = {
   updateData: Record<string, unknown>;
 };
 
+function isNewFinalization(
+  current: ActionRow,
+  nextActionPhase: ActionRow["action_phase"],
+): boolean {
+  return (
+    nextActionPhase === "post_action_complete" &&
+    current.action_phase !== "post_action_complete"
+  );
+}
+
 export async function persistActionUpdate(params: {
   supabase: SupabaseClient;
   actionId: string;
@@ -92,17 +102,22 @@ export async function prepareActionUpdate(params: {
   }
 
   const currentMetadata = extractActionMetadataFromNotes(current.notes);
+  const isFinalization = isNewFinalization(current, nextActionPhase);
   const isParticipantSubmission =
     nextActionPhase === "post_action_complete" &&
     (body.volunteersCount !== undefined ||
       body.volunteerParticipation !== undefined);
-  if (isParticipantSubmission) {
+  if (isFinalization || isParticipantSubmission) {
     const participation =
-      body.volunteerParticipation !== undefined
+      isFinalization
+        ? body.volunteerParticipation
+        : body.volunteerParticipation !== undefined
         ? body.volunteerParticipation
         : currentMetadata.volunteerParticipation;
     const compositionMessage = getVolunteerActionCompositionValidationMessage({
-      volunteersCount: body.volunteersCount ?? current.volunteers_count,
+      volunteersCount: isFinalization
+        ? body.volunteersCount ?? null
+        : body.volunteersCount ?? current.volunteers_count,
       childrenCount: participation?.childrenCount ?? null,
       retiredCount: participation?.retiredCount ?? null,
     });

@@ -8,6 +8,7 @@ import {
   persistActionUpdate,
   prepareActionUpdate,
 } from "./action-update-persistence";
+import { extractActionMetadataFromNotes } from "./metadata";
 
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
 
@@ -15,7 +16,10 @@ vi.mock("@/lib/geo/action-department-resolver", () => ({
   resolveActionDepartmentForPersistence: resolveActionDepartmentForPersistenceMock,
 }));
 
-function buildCurrent(preparationData: ActionRow["preparation_data"]): ActionRow {
+function buildCurrent(
+  preparationData: ActionRow["preparation_data"],
+  overrides: Partial<ActionRow> = {},
+): ActionRow {
   return {
     id: "action-42",
     created_at: "2026-09-15T09:00:00.000Z",
@@ -43,6 +47,7 @@ function buildCurrent(preparationData: ActionRow["preparation_data"]): ActionRow
     published_at: null,
     action_phase: "pre_action",
     preparation_data: preparationData,
+    ...overrides,
   };
 }
 
@@ -248,6 +253,12 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
       parsedBody: ({
         actionPhase: "post_action_complete",
         notes: "Finalisation rétrospective de l'action",
+        volunteersCount: 12,
+        volunteerParticipation: {
+          childrenCount: 1,
+          adultCount: 999,
+          retiredCount: 0,
+        },
         preparationData: { actionTitle: "Résultats de l'action" },
       } as unknown as ActionUpdateInput),
     });
@@ -260,6 +271,73 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
         validatedByUserId: null,
       },
     });
+    expect(prepared.updateData.volunteers_count).toBe(12);
+    expect(
+      extractActionMetadataFromNotes(prepared.updateData.notes as string)
+        .volunteerParticipation,
+    ).toMatchObject({
+      childrenCount: 1,
+      adultCount: 11,
+      retiredCount: 0,
+      participantsCount: 12,
+      effectiveVolunteerUnits: 11.5,
+    });
+  });
+
+  it.each([
+    ["pre-action", "pre_action"],
+    ["post-action draft", "post_action_draft"],
+  ] as const)("rejects finalization from %s without an explicit composition", async (_label, actionPhase) => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}, { action_phase: actionPhase }),
+        parsedBody: ({ actionPhase: "post_action_complete" } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "volunteerParticipation" });
+  });
+
+  it.each([
+    ["categories exceed total", 12, 13, 0],
+    ["zero total", 0, 0, 0],
+  ] as const)("rejects finalization when the composition is invalid: %s", async (_label, volunteersCount, childrenCount, retiredCount) => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}),
+        parsedBody: ({
+          actionPhase: "post_action_complete",
+          volunteersCount,
+          volunteerParticipation: { childrenCount, adultCount: 999, retiredCount },
+        } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "volunteerParticipation" });
+  });
+
+  it("does not invent adults while editing a historical complete action without participant fields", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, {
+        action_phase: "post_action_complete",
+        volunteers_count: 1,
+      }),
+      parsedBody: ({ notes: "Correction indépendante" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).not.toHaveProperty("volunteers_count");
+    expect(prepared.updateData.notes).toContain("Correction indépendante");
   });
 
   it("allows the post-action draft transition while requirements are pending", async () => {

@@ -264,6 +264,10 @@ export const updateActionSchema = createActionLegacyBaseSchema
     organizerId: z.string().trim().min(1).max(120).nullable().optional(),
     organizerName: z.string().trim().min(1).max(120).optional(),
     actionPhase: actionPhaseSchema.optional(),
+    // Create-only defaults must not appear on partial updates: omission means
+    // "leave the stored value unchanged", not a new participant or duration.
+    volunteersCount: z.number().int().min(0).max(500).optional(),
+    durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     accessMode: z.enum(["public", "invite_link"]).optional(),
     preparationData: preparationDataSchema.nullable().optional(),
     reason: z.string().trim().max(500).optional(),

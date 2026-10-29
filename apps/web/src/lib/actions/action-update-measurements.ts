@@ -125,18 +125,21 @@ function buildVolunteerMeasurementUpdate(params: {
     body,
     "volunteerParticipation",
   );
+  const resolveFromActionTotal =
+    current.action_phase !== "pre_action" ||
+    body.actionPhase === "post_action_complete";
   const participation = hasUpdate
     ? body.volunteerParticipation === null || body.volunteerParticipation === undefined
       ? null
-      : current.action_phase === "pre_action"
-        ? normalizeVolunteerParticipation(body.volunteerParticipation)
-        : normalizeActionVolunteerParticipationFromTotal({
+      : resolveFromActionTotal
+        ? normalizeActionVolunteerParticipationFromTotal({
             volunteersCount: body.volunteersCount ?? current.volunteers_count,
             volunteerParticipation: body.volunteerParticipation,
           })
+        : normalizeVolunteerParticipation(body.volunteerParticipation)
     : currentMetadata.volunteerParticipation;
   const normalizedParticipation =
-    current.action_phase === "pre_action" ||
+    !resolveFromActionTotal ||
     participation === null ||
     (body.volunteerParticipation === undefined && body.volunteersCount === undefined)
       ? participation
