@@ -208,6 +208,47 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["GPX", "gpx_import" as const],
+    ["GPS", "gps_tracking" as const],
+  ])("refuses a lower-priority manual drawing after an observed %s route without writing", async (_label, source) => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      geometry_source: source,
+      latitude: 48.85,
+      longitude: 2.35,
+      department_code: "75",
+      department_name: "Paris",
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson: "{\"type\":\"LineString\"}",
+      preparation_data: {
+        routeObservedDistanceKm: 3.4,
+        ...(source === "gpx_import"
+          ? { gpxImport: {
+              source: "gpx_import",
+              observedDistanceKm: 3.4,
+              pointCount: 2,
+              inferredTopology: "point_to_point",
+            } }
+          : {}),
+      },
+      notes: "Trace observée conservée",
+    }));
+
+    const response = await patchAction({
+      geometrySource: "manual",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [[48.9, 2.4], [48.91, 2.41]],
+      },
+      latitude: 48.9,
+      longitude: 2.4,
+      notes: "Dessin refusé",
+    });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it("rejects a forged preparation state before loading the action", async () => {
     const { PATCH } = await import("./route");
 

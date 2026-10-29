@@ -1,5 +1,6 @@
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import type { ActionRow } from "@/types/database";
+import { hasPriorityObservedGeometry } from "./action-observed-geometry";
 
 export function preserveObservedRouteGeometry(
   current: ActionRow,
@@ -8,10 +9,7 @@ export function preserveObservedRouteGeometry(
   const currentPreparationData = normalizeActionPreparationData(
     current.preparation_data ?? {},
   );
-  const hasObservedRoute =
-    current.geometry_source === "gpx_import" ||
-    current.geometry_source === "gps_tracking" ||
-    currentPreparationData.gpxImport?.source === "gpx_import";
+  const hasObservedRoute = hasPriorityObservedGeometry(current);
   if (!hasObservedRoute || !updateData["preparation_data"]) return;
   const nextSource = updateData["geometry_source"];
   if (nextSource === "gpx_import" || nextSource === "gps_tracking") return;

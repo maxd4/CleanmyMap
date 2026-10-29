@@ -72,6 +72,41 @@ function withoutDerivedRouteMetadata(
   return nextPreparationData;
 }
 
+export function hasPriorityObservedGeometry(
+  current: Pick<ActionRow, "geometry_source" | "preparation_data">,
+): boolean {
+  const preparationData = normalizeActionPreparationData(
+    current.preparation_data ?? {},
+  );
+  return (
+    current.geometry_source === "gpx_import" ||
+    current.geometry_source === "gps_tracking" ||
+    preparationData.gpxImport?.source === "gpx_import"
+  );
+}
+
+export function isManualDrawingReplacementBlocked(
+  current: Pick<ActionRow, "geometry_source" | "preparation_data">,
+  source: ActionGeometrySource | null | undefined,
+): boolean {
+  return source === "manual" && hasPriorityObservedGeometry(current);
+}
+
+export function getAcceptedActionDrawing({
+  current,
+  drawing,
+  source,
+}: {
+  current: Pick<ActionRow, "geometry_source" | "preparation_data">;
+  drawing: ActionDrawing | null | undefined;
+  source: ActionGeometrySource | null | undefined;
+}): ActionDrawing | null {
+  if (!drawing || (source !== "manual" && source !== "gpx_import")) {
+    return null;
+  }
+  return isManualDrawingReplacementBlocked(current, source) ? null : drawing;
+}
+
 export function buildObservedActionGeometryUpdate({
   current,
   drawing,
@@ -129,7 +164,7 @@ export function buildManualActionGeometryUpdate({
   drawing: ActionDrawing;
   preparationData?: ActionPreparationData | null;
 }): Record<string, unknown> {
-  if (current.geometry_source === "gpx_import" || current.geometry_source === "gps_tracking") {
+  if (isManualDrawingReplacementBlocked(current, "manual")) {
     return {};
   }
 

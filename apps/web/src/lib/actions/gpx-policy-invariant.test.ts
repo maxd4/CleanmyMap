@@ -226,4 +226,93 @@ describe("GPX policy invariant", () => {
     });
     expect(prepared.updateData).not.toHaveProperty("geometry_source");
   });
+
+  it.each([
+    ["GPX", "gpx_import" as const],
+    ["GPS", "gps_tracking" as const],
+  ])("rejects a lower-priority manual drawing after an observed %s geometry", async (_label, source) => {
+    const current = {
+      ...buildCurrent(),
+      geometry_source: source,
+      latitude: 48.85,
+      longitude: 2.35,
+      department_code: "75",
+      department_name: "Paris",
+      notes: buildGpxNotes(),
+    };
+
+    await expect(
+      prepareActionUpdate({
+        current,
+        parsedBody: ({
+          geometrySource: "manual",
+          manualDrawing: {
+            kind: "polyline",
+            coordinates: [[48.9, 2.4], [48.91, 2.41]],
+          },
+          latitude: 48.9,
+          longitude: 2.4,
+          notes: "Ne doit pas remplacer la trace observée",
+        } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({
+      field: "manualDrawing",
+      message: "Un dessin manuel ne peut pas remplacer un tracé GPX ou GPS déjà observé.",
+    });
+  });
+
+  it("rejects a manual drawing when historical GPX metadata remains the observed owner", async () => {
+    const current = {
+      ...buildCurrent(),
+      geometry_source: "routed" as const,
+      preparation_data: {
+        routeObservedDistanceKm: 2.4,
+        gpxImport,
+      },
+    };
+
+    await expect(
+      prepareActionUpdate({
+        current,
+        parsedBody: ({
+          geometrySource: "manual",
+          manualDrawing: {
+            kind: "polyline",
+            coordinates: [[48.9, 2.4], [48.91, 2.41]],
+          },
+        } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "manualDrawing" });
+  });
+
+  it("accepts a manual drawing when no observed geometry has priority", async () => {
+    const current = {
+      ...buildCurrent(),
+      geometry_source: "routed" as const,
+      derived_geometry_geojson: null,
+      preparation_data: {},
+      notes: null,
+    };
+    const drawing = {
+      kind: "polyline" as const,
+      coordinates: [[48.9, 2.4], [48.91, 2.41]] as [number, number][],
+    };
+
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({
+        geometrySource: "manual",
+        manualDrawing: drawing,
+        notes: "Dessin terrain corrigé",
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).toMatchObject({
+      geometry_source: "manual",
+      latitude: 48.905,
+      longitude: 2.405,
+    });
+    expect(prepared.updateData).toHaveProperty("derived_geometry_geojson");
+    expect(prepared.updateData.notes).toContain("Dessin terrain corrigé");
+  });
 });

@@ -11,6 +11,7 @@ import { resolveNextActionStatus } from "./action-update-status";
 import {
   buildManualActionGeometryUpdate,
   buildObservedActionGeometryUpdate,
+  getAcceptedActionDrawing,
   geometryRepresentativeCoordinates,
 } from "./action-observed-geometry";
 
@@ -60,15 +61,21 @@ export function getExplicitDrawing(body: ActionUpdateInput) {
     : null;
 }
 
-function geometryCoordinates(body: ActionUpdateInput) {
-  return geometryRepresentativeCoordinates(getExplicitDrawing(body));
+function geometryCoordinates(current: ActionRow, body: ActionUpdateInput) {
+  return geometryRepresentativeCoordinates(
+    getAcceptedActionDrawing({
+      current,
+      drawing: getExplicitDrawing(body),
+      source: body.geometrySource,
+    }),
+  );
 }
 
 async function buildDepartmentFields(
   current: ActionRow,
   body: ActionUpdateInput,
 ): Promise<Record<string, unknown>> {
-  const representative = geometryCoordinates(body);
+  const representative = geometryCoordinates(current, body);
   const nextLatitude = representative?.latitude ?? body.latitude ?? current.latitude;
   const nextLongitude = representative?.longitude ?? body.longitude ?? current.longitude;
   const coordinatesChanged =
@@ -135,7 +142,11 @@ export async function buildActionUpdateFields(params: {
   Object.assign(updateData, buildTimingFields(current, body));
   if (body.accessMode !== undefined) updateData["access_mode"] = body.accessMode;
 
-  const drawing = getExplicitDrawing(body);
+  const drawing = getAcceptedActionDrawing({
+    current,
+    drawing: getExplicitDrawing(body),
+    source: body.geometrySource,
+  });
   if (drawing) {
     const geometryUpdate =
       body.geometrySource === "gpx_import"

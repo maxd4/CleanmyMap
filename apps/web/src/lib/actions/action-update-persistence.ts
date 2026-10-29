@@ -12,7 +12,11 @@ import {
   preserveManualDrawing,
 } from "./action-update-notes";
 import { preserveObservedRouteGeometry } from "./action-update-geometry";
-import { geometryRepresentativeCoordinates } from "./action-observed-geometry";
+import {
+  geometryRepresentativeCoordinates,
+  getAcceptedActionDrawing,
+  isManualDrawingReplacementBlocked,
+} from "./action-observed-geometry";
 import {
   getVolunteerActionCompositionValidationMessage,
   getVolunteerForecastValidationMessage,
@@ -80,7 +84,13 @@ function validateEffectiveActionCoordinates(
   current: ActionRow,
   body: ActionUpdateInput,
 ): void {
-  const representative = geometryRepresentativeCoordinates(getExplicitDrawing(body));
+  const representative = geometryRepresentativeCoordinates(
+    getAcceptedActionDrawing({
+      current,
+      drawing: getExplicitDrawing(body),
+      source: body.geometrySource,
+    }),
+  );
   const hasCoordinatePatch = body.latitude !== undefined || body.longitude !== undefined;
   if (!hasCoordinatePatch && !representative) return;
 
@@ -134,6 +144,16 @@ export async function prepareActionUpdate(params: {
   }
 
   const nextActionPhase = body.actionPhase ?? current.action_phase;
+  const submittedDrawing = getExplicitDrawing(body);
+  if (
+    submittedDrawing &&
+    isManualDrawingReplacementBlocked(current, body.geometrySource)
+  ) {
+    throw new ActionUpdateValidationError(
+      "manualDrawing",
+      "Un dessin manuel ne peut pas remplacer un tracé GPX ou GPS déjà observé.",
+    );
+  }
   validateEffectiveActionDate(current, body, nextActionPhase);
   validateEffectiveActionCoordinates(current, body);
   if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
@@ -214,11 +234,11 @@ export async function prepareActionUpdate(params: {
     nextVolunteerParticipation: measurements.nextVolunteerParticipation,
   });
   if (notes !== undefined) {
-    const replacementDrawing =
-      body.manualDrawing &&
-      (body.geometrySource === "manual" || body.geometrySource === "gpx_import")
-        ? body.manualDrawing
-        : undefined;
+    const replacementDrawing = getAcceptedActionDrawing({
+      current,
+      drawing: submittedDrawing,
+      source: body.geometrySource,
+    }) ?? undefined;
     updateData["notes"] = preserveManualDrawing(
       current.notes,
       notes,
