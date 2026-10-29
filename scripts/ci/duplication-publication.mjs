@@ -311,6 +311,13 @@ function validateProofConsistency(repositoryRoot, candidateSha, proof, reports) 
         && classified.has(`${scope.name}:${fingerprint}`))
       .sort();
     assertJsonEqual(scope.qualifiedNewFingerprints, expectedQualified, `Duplication publication qualified fingerprints are incoherent for ${scope.name}.`);
+    const unqualified = [...currentFingerprintsByScope[scope.name]]
+      .filter((fingerprint) => !Object.hasOwn(nativeBaselines[scope.name].fingerprints, fingerprint)
+        && !expectedQualified.includes(fingerprint))
+      .sort();
+    if (unqualified.length > 0) {
+      throw new Error(`Duplication publication contains unqualified new fingerprints for ${scope.name}: ${unqualified.join(", ")}.`);
+    }
   }
   const statuses = proof.scopes.map((scope) => scope.ratchetStatus);
   const expectedStatus = expectedJustificationStatus.stale.length > 0 || statuses.includes("FAIL")

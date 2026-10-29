@@ -291,6 +291,52 @@ test("publication proof rejects justification evidence that does not cover both 
   }
 });
 
+test("publication proof rejects a new fingerprint that is absent from the durable registry", () => {
+  const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-unqualified-"));
+  try {
+    const candidateSha = git(["rev-parse", "HEAD"]);
+    writeDuplicationPublicationProof({
+      repositoryRoot: REPOSITORY_ROOT,
+      candidateSha,
+      results: fixtureResults(root),
+      baseline: fixtureBaseline(),
+      justificationReport: fixtureJustifications(),
+      toolVersion: { actual: DUPLICATION_TOOL_VERSION },
+      candidateScope: "DYNAMIC_CANDIDATE",
+      publicationRoot: root,
+      runId: "run-test-unqualified",
+    });
+    const newFingerprint = "abcdef0123456789";
+    rewriteJsonReportAndRefreshHash(root, candidateSha, "run-test-unqualified", "runtime", (report) => {
+      report.statistics.total.clones += 1;
+      report.duplicates.push({
+        firstFile: { name: "apps/web/src/unqualified-a.ts", start: 1, end: 5 },
+        secondFile: { name: "apps/web/src/unqualified-b.ts", start: 7, end: 11 },
+      });
+    }, (sarif) => {
+      sarif.runs[0].results.push({
+        partialFingerprints: { "jscpdCloneHash/v1": newFingerprint },
+        locations: [
+          { physicalLocation: { artifactLocation: { uri: "apps/web/src/unqualified-a.ts" }, region: { startLine: 1, endLine: 5 } } },
+          { physicalLocation: { artifactLocation: { uri: "apps/web/src/unqualified-b.ts" }, region: { startLine: 7, endLine: 11 } } },
+        ],
+      });
+    });
+    const proofPath = join(root, candidateSha, "run-test-unqualified", "duplication-publication-proof.json");
+    const proof = JSON.parse(readFileSync(proofPath, "utf8"));
+    const runtimeScope = proof.scopes.find((scope) => scope.name === "runtime");
+    runtimeScope.fingerprints.push(newFingerprint);
+    runtimeScope.metrics.clones += 1;
+    writeFileSync(proofPath, JSON.stringify(proof));
+    assert.throws(
+      () => validateDuplicationPublicationProof({ repositoryRoot: REPOSITORY_ROOT, candidateSha, publicationRoot: root }),
+      /unqualified new fingerprints/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("publication proof records jscpd execution and rejects non-successful execution metadata", () => {
   const root = mkdtempSync(join(tmpdir(), "cleanmymap-duplication-publication-execution-"));
   try {
