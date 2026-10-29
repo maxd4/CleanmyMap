@@ -93,7 +93,7 @@ function buildRouteFields(
 
 function buildParticipationFields(action: ActionEditorRecord): Partial<FormState> {
   return {
-    volunteersCount: String(action.volunteersCount),
+    volunteersCount: toFormNumber(action.volunteersCount),
     childrenCount:
       action.volunteerParticipation?.childrenCount == null
         ? ""

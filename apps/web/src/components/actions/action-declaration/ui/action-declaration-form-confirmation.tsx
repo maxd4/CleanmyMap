@@ -87,17 +87,18 @@ export function ActionDeclarationFormConfirmation({
               Structure / Cadre d&apos;engagement
             </p>
             <p className="text-base font-bold text-emerald-950">
-              {form.associationName}
+              {payload.organizerName?.trim() || form.associationName || "Non renseignée"}
             </p>
             <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
               Type de structure : {getOrganizerTypeLabel(payload.organizerType)}
             </p>
             {payload.recordType === "action" && (
-              <p className="cmm-text-small cmm-text-secondary mt-2">
+              <div className="cmm-text-small cmm-text-secondary mt-2 space-y-1">
                 {payload.organizerAccounts && payload.organizerAccounts.length > 0
-                    ? `Organisateur / Référant déclaré: ${payload.organizerAccounts.join(", ")}`
-                    : "Aucun organisateur ou référant n’est déclaré dans ces données."}
-              </p>
+                    ? <p>Coorganisateurs déclarés : {payload.organizerAccounts.join(", ")}</p>
+                    : <p>Aucun coorganisateur n’est déclaré dans ces données.</p>}
+                <p>Le nombre de participants présents est déclaré séparément des comptes.</p>
+              </div>
             )}
           </div>
 
@@ -210,14 +211,14 @@ export function ActionDeclarationFormConfirmation({
           <div className="grid gap-5 md:grid-cols-2">
             <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
               <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-                Bénévoles
+                Participants présents
               </p>
               <p className="text-2xl font-bold text-emerald-950 tracking-tight">
                 {payload.volunteersCount}
               </p>
               {payload.volunteerParticipation ? (
                 <p className="cmm-text-small cmm-text-secondary mt-2">
-                  Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Adultes {payload.volunteerParticipation.adultCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
+                  Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Adultes (hors retraités) {payload.volunteerParticipation.adultCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
                   <br />
                   Unités opérationnelles : {payload.volunteerParticipation.effectiveVolunteerUnits ?? "—"}
                 </p>

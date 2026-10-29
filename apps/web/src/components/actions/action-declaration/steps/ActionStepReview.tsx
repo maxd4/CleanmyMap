@@ -144,7 +144,7 @@ export function ActionStepReview({
               <DataRow icon={Trash2} label="Déchets" value={fmtKg(payload.wasteKg)} valueClass="text-emerald-700 font-bold" />
               <DataRow icon={Cigarette} label="Masse de mégots" value={fmtKg(payload.cigaretteButtsKg)} valueClass="text-amber-700" />
               <DataRow icon={Cigarette} label="Nombre de mégots" value={payload.cigaretteButtsCount == null ? "Non renseigné" : String(payload.cigaretteButtsCount)} valueClass="text-amber-700" />
-              <DataRow icon={Users} label="Participants" value={payload.volunteersCount > 0 ? `${payload.volunteersCount} personne${payload.volunteersCount > 1 ? "s" : ""}` : "Non renseigné"} />
+              <DataRow icon={Users} label="Participants présents" value={payload.volunteersCount == null ? "Non renseigné" : `${payload.volunteersCount} personne${payload.volunteersCount > 1 ? "s" : ""}`} />
             </>
           )}
         </section>
@@ -210,11 +210,23 @@ export function ActionStepReview({
           {payload.recordType === "action" && (
             <DataRow
               icon={Users}
-              label="Organisateur / référant déclaré"
+              label="Organisateur principal"
+              value={
+                payload.organizerName?.trim()
+                    ? payload.organizerName
+                    : "Non renseigné"
+              }
+              valueClass="text-violet-700"
+            />
+          )}
+          {payload.recordType === "action" && (
+            <DataRow
+              icon={Users}
+              label="Coorganisateurs"
               value={
                 payload.organizerAccounts && payload.organizerAccounts.length > 0
-                    ? payload.organizerAccounts.join(", ")
-                    : "Non renseigné"
+                  ? payload.organizerAccounts.join(", ")
+                  : "Non renseigné"
               }
               valueClass="text-violet-700"
             />

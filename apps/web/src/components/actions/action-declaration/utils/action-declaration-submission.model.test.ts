@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE, createInitialFormState } from "../payload";
 import {
+  getActionDeclarationSubmissionIssues,
   getStepOneValidationIssues,
   normalizeActionDeclarationFormBeforeSubmit,
 } from "./action-declaration-submission.model";
+import { buildCreateActionPayload } from "../payload";
 
 describe("action declaration submission model", () => {
   it("keeps the canonical normalized route and spontaneous-action rules", () => {
@@ -47,5 +49,63 @@ describe("action declaration submission model", () => {
       "arrivalLocationLabel",
       "eventStartTime",
     ]);
+  });
+
+  it("requires an explicit total for a post-action declaration", () => {
+    const form = createInitialFormState("Alex", "action");
+    form.organizerType = "spontaneous";
+    form.organizerAccounts = "user-organizer";
+    form.associationName = "Action spontanée";
+    form.actionDate = "2026-10-09";
+    form.locationLabel = "Quai nord";
+    form.wasteKg = "0";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    const issues = getActionDeclarationSubmissionIssues({
+      form,
+      payload,
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: true,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    });
+
+    expect(issues).toEqual([
+      {
+        field: "volunteersCount",
+        message: "Renseignez le nombre total de participants présents (un entier de 0 à 500).",
+      },
+    ]);
+
+    form.volunteersCount = "0";
+    expect(getActionDeclarationSubmissionIssues({
+      form,
+      payload: buildCreateActionPayload({
+        form,
+        declarationMode: "complete",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        linkedEventId: undefined,
+      }),
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: true,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    })).toEqual([]);
   });
 });

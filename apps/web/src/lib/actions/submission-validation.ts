@@ -4,6 +4,7 @@ import {
   hasCompleteVolunteerCategoryData,
   hasVolunteerCategoryData,
   normalizeVolunteerParticipation,
+  type VolunteerParticipationInput,
 } from "./volunteer-participation";
 
 export type VolunteerActionValidationIssue = {
@@ -11,18 +12,23 @@ export type VolunteerActionValidationIssue = {
   message: string;
 };
 
-type VolunteerActionSubmissionLike = Pick<
+type VolunteerActionSubmissionLike = Omit<
+  Pick<
   CreateActionPayload,
-  | "recordType"
-  | "submissionMode"
-  | "wasteKg"
-  | "cigaretteButtsKg"
-  | "cigaretteButts"
-  | "cigaretteButtsMeasurements"
-  | "volunteersCount"
-  | "volunteerParticipation"
-  | "wasteBreakdown"
->;
+    | "recordType"
+    | "submissionMode"
+    | "wasteKg"
+    | "cigaretteButtsKg"
+    | "cigaretteButts"
+    | "cigaretteButtsMeasurements"
+    | "volunteersCount"
+    | "volunteerParticipation"
+    | "wasteBreakdown"
+  >,
+  "volunteerParticipation"
+> & {
+  volunteerParticipation?: CreateActionPayload["volunteerParticipation"] | VolunteerParticipationInput;
+};
 
 export function getVolunteerActionValidationIssues(
   payload: VolunteerActionSubmissionLike,
@@ -62,10 +68,20 @@ export function getVolunteerActionValidationIssues(
     typeof payload.wasteBreakdown?.megotsKg === "number" &&
     Number.isFinite(payload.wasteBreakdown.megotsKg);
 
-  if (volunteersCount < 1) {
+  if (volunteersCount < 0) {
     issues.push({
       field: "volunteersCount",
-      message: "Renseignez au moins 1 bénévole.",
+      message: "Le nombre de participants ne peut pas être négatif.",
+    });
+  }
+
+  if (
+    hasCompleteCategoryData &&
+    participation?.participantsCount !== payload.volunteersCount
+  ) {
+    issues.push({
+      field: "volunteerParticipation",
+      message: `La somme de la répartition (${participation?.participantsCount}) doit correspondre au nombre total de participants (${payload.volunteersCount}).`,
     });
   }
 

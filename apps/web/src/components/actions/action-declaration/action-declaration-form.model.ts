@@ -10,7 +10,7 @@ export const ACTION_VALIDATION_FIELD_IDS: Record<string, string> = {
   manualDrawing: "action-disclosure-route",
   gpxImport: "gpx-import",
   wasteKg: "harvest-waste-kg",
-  volunteersCount: "action-children-count",
+  volunteersCount: "action-volunteers-count",
   volunteerParticipation: "action-children-count",
   durationMinutes: "action-duration-minutes",
   eventStartTime: "action-event-start",

@@ -101,7 +101,9 @@ function buildPreparationParticipationFields(
 ) {
   return {
     volunteersExpected:
-      volunteerParticipation.participantsCount ?? toOptionalNumber(form.volunteersCount),
+      toOptionalNumber(form.volunteersCount) ??
+      volunteerParticipation.participantsCount ??
+      undefined,
     volunteerParticipation:
       volunteerParticipationInput as ActionPreparationData["volunteerParticipation"],
     groupJoinEnabled: form.groupJoinEnabled,

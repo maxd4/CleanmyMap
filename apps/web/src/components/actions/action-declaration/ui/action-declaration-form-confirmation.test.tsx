@@ -47,7 +47,8 @@ describe("ActionDeclarationFormConfirmation", () => {
     expect(markup).not.toContain("Eau protégée");
     expect(markup).not.toContain("compte connecté sera compté");
     expect(markup).not.toContain("compte admin par défaut");
-    expect(markup).toContain("Aucun organisateur ou référant n’est déclaré");
+    expect(markup).toContain("Aucun coorganisateur n’est déclaré");
+    expect(markup).toContain("Le nombre de participants présents est déclaré séparément des comptes.");
   });
 
   it("keeps absent measurements distinct from explicit zero", () => {

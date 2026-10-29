@@ -31,7 +31,7 @@ describe("ActionStepReview", () => {
     expect(markup).toContain("valeurs brutes déclarées");
     expect(markup).toContain("Masse de mégots");
     expect(markup).toContain("Nombre de mégots");
-    expect(markup).toContain("Organisateur / référant déclaré");
+    expect(markup).toContain("Organisateur principal");
     expect(markup).toContain("Non renseigné");
     expect(markup).not.toContain("Repère indicatif");
     expect(markup).not.toContain("kg moyen");

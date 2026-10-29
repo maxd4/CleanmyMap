@@ -46,7 +46,7 @@ describe("ActionStepIdentity", () => {
       displayName: "Aperçu local",
     });
 
-    expect(html).toContain("Membres de l");
+    expect(html).toContain("Comptes participants identifiés");
     expect(html).toContain("Type de structure");
     expect(html).toContain("Association étudiante");
     expect(html).toContain("user-manual-1");
@@ -166,8 +166,10 @@ describe("ActionStepIdentity", () => {
     expect(actionHtml).not.toContain("Enfants");
 
     const participantsHtml = renderIdentity(form, undefined, "participants");
-    expect(participantsHtml).toContain("Enfants");
-    expect(participantsHtml).toContain("Total calculé");
+    expect(participantsHtml).toContain("Nombre total de participants présents");
+    expect(participantsHtml).toContain("Répartition facultative");
+    expect(participantsHtml).toContain("Adultes (hors retraités)");
+    expect(participantsHtml).not.toContain("Total calculé");
     expect(participantsHtml).not.toContain("Date de l’action");
 
     const durationHtml = renderIdentity(form, undefined, "duration");
@@ -184,7 +186,7 @@ describe("ActionStepIdentity", () => {
 
     const organizationHtml = renderIdentity(form, undefined, "organization");
     expect(organizationHtml).toContain("Organisateurs associés");
-    expect(organizationHtml).toContain("Ajoutez les participants connus");
+    expect(organizationHtml).toContain("Comptes identifiés uniquement");
     expect(organizationHtml).not.toContain("Environnement de collecte");
 
     const collectionHtml = renderIdentity(form, undefined, "collection");

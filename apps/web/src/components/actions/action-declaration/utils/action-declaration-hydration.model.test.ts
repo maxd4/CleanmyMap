@@ -121,4 +121,21 @@ describe("action declaration hydration model", () => {
     );
     expect(result.form.routeTargetDistanceKmManuallySet).toBe(false);
   });
+
+  it("keeps a historical total readable without inferring categories", () => {
+    const action = createEditorRecord({
+      volunteersCount: 7,
+      volunteerParticipation: null,
+    });
+
+    const result = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      action,
+    );
+
+    expect(result.volunteersCount).toBe("7");
+    expect(result.childrenCount).toBe("");
+    expect(result.adultCount).toBe("");
+    expect(result.retiredCount).toBe("");
+  });
 });

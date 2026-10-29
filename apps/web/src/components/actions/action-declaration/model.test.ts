@@ -24,4 +24,13 @@ describe("action declaration model", () => {
     expect(second.equipmentInventory).not.toHaveProperty("glovesPairs");
     expect(second.preparationChecklist[0].checked).toBe(false);
   });
+
+  it("leaves observed participant totals and category sources empty until declared", () => {
+    const form = createInitialFormState("Alice");
+
+    expect(form.volunteersCount).toBe("");
+    expect(form.childrenCount).toBe("");
+    expect(form.adultCount).toBe("");
+    expect(form.retiredCount).toBe("");
+  });
 });

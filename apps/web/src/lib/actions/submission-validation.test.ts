@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getVolunteerActionValidationIssues } from "./submission-validation";
 
 describe("getVolunteerActionValidationIssues", () => {
-  it("rejects action submissions with zero volunteers", () => {
+  it("preserves an explicitly declared zero participant total", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
       wasteKg: 2,
@@ -10,12 +10,7 @@ describe("getVolunteerActionValidationIssues", () => {
       volunteersCount: 0,
     });
 
-    expect(issues).toEqual([
-      {
-        field: "volunteersCount",
-        message: "Renseignez au moins 1 bénévole.",
-      },
-    ]);
+    expect(issues).toEqual([]);
   });
 
   it("accepts an explicitly observed zero", () => {
@@ -27,6 +22,45 @@ describe("getVolunteerActionValidationIssues", () => {
     });
 
     expect(issues).toEqual([]);
+  });
+
+  it("accepts a total without a category split", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "complete",
+      wasteKg: 1,
+      cigaretteButts: 0,
+      volunteersCount: 8,
+      volunteerParticipation: {
+        childrenCount: null,
+        adultCount: null,
+        retiredCount: null,
+      },
+    });
+
+    expect(issues).toEqual([]);
+  });
+
+  it("rejects a category split whose sum differs from the explicit total", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "complete",
+      wasteKg: 1,
+      cigaretteButts: 0,
+      volunteersCount: 8,
+      volunteerParticipation: {
+        childrenCount: 2,
+        adultCount: 4,
+        retiredCount: 1,
+      },
+    });
+
+    expect(issues).toEqual([
+      {
+        field: "volunteerParticipation",
+        message: "La somme de la répartition (7) doit correspondre au nombre total de participants (8).",
+      },
+    ]);
   });
 
   it("accepts a canonical raw cigarette-butt measurement without a legacy alias", () => {

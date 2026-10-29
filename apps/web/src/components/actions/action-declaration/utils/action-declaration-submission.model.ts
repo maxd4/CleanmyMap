@@ -145,6 +145,25 @@ export function getActionDeclarationSubmissionIssues({
   const stepOneIssues = getStepOneValidationIssues(form);
   if (stepOneIssues.length > 0) return stepOneIssues;
 
+  if (form.recordType === "action") {
+    const totalInput = form.volunteersCount.trim();
+    const total = Number(totalInput);
+    if (
+      !totalInput ||
+      !Number.isInteger(total) ||
+      total < 0 ||
+      total > 500
+    ) {
+      return [
+        {
+          field: "volunteersCount",
+          message:
+            "Renseignez le nombre total de participants présents (un entier de 0 à 500).",
+        },
+      ];
+    }
+  }
+
   const volunteerIssues = getVolunteerActionValidationIssues(payload);
   if (volunteerIssues.length > 0) return volunteerIssues;
 

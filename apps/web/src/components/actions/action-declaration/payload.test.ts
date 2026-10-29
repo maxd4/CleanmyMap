@@ -8,7 +8,7 @@ describe("action declaration payload identity and organisation", () => {
     form.childrenCount = "2";
     form.adultCount = "4";
     form.retiredCount = "2";
-    form.volunteersCount = "999";
+    form.volunteersCount = "8";
 
     const payload = buildCreateActionPayload({
       form,
@@ -32,6 +32,31 @@ describe("action declaration payload identity and organisation", () => {
       childrenCount: 2,
       adultCount: 4,
       retiredCount: 2,
+    });
+  });
+
+  it("accepts an explicit total without manufacturing a category split", () => {
+    const form = buildBaseForm();
+    form.volunteersCount = "7";
+    form.childrenCount = "";
+    form.adultCount = "";
+    form.retiredCount = "";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.volunteersCount).toBe(7);
+    expect(payload.volunteerParticipation).toEqual({
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: null,
     });
   });
 
