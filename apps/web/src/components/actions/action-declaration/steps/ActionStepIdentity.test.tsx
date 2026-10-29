@@ -67,12 +67,23 @@ describe("ActionStepIdentity", () => {
     const form = createInitialFormState("Aperçu local", "action");
     const blankHtml = renderIdentity(form);
 
-    expect(blankHtml).toContain('aria-pressed="false"');
-    expect(blankHtml).not.toContain('aria-pressed="true"');
+    expect(blankHtml).toContain("Type d’environnement non renseigné");
+    expect(blankHtml).toMatch(/<button[^>]*aria-pressed="true"[^>]*>Type d’environnement non renseigné<\/button>/);
 
     form.placeType = "Bois/Parc/Jardin/Square/Sentier";
     const selectedHtml = renderIdentity(form);
     expect(selectedHtml).toContain('aria-pressed="true"');
+  });
+
+  it("keeps Monument as a distinct editable historical environment", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.placeType = "Monument";
+
+    const html = renderIdentity(form);
+
+    expect(html).toContain(">Monument</p>");
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("Type d’environnement non renseigné");
   });
 
   it("explains the unified action time and event window", () => {

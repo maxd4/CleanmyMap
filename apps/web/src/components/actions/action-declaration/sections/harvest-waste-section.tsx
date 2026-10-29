@@ -7,6 +7,7 @@ import type { FormState } from "../model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
+  ACTION_MEASUREMENT_MAX_KG,
   compareWasteBreakdownToTotal,
   type ActionWasteMeasurementMethod,
   type WasteCategorySlug,
@@ -87,7 +88,7 @@ export function HarvestWasteSection({
           </div>
         </div>
         <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
-          0 – 100 kg
+          Mesure déclarée
         </span>
       </div>
 
@@ -100,7 +101,7 @@ export function HarvestWasteSection({
             type="number"
             step={ACTION_WASTE_MASS_RESOLUTION_KG}
             min="0"
-            max="100"
+            max={ACTION_MEASUREMENT_MAX_KG}
             className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300"
             value={wasteKg}
             onChange={(e) => onWasteKgChange(e.target.value)}
@@ -108,13 +109,6 @@ export function HarvestWasteSection({
           />
         </label>
       ) : null}
-
-      <WasteComparisonVisual
-        currentPerVolunteer={wasteCurrentPerVolunteer}
-        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-        deltaPercent={wasteDeltaPercent}
-        comparisonTone={comparisonTone}
-      />
 
       <label className="block space-y-1.5">
         <span className="text-xs font-medium text-slate-500">Méthode de mesure (facultatif)</span>
@@ -133,6 +127,13 @@ export function HarvestWasteSection({
           <option value="inconnue">Inconnue</option>
         </select>
       </label>
+
+      <WasteComparisonVisual
+        currentPerVolunteer={wasteCurrentPerVolunteer}
+        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+        deltaPercent={wasteDeltaPercent}
+        comparisonTone={comparisonTone}
+      />
 
       <div className="border-t border-slate-100 pt-4">
         <WasteCategorySelector
@@ -174,6 +175,7 @@ export function HarvestWasteSection({
                     type="number"
                     min="0"
                     step={ACTION_WASTE_MASS_RESOLUTION_KG}
+                    max={ACTION_MEASUREMENT_MAX_KG}
                     placeholder="0"
                     className={triInputCls}
                     value={value}
@@ -207,19 +209,20 @@ export function HarvestWasteSection({
               />
             </label>
 
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-400">Notes sur la collecte</span>
-              <textarea
-                rows={3}
-                placeholder="Observations, contexte particulier, difficultés rencontrées…"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 resize-none"
-                value={notes}
-                onChange={(e) => onTriChange("notes", e.target.value)}
-              />
-            </label>
           </div>
         )}
       </div>
+
+      <label className="block space-y-1">
+        <span className="text-xs font-medium text-slate-500">Notes générales sur la collecte</span>
+        <textarea
+          rows={3}
+          placeholder="Observations, contexte particulier, difficultés rencontrées…"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 resize-none"
+          value={notes}
+          onChange={(e) => onTriChange("notes", e.target.value)}
+        />
+      </label>
     </section>
   );
 }

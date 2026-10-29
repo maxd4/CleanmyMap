@@ -14,6 +14,7 @@ import { HarvestWasteSection } from "../sections/harvest-waste-section";
 import { Cigarette, Trash2 } from "lucide-react";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
+import { ACTION_MEASUREMENT_MAX_KG, ACTION_WASTE_MASS_RESOLUTION_KG } from "@/lib/waste";
 
 interface ActionStepHarvestProps {
   form: FormState;
@@ -23,8 +24,11 @@ interface ActionStepHarvestProps {
   photoAssets: ActionPhotoAsset[];
   visionEstimate: ActionVisionEstimate | null;
   visionStatus: "idle" | "processing" | "ready" | "error";
+  photoError: string | null;
   estimatedWasteKgInterval: [number, number] | null;
   onPhotoUpload: (files: FileList | null) => void;
+  onPhotoReplace: (photoId: string, file: File | null) => void;
+  onRemovePhoto: (photoId: string) => void;
   onClearPhotos: () => void;
   mode?: "all" | "essentials" | "collection" | "photos" | "details";
 }
@@ -37,8 +41,11 @@ export function ActionStepHarvest({
   photoAssets,
   visionEstimate,
   visionStatus,
+  photoError,
   estimatedWasteKgInterval,
   onPhotoUpload,
+  onPhotoReplace,
+  onRemovePhoto,
   onClearPhotos,
   mode = "all",
 }: ActionStepHarvestProps) {
@@ -82,8 +89,8 @@ export function ActionStepHarvest({
             inputMode="decimal"
             type="number"
             min="0"
-            max="100"
-            step="0.01"
+            max={ACTION_MEASUREMENT_MAX_KG}
+            step={ACTION_WASTE_MASS_RESOLUTION_KG}
             className="min-h-12 w-full rounded-xl border border-emerald-200 bg-white px-3.5 text-base font-bold text-emerald-950 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
             value={form.wasteKg}
             onChange={(event) => updateField("wasteKg", event.target.value)}
@@ -121,6 +128,7 @@ export function ActionStepHarvest({
             inputMode="decimal"
             type="number"
             min="0"
+            max={ACTION_MEASUREMENT_MAX_KG}
             step="0.01"
             className="min-h-12 w-full rounded-xl border border-emerald-200 bg-white px-3.5 text-base font-bold text-emerald-950 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15"
             value={form.wasteMegotsKg}
@@ -138,9 +146,12 @@ export function ActionStepHarvest({
         photoAssets={photoAssets}
         visionEstimate={visionEstimate}
         visionStatus={visionStatus}
+        photoError={photoError}
         estimatedWasteKgInterval={estimatedWasteKgInterval}
         hasPhotos={hasPhotos}
         onPhotoUpload={onPhotoUpload}
+        onPhotoReplace={onPhotoReplace}
+        onRemovePhoto={onRemovePhoto}
         onClearPhotos={onClearPhotos}
       />
     );
@@ -200,9 +211,12 @@ export function ActionStepHarvest({
           photoAssets={photoAssets}
           visionEstimate={visionEstimate}
           visionStatus={visionStatus}
+          photoError={photoError}
           estimatedWasteKgInterval={estimatedWasteKgInterval}
           hasPhotos={hasPhotos}
           onPhotoUpload={onPhotoUpload}
+          onPhotoReplace={onPhotoReplace}
+          onRemovePhoto={onRemovePhoto}
           onClearPhotos={onClearPhotos}
         />
       ) : null}

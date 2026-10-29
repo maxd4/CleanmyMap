@@ -6,6 +6,7 @@ import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
 import { ButtsComparisonVisual } from "../ui/harvest-gauges";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
+import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
@@ -137,7 +138,7 @@ export function HarvestMegotsSection({
               type="number"
               step="0.01"
               min="0"
-              max="100"
+              max={ACTION_MEASUREMENT_MAX_KG}
               className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
               value={wasteMegotsKg}
               onChange={(e) => onMegotsWeightChange(e.target.value)}
@@ -189,6 +190,7 @@ export function HarvestMegotsSection({
           type="number"
           step="0.01"
           min="0"
+          max={ACTION_MEASUREMENT_MAX_KG}
           className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
           value={cigaretteButtsVolumeLiters}
           onChange={(e) => onMegotsVolumeChange(e.target.value)}

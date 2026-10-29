@@ -31,9 +31,12 @@ describe("HarvestPhotoSection", () => {
         photoAssets: [],
         visionEstimate: null,
         visionStatus: "idle",
+        photoError: null,
         estimatedWasteKgInterval: null,
         hasPhotos: false,
         onPhotoUpload: () => undefined,
+        onPhotoReplace: () => undefined,
+        onRemovePhoto: () => undefined,
         onClearPhotos: () => undefined,
       }),
     );
@@ -48,14 +51,20 @@ describe("HarvestPhotoSection", () => {
         photoAssets: [photo],
         visionEstimate,
         visionStatus: "ready",
+        photoError: null,
         estimatedWasteKgInterval: [2.2, 4.8],
         hasPhotos: true,
         onPhotoUpload: () => undefined,
+        onPhotoReplace: () => undefined,
+        onRemovePhoto: () => undefined,
         onClearPhotos: () => undefined,
       }),
     );
 
     expect(markup).toContain('alt="Photo 1"');
+    expect(markup).toContain("Remplacer la photo 1");
+    expect(markup).toContain("Supprimer");
+    expect(markup).toContain('class="sr-only"');
     expect(markup).toContain('data-testid="vision-estimation-disabled"');
     expect(markup).toContain("Estimation photo désactivée");
     expect(markup).toContain("pas encore suffisamment mature ni validé");

@@ -10,18 +10,24 @@ type HarvestPhotoSectionProps = {
   /** Kept for the existing form/view-model contract; the engine is disabled here. */
   visionEstimate: ActionVisionEstimate | null;
   visionStatus: "idle" | "processing" | "ready" | "error";
+  photoError: string | null;
   /** Kept for the existing form/view-model contract; never rendered while disabled. */
   estimatedWasteKgInterval: [number, number] | null;
   hasPhotos: boolean;
   onPhotoUpload: (files: FileList | null) => void;
+  onPhotoReplace: (photoId: string, file: File | null) => void;
+  onRemovePhoto: (photoId: string) => void;
   onClearPhotos: () => void;
 };
 
 export function HarvestPhotoSection({
   photoAssets,
   visionStatus,
+  photoError,
   hasPhotos,
   onPhotoUpload,
+  onPhotoReplace,
+  onRemovePhoto,
   onClearPhotos,
 }: HarvestPhotoSectionProps) {
   return (
@@ -51,8 +57,7 @@ export function HarvestPhotoSection({
           )}
         </div>
 
-        {!hasPhotos ? (
-          <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* Upload fichier */}
             <label className={cn(
               "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 cursor-pointer transition-all hover:border-violet-300 hover:bg-violet-50/40"
@@ -61,11 +66,11 @@ export function HarvestPhotoSection({
                 <Camera size={18} />
               </div>
               <p className="text-xs font-semibold text-slate-700 text-center">Choisir un fichier</p>
-              <p className="text-xs text-slate-400 text-center">JPG, PNG, WebP · 3 photos · 5 Mo max</p>
+              <p className="text-xs text-slate-400 text-center">JPG, PNG, WebP · jusqu’à 3 photos · 5 Mo max chacune</p>
               <input
                 id="harvest-photos"
                 type="file"
-                className="hidden"
+                className="sr-only"
                 accept="image/*"
                 multiple
                 onChange={(e) => onPhotoUpload(e.target.files)}
@@ -82,23 +87,24 @@ export function HarvestPhotoSection({
               <p className="text-xs font-semibold text-slate-700 text-center">Prendre une photo</p>
               <p className="text-xs text-slate-400 text-center">Caméra en direct</p>
               <input
+                id="harvest-photo-camera"
                 type="file"
-                className="hidden"
+                className="sr-only"
                 accept="image/*"
                 capture="environment"
                 onChange={(e) => onPhotoUpload(e.target.files)}
               />
             </label>
           </div>
-        ) : (
+
+        {hasPhotos ? (
           <div className="relative">
-            {/* Aperçu photos */}
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {photoAssets.map((asset, i) => (
+              {photoAssets.map((asset, index) => (
                 <Image
-                  key={i}
+                  key={asset.id}
                   src={asset.dataUrl}
-                  alt={`Photo ${i + 1}`}
+                  alt={`Photo ${index + 1}`}
                   width={120}
                   height={120}
                   unoptimized
@@ -106,9 +112,37 @@ export function HarvestPhotoSection({
                 />
               ))}
             </div>
-
+            <div className="mt-3 flex flex-wrap gap-2">
+              {photoAssets.map((asset, index) => (
+                <div key={asset.id} className="flex items-center gap-2">
+                  <label
+                    htmlFor={`harvest-photo-replace-${asset.id}`}
+                    className="cursor-pointer rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-500"
+                  >
+                    Remplacer la photo {index + 1}
+                    <input
+                      id={`harvest-photo-replace-${asset.id}`}
+                      type="file"
+                      className="sr-only"
+                      accept="image/*"
+                      onChange={(event) => onPhotoReplace(asset.id, event.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => onRemovePhoto(asset.id)}
+                    className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                    aria-label={`Supprimer la photo ${index + 1}`}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+        ) : null}
+
+        {photoError ? <p role="alert" className="text-xs font-semibold leading-5 text-rose-700">{photoError}</p> : null}
 
         <div
           className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
@@ -121,7 +155,7 @@ export function HarvestPhotoSection({
           </p>
         </div>
 
-        {visionStatus === "error" && (
+        {visionStatus === "error" && !photoError && (
           <p className="text-xs text-rose-500">Préparation des photos impossible. Vérifiez le fichier sélectionné.</p>
         )}
       </section>

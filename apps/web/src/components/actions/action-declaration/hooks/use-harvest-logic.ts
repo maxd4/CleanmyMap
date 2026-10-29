@@ -7,6 +7,7 @@ import {
 import { deriveWasteComparison, type WasteComparisonTone } from "../utils/harvest-utils";
 import { useCallback, useMemo, useState } from "react";
 import { useActionPollutionScoreReferences } from "../../map/scores/action-pollution-score-references-context";
+import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 
 import type { FormState } from "../model";
 
@@ -41,7 +42,7 @@ function readValidMass(rawValue: string): number | null {
     return null;
   }
   const parsed = Number(rawValue);
-  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100 ? parsed : null;
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= ACTION_MEASUREMENT_MAX_KG ? parsed : null;
 }
 
 function formatDerivedNumber(value: number): string {
@@ -78,7 +79,7 @@ export function useHarvestLogic({
   const [lastMegotsInputSource, setLastMegotsInputSource] = useState<MegotsInputSource>(null);
 
   const derived = useMemo(() => {
-    const wasteKg = readValidComparisonNumber(form.wasteKg, 0, 100);
+    const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
     const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 1000);
     const wasteComparison = deriveWasteComparison({
       wasteKg,

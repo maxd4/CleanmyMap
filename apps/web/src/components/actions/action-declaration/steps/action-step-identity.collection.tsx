@@ -47,11 +47,18 @@ const PLACE_TYPE_TILE_OPTIONS = [
     sub: "Gare, station, portique",
   },
   {
-    values: ["Galerie/Passage couvert", "Monument"],
+    values: ["Galerie/Passage couvert"],
     value: "Galerie/Passage couvert",
     icon: Building,
-    label: "Galerie & Monument",
-    sub: "Passage, galerie, site, monument",
+    label: "Galerie & passage",
+    sub: "Passage, galerie, site couvert",
+  },
+  {
+    values: ["Monument"],
+    value: "Monument",
+    icon: Building,
+    label: "Monument",
+    sub: "Monument ou site patrimonial",
   },
 ] as const;
 
@@ -142,6 +149,19 @@ export function ActionCollectionSection({
           );
         })}
       </div>
+      <button
+        type="button"
+        aria-pressed={form.placeType === ""}
+        onClick={() => updateField("placeType", "")}
+        className={cn(
+          "mt-3 rounded-xl border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+          form.placeType === ""
+            ? "border-emerald-300 bg-emerald-50 text-emerald-950"
+            : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60",
+        )}
+      >
+        Type d’environnement non renseigné
+      </button>
     </div>
   );
 }

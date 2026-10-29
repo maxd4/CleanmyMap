@@ -24,6 +24,7 @@ function buildActionDeclarationSectionProps(
     photoAssets,
     visionEstimate,
     visionStatus,
+    photoError,
     submissionState,
     validationIssues,
     hasAttemptedSubmit,
@@ -42,7 +43,10 @@ function buildActionDeclarationSectionProps(
     visionStatus,
     estimatedWasteKgInterval: smartAssist.estimatedWasteKgInterval,
     onPhotoUpload: state.handlePhotoUpload,
+    onPhotoReplace: state.handlePhotoReplace,
+    onRemovePhoto: state.removePhoto,
     onClearPhotos: state.clearPhotos,
+    photoError,
   };
   const location = {
     form,

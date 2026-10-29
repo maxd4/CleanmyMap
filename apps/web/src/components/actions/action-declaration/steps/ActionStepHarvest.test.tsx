@@ -20,8 +20,11 @@ function renderHarvest(mode: "essentials" | "collection" | "details") {
       photoAssets: [],
       visionEstimate: null,
       visionStatus: "idle",
+      photoError: null,
       estimatedWasteKgInterval: null,
       onPhotoUpload: () => undefined,
+      onPhotoReplace: () => undefined,
+      onRemovePhoto: () => undefined,
       onClearPhotos: () => undefined,
     } as ComponentProps<typeof ActionStepHarvest>),
   );

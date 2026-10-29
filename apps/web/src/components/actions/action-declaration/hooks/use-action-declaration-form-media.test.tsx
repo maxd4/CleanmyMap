@@ -64,4 +64,103 @@ describe("useActionDeclarationFormMedia", () => {
 
     renderer.unmount();
   });
+
+  it("adds photos incrementally, removes them by stable id and replaces one without clearing the others", async () => {
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(React.createElement(Harness, {
+        onSnapshot: (snapshot) => { latest = snapshot; },
+      }));
+    });
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File] as unknown as FileList);
+    });
+    expect(latest.photoAssets).toHaveLength(1);
+
+    await act(async () => {
+      await latest.handlePhotoReplace("photo-1", {} as File);
+    });
+    expect(latest.photoAssets).toHaveLength(1);
+    expect(latest.photoAssets[0]?.id).toBe("photo-1");
+
+    act(() => latest.removePhoto("photo-1"));
+    expect(latest.photoAssets).toHaveLength(0);
+    renderer.unmount();
+  });
+
+  it("reports an excessive selection without silently losing the existing valid photos", async () => {
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(React.createElement(Harness, {
+        onSnapshot: (snapshot) => { latest = snapshot; },
+      }));
+    });
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File, {} as File, {} as File, {} as File] as unknown as FileList);
+    });
+
+    expect(latest.photoAssets).toHaveLength(3);
+    expect(latest.photoError).toContain("Sélection limitée à 3 photos");
+    expect(normalizeActionPhotosMock).toHaveBeenCalledTimes(3);
+    renderer.unmount();
+  });
+
+  it("keeps already prepared photos when a later file fails validation", async () => {
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(React.createElement(Harness, {
+        onSnapshot: (snapshot) => { latest = snapshot; },
+      }));
+    });
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File] as unknown as FileList);
+    });
+    normalizeActionPhotosMock.mockRejectedValueOnce(new Error("Compression impossible."));
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File] as unknown as FileList);
+    });
+
+    expect(latest.photoAssets).toHaveLength(1);
+    expect(latest.photoError).toContain("Compression impossible.");
+    renderer.unmount();
+  });
+
+  it("rejects an unsupported format without adding or clearing photos", async () => {
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    normalizeActionPhotosMock.mockResolvedValueOnce([{
+      id: "photo-gif",
+      name: "bilan.gif",
+      mimeType: "image/gif",
+      dataUrl: "data:image/gif;base64,AAA",
+      size: 42,
+      width: 120,
+      height: 80,
+    } satisfies ActionPhotoAsset]);
+
+    act(() => {
+      renderer = create(React.createElement(Harness, {
+        onSnapshot: (snapshot) => { latest = snapshot; },
+      }));
+    });
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File] as unknown as FileList);
+    });
+
+    expect(latest.photoAssets).toHaveLength(0);
+    expect(latest.photoError).toContain("Format photo non pris en charge");
+    renderer.unmount();
+  });
 });

@@ -2,7 +2,12 @@
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
-import { ACTION_MEDIA_BUCKET, ACTION_MEDIA_MAX_SIZE_BYTES, type ActionMediaReadItem } from "./action-media-contract";
+import {
+  ACTION_MEDIA_BUCKET,
+  ACTION_MEDIA_MAX_MEDIA,
+  ACTION_MEDIA_MAX_SIZE_BYTES,
+  type ActionMediaReadItem,
+} from "./action-media-contract";
 import type { ActionPhotoAsset } from "@/lib/actions/types";
 
 export type ActionMediaUploadFailure = { asset: ActionPhotoAsset; message: string };
@@ -65,9 +70,13 @@ async function uploadOne(actionId: string, asset: ActionPhotoAsset, sortOrder: n
 }
 
 export async function uploadActionMedia(actionId: string, assets: ActionPhotoAsset[]): Promise<ActionMediaUploadResult> {
-  const failed: ActionMediaUploadFailure[] = [];
+  const acceptedAssets = assets.slice(0, ACTION_MEDIA_MAX_MEDIA);
+  const failed: ActionMediaUploadFailure[] = assets.slice(ACTION_MEDIA_MAX_MEDIA).map((asset) => ({
+    asset,
+    message: `La limite de ${ACTION_MEDIA_MAX_MEDIA} photos est dépassée.`,
+  }));
   let uploadedCount = 0;
-  for (const [index, asset] of assets.slice(0, 3).entries()) {
+  for (const [index, asset] of acceptedAssets.entries()) {
     try {
       await uploadOne(actionId, asset, index);
       uploadedCount += 1;

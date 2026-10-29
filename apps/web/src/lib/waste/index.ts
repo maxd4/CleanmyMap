@@ -12,6 +12,7 @@ export type {
   WasteCategorySlug,
 } from "./types";
 export {
+  ACTION_MEASUREMENT_MAX_KG,
   ACTION_WASTE_MASS_RESOLUTION_KG,
   compareWasteBreakdownToTotal,
 } from "./measurement";

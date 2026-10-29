@@ -4,5 +4,6 @@ export const PLACE_TYPE_FORM_OPTIONS = [
   { value: "Quai/Pont/Port", label: "Quai/Pont/Port" },
   { value: "N° Boulevard/Avenue/Place", label: "N° Boulevard/Avenue/Place" },
   { value: "Gare/Station/Portique", label: "Gare/Station/Portique" },
-  { value: "Galerie/Passage couvert", label: "Galerie & Monument" },
+  { value: "Galerie/Passage couvert", label: "Galerie & passage" },
+  { value: "Monument", label: "Monument" },
 ] as const;

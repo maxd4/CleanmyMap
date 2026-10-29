@@ -34,7 +34,7 @@ function buildActionDeclarationFormResult({
   isCleanPlaceMode: boolean;
 }) {
   const { form, setForm, manualDrawing, manualDrawingSource, gpxError, hasAttemptedSubmit, setManualDrawing, hydration, draft, resolvedDefaultActorName } = lifecycle;
-  const { photoAssets, visionEstimate, visionStatus, handlePhotoUpload, clearPhotos } = media;
+  const { photoAssets, visionEstimate, visionStatus, photoError, handlePhotoUpload, handlePhotoReplace, removePhoto, clearPhotos } = media;
   const { submission, updates } = execution;
 
   return {
@@ -49,6 +49,7 @@ function buildActionDeclarationFormResult({
     photoAssets,
     visionEstimate,
     visionStatus,
+    photoError,
     submissionState: submission.submissionState,
     errorMessage: submission.errorMessage,
     createdId: submission.createdId,
@@ -72,6 +73,8 @@ function buildActionDeclarationFormResult({
     effectiveRoutePreviewSource: geometry.activeFinalGeometry?.source ?? null,
     smartAssist: execution.smartAssist,
     handlePhotoUpload,
+    handlePhotoReplace,
+    removePhoto,
     clearPhotos,
     handleGpxImport: updates.handleGpxImport,
     removeGpxImport: updates.removeGpxImport,

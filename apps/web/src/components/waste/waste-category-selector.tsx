@@ -56,9 +56,9 @@ export function WasteCategorySelector({
     <div className={cn("space-y-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-sm font-black text-emerald-950">{fr ? "Catégories de déchets" : "Waste categories"}</p>
+          <p className="text-sm font-black text-emerald-950">{fr ? "Catégories observées" : "Observed waste categories"}</p>
           <p className="text-xs font-medium text-emerald-900/65">
-            {fr ? "Sélection multiple · recherche par famille ou exemple" : "Multi-select · search by family or example"}
+            {fr ? "Matières collectées ou repérées · recherche par famille ou exemple" : "Collected or observed materials · search by family or example"}
           </p>
         </div>
         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
@@ -127,7 +127,7 @@ export function WasteCategorySelector({
       {value.length > 0 ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/75 px-4 py-3 text-xs leading-5 text-amber-950">
           {buildWasteFieldGuidance(value).hasReportOnlyCategory
-            ? (fr ? "Une catégorie nécessite un signalement ou une équipe autorisée : elle ne doit pas être traitée comme une collecte normale." : "A selected category requires reporting or an authorised team and is not normal collection.")
+            ? (fr ? "Une catégorie dangereuse ou non collectable est signalée comme observée ; sa sélection ne confirme pas qu'elle a été manipulée. Suivez la filière ou le signalement indiqué." : "A hazardous or non-collectable category is marked as observed; selecting it does not confirm handling. Follow the indicated route or report.")
             : (fr ? "Les consignes détaillées s’affichent sous la sélection." : "Detailed guidance appears below the selection.")}
         </div>
       ) : null}

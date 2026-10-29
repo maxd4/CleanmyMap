@@ -422,6 +422,11 @@ describe("createActionSchema", () => {
     expect(
       createActionSchema.safeParse({ ...basePayload, cigaretteButtsMassKg: 1.23 }).success,
     ).toBe(true);
+
+    expect(createActionSchema.safeParse({ ...basePayload, wasteKg: 100_000 }).success).toBe(true);
+    expect(updateActionSchema.safeParse({ wasteKg: 100_000 }).success).toBe(true);
+    expect(createActionSchema.safeParse({ ...basePayload, wasteKg: 100_000.1 }).success).toBe(false);
+    expect(updateActionSchema.safeParse({ wasteKg: 100_000.1 }).success).toBe(false);
   });
 
   it("accepts canonical raw measurements and strips client provenance fields", () => {

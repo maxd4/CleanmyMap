@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACTION_MEASUREMENT_MAX_KG,
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
   compareWasteBreakdownToTotal,
@@ -15,6 +16,11 @@ describe("canonical waste measurement contract", () => {
       "autre",
       "inconnue",
     ]);
+  });
+
+  it("keeps the existing technical mass ceiling explicit without changing measurement precision", () => {
+    expect(ACTION_MEASUREMENT_MAX_KG).toBe(100_000);
+    expect(isAlignedToWasteMassResolution(ACTION_MEASUREMENT_MAX_KG, ACTION_WASTE_MASS_RESOLUTION_KG)).toBe(true);
   });
 
   it("keeps NULL distinct from an explicit zero", () => {

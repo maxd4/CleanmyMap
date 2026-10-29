@@ -48,4 +48,37 @@ describe("HarvestWasteSection comparison", () => {
     expect(markup).toContain('id="harvest-waste-kg"');
     expect(markup).not.toContain('data-testid="waste-comparison-visual"');
   });
+
+  it("keeps an explicit zero visible and does not manufacture a value when absent", () => {
+    const zeroMarkup = renderWasteSection({
+      wasteKg: "0",
+      wasteCurrentPerVolunteer: 0,
+      wasteBenchmarkPerVolunteer: 8,
+      wasteDeltaPercent: -100,
+    });
+    const absentMarkup = renderWasteSection({
+      wasteKg: "",
+      wasteCurrentPerVolunteer: null,
+      wasteBenchmarkPerVolunteer: 8,
+      wasteDeltaPercent: null,
+    });
+
+    expect(zeroMarkup).toContain('value="0"');
+    expect(zeroMarkup).toContain('data-testid="waste-comparison-visual"');
+    expect(absentMarkup).toContain('value=""');
+    expect(absentMarkup).not.toContain('data-testid="waste-comparison-visual"');
+  });
+
+  it("does not reapply the former 100 kg UI ceiling to a valid declared mass", () => {
+    const markup = renderWasteSection({
+      wasteKg: "150",
+      wasteCurrentPerVolunteer: 150,
+      wasteBenchmarkPerVolunteer: 100,
+      wasteDeltaPercent: 50,
+    });
+
+    expect(markup).toContain('value="150"');
+    expect(markup).toContain('max="100000"');
+    expect(markup).toContain('data-testid="waste-comparison-visual"');
+  });
 });

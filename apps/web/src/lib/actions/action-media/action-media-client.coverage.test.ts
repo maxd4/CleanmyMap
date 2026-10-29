@@ -33,8 +33,9 @@ describe("action media client boundary", () => {
     uploadToSignedUrlMock.mockResolvedValueOnce({ error: { message: "upload down" } } as never);
     const result = await uploadActionMedia("a1", [asset("1"), asset("2"), asset("3"), { ...asset("4"), dataUrl: "invalid" }]);
     expect(result.uploadedCount).toBe(0);
-    expect(result.failed).toHaveLength(3);
+    expect(result.failed).toHaveLength(4);
     expect(result.failed.map(({ message }) => message)).toEqual(expect.arrayContaining(["intent denied", "La réponse d'upload est incomplète.", "Le bucket photo retourné est invalide."]));
+    expect(result.failed.map(({ message }) => message)).toContain("La limite de 3 photos est dépassée.");
   });
 
   it("tracks empty, ready, error and retry states in the read controller", async () => {

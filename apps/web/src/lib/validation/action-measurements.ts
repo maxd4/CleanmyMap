@@ -3,6 +3,7 @@ import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-partici
 import { isWasteCategorySlug } from "@/lib/waste";
 import {
   isAlignedToWasteMassResolution,
+  ACTION_MEASUREMENT_MAX_KG,
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
 } from "@/lib/waste/measurement";
@@ -11,7 +12,7 @@ import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 const wasteMassSchema = z
   .number()
   .min(0)
-  .max(100000)
+  .max(ACTION_MEASUREMENT_MAX_KG)
   .refine(
     (value) => isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
     "La masse doit respecter une résolution de 0,1 kg.",
@@ -25,12 +26,12 @@ export const wasteBreakdownSchema = z.object({
   unusualObjects: z.string().max(2000).nullable().optional(),
   specialHandlingWaste: z.string().max(2000).nullable().optional(),
   // Bounded read compatibility for existing metadata markers.
-  megotsKg: z.number().min(0).max(100000).optional(),
+  megotsKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).optional(),
   megotsCondition: z.enum(["propre", "humide", "mouille"]).optional(),
-  plastiqueKg: z.number().min(0).max(100000).optional(),
-  verreKg: z.number().min(0).max(100000).optional(),
-  metalKg: z.number().min(0).max(100000).optional(),
-  mixteKg: z.number().min(0).max(100000).optional(),
+  plastiqueKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).optional(),
+  verreKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).optional(),
+  metalKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).optional(),
+  mixteKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).optional(),
   triQuality: z.enum(["faible", "moyenne", "elevee"]).optional(),
 });
 
@@ -43,8 +44,8 @@ const cigaretteButtsMeasurementsSchema = z
   .object({
     // Server assigns provenance and formula versions.
     cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
-    cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable().optional(),
-    cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable().optional(),
+    cigaretteButtsMassKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).nullable().optional(),
+    cigaretteButtsVolumeLiters: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).nullable().optional(),
     cigaretteButtsCondition: z
       .enum(["propre", "humide", "mouille"])
       .nullable()
@@ -54,10 +55,10 @@ const cigaretteButtsMeasurementsSchema = z
   .optional();
 
 export const commonActionCigaretteButtSchemaFields = {
-  cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
-  cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsMassKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).nullable().optional(),
+  cigaretteButtsVolumeLiters: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).nullable().optional(),
   cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
-  cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).nullable().optional(),
   cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
 };
 
@@ -112,7 +113,7 @@ export const visionEstimateSchema = z.object({
     interval: z.tuple([z.number(), z.number()]).nullable().optional(),
   }),
   wasteKg: z.object({
-    value: z.number().min(0).max(100000),
+    value: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG),
     confidence: z.number().min(0).max(1),
     interval: z.tuple([z.number(), z.number()]).nullable().optional(),
   }),

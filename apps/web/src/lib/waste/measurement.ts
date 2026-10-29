@@ -12,6 +12,9 @@ export type ActionWasteMeasurementMethod =
 /** Resolution used by the current kilogram inputs and their coherence check. */
 export const ACTION_WASTE_MASS_RESOLUTION_KG = 0.1;
 
+/** Existing technical ceiling shared by the action measurement contracts. */
+export const ACTION_MEASUREMENT_MAX_KG = 100_000;
+
 /** Canonical field contract for waste other than cigarette butts. */
 export type CanonicalWasteBreakdown = {
   recyclablesKg?: number | null;
