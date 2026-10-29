@@ -11,6 +11,7 @@ import {
   type ActionWasteMeasurementMethod,
   type WasteCategorySlug,
 } from "@/lib/waste";
+import { WasteComparisonVisual } from "../ui/harvest-gauges";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -30,6 +31,10 @@ type HarvestWasteSectionProps = {
     key: K, value: FormState[K]
   ) => void;
   hidePrimaryMeasurement?: boolean;
+  wasteCurrentPerVolunteer: number | null;
+  wasteBenchmarkPerVolunteer: number | null;
+  wasteDeltaPercent: number | null;
+  comparisonTone: "emerald" | "orange" | "slate";
 };
 
 const triInputCls = "w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15";
@@ -49,6 +54,10 @@ export function HarvestWasteSection({
   wasteCategories,
   onTriChange,
   hidePrimaryMeasurement = false,
+  wasteCurrentPerVolunteer,
+  wasteBenchmarkPerVolunteer,
+  wasteDeltaPercent,
+  comparisonTone,
 }: HarvestWasteSectionProps) {
   const [triOpen, setTriOpen] = useState(false);
   const parseKg = (value: string): number | null => {
@@ -99,6 +108,13 @@ export function HarvestWasteSection({
           />
         </label>
       ) : null}
+
+      <WasteComparisonVisual
+        currentPerVolunteer={wasteCurrentPerVolunteer}
+        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+        deltaPercent={wasteDeltaPercent}
+        comparisonTone={comparisonTone}
+      />
 
       <label className="block space-y-1.5">
         <span className="text-xs font-medium text-slate-500">Méthode de mesure (facultatif)</span>

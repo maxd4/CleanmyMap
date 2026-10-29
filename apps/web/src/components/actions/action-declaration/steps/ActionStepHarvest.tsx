@@ -47,6 +47,10 @@ export function ActionStepHarvest({
     updateField,
   });
   const {
+    wasteCurrentPerVolunteer,
+    wasteBenchmarkPerVolunteer,
+    wasteDeltaPercent,
+    comparisonTone,
     megotsKg,
     megotsCount,
     cigaretteButtsCountProvenance,
@@ -157,6 +161,10 @@ export function ActionStepHarvest({
             wasteCategories={form.wasteCategories ?? []}
             onTriChange={(key, value) => updateField(key, value)}
             hidePrimaryMeasurement={mode === "collection" || mode === "details"}
+            wasteCurrentPerVolunteer={wasteCurrentPerVolunteer}
+            wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+            wasteDeltaPercent={wasteDeltaPercent}
+            comparisonTone={comparisonTone}
           />
           <HarvestMegotsSection
             wasteMegotsKg={form.wasteMegotsKg}

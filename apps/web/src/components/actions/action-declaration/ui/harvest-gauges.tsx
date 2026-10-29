@@ -1,10 +1,16 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Minus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { clamp, deriveGaugeMax, formatKg } from "../utils/harvest-utils";
+import {
+  clamp,
+  deriveGaugeMax,
+  formatKg,
+  formatSignedPercent,
+  type WasteComparisonTone,
+} from "../utils/harvest-utils";
 
 type GaugeTone = "emerald" | "orange";
 
@@ -119,6 +125,130 @@ export function TrashBinGauge({
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
         <Trash2 size={12} className="mr-1 inline-block align-text-bottom" />
         {formatKg(safeValue)} kg
+      </div>
+    </div>
+  );
+}
+
+type WasteComparisonVisualProps = {
+  currentPerVolunteer: number | null;
+  benchmarkPerVolunteer: number | null;
+  deltaPercent: number | null;
+  comparisonTone: WasteComparisonTone;
+};
+
+function getWasteComparisonColors(tone: WasteComparisonTone) {
+  if (tone === "orange") {
+    return {
+      accent: "text-orange-600",
+      fill: "text-orange-400",
+      bar: "bg-orange-400",
+    };
+  }
+  if (tone === "emerald") {
+    return {
+      accent: "text-emerald-600",
+      fill: "text-emerald-400",
+      bar: "bg-emerald-400",
+    };
+  }
+  return {
+    accent: "text-slate-600",
+    fill: "text-slate-400",
+    bar: "bg-slate-400",
+  };
+}
+
+export function WasteComparisonVisual({
+  currentPerVolunteer,
+  benchmarkPerVolunteer,
+  deltaPercent,
+  comparisonTone,
+}: WasteComparisonVisualProps) {
+  if (
+    currentPerVolunteer === null ||
+    benchmarkPerVolunteer === null ||
+    deltaPercent === null ||
+    !Number.isFinite(currentPerVolunteer) ||
+    !Number.isFinite(benchmarkPerVolunteer) ||
+    !Number.isFinite(deltaPercent) ||
+    currentPerVolunteer < 0 ||
+    benchmarkPerVolunteer <= 0
+  ) {
+    return null;
+  }
+
+  const colors = getWasteComparisonColors(comparisonTone);
+  const ratio = currentPerVolunteer / benchmarkPerVolunteer;
+  const maxValue = deriveGaugeMax([currentPerVolunteer, benchmarkPerVolunteer], 1);
+  const currentBarWidth = `${clamp((currentPerVolunteer / maxValue) * 100, 0, 100)}%`;
+  const benchmarkMarkerLeft = `${clamp((benchmarkPerVolunteer / maxValue) * 100, 0, 100)}%`;
+  const TrendIcon =
+    deltaPercent > 5 ? TrendingUp : deltaPercent < -5 ? TrendingDown : Minus;
+  const trendLabel =
+    deltaPercent > 5
+      ? "au-dessus du repère"
+      : deltaPercent < -5
+        ? "en dessous du repère"
+        : "proche du repère";
+
+  return (
+    <div
+      className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
+      data-trend={deltaPercent > 5 ? "up" : deltaPercent < -5 ? "down" : "neutral"}
+      data-testid="waste-comparison-visual"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-slate-700">Comparaison visuelle</p>
+          <p className="mt-0.5 text-xs text-slate-400">vs référence observée des autres actions</p>
+        </div>
+        <div className={cn("flex shrink-0 items-center gap-1 text-xs font-bold", colors.accent)}>
+          <TrendIcon size={14} aria-hidden="true" />
+          <span>{formatSignedPercent(deltaPercent)}</span>
+          <span className="sr-only">{trendLabel}</span>
+        </div>
+      </div>
+
+      <div
+        className="mt-3 flex items-end justify-center gap-2"
+        role="img"
+        aria-label={`Niveau visuel : ${formatSignedPercent(deltaPercent)} par rapport au repère observé`}
+      >
+        {[0, 1, 2].map((index) => {
+          const fill = clamp(ratio * 3 - index, 0, 1) * 100;
+          return (
+            <div
+              key={index}
+              className="relative h-9 w-9"
+              data-testid="waste-comparison-bin"
+              data-fill-percent={Math.round(fill)}
+            >
+              <Trash2 size={36} strokeWidth={1.6} className="absolute inset-0 text-slate-200" aria-hidden="true" />
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{ clipPath: `inset(${100 - fill}% 0 0 0)` }}
+                aria-hidden="true"
+              >
+                <Trash2 size={36} strokeWidth={1.6} className={cn(colors.fill, "fill-current")} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-3">
+        <div className="relative h-2 rounded-full bg-slate-200" aria-hidden="true">
+          <div className={cn("absolute inset-y-0 left-0 rounded-full", colors.bar)} style={{ width: currentBarWidth }} />
+          <div
+            className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full bg-slate-900/70"
+            style={{ left: benchmarkMarkerLeft }}
+          />
+        </div>
+        <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+          <span>{formatKg(currentPerVolunteer)} kg / bénévole</span>
+          <span>repère : {formatKg(benchmarkPerVolunteer)} kg</span>
+        </div>
       </div>
     </div>
   );

@@ -33,3 +33,55 @@ export function deriveGaugeMax(
     positiveValues.length > 0 ? Math.max(...positiveValues) : minimum;
   return Math.max(minimum, Number((reference * 1.35).toFixed(2)));
 }
+
+export type WasteComparisonTone = "emerald" | "orange" | "slate";
+
+export type WasteComparison = {
+  currentPerVolunteer: number | null;
+  benchmarkPerVolunteer: number | null;
+  deltaPercent: number | null;
+  tone: WasteComparisonTone;
+};
+
+export function deriveWasteComparison(params: {
+  wasteKg: number | null;
+  volunteersCount: number | null;
+  benchmarkPerVolunteer: number | null;
+  benchmarkSourceCount: number;
+}): WasteComparison {
+  const hasValidWaste =
+    params.wasteKg !== null &&
+    Number.isFinite(params.wasteKg) &&
+    params.wasteKg >= 0;
+  const hasValidVolunteers =
+    params.volunteersCount !== null &&
+    Number.isFinite(params.volunteersCount) &&
+    params.volunteersCount >= 1;
+  const hasValidBenchmark =
+    params.benchmarkSourceCount > 0 &&
+    params.benchmarkPerVolunteer !== null &&
+    Number.isFinite(params.benchmarkPerVolunteer) &&
+    params.benchmarkPerVolunteer > 0;
+
+  const currentPerVolunteer =
+    hasValidWaste && hasValidVolunteers
+      ? params.wasteKg! / params.volunteersCount!
+      : null;
+  const benchmarkPerVolunteer = hasValidBenchmark ? params.benchmarkPerVolunteer : null;
+  const deltaPercent =
+    currentPerVolunteer !== null && benchmarkPerVolunteer !== null
+      ? ((currentPerVolunteer - benchmarkPerVolunteer) / benchmarkPerVolunteer) * 100
+      : null;
+
+  return {
+    currentPerVolunteer,
+    benchmarkPerVolunteer,
+    deltaPercent,
+    tone:
+      deltaPercent === null || Math.abs(deltaPercent) < 5
+        ? "slate"
+        : deltaPercent > 0
+          ? "orange"
+          : "emerald",
+  };
+}
