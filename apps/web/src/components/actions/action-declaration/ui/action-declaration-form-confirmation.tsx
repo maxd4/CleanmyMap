@@ -1,10 +1,8 @@
 import type { FormState } from "../model";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { summarizeActionDrawingValidation } from "../action-drawing-validation";
 import { formatGeometryPointCount } from "../../map/layers/actions-map-geometry-render";
-import { formatKg } from "../utils/harvest-utils";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import {
   deriveEventDurationMinutes,
@@ -37,7 +35,6 @@ export function ActionDeclarationFormConfirmation({
 }: ActionDeclarationFormConfirmationProps) {
   const isCleanPlaceMode =
     payload.recordType === "clean_place" || payload.recordType === "spot";
-  const impact = computeActionImpactKpis({ metadata: payload });
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
   const event = deriveEventDurationMinutes(payload.eventStartTime, payload.eventEndTime);
   const organization = deriveOrganizationMinutes({
@@ -81,9 +78,6 @@ export function ActionDeclarationFormConfirmation({
                   {userMetadata.displayName || userMetadata.handle || userMetadata.username || 'Utilisateur'}
                 </p>
               </div>
-              <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm">
-                Automatique
-              </span>
             </div>
           </div>
 
@@ -100,11 +94,9 @@ export function ActionDeclarationFormConfirmation({
             </p>
             {payload.recordType === "action" && (
               <p className="cmm-text-small cmm-text-secondary mt-2">
-                {payload.associationName === "Action spontanée"
-                  ? "Le compte connecté sera compté automatiquement comme participant référant."
-                  : payload.organizerAccounts && payload.organizerAccounts.length > 0
+                {payload.organizerAccounts && payload.organizerAccounts.length > 0
                     ? `Organisateur / Référant déclaré: ${payload.organizerAccounts.join(", ")}`
-                    : "Le compte admin par défaut sera utilisé comme organisateur / référant."}
+                    : "Aucun organisateur ou référant n’est déclaré dans ces données."}
               </p>
             )}
           </div>
@@ -196,19 +188,21 @@ export function ActionDeclarationFormConfirmation({
               {isCleanPlaceMode ? "Lieu propre" : "Mesure déclarée — déchets collectés"}
             </p>
             <p className="text-4xl font-bold text-emerald-950 tracking-tight">
-              {isCleanPlaceMode ? "Signalé" : `${payload.wasteKg} kg`}
+              {isCleanPlaceMode ? "Signalé" : payload.wasteKg == null ? "Non renseigné" : `${payload.wasteKg} kg`}
             </p>
             {isCleanPlaceMode ? (
               <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
                 {payload.locationLabel}
               </p>
             ) : (
-              payload.cigaretteButtsCount &&
-              payload.cigaretteButtsCount > 0 && (
-                <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
-                  dont {payload.cigaretteButtsCount} mégots
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <p className="cmm-text-small cmm-text-secondary font-semibold">
+                  Nombre de mégots : {payload.cigaretteButtsCount == null ? "Non renseigné" : payload.cigaretteButtsCount}
                 </p>
-              )
+                <p className="cmm-text-small cmm-text-secondary font-semibold">
+                  Masse de mégots : {payload.cigaretteButtsKg == null ? "Non renseignée" : `${payload.cigaretteButtsKg} kg`}
+                </p>
+              </div>
             )}
           </div>
 
@@ -249,36 +243,6 @@ export function ActionDeclarationFormConfirmation({
               <p className="cmm-text-body whitespace-pre-wrap">
                 {form.notes}
               </p>
-            </div>
-          )}
-
-          {!isCleanPlaceMode && (
-            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-[#EFFAF3] via-[#F7FCF8] to-[#EAF7EF] p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500" />
-                <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold">
-                  Proxys d&apos;impact
-                </p>
-              </div>
-              <p className="cmm-text-body mb-4">
-                Ces valeurs sont des estimations calculées à partir des données disponibles. Elles ne remplacent pas les mesures déclarées ci-dessus.
-              </p>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-xs text-emerald-700 font-semibold mb-1">CO₂e évité (proxy)</p>
-                  <p className="text-xl font-bold text-emerald-950 tracking-tight">
-                    ~{formatKg(impact.co2AvoidedKg)} kg
-                  </p>
-                </div>
-                {impact.butts > 0 ? (
-                  <div>
-                    <p className="text-xs text-emerald-700 font-semibold mb-1">Eau protégée (proxy)</p>
-                    <p className="text-xl font-bold text-emerald-950 tracking-tight">
-                      ~{impact.waterSavedLiters.toLocaleString("fr-FR")} L
-                    </p>
-                  </div>
-                ) : null}
-              </div>
             </div>
           )}
 

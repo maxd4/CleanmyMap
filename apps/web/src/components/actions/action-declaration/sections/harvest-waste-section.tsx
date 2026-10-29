@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import { Trash2, ChevronDown } from "lucide-react";
-import { VolumeSliderWidget } from "../ui/VolumeSliderWidget";
-import { TrashBinGauge } from "../ui/harvest-gauges";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../model";
-import { HarvestBenchmarkSummary } from "./harvest-benchmark-summary";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
@@ -17,13 +14,6 @@ import {
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
-  wasteKgClamped: number;
-  wasteBenchmarkKg: number;
-  wasteCurrentPerVolunteer: number;
-  wasteBenchmarkPerVolunteer: number;
-  wasteDeltaPercent: number;
-  sourceLabel: string;
-  confidenceLabel: string | null;
   onWasteKgChange: (value: string) => void;
   // Tri détaillé
   wasteMeasurementMethod: ActionWasteMeasurementMethod | "";
@@ -46,13 +36,6 @@ const triInputCls = "w-full h-10 rounded-lg border border-slate-200 bg-white px-
 
 export function HarvestWasteSection({
   wasteKg,
-  wasteKgClamped,
-  wasteBenchmarkKg,
-  wasteCurrentPerVolunteer,
-  wasteBenchmarkPerVolunteer,
-  wasteDeltaPercent,
-  sourceLabel,
-  confidenceLabel,
   onWasteKgChange,
   wasteMeasurementMethod,
   wasteRecyclablesKg,
@@ -68,7 +51,6 @@ export function HarvestWasteSection({
   hidePrimaryMeasurement = false,
 }: HarvestWasteSectionProps) {
   const [triOpen, setTriOpen] = useState(false);
-  const delta = wasteDeltaPercent;
   const parseKg = (value: string): number | null => {
     const parsed = Number(value);
     return value.trim().length > 0 && Number.isFinite(parsed) && parsed >= 0
@@ -81,7 +63,6 @@ export function HarvestWasteSection({
     householdWasteKg: parseKg(wasteHouseholdKg),
     otherWasteKg: parseKg(wasteOtherKg),
   });
-  const trendColor = delta > 5 ? "text-emerald-600" : delta < -5 ? "text-orange-500" : "text-slate-400";
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
@@ -136,30 +117,6 @@ export function HarvestWasteSection({
           <option value="inconnue">Inconnue</option>
         </select>
       </label>
-
-      {/* Slider */}
-      {!hidePrimaryMeasurement ? (
-        <VolumeSliderWidget
-          value={wasteKgClamped}
-          onChange={(val) => onWasteKgChange(val.toString())}
-          label="Déchets collectés"
-          max={100}
-          unit="kg"
-          inputId="harvest-waste-slider"
-        />
-      ) : null}
-
-      {/* Gauge */}
-      <TrashBinGauge value={wasteKgClamped} comparisonValue={Math.min(100, wasteBenchmarkKg)} />
-
-      <HarvestBenchmarkSummary
-        currentPerVolunteer={wasteCurrentPerVolunteer}
-        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-        deltaPercent={delta}
-        trendColor={trendColor}
-        sourceLabel={sourceLabel}
-        confidenceLabel={confidenceLabel}
-      />
 
       <div className="border-t border-slate-100 pt-4">
         <WasteCategorySelector

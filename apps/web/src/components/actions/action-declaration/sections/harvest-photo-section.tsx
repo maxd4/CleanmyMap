@@ -81,7 +81,7 @@ export function HarvestPhotoSection({
                 <Camera size={18} />
               </div>
               <p className="text-xs font-semibold text-slate-700 text-center">Prendre une photo</p>
-              <p className="text-[10px] text-slate-400 text-center">Caméra en direct</p>
+              <p className="text-xs text-slate-400 text-center">Caméra en direct</p>
               <input
                 type="file"
                 className="hidden"
@@ -108,39 +108,39 @@ export function HarvestPhotoSection({
               ))}
             </div>
 
-            {/* Analyse IA en cours */}
+            {/* Analyse expérimentale en cours */}
             {visionStatus === "processing" && (
               <div className="mt-3 flex items-center gap-2 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3">
                 <Sparkles size={15} className="text-violet-500 animate-pulse" />
-                <p className="text-xs font-medium text-violet-700">Analyse en cours…</p>
+                <p className="text-xs font-medium text-violet-700">Analyse expérimentale en cours…</p>
               </div>
             )}
 
-            {/* Résultat IA */}
+            {/* Résultat expérimental : jamais une mesure ni une confiance calibrée */}
             {visionEstimate && visionStatus === "ready" && (
               <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <Sparkles size={13} className="text-violet-500" />
-                  <p className="text-xs font-semibold text-violet-800">Estimation IA</p>
-                  <span className="ml-auto text-[10px] font-bold text-violet-600">
-                    {Math.round(visionEstimate.wasteKg.confidence * 100)}% confiance du modèle
-                  </span>
+                  <p className="text-xs font-semibold text-violet-800">Proxy expérimental non validé</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg bg-white border border-violet-100 px-3 py-2 text-center">
-                    <p className="text-[10px] text-slate-400">Sacs</p>
+                    <p className="text-xs text-slate-400">Sacs (proxy)</p>
                     <p className="text-base font-bold text-slate-900">{visionEstimate.bagsCount.value}</p>
                   </div>
                   <div className="rounded-lg bg-white border border-violet-100 px-3 py-2 text-center">
-                    <p className="text-[10px] text-slate-400">Poids estimé</p>
+                    <p className="text-xs text-slate-400">Poids proposé (proxy)</p>
                     <p className="text-base font-bold text-slate-900">{visionEstimate.wasteKg.value} kg</p>
                   </div>
                 </div>
                 {estimatedWasteKgInterval && (
-                  <p className="text-[10px] text-slate-400">
-                    Intervalle : {formatKg(estimatedWasteKgInterval[0])} – {formatKg(estimatedWasteKgInterval[1])} kg
+                  <p className="text-xs text-slate-400">
+                    Intervalle heuristique non validé : {formatKg(estimatedWasteKgInterval[0])} – {formatKg(estimatedWasteKgInterval[1])} kg
                   </p>
                 )}
+                <p className="text-xs leading-4 text-violet-800">
+                  Cette analyse ne mesure pas la masse collectée et ne remplace pas une valeur déclarée.
+                </p>
               </div>
             )}
 

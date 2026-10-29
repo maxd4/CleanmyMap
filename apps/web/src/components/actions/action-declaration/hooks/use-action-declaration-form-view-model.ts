@@ -39,11 +39,7 @@ function buildActionDeclarationSectionProps(
     photoAssets,
     visionEstimate,
     visionStatus,
-    heuristicEstimatedWasteKg: smartAssist.heuristicEstimatedWasteKg,
-    estimatedWasteKg: smartAssist.estimatedWasteKg,
     estimatedWasteKgInterval: smartAssist.estimatedWasteKgInterval,
-    estimatedWasteKgConfidence: smartAssist.estimatedWasteKgConfidence,
-    wasteSuggestionSource: smartAssist.wasteSuggestionSource,
     onPhotoUpload: state.handlePhotoUpload,
     onClearPhotos: state.clearPhotos,
   };

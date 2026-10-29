@@ -19,11 +19,7 @@ function renderHarvest(mode: "essentials" | "collection" | "details") {
       photoAssets: [],
       visionEstimate: null,
       visionStatus: "idle",
-      heuristicEstimatedWasteKg: 0,
-      estimatedWasteKg: 0,
       estimatedWasteKgInterval: null,
-      estimatedWasteKgConfidence: null,
-      wasteSuggestionSource: "heuristic",
       onPhotoUpload: () => undefined,
       onClearPhotos: () => undefined,
     } as ComponentProps<typeof ActionStepHarvest>),
@@ -37,7 +33,10 @@ describe("ActionStepHarvest compact modes", () => {
     expect(html).toContain("Déchets hors mégots (kg)");
     expect(html).toContain("Nombre de mégots");
     expect(html).toContain("Masse de mégots (kg)");
+    expect(html).toContain('value="0"');
     expect(html).not.toContain('id="harvest-megots-volume"');
+    expect(html).not.toContain("kg moyen");
+    expect(html).not.toContain("Référence moyenne");
   });
 
   it("keeps secondary harvest controls out of the always-visible mode", () => {

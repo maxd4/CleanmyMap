@@ -3,27 +3,19 @@
 import { Cigarette } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
-import { ProgressGauge } from "../ui/harvest-gauges";
 import { formatCount, formatKg } from "../utils/harvest-utils";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
-import { HarvestBenchmarkSummary } from "./harvest-benchmark-summary";
 
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
   cigaretteButtsVolumeLiters: string;
   wasteMegotsCondition: ActionMegotsCondition;
-  megotsKg: number;
-  megotsCount: number;
-  comparisonTone: "emerald" | "orange";
-  megotsCurrentPerVolunteer: number;
-  wasteBenchmarkPerVolunteer: number;
-  megotsDeltaPercent: number;
+  cigaretteButtsCount: string;
+  megotsKg: number | null;
+  megotsCount: number | null;
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
   cigaretteButtsConversionFormulaVersion: string | null;
-  wasteBenchmarkKg: number;
-  sourceLabel: string;
-  confidenceLabel: string | null;
   onMegotsWeightChange: (value: string) => void;
   onMegotsVolumeChange: (value: string) => void;
   onMegotsCountChange: (value: string) => void;
@@ -35,26 +27,34 @@ export function HarvestMegotsSection({
   wasteMegotsKg,
   cigaretteButtsVolumeLiters,
   wasteMegotsCondition,
+  cigaretteButtsCount,
   megotsKg,
   megotsCount,
-  comparisonTone,
-  megotsCurrentPerVolunteer,
-  wasteBenchmarkPerVolunteer,
-  megotsDeltaPercent,
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
   cigaretteButtsConversionFormulaVersion,
-  wasteBenchmarkKg,
-  sourceLabel,
-  confidenceLabel,
   onMegotsWeightChange,
   onMegotsVolumeChange,
   onMegotsCountChange,
   onMegotsConditionChange,
   hidePrimaryMeasurements = false,
 }: HarvestMegotsSectionProps) {
-  const delta = megotsDeltaPercent;
-  const trendColor = comparisonTone === "orange" ? "text-orange-500" : "text-emerald-600";
+  const formatProvenance = (provenance: string) => {
+    switch (provenance) {
+      case "counted":
+        return "compté";
+      case "measured":
+        return "mesuré";
+      case "weight_converted":
+        return "dérivé par conversion de masse";
+      case "volume_converted":
+        return "dérivé par conversion de volume";
+      case "estimated":
+        return "estimé";
+      default:
+        return "non renseigné";
+    }
+  };
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
@@ -69,9 +69,9 @@ export function HarvestMegotsSection({
             <p className="text-xs text-slate-500">Les mesures brutes et les dérivés restent tracés séparément</p>
           </div>
         </div>
-        {megotsCount > 0 && (
+        {megotsCount !== null && (
           <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-            ≈ {formatCount(megotsCount)} mégots
+            {cigaretteButtsCountProvenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots
           </span>
         )}
       </div>
@@ -80,7 +80,7 @@ export function HarvestMegotsSection({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {!hidePrimaryMeasurements ? (
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">Masse (kg)</span>
+            <span className="text-xs font-medium text-slate-500">Masse déclarée (kg)</span>
             <input
               id="harvest-megots-kg"
               inputMode="decimal"
@@ -128,7 +128,7 @@ export function HarvestMegotsSection({
             <option value="mouille">Très mouillé</option>
           </select>
           <span className="block text-xs leading-snug text-slate-400">
-            L’état modifie le poids estimé par mégot.
+            L’état intervient seulement dans la conversion dérivée lorsqu’une des deux valeurs manque.
           </span>
         </label>
       </div>
@@ -138,7 +138,7 @@ export function HarvestMegotsSection({
           label={(
             <span className="flex items-center justify-between gap-3">
               <span>Nombre de mégots</span>
-              <span className="text-sm font-bold text-slate-900">{formatCount(megotsCount)}</span>
+              <span className="text-sm font-bold text-slate-900">{cigaretteButtsCount.trim() || "Non renseigné"}</span>
             </span>
           )}
           hint={(
@@ -154,49 +154,41 @@ export function HarvestMegotsSection({
             min={0}
             max={MAX_CIGARETTE_BUTTS_COUNT}
             step={1}
-            value={megotsCount}
+            value={cigaretteButtsCount}
             onChange={(e) => onMegotsCountChange(e.target.value)}
             className="!h-12 !w-full !rounded-xl !border-slate-200 !bg-white !px-4 !text-base !font-bold !text-slate-900 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-500/15"
           />
         </CmmField>
       ) : null}
 
-      {/* Auto-conversion */}
-      {megotsCount > 0 && (
+      {/* Valeurs résolues et provenance */}
+      {megotsCount !== null || megotsKg !== null ? (
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold text-amber-800">
-            Masse conservée
-            </p>
-            <p className="text-sm font-bold text-amber-900">
-              {formatKg(megotsKg)} kg
-            </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {megotsCount !== null ? (
+              <div>
+                <p className="text-xs font-semibold text-amber-800">Nombre retenu</p>
+                <p className="text-sm font-bold text-amber-900">{formatCount(megotsCount)} mégots</p>
+                <p className="mt-1 text-xs text-amber-700">Provenance : {formatProvenance(cigaretteButtsCountProvenance)}.</p>
+              </div>
+            ) : null}
+            {megotsKg !== null ? (
+              <div>
+                <p className="text-xs font-semibold text-amber-800">Masse retenue</p>
+                <p className="text-sm font-bold text-amber-900">{formatKg(megotsKg)} kg</p>
+                <p className="mt-1 text-xs text-amber-700">Provenance : {formatProvenance(cigaretteButtsMassProvenance)}.</p>
+              </div>
+            ) : null}
           </div>
           <p className="mt-1 text-xs leading-snug text-amber-700">
-            Comptage : {cigaretteButtsCountProvenance} · masse : {cigaretteButtsMassProvenance} · état : “{wasteMegotsCondition}”.
+            État : “{wasteMegotsCondition}”.
             {cigaretteButtsConversionFormulaVersion
               ? ` Formule : ${cigaretteButtsConversionFormulaVersion}.`
               : ""}
           </p>
         </div>
-      )}
+      ) : null}
 
-      {/* Gauge */}
-      <ProgressGauge
-        value={megotsKg}
-        comparisonValue={wasteBenchmarkKg}
-        tone={comparisonTone}
-        comparisonLabel="Référence moyenne"
-      />
-
-      <HarvestBenchmarkSummary
-        currentPerVolunteer={megotsCurrentPerVolunteer}
-        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-        deltaPercent={delta}
-        trendColor={trendColor}
-        sourceLabel={sourceLabel}
-        confidenceLabel={confidenceLabel}
-      />
     </section>
   );
 }

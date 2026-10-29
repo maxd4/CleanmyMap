@@ -17,7 +17,7 @@ const payload = {
 } as CreateActionPayload;
 
 describe("ActionStepReview", () => {
-  it("présente les mesures déclarées et le repère indicatif sans score de fiabilité", () => {
+  it("présente les mesures brutes sans heuristique comparative", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionStepReview, {
         payload,
@@ -28,8 +28,15 @@ describe("ActionStepReview", () => {
     );
 
     expect(markup).toContain("Aide à la relecture");
-    expect(markup).toContain("Repère indicatif");
-    expect(markup).toContain("valeurs déclarées");
+    expect(markup).toContain("valeurs brutes déclarées");
+    expect(markup).toContain("Masse de mégots");
+    expect(markup).toContain("Nombre de mégots");
+    expect(markup).toContain("Organisateur / référant déclaré");
+    expect(markup).toContain("Non renseigné");
+    expect(markup).not.toContain("Repère indicatif");
+    expect(markup).not.toContain("kg moyen");
+    expect(markup).not.toContain("Compte connecté automatiquement");
+    expect(markup).not.toContain("Compte admin par défaut");
     expect(markup).not.toContain("Analyse de fiabilité");
     expect(markup).not.toContain("Excellent");
     expect(markup).not.toContain("Niveau A");

@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import type { ActionDataQualityResult } from "../utils/action-declaration-form.quality";
-import { estimateWasteKg } from "../utils/action-declaration-form.estimation";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import { summarizeActionDrawingValidation } from "../action-drawing-validation";
 import { formatGeometryPointCount } from "../../map/layers/actions-map-geometry-render";
@@ -109,14 +108,6 @@ export function ActionStepReview({
     payload.recordType === "clean_place" || payload.recordType === "spot";
   const hasWarnings = dataQuality.warnings.length > 0;
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
-  const indicativeWasteEstimate = isCleanPlaceMode
-    ? null
-    : estimateWasteKg({
-        volunteersCount: String(payload.volunteersCount),
-        durationMinutes: String(payload.durationMinutes),
-        placeType: payload.placeType ?? "",
-      });
-
   const readyMessage = hasWarnings
     ? "Déclaration transmissible — certains éléments peuvent être améliorés."
     : isCleanPlaceMode
@@ -130,20 +121,9 @@ export function ActionStepReview({
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <SectionTitle color="bg-emerald-500">Aide à la relecture</SectionTitle>
         <p className="text-sm leading-6 text-slate-700">
-          Les mesures affichées correspondent aux valeurs déclarées. Les repères
-          estimatifs restent indicatifs et ne modifient pas ces mesures.
+          Vérifiez les valeurs brutes déclarées. Les photos sont conservées et
+          transmises séparément ; aucune estimation n&apos;est utilisée comme mesure.
         </p>
-        {indicativeWasteEstimate !== null && (
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-semibold text-slate-600">Repère indicatif</p>
-            <p className="mt-1 text-sm font-bold text-slate-900">
-              Estimation de déchets : {fmtKg(indicativeWasteEstimate)}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Ce repère ne remplace pas la masse déclarée et n&apos;entre pas dans les points d&apos;attention.
-            </p>
-          </div>
-        )}
         <p className="mt-4 text-sm font-medium leading-snug text-slate-700">{readyMessage}</p>
       </section>
 
@@ -162,7 +142,8 @@ export function ActionStepReview({
           ) : (
             <>
               <DataRow icon={Trash2} label="Déchets" value={fmtKg(payload.wasteKg)} valueClass="text-emerald-700 font-bold" />
-              <DataRow icon={Cigarette} label="Mégots" value={fmtKg(payload.cigaretteButtsKg)} valueClass="text-amber-700" />
+              <DataRow icon={Cigarette} label="Masse de mégots" value={fmtKg(payload.cigaretteButtsKg)} valueClass="text-amber-700" />
+              <DataRow icon={Cigarette} label="Nombre de mégots" value={payload.cigaretteButtsCount == null ? "Non renseigné" : String(payload.cigaretteButtsCount)} valueClass="text-amber-700" />
               <DataRow icon={Users} label="Participants" value={payload.volunteersCount > 0 ? `${payload.volunteersCount} personne${payload.volunteersCount > 1 ? "s" : ""}` : "Non renseigné"} />
             </>
           )}
@@ -229,13 +210,11 @@ export function ActionStepReview({
           {payload.recordType === "action" && (
             <DataRow
               icon={Users}
-              label="Organisateur / Référant ayant participé à l'action"
+              label="Organisateur / référant déclaré"
               value={
-                payload.associationName === "Action spontanée"
-                  ? "Compte connecté automatiquement"
-                  : payload.organizerAccounts && payload.organizerAccounts.length > 0
+                payload.organizerAccounts && payload.organizerAccounts.length > 0
                     ? payload.organizerAccounts.join(", ")
-                    : "Compte admin par défaut"
+                    : "Non renseigné"
               }
               valueClass="text-violet-700"
             />

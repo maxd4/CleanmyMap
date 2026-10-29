@@ -22,11 +22,7 @@ interface ActionStepHarvestProps {
   photoAssets: ActionPhotoAsset[];
   visionEstimate: ActionVisionEstimate | null;
   visionStatus: "idle" | "processing" | "ready" | "error";
-  heuristicEstimatedWasteKg: number;
-  estimatedWasteKg: number;
   estimatedWasteKgInterval: [number, number] | null;
-  estimatedWasteKgConfidence: number | null;
-  wasteSuggestionSource: "vision" | "heuristic";
   onPhotoUpload: (files: FileList | null) => void;
   onClearPhotos: () => void;
   mode?: "all" | "essentials" | "collection" | "photos" | "details";
@@ -39,11 +35,7 @@ export function ActionStepHarvest({
   photoAssets,
   visionEstimate,
   visionStatus,
-  heuristicEstimatedWasteKg,
-  estimatedWasteKg,
   estimatedWasteKgInterval,
-  estimatedWasteKgConfidence,
-  wasteSuggestionSource,
   onPhotoUpload,
   onClearPhotos,
   mode = "all",
@@ -53,27 +45,13 @@ export function ActionStepHarvest({
   const harvest = useHarvestLogic({
     form,
     updateField,
-    heuristicEstimatedWasteKg,
-    estimatedWasteKg,
-    estimatedWasteKgConfidence,
-    wasteSuggestionSource,
   });
   const {
-    wasteKgClamped,
-    wasteBenchmarkKg,
-    wasteCurrentPerVolunteer,
-    wasteBenchmarkPerVolunteer,
-    wasteDeltaPercent,
     megotsKg,
     megotsCount,
-    megotsCurrentPerVolunteer,
-    megotsDeltaPercent,
     cigaretteButtsCountProvenance,
     cigaretteButtsMassProvenance,
     cigaretteButtsConversionFormulaVersion,
-    comparisonTone,
-    confidenceLabel,
-    sourceLabel,
     syncMegotsWeightFromWeight,
     syncMegotsWeightFromCount,
     syncMegotsCondition,
@@ -166,13 +144,6 @@ export function ActionStepHarvest({
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
           <HarvestWasteSection
             wasteKg={form.wasteKg}
-            wasteKgClamped={wasteKgClamped}
-            wasteBenchmarkKg={wasteBenchmarkKg}
-            wasteCurrentPerVolunteer={wasteCurrentPerVolunteer}
-            wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-            wasteDeltaPercent={wasteDeltaPercent}
-            sourceLabel={sourceLabel}
-            confidenceLabel={confidenceLabel}
             onWasteKgChange={(value) => updateField("wasteKg", value)}
             wasteMeasurementMethod={form.wasteMeasurementMethod}
             wasteRecyclablesKg={form.wasteRecyclablesKg}
@@ -191,18 +162,12 @@ export function ActionStepHarvest({
             wasteMegotsKg={form.wasteMegotsKg}
             cigaretteButtsVolumeLiters={form.cigaretteButtsVolumeLiters}
             wasteMegotsCondition={form.wasteMegotsCondition}
+            cigaretteButtsCount={form.cigaretteButtsCount}
             megotsKg={megotsKg}
             megotsCount={megotsCount}
-            comparisonTone={comparisonTone}
-            megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
-            wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-            megotsDeltaPercent={megotsDeltaPercent}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
             cigaretteButtsConversionFormulaVersion={cigaretteButtsConversionFormulaVersion}
-            wasteBenchmarkKg={wasteBenchmarkKg}
-            sourceLabel={sourceLabel}
-            confidenceLabel={confidenceLabel}
             onMegotsWeightChange={syncMegotsWeightFromWeight}
             onMegotsVolumeChange={(value) => updateField("cigaretteButtsVolumeLiters", value)}
             onMegotsCountChange={syncMegotsWeightFromCount}

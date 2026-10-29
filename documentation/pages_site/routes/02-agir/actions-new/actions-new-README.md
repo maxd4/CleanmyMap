@@ -199,8 +199,8 @@ ne doit être inventée et aucune invitation externe n'est envoyée.
 - La déclaration après action affiche un bandeau compact lorsqu'une préparation existante est reprise; les phases techniques ne sont pas affichées.
 - Le header utilisateur est `Déclarer les résultats terrain`; les badges redondants de date, déchets et structure du formulaire ne sont pas affichés.
 - La revue du formulaire affiche une aide à la relecture et des points d'attention concrets; elle ne présente pas de score ou de grade local comme une mesure de qualité démontrée.
-- La masse de déchets saisie reste la mesure déclarée. `estimateWasteKg()` fournit seulement un repère indicatif séparé, sans pénaliser une valeur qui s'en écarte.
-- La confirmation conserve les mesures déclarées séparément des proxys d'impact. Les proxys affichés réutilisent `computeActionImpactKpis()`; aucune quantité de plastique n'est déduite du poids total sans donnée dédiée.
+- La masse de déchets saisie reste la mesure déclarée. `estimateWasteKg()` et les suggestions issues des photos restent des aides expérimentales séparées ; elles ne sont pas affichées comme moyenne, mesure ou comparaison dans les panneaux de saisie et de confirmation. Une suggestion photo éventuellement visible est explicitement qualifiée de proxy non validé.
+- La confirmation vérifie uniquement les données brutes déclarées, en séparant déchets hors mégots, nombre de mégots et masse de mégots. Les proxys d'impact sont déplacés vers le bilan après soumission et réutilisent le contrat existant ; aucune quantité de plastique n'est déduite du poids total sans donnée dédiée.
 - Les statuts, anomalies et provenances du contrat de données restent définis par `apps/web/src/lib/actions/quality/data-quality.ts`; la revue locale ne les duplique pas.
 - Le parcours avant action crée une préparation légère, visible ensuite dans la page Rejoindre une action uniquement si elle est explicitement publiée.
 - Les membres ajoutés avant publication sont conservés dans `participantAccounts` puis synchronisés en tant que participations `manual_add`.

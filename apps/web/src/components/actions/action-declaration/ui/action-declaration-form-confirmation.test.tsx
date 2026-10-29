@@ -1,9 +1,7 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import { formatKg } from "../utils/harvest-utils";
 import { createInitialFormState } from "../payload";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
 
@@ -13,6 +11,8 @@ function makePayload(overrides: Partial<CreateActionPayload> = {}): CreateAction
     locationLabel: "Quai de Loire",
     wasteKg: 12,
     cigaretteButts: 10,
+    cigaretteButtsCount: 10,
+    cigaretteButtsKg: 0.2,
     volunteersCount: 4,
     durationMinutes: 60,
     recordType: "action",
@@ -34,26 +34,42 @@ function renderConfirmation(payload: CreateActionPayload): string {
 }
 
 describe("ActionDeclarationFormConfirmation", () => {
-  it("uses canonical impact proxies and keeps them separate from declared measures", () => {
+  it("keeps raw waste and butt measurements separate and removes impact proxies from confirmation", () => {
     const payload = makePayload({ wasteBreakdown: { plastiqueKg: 2.4 } });
-    const impact = computeActionImpactKpis({ metadata: payload });
     const markup = renderConfirmation(payload);
 
     expect(markup).toContain("Mesure déclarée — déchets collectés");
-    expect(markup).toContain("Proxys d&#x27;impact");
-    expect(markup).toContain("CO₂e évité (proxy)");
-    expect(markup).toContain(`~${formatKg(impact.co2AvoidedKg)} kg`);
-    expect(markup).toContain("Eau protégée (proxy)");
-    expect(markup).toContain(impact.waterSavedLiters.toLocaleString("fr-FR"));
-    expect(markup).toContain("Ces valeurs sont des estimations");
-    expect(markup).not.toContain("Plastique");
-    expect(markup).not.toContain("~6,0 kg");
+    expect(markup).toContain("Nombre de mégots : 10");
+    expect(markup).toContain("Masse de mégots : 0.2 kg");
+    expect(markup).not.toContain("dont 10 mégots");
+    expect(markup).not.toContain("Proxys d&#x27;impact");
+    expect(markup).not.toContain("CO₂e évité");
+    expect(markup).not.toContain("Eau protégée");
+    expect(markup).not.toContain("compte connecté sera compté");
+    expect(markup).not.toContain("compte admin par défaut");
+    expect(markup).toContain("Aucun organisateur ou référant n’est déclaré");
   });
 
-  it("does not show a water proxy without dedicated cigarette-butt data", () => {
-    const markup = renderConfirmation(makePayload({ cigaretteButts: 0 }));
+  it("keeps absent measurements distinct from explicit zero", () => {
+    const unknownMarkup = renderConfirmation(makePayload({
+      wasteKg: null,
+      cigaretteButts: null,
+      cigaretteButtsCount: null,
+      cigaretteButtsKg: null,
+    }));
+    expect(unknownMarkup).toContain("Non renseigné");
+    expect(unknownMarkup).toContain("Masse de mégots : Non renseignée");
+    expect(unknownMarkup).not.toContain("null kg");
 
-    expect(markup).toContain("CO₂e évité (proxy)");
-    expect(markup).not.toContain("Eau protégée (proxy)");
+    const zeroMarkup = renderConfirmation(makePayload({
+      wasteKg: 0,
+      cigaretteButts: 0,
+      cigaretteButtsCount: 0,
+      cigaretteButtsKg: 0,
+    }));
+
+    expect(zeroMarkup).toContain("0 kg");
+    expect(zeroMarkup).toContain("Nombre de mégots : 0");
+    expect(zeroMarkup).toContain("Masse de mégots : 0 kg");
   });
 });
