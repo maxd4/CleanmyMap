@@ -11,8 +11,6 @@ fichier explicitement fourni pour le lot ; checkout et contrats réellement
 consommés ; `AGENTS.md` racine et scoped ; documentation canonique ; simplicité,
 maintenabilité, performance et coûts.
 
-**Canari** : commencer uniquement la réponse finale par `Maxence —`.
-
 **Source versionnée** : `maxd4/CleanmyMap`, branche `main`. Dans le checkout,
 identifier le dépôt par sa racine Git et son remote, jamais par le nom du dossier.
 Le checkout local effectif, ses changements préexistants et les candidats
@@ -397,5 +395,5 @@ claims et coordinateurs sont `LEGACY` ou `COMPATIBILITY`, jamais un workflow
 Clôturer lorsqu'objectif, invariants et preuves suffisantes sont traités et
 qu'aucun changement étranger n'a été écrasé. Signaler les incertitudes
 matérielles, blocages et écarts, sans rapport encyclopédique. Réponse finale
-en français, commençant par `Maxence —`, avec résultat, commit éventuel et
+en français, avec résultat, commit éventuel et
 validation importante seulement si elle éclaire la décision.
