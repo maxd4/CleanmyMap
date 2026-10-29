@@ -429,6 +429,64 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
   });
 
+  it("preserves an independent historical mass when PATCH clears only the count", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      ...createPatchAction({
+        action_phase: "post_action_complete",
+        cigarette_butts: 1_700,
+        notes: "Historique mégots",
+      }),
+    });
+    extractActionMetadataFromNotesMock.mockReturnValue({
+      cleanNotes: "Historique mégots",
+      cigaretteButtsKg: 1,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: 1_700,
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "humide",
+        cigaretteButtsCountProvenance: "unknown",
+        cigaretteButtsMassProvenance: "unknown",
+        cigaretteButtsVolumeProvenance: "unknown",
+        cigaretteButtsConversionFormulaVersion: null,
+      },
+      associationName: null,
+      groupJoinEnabled: false,
+      departureLocationLabel: null,
+      arrivalLocationLabel: null,
+      routeStyle: "souple",
+      routeAdjustmentMessage: null,
+      placeType: null,
+      submissionMode: "complete",
+      wasteBreakdown: null,
+      wasteMeasurementMethod: null,
+      photos: null,
+      visionEstimate: null,
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          cigaretteButtsMeasurements: {
+            cigaretteButtsCount: null,
+            cigaretteButtsMassKg: 1,
+            cigaretteButtsVolumeLiters: null,
+            cigaretteButtsCondition: "humide",
+            cigaretteButtsInputSource: "unknown",
+          },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ cigarette_butts: null }),
+    );
+  });
+
   it("treats canonical raw PATCH input as server-authoritative and preserves explicit nulls", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",

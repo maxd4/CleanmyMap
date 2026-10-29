@@ -157,30 +157,94 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     existingMeasurements?: ActionCigaretteButtsMeasurements | null;
   } = {},
 ): ActionCigaretteButtsMeasurements {
-  const inputSource = resolveUserInputSource(input, options.existingMeasurements);
+  const existingMeasurements = options.existingMeasurements;
+  const effectiveInput: RawCigaretteButtsMeasurementInput = existingMeasurements
+    ? {
+        ...input,
+        cigaretteButtsCount:
+          input.cigaretteButtsCount !== undefined
+            ? input.cigaretteButtsCount
+            : existingMeasurements.cigaretteButtsCount,
+        cigaretteButtsMassKg:
+          input.cigaretteButtsMassKg !== undefined
+            ? input.cigaretteButtsMassKg
+            : existingMeasurements.cigaretteButtsMassKg,
+        cigaretteButtsVolumeLiters:
+          input.cigaretteButtsVolumeLiters !== undefined
+            ? input.cigaretteButtsVolumeLiters
+            : existingMeasurements.cigaretteButtsVolumeLiters,
+        cigaretteButtsCondition:
+          input.cigaretteButtsCondition !== undefined
+            ? input.cigaretteButtsCondition
+            : existingMeasurements.cigaretteButtsCondition,
+      }
+    : input;
+  const countExplicitlyCleared = Boolean(
+    existingMeasurements &&
+      input.cigaretteButtsCount === null &&
+      existingMeasurements.cigaretteButtsCount !== null,
+  );
+  const massExplicitlyCleared = Boolean(
+    existingMeasurements &&
+      input.cigaretteButtsMassKg === null &&
+      existingMeasurements.cigaretteButtsMassKg !== null,
+  );
+
+  if (existingMeasurements && (countExplicitlyCleared || massExplicitlyCleared)) {
+    const persistedSource = inferCigaretteButtsInputSource(existingMeasurements);
+    const orphanedCount =
+      massExplicitlyCleared &&
+      persistedSource === "mass" &&
+      effectiveInput.cigaretteButtsCount === existingMeasurements.cigaretteButtsCount;
+    const orphanedMass =
+      countExplicitlyCleared &&
+      persistedSource === "count" &&
+      effectiveInput.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg;
+    const partiallyCleared = normalizeCigaretteButtsMeasurements({
+      ...effectiveInput,
+      cigaretteButtsCount: orphanedCount ? null : effectiveInput.cigaretteButtsCount,
+      cigaretteButtsMassKg: orphanedMass ? null : effectiveInput.cigaretteButtsMassKg,
+      deriveMissingFromMassOrCount: false,
+    });
+
+    if (!countExplicitlyCleared &&
+        partiallyCleared.cigaretteButtsCount === existingMeasurements.cigaretteButtsCount) {
+      partiallyCleared.cigaretteButtsCountProvenance =
+        existingMeasurements.cigaretteButtsCountProvenance;
+    }
+    if (!massExplicitlyCleared &&
+        partiallyCleared.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg) {
+      partiallyCleared.cigaretteButtsMassProvenance =
+        existingMeasurements.cigaretteButtsMassProvenance;
+    }
+    partiallyCleared.cigaretteButtsConversionFormulaVersion = null;
+    return partiallyCleared;
+  }
+
+  const inputSource = resolveUserInputSource(effectiveInput, options.existingMeasurements);
   const explicitInputSource =
-    input.cigaretteButtsInputSource !== undefined ||
+    effectiveInput.cigaretteButtsInputSource !== undefined ||
     options.existingMeasurements !== null &&
     options.existingMeasurements !== undefined;
   const sourceSpecificInput = explicitInputSource
     ? inputSource === "mass"
       ? {
-          ...input,
+          ...effectiveInput,
           cigaretteButtsCount: null,
           deriveMissingFromMassOrCount: true,
         }
       : inputSource === "count"
         ? {
-            ...input,
+            ...effectiveInput,
             cigaretteButtsMassKg: null,
             deriveMissingFromMassOrCount: true,
           }
         : {
-            ...input,
+            ...effectiveInput,
             deriveMissingFromMassOrCount: false,
           }
     : {
-        ...input,
+        ...effectiveInput,
         deriveMissingFromMassOrCount: true,
       };
   const normalized = normalizeCigaretteButtsMeasurements({
@@ -191,7 +255,6 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     deriveMissingFromMassOrCount: sourceSpecificInput.deriveMissingFromMassOrCount,
   });
 
-  const existingMeasurements = options.existingMeasurements;
   if (
     existingMeasurements &&
     inputSource === "unknown" &&

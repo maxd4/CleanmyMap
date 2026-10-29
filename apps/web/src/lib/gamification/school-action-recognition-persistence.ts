@@ -36,10 +36,16 @@ export async function reconcileSchoolActionRecognitions(params: {
   });
   if (!action) return { status: "not_found", activeIds: [] };
 
-  const existingQuery = await supabase
-    .from(RECOGNITION_TABLE)
-    .select("recognition_id")
-    .eq("action_id", actionId);
+  let existingQuery: { data: unknown; error: { code?: string | null; message?: string | null } | null };
+  try {
+    existingQuery = await supabase
+      .from(RECOGNITION_TABLE)
+      .select("recognition_id")
+      .eq("action_id", actionId);
+  } catch (error) {
+    logFailure("Gamification", "School recognition state query unavailable", error, { actionId });
+    return { status: "unavailable", activeIds: [] };
+  }
   if (existingQuery.error) {
     if (!isMissingRecognitionTable(existingQuery.error)) {
       logFailure("Gamification", "School recognition state load failed", existingQuery.error, { actionId });

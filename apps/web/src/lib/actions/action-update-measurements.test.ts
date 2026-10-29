@@ -287,4 +287,156 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
     });
     expect(result.updateData).toEqual({ cigarette_butts: null });
   });
+
+  it("preserves the other unknown historical value when the PATCH clears only count", () => {
+    const { notes } = buildMeasurementsMetadata("unknown");
+
+    const result = updateMeasurements(buildCurrent(notes), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "humide",
+        cigaretteButtsInputSource: "unknown",
+      },
+    });
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+    });
+    expect(result.updateData).toEqual({ cigarette_butts: null });
+
+    const nextNotes = buildActionUpdateNotes({
+      body: {
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: null,
+          cigaretteButtsMassKg: 1,
+          cigaretteButtsVolumeLiters: null,
+          cigaretteButtsCondition: "humide",
+          cigaretteButtsInputSource: "unknown",
+        },
+      } as never,
+      currentMetadata: extractActionMetadataFromNotes(notes),
+      hasButtsMeasurementUpdate: result.hasButtsMeasurementUpdate,
+      nextCigaretteButtsMeasurements: result.nextCigaretteButtsMeasurements,
+      nextVolunteerParticipation: result.nextVolunteerParticipation,
+    });
+    expect(extractActionMetadataFromNotes(nextNotes).cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsMassProvenance: "unknown",
+    });
+  });
+
+  it("preserves the other unknown historical value when the PATCH clears only mass", () => {
+    const { notes } = buildMeasurementsMetadata("unknown");
+
+    const result = updateMeasurements(buildCurrent(notes), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: 1_700,
+        cigaretteButtsMassKg: null,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "humide",
+        cigaretteButtsInputSource: "unknown",
+      },
+    });
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+    });
+  });
+
+  it("preserves an independent measured mass when the PATCH clears the count", () => {
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsCountProvenance: "counted",
+      cigaretteButtsMassProvenance: "measured",
+    });
+    const notes = buildPersistedNotes({
+      notes: "Action terrain",
+      cigaretteButtsMeasurements: measurements,
+    }, { resolvedCigaretteButtsMeasurements: measurements });
+
+    const result = updateMeasurements(buildCurrent(notes), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "humide",
+        cigaretteButtsInputSource: "count",
+      },
+    });
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "measured",
+    });
+  });
+
+  it("does not retain a derived mass when its counted source is cleared through PATCH", () => {
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsCondition: "humide",
+      deriveMissingFromMassOrCount: true,
+    });
+    const notes = buildPersistedNotes({
+      notes: "Action terrain",
+      cigaretteButtsMeasurements: measurements,
+    }, { resolvedCigaretteButtsMeasurements: measurements });
+
+    const result = updateMeasurements(buildCurrent(notes), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: measurements.cigaretteButtsMassKg,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "humide",
+        cigaretteButtsInputSource: "count",
+      },
+    });
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsConversionFormulaVersion: null,
+    });
+  });
+
+  it("keeps a source when the PATCH clears only its derived counterpart", () => {
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: "humide",
+      deriveMissingFromMassOrCount: true,
+    });
+    const notes = buildPersistedNotes({
+      notes: "Action terrain",
+      cigaretteButtsMeasurements: measurements,
+    }, { resolvedCigaretteButtsMeasurements: measurements });
+
+    const result = updateMeasurements(buildCurrent(notes), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "humide",
+        cigaretteButtsInputSource: "mass",
+      },
+    });
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsConversionFormulaVersion: null,
+    });
+  });
 });
