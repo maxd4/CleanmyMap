@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 export const DUPLICATION_POLICY_VERSION = 2;
 export const DUPLICATION_TOOL = "jscpd";
-export const DUPLICATION_TOOL_VERSION = "5.3.0";
+export const DUPLICATION_TOOL_VERSION = "5.4.2";
 export const DUPLICATION_MIN_LINES = 5;
 export const DUPLICATION_MIN_TOKENS = 50;
 export const DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING = true;
