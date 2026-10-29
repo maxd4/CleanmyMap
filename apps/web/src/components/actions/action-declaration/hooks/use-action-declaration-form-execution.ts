@@ -14,6 +14,7 @@ import { useActionDeclarationSmartAssist } from "./use-action-declaration-smart-
 import { useActionDeclarationSubmission } from "./use-action-declaration-submission";
 import { useActionDeclarationFormUpdates } from "./use-action-declaration-form-updates";
 import type { ActionDeclarationGeometryState } from "./action-declaration-form-geometry";
+import { hasValidCoordinatePair } from "../payload-numbers";
 
 type ActionDeclarationFormExecutionParams = {
   form: FormState;
@@ -94,7 +95,7 @@ export function useActionDeclarationFormExecution({
     form,
     declarationMode,
     recordType: form.recordType,
-    hasLocationProof: form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
+    hasLocationProof: hasValidCoordinatePair(form.latitude, form.longitude),
     hasDrawingProof: geometry.hasValidDrawing,
     photoAssets,
     visionEstimate,

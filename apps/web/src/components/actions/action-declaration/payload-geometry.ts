@@ -10,7 +10,7 @@ import {
 import { resolveActionRouteTopology } from "../../../lib/actions/route-topology";
 import { normalizeActionDrawing } from "../../../lib/actions/geometry/geometry-core";
 import type { CreateActionPayloadParams, CreateActionPayloadParts } from "./payload-contract";
-import { toOptionalNumber } from "./payload-numbers";
+import { hasValidCoordinatePair, toOptionalNumber } from "./payload-numbers";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 function getDrawingCentroid(drawing: ActionDrawing): {
@@ -64,8 +64,9 @@ export function resolveCreateActionRouteParts(
     routeTopology === "point_to_point" && departureLocationLabel && arrivalLocationLabel
       ? `${departureLocationLabel} → ${arrivalLocationLabel}`
       : departureLocationLabel || form.locationLabel.trim();
-  let latitude = toOptionalNumber(form.latitude) ?? null;
-  let longitude = toOptionalNumber(form.longitude) ?? null;
+  const hasCoordinatePair = hasValidCoordinatePair(form.latitude, form.longitude);
+  let latitude = hasCoordinatePair ? toOptionalNumber(form.latitude) ?? null : null;
+  let longitude = hasCoordinatePair ? toOptionalNumber(form.longitude) ?? null : null;
   const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
   const finalGeometry = resolveFinalActionGeometry({
     gpxDrawing: !isFixedArea && form.gpxImport ? normalizedManualDrawing : null,

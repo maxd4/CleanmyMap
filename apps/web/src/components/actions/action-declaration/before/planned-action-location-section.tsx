@@ -7,6 +7,9 @@ import { OperationalRouteEditor } from "../operational-route-editor";
 import type { FormState } from "../model";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
+import { hasValidCoordinatePair } from "../payload-numbers";
+
+export { hasValidCoordinatePair } from "../payload-numbers";
 
 export function PlannedActionLocationSection({
   form,
@@ -66,13 +69,6 @@ export function PlannedActionLocationSection({
 
 function SectionHeading({ id, title }: { id: string; title: string }) {
   return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
-}
-
-export function hasValidCoordinatePair(latitude: string, longitude: string): boolean {
-  if (!latitude.trim() || !longitude.trim()) return false;
-  const parsedLatitude = Number(latitude);
-  const parsedLongitude = Number(longitude);
-  return Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90 && Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
 }
 
 export function MeetingLocationFields({

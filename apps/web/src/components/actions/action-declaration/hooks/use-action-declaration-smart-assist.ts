@@ -69,7 +69,7 @@ export function useActionDeclarationSmartAssist({
               : `Position GPS (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
         }));
         setGpsStatus("success");
-        setGpsMessage("Coordonnees GPS pre-remplies.");
+        setGpsMessage("Position actuelle de l’appareil enregistrée ; elle peut différer du lieu d’une action passée.");
       },
       (error) => {
         setGpsStatus("error");

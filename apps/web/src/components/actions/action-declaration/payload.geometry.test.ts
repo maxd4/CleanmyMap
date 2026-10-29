@@ -72,6 +72,42 @@ describe("action declaration payload géométrie", () => {
     });
   });
 
+  it("keeps a text-only location without promoting partial or out-of-range coordinates", () => {
+    const partialForm = createInitialFormState("Alice");
+    partialForm.locationLabel = "Adresse libre, Paris";
+    partialForm.latitude = "";
+    partialForm.longitude = "2.35";
+
+    const partialPayload = buildCreateActionPayload({
+      form: partialForm,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(partialPayload.latitude).toBeUndefined();
+    expect(partialPayload.longitude).toBeUndefined();
+    expect(partialPayload.locationLabel).toBe("Adresse libre, Paris");
+
+    const outOfRangeForm = { ...partialForm, latitude: "91", longitude: "2.35" };
+    const outOfRangePayload = buildCreateActionPayload({
+      form: outOfRangeForm,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(outOfRangePayload.latitude).toBeUndefined();
+    expect(outOfRangePayload.longitude).toBeUndefined();
+    expect(outOfRangePayload.locationLabel).toBe("Adresse libre, Paris");
+  });
+
   it("keeps pre-action rendez-vous coordinates when an operational route is present", () => {
     const form = createInitialFormState("Alice");
     form.actionTitle = "Boucle test";

@@ -29,7 +29,7 @@ function GpsButton({
         type="button"
         onClick={onAutofill}
         disabled={isLocating}
-        aria-label="Utiliser ma géolocalisation"
+        aria-label="Utiliser la position actuelle de mon appareil"
         className={cn(
           "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30",
           isSuccess
@@ -55,7 +55,7 @@ function GpsButton({
             ? "Position détectée"
             : isError
               ? "Réessayer la géolocalisation"
-              : "Utiliser ma position GPS"}
+              : "Utiliser la position actuelle de mon appareil"}
       </button>
 
       {message ? (
@@ -137,10 +137,10 @@ export function ActionLocationInputs({
         {isCleanPlaceMode ? "Géolocalisation du lieu" : "Localisation de collecte"}
       </SectionTitle>
 
-      <p className="-mt-2 text-xs text-emerald-900/45">
+      <p className="-mt-2 text-xs leading-5 text-emerald-900/50">
         {isCleanPlaceMode
-          ? "Indiquez l'adresse du lieu propre ou utilisez votre position GPS."
-          : "Indiquez l'adresse du lieu ou utilisez votre position GPS."}
+          ? "Indiquez l'adresse du lieu ou utilisez la position actuelle de l'appareil."
+          : "Indiquez l'adresse du lieu ou utilisez la position actuelle de l'appareil. Pour une action passée, cette position peut différer du lieu de l'action."}
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -214,7 +214,7 @@ export function ActionLocationInputs({
             onChange={(event) => updateField("routeTargetDistanceKm", event.target.value)}
             className="mt-2 w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-sky-950 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 sm:max-w-xs"
           />
-          <p className="mt-1 text-xs text-sky-800/70">Estimation par défaut : 1 km par heure d’action. Modifiable.</p>
+          <p className="mt-1 text-xs leading-5 text-sky-800/70">Repère de planification, par défaut 1 km par heure d’action. Modifiable ; il ne mesure pas une distance parcourue.</p>
         </div>
       ) : null}
     </div>

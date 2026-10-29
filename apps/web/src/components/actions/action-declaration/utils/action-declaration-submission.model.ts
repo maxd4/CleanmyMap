@@ -1,4 +1,5 @@
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
+import { isActionDateInFuture } from "@/lib/actions/temporal";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import type {
@@ -78,6 +79,13 @@ export function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     issues.push({
       field: "actionDate",
       message: "Indiquez la date de l’action avant l’envoi.",
+    });
+  }
+
+  if (isActionDateInFuture(form.actionDate)) {
+    issues.push({
+      field: "actionDate",
+      message: "Une déclaration finale doit concerner une date déjà passée ou aujourd’hui.",
     });
   }
 

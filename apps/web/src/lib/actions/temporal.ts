@@ -27,6 +27,15 @@ export function getActionParisDate(now = new Date()): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+/** A completed declaration cannot describe a calendar day that has not happened yet. */
+export function isActionDateInFuture(
+  actionDate: string | null | undefined,
+  now = new Date(),
+): boolean {
+  const date = actionDate?.trim() ?? "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && date > getActionParisDate(now);
+}
+
 function getParisDateTimeKey(now: Date): string {
   const values = getParisDateTimeParts(now);
   return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;

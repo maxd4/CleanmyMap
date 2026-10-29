@@ -17,6 +17,8 @@ describe("geometry core helpers", () => {
   it("detects usable coordinates and point fallbacks", () => {
     expect(hasCoordinates(48.85, 2.35)).toBe(true);
     expect(hasCoordinates(null, 2.35)).toBe(false);
+    expect(hasCoordinates(91, 2.35)).toBe(false);
+    expect(hasCoordinates(48.85, 181)).toBe(false);
     expect(toPointCoordinates(48.85, 2.35)).toEqual([[48.85, 2.35]]);
     expect(toPointCoordinates(null, 2.35)).toEqual([]);
   });

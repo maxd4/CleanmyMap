@@ -6,6 +6,7 @@ import {
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
 import { getTimeContractValidationIssues, isValidClockTime } from "@/lib/actions/time-contract";
+import { isActionDateInFuture } from "@/lib/actions/temporal";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import {
   actionInputGeometrySourceSchema,
@@ -71,6 +72,23 @@ function addTemporalContractIssue(
       code: z.ZodIssueCode.custom,
       path,
       message: issue.message,
+    });
+  }
+}
+
+function addCompletedActionFutureDateIssue(
+  value: { actionDate?: string; actionPhase?: string; submissionMode?: string },
+  ctx: z.RefinementCtx,
+  path: (string | number)[] = ["actionDate"],
+) {
+  if (
+    (value.actionPhase === "post_action_complete" || value.submissionMode === "complete") &&
+    isActionDateInFuture(value.actionDate)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path,
+      message: "Une déclaration finale doit concerner une date déjà passée ou aujourd’hui.",
     });
   }
 }
@@ -148,6 +166,7 @@ const createActionLegacyBaseSchema = z.object({
 const createActionLegacySchema = createActionLegacyBaseSchema
   .extend({ plannerSnapshotProof: routePlannerProofSchema })
   .superRefine((value, ctx) => {
+    addCompletedActionFutureDateIssue(value, ctx);
     addTemporalContractIssue(value, ctx);
     addRouteTopologyIssue(value, ctx);
     addGpxImportIssue(value, ctx);
@@ -195,6 +214,11 @@ const createActionContractSchema = z.object({
     visionEstimate: visionEstimateSchema.nullable().optional(),
   }),
 }).superRefine((value, ctx) => {
+  addCompletedActionFutureDateIssue({
+    actionDate: value.dates.observedAt,
+    actionPhase: value.metadata.actionPhase,
+    submissionMode: value.metadata.submissionMode,
+  }, ctx, ["dates", "observedAt"]);
   addTemporalContractIssue({
     durationMinutes: value.metadata.durationMinutes,
     eventStartTime: value.dates.eventStartTime,

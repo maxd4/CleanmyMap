@@ -7,6 +7,7 @@ import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance"
 import { summarizeActionDrawingValidation } from "../action-drawing-validation";
 import { applyOrganizerFormUpdates } from "../organizer-form-state";
 import { isDrawingValid } from "../payload";
+import { hasValidCoordinatePair } from "../payload-numbers";
 import type { FormState } from "../model";
 
 const ROUTE_GEOMETRY_PARAMETER_FIELDS = new Set<keyof FormState>([
@@ -33,6 +34,15 @@ export type ActionDeclarationGeometryState = {
   hasValidDrawing: boolean;
   hasServerRouteInput: boolean;
 };
+
+export function hasUsableServerRouteInput(params: {
+  routePreviewInput: string;
+  latitude: string;
+  longitude: string;
+}): boolean {
+  return params.routePreviewInput.trim().length >= 2 ||
+    hasValidCoordinatePair(params.latitude, params.longitude);
+}
 
 export function resolveActionDeclarationGeometryState({
   form,
@@ -69,9 +79,11 @@ export function resolveActionDeclarationGeometryState({
     effectiveRoutePreviewDrawing,
     effectiveDrawing,
     hasValidDrawing: Boolean(effectiveDrawing),
-    hasServerRouteInput: routePreviewInput.length >= 2 || (
-      Number.isFinite(Number(form.latitude)) && Number.isFinite(Number(form.longitude))
-    ),
+    hasServerRouteInput: hasUsableServerRouteInput({
+      routePreviewInput,
+      latitude: form.latitude,
+      longitude: form.longitude,
+    }),
   };
 }
 

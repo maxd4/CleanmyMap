@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getActionParisDate,
+  isActionDateInFuture,
   isActionStartInFuture,
   isJoinableFuturePreAction,
   isPublishedFuturePreAction,
@@ -14,6 +15,12 @@ describe("action temporal contract", () => {
     expect(isActionStartInFuture({ action_date: "2026-09-14", event_start_time: "11:01" }, now)).toBe(true);
     expect(isActionStartInFuture({ action_date: "2026-09-15", event_start_time: null }, now)).toBe(true);
     expect(isActionStartInFuture({ action_date: "2026-09-14", event_start_time: "10:59" }, now)).toBe(false);
+  });
+
+  it("rejects a future calendar date for a completed declaration while keeping today valid", () => {
+    expect(isActionDateInFuture("2999-01-01", now)).toBe(true);
+    expect(isActionDateInFuture("2026-09-14", now)).toBe(false);
+    expect(isActionDateInFuture(" ", now)).toBe(false);
   });
 
   it("uses the Europe/Paris calendar date around UTC midnight", () => {

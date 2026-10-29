@@ -490,6 +490,17 @@ describe("createActionSchema", () => {
 });
 
 describe("pre-action temporal contract", () => {
+  const basePayload = {
+    actorName: "Bénévole test",
+    associationName: "Action spontanée",
+    actionDate: "2026-04-22",
+    locationLabel: "Canal Saint-Martin",
+    wasteKg: 1.5,
+    cigaretteButts: 0,
+    volunteersCount: 2,
+    durationMinutes: 45,
+  };
+
   it("validates rendez-vous and departure against the global window", () => {
     const invalid = createActionSchema.safeParse({
       actorName: "Bénévole test",
@@ -518,5 +529,24 @@ describe("pre-action temporal contract", () => {
         "preparationData.departureTime",
       ]));
     }
+  });
+
+  it("rejects a future date only for the completed declaration contract", () => {
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        actionDate: "2999-01-01",
+        actionPhase: "post_action_complete",
+        submissionMode: "complete",
+      }).success,
+    ).toBe(false);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        actionDate: "2999-01-01",
+        actionPhase: "pre_action",
+        submissionMode: "quick",
+      }).success,
+    ).toBe(true);
   });
 });
