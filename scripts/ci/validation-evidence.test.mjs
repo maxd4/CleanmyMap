@@ -399,6 +399,31 @@ test("exact coverage identity rejects an unreadable Git index instead of treatin
   }
 });
 
+test("exact coverage identity ignores generated reports downloaded by a FULL gate", () => {
+  const root = makeRoot();
+  try {
+    git(root, ["init", "--quiet"]);
+    git(root, ["config", "user.email", "validation-test.local"]);
+    git(root, ["config", "user.name", "Validation Evidence Test"]);
+    fs.mkdirSync(path.join(root, "scripts", "ci"), { recursive: true });
+    fs.writeFileSync(path.join(root, "scripts", "ci", "producer.mjs"), "export const producer = true;\n");
+    git(root, ["add", "."]);
+    git(root, ["commit", "--quiet", "-m", "baseline"]);
+    fs.mkdirSync(path.join(root, "scripts", "coverage"), { recursive: true });
+    fs.writeFileSync(path.join(root, "scripts", "coverage", "lcov.info"), "TN:\n");
+    const identity = assertCoverageCandidateIdentity({
+      repositoryRoot: root,
+      candidateSha: getCandidateSha(root),
+      candidateScope: "CI_CANDIDATE",
+      scope: "node",
+    });
+    assert.equal(identity.verified, true);
+    assert.deepEqual(identity.relevantDirtyFiles, []);
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("exact coverage identity rejects a single failed Git inventory command", () => {
   const root = makeRoot();
   try {

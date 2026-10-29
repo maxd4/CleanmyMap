@@ -372,11 +372,11 @@ jobs:
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope full -SkipE2E -SkipEncodingAutofix
 
       - name: Python coverage report (changed scope)
-        if: needs.scope.outputs.python_coverage_relevant == 'true'
+        if: needs.scope.outputs.python_coverage_relevant == 'true' || (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL')
         run: npm run test:coverage:python
 
       - name: Upload Python coverage provenance
-        if: needs.scope.outputs.python_coverage_relevant == 'true'
+        if: needs.scope.outputs.python_coverage_relevant == 'true' || (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL')
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: python-coverage-evidence-${{ env.CANDIDATE_SHA }}
@@ -614,7 +614,7 @@ jobs:
 
   node-coverage:
     needs: scope
-    if: needs.scope.outputs.node_coverage_relevant == 'true'
+    if: needs.scope.outputs.node_coverage_relevant == 'true' || (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -808,3 +808,45 @@ jobs:
           path: artifacts/security-evidence
           if-no-files-found: ignore
           retention-days: 3
+
+  full-coverage-gate:
+    name: FULL coverage gate
+    needs: [web-tests, web-coverage, mobile-validation, node-coverage, python-validation]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CANDIDATE_SHA: ${{ github.sha }}
+      FULL_COVERAGE_RESULTS: ${{ toJSON(needs) }}
+
+    steps:
+      - name: Checkout exact candidate tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Download all FULL coverage evidence
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: '*-coverage-evidence-${{ env.CANDIDATE_SHA }}'
+          path: .
+          merge-multiple: true
+
+      - name: Validate four-domain FULL coverage gate
+        run: node scripts/ci/full-coverage-gate.mjs

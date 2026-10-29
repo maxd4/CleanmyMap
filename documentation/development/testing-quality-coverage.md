@@ -454,11 +454,11 @@ Le workflow manuel sépare la préparation des couvertures du scan. Les quatre
 producteurs sont indépendants et un échec reste publié comme `FAIL`. Un rapport
 n'est téléversé que si son producteur et sa validation stricte ont réussi ; un
 LCOV partiellement écrit après un échec n'est jamais récupéré. Le job d'analyse
-utilise le mode `SONAR_PARTIAL` : chaque rapport candidat est revalidé, les
-rapports absents ou invalides sont explicitement omis, et une configuration
-temporaire est dérivée des seuls chemins importables. Le mode partiel ne
-tolère donc jamais l'intégrité douteuse d'un rapport effectivement importé et
-ne fabrique ni métrique nulle, ni fichier LCOV vide.
+canonique utilise le mode `SONAR_FULL` : les quatre producteurs, les quatre
+validations, les rapports importables et leur provenance du même SHA/run sont
+nécessaires avant d'autoriser le scanner. Le mode `SONAR_PARTIAL` reste
+disponible pour un diagnostic indépendant, mais il n'autorise plus une nouvelle
+publication sur le projet SonarQube canonique.
 
 Les résultats indépendants sont affichés sous la forme :
 
@@ -471,16 +471,14 @@ ANALYZED_SHA: <sha>
 ```
 
 Pour chaque domaine, la preuve indique le producteur, le validateur,
-l'import ou l'omission et sa raison. Une analyse `COMPLETE` avec
-`SONAR_TESTS_STATUS: FAIL` prouve uniquement que le scanner a terminé ; elle
-ne constitue pas une preuve de release verte. `SONAR_INTEGRITY_STATUS: PASS`
-exige que chaque rapport importé soit validé et rattaché au même SHA et au
-même `run_id`; un rapport absent, corrompu, malformé ou d'une autre
-provenance est omis, documenté dans le manifeste et produit
-`SONAR_INTEGRITY_STATUS: FAIL` lorsqu'une preuve de rapport était attendue.
-Le scanner peut donc terminer avec une configuration partielle, mais la
-finalisation échoue tant que l'intégrité attendue n'est pas prouvée. Les
-artefacts sont nommés avec le `run_id` et rattachés au SHA exact du workflow.
+l'import ou l'omission et sa raison. Une analyse `COMPLETE` avec une couverture
+`PARTIAL`, des tests `FAIL` ou une intégrité `FAIL` est refusée par la
+finalisation et ne constitue pas une publication canonique valide.
+`SONAR_INTEGRITY_STATUS: PASS` exige que chaque rapport importé soit validé et
+rattaché au même SHA et au même `run_id`; un rapport absent, corrompu, malformé
+ou d'une autre provenance est omis, documenté dans le manifeste et empêche le
+mode `SONAR_FULL`. Les artefacts sont nommés avec le `run_id` et rattachés au
+SHA exact du workflow.
 Le manifeste final permet de retrouver le SHA réellement analysé et les
 couvertures effectivement transmises. Une couverture partielle ne peut pas
 devenir, sans qualification, une nouvelle référence comparable pour la

@@ -595,6 +595,51 @@ export function prepareSonarPartialCoverage({
   return manifest;
 }
 
+export function assertCompleteSonarCoverageManifest(manifest) {
+  if (!manifest || manifest.schemaVersion !== 1) {
+    throw new Error("Canonical SonarQube coverage manifest is missing or incompatible.");
+  }
+  if (!/^[0-9a-f]{40}$/i.test(String(manifest.analyzedSha ?? "")) || !String(manifest.runId ?? "")) {
+    throw new Error("Canonical SonarQube coverage manifest has no candidate SHA/run provenance.");
+  }
+  if (manifest.statuses?.sonarCoverage !== "COMPLETE") {
+    throw new Error(`Canonical SonarQube coverage requires COMPLETE coverage (received ${manifest.statuses?.sonarCoverage ?? "NOT_RUN"}).`);
+  }
+  if (manifest.statuses?.sonarTests !== "PASS") {
+    throw new Error(`Canonical SonarQube coverage requires PASS tests (received ${manifest.statuses?.sonarTests ?? "NOT_RUN"}).`);
+  }
+  if (manifest.statuses?.sonarIntegrity !== "PASS") {
+    throw new Error(`Canonical SonarQube coverage requires PASS integrity (received ${manifest.statuses?.sonarIntegrity ?? "NOT_RUN"}).`);
+  }
+  const definitionsByScope = new Map(REPORT_DEFINITIONS.map((definition) => [definition.scope, definition]));
+  const reports = Array.isArray(manifest.reports) ? manifest.reports : [];
+  if (reports.length !== REPORT_DEFINITIONS.length || new Set(reports.map((report) => report?.scope)).size !== REPORT_DEFINITIONS.length) {
+    throw new Error("Canonical SonarQube coverage requires exactly one report per domain.");
+  }
+  for (const definition of REPORT_DEFINITIONS) {
+    const report = reports.find((candidate) => candidate?.scope === definition.scope);
+    const expectedPath = definition.format === "cobertura" ? definition.coveragePath : definition.lcovPath;
+    if (
+      !report
+      || report.producerStatus !== "PASS"
+      || report.validatorStatus !== "PASS"
+      || report.imported !== true
+      || report.path !== expectedPath
+    ) {
+      throw new Error(`Canonical SonarQube coverage report is not fully validated for ${definition.scope}.`);
+    }
+    if (!definitionsByScope.has(report.scope)) {
+      throw new Error(`Canonical SonarQube coverage contains an unknown domain: ${report.scope}.`);
+    }
+  }
+  return manifest;
+}
+
+export function prepareSonarFullCoverage(options = {}) {
+  const manifest = prepareSonarPartialCoverage(options);
+  return assertCompleteSonarCoverageManifest(manifest);
+}
+
 export function finalizeSonarAnalysis({ manifest = null, scannerOutcome, preparationOutcome } = {}) {
   const analysisStatus = preparationOutcome !== "success"
     ? "NOT_RUN"
@@ -610,7 +655,10 @@ export function finalizeSonarAnalysis({ manifest = null, scannerOutcome, prepara
   for (const report of manifest?.reports ?? []) {
     console.log(`SONAR_COVERAGE_${report.scope.toUpperCase()}: producer=${report.producerStatus} validator=${report.validatorStatus} import=${report.imported ? "YES" : "NO"}${report.reason ? ` reason=${report.reason}` : ""}`);
   }
-  return analysisStatus === "COMPLETE" && integrityStatus === "PASS" ? 0 : 1;
+  const canonicalCoverageComplete = coverageStatus === "COMPLETE"
+    && testsStatus === "PASS"
+    && integrityStatus === "PASS";
+  return analysisStatus === "COMPLETE" && canonicalCoverageComplete ? 0 : 1;
 }
 
 function cliArgs() {
@@ -646,8 +694,9 @@ function main() {
       fs.writeFileSync(args.resultPath, `${JSON.stringify(result, null, 2)}\n`);
       return;
     }
-    if (mode === "SONAR_PARTIAL") {
-      const manifest = prepareSonarPartialCoverage({
+    if (mode === "SONAR_PARTIAL" || mode === "SONAR_FULL") {
+      const prepare = mode === "SONAR_FULL" ? prepareSonarFullCoverage : prepareSonarPartialCoverage;
+      const manifest = prepare({
         producerResultsDir: args.producerResultsDir,
         analyzedSha: args.sha,
         runId: args.runId,

@@ -4,9 +4,12 @@ import path from "node:path";
 import test from "node:test";
 import yaml from "js-yaml";
 
+import { assertFullCoverageJobs } from "../ci/full-coverage-gate.mjs";
+
 const root = process.cwd();
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 const workflow = () => yaml.load(read(".github/workflows/sonarqube-manual.yml"));
+const ciWorkflow = () => yaml.load(read(".github/workflows/ci.yml"));
 const step = (steps, name) => steps.find((candidate) => candidate.name === name);
 
 test("Vitest keeps JSON summaries and emits LCOV for both workspaces", () => {
@@ -57,7 +60,7 @@ test("the workflow runs four independent producers and validates only successful
   assert.match(step(preparation.steps, "Preserve producer and validator failures").run, /exit 1/);
 });
 
-test("the analysis job is independent, imports only validated artifacts, and preserves the scanner gate", () => {
+test("the canonical analysis job requires complete coverage before scanning", () => {
   const parsed = workflow();
   const analysis = parsed.jobs.sonarqube;
   assert.equal(analysis.needs, "coverage-preparation");
@@ -65,60 +68,47 @@ test("the analysis job is independent, imports only validated artifacts, and pre
   assert.match(analysis.if, /!cancelled\(\)/);
   assert.equal(analysis.permissions.contents, "read");
   assert.equal(analysis.permissions.actions, "read");
-  const partial = step(analysis.steps, "Prepare effective partial SonarQube coverage configuration");
+  const full = step(analysis.steps, "Prepare complete canonical SonarQube coverage configuration");
   const scanner = step(analysis.steps, "SonarQube Cloud scan");
   const finalizer = step(analysis.steps, "Publish independent SonarQube statuses");
-  assert.match(partial.run, /--mode=SONAR_PARTIAL/);
-  assert.match(partial.run, /--manifestOut=artifacts\/sonarqube-manifest\.json/);
-  assert.match(scanner.if, /steps\.partial\.outcome == 'success'/);
+  assert.match(full.run, /--mode=SONAR_FULL/);
+  assert.doesNotMatch(full.run, /--mode=SONAR_PARTIAL/);
+  assert.match(full.run, /--manifestOut=artifacts\/sonarqube-manifest\.json/);
+  assert.match(scanner.if, /steps\.full\.outcome == 'success'/);
   assert.match(scanner.with.args, /-Dproject\.settings=artifacts\/sonar-project\.properties/);
   assert.match(finalizer.run, /--mode=FINALIZE/);
+  assert.match(finalizer.env.SONAR_PREPARATION_OUTCOME, /steps\.full\.outcome/);
   assert.match(read(".github/workflows/sonarqube-manual.yml"), /uses: actions\/setup-python@[0-9a-f]{40}/);
   assert.match(read(".github/workflows/sonarqube-manual.yml"), /uses: actions\/upload-artifact@[0-9a-f]{40}/);
   assert.match(read(".github/workflows/sonarqube-manual.yml"), /uses: actions\/download-artifact@[0-9a-f]{40}/);
 });
 
-function expectedWorkflowConclusion({ webGeneration, coverageComparison, mobile, lcov, scanner }) {
-  const preparation = [webGeneration, mobile, lcov].every((status) => status === "success") && coverageComparison !== "mandatory-failure";
-  const analysis = scanner === "success";
-  return preparation && analysis ? "success" : "failure";
-}
+test("FULL CI runs and gates all four coverage domains independently of the diff scope", () => {
+  const parsed = ciWorkflow();
+  const full = "github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'";
+  assert.match(parsed.jobs["node-coverage"].if, new RegExp(full.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(parsed.jobs["python-validation"].if, new RegExp(full.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(step(parsed.jobs["python-validation"].steps, "Python coverage report (changed scope)").if, /validation_mode == 'FULL'/);
+  assert.match(step(parsed.jobs["python-validation"].steps, "Upload Python coverage provenance").if, /validation_mode == 'FULL'/);
 
-test("workflow outcome cases allow numeric regressions but preserve mandatory failures", () => {
-  const cases = [
-    {
-      name: "comparison PASS",
-      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "success", scanner: "success" },
-      expected: "success",
-    },
-    {
-      name: "numeric regression with successful scan",
-      input: { webGeneration: "success", coverageComparison: "informative-regression", mobile: "success", lcov: "success", scanner: "success" },
-      expected: "success",
-    },
-    {
-      name: "LCOV absent",
-      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "failure", scanner: "skipped" },
-      expected: "failure",
-    },
-    {
-      name: "scanner error",
-      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "success", scanner: "failure" },
-      expected: "failure",
-    },
-    {
-      name: "mandatory coverage evidence error",
-      input: { webGeneration: "success", coverageComparison: "mandatory-failure", mobile: "success", lcov: "success", scanner: "skipped" },
-      expected: "failure",
-    },
-    {
-      name: "Node producer failure still allows a successful scanner but not a green workflow",
-      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "failure", scanner: "success" },
-      expected: "failure",
-    },
-  ];
+  const gate = parsed.jobs["full-coverage-gate"];
+  assert.deepEqual(gate.needs, ["web-tests", "web-coverage", "mobile-validation", "node-coverage", "python-validation"]);
+  assert.match(gate.if, /always\(\)/);
+  assert.match(gate.if, /validation_mode == 'FULL'/);
+  const download = step(gate.steps, "Download all FULL coverage evidence");
+  assert.match(download.with.pattern, /coverage-evidence/);
+  assert.equal(download["continue-on-error"], true);
+  assert.match(step(gate.steps, "Validate four-domain FULL coverage gate").run, /full-coverage-gate\.mjs/);
+});
 
-  for (const scenario of cases) {
-    assert.equal(expectedWorkflowConclusion(scenario.input), scenario.expected, scenario.name);
-  }
+test("the consumed FULL gate rejects a successful scanner when a coverage job is not successful", () => {
+  const jobs = {
+    "web-tests": { result: "success" },
+    "web-coverage": { result: "success" },
+    "mobile-validation": { result: "success" },
+    "node-coverage": { result: "skipped" },
+    "python-validation": { result: "success" },
+    sonarqube: { result: "success" },
+  };
+  assert.throws(() => assertFullCoverageJobs(jobs), /node-coverage=skipped/);
 });

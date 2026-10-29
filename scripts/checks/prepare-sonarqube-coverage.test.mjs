@@ -6,8 +6,10 @@ import test from "node:test";
 
 import {
   REPORT_DEFINITIONS,
+  assertCompleteSonarCoverageManifest,
   createSonarProducerResult,
   finalizeSonarAnalysis,
+  prepareSonarFullCoverage,
   prepareSonarPartialCoverage,
   stageSonarCoverageReport,
   validateSonarCoverageReports,
@@ -247,6 +249,58 @@ test("imports four validated reports and produces a complete SonarQube manifest"
   assert.equal(manifest.reports.filter((report) => report.imported).length, 4);
   assert.match(fs.readFileSync(path.join(root, "artifacts", "sonar-project.properties"), "utf8"), /sonar\.javascript\.lcov\.reportPaths=.*apps\/web\/coverage\/lcov\.info/);
   assert.match(fs.readFileSync(path.join(root, "artifacts", "sonar-project.properties"), "utf8"), /sonar\.python\.coverage\.reportPaths=maintenance\/python\/coverage\.xml/);
+  const fullResultsDir = writeProducerResults(root, { analyzedSha: "a".repeat(40) });
+  assert.equal(prepareSonarFullCoverage({
+    root,
+    producerResultsDir: fullResultsDir,
+    analyzedSha: "a".repeat(40),
+    runId: "run-1",
+    propertiesOut: path.join(root, "artifacts", "sonar-project-full.properties"),
+    manifestOut: path.join(root, "artifacts", "sonarqube-manifest-full.json"),
+  }).statuses.sonarCoverage, "COMPLETE");
+});
+
+test("canonical SonarQube FULL preparation rejects a partial or failed manifest", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-sonar-full-reject-"));
+  for (const definition of REPORT_DEFINITIONS) writeValidReport(root, definition.scope);
+  const resultsDir = writeProducerResults(root, { analyzedSha: "a".repeat(40), failedScopes: ["web"] });
+  assert.throws(() => prepareSonarFullCoverage({
+    root,
+    producerResultsDir: resultsDir,
+    analyzedSha: "a".repeat(40),
+    runId: "run-1",
+    propertiesOut: path.join(root, "artifacts", "sonar-project.properties"),
+    manifestOut: path.join(root, "artifacts", "sonarqube-manifest.json"),
+  }), /requires COMPLETE coverage|requires PASS tests/);
+});
+
+test("finalization requires complete coverage and passing tests as well as integrity", () => {
+  const base = { analyzedSha: "sha-current", runId: "run-1", reports: [] };
+  for (const statuses of [
+    { sonarCoverage: "PARTIAL", sonarTests: "PASS", sonarIntegrity: "PASS" },
+    { sonarCoverage: "COMPLETE", sonarTests: "FAIL", sonarIntegrity: "PASS" },
+    { sonarCoverage: "COMPLETE", sonarTests: "PASS", sonarIntegrity: "FAIL" },
+  ]) {
+    assert.equal(finalizeSonarAnalysis({ manifest: { ...base, statuses }, scannerOutcome: "success", preparationOutcome: "success" }), 1);
+  }
+  assert.equal(finalizeSonarAnalysis({
+    manifest: { ...base, statuses: { sonarCoverage: "COMPLETE", sonarTests: "PASS", sonarIntegrity: "PASS" } },
+    scannerOutcome: "success",
+    preparationOutcome: "success",
+  }), 0);
+  assert.equal(assertCompleteSonarCoverageManifest({
+    schemaVersion: 1,
+    analyzedSha: "a".repeat(40),
+    runId: "run-1",
+    statuses: { sonarCoverage: "COMPLETE", sonarTests: "PASS", sonarIntegrity: "PASS" },
+    reports: REPORT_DEFINITIONS.map((definition) => ({
+      scope: definition.scope,
+      path: definition.format === "cobertura" ? definition.coveragePath : definition.lcovPath,
+      producerStatus: "PASS",
+      validatorStatus: "PASS",
+      imported: true,
+    })),
+  }).runId, "run-1");
 });
 
 test("keeps a failed Node producer visible and imports the other three reports", () => {
@@ -402,7 +456,7 @@ test("final status keeps a successful scan distinct from failed preparation test
     reports: [],
   };
   assert.equal(finalizeSonarAnalysis({ manifest, scannerOutcome: "success", preparationOutcome: "failure" }), 1);
-  assert.equal(finalizeSonarAnalysis({ manifest: { ...manifest, statuses: { ...manifest.statuses, sonarIntegrity: "PASS" } }, scannerOutcome: "success", preparationOutcome: "success" }), 0);
+  assert.equal(finalizeSonarAnalysis({ manifest: { ...manifest, statuses: { ...manifest.statuses, sonarIntegrity: "PASS" } }, scannerOutcome: "success", preparationOutcome: "success" }), 1);
   assert.equal(finalizeSonarAnalysis({ manifest: { ...manifest, statuses: { ...manifest.statuses, sonarIntegrity: "FAIL" } }, scannerOutcome: "success", preparationOutcome: "success" }), 1);
 });
 
@@ -562,7 +616,7 @@ test("reports producer PASS with validator NOT_RUN and producer FAIL without a f
   assert.equal(manifest.reports.find((report) => report.scope === "web").imported, false);
   assert.equal(manifest.reports.find((report) => report.scope === "node").imported, false);
   assert.equal(manifest.statuses.sonarTests, "FAIL");
-  assert.equal(finalizeSonarAnalysis({ manifest, scannerOutcome: "success", preparationOutcome: "success" }), 0);
+  assert.equal(finalizeSonarAnalysis({ manifest, scannerOutcome: "success", preparationOutcome: "success" }), 1);
 });
 
 test("refuses staging coverage outside the artifact output root", () => {

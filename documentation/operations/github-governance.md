@@ -152,16 +152,16 @@ Supabase. Cette documentation ne contient aucune valeur secrète.
   producteur ou un validateur en échec reste en échec, tandis que le job
   d'analyse utilise `always() && !cancelled()` et son propre checkout du
   `github.sha`.
-- Le scanner ne reçoit qu'une configuration temporaire dérivée des rapports
-  validés du `run_id` courant. Les rapports absents, invalides ou d'un autre
-  SHA sont omis et leur raison est conservée dans le manifeste. Les statuts
+- Le scanner ne reçoit une configuration canonique que si `SONAR_FULL` confirme
+  les quatre producteurs, validations, rapports importables et la provenance du
+  `run_id`/SHA courant. Les rapports absents, invalides ou d'un autre SHA sont
+  conservés comme diagnostics mais bloquent le scanner canonique. Les statuts
   `SONAR_ANALYSIS_STATUS`, `SONAR_COVERAGE_STATUS`, `SONAR_TESTS_STATUS`,
   `SONAR_INTEGRITY_STATUS` et `ANALYZED_SHA` doivent être lus séparément ; un
-  scan terminé ne transforme jamais un échec de tests ou d'intégrité en preuve
-  de release verte. Un résultat producteur malformé ou d'un autre SHA/run est
-  omis par domaine et conservé comme omission dans le manifeste ; l'analyse
-  statique peut continuer, mais la finalisation échoue si l'intégrité attendue
-  n'est pas démontrée.
+  scan terminé ne transforme jamais un échec de tests, de couverture ou
+  d'intégrité en preuve de release verte. `SONAR_PARTIAL` reste réservé à un
+  diagnostic indépendant et ne suffit pas à publier une nouvelle mesure
+  canonique.
 
 ## Reproductibilité locale des workflows
 
@@ -181,11 +181,12 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 | `ci.yml` / `web-quality` | `npm run quality:top-heavy`; `npm run quality:dead-code`; `npm run quality:complexity`; `npm run quality:duplication`; installation puis `npm run audit:gitnexus`; `npm run quality:cycles` (`SKIPPED_BY_POLICY`); résumé `node scripts/ci/write-quality-summary.mjs` | Job réservé à `workflow_dispatch` avec `validation_mode=FULL`; l'analyse GitNexus des cycles est suspendue jusqu'à réactivation explicite ; les contrôles globaux restent hors de la CI DEVELOPMENT ordinaire. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-tests` | En DEVELOPMENT : `npm run test:security` et `npm run test:regression-gates`. En FULL : `node scripts/checks/validation-policy.mjs --assert-full-suite`; `npm run test:coverage`; publication de `apps/web/coverage` | La suite Web couverte et les ratchets qualité sont réservés au workflow explicitement déclenché en FULL ; l'artefact est court terme et lié à `github.sha`. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-coverage` | téléchargement de l'artefact Web; `npm run quality:coverage -- --from-existing-summary` | Le job compare les métriques sur l'artefact correspondant. Une régression numérique ou une baseline historique indisponible est informative ; la génération, l'intégrité de la preuve et les rapports obligatoires restent bloquants. Le job ne relance pas Vitest. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `full-coverage-gate` | téléchargement des artefacts Web, mobile, Node et Python; `node scripts/ci/full-coverage-gate.mjs` | Réservé à `workflow_dispatch` avec `validation_mode=FULL`. Les cinq jobs attendus (`web-tests`, `web-coverage`, `mobile-validation`, `node-coverage`, `python-validation`) doivent réussir et les quatre preuves doivent être valides sur le `github.sha` exact ; un domaine `skipped`, annulé, absent ou incohérent fait échouer le gate. | Oui pour le script; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-vercel-audit` | `npm run audit:vercel:ci` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; il est `SKIPPED_SCOPE` sinon. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-build` | `npm run build` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; les variables publiques de build sont injectées uniquement dans ce job. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `mobile-validation` | `npm ci`; `npm run check:semgrep` lorsque le Web n'est pas concerné; sécurité mobile; typecheck; tests Vitest; couverture; lint | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job s'exécute sur chaque `push` vers `main` et chaque Pull Request ciblant `main`; le résumé Semgrep reste séparé lorsque ce contrôle conditionnel est réellement exécuté. | Oui. |
 | `sonarqube-manual` / `coverage-preparation` | Producteurs `npm run test:coverage`, `npm run quality:mobile-coverage`, `npm run test:coverage:node` et `npm run test:coverage:python`, puis `prepare-sonarqube-coverage.mjs --mode=STRICT` par domaine | Matrice `fail-fast: false`, artefacts rattachés au `github.run_id` et au `github.sha`; un producteur ou un validateur en échec reste bloquant pour la préparation et n'autorise pas l'import de son rapport. | Oui pour les producteurs et le validateur; non pour l'orchestration exacte GitHub. |
-| `sonarqube-manual` / `sonarqube` | Téléchargement des artefacts valides; `prepare-sonarqube-coverage.mjs --mode=SONAR_PARTIAL`; SonarSource scan action; publication des statuts indépendants | Job exécuté avec `always() && !cancelled()` après la préparation. Il peut analyser sans un ou plusieurs rapports, mais ne consomme que les rapports strictement validés du même SHA/run. Le résultat du scanner, les tests et la couverture restent distincts. | Partiellement : la configuration effective et les validations sont locales; le runner, le token et le résultat SonarQube Cloud restent externes. |
+| `sonarqube-manual` / `sonarqube` | Téléchargement des artefacts valides; `prepare-sonarqube-coverage.mjs --mode=SONAR_FULL`; SonarSource scan action; publication des statuts indépendants | Job exécuté avec `always() && !cancelled()` après la préparation. Le scanner canonique ne démarre que si les quatre rapports strictement validés du même SHA/run sont importables. `SONAR_PARTIAL` reste un mode de diagnostic non canonique. | Partiellement : la configuration effective et les validations sont locales; le runner, le token et le résultat SonarQube Cloud restent externes. |
 | `codeql.yml` / `analyze` | Aucun script npm équivalent direct : `actions/checkout`, `github/codeql-action/init`, `autobuild` et `analyze` | Runner GitHub, bundle CodeQL et permission `security-events: write` pour publier les résultats. | Non à l'identique; ce contrôle reste GitHub-dépendant. |
 
 Les modes locaux `DEVELOPMENT`/`FULL`/`RELEASE` restent orchestrés

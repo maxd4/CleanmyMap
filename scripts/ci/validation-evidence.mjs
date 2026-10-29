@@ -164,6 +164,12 @@ const PYTHON_COVERAGE_PATHS = Object.freeze([
 
 function isCoveragePathForScope(file, scope) {
   const normalized = normalizePath(file);
+  if (
+    normalized.startsWith("apps/web/coverage/")
+    || normalized.startsWith("apps/mobile/coverage/")
+    || normalized.startsWith("scripts/coverage/")
+    || normalized === "maintenance/python/coverage.xml"
+  ) return false;
   const prefixes = scope === "node" ? NODE_COVERAGE_PATHS : scope === "python" ? PYTHON_COVERAGE_PATHS : [];
   return prefixes.some((prefix) => normalized === prefix || normalized.startsWith(prefix));
 }

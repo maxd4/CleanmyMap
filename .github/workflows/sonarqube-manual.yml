@@ -177,15 +177,15 @@ jobs:
           path: artifacts/sonarqube-results
           merge-multiple: true
 
-      - name: Prepare effective partial SonarQube coverage configuration
-        id: partial
+      - name: Prepare complete canonical SonarQube coverage configuration
+        id: full
         if: always()
         continue-on-error: true
-        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=SONAR_PARTIAL --sha=${{ github.sha }} --runId=${{ github.run_id }} --producerResultsDir=artifacts/sonarqube-results --propertiesOut=artifacts/sonar-project.properties --manifestOut=artifacts/sonarqube-manifest.json
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=SONAR_FULL --sha=${{ github.sha }} --runId=${{ github.run_id }} --producerResultsDir=artifacts/sonarqube-results --propertiesOut=artifacts/sonar-project.properties --manifestOut=artifacts/sonarqube-manifest.json
 
       - name: SonarQube Cloud scan
         id: sonar-scan
-        if: steps.partial.outcome == 'success'
+        if: steps.full.outcome == 'success'
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9
         with:
@@ -194,7 +194,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Upload SonarQube analysis evidence
-        if: always() && steps.partial.outcome == 'success'
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: sonarqube-analysis-evidence-${{ github.run_id }}
@@ -207,5 +207,5 @@ jobs:
         if: always()
         env:
           SONAR_SCANNER_OUTCOME: ${{ steps.sonar-scan.outcome }}
-          SONAR_PREPARATION_OUTCOME: ${{ steps.partial.outcome }}
+          SONAR_PREPARATION_OUTCOME: ${{ steps.full.outcome }}
         run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=FINALIZE --manifestPath=artifacts/sonarqube-manifest.json
