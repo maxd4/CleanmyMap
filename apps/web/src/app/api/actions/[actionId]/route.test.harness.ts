@@ -140,6 +140,7 @@ export {
   extractActionMetadataFromNotesMock,
   getCurrentUserIdentityMock,
   loadActionByIdMock,
+  loadCanonicalActionOrganizerIdsForActionMock,
   loadActionOrganizerIdsForActionMock,
   loadManualRegistrationIdsForActionMock,
   loadManualInvitationStatusesForActionMock,

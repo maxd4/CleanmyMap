@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadCanonicalActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, requireAuthenticatedAccessMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
@@ -70,6 +70,102 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     );
     expect(syncActionManualParticipantsMock).not.toHaveBeenCalled();
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
+  });
+
+  it("allows the owner to finalize an approved pre-action in normal moderation", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      status: "approved",
+      action_phase: "pre_action",
+    }));
+
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action_phase: "post_action_complete",
+        status: "pending",
+      }),
+    );
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ operation: "correct_impact" }),
+    );
+  });
+
+  it("allows an authorized co-organizer to finalize an approved pre-action", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "organizer-2",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "organizer-2",
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["organizer-2"]);
+    loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValueOnce(["organizer-2"]);
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      status: "approved",
+      action_phase: "pre_action",
+      created_by_clerk_id: "owner-1",
+    }));
+
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action_phase: "post_action_complete",
+        status: "pending",
+      }),
+    );
+  });
+
+  it("keeps participant validation ahead of any approved-impact classification", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      status: "approved",
+      action_phase: "pre_action",
+    }));
+
+    const response = await patchAction({ actionPhase: "post_action_complete" });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("does not let an unrelated user finalize an approved pre-action", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "unrelated-user",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "unrelated-user",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      status: "approved",
+      action_phase: "pre_action",
+    }));
+
+    const response = await patchAction({
+      actionPhase: "post_action_complete",
+      volunteersCount: 12,
+      volunteerParticipation: { childrenCount: 1, adultCount: 11, retiredCount: 0 },
+    });
+
+    expect(response.status).toBe(403);
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("transmits associated organizers when an authorized action is resumed", async () => {

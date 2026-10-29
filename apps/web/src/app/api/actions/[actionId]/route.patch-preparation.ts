@@ -105,7 +105,23 @@ export async function preparePatchMutation({
   });
   if (parsedBodyResult instanceof Response) return parsedBodyResult;
   const parsedBody = parsedBodyResult;
-  const validatedImpactCorrection = current.status === "approved" && hasActionImpactUpdate(parsedBody);
+
+  const preparedUpdate = await prepareActionUpdate({ current, parsedBody }).catch((error: unknown) => {
+    if (error instanceof ActionUpdateValidationError) {
+      return validationErrorResponse({ [error.field]: [error.message] });
+    }
+    throw error;
+  });
+  if (preparedUpdate instanceof Response) return preparedUpdate;
+
+  const isFirstFinalization =
+    current.action_phase !== "post_action_complete" &&
+    preparedUpdate.updateData.action_phase === "post_action_complete";
+  const validatedImpactCorrection =
+    !isFirstFinalization &&
+    current.action_phase === "post_action_complete" &&
+    current.status === "approved" &&
+    hasActionImpactUpdate(parsedBody);
   if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {
     return NextResponse.json(
       { error: "La correction d'un impact validé est réservée aux administrateurs autorisés." },
@@ -118,14 +134,6 @@ export async function preparePatchMutation({
   if (validatedImpactCorrection && !moderationReason) {
     return validationErrorResponse({ reason: ["Un motif d'au moins 5 caractères est requis pour corriger un impact validé."] });
   }
-
-  const preparedUpdate = await prepareActionUpdate({ current, parsedBody }).catch((error: unknown) => {
-    if (error instanceof ActionUpdateValidationError) {
-      return validationErrorResponse({ [error.field]: [error.message] });
-    }
-    throw error;
-  });
-  if (preparedUpdate instanceof Response) return preparedUpdate;
 
   return {
     preparedUpdate,

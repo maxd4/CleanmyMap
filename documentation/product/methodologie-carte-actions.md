@@ -95,10 +95,10 @@ ni les agrégats historiques.
 
 #### Modèles candidats — `RESEARCH / NON NORMATIF`
 
-Des modèles différenciés selon la tâche peuvent être étudiés, mais ils ne sont
-pas implémentés, calibrés ni validés scientifiquement. Ils ne constituent pas
-des coefficients runtime, une nouvelle version du contrat, un benchmark de
-production ou une prévision de collecte.
+Les coefficients historiques ci-dessous restent des hypothèses de recherche
+conservées pour la traçabilité. Ils ne constituent pas les coefficients du
+simulateur A/B/C, ni des coefficients runtime, une nouvelle version du contrat,
+un benchmark de production ou une prévision de collecte.
 
 Pour les déchets hors mégots, un modèle candidat pourrait être :
 
@@ -131,10 +131,60 @@ sous-groupes — ne sont pas calculables à partir des seules données actuelles
 La variabilité individuelle interdit également d'attribuer automatiquement une
 performance réduite à une personne du seul fait de son statut de retraité.
 
-Le statut de lecture est donc explicite : `CURRENT` pour la pondération
-`1 / 0,5 / 0,5`, `RESEARCH / NON NORMATIF` pour les modèles différenciés et les
-mécanismes futurs, et `NA` lorsque la mesure ou la répartition nécessaire est
-réellement inconnue.
+### Simulateur expérimental A/B/C — `RESEARCH / NON NORMATIF`
+
+Le module privé [`volunteer-participation-research.ts`](../../apps/web/src/lib/actions/volunteer-participation-research.ts)
+permet de comparer déterministiquement trois modèles de recherche. Il ne
+persiste rien, n'est appelé par aucun scorer, RPC, système de récompense ou
+indicateur de production et ne modifie pas `effective-volunteer-units-v1`.
+La configuration (`ordinary`, `family` ou `school`) est une entrée explicite :
+le moteur ne choisit jamais un modèle à partir de la taille du groupe.
+
+| Modèle | Déchets hors mégots | Mégots | Configurations | Statut |
+| --- | --- | --- | --- | --- |
+| A | `A + 0,50 E + 0,50 R` | `A + 0,50 E + 0,50 R` | toutes | réutilise le calcul `CURRENT` |
+| B | `A + 0,60 E + 0,80 R` | `A + 0,40 E + 0,50 R` | ordinaire, familiale | hypothèse expérimentale |
+| C | `A + 0,45 E` | `A_collecteurs_megots` | scolaire sans retraité | hypothèse expérimentale |
+
+Dans ce tableau, `A` désigne les adultes dérivés par la formule canonique
+`volunteersCount - childrenCount - retiredCount`, `E` les enfants et `R` les
+retraités. Une composition incohérente, fractionnaire, négative, non finie ou
+hors validation est refusée. Pour C, une présence de retraités rend le modèle
+non applicable plutôt que de déclencher un coefficient scolaire inventé.
+
+Pour les mégots du modèle C, le nombre d'adultes collecteurs doit être fourni
+explicitement avec sa base (`OBSERVED` ou `HYPOTHESIS`). L'hypothèse « tous les
+adultes collectent » est donc déclarée comme `HYPOTHESIS / ALL_ADULTS`; elle ne
+doit pas être inférée de la présence des adultes. Un zéro explicite reste un
+zéro, tandis qu'une affectation absente rend cette capacité indisponible.
+Les enfants ne sont pas affectés aux mégots dans C et les adultes consacrés
+uniquement à l'encadrement ne sont pas comptés comme collecteurs.
+
+Le moteur sépare les personnes présentes (`volunteersCount`), les unités
+`CURRENT`, les capacités expérimentales de déchets et de mégots, les quantités
+réellement collectées et les projections simulées. Une projection n'est
+disponible que si la durée effective `T_eff` et le rendement de référence
+correspondant sont fournis explicitement :
+
+`Q_D = R_D × T_eff × U_D` en kilogrammes de déchets hors mégots ;
+
+`Q_M = R_M × T_eff × U_M` en nombre de mégots.
+
+`R_D` et `R_M` ne reçoivent aucune valeur par défaut et ne proviennent pas de
+`action_collection_reference_averages_v1()`, qui produit des moyennes par
+participant et par action. Les kilogrammes et les mégots restent des unités
+distinctes. Une valeur inconnue reste indisponible (`NA` dans la lecture
+scientifique), alors qu'un zéro fourni explicitement est calculé sans arrondi
+intermédiaire. Les comparaisons exposent les écarts absolus et relatifs à A
+lorsque les deux valeurs sont disponibles.
+
+Le module permet aussi une sensibilité ponctuelle du coefficient `R` pour les
+déchets (`0,50`, `0,80`, `1,00`). Cette analyse ne modifie pas le coefficient
+des mégots, ne crée pas un modèle D permanent et ne consacre aucune valeur
+comme mesure de performance des retraités. Le statut de lecture est donc
+explicite : `CURRENT` pour `effective-volunteer-units-v1`,
+`RESEARCH / NON NORMATIF` pour A/B/C et leurs sensibilités, et `NA` lorsque la
+mesure ou l'affectation nécessaire est inconnue.
 
 Les trois catégories ont aussi une fonction descriptive : elles permettent
 d'estimer la répartition des générations de bénévoles mobilisées sur les actions

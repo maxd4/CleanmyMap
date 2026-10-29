@@ -157,7 +157,11 @@ Le lien `/actions/new?from=before&actionId=...` ne reprend une action comme
 pré-action éditable que si `actionPhase = pre_action` et que son statut est
 `pending` ou `approved`. Une pré-action `pending` non publiée peut donc rester
 en préparation puis être publiée explicitement ; une pré-action approuvée peut
-être reprise selon le même contrat.
+être reprise selon le même contrat. Sa finalisation après l'action reste
+possible pour son propriétaire ou un coorganisateur autorisé, avec une
+déclaration explicite des participants et des résultats ; elle repasse alors
+dans le statut `pending` pour la modération du bilan. Cette première
+finalisation n'est pas une correction administrative d'un impact déjà validé.
 
 Les statuts `rejected` et `cancelled` sont terminaux pour ce parcours : ils
 sont affichés comme tels, ne sont pas éditables comme pré-actions, ne peuvent

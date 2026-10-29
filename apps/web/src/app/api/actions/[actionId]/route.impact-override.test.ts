@@ -224,6 +224,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
           wasteKg: 2,
           cigaretteButts: 4,
           volunteersCount: 5,
+          volunteerParticipation: { childrenCount: 1, adultCount: 3, retiredCount: 1 },
           durationMinutes: 45,
           notes: "Nouvelles notes privées",
           preparationData: { actionTitle: "Nouvelle préparation" },

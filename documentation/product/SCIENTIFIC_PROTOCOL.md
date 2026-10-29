@@ -178,6 +178,84 @@ La migration append-only
 RPC V2 globale et départementale sur cette population, sans modifier la
 formule par bénévole ni supprimer les références départementales.
 
+## Rendement des cleanwalks — recherche non normative
+
+Le contrat `CURRENT` des unités opérationnelles reste
+`effective-volunteer-units-v1` :
+`A + 0,50 E + 0,50 R`, pour les déchets comme pour les mégots. Le simulateur
+privé A/B/C documenté dans
+[`methodologie-carte-actions.md`](./methodologie-carte-actions.md) est une
+capacité de recherche déterministe. Il ne remplace ni les indicateurs publiés,
+ni `participantsCount`/`volunteersCount`, ni les mesures de terrain, et il
+n'est pas exposé par une route ou une persistance.
+
+Les modèles B (`0,60` enfant et `0,80` retraité pour les déchets ; `0,40` et
+`0,50` pour les mégots) et C (`0,45` enfant pour les déchets ; adultes
+explicitement affectés aux mégots) sont des hypothèses non calibrées. La
+configuration ordinaire, familiale ou scolaire doit être déclarée. Le modèle C
+est non applicable en présence de retraités et ne déduit jamais les collecteurs
+de mégots de la seule présence des adultes. Les coefficients historiques
+`0,60/0,70` et `0,25/0,40` restent conservés séparément dans la méthodologie :
+leur présence documentaire n'en fait pas une validation scientifique.
+
+La distinction de preuve est obligatoire :
+
+| Objet | Lecture | Unité / règle |
+| --- | --- | --- |
+| personnes présentes | `OBSERVED` ou `DECLARED` | nombre réel, conservé séparément des unités |
+| unités `CURRENT` | `DERIVED` / `PROXY` | formule versionnée, inchangée par la recherche |
+| unités A/B/C | `ASSUMPTION` / `PROXY` | capacité relative hypothétique, non performance individuelle |
+| quantité collectée | `OBSERVED` ou `DECLARED` | kg hors mégots et mégots comptés séparément |
+| rendement horaire fourni | `DECLARED` ou `OBSERVED` | kg par unité opérationnelle et heure, ou mégots par unité et heure |
+| projection | `DERIVED` / `PROXY` | seulement avec taux et durée effectifs explicitement fournis |
+| donnée absente | `NA` | jamais convertie en zéro |
+
+Les projections suivent `Q_D = R_D × T_eff × U_D` en kilogrammes et
+`Q_M = R_M × T_eff × U_M` en mégots. Aucune moyenne de
+`action_collection_reference_averages_v1()` ne sert de rendement adulte par
+heure. Il n'existe pas de conversion entre kg et nombre d'objets. Les
+coefficients enfant ne sont pas automatiquement applicables aux très jeunes
+enfants, aux participants passifs ou aux enfants simplement présents. Le
+statut de retraité ne mesure ni capacité physique ni productivité individuelle.
+La collecte des mégots par des mineurs doit respecter l'âge, la sécurité, les
+équipements et les tâches réellement affectées; une participation à l'action
+ne signifie pas une manipulation de mégots.
+
+Les mécanismes de supervision, familiarité, équipements, répartition spatiale,
+disponibilité initiale des déchets et saturation restent non quantifiés. Une
+ville, la taille du groupe, la proximité familiale, la discussion, l'âge exact
+ou le statut de retraité ne fournissent aucun facteur automatique.
+
+Une revue de contexte supplémentaire est : Cook, E., Cano, N. S. de S. L. et
+Velis, C. A. (2024), « Informal recycling sector contribution to plastic
+pollution mitigation: A systematic scoping review and quantitative analysis of
+prevalence and productivity », *Resources, Conservation and Recycling*, 206,
+107588, [doi:10.1016/j.resconrec.2024.107588](https://doi.org/10.1016/j.resconrec.2024.107588).
+Elle rapporte seulement trois observations comparables situant la collecte
+d'enfants autour de la moitié aux deux tiers de celle d'adultes dans le secteur
+du recyclage informel. Ce contexte est différent d'une cleanwalk bénévole;
+les auteurs soulignent les limites de méthode et de généralisabilité. Cette
+revue ne valide donc aucune valeur `0,60`, `0,45` ou `0,80` de CleanMyMap.
+
+## Préparation d'une future calibration
+
+Une étude pilote devrait recueillir, pour chaque session, les participants
+réellement présents et leur composition connue, la configuration, la durée
+totale et effective, l'affectation des tâches déchets/mégots, la masse réelle
+hors mégots, le nombre réel de mégots, l'équipement, les encadrants et la
+supervision observée, le type et l'emprise du secteur, la disponibilité initiale
+mesurée, les nettoyages antérieurs connus et des répétitions sur plusieurs
+sites. Les secteurs devraient être comparables, la durée homogène et les
+conditions observées; l'analyse devrait expliciter sélection, saturation,
+répartition spatiale et autres biais.
+
+Ce protocole ne demande aucun nouveau champ persistant dans le formulaire
+actuel, aucune donnée de santé ou profil individuel sensible, aucun âge précis
+de mineur et aucune attribution de performance individuelle selon l'âge ou le
+statut de retraité. Les données manquantes restent inconnues. Une éventuelle
+adoption runtime exigerait des échantillons comparables, une analyse des biais,
+une version de méthode nouvelle et une décision scientifique documentée.
+
 ## Gouvernance
 
 - revoir les coefficients a intervalle fixe ;
