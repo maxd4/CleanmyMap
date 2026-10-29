@@ -3,6 +3,12 @@
 Ce document definit la methode de calcul des indicateurs utilises par CleanMyMap.
 Les indicateurs sont des proxys de lecture et de pilotage, pas une mesure scientifique absolue.
 
+Les sources de contexte sur les rendements de collectes, les groupes et les
+conditions de terrain sont regroupées dans l'[annexe de recherche non
+normative](./ANNEXE_RECHERCHE_RENDEMENT_CLEANWALKS.md). Cette annexe conserve
+les résultats publiés, les ratios calculés et leurs limites ; elle ne définit
+aucun coefficient runtime, benchmark de production ou objectif de collecte.
+
 ## Comptabilité environnementale CleanMyMap
 
 Le vocabulaire de statut est strictement limité à `OBSERVED`, `DERIVED`,
