@@ -43,7 +43,7 @@
     "@clerk/nextjs": "7.9.19",
     "@sentry/nextjs": "11.8.0",
     "@sparticuz/chromium": "153.0.0",
-    "@supabase/supabase-js": "^2.117.3",
+    "@supabase/supabase-js": "^2.118.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
     "@vercel/analytics": "^2.0.1",
