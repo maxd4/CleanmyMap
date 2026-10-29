@@ -2,15 +2,24 @@ import { describe, expect, it } from "vitest";
 import { getVolunteerActionValidationIssues } from "./submission-validation";
 
 describe("getVolunteerActionValidationIssues", () => {
-  it("preserves an explicitly declared zero participant total", () => {
+  it("rejects an explicitly declared zero participant total for a realized action", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
+      submissionMode: "complete",
       wasteKg: 2,
       cigaretteButts: 0,
       volunteersCount: 0,
+      volunteerParticipation: {
+        childrenCount: 0,
+        adultCount: 0,
+        retiredCount: 0,
+      },
     });
 
-    expect(issues).toEqual([]);
+    expect(issues[0]).toMatchObject({
+      field: "volunteerParticipation",
+      message: "Renseignez un nombre total de participants entier compris entre 1 et 500.",
+    });
   });
 
   it("accepts an explicitly observed zero", () => {
@@ -19,12 +28,17 @@ describe("getVolunteerActionValidationIssues", () => {
       wasteKg: 0,
       cigaretteButts: 0,
       volunteersCount: 1,
+      volunteerParticipation: {
+        childrenCount: 0,
+        adultCount: 1,
+        retiredCount: 0,
+      },
     });
 
     expect(issues).toEqual([]);
   });
 
-  it("accepts a total without a category split", () => {
+  it("requires children and retirees for a complete action composition", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
       submissionMode: "complete",
@@ -38,10 +52,15 @@ describe("getVolunteerActionValidationIssues", () => {
       },
     });
 
-    expect(issues).toEqual([]);
+    expect(issues).toEqual([
+      {
+        field: "volunteerParticipation",
+        message: "Renseignez les nombres entiers d’enfants et de retraités présents.",
+      },
+    ]);
   });
 
-  it("rejects a category split whose sum differs from the explicit total", () => {
+  it("rejects a composition whose children and retirees exceed the explicit total", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
       submissionMode: "complete",
@@ -49,8 +68,8 @@ describe("getVolunteerActionValidationIssues", () => {
       cigaretteButts: 0,
       volunteersCount: 8,
       volunteerParticipation: {
-        childrenCount: 2,
-        adultCount: 4,
+        childrenCount: 9,
+        adultCount: 0,
         retiredCount: 1,
       },
     });
@@ -58,9 +77,29 @@ describe("getVolunteerActionValidationIssues", () => {
     expect(issues).toEqual([
       {
         field: "volunteerParticipation",
-        message: "La somme de la répartition (7) doit correspondre au nombre total de participants (8).",
+        message: "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.",
       },
     ]);
+  });
+
+  it("requires the adult count to match the central derivation when a forged value is provided", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "complete",
+      wasteKg: 1,
+      cigaretteButts: 0,
+      volunteersCount: 12,
+      volunteerParticipation: {
+        childrenCount: 1,
+        adultCount: 1,
+        retiredCount: 0,
+      },
+    });
+
+    expect(issues).toContainEqual({
+      field: "volunteerParticipation",
+      message: "Le nombre d’adultes est calculé automatiquement à partir du total, des enfants et des retraités.",
+    });
   });
 
   it("accepts a canonical raw cigarette-butt measurement without a legacy alias", () => {
@@ -76,6 +115,11 @@ describe("getVolunteerActionValidationIssues", () => {
         cigaretteButtsCondition: "propre",
       },
       volunteersCount: 1,
+      volunteerParticipation: {
+        childrenCount: 0,
+        adultCount: 1,
+        retiredCount: 0,
+      },
     });
 
     expect(issues).toEqual([]);
@@ -87,6 +131,11 @@ describe("getVolunteerActionValidationIssues", () => {
       wasteKg: null,
       cigaretteButts: null,
       volunteersCount: 1,
+      volunteerParticipation: {
+        childrenCount: 0,
+        adultCount: 1,
+        retiredCount: 0,
+      },
     });
 
     expect(issues).toEqual([
@@ -127,6 +176,11 @@ describe("getVolunteerActionValidationIssues", () => {
       wasteKg: 0,
       cigaretteButts: 0,
       volunteersCount: 1,
+      volunteerParticipation: {
+        childrenCount: 0,
+        adultCount: 1,
+        retiredCount: 0,
+      },
       wasteBreakdown: {
         megotsKg: 1.2,
       },

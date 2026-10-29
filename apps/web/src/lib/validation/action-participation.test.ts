@@ -13,13 +13,22 @@ const basePayload = {
 };
 
 describe("action participant total validation", () => {
-  it("accepts an explicit zero participant total without turning it into one", () => {
+  it("preserves the explicit participant total and complete composition", () => {
     const parsed = createActionSchema.parse({
       ...basePayload,
-      volunteersCount: 0,
-      volunteerParticipation: null,
+      volunteersCount: 12,
+      volunteerParticipation: {
+        childrenCount: 1,
+        adultCount: 11,
+        retiredCount: 0,
+      },
     });
 
-    expect(parsed.volunteersCount).toBe(0);
+    expect(parsed.volunteersCount).toBe(12);
+    expect(parsed.volunteerParticipation).toMatchObject({
+      childrenCount: 1,
+      adultCount: 11,
+      retiredCount: 0,
+    });
   });
 });

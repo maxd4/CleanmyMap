@@ -150,7 +150,6 @@ function gitTreeSha(candidate) {
 
 function writeWebEvidence(root, report, { candidate = auditedSha, ciPaths = false } = {}) {
   const evidencePath = path.join(root, "apps/web/coverage/coverage-evidence.json");
-  const summaryPath = report.summaryPath;
   const lcovPath = report.lcovPath;
   const evidence = {
     schemaVersion: 2,
@@ -234,7 +233,7 @@ function createFixture({ mobile = false, python = false, attestMobile = false, a
   const webRoot = path.join(root, "web");
   const nodeRoot = path.join(root, "node");
   const web = writeLcovScope(webRoot, "web", { ciPaths });
-  const node = writeLcovScope(nodeRoot, "node");
+  writeLcovScope(nodeRoot, "node");
   writeWebEvidence(webRoot, web, { candidate: auditedSha, ciPaths });
   const webProof = writePublicationProof(webRoot, "web", { candidate, candidateScope, mutateProof: mutateWebProof });
   const nodeProof = writePublicationProof(nodeRoot, "node", { candidate, candidateScope, mutateProof: mutateNodeProof });

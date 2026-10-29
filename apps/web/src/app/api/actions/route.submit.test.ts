@@ -19,6 +19,14 @@ import {
   resetSubmitRouteMocks,
 } from "./route.submit.test.harness";
 
+const completeParticipationInput = {
+  childrenCount: 0,
+  adultCount: 4,
+  retiredCount: 0,
+} as unknown as NonNullable<
+  import("@/lib/actions/types").CreateActionPayload["volunteerParticipation"]
+>;
+
 describe("POST /api/actions — création standard et pré-action", () => {
   beforeEach(() => {
     resetSubmitRouteMocks();
@@ -162,6 +170,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       notes: "Formulaire bénévole de test",
       organizerAccounts: ["user-test-1"],
       submissionMode: "complete",
+      volunteerParticipation: completeParticipationInput,
     });
 
     const response = await POST(
@@ -269,6 +278,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       organizerAccounts: ["user-test-1"],
       submissionMode: "complete",
       recordType: "action",
+      volunteerParticipation: completeParticipationInput,
     });
 
     const response = await POST(

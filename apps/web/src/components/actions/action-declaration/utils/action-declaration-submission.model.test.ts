@@ -84,11 +84,11 @@ describe("action declaration submission model", () => {
     expect(issues).toEqual([
       {
         field: "volunteersCount",
-        message: "Renseignez le nombre total de participants présents (un entier de 0 à 500).",
+        message: "Renseignez le nombre total de participants présents (un entier de 1 à 500).",
       },
     ]);
 
-    form.volunteersCount = "0";
+    form.volunteersCount = "12";
     expect(getActionDeclarationSubmissionIssues({
       form,
       payload: buildCreateActionPayload({
@@ -107,5 +107,30 @@ describe("action declaration submission model", () => {
       isCleanPlaceMode: false,
       manualDrawingSource: null,
     })).toEqual([]);
+
+    form.childrenCount = "";
+    expect(getActionDeclarationSubmissionIssues({
+      form,
+      payload: buildCreateActionPayload({
+        form,
+        declarationMode: "complete",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        linkedEventId: undefined,
+      }),
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: true,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    })).toEqual([
+      {
+        field: "volunteerParticipation",
+        message: "Renseignez les nombres entiers d’enfants et de retraités présents.",
+      },
+    ]);
   });
 });

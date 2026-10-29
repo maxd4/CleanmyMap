@@ -86,6 +86,12 @@ function validateVolunteerForecastForm(form: FormState): BeforeValidationIssue[]
   }
 
   const categoryInputs = [form.childrenCount, form.adultCount, form.retiredCount];
+  const isDefaultPostActionComposition =
+    !totalInput &&
+    form.childrenCount.trim() === "0" &&
+    form.adultCount.trim() === "" &&
+    form.retiredCount.trim() === "0";
+  if (isDefaultPostActionComposition) return issues;
   if (!categoryInputs.some((value) => value.trim())) return issues;
 
   const categories: VolunteerParticipationInput = {

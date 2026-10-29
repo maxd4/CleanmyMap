@@ -1,5 +1,6 @@
 import type { CreateActionPayload } from "../../../lib/actions/types";
 import {
+  deriveVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
   type VolunteerParticipationInput,
 } from "../../../lib/actions/volunteer-participation";
@@ -7,20 +8,42 @@ import type { FormState } from "./model";
 import type { CreateActionPayloadParts } from "./payload-contract";
 import { toOptionalNumber, toRequiredNumber } from "./payload-numbers";
 import { resolveOrganizerPayload } from "./organizer-payload";
+import type { DeclarationMode } from "./types";
 
 export function buildVolunteerParticipationFromForm(
   form: FormState,
 ): VolunteerParticipationInput {
+  const childrenCount = toOptionalNumber(form.childrenCount) ?? null;
+  const adultCount = toOptionalNumber(form.adultCount) ?? null;
+  const retiredCount = toOptionalNumber(form.retiredCount) ?? null;
+  if (adultCount === null && childrenCount === 0 && retiredCount === 0) {
+    return {
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: null,
+    };
+  }
   return {
-    childrenCount: toOptionalNumber(form.childrenCount) ?? null,
-    adultCount: toOptionalNumber(form.adultCount) ?? null,
-    retiredCount: toOptionalNumber(form.retiredCount) ?? null,
+    childrenCount,
+    adultCount,
+    retiredCount,
   };
+}
+
+export function buildActionVolunteerParticipationFromForm(
+  form: FormState,
+): VolunteerParticipationInput {
+  return deriveVolunteerParticipationFromTotal({
+    volunteersCount: toOptionalNumber(form.volunteersCount) ?? null,
+    childrenCount: toOptionalNumber(form.childrenCount) ?? null,
+    retiredCount: toOptionalNumber(form.retiredCount) ?? null,
+  });
 }
 
 export function resolveCreateActionMeasurementParts(
   form: FormState,
   isEntrepriseMode: boolean,
+  declarationMode: DeclarationMode,
 ): Pick<
   CreateActionPayloadParts,
   | "isSpontaneousAction"
@@ -47,7 +70,10 @@ export function resolveCreateActionMeasurementParts(
     cigaretteButtsVolumeLiters: enteredVolumeLiters,
     cigaretteButtsCondition,
   };
-  const volunteerParticipationInput = buildVolunteerParticipationFromForm(form);
+  const volunteerParticipationInput =
+    declarationMode === "complete"
+      ? buildActionVolunteerParticipationFromForm(form)
+      : buildVolunteerParticipationFromForm(form);
   const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
   return {
     isSpontaneousAction,

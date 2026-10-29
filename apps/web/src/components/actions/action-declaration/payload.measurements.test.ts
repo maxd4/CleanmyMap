@@ -34,7 +34,7 @@ describe("action declaration payload mesures", () => {
     const zeroForm = createInitialFormState("Alice");
     zeroForm.wasteKg = "0";
     zeroForm.cigaretteButtsCount = "0";
-    zeroForm.volunteersCount = "0";
+    zeroForm.volunteersCount = "1";
     const zeroPayload = buildCreateActionPayload({
       form: zeroForm,
       declarationMode: "complete",
@@ -47,7 +47,7 @@ describe("action declaration payload mesures", () => {
 
     expect(zeroPayload.wasteKg).toBe(0);
     expect(zeroPayload.cigaretteButts).toBe(0);
-    expect(zeroPayload.volunteersCount).toBe(0);
+    expect(zeroPayload.volunteersCount).toBe(1);
   });
 
   it("keeps synchronized megots count and weight coherent in the payload", () => {

@@ -1,8 +1,9 @@
 import type { CreateActionPayload } from "./types";
 import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
 import {
+  deriveAdultCountFromTotal,
+  getVolunteerActionCompositionValidationMessage,
   hasCompleteVolunteerCategoryData,
-  hasVolunteerCategoryData,
   normalizeVolunteerParticipation,
   type VolunteerParticipationInput,
 } from "./volunteer-participation";
@@ -41,20 +42,20 @@ export function getVolunteerActionValidationIssues(
   const participation = payload.volunteerParticipation
     ? normalizeVolunteerParticipation(payload.volunteerParticipation)
     : null;
-  const hasCategoryData = hasVolunteerCategoryData(participation);
   const hasCompleteCategoryData = participation
     ? hasCompleteVolunteerCategoryData(participation)
     : false;
-  if (hasCategoryData && !hasCompleteCategoryData) {
+  const compositionMessage = getVolunteerActionCompositionValidationMessage({
+    volunteersCount: payload.volunteersCount,
+    childrenCount: participation?.childrenCount ?? null,
+    retiredCount: participation?.retiredCount ?? null,
+  });
+  if (compositionMessage) {
     issues.push({
       field: "volunteerParticipation",
-      message:
-        "Renseignez les trois catégories de bénévoles pour calculer le total.",
+      message: compositionMessage,
     });
   }
-  const volunteersCount = Math.trunc(
-    participation?.participantsCount ?? payload.volunteersCount,
-  );
   const hasWasteMeasurement =
     typeof payload.wasteKg === "number" && Number.isFinite(payload.wasteKg);
   const hasAnyCigaretteButtsMeasurement =
@@ -68,20 +69,20 @@ export function getVolunteerActionValidationIssues(
     typeof payload.wasteBreakdown?.megotsKg === "number" &&
     Number.isFinite(payload.wasteBreakdown.megotsKg);
 
-  if (volunteersCount < 0) {
-    issues.push({
-      field: "volunteersCount",
-      message: "Le nombre de participants ne peut pas être négatif.",
-    });
-  }
-
   if (
+    !compositionMessage &&
     hasCompleteCategoryData &&
-    participation?.participantsCount !== payload.volunteersCount
+    participation?.adultCount !==
+      deriveAdultCountFromTotal({
+        volunteersCount: payload.volunteersCount,
+        childrenCount: participation?.childrenCount,
+        retiredCount: participation?.retiredCount,
+      })
   ) {
     issues.push({
       field: "volunteerParticipation",
-      message: `La somme de la répartition (${participation?.participantsCount}) doit correspondre au nombre total de participants (${payload.volunteersCount}).`,
+      message:
+        "Le nombre d’adultes est calculé automatiquement à partir du total, des enfants et des retraités.",
     });
   }
 

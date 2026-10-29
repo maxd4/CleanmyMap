@@ -105,6 +105,7 @@ export function buildCreateActionPayloadGeometryFields(
   buildPreparationData: (
     form: CreateActionPayloadParams["form"],
     finalGeometry: FinalActionGeometry | null,
+    declarationMode: CreateActionPayloadParams["declarationMode"],
   ) => CreateActionPayload["preparationData"],
 ): Partial<CreateActionPayload> {
   const hasManualGeometry = Boolean(
@@ -114,7 +115,11 @@ export function buildCreateActionPayloadGeometryFields(
   return {
     latitude: parts.latitude ?? undefined,
     longitude: parts.longitude ?? undefined,
-    preparationData: buildPreparationData(params.form, parts.finalGeometry),
+    preparationData: buildPreparationData(
+      params.form,
+      parts.finalGeometry,
+      params.declarationMode,
+    ),
     plannerSnapshotProof: params.form.plannerProof ?? null,
     manualDrawing: hasManualGeometry ? parts.normalizedDrawing! : undefined,
     geometrySource: hasManualGeometry ? parts.resolvedManualDrawingSource : undefined,

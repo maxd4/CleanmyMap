@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { pickTraceableActorName, type UserIdentity } from "@/lib/authz";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
+import { normalizeActionVolunteerParticipationFromTotal } from "@/lib/actions/volunteer-participation";
 import { validationErrorResponse } from "@/lib/http/api-errors";
 import { createActionSchema } from "@/lib/validation/action";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -46,6 +47,15 @@ export async function executeActionCreation({
   const normalizedPayload = {
     ...payload,
     actorName: pickTraceableActorName(identity, payload.actorName),
+    volunteerParticipation:
+      payload.recordType === "action" &&
+      payload.submissionMode !== "quick" &&
+      payload.actionPhase !== "pre_action"
+        ? normalizeActionVolunteerParticipationFromTotal({
+            volunteersCount: payload.volunteersCount,
+            volunteerParticipation: payload.volunteerParticipation,
+          })
+        : payload.volunteerParticipation,
   };
 
   if (normalizedPayload.submissionMode !== "quick") {

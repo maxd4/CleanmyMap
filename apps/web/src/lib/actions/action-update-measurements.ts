@@ -4,6 +4,7 @@ import {
 } from "@/lib/waste/cigarette-butts";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import {
+  normalizeActionVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
   resolveParticipantsCount,
   type ActionVolunteerParticipation,
@@ -127,15 +128,29 @@ function buildVolunteerMeasurementUpdate(params: {
   const participation = hasUpdate
     ? body.volunteerParticipation === null || body.volunteerParticipation === undefined
       ? null
-      : normalizeVolunteerParticipation(body.volunteerParticipation)
+      : current.action_phase === "pre_action"
+        ? normalizeVolunteerParticipation(body.volunteerParticipation)
+        : normalizeActionVolunteerParticipationFromTotal({
+            volunteersCount: body.volunteersCount ?? current.volunteers_count,
+            volunteerParticipation: body.volunteerParticipation,
+          })
     : currentMetadata.volunteerParticipation;
+  const normalizedParticipation =
+    current.action_phase === "pre_action" ||
+    participation === null ||
+    (body.volunteerParticipation === undefined && body.volunteersCount === undefined)
+      ? participation
+      : normalizeActionVolunteerParticipationFromTotal({
+          volunteersCount: body.volunteersCount ?? current.volunteers_count,
+          volunteerParticipation: participation,
+        });
   return {
-    participation,
+    participation: normalizedParticipation,
     updateData:
       hasUpdate || body.volunteersCount !== undefined
         ? {
             volunteers_count: resolveParticipantsCount({
-              volunteerParticipation: participation,
+              volunteerParticipation: normalizedParticipation,
               legacyVolunteersCount: body.volunteersCount ?? current.volunteers_count,
             }),
           }

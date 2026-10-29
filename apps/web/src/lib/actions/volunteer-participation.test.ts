@@ -1,13 +1,95 @@
 import { describe, expect, it } from "vitest";
 import {
+  deriveAdultCountFromTotal,
+  deriveVolunteerParticipationFromTotal,
   EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+  getVolunteerActionCompositionValidationMessage,
   getVolunteerParticipationDisclosureDetail,
+  normalizeActionVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
   resolveEffectiveVolunteerUnits,
   resolveParticipantsCount,
 } from "./volunteer-participation";
 
 describe("volunteer participation contract", () => {
+  it.each([
+    { total: 12, children: 0, retired: 0, adult: 12, units: 12 },
+    { total: 12, children: 1, retired: 0, adult: 11, units: 11.5 },
+    { total: 12, children: 2, retired: 2, adult: 8, units: 10 },
+    { total: 1, children: 1, retired: 0, adult: 0, units: 0.5 },
+  ])("derives adults and units from the declared total", ({ total, children, retired, adult, units }) => {
+    const input = deriveVolunteerParticipationFromTotal({
+      volunteersCount: total,
+      childrenCount: children,
+      retiredCount: retired,
+    });
+    const result = normalizeVolunteerParticipation(input);
+
+    expect(deriveAdultCountFromTotal({
+      volunteersCount: total,
+      childrenCount: children,
+      retiredCount: retired,
+    })).toBe(adult);
+    expect(result).toMatchObject({
+      childrenCount: children,
+      adultCount: adult,
+      retiredCount: retired,
+      participantsCount: total,
+      effectiveVolunteerUnits: units,
+    });
+  });
+
+  it("does not hide an impossible composition behind an adjusted value", () => {
+    expect(deriveAdultCountFromTotal({
+      volunteersCount: 12,
+      childrenCount: 13,
+      retiredCount: 0,
+    })).toBe(-1);
+    expect(getVolunteerActionCompositionValidationMessage({
+      volunteersCount: 12,
+      childrenCount: 13,
+      retiredCount: 0,
+    })).toBe("Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.");
+  });
+
+  it("keeps the composition unavailable until all action inputs exist", () => {
+    expect(deriveAdultCountFromTotal({
+      volunteersCount: null,
+      childrenCount: 0,
+      retiredCount: 0,
+    })).toBeNull();
+    expect(getVolunteerActionCompositionValidationMessage({
+      volunteersCount: 12,
+      childrenCount: null,
+      retiredCount: 0,
+    })).toBe("Renseignez les nombres entiers d’enfants et de retraités présents.");
+  });
+
+  it.each([
+    { volunteersCount: 12, childrenCount: -1, retiredCount: 0 },
+    { volunteersCount: 12, childrenCount: 1.5, retiredCount: 0 },
+    { volunteersCount: null, childrenCount: 0, retiredCount: 0 },
+  ])("rejects an invalid action composition", (input) => {
+    expect(getVolunteerActionCompositionValidationMessage(input)).not.toBeNull();
+  });
+
+  it("recalculates adults at the server boundary instead of trusting a stale field", () => {
+    expect(normalizeActionVolunteerParticipationFromTotal({
+      volunteersCount: 12,
+      volunteerParticipation: {
+        childrenCount: 1,
+        adultCount: 999,
+        retiredCount: 0,
+      },
+    })).toMatchObject({
+      childrenCount: 1,
+      adultCount: 11,
+      retiredCount: 0,
+      participantsCount: 12,
+      effectiveVolunteerUnits: 11.5,
+    });
+  });
+
   it.each([
     {
       input: { childrenCount: "", adultCount: "", retiredCount: "" },

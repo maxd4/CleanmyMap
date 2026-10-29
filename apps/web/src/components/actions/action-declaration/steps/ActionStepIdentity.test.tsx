@@ -166,10 +166,12 @@ describe("ActionStepIdentity", () => {
     expect(actionHtml).not.toContain("Enfants");
 
     const participantsHtml = renderIdentity(form, undefined, "participants");
-    expect(participantsHtml).toContain("Nombre total de participants présents");
-    expect(participantsHtml).toContain("Répartition facultative");
-    expect(participantsHtml).toContain("Adultes (hors retraités)");
-    expect(participantsHtml).not.toContain("Total calculé");
+    expect(participantsHtml).toContain("Nombre total de participants");
+    expect(participantsHtml).toContain("Composition du groupe");
+    expect(participantsHtml).toContain("Enfants");
+    expect(participantsHtml).toContain("Retraités");
+    expect(participantsHtml).toContain("Adultes calculés automatiquement");
+    expect(participantsHtml).not.toContain('id="action-adult-count"');
     expect(participantsHtml).not.toContain("Date de l’action");
 
     const durationHtml = renderIdentity(form, undefined, "duration");
@@ -179,6 +181,18 @@ describe("ActionStepIdentity", () => {
     const timeHtml = renderIdentity(form, undefined, "time");
     expect(timeHtml).toContain("Rendez-vous · début");
     expect(timeHtml).not.toContain("Durée d’action (min)");
+  });
+
+  it("renders adults as a derived value without an editable field", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.volunteersCount = "12";
+    form.childrenCount = "1";
+    form.retiredCount = "0";
+
+    const html = renderIdentity(form, undefined, "participants");
+
+    expect(html).toContain("11 adultes calculés automatiquement");
+    expect(html).not.toContain('id="action-adult-count"');
   });
 
   it("composes organizer, participants and collection modes without cross-rendering", () => {

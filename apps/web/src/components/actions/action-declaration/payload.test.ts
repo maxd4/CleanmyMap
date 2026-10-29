@@ -6,9 +6,9 @@ describe("action declaration payload identity and organisation", () => {
   it("uses category sources for participants and keeps operational units separate", () => {
     const form = buildBaseForm();
     form.childrenCount = "2";
-    form.adultCount = "4";
     form.retiredCount = "2";
     form.volunteersCount = "8";
+    form.adultCount = "999";
 
     const payload = buildCreateActionPayload({
       form,
@@ -57,6 +57,35 @@ describe("action declaration payload identity and organisation", () => {
       childrenCount: null,
       adultCount: null,
       retiredCount: null,
+    });
+  });
+
+  it("derives adults from the total, children and retirees in preparation data", () => {
+    const form = buildBaseForm();
+    form.volunteersCount = "12";
+    form.childrenCount = "1";
+    form.retiredCount = "0";
+    form.adultCount = "1";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.volunteerParticipation).toMatchObject({
+      childrenCount: 1,
+      adultCount: 11,
+      retiredCount: 0,
+    });
+    expect(payload.preparationData?.volunteerParticipation).toEqual({
+      childrenCount: 1,
+      adultCount: 11,
+      retiredCount: 0,
     });
   });
 

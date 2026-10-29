@@ -11,7 +11,10 @@ import {
   preserveManualDrawing,
 } from "./action-update-notes";
 import { preserveObservedRouteGeometry } from "./action-update-geometry";
-import { getVolunteerForecastValidationMessage } from "./volunteer-participation";
+import {
+  getVolunteerActionCompositionValidationMessage,
+  getVolunteerForecastValidationMessage,
+} from "./volunteer-participation";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -89,6 +92,27 @@ export async function prepareActionUpdate(params: {
   }
 
   const currentMetadata = extractActionMetadataFromNotes(current.notes);
+  const isParticipantSubmission =
+    nextActionPhase === "post_action_complete" &&
+    (body.volunteersCount !== undefined ||
+      body.volunteerParticipation !== undefined);
+  if (isParticipantSubmission) {
+    const participation =
+      body.volunteerParticipation !== undefined
+        ? body.volunteerParticipation
+        : currentMetadata.volunteerParticipation;
+    const compositionMessage = getVolunteerActionCompositionValidationMessage({
+      volunteersCount: body.volunteersCount ?? current.volunteers_count,
+      childrenCount: participation?.childrenCount ?? null,
+      retiredCount: participation?.retiredCount ?? null,
+    });
+    if (compositionMessage) {
+      throw new ActionUpdateValidationError(
+        "volunteerParticipation",
+        compositionMessage,
+      );
+    }
+  }
   const temporalMessage = getTimeContractValidationMessage({
     actionDurationMinutes:
       body.durationMinutes !== undefined

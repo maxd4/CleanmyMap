@@ -189,7 +189,7 @@ function buildScope({ root, auditedSha, definition, fsApi, validateEvidence, val
     return emptyScope(definition, "NOT_MEASURED", diagnostics);
   }
 
-  let evidenceState = "EVIDENCE_UNVERIFIED";
+  let evidenceState;
   if (definition.scope === "web") {
     try {
       const evidence = validateEvidence({ repositoryRoot: root });

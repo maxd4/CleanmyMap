@@ -159,7 +159,7 @@ export function getCoveragePublicationRequirements({
 
 function gitSha(repositoryRoot, ref) {
   const normalizedRef = assertSafeGitRef(ref, "coverage Git ref");
-  return execFileSync(gitExecutable(), ["rev-parse", "--verify", `${ref}^{commit}`], {
+  return execFileSync(gitExecutable(), ["rev-parse", "--verify", `${normalizedRef}^{commit}`], {
     cwd: repositoryRoot,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],

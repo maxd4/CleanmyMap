@@ -25,12 +25,12 @@ describe("action declaration model", () => {
     expect(second.preparationChecklist[0].checked).toBe(false);
   });
 
-  it("leaves observed participant totals and category sources empty until declared", () => {
+  it("starts a new action with an empty total and zero category defaults", () => {
     const form = createInitialFormState("Alice");
 
     expect(form.volunteersCount).toBe("");
-    expect(form.childrenCount).toBe("");
+    expect(form.childrenCount).toBe("0");
     expect(form.adultCount).toBe("");
-    expect(form.retiredCount).toBe("");
+    expect(form.retiredCount).toBe("0");
   });
 });

@@ -28,6 +28,12 @@ export type VolunteerParticipationFormInput = {
   retiredCount: string;
 };
 
+export type ActionVolunteerCompositionInput = {
+  volunteersCount: number | null | undefined;
+  childrenCount: number | null | undefined;
+  retiredCount: number | null | undefined;
+};
+
 export type VolunteerForecastValidationInput = {
   volunteersExpected?: number | null;
   volunteerParticipation?: VolunteerParticipationInput | null;
@@ -41,6 +47,109 @@ function normalizeCount(value: number | null | undefined): number | null {
     return null;
   }
   return Math.trunc(value);
+}
+
+function normalizeIntegerCount(value: number | null | undefined): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value) ||
+    value < 0 ||
+    value > 500
+  ) {
+    return null;
+  }
+  return value;
+}
+
+export function deriveAdultCountFromTotal(
+  input: ActionVolunteerCompositionInput,
+): number | null {
+  const volunteersCount = normalizeIntegerCount(input.volunteersCount);
+  const childrenCount = normalizeIntegerCount(input.childrenCount);
+  const retiredCount = normalizeIntegerCount(input.retiredCount);
+
+  if (
+    volunteersCount === null ||
+    childrenCount === null ||
+    retiredCount === null
+  ) {
+    return null;
+  }
+
+  return volunteersCount - childrenCount - retiredCount;
+}
+
+export function deriveVolunteerParticipationFromTotal(
+  input: ActionVolunteerCompositionInput,
+): VolunteerParticipationInput {
+  const childrenCount = normalizeIntegerCount(input.childrenCount);
+  const retiredCount = normalizeIntegerCount(input.retiredCount);
+  return {
+    childrenCount,
+    adultCount: deriveAdultCountFromTotal(input),
+    retiredCount,
+  };
+}
+
+export function getVolunteerActionCompositionValidationMessage(
+  input: ActionVolunteerCompositionInput,
+): string | null {
+  const volunteersCount = input.volunteersCount;
+  const childrenCount = input.childrenCount;
+  const retiredCount = input.retiredCount;
+
+  if (
+    volunteersCount === null ||
+    volunteersCount === undefined ||
+    !Number.isInteger(volunteersCount) ||
+    volunteersCount < 1 ||
+    volunteersCount > 500
+  ) {
+    return "Renseignez un nombre total de participants entier compris entre 1 et 500.";
+  }
+
+  if (
+    childrenCount === null ||
+    childrenCount === undefined ||
+    retiredCount === null ||
+    retiredCount === undefined
+  ) {
+    return "Renseignez les nombres entiers d’enfants et de retraités présents.";
+  }
+
+  if (
+    !Number.isInteger(childrenCount) ||
+    !Number.isInteger(retiredCount) ||
+    childrenCount < 0 ||
+    retiredCount < 0 ||
+    childrenCount > 500 ||
+    retiredCount > 500
+  ) {
+    return "Les nombres d’enfants et de retraités doivent être des entiers positifs ou nuls.";
+  }
+
+  if (childrenCount + retiredCount > volunteersCount) {
+    return "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.";
+  }
+
+  return null;
+}
+
+export function normalizeActionVolunteerParticipationFromTotal(input: {
+  volunteersCount: number | null | undefined;
+  volunteerParticipation: VolunteerParticipationInput | null | undefined;
+}): ActionVolunteerParticipation | null {
+  if (!input.volunteerParticipation) return null;
+
+  return normalizeVolunteerParticipation(
+    deriveVolunteerParticipationFromTotal({
+      volunteersCount: input.volunteersCount,
+      childrenCount: input.volunteerParticipation.childrenCount,
+      retiredCount: input.volunteerParticipation.retiredCount,
+    }),
+  );
 }
 
 export function hasVolunteerCategoryData(

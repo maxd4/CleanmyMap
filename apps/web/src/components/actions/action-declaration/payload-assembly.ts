@@ -13,7 +13,11 @@ function resolveCreateActionPayloadParts(
   return {
     ...resolveCreateActionRouteParts(params),
     ...resolveCreateActionIdentityParts(params),
-    ...resolveCreateActionMeasurementParts(params.form, params.isEntrepriseMode),
+    ...resolveCreateActionMeasurementParts(
+      params.form,
+      params.isEntrepriseMode,
+      params.declarationMode,
+    ),
   };
 }
 

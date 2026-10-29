@@ -21,15 +21,6 @@ import {
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, "../..");
 const SCOPES = ["runtime", "tests", "fixtures/data"];
-const SOURCE_FILES = [
-  "scripts/checks/duplication-policy.mjs",
-  "scripts/checks/check-duplication.mjs",
-  "scripts/checks/duplication-metrics-baseline.json",
-  "scripts/checks/duplication-runtime-baseline.json",
-  "scripts/checks/duplication-tests-baseline.json",
-  "scripts/checks/duplication-data-baseline.json",
-  "scripts/checks/duplication-justifications.json",
-];
 const CANONICAL_METRICS_BASELINE = JSON.parse(readFileSync(join(REPOSITORY_ROOT, "scripts/checks/duplication-metrics-baseline.json"), "utf8"));
 const CANONICAL_JUSTIFICATIONS = JSON.parse(readFileSync(join(REPOSITORY_ROOT, "scripts/checks/duplication-justifications.json"), "utf8"));
 const CANONICAL_NATIVE_BASELINES = {

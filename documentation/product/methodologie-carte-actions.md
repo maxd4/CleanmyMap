@@ -39,9 +39,15 @@ Le vert ne doit pas être utilisé comme niveau de « faible pollution » d'une 
 
 ### Participants et unités opérationnelles
 
-Les nouvelles actions collectent séparément trois catégories, sans âge exact ni
-date de naissance : `childrenCount`, `adultCount` et `retiredCount`. Le nombre
-public de participants est le total réel des personnes :
+Les nouvelles actions déclarent le total réel des personnes présentes, puis les
+deux catégories complémentaires Enfants et Retraités, sans âge exact ni date
+de naissance. Le nombre d'adultes n'est pas une saisie indépendante : il est
+calculé par l'owner canonique à partir des trois entrées :
+
+`adultCount = volunteersCount - childrenCount - retiredCount`.
+
+Les champs persistés restent `childrenCount`, `adultCount` et `retiredCount`.
+Le nombre public de participants est le total réel des personnes :
 
 `participantsCount = childrenCount + adultCount + retiredCount`.
 

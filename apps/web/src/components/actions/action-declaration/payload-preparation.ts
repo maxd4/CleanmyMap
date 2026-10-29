@@ -4,7 +4,10 @@ import { resolveActionRouteTopology } from "../../../lib/actions/route-topology"
 import { resolveRouteTargetDistance } from "../../../lib/actions/route-target-distance";
 import type { FinalActionGeometry } from "../../../lib/actions/geometry/final-geometry";
 import type { FormState } from "./model";
-import { buildVolunteerParticipationFromForm } from "./payload-measurements";
+import {
+  buildActionVolunteerParticipationFromForm,
+  buildVolunteerParticipationFromForm,
+} from "./payload-measurements";
 import { toOptionalNumber } from "./payload-numbers";
 import { normalizeVolunteerParticipation } from "../../../lib/actions/volunteer-participation";
 import {
@@ -19,6 +22,7 @@ import {
   normalizeSuggestedMaterials,
 } from "../../../lib/actions/preparation-contract";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
+import type { DeclarationMode } from "./types";
 
 function buildPreparationRouteFields(
   form: FormState,
@@ -146,13 +150,17 @@ function buildPreparationContentFields(
 function resolvePreparationContext(
   form: FormState,
   finalGeometry: FinalActionGeometry | null,
+  declarationMode: DeclarationMode,
 ) {
   const routeTopology = resolveActionRouteTopology({
     topology: form.routeTopology,
     arrivalLocationLabel: form.arrivalLocationLabel,
     recordType: form.recordType,
   });
-  const volunteerParticipationInput = buildVolunteerParticipationFromForm(form);
+  const volunteerParticipationInput =
+    declarationMode === "complete"
+      ? buildActionVolunteerParticipationFromForm(form)
+      : buildVolunteerParticipationFromForm(form);
   const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
   const targetSource: "derived" | "manual" = form.routeTargetDistanceKmManuallySet ? "manual" : "derived";
   const resolvedTarget = resolveRouteTargetDistance({
@@ -175,8 +183,9 @@ export function buildPreparationDataFromForm(
     gpxImport: form.gpxImport,
     operationalRoute: form.operationalRoute,
   }),
+  declarationMode: DeclarationMode = "quick",
 ): ActionPreparationData {
-  const context = resolvePreparationContext(form, finalGeometry);
+  const context = resolvePreparationContext(form, finalGeometry, declarationMode);
   return {
     ...buildPreparationContentFields(form),
     ...buildPreparationRouteFields(
