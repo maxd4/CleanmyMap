@@ -7,6 +7,7 @@ import useSWR from "swr";
 import {
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution/pollution-score";
+import type { ActionCollectionReferenceAverages } from "@/lib/actions/action-collection-reference-averages";
 import {
   ACTION_POLLUTION_SCORE_REFERENCES_INVALIDATED_EVENT,
 } from "@/lib/actions/pollution/pollution-score-references-events";
@@ -14,13 +15,20 @@ import { swrSupervisionOptions } from "@/lib/swr-config";
 
 type ActionPollutionScoreReferencesContextValue = {
   references: PollutionScoreReferences | null;
+  collectionReferences: ActionCollectionReferenceAverages | null;
   isLoading: boolean;
   error: string | null;
   reload: () => void;
 };
 
+type ActionPollutionScoreReferencePayload = {
+  references: PollutionScoreReferences | null;
+  collectionReferences: ActionCollectionReferenceAverages | null;
+};
+
 const DEFAULT_ACTION_POLLUTION_SCORE_REFERENCES_CONTEXT: ActionPollutionScoreReferencesContextValue = {
   references: null,
+  collectionReferences: null,
   isLoading: false,
   error: null,
   reload: () => {},
@@ -29,15 +37,21 @@ const DEFAULT_ACTION_POLLUTION_SCORE_REFERENCES_CONTEXT: ActionPollutionScoreRef
 const ActionPollutionScoreReferencesContext =
   createContext<ActionPollutionScoreReferencesContextValue | null>(null);
 
-async function fetchPollutionScoreReferences(): Promise<PollutionScoreReferences | null> {
+async function fetchPollutionScoreReferences(): Promise<ActionPollutionScoreReferencePayload> {
   const response = await fetch("/api/actions/map/pollution-score-references", {
     cache: "no-store",
   });
   if (!response.ok) {
     throw new Error("Impossible de charger la référence du score.");
   }
-  const payload = (await response.json()) as { references?: PollutionScoreReferences | null };
-  return payload.references ?? null;
+  const payload = (await response.json()) as {
+    references?: PollutionScoreReferences | null;
+    collectionReferences?: ActionCollectionReferenceAverages | null;
+  };
+  return {
+    references: payload.references ?? null,
+    collectionReferences: payload.collectionReferences ?? null,
+  };
 }
 
 const POLLUTION_SCORE_REFERENCES_KEY = "action-pollution-score-references";
@@ -47,7 +61,7 @@ export function ActionPollutionScoreReferencesProvider({
 }: {
   children: ReactNode;
 }) {
-  const { data, error: fetchError, isLoading, mutate } = useSWR<PollutionScoreReferences | null, unknown>(
+  const { data, error: fetchError, isLoading, mutate } = useSWR<ActionPollutionScoreReferencePayload, unknown>(
     POLLUTION_SCORE_REFERENCES_KEY,
     fetchPollutionScoreReferences,
     {
@@ -57,7 +71,8 @@ export function ActionPollutionScoreReferencesProvider({
     },
   );
 
-  const references = data ?? null;
+  const references = data?.references ?? null;
+  const collectionReferences = data?.collectionReferences ?? null;
   const error = fetchError
     ? fetchError instanceof Error && fetchError.message
       ? fetchError.message
@@ -93,11 +108,12 @@ export function ActionPollutionScoreReferencesProvider({
   const value = useMemo(
     () => ({
       references,
+      collectionReferences,
       isLoading,
       error,
       reload,
     }),
-    [error, isLoading, references, reload],
+    [collectionReferences, error, isLoading, references, reload],
   );
 
   return (

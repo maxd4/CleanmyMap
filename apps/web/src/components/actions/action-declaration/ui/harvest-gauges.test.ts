@@ -42,6 +42,7 @@ describe("WasteComparisonVisual", () => {
         currentPerVolunteer,
         benchmarkPerVolunteer,
         deltaPercent,
+        benchmarkSourceCount: 12,
         comparisonTone: deltaPercent !== null && deltaPercent > 5
           ? "orange"
           : deltaPercent !== null && deltaPercent < -5
@@ -68,7 +69,7 @@ describe("WasteComparisonVisual", () => {
 
     expect(markup).toContain('data-trend="neutral"');
     expect(markup).toContain("+1%");
-    expect(markup).toContain("repère : 8,0 kg");
+    expect(markup).toContain("moyenne : 8,0 kg");
   });
 
   it("shows an above-reference result and supports an explicit zero", () => {
@@ -97,6 +98,7 @@ describe("ButtsComparisonVisual", () => {
         currentPerVolunteer: 3000,
         benchmarkPerVolunteer: 4000,
         deltaPercent: -25,
+        benchmarkSourceCount: 12,
         comparisonTone: "emerald",
       }),
     );
@@ -106,7 +108,7 @@ describe("ButtsComparisonVisual", () => {
     expect(markup).toContain('data-trend="down"');
     expect(markup).toContain("-25%");
     expect(markup).toContain("3 000 mégots / bénévole");
-    expect(markup).toContain("lucide-droplets");
+    expect(markup).toContain("lucide-droplet");
   });
 
   it("does not render when the observed reference is unavailable", () => {
@@ -115,6 +117,7 @@ describe("ButtsComparisonVisual", () => {
         currentPerVolunteer: 3000,
         benchmarkPerVolunteer: null,
         deltaPercent: null,
+        benchmarkSourceCount: 0,
         comparisonTone: "slate",
       }),
     );

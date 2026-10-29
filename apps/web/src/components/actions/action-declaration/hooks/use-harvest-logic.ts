@@ -55,12 +55,14 @@ function formatDerivedNumber(value: number): string {
 export type UseHarvestLogicResult = {
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
+  wasteBenchmarkSourceCount: number;
   wasteDeltaPercent: number | null;
   comparisonTone: WasteComparisonTone;
   megotsKg: number | null;
   megotsCount: number | null;
   megotsCurrentPerVolunteer: number | null;
   megotsBenchmarkPerVolunteer: number | null;
+  megotsBenchmarkSourceCount: number;
   megotsDeltaPercent: number | null;
   megotsComparisonTone: WasteComparisonTone;
   cigaretteButtsCountProvenance: string;
@@ -75,7 +77,7 @@ export function useHarvestLogic({
   form,
   updateFields,
 }: UseHarvestLogicParams): UseHarvestLogicResult {
-  const { references } = useActionPollutionScoreReferences();
+  const { collectionReferences } = useActionPollutionScoreReferences();
   const [lastMegotsInputSource, setLastMegotsInputSource] = useState<MegotsInputSource>(null);
 
   const derived = useMemo(() => {
@@ -84,8 +86,8 @@ export function useHarvestLogic({
     const wasteComparison = deriveWasteComparison({
       wasteKg,
       volunteersCount,
-      benchmarkPerVolunteer: references?.global.wastePerVolunteer ?? null,
-      benchmarkSourceCount: references?.global.wasteSourceCount ?? 0,
+      benchmarkPerVolunteer: collectionReferences?.wastePerVolunteer ?? null,
+      benchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
     });
     const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
       cigaretteButtsCount: readValidCount(form.cigaretteButtsCount),
@@ -105,19 +107,21 @@ export function useHarvestLogic({
     const megotsComparison = deriveWasteComparison({
       wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
       volunteersCount,
-      benchmarkPerVolunteer: references?.global.buttsPerVolunteer ?? null,
-      benchmarkSourceCount: references?.global.buttsSourceCount ?? 0,
+      benchmarkPerVolunteer: collectionReferences?.buttsPerVolunteer ?? null,
+      benchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
     });
 
     return {
       wasteCurrentPerVolunteer: wasteComparison.currentPerVolunteer,
       wasteBenchmarkPerVolunteer: wasteComparison.benchmarkPerVolunteer,
+      wasteBenchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
       wasteDeltaPercent: wasteComparison.deltaPercent,
       comparisonTone: wasteComparison.tone,
       megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
       megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
       megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer,
       megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer,
+      megotsBenchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
       megotsDeltaPercent: megotsComparison.deltaPercent,
       megotsComparisonTone: megotsComparison.tone,
       cigaretteButtsCountProvenance:
@@ -134,7 +138,7 @@ export function useHarvestLogic({
     form.wasteMegotsKg,
     form.wasteKg,
     lastMegotsInputSource,
-    references,
+    collectionReferences,
   ]);
 
   const syncMegotsWeightFromWeight = useCallback(

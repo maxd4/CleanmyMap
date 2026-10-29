@@ -22,6 +22,7 @@ function renderWasteSection(overrides: Partial<React.ComponentProps<typeof Harve
       onTriChange: () => undefined,
       wasteCurrentPerVolunteer: 8,
       wasteBenchmarkPerVolunteer: 8,
+      wasteBenchmarkSourceCount: 12,
       wasteDeltaPercent: 0,
       comparisonTone: "slate",
       ...overrides,

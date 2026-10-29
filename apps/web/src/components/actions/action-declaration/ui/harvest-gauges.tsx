@@ -1,6 +1,6 @@
 "use client";
 
-import { Droplets, Minus, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { Droplet, Minus, ShoppingBag, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -141,24 +141,12 @@ type ComparisonVisualProps = {
   contextLabel: string;
   currentLabel: string;
   benchmarkLabel: string;
+  benchmarkSourceCount: number;
   testId: string;
 };
 
 function getWasteComparisonColors(tone: WasteComparisonTone) {
-  if (tone === "orange") {
-    return {
-      accent: "text-orange-600",
-      fill: "text-orange-400",
-      bar: "bg-orange-400",
-    };
-  }
-  if (tone === "emerald") {
-    return {
-      accent: "text-emerald-600",
-      fill: "text-emerald-400",
-      bar: "bg-emerald-400",
-    };
-  }
+  void tone;
   return {
     accent: "text-slate-600",
     fill: "text-slate-400",
@@ -200,10 +188,10 @@ function ComparisonVisual({
     deltaPercent > 5 ? TrendingUp : deltaPercent < -5 ? TrendingDown : Minus;
   const trendLabel =
     deltaPercent > 5
-      ? "au-dessus du repère"
+      ? "au-dessus de la moyenne historique"
       : deltaPercent < -5
-        ? "en dessous du repère"
-        : "proche du repère";
+        ? "en dessous de la moyenne historique"
+        : "proche de la moyenne historique";
 
   return (
     <div
@@ -226,7 +214,7 @@ function ComparisonVisual({
       <div
         className="mt-3 flex items-end justify-center gap-2"
         role="img"
-        aria-label={`Niveau visuel : ${formatSignedPercent(deltaPercent)} par rapport au repère observé`}
+        aria-label={`Niveau visuel : ${formatSignedPercent(deltaPercent)} par rapport à la moyenne historique des actions comparables`}
       >
         {[0, 1, 2].map((index) => {
           const fill = clamp(ratio * 3 - index, 0, 1) * 100;
@@ -272,6 +260,7 @@ export function WasteComparisonVisual({
   benchmarkPerVolunteer,
   deltaPercent,
   comparisonTone,
+  benchmarkSourceCount,
 }: Omit<ComparisonVisualProps, "icon" | "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
   return (
     <ComparisonVisual
@@ -279,11 +268,12 @@ export function WasteComparisonVisual({
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       deltaPercent={deltaPercent}
       comparisonTone={comparisonTone}
-      icon={Trash2}
+      icon={ShoppingBag}
       title="Comparaison visuelle"
-      contextLabel="vs référence observée des autres actions"
+      contextLabel={`Moyenne historique des actions comparables · ${benchmarkSourceCount} action(s)`}
       currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / bénévole`}
-      benchmarkLabel={`repère : ${formatKg(benchmarkPerVolunteer ?? 0)} kg`}
+      benchmarkLabel={`moyenne : ${formatKg(benchmarkPerVolunteer ?? 0)} kg`}
+      benchmarkSourceCount={benchmarkSourceCount}
       testId="waste-comparison-visual"
     />
   );
@@ -294,6 +284,7 @@ export function ButtsComparisonVisual({
   benchmarkPerVolunteer,
   deltaPercent,
   comparisonTone,
+  benchmarkSourceCount,
 }: Omit<ComparisonVisualProps, "icon" | "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
   return (
     <ComparisonVisual
@@ -301,11 +292,12 @@ export function ButtsComparisonVisual({
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       deltaPercent={deltaPercent}
       comparisonTone={comparisonTone}
-      icon={Droplets}
+      icon={Droplet}
       title="Comparaison visuelle des mégots"
-      contextLabel="vs référence observée des autres actions"
+      contextLabel={`Moyenne historique des actions comparables · ${benchmarkSourceCount} action(s)`}
       currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / bénévole`}
-      benchmarkLabel={`repère : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots`}
+      benchmarkLabel={`moyenne : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots`}
+      benchmarkSourceCount={benchmarkSourceCount}
       testId="butts-comparison-visual"
     />
   );

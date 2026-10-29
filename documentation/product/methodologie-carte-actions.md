@@ -183,6 +183,18 @@ doit être lue directement dans :
 
 `apps/web/src/lib/actions/pollution/pollution-score.ts`
 
+Cette référence maximale du score cartographique ne doit pas être confondue
+avec le repère visuel du formulaire de déclaration finale. Ce dernier utilise
+la RPC indépendante `action_collection_reference_averages_v1()`, qui calcule
+séparément la moyenne arithmétique de chaque ratio `waste_kg /
+volunteers_count` et `cigarette_butts / volunteers_count` sur les actions
+approuvées, publiques, terminées et datées. Les valeurs absentes ne contribuent
+pas à leur métrique ; un zéro déclaré y contribue. Le nombre d'actions sources
+est conservé pour chaque moyenne et une comparaison n'est rendue qu'à partir
+de deux sources. Cette lecture reste descriptive : elle n'utilise pas les
+unités pondérées `effective-volunteer-units-v1` et ne transforme pas une flèche
+au-dessus ou en dessous de la moyenne en jugement de qualité.
+
 Le score doit être présenté comme :
 
 > Pollution constatée avant l'action

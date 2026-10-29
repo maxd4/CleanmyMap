@@ -15,7 +15,7 @@ describe("deriveWasteComparison", () => {
       currentPerVolunteer: 4,
       benchmarkPerVolunteer: 8,
       deltaPercent: -50,
-      tone: "emerald",
+        tone: "slate",
     });
   });
 
@@ -35,7 +35,7 @@ describe("deriveWasteComparison", () => {
       currentPerVolunteer: 12,
       benchmarkPerVolunteer: 8,
       deltaPercent: 50,
-      tone: "orange",
+      tone: "slate",
     });
   });
 
@@ -45,7 +45,7 @@ describe("deriveWasteComparison", () => {
     ).toMatchObject({
       currentPerVolunteer: 0,
       deltaPercent: -100,
-      tone: "emerald",
+      tone: "slate",
     });
   });
 
@@ -62,5 +62,8 @@ describe("deriveWasteComparison", () => {
     expect(
       deriveWasteComparison({ wasteKg: Number.NaN, volunteersCount: 1, ...reference }),
     ).toMatchObject({ currentPerVolunteer: null, deltaPercent: null, tone: "slate" });
+    expect(
+      deriveWasteComparison({ wasteKg: 8, volunteersCount: 1, benchmarkPerVolunteer: 8, benchmarkSourceCount: 1 }),
+    ).toMatchObject({ benchmarkPerVolunteer: null, deltaPercent: null, tone: "slate" });
   });
 });

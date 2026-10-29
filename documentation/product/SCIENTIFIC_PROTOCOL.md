@@ -225,8 +225,16 @@ les itérations futures mais désactivé tant que sa maturité et sa validation 
 sont pas suffisantes. Une photo de bilan reste une pièce documentaire et ne
 produit actuellement aucune masse, confiance ou intervalle affiché dans la
 saisie ; les comparaisons visuelles déchets et mégots restent des repères
-comparatifs fondés sur les références observées d'autres actions, séparés des
-mesures déclarées.
+comparatifs fondés sur `action_collection_reference_averages_v1()`, séparés des
+mesures déclarées et du score cartographique. Cette RPC calcule, pour chaque
+métrique, la moyenne arithmétique des ratios par participant sur les actions
+approuvées, publiques, terminées et datées, sans remplacer les valeurs
+absentes par zéro. Chaque métrique conserve son propre nombre d'actions
+sources ; l'interface masque la comparaison en dessous de deux sources. Le
+dénominateur reste le nombre réel de participants :
+`effective-volunteer-units-v1` n'est pas mélangé à cette population historique.
+Les pictogrammes et la flèche indiquent un écart descriptif à la moyenne, pas
+une performance environnementale démontrée.
 
 La quote-part additive est conservatrice : les participations confirmées
 mesurées utilisent leur mesure exacte ; les confirmés non mesurés se partagent

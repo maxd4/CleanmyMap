@@ -58,7 +58,7 @@ export function deriveWasteComparison(params: {
     Number.isFinite(params.volunteersCount) &&
     params.volunteersCount >= 1;
   const hasValidBenchmark =
-    params.benchmarkSourceCount > 0 &&
+    params.benchmarkSourceCount >= 2 &&
     params.benchmarkPerVolunteer !== null &&
     Number.isFinite(params.benchmarkPerVolunteer) &&
     params.benchmarkPerVolunteer > 0;
@@ -77,11 +77,8 @@ export function deriveWasteComparison(params: {
     currentPerVolunteer,
     benchmarkPerVolunteer,
     deltaPercent,
-    tone:
-      deltaPercent === null || Math.abs(deltaPercent) < 5
-        ? "slate"
-        : deltaPercent > 0
-          ? "orange"
-          : "emerald",
+    // The arrow only communicates direction. It must not grade the action or
+    // imply that collecting more or fewer waste is intrinsically better.
+    tone: "slate",
   };
 }

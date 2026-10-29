@@ -14,6 +14,7 @@ function renderMegots(overrides: Partial<React.ComponentProps<typeof HarvestMego
       megotsCount: 3000,
       megotsCurrentPerVolunteer: 3000,
       megotsBenchmarkPerVolunteer: 4000,
+      megotsBenchmarkSourceCount: 12,
       megotsDeltaPercent: -25,
       megotsComparisonTone: "emerald",
       cigaretteButtsCountProvenance: "weight_converted",
@@ -54,6 +55,7 @@ describe("HarvestMegotsSection", () => {
       megotsCount: 0,
       megotsCurrentPerVolunteer: 0,
       megotsBenchmarkPerVolunteer: 4000,
+      megotsBenchmarkSourceCount: 12,
       megotsDeltaPercent: -100,
       megotsComparisonTone: "emerald",
       cigaretteButtsCountProvenance: "counted",
@@ -70,6 +72,7 @@ describe("HarvestMegotsSection", () => {
     const markup = renderMegots({
       megotsCurrentPerVolunteer: null,
       megotsBenchmarkPerVolunteer: null,
+      megotsBenchmarkSourceCount: 0,
       megotsDeltaPercent: null,
     });
 

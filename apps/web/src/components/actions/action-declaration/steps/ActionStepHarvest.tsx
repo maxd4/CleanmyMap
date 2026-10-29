@@ -58,12 +58,14 @@ export function ActionStepHarvest({
   const {
     wasteCurrentPerVolunteer,
     wasteBenchmarkPerVolunteer,
+    wasteBenchmarkSourceCount,
     wasteDeltaPercent,
     comparisonTone,
     megotsKg,
     megotsCount,
     megotsCurrentPerVolunteer,
     megotsBenchmarkPerVolunteer,
+    megotsBenchmarkSourceCount,
     megotsDeltaPercent,
     megotsComparisonTone,
     cigaretteButtsCountProvenance,
@@ -180,6 +182,7 @@ export function ActionStepHarvest({
             hidePrimaryMeasurement={mode === "collection" || mode === "details"}
             wasteCurrentPerVolunteer={wasteCurrentPerVolunteer}
             wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+            wasteBenchmarkSourceCount={wasteBenchmarkSourceCount}
             wasteDeltaPercent={wasteDeltaPercent}
             comparisonTone={comparisonTone}
           />
@@ -192,6 +195,7 @@ export function ActionStepHarvest({
             megotsCount={megotsCount}
             megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
             megotsBenchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+            megotsBenchmarkSourceCount={megotsBenchmarkSourceCount}
             megotsDeltaPercent={megotsDeltaPercent}
             megotsComparisonTone={megotsComparisonTone}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}

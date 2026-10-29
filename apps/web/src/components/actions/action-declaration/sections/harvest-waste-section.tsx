@@ -34,6 +34,7 @@ type HarvestWasteSectionProps = {
   hidePrimaryMeasurement?: boolean;
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
+  wasteBenchmarkSourceCount: number;
   wasteDeltaPercent: number | null;
   comparisonTone: "emerald" | "orange" | "slate";
 };
@@ -57,6 +58,7 @@ export function HarvestWasteSection({
   hidePrimaryMeasurement = false,
   wasteCurrentPerVolunteer,
   wasteBenchmarkPerVolunteer,
+  wasteBenchmarkSourceCount,
   wasteDeltaPercent,
   comparisonTone,
 }: HarvestWasteSectionProps) {
@@ -131,6 +133,7 @@ export function HarvestWasteSection({
       <WasteComparisonVisual
         currentPerVolunteer={wasteCurrentPerVolunteer}
         benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+        benchmarkSourceCount={wasteBenchmarkSourceCount}
         deltaPercent={wasteDeltaPercent}
         comparisonTone={comparisonTone}
       />

@@ -3,12 +3,15 @@ import { renderToString } from "react-dom/server";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 
 function HookConsumer() {
-  const { references, isLoading, error } = useActionPollutionScoreReferences();
+  const { references, collectionReferences, isLoading, error } = useActionPollutionScoreReferences();
 
   return (
     <div>
       <output data-field="references">
         {references ? JSON.stringify(references.global) : "null"}
+      </output>
+      <output data-field="collection-references">
+        {collectionReferences ? JSON.stringify(collectionReferences) : "null"}
       </output>
       <output data-field="is-loading">{String(isLoading)}</output>
       <output data-field="error">{error === null ? "null" : error}</output>
@@ -21,6 +24,7 @@ describe("action pollution score references context", () => {
     const html = renderToString(<HookConsumer />);
 
     expect(html).toContain('data-field="references">null');
+    expect(html).toContain('data-field="collection-references">null');
     expect(html).toContain('data-field="is-loading">false');
     expect(html).toContain('data-field="error">null');
   });

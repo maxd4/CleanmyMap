@@ -17,6 +17,7 @@ type HarvestMegotsSectionProps = {
   megotsCount: number | null;
   megotsCurrentPerVolunteer: number | null;
   megotsBenchmarkPerVolunteer: number | null;
+  megotsBenchmarkSourceCount: number;
   megotsDeltaPercent: number | null;
   megotsComparisonTone: "emerald" | "orange" | "slate";
   cigaretteButtsCountProvenance: string;
@@ -38,6 +39,7 @@ export function HarvestMegotsSection({
   megotsCount,
   megotsCurrentPerVolunteer,
   megotsBenchmarkPerVolunteer,
+  megotsBenchmarkSourceCount,
   megotsDeltaPercent,
   megotsComparisonTone,
   cigaretteButtsCountProvenance,
@@ -178,6 +180,7 @@ export function HarvestMegotsSection({
       <ButtsComparisonVisual
         currentPerVolunteer={megotsCurrentPerVolunteer}
         benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+        benchmarkSourceCount={megotsBenchmarkSourceCount}
         deltaPercent={megotsDeltaPercent}
         comparisonTone={megotsComparisonTone}
       />
