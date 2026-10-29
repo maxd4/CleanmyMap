@@ -25,7 +25,24 @@ const visionEstimate = {
 } satisfies ActionVisionEstimate;
 
 describe("HarvestPhotoSection", () => {
-  it("keeps photos and labels the experimental result as an unvalidated proxy", () => {
+  it("documents the disabled state before any photo is selected", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(HarvestPhotoSection, {
+        photoAssets: [],
+        visionEstimate: null,
+        visionStatus: "idle",
+        estimatedWasteKgInterval: null,
+        hasPhotos: false,
+        onPhotoUpload: () => undefined,
+        onClearPhotos: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain('data-testid="vision-estimation-disabled"');
+    expect(markup).toContain("Estimation photo désactivée");
+  });
+
+  it("keeps photos visible while the immature photo estimation stays disabled", () => {
     const markup = renderToStaticMarkup(
       React.createElement(HarvestPhotoSection, {
         photoAssets: [photo],
@@ -39,9 +56,12 @@ describe("HarvestPhotoSection", () => {
     );
 
     expect(markup).toContain('alt="Photo 1"');
-    expect(markup).toContain("Proxy expérimental non validé");
-    expect(markup).toContain("Poids proposé (proxy)");
-    expect(markup).toContain("ne mesure pas la masse collectée");
+    expect(markup).toContain('data-testid="vision-estimation-disabled"');
+    expect(markup).toContain("Estimation photo désactivée");
+    expect(markup).toContain("pas encore suffisamment mature ni validé");
+    expect(markup).not.toContain("Proxy expérimental non validé");
+    expect(markup).not.toContain("Poids proposé");
+    expect(markup).not.toContain("Intervalle heuristique");
     expect(markup).not.toContain("Estimation IA");
     expect(markup).not.toContain("confiance du modèle");
     expect(markup).not.toContain("vision-hybrid-v1");

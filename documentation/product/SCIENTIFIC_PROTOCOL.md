@@ -214,6 +214,14 @@ masse de déchets hors mégots, condition et méthode ; nombre de mégots et/ou
 masse, condition et provenance. Une mesure `NULL` n'est pas un zéro, et une
 valeur dérivée ne remplace jamais la valeur brute.
 
+Le moteur d'estimation photo du formulaire `/actions/new` est conservé pour
+les itérations futures mais désactivé tant que sa maturité et sa validation ne
+sont pas suffisantes. Une photo de bilan reste une pièce documentaire et ne
+produit actuellement aucune masse, confiance ou intervalle affiché dans la
+saisie ; les comparaisons visuelles déchets et mégots restent des repères
+comparatifs fondés sur les références observées d'autres actions, séparés des
+mesures déclarées.
+
 La quote-part additive est conservatrice : les participations confirmées
 mesurées utilisent leur mesure exacte ; les confirmés non mesurés se partagent
 uniquement `totalAction - somme(mesures exactes)`. Si le total collectif est

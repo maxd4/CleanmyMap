@@ -82,11 +82,10 @@ export function useActionDeclarationFormViewModel(
 ) {
   const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
   const [showRestrictionDialog, setShowRestrictionDialog] = useState(false);
-  const { form, photoAssets, visionEstimate, manualDrawing, validationIssues, hasAttemptedSubmit, loadedActionPhase, submissionState } = state;
+  const { form, photoAssets, manualDrawing, validationIssues, hasAttemptedSubmit, loadedActionPhase, submissionState } = state;
   const presentation = useActionDeclarationFormPresentation({
     form,
     photoAssets,
-    visionEstimate,
     manualDrawing,
     validationIssues,
     hasAttemptedSubmit,

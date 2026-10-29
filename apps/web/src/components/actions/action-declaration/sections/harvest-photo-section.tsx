@@ -1,15 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Sparkles, Trash2 } from "lucide-react";
+import { Camera, Trash2 } from "lucide-react";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
-import { formatKg } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
 
 type HarvestPhotoSectionProps = {
   photoAssets: ActionPhotoAsset[];
+  /** Kept for the existing form/view-model contract; the engine is disabled here. */
   visionEstimate: ActionVisionEstimate | null;
   visionStatus: "idle" | "processing" | "ready" | "error";
+  /** Kept for the existing form/view-model contract; never rendered while disabled. */
   estimatedWasteKgInterval: [number, number] | null;
   hasPhotos: boolean;
   onPhotoUpload: (files: FileList | null) => void;
@@ -18,9 +19,7 @@ type HarvestPhotoSectionProps = {
 
 export function HarvestPhotoSection({
   photoAssets,
-  visionEstimate,
   visionStatus,
-  estimatedWasteKgInterval,
   hasPhotos,
   onPhotoUpload,
   onClearPhotos,
@@ -108,46 +107,22 @@ export function HarvestPhotoSection({
               ))}
             </div>
 
-            {/* Analyse expérimentale en cours */}
-            {visionStatus === "processing" && (
-              <div className="mt-3 flex items-center gap-2 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3">
-                <Sparkles size={15} className="text-violet-500 animate-pulse" />
-                <p className="text-xs font-medium text-violet-700">Analyse expérimentale en cours…</p>
-              </div>
-            )}
-
-            {/* Résultat expérimental : jamais une mesure ni une confiance calibrée */}
-            {visionEstimate && visionStatus === "ready" && (
-              <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={13} className="text-violet-500" />
-                  <p className="text-xs font-semibold text-violet-800">Proxy expérimental non validé</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-white border border-violet-100 px-3 py-2 text-center">
-                    <p className="text-xs text-slate-400">Sacs (proxy)</p>
-                    <p className="text-base font-bold text-slate-900">{visionEstimate.bagsCount.value}</p>
-                  </div>
-                  <div className="rounded-lg bg-white border border-violet-100 px-3 py-2 text-center">
-                    <p className="text-xs text-slate-400">Poids proposé (proxy)</p>
-                    <p className="text-base font-bold text-slate-900">{visionEstimate.wasteKg.value} kg</p>
-                  </div>
-                </div>
-                {estimatedWasteKgInterval && (
-                  <p className="text-xs text-slate-400">
-                    Intervalle heuristique non validé : {formatKg(estimatedWasteKgInterval[0])} – {formatKg(estimatedWasteKgInterval[1])} kg
-                  </p>
-                )}
-                <p className="text-xs leading-4 text-violet-800">
-                  Cette analyse ne mesure pas la masse collectée et ne remplace pas une valeur déclarée.
-                </p>
-              </div>
-            )}
-
-            {visionStatus === "error" && (
-              <p className="mt-2 text-xs text-rose-500">Analyse impossible. Vérifiez la qualité de la photo.</p>
-            )}
           </div>
+        )}
+
+        <div
+          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+          data-testid="vision-estimation-disabled"
+          role="status"
+        >
+          <p className="text-xs font-semibold text-slate-700">Estimation photo désactivée</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Le moteur d’estimation est conservé pour de futures itérations, mais il reste désactivé ici car il n’est pas encore suffisamment mature ni validé. Les photos servent uniquement à documenter la collecte.
+          </p>
+        </div>
+
+        {visionStatus === "error" && (
+          <p className="text-xs text-rose-500">Préparation des photos impossible. Vérifiez le fichier sélectionné.</p>
         )}
       </section>
 

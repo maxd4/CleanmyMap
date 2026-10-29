@@ -74,7 +74,7 @@ export function ActionDeclarationDetails({
 
       <CmmDisclosure
         id="action-disclosure-photos"
-        summary={<ActionFormDisclosureSummary label="Photos et estimation" detail={summaries.photo} />}
+        summary={<ActionFormDisclosureSummary label="Photos du bilan" detail={summaries.photo} />}
         tone="emerald"
         size="md"
         open={disclosures.photo.open}

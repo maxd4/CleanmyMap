@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ActionDrawing, ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
+import type { ActionDrawing, ActionPhotoAsset } from "@/lib/actions/types";
 import type { FormState, ValidationIssue } from "../model";
 import {
   ACTION_VALIDATION_FIELD_IDS,
@@ -10,7 +10,6 @@ import {
 export function useActionDeclarationFormPresentation({
   form,
   photoAssets,
-  visionEstimate,
   manualDrawing,
   validationIssues,
   hasAttemptedSubmit,
@@ -19,7 +18,6 @@ export function useActionDeclarationFormPresentation({
 }: {
   form: FormState;
   photoAssets: ActionPhotoAsset[];
-  visionEstimate: ActionVisionEstimate | null;
   manualDrawing: ActionDrawing | null;
   validationIssues: ValidationIssue[];
   hasAttemptedSubmit: boolean;
@@ -35,7 +33,6 @@ export function useActionDeclarationFormPresentation({
   const summaries = getActionDeclarationDisclosureSummaries({
     form,
     photoAssets,
-    visionEstimate,
     manualDrawing,
   });
 

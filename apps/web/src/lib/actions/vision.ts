@@ -11,6 +11,13 @@ import {
 } from "@/lib/media/image-compression";
 import { createClientIdentifier } from "@/lib/client-identifier";
 
+/**
+ * The photo engine remains available for future evaluation, but it is not
+ * part of the active action-declaration experience until its validation is
+ * mature enough for user-facing estimates.
+ */
+export const ACTION_VISION_ESTIMATION_ENABLED = false as const;
+
 export type ActionVisionContext = {
   locationLabel: string;
   departureLocationLabel?: string;

@@ -1,20 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
-import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
+import { ACTION_VISION_ESTIMATION_ENABLED, normalizeActionPhotos } from "@/lib/actions/vision";
 
-type ActionDeclarationFormMediaParams = {
-  locationLabel: string;
-  placeType: string;
-  volunteersCount: string;
-  durationMinutes: string;
-};
-
-export function useActionDeclarationFormMedia({
-  locationLabel,
-  placeType,
-  volunteersCount,
-  durationMinutes,
-}: ActionDeclarationFormMediaParams) {
+export function useActionDeclarationFormMedia() {
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
@@ -28,6 +16,8 @@ export function useActionDeclarationFormMedia({
     setVisionStatus("processing");
     try {
       setPhotoAssets(await normalizeActionPhotos(selected));
+      setVisionEstimate(null);
+      setVisionStatus("idle");
     } catch {
       setVisionStatus("error");
     }
@@ -39,24 +29,7 @@ export function useActionDeclarationFormMedia({
     setVisionStatus("idle");
   }
 
-  useEffect(() => {
-    let active = true;
-    if (photoAssets.length === 0) return;
-    inferActionVisionEstimate(photoAssets, {
-      locationLabel,
-      placeType,
-      volunteersCount: Number(volunteersCount),
-      durationMinutes: Number(durationMinutes),
-    }).then((result) => {
-      if (!active) return;
-      setVisionEstimate(result);
-      setVisionStatus("ready");
-    }).catch(() => {
-      if (!active) return;
-      setVisionStatus("error");
-    });
-    return () => { active = false; };
-  }, [photoAssets, locationLabel, placeType, volunteersCount, durationMinutes]);
+  const exposedVisionEstimate = ACTION_VISION_ESTIMATION_ENABLED ? visionEstimate : null;
 
-  return { photoAssets, visionEstimate, visionStatus, handlePhotoUpload, clearPhotos };
+  return { photoAssets, visionEstimate: exposedVisionEstimate, visionStatus, handlePhotoUpload, clearPhotos };
 }

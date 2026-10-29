@@ -1,4 +1,4 @@
-import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
+import type { ActionPhotoAsset } from "@/lib/actions/types";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "./payload";
 import type { FormState, ValidationIssue } from "./model";
 
@@ -58,12 +58,10 @@ export function getActionDeclarationDisclosureAttention({
 export function getActionDeclarationDisclosureSummaries({
   form,
   photoAssets,
-  visionEstimate,
   manualDrawing,
 }: {
   form: FormState;
   photoAssets: ActionPhotoAsset[];
-  visionEstimate: ActionVisionEstimate | null;
   manualDrawing: unknown;
 }): ActionDeclarationDisclosureSummaries {
   return {
@@ -82,9 +80,7 @@ export function getActionDeclarationDisclosureSummaries({
         : undefined,
     photo: photoAssets.length
       ? `${photoAssets.length} photo${photoAssets.length > 1 ? "s" : ""}`
-      : visionEstimate
-        ? "estimation disponible"
-        : undefined,
+      : undefined,
     route: form.gpxImport
       ? "GPX importé"
       : manualDrawing

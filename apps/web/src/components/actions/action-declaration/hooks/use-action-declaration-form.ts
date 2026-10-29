@@ -114,7 +114,7 @@ export function useActionDeclarationForm({
     setGpxError,
   } = lifecycle;
   const isCleanPlaceMode = form.recordType === "clean_place";
-  const media = useActionDeclarationFormMedia({ locationLabel: form.locationLabel, placeType: form.placeType, volunteersCount: form.volunteersCount, durationMinutes: form.durationMinutes });
+  const media = useActionDeclarationFormMedia();
   const { photoAssets, visionEstimate } = media;
 
   const geometry = resolveActionDeclarationGeometryState({

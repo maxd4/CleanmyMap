@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { estimateVisionFromStats } from "./vision";
+import { ACTION_VISION_ESTIMATION_ENABLED, estimateVisionFromStats } from "./vision";
+
+describe("active action declaration vision status", () => {
+  it("keeps the engine available in code but disabled for the current form", () => {
+    expect(ACTION_VISION_ESTIMATION_ENABLED).toBe(false);
+  });
+});
 
 describe("estimateVisionFromStats", () => {
   it("returns the minimalisted training signals and a discrete fill level", () => {

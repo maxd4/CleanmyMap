@@ -17,7 +17,6 @@ describe("action declaration presentation model", () => {
     expect(getActionDeclarationDisclosureSummaries({
       form,
       photoAssets: [],
-      visionEstimate: null,
       manualDrawing: null,
     })).toMatchObject({ organization: "", collection: undefined, photo: undefined, route: undefined, time: undefined });
 
@@ -35,7 +34,6 @@ describe("action declaration presentation model", () => {
     expect(getActionDeclarationDisclosureSummaries({
       form,
       photoAssets: [{ id: "photo-1", fileName: "photo.jpg", status: "ready" } as never],
-      visionEstimate: null,
       manualDrawing: drawing,
     })).toEqual({
       organization: "2 participants",
