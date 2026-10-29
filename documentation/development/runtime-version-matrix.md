@@ -1,15 +1,15 @@
 # Matrice des runtimes et versions
 
-État vérifié le 25 octobre 2026 à partir des manifests suivis, du lockfile npm,
+État vérifié le 29 octobre 2026 à partir des manifests suivis, du lockfile npm,
 des `tsconfig` associés et des fichiers de gouvernance propres à chaque
 surface. Cette matrice décrit les contrats actuels ; elle ne constitue pas une
 autorisation d'aligner ou d'upgrader les versions.
 
 | Surface | Runtime | TypeScript | Test runner | Build | Raison de la version |
 | --- | --- | --- | --- | --- | --- |
-| Web (`apps/web`) | Node 24.x ; Next.js 16.4.1 ; React 19.2.3 | Déclaré et résolu 6.0.3 | Vitest 4.1.11 | `next build`, puis finalisation du manifeste et upload Sentry | Le workspace Web possède son propre contrat Next/React et sa dépendance TypeScript 6. La résolution est locale au workspace npm. |
-| Mobile (`apps/mobile`) | Expo SDK 57 (`~57.0.27`) ; React Native 0.86.3 ; React 19.2.3 | Déclaré et résolu 6.0.3 | Vitest 4.1.11 avec `vitest.config.ts` | Aucun script `build` npm ; `expo run:android`/`expo run:ios` pour le natif local, EAS pour une release | Le contrat mobile actif documente Expo SDK 57, React Native 0.86.3 et TypeScript 6.0.3. Cette combinaison ne doit pas être remplacée par la version Web par principe. |
-| Outillage dépôt | Node 24.x (`apps/web/.nvmrc`) | Résolution racine 6.0.3 pour les scripts qui importent `typescript` depuis la racine ; `typescript-eslint` 8.71.2 | `node --test` pour les tests de scripts ; Vitest est appelé par workspace | Pas de build applicatif | `scripts/reports/generate-architecture-import-graph.mjs` consomme le TypeScript racine pour analyser les surfaces. Ce rôle d'outillage ne fixe pas le compilateur Web ou Mobile. |
+| Web (`apps/web`) | Node 24.x ; Next.js 16.4.2 ; React 19.2.3 | Déclaré et résolu 6.0.3 | Vitest 4.1.12 | `next build`, puis finalisation du manifeste et upload Sentry | Le workspace Web possède son propre contrat Next/React et sa dépendance TypeScript 6. La résolution est locale au workspace npm. |
+| Mobile (`apps/mobile`) | Expo SDK 57 (`~57.0.27`) ; React Native 0.86.3 ; React 19.2.3 | Déclaré et résolu 6.0.3 | Vitest 4.1.12 avec `vitest.config.ts` | Aucun script `build` npm ; `expo run:android`/`expo run:ios` pour le natif local, EAS pour une release | Le contrat mobile actif documente Expo SDK 57, React Native 0.86.3 et TypeScript 6.0.3. Cette combinaison ne doit pas être remplacée par la version Web par principe. |
+| Outillage dépôt | Node 24.x (`apps/web/.nvmrc`) | Résolution racine 6.0.3 pour les scripts qui importent `typescript` depuis la racine ; `typescript-eslint` 8.72.0 | `node --test` pour les tests de scripts ; Vitest est appelé par workspace | Pas de build applicatif | `scripts/reports/generate-architecture-import-graph.mjs` consomme le TypeScript racine pour analyser les surfaces. Ce rôle d'outillage ne fixe pas le compilateur Web ou Mobile. |
 | Maintenance Python | Python 3.14.x ; hors runtimes Web/Mobile | Sans objet | pytest 9.1.1 dans `requirements-lock.txt` | Aucun build applicatif | `requirements.txt`, `requirements-dev.txt`, `requirements-lock.txt` et `pytest.ini` isolent la maintenance. `pyproject.toml` est absent ; aucune migration de configuration n'apporte actuellement de bénéfice démontré (`NO_CHANGE`). |
 
 ## Convergence des versions TypeScript Web/Mobile — configurations distinctes
@@ -36,8 +36,8 @@ leurs `tsconfig` et ne remplace pas leurs runtimes respectifs.
 Les commandes d'inspection ont confirmé :
 
 ```text
-apps/web    -> TypeScript 6.0.3 -> Vitest 4.1.11
-apps/mobile -> TypeScript 6.0.3 -> Vitest 4.1.11
+apps/web    -> TypeScript 6.0.3 -> Vitest 4.1.12
+apps/mobile -> TypeScript 6.0.3 -> Vitest 4.1.12
 ```
 
 Les `tsconfig` restent également distincts : Web possède une configuration
@@ -51,7 +51,7 @@ Le principal consommateur direct hors workspace identifié est
 `scripts/reports/generate-architecture-import-graph.mjs`, qui importe
 `typescript` depuis la racine. Il sert l'analyse statique et ne remplace pas
 les commandes `typecheck` Web/Mobile. Les contrôles utilisant
-`typescript-eslint` partagent la version déclarée 8.71.2, mais cela ne justifie
+`typescript-eslint` partagent la version déclarée 8.72.0, mais cela ne justifie
 pas l'alignement des compilateurs TypeScript.
 
 Toute future proposition d'alignement doit être un patch isolé, précédé d'une
