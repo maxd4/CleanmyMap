@@ -32,5 +32,6 @@ describe("action declaration model", () => {
     expect(form.childrenCount).toBe("0");
     expect(form.adultCount).toBe("");
     expect(form.retiredCount).toBe("0");
+    expect(form.cigaretteButtsInputSource).toBeNull();
   });
 });

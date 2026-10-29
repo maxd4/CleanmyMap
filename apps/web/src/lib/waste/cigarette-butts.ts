@@ -19,6 +19,12 @@ export const CIGARETTE_BUTTS_PROVENANCES = [
 export type CigaretteButtsProvenance =
   (typeof CIGARETTE_BUTTS_PROVENANCES)[number];
 
+/**
+ * Identifies which field was manually observed in the form. `unknown` is
+ * reserved for historical pairs whose original source cannot be reconstructed.
+ */
+export type CigaretteButtsInputSource = "count" | "mass" | "unknown" | null;
+
 export type ActionCigaretteButtsMeasurements = {
   cigaretteButtsCount: number | null;
   cigaretteButtsMassKg: number | null;
@@ -39,6 +45,7 @@ export type CigaretteButtsMeasurementInput = {
   cigaretteButtsMassProvenance?: CigaretteButtsProvenance;
   cigaretteButtsVolumeProvenance?: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion?: string | null;
+  cigaretteButtsInputSource?: CigaretteButtsInputSource;
   deriveMissingFromMassOrCount?: boolean;
 };
 
@@ -48,7 +55,10 @@ export type RawCigaretteButtsMeasurementInput = Pick<
   | "cigaretteButtsMassKg"
   | "cigaretteButtsVolumeLiters"
   | "cigaretteButtsCondition"
->;
+> & {
+  /** Client hint only; the server recomputes provenance and conversions. */
+  cigaretteButtsInputSource?: CigaretteButtsInputSource;
+};
 
 function normalizeNullableNonNegative(
   value: number | null | undefined,
@@ -145,12 +155,35 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     >;
   } = {},
 ): ActionCigaretteButtsMeasurements {
+  const explicitInputSource = input.cigaretteButtsInputSource !== undefined;
+  const inputSource = input.cigaretteButtsInputSource ?? "unknown";
+  const sourceSpecificInput = explicitInputSource
+    ? inputSource === "mass"
+      ? {
+          ...input,
+          cigaretteButtsCount: null,
+          deriveMissingFromMassOrCount: true,
+        }
+      : inputSource === "count"
+        ? {
+            ...input,
+            cigaretteButtsMassKg: null,
+            deriveMissingFromMassOrCount: true,
+          }
+        : {
+            ...input,
+            deriveMissingFromMassOrCount: false,
+          }
+    : {
+        ...input,
+        deriveMissingFromMassOrCount: true,
+      };
   const normalized = normalizeCigaretteButtsMeasurements({
-    cigaretteButtsCount: input.cigaretteButtsCount,
-    cigaretteButtsMassKg: input.cigaretteButtsMassKg,
-    cigaretteButtsVolumeLiters: input.cigaretteButtsVolumeLiters,
-    cigaretteButtsCondition: input.cigaretteButtsCondition,
-    deriveMissingFromMassOrCount: true,
+    cigaretteButtsCount: sourceSpecificInput.cigaretteButtsCount,
+    cigaretteButtsMassKg: sourceSpecificInput.cigaretteButtsMassKg,
+    cigaretteButtsVolumeLiters: sourceSpecificInput.cigaretteButtsVolumeLiters,
+    cigaretteButtsCondition: sourceSpecificInput.cigaretteButtsCondition,
+    deriveMissingFromMassOrCount: sourceSpecificInput.deriveMissingFromMassOrCount,
   });
 
   if (!options.preserveExplicitNulls && !options.explicitNullFields?.length) {
@@ -203,6 +236,35 @@ export function hasCigaretteButtsMeasurement(
         measurements.cigaretteButtsMassKg !== null ||
         measurements.cigaretteButtsVolumeLiters !== null),
   );
+}
+
+export function inferCigaretteButtsInputSource(
+  measurements: ActionCigaretteButtsMeasurements | null | undefined,
+): CigaretteButtsInputSource {
+  if (!measurements) return null;
+
+  const hasCount = measurements.cigaretteButtsCount !== null;
+  const hasMass = measurements.cigaretteButtsMassKg !== null;
+  if (!hasCount && !hasMass) return null;
+
+  if (
+    hasCount &&
+    measurements.cigaretteButtsCountProvenance === "counted" &&
+    measurements.cigaretteButtsMassProvenance === "weight_converted"
+  ) {
+    return "count";
+  }
+  if (
+    hasMass &&
+    measurements.cigaretteButtsMassProvenance === "measured" &&
+    measurements.cigaretteButtsCountProvenance === "weight_converted"
+  ) {
+    return "mass";
+  }
+
+  // A pair with two independently observed values, or an older record without
+  // enough provenance, must not be rewritten by a later condition change.
+  return "unknown";
 }
 
 export {

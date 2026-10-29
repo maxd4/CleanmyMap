@@ -61,14 +61,13 @@ export function resolveCreateActionMeasurementParts(
   const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg) ?? null;
   const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount) ?? null;
   const enteredVolumeLiters = toOptionalNumber(form.cigaretteButtsVolumeLiters) ?? null;
-  const cigaretteButtsCondition = form.wasteMegotsCondition === "propre"
-    ? form.cigaretteButtsCondition
-    : form.wasteMegotsCondition;
+  const cigaretteButtsCondition = form.wasteMegotsCondition;
   const rawCigaretteButtsMeasurements = {
     cigaretteButtsCount: enteredButtsCount,
     cigaretteButtsMassKg: enteredMegotsKg,
     cigaretteButtsVolumeLiters: enteredVolumeLiters,
     cigaretteButtsCondition,
+    cigaretteButtsInputSource: form.cigaretteButtsInputSource,
   };
   const volunteerParticipationInput =
     declarationMode === "complete"

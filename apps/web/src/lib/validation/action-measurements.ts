@@ -50,6 +50,12 @@ const cigaretteButtsMeasurementsSchema = z
       .enum(["propre", "humide", "mouille"])
       .nullable()
       .optional(),
+    // Hint of the field manually observed in the form. The server computes
+    // the final provenance and conversion from this bounded value.
+    cigaretteButtsInputSource: z
+      .enum(["count", "mass", "unknown"])
+      .nullable()
+      .optional(),
   })
   .nullable()
   .optional();

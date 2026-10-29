@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   normalizeCigaretteButtsMeasurements,
+  normalizeCigaretteButtsMeasurementsFromUserInput,
 } from "./cigarette-butts";
 
 describe("cigarette-butt raw and derived measurements", () => {
@@ -77,6 +78,52 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsVolumeProvenance).toBe("measured");
     expect(measurement.cigaretteButtsMassKg).toBeNull();
     expect(measurement.cigaretteButtsCount).toBeNull();
+    expect(measurement.cigaretteButtsConversionFormulaVersion).toBeNull();
+  });
+
+  it("treats the mass as the sole observed source when the form says mass", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "mass",
+    });
+
+    expect(measurement.cigaretteButtsMassKg).toBe(1);
+    expect(measurement.cigaretteButtsCount).toBe(1_750);
+    expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
+    expect(measurement.cigaretteButtsCountProvenance).toBe("weight_converted");
+    expect(measurement.cigaretteButtsConversionFormulaVersion).toBe(
+      CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    );
+  });
+
+  it("treats the count as the sole observed source when the form says count", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "count",
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(1_750);
+    expect(measurement.cigaretteButtsMassKg).toBe(1);
+    expect(measurement.cigaretteButtsCountProvenance).toBe("counted");
+    expect(measurement.cigaretteButtsMassProvenance).toBe("weight_converted");
+  });
+
+  it("preserves an indeterminate historical pair without converting it", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(1_700);
+    expect(measurement.cigaretteButtsMassKg).toBe(1);
+    expect(measurement.cigaretteButtsCountProvenance).toBe("counted");
+    expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBeNull();
   });
 });

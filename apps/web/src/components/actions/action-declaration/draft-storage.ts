@@ -92,6 +92,7 @@ const FORM_STATE_KEYS = [
   "wasteSpecialHandlingWaste",
   "cigaretteButts",
   "cigaretteButtsCount",
+  "cigaretteButtsInputSource",
   "cigaretteButtsCondition",
   "cigaretteButtsVolumeLiters",
   "volunteersCount",

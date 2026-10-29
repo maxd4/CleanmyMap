@@ -149,6 +149,23 @@ describe("action declaration draft storage", () => {
     expect(restored?.preparationChecklist[0]).toMatchObject({ key: "materials_checked", checked: true });
   });
 
+  it("persists the manually observed cigarette-butt source across draft recovery", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    draft.wasteMegotsKg = "1";
+    draft.cigaretteButtsCount = "1750";
+    draft.cigaretteButtsInputSource = "mass";
+    draft.wasteMegotsCondition = "humide";
+    draft.cigaretteButtsCondition = "humide";
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z");
+
+    const restored = loadDraftSnapshot(createInitialFormState("Fallback"))?.form;
+    expect(restored?.cigaretteButtsInputSource).toBe("mass");
+    expect(restored?.wasteMegotsKg).toBe("1");
+    expect(restored?.cigaretteButtsCount).toBe("1750");
+  });
+
   it("keeps legacy checklist prose without marking a structured item", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({

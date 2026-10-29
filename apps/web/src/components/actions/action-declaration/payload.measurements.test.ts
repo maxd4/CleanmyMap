@@ -83,6 +83,8 @@ describe("action declaration payload mesures", () => {
     form.cigaretteButtsCount = "";
     form.wasteMegotsKg = "1.2";
     form.wasteMegotsCondition = "propre";
+    form.cigaretteButtsCondition = "propre";
+    form.cigaretteButtsInputSource = "mass";
     form.cigaretteButtsVolumeLiters = "2.5";
 
     const payload = buildCreateActionPayload({
@@ -99,6 +101,7 @@ describe("action declaration payload mesures", () => {
       cigaretteButtsCount: null,
       cigaretteButtsMassKg: 1.2,
       cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsInputSource: "mass",
     });
     expect(payload.cigaretteButts).toBeNull();
     expect(payload.cigaretteButtsKg).toBe(1.2);
@@ -108,6 +111,7 @@ describe("action declaration payload mesures", () => {
     const form = buildBaseForm();
     form.cigaretteButtsCount = "2500";
     form.wasteMegotsKg = "1.2";
+    form.cigaretteButtsInputSource = "unknown";
 
     const payload = buildCreateActionPayload({
       form,
@@ -121,5 +125,27 @@ describe("action declaration payload mesures", () => {
 
     expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCount).toBe(2500);
     expect(payload.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBe(1.2);
+  });
+
+  it("uses one canonical condition in the payload", () => {
+    const form = buildBaseForm();
+    form.cigaretteButtsCount = "1750";
+    form.wasteMegotsKg = "1";
+    form.wasteMegotsCondition = "mouille";
+    form.cigaretteButtsCondition = "humide";
+    form.cigaretteButtsInputSource = "mass";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.cigaretteButtsCondition).toBe("mouille");
+    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCondition).toBe("mouille");
   });
 });

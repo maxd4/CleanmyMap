@@ -9,6 +9,7 @@ import {
 } from "../payload";
 import type { FormState } from "../model";
 import { parseOrganizerAccounts } from "../payload";
+import { inferCigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
 
 export type LoadedActionPhase =
   | "pre_action"
@@ -37,6 +38,7 @@ function clearPostActionMeasurements(form: FormState): void {
   form.wasteSpecialHandlingWaste = "";
   form.cigaretteButts = "";
   form.cigaretteButtsCount = "";
+  form.cigaretteButtsInputSource = null;
   form.cigaretteButtsVolumeLiters = "";
   form.wasteMegotsKg = "";
   form.wastePlastiqueKg = "";
@@ -125,6 +127,7 @@ function buildCigaretteFields(
         : action.cigaretteButts === null
           ? ""
           : String(action.cigaretteButts),
+    cigaretteButtsInputSource: inferCigaretteButtsInputSource(cigaretteMeasurements),
     cigaretteButtsCondition:
       cigaretteMeasurements?.cigaretteButtsCondition ??
       preparedForm.cigaretteButtsCondition,

@@ -88,6 +88,8 @@ describe("action declaration hydration model", () => {
         cigaretteButtsMassKg: 0.3,
         cigaretteButtsVolumeLiters: 2,
         cigaretteButtsCondition: "humide",
+        cigaretteButtsCountProvenance: "weight_converted",
+        cigaretteButtsMassProvenance: "measured",
       } as ActionEditorRecord["cigaretteButtsMeasurements"],
       volunteerParticipation: {
         childrenCount: 1,
@@ -106,6 +108,9 @@ describe("action declaration hydration model", () => {
     expect(result.loadedActionPhase).toBe("post_action_complete");
     expect(result.form.wasteRecyclablesKg).toBe("1.5");
     expect(result.form.wasteMegotsKg).toBe("0.3");
+    expect(result.form.cigaretteButtsInputSource).toBe("mass");
+    expect(result.form.cigaretteButtsCondition).toBe("humide");
+    expect(result.form.wasteMegotsCondition).toBe("humide");
     expect(result.form.childrenCount).toBe("1");
     expect(result.form.adultCount).toBe("2");
     expect(result.form.retiredCount).toBe("1");
@@ -137,5 +142,23 @@ describe("action declaration hydration model", () => {
     expect(result.childrenCount).toBe("");
     expect(result.adultCount).toBe("");
     expect(result.retiredCount).toBe("");
+  });
+
+  it("marks independent historical measurements as source-unknown", () => {
+    const result = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: 1_700,
+          cigaretteButtsMassKg: 1,
+          cigaretteButtsVolumeLiters: null,
+          cigaretteButtsCondition: "humide",
+          cigaretteButtsCountProvenance: "counted",
+          cigaretteButtsMassProvenance: "measured",
+        } as ActionEditorRecord["cigaretteButtsMeasurements"],
+      }),
+    );
+
+    expect(result.cigaretteButtsInputSource).toBe("unknown");
   });
 });

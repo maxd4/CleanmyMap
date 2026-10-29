@@ -59,6 +59,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     expect(harness.latest.form.cigaretteButtsCount).toBe("1750");
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.form.cigaretteButtsInputSource).toBe("count");
     expect(harness.latest.logic.megotsCount).toBe(1750);
     expect(harness.latest.logic.megotsKg).toBe(1);
     expect(harness.latest.logic.cigaretteButtsCountProvenance).toBe("counted");
@@ -79,6 +80,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     });
 
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.form.cigaretteButtsInputSource).toBe("mass");
     expect(harness.latest.form.cigaretteButtsCount).toBe("2500");
     expect(harness.latest.logic.cigaretteButtsCountProvenance).toBe("weight_converted");
     expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("measured");
@@ -88,6 +90,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     });
 
     expect(harness.latest.form.wasteMegotsCondition).toBe("mouille");
+    expect(harness.latest.form.cigaretteButtsCondition).toBe("mouille");
     expect(harness.latest.form.cigaretteButtsCount).toBe("1000");
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
 
@@ -118,6 +121,49 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsCount).toBeNull();
     expect(harness.latest.logic.megotsKg).toBeNull();
     expect(harness.latest.logic.cigaretteButtsConversionFormulaVersion).toBeNull();
+
+    harness.renderer.unmount();
+  });
+
+  it("reuses a hydrated mass source when the condition changes", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsKg: "1",
+      cigaretteButtsCount: "1750",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "mass",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsCondition("propre");
+    });
+
+    expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("2500");
+    expect(harness.latest.form.cigaretteButtsInputSource).toBe("mass");
+    expect(harness.latest.form.cigaretteButtsCondition).toBe("propre");
+
+    harness.renderer.unmount();
+  });
+
+  it("does not rewrite an indeterminate historical pair on condition change", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      wasteMegotsKg: "1",
+      cigaretteButtsCount: "1700",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsCondition("propre");
+    });
+
+    expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("1700");
+    expect(harness.latest.form.cigaretteButtsInputSource).toBe("unknown");
 
     harness.renderer.unmount();
   });
