@@ -168,6 +168,14 @@ doit pas être inférée de la présence des adultes. Un zéro explicite reste u
 zéro, tandis qu'une affectation absente rend cette capacité indisponible.
 Les enfants ne sont pas affectés aux mégots dans C et les adultes consacrés
 uniquement à l'encadrement ne sont pas comptés comme collecteurs.
+La provenance est contrôlée comme un contrat : `OBSERVED` exige un nombre
+entier fini entre zéro et le nombre d'adultes sans propriété `hypothesis` ;
+`HYPOTHESIS / ALL_ADULTS` exige exactement tous les adultes ;
+`HYPOTHESIS / EXPLICIT` autorise un sous-ensemble d'adultes. Une affectation
+contradictoire est `INVALID_INPUT`, conserve son motif déterministe et ne
+produit ni capacité ni projection de mégots. Cette validation concerne le
+module de recherche privé et ne modifie ni les coefficients ni les mesures
+réelles.
 
 Le moteur sépare les personnes présentes (`volunteersCount`), les unités
 `CURRENT`, les capacités expérimentales de déchets et de mégots, les quantités

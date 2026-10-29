@@ -186,6 +186,75 @@ describe("cleanwalk yield research simulator", () => {
     expect(result.capacities.cigaretteButts.availability).toBe("INVALID_INPUT");
   });
 
+  it("accepts ALL_ADULTS only when every adult is assigned", () => {
+    const result = simulateCleanwalkYield({
+      ...school,
+      model: "C",
+      cigaretteButtCollectors: {
+        count: 2,
+        basis: "HYPOTHESIS",
+        hypothesis: "ALL_ADULTS",
+      },
+    });
+
+    expect(result.capacities.cigaretteButts.value).toBe(2);
+    expect(result.capacities.cigaretteButts.reason).toBeNull();
+  });
+
+  it.each([
+    {
+      assignment: {
+        count: 1,
+        basis: "HYPOTHESIS" as const,
+        hypothesis: "ALL_ADULTS" as const,
+      },
+      reason: "ALL_ADULTS",
+    },
+    {
+      assignment: {
+        count: 2,
+        basis: "OBSERVED" as const,
+        hypothesis: "ALL_ADULTS" as const,
+      },
+      reason: "OBSERVED",
+    },
+    {
+      assignment: {
+        count: 2,
+        basis: "HYPOTHESIS" as const,
+      },
+      reason: "HYPOTHESIS",
+    },
+  ])("rejects contradictory assignment provenance", ({ assignment, reason }) => {
+    const result = simulateCleanwalkYield({
+      ...school,
+      model: "C",
+      cigaretteButtCollectors: assignment,
+      effectiveCollectionHours: 1,
+      referenceRates: { cigaretteButtsPerUnitHour: 10 },
+    });
+
+    expect(result.capacities.cigaretteButts.availability).toBe("INVALID_INPUT");
+    expect(result.capacities.cigaretteButts.value).toBeNull();
+    expect(result.capacities.cigaretteButts.reason).toContain(reason);
+    expect(result.projections.cigaretteButts.value).toBeNull();
+  });
+
+  it.each([-1, 1.5, Number.POSITIVE_INFINITY, 3])(
+    "rejects invalid collector counts: %s",
+    (count) => {
+      const result = simulateCleanwalkYield({
+        ...school,
+        model: "C",
+        cigaretteButtCollectors: { count, basis: "OBSERVED" },
+      });
+
+      expect(result.capacities.cigaretteButts.availability).toBe("INVALID_INPUT");
+      expect(result.capacities.cigaretteButts.value).toBeNull();
+      expect(result.capacities.cigaretteButts.reason).toMatch(/entier fini/);
+    },
+  );
+
   it("marks school C with retired participants as non-applicable", () => {
     const result = simulateCleanwalkYield({
       volunteersCount: 18,
@@ -282,6 +351,50 @@ describe("cleanwalk yield research simulator", () => {
     expect(bWaste?.value).toBeNull();
     expect(bWaste?.absoluteDifferenceFromA).toBeNull();
     expect(cButts?.value).toBeNull();
+  });
+
+  it("does not calculate retired sensitivity for a non-applicable model", () => {
+    const sensitivity = compareRetiredWasteCoefficientSensitivity({
+      ...school,
+      model: "B",
+    });
+
+    expect(sensitivity.results).toEqual([
+      { retiredCoefficient: 0.5, value: null, availability: "NOT_APPLICABLE" },
+      { retiredCoefficient: 0.8, value: null, availability: "NOT_APPLICABLE" },
+      { retiredCoefficient: 1, value: null, availability: "NOT_APPLICABLE" },
+    ]);
+  });
+
+  it("keeps model A retired sensitivity applicable in school", () => {
+    const sensitivity = compareRetiredWasteCoefficientSensitivity({
+      ...school,
+      model: "A",
+    });
+
+    expect(sensitivity.results.map((entry) => entry.value)).toEqual([
+      9.5,
+      9.5,
+      9.5,
+    ]);
+    expect(sensitivity.results.every((entry) => entry.availability === "AVAILABLE")).toBe(
+      true,
+    );
+  });
+
+  it("does not calculate sensitivity for an invalid composition", () => {
+    const sensitivity = compareRetiredWasteCoefficientSensitivity({
+      volunteersCount: 5,
+      childrenCount: 6,
+      retiredCount: 0,
+      configuration: "ordinary",
+      model: "B",
+    });
+
+    expect(sensitivity.results.every((entry) => entry.value === null)).toBe(true);
+    expect(sensitivity.results.every((entry) => entry.availability === "INVALID_INPUT")).toBe(
+      true,
+    );
   });
 
   it("supports retired-waste sensitivity without applying it to cigarette butts", () => {

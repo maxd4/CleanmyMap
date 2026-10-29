@@ -206,6 +206,17 @@ de mégots de la seule présence des adultes. Les coefficients historiques
 `0,60/0,70` et `0,25/0,40` restent conservés séparément dans la méthodologie :
 leur présence documentaire n'en fait pas une validation scientifique.
 
+Dans ce module de recherche, la provenance des affectations de mégots est
+également validée : `OBSERVED` exige un entier fini de `0` à `A` sans
+`hypothesis`, `HYPOTHESIS / ALL_ADULTS` exige exactement `A`, et
+`HYPOTHESIS / EXPLICIT` autorise un sous-ensemble explicite. Une affectation
+incohérente est marquée `INVALID_INPUT` avec un motif déterministe ; aucune
+capacité ni projection de mégots n'est calculée depuis cette affectation. Une
+affectation absente reste indisponible et un zéro explicite valide reste zéro.
+La sensibilité des coefficients retraités réutilise par ailleurs le statut
+d'applicabilité du simulateur principal : elle ne produit aucune valeur pour
+un modèle `NOT_APPLICABLE` ou une composition `INVALID_INPUT`.
+
 La distinction de preuve est obligatoire :
 
 | Objet | Lecture | Unité / règle |

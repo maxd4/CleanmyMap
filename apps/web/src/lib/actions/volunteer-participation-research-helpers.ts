@@ -20,6 +20,7 @@ export function unavailableCapacity(
   availability: CapacityAvailability,
   coefficients: ResearchCapacity["coefficients"],
   basis: ResearchCapacity["basis"] = null,
+  reason: string | null = null,
 ): ResearchCapacity {
   return {
     value: null,
@@ -27,6 +28,7 @@ export function unavailableCapacity(
     unit: "adult-equivalent-units",
     coefficients,
     basis,
+    reason,
   };
 }
 

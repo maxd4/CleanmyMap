@@ -64,6 +64,7 @@ export type ResearchCapacity = {
     retired: number | null;
   };
   basis: "CURRENT" | "EXPERIMENTAL" | "ASSIGNED" | null;
+  reason: string | null;
 };
 
 export type ResearchProjection = {
@@ -132,7 +133,11 @@ export type RetiredWasteSensitivityResult = {
   results: readonly {
     retiredCoefficient: number;
     value: number | null;
-    availability: "AVAILABLE" | "INVALID_COEFFICIENT" | "INVALID_INPUT";
+    availability:
+      | "AVAILABLE"
+      | "INVALID_COEFFICIENT"
+      | "INVALID_INPUT"
+      | "NOT_APPLICABLE";
   }[];
 };
 
@@ -152,6 +157,64 @@ const MODEL_COEFFICIENTS = {
 } as const;
 
 export const DEFAULT_RETIRED_WASTE_SENSITIVITY = [0.5, 0.8, 1] as const;
+
+type AssignmentValidation =
+  | { valid: true }
+  | { valid: false; reason: string };
+
+function validateCigaretteButtCollectorAssignment(
+  assignment: CigaretteButtCollectorAssignment,
+  adultCount: number,
+): AssignmentValidation {
+  if (
+    !Number.isInteger(assignment.count) ||
+    !isNonNegativeFinite(assignment.count) ||
+    assignment.count > adultCount
+  ) {
+    return {
+      valid: false,
+      reason:
+        "Le nombre de collecteurs de mégots doit être un entier fini compris entre 0 et le nombre d'adultes.",
+    };
+  }
+
+  if (assignment.basis === "OBSERVED") {
+    return assignment.hypothesis === undefined
+      ? { valid: true }
+      : {
+          valid: false,
+          reason:
+            "Une affectation OBSERVED ne peut pas déclarer simultanément une hypothèse.",
+        };
+  }
+
+  if (assignment.basis !== "HYPOTHESIS") {
+    return {
+      valid: false,
+      reason: "La base de provenance de l'affectation est inconnue.",
+    };
+  }
+
+  if (assignment.hypothesis === "ALL_ADULTS") {
+    return assignment.count === adultCount
+      ? { valid: true }
+      : {
+          valid: false,
+          reason:
+            "L'hypothèse ALL_ADULTS exige un nombre de collecteurs égal au nombre d'adultes.",
+        };
+  }
+
+  if (assignment.hypothesis === "EXPLICIT") {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    reason:
+      "Une affectation HYPOTHESIS doit déclarer l'hypothèse ALL_ADULTS ou EXPLICIT.",
+  };
+}
 
 export function simulateCleanwalkYield(
   input: CleanwalkYieldSimulationInput,
@@ -285,23 +348,29 @@ export function simulateCleanwalkYield(
     unit: "adult-equivalent-units",
     coefficients: coefficients.waste,
     basis: model === "A" ? "CURRENT" : "EXPERIMENTAL",
+    reason: null,
   };
 
   let cigaretteButtCapacity: ResearchCapacity;
+  const assignmentValidation =
+    model === "C" && assignment
+      ? validateCigaretteButtCollectorAssignment(
+          assignment,
+          composition.adultCount,
+        )
+      : null;
   if (model === "C") {
     if (!assignment) {
       cigaretteButtCapacity = unavailableCapacity(
         "MISSING_ASSIGNMENT",
         coefficients.cigaretteButts,
       );
-    } else if (
-      !Number.isInteger(assignment.count) ||
-      !isNonNegativeFinite(assignment.count) ||
-      assignment.count > composition.adultCount
-    ) {
+    } else if (assignmentValidation && !assignmentValidation.valid) {
       cigaretteButtCapacity = unavailableCapacity(
         "INVALID_INPUT",
         coefficients.cigaretteButts,
+        null,
+        assignmentValidation.reason,
       );
     } else {
       cigaretteButtCapacity = {
@@ -310,6 +379,7 @@ export function simulateCleanwalkYield(
         unit: "adult-equivalent-units",
         coefficients: coefficients.cigaretteButts,
         basis: "ASSIGNED",
+        reason: null,
       };
     }
   } else {
@@ -322,11 +392,14 @@ export function simulateCleanwalkYield(
       unit: "adult-equivalent-units",
       coefficients: coefficients.cigaretteButts,
       basis: model === "A" ? "CURRENT" : "EXPERIMENTAL",
+      reason: null,
     };
   }
 
   const assignmentNote = assignment
-    ? `L'affectation des mégots est ${assignment.basis.toLowerCase()}${assignment.hypothesis ? ` (${assignment.hypothesis})` : ""}.`
+    ? assignmentValidation && !assignmentValidation.valid
+      ? assignmentValidation.reason
+      : `L'affectation des mégots est ${assignment.basis.toLowerCase()}${assignment.hypothesis ? ` (${assignment.hypothesis})` : ""}.`
     : "Aucune affectation effective des adultes aux mégots n'est inventée.";
   return {
     status: CLEANWALK_YIELD_RESEARCH_STATUS,
@@ -406,6 +479,13 @@ export function compareRetiredWasteCoefficientSensitivity(
     input.retiredCoefficients ?? DEFAULT_RETIRED_WASTE_SENSITIVITY;
   const childCoefficient = input.model === "A" ? 0.5 : 0.6;
   const results = coefficientValues.map((retiredCoefficient) => {
+    if (base.availability !== "AVAILABLE") {
+      return {
+        retiredCoefficient,
+        value: null,
+        availability: base.availability,
+      };
+    }
     if (!isNonNegativeFinite(retiredCoefficient)) {
       return {
         retiredCoefficient,
