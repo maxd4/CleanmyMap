@@ -36,32 +36,61 @@ function buildButtsInput(
   currentMetadata: ActionMetadata,
 ) {
   const currentMeasurements = currentMetadata.cigaretteButtsMeasurements;
-  return body.cigaretteButtsMeasurements !== undefined
-    ? body.cigaretteButtsMeasurements === null
-      ? {}
-      : body.cigaretteButtsMeasurements
-    : {
-        cigaretteButtsCount:
-          body.cigaretteButtsCount !== undefined
-            ? body.cigaretteButtsCount
-            : body.cigaretteButts !== undefined
-              ? body.cigaretteButts
-              : currentMeasurements?.cigaretteButtsCount ?? current.cigarette_butts,
-        cigaretteButtsMassKg:
-          body.cigaretteButtsMassKg !== undefined
-            ? body.cigaretteButtsMassKg
-            : body.cigaretteButtsKg !== undefined
-              ? body.cigaretteButtsKg
-              : currentMeasurements?.cigaretteButtsMassKg ?? currentMetadata.cigaretteButtsKg,
-        cigaretteButtsVolumeLiters:
-          body.cigaretteButtsVolumeLiters !== undefined
-            ? body.cigaretteButtsVolumeLiters
-            : currentMeasurements?.cigaretteButtsVolumeLiters ?? null,
-        cigaretteButtsCondition:
-          body.cigaretteButtsCondition !== undefined
-            ? body.cigaretteButtsCondition
-            : currentMeasurements?.cigaretteButtsCondition ?? null,
-      };
+  const currentCount = currentMeasurements
+    ? currentMeasurements.cigaretteButtsCount
+    : current.cigarette_butts;
+  const currentMass = currentMeasurements
+    ? currentMeasurements.cigaretteButtsMassKg
+    : currentMetadata.cigaretteButtsKg;
+  const currentVolume = currentMeasurements?.cigaretteButtsVolumeLiters ?? null;
+  const currentCondition = currentMeasurements?.cigaretteButtsCondition ?? null;
+  const submittedMeasurements = body.cigaretteButtsMeasurements;
+
+  if (submittedMeasurements === null) return {};
+  if (submittedMeasurements !== undefined) {
+    return {
+      cigaretteButtsCount:
+        submittedMeasurements.cigaretteButtsCount !== undefined
+          ? submittedMeasurements.cigaretteButtsCount
+          : currentCount,
+      cigaretteButtsMassKg:
+        submittedMeasurements.cigaretteButtsMassKg !== undefined
+          ? submittedMeasurements.cigaretteButtsMassKg
+          : currentMass,
+      cigaretteButtsVolumeLiters:
+        submittedMeasurements.cigaretteButtsVolumeLiters !== undefined
+          ? submittedMeasurements.cigaretteButtsVolumeLiters
+          : currentVolume,
+      cigaretteButtsCondition:
+        submittedMeasurements.cigaretteButtsCondition !== undefined
+          ? submittedMeasurements.cigaretteButtsCondition
+          : currentCondition,
+      cigaretteButtsInputSource: submittedMeasurements.cigaretteButtsInputSource,
+    };
+  }
+
+  return {
+    cigaretteButtsCount:
+      body.cigaretteButtsCount !== undefined
+        ? body.cigaretteButtsCount
+        : body.cigaretteButts !== undefined
+          ? body.cigaretteButts
+          : currentCount,
+    cigaretteButtsMassKg:
+      body.cigaretteButtsMassKg !== undefined
+        ? body.cigaretteButtsMassKg
+        : body.cigaretteButtsKg !== undefined
+          ? body.cigaretteButtsKg
+          : currentMass,
+    cigaretteButtsVolumeLiters:
+      body.cigaretteButtsVolumeLiters !== undefined
+        ? body.cigaretteButtsVolumeLiters
+        : currentVolume,
+    cigaretteButtsCondition:
+      body.cigaretteButtsCondition !== undefined
+        ? body.cigaretteButtsCondition
+        : currentCondition,
+  };
 }
 
 function buildButtsOptions(body: ActionUpdateInput) {
@@ -103,7 +132,10 @@ function buildButtsMeasurementUpdate(params: {
   }
   const measurements = normalizeCigaretteButtsMeasurementsFromUserInput(
     buildButtsInput(current, body, currentMetadata),
-    buildButtsOptions(body),
+    {
+      ...buildButtsOptions(body),
+      existingMeasurements: currentMetadata.cigaretteButtsMeasurements,
+    },
   );
   return {
     hasUpdate,

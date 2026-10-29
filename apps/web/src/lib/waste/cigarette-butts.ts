@@ -153,10 +153,15 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     explicitNullFields?: Array<
       "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"
     >;
+    /** Persisted server metadata used to protect historical provenance. */
+    existingMeasurements?: ActionCigaretteButtsMeasurements | null;
   } = {},
 ): ActionCigaretteButtsMeasurements {
-  const explicitInputSource = input.cigaretteButtsInputSource !== undefined;
-  const inputSource = input.cigaretteButtsInputSource ?? "unknown";
+  const inputSource = resolveUserInputSource(input, options.existingMeasurements);
+  const explicitInputSource =
+    input.cigaretteButtsInputSource !== undefined ||
+    options.existingMeasurements !== null &&
+    options.existingMeasurements !== undefined;
   const sourceSpecificInput = explicitInputSource
     ? inputSource === "mass"
       ? {
@@ -185,6 +190,26 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     cigaretteButtsCondition: sourceSpecificInput.cigaretteButtsCondition,
     deriveMissingFromMassOrCount: sourceSpecificInput.deriveMissingFromMassOrCount,
   });
+
+  const existingMeasurements = options.existingMeasurements;
+  if (
+    existingMeasurements &&
+    inputSource === "unknown" &&
+    sameCountAndMass(normalized, existingMeasurements)
+  ) {
+    normalized.cigaretteButtsCountProvenance =
+      existingMeasurements.cigaretteButtsCountProvenance;
+    normalized.cigaretteButtsMassProvenance =
+      existingMeasurements.cigaretteButtsMassProvenance;
+    normalized.cigaretteButtsConversionFormulaVersion =
+      existingMeasurements.cigaretteButtsConversionFormulaVersion;
+  } else if (inputSource === "unknown" && explicitInputSource) {
+    // An ambiguous pair must remain explicitly unqualified. In particular,
+    // do not turn non-null historical values into counted/measured values.
+    normalized.cigaretteButtsCountProvenance = "unknown";
+    normalized.cigaretteButtsMassProvenance = "unknown";
+    normalized.cigaretteButtsConversionFormulaVersion = null;
+  }
 
   if (!options.preserveExplicitNulls && !options.explicitNullFields?.length) {
     return normalized;
@@ -217,6 +242,64 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
   }
 
   return result;
+}
+
+function sameMeasurementValue(left: number | null, right: number | null): boolean {
+  return left === right;
+}
+
+function sameCountAndMass(
+  left: Pick<ActionCigaretteButtsMeasurements, "cigaretteButtsCount" | "cigaretteButtsMassKg">,
+  right: Pick<ActionCigaretteButtsMeasurements, "cigaretteButtsCount" | "cigaretteButtsMassKg">,
+): boolean {
+  return (
+    sameMeasurementValue(left.cigaretteButtsCount, right.cigaretteButtsCount) &&
+    sameMeasurementValue(left.cigaretteButtsMassKg, right.cigaretteButtsMassKg)
+  );
+}
+
+function resolveUserInputSource(
+  input: RawCigaretteButtsMeasurementInput,
+  existingMeasurements: ActionCigaretteButtsMeasurements | null | undefined,
+): CigaretteButtsInputSource {
+  if (!existingMeasurements) {
+    return input.cigaretteButtsInputSource ?? "unknown";
+  }
+
+  const persistedSource = inferCigaretteButtsInputSource(existingMeasurements);
+  const countChanged =
+    input.cigaretteButtsCount !== undefined &&
+    !sameMeasurementValue(
+      normalizeCount(input.cigaretteButtsCount),
+      existingMeasurements.cigaretteButtsCount,
+    );
+  const massChanged =
+    input.cigaretteButtsMassKg !== undefined &&
+    !sameMeasurementValue(
+      normalizeNullableNonNegative(input.cigaretteButtsMassKg),
+      existingMeasurements.cigaretteButtsMassKg,
+    );
+
+  // A changed field is evidence of a new form edit; the client hint only
+  // disambiguates the case where the form synchronously changed both fields.
+  if (countChanged && !massChanged) {
+    return persistedSource === "mass" && input.cigaretteButtsInputSource !== "count"
+      ? "mass"
+      : "count";
+  }
+  if (massChanged && !countChanged) {
+    return persistedSource === "count" && input.cigaretteButtsInputSource !== "mass"
+      ? "count"
+      : "mass";
+  }
+  if (countChanged && massChanged) {
+    if (input.cigaretteButtsInputSource === "count") return "count";
+    if (input.cigaretteButtsInputSource === "mass") return "mass";
+  }
+
+  // A condition-only edit must follow the persisted source. An ambiguous
+  // historical pair stays ambiguous, regardless of a forged payload hint.
+  return persistedSource;
 }
 
 export function hasCigaretteButtsMeasurement(

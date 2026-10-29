@@ -112,6 +112,17 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsMassProvenance).toBe("weight_converted");
   });
 
+  it("keeps legacy payloads deriving a missing value when no source hint exists", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: "humide",
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(1_750);
+    expect(measurement.cigaretteButtsCountProvenance).toBe("weight_converted");
+    expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
+  });
+
   it("preserves an indeterminate historical pair without converting it", () => {
     const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
       cigaretteButtsCount: 1_700,
@@ -122,8 +133,8 @@ describe("cigarette-butt raw and derived measurements", () => {
 
     expect(measurement.cigaretteButtsCount).toBe(1_700);
     expect(measurement.cigaretteButtsMassKg).toBe(1);
-    expect(measurement.cigaretteButtsCountProvenance).toBe("counted");
-    expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
+    expect(measurement.cigaretteButtsCountProvenance).toBe("unknown");
+    expect(measurement.cigaretteButtsMassProvenance).toBe("unknown");
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBeNull();
   });
 });
