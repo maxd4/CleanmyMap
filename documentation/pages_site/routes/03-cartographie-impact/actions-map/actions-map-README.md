@@ -232,6 +232,10 @@ scolaires approuvées et finalisées restent visibles. Les autres actions
 `pending`, `rejected` ou masquées restent exclues. Ce contrat est appliqué par
 l'API, le fallback RPC et la projection SQL, pas uniquement par l'interface.
 
+Dans la RPC canonique, cette exclusion est appliquée dans la sélection des
+actions avant l'union avec les spots, le tri stable et la limite finale ; une
+pré-action scolaire exclue ne consomme donc pas une place de pagination.
+
 Les seuls contrôles de filtrage affichés sont ceux qui modifient effectivement
 la vue :
 
