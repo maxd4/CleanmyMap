@@ -18,7 +18,7 @@ import {
   loadQuizLearningProgression,
   type LearningProgressionSummary,
 } from "../quiz-learning-progression";
-import { BADGE_DEFINITIONS } from "../badge-catalog";
+import { PERSONAL_BADGE_DEFINITIONS } from "../badge-catalog";
 import {
   buildTerrainSpecializationProgressions,
   TERRAIN_SPECIALIZATION_EVENT_TYPE,
@@ -30,7 +30,7 @@ const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
 export type GamificationBadgesListPayload = {
   badges: GamificationBadgeEntry[];
-  badgeCatalog: typeof BADGE_DEFINITIONS;
+  badgeCatalog: typeof PERSONAL_BADGE_DEFINITIONS;
   /** Canonical user-facing quiz progression: one learning axis. */
   learningProgression: LearningProgressionSummary;
   /** Compatibility field retained for clients that still read the old plural key. */
@@ -192,7 +192,7 @@ export async function loadGamificationBadgesList(
 
   return {
     badges,
-    badgeCatalog: BADGE_DEFINITIONS,
+    badgeCatalog: PERSONAL_BADGE_DEFINITIONS,
     learningProgression,
     quizProgressions: [learningProgression],
     unlockedCount,

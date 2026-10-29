@@ -205,11 +205,15 @@ identités canoniques attribuables par `organizer_id`.
 - L'equivalent sec des dechets est une hypothese de gamification versionnee `impact-terrain-2026-waste-moisture-v1` (`sec = 1,0`, `humide = 0,7`, `mouille = 0,4`). Elle ne remplace jamais la masse brute des resultats collectifs. Pour les megots, le moteur canonique `2500 megots/kg` et les facteurs `propre = 1`, `humide = 0,7`, `mouille = 0,4` restent la seule conversion ; un comptage explicite prime sur la masse.
 - Mohs est une progression d'impact personnelle secondaire : Talc vaut `0 XP`, puis chaque seuil fixe franchi vaut `+0,25 XP` (pas `20 kg` pour les déchets, pas `2 000` pour les mégots, jusqu'à Diamant). Elle réutilise `infinite_waste_milestone` et `infinite_butts_milestone` avec une identité de grade idempotente, contribue au total XP global et reste hors des sept axes comportementaux et de `diversityTypes`. Une correction des faits peut retirer les seuils devenus inéligibles et recalcule le profil ; aucune écriture `points_ledger` n'est effectuée.
 
-### Contrainte produit temporaire (prioritaire)
+### Contrainte produit et exception scolaire bornée (prioritaire)
 
-- pour l instant, **interdiction de proposer ou coder des objectifs globaux ou communautaires**;
-- la gamification active doit rester centree sur les **donnees utilisateur individuelles** (niveau, progression, qualite, regularite personnelle, badges personnels);
-- les classements autorises doivent rester des lectures de profil (ex: niveau utilisateur), sans introduire de cible collective a atteindre.
+- la gamification active reste centrée sur les **données utilisateur individuelles** (niveau, progression, qualité, régularité personnelle et badges personnels) ;
+- une exception limitée autorise une reconnaissance **non compétitive, descriptive et attachée à une action scolaire précise** : `school_first_mission`, `school_documented_sorting` et `school_field_debrief` ;
+- ces reconnaissances exigent une action explicitement confirmée comme scolaire par un organisateur autorisé, puis approuvée et finalisée. Une simple détection automatique, un formulaire ouvert, un quiz affiché, une photo ou une majorité d’enfants ne suffisent pas ;
+- elles sont réconciliables, valent toujours `0 XP`, ne modifient pas la progression personnelle et n’exposent ni podium, ni classement d’élèves, ni objectif général de quantité ;
+- les classements autorisés restent des lectures de profil. La reconnaissance scolaire ne devient pas une cible communautaire globale.
+
+Le parcours relié réutilise `/learn/ecole` et ses formats `quiz-30` / `atelier-60` sans compte élève ni persistance de réponses. L’attestation d’action est une projection descriptive, non une certification officielle de l’Éducation nationale ; elle ne contient pas de nom d’élève, résultat de quiz, note, âge, photo obligatoire ou donnée de santé.
 
 ### Regle de base
 

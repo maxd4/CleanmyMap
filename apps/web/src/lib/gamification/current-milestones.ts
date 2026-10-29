@@ -3,6 +3,7 @@ import {
   CURRENT_GAMIFICATION_RULES_VERSION,
   type GamificationVisibility,
   type MilestoneDefinition,
+  type SchoolCollectiveRecognitionDefinition,
 } from "./progression-types";
 
 type CurrentMilestoneInput = Omit<
@@ -56,3 +57,65 @@ export const CURRENT_MILESTONES = [
   defineCurrentMilestone({ id: "moderateur_polyvalent", label: "Modérateur polyvalent", description: "Dossiers résolus dans les familles action, participation et clean place.", sourceDomain: "admin_operations_audit / familles de dossiers résolus", factKey: "moderateur_polyvalent", xpAwarded: 1, oneShot: true, visibility: "authorized_moderation", introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION }),
   defineCurrentMilestone({ id: "spogomi_first_referee", label: "Premier arbitrage certifié", description: "Première mission d’arbitrage SPOGOMI effectivement réalisée et certifiée dans l’historique du compte.", sourceDomain: "spogomi_recognition_attestations(kind=referee,status=certified) + identité SPOGOMI vérifiée", factKey: "spogomi_first_referee_certified", xpAwarded: 1, oneShot: true, introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION }),
 ] as const satisfies readonly MilestoneDefinition[];
+
+/**
+ * Recognition attached to one validated school action. These definitions are
+ * deliberately outside the user progression/event model: they never create
+ * XP, a student account, a ranking, or a personal badge balance.
+ */
+export const CURRENT_SCHOOL_COLLECTIVE_RECOGNITIONS = [
+  {
+    id: "school_first_mission",
+    label: "Première mission scolaire",
+    description: "Action scolaire confirmée, réalisée puis approuvée dans son parcours complet.",
+    sourceDomain: "action scolaire confirmée + action validée",
+    factKey: "school_action_validated",
+    badgeId: "school_first_mission",
+    visibility: "action_collective",
+    rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+    xpAwarded: 0,
+    xpPolicy: {
+      kind: "none",
+      reason: "Reconnaissance collective descriptive attachée à l’action, sans XP individuel.",
+    },
+    oneShot: true,
+    scope: "action",
+  },
+  {
+    id: "school_documented_sorting",
+    label: "Tri documenté",
+    description: "Action scolaire approuvée avec une ventilation multi-flux effectivement documentée.",
+    sourceDomain: "action scolaire validée + ventilation canonique des déchets",
+    factKey: "school_action_documented_sorting",
+    badgeId: "school_documented_sorting",
+    visibility: "action_collective",
+    rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+    xpAwarded: 0,
+    xpPolicy: {
+      kind: "none",
+      reason: "Reconnaissance collective descriptive attachée à l’action, sans XP individuel.",
+    },
+    oneShot: true,
+    scope: "action",
+  },
+  {
+    id: "school_field_debrief",
+    label: "Bilan de terrain",
+    description: "Action scolaire approuvée avec une participation valide et un résultat collectif traçable.",
+    sourceDomain: "action scolaire validée + participation catégorisée + mesure tracée",
+    factKey: "school_action_field_debrief",
+    badgeId: "school_field_debrief",
+    visibility: "action_collective",
+    rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+    xpAwarded: 0,
+    xpPolicy: {
+      kind: "none",
+      reason: "Reconnaissance collective descriptive attachée à l’action, sans XP individuel.",
+    },
+    oneShot: true,
+    scope: "action",
+  },
+] as const satisfies readonly SchoolCollectiveRecognitionDefinition[];

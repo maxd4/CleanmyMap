@@ -75,6 +75,9 @@ function ParticipantCounts({
     childrenCount,
     retiredCount,
   });
+  const schoolJourneySuggested =
+    form.actionContext === "school" ||
+    (form.actionContext === "" && contextSuggestion.context === "school");
   const contextControl = (
     <div className="space-y-1.5 rounded-xl border border-emerald-900/10 bg-emerald-50/60 p-3">
       <label htmlFor="action-context" className="block text-xs font-semibold text-emerald-950">
@@ -108,6 +111,25 @@ function ParticipantCounts({
         <p className="text-xs font-semibold text-emerald-800" role="status">
           Choix explicite conservé jusqu’à une remise en mode automatique.
         </p>
+      ) : null}
+      {schoolJourneySuggested ? (
+        <div className="space-y-2 rounded-lg border border-sky-900/10 bg-sky-50/70 p-3 text-xs text-sky-950">
+          <p className="font-semibold">Parcours école : préparer, agir, faire le bilan</p>
+          <p>
+            Retrouvez le quiz et l&apos;atelier existants dans l&apos;espace pédagogique{" "}
+            <a className="font-semibold underline" href="/learn/ecole">/learn/ecole</a>.
+            Aucun compte élève ni résultat de quiz n&apos;est nécessaire pour l&apos;action.
+          </p>
+          <p>
+            Les élèves restent sur les déchets ordinaires avec encadrement adulte ; les adultes prennent en charge les mégots,
+            objets dangereux et toute situation à risque. Gants, pinces et sacs adaptés restent nécessaires.
+          </p>
+          {form.actionContext === "" ? (
+            <p className="font-semibold text-sky-900">
+              La proposition automatique aide à préparer l&apos;action, mais ne déclenche aucune reconnaissance scolaire sans confirmation explicite.
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

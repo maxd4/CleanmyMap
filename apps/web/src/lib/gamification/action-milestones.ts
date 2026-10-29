@@ -59,7 +59,10 @@ function hasPersistedPreparationJourney(action: ActionRow): boolean {
   return action.action_phase === "post_action_complete" && Boolean(action.published_at);
 }
 
-export function isCurrentActionValidated(action: ActionRow): boolean {
+export function isCurrentActionValidated(action: {
+  status: string;
+  action_phase?: string | null;
+}): boolean {
   return (
     action.status === "approved" &&
     (action.action_phase ?? "post_action_complete") === "post_action_complete"
@@ -74,7 +77,7 @@ function canonicalBreakdown(metadata: ReturnType<typeof extractActionMetadataFro
   return metadata.wasteBreakdown ?? null;
 }
 
-function hasDocumentedSorting(metadata: ReturnType<typeof extractActionMetadataFromNotes>): boolean {
+export function hasDocumentedSorting(metadata: ReturnType<typeof extractActionMetadataFromNotes>): boolean {
   const breakdown = canonicalBreakdown(metadata);
   if (!breakdown) return false;
 
@@ -88,7 +91,9 @@ function hasDocumentedSorting(metadata: ReturnType<typeof extractActionMetadataF
   return values.length >= 2 && values.some((value) => value > 0);
 }
 
-function hasTraceableMeasurement(action: ActionRow, metadata: ReturnType<typeof extractActionMetadataFromNotes>): boolean {
+export function hasTraceableMeasurement(action: {
+  waste_kg: number | null;
+}, metadata: ReturnType<typeof extractActionMetadataFromNotes>): boolean {
   const method = metadata.wasteMeasurementMethod;
   if (!method || method === "inconnue") return false;
 

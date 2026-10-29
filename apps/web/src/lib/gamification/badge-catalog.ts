@@ -1,9 +1,13 @@
-import { CURRENT_MILESTONES } from "./current-milestones";
+import {
+  CURRENT_MILESTONES,
+  CURRENT_SCHOOL_COLLECTIVE_RECOGNITIONS,
+} from "./current-milestones";
 import { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
 import type {
   GamificationBadgeDefinition,
   GamificationProgressionDefinition,
   MilestoneDefinition,
+  SchoolCollectiveRecognitionDefinition,
 } from "./progression-types";
 import { TERRAIN_SPECIALIZATIONS } from "./terrain-specializations";
 
@@ -42,6 +46,25 @@ function milestoneBadgeDefinition(
     rule: { kind: "one_shot", description: milestone.description },
     xpPolicy: milestone.xpPolicy,
     aliases: milestone.legacyId ? [milestone.legacyId] : [],
+  };
+}
+
+function schoolCollectiveBadgeDefinition(
+  recognition: SchoolCollectiveRecognitionDefinition,
+): GamificationBadgeDefinition {
+  return {
+    id: recognition.badgeId,
+    family: `school-action:${recognition.id}`,
+    status: "CURRENT",
+    label: recognition.label,
+    scale: "learning",
+    metric: recognition.factKey,
+    sourceDomain: recognition.sourceDomain,
+    visibility: recognition.visibility,
+    progressionId: null,
+    rule: { kind: "one_shot", description: recognition.description },
+    xpPolicy: recognition.xpPolicy,
+    aliases: [],
   };
 }
 
@@ -97,6 +120,7 @@ export const CURRENT_BADGE_DEFINITIONS = [
   ...CURRENT_INFINITE_PROGRESSIONS.map(progressionBadgeDefinition),
   ...CURRENT_TERRAIN_SPECIALIZATION_BADGE_DEFINITIONS,
   ...CURRENT_MILESTONES.map(milestoneBadgeDefinition),
+  ...CURRENT_SCHOOL_COLLECTIVE_RECOGNITIONS.map(schoolCollectiveBadgeDefinition),
   ...CURRENT_SPOGOMI_BADGE_DEFINITIONS,
 ] as const satisfies readonly GamificationBadgeDefinition[];
 
@@ -219,6 +243,13 @@ export const BADGE_DEFINITIONS = [
   ...CURRENT_BADGE_DEFINITIONS,
   ...LEGACY_BADGE_DEFINITIONS,
 ] as const satisfies readonly GamificationBadgeDefinition[];
+
+/** Catalog exposed by personal progression surfaces. Action-scoped school
+ * recognitions are read from the action attestation, never from a user XP
+ * profile or personal badge inventory. */
+export const PERSONAL_BADGE_DEFINITIONS = BADGE_DEFINITIONS.filter(
+  (definition) => definition.visibility !== "action_collective",
+);
 
 export function findBadgeDefinition(idOrAlias: string): GamificationBadgeDefinition | undefined {
   return BADGE_DEFINITIONS.find((definition) =>

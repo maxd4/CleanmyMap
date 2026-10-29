@@ -155,6 +155,24 @@ module métier, jamais redéfinis par une page.
 | `learning` | learning | `validated_learning_events` | quiz, badge list, progression Apprentissage |
 | `moderation` | gem | `resolvedModerationCases` | profil autorisé, progression Modération |
 
+### Reconnaissances d’action scolaire
+
+Le catalogue canonique contient aussi trois identités `action_collective`,
+strictement attachées à une action : `school_first_mission`,
+`school_documented_sorting` et `school_field_debrief`. Elles sont visibles dans
+l’attestation de l’action et dans les projections autorisées de cette action,
+jamais dans l’inventaire ou le solde XP d’un élève.
+
+Une reconnaissance n’est active que si le cadre `school` est explicitement
+confirmé par un organisateur autorisé et que l’action est approuvée et
+finalisée. La détection automatique de la composition, un quiz affiché, une
+photo ou une action simplement commencée ne prouvent pas ce cadre. Les trois
+jalons sont descriptifs, idempotents, réconciliables et valent `0 XP` : aucune
+récompense n’est calculée à partir du nombre d’enfants, de la masse, des
+mégots, d’un rendement estimé ou d’un classement. Une correction, un rejet,
+une annulation, une dépublication ou une reclassification hors scolaire
+désactive la projection sans effacer l’audit.
+
 Les jalons CURRENT ont chacun leur identité `milestone:<id>` dans le même
 catalogue : `premiere_trace_utile`, `trace_fondatrice`, `boucle_bouclee`,
 `mobilisateur`, `donnee_exemplaire`, `parcours_documente`,

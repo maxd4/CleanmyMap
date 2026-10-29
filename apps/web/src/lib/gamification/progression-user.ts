@@ -29,7 +29,7 @@ import type {
   PersonalTimelineItem,
   UserProgressionResponse,
 } from "./progression-types";
-import { BADGE_DEFINITIONS } from "./badge-catalog";
+import { PERSONAL_BADGE_DEFINITIONS } from "./badge-catalog";
 import { actionRowToDrawing, toInt, toNullableFloat } from "./progression-utils";
 import { resolveEngagementStatus } from "./engagement-status";
 import {
@@ -282,7 +282,7 @@ function buildUserProgressionResponse(
   return {
     userId,
     ...level,
-    badgeCatalog: BADGE_DEFINITIONS,
+    badgeCatalog: PERSONAL_BADGE_DEFINITIONS,
     summary: buildProgressionSummary(inputs, level),
     engagementStatus: resolveEngagementStatus(level.currentLevel),
     impact: computePersonalImpactMetrics(inputs.rows),

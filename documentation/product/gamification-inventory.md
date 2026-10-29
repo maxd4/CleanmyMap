@@ -158,7 +158,7 @@ ou aux rapports. Elles ne créent aucune récompense CURRENT par elles-mêmes.
 
 ## Regles de conception transverses
 
-- contrainte active: ne pas proposer ni coder d objectifs globaux ou communautaires; rester sur la progression basee sur les donnees utilisateur individuelles;
+- contrainte active: rester sur la progression basée sur les données utilisateur individuelles, avec la seule exception bornée des reconnaissances descriptives `school_first_mission`, `school_documented_sorting` et `school_field_debrief`, attachées à une action scolaire confirmée et validée, sans XP ni classement;
 - un seul objectif visible a la fois suffit dans la plupart des ecrans;
 - un badge doit toujours avoir un sens lisible par un humain;
 - un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;
@@ -171,6 +171,14 @@ ou aux rapports. Elles ne créent aucune récompense CURRENT par elles-mêmes.
 - un `one-shot` doit cesser de s afficher comme action a completer une fois acquis;
 - un `régulier` doit rester sobre, sans surcharge de notifications;
 - un score seul ne suffit jamais a motiver durablement une communaute benevole.
+
+### Reconnaissance collective scolaire
+
+- échelle : `action` / `learning`, une action source et non un profil élève ;
+- source : action scolaire explicitement confirmée, approuvée et finalisée ;
+- preuves : validation de l’action, ventilation réelle pour `Tri documenté`, participation catégorisée et mesure traçable pour `Bilan de terrain` ;
+- effets : attestation et trois jalons lisibles, toujours `0 XP`, sans écriture `progression_events`, sans classement et sans objectif de masse ou de mégots ;
+- retrait : rejet, annulation, dépublication ou reclassification hors scolaire invalide les reconnaissances par réconciliation idempotente.
 
 ## Point de liaison avec la doc existante
 

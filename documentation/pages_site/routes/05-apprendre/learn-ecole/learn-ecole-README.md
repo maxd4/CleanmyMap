@@ -81,6 +81,25 @@ uniquement en mémoire dans le navigateur : pré-quiz, séquence pédagogique,
 post-quiz puis bilan. Aucun nom, compte, classe nominative ou classement n’est
 nécessaire.
 
+## Liaison avec une action scolaire
+
+Une action peut réutiliser cette page comme préparation pédagogique avant le
+terrain : le formulaire conserve le même lien `/learn/ecole` et les formats
+`quiz-30` / `atelier-60`. Le quiz, l’atelier, leurs réponses et leurs résultats
+restent collectifs et en mémoire ; ils ne déclenchent aucune reconnaissance.
+
+Pendant l’action, les élèves sont encadrés sur les déchets ordinaires. Les
+adultes prennent en charge les mégots, objets dangereux et situations à risque,
+avec gants, pinces et sacs adaptés. Le bilan distingue personnes présentes et
+unités opérationnelles, conserve les catégories et mesures réellement saisies,
+et laisse toute valeur absente inconnue.
+
+La reconnaissance non compétitive est portée par l’action, pas par un compte
+élève. Elle exige une confirmation scolaire explicite par un organisateur
+autorisé, une action approuvée et finalisée, puis les preuves propres à chaque
+jalon. L’attestation est descriptive et ne constitue pas une certification
+officielle de l’Éducation nationale.
+
 ## Fichiers liés
 
 - `learn-ecole-presentation-detaillee.md`

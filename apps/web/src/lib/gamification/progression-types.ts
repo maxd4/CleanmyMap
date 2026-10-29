@@ -25,6 +25,7 @@ export type GamificationAwardCategory = Exclude<GamificationCategory, "NON_GAMIF
 
 export type GamificationVisibility =
   | "current_user"
+  | "action_collective"
   | "authorized_moderation"
   | "not_exposed";
 
@@ -184,6 +185,31 @@ export type GamificationBadgeDefinition = {
   aliases: readonly string[];
   legacyLabels?: readonly string[];
   legacyThresholds?: readonly { label: string; minimum: number }[];
+};
+
+export const CURRENT_SCHOOL_COLLECTIVE_RECOGNITION_IDS = [
+  "school_first_mission",
+  "school_documented_sorting",
+  "school_field_debrief",
+] as const;
+
+export type CurrentSchoolCollectiveRecognitionId =
+  (typeof CURRENT_SCHOOL_COLLECTIVE_RECOGNITION_IDS)[number];
+
+export type SchoolCollectiveRecognitionDefinition = {
+  id: CurrentSchoolCollectiveRecognitionId;
+  label: string;
+  description: string;
+  sourceDomain: string;
+  factKey: string;
+  badgeId: CurrentSchoolCollectiveRecognitionId;
+  visibility: "action_collective";
+  rulesVersion: string;
+  introducedInRulesRevision: number;
+  xpAwarded: 0;
+  xpPolicy: { kind: "none"; reason: string };
+  oneShot: true;
+  scope: "action";
 };
 
 export interface MilestoneDefinition {

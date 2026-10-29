@@ -10,6 +10,7 @@ import {
 import type { ActionParticipantImpactSnapshot } from "./participation/group-participation-read";
 import type { appendActionModerationAudit } from "./moderation-audit";
 import type { UserIdentity } from "@/lib/authz";
+import { reconcileSchoolActionRecognitions } from "@/lib/gamification/school-action-recognition-persistence";
 import type {
   ActionAuditSnapshots,
   ActionUpdateInput,
@@ -77,6 +78,11 @@ export async function runActionUpdatePostProcessing(
     await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
   }
   await syncUpdatedParticipants({ supabase, actionId, body, userId, identity, setErrorStage });
+  await reconcileSchoolActionRecognitions({
+    supabase,
+    actionId,
+    actorUserId: adminAuditActorUserId,
+  });
   if (previousImpactSnapshot) {
     await emitActionParticipantImpactNotifications({
       supabase,
