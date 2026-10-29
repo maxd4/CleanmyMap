@@ -433,6 +433,17 @@ bloque ni CI, ni FULL, ni le scan SonarQube ; l'échec des tests, de la
 production du rapport ou de sa validation reste bloquant lorsqu'un périmètre
 est activé.
 
+Les pourcentages V8 Web, mobile, Node et Python sont des mesures de leurs
+propres périmètres instrumentés ; ils ne sont pas additionnés pour fabriquer
+un taux monorepo. Ainsi, une couverture Web de `75–76 %` ne signifie pas que la
+couverture globale SonarQube Cloud vaut `75–76 %` : SonarQube recalcule ses
+propres dénominateurs sur les fichiers effectivement analysés et les rapports
+effectivement importés. L'absence du rapport Web peut donc réduire la mesure
+SonarQube affichée sans démontrer une baisse de la qualité des tests Web. Toute
+comparaison avant/après exige la même méthode, le même SHA candidat, les mêmes
+fichiers instrumentés, le même périmètre, les mêmes exclusions et les mêmes
+dénominateurs ; sinon elle est `NON_COMPARABLE`.
+
 ### Rapports de couverture importés par SonarQube Cloud
 
 Le workflow manuel `sonarqube-manual.yml` produit quatre rapports distincts
