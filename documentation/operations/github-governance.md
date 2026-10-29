@@ -121,8 +121,9 @@ Checks conservés pour la revue manuelle GitHub :
 - `web-vercel-audit` et `web-build` lorsque `build_relevant == 'true'`
 - `mobile-validation` sur chaque `push` vers `main` et chaque Pull Request ciblant `main`
 - `sonarqube-manual` : préparation indépendante des quatre couvertures puis
-  analyse SonarQube sur le SHA exact, y compris lorsque la préparation échoue
-  sans annulation du workflow
+  analyse SonarQube sur le SHA exact uniquement si `SONAR_FULL` valide les
+  quatre rapports ; une préparation incomplète conserve ses diagnostics mais
+  bloque le scanner canonique
 - `CodeQL`
 - `Vercel`
 

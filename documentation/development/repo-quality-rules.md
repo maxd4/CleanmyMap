@@ -131,14 +131,77 @@ existants sont réutilisés sans copie ni contournement. Les réglages réelleme
 actifs sur SonarQube Cloud doivent être distingués de la configuration
 versionnée et des analyses historiques observées.
 
+### État vérifié au 29 octobre 2026
+
+La dernière analyse SonarQube Cloud réellement publiée est celle du
+[workflow manuel GitHub 40952480989](https://github.com/maxd4/CleanMyMap/actions/runs/40952480989),
+terminée le 29 octobre 2026 à 20:56:48 UTC, sur le SHA
+`e30923fed0eb0c1086b70f48570b6bcb72f743e6`. Elle ne décrit pas le `main`
+actuel, qui est `9a4b7a0c8970da37da3d7ba30f02c0d4e69d64ff`, et le run a échoué
+après avoir néanmoins transmis une analyse au projet
+[`maxd4_CleanmyMap`](https://sonarcloud.io/project/overview?id=maxd4_CleanmyMap).
+
+Les mesures ci-dessous proviennent de l'API publique SonarQube Cloud relue le
+29 octobre 2026, et non de la seule capture fournie :
+
+| Mesure globale SonarQube Cloud | Valeur observée | Provenance |
+| --- | ---: | --- |
+| Couverture | `39,1 %` | API `measures/component`, `coverage` |
+| Couverture lignes | `34,4 %` | API `line_coverage` |
+| Couverture branches | `78,6 %` | API `branch_coverage` |
+| Couverture du nouveau code | `52,2 %` | API `new_coverage` |
+| Couverture lignes du nouveau code | `45,9 %` | API `new_line_coverage` |
+| Couverture branches du nouveau code | `79,7 %` | API `new_branch_coverage` |
+| NCLOC / fichiers analysés | `417 699` / `3 185` | API `ncloc` / `files` |
+| Bugs / fiabilité | `9` / rating `D` (`4`) | API `bugs` / `reliability_rating` |
+| Vulnérabilités / sécurité | `5` / rating `C` (`3`) | API `vulnerabilities` / `security_rating` |
+| Code smells / maintenabilité | `4` / rating `A` (`1`) | API `code_smells` / `sqale_rating` |
+| Security Hotspots / revue | `0` / `100 %` | API `security_hotspots` / `security_hotspots_reviewed` |
+| Duplications | `4,7 %` | API `duplicated_lines_density` |
+| Quality Gate | `ERROR` | API `qualitygates/project_status` |
+
+Le Quality Gate observé échoue sur la fiabilité du nouveau code (`4` pour un
+seuil `1`), la sécurité (`3` pour `1`) et la couverture (`52,2 %` pour `80 %`).
+La maintenabilité (`1`), la duplication (`1,9 %` sur le nouveau code) et la
+revue des hotspots (`100 %`) sont observées `OK`. Ces valeurs SonarCloud ne
+constituent ni une mesure du `main` courant, ni une preuve de release.
+
+Le run de correction FULL
+[`40966387582`](https://github.com/maxd4/CleanMyMap/actions/runs/40966387582),
+sur `1cbddb4f0f709ae0c837adec0dd25fea2b4d7034`, a terminé `cancelled` avec le
+`FULL coverage gate` en échec. Le manifeste du run Sonar `40952480989` établit
+la matrice suivante :
+
+| Domaine | Producteur | Validateur | Import Sonar |
+| --- | --- | --- | --- |
+| Web | `FAIL` | `NOT_RUN` | `NO` |
+| Mobile | `PASS` | `PASS` | `YES` |
+| Node | `PASS` | `PASS` | `YES` |
+| Python | `PASS` | `PASS` | `YES` |
+
+Le statut global documenté est donc `SONAR_COVERAGE_STATUS: PARTIAL`,
+`SONAR_TESTS_STATUS: FAIL` et `SONAR_INTEGRITY_STATUS: PASS` pour le manifeste
+de ce run ; le scanner a terminé côté GitHub, mais cette combinaison n'est pas
+une publication canonique complète. Le rapport Web n'a pas été importé. Les
+rapports mobile, Node et Python ne suffisent pas à transformer `39,1 %` en
+mesure complète des quatre domaines.
+
+La politique publiée reste fail-closed : le workflow `ci.yml` en mode FULL
+doit obtenir `PASS` pour `web-tests`, `web-coverage`, `mobile-validation`,
+`node-coverage` et `python-validation`, puis valider quatre preuves rattachées
+au même SHA. Le workflow Sonar manuel exige en plus `SONAR_FULL` et les quatre
+rapports importables du même `run_id` et du même SHA ; `SONAR_PARTIAL` reste un
+diagnostic et n'autorise pas le scanner canonique. Aucun nouveau snapshot
+complet n'est créé tant que cette preuve n'existe pas.
+
 Le workflow manuel sépare désormais trois faits qui ne doivent pas être
 confondus : la préparation et les tests de couverture, l'analyse statique
 SonarQube et la décision de qualité/release. Les producteurs Web, mobile, Node
 et Python s'exécutent indépendamment ; leurs échecs restent visibles et
-bloquent leur propre préparation, mais ne suppriment pas la possibilité de
-lancer le scanner sur le SHA sélectionné. Le job SonarQube est conditionné par
-`always() && !cancelled()` et ne consomme que les artefacts du `run_id` courant
-portant le même `ANALYZED_SHA`.
+bloquent leur propre préparation. Le job SonarQube conserve les diagnostics,
+mais son scanner canonique ne démarre que si `SONAR_FULL` valide les quatre
+producteurs, validations, rapports importables et leur provenance du même
+`run_id` et du même `ANALYZED_SHA`.
 
 Un rapport valide est importé uniquement après validation de son producteur,
 de ses chemins sources, de son contenu et de la cohérence de ses métriques.

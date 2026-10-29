@@ -460,6 +460,14 @@ nécessaires avant d'autoriser le scanner. Le mode `SONAR_PARTIAL` reste
 disponible pour un diagnostic indépendant, mais il n'autorise plus une nouvelle
 publication sur le projet SonarQube canonique.
 
+En mode `FULL` explicite de `ci.yml`, le garde-fou final attend les cinq jobs
+`web-tests`, `web-coverage`, `mobile-validation`, `node-coverage` et
+`python-validation` en état `success`. Il télécharge les preuves Web, mobile,
+Node et Python du candidat, puis vérifie leur présence, leur structure, leur
+SHA et leur provenance. Un job absent, `skipped`, annulé ou en échec, un rapport
+manquant ou une provenance divergente font échouer le garde-fou ; aucune
+couverture partielle n'est promue en couverture complète.
+
 Les résultats indépendants sont affichés sous la forme :
 
 ```text
