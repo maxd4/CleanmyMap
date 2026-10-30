@@ -154,6 +154,8 @@ export type ActionRow = {
     | null;
   cancelled_from_status?: "pending" | "approved" | null;
   published_at?: string | null;
+  public_visibility_started_at?: string | null;
+  results_published_at?: string | null;
   moderation_visibility?: "visible" | "hidden";
   access_mode?: ActionAccessMode;
   hidden_at?: string | null;

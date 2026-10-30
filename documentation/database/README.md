@@ -68,11 +68,18 @@ idempotents.
 Le refresh `POST /api/community/digest/refresh` est authentifié, limité et
 déclenché depuis le parcours communautaire. Il consulte d'abord les
 abonnements actifs et les exécutions déjà enregistrées ; une période traitée
-ne relance pas l'agrégation. Les dates canoniques d'entrée dans la visibilité
-sont `published_at` pour les futures actions et les résultats publiés, et le
-maximum entre `published_at` de l'action et `created_at` du besoin pour les
-besoins. Seules les références publiques dues, dédoublonnées et limitées à dix
-entrées sont transmises à la RPC.
+ne relance pas l'agrégation. Pour une future pré-action,
+`public_visibility_started_at` est le premier passage effectivement public ;
+`published_at` reste le marqueur de publication initiale et sert de repli
+uniquement pour les anciennes lignes qui n'ont pas encore ce nouveau marqueur.
+Pour un résultat, `results_published_at` est capturé lors de sa première
+visibilité publique effective et n'est jamais recalculé à partir de
+`published_at` ou `updated_at`. Pour un besoin ouvert, la date canonique est le
+maximum entre `created_at` du besoin et la première visibilité publique de son
+action porteuse. Les timestamps historiques de résultats qui ne peuvent pas
+être établis sans inventer de date restent absents. Seules les références
+publiques dues, dédoublonnées et limitées à dix entrées sont transmises à la
+RPC.
 
 La RPC `commit_community_digest_run` est réservée à `service_role` : elle
 verrouille la clé logique, persiste le run et crée, dans la même transaction,

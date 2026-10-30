@@ -40,6 +40,8 @@ const ACTION_BASE_SELECT_FIELDS = [
   "review_reason",
   "review_operation_id",
   "published_at",
+  "public_visibility_started_at",
+  "results_published_at",
   "access_mode",
   "cancelled_at",
   "cancelled_by_clerk_id",
@@ -69,6 +71,8 @@ const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
   .filter(
     (field) =>
       field !== "published_at" &&
+      field !== "public_visibility_started_at" &&
+      field !== "results_published_at" &&
       field !== "cancelled_at" &&
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
@@ -89,6 +93,8 @@ const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
       field !== "event_start_time" &&
       field !== "event_end_time" &&
       field !== "published_at" &&
+      field !== "public_visibility_started_at" &&
+      field !== "results_published_at" &&
       field !== "cancelled_at" &&
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
@@ -126,6 +132,8 @@ const ACTION_COLUMN_MARKERS = [
   "event_start_time",
   "event_end_time",
   "published_at",
+  "public_visibility_started_at",
+  "results_published_at",
   "cancelled_at",
   "cancelled_by_clerk_id",
   "cancellation_reason",

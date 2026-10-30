@@ -71,11 +71,16 @@ function isWithinAnyPeriod(value: string, periods: readonly CommunityDigestPerio
   return periods.some((period) => isDateInCommunityDigestPeriod(value, period));
 }
 
+function actionPublicVisibilityAt(action: ActionRow): string | null {
+  return action.public_visibility_started_at ?? action.published_at ?? null;
+}
+
 function toActionReference(
   action: ActionRow,
   type: "future_actions" | "results",
+  visibleAt: string | null,
 ): CommunityDigestReference | null {
-  if (!action.published_at) return null;
+  if (!visibleAt) return null;
   return {
     type,
     id: action.id,
@@ -84,7 +89,7 @@ function toActionReference(
     actionDate: action.action_date,
     locationLabel: action.location_label,
     territoryZoneName: actionTerritory(action),
-    visibleAt: action.published_at,
+    visibleAt,
   };
 }
 
@@ -92,10 +97,11 @@ function toNeedReference(
   need: ActionNeedRow,
   action: ActionRow,
 ): CommunityDigestReference | null {
-  if (!action.published_at) return null;
-  const visibleAt = new Date(need.created_at).getTime() > new Date(action.published_at).getTime()
+  const actionVisibleAt = actionPublicVisibilityAt(action);
+  if (!actionVisibleAt) return null;
+  const visibleAt = new Date(need.created_at).getTime() > new Date(actionVisibleAt).getTime()
     ? need.created_at
-    : action.published_at;
+    : actionVisibleAt;
   return {
     type: "needs",
     id: need.id,
@@ -185,16 +191,18 @@ export async function loadPublicCommunityDigestReferences(
 
   if (sources.has("future_actions")) {
     for (const action of publicActions) {
-      if (!isPublishedFuturePreAction(action, now) || !action.published_at || !isWithinAnyPeriod(action.published_at, periods)) continue;
-      const reference = toActionReference(action, "future_actions");
+      const visibleAt = actionPublicVisibilityAt(action);
+      if (!isPublishedFuturePreAction(action, now) || !visibleAt || !isWithinAnyPeriod(visibleAt, periods)) continue;
+      const reference = toActionReference(action, "future_actions", visibleAt);
       if (reference) references.push(reference);
     }
   }
 
   if (sources.has("results")) {
     for (const action of publicActions) {
-      if (action.action_phase !== "post_action_complete" || action.status !== "approved" || !action.published_at || !isWithinAnyPeriod(action.published_at, periods)) continue;
-      const reference = toActionReference(action, "results");
+      const visibleAt = action.results_published_at ?? null;
+      if (action.action_phase !== "post_action_complete" || action.status !== "approved" || !visibleAt || !isWithinAnyPeriod(visibleAt, periods)) continue;
+      const reference = toActionReference(action, "results", visibleAt);
       if (reference) references.push(reference);
     }
   }
