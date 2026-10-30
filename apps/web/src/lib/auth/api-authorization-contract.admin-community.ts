@@ -246,6 +246,20 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["auth()", "userId"],
     },
   },
+  "community/helper-skills": {
+    GET: {
+      expected: "Authenticated member reads only their private helper categories",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + session userId passed to the private service",
+      evidence: ["requireAuthenticatedAccess", "access.userId"],
+    },
+    PUT: {
+      expected: "Authenticated member replaces only their private helper categories",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + session userId passed to the atomic server replacement",
+      evidence: ["requireAuthenticatedAccess", "access.userId"],
+    },
+  },
   "community/subscriptions": {
     GET: {
       expected: "Authenticated user reads only their own private subscriptions",
@@ -321,6 +335,15 @@ export const adminCommunityAuthorizationContract = {
       dimensions: ["authentication", "ownership", "business permission"],
       actual: "requireAuthenticatedAccess + transitionActionNeedOffer RPC rechecking actor, offer, need and action eligibility",
       evidence: ["requireAuthenticatedAccess", "transitionActionNeedOffer", "access.userId"],
+      evidenceScope: "module",
+    },
+  },
+  "community/needs/suggestions": {
+    GET: {
+      expected: "Authenticated member receives only public needs matching their private helper categories",
+      dimensions: ["authentication", "public-safe", "ownership"],
+      actual: "requireAuthenticatedAccess + session-scoped skills + canonical public action-need projection",
+      evidence: ["requireAuthenticatedAccess", "access.userId", "listCommunityHelperSkills", "listSuggestedActionNeeds"],
       evidenceScope: "module",
     },
   },

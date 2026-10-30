@@ -27,8 +27,19 @@ jamais d'inscription, de participation confirmée ou de permission sur
 l'action. La table et les notifications restent privées ; les identités des
 offreurs ne figurent pas dans les projections publiques.
 
-Les préférences, suggestions et digest restent `PLAN` et doivent réutiliser
-ces tables ainsi que les règles de publication actuelles des actions.
+## État courant — 6A4
+
+Les préférences privées `public.community_helper_skills` permettent à un
+membre authentifié de sélectionner volontairement zéro ou plusieurs des huit
+catégories d'aide. Elles sont accessibles par `GET` et `PUT`
+`/api/community/helper-skills`, avec remplacement atomique de l'ensemble ; il
+n'existe ni annuaire, ni badge, ni score, ni classement associé.
+
+`GET /api/community/needs/suggestions` propose uniquement les besoins publics,
+ouverts, non expirés et correspondant aux catégories sélectionnées. Le
+territoire préféré du membre puis ses voisins canoniques servent seulement au
+classement ; les autres territoires restent éligibles. Ce flux ne génère pas
+de notification automatique. Le digest communautaire reste `PLAN`.
 
 ## Intentions produit
 

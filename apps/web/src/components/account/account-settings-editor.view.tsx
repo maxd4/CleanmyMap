@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 
 import { GreaterParisSelect } from "@/components/account/greater-paris-select";
+import { CommunityHelperSkillsSetting } from "@/components/account/community-helper-skills-setting";
 import { NotificationPreferencesSetting } from "@/components/account/notification-preferences-setting";
 import { LeaderboardOptInSetting } from "@/components/sections/rubriques/gamification/leaderboard-opt-in-setting";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
@@ -133,6 +134,7 @@ function PreferencesSection({ props }: { props: AccountSettingsViewProps }) {
       <div className="mt-5"><LeaderboardOptInSetting fr={locale === "fr"} /></div>
       <div className="mt-5 rounded-2xl border border-sky-200/70 bg-sky-50/80 p-4"><h3 className="font-bold text-slate-900">{copy.ageBandTitle}</h3><p className="mt-1 cmm-text-small leading-relaxed text-slate-700">{copy.ageBandDescription}</p><div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={copy.ageBandTitle}>{([["under_15", copy.ageUnder15], ["15_or_over", copy.age15OrOver], ["unknown", copy.ageUnknown]] as const).map(([value, label]) => <label key={value} className="flex items-start gap-2 rounded-xl border border-sky-200 bg-white p-3 text-sm text-slate-800"><input type="radio" name="settings-age-band" value={value} checked={ageBand === value} onChange={() => onSaveAgeBand(value)} disabled={ageBandState === "saving"} /><span>{label}</span></label>)}</div><div className="mt-3 flex flex-wrap items-center gap-3"><SaveStatus state={ageBandState} copy={{ ...copy, saved: copy.ageSaved, error: copy.ageError }} /><button type="button" onClick={requestCookieConsentPreferences} className="text-sm font-bold text-sky-800 underline underline-offset-2">{copy.manageAnalytics}</button></div></div>
       <div className="mt-5"><NotificationPreferencesSetting locale={locale} /></div>
+      <CommunityHelperSkillsSetting locale={locale} />
     </SectionCard>
   );
 }

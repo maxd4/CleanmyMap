@@ -135,7 +135,7 @@ async function loadPublicActions(
   return actions.filter((action) => isPublicNeedAction(action, now));
 }
 
-async function loadActionContexts(
+export async function loadActionContexts(
   supabase: SupabaseClient,
   userId: string | null,
   now: Date,

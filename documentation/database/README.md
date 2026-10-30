@@ -34,9 +34,24 @@ projection de lecture lorsque `status = open` et que `expires_at < now()` ; il
 n'est jamais persisté.
 
 La table est protégée par RLS et aucun rôle navigateur (`anon` ou
-`authenticated`) ne dispose d'une écriture directe. Les mutations futures
-passeront par un service serveur authentifié et autorisé ; les règles de
-publication et la lecture privée des besoins seront exposées par les lots
-API/UI ultérieurs, sans créer une seconde table ou un second statut effectif.
+`authenticated`) ne dispose d'une écriture directe. Les mutations passent par
+un service serveur authentifié et autorisé ; les routes communautaires
+réutilisent cette représentation sans créer une seconde table ou un second
+statut effectif.
 
 Pour le classement des sources de stockage (Git, navigateur, Supabase, cache/ISR, Storage), voir **uniquement** `../architecture/data-governance.md` : aucun second tableau n'est maintenu ici. Les familles de tables sont inventoriées dans cette source et dans les migrations, pas dans cet index.
+
+### CURRENT — préférences d'aide et suggestions (6A4)
+
+`public.community_helper_skills` est la représentation canonique des catégories
+d'aide choisies volontairement par un membre. Elle utilise exclusivement
+`COMMUNITY_HELP_CATEGORIES`, reste privée par utilisateur sous RLS et ne crée
+ni annuaire, ni badge, ni score. Les routes `GET` et `PUT`
+`/api/community/helper-skills` lisent et remplacent l'ensemble via la RPC
+serveur atomique ; l'identité vient uniquement de la session.
+
+`GET /api/community/needs/suggestions` réutilise la projection publique
+canonique des besoins. Il ne sélectionne que les besoins ouverts, non expirés
+et réellement publiés, correspondant aux catégories choisies. Le territoire
+préféré et ses voisins canoniques ordonnent les résultats sans exclure les
+autres territoires. Aucune notification n'est générée par ce lot.

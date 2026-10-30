@@ -10,6 +10,7 @@ import type { ActionContext, ActionContextSource } from "@/lib/actions/action-co
 import type { CommunitySubscriptionRow } from "@/lib/community/subscriptions";
 import type { ActionNeedRow } from "@/lib/community/action-needs";
 import type { ActionNeedOfferRow } from "@/lib/community/action-need-offers";
+import type { CommunityHelperSkillRow } from "@/lib/community/helper-skills";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -30,6 +31,7 @@ export type CommunityEventRow = {
 export type { CommunitySubscriptionRow };
 export type { ActionNeedRow };
 export type { ActionNeedOfferRow };
+export type { CommunityHelperSkillRow };
 export type ActionParticipantRow = {
   id: string;
   created_at: string;
