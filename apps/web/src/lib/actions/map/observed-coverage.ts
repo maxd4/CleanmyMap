@@ -35,17 +35,13 @@ function parseObservedSources(
   if (!sources.every((source) => source === "gps_tracking" || source === "gpx_import")) {
     return undefined;
   }
-  const uniqueSources = [
-    ...new Set(
-      sources as Extract<ActionGeometrySource, "gps_tracking" | "gpx_import">[],
-    ),
-  ];
-  if (
-    uniqueSources.length === 0 ||
-    (uniqueSources.length > 1 && uniqueSources.length !== traceCount)
-  ) {
+  if (sources.length === 0 || (sources.length !== 1 && sources.length !== traceCount)) {
     return undefined;
   }
+
+  const uniqueSources = [...new Set(
+    sources as Extract<ActionGeometrySource, "gps_tracking" | "gpx_import">[],
+  )];
   return uniqueSources;
 }
 

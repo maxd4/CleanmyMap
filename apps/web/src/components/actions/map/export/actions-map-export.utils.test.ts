@@ -156,6 +156,7 @@ describe("actions map export utils", () => {
         coordinates: [
           [[2.34, 48.85], [2.341, 48.851]],
           [[2.35, 48.86], [2.351, 48.861]],
+          [[2.36, 48.87], [2.361, 48.871]],
         ],
       }),
       preparationData: {
@@ -164,18 +165,21 @@ describe("actions map export utils", () => {
           coordinates: [
             [[2.34, 48.85], [2.341, 48.851]],
             [[2.35, 48.86], [2.351, 48.861]],
+            [[2.36, 48.87], [2.361, 48.871]],
           ],
-          traceCount: 2,
-          individualDistancesKm: [0.2, 0.3],
-          sources: ["gpx_import"],
+          traceCount: 3,
+          individualDistancesKm: [0.2, 0.3, 0.4],
+          sources: ["gpx_import", "gps_tracking", "gpx_import"],
           coverageDistanceKm: null,
           coverageVersion: "observed-traces-v1",
         },
       },
     });
 
+    const item = toActionMapItem(contract);
+    const mapGeometry = resolveActionMapGeometryViewModel(item);
     const geojson = JSON.parse(
-      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+      buildActionsMapGeoJsonString([item]),
     ) as {
       features: Array<{
         geometry: { type: string; coordinates: unknown } | null;
@@ -184,18 +188,32 @@ describe("actions map export utils", () => {
     };
 
     expect(geojson.features[0]?.geometry?.type).toBe("MultiLineString");
-    expect(geojson.features[0]?.geometry?.coordinates).toHaveLength(2);
+    expect(geojson.features[0]?.geometry?.coordinates).toHaveLength(3);
     expect(geojson.features[0]?.properties.geometry_label).toBe(
       "Couverture observée multi-traces",
     );
     expect(geojson.features[0]?.properties.geometry_reality).toBe("observed");
     expect(geojson.features[0]?.properties).toMatchObject({
       geometry_kind: "multiline",
-      geometry_source: "gpx_import",
-      geometry_sources: ["gpx_import"],
+      geometry_source: null,
+      geometry_sources: ["gpx_import", "gps_tracking"],
       historical_geometry_kind: "multiline",
       historical_geometry_source: "gpx_import",
-      observed_trace_count: 2,
+      observed_trace_count: 3,
+    });
+    expect(mapGeometry).toMatchObject({
+      kind: "multiline",
+      coverageTraceCount: 3,
+      multiLinePositions: [
+        [[48.85, 2.34], [48.851, 2.341]],
+        [[48.86, 2.35], [48.861, 2.351]],
+        [[48.87, 2.36], [48.871, 2.361]],
+      ],
+      presentation: {
+        label: "Couverture observée multi-traces",
+        reality: "observed",
+        strokeStyle: "solid",
+      },
     });
   });
 

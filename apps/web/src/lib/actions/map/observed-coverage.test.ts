@@ -9,6 +9,11 @@ const validLines = [
   [[2.35, 48.86], [2.351, 48.861]],
 ] as const;
 
+const threeValidLines = [
+  ...validLines,
+  [[2.36, 48.87], [2.361, 48.871]],
+] as const;
+
 function coverage(overrides: Record<string, unknown> = {}) {
   return {
     type: "MultiLineString",
@@ -76,11 +81,8 @@ describe("observed coverage resolver", () => {
     expect(
       parseObservedCoverageGeometry(
         coverage({
-          coordinates: [
-            ...validLines,
-            [[2.36, 48.87], [2.361, 48.871]],
-          ],
-          sources: ["gpx_import", "gps_tracking", "gpx_import"],
+          coordinates: threeValidLines,
+          sources: ["gpx_import", "gps_tracking"],
         }),
       )?.sources,
     ).toBeUndefined();
@@ -91,12 +93,33 @@ describe("observed coverage resolver", () => {
     ).toBeUndefined();
   });
 
-  it("deduplicates repeated source values from a persisted source list", () => {
+  it("validates per-line sources before deduplicating the public provenance", () => {
     expect(
       parseObservedCoverageGeometry(
-        coverage({ sources: ["gpx_import", "gpx_import"] }),
+        coverage({
+          coordinates: threeValidLines,
+          sources: ["gpx_import", "gps_tracking", "gpx_import"],
+        }),
       ),
-    ).toMatchObject({ sources: ["gpx_import"] });
+    ).toMatchObject({
+      coordinates: threeValidLines,
+      traceCount: 3,
+      sources: ["gpx_import", "gps_tracking"],
+    });
+  });
+
+  it("deduplicates three repeated GPX sources without losing the trace count", () => {
+    expect(
+      parseObservedCoverageGeometry(
+        coverage({
+          coordinates: threeValidLines,
+          sources: ["gpx_import", "gpx_import", "gpx_import"],
+        }),
+      ),
+    ).toMatchObject({
+      traceCount: 3,
+      sources: ["gpx_import"],
+    });
   });
 
   it("prefers valid preparation coverage over a primary GeoJSON fallback", () => {
