@@ -259,11 +259,21 @@ Pour `citizen` et `company`, `U_D = U_M = A + 0,50 E + 0,50 R`. Pour `school`,
 `U_D = A + 0,45 E` et `U_M = A`. Une action scolaire avec des retraités est
 exclue de cette référence faute d'hypothèse documentée ; avec zéro adulte,
 son ratio mégots est `NA`, tandis que son ratio déchets peut rester calculable.
-Les personnes physiques et les unités opérationnelles estimées restent deux
-mesures distinctes. Les zéros déclarés sont valides, les valeurs absentes sont
-exclues métrique par métrique et le nombre de sources est exposé séparément.
-L'interface affiche `Référence insuffisante` sous deux sources pour la métrique
-concernée. Cette règle est descriptive, non calibrée et ne modifie ni le score
+Les unités opérationnelles sont des dénominateurs positifs qui peuvent être
+fractionnaires (`0,45`, `0,50` ou `1`) ; elles ne remplacent jamais le nombre
+réel de personnes. Les personnes physiques et les unités opérationnelles
+estimées restent deux mesures distinctes. La RPC ne retient que les actions
+approuvées, visibles et publiques, terminées et datées ; les actions privées
+ou à visibilité non publique ne sont jamais une source de référence publique.
+Les zéros déclarés sont valides, y compris une moyenne de référence nulle.
+Les valeurs absentes sont exclues métrique par métrique et chaque moyenne
+exige au moins deux actions sources indépendantes. Avec une seule source, la
+moyenne reste `NA` même si la mesure est valide ; avec deux sources nulles,
+elle vaut zéro. Lorsque la référence vaut zéro, l'interface conserve les
+valeurs mais n'affiche aucun pourcentage de variation, car la division serait
+indéfinie. La petite taille minimale de deux sources limite fortement la
+portée descriptive : ce seuil ne constitue ni une calibration scientifique ni
+une preuve de représentativité. Cette règle ne modifie ni le score
 cartographique, ni la collecte brute, ni la RPC globale historique
 `action_collection_reference_averages_v1()`.
 

@@ -19,6 +19,21 @@ describe("action collection reference averages", () => {
     });
   });
 
+  it("keeps fractional contextual units positive and context-specific", () => {
+    expect(deriveContextualCollectionUnits({
+      actionContext: "citizen",
+      childrenCount: 1,
+      adultCount: 0,
+      retiredCount: 0,
+    })).toEqual({ wasteUnits: 0.5, buttsUnits: 0.5 });
+    expect(deriveContextualCollectionUnits({
+      actionContext: "school",
+      childrenCount: 1,
+      adultCount: 0,
+      retiredCount: 0,
+    })).toEqual({ wasteUnits: 0.45, buttsUnits: null });
+  });
+
   it("does not invent a school butt denominator when there are no adults or when retirees are present", () => {
     expect(deriveContextualCollectionUnits({ actionContext: "school", childrenCount: 25, adultCount: 0, retiredCount: 0 })).toEqual({ wasteUnits: 11.25, buttsUnits: null });
     expect(deriveContextualCollectionUnits({ actionContext: "school", childrenCount: 25, adultCount: 3, retiredCount: 1 })).toEqual({ wasteUnits: null, buttsUnits: null });

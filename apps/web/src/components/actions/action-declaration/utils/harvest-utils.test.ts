@@ -54,6 +54,17 @@ describe("deriveWasteComparison", () => {
     });
   });
 
+  it.each([0.45, 0.5, 1])("accepts a finite fractional or unit denominator (%s)", (operationalUnits) => {
+    expect(
+      deriveWasteComparison({
+        wasteKg: operationalUnits,
+        volunteersCount: 12,
+        operationalUnits,
+        ...reference,
+      }),
+    ).toMatchObject({ currentPerVolunteer: 1, benchmarkPerVolunteer: 8, deltaPercent: -87.5 });
+  });
+
   it("keeps an explicit zero as a valid comparison value", () => {
     expect(
       deriveWasteComparison({ wasteKg: 0, volunteersCount: 2, ...reference }),
@@ -64,12 +75,35 @@ describe("deriveWasteComparison", () => {
     });
   });
 
+  it("keeps a zero contextual reference without inventing a percentage", () => {
+    expect(
+      deriveWasteComparison({
+        wasteKg: 3,
+        volunteersCount: 12,
+        operationalUnits: 0.5,
+        benchmarkPerVolunteer: 0,
+        benchmarkSourceCount: 2,
+      }),
+    ).toEqual({
+      currentPerVolunteer: 6,
+      benchmarkPerVolunteer: 0,
+      deltaPercent: null,
+      tone: "slate",
+    });
+  });
+
   it("returns unavailable values for missing, invalid, or empty references", () => {
     expect(
       deriveWasteComparison({ wasteKg: null, volunteersCount: 1, ...reference }),
     ).toMatchObject({ currentPerVolunteer: null, deltaPercent: null, tone: "slate" });
     expect(
       deriveWasteComparison({ wasteKg: 8, volunteersCount: 0, ...reference }),
+    ).toMatchObject({ currentPerVolunteer: null, deltaPercent: null, tone: "slate" });
+    expect(
+      deriveWasteComparison({ wasteKg: 8, volunteersCount: 10, operationalUnits: 0, ...reference }),
+    ).toMatchObject({ currentPerVolunteer: null, deltaPercent: null, tone: "slate" });
+    expect(
+      deriveWasteComparison({ wasteKg: 8, volunteersCount: 10, operationalUnits: null, ...reference }),
     ).toMatchObject({ currentPerVolunteer: null, deltaPercent: null, tone: "slate" });
     expect(
       deriveWasteComparison({ wasteKg: 8, volunteersCount: 1, benchmarkPerVolunteer: null, benchmarkSourceCount: 0 }),

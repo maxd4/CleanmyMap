@@ -177,12 +177,44 @@ function ComparisonVisual({
   if (
     currentPerVolunteer === null ||
     benchmarkPerVolunteer === null ||
-    deltaPercent === null ||
     !Number.isFinite(currentPerVolunteer) ||
     !Number.isFinite(benchmarkPerVolunteer) ||
-    !Number.isFinite(deltaPercent) ||
     currentPerVolunteer < 0 ||
-    benchmarkPerVolunteer <= 0
+    benchmarkPerVolunteer < 0
+  ) {
+    return null;
+  }
+
+  if (benchmarkPerVolunteer === 0) {
+    if (deltaPercent !== null) return null;
+    return (
+      <div
+        className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
+        data-comparison-state="zero-reference"
+        data-testid={testId}
+        role="status"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-slate-700">{title}</p>
+            <p className="mt-0.5 text-xs text-slate-400">{contextLabel}</p>
+          </div>
+          <span className="text-xs font-semibold text-slate-600">Moyenne nulle</span>
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+          <span>{currentLabel}</span>
+          <span>{benchmarkLabel}</span>
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          Variation en pourcentage non calculable avec une moyenne de référence nulle.
+        </p>
+      </div>
+    );
+  }
+
+  if (
+    deltaPercent === null ||
+    !Number.isFinite(deltaPercent)
   ) {
     return null;
   }

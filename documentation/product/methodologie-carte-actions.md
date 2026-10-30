@@ -263,10 +263,20 @@ sont jamais mélangés. `citizen` et `company` utilisent `A + 0,50 E + 0,50 R`;
 `school` utilise `U_D = A + 0,45 E` et `U_M = A`, sans coefficient automatique
 pour les retraités. Les zéros valides sont conservés, les `NULL` sont exclus
 indépendamment pour chaque métrique, les comptes de sources sont séparés et
-`Référence insuffisante` est affiché sous deux sources. Le libellé d'unité est
+`Référence insuffisante` est affiché sous deux sources. Les unités positives
+peuvent être fractionnaires (`0,45`, `0,50`, `1`) et ne sont jamais remplacées
+par `volunteersCount` lorsque la composition contextuelle est inconnue. La
+population publique exclut les actions privées ou non visibles ; une action
+en préparation ne peut donc pas alimenter cette moyenne. Chaque métrique
+exige au moins deux actions sources indépendantes : une source seule reste
+indisponible, tandis que deux zéros valides produisent une référence nulle.
+Avec une référence nulle, la valeur courante et la référence restent affichées
+mais aucun pourcentage ni sens de flèche n'est calculé. Le libellé d'unité est
 `Moyenne par unité opérationnelle estimée`; il ne s'agit ni de kg/personne ni
-d'un rendement horaire. Cette lecture descriptive ne modifie ni le score
-cartographique, ni les mesures brutes, ni la RPC globale historique.
+d'un rendement horaire. Ce minimum réduit le risque de surinterpréter un
+petit échantillon et ne constitue pas une calibration scientifique. Cette
+lecture descriptive ne modifie ni le score cartographique, ni les mesures
+brutes, ni la RPC globale historique.
 
 Le score doit être présenté comme :
 

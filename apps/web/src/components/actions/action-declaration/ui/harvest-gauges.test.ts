@@ -89,6 +89,19 @@ describe("WasteComparisonVisual", () => {
     expect(renderComparison(8, 0, Number.POSITIVE_INFINITY)).toBe("");
     expect(renderComparison(Number.NaN, 8, 0)).toBe("");
   });
+
+  it("renders a descriptive zero-reference state without a percentage or trend", () => {
+    const markup = renderComparison(6, 0, null);
+
+    expect(markup).toContain('data-comparison-state="zero-reference"');
+    expect(markup).toContain("Moyenne nulle");
+    expect(markup).toContain("6,0 kg / unité opérationnelle");
+    expect(markup).toContain("moyenne : 0,00 kg / unité");
+    expect(markup).toContain("12 action(s)");
+    expect(markup).toContain("Variation en pourcentage non calculable");
+    expect(markup).not.toContain("data-trend=");
+    expect(markup).not.toContain("%");
+  });
 });
 
 describe("ButtsComparisonVisual", () => {

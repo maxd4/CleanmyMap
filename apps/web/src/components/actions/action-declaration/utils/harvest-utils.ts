@@ -54,24 +54,29 @@ export function deriveWasteComparison(params: {
     params.wasteKg !== null &&
     Number.isFinite(params.wasteKg) &&
     params.wasteKg >= 0;
-  const denominator = params.operationalUnits ?? params.volunteersCount ?? null;
-  const hasValidVolunteers =
+  const denominator =
+    params.operationalUnits !== undefined
+      ? params.operationalUnits
+      : params.volunteersCount ?? null;
+  const hasValidDenominator =
     denominator !== null &&
     Number.isFinite(denominator) &&
-    denominator >= 1;
+    denominator > 0;
   const hasValidBenchmark =
     params.benchmarkSourceCount >= 2 &&
     params.benchmarkPerVolunteer !== null &&
     Number.isFinite(params.benchmarkPerVolunteer) &&
-    params.benchmarkPerVolunteer > 0;
+    params.benchmarkPerVolunteer >= 0;
 
   const currentPerVolunteer =
-    hasValidWaste && hasValidVolunteers
+    hasValidWaste && hasValidDenominator
       ? params.wasteKg! / denominator!
       : null;
   const benchmarkPerVolunteer = hasValidBenchmark ? params.benchmarkPerVolunteer : null;
   const deltaPercent =
-    currentPerVolunteer !== null && benchmarkPerVolunteer !== null
+    currentPerVolunteer !== null &&
+    benchmarkPerVolunteer !== null &&
+    benchmarkPerVolunteer > 0
       ? ((currentPerVolunteer - benchmarkPerVolunteer) / benchmarkPerVolunteer) * 100
       : null;
 

@@ -41,8 +41,9 @@ export function deriveContextualCollectionUnits(params: {
   const retired = params.retiredCount as number;
   if (params.actionContext === "school") {
     if (retired !== 0) return { wasteUnits: null, buttsUnits: null };
+    const wasteUnits = adults + 0.45 * children;
     return {
-      wasteUnits: adults + 0.45 * children > 0 ? adults + 0.45 * children : null,
+      wasteUnits: wasteUnits > 0 ? wasteUnits : null,
       buttsUnits: adults > 0 ? adults : null,
     };
   }
