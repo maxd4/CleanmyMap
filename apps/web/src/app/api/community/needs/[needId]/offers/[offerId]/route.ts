@@ -35,6 +35,7 @@ export async function PATCH(
   try {
     const result = await transitionActionNeedOffer(
       getSupabaseServerClient(true),
+      needId,
       offerId,
       access.userId,
       parsed.data.operation,

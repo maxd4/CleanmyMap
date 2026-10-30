@@ -1,6 +1,6 @@
 begin;
 
-select plan(44);
+select plan(51);
 
 select has_table('public', 'action_need_offers', 'action need offers table exists');
 select ok(has_column('public.action_need_offers', 'need_id'), 'need foreign key column exists');
@@ -18,8 +18,9 @@ select ok(not has_table_privilege('service_role', 'public.action_need_offers', '
 select ok(not has_table_privilege('authenticated', 'public.action_need_offers', 'SELECT'), 'authenticated cannot read offers directly');
 select ok(not has_table_privilege('authenticated', 'public.action_need_offers', 'INSERT'), 'authenticated cannot insert offers directly');
 select ok(has_function_privilege('service_role', 'public.create_action_need_offer(uuid, text, text)', 'EXECUTE'), 'service role can execute offer creation');
-select ok(has_function_privilege('service_role', 'public.transition_action_need_offer(uuid, text, text)', 'EXECUTE'), 'service role can execute offer transitions');
-select ok(not has_function_privilege('authenticated', 'public.transition_action_need_offer(uuid, text, text)', 'EXECUTE'), 'authenticated cannot execute offer transitions');
+select ok(has_function_privilege('service_role', 'public.transition_action_need_offer(uuid, uuid, text, text)', 'EXECUTE'), 'service role can execute offer transitions');
+select ok(not has_function_privilege('authenticated', 'public.transition_action_need_offer(uuid, uuid, text, text)', 'EXECUTE'), 'authenticated cannot execute offer transitions');
+select ok(to_regprocedure('public.transition_action_need_offer(uuid, text, text)') is null, 'the legacy transition signature is not executable');
 select ok(
   exists (
     select 1 from pg_constraint
@@ -87,6 +88,29 @@ select throws_ok(
   'the active partial unique index rejects a duplicate member offer'
 );
 
+select lives_ok(
+  $$insert into public.actions (
+      id, created_by_clerk_id, action_date, location_label, status,
+      action_phase, published_at, moderation_visibility, review_state,
+      access_mode, event_start_time
+    ) values (
+      'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'offer-manager', '2099-10-31',
+      'Lyon', 'pending', 'pre_action', now(), 'visible', 'not_required',
+      'public', '11:00:00'
+    )$$,
+  'second fixture action exists for mismatch checks'
+);
+select lives_ok(
+  $$insert into public.action_needs (
+      id, action_id, created_by_clerk_id, category, title, description
+    ) values (
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      'offer-manager', 'materiel', 'Gilets', 'Prévoir des gilets.'
+    )$$,
+  'second fixture need exists for mismatch checks'
+);
+
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","sub":"helper-1"}', true);
@@ -104,8 +128,31 @@ select throws_ok(
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"offer-manager"}', true);
+select throws_ok(
+  $$select public.transition_action_need_offer(
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      (select id from public.action_need_offers where offered_by_clerk_id = 'helper-1'),
+      'offer-manager', 'accept'
+    )$$,
+  'P0002', null,
+  'a mismatched need rejects acceptance before mutation'
+);
+select is(
+  (select status from public.action_need_offers where offered_by_clerk_id = 'helper-1'),
+  'pending',
+  'mismatched acceptance leaves the offer pending'
+);
+select is(
+  (select count(*)::integer from public.app_notifications
+   where user_id = 'helper-1'
+     and type = 'community'
+     and payload ->> 'kind' = 'action_need_offer_accepted'),
+  0,
+  'mismatched acceptance creates no notification'
+);
 select lives_ok(
   $$select public.transition_action_need_offer(
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       (select id from public.action_need_offers where offered_by_clerk_id = 'helper-1'),
       'offer-manager', 'accept'
     )$$,
@@ -127,6 +174,7 @@ select is(
 );
 select lives_ok(
   $$select public.transition_action_need_offer(
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       (select id from public.action_need_offers where offered_by_clerk_id = 'helper-1'),
       'offer-manager', 'accept'
     )$$,
@@ -157,8 +205,23 @@ select lives_ok(
     )$$,
   'a second member can propose help'
 );
+select throws_ok(
+  $$select public.transition_action_need_offer(
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      (select id from public.action_need_offers where offered_by_clerk_id = 'helper-2'),
+      'offer-manager', 'decline'
+    )$$,
+  'P0002', null,
+  'a mismatched need rejects decline before mutation'
+);
+select is(
+  (select status from public.action_need_offers where offered_by_clerk_id = 'helper-2'),
+  'pending',
+  'mismatched decline leaves the offer pending'
+);
 select lives_ok(
   $$select public.transition_action_need_offer(
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       (select id from public.action_need_offers where offered_by_clerk_id = 'helper-2'),
       'offer-manager', 'decline'
     )$$,
@@ -175,8 +238,23 @@ select lives_ok(
     )$$,
   'a third member can propose help'
 );
+select throws_ok(
+  $$select public.transition_action_need_offer(
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      (select id from public.action_need_offers where offered_by_clerk_id = 'helper-3'),
+      'helper-3', 'withdraw'
+    )$$,
+  'P0002', null,
+  'a mismatched need rejects withdrawal before mutation'
+);
+select is(
+  (select status from public.action_need_offers where offered_by_clerk_id = 'helper-3'),
+  'pending',
+  'mismatched withdrawal leaves the offer pending'
+);
 select lives_ok(
   $$select public.transition_action_need_offer(
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       (select id from public.action_need_offers where offered_by_clerk_id = 'helper-3'),
       'helper-3', 'withdraw'
     )$$,
@@ -184,6 +262,7 @@ select lives_ok(
 );
 select lives_ok(
   $$select public.transition_action_need_offer(
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       (select id from public.action_need_offers where offered_by_clerk_id = 'helper-3'),
       'helper-3', 'withdraw'
     )$$,
@@ -206,6 +285,7 @@ update public.action_needs
  where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 select throws_ok(
   $$select public.transition_action_need_offer(
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       (select id from public.action_need_offers where offered_by_clerk_id = 'helper-4'),
       'offer-manager', 'accept'
     )$$,

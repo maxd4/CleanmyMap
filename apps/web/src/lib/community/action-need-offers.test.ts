@@ -4,6 +4,7 @@ import {
   ACTION_NEED_OFFER_SELECT_FIELDS,
   getActionNeedOfferErrorCode,
   listActionNeedOffers,
+  transitionActionNeedOffer,
   toActionNeedOfferItem,
 } from "./action-need-offers";
 
@@ -52,5 +53,27 @@ describe("action need offers contract", () => {
   it("preserves provider error codes for route conflict mapping", () => {
     expect(getActionNeedOfferErrorCode({ code: "23505" })).toBe("23505");
     expect(getActionNeedOfferErrorCode(new Error("conflict"))).toBeNull();
+  });
+
+  it("passes the expected need identity to the transition RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: { status: "accepted", offer: { ...row, status: "accepted" }, notificationId: null },
+      error: null,
+    });
+
+    await transitionActionNeedOffer(
+      { rpc } as never,
+      row.need_id,
+      row.id,
+      "manager-1",
+      "accept",
+    );
+
+    expect(rpc).toHaveBeenCalledWith("transition_action_need_offer", {
+      p_need_id: row.need_id,
+      p_offer_id: row.id,
+      p_actor_clerk_id: "manager-1",
+      p_operation: "accept",
+    });
   });
 });

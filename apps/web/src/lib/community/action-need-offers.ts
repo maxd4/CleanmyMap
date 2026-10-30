@@ -105,11 +105,13 @@ export async function createActionNeedOffer(
 
 export async function transitionActionNeedOffer(
   supabase: SupabaseClient,
+  needId: string,
   offerId: string,
   actorClerkId: string,
   operation: ActionNeedOfferOperation,
 ): Promise<ActionNeedOfferMutationResult> {
   const result = await supabase.rpc("transition_action_need_offer", {
+    p_need_id: needId,
     p_offer_id: offerId,
     p_actor_clerk_id: actorClerkId,
     p_operation: operation,
