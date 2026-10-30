@@ -36,6 +36,7 @@ type AdminOperationAuditDbRow = {
   operation_type: AdminOperationAuditEntry["operationType"];
   outcome: AdminOperationAuditEntry["outcome"];
   target_id: string | null;
+  target_user_id: string | null;
   details: Record<string, unknown>;
 };
 
@@ -53,7 +54,25 @@ export type AdminOperationAuditEntry = {
     | "spogomi_team_name_rename";
   outcome: "success" | "error";
   targetId?: string;
+  targetUserId?: string;
   details: Record<string, unknown>;
+};
+
+export type AdminOperationAuditFilters = {
+  actorUserId?: string | null;
+  operationType?: AdminOperationAuditEntry["operationType"] | null;
+  operation?: string | null;
+  outcome?: AdminOperationAuditEntry["outcome"] | null;
+  targetId?: string | null;
+  from?: string | null;
+  to?: string | null;
+  cursor?: string | null;
+};
+
+export type AdminOperationAuditPage = {
+  items: AdminOperationAuditEntry[];
+  hasMore: boolean;
+  nextCursor: string | null;
 };
 
 type AuditStore = LocalRecordStorePayload<AdminOperationAuditEntry>;
@@ -104,6 +123,7 @@ function parseAdminOperationAuditDbRow(value: unknown): AdminOperationAuditDbRow
     !isAuditOperationType(value.operation_type) ||
     !isAuditOutcome(value.outcome) ||
     (value.target_id !== null && value.target_id !== undefined && typeof value.target_id !== "string") ||
+    (value.target_user_id !== null && value.target_user_id !== undefined && typeof value.target_user_id !== "string") ||
     !isRecord(value.details)
   ) return null;
   return {
@@ -113,6 +133,7 @@ function parseAdminOperationAuditDbRow(value: unknown): AdminOperationAuditDbRow
     operation_type: value.operation_type,
     outcome: value.outcome,
     target_id: value.target_id === undefined ? null : value.target_id,
+    target_user_id: value.target_user_id === undefined ? null : value.target_user_id,
     details: value.details,
   };
 }
@@ -137,6 +158,7 @@ function normalizeAuditEntry(
     !isAuditOperationType(operationType) ||
     !isAuditOutcome(outcome) ||
     (record.targetId !== undefined && typeof record.targetId !== "string") ||
+    (record.targetUserId !== undefined && typeof record.targetUserId !== "string") ||
     !isRecord(record.details)
   ) {
     return null;
@@ -226,8 +248,72 @@ async function normalizeSupabaseAuditRows(
     operationType: row.operation_type,
     outcome: row.outcome,
     targetId: row.target_id ?? undefined,
+    targetUserId: row.target_user_id ?? undefined,
     details: row.details,
   }));
+}
+
+function encodeAuditCursor(value: { at: string; operationId: string }): string {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+function parseAuditCursor(value: string | null | undefined): { at: string; operationId: string } | null {
+  if (!value || value.length > 512) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Record<string, unknown>;
+    return typeof parsed.at === "string" && Number.isFinite(Date.parse(parsed.at)) && typeof parsed.operationId === "string" && parsed.operationId.length > 0
+      ? { at: new Date(parsed.at).toISOString(), operationId: parsed.operationId }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function matchesAuditFilters(
+  entry: AdminOperationAuditEntry,
+  filters: AdminOperationAuditFilters,
+): boolean {
+  const operation = typeof entry.details.operation === "string" ? entry.details.operation : null;
+  return (!filters.actorUserId || entry.actorUserId === filters.actorUserId.trim()) &&
+    (!filters.operationType || entry.operationType === filters.operationType) &&
+    (!filters.operation || operation === filters.operation.trim()) &&
+    (!filters.outcome || entry.outcome === filters.outcome) &&
+    (!filters.targetId || entry.targetId === filters.targetId.trim()) &&
+    (!filters.from || Date.parse(entry.at) >= Date.parse(filters.from)) &&
+    (!filters.to || Date.parse(entry.at) <= Date.parse(filters.to));
+}
+
+export function projectAdminOperationAuditEntry(
+  entry: AdminOperationAuditEntry,
+): AdminOperationAuditEntry {
+  const allowlistedKeys = new Set([
+    "priority",
+    "status",
+    "creatorState",
+    "qualificationStatus",
+    "trackingStatus",
+    "publicationStatus",
+    "removed",
+    "removedAt",
+  ]);
+  const projectValue = (value: unknown): Record<string, unknown> | undefined => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+    const projected = Object.fromEntries(
+      Object.entries(value).filter(([key, nested]) => allowlistedKeys.has(key) && ["string", "boolean", "number"].includes(typeof nested)),
+    );
+    return Object.keys(projected).length > 0 ? projected : undefined;
+  };
+  const details = entry.details;
+  return {
+    ...entry,
+    details: {
+      ...(typeof details.operation === "string" ? { operation: details.operation } : {}),
+      ...(typeof details.reason === "string" ? { reason: details.reason } : {}),
+      ...(typeof details.partialMutation === "boolean" ? { partialMutation: details.partialMutation } : {}),
+      ...(projectValue(details.previousValue) ? { previousValue: projectValue(details.previousValue) } : {}),
+      ...(projectValue(details.newValue) ? { newValue: projectValue(details.newValue) } : {}),
+    },
+  };
 }
 
 export async function appendAdminOperationAudit(
@@ -257,6 +343,7 @@ export async function appendAdminOperationAudit(
         operation_type: normalizedEntry.operationType,
         outcome: normalizedEntry.outcome,
         target_id: normalizedEntry.targetId ?? null,
+        target_user_id: normalizedEntry.targetUserId ?? null,
         details: normalizedEntry.details,
       });
 
@@ -281,10 +368,22 @@ export async function appendAdminOperationAudit(
 
 export async function listAdminOperationAudit(
   limit = 100,
-  targetId?: string | null,
+  targetIdOrFilters?: string | null | AdminOperationAuditFilters,
 ): Promise<AdminOperationAuditEntry[]> {
+  const page = await listAdminOperationAuditPage(limit, targetIdOrFilters && typeof targetIdOrFilters === "object"
+    ? targetIdOrFilters
+    : { targetId: targetIdOrFilters });
+  return page.items;
+}
+
+export async function listAdminOperationAuditPage(
+  limit = 100,
+  filters: AdminOperationAuditFilters = {},
+): Promise<AdminOperationAuditPage> {
   assertPersistenceAvailable("admin_operations_audit");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+  const cursor = parseAuditCursor(filters.cursor);
+  if (filters.cursor && !cursor) throw new Error("Invalid admin audit cursor.");
 
   if (canUseSupabaseServerPersistence()) {
     try {
@@ -292,19 +391,35 @@ export async function listAdminOperationAudit(
       let query = supabase
         .from("admin_operations_audit")
         .select(
-          "operation_id, at, actor_user_id, operation_type, outcome, target_id, details",
+          "operation_id, at, actor_user_id, operation_type, outcome, target_id, target_user_id, details",
         );
 
-      if (targetId && targetId.trim().length > 0) {
-        query = query.eq("target_id", targetId.trim());
+      if (filters.actorUserId?.trim()) query = query.eq("actor_user_id", filters.actorUserId.trim());
+      if (filters.operationType) query = query.eq("operation_type", filters.operationType);
+      if (filters.operation) query = query.eq("details->>operation", filters.operation.trim());
+      if (filters.outcome) query = query.eq("outcome", filters.outcome);
+      if (filters.targetId?.trim()) query = query.eq("target_id", filters.targetId.trim());
+      if (filters.from) query = query.gte("at", filters.from);
+      if (filters.to) query = query.lte("at", filters.to);
+      if (cursor) {
+        query = query.or(`at.lt.${cursor.at},and(at.eq.${cursor.at},operation_id.lt.${cursor.operationId})`);
       }
 
       const result = await query
         .order("at", { ascending: false })
-        .limit(normalizedLimit);
+        .order("operation_id", { ascending: false })
+        .limit(normalizedLimit + 1);
 
       if (!result.error) {
-        return await normalizeSupabaseAuditRows(result.data ?? []);
+        const rows = await normalizeSupabaseAuditRows(result.data ?? []);
+        const hasMore = rows.length > normalizedLimit;
+        const items = rows.slice(0, normalizedLimit);
+        const last = items.at(-1);
+        return {
+          items,
+          hasMore,
+          nextCursor: hasMore && last ? encodeAuditCursor({ at: last.at, operationId: last.operationId }) : null,
+        };
       }
 
       if (!allowLocalFileStoreFallback()) {
@@ -318,14 +433,19 @@ export async function listAdminOperationAudit(
   }
 
   const store = await readStore();
-  const records = targetId
-    ? store.records.filter(
-        (record) => record.targetId?.trim() === targetId.trim(),
-      )
-    : store.records;
-
-  return records.slice(0, normalizedLimit).map((record) => ({
+  const records = store.records
+    .filter((record) => matchesAuditFilters(record, filters))
+    .filter((record) => !cursor || record.at < cursor.at || (record.at === cursor.at && record.operationId < cursor.operationId))
+    .sort((left, right) => right.at.localeCompare(left.at) || right.operationId.localeCompare(left.operationId));
+  const hasMore = records.length > normalizedLimit;
+  const items = records.slice(0, normalizedLimit).map((record) => ({
     ...record,
     actorLabel: record.actorLabel ?? buildActorLabel(undefined, record.actorUserId),
   }));
+  const last = items.at(-1);
+  return {
+    items,
+    hasMore,
+    nextCursor: hasMore && last ? encodeAuditCursor({ at: last.at, operationId: last.operationId }) : null,
+  };
 }

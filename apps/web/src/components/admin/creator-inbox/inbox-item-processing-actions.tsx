@@ -1,4 +1,5 @@
 import type { CreatorInboxItem, CreatorInboxSource } from "@/lib/community/creator-inbox";
+import { useState } from "react";
 import type { CreatorInboxCopy } from "./creator-inbox-copy";
 import type { InboxActionParams } from "./inbox-item-card.types";
 
@@ -17,6 +18,7 @@ export function InboxItemProcessingActions({
   actionBusy,
   onApplyInboxAction,
 }: InboxItemProcessingActionsProps) {
+  const [priority, setPriority] = useState<"normal" | "high" | "critical">(item.priority);
   const apply = (action: InboxActionParams["action"]) => {
     onApplyInboxAction({
       source: item.source,
@@ -28,6 +30,39 @@ export function InboxItemProcessingActions({
 
   return (
     <>
+      {item.source === "feedback" ? (
+        <>
+          <label className="sr-only" htmlFor={`priority-${item.id}`}>Priorité du feedback</label>
+          <select
+            id={`priority-${item.id}`}
+            value={priority}
+            onChange={(event) => setPriority(event.target.value as typeof priority)}
+            className="rounded-lg border border-amber-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-amber-800"
+          >
+            <option value="critical">Critique</option>
+            <option value="high">Haute</option>
+            <option value="normal">Normale</option>
+          </select>
+          <button
+            type="button"
+            disabled={
+              priority === item.priority ||
+              actionBusy(item.source, item.sourceRecordId, "change_priority") ||
+              actionReason.trim().length < 5
+            }
+            onClick={() => onApplyInboxAction({
+              source: item.source,
+              itemId: item.sourceRecordId,
+              action: "change_priority",
+              reason: actionReason,
+              priority,
+            })}
+            className="rounded-lg border border-amber-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-amber-800 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {actionBusy(item.source, item.sourceRecordId, "change_priority") ? "Enregistrement…" : "Changer la priorité"}
+          </button>
+        </>
+      ) : null}
       <button
         type="button"
         disabled={

@@ -5,7 +5,8 @@ import { z } from "zod";
 const baseActionSchema = z.object({
   source: z.enum(["feedback", "promotion", "partner"]),
   itemId: z.string().trim().min(1),
-  action: z.enum(["mark_treated", "responded", "archive", "delete", "qualify", "update_tracking"]),
+  action: z.enum(["mark_treated", "responded", "archive", "delete", "change_priority", "qualify", "update_tracking"]),
+  priority: z.enum(["normal", "high", "critical"]).optional(),
   reason: z.string().trim().max(500).optional(),
   decision: z.enum(["pending", "needs_info", "accepted", "duplicate", "rejected"]).optional(),
   duplicateFeedbackId: z.string().trim().min(1).max(128).optional().nullable(),
@@ -23,6 +24,14 @@ export const actionSchema = baseActionSchema.superRefine((value, context) => {
 
   if (value.action === "update_tracking") {
     validateTrackingAction(value, context);
+    return;
+  }
+
+  if (value.action === "change_priority") {
+    addIssueIf(context, value.source !== "feedback", "source", "Priority changes are limited to feedback.");
+    addIssueIf(context, !value.priority, "priority", "Feedback priority is required.");
+    addIssueIf(context, !value.reason || value.reason.length < 5, "reason", "A reason of at least 5 characters is required.");
+    addIssueIf(context, Boolean(value.decision || value.duplicateFeedbackId), "decision", "Qualification fields are not valid for priority changes.");
     return;
   }
 
@@ -85,7 +94,7 @@ export type CreatorInboxMutationSource = Exclude<
 const AUDIT_OPERATION = "creator_inbox_update";
 
 type CreatorInboxAuditDetails = {
-  operation: typeof AUDIT_OPERATION;
+  operation: string;
   reason: string;
   targetUserId?: string;
   previousValue: Record<string, unknown>;
@@ -126,6 +135,7 @@ export function buildSnapshot(
 }
 
 function buildAuditDetails(params: {
+  operation?: string;
   reason: string;
   targetUserId?: string;
   previousValue: Record<string, unknown>;
@@ -134,7 +144,7 @@ function buildAuditDetails(params: {
   partialMutation?: boolean;
 }): CreatorInboxAuditDetails {
   return {
-    operation: AUDIT_OPERATION,
+    operation: params.operation ?? AUDIT_OPERATION,
     reason: params.reason,
     ...(params.targetUserId ? { targetUserId: params.targetUserId } : {}),
     previousValue: params.previousValue,
@@ -166,6 +176,7 @@ type CreatorInboxAuditParams = {
   outcome: "success" | "error";
   targetId: string;
   reason: string;
+  operation?: string;
   targetUserId?: string;
   previousValue: Record<string, unknown>;
   newValue: Record<string, unknown>;
@@ -183,6 +194,7 @@ async function appendCreatorInboxAudit(
     outcome,
     targetId,
     reason,
+    operation,
     targetUserId,
     previousValue,
     newValue,
@@ -197,6 +209,7 @@ async function appendCreatorInboxAudit(
     targetId,
     details: buildAuditDetails({
       reason,
+      operation,
       targetUserId,
       previousValue,
       newValue,
@@ -220,6 +233,7 @@ export type CreatorInboxHandlerParams = CreatorInboxMutationContext & {
   itemId: string;
   action: CreatorInboxAction["action"];
   reason: string;
+  priority?: "normal" | "high" | "critical";
 };
 
 export function createCreatorInboxAudit(

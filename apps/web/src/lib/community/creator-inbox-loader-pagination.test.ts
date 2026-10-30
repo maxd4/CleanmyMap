@@ -52,7 +52,7 @@ function listLikeCanonicalSource<T extends SourceRecord>(
     .slice(0, limit);
 }
 
-function feedback(id: string, createdAt: string) {
+function feedback(id: string, createdAt: string, priority: "normal" | "high" | "critical" = "normal") {
   return {
     id,
     createdAt,
@@ -65,6 +65,10 @@ function feedback(id: string, createdAt: string) {
     description: "Description suffisamment longue.",
     pagePath: "/feedback",
     source: "feedback_section" as const,
+    priority,
+    removedAt: null,
+    removedByUserId: null,
+    removedReason: null,
     status: "open" as const,
     creatorState: "new" as const,
   };
@@ -102,6 +106,34 @@ describe("creator inbox server pagination", () => {
     getClerkServiceMock.mockReturnValue({
       resolveUsers: async () => new Map(),
     });
+  });
+
+  it("keeps feedback-only pages ordered by persisted priority across cursors", async () => {
+    const records = [
+      feedback("normal", "2026-08-27T09:00:00.000Z", "normal"),
+      feedback("critical", "2026-08-27T12:00:00.000Z", "critical"),
+      feedback("high", "2026-08-27T10:00:00.000Z", "high"),
+    ];
+    listBugReportsMock.mockImplementation(
+      async (limit: number, cursor: { priority: "normal" | "high" | "critical"; createdAt: string; id: string } | null, options?: { order?: string }) => {
+        expect(options).toMatchObject({ activeOnly: true, order: "priority" });
+        const rank = { critical: 0, high: 1, normal: 2 } as const;
+        return records
+          .filter((record) => !cursor || rank[record.priority] > rank[cursor.priority] || (record.priority === cursor.priority && (record.createdAt > cursor.createdAt || (record.createdAt === cursor.createdAt && record.id > cursor.id))))
+          .sort((left, right) => rank[left.priority] - rank[right.priority] || left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))
+          .slice(0, limit);
+      },
+    );
+
+    const { loadCreatorInboxPage, parseCreatorInboxPageCursor } = await import("./creator-inbox-loader");
+    const firstPage = await loadCreatorInboxPage({ limit: 2, source: "feedback" });
+    expect(firstPage.items.map((item) => item.sourceRecordId)).toEqual(["critical", "high"]);
+    expect(firstPage.hasMore).toBe(true);
+
+    const cursor = parseCreatorInboxPageCursor(firstPage.nextCursor);
+    expect(cursor?.feedback).toMatchObject({ version: 1, priority: "high", id: "high" });
+    const secondPage = await loadCreatorInboxPage({ limit: 2, source: "feedback", cursor });
+    expect(secondPage.items.map((item) => item.sourceRecordId)).toEqual(["normal"]);
   });
 
   it("uses a stable source cursor and does not repeat the next page", async () => {

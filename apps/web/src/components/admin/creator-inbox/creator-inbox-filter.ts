@@ -4,7 +4,7 @@ export function filterAndSortCreatorInboxItems(items: CreatorInboxItem[], option
   query: string;
   sourceFilter: "all" | CreatorInboxSource;
   statusFilter: "all" | CreatorInboxStatus;
-  priorityFilter: "all" | "high" | "normal";
+  priorityFilter: "all" | "high" | "normal" | "critical";
   sortMode: "priority" | "date";
 }) {
   const normalizedQuery = options.query.trim().toLowerCase();
@@ -16,6 +16,6 @@ export function filterAndSortCreatorInboxItems(items: CreatorInboxItem[], option
     const haystack = [item.title, item.subtitle ?? "", item.authorName, item.authorEmail ?? "", item.authorRole ?? "", item.context, item.pagePath ?? "", item.source, item.sourceStatus, item.status, ...item.details.map((detail) => `${detail.label} ${detail.value}`)].join(" ").toLowerCase();
     return haystack.includes(normalizedQuery);
   }).sort((left, right) => options.sortMode === "priority"
-    ? Number(right.priority === "high") - Number(left.priority === "high") || Date.parse(right.createdAt) - Date.parse(left.createdAt) || left.source.localeCompare(right.source) || right.sourceRecordId.localeCompare(left.sourceRecordId)
+    ? ({ critical: 0, high: 1, normal: 2 }[left.priority] - { critical: 0, high: 1, normal: 2 }[right.priority]) || Date.parse(right.createdAt) - Date.parse(left.createdAt) || left.source.localeCompare(right.source) || right.sourceRecordId.localeCompare(left.sourceRecordId)
     : Date.parse(right.createdAt) - Date.parse(left.createdAt) || left.source.localeCompare(right.source) || right.sourceRecordId.localeCompare(left.sourceRecordId));
 }

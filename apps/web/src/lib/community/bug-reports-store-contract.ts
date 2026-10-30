@@ -62,6 +62,10 @@ export type BugReportRecord = BugReportInput & {
   submittedByEmail: string | null;
   submittedByRole: string | null;
   source: "discussion_form" | "feedback_section" | "feedback_discussion";
+  priority: "normal" | "high" | "critical";
+  removedAt: string | null;
+  removedByUserId: string | null;
+  removedReason: string | null;
   status: "open" | "treated" | "archived";
   creatorState: "new" | "pending" | "responded" | "treated" | "archived";
   screenshotUploadState?: "pending" | "ready" | "failed" | null;
@@ -71,6 +75,15 @@ export type BugReportRecord = BugReportInput & {
   qualificationDecidedByUserId?: string | null;
   qualificationDuplicateFeedbackId?: string | null;
   tracking?: FeedbackTracking;
+};
+
+export type CommunityBugReportPriority = BugReportRecord["priority"];
+
+export type CommunityBugReportQueueCursor = {
+  version: 1;
+  priority: CommunityBugReportPriority;
+  createdAt: string;
+  id: string;
 };
 
 const COMMUNITY_BUG_REPORTS_HISTORY_DEFAULT_LIMIT = 20;

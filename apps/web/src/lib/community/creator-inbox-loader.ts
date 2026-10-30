@@ -22,6 +22,7 @@ import {
   type CreatorInboxPaginationCursor,
   type CreatorInboxRecordCursor,
 } from "./creator-inbox-pagination";
+import type { CommunityBugReportQueueCursor } from "./bug-reports-store-contract";
 
 const CREATOR_INBOX_SOURCES = [
   "feedback",
@@ -34,7 +35,7 @@ const CREATOR_INBOX_SOURCES = [
 type CreatorInboxPageSource = (typeof CREATOR_INBOX_SOURCES)[number];
 
 type CreatorInboxPageCursor = {
-  feedback: CreatorInboxPaginationCursor | null;
+  feedback: CreatorInboxPaginationCursor | CommunityBugReportQueueCursor | null;
   promotion: CreatorInboxRecordCursor | null;
   partner: CreatorInboxRecordCursor | null;
   legal_content_report: CreatorInboxRecordCursor | null;
@@ -92,7 +93,7 @@ export function parseCreatorInboxPageCursor(
       if (rawCursor !== null && !isValidSourceCursor) {
         return null;
       }
-      cursor[source] = rawCursor as CreatorInboxPaginationCursor | null;
+      cursor[source] = rawCursor as CreatorInboxPageCursor[typeof source];
     }
     return cursor;
   } catch {
@@ -123,15 +124,22 @@ function compareInboxCandidates(left: InboxCandidate, right: InboxCandidate): nu
           !Number.isFinite(rightTime) &&
           left.item.createdAt === right.item.createdAt;
   const sourceCursorOrder = compareCreatorInboxRecordCursors(leftCursor, rightCursor);
-  if (!sameDateOrderKey) {
-    return -sourceCursorOrder;
-  }
+  if (!sameDateOrderKey) return -sourceCursorOrder;
   const sourceOrder =
     CREATOR_INBOX_SOURCES.indexOf(left.source) - CREATOR_INBOX_SOURCES.indexOf(right.source);
   if (sourceOrder !== 0) {
     return sourceOrder;
   }
   return -sourceCursorOrder;
+}
+
+function compareFeedbackQueueCandidates(left: InboxCandidate, right: InboxCandidate): number {
+  const priorityRank = { critical: 0, high: 1, normal: 2 } as const;
+  return priorityRank[left.item.priority] - priorityRank[right.item.priority] ||
+    compareCreatorInboxRecordCursors(
+      { createdAt: left.item.createdAt, id: left.item.sourceRecordId },
+      { createdAt: right.item.createdAt, id: right.item.sourceRecordId },
+    );
 }
 
 function clampPageSize(value: number | null | undefined): number {
@@ -144,16 +152,20 @@ function clampPageSize(value: number | null | undefined): number {
 export async function loadCreatorInboxPage(params?: {
   limit?: number | null;
   cursor?: CreatorInboxPageCursor | null;
+  source?: "feedback";
 }): Promise<CreatorInboxPage> {
   const limit = clampPageSize(params?.limit);
   const cursor = params?.cursor ?? emptyPageCursor();
   const sourceLimit = limit + 1;
+  const feedbackOnly = params?.source === "feedback";
   const [feedback, promotion, partner, legalContentReports, events, feedbackMetrics] = await Promise.all([
-    listCommunityBugReports(sourceLimit, cursor.feedback),
-    listPromotionRequests(sourceLimit, cursor.promotion),
-    listPartnerOnboardingRequests(sourceLimit, cursor.partner),
-    listLegalContentReports(sourceLimit, cursor.legal_content_report),
-    loadCreatorInboxEvents(sourceLimit, cursor.event),
+    feedbackOnly
+      ? listCommunityBugReports(sourceLimit, cursor.feedback, { activeOnly: true, order: "priority" })
+      : listCommunityBugReports(sourceLimit, cursor.feedback),
+    feedbackOnly ? Promise.resolve([]) : listPromotionRequests(sourceLimit, cursor.promotion),
+    feedbackOnly ? Promise.resolve([]) : listPartnerOnboardingRequests(sourceLimit, cursor.partner),
+    feedbackOnly ? Promise.resolve([]) : listLegalContentReports(sourceLimit, cursor.legal_content_report),
+    feedbackOnly ? Promise.resolve([]) : loadCreatorInboxEvents(sourceLimit, cursor.event),
     loadCommunityBugReportFollowUpMetrics(),
   ]);
 
@@ -175,7 +187,7 @@ export async function loadCreatorInboxPage(params?: {
       source: "legal_content_report" as const,
     })),
     ...events.map((item) => ({ item, source: "event" as const })),
-  ].sort(compareInboxCandidates);
+  ].sort(feedbackOnly ? compareFeedbackQueueCandidates : compareInboxCandidates);
 
   const items = candidates.slice(0, limit).map(({ item }) => item);
   const hasMore = candidates.length > limit;
@@ -186,7 +198,14 @@ export async function loadCreatorInboxPage(params?: {
   const nextCursor = { ...cursor };
   for (const candidate of candidates.slice(0, limit)) {
     const candidateCursor =
-      candidate.source === "feedback"
+      candidate.source === "feedback" && feedbackOnly
+        ? {
+            version: 1 as const,
+            priority: candidate.item.priority,
+            createdAt: candidate.item.createdAt,
+            id: candidate.item.sourceRecordId,
+          }
+        : candidate.source === "feedback"
         ? createCreatorInboxContinuationCursor({
             createdAt: candidate.item.createdAt,
             id: candidate.item.sourceRecordId,

@@ -47,7 +47,7 @@ export type CreatorInboxItem = {
   pagePath: string | null;
   status: CreatorInboxStatus;
   sourceStatus: string;
-  priority: "normal" | "high";
+  priority: "normal" | "high" | "critical";
   context: string;
   details: CreatorInboxItemDetail[];
   canDelete: boolean;
@@ -202,7 +202,7 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
     pagePath: record.pagePath,
     status,
     sourceStatus,
-    priority: "normal",
+    priority: record.priority ?? "normal",
     context: record.description,
     details: [
       { label: "Provenance du formulaire", value: record.source },

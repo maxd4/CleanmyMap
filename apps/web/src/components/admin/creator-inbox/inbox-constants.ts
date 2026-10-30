@@ -22,6 +22,7 @@ export const STATUS_FILTERS: Array<{ value: "all" | CreatorInboxStatus; label: s
 
 export const PRIORITY_FILTERS = [
   { value: "all", label: "Toutes les priorités" },
+  { value: "critical", label: "Priorité critique" },
   { value: "high", label: "Priorité haute" },
   { value: "normal", label: "Priorité normale" },
 ] as const;

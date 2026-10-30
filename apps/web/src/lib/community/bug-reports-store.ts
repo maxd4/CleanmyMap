@@ -18,6 +18,8 @@ import {
   type BugReportRecord,
   type CommunityBugReportHistoryCursor,
   type CommunityBugReportHistoryPage,
+  type CommunityBugReportPriority,
+  type CommunityBugReportQueueCursor,
   type FeedbackQualificationDecision,
   type FeedbackTrackingStatus,
 } from "./bug-reports-store-contract";
@@ -47,6 +49,8 @@ export type {
   FeedbackQualificationStatus,
   FeedbackTracking,
   FeedbackTrackingStatus,
+  CommunityBugReportPriority,
+  CommunityBugReportQueueCursor,
 } from "./bug-reports-store-contract";
 export {
   buildCommunityBugReportHistoryCursor,
@@ -190,6 +194,10 @@ export async function appendCommunityBugReport(params: {
     submittedByEmail: restInput.submittedByEmail ?? null,
     submittedByRole: restInput.submittedByRole ?? null,
     source: source ?? "discussion_form",
+    priority: "normal",
+    removedAt: null,
+    removedByUserId: null,
+    removedReason: null,
     status: "open",
     creatorState: "new",
     screenshotUploadState: null,
@@ -215,10 +223,12 @@ export async function appendCommunityBugReport(params: {
 
 export async function listCommunityBugReports(
   limit = 100,
-  beforeCursor?: CreatorInboxPaginationCursor | null,
+  beforeCursor?: (CreatorInboxPaginationCursor | CommunityBugReportQueueCursor) | null,
+  options?: { activeOnly?: boolean; order?: "createdAt" | "priority" },
 ): Promise<BugReportRecord[]> {
   assertPersistenceAvailable("community_bug_reports");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+  const activeOnly = options?.activeOnly ?? true;
 
   if (canUseSupabaseServerPersistence()) {
     if (beforeCursor && isCreatorInboxHistoricalRecordCursor(beforeCursor)) {
@@ -226,12 +236,24 @@ export async function listCommunityBugReports(
         "Historical community feedback cursors are only supported by local persistence.",
       );
     }
+    const priorityOrder = options?.order === "priority";
+    if (priorityOrder && beforeCursor && !isCommunityBugReportQueueCursor(beforeCursor)) {
+      throw new Error("Feedback queue cursors are required for priority ordering.");
+    }
     let query = getSupabaseServerClient(true)
       .from("community_bug_reports")
-      .select(SUPABASE_BUG_REPORT_COLUMNS)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false });
-    if (beforeCursor) {
+      .select(SUPABASE_BUG_REPORT_COLUMNS);
+    if (activeOnly && typeof query.is === "function") query = query.is("removed_at", null);
+    if (priorityOrder) {
+      query = query.order("priority", { ascending: true }).order("created_at", { ascending: true }).order("id", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: false }).order("id", { ascending: false });
+    }
+    if (priorityOrder && beforeCursor && isCommunityBugReportQueueCursor(beforeCursor)) {
+      query = query.or(
+        `priority.gt.${beforeCursor.priority},and(priority.eq.${beforeCursor.priority},created_at.gt.${beforeCursor.createdAt}),and(priority.eq.${beforeCursor.priority},created_at.eq.${beforeCursor.createdAt},id.gt.${beforeCursor.id})`,
+      );
+    } else if (beforeCursor) {
       query = query.or(
         `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
       );
@@ -242,16 +264,49 @@ export async function listCommunityBugReports(
   }
 
   const store = await readStore();
-  return store.records
+  const records = store.records
+    .filter((record) => !activeOnly || record.removedAt == null)
     .filter(
       (record) =>
         !beforeCursor ||
-        compareCreatorInboxRecordCursors(record, beforeCursor) < 0,
+        (options?.order === "priority" && isCommunityBugReportQueueCursor(beforeCursor)
+          ? compareCommunityBugReportQueueCursors(
+              { priority: record.priority, createdAt: record.createdAt, id: record.id },
+              beforeCursor,
+            ) > 0
+          : compareCreatorInboxRecordCursors(record, beforeCursor) < 0),
+
     )
-    .sort((left, right) =>
-      compareCreatorInboxRecordCursors(right, left),
-    )
+    .sort((left, right) => options?.order === "priority"
+      ? compareCommunityBugReportQueueCursors(
+          { priority: left.priority, createdAt: left.createdAt, id: left.id },
+          { priority: right.priority, createdAt: right.createdAt, id: right.id },
+        )
+      : compareCreatorInboxRecordCursors(right, left))
     .slice(0, normalizedLimit);
+  return records;
+}
+
+const COMMUNITY_BUG_REPORT_PRIORITY_RANK: Record<CommunityBugReportPriority, number> = {
+  critical: 0,
+  high: 1,
+  normal: 2,
+};
+
+function isCommunityBugReportQueueCursor(value: unknown): value is CommunityBugReportQueueCursor {
+  return Boolean(value) && typeof value === "object" &&
+    (value as CommunityBugReportQueueCursor).version === 1 &&
+    (value as CommunityBugReportQueueCursor).priority in COMMUNITY_BUG_REPORT_PRIORITY_RANK &&
+    isCreatorInboxRecordCursor(value);
+}
+
+function compareCommunityBugReportQueueCursors(
+  left: { priority: CommunityBugReportPriority; createdAt: string; id: string },
+  right: CommunityBugReportQueueCursor | { priority: CommunityBugReportPriority; createdAt: string; id: string },
+): number {
+  const priorityOrder = COMMUNITY_BUG_REPORT_PRIORITY_RANK[left.priority] - COMMUNITY_BUG_REPORT_PRIORITY_RANK[right.priority];
+  if (priorityOrder !== 0) return priorityOrder;
+  return compareCreatorInboxRecordCursors(left, right);
 }
 
 export async function listCommunityBugReportsForUser(params: {
@@ -330,11 +385,138 @@ export async function getCommunityBugReportById(
   return findRecordInList(store.records, (record) => record.id === reportId);
 }
 
+export type CommunityBugReportMutationStatus =
+  | "updated"
+  | "unchanged"
+  | "not_found"
+  | "conflict";
+
+type CommunityBugReportMutationResult = {
+  record: BugReportRecord | null;
+  status: CommunityBugReportMutationStatus;
+  auditPersisted?: boolean;
+};
+
+function parseCommunityBugReportMutationResult(
+  data: unknown,
+): CommunityBugReportMutationResult {
+  const payload = data as { status?: unknown; item?: Record<string, unknown> | null } | null;
+  if (
+    payload?.status !== "updated" &&
+    payload?.status !== "unchanged" &&
+    payload?.status !== "not_found" &&
+    payload?.status !== "conflict"
+  ) {
+    throw new Error("Invalid feedback mutation result.");
+  }
+  return {
+    status: payload.status,
+    record: payload.item ? fromSupabaseRow(payload.item) : null,
+    auditPersisted: true,
+  };
+}
+
+export async function updateCommunityBugReportStatusTransactional(params: {
+  reportId: string;
+  status: "open" | "treated" | "archived";
+  actorUserId: string;
+  operationId: string;
+  expectedStatus: BugReportRecord["status"];
+  expectedCreatorState: BugReportRecord["creatorState"];
+}): Promise<CommunityBugReportMutationResult> {
+  assertPersistenceAvailable("community_bug_reports");
+  if (!canUseSupabaseServerPersistence()) {
+    throw new Error("Feedback status mutations require transactional Supabase persistence.");
+  }
+  const result = await getSupabaseServerClient(true).rpc("update_community_bug_report_status", {
+    p_feedback_id: params.reportId,
+    p_status: params.status,
+    p_actor_user_id: params.actorUserId,
+    p_operation_id: params.operationId,
+    p_expected_status: params.expectedStatus,
+    p_expected_creator_state: params.expectedCreatorState,
+  });
+  if (result.error) throw new Error(result.error.message);
+  return parseCommunityBugReportMutationResult(result.data);
+}
+
+export async function changeCommunityBugReportPriority(params: {
+  reportId: string;
+  priority: CommunityBugReportPriority;
+  reason: string;
+  actorUserId: string;
+  operationId: string;
+  expectedPriority: CommunityBugReportPriority;
+}): Promise<CommunityBugReportMutationResult> {
+  assertPersistenceAvailable("community_bug_reports");
+  if (!canUseSupabaseServerPersistence()) {
+    throw new Error("Feedback priority mutations require transactional Supabase persistence.");
+  }
+  const result = await getSupabaseServerClient(true).rpc("change_community_bug_report_priority", {
+    p_feedback_id: params.reportId,
+    p_priority: params.priority,
+    p_reason: params.reason,
+    p_actor_user_id: params.actorUserId,
+    p_operation_id: params.operationId,
+    p_expected_priority: params.expectedPriority,
+  });
+  if (result.error) throw new Error(result.error.message);
+  return parseCommunityBugReportMutationResult(result.data);
+}
+
+export async function removeCommunityBugReportFromActiveQueue(params: {
+  reportId: string;
+  reason: string;
+  actorUserId: string;
+  operationId: string;
+  expectedStatus: BugReportRecord["status"];
+  expectedCreatorState: BugReportRecord["creatorState"];
+}): Promise<CommunityBugReportMutationResult> {
+  assertPersistenceAvailable("community_bug_reports");
+  if (!canUseSupabaseServerPersistence()) {
+    throw new Error("Feedback removal requires transactional Supabase persistence.");
+  }
+  const result = await getSupabaseServerClient(true).rpc("remove_community_bug_report_from_active_queue", {
+    p_feedback_id: params.reportId,
+    p_reason: params.reason,
+    p_actor_user_id: params.actorUserId,
+    p_operation_id: params.operationId,
+    p_expected_status: params.expectedStatus,
+    p_expected_creator_state: params.expectedCreatorState,
+  });
+  if (result.error) throw new Error(result.error.message);
+  return parseCommunityBugReportMutationResult(result.data);
+}
+
 export async function updateCommunityBugReportStatus(params: {
   reportId: string;
   status: "open" | "treated" | "archived";
+  actorUserId?: string;
+  operationId?: string;
+  expectedStatus?: BugReportRecord["status"];
+  expectedCreatorState?: BugReportRecord["creatorState"];
 }): Promise<BugReportRecord | null> {
   assertPersistenceAvailable("community_bug_reports");
+
+  if (
+    params.actorUserId &&
+    params.operationId &&
+    params.expectedStatus &&
+    params.expectedCreatorState
+  ) {
+    const result = await updateCommunityBugReportStatusTransactional({
+      reportId: params.reportId,
+      status: params.status,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+      expectedStatus: params.expectedStatus,
+      expectedCreatorState: params.expectedCreatorState,
+    });
+    if (result.status === "conflict") {
+      throw new Error("Feedback state changed concurrently.");
+    }
+    return result.record;
+  }
 
   if (canUseSupabaseServerPersistence()) {
     const creatorState =

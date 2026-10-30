@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const readLocalRecordStoreMock = vi.hoisted(() => vi.fn());
-const runtimeState = vi.hoisted(() => ({ allowFallback: false }));
+const runtimeState = vi.hoisted(() => ({ allowFallback: false, useSupabase: true }));
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
-  canUseSupabaseServerPersistence: () => true,
+  canUseSupabaseServerPersistence: () => runtimeState.useSupabase,
   allowLocalFileStoreFallback: () => runtimeState.allowFallback,
   assertPersistenceAvailable: () => undefined,
 }));
@@ -116,6 +116,7 @@ describe("admin operation audit", () => {
     vi.resetModules();
     vi.clearAllMocks();
     runtimeState.allowFallback = false;
+    runtimeState.useSupabase = true;
     readLocalRecordStoreMock.mockResolvedValue({
       updatedAt: "2026-06-20T11:00:00Z",
       records: [
@@ -371,5 +372,56 @@ describe("admin operation audit", () => {
     expect(items[0]?.operationId).toBe("local-op-1");
     expect(items[0]?.targetId).toBe("action-local");
     expect(readLocalRecordStoreMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("filters the local audit page and resumes from a stable cursor", async () => {
+    runtimeState.useSupabase = false;
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-06-20T11:00:00Z",
+      records: [
+        {
+          operationId: "op-a",
+          at: "2026-06-20T10:00:00Z",
+          actorUserId: "admin-a",
+          operationType: "admin_operation",
+          outcome: "success",
+          targetId: "feedback-a",
+          details: { operation: "feedback_priority_changed", reason: "Priorité urgente" },
+        },
+        {
+          operationId: "op-b",
+          at: "2026-06-20T09:00:00Z",
+          actorUserId: "admin-b",
+          operationType: "admin_operation",
+          outcome: "error",
+          targetId: "feedback-b",
+          details: { operation: "feedback_state_changed" },
+        },
+        {
+          operationId: "op-c",
+          at: "2026-06-20T08:00:00Z",
+          actorUserId: "admin-a",
+          operationType: "admin_operation",
+          outcome: "success",
+          targetId: "feedback-c",
+          details: { operation: "feedback_priority_changed" },
+        },
+      ],
+    });
+
+    const { listAdminOperationAuditPage } = await import("./operation-audit");
+    const first = await listAdminOperationAuditPage(1, {
+      actorUserId: "admin-a",
+      operation: "feedback_priority_changed",
+    });
+    expect(first.items.map((item) => item.operationId)).toEqual(["op-a"]);
+    expect(first.hasMore).toBe(true);
+    const second = await listAdminOperationAuditPage(1, {
+      actorUserId: "admin-a",
+      operation: "feedback_priority_changed",
+      cursor: first.nextCursor,
+    });
+    expect(second.items.map((item) => item.operationId)).toEqual(["op-c"]);
+    expect(second.hasMore).toBe(false);
   });
 });

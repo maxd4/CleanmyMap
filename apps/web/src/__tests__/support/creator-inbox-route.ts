@@ -6,6 +6,9 @@ const creatorInboxMocks = vi.hoisted(() => ({
   appendAdminOperationAuditMock: vi.fn(),
   getCommunityBugReportByIdMock: vi.fn(),
   updateCommunityBugReportStatusMock: vi.fn(),
+  updateCommunityBugReportStatusTransactionalMock: vi.fn(),
+  removeCommunityBugReportFromActiveQueueMock: vi.fn(),
+  changeCommunityBugReportPriorityMock: vi.fn(),
   qualifyCommunityBugReportMock: vi.fn(),
   updateCommunityBugReportTrackingMock: vi.fn(),
   updateCommunityBugReportCreatorStateMock: vi.fn(),
@@ -27,6 +30,9 @@ export const getCurrentUserIdentityMock = creatorInboxMocks.getCurrentUserIdenti
 export const appendAdminOperationAuditMock = creatorInboxMocks.appendAdminOperationAuditMock;
 export const getCommunityBugReportByIdMock = creatorInboxMocks.getCommunityBugReportByIdMock;
 export const updateCommunityBugReportStatusMock = creatorInboxMocks.updateCommunityBugReportStatusMock;
+export const updateCommunityBugReportStatusTransactionalMock = creatorInboxMocks.updateCommunityBugReportStatusTransactionalMock;
+export const removeCommunityBugReportFromActiveQueueMock = creatorInboxMocks.removeCommunityBugReportFromActiveQueueMock;
+export const changeCommunityBugReportPriorityMock = creatorInboxMocks.changeCommunityBugReportPriorityMock;
 export const qualifyCommunityBugReportMock = creatorInboxMocks.qualifyCommunityBugReportMock;
 export const updateCommunityBugReportTrackingMock = creatorInboxMocks.updateCommunityBugReportTrackingMock;
 export const updateCommunityBugReportCreatorStateMock = creatorInboxMocks.updateCommunityBugReportCreatorStateMock;
@@ -60,6 +66,9 @@ vi.mock("@/lib/community/bug-reports-store", () => ({
   getCommunityBugReportById: getCommunityBugReportByIdMock,
   updateCommunityBugReportCreatorState: updateCommunityBugReportCreatorStateMock,
   updateCommunityBugReportStatus: updateCommunityBugReportStatusMock,
+  updateCommunityBugReportStatusTransactional: updateCommunityBugReportStatusTransactionalMock,
+  removeCommunityBugReportFromActiveQueue: removeCommunityBugReportFromActiveQueueMock,
+  changeCommunityBugReportPriority: changeCommunityBugReportPriorityMock,
   qualifyCommunityBugReport: qualifyCommunityBugReportMock,
   updateCommunityBugReportTracking: updateCommunityBugReportTrackingMock,
 }));
@@ -106,6 +115,7 @@ const feedbackRecord = {
   submittedByEmail: "person@example.com",
   title: "Message title",
   description: "Message content",
+  priority: "normal" as const,
   status: "open" as const,
   creatorState: "new" as const,
 };
@@ -161,6 +171,21 @@ export function resetCreatorInboxMocks() {
       status,
       creatorState: status === "treated" ? "treated" : "archived",
     }),
+  );
+  updateCommunityBugReportStatusTransactionalMock.mockImplementation(
+    async ({ reportId, status }: { reportId: string; status: "treated" | "archived" }) => {
+      const record = await updateCommunityBugReportStatusMock({ reportId, status });
+      return { status: record ? "updated" : "not_found", record };
+    },
+  );
+  removeCommunityBugReportFromActiveQueueMock.mockImplementation(
+    async ({ reportId }: { reportId: string }) => {
+      const deleted = await deleteCommunityBugReportMock(reportId);
+      return { status: deleted ? "updated" : "not_found", record: deleted ? feedbackRecord : null };
+    },
+  );
+  changeCommunityBugReportPriorityMock.mockImplementation(
+    async () => ({ status: "updated", record: feedbackRecord }),
   );
   qualifyCommunityBugReportMock.mockResolvedValue({
     status: "updated",

@@ -149,7 +149,7 @@ describe("InboxItemCard state actions", () => {
     expect(markup).toContain("Motif de traitement");
     expect(markup).toContain('minLength="5"');
     expect(markup).toContain('maxLength="500"');
-    expect((markup.match(/disabled=""/g) ?? []).length).toBe(4);
+    expect((markup.match(/disabled=""/g) ?? []).length).toBe(5);
   });
 
   it("keeps generic inbox mutations out of legal content notifications", () => {

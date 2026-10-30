@@ -23,7 +23,7 @@ export function createFeedbackInboxActions({
   feedbackMetrics?: CommunityBugReportFollowUpMetrics;
   setFeedbackMetrics: Dispatch<SetStateAction<CommunityBugReportFollowUpMetrics | undefined>>;
 }) {
-  const applyInboxAction = async (params: { source: CreatorInboxSource; itemId: string; action: "mark_treated" | "responded" | "archive" | "delete"; reason: string }) => {
+  const applyInboxAction = async (params: { source: CreatorInboxSource; itemId: string; action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority"; reason: string; priority?: "normal" | "high" | "critical" }) => {
     const reason = params.reason.trim();
     if (reason.length < 5) {
       deps.setErrorMessage(deps.inboxLocale === "fr" ? "Saisissez un motif d'au moins 5 caractères." : "Enter a reason of at least 5 characters.");

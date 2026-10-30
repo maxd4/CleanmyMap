@@ -42,7 +42,15 @@ export async function GET(request: Request) {
     if (!cursor) {
       return NextResponse.json({ error: "Invalid pagination cursor" }, { status: 400 });
     }
-    const page = await loadCreatorInboxPage({ limit, cursor });
+    const sourceValue = url.searchParams.get("source");
+    if (sourceValue && sourceValue !== "feedback") {
+      return NextResponse.json({ error: "Invalid creator inbox source" }, { status: 400 });
+    }
+    const page = await loadCreatorInboxPage({
+      limit,
+      cursor,
+      ...(sourceValue === "feedback" ? { source: "feedback" as const } : {}),
+    });
     const { feedbackMetrics, ...pageWithoutFeedbackMetrics } = page;
     return NextResponse.json({
       status: "ok",
@@ -128,13 +136,14 @@ export async function PATCH(request: Request) {
     });
   };
   const operationId = randomUUID();
-  const { source, itemId, action, reason } = parsed.data;
+  const { source, itemId, action, reason, priority } = parsed.data;
   const common = {
     operationId,
     actorUserId: identity.userId,
     itemId,
     action,
     reason: reason!,
+    priority,
     appendDecisionAudit,
   };
 

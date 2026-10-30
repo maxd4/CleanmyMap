@@ -16,7 +16,7 @@ const STORE_FILE = join(
 );
 
 export const SUPABASE_BUG_REPORT_COLUMNS =
-  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state, screenshot_upload_state, qualification_status, qualification_reason, qualification_decided_at, qualification_decided_by_user_id, qualification_duplicate_feedback_id, tracking_status, tracking_public_summary, tracking_reference, tracking_shipped_on, tracking_shipped_notification_at, tracking_updated_at, tracking_updated_by_user_id";
+  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, priority, removed_at, removed_by_user_id, removed_reason, status, creator_state, screenshot_upload_state, qualification_status, qualification_reason, qualification_decided_at, qualification_decided_by_user_id, qualification_duplicate_feedback_id, tracking_status, tracking_public_summary, tracking_reference, tracking_shipped_on, tracking_shipped_notification_at, tracking_updated_at, tracking_updated_by_user_id";
 
 type StorePayload = {
   updatedAt: string;

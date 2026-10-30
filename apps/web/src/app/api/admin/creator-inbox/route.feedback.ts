@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { buildFeedbackInboxItem } from "@/lib/community/creator-inbox";
 import {
-  deleteCommunityBugReport,
+  changeCommunityBugReportPriority,
   getCommunityBugReportById,
   qualifyCommunityBugReport,
   updateCommunityBugReportTracking,
-  updateCommunityBugReportStatus,
+  updateCommunityBugReportStatusTransactional,
+  removeCommunityBugReportFromActiveQueue,
 } from "@/lib/community/bug-reports-store";
 import type { FeedbackTrackingStatus } from "@/lib/community/bug-reports-store";
 import {
@@ -30,6 +31,8 @@ type FeedbackStateMutationParams = {
   audit: CreatorInboxAudit;
   reason: string;
   targetUserId?: string;
+  actorUserId: string;
+  operationId: string;
 };
 
 type FeedbackQualificationParams = CreatorInboxHandlerParams & {
@@ -109,16 +112,37 @@ async function deleteFeedbackInboxItem(params: {
   current: FeedbackRecord;
   audit: CreatorInboxAudit;
   reason: string;
+  actorUserId: string;
+  operationId: string;
 }) {
-  const { itemId, current, audit, reason } = params;
-  let deleted;
-  let deletionFailed = false;
+  const { itemId, current, audit, reason, actorUserId, operationId } = params;
+  let result: Awaited<ReturnType<typeof removeCommunityBugReportFromActiveQueue>>;
   try {
-    deleted = await deleteCommunityBugReport(itemId);
+    result = await removeCommunityBugReportFromActiveQueue({
+      reportId: itemId,
+      reason,
+      actorUserId,
+      operationId,
+      expectedStatus: current.status,
+      expectedCreatorState: current.creatorState,
+    });
   } catch {
-    deletionFailed = true;
+    await appendCreatorInboxErrorAudit({
+      audit,
+      targetId: itemId,
+      reason,
+      targetUserId: canonicalTargetUserId(current.submittedByUserId),
+      previousValue: buildSnapshot("feedback", current),
+      newValue: { source: "feedback", removed: true },
+      stage: "delete",
+      partialMutation: false,
+    });
+    return mutationErrorResponse();
   }
-  if (!deleted) {
+  if (result.status === "conflict") {
+    return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
+  }
+  if (result.status === "not_found" || !result.record) {
     await appendCreatorInboxErrorAudit({
       audit,
       targetId: itemId,
@@ -129,29 +153,70 @@ async function deleteFeedbackInboxItem(params: {
       stage: "delete",
       partialMutation: false,
     });
-    if (deletionFailed) return mutationErrorResponse();
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
   }
-  await appendCreatorInboxSuccessAudit({
-    audit,
-    targetId: itemId,
-    reason,
-    targetUserId: canonicalTargetUserId(current.submittedByUserId),
-    previousValue: { source: "feedback", creatorState: current.creatorState },
-    newValue: { deleted: true },
-  });
-  return NextResponse.json({ status: "ok", deletedId: itemId });
+  if (!result.auditPersisted) {
+    await appendCreatorInboxSuccessAudit({
+      audit,
+      targetId: itemId,
+      reason,
+      targetUserId: canonicalTargetUserId(current.submittedByUserId),
+      previousValue: { source: "feedback", creatorState: current.creatorState },
+      newValue: { deleted: true },
+    });
+  }
+  return NextResponse.json({ status: "ok", deletedId: itemId, removed: true });
+}
+
+async function changeFeedbackPriority(params: {
+  itemId: string;
+  current: FeedbackRecord;
+  reason: string;
+  actorUserId: string;
+  operationId: string;
+  priority: "normal" | "high" | "critical";
+}) {
+  let result;
+  try {
+    result = await changeCommunityBugReportPriority({
+      reportId: params.itemId,
+      priority: params.priority,
+      reason: params.reason,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+      expectedPriority: params.current.priority,
+    });
+  } catch {
+    return mutationErrorResponse();
+  }
+  if (result.status === "conflict") {
+    return NextResponse.json({ error: "Feedback priority changed concurrently." }, { status: 409 });
+  }
+  if (result.status === "not_found" || !result.record) {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+  return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(result.record) });
 }
 
 async function markFeedbackTreated(params: FeedbackStateMutationParams) {
   const { itemId, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("feedback", current);
   let updated;
+  let mutationResult: Awaited<ReturnType<typeof updateCommunityBugReportStatusTransactional>>;
   try {
-    updated = await updateCommunityBugReportStatus({
+    const result = await updateCommunityBugReportStatusTransactional({
       reportId: itemId,
       status: "treated",
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+      expectedStatus: current.status,
+      expectedCreatorState: current.creatorState,
     });
+    mutationResult = result;
+    if (result.status === "conflict") {
+      return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
+    }
+    updated = result.record;
     if (!updated) {
       throw new Error("feedback status update did not persist");
     }
@@ -171,14 +236,16 @@ async function markFeedbackTreated(params: FeedbackStateMutationParams) {
     });
     return mutationErrorResponse();
   }
-  await appendCreatorInboxSuccessAudit({
-    audit,
-    targetId: updated.id,
-    reason,
-    targetUserId,
-    previousValue,
-    newValue: buildSnapshot("feedback", updated),
-  });
+  if (!mutationResult.auditPersisted) {
+    await appendCreatorInboxSuccessAudit({
+      audit,
+      targetId: itemId,
+      reason,
+      targetUserId: canonicalTargetUserId(current.submittedByUserId),
+      previousValue: buildSnapshot("feedback", current),
+      newValue: buildSnapshot("feedback", updated),
+    });
+  }
   return NextResponse.json({
     status: "ok",
     item: buildFeedbackInboxItem(updated),
@@ -189,11 +256,21 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
   const { itemId, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("feedback", current);
   let finalRecord: FeedbackRecord;
+  let mutationResult: Awaited<ReturnType<typeof updateCommunityBugReportStatusTransactional>>;
   try {
-    const archivedRecord = await updateCommunityBugReportStatus({
+    const result = await updateCommunityBugReportStatusTransactional({
       reportId: itemId,
       status: "archived",
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+      expectedStatus: current.status,
+      expectedCreatorState: current.creatorState,
     });
+    mutationResult = result;
+    if (result.status === "conflict") {
+      return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
+    }
+    const archivedRecord = result.record;
     if (!archivedRecord) {
       throw new Error("feedback archive status update did not persist");
     }
@@ -215,14 +292,17 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
     return mutationErrorResponse();
   }
 
-  await appendCreatorInboxSuccessAudit({
-    audit,
-    targetId: finalRecord.id,
-    reason,
-    targetUserId,
-    previousValue,
-    newValue: buildSnapshot("feedback", finalRecord),
-  });
+  if (!mutationResult.auditPersisted) {
+    await appendCreatorInboxSuccessAudit({
+      audit,
+      targetId: finalRecord.id,
+      reason,
+      targetUserId,
+      previousValue,
+      newValue: buildSnapshot("feedback", finalRecord),
+    });
+  }
+
   return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(finalRecord) });
 }
 
@@ -299,6 +379,19 @@ export async function handleCreatorInboxFeedback(
       current,
       audit,
       reason,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+    });
+  }
+
+  if (action === "change_priority" && "priority" in params && params.priority) {
+    return changeFeedbackPriority({
+      itemId,
+      current,
+      reason,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
+      priority: params.priority,
     });
   }
 
@@ -322,6 +415,8 @@ export async function handleCreatorInboxFeedback(
       audit,
       reason,
       targetUserId,
+      actorUserId: params.actorUserId,
+      operationId: params.operationId,
     });
   }
 
@@ -331,5 +426,7 @@ export async function handleCreatorInboxFeedback(
     audit,
     reason,
     targetUserId,
+    actorUserId: params.actorUserId,
+    operationId: params.operationId,
   });
 }

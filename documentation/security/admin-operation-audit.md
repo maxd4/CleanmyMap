@@ -109,6 +109,7 @@ Champs de premier niveau :
 | `operationType` | famille bornée d'opération |
 | `outcome` | `success` ou `error` |
 | `targetId` | identifiant de la ressource cible lorsque disponible |
+| `targetUserId` | identifiant utilisateur cible lorsque le contrat le justifie, sans contenu utilisateur |
 | `details` | objet strictement borné au contrat de l'opération |
 
 Familles actuellement supportées :
@@ -433,11 +434,19 @@ Un parcours local de développement autorisé par un token technique n'est pas a
 
 En production, `appendAdminOperationAudit(...)` persiste dans `admin_operations_audit`.
 
-`listAdminOperationAudit(...)` lit le journal avec une limite bornée et peut filtrer par `targetId`.
+`listAdminOperationAudit(...)` lit le journal avec une limite bornée et peut filtrer par auteur,
+famille (`operationType`), opération métier, résultat, période et `targetId`. La route
+`/api/admin/operations` applique ces filtres côté serveur avant une pagination par curseur
+stable (`at` puis `operationId`). Les entrées destinées à l'interface passent par une
+projection allowlistée : motif, mutation partielle et before/after limité aux états et
+énumérations utiles ; l'objet `details` brut n'est jamais rendu.
 
 L'identité canonique persistée est `actorUserId`. `actorLabel` est un enrichissement d'affichage et ne doit jamais devenir la clé d'identité.
 
 Le journal n'est pas public. Toute surface de lecture doit appliquer le contrat AuthZ adapté.
+La table PostgreSQL est append-only pour l'application : les droits UPDATE/DELETE sont
+révoqués et un trigger rejette toute tentative résiduelle. La rétention légale éventuelle
+doit suivre une politique indépendante, explicitement gouvernée.
 
 Une erreur de persistence de l'audit ne doit jamais être décrite comme un rollback de la mutation métier si aucun rollback réel n'a eu lieu.
 

@@ -7,8 +7,9 @@ import type {
 export type InboxActionParams = {
   source: CreatorInboxSource;
   itemId: string;
-  action: "mark_treated" | "responded" | "archive" | "delete";
+  action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority";
   reason: string;
+  priority?: "normal" | "high" | "critical";
 };
 
 export type LegalDecisionParams = {

@@ -66,10 +66,12 @@ function isFeedbackMetrics(value: unknown): value is CommunityBugReportFollowUpM
 export async function fetchCreatorInboxPage(params?: {
   limit?: number;
   cursor?: string | null;
+  source?: "feedback";
 }): Promise<CreatorInboxPagePayload> {
   const search = new URLSearchParams();
   if (params?.limit !== undefined) search.set("limit", String(params.limit));
   if (params?.cursor) search.set("cursor", params.cursor);
+  if (params?.source) search.set("source", params.source);
   const query = search.toString();
   const response = await fetch(`/api/admin/creator-inbox${query ? `?${query}` : ""}`);
   if (!response.ok) {
@@ -93,8 +95,9 @@ export async function fetchCreatorInboxPage(params?: {
 export async function applyCreatorInboxAction(params: {
   source: CreatorInboxSource;
   itemId: string;
-  action: "mark_treated" | "responded" | "archive" | "delete" | "qualify" | "update_tracking";
+  action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority" | "qualify" | "update_tracking";
   reason: string;
+  priority?: "normal" | "high" | "critical";
   decision?: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
   duplicateFeedbackId?: string | null;
   trackingStatus?: FeedbackTrackingStatus;

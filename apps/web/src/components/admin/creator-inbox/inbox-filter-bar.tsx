@@ -12,8 +12,8 @@ type InboxFilterBarProps = {
   onSourceFilterChange: (value: "all" | CreatorInboxSource) => void;
   statusFilter: "all" | CreatorInboxStatus;
   onStatusFilterChange: (value: "all" | CreatorInboxStatus) => void;
-  priorityFilter: "all" | "high" | "normal";
-  onPriorityFilterChange: (value: "all" | "high" | "normal") => void;
+  priorityFilter: "all" | "high" | "normal" | "critical";
+  onPriorityFilterChange: (value: "all" | "high" | "normal" | "critical") => void;
   sortMode: "priority" | "date";
   onSortModeChange: (value: "priority" | "date") => void;
   partnerConfirm: string;

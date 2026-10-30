@@ -30,6 +30,12 @@ function normalizeBugReportSource(
     : "discussion_form";
 }
 
+function normalizeBugReportPriority(
+  value: unknown,
+): BugReportRecord["priority"] {
+  return value === "critical" || value === "high" ? value : "normal";
+}
+
 function normalizeBugReportStatus(
   value: unknown,
 ): BugReportRecord["status"] {
@@ -105,6 +111,10 @@ export function normalizeBugReportRecord(record: unknown): BugReportRecord | nul
     submittedByEmail,
     submittedByRole,
     source,
+    priority: normalizeBugReportPriority(raw["priority"]),
+    removedAt: normalizeOptionalTextField(raw["removedAt"]),
+    removedByUserId: normalizeOptionalTextField(raw["removedByUserId"]),
+    removedReason: normalizeOptionalTextField(raw["removedReason"]),
     status,
     creatorState,
     screenshotUploadState: normalizeScreenshotUploadState(raw["screenshotUploadState"]),
@@ -144,6 +154,10 @@ export function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord |
     description: row.description,
     pagePath: row.page_path,
     source: row.source,
+    priority: row.priority,
+    removedAt: row.removed_at,
+    removedByUserId: row.removed_by_user_id,
+    removedReason: row.removed_reason,
     status: row.status,
     creatorState: row.creator_state,
     screenshotUploadState: row.screenshot_upload_state,
@@ -175,6 +189,10 @@ export function toSupabaseRow(record: BugReportRecord): Record<string, unknown> 
     description: record.description,
     page_path: record.pagePath,
     source: record.source,
+    priority: record.priority,
+    removed_at: record.removedAt,
+    removed_by_user_id: record.removedByUserId,
+    removed_reason: record.removedReason,
     status: record.status,
     creator_state: record.creatorState,
     qualification_status: record.qualificationStatus ?? "pending",
