@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionDrawing, ActionGeometrySource, CreateActionPayload } from "@/lib/actions/types";
-import { createInitialFormState } from "../payload";
+import { buildCreateActionPayload, createInitialFormState } from "../payload";
 import { ACTION_DECLARATION_DRAFT_KEY, saveDraft } from "../draft-storage";
 import type { FormState } from "../model";
 import type { LoadedActionPhase } from "../utils/action-declaration-hydration.model";
@@ -27,6 +27,23 @@ vi.mock("@/lib/analytics/funnel-client", () => ({
 type DraftHook = ReturnType<typeof useActionDeclarationDraft>;
 type SubmissionHook = ReturnType<typeof useActionDeclarationSubmission>;
 type HookHarnessValue = { draft: DraftHook; submission: SubmissionHook; setForm: (form: FormState) => void };
+
+const resumedGpxDrawing: ActionDrawing = {
+  kind: "polyline",
+  coordinates: [
+    [48.8566, 2.3522],
+    [48.8576, 2.3532],
+  ],
+};
+
+const resumedGpxImport = {
+  source: "gpx_import" as const,
+  observedDistanceKm: 0.15,
+  pointCount: resumedGpxDrawing.coordinates.length,
+  inferredTopology: "point_to_point" as const,
+  intent: "observed" as const,
+  provenance: "unknown" as const,
+};
 
 function installLocalStorage() {
   const store = new Map<string, string>();
@@ -60,6 +77,16 @@ function buildResumableForm(): FormState {
     eventStartTime: "09:00",
     eventEndTime: "10:00",
     durationMinutes: "60",
+    latitude: "48.8571",
+    longitude: "2.3527",
+    wasteKg: "0",
+    cigaretteButtsCount: "0",
+    volunteersCount: "1",
+    childrenCount: "0",
+    adultCount: "1",
+    retiredCount: "0",
+    geometryMethod: "gpx_import",
+    gpxImport: resumedGpxImport,
   };
 }
 
@@ -81,6 +108,19 @@ function HookHarness({
     setManualDrawingSource: setManualDrawingSource,
     setHasAttemptedSubmit,
   });
+  const payload = buildCreateActionPayload({
+    form,
+    declarationMode: "complete",
+    effectiveManualDrawingEnabled: true,
+    drawingIsValid: manualDrawing !== null,
+    manualDrawing,
+    manualDrawingSource,
+    isEntrepriseMode: false,
+    linkedEventId: undefined,
+    photos: [],
+    visionEstimate: null,
+    userMetadata: { userId: "user-1" },
+  });
   const submission = useActionDeclarationSubmission({
     form,
     declarationMode: "complete",
@@ -91,17 +131,13 @@ function HookHarness({
     manualDrawingEnabled: true,
     manualDrawing,
     manualDrawingSource,
-    drawingIsValid: false,
+    drawingIsValid: manualDrawing !== null,
     effectiveRoutePreviewDrawing: null,
     routePreviewSource: null,
-    hasValidDrawing: false,
-    hasServerRouteInput: true,
+    hasValidDrawing: manualDrawing !== null,
+    hasServerRouteInput: false,
     isCleanPlaceMode: false,
-    payload: {
-      recordType: "action",
-      submissionMode: "quick",
-      volunteersCount: 1,
-    } as CreateActionPayload,
+    payload: payload as CreateActionPayload,
     linkedEventId: undefined,
     photoAssets: [],
     visionEstimate: null,
@@ -132,7 +168,13 @@ describe("action declaration resumed draft durability", () => {
   it("keeps the resumed draft and idempotency key across a lost response and remount", async () => {
     const { store } = installLocalStorage();
     const creationRequestId = "action-create-resume-42";
-    saveDraft(buildResumableForm(), "2026-10-17T09:00:00.000Z", null, null, creationRequestId);
+    saveDraft(
+      buildResumableForm(),
+      "2026-10-17T09:00:00.000Z",
+      { drawing: resumedGpxDrawing, source: "gpx_import" },
+      null,
+      creationRequestId,
+    );
 
     let latest!: HookHarnessValue;
     const renderer = mountHarness((value) => { latest = value; });
@@ -147,7 +189,7 @@ describe("action declaration resumed draft durability", () => {
     await act(async () => {
       latest.setForm(editedForm);
     });
-    latest.draft.saveDraftIfAllowed(editedForm);
+    latest.draft.saveDraftIfAllowed(editedForm, { drawing: resumedGpxDrawing, source: "gpx_import" });
     expect(JSON.parse(store.get(ACTION_DECLARATION_DRAFT_KEY) ?? "{}").actionTitle).toBe("Modification après reprise");
 
     createActionMock.mockRejectedValueOnce(new Error("network response lost"));
@@ -157,10 +199,12 @@ describe("action declaration resumed draft durability", () => {
 
     expect(createActionMock).toHaveBeenCalledWith(expect.anything(), { idempotencyKey: creationRequestId });
     expect(store.has(ACTION_DECLARATION_DRAFT_KEY)).toBe(true);
-    renderer.unmount();
+    act(() => {
+      renderer.unmount();
+    });
 
     let remounted!: HookHarnessValue;
-    mountHarness((value) => { remounted = value; });
+    const remountedRenderer = mountHarness((value) => { remounted = value; });
     expect(remounted.draft.creationRequestId).toBe(creationRequestId);
     await act(async () => {
       remounted.draft.handleResumeDraft();
@@ -173,6 +217,9 @@ describe("action declaration resumed draft durability", () => {
 
     expect(createActionMock).toHaveBeenLastCalledWith(expect.anything(), { idempotencyKey: creationRequestId });
     expect(store.has(ACTION_DECLARATION_DRAFT_KEY)).toBe(false);
+    act(() => {
+      remountedRenderer.unmount();
+    });
   });
 
   it("tracks repeated form-start calls only once", () => {
@@ -190,6 +237,8 @@ describe("action declaration resumed draft durability", () => {
       "complete",
       expect.objectContaining({ source: "action_declaration_form" }),
     );
-    renderer.unmount();
+    act(() => {
+      renderer.unmount();
+    });
   });
 });
