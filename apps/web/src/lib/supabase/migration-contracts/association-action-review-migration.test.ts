@@ -13,6 +13,10 @@ const revalidationMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261030000012_association_action_review_geography_revalidation.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
+const robustnessMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261030000013_association_action_review_formalities_robustness.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
 
 describe("association action review migration STATIC_CONTRACT", () => {
   it("separates review from moderation and preserves historical rows", () => {
@@ -85,5 +89,13 @@ describe("association action review migration STATIC_CONTRACT", () => {
     expect(revalidationMigration).toContain("revoke all on function public.decide_association_action_review");
     expect(revalidationMigration).toContain("grant execute on function public.decide_association_action_review");
     expect(revalidationMigration).toContain("set search_path = pg_catalog, public");
+  });
+
+  it("keeps the follow-up migration forward-only and fail-closed for malformed progress", () => {
+    expect(robustnessMigration).toContain("jsonb_array_elements(case when jsonb_typeof(value -> 'progress') = 'array'");
+    expect(robustnessMigration).toContain("progress ->> 'validforqualification' = 'true'");
+    expect(robustnessMigration).toContain("create or replace function public.decide_association_action_review(");
+    expect(robustnessMigration).toContain("corrigez et soumettez-la à nouveau");
+    expect(robustnessMigration).toContain("revoke all on function public.decide_association_action_review");
   });
 });
