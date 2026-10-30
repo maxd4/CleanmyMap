@@ -37,14 +37,22 @@ export function useActionDeclarationFormPresentation({
   useEffect(() => {
     if (!hasAttemptedSubmit || validationIssues.length === 0) return;
     let frame = 0;
-    frame = window.requestAnimationFrame(() => {
+    const focusFirstInvalidControl = () => {
       const issue = validationIssues[0];
       const targetId = ACTION_VALIDATION_FIELD_IDS[issue?.field ?? ""];
       if (!targetId) return;
       const focusTarget = resolveValidationFocusTarget(targetId);
       if (focusTarget instanceof HTMLElement) focusTarget.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
+    };
+    const observer = typeof MutationObserver === "undefined"
+      ? null
+      : new MutationObserver(focusFirstInvalidControl);
+    observer?.observe(document.body, { childList: true, subtree: true });
+    frame = window.requestAnimationFrame(focusFirstInvalidControl);
+    return () => {
+      observer?.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
   }, [hasAttemptedSubmit, validationIssues]);
 
   useEffect(() => {
@@ -54,28 +62,36 @@ export function useActionDeclarationFormPresentation({
       ariaInvalid: string | null;
     }>();
 
-    for (const issue of validationIssues) {
-      const targetId = getActionValidationTargetId(issue.field);
-      if (!targetId) continue;
-      const target = resolveValidationFocusTarget(targetId);
-      if (!(target instanceof HTMLElement)) continue;
-      if (!previousAttributes.has(target)) {
-        previousAttributes.set(target, {
-          ariaDescribedBy: target.getAttribute("aria-describedby"),
-          ariaInvalid: target.getAttribute("aria-invalid"),
-        });
+    const applyValidationAttributes = () => {
+      for (const issue of validationIssues) {
+        const targetId = getActionValidationTargetId(issue.field);
+        if (!targetId) continue;
+        const target = resolveValidationFocusTarget(targetId);
+        if (!(target instanceof HTMLElement)) continue;
+        if (!previousAttributes.has(target)) {
+          previousAttributes.set(target, {
+            ariaDescribedBy: target.getAttribute("aria-describedby"),
+            ariaInvalid: target.getAttribute("aria-invalid"),
+          });
+        }
+        const errorId = getActionValidationFieldErrorId(issue.field);
+        const describedBy = (target.getAttribute("aria-describedby") ?? "")
+          .split(/\s+/)
+          .filter(Boolean);
+        if (!describedBy.includes(errorId)) {
+          target.setAttribute("aria-describedby", [...describedBy, errorId].join(" "));
+        }
+        target.setAttribute("aria-invalid", "true");
       }
-      const errorId = getActionValidationFieldErrorId(issue.field);
-      const describedBy = (target.getAttribute("aria-describedby") ?? "")
-        .split(/\s+/)
-        .filter(Boolean);
-      if (!describedBy.includes(errorId)) {
-        target.setAttribute("aria-describedby", [...describedBy, errorId].join(" "));
-      }
-      target.setAttribute("aria-invalid", "true");
-    }
+    };
+    const observer = typeof MutationObserver === "undefined"
+      ? null
+      : new MutationObserver(applyValidationAttributes);
+    observer?.observe(document.body, { childList: true, subtree: true });
+    applyValidationAttributes();
 
     return () => {
+      observer?.disconnect();
       for (const [target, attributes] of previousAttributes) {
         if (attributes.ariaDescribedBy === null) target.removeAttribute("aria-describedby");
         else target.setAttribute("aria-describedby", attributes.ariaDescribedBy);

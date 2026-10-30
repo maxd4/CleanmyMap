@@ -7,6 +7,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HarvestWasteSection } from "./harvest-waste-section";
+import { createInitialFormState, buildCreateActionPayload } from "../payload";
+import type { FormState, ValidationIssue } from "../model";
+import { getActionDeclarationSubmissionIssues } from "../utils/action-declaration-submission.model";
+import { useActionDeclarationFormPresentation } from "../hooks/use-action-declaration-form-presentation";
+import { ActionDeclarationValidationSummary } from "../action-declaration-form-sections";
 
 function renderWasteSection(overrides: Partial<React.ComponentProps<typeof HarvestWasteSection>> = {}) {
   return renderToStaticMarkup(
@@ -24,6 +29,7 @@ function renderWasteSection(overrides: Partial<React.ComponentProps<typeof Harve
       notes: "",
       wasteCategories: [],
       onTriChange: () => undefined,
+      validationIssues: [],
       wasteCurrentPerVolunteer: 8,
       wasteBenchmarkPerVolunteer: 8,
       wasteBenchmarkSourceCount: 12,
@@ -67,13 +73,125 @@ function InteractiveWasteSection({
     wasteBenchmarkSourceCount: 12,
     wasteDeltaPercent: 0,
     comparisonTone: "slate",
+    validationIssues: [],
   });
+}
+
+function buildValidationForm(participantOnly = false): FormState {
+  const form: FormState = {
+    ...createInitialFormState("Alex", "action"),
+    organizerType: "association",
+    associationName: "Association locale",
+    actionDate: "2026-10-09",
+    locationLabel: "Quai nord",
+    departureLocationLabel: "Quai nord",
+    volunteersCount: "1",
+    childrenCount: "0",
+    retiredCount: "0",
+    durationMinutes: "60",
+    wasteKg: "8",
+    wasteRecyclablesKg: "-1",
+    wasteGlassKg: "100001",
+    wasteHouseholdKg: "100001",
+    wasteOtherKg: "100001",
+  };
+  if (participantOnly) {
+    form.volunteersCount = "0";
+    form.wasteRecyclablesKg = "";
+    form.wasteGlassKg = "";
+    form.wasteHouseholdKg = "";
+    form.wasteOtherKg = "";
+  }
+  return form;
+}
+
+function HarvestValidationHarness({ participantOnly = false }: { participantOnly?: boolean }) {
+  const [form, setForm] = React.useState(() => buildValidationForm(participantOnly));
+  const [validationIssues, setValidationIssues] = React.useState<ValidationIssue[]>([]);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
+  const presentation = useActionDeclarationFormPresentation({
+    validationIssues,
+    hasAttemptedSubmit,
+    initialActionId: null,
+    loadedActionPhase: null,
+  });
+
+  function validate() {
+    const issues = getActionDeclarationSubmissionIssues({
+      form,
+      payload: buildCreateActionPayload({
+        form,
+        declarationMode: "complete",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        linkedEventId: undefined,
+      }),
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: true,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    });
+    setHasAttemptedSubmit(true);
+    setValidationIssues(issues);
+  }
+
+  function updateTriField(field: keyof FormState, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  return (
+    <>
+      <button type="button" onClick={validate}>Vérifier</button>
+      {hasAttemptedSubmit && validationIssues.length > 0 ? (
+        <ActionDeclarationValidationSummary validationIssues={validationIssues} />
+      ) : null}
+      <HarvestWasteSection
+        wasteKg={form.wasteKg}
+        onWasteKgChange={(value) => updateTriField("wasteKg", value)}
+        wasteMeasurementMethod={form.wasteMeasurementMethod}
+        wasteRecyclablesKg={form.wasteRecyclablesKg}
+        wasteGlassKg={form.wasteGlassKg}
+        wasteHouseholdKg={form.wasteHouseholdKg}
+        wasteOtherKg={form.wasteOtherKg}
+        wasteUnusualObjects={form.wasteUnusualObjects}
+        wasteSpecialHandlingWaste={form.wasteSpecialHandlingWaste}
+        onMeasurementMethodChange={(value) => updateTriField("wasteMeasurementMethod", value)}
+        notes={form.notes}
+        wasteCategories={form.wasteCategories ?? []}
+        onTriChange={(field, value) => updateTriField(field, String(value))}
+        wasteCurrentPerVolunteer={8}
+        wasteBenchmarkPerVolunteer={8}
+        wasteBenchmarkSourceCount={12}
+        wasteDeltaPercent={0}
+        comparisonTone="slate"
+        validationIssues={validationIssues}
+      />
+      <output data-testid="confirmation-state">
+        {hasAttemptedSubmit && validationIssues.length === 0 ? "open" : "closed"}
+      </output>
+      <output data-testid="preparation-state">{presentation.showPreparationSummary ? "shown" : "hidden"}</output>
+    </>
+  );
 }
 
 function activateDisclosureWithKeyboard(button: HTMLButtonElement, key: "Enter" | " ") {
   button.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
   button.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
   button.click();
+}
+
+function setControlValue(element: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(element),
+    "value",
+  )?.set;
+  setter?.call(element, value);
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+  element.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 describe("HarvestWasteSection comparison", () => {
@@ -133,6 +251,90 @@ describe("HarvestWasteSection comparison", () => {
       act(() => activateDisclosureWithKeyboard(button(), " "));
       expect(button().getAttribute("aria-expanded")).toBe("false");
       expect(button().hasAttribute("aria-controls")).toBe(false);
+      expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
+    });
+  });
+
+  describe("validation accessibility", () => {
+    let container: HTMLDivElement;
+    let root: ReturnType<typeof createRoot>;
+    let originalRequestAnimationFrame: typeof window.requestAnimationFrame;
+
+    beforeEach(() => {
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      container = document.createElement("div");
+      document.body.appendChild(container);
+      originalRequestAnimationFrame = window.requestAnimationFrame;
+      window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+        callback(0);
+        return 1;
+      }) as typeof window.requestAnimationFrame;
+    });
+
+    afterEach(() => {
+      window.requestAnimationFrame = originalRequestAnimationFrame;
+      act(() => root.unmount());
+      document.body.replaceChildren();
+    });
+
+    it("opens the real disclosure and exposes every invalid breakdown field", async () => {
+      act(() => {
+        root = createRoot(container);
+        root.render(<HarvestValidationHarness />);
+      });
+
+      const disclosure = () => [...container.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent?.includes("Détail du tri")) as HTMLButtonElement;
+      expect(disclosure().getAttribute("aria-expanded")).toBe("false");
+      expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
+
+      await act(async () => {
+        (container.querySelector("button") as HTMLButtonElement).click();
+        await Promise.resolve();
+      });
+
+      expect(disclosure().getAttribute("aria-expanded")).toBe("true");
+      expect(container.querySelector("#harvest-waste-tri-details")).not.toBeNull();
+      for (const id of [
+        "harvest-waste-recyclables-kg",
+        "harvest-waste-glass-kg",
+        "harvest-waste-household-kg",
+        "harvest-waste-other-kg",
+      ]) {
+        const control = container.querySelector(`#${id}`) as HTMLInputElement;
+        expect(control).not.toBeNull();
+        expect(control.getAttribute("aria-invalid")).toBe("true");
+        const describedBy = control.getAttribute("aria-describedby");
+        expect(describedBy).toBeTruthy();
+        expect(container.querySelector(`#${describedBy}`)).not.toBeNull();
+      }
+      expect(document.activeElement?.id).toBe("harvest-waste-recyclables-kg");
+      const firstError = container.querySelector("#action-validation-error-wasteRecyclablesKg a") as HTMLAnchorElement;
+      expect(firstError.getAttribute("href")).toBe("#harvest-waste-recyclables-kg");
+      expect(container.querySelector(firstError.getAttribute("href") ?? "")).not.toBeNull();
+
+      for (const id of [
+        "harvest-waste-recyclables-kg",
+        "harvest-waste-glass-kg",
+        "harvest-waste-household-kg",
+        "harvest-waste-other-kg",
+      ]) {
+        act(() => { setControlValue(container.querySelector(`#${id}`) as HTMLInputElement, "1"); });
+      }
+      act(() => { (container.querySelector("button") as HTMLButtonElement).click(); });
+      expect(container.querySelector('[data-testid="confirmation-state"]')?.textContent).toBe("open");
+      expect(container.querySelector("#action-declaration-validation-summary")).toBeNull();
+    });
+
+    it("does not open the disclosure for an unrelated participant error", () => {
+      act(() => {
+        root = createRoot(container);
+        root.render(<HarvestValidationHarness participantOnly />);
+      });
+      const disclosure = [...container.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent?.includes("Détail du tri")) as HTMLButtonElement;
+      act(() => { (container.querySelector("button") as HTMLButtonElement).click(); });
+      expect(disclosure.getAttribute("aria-expanded")).toBe("false");
       expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
     });
   });

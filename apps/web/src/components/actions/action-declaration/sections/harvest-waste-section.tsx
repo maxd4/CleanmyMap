@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Trash2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../model";
+import type { ValidationIssue } from "../model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
@@ -37,9 +38,11 @@ type HarvestWasteSectionProps = {
   wasteBenchmarkSourceCount: number;
   wasteDeltaPercent: number | null;
   comparisonTone: "emerald" | "orange" | "slate";
+  validationIssues: ValidationIssue[];
 };
 
 const triInputCls = "w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15";
+const useDisclosureLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function HarvestWasteSection({
   wasteKg,
@@ -61,8 +64,20 @@ export function HarvestWasteSection({
   wasteBenchmarkSourceCount,
   wasteDeltaPercent,
   comparisonTone,
+  validationIssues,
 }: HarvestWasteSectionProps) {
   const [triOpen, setTriOpen] = useState(false);
+  const hasTriValidationIssues = validationIssues.some((issue) =>
+    issue.field === "wasteRecyclablesKg" ||
+    issue.field === "wasteGlassKg" ||
+    issue.field === "wasteHouseholdKg" ||
+    issue.field === "wasteOtherKg",
+  );
+
+  useDisclosureLayoutEffect(() => {
+    if (hasTriValidationIssues) setTriOpen(true);
+  }, [hasTriValidationIssues, validationIssues]);
+
   const parseKg = (value: string): number | null => {
     const parsed = Number(value);
     return value.trim().length > 0 && Number.isFinite(parsed) && parsed >= 0

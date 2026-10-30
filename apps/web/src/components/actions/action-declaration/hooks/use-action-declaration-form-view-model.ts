@@ -48,6 +48,7 @@ function buildActionDeclarationSectionProps(
     onRemovePhoto: state.removePhoto,
     onClearPhotos: state.clearPhotos,
     photoError,
+    validationIssues,
   };
   const location = {
     form,

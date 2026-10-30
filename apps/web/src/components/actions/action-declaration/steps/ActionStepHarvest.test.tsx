@@ -26,6 +26,7 @@ function renderHarvest(mode: "essentials" | "collection" | "details") {
       onPhotoReplace: () => undefined,
       onRemovePhoto: () => undefined,
       onClearPhotos: () => undefined,
+      validationIssues: [],
     } as ComponentProps<typeof ActionStepHarvest>),
   );
 }

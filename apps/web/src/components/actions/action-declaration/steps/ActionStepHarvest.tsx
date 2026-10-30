@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormState } from "../model";
+import type { ValidationIssue } from "../model";
 import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
@@ -30,6 +31,7 @@ interface ActionStepHarvestProps {
   onPhotoReplace: (photoId: string, file: File | null) => void;
   onRemovePhoto: (photoId: string) => void;
   onClearPhotos: () => void;
+  validationIssues: ValidationIssue[];
   mode?: "all" | "essentials" | "collection" | "photos" | "details";
 }
 
@@ -47,6 +49,7 @@ export function ActionStepHarvest({
   onPhotoReplace,
   onRemovePhoto,
   onClearPhotos,
+  validationIssues,
   mode = "all",
 }: ActionStepHarvestProps) {
   const isCleanPlaceMode = recordType === "clean_place";
@@ -186,6 +189,7 @@ export function ActionStepHarvest({
             wasteBenchmarkSourceCount={wasteBenchmarkSourceCount}
             wasteDeltaPercent={wasteDeltaPercent}
             comparisonTone={comparisonTone}
+            validationIssues={validationIssues}
           />
           <HarvestMegotsSection
             wasteMegotsKg={form.wasteMegotsKg}
