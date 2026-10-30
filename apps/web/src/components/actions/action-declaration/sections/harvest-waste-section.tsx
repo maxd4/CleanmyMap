@@ -169,14 +169,15 @@ export function HarvestWasteSection({
           <div id="harvest-waste-tri-details" className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: "wasteRecyclablesKg" as const, label: "Recyclables (kg)", value: wasteRecyclablesKg },
-                { key: "wasteGlassKg" as const,       label: "Verre (kg)",       value: wasteGlassKg },
-                { key: "wasteHouseholdKg" as const,   label: "Déchets ménagers (kg)", value: wasteHouseholdKg },
-                { key: "wasteOtherKg" as const,       label: "Autres déchets (kg)", value: wasteOtherKg },
-              ].map(({ key, label, value }) => (
+                { key: "wasteRecyclablesKg" as const, id: "harvest-waste-recyclables-kg", label: "Recyclables (kg)", value: wasteRecyclablesKg },
+                { key: "wasteGlassKg" as const,       id: "harvest-waste-glass-kg", label: "Verre (kg)",       value: wasteGlassKg },
+                { key: "wasteHouseholdKg" as const,   id: "harvest-waste-household-kg", label: "Déchets ménagers (kg)", value: wasteHouseholdKg },
+                { key: "wasteOtherKg" as const,       id: "harvest-waste-other-kg", label: "Autres déchets (kg)", value: wasteOtherKg },
+              ].map(({ key, id, label, value }) => (
                 <label key={key} className="block space-y-1">
                   <span className="text-xs font-medium text-slate-400">{label}</span>
                   <input
+                    id={id}
                     type="number"
                     min="0"
                     step={ACTION_WASTE_MASS_RESOLUTION_KG}

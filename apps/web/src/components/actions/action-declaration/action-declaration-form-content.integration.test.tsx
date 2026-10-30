@@ -57,6 +57,9 @@ vi.mock("./action-declaration-form-sections", () => ({
       <label htmlFor="harvest-waste-kg">Déchets hors mégots</label>
       <input
         id="harvest-waste-kg"
+        type="number"
+        min={0}
+        max={100000}
         value={form.wasteKg}
         onChange={(event) => identity.updateField("wasteKg", event.target.value)}
       />
@@ -269,6 +272,38 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
 
     expect(container.querySelector("#confirmation-state")?.textContent).toBe("open");
     expect(container.querySelector('[role="alert"]')).toBeNull();
+
+    await act(async () => root.unmount());
+  });
+
+  it("runs application measurement validation even when the native range is invalid", async () => {
+    const { container, root } = renderHarness();
+    const form = container.querySelector("form") as HTMLFormElement;
+    const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const organizerType = container.querySelector("#action-organizer-type") as HTMLSelectElement;
+    const volunteersCount = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const wasteKg = container.querySelector("#harvest-waste-kg") as HTMLInputElement;
+    const geometry = container.querySelector("#manual-drawing-control") as HTMLButtonElement;
+
+    await act(async () => {
+      setControlValue(organizerType, "association");
+      setControlValue(volunteersCount, "12");
+      setControlValue(wasteKg, "-1");
+      geometry.click();
+      await Promise.resolve();
+    });
+
+    expect(form.checkValidity()).toBe(false);
+
+    await act(async () => {
+      submit.click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("#confirmation-state")?.textContent).toBe("closed");
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("masse de déchets");
+    expect(wasteKg.getAttribute("aria-invalid")).toBe("true");
+    expect(wasteKg.getAttribute("aria-describedby")).toContain("action-validation-error-wasteKg");
 
     await act(async () => root.unmount());
   });

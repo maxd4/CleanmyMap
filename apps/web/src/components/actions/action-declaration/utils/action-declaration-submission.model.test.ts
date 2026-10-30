@@ -6,6 +6,45 @@ import {
   normalizeActionDeclarationFormBeforeSubmit,
 } from "./action-declaration-submission.model";
 import { buildCreateActionPayload } from "../payload";
+import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste/measurement";
+import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
+
+function buildValidCompleteDeclaration() {
+  return {
+    ...createInitialFormState("Alex", "action"),
+    organizerType: "association" as const,
+    associationName: "Association locale",
+    actionDate: "2026-10-09",
+    locationLabel: "Quai nord",
+    departureLocationLabel: "Quai nord",
+    volunteersCount: "1",
+    childrenCount: "0",
+    retiredCount: "0",
+    wasteKg: "1",
+    durationMinutes: "60",
+  };
+}
+
+function getCompleteDeclarationIssues(form: ReturnType<typeof buildValidCompleteDeclaration>) {
+  return getActionDeclarationSubmissionIssues({
+    form,
+    payload: buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    }),
+    isAuthenticated: true,
+    declarationMode: "complete",
+    hasValidDrawing: true,
+    hasServerRouteInput: false,
+    isCleanPlaceMode: false,
+    manualDrawingSource: null,
+  });
+}
 
 describe("action declaration submission model", () => {
   it("keeps the canonical normalized route and spontaneous-action rules", () => {
@@ -187,5 +226,85 @@ describe("action declaration submission model", () => {
         message: "Renseignez les nombres entiers d’enfants et de retraités présents.",
       },
     ]);
+  });
+
+  it.each([
+    ["below zero", "-1"],
+    ["above the maximum", String(ACTION_MEASUREMENT_MAX_KG + 1)],
+  ])("rejects waste mass %s before confirmation", (_label, value) => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteKg = value;
+
+    expect(getCompleteDeclarationIssues(form)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: "wasteKg" }),
+    ]));
+  });
+
+  it("accepts zero as an explicitly measured waste mass", () => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteKg = "0";
+
+    expect(getCompleteDeclarationIssues(form)).toEqual([]);
+  });
+
+  it.each([
+    ["negative", "-1"],
+    ["fractional", "1.5"],
+    ["above the maximum", String(MAX_CIGARETTE_BUTTS_COUNT + 1)],
+  ])("rejects %s cigarette-butt count", (_label, value) => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteKg = "";
+    form.cigaretteButtsCount = value;
+
+    expect(getCompleteDeclarationIssues(form)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: "cigaretteButtsCount" }),
+    ]));
+  });
+
+  it("rejects out-of-range cigarette-butt mass, volume and detailed breakdown", () => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteKg = "";
+    form.wasteMegotsKg = "-1";
+    form.cigaretteButtsVolumeLiters = String(ACTION_MEASUREMENT_MAX_KG + 1);
+    form.wasteRecyclablesKg = "-1";
+    form.wasteGlassKg = String(ACTION_MEASUREMENT_MAX_KG + 1);
+
+    const fields = getCompleteDeclarationIssues(form).map((issue) => issue.field);
+    expect(fields).toEqual(expect.arrayContaining([
+      "wasteMegotsKg",
+      "cigaretteButtsVolumeLiters",
+      "wasteRecyclablesKg",
+      "wasteGlassKg",
+    ]));
+  });
+
+  it("keeps optional measurements absent and accepts valid detailed measurements", () => {
+    const absent = buildValidCompleteDeclaration();
+    absent.wasteKg = "0";
+    expect(getCompleteDeclarationIssues(absent)).toEqual([]);
+
+    const measured = buildValidCompleteDeclaration();
+    measured.wasteKg = "12.5";
+    measured.wasteMegotsKg = "0.25";
+    measured.cigaretteButtsCount = "2500";
+    measured.cigaretteButtsVolumeLiters = "1.5";
+    measured.wasteRecyclablesKg = "4.0";
+    measured.wasteGlassKg = "2.0";
+    measured.wasteHouseholdKg = "3.0";
+    measured.wasteOtherKg = "3.5";
+
+    expect(getCompleteDeclarationIssues(measured)).toEqual([]);
+  });
+
+  it("does not silently treat a non-numeric measurement as absent", () => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteKg = "not-a-number";
+
+    expect(getCompleteDeclarationIssues(form)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        field: "wasteKg",
+        message: "Saisissez une mesure numérique valide ou laissez ce champ vide.",
+      }),
+    ]));
   });
 });

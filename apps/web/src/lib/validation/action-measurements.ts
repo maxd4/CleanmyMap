@@ -131,6 +131,18 @@ export const commonActionMeasurementSchemaFields = {
   ...commonActionCigaretteButtSchemaFields,
 };
 
+/**
+ * Shared measurement fields for the legacy and contract action payloads.
+ * Keeping this object in the canonical measurement owner lets the client
+ * reuse the exact same bounds before opening the confirmation dialog.
+ */
+export const actionMeasurementSchemaFields = {
+  ...commonActionMeasurementSchemaFields,
+  cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+  wasteBreakdown: wasteBreakdownSchema.optional(),
+  wasteMeasurementMethod: wasteMeasurementMethodSchema,
+};
+
 export const wasteCategorySlugSchema = z
   .string()
   .refine(isWasteCategorySlug, "Catégorie de déchet inconnue.");

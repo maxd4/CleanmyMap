@@ -1,7 +1,10 @@
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
 import { isActionDateInFuture } from "@/lib/actions/temporal";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
-import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
+import {
+  getActionMeasurementValidationIssues,
+  getVolunteerActionValidationIssues,
+} from "@/lib/actions/submission-validation";
 import type {
   ActionGeometrySource,
   CreateActionPayload,
@@ -148,6 +151,25 @@ export function getActionDeclarationSubmissionIssues({
 
   const issues: ValidationIssue[] = [...getStepOneValidationIssues(form)];
 
+  const rawMeasurementFields = [
+    ["wasteKg", form.wasteKg],
+    ["wasteRecyclablesKg", form.wasteRecyclablesKg],
+    ["wasteGlassKg", form.wasteGlassKg],
+    ["wasteHouseholdKg", form.wasteHouseholdKg],
+    ["wasteOtherKg", form.wasteOtherKg],
+    ["wasteMegotsKg", form.wasteMegotsKg],
+    ["cigaretteButtsCount", form.cigaretteButtsCount],
+    ["cigaretteButtsVolumeLiters", form.cigaretteButtsVolumeLiters],
+  ] as const;
+  for (const [field, rawValue] of rawMeasurementFields) {
+    if (rawValue.trim() && !Number.isFinite(Number(rawValue))) {
+      issues.push({
+        field,
+        message: "Saisissez une mesure numérique valide ou laissez ce champ vide.",
+      });
+    }
+  }
+
   if (form.recordType === "action") {
     const totalInput = form.volunteersCount.trim();
     const total = Number(totalInput);
@@ -173,6 +195,9 @@ export function getActionDeclarationSubmissionIssues({
       }
     }
   }
+
+  const measurementIssues = getActionMeasurementValidationIssues(payload);
+  issues.push(...measurementIssues);
 
   const volunteerIssues = getVolunteerActionValidationIssues(payload);
   issues.push(...volunteerIssues);

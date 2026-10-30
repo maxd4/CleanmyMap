@@ -7,7 +7,6 @@ import type { CreateActionPayload } from "@/lib/actions/types";
 import { getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
 import { getTimeContractValidationIssues, isValidClockTime } from "@/lib/actions/time-contract";
 import { isActionDateInFuture } from "@/lib/actions/temporal";
-import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import {
   actionInputGeometrySourceSchema,
   addGpxImportIssue,
@@ -18,11 +17,9 @@ import {
   routePlannerProofSchema,
 } from "./action-geometry";
 import {
-  commonActionMeasurementSchemaFields,
+  actionMeasurementSchemaFields,
   visionEstimateSchema,
   volunteerParticipationSchema,
-  wasteBreakdownSchema,
-  wasteMeasurementMethodSchema,
 } from "./action-measurements";
 import { commonActionIdentitySchemaFields, userMetadataSchema } from "./action-identity";
 import { photoAssetSchema } from "./action-media";
@@ -150,8 +147,7 @@ const createActionLegacyBaseSchema = z.object({
   accessMode: z.enum(["public", "invite_link"]).optional(),
   preparationData: preparationDataSchema.nullable().optional(),
   routeCalibrationContext: routeCalibrationContextSchema.nullable().optional(),
-  ...commonActionMeasurementSchemaFields,
-  cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+  ...actionMeasurementSchemaFields,
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(0).max(500).default(1),
   durationMinutes: z.number().int().min(0).max(24 * 60).default(0),
@@ -159,8 +155,6 @@ const createActionLegacyBaseSchema = z.object({
   manualDrawing: manualDrawingSchema.optional(),
   geometrySource: actionInputGeometrySourceSchema.nullable().optional(),
   submissionMode: z.enum(["quick", "complete"]).optional(),
-  wasteBreakdown: wasteBreakdownSchema.optional(),
-  wasteMeasurementMethod: wasteMeasurementMethodSchema,
   photos: z.array(photoAssetSchema).max(3).optional(),
   visionEstimate: visionEstimateSchema.nullable().optional(),
   userMetadata: userMetadataSchema.optional(),
@@ -196,7 +190,7 @@ const createActionContractSchema = z.object({
   metadata: z.object({
     ...commonActionIdentitySchemaFields,
     placeType: z.string().max(80).optional(),
-    ...commonActionMeasurementSchemaFields,
+    ...actionMeasurementSchemaFields,
     volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(0).max(500).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
@@ -213,8 +207,6 @@ const createActionContractSchema = z.object({
     accessMode: z.enum(["public", "invite_link"]).optional(),
     preparationData: preparationDataSchema.nullable().optional(),
     plannerSnapshotProof: routePlannerProofSchema,
-    wasteBreakdown: wasteBreakdownSchema.optional(),
-    wasteMeasurementMethod: wasteMeasurementMethodSchema,
     photos: z.array(photoAssetSchema).max(3).optional(),
     visionEstimate: visionEstimateSchema.nullable().optional(),
   }),

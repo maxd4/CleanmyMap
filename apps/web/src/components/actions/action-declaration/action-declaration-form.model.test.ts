@@ -9,6 +9,10 @@ describe("action declaration form presentation model", () => {
   it("maps validation issues to controls that remain visible in the five-group form", () => {
     expect(getActionValidationTargetId("organizerType")).toBe("action-organizer-type");
     expect(getActionValidationTargetId("wasteKg")).toBe("harvest-waste-kg");
+    expect(getActionValidationTargetId("wasteRecyclablesKg")).toBe("harvest-waste-recyclables-kg");
+    expect(getActionValidationTargetId("wasteMegotsKg")).toBe("harvest-megots-kg");
+    expect(getActionValidationTargetId("cigaretteButtsCount")).toBe("harvest-megots-count");
+    expect(getActionValidationTargetId("cigaretteButtsVolumeLiters")).toBe("harvest-megots-volume");
     expect(getActionValidationTargetId("manualDrawing")).toBe("action-location-geometry");
     expect(getActionValidationTargetId("gpxImport")).toBe("gpx-import");
     expect(getActionValidationTargetId("unknown")).toBeNull();
