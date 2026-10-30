@@ -39,6 +39,8 @@ export type GpxSerializerInput = {
   waypoints?: readonly GpxWaypoint[];
   name?: string;
   description?: string;
+  /** Machine-readable origin marker used to keep planner exports planned on re-import. */
+  provenance?: "planned" | "observed";
 };
 
 // GPX 1.1 requires this URI as its schema namespace; it is not a network request.
@@ -314,15 +316,21 @@ export function serializeActionGeometryToGpx(
     ),
   ].join("\n");
   const tracks = input.tracks.map(serializeTrack).join("\n");
+  const provenance = input.provenance ?? (
+    input.tracks.every((track) => track.geometrySource === "gpx_import" || track.geometrySource === "gps_tracking")
+      ? "observed"
+      : "planned"
+  );
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<gpx version="1.1" creator="CleanMyMap" xmlns="${GPX_1_1_NAMESPACE}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="${GPX_1_1_NAMESPACE} http://www.topografix.com/GPX/1/1/gpx.xsd">`,
+    `<gpx version="1.1" creator="CleanMyMap" xmlns="${GPX_1_1_NAMESPACE}" xmlns:cmm="https://cleanmymap.org/gpx" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="${GPX_1_1_NAMESPACE} http://www.topografix.com/GPX/1/1/gpx.xsd">`,
     "  <metadata>",
     `    <name>${escapeXml(documentName, "nom du document")}</name>`,
     documentDescription
       ? `    <desc>${escapeXml(documentDescription, "description du document")}</desc>`
       : "",
+    `    <cmm:provenance version="1" intent="${provenance}" />`,
     "  </metadata>",
     waypoints,
     tracks,

@@ -4,6 +4,7 @@ import {
   buildActionRouteGpxDocument,
   buildActionRouteGpxInput,
 } from "./action-route-gpx";
+import { parseGpxText } from "@/lib/actions/geometry/gpx";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 
 const finalCoordinates: [number, number][] = [
@@ -87,6 +88,7 @@ describe("action-route-gpx export adapter", () => {
     });
 
     expect(xml).toContain("Tracé GPX importé");
+    expect(xml).toContain('cmm:provenance version="1" intent="observed"');
     expect(xml).toContain('lat="48.8" lon="2.3"');
     expect(xml).not.toContain('lat="48.85" lon="2.35"');
     expect(xml).not.toContain('lat="48.86" lon="2.36"');
@@ -114,6 +116,7 @@ describe("action-route-gpx export adapter", () => {
     });
 
     expect(xml).toContain("Tracé estimé CleanMyMap");
+    expect(xml).toContain('cmm:provenance version="1" intent="planned"');
     expect(xml).toContain('lat="48.82" lon="2.32"');
     expect(xml).toContain('lat="48.83" lon="2.33"');
   });
@@ -138,6 +141,7 @@ describe("action-route-gpx export adapter", () => {
     expect(xml).toContain('lat="48.9" lon="2.4"');
     expect(xml).toContain('lat="48.91" lon="2.41"');
     expect(xml).not.toContain('lon="2.35"></trkpt>\n        <trkpt lat="48.9"');
+    expect(parseGpxText(xml!).provenance).toBe("planned");
   });
 
   it("keeps fallback and GPX import sources identifiable without routing", () => {

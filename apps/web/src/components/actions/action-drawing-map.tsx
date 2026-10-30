@@ -79,12 +79,14 @@ function asCoordinates(latLngs: L.LatLng[]): [number, number][] {
 function DrawingController({
  value,
   drawingSource,
+  previewDrawings = [],
  onChange,
  onUndoAvailable,
  readOnly = false,
 }: {
  value: ActionDrawing | null;
   drawingSource?: ActionGeometrySource | null;
+ previewDrawings?: ActionDrawing[];
  onChange: (
   drawing: ActionDrawing | null,
   geometrySource?: ActionGeometrySource | null,
@@ -94,6 +96,7 @@ function DrawingController({
 }) {
  const map = useMap();
  const layerGroupRef = useRef<L.FeatureGroup | null>(null);
+ const previewLayerGroupRef = useRef<L.LayerGroup | null>(null);
  const currentDrawingRef = useRef(
   createActionDrawingSnapshot(normalizeActionDrawing(value), drawingSource),
  );
@@ -102,6 +105,25 @@ function DrawingController({
  useEffect(() => {
   currentDrawingRef.current = createActionDrawingSnapshot(normalizeActionDrawing(value), drawingSource);
  }, [drawingSource, value]);
+
+ useEffect(() => {
+  const previewLayerGroup = previewLayerGroupRef.current ?? new L.LayerGroup();
+  if (!previewLayerGroupRef.current) {
+   previewLayerGroupRef.current = previewLayerGroup;
+   map.addLayer(previewLayerGroup);
+  }
+  previewLayerGroup.clearLayers();
+  for (const previewDrawing of previewDrawings) {
+   if (previewDrawing.kind !== "polyline" || previewDrawing.coordinates.length < 2) continue;
+   previewLayerGroup.addLayer(L.polyline(previewDrawing.coordinates.map(([lat, lng]) => L.latLng(lat, lng)), {
+    color: "#7c3aed",
+    weight: 3,
+    opacity: 0.72,
+    dashArray: "7 5",
+   }));
+  }
+  return () => { previewLayerGroup.clearLayers(); };
+ }, [map, previewDrawings]);
 
  useEffect(() => {
  const layerGroup = new L.FeatureGroup();
@@ -270,6 +292,10 @@ function DrawingController({
  }
  window.clearTimeout(labelTimer);
  map.removeLayer(layerGroup);
+ if (previewLayerGroupRef.current) {
+  map.removeLayer(previewLayerGroupRef.current);
+  previewLayerGroupRef.current = null;
+ }
  layerGroupRef.current = null;
  };
  }, [drawingSource, map, onChange, onUndoAvailable, readOnly, isMobile]);
@@ -349,6 +375,7 @@ type ActionDrawingMapProps = {
   geometrySource?: ActionGeometrySource | null,
  ) => void;
  drawingSource?: ActionGeometrySource | null;
+ previewDrawings?: ActionDrawing[];
  readOnly?: boolean;
  onUndoAvailable?: (state: ActionDrawingUndoState | null) => void;
 };
@@ -359,6 +386,7 @@ export function ActionDrawingMap({
  drawing,
  onDrawingChange,
   drawingSource,
+  previewDrawings = [],
  readOnly = false,
   onUndoAvailable,
 }: ActionDrawingMapProps) {
@@ -447,6 +475,7 @@ export function ActionDrawingMap({
  value={currentValue}
  onChange={handleChange}
    drawingSource={drawingSource}
+   previewDrawings={previewDrawings}
    onUndoAvailable={handleUndoAvailable}
  readOnly={effectiveReadOnly}
  />

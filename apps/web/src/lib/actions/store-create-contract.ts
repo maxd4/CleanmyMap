@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionGpxImportMetadata,
   ActionGeometrySource,
   ActionPreparationData,
   ActionStatus,
@@ -178,13 +179,15 @@ function appendGpxPreparationData(
     return preparation;
   }
   const observedDistanceKm = Number(polylineDistanceKm(params.finalDrawing.coordinates).toFixed(3));
+  const importedGpx = (preparation.gpxImport ?? {}) as Partial<ActionGpxImportMetadata>;
+  const isObserved = importedGpx.intent !== "planned";
   return {
     ...preparation,
-    routeObservedDistanceKm: observedDistanceKm,
+    ...(isObserved ? { routeObservedDistanceKm: observedDistanceKm } : { routeObservedDistanceKm: undefined }),
     gpxImport: {
-      ...(preparation.gpxImport ?? {}),
+      ...importedGpx,
       source: "gpx_import",
-      observedDistanceKm,
+      observedDistanceKm: isObserved ? observedDistanceKm : 0,
       pointCount: params.finalDrawing.coordinates.length,
       inferredTopology: inferGpxTopology(params.finalDrawing.coordinates),
     },

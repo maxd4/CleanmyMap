@@ -81,6 +81,7 @@ describe("serializeActionGeometryToGpx", () => {
     assertWellFormedXml(xml);
     expect(xml).toContain('version="1.1"');
     expect(xml).toContain('xmlns="http://www.topografix.com/GPX/1/1"');
+    expect(xml).toContain('cmm:provenance version="1" intent="planned"');
     expect(xml).toContain('xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"');
     expect(xml).toContain("Itinéraire &amp; &lt;CleanMyMap&gt;");
     expect(xml).toContain("Départ &amp; accueil");
@@ -128,6 +129,7 @@ describe("serializeActionGeometryToGpx", () => {
     });
 
     expect(xml).toContain("Trace GPS observée");
+    expect(xml).toContain('cmm:provenance version="1" intent="observed"');
     expect(xml).toContain('lat="48.85" lon="2.35"');
     expect(xml).toContain('lat="48.87" lon="2.37"');
   });

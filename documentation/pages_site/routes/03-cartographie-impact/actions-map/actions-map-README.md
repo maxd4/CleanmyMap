@@ -433,12 +433,14 @@ géométrie indicative encore affichée en préparation. Une couverture multi-tr
 n'annonce pas de distance cumulée. Le navigateur ne déclenche pas de routage
 pour produire ou recaler cette géométrie.
 
-Un fichier GPX valide constitue un tracé fourni par l'utilisateur : sa source
-reste `gpx_import`, sa longueur observée est calculée séparément de la distance
-cible, et aucun routage ou snapping ne le remplace. Le formulaire conserve les
-segments dans leur ordre ; un fichier multi-segment est refusé tant que la
-géométrie canonique ne sait pas les persister sans inventer une liaison. La
-topologie choisie doit être cohérente avec le caractère fermé ou ouvert du GPX.
+Un fichier GPX valide conserve sa source et sa longueur séparément de la
+distance cible ; aucun routage ou snapping ne le remplace. Les exports du
+générateur portent explicitement la provenance `planned` et restent des
+itinéraires prévus lors d'une réimportation. Les traces terrain déclarées
+utilisent `gpx_import` après contrôle d'éligibilité ; `gps_tracking` reste
+réservé aux traces issues du suivi mobile. Plusieurs fichiers ou segments
+restent des lignes indépendantes : la carte peut les projeter en
+`MultiLineString`, sans créer de liaison ni de distance de couverture unique.
 
 Les polylines disposent d'une zone de clic/touch invisible élargie. L'action « Voir tout le tracé » cadre explicitement la géométrie sans recentrage automatique à chaque sélection.
 

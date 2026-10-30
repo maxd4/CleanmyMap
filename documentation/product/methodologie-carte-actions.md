@@ -615,6 +615,10 @@ couleur de la carte :
 - `gpx_import` = observation `CURRENT` d'une trajectoire fournie par l'utilisateur ; sa
   distance est mesurée depuis la trace GPX ; `gpxImport` reste réservé à cet
   import et ne décrit jamais une mission mobile ;
+- Un export du générateur porte une provenance machine `planned`. Sa
+  réimportation reste une donnée de préparation et ne crée pas de contribution
+  `gpx_import`. Un fichier sans marqueur explicite reste inconnu jusqu'à ce que
+  l'utilisateur précise s'il s'agit d'un parcours prévu ou d'une trace terrain.
 - `manual` = parcours ou zone explicitement déclaré ou dessiné par
   l'utilisateur ; ce n'est pas une observation GPS ;
 - `reference` = géométrie connue d'une emprise identifiable, notamment un parc,
@@ -686,9 +690,13 @@ géométrie hypothétique initiale
 → couverture observée multi-traces
 ```
 
-Dans ce contrat `CURRENT`, un GPX validé est promu comme `gpx_import` sans routage ni
-snapping réseau ; une mission liée éligible est promue comme `gps_tracking`
-depuis ses `gps_points` validés et sa distance serveur. Une promotion conserve
+Dans ce contrat `CURRENT`, une trace terrain GPX explicitement déclarée est promue
+comme `gpx_import` sans routage ni snapping réseau ; une mission liée éligible est promue comme `gps_tracking`
+depuis ses `gps_points` validés et sa distance serveur. Une trace GPX peut
+contenir plusieurs fichiers ou segments : chaque ligne conserve son identité,
+sa distance, ses points et sa topologie sans concaténation. Les fichiers valides
+restent disponibles lorsqu'un autre fichier est refusé ; les plafonds courants
+sont de 5 Mo et 400 points validés par fichier. Une promotion conserve
 `routeTargetDistanceKm` comme cible historique distincte de
 `routeObservedDistanceKm`. Avec plusieurs observations, la projection utilise
 une `MultiLineString` de couverture prioritaire : les traces ne sont jamais concaténées,

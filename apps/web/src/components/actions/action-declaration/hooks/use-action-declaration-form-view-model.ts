@@ -63,6 +63,7 @@ function buildActionDeclarationSectionProps(
     gpxError: state.gpxError,
     onImportGpx: state.handleGpxImport,
     onRemoveGpx: state.removeGpxImport,
+    onSetGpxIntent: state.setGpxIntent,
     onResetManualDrawing: () => state.setManualDrawing(null),
     gpsStatus: smartAssist.gpsStatus,
     gpsMessage: smartAssist.gpsMessage,

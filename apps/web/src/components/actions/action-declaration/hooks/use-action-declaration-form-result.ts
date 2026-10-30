@@ -68,6 +68,7 @@ export function buildActionDeclarationFormResult({
     clearPhotos,
     handleGpxImport: updates.handleGpxImport,
     removeGpxImport: updates.removeGpxImport,
+    setGpxIntent: updates.setGpxIntent,
     updateField: updates.updateField,
     updateFields: updates.updateFields,
     handleResumeDraft: draft.handleResumeDraft,

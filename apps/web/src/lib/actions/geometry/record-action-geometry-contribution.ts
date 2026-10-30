@@ -17,6 +17,7 @@ type RecordActionGeometryContributionParams = {
   source: ActionGeometryContributionSource;
   geojson: string;
   observedDistanceKm: number;
+  sourceFingerprint?: string | null;
   missionId?: string | null;
   observedAt?: string | null;
   technicalProvenance?: Record<string, unknown>;
@@ -34,9 +35,23 @@ function parseLineString(geojson: string): Record<string, unknown> {
     !parsed ||
     typeof parsed !== "object" ||
     Array.isArray(parsed) ||
-    (parsed as { type?: unknown }).type !== "LineString"
+    (parsed as { type?: unknown }).type !== "LineString" ||
+    !Array.isArray((parsed as { coordinates?: unknown }).coordinates) ||
+    ((parsed as { coordinates: unknown[] }).coordinates).length < 2 ||
+    ((parsed as { coordinates: unknown[] }).coordinates).some((coordinate) =>
+      !Array.isArray(coordinate) ||
+      coordinate.length !== 2 ||
+      typeof coordinate[0] !== "number" ||
+      typeof coordinate[1] !== "number" ||
+      !Number.isFinite(coordinate[0]) ||
+      !Number.isFinite(coordinate[1]) ||
+      coordinate[0] < -180 ||
+      coordinate[0] > 180 ||
+      coordinate[1] < -90 ||
+      coordinate[1] > 90,
+    )
   ) {
-    throw new Error("La contribution cartographique doit être une LineString.");
+    throw new Error("La contribution cartographique doit être une LineString de coordonnées valides.");
   }
 
   return parsed as Record<string, unknown>;
@@ -68,7 +83,7 @@ export async function recordActionGeometryContribution(
     p_source: params.source,
     p_observed_geometry: observedGeometry,
     p_observed_distance_km: params.observedDistanceKm,
-    p_source_fingerprint: null,
+    p_source_fingerprint: params.sourceFingerprint ?? null,
     p_mission_id: params.missionId ?? null,
     p_observed_at: params.observedAt ?? null,
     p_technical_provenance: params.technicalProvenance ?? {},

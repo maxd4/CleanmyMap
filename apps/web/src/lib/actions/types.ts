@@ -66,6 +66,23 @@ void ACTION_GEOMETRY_SOURCES;
 export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionRouteTopology = "loop" | "point_to_point";
+export type ActionGpxImportIntent = "planned" | "observed";
+export type ActionGpxImportSegment = {
+  fileName: string;
+  traceIndex: number;
+  segmentIndex: number;
+  coordinates: [number, number][];
+  distanceKm: number;
+  pointCount: number;
+  topology: ActionRouteTopology;
+  sourceFingerprint: string;
+};
+export type ActionGpxImportFile = {
+  fileName: string;
+  provenance: "planned" | "unknown";
+  segments: ActionGpxImportSegment[];
+  error?: string;
+};
 export type ActionLocationCoordinates = {
   latitude: number;
   longitude: number;
@@ -75,6 +92,18 @@ export type ActionGpxImportMetadata = {
   observedDistanceKm: number;
   pointCount: number;
   inferredTopology: ActionRouteTopology;
+  /** A multi-segment file never gets one synthetic topology; this is per segment. */
+  segmentTopologies?: ActionRouteTopology[];
+  segmentDistancesKm?: number[];
+  segmentPointCounts?: number[];
+  segmentCount?: number;
+  traceCount?: number;
+  /** Explicit marker written by the CleanMyMap planner export. */
+  provenance?: "planned" | "unknown";
+  /** Explicit user intent. A planned file is never an observed contribution. */
+  intent?: ActionGpxImportIntent;
+  /** Bounded, independent file/segment candidates kept for persistence and retries. */
+  files?: ActionGpxImportFile[];
   fileName?: string;
 };
 export type ActionObservedCoverage = {

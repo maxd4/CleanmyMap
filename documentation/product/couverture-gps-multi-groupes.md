@@ -11,6 +11,25 @@
 > déduplique la progression `cartography` par utilisateur/action. La
 > déduplication spatiale et la distance de couverture unique restent `TARGET`.
 
+### Import GPX et provenance
+
+Un import GPX distingue explicitement deux intentions : `parcours prévu` pour
+un fichier issu du générateur d'itinéraire, et `trace de terrain` pour une
+trace déclarée après l'action. Le marqueur machine `CleanMyMap`/`cmm:provenance`
+porte l'origine planifiée des exports du générateur ; un fichier sans ce
+marqueur reste d'origine inconnue et ne devient pas automatiquement une
+observation. Un parcours prévu reste dans le contexte de préparation et ne
+produit ni contribution ni progression cartographique.
+
+Les fichiers valides sont traités indépendamment. Un fichier peut contenir
+plusieurs traces et segments : chaque segment reste une unité LineString,
+avec sa distance, ses points et sa topologie propres. Les segments ne sont
+jamais concaténés. Après déclaration terrain et contrôle d'éligibilité, ces
+unités peuvent être projetées en `MultiLineString`, mais cette projection ne
+remplace jamais les contributions sources. Le plafond courant reste de 5 Mo
+par fichier et 400 points validés par fichier ; les erreurs d'un fichier ne
+suppriment pas les candidats valides des autres fichiers.
+
 ## 1. Problème à résoudre
 
 Une action CleanMyMap peut être créée avant le terrain avec une géométrie

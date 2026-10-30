@@ -297,7 +297,8 @@ function buildPersistedGpxFields(
 
   const gpxImport = parseGpxImport(form.gpxImport);
   const drawing = parseDrawing(geometry.drawing);
-  if (!gpxImport || !drawing || gpxImport.pointCount !== drawing.coordinates.length) {
+  const representativePointCount = gpxImport?.files?.flatMap((file) => file.segments)[0]?.pointCount ?? gpxImport?.pointCount;
+  if (!gpxImport || !drawing || representativePointCount !== drawing.coordinates.length) {
     return {};
   }
 

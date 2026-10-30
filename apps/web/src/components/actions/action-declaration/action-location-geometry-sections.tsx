@@ -25,20 +25,25 @@ function SectionTitle({ color, children }: { color: string; children: React.Reac
   return <div className="mb-3 flex items-center gap-2"><span className={cn("h-1 w-5 rounded-full", color)} /><h3 className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-900/60">{children}</h3></div>;
 }
 
-type GpxImportProps = Pick<ActionLocationGeometryPanelProps, "form" | "gpxImport" | "gpxError" | "onImportGpx" | "onRemoveGpx">;
+type GpxImportProps = Pick<ActionLocationGeometryPanelProps, "form" | "gpxImport" | "gpxError" | "onImportGpx" | "onRemoveGpx" | "onSetGpxIntent">;
 
-export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx, onRemoveGpx }: GpxImportProps) {
+export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx, onRemoveGpx, onSetGpxIntent }: GpxImportProps) {
   if (form.recordType === "clean_place") return null;
   return (
     <div className="rounded-xl border border-violet-200/80 bg-violet-50/55 px-4 py-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><p className="flex items-center gap-2 text-sm font-semibold text-violet-950"><Upload size={16} aria-hidden="true" />Importer un tracé GPX</p><p className="mt-1 text-xs text-violet-900/70">Le tracé importé est conservé tel quel, sans reconstruction réseau.</p></div>
         <label htmlFor="gpx-import" className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 focus-within:ring-2 focus-within:ring-violet-500/20">
-          <Upload size={14} aria-hidden="true" />{gpxImport ? "Remplacer le GPX" : "Choisir un fichier .gpx"}
-          <input id="gpx-import" type="file" accept=".gpx,application/gpx+xml" className="sr-only" onChange={(event) => { const file = event.currentTarget.files?.[0] ?? null; event.currentTarget.value = ""; void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onImportGpx(file); }} />
+          <Upload size={14} aria-hidden="true" />Ajouter des fichiers GPX
+          <input id="gpx-import" type="file" multiple accept=".gpx,application/gpx+xml" className="sr-only" onChange={(event) => { const files = event.currentTarget.files; event.currentTarget.value = ""; void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onImportGpx(files); }} />
         </label>
       </div>
-      {gpxImport ? <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-violet-950"><span><strong>Tracé GPX importé</strong>{gpxImport.fileName ? ` · ${gpxImport.fileName}` : ""}{` · ${gpxImport.observedDistanceKm.toFixed(2).replace(".", ",")} km · ${gpxImport.pointCount} points`}</span><button type="button" onClick={onRemoveGpx} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"><Trash2 size={13} aria-hidden="true" />Supprimer le GPX</button></div> : null}
+      {gpxImport ? <div className="mt-3 space-y-3 rounded-lg border border-violet-200 bg-white px-3 py-3 text-xs text-violet-950">
+        <div className="flex flex-wrap items-center justify-between gap-3"><span><strong>{gpxImport.files?.length ?? 1} fichier(s) · {gpxImport.segmentCount ?? 1} segment(s)</strong>{` · ${gpxImport.observedDistanceKm.toFixed(2).replace(".", ",")} km · ${gpxImport.pointCount} points`}</span><button type="button" onClick={() => onRemoveGpx()} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"><Trash2 size={13} aria-hidden="true" />Tout supprimer</button></div>
+        <fieldset className="flex flex-wrap gap-3 border-t border-violet-100 pt-2"><legend className="sr-only">Intention de l’import GPX</legend><label className="inline-flex items-center gap-2"><input type="radio" name="gpx-intent" checked={(gpxImport.intent ?? "planned") === "planned"} onChange={() => onSetGpxIntent("planned")} />Parcours prévu <span className="text-violet-900/55">(aucune contribution)</span></label><label className="inline-flex items-center gap-2"><input type="radio" name="gpx-intent" checked={gpxImport.intent === "observed"} onChange={() => onSetGpxIntent("observed")} />Trace de terrain <span className="text-violet-900/55">(soumise à éligibilité)</span></label></fieldset>
+        <p className="rounded-md bg-amber-50 px-2 py-1.5 text-amber-800">Ces candidates sont conservées localement dans le formulaire jusqu’à la création de l’action.</p>
+        {(gpxImport.files ?? []).map((file) => <div key={file.fileName} className="rounded-md border border-violet-100 px-2.5 py-2"><div className="flex items-center justify-between gap-2"><strong>{file.fileName}</strong>{file.error ? <span className="text-rose-700">Erreur : {file.error}</span> : null}<button type="button" aria-label={`Supprimer ${file.fileName}`} onClick={() => onRemoveGpx(file.fileName)} className="text-rose-700 hover:underline">Supprimer</button></div>{file.segments.map((segment) => <div key={segment.sourceFingerprint} className="mt-1 flex flex-wrap items-center justify-between gap-2 pl-3 text-violet-900/75"><span>Segment {segment.segmentIndex + 1} · {segment.distanceKm.toFixed(2).replace(".", ",")} km · {segment.pointCount} points · {segment.topology === "loop" ? "boucle" : "ouvert"}</span><button type="button" aria-label={`Supprimer le segment ${segment.segmentIndex + 1} de ${file.fileName}`} onClick={() => onRemoveGpx(segment.sourceFingerprint)} className="text-rose-700 hover:underline">Supprimer</button></div>)}</div>)}
+      </div> : null}
       {gpxError ? <p role="alert" className="mt-2 text-xs font-medium text-rose-700">{gpxError}</p> : null}
     </div>
   );
@@ -69,9 +74,13 @@ function ActionLocationMapCanvas({
   onUndo: () => void;
   onCloseUndo: () => void;
 }) {
+  const previewDrawings = gpxImport?.files?.flatMap((file) => file.segments).slice(1).map((segment) => ({
+    kind: "polyline" as const,
+    coordinates: segment.coordinates,
+  })) ?? [];
   return <>
       {isMapVisible ? <>
-        <ActionDrawingMap drawing={viewModel.displayedDrawing} drawingSource={viewModel.activeGeometry?.source} onDrawingChange={setManualDrawing} onUndoAvailable={onUndoAvailable} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />
+        <ActionDrawingMap drawing={viewModel.displayedDrawing} previewDrawings={previewDrawings} drawingSource={viewModel.activeGeometry?.source} onDrawingChange={setManualDrawing} onUndoAvailable={onUndoAvailable} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />
         {!viewModel.hasDrawing ? <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]"><div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm"><Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" /><p className="text-sm font-semibold text-emerald-950">Aucun repère</p><p className="mt-1 text-xs text-emerald-900/45">Saisissez une adresse ou utilisez le GPS pour placer le lieu</p></div></div> : null}
         {viewModel.isGpx && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-violet-200 bg-white/95 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm">Tracé GPX importé · aucune reconstruction réseau</div> : null}
         {viewModel.isTracking && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-emerald-200 bg-white/95 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm">Trace GPS observée · aucune reconstruction réseau</div> : null}

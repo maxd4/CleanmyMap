@@ -87,6 +87,7 @@ export async function executeActionCreation({
         id: created.id,
         source: created.source,
         retentionLoop: created.kind === "action" ? created.retentionLoop : null,
+        geometryContribution: created.kind === "action" ? created.geometryContribution ?? null : null,
       },
       { status: 201 },
     );

@@ -25,6 +25,7 @@ import {
   invalidateActionSnapshots,
   persistInitialFormalities,
 } from "@/lib/actions/create-submission-effects";
+import { recordGpxGeometryContributionIfPresent } from "@/lib/actions/geometry/action-geometry-contribution-workflow";
 
 export class ActionCreationValidationError extends Error {
   constructor(public readonly fieldErrors: Record<string, string[]>) {
@@ -64,7 +65,42 @@ export type CreateActionSubmissionResult =
       id: string;
       source: "actions";
       retentionLoop: Awaited<ReturnType<typeof buildActionRetentionLoop>>;
+      geometryContribution?: {
+        accepted: boolean;
+        persisted: boolean;
+        traceCount?: number;
+        status: "accepted" | "partial_or_refused" | "not_requested";
+      };
     };
+
+async function persistCreatedGpxContributions(params: {
+  supabase: SupabaseClient;
+  userId: string;
+  actionId: string;
+  payload: CreateActionPayload;
+}): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>["geometryContribution"]> {
+  const result = await recordGpxGeometryContributionIfPresent({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    userId: params.userId,
+    updateData: {
+      geometry_source: params.payload.geometrySource,
+      derived_geometry_geojson: params.payload.manualDrawing
+        ? JSON.stringify({
+            type: params.payload.manualDrawing.kind === "polyline" ? "LineString" : "Polygon",
+            coordinates: params.payload.manualDrawing.coordinates.map(([latitude, longitude]) => [longitude, latitude]),
+          })
+        : undefined,
+      preparation_data: params.payload.preparationData,
+    },
+  });
+  if (!result || result instanceof Response) {
+    return result instanceof Response
+      ? { accepted: false, persisted: false, status: "partial_or_refused" }
+      : { accepted: false, persisted: false, status: "not_requested" };
+  }
+  return { ...result, status: result.accepted ? "accepted" : "partial_or_refused" };
+}
 
 function validationError(field: string, message: string): ActionCreationValidationError {
   return new ActionCreationValidationError({ [field]: [message] });
@@ -378,6 +414,12 @@ async function persistStandardActionSubmission(params: {
   participantResolution: ParticipantResolution;
 }): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>> {
   const created = await createPersistedAction(params);
+  const geometryContribution = await persistCreatedGpxContributions({
+    supabase: params.supabase,
+    userId: params.userId,
+    actionId: created.id,
+    payload: params.payload,
+  });
 
   if (created.replayed) {
     return {
@@ -385,6 +427,7 @@ async function persistStandardActionSubmission(params: {
       id: created.id,
       source: "actions",
       retentionLoop: null,
+      geometryContribution,
     };
   }
 
@@ -415,6 +458,7 @@ async function persistStandardActionSubmission(params: {
     id: created.id,
     source: "actions",
     retentionLoop,
+    geometryContribution,
   };
 }
 

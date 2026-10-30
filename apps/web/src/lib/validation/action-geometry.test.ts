@@ -6,6 +6,7 @@ import {
   manualDrawingSchema,
 } from "./action-geometry";
 import { createActionSchema } from "./action";
+import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 describe("action geometry validation", () => {
   it("requires the minimum number of points and keeps coordinate bounds closed", () => {
@@ -71,6 +72,38 @@ describe("action geometry validation", () => {
     expect(gpxImportMetadataSchema.safeParse({ ...valid, fileName: "track\u0000.gpx" }).success).toBe(false);
     expect(gpxImportMetadataSchema.safeParse({ ...valid, pointCount: 1 }).success).toBe(false);
     expect(gpxImportMetadataSchema.safeParse({ ...valid, observedDistanceKm: 1_001 }).success).toBe(false);
+    expect(gpxImportMetadataSchema.safeParse({
+      ...valid,
+      observedDistanceKm: 2,
+      pointCount: 4,
+      intent: "observed",
+      files: [{
+        fileName: "terrain.gpx",
+        provenance: "unknown",
+        segments: [
+          {
+            fileName: "terrain.gpx",
+            traceIndex: 0,
+            segmentIndex: 0,
+            coordinates: [[48.85, 2.35], [48.86, 2.36]],
+            distanceKm: 1,
+            pointCount: 2,
+            topology: "point_to_point",
+            sourceFingerprint: "gpx-a",
+          },
+          {
+            fileName: "terrain.gpx",
+            traceIndex: 0,
+            segmentIndex: 1,
+            coordinates: [[48.87, 2.37], [48.88, 2.38]],
+            distanceKm: 1,
+            pointCount: 2,
+            topology: "point_to_point",
+            sourceFingerprint: "gpx-b",
+          },
+        ],
+      }],
+    }).success).toBe(true);
   });
 
   it("refuses incomplete GPX provenance at the action boundary", () => {
@@ -135,5 +168,37 @@ describe("action geometry validation", () => {
     if (!mismatchedSource.success) {
       expect(mismatchedSource.error.issues.some((issue) => issue.path.includes("geometrySource"))).toBe(true);
     }
+  });
+
+  it("validates the representative segment without joining the other segments", () => {
+    const coordinates: [number, number][] = [[48.85, 2.35], [48.86, 2.36]];
+    const result = createActionSchema.safeParse({
+      actorName: "Bénévole test",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Canal Saint-Martin",
+      arrivalLocationLabel: "Pont suivant",
+      routeTopology: "point_to_point",
+      geometrySource: "gpx_import",
+      manualDrawing: { kind: "polyline", coordinates },
+      preparationData: {
+        gpxImport: {
+          source: "gpx_import",
+          intent: "observed",
+          observedDistanceKm: 2,
+          pointCount: 4,
+          inferredTopology: "point_to_point",
+          files: [{
+            fileName: "terrain.gpx",
+            provenance: "unknown",
+            segments: [
+              { fileName: "terrain.gpx", traceIndex: 0, segmentIndex: 0, coordinates, distanceKm: polylineDistanceKm(coordinates), pointCount: 2, topology: "point_to_point", sourceFingerprint: "gpx-a" },
+              { fileName: "terrain.gpx", traceIndex: 0, segmentIndex: 1, coordinates: [[48.87, 2.37], [48.88, 2.38]], distanceKm: 1, pointCount: 2, topology: "point_to_point", sourceFingerprint: "gpx-b" },
+            ],
+          }],
+        },
+      },
+    });
+    expect(result.success).toBe(true);
   });
 });

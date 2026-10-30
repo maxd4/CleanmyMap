@@ -24,6 +24,11 @@ export const locationCoordinatesSchema = z
   })
   .strict();
 
+const coordinateSchema = z.tuple([
+  z.number().finite().min(-90).max(90),
+  z.number().finite().min(-180).max(180),
+]);
+
 function validateMinimumGeometryPoints(
   value: { kind: "polyline" | "polygon"; coordinates: unknown[] },
   ctx: z.RefinementCtx,
@@ -44,8 +49,32 @@ export const gpxImportMetadataSchema = z
   .object({
     source: z.literal("gpx_import"),
     observedDistanceKm: z.number().finite().min(0).max(1000),
-    pointCount: z.number().int().min(2).max(MAX_GPX_POINTS),
+    // The 400-point limit is enforced per imported file by the GPX parser;
+    // this aggregate may contain several independently bounded files.
+    pointCount: z.number().int().min(2).max(MAX_GPX_POINTS * 20),
     inferredTopology: z.enum(["loop", "point_to_point"]),
+    segmentTopologies: z.array(z.enum(["loop", "point_to_point"])).max(400).optional(),
+    segmentDistancesKm: z.array(z.number().finite().min(0).max(1000)).max(400).optional(),
+    segmentPointCounts: z.array(z.number().int().min(2).max(MAX_GPX_POINTS)).max(400).optional(),
+    segmentCount: z.number().int().min(1).max(400).optional(),
+    traceCount: z.number().int().min(1).max(400).optional(),
+    provenance: z.enum(["planned", "unknown"]).optional(),
+    intent: z.enum(["planned", "observed"]).optional(),
+    files: z.array(z.object({
+      fileName: z.string().min(1).max(120),
+      provenance: z.enum(["planned", "unknown"]),
+      error: z.string().max(500).optional(),
+      segments: z.array(z.object({
+        fileName: z.string().min(1).max(120),
+        traceIndex: z.number().int().min(0).max(400),
+        segmentIndex: z.number().int().min(0).max(400),
+        coordinates: z.array(coordinateSchema).min(2).max(MAX_GPX_POINTS),
+        distanceKm: z.number().finite().min(0).max(1000),
+        pointCount: z.number().int().min(2).max(MAX_GPX_POINTS),
+        topology: z.enum(["loop", "point_to_point"]),
+        sourceFingerprint: z.string().min(1).max(200),
+      }).strict()),
+    }).strict()).max(20).optional(),
     fileName: z
       .string()
       .max(120)
@@ -56,11 +85,6 @@ export const gpxImportMetadataSchema = z
       .optional(),
   })
   .strict();
-
-const coordinateSchema = z.tuple([
-  z.number().finite().min(-90).max(90),
-  z.number().finite().min(-180).max(180),
-]);
 
 export const manualDrawingSchema = z
   .object({
@@ -123,6 +147,7 @@ type GpxImportValidationContext = {
     observedDistanceKm: number;
     pointCount: number;
     inferredTopology: "loop" | "point_to_point";
+    files?: Array<{ segments: Array<{ coordinates: [number, number][]; distanceKm: number; pointCount: number }> }>;
   };
 };
 
@@ -136,6 +161,7 @@ type GpxImportValidationInput = {
       observedDistanceKm: number;
       pointCount: number;
       inferredTopology: "loop" | "point_to_point";
+      files?: Array<{ segments: Array<{ coordinates: [number, number][]; distanceKm: number; pointCount: number }> }>;
     };
   } | null;
   routeTopology?: "loop" | "point_to_point";
@@ -210,9 +236,18 @@ function addGpxDistanceIssue(
   context: GpxImportValidationContext,
   ctx: z.RefinementCtx,
 ) {
+  const representative = context.metadata.files?.flatMap((file) => file.segments)[0];
+  if (representative) {
+    const observedDistanceKm = polylineDistanceKm(context.drawing.coordinates);
+    if (representative.pointCount === context.drawing.coordinates.length && Math.abs(representative.distanceKm - observedDistanceKm) <= 0.01) return;
+  }
   const observedDistanceKm = polylineDistanceKm(context.drawing.coordinates);
-  const distanceMatches = Math.abs(context.metadata.observedDistanceKm - observedDistanceKm) <= 0.01;
-  const pointCountMatches = context.metadata.pointCount === context.drawing.coordinates.length;
+  const distanceMatches = representative
+    ? Math.abs(representative.distanceKm - observedDistanceKm) <= 0.01
+    : Math.abs(context.metadata.observedDistanceKm - observedDistanceKm) <= 0.01;
+  const pointCountMatches = representative
+    ? representative.pointCount === context.drawing.coordinates.length
+    : context.metadata.pointCount === context.drawing.coordinates.length;
   if (distanceMatches && pointCountMatches) return;
 
   ctx.addIssue({

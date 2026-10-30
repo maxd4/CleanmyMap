@@ -22,6 +22,7 @@ export function ActionLocationGeometryPanel({
   gpxError,
   onImportGpx,
   onRemoveGpx,
+  onSetGpxIntent,
   onResetManualDrawing,
 }: ActionLocationGeometryPanelProps) {
   const viewModel = buildActionLocationViewModel({
@@ -35,7 +36,7 @@ export function ActionLocationGeometryPanel({
 
   return (
     <div id="action-location-geometry" className="space-y-4">
-      <ActionLocationGpxImport form={form} gpxImport={gpxImport} gpxError={gpxError} onImportGpx={onImportGpx} onRemoveGpx={onRemoveGpx} />
+      <ActionLocationGpxImport form={form} gpxImport={gpxImport} gpxError={gpxError} onImportGpx={onImportGpx} onRemoveGpx={onRemoveGpx} onSetGpxIntent={onSetGpxIntent} />
       {viewModel.activeGeometry?.operationalRoute ? <OperationalRouteEditor operationalRoute={viewModel.activeGeometry.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} /> : null}
       <ActionGpxExportButton input={{ finalGeometry: viewModel.activeGeometry, operationalRoute: form.operationalRoute, drawing: manualDrawing, gpxImport, routeTopology: form.routeTopology, departureLabel: form.departureLocationLabel, midpointLabel: form.midRouteLocationLabel, midpointCoordinates: form.midRouteCoordinates, arrivalLabel: form.arrivalLocationLabel }} />
       <ActionLocationMapPanel form={form} gpxImport={gpxImport} setManualDrawing={setManualDrawing} onResetManualDrawing={onResetManualDrawing} viewModel={viewModel} />

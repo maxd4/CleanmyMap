@@ -80,7 +80,7 @@ export function useActionDeclarationFormUpdates({
     updateForm(updates);
   }
 
-  const { handleGpxImport, removeGpxImport } = createActionDeclarationGeometryHandlers({
+  const { handleGpxImport, removeGpxImport, setGpxIntent } = createActionDeclarationGeometryHandlers({
     form,
     manualDrawing,
     manualDrawingSource,
@@ -90,5 +90,5 @@ export function useActionDeclarationFormUpdates({
     updateForm,
   });
 
-  return { updateField, updateFields, handleGpxImport, removeGpxImport };
+  return { updateField, updateFields, handleGpxImport, removeGpxImport, setGpxIntent };
 }

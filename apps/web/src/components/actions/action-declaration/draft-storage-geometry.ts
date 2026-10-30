@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionGpxImportFile,
   ActionGpxImportMetadata,
   ActionLocationCoordinates,
 } from "@/lib/actions/types";
@@ -52,11 +53,36 @@ export function parseGpxImport(value: unknown): ActionGpxImportMetadata | null {
   }
   if (value.inferredTopology !== "loop" && value.inferredTopology !== "point_to_point") return null;
 
+  const files: ActionGpxImportFile[] = isRecord(value.files) || !Array.isArray(value.files)
+    ? []
+    : value.files.flatMap((file): ActionGpxImportFile[] => {
+        if (!isRecord(file) || typeof file.fileName !== "string" || (file.provenance !== "planned" && file.provenance !== "unknown") || !Array.isArray(file.segments)) return [];
+        const segments = file.segments.flatMap((segment): ActionGpxImportFile["segments"] => {
+          if (!isRecord(segment) || typeof segment.fileName !== "string" || typeof segment.traceIndex !== "number" || typeof segment.segmentIndex !== "number" || !Array.isArray(segment.coordinates) || typeof segment.distanceKm !== "number" || typeof segment.pointCount !== "number" || (segment.topology !== "loop" && segment.topology !== "point_to_point") || typeof segment.sourceFingerprint !== "string") return [];
+          const coordinates = segment.coordinates.flatMap((point): [number, number][] => {
+            const parsed = parseDrawingPoint(point);
+            return parsed ? [parsed] : [];
+          });
+          return coordinates.length === segment.coordinates.length && coordinates.length >= 2
+            ? [{ fileName: segment.fileName, traceIndex: segment.traceIndex, segmentIndex: segment.segmentIndex, coordinates, distanceKm: segment.distanceKm, pointCount: segment.pointCount, topology: segment.topology, sourceFingerprint: segment.sourceFingerprint }]
+            : [];
+        });
+        return [{ fileName: file.fileName, provenance: file.provenance, segments, ...(typeof file.error === "string" ? { error: file.error } : {}) }];
+      });
+
   return {
     source: "gpx_import",
     observedDistanceKm: value.observedDistanceKm,
     pointCount: value.pointCount,
     inferredTopology: value.inferredTopology,
+    ...(Array.isArray(value.segmentTopologies) ? { segmentTopologies: value.segmentTopologies.filter((topology): topology is "loop" | "point_to_point" => topology === "loop" || topology === "point_to_point") } : {}),
+    ...(Array.isArray(value.segmentDistancesKm) ? { segmentDistancesKm: value.segmentDistancesKm.filter((distance): distance is number => typeof distance === "number" && Number.isFinite(distance) && distance >= 0) } : {}),
+    ...(Array.isArray(value.segmentPointCounts) ? { segmentPointCounts: value.segmentPointCounts.filter((count): count is number => typeof count === "number" && Number.isInteger(count) && count >= 2) } : {}),
+    ...(typeof value.segmentCount === "number" && Number.isInteger(value.segmentCount) && value.segmentCount >= 1 ? { segmentCount: value.segmentCount } : {}),
+    ...(typeof value.traceCount === "number" && Number.isInteger(value.traceCount) && value.traceCount >= 1 ? { traceCount: value.traceCount } : {}),
+    ...(value.provenance === "planned" || value.provenance === "unknown" ? { provenance: value.provenance } : {}),
+    ...(value.intent === "planned" || value.intent === "observed" ? { intent: value.intent } : {}),
+    ...(files.length > 0 ? { files } : {}),
     ...(typeof value.fileName === "string" ? { fileName: value.fileName } : {}),
   };
 }
@@ -66,10 +92,11 @@ export function hasValidGpxPair(
   gpxImport: ActionGpxImportMetadata | null,
   manualDrawing: ActionDrawing | null,
 ): boolean {
+  const representativePointCount = gpxImport?.files?.flatMap((file) => file.segments)[0]?.pointCount ?? gpxImport?.pointCount;
   return Boolean(
     gpxImport &&
       manualDrawing &&
       parsed.manualDrawingSource === "gpx_import" &&
-      gpxImport.pointCount === manualDrawing.coordinates.length,
+      representativePointCount === manualDrawing.coordinates.length,
   );
 }

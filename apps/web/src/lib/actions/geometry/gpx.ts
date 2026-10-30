@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionGpxImportFile,
   ActionGpxImportMetadata,
   ActionRouteTopology,
 } from "@/lib/actions/types";
@@ -15,12 +16,37 @@ export const MAX_GPX_POINTS = 400;
 const GPX_LOOP_CLOSURE_THRESHOLD_METERS = 50;
 
 type GpxImportMetadata = ActionGpxImportMetadata;
+export type GpxImportProvenance = "planned" | "unknown";
+
+function fingerprint(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `gpx-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+export function createGpxSourceFingerprint(
+  fileName: string,
+  traceIndex: number,
+  segmentIndex: number,
+  coordinates: readonly GeodesicCoordinate[],
+): string {
+  return fingerprint(`${fileName}:${traceIndex}:${segmentIndex}:${JSON.stringify(coordinates)}`);
+}
 
 export type ParsedGpxTrack = {
   drawing: ActionDrawing;
   metadata: GpxImportMetadata;
   segments: GeodesicCoordinate[][];
+  tracks: GeodesicCoordinate[][][];
+  provenance: GpxImportProvenance;
 };
+
+export type GpxFileParseResult =
+  | { ok: true; fileName: string; parsed: ParsedGpxTrack }
+  | { ok: false; fileName: string; error: string };
 
 export class GpxImportError extends Error {
   constructor(message: string) {
@@ -119,6 +145,8 @@ function assertXmlSafe(xml: string): void {
 type GpxParserState = {
   stack: string[];
   segments: GeodesicCoordinate[][];
+  tracks: GeodesicCoordinate[][][];
+  activeTrackSegments: GeodesicCoordinate[][] | null;
   activeSegment: GeodesicCoordinate[] | null;
   rootSeen: boolean;
   rootClosed: boolean;
@@ -129,7 +157,14 @@ function consumeClosingTag(tag: XmlTag, state: GpxParserState): void {
   if (!expected || expected !== tag.name) throw new GpxImportError("Le fichier GPX n'est pas un XML bien formé.");
   if (tag.name === "trkseg") {
     if (state.activeSegment && state.activeSegment.length > 0) state.segments.push(state.activeSegment);
+    if (state.activeSegment && state.activeTrackSegments) {
+      state.activeTrackSegments.push(state.activeSegment);
+    }
     state.activeSegment = null;
+  }
+  if (tag.name === "trk" && state.activeTrackSegments) {
+    if (state.activeTrackSegments.length > 0) state.tracks.push(state.activeTrackSegments);
+    state.activeTrackSegments = null;
   }
   if (tag.name === "gpx") state.rootClosed = true;
 }
@@ -141,7 +176,12 @@ function appendTrackPoint(tag: XmlTag, state: GpxParserState): void {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     throw new GpxImportError("Le GPX contient une latitude ou une longitude invalide.");
   }
-  state.activeSegment.push([Number(latitude.toFixed(6)), Number(longitude.toFixed(6))]);
+  const coordinate: GeodesicCoordinate = [Number(latitude.toFixed(6)), Number(longitude.toFixed(6))];
+  const previous = state.activeSegment.at(-1);
+  if (previous && previous[0] === coordinate[0] && previous[1] === coordinate[1]) {
+    throw new GpxImportError("Le GPX contient deux points consécutifs identiques.");
+  }
+  state.activeSegment.push(coordinate);
 }
 
 function consumeOpeningTag(tag: XmlTag, state: GpxParserState): void {
@@ -152,15 +192,28 @@ function consumeOpeningTag(tag: XmlTag, state: GpxParserState): void {
   if (state.rootClosed) throw new GpxImportError("Le fichier GPX contient du contenu après sa racine XML.");
   if (tag.name === "trkseg") {
     if (state.activeSegment) throw new GpxImportError("Le fichier GPX contient des segments imbriqués.");
+    if (!state.activeTrackSegments) throw new GpxImportError("Un segment GPX doit appartenir à une trace.");
     state.activeSegment = [];
+  }
+  if (tag.name === "trk") {
+    if (state.activeTrackSegments) throw new GpxImportError("Le fichier GPX contient des traces imbriquées.");
+    state.activeTrackSegments = [];
   }
   if (tag.name === "trkpt") appendTrackPoint(tag, state);
   if (!tag.selfClosing) state.stack.push(tag.name);
 }
 
-function parseTrackSegments(xml: string): GeodesicCoordinate[][] {
+function parseTrackSegments(xml: string): { segments: GeodesicCoordinate[][]; tracks: GeodesicCoordinate[][][] } {
   assertXmlSafe(xml);
-  const state: GpxParserState = { stack: [], segments: [], activeSegment: null, rootSeen: false, rootClosed: false };
+  const state: GpxParserState = {
+    stack: [],
+    segments: [],
+    tracks: [],
+    activeTrackSegments: null,
+    activeSegment: null,
+    rootSeen: false,
+    rootClosed: false,
+  };
   let cursor = 0;
   while (cursor < xml.length) {
     const tagStart = xml.indexOf("<", cursor);
@@ -180,7 +233,13 @@ function parseTrackSegments(xml: string): GeodesicCoordinate[][] {
   if (state.segments.length === 0) {
     throw new GpxImportError("Le GPX ne contient aucun segment de trace exploitable.");
   }
-  return state.segments;
+  return { segments: state.segments, tracks: state.tracks };
+}
+
+function detectGpxProvenance(xml: string): GpxImportProvenance {
+  const cleanMyMapCreator = /<gpx\b[^>]*\bcreator\s*=\s*["']CleanMyMap["'][^>]*>/i.test(xml);
+  const plannedMarker = /<(?:[A-Za-z_][\w.-]*:)?provenance\b[^>]*\bintent\s*=\s*["']planned["'][^>]*\/?\s*>/i.test(xml);
+  return cleanMyMapCreator && plannedMarker ? "planned" : "unknown";
 }
 
 function isGpxLoop(coordinates: readonly GeodesicCoordinate[]): boolean {
@@ -207,33 +266,58 @@ export function parseGpxText(
     throw new GpxImportError("Le fichier GPX est vide.");
   }
 
-  const segments = parseTrackSegments(xml);
+  const parsedSegments = parseTrackSegments(xml);
+  const segments = parsedSegments.segments;
   if (segments.some((segment) => segment.length < 2)) {
     throw new GpxImportError("Chaque segment GPX doit contenir au moins 2 points.");
   }
-  if (segments.length > 1) {
-    throw new GpxImportError(
-      "Ce GPX contient plusieurs segments. Importez un fichier à segment unique pour éviter d'inventer une liaison.",
-    );
+  const pointCount = segments.reduce((total, segment) => total + segment.length, 0);
+  if (pointCount > MAX_GPX_POINTS) {
+    throw new GpxImportError(`Le GPX dépasse la limite de ${MAX_GPX_POINTS} points.`);
   }
 
   const coordinates = segments[0] ?? [];
   if (coordinates.length < 2) {
     throw new GpxImportError("Le GPX doit contenir au moins 2 points exploitables.");
   }
-  if (coordinates.length > MAX_GPX_POINTS) {
-    throw new GpxImportError(`Le GPX dépasse la limite de ${MAX_GPX_POINTS} points.`);
-  }
+  const segmentDistancesKm = segments.map((segment) => Number(polylineDistanceKm(segment).toFixed(3)));
+  const provenance = detectGpxProvenance(xml);
+  const sanitizedFileName = sanitizeFileName(options.fileName);
+  const files: ActionGpxImportFile[] = sanitizedFileName
+    ? [{
+        fileName: sanitizedFileName,
+        provenance,
+        segments: parsedSegments.tracks.flatMap((track, traceIndex) => track.map((segment, segmentIndex) => ({
+          fileName: sanitizedFileName,
+          traceIndex,
+          segmentIndex,
+          coordinates: segment,
+          distanceKm: Number(polylineDistanceKm(segment).toFixed(3)),
+          pointCount: segment.length,
+          topology: inferGpxTopology(segment),
+          sourceFingerprint: createGpxSourceFingerprint(sanitizedFileName, traceIndex, segmentIndex, segment),
+        }))),
+      }]
+    : [];
 
   return {
     drawing: { kind: "polyline", coordinates },
     segments,
+    tracks: parsedSegments.tracks,
+    provenance,
     metadata: {
       source: ACTION_GPX_SOURCE,
-      observedDistanceKm: Number(polylineDistanceKm(coordinates).toFixed(3)),
-      pointCount: coordinates.length,
+      observedDistanceKm: Number(segmentDistancesKm.reduce((total, distance) => total + distance, 0).toFixed(3)),
+      pointCount,
       inferredTopology: inferGpxTopology(coordinates),
-      fileName: sanitizeFileName(options.fileName),
+      segmentTopologies: segments.map(inferGpxTopology),
+      segmentDistancesKm,
+      segmentPointCounts: segments.map((segment) => segment.length),
+      segmentCount: segments.length,
+      traceCount: parsedSegments.tracks.length,
+      provenance,
+      fileName: sanitizedFileName,
+      ...(files.length > 0 ? { files } : {}),
     },
   };
 }
@@ -255,4 +339,20 @@ export async function parseGpxFile(file: File): Promise<ParsedGpxTrack> {
   }
   const xml = await file.text();
   return parseGpxText(xml, { fileName });
+}
+
+/** Parse every selected file independently so one invalid file does not erase valid candidates. */
+export async function parseGpxFiles(files: readonly File[]): Promise<GpxFileParseResult[]> {
+  return Promise.all(files.map(async (file): Promise<GpxFileParseResult> => {
+    const fileName = sanitizeFileName(file.name) ?? file.name ?? "GPX sans nom";
+    try {
+      return { ok: true, fileName, parsed: await parseGpxFile(file) };
+    } catch (error: unknown) {
+      return {
+        ok: false,
+        fileName,
+        error: error instanceof GpxImportError ? error.message : "Impossible de lire ce fichier GPX.",
+      };
+    }
+  }));
 }

@@ -21,8 +21,9 @@ export type ActionStepLocationProps = {
   routePreviewSource: ActionGeometrySource | null;
   gpxImport: ActionGpxImportMetadata | null;
   gpxError: string | null;
-  onImportGpx: (file: File | null) => Promise<void>;
-  onRemoveGpx: () => void;
+  onImportGpx: (files: FileList | readonly File[] | null) => Promise<void>;
+  onRemoveGpx: (sourceFingerprint?: string) => void;
+  onSetGpxIntent: (intent: "planned" | "observed") => void;
   onResetManualDrawing?: () => void;
   gpsStatus: "idle" | "locating" | "success" | "error";
   gpsMessage: string | null;
@@ -47,6 +48,7 @@ export type ActionLocationGeometryPanelProps = ActionLocationGeometryInput &
     | "setManualDrawing"
     | "onImportGpx"
     | "onRemoveGpx"
+    | "onSetGpxIntent"
     | "onResetManualDrawing"
     | "gpxError"
   >;

@@ -4,6 +4,7 @@ import {
   MAX_GPX_FILE_BYTES,
   inferGpxTopology,
   parseGpxFile,
+  parseGpxFiles,
   parseGpxText,
 } from "./gpx";
 
@@ -70,15 +71,52 @@ describe("GPX track parsing", () => {
     expect(() => parseGpxText(malformed)).toThrow(GpxImportError);
   });
 
-  it("rejects invalid coordinates and multiple segments instead of inventing a link", () => {
+  it("rejects invalid coordinates and preserves multiple segments without inventing a link", async () => {
     expect(() => parseGpxText(gpx(`${point(95, 2.35)}${point(48.851, 2.351)}`))).toThrow(
       /latitude ou une longitude invalide/i,
     );
-    expect(() =>
-      parseGpxText(
-        `<?xml version="1.0"?><gpx><trk><trkseg>${point(48.85, 2.35)}${point(48.851, 2.351)}</trkseg><trkseg>${point(48.86, 2.36)}${point(48.861, 2.361)}</trkseg></trk></gpx>`,
-      ),
-    ).toThrow(/plusieurs segments/i);
+    const result = parseGpxText(
+      `<?xml version="1.0"?><gpx><trk><trkseg>${point(48.85, 2.35)}${point(48.851, 2.351)}</trkseg><trkseg>${point(48.86, 2.36)}${point(48.861, 2.361)}</trkseg></trk></gpx>`,
+    );
+    expect(result.segments).toHaveLength(2);
+    expect(result.segments[0]).toEqual([[48.85, 2.35], [48.851, 2.351]]);
+    expect(result.segments[1]).toEqual([[48.86, 2.36], [48.861, 2.361]]);
+    expect(result.drawing.coordinates).toEqual(result.segments[0]);
+    expect(result.metadata).toMatchObject({
+      segmentCount: 2,
+      traceCount: 1,
+      pointCount: 4,
+      segmentPointCounts: [2, 2],
+    });
+    expect(result.drawing.coordinates).not.toContain([48.86, 2.36]);
+
+    const files = await parseGpxFiles([
+      { name: "valide.gpx", type: "application/gpx+xml", size: 100, text: async () => gpx(`${point(48.85, 2.35)}${point(48.851, 2.351)}`) },
+      { name: "invalide.gpx", type: "application/gpx+xml", size: 100, text: async () => "<gpx>" },
+    ] as unknown as File[]);
+    expect(files[0]).toMatchObject({ ok: true, fileName: "valide.gpx" });
+    expect(files[1]).toMatchObject({ ok: false, fileName: "invalide.gpx" });
+  });
+
+  it("rejects consecutive duplicates and recognizes only the explicit planner marker", () => {
+    expect(() => parseGpxText(gpx(`${point(48.85, 2.35)}${point(48.85, 2.35)}`))).toThrow(/identiques/i);
+
+    const planned = parseGpxText(
+      `<?xml version="1.0"?><gpx creator="CleanMyMap"><metadata><cmm:provenance version="1" intent="planned" /></metadata><trk><trkseg>${point(48.85, 2.35)}${point(48.851, 2.351)}</trkseg></trk></gpx>`,
+    );
+    expect(planned.provenance).toBe("planned");
+    expect(planned.metadata.provenance).toBe("planned");
+    expect(parseGpxText(gpx(`${point(48.85, 2.35)}${point(48.851, 2.351)}`)).provenance).toBe("unknown");
+  });
+
+  it("keeps separate GPX traces separate even when they share a departure", () => {
+    const result = parseGpxText(
+      `<?xml version="1.0"?><gpx><trk><trkseg>${point(48.85, 2.35)}${point(48.851, 2.351)}</trkseg></trk><trk><trkseg>${point(48.85, 2.35)}${point(48.86, 2.36)}</trkseg></trk></gpx>`,
+    );
+    expect(result.tracks).toHaveLength(2);
+    expect(result.segments).toHaveLength(2);
+    expect(result.metadata.traceCount).toBe(2);
+    expect(result.metadata.segmentDistancesKm).toHaveLength(2);
   });
 
   it("bounds the point count and file size", async () => {
