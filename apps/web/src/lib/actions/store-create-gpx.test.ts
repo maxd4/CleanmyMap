@@ -57,6 +57,114 @@ function buildGpxPayload(overrides: Partial<CreateActionPayload> = {}): CreateAc
 }
 
 describe("GPX create-action priority", () => {
+  it("keeps location_only as a point-only choice and never reconstructs", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      latitude: 48.85,
+      longitude: 2.35,
+      preparationData: { geometryMethod: "location_only", routeTopology: "loop" },
+    }));
+
+    expect(result).toEqual({ drawing: null, geometrySource: null, routeGeometry: null, origin: null });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps location_only without coordinates free of an invented route", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      latitude: undefined,
+      longitude: undefined,
+      preparationData: { geometryMethod: "location_only" },
+    }));
+
+    expect(result).toEqual({ drawing: null, geometrySource: null, routeGeometry: null, origin: null });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an explicit manual source without silently routing", async () => {
+    routeProviderMock.mockClear();
+    await expect(resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "manual" },
+    }))).rejects.toMatchObject({
+      fieldErrors: { manualDrawing: expect.any(Array) },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unavailable GPX source without silently routing", async () => {
+    routeProviderMock.mockClear();
+    await expect(resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "gpx_import" },
+    }))).rejects.toMatchObject({
+      fieldErrors: { gpxImport: expect.any(Array) },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unavailable generator route without silently routing", async () => {
+    routeProviderMock.mockClear();
+    await expect(resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "generator" },
+    }))).rejects.toMatchObject({
+      fieldErrors: { geometryMethod: expect.any(Array) },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a valid generator route as the selected geometry", async () => {
+    routeProviderMock.mockClear();
+    const generatorRoute = {
+      routes: [{
+        routeId: "generated-1",
+        groupIndex: 1,
+        geometry: {
+          coordinates: [[48.7, 2.2], [48.71, 2.21]],
+          mode: "network",
+          estimated: false,
+        },
+        plannerTechnicalStops: [],
+      }],
+    } as never;
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "generator", operationalRoute: generatorRoute },
+    }));
+
+    expect(result).toMatchObject({
+      geometrySource: "routed",
+      drawing: { kind: "polyline", coordinates: [[48.7, 2.2], [48.71, 2.21]] },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a valid manual drawing exact and never routes", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: gpxDrawing,
+      geometrySource: "manual",
+      preparationData: { geometryMethod: "manual" },
+    }));
+
+    expect(result).toMatchObject({
+      drawing: gpxDrawing,
+      geometrySource: "manual",
+      routeGeometry: null,
+      origin: gpxDrawing.coordinates[0],
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
   it("uses the imported trace and never calls the routing provider", async () => {
     const result = await resolveCreateActionDrawing(buildGpxPayload());
 

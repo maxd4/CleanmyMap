@@ -44,6 +44,7 @@ type ActionDeclarationFormExecutionParams = {
   setManualDrawingState: Dispatch<SetStateAction<ActionDrawing | null>>;
   setManualDrawingSource: Dispatch<SetStateAction<ActionGeometrySource | null>>;
   setGpxError: (message: string | null) => void;
+  onBusinessDataChange?: () => void;
   saveDraftIfAllowed: Parameters<typeof useActionDeclarationFormUpdates>[0]["saveDraftIfAllowed"];
 }
 
@@ -75,6 +76,7 @@ export function useActionDeclarationFormExecution({
   setManualDrawingState,
   setManualDrawingSource,
   setGpxError,
+  onBusinessDataChange,
   saveDraftIfAllowed,
 }: ActionDeclarationFormExecutionParams) {
   const payload = useMemo(() => buildCreateActionPayload({
@@ -103,7 +105,7 @@ export function useActionDeclarationFormExecution({
     visionEstimate,
   }), [declarationMode, form, geometry.hasValidDrawing, photoAssets, visionEstimate]);
 
-  const smartAssist = useActionDeclarationSmartAssist({ form, setForm, visionEstimate });
+  const smartAssist = useActionDeclarationSmartAssist({ form, setForm, visionEstimate, onBusinessDataChange });
   const submission = useActionDeclarationSubmission({
     form,
     declarationMode,
@@ -142,6 +144,7 @@ export function useActionDeclarationFormExecution({
     setManualDrawingState,
     setManualDrawingSource,
     setGpxError,
+    invalidateValidation: onBusinessDataChange ?? (() => undefined),
     setHasAttemptedSubmit,
     saveDraftIfAllowed,
     shouldSaveDraft: submission.submissionState !== "success",

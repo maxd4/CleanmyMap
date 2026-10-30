@@ -202,8 +202,29 @@ export function getActionDeclarationSubmissionIssues({
   const volunteerIssues = getVolunteerActionValidationIssues(payload);
   issues.push(...volunteerIssues);
 
-  if (
+  const explicitGeometryMethod = form.geometryMethod;
+  const missingExplicitSource: ValidationIssue | null = explicitGeometryMethod === "manual" && manualDrawingSource !== "manual"
+    ? {
+        field: "manualDrawing",
+        message: "Un dessin manuel valide est requis pour la source cartographique sélectionnée.",
+      }
+    : explicitGeometryMethod === "gpx_import" && (manualDrawingSource !== "gpx_import" || !gpxImport)
+      ? {
+          field: "gpxImport",
+          message: "Un tracé GPX exploitable est requis pour la source cartographique sélectionnée.",
+        }
+      : explicitGeometryMethod === "generator" && !payload.preparationData?.operationalRoute?.routes?.length
+        ? {
+            field: "geometryMethod",
+            message: "Le parcours opérationnel du générateur est indisponible. Choisissez une autre source.",
+          }
+        : null;
+
+  if (missingExplicitSource) {
+    issues.push(missingExplicitSource);
+  } else if (
     declarationMode === "complete" &&
+    !explicitGeometryMethod &&
     !hasValidDrawing &&
     !hasServerRouteInput &&
     !isCleanPlaceMode

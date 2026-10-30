@@ -16,6 +16,7 @@ type ActionDeclarationFormLifecycleParams = {
   userId: string;
   initialActionId?: string | null;
   initialRecordType: "action";
+  onBusinessDataChange?: () => void;
 };
 
 export function useActionDeclarationFormLifecycle({
@@ -24,6 +25,7 @@ export function useActionDeclarationFormLifecycle({
   userId,
   initialActionId,
   initialRecordType,
+  onBusinessDataChange,
 }: ActionDeclarationFormLifecycleParams) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName)
     ? defaultActorName
@@ -65,6 +67,7 @@ export function useActionDeclarationFormLifecycle({
     setManualDrawingState,
     setManualDrawingSource: setManualDrawingSourceState,
     setHasAttemptedSubmit,
+    onBusinessDataChange,
   });
 
   return {

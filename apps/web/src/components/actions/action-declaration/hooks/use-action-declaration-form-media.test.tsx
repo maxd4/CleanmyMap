@@ -36,8 +36,8 @@ function controlledPromise<T>() {
   return { promise, resolve };
 }
 
-function Harness({ onSnapshot }: { onSnapshot: (snapshot: MediaSnapshot) => void }) {
-  const media = useActionDeclarationFormMedia();
+function Harness({ onSnapshot, onPhotoMutation }: { onSnapshot: (snapshot: MediaSnapshot) => void; onPhotoMutation?: () => void }) {
+  const media = useActionDeclarationFormMedia({ onPhotoMutation });
   onSnapshot(media);
   return null;
 }
@@ -80,6 +80,30 @@ describe("useActionDeclarationFormMedia", () => {
     expect(normalizeActionPhotosMock).toHaveBeenCalledTimes(1);
     expect(inferActionVisionEstimateMock).not.toHaveBeenCalled();
 
+    renderer.unmount();
+  });
+
+  it("notifies the validation owner when photos are added, replaced or removed", async () => {
+    const onPhotoMutation = vi.fn();
+    let latest!: MediaSnapshot;
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(React.createElement(Harness, {
+        onSnapshot: (snapshot) => { latest = snapshot; },
+        onPhotoMutation,
+      }));
+    });
+
+    await act(async () => {
+      await latest.handlePhotoUpload([{} as File] as unknown as FileList);
+    });
+    await act(async () => {
+      await latest.handlePhotoReplace("photo-1", {} as File);
+    });
+    act(() => latest.removePhoto("photo-1"));
+
+    expect(onPhotoMutation).toHaveBeenCalledTimes(3);
     renderer.unmount();
   });
 

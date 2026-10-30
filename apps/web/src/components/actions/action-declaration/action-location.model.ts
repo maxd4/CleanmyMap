@@ -1,6 +1,7 @@
 import type { ActionDrawing } from "@/lib/actions/types";
 import { summarizeActionDrawingValidation } from "./action-drawing-validation";
 import { formatGeometryPointCount } from "../map/layers/actions-map-geometry-render";
+import { locationCoordinatesSchema } from "@/lib/validation/action-geometry";
 import {
   resolveFinalActionGeometry,
   type FinalActionGeometry,
@@ -25,6 +26,18 @@ export type ActionLocationViewModel = {
   statusTone: ActionLocationStatusTone;
 };
 
+export function parseActionLocationCoordinates(
+  form: Pick<NonNullable<ActionLocationGeometryInput["form"]>, "latitude" | "longitude">,
+): [number, number] | null {
+  const latitude = typeof form.latitude === "string" ? form.latitude.trim() : "";
+  const longitude = typeof form.longitude === "string" ? form.longitude.trim() : "";
+  const parsed = locationCoordinatesSchema.safeParse({
+    latitude: latitude ? Number(latitude) : null,
+    longitude: longitude ? Number(longitude) : null,
+  });
+  return parsed.success ? [parsed.data.latitude, parsed.data.longitude] : null;
+}
+
 export function buildActionLocationViewModel({
   form,
   manualDrawing,
@@ -47,7 +60,9 @@ export function buildActionLocationViewModel({
     reconstructedDrawing: routePreviewDrawing,
     reconstructedSource: routePreviewSource,
   });
-  const displayedDrawing = activeGeometry?.drawing ?? previewSummary.normalized;
+  const displayedDrawing = activeGeometry?.drawing ?? (
+    form.geometryMethod ? null : previewSummary.normalized
+  );
   const activeSummary = activeGeometry?.drawing
     ? summarizeActionDrawingValidation(activeGeometry.drawing)
     : previewSummary;

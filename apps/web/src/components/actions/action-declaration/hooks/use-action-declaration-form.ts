@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ActionDeclarationUserMetadata } from "./use-action-declaration-submission";
 import { useActionDeclarationFormLifecycle } from "./use-action-declaration-form-lifecycle";
 import { useActionDeclarationFormMedia } from "./use-action-declaration-form-media";
 import { useActionDeclarationFormExecution } from "./use-action-declaration-form-execution";
 import { resolveActionDeclarationGeometryState } from "./action-declaration-form-geometry";
 import { buildActionDeclarationFormResult } from "./use-action-declaration-form-result";
+import { createInitialFormState } from "../payload";
 
 type UseActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -26,7 +27,16 @@ export function useActionDeclarationForm({
   initialRecordType = "action",
 }: UseActionDeclarationFormProps) {
   const [declarationMode] = useState<"complete">("complete");
-  const lifecycle = useActionDeclarationFormLifecycle({ defaultActorName, actorNameOptions, userId: userMetadata.userId, initialActionId, initialRecordType });
+  const validationInvalidationRef = useRef<() => void>(() => undefined);
+  const invalidateValidation = () => validationInvalidationRef.current();
+  const lifecycle = useActionDeclarationFormLifecycle({
+    defaultActorName,
+    actorNameOptions,
+    userId: userMetadata.userId,
+    initialActionId,
+    initialRecordType,
+    onBusinessDataChange: invalidateValidation,
+  });
   const {
     form,
     setForm,
@@ -43,9 +53,10 @@ export function useActionDeclarationForm({
     setManualDrawingState,
     setManualDrawingSource,
     setGpxError,
+    resolvedDefaultActorName,
   } = lifecycle;
   const isCleanPlaceMode = form.recordType === "clean_place";
-  const media = useActionDeclarationFormMedia();
+  const media = useActionDeclarationFormMedia({ onPhotoMutation: invalidateValidation });
   const { photoAssets, visionEstimate, photoPreparationPending } = media;
 
   const geometry = resolveActionDeclarationGeometryState({
@@ -85,7 +96,22 @@ export function useActionDeclarationForm({
     setManualDrawingState,
     setManualDrawingSource,
     setGpxError,
+    onBusinessDataChange: invalidateValidation,
     saveDraftIfAllowed: draft.saveDraftIfAllowed,
   });
-  return buildActionDeclarationFormResult({ lifecycle, media, geometry, execution, isCleanPlaceMode });
+  useEffect(() => {
+    validationInvalidationRef.current = execution.submission.invalidateValidation;
+  }, [execution.submission.invalidateValidation]);
+
+  const resetForm = () => {
+    setForm(createInitialFormState(resolvedDefaultActorName, initialRecordType));
+    setManualDrawingState(null);
+    setManualDrawingSource(null);
+    setPersistedDrawing(null);
+    setPersistedDrawingSource(null);
+    setGpxError(null);
+    media.clearPhotos();
+    execution.submission.resetSubmission();
+  };
+  return buildActionDeclarationFormResult({ lifecycle, media, geometry, execution, isCleanPlaceMode, resetForm });
 }

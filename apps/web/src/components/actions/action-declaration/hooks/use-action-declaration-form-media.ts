@@ -23,7 +23,11 @@ async function normalizeOnePhoto(file: File): Promise<ActionPhotoAsset> {
   return asset;
 }
 
-export function useActionDeclarationFormMedia() {
+type ActionDeclarationFormMediaParams = {
+  onPhotoMutation?: () => void;
+};
+
+export function useActionDeclarationFormMedia({ onPhotoMutation }: ActionDeclarationFormMediaParams = {}) {
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
@@ -58,6 +62,7 @@ export function useActionDeclarationFormMedia() {
     }
 
     const acceptedFiles = selected.slice(0, availableSlots);
+    onPhotoMutation?.();
     const operationVersion = mutationVersionRef.current;
     pendingPreparationCountRef.current += acceptedFiles.length;
     setPhotoPreparationPending(true);
@@ -116,6 +121,7 @@ export function useActionDeclarationFormMedia() {
       const replacement = await normalizeOnePhoto(file);
       if (operationVersion !== mutationVersionRef.current) return;
       commitPhotoAssets(photoAssetsRef.current.map((asset) => asset.id === photoId ? { ...replacement, id: photoId } : asset));
+      onPhotoMutation?.();
       commitPhotoError(null);
       setVisionEstimate(null);
       setVisionStatus("idle");
@@ -127,6 +133,7 @@ export function useActionDeclarationFormMedia() {
 
   function removePhoto(photoId: string) {
     mutationVersionRef.current += 1;
+    if (photoAssetsRef.current.some((asset) => asset.id === photoId)) onPhotoMutation?.();
     commitPhotoAssets(photoAssetsRef.current.filter((asset) => asset.id !== photoId));
     commitPhotoError(null);
     setVisionEstimate(null);
@@ -135,6 +142,7 @@ export function useActionDeclarationFormMedia() {
 
   function clearPhotos() {
     mutationVersionRef.current += 1;
+    if (photoAssetsRef.current.length > 0) onPhotoMutation?.();
     commitPhotoAssets([]);
     setVisionEstimate(null);
     commitPhotoError(null);

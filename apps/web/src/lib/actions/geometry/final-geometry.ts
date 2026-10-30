@@ -225,6 +225,12 @@ export function resolveFinalActionGeometry(
       : null;
   }
 
+  if (input.geometryMethod === "generator") {
+    return operationalRoute && operationalCandidate
+      ? { ...operationalCandidate, operationalRoute }
+      : null;
+  }
+
   if (
     !input.geometryMethod &&
     canUseManualCandidate(input, gpxTagged)

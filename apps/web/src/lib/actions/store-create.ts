@@ -14,6 +14,7 @@ import {
   buildInitialActionRegistrationRows,
 } from "./store-participants";
 import { reconstructActionRoute } from "@/lib/actions/geometry/route-reconstruction";
+import { ActionRouteReconstructionError } from "@/lib/actions/geometry/route-reconstruction-error";
 import {
   clearActionRouteArrivalForLoop,
   resolveActionRouteTopology,
@@ -187,8 +188,9 @@ export async function persistActionWithRelations(
 export async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
 ): Promise<ResolvedCreateActionDrawing> {
+  const geometryMethod = payload.preparationData?.geometryMethod;
   const activeGeometry = resolveFinalActionGeometry({
-    geometryMethod: payload.preparationData?.geometryMethod,
+    geometryMethod,
     gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
     gpxImport: payload.preparationData?.gpxImport,
     manualDrawing: payload.manualDrawing,
@@ -202,6 +204,28 @@ export async function resolveCreateActionDrawing(
       routeGeometry: activeGeometry.operationalRoute?.routes[0]?.geometry ?? null,
       origin: activeGeometry.drawing.coordinates[0] ?? null,
     };
+  }
+
+  if (geometryMethod === "location_only") {
+    return { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
+  }
+
+  if (geometryMethod === "manual") {
+    throw new ActionRouteReconstructionError({
+      manualDrawing: ["Un dessin manuel valide est requis pour la source cartographique sélectionnée."],
+    });
+  }
+
+  if (geometryMethod === "gpx_import") {
+    throw new ActionRouteReconstructionError({
+      gpxImport: ["Un tracé GPX exploitable est requis pour la source cartographique sélectionnée."],
+    });
+  }
+
+  if (geometryMethod === "generator") {
+    throw new ActionRouteReconstructionError({
+      geometryMethod: ["Le parcours opérationnel du générateur est indisponible. Choisissez une autre source."],
+    });
   }
 
   const route = await reconstructActionRoute({

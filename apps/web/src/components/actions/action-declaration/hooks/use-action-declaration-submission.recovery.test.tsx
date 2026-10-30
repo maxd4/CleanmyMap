@@ -274,9 +274,92 @@ describe("action declaration draft recovery", () => {
     expect(createActionMock).toHaveBeenCalledTimes(1);
     expect(latest.submissionState).toBe("error");
     expect(latest.errorMessage).toBe("Serveur indisponible");
+    latest.invalidateValidation();
+    expect(latest.validationStatus).toBe("transmission_error");
 
     await act(async () => { await latest.handleConfirmSubmit(); });
     expect(createActionMock).toHaveBeenCalledTimes(2);
+    expect(latest.submissionState).toBe("success");
+
+    act(() => { latest.resetSubmission(); });
+    expect(latest.submissionState).toBe("idle");
+    expect(latest.validationStatus).toBe("not_attempted");
+    expect(latest.createdId).toBeNull();
+  });
+
+  it("does not invalidate the verified state while a transmission is pending", async () => {
+    const form = createInitialFormState("Test");
+    form.organizerType = "spontaneous";
+    form.organizerAccounts = "user-1";
+    form.associationName = "Action spontanée";
+    form.actionDate = "2026-10-01";
+    form.locationLabel = "Quai de test";
+    form.departureLocationLabel = "Quai de test";
+    form.volunteersCount = "1";
+    form.childrenCount = "0";
+    form.retiredCount = "0";
+    form.wasteKg = "1";
+    form.durationMinutes = "60";
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    let resolveCreate!: (value: { id: string }) => void;
+    createActionMock.mockReturnValueOnce(new Promise<{ id: string }>((resolve) => {
+      resolveCreate = resolve;
+    }));
+    fetchActionByIdMock.mockResolvedValue(null);
+
+    let latest!: ReturnType<typeof useActionDeclarationSubmission>;
+    function Harness() {
+      latest = useActionDeclarationSubmission({
+        form,
+        declarationMode: "complete",
+        isAuthenticated: true,
+        draftStorageReadError: false,
+        initialActionId: null,
+        loadedActionPhase: null,
+        manualDrawingEnabled: false,
+        manualDrawing: null,
+        manualDrawingSource: null,
+        drawingIsValid: false,
+        effectiveRoutePreviewDrawing: null,
+        routePreviewSource: null,
+        hasValidDrawing: true,
+        hasServerRouteInput: false,
+        isCleanPlaceMode: false,
+        payload,
+        photoAssets: [],
+        photoPreparationPending: false,
+        visionEstimate: null,
+        userMetadata: { userId: "user-1" },
+        clearDraft: vi.fn(),
+        creationRequestId: "action-create-pending",
+        setLoadedActionPhase: vi.fn(),
+        setHasAttemptedSubmit: vi.fn(),
+      });
+      return null;
+    }
+
+    act(() => { create(<Harness />); });
+    act(() => { expect(latest.validateBeforeConfirmation()).toBe(true); });
+    let submit!: Promise<void>;
+    await act(async () => {
+      submit = latest.handleConfirmSubmit();
+      await Promise.resolve();
+    });
+
+    expect(latest.submissionState).toBe("pending");
+    act(() => { latest.invalidateValidation(); });
+    expect(latest.validationStatus).toBe("validated");
+
+    resolveCreate({ id: "action-pending-resolved" });
+    await act(async () => { await submit; });
     expect(latest.submissionState).toBe("success");
   });
 });

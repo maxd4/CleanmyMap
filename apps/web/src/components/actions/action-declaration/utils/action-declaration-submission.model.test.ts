@@ -145,6 +145,65 @@ describe("action declaration submission model", () => {
     })).toEqual([]);
   });
 
+  it("does not require a line for explicit location_only", () => {
+    const form = buildValidCompleteDeclaration();
+    form.geometryMethod = "location_only";
+    form.latitude = "";
+    form.longitude = "";
+    const issues = getActionDeclarationSubmissionIssues({
+      form,
+      payload: buildCreateActionPayload({
+        form,
+        declarationMode: "complete",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        linkedEventId: undefined,
+      }),
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: false,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    });
+
+    expect(issues.some((issue) => issue.field === "manualDrawing")).toBe(false);
+  });
+
+  it.each([
+    ["manual", "manualDrawing"],
+    ["gpx_import", "gpxImport"],
+    ["generator", "geometryMethod"],
+  ] as const)("reports an unavailable explicit %s source", (geometryMethod, field) => {
+    const form = buildValidCompleteDeclaration();
+    form.geometryMethod = geometryMethod;
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    const issues = getActionDeclarationSubmissionIssues({
+      form,
+      payload,
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: false,
+      hasServerRouteInput: true,
+      isCleanPlaceMode: false,
+      gpxImport: null,
+      manualDrawingSource: null,
+    });
+
+    expect(issues).toEqual(expect.arrayContaining([expect.objectContaining({ field })]));
+  });
+
   it("requires an explicit total for a post-action declaration", () => {
     const form = createInitialFormState("Alex", "action");
     form.organizerType = "spontaneous";

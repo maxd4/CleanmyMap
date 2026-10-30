@@ -261,6 +261,7 @@ export type ValidationIssue = {
  |"actionDate"
  |"locationLabel"
  |"arrivalLocationLabel"
+  |"geometryMethod"
  |"manualDrawing"
  |"gpxImport"
  |"wasteKg"

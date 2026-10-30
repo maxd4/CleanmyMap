@@ -13,7 +13,7 @@ import {
   createActionDrawingUndoState,
   type ActionDrawingUndoState,
 } from "../action-drawing-undo";
-import { formatGeometryPointCount, type ActionLocationViewModel } from "./action-location.model";
+import { formatGeometryPointCount, parseActionLocationCoordinates, type ActionLocationViewModel } from "./action-location.model";
 import type { ActionLocationGeometryPanelProps } from "./action-location.types";
 
 const ActionDrawingMap = dynamic(
@@ -79,11 +79,7 @@ function ActionLocationMapCanvas({
     kind: "polyline" as const,
     coordinates: segment.coordinates,
   })) ?? [];
-  const latitude = Number(form.latitude);
-  const longitude = Number(form.longitude);
-  const locationCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude)
-    ? [latitude, longitude] as [number, number]
-    : null;
+  const locationCoordinates = parseActionLocationCoordinates(form);
   return <>
       {isMapVisible ? <>
         <ActionDrawingMap drawing={viewModel.displayedDrawing} previewDrawings={previewDrawings} locationCoordinates={locationCoordinates} drawingSource={viewModel.activeGeometry?.source} onDrawingChange={setManualDrawing} onUndoAvailable={onUndoAvailable} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />

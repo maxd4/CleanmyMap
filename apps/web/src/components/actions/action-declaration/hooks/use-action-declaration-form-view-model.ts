@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from "react";
 import { getBlockClasses } from "@/lib/ui/block-accents";
-import { createInitialFormState } from "../payload";
 import {
   ActionDeclarationFormOverlays,
   ActionDeclarationFormSurface,
@@ -174,7 +173,7 @@ export function useActionDeclarationFormViewModel(
         onRetryActionMedia: () => { void /* fire-and-forget -- the feedback control owns upload retry state and errors. */ state.retryActionMediaUploads(); },
       },
       onReset: () => {
-        state.setForm(createInitialFormState(state.resolvedDefaultActorName, props.initialRecordType ?? "action"));
+        state.resetForm();
         window.scrollTo({ top: 0, behavior: "smooth" });
       },
     } satisfies React.ComponentProps<typeof ActionDeclarationFormSurface>,

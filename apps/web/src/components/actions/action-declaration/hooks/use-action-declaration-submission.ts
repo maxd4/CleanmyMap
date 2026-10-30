@@ -319,6 +319,33 @@ export function useActionDeclarationSubmission(
   });
   const submissionInFlightRef = useRef(false);
 
+  function invalidateValidation() {
+    if (submissionInFlightRef.current || submissionState === "pending") return;
+    if (validationStatus !== "validated") return;
+
+    setValidationStatus("not_attempted");
+    setValidationIssues([]);
+    setErrorMessage(null);
+    setHasAttemptedSubmit(false);
+    setShowConfirmation(false);
+  }
+
+  function resetSubmission() {
+    if (submissionInFlightRef.current || submissionState === "pending") return;
+
+    hasTrackedStartRef.current = false;
+    setSubmissionState("idle");
+    setErrorMessage(null);
+    setCreatedId(null);
+    setRecordedAction(null);
+    setRetentionLoop(null);
+    setValidationIssues([]);
+    setValidationStatus("not_attempted");
+    setShowConfirmation(false);
+    setActionMediaUpload({ status: "idle", uploadedCount: 0, failed: [] });
+    setHasAttemptedSubmit(false);
+  }
+
   async function retryActionMediaUploads() {
     if (!createdId || actionMediaUpload.failed.length === 0) return;
     setActionMediaUpload((current) => ({ ...current, status: "uploading" }));
@@ -436,6 +463,8 @@ export function useActionDeclarationSubmission(
     actionMediaUpload,
     retryActionMediaUploads,
     trackFormStart,
+    invalidateValidation,
+    resetSubmission,
     validateBeforeConfirmation,
     handleConfirmSubmit,
   };

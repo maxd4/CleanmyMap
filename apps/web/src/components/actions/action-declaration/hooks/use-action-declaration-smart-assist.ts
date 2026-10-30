@@ -14,12 +14,14 @@ type UseSmartAssistParams = {
   form: FormState;
   setForm: SetFormState;
   visionEstimate: ActionVisionEstimate | null;
+  onBusinessDataChange?: () => void;
 };
 
 export function useActionDeclarationSmartAssist({
   form,
   setForm,
   visionEstimate,
+  onBusinessDataChange,
 }: UseSmartAssistParams) {
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
   const [gpsMessage, setGpsMessage] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export function useActionDeclarationSmartAssist({
     setGpsMessage("Recherche de votre position en cours...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        onBusinessDataChange?.();
         const latitude = Number(position.coords.latitude.toFixed(6));
         const longitude = Number(position.coords.longitude.toFixed(6));
         setForm((prev) => ({

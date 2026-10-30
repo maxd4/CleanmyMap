@@ -19,6 +19,7 @@ type ActionDeclarationFormUpdatesParams = {
   setManualDrawingSource: (source: ActionGeometrySource | null) => void;
   setGpxError: (message: string | null) => void;
   setHasAttemptedSubmit: (attempted: boolean) => void;
+  invalidateValidation: () => void;
   saveDraftIfAllowed: (
     form: FormState,
     draftGeometry?: ActionDeclarationDraftGeometry,
@@ -40,6 +41,7 @@ export function useActionDeclarationFormUpdates({
   setManualDrawingSource,
   setGpxError,
   setHasAttemptedSubmit,
+  invalidateValidation,
   saveDraftIfAllowed,
   shouldSaveDraft,
   trackFormStart,
@@ -64,6 +66,7 @@ export function useActionDeclarationFormUpdates({
         : null
       : draftGeometry;
     saveDraftIfAllowed(nextForm, activeDraftGeometry, shouldSaveDraft);
+    invalidateValidation();
     if (updates.recordType !== undefined) {
       setHasAttemptedSubmit(false);
     }

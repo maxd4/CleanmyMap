@@ -14,26 +14,39 @@ export function buildActionDeclarationFormResult({
   geometry,
   execution,
   isCleanPlaceMode,
+  resetForm,
 }: {
   lifecycle: ActionDeclarationLifecycle;
   media: ActionDeclarationMedia;
   geometry: ActionDeclarationGeometry;
   execution: ActionDeclarationExecution;
   isCleanPlaceMode: boolean;
+  resetForm: () => void;
 }) {
   const { form, setForm, manualDrawing, manualDrawingSource, gpxError, hasAttemptedSubmit, setManualDrawing, hydration, draft, resolvedDefaultActorName } = lifecycle;
   const { photoAssets, visionEstimate, visionStatus, photoError, photoPreparationPending, handlePhotoUpload, handlePhotoReplace, removePhoto, clearPhotos } = media;
   const { submission, updates } = execution;
+  const setManualDrawingWithInvalidation = (
+    drawing: Parameters<typeof setManualDrawing>[0],
+    source?: Parameters<typeof setManualDrawing>[1],
+  ) => {
+    submission.invalidateValidation();
+    setManualDrawing(drawing, source);
+  };
+  const setFormWithInvalidation = (nextForm: Parameters<typeof setForm>[0]) => {
+    submission.invalidateValidation();
+    setForm(nextForm);
+  };
 
   return {
     form,
-    setForm,
+    setForm: setFormWithInvalidation,
     resolvedDefaultActorName,
     manualDrawing,
     manualDrawingSource,
     gpxImport: form.gpxImport,
     gpxError,
-    setManualDrawing,
+    setManualDrawing: setManualDrawingWithInvalidation,
     photoAssets,
     visionEstimate,
     visionStatus,
@@ -75,6 +88,7 @@ export function buildActionDeclarationFormResult({
     handleIgnoreDraft: draft.handleIgnoreDraft,
     validateBeforeConfirmation: submission.validateBeforeConfirmation,
     handleConfirmSubmit: submission.handleConfirmSubmit,
+    resetForm,
     actionMediaUpload: submission.actionMediaUpload,
     retryActionMediaUploads: submission.retryActionMediaUploads,
   };

@@ -126,6 +126,14 @@ describe("resolveFinalActionGeometry", () => {
     })).toMatchObject({ source: "gps_tracking", drawing: trackingDrawing });
   });
 
+  it("does not replace a missing generator route with persisted geometry", () => {
+    expect(resolveFinalActionGeometry({
+      geometryMethod: "generator",
+      reconstructedDrawing: manualDrawing,
+      reconstructedSource: "reference",
+    })).toBeNull();
+  });
+
   it("does not create an active GPX geometry from orphaned metadata", () => {
     const result = resolveFinalActionGeometry({
       gpxImport: {
