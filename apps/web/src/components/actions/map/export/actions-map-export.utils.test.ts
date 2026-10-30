@@ -130,6 +130,12 @@ describe("actions map export utils", () => {
     };
 
     expect(geojson.features[0]?.properties.has_manual_drawing).toBe(false);
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "polyline",
+      geometry_source: "routed",
+      historical_geometry_kind: "polyline",
+      historical_geometry_source: "routed",
+    });
   });
 
   it("exports observed multi-traces with their provenance and label", () => {
@@ -160,6 +166,7 @@ describe("actions map export utils", () => {
           ],
           traceCount: 2,
           individualDistancesKm: [0.2, 0.3],
+          sources: ["gpx_import"],
           coverageDistanceKm: null,
           coverageVersion: "observed-traces-v1",
         },
@@ -181,6 +188,14 @@ describe("actions map export utils", () => {
       "Couverture observée multi-traces",
     );
     expect(geojson.features[0]?.properties.geometry_reality).toBe("observed");
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "multiline",
+      geometry_source: "gpx_import",
+      geometry_sources: ["gpx_import"],
+      historical_geometry_kind: "multiline",
+      historical_geometry_source: "gpx_import",
+      observed_trace_count: 2,
+    });
   });
 
   it("prioritizes preparation coverage over a historical polygon in both map and export", () => {
@@ -233,9 +248,14 @@ describe("actions map export utils", () => {
       ],
     });
     expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "multiline",
+      geometry_source: null,
+      geometry_sources: ["gpx_import", "gps_tracking"],
       geometry_reality: "observed",
       geometry_label: "Couverture observée multi-traces",
       observed_trace_count: 2,
+      historical_geometry_kind: "polygon",
+      historical_geometry_source: "reference",
     });
   });
 
@@ -267,13 +287,58 @@ describe("actions map export utils", () => {
       },
     });
     const geojson = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
-      features: Array<{ geometry: { type: string; coordinates: unknown } | null }>;
+      features: Array<{
+        geometry: { type: string; coordinates: unknown } | null;
+        properties: Record<string, unknown>;
+      }>;
     };
     expect(geojson.features[0]?.geometry?.type).toBe("MultiLineString");
     expect(geojson.features[0]?.geometry?.coordinates).toEqual([
       [[2.4, 48.9], [2.41, 48.91]],
       [[2.5, 48.92], [2.51, 48.93]],
     ]);
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "multiline",
+      geometry_source: null,
+      historical_geometry_kind: kind,
+      historical_geometry_source: geometrySource,
+    });
+  });
+
+  it("resolves observed trace count from the primary GeoJSON when preparation metadata is absent", () => {
+    const contract = buildActionDataContract({
+      id: "action-primary-coverage",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parc observé",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "reference",
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "MultiLineString",
+        coordinates: [
+          [[2.34, 48.85], [2.341, 48.851]],
+          [[2.35, 48.86], [2.351, 48.861]],
+        ],
+      }),
+    });
+
+    const geojson = JSON.parse(
+      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+    ) as { features: Array<{ properties: Record<string, unknown> }> };
+
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "multiline",
+      geometry_source: null,
+      geometry_sources: null,
+      geometry_reality: "observed",
+      observed_trace_count: 2,
+      historical_geometry_kind: "multiline",
+      historical_geometry_source: "reference",
+    });
   });
 
   it("falls back when observed coverage is empty or malformed", () => {
@@ -311,7 +376,13 @@ describe("actions map export utils", () => {
       features: Array<{ geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> }>;
     };
     expect(geojson.features[0]?.geometry?.type).toBe("Point");
-    expect(geojson.features[0]?.properties.geometry_reality).toBe("contextual");
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "point",
+      geometry_source: "fallback_point",
+      geometry_reality: "contextual",
+      historical_geometry_kind: "polygon",
+      historical_geometry_source: "reference",
+    });
   });
 
   it("exports contextual reference geometry as a location point, never as coverage", () => {
@@ -345,10 +416,14 @@ describe("actions map export utils", () => {
     };
 
     expect(geojson.features[0]?.geometry?.type).toBe("Point");
-    expect(geojson.features[0]?.properties.geometry_label).toBe(
-      "Repère géographique indicatif",
-    );
-    expect(geojson.features[0]?.properties.geometry_reality).toBe("contextual");
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "point",
+      geometry_source: "fallback_point",
+      geometry_label: "Repère géographique indicatif",
+      geometry_reality: "contextual",
+      historical_geometry_kind: "polygon",
+      historical_geometry_source: "reference",
+    });
   });
 
   it("builds stable filenames for geojson and png exports", () => {

@@ -11,11 +11,18 @@ import {
   getGeometryPresentation,
   isIndicativeRouteFallback,
 } from "@/lib/actions/geometry/geometry-presentation";
-import type { ActionMapItem } from "@/lib/actions/types";
+import type {
+  ActionGeometryKind,
+  ActionGeometrySource,
+  ActionMapItem,
+} from "@/lib/actions/types";
 import type { ActionCsvRowWithDrawing } from "@/lib/reports/csv";
 import { buildDeliverableBaseName } from "@/lib/reports/deliverable-name";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
-import { resolveObservedCoverageGeometry } from "@/lib/actions/map/observed-coverage";
+import {
+  resolveObservedCoverageGeometry,
+  type ObservedCoverageGeometry,
+} from "@/lib/actions/map/observed-coverage";
 
 type GeoJsonGeometry =
   | {
@@ -160,15 +167,90 @@ function shouldExportPublicDrawing(item: ActionMapItem): boolean {
   return !(presentation.origin === "estimated_route" && isIndicativeRouteFallback(item) && !isPreAction);
 }
 
-function resolveGeoJsonGeometry(item: ActionMapItem): GeoJsonGeometry | null {
+type ResolvedExportGeometry = {
+  geometry: GeoJsonGeometry | null;
+  observedCoverage: ObservedCoverageGeometry | null;
+  presentation: ReturnType<typeof getGeometryPresentation>;
+  effectiveKind: ActionGeometryKind | null;
+  effectiveSource: ActionGeometrySource | null;
+  effectiveSources: Extract<ActionGeometrySource, "gps_tracking" | "gpx_import">[] | null;
+  effectiveConfidence: number | null;
+  historicalKind: ActionGeometryKind | null;
+  historicalSource: ActionGeometrySource | null;
+  historicalConfidence: number | null;
+};
+
+function geometryKind(geometry: GeoJsonGeometry | null): ActionGeometryKind | null {
+  switch (geometry?.type) {
+    case "Point":
+      return "point";
+    case "LineString":
+      return "polyline";
+    case "Polygon":
+      return "polygon";
+    case "MultiLineString":
+      return "multiline";
+    default:
+      return null;
+  }
+}
+
+function uniqueObservedSources(
+  observedCoverage: ObservedCoverageGeometry | null,
+): Extract<ActionGeometrySource, "gps_tracking" | "gpx_import">[] | null {
+  const sources = observedCoverage?.sources ?? [];
+  return sources.length > 0 ? sources : null;
+}
+
+function resolveObservedSource(
+  observedCoverage: ObservedCoverageGeometry,
+): ActionGeometrySource | null {
+  const sources = uniqueObservedSources(observedCoverage) ?? [];
+  return sources.length === 1 ? sources[0] : null;
+}
+
+function observedGeometryLabel(
+  observedCoverage: ObservedCoverageGeometry,
+  source: ActionGeometrySource | null,
+): string {
+  if (observedCoverage.traceCount > 1) return "Couverture observée multi-traces";
+  if (source === "gpx_import") return "Trace GPX fournie";
+  if (source === "gps_tracking") return "Trace GPS enregistrée";
+  return "Couverture observée";
+}
+
+function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
+  const historicalKind = item.contract?.geometry.kind ?? item.geometry_kind ?? null;
+  const historicalSource =
+    item.contract?.geometry.geometrySource ?? item.geometry_source ?? null;
+  const historicalConfidence =
+    item.contract?.geometry.confidence ?? item.geometry_confidence ?? null;
   const observedCoverage = resolveObservedCoverageGeometry({
     preparationData: item.contract?.metadata.preparationData,
     primaryGeoJson: item.contract?.geometry.geojson,
   });
   if (observedCoverage) {
+    const effectiveSource = resolveObservedSource(observedCoverage);
     return {
-      type: "MultiLineString",
-      coordinates: observedCoverage.coordinates,
+      geometry: {
+        type: "MultiLineString",
+        coordinates: observedCoverage.coordinates,
+      },
+      observedCoverage,
+      presentation: {
+        origin: effectiveSource ?? "fallback_point",
+        reality: "observed",
+        label: observedGeometryLabel(observedCoverage, effectiveSource),
+        strokeStyle: "solid",
+        variant: "observed",
+      },
+      effectiveKind: "multiline",
+      effectiveSource,
+      effectiveSources: uniqueObservedSources(observedCoverage),
+      effectiveConfidence: null,
+      historicalKind,
+      historicalSource,
+      historicalConfidence,
     };
   }
 
@@ -178,26 +260,64 @@ function resolveGeoJsonGeometry(item: ActionMapItem): GeoJsonGeometry | null {
     : null;
 
   if (geometry) {
-    return geometry;
+    const presentation = getGeometryPresentation(item);
+    return {
+      geometry,
+      observedCoverage: null,
+      presentation,
+      effectiveKind: geometryKind(geometry),
+      effectiveSource:
+        geometry.type === "Point" && presentation.reality === "contextual"
+          ? "fallback_point"
+          : historicalSource,
+      effectiveSources: null,
+      effectiveConfidence:
+        geometry.type === "Point" && presentation.reality === "contextual"
+          ? null
+          : historicalConfidence,
+      historicalKind,
+      historicalSource,
+      historicalConfidence,
+    };
   }
 
   const coords = mapItemCoordinates(item);
   if (coords.latitude === null || coords.longitude === null) {
-    return null;
+    return {
+      geometry: null,
+      observedCoverage: null,
+      presentation: getGeometryPresentation(item),
+      effectiveKind: null,
+      effectiveSource: null,
+      effectiveSources: null,
+      effectiveConfidence: null,
+      historicalKind,
+      historicalSource,
+      historicalConfidence,
+    };
   }
 
   return {
-    type: "Point",
-    coordinates: [coords.longitude, coords.latitude],
+    geometry: {
+      type: "Point",
+      coordinates: [coords.longitude, coords.latitude],
+    },
+    observedCoverage: null,
+    presentation: getGeometryPresentation(item),
+    effectiveKind: "point",
+    effectiveSource: "fallback_point",
+    effectiveSources: null,
+    effectiveConfidence: null,
+    historicalKind,
+    historicalSource,
+    historicalConfidence,
   };
 }
 
-function buildFeatureProperties(item: ActionMapItem): Record<string, unknown> {
-  const geometrySource =
-    item.contract?.geometry.geometrySource ?? item.geometry_source ?? null;
-  const presentation = getGeometryPresentation(item);
-  const observedCoverage = item.contract?.metadata.preparationData?.observedCoverage;
-
+function buildFeatureProperties(
+  item: ActionMapItem,
+  resolved: ResolvedExportGeometry,
+): Record<string, unknown> {
   return {
     id: item.id,
     created_at: resolveCreatedAt(item),
@@ -212,14 +332,18 @@ function buildFeatureProperties(item: ActionMapItem): Record<string, unknown> {
     volunteers_count: item.contract?.metadata.volunteersCount ?? item.volunteers_count ?? null,
     duration_minutes: item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? null,
     notes_plain: item.contract?.metadata.notesPlain ?? item.notes_plain ?? null,
-    geometry_kind: item.contract?.geometry.kind ?? item.geometry_kind ?? null,
-    geometry_confidence: item.contract?.geometry.confidence ?? item.geometry_confidence ?? null,
-    geometry_source: geometrySource,
-    geometry_label: presentation.label,
-    geometry_reality: presentation.reality,
-    geometry_variant: presentation.variant ?? null,
-    observed_trace_count: observedCoverage?.traceCount ?? null,
-    has_manual_drawing: geometrySource === "manual",
+    geometry_kind: resolved.effectiveKind,
+    geometry_confidence: resolved.effectiveConfidence,
+    geometry_source: resolved.effectiveSource,
+    geometry_sources: resolved.effectiveSources,
+    geometry_label: resolved.presentation.label,
+    geometry_reality: resolved.presentation.reality,
+    geometry_variant: resolved.presentation.variant ?? null,
+    observed_trace_count: resolved.observedCoverage?.traceCount ?? null,
+    historical_geometry_kind: resolved.historicalKind,
+    historical_geometry_confidence: resolved.historicalConfidence,
+    historical_geometry_source: resolved.historicalSource,
+    has_manual_drawing: resolved.effectiveSource === "manual",
   };
 }
 
@@ -280,12 +404,15 @@ function buildActionsMapGeoJson(
       loadedCount: context.loadedCount ?? items.length,
       freshnessLabel: context.freshnessLabel ?? null,
     },
-    features: items.map((item) => ({
-      type: "Feature",
-      id: item.id,
-      geometry: resolveGeoJsonGeometry(item),
-      properties: buildFeatureProperties(item),
-    })),
+    features: items.map((item) => {
+      const resolved = resolveExportGeometry(item);
+      return {
+        type: "Feature",
+        id: item.id,
+        geometry: resolved.geometry,
+        properties: buildFeatureProperties(item, resolved),
+      };
+    }),
   };
 }
 
