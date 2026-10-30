@@ -80,6 +80,13 @@ export function sanitizePublicObservedPreparationData(
   const observedCoverage = parsePublicObservedCoverage(input.observedCoverage)?.observedCoverage;
   if (observedCoverage) output.observedCoverage = observedCoverage;
 
+  if (typeof input.geometryMethod === "string" && ["automatic", "generator", "manual", "gpx_import", "location_only"].includes(input.geometryMethod)) {
+    output.geometryMethod = input.geometryMethod;
+  }
+  if (input.gpxImportProvenance === "planned" || input.gpxImportProvenance === "unknown") {
+    output.gpxImportProvenance = input.gpxImportProvenance;
+  }
+
   for (const key of [
     "routeTargetDistanceKm",
     "routeNetworkDistanceKm",

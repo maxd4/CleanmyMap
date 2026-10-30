@@ -119,6 +119,23 @@ describe("GPX track parsing", () => {
     expect(result.metadata.segmentDistancesKm).toHaveLength(2);
   });
 
+  it("assigns distinct candidate identities and fingerprints to homonymous files", async () => {
+    const files = await parseGpxFiles([
+      { name: "terrain.gpx", type: "application/gpx+xml", size: 100, text: async () => gpx(`${point(48.85, 2.35)}${point(48.851, 2.351)}`) },
+      { name: "terrain.gpx", type: "application/gpx+xml", size: 100, text: async () => gpx(`${point(48.86, 2.36)}${point(48.861, 2.361)}`) },
+    ] as unknown as File[]);
+
+    expect(files.every((file) => file.ok)).toBe(true);
+    if (files[0]?.ok && files[1]?.ok) {
+      const first = files[0].parsed.metadata.files?.[0];
+      const second = files[1].parsed.metadata.files?.[0];
+      expect(first?.fileId).toBeTruthy();
+      expect(second?.fileId).toBeTruthy();
+      expect(first?.fileId).not.toBe(second?.fileId);
+      expect(first?.segments[0]?.sourceFingerprint).not.toBe(second?.segments[0]?.sourceFingerprint);
+    }
+  });
+
   it("bounds the point count and file size", async () => {
     const tooManyPoints = Array.from({ length: 401 }, (_, index) =>
       point(40 + index / 10_000, 2 + index / 10_000),

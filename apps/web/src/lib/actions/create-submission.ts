@@ -79,6 +79,11 @@ async function persistCreatedGpxContributions(params: {
   actionId: string;
   payload: CreateActionPayload;
 }): Promise<Extract<CreateActionSubmissionResult, { kind: "action" }>["geometryContribution"]> {
+  if (!Array.isArray(params.payload.preparationData?.gpxImport?.files)) {
+    // Legacy single-segment creations are owned by the compatibility trigger.
+    // New multi-file candidates are persisted only by this segment workflow.
+    return { accepted: false, persisted: false, status: "not_requested" };
+  }
   const result = await recordGpxGeometryContributionIfPresent({
     supabase: params.supabase,
     actionId: params.actionId,

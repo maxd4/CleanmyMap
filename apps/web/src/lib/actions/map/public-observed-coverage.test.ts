@@ -111,4 +111,17 @@ describe("public map preparation projection", () => {
       routeGeometryProvider: "none",
     });
   });
+
+  it("keeps only the bounded GPX provenance markers in the public preparation", () => {
+    expect(parsePublicObservedPreparationData({
+      public_preparation_data: {
+        geometryMethod: "gpx_import",
+        gpxImportProvenance: "planned",
+        gpxImport: { fileName: "private.gpx" },
+      },
+    })).toEqual({
+      geometryMethod: "gpx_import",
+      gpxImportProvenance: "planned",
+    });
+  });
 });

@@ -14,6 +14,7 @@ const ACTION_GPX_SOURCE = "gpx_import" as const;
 export const MAX_GPX_FILE_BYTES = 5_000_000;
 export const MAX_GPX_POINTS = 400;
 const GPX_LOOP_CLOSURE_THRESHOLD_METERS = 50;
+let gpxFileIdentityCounter = 0;
 
 type GpxImportMetadata = ActionGpxImportMetadata;
 export type GpxImportProvenance = "planned" | "unknown";
@@ -27,13 +28,23 @@ function fingerprint(value: string): string {
   return `gpx-${(hash >>> 0).toString(16).padStart(8, "0")}`;
 }
 
+/** Identity of a UI candidate; it is persisted with the draft, not used as a global proof. */
+export function createGpxFileIdentity(seed?: string): string {
+  if (seed) return `gpx-file-${fingerprint(seed).slice(4)}`;
+  const randomUUID = globalThis.crypto?.randomUUID;
+  if (typeof randomUUID === "function") return `gpx-file-${randomUUID.call(globalThis.crypto)}`;
+  gpxFileIdentityCounter += 1;
+  return `gpx-file-${Date.now().toString(36)}-${gpxFileIdentityCounter.toString(36)}`;
+}
+
 export function createGpxSourceFingerprint(
   fileName: string,
   traceIndex: number,
   segmentIndex: number,
   coordinates: readonly GeodesicCoordinate[],
+  fileId?: string,
 ): string {
-  return fingerprint(`${fileName}:${traceIndex}:${segmentIndex}:${JSON.stringify(coordinates)}`);
+  return fingerprint(`${fileId ?? fileName}:${traceIndex}:${segmentIndex}:${JSON.stringify(coordinates)}`);
 }
 
 export type ParsedGpxTrack = {
@@ -260,7 +271,7 @@ export function inferGpxTopology(
 
 export function parseGpxText(
   xml: string,
-  options: { fileName?: string } = {},
+  options: { fileName?: string; fileId?: string; preserveSourceFingerprint?: boolean } = {},
 ): ParsedGpxTrack {
   if (typeof xml !== "string" || xml.trim().length === 0) {
     throw new GpxImportError("Le fichier GPX est vide.");
@@ -285,9 +296,11 @@ export function parseGpxText(
   const sanitizedFileName = sanitizeFileName(options.fileName);
   const files: ActionGpxImportFile[] = sanitizedFileName
     ? [{
+        ...(options.fileId ? { fileId: options.fileId } : {}),
         fileName: sanitizedFileName,
         provenance,
         segments: parsedSegments.tracks.flatMap((track, traceIndex) => track.map((segment, segmentIndex) => ({
+          ...(options.fileId ? { fileId: options.fileId } : {}),
           fileName: sanitizedFileName,
           traceIndex,
           segmentIndex,
@@ -295,7 +308,13 @@ export function parseGpxText(
           distanceKm: Number(polylineDistanceKm(segment).toFixed(3)),
           pointCount: segment.length,
           topology: inferGpxTopology(segment),
-          sourceFingerprint: createGpxSourceFingerprint(sanitizedFileName, traceIndex, segmentIndex, segment),
+          sourceFingerprint: createGpxSourceFingerprint(
+            sanitizedFileName,
+            traceIndex,
+            segmentIndex,
+            segment,
+            options.preserveSourceFingerprint ? undefined : options.fileId,
+          ),
         }))),
       }]
     : [];
@@ -322,7 +341,7 @@ export function parseGpxText(
   };
 }
 
-export async function parseGpxFile(file: File): Promise<ParsedGpxTrack> {
+function assertUsableGpxFile(file: File): void {
   const fileName = file.name ?? "";
   if (!/\.gpx$/i.test(fileName)) {
     throw new GpxImportError("Sélectionnez un fichier portant l'extension .gpx.");
@@ -337,16 +356,40 @@ export async function parseGpxFile(file: File): Promise<ParsedGpxTrack> {
   if (file.size > MAX_GPX_FILE_BYTES) {
     throw new GpxImportError("Le fichier GPX dépasse la taille maximale autorisée de 5 Mo.");
   }
+}
+
+export async function parseGpxFile(file: File, options: { fileId?: string; preserveSourceFingerprint?: boolean } = {}): Promise<ParsedGpxTrack> {
+  assertUsableGpxFile(file);
+  const fileName = file.name ?? "";
   const xml = await file.text();
-  return parseGpxText(xml, { fileName });
+  return parseGpxText(xml, { fileName, fileId: options.fileId, preserveSourceFingerprint: options.preserveSourceFingerprint });
 }
 
 /** Parse every selected file independently so one invalid file does not erase valid candidates. */
 export async function parseGpxFiles(files: readonly File[]): Promise<GpxFileParseResult[]> {
-  return Promise.all(files.map(async (file): Promise<GpxFileParseResult> => {
+  const fileNameCounts = new Map<string, number>();
+  for (const file of files) {
+    const fileName = sanitizeFileName(file.name) ?? file.name ?? "GPX sans nom";
+    fileNameCounts.set(fileName, (fileNameCounts.get(fileName) ?? 0) + 1);
+  }
+  return Promise.all(files.map(async (file, fileIndex): Promise<GpxFileParseResult> => {
     const fileName = sanitizeFileName(file.name) ?? file.name ?? "GPX sans nom";
     try {
-      return { ok: true, fileName, parsed: await parseGpxFile(file) };
+      assertUsableGpxFile(file);
+      const occurrence = files.slice(0, fileIndex).filter((candidate) =>
+        (sanitizeFileName(candidate.name) ?? candidate.name ?? "GPX sans nom") === fileName,
+      ).length;
+      const xml = await file.text();
+      const fileId = createGpxFileIdentity(`${fileName}:${occurrence}:${xml}`);
+      return {
+        ok: true,
+        fileName,
+        parsed: parseGpxText(xml, {
+          fileName,
+          fileId,
+          preserveSourceFingerprint: (fileNameCounts.get(fileName) ?? 0) === 1,
+        }),
+      };
     } catch (error: unknown) {
       return {
         ok: false,

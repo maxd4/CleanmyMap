@@ -106,6 +106,28 @@ describe("action geometry validation", () => {
     }).success).toBe(true);
   });
 
+  it("does not allow planned provenance to enter the observed intent", () => {
+    const valid = {
+      source: "gpx_import" as const,
+      observedDistanceKm: 1,
+      pointCount: 2,
+      inferredTopology: "point_to_point" as const,
+      intent: "observed" as const,
+    };
+    expect(gpxImportMetadataSchema.safeParse({ ...valid, provenance: "planned" }).success).toBe(false);
+    expect(gpxImportMetadataSchema.safeParse({
+      ...valid,
+      files: [{ fileName: "plan.gpx", provenance: "planned", segments: [] }],
+    }).success).toBe(false);
+    expect(gpxImportMetadataSchema.safeParse({
+      source: "gpx_import" as const,
+      observedDistanceKm: 1,
+      pointCount: 2,
+      inferredTopology: "point_to_point" as const,
+      files: [{ fileName: "terrain.gpx", provenance: "unknown", segments: [] }],
+    }).success).toBe(false);
+  });
+
   it("refuses incomplete GPX provenance at the action boundary", () => {
     const base = {
       actorName: "Bénévole test",

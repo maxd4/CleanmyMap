@@ -289,9 +289,13 @@ une proposition intermédiaire ou une ancienne prévisualisation. Le serializer
 est pur et sans réseau : il conserve l’ordre exact des coordonnées, la
 latitude/longitude et la topologie (boucle fermée ou parcours
 `point_to_point` ouvert), tandis que les arrêts et repères sont ajoutés comme
-waypoints sans modifier le track. Une géométrie manual ou `gpx_import` reste
-exportable lorsqu’elle est la géométrie finale disponible ; un import conserve
-ses coordonnées canoniques sans reroutage ni application de policy. Les
+waypoints sans modifier le track. Une géométrie `manual` reste exportable
+lorsqu’elle est la géométrie finale disponible. Un import `gpx_import` conserve
+ses coordonnées canoniques sans reroutage ni application de policy, mais son
+export porte l’intention effective : un GPX marqué `planned` reste planifié et
+ne peut pas devenir une observation par simple réimport ; un GPX non marqué
+reste à qualifier. Une trace `observed` ne devient publique comme couverture
+qu’après admissibilité et persistance de ses contributions indépendantes. Les
 géométries estimées restent exportables et sont identifiées comme telles dans
 le GPX.
 

@@ -19,6 +19,7 @@ type GpxContributionPayload = {
 };
 
 type StoredGpxSegment = {
+  fileId?: unknown;
   fileName?: unknown;
   traceIndex?: unknown;
   segmentIndex?: unknown;
@@ -80,7 +81,7 @@ function parseStoredGpxSegments(value: unknown): GpxContributionPayload["traces"
     });
     const sourceFingerprint = typeof segment.sourceFingerprint === "string"
       ? segment.sourceFingerprint
-      : fingerprint(`${String(segment.fileName ?? "unknown")}:${String(segment.traceIndex ?? 0)}:${String(segment.segmentIndex ?? 0)}:${geojson}`);
+      : fingerprint(`${String(segment.fileId ?? segment.fileName ?? "unknown")}:${String(segment.traceIndex ?? 0)}:${String(segment.segmentIndex ?? 0)}:${geojson}`);
     return [{
       geojson,
       observedDistanceKm: typeof segment.distanceKm === "number" && Number.isFinite(segment.distanceKm)
@@ -104,14 +105,22 @@ function getGpxContributionPayload(
   const preparationData = updateData["preparation_data"] as
     | {
         routeObservedDistanceKm?: number;
-        gpxImport?: { fileName?: unknown; segmentDistancesKm?: unknown; intent?: unknown; files?: unknown };
+        gpxImport?: { fileName?: unknown; segmentDistancesKm?: unknown; intent?: unknown; provenance?: unknown; files?: unknown };
       }
     | undefined;
   const traces = parseGeoJsonTraces(updateData["derived_geometry_geojson"]);
   const intent = preparationData?.gpxImport?.intent;
-  if (intent === "planned") return null;
-  const storedTraces = preparationData?.gpxImport?.files && Array.isArray(preparationData.gpxImport.files)
-    ? parseStoredGpxSegments(preparationData.gpxImport.files.flatMap((file: { segments?: unknown }) => Array.isArray(file.segments) ? file.segments : []))
+  const files = preparationData?.gpxImport?.files && Array.isArray(preparationData.gpxImport.files)
+    ? preparationData.gpxImport.files
+    : [];
+  const hasCandidateFiles = files.length > 0;
+  const hasPlannedProvenance = preparationData?.gpxImport?.provenance === "planned" ||
+    files.some((file: { provenance?: unknown }) => file.provenance === "planned");
+  if (intent === "planned" || hasPlannedProvenance || (hasCandidateFiles && intent !== "observed")) return null;
+  const storedTraces = hasCandidateFiles
+    ? parseStoredGpxSegments(files.flatMap((file: { fileId?: unknown; segments?: unknown }) => Array.isArray(file.segments)
+      ? file.segments.map((segment: Record<string, unknown>) => ({ ...segment, fileId: segment.fileId ?? file.fileId }))
+      : []))
     : [];
   const contributionTraces = storedTraces.length > 0 ? storedTraces : traces.map((trace, index) => ({
     ...trace,
@@ -185,7 +194,10 @@ export function stripObservedGeometryProjectionFields(
     const nextPreparationData = { ...(preparationData as Record<string, unknown>) };
     delete nextPreparationData["observedCoverage"];
     delete nextPreparationData["routeObservedDistanceKm"];
-    delete nextPreparationData["gpxImport"];
+    const gpxImport = nextPreparationData["gpxImport"];
+    const planned = gpxImport && typeof gpxImport === "object" && !Array.isArray(gpxImport) &&
+      ((gpxImport as Record<string, unknown>).intent === "planned" || (gpxImport as Record<string, unknown>).provenance === "planned");
+    if (!planned) delete nextPreparationData["gpxImport"];
     nextUpdateData["preparation_data"] = nextPreparationData;
   }
 

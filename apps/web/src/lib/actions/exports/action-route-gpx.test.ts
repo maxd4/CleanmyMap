@@ -95,6 +95,23 @@ describe("action-route-gpx export adapter", () => {
     expect(xml).not.toContain("Stop CleanMyMap");
   });
 
+  it("exports a planned GPX import as planned and never promotes it", () => {
+    const xml = buildActionRouteGpxDocument({
+      drawing: { coordinates: [[48.8, 2.3], [48.81, 2.31]] },
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 0,
+        pointCount: 2,
+        inferredTopology: "point_to_point",
+        intent: "planned",
+        provenance: "planned",
+      },
+    });
+
+    expect(xml).toContain('cmm:provenance version="1" intent="planned"');
+    expect(parseGpxText(xml!).provenance).toBe("planned");
+  });
+
   it("exports a promoted GPS tracking observation without routing it", () => {
     const xml = buildActionRouteGpxDocument({
       operationalRoute,

@@ -1,4 +1,4 @@
-import { GpxImportError, parseGpxFiles } from "@/lib/actions/geometry/gpx";
+import { createGpxFileIdentity, GpxImportError, parseGpxFiles } from "@/lib/actions/geometry/gpx";
 import type {
   ActionDrawing,
   ActionGpxImportFile,
@@ -33,6 +33,7 @@ export function createActionDeclarationGeometryHandlers({
   updateForm,
 }: ActionDeclarationGeometryHandlersParams) {
   function rebuildMetadata(files: ActionGpxImportFile[], intent: ActionGpxImportMetadata["intent"] = form.gpxImport?.intent ?? "planned") {
+    const effectiveIntent = files.some((file) => file.provenance === "planned") ? "planned" : intent;
     const segments = files.flatMap((file) => file.segments);
     const first = segments[0];
     return {
@@ -44,9 +45,10 @@ export function createActionDeclarationGeometryHandlers({
       segmentDistancesKm: segments.map((segment) => segment.distanceKm),
       segmentPointCounts: segments.map((segment) => segment.pointCount),
       segmentCount: segments.length,
-      traceCount: new Set(segments.map((segment) => `${segment.fileName}:${segment.traceIndex}`)).size,
+      traceCount: new Set(segments.map((segment) => `${segment.fileId ?? segment.fileName}:${segment.traceIndex}`)).size,
       provenance: files.every((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
-      intent,
+      intent: effectiveIntent,
+      gpxImportProvenance: files.some((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
       files,
       fileName: files.length === 1 ? files[0]?.fileName : undefined,
     } satisfies ActionGpxImportMetadata;
@@ -58,7 +60,7 @@ export function createActionDeclarationGeometryHandlers({
     try {
       const parsedFiles = await parseGpxFiles(files);
       const candidates: ActionGpxImportFile[] = parsedFiles.map((result) => {
-        if (!result.ok) return { fileName: result.fileName, provenance: "unknown", segments: [], error: result.error };
+        if (!result.ok) return { fileId: createGpxFileIdentity(), fileName: result.fileName, provenance: "unknown", segments: [], error: result.error };
         const candidate = result.parsed.metadata.files?.[0];
         const topologyMismatch = result.parsed.segments.some((segment) => {
           const topology = result.parsed.metadata.segmentTopologies?.[result.parsed.segments.indexOf(segment)];
@@ -66,6 +68,7 @@ export function createActionDeclarationGeometryHandlers({
         });
         if (topologyMismatch) {
           return {
+            fileId: candidate?.fileId ?? createGpxFileIdentity(),
             fileName: result.fileName,
             provenance: result.parsed.provenance,
             segments: [],
@@ -74,7 +77,7 @@ export function createActionDeclarationGeometryHandlers({
               : "Ce fichier contient un segment fermé : sélectionnez Départ → arrivée uniquement pour des traces ouvertes.",
           };
         }
-        return candidate ?? { fileName: result.fileName, provenance: result.parsed.provenance, segments: [] };
+        return candidate ?? { fileId: createGpxFileIdentity(), fileName: result.fileName, provenance: result.parsed.provenance, segments: [] };
       });
       const validIncoming = candidates.some((candidate) => candidate.segments.length > 0);
       if (!validIncoming && candidates.every((candidate) => candidate.error)) {
@@ -109,13 +112,18 @@ export function createActionDeclarationGeometryHandlers({
     }
   }
 
-  function removeGpxImport(sourceFingerprint?: string) {
-    if (sourceFingerprint && form.gpxImport?.files) {
+  function removeGpxImport(fileIdOrFingerprint?: string) {
+    if (fileIdOrFingerprint && form.gpxImport?.files) {
+      const removesFile = form.gpxImport.files.some((file) =>
+        file.fileId === fileIdOrFingerprint || (!file.fileId && file.fileName === fileIdOrFingerprint),
+      );
       const files = form.gpxImport.files
-        .filter((file) => file.fileName !== sourceFingerprint)
+        .filter((file) => !removesFile || (file.fileId === fileIdOrFingerprint || (!file.fileId && file.fileName === fileIdOrFingerprint)) === false)
         .map((file) => ({
           ...file,
-          segments: file.segments.filter((segment) => segment.sourceFingerprint !== sourceFingerprint),
+          segments: removesFile
+            ? file.segments
+            : file.segments.filter((segment) => segment.sourceFingerprint !== fileIdOrFingerprint),
         }))
         .filter((file) => file.error ? true : file.segments.length > 0);
       const nextMetadata = files.length > 0 ? rebuildMetadata(files) : null;
@@ -137,6 +145,11 @@ export function createActionDeclarationGeometryHandlers({
 
   function setGpxIntent(intent: "planned" | "observed") {
     if (!form.gpxImport) return;
+    if (intent === "observed" && form.gpxImport.files?.some((file) => file.provenance === "planned")) {
+      setGpxError("Un fichier GPX marqué planned ne peut pas être requalifié en trace de terrain.");
+      return;
+    }
+    setGpxError(null);
     updateForm({ gpxImport: { ...form.gpxImport, intent } });
   }
 

@@ -205,9 +205,13 @@ export function buildActionRouteGpxInput(
     name: "Itinéraire CleanMyMap",
     description: "Export de la géométrie finale actuellement retenue.",
     provenance:
-      finalGeometry.source === "gpx_import" || finalGeometry.source === "gps_tracking"
-        ? "observed"
-        : "planned",
+      finalGeometry.source === "gpx_import"
+        ? params.gpxImport?.intent === "planned" || params.gpxImport?.provenance === "planned"
+          ? "planned"
+          : "observed"
+        : finalGeometry.source === "gps_tracking"
+          ? "observed"
+          : "planned",
     tracks: [
       {
         geometry: { coordinates },

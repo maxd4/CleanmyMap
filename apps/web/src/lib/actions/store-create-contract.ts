@@ -180,7 +180,13 @@ function appendGpxPreparationData(
   }
   const observedDistanceKm = Number(polylineDistanceKm(params.finalDrawing.coordinates).toFixed(3));
   const importedGpx = (preparation.gpxImport ?? {}) as Partial<ActionGpxImportMetadata>;
-  const isObserved = importedGpx.intent !== "planned";
+  const hasPlannedProvenance = importedGpx.provenance === "planned" ||
+    importedGpx.gpxImportProvenance === "planned" ||
+    importedGpx.files?.some((file) => file.provenance === "planned") === true;
+  const hasCandidateFiles = Array.isArray(importedGpx.files);
+  const isObserved = !hasPlannedProvenance && (
+    importedGpx.intent === "observed" || (!hasCandidateFiles && importedGpx.intent !== "planned")
+  );
   return {
     ...preparation,
     ...(isObserved ? { routeObservedDistanceKm: observedDistanceKm } : { routeObservedDistanceKm: undefined }),

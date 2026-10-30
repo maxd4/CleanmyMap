@@ -251,16 +251,20 @@ vérification restent rattachés au moteur
 #### Géométries observées et promotion
 
 `ActionGeometrySource` est la provenance fine ; la projection de qualité ne
-doit pas la remplacer par la taxonomie des mesures. `gps_tracking` et
-`gpx_import` sont des observations lorsqu'elles proviennent respectivement de
-`gps_points` persistés ou d'une trace GPX validée ; `manual` est une déclaration,
+doit pas la remplacer par la taxonomie des mesures. `gps_tracking` est une
+observation lorsqu'il provient de `gps_points` persistés ; `gpx_import` est une
+observation uniquement lorsqu'une trace explicitement déclarée `observed` est
+admissible et persistée comme contribution. Un GPX `planned` reste une
+préparation et un fichier sans marqueur reste à qualifier ; `manual` est une déclaration,
 `reference` une emprise connue, et `routed`/`estimated_route` des
 reconstructions ou estimations. Les observations valides priment les
 reconstructions ultérieures.
 
 Une promotion conserve la cible de planification séparément de la distance
 observée et ajoute une contribution append-only et idempotente dans
-`action_geometry_contributions`. Plusieurs traces deviennent une couverture
+`action_geometry_contributions`. Chaque segment GPX admissible devient une
+contribution `LineString` indépendante, avec empreinte idempotente ; les retries
+ne recréent pas une contribution déjà acceptée. Plusieurs traces deviennent une couverture
 `MultiLineString` sans concaténation ni distance collective annoncée ; les
 distances individuelles restent séparées. La confiance ne prouve jamais la
 provenance. Une remédiation historique exige une preuve persistée ; à défaut,

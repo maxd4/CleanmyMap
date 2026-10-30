@@ -74,6 +74,8 @@ export type ActionGeometryMethod =
   | "location_only";
 export type ActionGpxImportIntent = "planned" | "observed";
 export type ActionGpxImportSegment = {
+  /** UI candidate identity; older persisted segments may omit it. */
+  fileId?: string;
   fileName: string;
   traceIndex: number;
   segmentIndex: number;
@@ -84,6 +86,8 @@ export type ActionGpxImportSegment = {
   sourceFingerprint: string;
 };
 export type ActionGpxImportFile = {
+  /** Stable identity of this candidate across draft persistence and retries. */
+  fileId?: string;
   fileName: string;
   provenance: "planned" | "unknown";
   segments: ActionGpxImportSegment[];
@@ -108,6 +112,8 @@ export type ActionGpxImportMetadata = {
   provenance?: "planned" | "unknown";
   /** Explicit user intent. A planned file is never an observed contribution. */
   intent?: ActionGpxImportIntent;
+  /** Sanitized public projection of the GPX provenance. */
+  gpxImportProvenance?: "planned" | "unknown";
   /** Bounded, independent file/segment candidates kept for persistence and retries. */
   files?: ActionGpxImportFile[];
   fileName?: string;
@@ -192,6 +198,8 @@ export type ActionPreparationData = {
   routeTopology?: ActionRouteTopology;
   /** Explicit creation source selected in the canonical form. */
   geometryMethod?: ActionGeometryMethod;
+  /** Publicly safe GPX provenance marker; never implies an accepted contribution. */
+  gpxImportProvenance?: "planned" | "unknown";
   /** Immutable route evidence captured before this action was created. */
   routeCalibrationContext?: RouteCalibrationContext;
   /** Mutable operational copy planned from the planner, kept separate from the snapshot. */

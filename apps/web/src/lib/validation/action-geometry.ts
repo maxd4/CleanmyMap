@@ -60,11 +60,14 @@ export const gpxImportMetadataSchema = z
     traceCount: z.number().int().min(1).max(400).optional(),
     provenance: z.enum(["planned", "unknown"]).optional(),
     intent: z.enum(["planned", "observed"]).optional(),
+    gpxImportProvenance: z.enum(["planned", "unknown"]).optional(),
     files: z.array(z.object({
+      fileId: z.string().min(1).max(160).optional(),
       fileName: z.string().min(1).max(120),
       provenance: z.enum(["planned", "unknown"]),
       error: z.string().max(500).optional(),
       segments: z.array(z.object({
+        fileId: z.string().min(1).max(160).optional(),
         fileName: z.string().min(1).max(120),
         traceIndex: z.number().int().min(0).max(400),
         segmentIndex: z.number().int().min(0).max(400),
@@ -84,7 +87,25 @@ export const gpxImportMetadataSchema = z
       )
       .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    const hasPlannedProvenance = value.provenance === "planned" ||
+      value.files?.some((file) => file.provenance === "planned");
+    if (hasPlannedProvenance && value.intent === "observed") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["intent"],
+        message: "Un GPX marqué planned ne peut pas être déclaré comme observation.",
+      });
+    }
+    if (value.files && value.files.length > 0 && !value.intent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["intent"],
+        message: "L'intention planned ou observed doit être explicitement déclarée pour un import GPX multiple.",
+      });
+    }
+  });
 
 export const manualDrawingSchema = z
   .object({

@@ -71,6 +71,42 @@ describe("geometry presentation provenance", () => {
     });
   });
 
+  it("does not present planned or unqualified GPX as observed", () => {
+    expect(getGeometryPresentation(buildItem("gpx_import", "polyline", {
+      geometryMethod: "gpx_import",
+      gpxImportProvenance: "planned",
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 0,
+        pointCount: 2,
+        inferredTopology: "point_to_point",
+        intent: "planned",
+        provenance: "planned",
+      },
+    }))).toMatchObject({
+      label: "Parcours GPX prévu",
+      reality: "planned",
+      strokeStyle: "dashed",
+      variant: "planned_gpx",
+    });
+    expect(getGeometryPresentation(buildItem("gpx_import", "polyline", {
+      geometryMethod: "gpx_import",
+      gpxImportProvenance: "unknown",
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 0,
+        pointCount: 2,
+        inferredTopology: "point_to_point",
+        intent: "observed",
+        provenance: "unknown",
+      },
+    }))).toMatchObject({
+      label: "Trace GPX à qualifier",
+      reality: "contextual",
+      strokeStyle: "dashed",
+    });
+  });
+
   it("distinguishes a network estimate from its geographic fallback", () => {
     expect(
       getGeometryPresentation(

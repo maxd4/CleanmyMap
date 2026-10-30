@@ -9,6 +9,7 @@ type GeometryPresentationVariant =
   | "network"
   | "estimated"
   | "indicative"
+  | "planned_gpx"
   | "point";
 
 export type GeometryPresentationReality =
@@ -128,6 +129,36 @@ function observedCoverageSources(item: ActionMapItem): ActionGeometryOrigin[] {
     );
 }
 
+function getGpxProvenancePresentation(item: ActionMapItem): GeometryPresentation | null {
+  const preparationData = item.contract?.metadata.preparationData;
+  const gpxImport = preparationData?.gpxImport;
+  const isPlanned = preparationData?.gpxImportProvenance === "planned" ||
+    gpxImport?.intent === "planned" ||
+    gpxImport?.provenance === "planned";
+  if (isPlanned) {
+    return buildPresentation(
+      "gpx_import",
+      "planned",
+      "Parcours GPX prévu",
+      "dashed",
+      "planned_gpx",
+    );
+  }
+  const isUnknown = preparationData?.gpxImportProvenance === "unknown" ||
+    (gpxImport?.intent === "observed" && gpxImport.provenance === "unknown") ||
+    (Array.isArray(gpxImport?.files) && gpxImport.intent !== "observed");
+  if (isUnknown) {
+    return buildPresentation(
+      "gpx_import",
+      "contextual",
+      "Trace GPX à qualifier",
+      "dashed",
+      "indicative",
+    );
+  }
+  return null;
+}
+
 function observedLabel(
   item: ActionMapItem,
   origin: ActionGeometryOrigin | null,
@@ -156,6 +187,7 @@ export function getGeometryPresentation(
     case "reference":
       return buildPresentation(origin, "contextual", "Repère géographique indicatif", "dashed", "reference");
     case "gpx_import":
+      return getGpxProvenancePresentation(item) ?? buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
     case "gps_tracking":
       return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
     case "routed":

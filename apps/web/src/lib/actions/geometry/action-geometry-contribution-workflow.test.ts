@@ -101,6 +101,29 @@ describe("observed geometry contribution workflow", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("keeps a planned file marker authoritative even when the request says observed", async () => {
+    const rpc = vi.fn();
+    const result = await recordGpxGeometryContributionIfPresent({
+      supabase: { rpc } as never,
+      actionId: "action-planned-file",
+      userId: "user-1",
+      updateData: {
+        geometry_source: "gpx_import",
+        derived_geometry_geojson: JSON.stringify({ type: "LineString", coordinates: [[2.3, 48.8], [2.31, 48.81]] }),
+        preparation_data: {
+          gpxImport: {
+            source: "gpx_import",
+            intent: "observed",
+            files: [{ fileId: "file-1", fileName: "plan.gpx", provenance: "planned", segments: [] }],
+          },
+        },
+      },
+    });
+
+    expect(result).toBeNull();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("records independent stored segments, preserves fingerprints and continues after a refusal", async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: { accepted: true, contributionId: "c1", validationState: "accepted", traceCount: 1 }, error: null })

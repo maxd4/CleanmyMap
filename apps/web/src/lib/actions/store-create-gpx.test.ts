@@ -96,6 +96,36 @@ describe("GPX create-action priority", () => {
     );
   });
 
+  it("keeps a planned GPX out of observed distance fields at creation", () => {
+    const payload = buildGpxPayload({
+      preparationData: {
+        ...buildGpxPayload().preparationData,
+        gpxImport: {
+          source: "gpx_import",
+          observedDistanceKm: 999,
+          pointCount: 999,
+          inferredTopology: "loop",
+          fileName: "route.gpx",
+          intent: "planned",
+          provenance: "planned",
+        },
+      },
+    });
+    const geometry = buildCreateActionGeometry(payload, gpxDrawing, "gpx_import");
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload,
+      persistedGeometry: geometry,
+      finalDrawing: gpxDrawing,
+      routeGeometry: null,
+      status: "pending",
+    });
+
+    expect(row.preparation_data.routeObservedDistanceKm).toBeUndefined();
+    expect(row.preparation_data.gpxImport?.observedDistanceKm).toBe(0);
+    expect(row.preparation_data.gpxImport?.intent).toBe("planned");
+  });
+
   it("does not persist an older operational route beside an active GPX", async () => {
     const payload = buildGpxPayload({
       preparationData: {
