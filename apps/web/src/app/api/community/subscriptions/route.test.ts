@@ -78,6 +78,7 @@ describe("community subscriptions API", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).items).toEqual([row]);
     expect(from).toHaveBeenCalledWith("community_subscriptions");
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
     expect(subscriptions.eq).toHaveBeenCalledWith("user_id", userId);
   });
 
@@ -114,6 +115,7 @@ describe("community subscriptions API", () => {
       topic_id: null,
       enabled: true,
     }));
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
   });
 
   it("converges a concurrent duplicate insert to the unique existing row", async () => {
@@ -155,6 +157,8 @@ describe("community subscriptions API", () => {
 
     expect(patchResponse.status).toBe(200);
     expect(deleteResponse.status).toBe(200);
+    expect(getSupabaseServerClientMock).toHaveBeenNthCalledWith(1, true);
+    expect(getSupabaseServerClientMock).toHaveBeenNthCalledWith(2, true);
     expect(patchQuery.eq).toHaveBeenCalledWith("user_id", userId);
     expect(deleteQuery.eq).toHaveBeenCalledWith("user_id", userId);
   });
