@@ -50,7 +50,14 @@ export type ActionPublicFutureCandidate = Pick<
   | "published_at"
 > & {
   moderation_visibility?: "visible" | "hidden" | null;
+  review_state?: "not_required" | "draft" | "pending_review" | "approved" | "rejected" | null;
 };
+
+export function isPublicActionReviewState(
+  reviewState: ActionPublicFutureCandidate["review_state"],
+): boolean {
+  return reviewState === undefined || reviewState === null || reviewState === "not_required" || reviewState === "approved";
+}
 
 /** The action start is a local Paris date, with 00:00 as the known fallback. */
 export function isActionStartInFuture(
@@ -73,6 +80,7 @@ export function isPublishedFuturePreAction(
     action.action_phase === "pre_action" &&
     (action.status === "pending" || action.status === "approved") &&
     action.moderation_visibility === "visible" &&
+    isPublicActionReviewState(action.review_state) &&
     Boolean(action.published_at) &&
     isActionStartInFuture(action, now)
   );

@@ -68,6 +68,7 @@ export function isShareableFutureAction(
     | "status"
     | "moderation_visibility"
     | "published_at"
+    | "review_state"
     | "access_mode"
   >,
   now = new Date(),
@@ -85,11 +86,13 @@ export function getPublicActionShareKind(
     | "status"
     | "moderation_visibility"
     | "published_at"
+    | "review_state"
     | "access_mode"
   >,
   now = new Date(),
 ): PublicActionShareKind | null {
   if (action.access_mode === "invite_link") return null;
+  if (action.review_state && !["not_required", "approved"].includes(action.review_state)) return null;
   if (!action.published_at || action.moderation_visibility === "hidden") {
     return null;
   }
@@ -112,6 +115,7 @@ export function isPublicActionReferenceAvailable(
     | "status"
     | "moderation_visibility"
     | "published_at"
+    | "review_state"
   >,
   now = new Date(),
 ): boolean {

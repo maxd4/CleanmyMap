@@ -37,6 +37,7 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
   const [canQualify, setCanQualify] = useState(initialCanQualify);
   const [feedbackMetrics, setFeedbackMetrics] = useState(initialFeedbackMetrics);
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
+  const [associationActionReasons, setAssociationActionReasons] = useState<Record<string, string>>({});
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
   const feedbackTimersRef = useRef<Set<number>>(new Set());
@@ -75,10 +76,12 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
   const applyInboxAction = (params: Parameters<ReturnType<typeof createFeedbackInboxActions>["applyInboxAction"]>[0]) => createFeedbackInboxActions({ ...getSharedActions(), feedbackMetrics, setFeedbackMetrics }).applyInboxAction(params);
   const qualifyFeedback = (params: Parameters<ReturnType<typeof createFeedbackInboxActions>["qualifyFeedback"]>[0]) => createFeedbackInboxActions({ ...getSharedActions(), feedbackMetrics, setFeedbackMetrics }).qualifyFeedback(params);
   const updateFeedbackTracking = (params: Parameters<ReturnType<typeof createFeedbackInboxActions>["updateFeedbackTracking"]>[0]) => createFeedbackInboxActions({ ...getSharedActions(), feedbackMetrics, setFeedbackMetrics }).updateFeedbackTracking(params);
-  const acceptPromotion = (item: Parameters<ReturnType<typeof createReviewInboxActions>["acceptPromotion"]>[0]) => createReviewInboxActions({ ...getSharedActions(), promotionReasons, partnerReason, partnerConfirm, refreshInbox }).acceptPromotion(item);
-  const rejectPromotion = (item: Parameters<ReturnType<typeof createReviewInboxActions>["rejectPromotion"]>[0]) => createReviewInboxActions({ ...getSharedActions(), promotionReasons, partnerReason, partnerConfirm, refreshInbox }).rejectPromotion(item);
-  const acceptPartner = (item: Parameters<ReturnType<typeof createReviewInboxActions>["acceptPartner"]>[0]) => createReviewInboxActions({ ...getSharedActions(), promotionReasons, partnerReason, partnerConfirm, refreshInbox }).acceptPartner(item);
-  const rejectPartner = (item: Parameters<ReturnType<typeof createReviewInboxActions>["rejectPartner"]>[0]) => createReviewInboxActions({ ...getSharedActions(), promotionReasons, partnerReason, partnerConfirm, refreshInbox }).rejectPartner(item);
+  const reviewActions = () => createReviewInboxActions({ ...getSharedActions(), promotionReasons, partnerReason, associationActionReasons, partnerConfirm, refreshInbox });
+  const acceptPromotion = (item: Parameters<ReturnType<typeof createReviewInboxActions>["acceptPromotion"]>[0]) => reviewActions().acceptPromotion(item);
+  const rejectPromotion = (item: Parameters<ReturnType<typeof createReviewInboxActions>["rejectPromotion"]>[0]) => reviewActions().rejectPromotion(item);
+  const acceptPartner = (item: Parameters<ReturnType<typeof createReviewInboxActions>["acceptPartner"]>[0]) => reviewActions().acceptPartner(item);
+  const rejectPartner = (item: Parameters<ReturnType<typeof createReviewInboxActions>["rejectPartner"]>[0]) => reviewActions().rejectPartner(item);
+  const decideAssociationAction = (item: Parameters<ReturnType<typeof createReviewInboxActions>["decideAssociationAction"]>[0], decision: "approve" | "reject") => reviewActions().decideAssociationAction(item, decision);
   const copySummary = (item: Parameters<ReturnType<typeof createCopySummaryAction>>[0]) => createCopySummaryAction({ inboxLocale, copy, setCopiedKey, setErrorMessage, scheduleFeedbackTimer })(item);
   const decideLegalReport = (params: Parameters<ReturnType<typeof createLegalDecisionAction>>[0]) => createLegalDecisionAction(getSharedActions())(params);
 
@@ -108,6 +111,8 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
     setPartnerConfirm,
     partnerReason,
     setPartnerReason,
+    associationActionReasons,
+    setAssociationActionReasons,
     actionReasons,
     setActionReasons,
     promotionReasons,
@@ -125,6 +130,7 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
     rejectPromotion,
     acceptPartner,
     rejectPartner,
+    decideAssociationAction,
     decideLegalReport,
   };
 }

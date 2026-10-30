@@ -23,6 +23,7 @@ export type ActionDiscussionCandidate = {
   status: ActionRow["status"];
   moderation_visibility?: ActionRow["moderation_visibility"];
   published_at?: ActionRow["published_at"];
+  review_state?: ActionRow["review_state"];
 };
 
 export type ActionDiscussionMembership = {

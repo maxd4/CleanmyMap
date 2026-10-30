@@ -493,6 +493,7 @@ describe("creator inbox server pagination", () => {
       partner: null,
       legal_content_report: null,
       event: null,
+      association_action: null,
     });
   });
 

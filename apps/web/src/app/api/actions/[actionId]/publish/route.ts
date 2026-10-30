@@ -21,6 +21,7 @@ import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { isPublishedActionRow } from "@/lib/actions/runtime-contracts";
 import { parseActionSingleRow, parseActionSupabaseResult } from "@/lib/actions/query";
+import { isAssociationActionReviewRequired, submitAssociationActionReview } from "@/lib/actions/association-action-review";
 
 export const runtime = "nodejs";
 // Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
@@ -64,6 +65,33 @@ function requiredFormalitiesNotReady(params: {
   return getBlockedRequiredFormalityIds(params.qualification, params.workflow);
 }
 
+async function validateFormalitiesBeforePublication(current: ActionRow) {
+  const formalitiesContext = await deriveActionFormalitiesFactsFromAction(current);
+  const qualification = qualifyActionFormalities(formalitiesContext);
+  const formalitiesWorkflow = buildFormalitiesWorkflowState({
+    facts: formalitiesContext,
+    qualification,
+    previous: normalizeActionFormalitiesWorkflow(current.preparation_data?.formalitiesWorkflow),
+    actionDependencies: {
+      locationLabel: current.location_label,
+      actionDate: current.action_date,
+      territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
+    },
+  });
+  const blockedFormalities = requiredFormalitiesNotReady({ qualification, workflow: formalitiesWorkflow });
+  if (blockedFormalities.length > 0) {
+    return NextResponse.json(
+      {
+        error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
+        code: "required_formality_not_ready",
+        formalityIds: blockedFormalities,
+      },
+      { status: 422 },
+    );
+  }
+  return { formalitiesContext, formalitiesWorkflow };
+}
+
 function spontaneousOrganizerPublicationError(
   action: Pick<ActionRow, "organizer_type">,
   organizerIds: string[],
@@ -88,29 +116,9 @@ async function completeActionPublication({
   actionId: string;
   userId: string;
 }) {
-  const formalitiesContext = await deriveActionFormalitiesFactsFromAction(current);
-  const qualification = qualifyActionFormalities(formalitiesContext);
-  const formalitiesWorkflow = buildFormalitiesWorkflowState({
-    facts: formalitiesContext,
-    qualification,
-    previous: normalizeActionFormalitiesWorkflow(current.preparation_data?.formalitiesWorkflow),
-    actionDependencies: {
-      locationLabel: current.location_label,
-      actionDate: current.action_date,
-      territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
-    },
-  });
-  const blockedFormalities = requiredFormalitiesNotReady({ qualification, workflow: formalitiesWorkflow });
-  if (blockedFormalities.length > 0) {
-    return NextResponse.json(
-      {
-        error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
-        code: "required_formality_not_ready",
-        formalityIds: blockedFormalities,
-      },
-      { status: 422 },
-    );
-  }
+  const validation = await validateFormalitiesBeforePublication(current);
+  if (validation instanceof NextResponse) return validation;
+  const { formalitiesContext, formalitiesWorkflow } = validation;
   const publishedAt = new Date().toISOString();
   const rawResult: unknown = await supabase
     .from("actions")
@@ -183,6 +191,36 @@ export async function POST(
         { error: "Cette action est dans un état terminal et ne peut plus être publiée." },
         { status: 422 },
       );
+    }
+
+    if (isAssociationActionReviewRequired(current)) {
+      const validation = await validateFormalitiesBeforePublication(current);
+      if (validation instanceof NextResponse) return validation;
+      if (current.published_at && current.review_state === "approved") {
+        return NextResponse.json({
+          status: "published",
+          id: current.id,
+          publishedAt: current.published_at,
+          alreadyPublished: true,
+          reviewState: current.review_state,
+        });
+      }
+      const review = await submitAssociationActionReview({
+        supabase,
+        actionId,
+        actorUserId: access.userId,
+        expectedUpdatedAt: current.updated_at ?? null,
+      });
+      if (review.status === "conflict") {
+        return NextResponse.json({ error: "La préparation a changé ; rechargez puis réessayez.", code: "state_conflict" }, { status: 409 });
+      }
+      return NextResponse.json({
+        status: "pending_review",
+        id: current.id,
+        publishedAt: null,
+        alreadyPublished: false,
+        reviewState: review.review_state ?? "pending_review",
+      }, { status: 202 });
     }
 
     if (current.published_at) {

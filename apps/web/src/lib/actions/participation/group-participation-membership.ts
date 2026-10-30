@@ -3,6 +3,7 @@ import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { isJoinableFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionPhase } from "@/lib/actions/types";
+import type { ActionRow } from "@/types/database";
 import {
   ACTION_PARTICIPATION_COLUMNS,
   ACTIVE_PARTICIPATION_STATUS,
@@ -180,6 +181,7 @@ export async function cancelActionParticipation(
 
 type JoinableActionRow = {
   status: "pending" | "approved" | "rejected" | "cancelled";
+  review_state?: ActionRow["review_state"];
   moderation_visibility?: "visible" | "hidden" | null;
   action_phase: ActionPhase;
   action_date: string;

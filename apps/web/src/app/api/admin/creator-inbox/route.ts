@@ -16,6 +16,7 @@ import {
 import { handleCreatorInboxFeedback } from "./route.feedback";
 import { handleCreatorInboxPartner } from "./route.partner";
 import { handleCreatorInboxPromotion } from "./route.promotion";
+import { handleCreatorInboxAssociationAction } from "./route.association-action";
 
 export const runtime = "nodejs";
 
@@ -43,13 +44,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid pagination cursor" }, { status: 400 });
     }
     const sourceValue = url.searchParams.get("source");
-    if (sourceValue && sourceValue !== "feedback") {
+    if (sourceValue && sourceValue !== "feedback" && sourceValue !== "association_action") {
       return NextResponse.json({ error: "Invalid creator inbox source" }, { status: 400 });
     }
     const page = await loadCreatorInboxPage({
       limit,
       cursor,
-      ...(sourceValue === "feedback" ? { source: "feedback" as const } : {}),
+      ...(sourceValue === "feedback" || sourceValue === "association_action" ? { source: sourceValue } : {}),
     });
     const { feedbackMetrics, ...pageWithoutFeedbackMetrics } = page;
     return NextResponse.json({
@@ -149,6 +150,15 @@ export async function PATCH(request: Request) {
 
   if (source === "feedback") {
     return handleCreatorInboxFeedback(common);
+  }
+  if (source === "association_action") {
+    return handleCreatorInboxAssociationAction({
+      operationId,
+      actorUserId: identity.userId,
+      itemId,
+      action,
+      reason: reason!,
+    });
   }
   if (source === "promotion") {
     return handleCreatorInboxPromotion(common);

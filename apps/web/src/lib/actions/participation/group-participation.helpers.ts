@@ -38,6 +38,7 @@ export type ActionPreviewRow = Pick<
   | "volunteers_count"
   | "duration_minutes"
   | "status"
+  | "review_state"
   | "moderation_visibility"
   | "notes"
   | "action_phase"
@@ -85,9 +86,9 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, updated_at, action_date, event_start_time, event_end_time, location_label, latitude, longitude, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
+  "id, created_at, updated_at, action_date, event_start_time, event_end_time, location_label, latitude, longitude, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, review_state, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
 const ACTION_PARTICIPATION_COLUMNS =
-  "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at, access_mode";
+  "status, review_state, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at, access_mode";
 
 export type JoinableActionMetadata = {
   groupJoinEnabled: boolean;

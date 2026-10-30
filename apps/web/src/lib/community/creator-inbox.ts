@@ -11,8 +11,9 @@ import {
   formatLegalContentReportExecutionStatus,
   type LegalContentReportRecord,
 } from "@/lib/legal-content-report/legal-content-report";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 
-export type CreatorInboxSource = "feedback" | "promotion" | "partner" | "event" | "legal_content_report";
+export type CreatorInboxSource = "feedback" | "promotion" | "partner" | "event" | "legal_content_report" | "association_action";
 
 export type CreatorInboxStatus =
   | "new"
@@ -85,6 +86,7 @@ const SOURCE_LABELS: Record<CreatorInboxSource, { fr: string; en: string }> = {
   partner: { fr: "Partenariat", en: "Partnership" },
   event: { fr: "Événement", en: "Event" },
   legal_content_report: { fr: "Notification de contenu illicite", en: "Illegal content notification" },
+  association_action: { fr: "Action associative à valider", en: "Association action review" },
 };
 
 function normalizeCreatorState(
@@ -229,6 +231,72 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
       duplicateFeedbackId: record.qualificationDuplicateFeedbackId ?? null,
     },
     tracking: record.tracking,
+  };
+}
+
+export type AssociationActionReviewInboxRecord = {
+  id: string;
+  created_at: string;
+  created_by_clerk_id: string;
+  actor_name: string | null;
+  organizer_type: OrganizerType | null;
+  organizer_name: string | null;
+  action_date: string;
+  event_start_time: string | null;
+  event_end_time: string | null;
+  location_label: string;
+  notes: string | null;
+  review_state: string;
+  review_reason: string | null;
+  preparation_data: Record<string, unknown> | null;
+};
+
+export function buildAssociationActionReviewInboxItem(
+  record: AssociationActionReviewInboxRecord,
+  authorName: string,
+): CreatorInboxItem {
+  const preparation = record.preparation_data ?? {};
+  const title = typeof preparation.actionTitle === "string" && preparation.actionTitle.trim()
+    ? preparation.actionTitle.trim()
+    : record.location_label;
+  const description = typeof preparation.actionDescription === "string"
+    ? preparation.actionDescription.trim()
+    : record.notes?.trim() ?? "";
+  const sourceStatus = record.review_state;
+  return {
+    id: `association_action-${record.id}`,
+    source: "association_action",
+    sourceLabel: SOURCE_LABELS.association_action.fr,
+    sourceRecordId: record.id,
+    title,
+    subtitle: record.organizer_name ?? "Association",
+    authorName,
+    authorEmail: null,
+    authorRole: record.organizer_type ?? "association",
+    createdAt: record.created_at,
+    pagePath: `/actions/new?actionId=${encodeURIComponent(record.id)}`,
+    status: sourceStatus === "rejected" ? "rejected" : sourceStatus === "approved" ? "accepted" : "pending",
+    sourceStatus,
+    priority: "high",
+    context: description.slice(0, 1000),
+    details: [
+      ...buildCommonDetails({
+        sourceLabel: SOURCE_LABELS.association_action.fr,
+        sourceStatus,
+        pagePath: `/actions/new?actionId=${encodeURIComponent(record.id)}`,
+        createdAt: record.created_at,
+        authorRole: record.organizer_type ?? "association",
+      }),
+      { label: "Date de l’action", value: record.action_date },
+      { label: "Horaire", value: [record.event_start_time, record.event_end_time].filter(Boolean).join("–") || "non précisé" },
+      { label: "Lieu", value: record.location_label },
+      { label: "Description", value: description.slice(0, 1000) || "non précisée" },
+      ...(record.review_reason ? [{ label: "Motif précédent", value: record.review_reason }] : []),
+    ],
+    canDelete: false,
+    canReview: sourceStatus === "pending_review",
+    hasReplyTarget: false,
+    privateReplyTargetUserId: record.created_by_clerk_id,
   };
 }
 

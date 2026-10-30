@@ -88,12 +88,16 @@ Une action future apparaît dans l'onglet public uniquement si le prédicat
 action_phase = pre_action
 status ∈ {approved, pending}
 moderation_visibility = visible
+review_state ∈ {not_required, approved}
 published_at != null
 date/heure de début future selon Europe/Paris
 groupJoinEnabled = true
 ```
 
 Le statut `pending` n'exclut donc pas automatiquement une pré-action de cette page.
+Pour une nouvelle action associative ou étudiante, `pending_review`, `draft` et
+`rejected` restent privés jusqu'à la décision administrative; la revue ne
+réactive pas l'ancien flux `community_events`.
 
 La visibilité de l'ouverture à la participation reste distincte de :
 

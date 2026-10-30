@@ -19,6 +19,7 @@ const ACTION_RESUME_SELECT_FIELDS = [
   "action_date",
   "event_start_time",
   "status",
+  "review_state",
   "published_at",
   "moderation_visibility",
   "action_phase",
@@ -31,6 +32,7 @@ export type ActionResumeRow = Pick<
   | "action_date"
   | "event_start_time"
   | "status"
+  | "review_state"
   | "published_at"
   | "moderation_visibility"
   | "action_phase"
@@ -78,6 +80,9 @@ function buildActionListQuery(
 
   if (selectFields.includes("moderation_visibility")) {
     nextQuery = nextQuery.eq("moderation_visibility", "visible");
+  }
+  if (!params.includePrivateActions && selectFields.includes("review_state")) {
+    nextQuery = nextQuery.or("review_state.is.null,review_state.in.(not_required,approved)");
   }
   if (!params.includePrivateActions && selectFields.includes("access_mode")) {
     nextQuery = nextQuery.eq("access_mode", "public");

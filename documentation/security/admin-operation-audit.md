@@ -122,6 +122,13 @@ role_management
 admin_operation
 ```
 
+Les décisions de publication associative utilisent `operationType =
+admin_operation` et les identifiants métier bornés
+`association_action_publish_approved` ou `association_action_publish_rejected`
+dans `details.operation`. La transition `actions.review_state`, son motif et
+son `published_at` sont écrits dans la même transaction que l'audit; aucune
+description complète ni donnée personnelle n'est copiée dans l'audit.
+
 `operationType` ne doit pas être utilisé comme substitut à l'opération métier détaillée. Pour les opérations génériques, `details.operation` porte un identifiant métier borné.
 
 ## 5. Règle d'identité

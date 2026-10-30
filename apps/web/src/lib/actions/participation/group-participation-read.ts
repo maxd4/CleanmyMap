@@ -55,6 +55,7 @@ export function isVisibleInGroupForms(
     | "event_start_time"
     | "action_phase"
     | "status"
+    | "review_state"
     | "moderation_visibility"
     | "published_at"
     | "access_mode"
@@ -76,6 +77,7 @@ function configureJoinableActionQuery(
     .eq("access_mode", "public")
     .eq("moderation_visibility", "visible")
     .in("status", ["approved", "pending"])
+    .in("review_state", ["not_required", "approved"])
     .not("published_at", "is", null)
     .gte("action_date", getActionParisDate(now));
 

@@ -3,11 +3,13 @@ import { listPromotionRequests } from "@/lib/admin/promotion-requests-store";
 import { listCommunityBugReports, loadCommunityBugReportFollowUpMetrics, type CommunityBugReportFollowUpMetrics } from "@/lib/community/bug-reports-store";
 import {
   buildEventInboxItem,
+  buildAssociationActionReviewInboxItem,
   buildFeedbackInboxItem,
   buildLegalContentReportInboxItem,
   buildPartnerInboxItem,
   buildPromotionInboxItem,
   type CreatorInboxItem,
+  type AssociationActionReviewInboxRecord,
 } from "@/lib/community/creator-inbox";
 import { listPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
 import { listLegalContentReports } from "@/lib/legal-content-report/legal-content-report-store";
@@ -30,6 +32,7 @@ const CREATOR_INBOX_SOURCES = [
   "partner",
   "legal_content_report",
   "event",
+  "association_action",
 ] as const;
 
 type CreatorInboxPageSource = (typeof CREATOR_INBOX_SOURCES)[number];
@@ -40,6 +43,7 @@ type CreatorInboxPageCursor = {
   partner: CreatorInboxRecordCursor | null;
   legal_content_report: CreatorInboxRecordCursor | null;
   event: CreatorInboxRecordCursor | null;
+  association_action: CreatorInboxRecordCursor | null;
 };
 
 export type CreatorInboxPage = {
@@ -60,6 +64,7 @@ function emptyPageCursor(): CreatorInboxPageCursor {
     partner: null,
     legal_content_report: null,
     event: null,
+    association_action: null,
   };
 }
 
@@ -90,7 +95,11 @@ export function parseCreatorInboxPageCursor(
       const isValidSourceCursor =
         isCreatorInboxRecordCursor(rawCursor) ||
         (source === "feedback" && isCreatorInboxHistoricalRecordCursor(rawCursor));
-      if (rawCursor !== null && !isValidSourceCursor) {
+      if (rawCursor === undefined || rawCursor === null) {
+        cursor[source] = null;
+        continue;
+      }
+      if (!isValidSourceCursor) {
         return null;
       }
       cursor[source] = rawCursor as CreatorInboxPageCursor[typeof source];
@@ -152,20 +161,24 @@ function clampPageSize(value: number | null | undefined): number {
 export async function loadCreatorInboxPage(params?: {
   limit?: number | null;
   cursor?: CreatorInboxPageCursor | null;
-  source?: "feedback";
+  source?: "feedback" | "association_action";
 }): Promise<CreatorInboxPage> {
   const limit = clampPageSize(params?.limit);
   const cursor = params?.cursor ?? emptyPageCursor();
   const sourceLimit = limit + 1;
   const feedbackOnly = params?.source === "feedback";
-  const [feedback, promotion, partner, legalContentReports, events, feedbackMetrics] = await Promise.all([
+  const associationOnly = params?.source === "association_action";
+  const [feedback, promotion, partner, legalContentReports, events, associationActions, feedbackMetrics] = await Promise.all([
     feedbackOnly
       ? listCommunityBugReports(sourceLimit, cursor.feedback, { activeOnly: true, order: "priority" })
-      : listCommunityBugReports(sourceLimit, cursor.feedback),
-    feedbackOnly ? Promise.resolve([]) : listPromotionRequests(sourceLimit, cursor.promotion),
-    feedbackOnly ? Promise.resolve([]) : listPartnerOnboardingRequests(sourceLimit, cursor.partner),
-    feedbackOnly ? Promise.resolve([]) : listLegalContentReports(sourceLimit, cursor.legal_content_report),
-    feedbackOnly ? Promise.resolve([]) : loadCreatorInboxEvents(sourceLimit, cursor.event),
+      : associationOnly ? Promise.resolve([]) : listCommunityBugReports(sourceLimit, cursor.feedback),
+    feedbackOnly || associationOnly ? Promise.resolve([]) : listPromotionRequests(sourceLimit, cursor.promotion),
+    feedbackOnly || associationOnly ? Promise.resolve([]) : listPartnerOnboardingRequests(sourceLimit, cursor.partner),
+    feedbackOnly || associationOnly ? Promise.resolve([]) : listLegalContentReports(sourceLimit, cursor.legal_content_report),
+    feedbackOnly || associationOnly ? Promise.resolve([]) : loadCreatorInboxEvents(sourceLimit, cursor.event),
+    feedbackOnly
+      ? Promise.resolve([])
+      : loadAssociationActionReviewInbox(sourceLimit, cursor.association_action, { required: associationOnly }),
     loadCommunityBugReportFollowUpMetrics(),
   ]);
 
@@ -187,6 +200,7 @@ export async function loadCreatorInboxPage(params?: {
       source: "legal_content_report" as const,
     })),
     ...events.map((item) => ({ item, source: "event" as const })),
+    ...associationActions.map((item) => ({ item, source: "association_action" as const })),
   ].sort(feedbackOnly ? compareFeedbackQueueCandidates : compareInboxCandidates);
 
   const items = candidates.slice(0, limit).map(({ item }) => item);
@@ -294,4 +308,43 @@ async function loadCreatorInboxEvents(
       organizer,
     );
   });
+}
+
+async function loadAssociationActionReviewInbox(
+  limit: number,
+  beforeCursor?: CreatorInboxRecordCursor | null,
+  options?: { required?: boolean },
+): Promise<CreatorInboxItem[]> {
+  const supabase = getSupabaseServerClient(true);
+  const selected = supabase
+    .from("actions")
+    .select("id, created_at, created_by_clerk_id, actor_name, organizer_type, organizer_name, action_date, event_start_time, event_end_time, location_label, notes, review_state, review_reason, preparation_data");
+  if (!selected || typeof (selected as { eq?: unknown }).eq !== "function") {
+    if (options?.required) {
+      throw new Error("Creator inbox association action query is unavailable");
+    }
+    return [];
+  }
+  let query = selected
+    .eq("action_phase", "pre_action")
+    .in("organizer_type", ["association", "student_association"])
+    .eq("review_state", "pending_review")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
+  if (beforeCursor) {
+    query = query.or(
+      `created_at.lt.${beforeCursor.createdAt},and(created_at.eq.${beforeCursor.createdAt},id.lt.${beforeCursor.id})`,
+    );
+  }
+  const result = await query.limit(limit);
+  if (result.error) throw new Error("Creator inbox association action read failed");
+  const rows = (result.data ?? []) as unknown as AssociationActionReviewInboxRecord[];
+  if (rows.length === 0) return [];
+  const clerk = await getClerkService();
+  const authorIds = Array.from(new Set(rows.map((row) => row.created_by_clerk_id).filter(Boolean)));
+  const authorMap = await clerk.resolveUsers(authorIds);
+  return rows.map((row) => buildAssociationActionReviewInboxItem(
+    row,
+    authorMap.get(row.created_by_clerk_id)?.displayName ?? row.actor_name ?? "Membre",
+  ));
 }

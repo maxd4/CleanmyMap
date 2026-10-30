@@ -78,4 +78,20 @@ describe("action temporal contract", () => {
     expect(isJoinableFuturePreAction(action, { groupJoinEnabled: true }, now)).toBe(true);
     expect(isJoinableFuturePreAction(action, { groupJoinEnabled: false }, now)).toBe(false);
   });
+
+  it("fails closed for association review states without changing legacy null semantics", () => {
+    const base = {
+      action_date: "2026-09-15",
+      event_start_time: "09:00",
+      action_phase: "pre_action" as const,
+      status: "pending" as const,
+      moderation_visibility: "visible" as const,
+      published_at: "2026-09-14T08:00:00Z",
+    };
+    expect(isPublishedFuturePreAction({ ...base, review_state: "draft" }, now)).toBe(false);
+    expect(isPublishedFuturePreAction({ ...base, review_state: "pending_review" }, now)).toBe(false);
+    expect(isPublishedFuturePreAction({ ...base, review_state: "rejected" }, now)).toBe(false);
+    expect(isPublishedFuturePreAction({ ...base, review_state: "approved" }, now)).toBe(true);
+    expect(isPublishedFuturePreAction(base, now)).toBe(true);
+  });
 });

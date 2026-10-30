@@ -38,6 +38,7 @@ export type ActionEditorRecord = {
   id: string;
   createdAt: string;
   status: ActionStatus;
+  reviewState?: "not_required" | "draft" | "pending_review" | "approved" | "rejected";
   publishedAt?: string | null;
   actionPhase: ActionPhase;
   preparationData: ActionPreparationData | null;
@@ -192,8 +193,9 @@ export async function updateAction(
 
 export async function publishAction(actionId: string): Promise<{
   id: string;
-  publishedAt: string;
+  publishedAt: string | null;
   alreadyPublished: boolean;
+  reviewState?: "not_required" | "draft" | "pending_review" | "approved" | "rejected";
 }> {
   const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/publish`, {
     method: "POST",
@@ -211,12 +213,12 @@ export async function publishAction(actionId: string): Promise<{
     !body ||
     typeof body !== "object" ||
     typeof (body as { id?: unknown }).id !== "string" ||
-    typeof (body as { publishedAt?: unknown }).publishedAt !== "string"
+    !((body as { publishedAt?: unknown }).publishedAt === null || typeof (body as { publishedAt?: unknown }).publishedAt === "string")
   ) {
     throw new AppError({
       kind: "server",
       message: "La réponse du service est incomplète lors de la publication.",
     });
   }
-  return body as { id: string; publishedAt: string; alreadyPublished: boolean };
+  return body as { id: string; publishedAt: string | null; alreadyPublished: boolean; reviewState?: "not_required" | "draft" | "pending_review" | "approved" | "rejected" };
 }

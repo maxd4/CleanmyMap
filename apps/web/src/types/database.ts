@@ -113,6 +113,17 @@ export type ActionRow = {
   event_end_time?: string | null;
   notes: string | null;
   status: "pending" | "approved" | "rejected" | "cancelled";
+  review_state?:
+    | "not_required"
+    | "draft"
+    | "pending_review"
+    | "approved"
+    | "rejected";
+  review_submitted_at?: string | null;
+  review_decided_at?: string | null;
+  review_decided_by_clerk_id?: string | null;
+  review_reason?: string | null;
+  review_operation_id?: string | null;
   cancelled_at?: string | null;
   cancelled_by_clerk_id?: string | null;
   cancellation_reason?:

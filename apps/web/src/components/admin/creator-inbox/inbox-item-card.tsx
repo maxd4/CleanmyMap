@@ -23,6 +23,8 @@ type InboxItemCardProps = {
   onPromotionReasonChange: (reason: string) => void;
   partnerReason: string;
   onPartnerReasonChange: (reason: string) => void;
+  associationActionReason?: string;
+  onAssociationActionReasonChange?: (reason: string) => void;
   actionReason: string;
   onActionReasonChange: (reason: string) => void;
   actionBusy: (source: CreatorInboxSource, id: string, action: string) => boolean;
@@ -31,6 +33,8 @@ type InboxItemCardProps = {
   onRejectPromotion: (item: CreatorInboxItem) => void;
   onAcceptPartner: (item: CreatorInboxItem) => void;
   onRejectPartner: (item: CreatorInboxItem) => void;
+  onAcceptAssociationAction?: (item: CreatorInboxItem) => void;
+  onRejectAssociationAction?: (item: CreatorInboxItem) => void;
   onApplyInboxAction: (params: InboxActionParams) => void;
   onLegalDecision?: (params: LegalDecisionParams) => void;
   canQualify?: boolean;
@@ -57,6 +61,8 @@ export function InboxItemCard({
   onPromotionReasonChange,
   partnerReason,
   onPartnerReasonChange,
+  associationActionReason = "",
+  onAssociationActionReasonChange = () => undefined,
   actionReason,
   onActionReasonChange,
   actionBusy,
@@ -65,6 +71,8 @@ export function InboxItemCard({
   onRejectPromotion,
   onAcceptPartner,
   onRejectPartner,
+  onAcceptAssociationAction = () => undefined,
+  onRejectAssociationAction = () => undefined,
   onApplyInboxAction,
   onLegalDecision,
   canQualify,
@@ -114,6 +122,8 @@ export function InboxItemCard({
         onPromotionReasonChange={onPromotionReasonChange}
         partnerReason={partnerReason}
         onPartnerReasonChange={onPartnerReasonChange}
+        associationActionReason={associationActionReason}
+        onAssociationActionReasonChange={onAssociationActionReasonChange}
         actionReason={actionReason}
         onActionReasonChange={onActionReasonChange}
         actionBusy={actionBusy}
@@ -122,6 +132,8 @@ export function InboxItemCard({
         onRejectPromotion={onRejectPromotion}
         onAcceptPartner={onAcceptPartner}
         onRejectPartner={onRejectPartner}
+        onAcceptAssociationAction={onAcceptAssociationAction}
+        onRejectAssociationAction={onRejectAssociationAction}
         onApplyInboxAction={onApplyInboxAction}
         onLegalDecision={onLegalDecision}
       />
@@ -138,6 +150,8 @@ function InboxItemCardActions({
   onPromotionReasonChange,
   partnerReason,
   onPartnerReasonChange,
+  associationActionReason = "",
+  onAssociationActionReasonChange = () => undefined,
   actionReason,
   onActionReasonChange,
   actionBusy,
@@ -146,6 +160,8 @@ function InboxItemCardActions({
   onRejectPromotion,
   onAcceptPartner,
   onRejectPartner,
+  onAcceptAssociationAction = () => undefined,
+  onRejectAssociationAction = () => undefined,
   onApplyInboxAction,
   onLegalDecision,
 }: Omit<InboxItemCardProps, "canQualify" | "feedbackOptions" | "onQualifyFeedback" | "onUpdateFeedbackTracking">) {
@@ -153,10 +169,11 @@ function InboxItemCardActions({
     <div className="mt-4 flex flex-wrap gap-2">
       {item.source === "legal_content_report" && onLegalDecision ? <InboxItemLegalDecision item={item} actionBusy={actionBusy} onLegalDecision={onLegalDecision} /> : null}
       <InboxItemContextualActions item={item} copy={copy} copiedKey={copiedKey} onCopySummary={onCopySummary} />
-      {item.source !== "event" && item.source !== "legal_content_report" ? <InboxItemProcessingReason locale={locale} actionReason={actionReason} onActionReasonChange={onActionReasonChange} /> : null}
+      {item.source !== "event" && item.source !== "legal_content_report" && item.source !== "association_action" ? <InboxItemProcessingReason locale={locale} actionReason={actionReason} onActionReasonChange={onActionReasonChange} /> : null}
       {item.source === "promotion" && item.sourceStatus === "pending_owner_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={promotionReason} onReasonChange={onPromotionReasonChange} actionBusy={actionBusy} onAccept={onAcceptPromotion} onReject={onRejectPromotion} /> : null}
       {item.source === "partner" && item.sourceStatus === "pending_admin_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={partnerReason} onReasonChange={onPartnerReasonChange} actionBusy={actionBusy} onAccept={onAcceptPartner} onReject={onRejectPartner} /> : null}
-      {item.source !== "event" && item.source !== "legal_content_report" ? <InboxItemProcessingActions item={item} copy={copy} actionReason={actionReason} actionBusy={actionBusy} onApplyInboxAction={onApplyInboxAction} /> : null}
+      {item.source === "association_action" && item.sourceStatus === "pending_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={associationActionReason} onReasonChange={onAssociationActionReasonChange} actionBusy={actionBusy} onAccept={onAcceptAssociationAction} onReject={onRejectAssociationAction} /> : null}
+      {item.source !== "event" && item.source !== "legal_content_report" && item.source !== "association_action" ? <InboxItemProcessingActions item={item} copy={copy} actionReason={actionReason} actionBusy={actionBusy} onApplyInboxAction={onApplyInboxAction} /> : null}
     </div>
   );
 }

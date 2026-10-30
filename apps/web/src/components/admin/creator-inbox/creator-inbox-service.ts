@@ -66,7 +66,7 @@ function isFeedbackMetrics(value: unknown): value is CommunityBugReportFollowUpM
 export async function fetchCreatorInboxPage(params?: {
   limit?: number;
   cursor?: string | null;
-  source?: "feedback";
+  source?: "feedback" | "association_action";
 }): Promise<CreatorInboxPagePayload> {
   const search = new URLSearchParams();
   if (params?.limit !== undefined) search.set("limit", String(params.limit));
@@ -95,7 +95,7 @@ export async function fetchCreatorInboxPage(params?: {
 export async function applyCreatorInboxAction(params: {
   source: CreatorInboxSource;
   itemId: string;
-  action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority" | "qualify" | "update_tracking";
+  action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority" | "qualify" | "update_tracking" | "approve_association_action" | "reject_association_action";
   reason: string;
   priority?: "normal" | "high" | "critical";
   decision?: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";

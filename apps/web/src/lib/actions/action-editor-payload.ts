@@ -112,6 +112,7 @@ function buildActionEditorResult(
     id: row.id,
     createdAt: row.created_at,
     status: row.status,
+    reviewState: row.review_state ?? "not_required",
     publishedAt: row.published_at ?? null,
     recordType: "action",
     actionPhase: row.action_phase,

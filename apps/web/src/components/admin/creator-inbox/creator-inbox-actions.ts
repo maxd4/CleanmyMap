@@ -101,6 +101,7 @@ export function createFeedbackInboxActions({
 export function createReviewInboxActions({ ...deps }: SharedActionDeps & {
   promotionReasons: Record<string, string>;
   partnerReason: Record<string, string>;
+  associationActionReasons: Record<string, string>;
   partnerConfirm: string;
   refreshInbox: () => Promise<void>;
 }) {
@@ -153,7 +154,22 @@ export function createReviewInboxActions({ ...deps }: SharedActionDeps & {
     catch (error) { deps.setErrorMessage(resolveInboxMessage(error, deps.copy.messages.rejectionError)); }
     finally { deps.setUpdatingKey(null); }
   };
-  return { acceptPromotion, rejectPromotion, acceptPartner, rejectPartner };
+  const decideAssociationAction = async (item: CreatorInboxItem, decision: "approve" | "reject") => {
+    const reason = deps.associationActionReasons[item.sourceRecordId] ?? "";
+    if (!validateReason(reason)) return;
+    const action = decision === "approve" ? "approve_association_action" : "reject_association_action";
+    deps.setUpdatingKey(`association_action:${item.sourceRecordId}:${decision === "approve" ? "accept" : "reject"}`);
+    deps.setErrorMessage(null);
+    try {
+      await applyCreatorInboxAction({ source: "association_action", itemId: item.sourceRecordId, action, reason });
+      await deps.refreshInbox();
+    } catch (error) {
+      deps.setErrorMessage(resolveInboxMessage(error, decision === "approve" ? deps.copy.messages.approvalError : deps.copy.messages.rejectionError));
+    } finally {
+      deps.setUpdatingKey(null);
+    }
+  };
+  return { acceptPromotion, rejectPromotion, acceptPartner, rejectPartner, decideAssociationAction };
 }
 
 export function createCopySummaryAction({ inboxLocale, copy, setCopiedKey, setErrorMessage, scheduleFeedbackTimer }: Pick<SharedActionDeps, "inboxLocale" | "copy" | "setErrorMessage" | "scheduleFeedbackTimer"> & { setCopiedKey: Dispatch<SetStateAction<string | null>> }) {

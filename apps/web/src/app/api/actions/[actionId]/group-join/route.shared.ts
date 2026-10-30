@@ -101,7 +101,7 @@ export function loadGroupJoinAction(
 ) {
   return runSingleActionQuery<GroupJoinAction>(supabase, (query) =>
     query
-      .select("id, created_by_clerk_id, status, action_phase, notes")
+      .select("id, created_by_clerk_id, status, action_phase, review_state, notes")
       .eq("id", actionId)
       .maybeSingle(),
   );

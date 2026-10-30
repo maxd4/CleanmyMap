@@ -7,6 +7,7 @@ export const SOURCE_FILTERS: Array<{ value: "all" | CreatorInboxSource; label: s
   { value: "partner", label: "Partenariat" },
   { value: "event", label: "Événement" },
   { value: "legal_content_report", label: "Notification de contenu illicite" },
+  { value: "association_action", label: "Action associative à valider" },
 ];
 
 export const STATUS_FILTERS: Array<{ value: "all" | CreatorInboxStatus; label: string }> = [

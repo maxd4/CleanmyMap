@@ -135,6 +135,16 @@ contrôle d'ownership/co-organisateur autorisé, renseigne ce champ. Une action
 future est ensuite une propriété dérivée : pré-action publiée et début local
 Europe/Paris strictement postérieur à l'instant courant.
 
+Pour une nouvelle pré-action associative (`organizer_type = association` ou
+`student_association`), `review_state` est une frontière indépendante :
+`draft → pending_review → approved|rejected`. Le serveur et le trigger SQL
+forcent `draft` à la création et refusent une publication avant `approved`.
+Une décision `admin|max` passe par la file administrative et une RPC atomique
+avec `admin_operations_audit`; le refus conserve l'action et son motif. Les
+états `draft`, `pending_review` et `rejected` restent exclus de toute lecture
+publique, inscription, discussion et référence d'action, tandis que les lignes
+historiques `not_required` restent compatibles.
+
 ### Frontière de lecture de `GET /api/actions`
 
 La lecture publique globale est toujours public-safe : une requête sans statut,

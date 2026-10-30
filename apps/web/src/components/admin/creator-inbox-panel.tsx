@@ -99,6 +99,13 @@ export function CreatorInboxPanel({
                     [item.sourceRecordId]: reason,
                   }))
                 }
+                associationActionReason={inbox.associationActionReasons[item.sourceRecordId] ?? ""}
+                onAssociationActionReasonChange={(reason) =>
+                  inbox.setAssociationActionReasons((current) => ({
+                    ...current,
+                    [item.sourceRecordId]: reason,
+                  }))
+                }
                 actionReason={inbox.actionReasons[item.sourceRecordId] ?? ""}
                 onActionReasonChange={(reason) =>
                   inbox.setActionReasons((current) => ({
@@ -112,6 +119,8 @@ export function CreatorInboxPanel({
                 onRejectPromotion={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.rejectPromotion(nextItem); }}
                 onAcceptPartner={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.acceptPartner(nextItem); }}
                 onRejectPartner={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.rejectPartner(nextItem); }}
+                onAcceptAssociationAction={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.decideAssociationAction(nextItem, "approve"); }}
+                onRejectAssociationAction={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.decideAssociationAction(nextItem, "reject"); }}
                 onApplyInboxAction={(params) =>
                   void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.applyInboxAction({
                     ...params,

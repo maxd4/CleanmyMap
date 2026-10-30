@@ -3,9 +3,9 @@ import type { CreatorInboxSource } from "@/lib/community/creator-inbox";
 import { z } from "zod";
 
 const baseActionSchema = z.object({
-  source: z.enum(["feedback", "promotion", "partner"]),
+  source: z.enum(["feedback", "promotion", "partner", "association_action"]),
   itemId: z.string().trim().min(1),
-  action: z.enum(["mark_treated", "responded", "archive", "delete", "change_priority", "qualify", "update_tracking"]),
+  action: z.enum(["mark_treated", "responded", "archive", "delete", "change_priority", "qualify", "update_tracking", "approve_association_action", "reject_association_action"]),
   priority: z.enum(["normal", "high", "critical"]).optional(),
   reason: z.string().trim().max(500).optional(),
   decision: z.enum(["pending", "needs_info", "accepted", "duplicate", "rejected"]).optional(),
@@ -32,6 +32,12 @@ export const actionSchema = baseActionSchema.superRefine((value, context) => {
     addIssueIf(context, !value.priority, "priority", "Feedback priority is required.");
     addIssueIf(context, !value.reason || value.reason.length < 5, "reason", "A reason of at least 5 characters is required.");
     addIssueIf(context, Boolean(value.decision || value.duplicateFeedbackId), "decision", "Qualification fields are not valid for priority changes.");
+    return;
+  }
+
+  if (value.action === "approve_association_action" || value.action === "reject_association_action") {
+    addIssueIf(context, value.source !== "association_action", "source", "Association action decisions require the association_action source.");
+    addIssueIf(context, !value.reason || value.reason.length < 5, "reason", "A review reason of at least 5 characters is required.");
     return;
   }
 
