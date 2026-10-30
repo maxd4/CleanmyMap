@@ -5,6 +5,7 @@ import {
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
   isFormalitiesPublicationBlocked,
+  normalizeActionFormalitiesWorkflow,
 } from "./formalities-workflow";
 import { buildReviewableFormalityEmailDraft } from "./formalities-email-draft";
 import type { ActionFormalitiesFacts } from "./formalities-qualification";
@@ -231,6 +232,116 @@ describe("formalities workflow", () => {
       validForQualification: false,
       invalidatedAt: "2026-09-17T10:02:00.000Z",
     });
+  });
+
+  it("rejects a trace without the canonical qualification and traceability fields", () => {
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        schemaVersion: "action-formalities-workflow-v1",
+        contentVersion: "v1",
+        trace: { formalities: [] },
+        progress: [],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects progress whose content version does not match the workflow", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: sent.progress.map((progress) => ({
+          ...progress,
+          contentVersion: "stale-content-version",
+        })),
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a proof with a non-ISO recordedAt timestamp", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: sent.progress.map((progress, index) => index === 0
+          ? { ...progress, proof: { ...progress.proof!, recordedAt: "not-a-timestamp" } }
+          : progress),
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects duplicate progress identifiers regardless of order", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const first = sent.progress[0]!;
+    const contradictory = {
+      ...first,
+      userStatus: "prepared" as const,
+      proof: null,
+    };
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [first, contradictory, ...sent.progress.slice(1)],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [contradictory, first, ...sent.progress.slice(1)],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects duplicate active formality identifiers", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const firstFormality = sent.trace.formalities[0]!;
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        trace: {
+          ...sent.trace,
+          formalities: [...sent.trace.formalities, firstFormality],
+        },
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps complete workflows valid with no required formality or with a null proof reference", () => {
+    const noRequiredFacts = parisFacts({
+      manager: { kind: "unknown", label: null },
+      hasInstallations: false,
+      requiresPhysicalOccupation: false,
+    });
+    const noRequiredQualification = qualifyActionFormalities(noRequiredFacts);
+    const noRequired = buildFormalitiesWorkflowState({
+      facts: noRequiredFacts,
+      qualification: noRequiredQualification,
+      now: "2026-09-17T10:00:00.000Z",
+    });
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+
+    expect(normalizeActionFormalitiesWorkflow(noRequired)).not.toBeNull();
+    expect(normalizeActionFormalitiesWorkflow(sent)).not.toBeNull();
+    expect(sent.progress[0]?.proof?.reference).toBeNull();
   });
 
   it("does not block for recommendation or unknown qualification", () => {

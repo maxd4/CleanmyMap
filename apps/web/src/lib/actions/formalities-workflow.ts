@@ -5,6 +5,7 @@ import type {
   FormalityRequirementStatus,
 } from "./formalities-qualification";
 import {
+  actionFormalitiesFactsSchema,
   snapshotFormalitiesFacts,
   type FormalitiesFactsSnapshot,
 } from "./formalities-facts";
@@ -77,14 +78,83 @@ function isMeaningful(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function isIso8601Timestamp(value: unknown): value is string {
+  return typeof value === "string" &&
+    value === value.trim() &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+    Number.isFinite(Date.parse(value));
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isNullableMeaningfulString(value: unknown): value is string | null {
+  return value === null || isMeaningful(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 export function isFormalitySendProof(value: unknown): value is FormalitySendProof {
-  if (!value || typeof value !== "object") return false;
+  if (!isRecord(value)) return false;
   const proof = value as Partial<FormalitySendProof>;
   return (
     (proof.kind === "user_declared" || proof.kind === "official_confirmation") &&
     (proof.reference === null || typeof proof.reference === "string") &&
-    isMeaningful(proof.recordedAt)
+    isIso8601Timestamp(proof.recordedAt)
   );
+}
+
+function isCanonicalOfficialSource(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return isMeaningful(value.id) &&
+    isMeaningful(value.url) &&
+    ["municipal", "police", "national"].includes(value.authorityLevel as string) &&
+    isMeaningful(value.verifiedOn);
+}
+
+function isCanonicalTraceFormality(value: unknown): value is ActionFormalitiesTrace["formalities"][number] {
+  if (!isRecord(value)) return false;
+  return isMeaningful(value.id) &&
+    ["required", "recommended", "not_required", "unknown"].includes(value.requirementStatus as string) &&
+    ["city_aot", "police_declaration", "other_manager", "information_only", "none", "unknown"].includes(value.procedureKind as string) &&
+    (value.sourceId === null || isMeaningful(value.sourceId));
+}
+
+function isCanonicalFormalitiesTrace(value: unknown): value is ActionFormalitiesTrace {
+  if (!isRecord(value)) return false;
+  const officialSourceIds = value.officialSourceIds;
+  const officialSources = value.officialSources;
+  const formalities = value.formalities;
+  return isIso8601Timestamp(value.qualifiedAt) &&
+    isNullableMeaningfulString(value.rulesetVersion) &&
+    Array.isArray(officialSourceIds) &&
+    officialSourceIds.every(isMeaningful) &&
+    new Set(officialSourceIds).size === officialSourceIds.length &&
+    Array.isArray(officialSources) &&
+    officialSources.every(isCanonicalOfficialSource) &&
+    new Set(officialSources.map((source) => (source as { id: string }).id)).size === officialSources.length &&
+    isNullableString(value.verifiedOn) &&
+    (value.verifiedOn === null || isMeaningful(value.verifiedOn)) &&
+    isMeaningful(value.actionDependencyFingerprint) &&
+    actionFormalitiesFactsSchema.safeParse(value.determiningFacts).success &&
+    Array.isArray(formalities) &&
+    formalities.every(isCanonicalTraceFormality) &&
+    new Set(formalities.map((formality) => formality.id)).size === formalities.length;
+}
+
+function isCanonicalProgress(value: unknown): value is ActionFormalityProgress {
+  if (!isRecord(value)) return false;
+  return isMeaningful(value.formalityId) &&
+    ["not_started", "prepared", "sent"].includes(value.userStatus as string) &&
+    isMeaningful(value.contentVersion) &&
+    (value.statusChangedAt === null || isIso8601Timestamp(value.statusChangedAt)) &&
+    (value.proof === null || isFormalitySendProof(value.proof)) &&
+    typeof value.active === "boolean" &&
+    typeof value.validForQualification === "boolean" &&
+    (value.invalidatedAt === null || isIso8601Timestamp(value.invalidatedAt));
 }
 
 function dependencyKeysForFormality(formalityId: string): Array<keyof FormalitiesFactsSnapshot> {
@@ -345,13 +415,29 @@ export function normalizeActionFormalitiesWorkflow(
   const candidate = value as Partial<ActionFormalitiesWorkflowState>;
   if (
     candidate.schemaVersion !== ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION ||
-    typeof candidate.contentVersion !== "string" ||
-    !candidate.trace ||
-    typeof candidate.trace !== "object" ||
+    !isMeaningful(candidate.contentVersion) ||
+    !isCanonicalFormalitiesTrace(candidate.trace) ||
     !Array.isArray(candidate.progress)
   ) {
     return null;
   }
+  if (!candidate.progress.every(isCanonicalProgress)) return null;
+
+  const traceFormalityIds = new Set(candidate.trace.formalities.map((formality) => formality.id));
+  const progressIds = candidate.progress.map((progress) => progress.formalityId);
+  if (new Set(progressIds).size !== progressIds.length) return null;
+  if (candidate.progress.some((progress) => progress.contentVersion !== candidate.contentVersion)) {
+    return null;
+  }
+  const activeProgressIds = new Set(
+    candidate.progress
+      .filter((progress) => progress.active)
+      .map((progress) => progress.formalityId),
+  );
+  if (activeProgressIds.size !== traceFormalityIds.size) return null;
+  if ([...traceFormalityIds].some((formalityId) => !activeProgressIds.has(formalityId))) return null;
+  if ([...activeProgressIds].some((formalityId) => !traceFormalityIds.has(formalityId))) return null;
+
   return value as ActionFormalitiesWorkflowState;
 }
 

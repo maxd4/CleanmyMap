@@ -21,6 +21,10 @@ const strictProofMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261030000016_association_action_review_formalities_strict_proof.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
+const canonicalIntegrityMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261030000020_association_action_review_formalities_canonical_integrity.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
 
 describe("association action review migration STATIC_CONTRACT", () => {
   it("separates review from moderation and preserves historical rows", () => {
@@ -113,5 +117,21 @@ describe("association action review migration STATIC_CONTRACT", () => {
     expect(strictProofMigration).toContain("grant execute on function public.decide_association_action_review");
     expect(strictProofMigration).not.toContain("20261030000012");
     expect(strictProofMigration).not.toContain("20261030000013");
+  });
+
+  it("rejects incomplete, stale, duplicated and malformed canonical workflow data", () => {
+    expect(canonicalIntegrityMigration).toContain("qualifiedat");
+    expect(canonicalIntegrityMigration).toContain("actiondependencyfingerprint");
+    expect(canonicalIntegrityMigration).toContain("determiningfacts");
+    expect(canonicalIntegrityMigration).toContain("having count(*) > 1");
+    expect(canonicalIntegrityMigration).toContain("item ->> 'contentversion' = (select value ->> 'contentversion' from workflow)");
+    expect(canonicalIntegrityMigration).toContain("recordedat");
+    expect(canonicalIntegrityMigration).toContain("pg_catalog.pg_input_is_valid");
+    expect(canonicalIntegrityMigration).toContain("select coalesce(");
+    expect(canonicalIntegrityMigration).toContain("other_manager");
+    expect(canonicalIntegrityMigration).toContain("grant execute on function public.is_association_action_formalities_ready");
+    expect(canonicalIntegrityMigration).not.toContain("20261030000012");
+    expect(canonicalIntegrityMigration).not.toContain("20261030000013");
+    expect(canonicalIntegrityMigration).not.toContain("20261030000016");
   });
 });

@@ -1,6 +1,82 @@
 begin;
 
-select plan(27);
+select plan(33);
+
+create temp table formalities_workflow_fixture (
+  name text primary key,
+  workflow jsonb not null
+);
+
+insert into formalities_workflow_fixture (name, workflow)
+values
+(
+  'complete_no_required',
+  jsonb_build_object(
+    'schemaVersion', 'action-formalities-workflow-v1',
+    'contentVersion', 'qualification-v1',
+    'trace', jsonb_build_object(
+      'qualifiedAt', '2026-10-30T10:00:00Z',
+      'rulesetVersion', 'rules-v1',
+      'officialSourceIds', '[]'::jsonb,
+      'officialSources', '[]'::jsonb,
+      'verifiedOn', '2026-10-30',
+      'actionDependencyFingerprint', 'canonical-v2:fixture',
+      'determiningFacts', jsonb_build_object(
+        'territory', jsonb_build_object('countryCode', 'FR', 'code', 'FR-75', 'label', 'Paris'),
+        'publicSpace', 'unknown',
+        'manager', jsonb_build_object('kind', 'unknown', 'label', null),
+        'isCleanwalk', true,
+        'isPublicRoadwayActivity', 'unknown',
+        'isItinerant', 'unknown',
+        'isClaiming', 'unknown',
+        'hasInstallations', false,
+        'requiresPhysicalOccupation', false,
+        'localCustomaryUse', 'unknown',
+        'largeCrowdOrComplexInstallations', 'unknown'
+      ),
+      'formalities', jsonb_build_array(
+        jsonb_build_object('id', 'optional', 'requirementStatus', 'recommended', 'procedureKind', 'information_only', 'sourceId', null)
+      )
+    ),
+    'progress', jsonb_build_array(
+      jsonb_build_object('formalityId', 'optional', 'userStatus', 'not_started', 'contentVersion', 'qualification-v1', 'statusChangedAt', null, 'proof', null, 'active', true, 'validForQualification', true, 'invalidatedAt', null)
+    )
+  )
+),
+(
+  'complete_required',
+  jsonb_build_object(
+    'schemaVersion', 'action-formalities-workflow-v1',
+    'contentVersion', 'qualification-v1',
+    'trace', jsonb_build_object(
+      'qualifiedAt', '2026-10-30T10:00:00Z',
+      'rulesetVersion', 'rules-v1',
+      'officialSourceIds', '[]'::jsonb,
+      'officialSources', '[]'::jsonb,
+      'verifiedOn', '2026-10-30',
+      'actionDependencyFingerprint', 'canonical-v2:fixture',
+      'determiningFacts', jsonb_build_object(
+        'territory', jsonb_build_object('countryCode', 'FR', 'code', 'FR-75', 'label', 'Paris'),
+        'publicSpace', 'public_domain',
+        'manager', jsonb_build_object('kind', 'paris_city', 'label', null),
+        'isCleanwalk', true,
+        'isPublicRoadwayActivity', false,
+        'isItinerant', false,
+        'isClaiming', false,
+        'hasInstallations', true,
+        'requiresPhysicalOccupation', true,
+        'localCustomaryUse', false,
+        'largeCrowdOrComplexInstallations', false
+      ),
+      'formalities', jsonb_build_array(
+        jsonb_build_object('id', 'required', 'requirementStatus', 'required', 'procedureKind', 'city_aot', 'sourceId', null)
+      )
+    ),
+    'progress', jsonb_build_array(
+      jsonb_build_object('formalityId', 'required', 'userStatus', 'sent', 'contentVersion', 'qualification-v1', 'statusChangedAt', '2026-10-30T10:00:00Z', 'proof', jsonb_build_object('kind', 'user_declared', 'reference', null, 'recordedAt', '2026-10-30T10:00:00Z'), 'active', true, 'validForQualification', true, 'invalidatedAt', null)
+    )
+  )
+);
 
 select is(
   public.is_association_action_formalities_ready('{}'::jsonb),
@@ -23,7 +99,99 @@ select is(
 );
 select is(
   public.is_association_action_formalities_ready(
-    '{"formalitiesWorkflow":{"schemaVersion":"action-formalities-workflow-v1","contentVersion":"v1","trace":{"formalities":[{"id":"optional","requirementStatus":"recommended","procedureKind":"information_only","sourceId":null}]},"progress":[{"formalityId":"optional","userStatus":"not_started","contentVersion":"v1","statusChangedAt":null,"proof":null,"active":true,"validForQualification":true,"invalidatedAt":null}]}}'::jsonb
+    '{"formalitiesWorkflow":{"schemaVersion":"action-formalities-workflow-v1","contentVersion":"v1","trace":{"formalities":[]},"progress":[]}}'::jsonb
+  ),
+  false,
+  'an incomplete trace without qualification metadata is not ready'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set((select workflow from formalities_workflow_fixture where name = 'complete_required'), '{progress,0,contentVersion}', '"stale-version"'::jsonb)
+    )
+  ),
+  false,
+  'a progress entry with a stale content version is not ready'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set((select workflow from formalities_workflow_fixture where name = 'complete_required'), '{progress,0,proof,recordedAt}', '"not-a-timestamp"'::jsonb)
+    )
+  ),
+  false,
+  'a proof with an invalid timestamp is not ready'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+        '{progress}',
+        jsonb_build_array(
+          ((select workflow from formalities_workflow_fixture where name = 'complete_required') -> 'progress') -> 0,
+          jsonb_set(
+            jsonb_set(
+              ((select workflow from formalities_workflow_fixture where name = 'complete_required') -> 'progress') -> 0,
+              '{userStatus}',
+              '"prepared"'::jsonb
+            ),
+            '{proof}',
+            'null'::jsonb
+          )
+        )
+      )
+    )
+  ),
+  false,
+  'contradictory duplicate progress entries are not ready in their original order'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+        '{progress}',
+        jsonb_build_array(
+          jsonb_set(
+            jsonb_set(
+              ((select workflow from formalities_workflow_fixture where name = 'complete_required') -> 'progress') -> 0,
+              '{userStatus}',
+              '"prepared"'::jsonb
+            ),
+            '{proof}',
+            'null'::jsonb
+          ),
+          ((select workflow from formalities_workflow_fixture where name = 'complete_required') -> 'progress') -> 0
+        )
+      )
+    )
+  ),
+  false,
+  'contradictory duplicate progress entries are not ready in reverse order'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        (select workflow from formalities_workflow_fixture where name = 'complete_required'),
+        '{trace,formalities}',
+        (((select workflow from formalities_workflow_fixture where name = 'complete_required') -> 'trace' -> 'formalities') ||
+          jsonb_build_array(((select workflow from formalities_workflow_fixture where name = 'complete_required') -> 'trace' -> 'formalities') -> 0))
+      )
+    )
+  ),
+  false,
+  'duplicate active formality identifiers are not ready'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_no_required'))
   ),
   true,
   'a valid workflow with no required formality is ready'
@@ -51,7 +219,7 @@ select is(
 );
 select is(
   public.is_association_action_formalities_ready(
-    '{"formalitiesWorkflow":{"schemaVersion":"action-formalities-workflow-v1","contentVersion":"v1","trace":{"formalities":[{"id":"required","requirementStatus":"required","procedureKind":"city_aot","sourceId":null}]},"progress":[{"formalityId":"required","userStatus":"sent","contentVersion":"v1","statusChangedAt":"2026-10-30T10:00:00Z","proof":{"kind":"user_declared","reference":null,"recordedAt":"2026-10-30T10:00:00Z"},"active":true,"validForQualification":true,"invalidatedAt":null}]}}'::jsonb
+    jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_required'))
   ),
   true,
   'a conforming user declaration with an optional reference is ready'
@@ -126,7 +294,7 @@ with invalid_action as (
   ) values (
     'review-fixture-user', current_date, 'Fixture location', 'Fixture association',
     'association', 'pre_action', 'pending',
-    '{"formalitiesWorkflow":{"schemaVersion":"action-formalities-workflow-v1","contentVersion":"v1","trace":{"formalities":[{"id":"required","requirementStatus":"required","procedureKind":"city_aot","sourceId":null}]},"progress":[{"formalityId":"required","userStatus":"sent","contentVersion":"v1","statusChangedAt":"2026-10-30T10:00:00Z","proof":{"kind":"user_declared","reference":null,"recordedAt":"2026-10-30T10:00:00Z"},"active":true,"validForQualification":true,"invalidatedAt":null}]}}'::jsonb,
+    jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_required')),
     'visible', null
   ) returning id
 )
