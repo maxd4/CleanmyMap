@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(38);
 
 select has_table(
   'public',
@@ -35,11 +35,17 @@ select ok(
   'exact category check exists'
 );
 select ok(has_table_privilege('authenticated', 'public.community_helper_skills', 'SELECT'), 'authenticated can read owner rows');
-select ok(has_table_privilege('authenticated', 'public.community_helper_skills', 'INSERT'), 'authenticated can insert owner rows');
-select ok(has_table_privilege('authenticated', 'public.community_helper_skills', 'UPDATE'), 'authenticated can update owner rows');
-select ok(has_table_privilege('authenticated', 'public.community_helper_skills', 'DELETE'), 'authenticated can delete owner rows');
+select ok(not has_table_privilege('authenticated', 'public.community_helper_skills', 'INSERT'), 'authenticated cannot insert helper rows directly');
+select ok(not has_table_privilege('authenticated', 'public.community_helper_skills', 'UPDATE'), 'authenticated cannot update helper rows directly');
+select ok(not has_table_privilege('authenticated', 'public.community_helper_skills', 'DELETE'), 'authenticated cannot delete helper rows directly');
+select ok(has_table_privilege('service_role', 'public.community_helper_skills', 'SELECT'), 'service role can read helper rows');
+select ok(has_table_privilege('service_role', 'public.community_helper_skills', 'INSERT'), 'service role can insert helper rows');
+select ok(has_table_privilege('service_role', 'public.community_helper_skills', 'UPDATE'), 'service role can update helper rows');
+select ok(has_table_privilege('service_role', 'public.community_helper_skills', 'DELETE'), 'service role can delete helper rows');
 select ok(not has_table_privilege('anon', 'public.community_helper_skills', 'SELECT'), 'anon cannot read helper skills');
 select ok(not has_table_privilege('anon', 'public.community_helper_skills', 'INSERT'), 'anon cannot insert helper skills');
+select ok(not has_table_privilege('anon', 'public.community_helper_skills', 'UPDATE'), 'anon cannot update helper skills');
+select ok(not has_table_privilege('anon', 'public.community_helper_skills', 'DELETE'), 'anon cannot delete helper skills');
 select ok(has_function_privilege('service_role', 'public.replace_community_helper_skills(text, text[])', 'EXECUTE'), 'service role can replace helper skills');
 select ok(not has_function_privilege('authenticated', 'public.replace_community_helper_skills(text, text[])', 'EXECUTE'), 'authenticated cannot call server replacement RPC');
 
@@ -75,15 +81,34 @@ select is(
   0,
   'empty replacement removes the previous set atomically'
 );
+select lives_ok(
+  $$select public.replace_community_helper_skills('helper-one', array['materiel', 'transport']::text[])$$,
+  'replacement restores a baseline before invalid input'
+);
 select throws_ok(
   $$select public.replace_community_helper_skills('helper-one', array['inconnue']::text[])$$,
   '23514', null,
   'unknown category is rejected'
 );
+select is(
+  (select count(*)::integer from public.community_helper_skills where user_id = 'helper-one'),
+  2,
+  'invalid category leaves the previous replacement unchanged'
+);
+select is(
+  (select string_agg(category, ',' order by category) from public.community_helper_skills where user_id = 'helper-one'),
+  'materiel,transport',
+  'invalid category failure is atomic'
+);
 select throws_ok(
   $$select public.replace_community_helper_skills('helper-one', array['materiel', 'materiel']::text[])$$,
   '23505', null,
   'duplicate categories are rejected'
+);
+select is(
+  (select count(*)::integer from public.community_helper_skills where user_id = 'helper-one'),
+  2,
+  'duplicate category failure leaves the previous replacement unchanged'
 );
 
 reset role;
@@ -93,15 +118,28 @@ select set_config(
   '{"role":"authenticated","sub":"helper-one"}',
   true
 );
-select lives_ok(
+select throws_ok(
   $$insert into public.community_helper_skills (user_id, category)
     values ('helper-one', 'logistique')$$,
-  'authenticated can write its own category'
+  '42501', null,
+  'authenticated cannot write its own category directly'
 );
 select is(
   (select count(*)::integer from public.community_helper_skills where user_id = 'helper-one'),
-  1,
+  2,
   'owner can read its private category'
+);
+select throws_ok(
+  $$update public.community_helper_skills
+    set category = 'logistique'
+    where user_id = 'helper-one' and category = 'materiel'$$,
+  '42501', null,
+  'authenticated cannot update its own category directly'
+);
+select throws_ok(
+  $$delete from public.community_helper_skills where user_id = 'helper-one'$$,
+  '42501', null,
+  'authenticated cannot delete its own categories directly'
 );
 select set_config(
   'request.jwt.claims',

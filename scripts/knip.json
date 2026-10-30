@@ -10,6 +10,7 @@
         "e2e/global.setup.ts",
         "e2e/global.teardown.ts",
         "e2e/run-*.mjs",
+        "e2e/community-helper-skills-concurrency.mjs",
         "e2e/gamification-reconciliation-concurrency.mjs",
         "e2e/quiz-progression-concurrency.mjs",
         "e2e/reports-postgres-concurrency.mjs",

@@ -37,6 +37,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.contracts.length, 9);
   assert.deepEqual(inventory.multisession, [
     "e2e/action-role-attestation-concurrency.mjs",
+    "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/quiz-progression-concurrency.mjs",
     "e2e/reports-postgres-concurrency.mjs",
@@ -49,6 +50,7 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   const knipConfig = JSON.parse(readFileSync(new URL("../knip.json", import.meta.url), "utf8"));
   const entries = new Set(knipConfig.workspaces["."].entry);
   for (const entrypoint of [
+    "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/quiz-progression-concurrency.mjs",
     "e2e/reports-postgres-concurrency.mjs",

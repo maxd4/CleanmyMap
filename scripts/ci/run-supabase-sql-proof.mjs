@@ -28,6 +28,7 @@ const CONTRACT_MARKERS = new Map([
 
 const MULTISESSION_PROOFS = new Map([
   ["e2e/action-role-attestation-concurrency.mjs", /Role attestation concurrent correction contract passed\./],
+  ["e2e/community-helper-skills-concurrency.mjs", /Community helper skills two-session exact replacement contract passed\./],
   ["e2e/gamification-reconciliation-concurrency.mjs", /Gamification reconciliation two-session lock, CAS, atomicity and idempotence passed\./],
   ["e2e/quiz-progression-concurrency.mjs", /Quiz progression two-session user lock and balanced milestone passed\./],
   ["e2e/reports-postgres-concurrency.mjs", /EXECUTED_DB_CONTRACT: Reports quota and PDF artifact two-session concurrency contract passed\./],
