@@ -302,4 +302,36 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     harness.renderer.unmount();
   });
+
+  it("keeps hydrated volume provenance while editing another butt field", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      cigaretteButtsCount: "1700",
+      wasteMegotsKg: "1",
+      cigaretteButtsVolumeLiters: "2.5",
+      wasteMegotsCondition: "humide",
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsVolumeProvenance: "volume_converted",
+      cigaretteButtsConversionFormulaVersion: null,
+    });
+
+    act(() => {
+      harness.latest.logic.syncMegotsWeightFromCount("1800");
+    });
+
+    expect(harness.latest.form.cigaretteButtsVolumeLiters).toBe("2.5");
+    expect(harness.latest.form.cigaretteButtsVolumeProvenance).toBe("volume_converted");
+    expect(harness.latest.logic.cigaretteButtsVolumeProvenance).toBe("volume_converted");
+
+    act(() => {
+      harness.latest.logic.syncMegotsVolume("2.5");
+    });
+
+    expect(harness.latest.form.cigaretteButtsVolumeProvenance).toBe("volume_converted");
+
+    harness.renderer.unmount();
+  });
 });

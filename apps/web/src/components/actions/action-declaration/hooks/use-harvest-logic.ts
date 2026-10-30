@@ -232,13 +232,18 @@ export function useHarvestLogic({
 
   const syncMegotsVolume = useCallback(
     (rawValue: string) => {
+      const normalized = normalizeCigaretteButtsMeasurementsFromUserInput({
+        cigaretteButtsVolumeLiters: rawValue.trim() === "" ? null : readValidMass(rawValue),
+        cigaretteButtsCondition: form.wasteMegotsCondition,
+      }, {
+        existingMeasurements: buildExistingMeasurements(form),
+      });
       updateFields({
         cigaretteButtsVolumeLiters: rawValue,
-        cigaretteButtsVolumeProvenance:
-          readValidMass(rawValue) === null ? "unknown" : "measured",
+        cigaretteButtsVolumeProvenance: normalized.cigaretteButtsVolumeProvenance,
       });
     },
-    [updateFields],
+    [form, updateFields],
   );
 
   const syncMegotsCondition = useCallback(

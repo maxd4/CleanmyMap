@@ -194,6 +194,9 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
       input.cigaretteButtsVolumeLiters === null &&
       existingMeasurements.cigaretteButtsVolumeLiters !== null,
   );
+  const volumeClearRequested = Boolean(
+    existingMeasurements && input.cigaretteButtsVolumeLiters === null,
+  );
 
   if (
     existingMeasurements &&
@@ -288,6 +291,15 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     cigaretteButtsCondition: sourceSpecificInput.cigaretteButtsCondition,
     deriveMissingFromMassOrCount: sourceSpecificInput.deriveMissingFromMassOrCount,
   });
+
+  if (
+    existingMeasurements &&
+    !volumeClearRequested &&
+    normalized.cigaretteButtsVolumeLiters === existingMeasurements.cigaretteButtsVolumeLiters
+  ) {
+    normalized.cigaretteButtsVolumeProvenance =
+      existingMeasurements.cigaretteButtsVolumeProvenance;
+  }
 
   if (
     existingMeasurements &&

@@ -188,6 +188,47 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
     });
   });
 
+  it("round trips an unchanged volume provenance through hydration, edit and notes serialization", () => {
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsVolumeProvenance: "unknown",
+    });
+    const notes = buildPersistedNotes({
+      notes: "Action terrain",
+      cigaretteButtsMeasurements: measurements,
+    }, {
+      resolvedCigaretteButtsMeasurements: measurements,
+    });
+    const currentMetadata = extractActionMetadataFromNotes(notes);
+    const body = {
+      cigaretteButtsCount: 1_800,
+      notes: "Volume historique conservé",
+    };
+    const result = updateMeasurements(buildCurrent(notes), body);
+    const nextNotes = buildActionUpdateNotes({
+      body: body as never,
+      currentMetadata,
+      hasButtsMeasurementUpdate: result.hasButtsMeasurementUpdate,
+      nextCigaretteButtsMeasurements: result.nextCigaretteButtsMeasurements,
+      nextVolunteerParticipation: result.nextVolunteerParticipation,
+    });
+    const reread = extractActionMetadataFromNotes(nextNotes).cigaretteButtsMeasurements;
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsVolumeProvenance: "unknown",
+    });
+    expect(reread).toMatchObject({
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsVolumeProvenance: "unknown",
+    });
+  });
+
   it("keeps established independent observations when the condition changes", () => {
     const measurements = normalizeCigaretteButtsMeasurements({
       cigaretteButtsCount: 1_700,

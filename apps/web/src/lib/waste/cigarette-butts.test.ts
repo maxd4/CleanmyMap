@@ -232,6 +232,73 @@ describe("cigarette-butt raw and derived measurements", () => {
     });
   });
 
+  it.each([
+    ["unknown", "count edit", { cigaretteButtsCount: 2_000 }],
+    ["volume_converted", "mass edit", { cigaretteButtsMassKg: 1.2 }],
+    ["measured", "condition edit", { cigaretteButtsCondition: "propre" }],
+  ] as const)("preserves %s volume provenance after a %s", (provenance, _label, patch) => {
+    const existing = buildExistingMeasurements({
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsVolumeProvenance: provenance,
+      cigaretteButtsCountProvenance: "counted",
+      cigaretteButtsMassProvenance: "measured",
+    });
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "unknown",
+      ...patch,
+    }, { existingMeasurements: existing });
+
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(2.5);
+    expect(measurement.cigaretteButtsVolumeProvenance).toBe(provenance);
+  });
+
+  it("preserves volume provenance when a partial patch omits the volume", () => {
+    const existing = buildExistingMeasurements({
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsVolumeProvenance: "volume_converted",
+    });
+
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_800,
+    }, { existingMeasurements: existing });
+
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(2.5);
+    expect(measurement.cigaretteButtsVolumeProvenance).toBe("volume_converted");
+  });
+
+  it("clears volume with the canonical unknown provenance", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsVolumeLiters: null,
+    }, {
+      existingMeasurements: buildExistingMeasurements({
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsVolumeProvenance: "volume_converted",
+      }),
+    });
+
+    expect(measurement.cigaretteButtsVolumeLiters).toBeNull();
+    expect(measurement.cigaretteButtsVolumeProvenance).toBe("unknown");
+  });
+
+  it("qualifies a genuinely new volume as measured without accepting a client provenance hint", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsVolumeLiters: 3.5,
+      cigaretteButtsVolumeProvenance: "unknown",
+    } as never, {
+      existingMeasurements: buildExistingMeasurements({
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsVolumeProvenance: "volume_converted",
+      }),
+    });
+
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(3.5);
+    expect(measurement.cigaretteButtsVolumeProvenance).toBe("measured");
+  });
+
   it("clears volume explicitly without changing the independent pair or formula", () => {
     const existing = buildExistingMeasurements({
       cigaretteButtsVolumeLiters: 2.5,
