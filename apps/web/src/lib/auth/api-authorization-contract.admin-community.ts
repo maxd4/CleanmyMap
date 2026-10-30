@@ -77,8 +77,8 @@ export const adminCommunityAuthorizationContract = {
     GET: {
       expected: "Admin-like role for audit-log read",
       dimensions: ["admin/creator role", "audit"],
-      actual: "requireAdminAccess + listAdminOperationAudit",
-      evidence: ["requireAdminAccess", "listAdminOperationAudit"],
+      actual: "requireAdminAccess + listAdminOperationAuditPage",
+      evidence: ["requireAdminAccess", "listAdminOperationAuditPage"],
     },
   },
   "admin/partners/published-directory": {

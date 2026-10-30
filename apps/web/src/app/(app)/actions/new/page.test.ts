@@ -246,14 +246,7 @@ describe("action creation entry point", () => {
       ),
       "utf8",
     );
-    const detailsSource = readFileSync(
-      new URL(
-        "../../../../components/actions/action-declaration/action-declaration-details.tsx",
-        import.meta.url,
-      ),
-      "utf8",
-    );
-    const formSource = `${formContentSource}\n${sectionsSource}\n${detailsSource}`;
+    const formSource = `${formContentSource}\n${sectionsSource}`;
     const identitySource = readFileSync(
       new URL(
         "../../../../components/actions/action-declaration/steps/ActionStepIdentity.tsx",
@@ -271,14 +264,11 @@ describe("action creation entry point", () => {
     expect(identitySource).not.toContain("Type d&apos;action");
     expect(identitySource).not.toContain("Action terrain");
     for (const sectionLabel of [
-      "Action",
-      "Participants",
-      "Résultats essentiels",
-      "Détails de l’organisation",
-      "Détails de la collecte",
-      "Photos et estimation",
-      "Parcours et géométrie",
-      "Détails temporels",
+      "Identifier l’action",
+      "Déclarer les participants",
+      "Déclarer les résultats collectés",
+      "Documenter le terrain",
+      "Vérifier et transmettre",
     ]) {
       expect(formSource).toContain(sectionLabel);
     }
