@@ -115,7 +115,7 @@ describe("RouteSection explainability wiring", () => {
         sharedDistanceRatio: null,
       },
       groupRoutes: [
-         { groupIndex: 1, volunteerCount: 4, travelDistanceKm: 2.4, travelMinutes: 20, targetCount: 3, meetingPoint: { coordinates: [48.85, 2.35], cumulativeDistanceKm: 1.2, progress: 0.5, estimatedDurationMinutes: 10, provenance: "final_geometry_midpoint" } },
+         { groupIndex: 1, volunteerCount: 4, travelDistanceKm: 2.4, travelMinutes: 20, targetCount: 3, meetingPoint: { coordinates: [48.85, 2.35], cumulativeDistanceKm: 1.2, progress: 0.5, estimatedDurationMinutes: 10, provenance: "final_geometry_midpoint" }, meetingOpportunities: [{ candidateId: "spot-1", label: "Candidat spot-1", coordinates: [48.8505, 2.3505], distanceMeters: 75, distanceType: "straight_line", provenance: "predicted", source: "urban-pressure-model", modelVersion: "test-v1" }] },
         { groupIndex: 2, volunteerCount: 4, travelDistanceKm: 2.7, travelMinutes: 22, targetCount: 3 },
         { groupIndex: 3, volunteerCount: 4, travelDistanceKm: 3.1, travelMinutes: 25, targetCount: 2 },
       ],
@@ -137,6 +137,9 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("Groupe 2 — 4 bénévoles");
     expect(markup).toContain("Groupe 3 — 4 bénévoles");
     expect(markup).toContain("Rendez-vous intermédiaire");
+    expect(markup).toContain("Opportunités locales à proximité");
+    expect(markup).toContain("75 m à vol d’oiseau");
+    expect(markup).toContain("prédiction");
     expect(markup).toContain('aria-label="Légende des boucles"');
     expect(markup).toContain("La durée d’action complète n’est pas encore fiable");
   });

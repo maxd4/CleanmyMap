@@ -7,7 +7,11 @@ import { RoutePdfExport } from "./components/route-pdf-export";
 import { RouteWeatherSummary } from "./components/route-weather-summary";
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type { RouteResponse, RouteOriginMode, RouteRecommendationOrigin } from "./route-types";
-import type { MeetingPointProjection, RouteGroupRoute } from "@/lib/route/route-response-contract";
+import type {
+  MeetingOpportunity,
+  MeetingPointProjection,
+  RouteGroupRoute,
+} from "@/lib/route/route-response-contract";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -38,9 +42,11 @@ type RouteResultDisplayProps = {
 
 function MeetingPointDetails({
   meetingPoint,
+  meetingOpportunities = [],
   fr,
 }: {
   meetingPoint: MeetingPointProjection | null | undefined;
+  meetingOpportunities?: MeetingOpportunity[];
   fr: boolean;
 }) {
   if (!meetingPoint) {
@@ -66,6 +72,34 @@ function MeetingPointDetails({
         {meetingPoint.coordinates[0].toFixed(5)}, {meetingPoint.coordinates[1].toFixed(5)} · {distance} · {duration}
       </p>
       <p className="mt-1 text-xs font-semibold text-amber-100/65">{provenance}</p>
+      <section className="mt-3 border-t border-amber-200/15 pt-3" data-meeting-opportunities>
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-100/80">
+          {fr ? "Opportunités locales à proximité" : "Nearby local opportunities"}
+        </p>
+        {meetingOpportunities.length === 0 ? (
+          <p className="mt-2 text-xs font-semibold text-amber-100/70">
+            {fr ? "Aucune opportunité locale admissible." : "No admissible local opportunity."}
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-2" aria-label={fr ? "Opportunités locales" : "Local opportunities"}>
+            {meetingOpportunities.map((opportunity) => (
+              <li key={opportunity.candidateId} className="rounded-xl border border-amber-100/10 bg-black/10 px-3 py-2">
+                <p className="font-bold">{opportunity.label}</p>
+                <p className="mt-1 text-xs font-semibold text-amber-100/75">
+                  {opportunity.distanceMeters} m {fr ? "à vol d’oiseau" : "straight-line"} · {opportunity.provenance === "observed"
+                    ? (fr ? "observation" : "observed")
+                    : (fr ? "prédiction" : "predicted")} · {opportunity.source}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 text-xs font-semibold text-amber-100/65">
+          {fr
+            ? "Restez à proximité du point de regroupement et revenez-y. La distance affichée est à vol d’oiseau ; aucune accessibilité piétonne n’est calculée."
+            : "Stay near the meeting point and return to it. The displayed distance is straight-line; pedestrian accessibility is not calculated."}
+        </p>
+      </section>
     </div>
   );
 }
@@ -114,7 +148,7 @@ function RouteResultSummary({
             Créneau utilisateur : {eventBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {actionBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes === null ? "Non disponible" : `${organizationMarginMinutes} min`}.
           </p>
           {serviceMinutes === null ? <p className="text-xs font-semibold text-amber-100/80">La durée d’action complète n’est pas encore fiable ; le planner conserve son fonctionnement avec le temps réseau disponible.</p> : null}
-          <MeetingPointDetails meetingPoint={data.meetingPoint} fr={fr} />
+          <MeetingPointDetails meetingPoint={data.meetingPoint} meetingOpportunities={data.meetingOpportunities} fr={fr} />
           {data.isLoop ? <p className="text-sm font-semibold text-emerald-100/80">
             {groupRoutes.length > 1
               ? `${data.volunteers} bénévoles · ${data.groupCount} groupes · ${data.multiRoute.totalDistanceKm.toFixed(2)} km cumulés`
@@ -178,7 +212,7 @@ function RouteGroupSelection({
             <button type="button" onClick={() => setSelectedGroupIndex(group.groupIndex)} aria-label={groupLabel} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-300/40">
               <span className="flex items-center gap-3"><span aria-hidden="true" className="h-1.5 w-10 rounded-full" style={{ backgroundColor: visualStyle.color, backgroundImage: multiRouteDisplayMode === "patterns" ? `repeating-linear-gradient(90deg, ${visualStyle.color} 0 8px, transparent 8px 14px)` : undefined }} /><span className="font-black text-white">{groupLabel}</span></span>
               <p className="mt-2 text-xs text-slate-300">{group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} stops</p>
-              <div className="mt-3"><MeetingPointDetails meetingPoint={group.meetingPoint} fr={fr} /></div>
+              <div className="mt-3"><MeetingPointDetails meetingPoint={group.meetingPoint} meetingOpportunities={group.meetingOpportunities} fr={fr} /></div>
               <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{group.operationalBudget?.withinBudget === true ? "Budget d’action respecté" : group.operationalBudget?.withinBudget === false ? "Budget d’action dépassé" : "Budget d’action non vérifiable"}</p>
               {multiRouteDisplayMode === "patterns" ? <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{fr ? "Trait : " : "Line: "}{getRouteGroupPatternLabel(group.groupIndex, fr)}</p> : null}
             </button>

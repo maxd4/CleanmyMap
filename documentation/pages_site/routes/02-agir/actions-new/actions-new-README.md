@@ -185,6 +185,14 @@ jusqu'à son enregistrement explicite. Un itinéraire n'est repris que si sa
 géométrie opérationnelle et son contexte planner sont encore valides et
 vérifiés ; sinon le lieu est conservé et un nouveau calcul peut être demandé.
 
+Lorsque la géométrie finale fournit un rendez-vous intermédiaire, le panneau
+peut proposer jusqu'à trois opportunités locales admissibles dans un rayon
+de la policy `MEETING_OPPORTUNITY_POLICY` (150 m). La distance est affichée à
+vol d'oiseau avec une provenance
+observée ou prédite ; ces possibilités restent facultatives, ne créent aucun
+détour et demandent de rester à proximité puis de revenir au point de
+regroupement.
+
 Le briefing `Jour J` est une projection fraîche des informations pratiques
 autorisées de l'action. Il peut être copié, imprimé depuis le navigateur ou
 exporté vers un fichier iCalendar. L'export utilise l'identifiant stable de

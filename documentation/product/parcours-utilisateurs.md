@@ -64,7 +64,14 @@ Pour un parcours planifié, le point de rendez-vous intermédiaire est calculé
 sur la géométrie finale retenue, à mi-distance cumulée. La distance et le temps
 relatif sont affichés avec leur provenance lorsqu'ils sont disponibles. Les
 boucles de groupes indépendants conservent un point par boucle ; aucune
-position unique commune n'est déduite.
+position unique commune n'est déduite. Quand le point est disponible, le
+panneau peut proposer jusqu'à trois opportunités locales admissibles dans un
+rayon de la policy `MEETING_OPPORTUNITY_POLICY` (150 m). Elles restent
+facultatives, indiquent leur provenance
+observée ou prédite et une distance à vol d'oiseau ; elles ne modifient ni les
+stops, ni le budget, ni la géométrie. Les participants restent à proximité et
+reviennent au point de regroupement ; une accessibilité ou une sécurité non
+garantie exclut la proposition.
 
 ### États et sorties attendues
 

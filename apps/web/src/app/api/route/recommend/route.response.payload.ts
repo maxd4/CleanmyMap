@@ -108,6 +108,12 @@ function buildCommonPayload({
     meetingPoint: context.groupRoutes.length === 1
       ? context.groupRoutes[0]?.meetingPoint ?? null
       : null,
+    meetingOpportunities: context.groupRoutes.length === 1
+      ? context.groupRoutes[0]?.meetingOpportunities ?? []
+      : [],
+    meetingOpportunityTrace: context.groupRoutes.length === 1
+      ? context.groupRoutes[0]?.meetingOpportunityTrace
+      : undefined,
     multiRoute: context.multiRoute,
   };
 }

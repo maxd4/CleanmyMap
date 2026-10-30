@@ -55,6 +55,8 @@ import {
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
+  /** The exact candidate pool and planner evaluations used by this run. */
+  candidates?: RoutePlannerCandidate[];
   predictionSummary: ReturnType<typeof applyRoutePredictionPoolAudit>;
   /** The single predictive branch used by this planning run. */
   effectiveRiskFocus: RouteRiskFocus;
@@ -412,6 +414,7 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
   });
   return {
     plannerResult,
+    candidates: preparation.candidatePool.candidates,
     predictionSummary,
     effectiveRiskFocus,
     plannedStops,

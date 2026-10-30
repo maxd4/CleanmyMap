@@ -22,6 +22,7 @@ import {
   type RouteOperationalBudgetDependency,
 } from "@/lib/route/route-operational-budget";
 import { buildCleanupWorkload } from "@/lib/route/route-cleanup-workload";
+import { buildMeetingOpportunities } from "@/lib/route/route-meeting-opportunities";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
@@ -206,6 +207,27 @@ function buildGroupRoutesWithBudgets(
   });
 }
 
+function attachMeetingOpportunities(
+  input: RouteRecommendationResponseInput,
+  groupRoutes: RouteGroupRoute[],
+): RouteGroupRoute[] {
+  const mainStopIds = new Set(input.planning.plannedStops.map(({ candidate }) => candidate.id));
+  const evaluations = input.planning.plannerResult.audit.evaluations;
+  return groupRoutes.map((group) => {
+    const result = buildMeetingOpportunities({
+      meetingPoint: group.meetingPoint ?? null,
+      candidates: input.planning.candidates ?? [],
+      evaluations,
+      mainStopIds,
+    });
+    return {
+      ...group,
+      meetingOpportunities: result.opportunities,
+      meetingOpportunityTrace: result.trace,
+    };
+  });
+}
+
 function buildMultiRouteMetrics(
   input: RouteRecommendationResponseInput,
   operationalBudget: ReturnType<typeof buildRouteOperationalBudget>,
@@ -285,12 +307,13 @@ export function buildRouteOperationalContext(
   const candidateById = new Map(
     input.planning.plannedStops.map((stop) => [stop.candidate.id, stop.candidate]),
   );
-  const groupRoutes = buildGroupRoutesWithBudgets(
+  const groupRoutesWithBudgets = buildGroupRoutesWithBudgets(
     input,
     generatedAt,
     durationDependency,
     candidateById,
   );
+  const groupRoutes = attachMeetingOpportunities(input, groupRoutesWithBudgets);
   const multiRoute = buildMultiRouteMetrics(input, operationalBudget, groupRoutes);
   return {
     generatedAt,

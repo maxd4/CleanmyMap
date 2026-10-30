@@ -19,6 +19,12 @@ import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { StreetCleaningCorridorHandoff } from "./street-cleaning-corridor";
+import type {
+  MeetingOpportunity,
+  MeetingOpportunityTrace,
+} from "./route-meeting-opportunities";
+
+export type { MeetingOpportunity, MeetingOpportunityTrace } from "./route-meeting-opportunities";
 
 export {
   isRoutePickupPreference,
@@ -158,6 +164,9 @@ export type RouteRecommendationResponse = {
   groupRoutes: RouteGroupRoute[];
   /** Available only when one final route has an unambiguous rendezvous. */
   meetingPoint?: MeetingPointProjection | null;
+  /** Optional local opportunities evaluated around the unambiguous rendezvous. */
+  meetingOpportunities?: MeetingOpportunity[];
+  meetingOpportunityTrace?: MeetingOpportunityTrace;
   multiRoute: RouteMultiRouteMetrics;
   partition: {
     metrics: RoutePartitionMetrics;
@@ -176,6 +185,8 @@ export type RouteGroupRoute = RouteGroupAssignment & {
   operationalBudget?: RouteOperationalBudget;
   /** Derived independently for this group's final geometry. */
   meetingPoint?: MeetingPointProjection | null;
+  meetingOpportunities?: MeetingOpportunity[];
+  meetingOpportunityTrace?: MeetingOpportunityTrace;
 };
 
 export type RouteMultiRouteMetrics = {

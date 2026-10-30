@@ -134,4 +134,11 @@ de la distance cumulée des coordonnées finales, expose sa distance et son temp
 relatif lorsqu'ils sont disponibles, et porte sa provenance. Pour plusieurs
 groupes indépendants, chaque boucle porte sa propre projection ; aucun midpoint
 partagé ambigu n'est créé. Une géométrie insuffisante laisse le rendez-vous
-indisponible sans inventer de coordonnées ou d'ETA.
+indisponible sans inventer de coordonnées ou d'ETA. Lorsque ce point existe,
+le panneau peut proposer au plus trois opportunités locales issues du même pool
+de candidats admissibles, dans le rayon maximal de la policy
+`MEETING_OPPORTUNITY_POLICY` (150 m). Leur distance
+est explicitement à vol d'oiseau, leur provenance observée ou prédite reste
+visible, et aucune accessibilité piétonne, aucun détour ni second itinéraire
+n'est fabriqué ; les garanties de sécurité et d'accessibilité manquantes les
+excluent.
