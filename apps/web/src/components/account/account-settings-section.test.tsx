@@ -19,6 +19,11 @@ describe("account settings surface contract", () => {
     expect(source).toContain('href=\"/contact\"');
   });
 
+  it("exposes community follows as an explicit settings surface", () => {
+    expect(source).toContain("CommunitySubscriptionsSetting");
+    expect(source).toContain("community-subscriptions-setting");
+  });
+
   it("renders the full account surface in French and English", () => {
     const frMarkup = renderToStaticMarkup(
       <SitePreferencesProvider initialLocale="fr">

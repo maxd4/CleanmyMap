@@ -7,6 +7,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { Locale } from "@/lib/ui/preferences";
 import { NotificationPreferencesSetting } from "@/components/account/notification-preferences-setting";
+import { CommunitySubscriptionsSetting } from "@/components/account/community-subscriptions-setting";
 
 const ACCOUNT_SETTINGS_COPY = {
   fr: {
@@ -171,6 +172,7 @@ export function AccountSettingsSection({
         </div>
 
         <NotificationPreferencesSetting locale={localeOverride ?? locale} />
+        <CommunitySubscriptionsSetting locale={localeOverride ?? locale} />
 
         <p className="cmm-text-small text-slate-600 mt-5">
           {copy.dataQuestions}

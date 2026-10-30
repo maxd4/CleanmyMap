@@ -246,4 +246,32 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["auth()", "userId"],
     },
   },
+  "community/subscriptions": {
+    GET: {
+      expected: "Authenticated user reads only their own private subscriptions",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + userId filter on the owner-scoped projection",
+      evidence: ["requireAuthenticatedAccess", "access.userId"],
+    },
+    POST: {
+      expected: "Authenticated user creates or updates only their own explicit subscription",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + userId from the session for insert, lookup and race convergence",
+      evidence: ["requireAuthenticatedAccess", "access.userId"],
+    },
+  },
+  "community/subscriptions/[subscriptionId]": {
+    PATCH: {
+      expected: "Authenticated owner updates only their own subscription",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + id and session userId ownership predicates",
+      evidence: ["requireAuthenticatedAccess", "access.userId"],
+    },
+    DELETE: {
+      expected: "Authenticated owner deletes only their own subscription",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + id and session userId ownership predicates",
+      evidence: ["requireAuthenticatedAccess", "access.userId"],
+    },
+  },
 } as const satisfies ApiAuthorizationContract;

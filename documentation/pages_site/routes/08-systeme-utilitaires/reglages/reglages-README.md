@@ -6,8 +6,11 @@
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/reglages/page.tsx`
 - `apps/web/src/components/account/account-settings-editor.tsx`
+- `apps/web/src/components/account/community-subscriptions-setting.tsx`
 - `apps/web/src/app/api/account/identity/route.ts`
 - `apps/web/src/app/api/account/locations/route.ts`
+- `apps/web/src/app/api/community/subscriptions/route.ts`
+- `apps/web/src/app/api/community/subscriptions/[subscriptionId]/route.ts`
 - **Type fonctionnel** : outil
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
@@ -15,7 +18,7 @@
 - **Objectif utilisateur principal** : Modifier les informations du compte, l'identité publique, les localisations et les préférences depuis cette surface canonique.
 - **Action principale attendue** : Enregistrer une rubrique ciblée et obtenir un état confirmé, en attente de synchronisation ou en erreur récupérable.
 - **Palette attendue** : sky / slate
-- **Scope** : surface protégée en cinq rubriques : informations personnelles Clerk, identité publique et handle Supabase, localisations indépendantes `residence`/`work` dans `territoryPreferences`, préférences de navigateur et de compte, puis sécurité et données. Les mutations sont ciblées : identité via `/api/account/identity`, localisations via `/api/account/locations`, handle via `/api/users/profile/handle`, mode d'affichage via `/api/users/profile/display-name-mode`, consentement classement via `/api/users/profile/leaderboard-opt-in`, activité via `/api/account/activity-status` et notifications via `/api/notifications/preferences`. Une projection Clerk réussie sans confirmation Supabase renvoie un état récupérable `clerk_updated_supabase_sync_pending` et n'est jamais présenté comme un succès complet. L'espace Compte mobile consomme une projection Bearer bornée et réutilise les mutations canoniques ; il ne crée pas une seconde logique d'écriture.
+- **Scope** : surface protégée en cinq rubriques : informations personnelles Clerk, identité publique et handle Supabase, localisations indépendantes `residence`/`work` dans `territoryPreferences`, préférences de navigateur et de compte, puis sécurité et données. Les mutations sont ciblées : identité via `/api/account/identity`, localisations via `/api/account/locations`, handle via `/api/users/profile/handle`, mode d'affichage via `/api/users/profile/display-name-mode`, consentement classement via `/api/users/profile/leaderboard-opt-in`, activité via `/api/account/activity-status`, notifications via `/api/notifications/preferences` et abonnements communautaires explicites via `/api/community/subscriptions` et `/api/community/subscriptions/[subscriptionId]`. Les abonnements sont privés, propriétaires, uniques par cible, réversibles et ne sont créés ni par la consultation, ni par le changement temporaire de territoire, ni par le profil. Une projection Clerk réussie sans confirmation Supabase renvoie un état récupérable `clerk_updated_supabase_sync_pending` et n'est jamais présentée comme un succès complet. L'espace Compte mobile consomme une projection Bearer bornée et réutilise les mutations canoniques ; il ne crée pas une seconde logique d'écriture.
 - **Terminée** : oui pour le périmètre actuellement livré
 - **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres ; `AccountSettingsSection` et la variante light de `SitePreferencesControls` suivent cette palette.
 - **Exception de couleur documentée** : la variante compacte de `AccountSettingsSection`, réutilisée dans les cartes dashboard/profil, conserve une ambiance ambre pour rester cohérente avec ces surfaces parentes ; elle n'est pas rendue sur `/reglages`.
@@ -57,6 +60,7 @@
 - La localisation des réglages réutilise directement le modèle canonique `territoryPreferences` sans rediriger l'utilisateur vers `/onboarding`.
 - Les libellés visibles et les textes d'assistance des contrôles sont disponibles en français et en anglais ; leurs aria-labels suivent la langue active.
 - Les notifications et le consentement au classement sont présentés comme des préférences de compte ; leur écriture reste portée par leurs routes serveur canoniques.
+- Les abonnements communautaires sont présentés avec des actions explicites `Suivre`, `Ne plus suivre`, `Désactiver` et `Réactiver`, avec choix de cadence ; aucun contrôle n'est précoché et la consultation seule ne mute jamais l'état.
 - Les états `Enregistrement`, `Enregistré`, `Synchronisation en attente` et `Erreur` sont annoncés avec des régions accessibles ; les boutons sont désactivés pendant leur propre mutation.
 
 
