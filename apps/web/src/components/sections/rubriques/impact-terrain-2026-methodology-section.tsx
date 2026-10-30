@@ -111,7 +111,7 @@ function KpiMethodBlock({
             )}
             <ImpactTerrain2026ParticipantsPieChart
               distribution={results?.actionDistribution ?? []}
-              participantsTotal={results?.participantsTotal ?? 0}
+                participantsTotal={results?.participantsTotal ?? null}
               isFrench={isFrench}
             />
           </div>

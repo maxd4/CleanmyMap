@@ -26,7 +26,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-import { loadLandingSummary } from "./data";
+import { loadLandingSummary, loadRecentCommunityActivity } from "./data";
 
 function monthlyPayload(): PublicImpactSnapshotPayload {
   return {
@@ -152,6 +152,19 @@ describe("landing summary loading", () => {
       distinctLocations: 4,
       items: [],
     });
+    expect(summary.impactSnapshot).toMatchObject({
+      snapshotDate: "2026-09-01",
+      generatedAt: "2026-09-08T03:00:00.000Z",
+      methodologyVersion: "impact-proxy-2026.04-v1",
+      resultsContractVersion: "impact-terrain-results-2026.09-v1",
+    });
+    expect(summary.impactSnapshot?.impactTerrain).toBe(summary.impactTerrain);
+    expect(summary.impactSnapshot?.actionDistribution).toBe(
+      summary.actionDistribution,
+    );
+    expect(summary.impactSnapshot?.streetCleaningSavings).toBe(
+      summary.streetCleaningSavings,
+    );
     expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
     expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
     expect(storageListMock).not.toHaveBeenCalled();
@@ -175,5 +188,25 @@ describe("landing summary loading", () => {
     expect(summary).toBeNull();
     expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
     expect(storageListMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the independent community activity lane bounded without rebuilding impact", async () => {
+    loadLatestPublicImpactSnapshotMock.mockResolvedValueOnce(null);
+
+    await expect(loadRecentCommunityActivity()).resolves.toMatchObject({
+      activity: {
+        visibleActions: 1,
+        items: [{ id: "landing-action" }],
+      },
+    });
+
+    expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        limit: 3,
+        status: "approved",
+        types: ["action"],
+      }),
+      expect.anything(),
+    );
   });
 });

@@ -196,6 +196,16 @@ describe("public monthly impact snapshot", () => {
     expect(isCurrentPublicImpactSnapshot(snapshot, LATER_IN_SAME_MONTH)).toBe(false);
   });
 
+  it("ne sert pas un snapshot incompatible, même s'il appartient au mois courant", async () => {
+    readLatestSnapshotMock.mockResolvedValue(
+      currentSnapshot({ version: "impact-terrain-public-incompatible" }),
+    );
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it("rejette un snapshot d'un autre mois", () => {
     const snapshot = currentSnapshot({ snapshotDate: "2026-08-01" });
 
@@ -313,6 +323,18 @@ describe("public monthly impact snapshot", () => {
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 
+  it("keeps the previous valid snapshot readable after a failed monthly generation", async () => {
+    const previous = existingSnapshot();
+    readLatestSnapshotMock.mockResolvedValue(previous);
+    loadIncrementalAggregateMock.mockRejectedValue(new Error("cron aggregate unavailable"));
+
+    await expect(
+      generateAndPersistPublicImpactSnapshot({ now: NOW }),
+    ).rejects.toThrow("cron aggregate unavailable");
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(previous);
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it("propagates persistence failure without replacing the previous snapshot", async () => {
     readLatestSnapshotMock.mockResolvedValue(
       existingSnapshot({ snapshotDate: "2026-08-01" }),
@@ -322,6 +344,35 @@ describe("public monthly impact snapshot", () => {
     await expect(
       generateAndPersistPublicImpactSnapshot({ now: NOW }),
     ).rejects.toThrow("persistence unavailable");
+    expect(upsertSnapshotMock).toHaveBeenCalledOnce();
+    expect(readLatestSnapshotMock).toHaveBeenCalledOnce();
+  });
+
+  it("coalesces concurrent scheduled generations before the heavy aggregate call", async () => {
+    let releaseAggregate!: () => void;
+    let signalAggregateStarted!: () => void;
+    const aggregateGate = new Promise<void>((resolve) => {
+      releaseAggregate = resolve;
+    });
+    const aggregateStarted = new Promise<void>((resolve) => {
+      signalAggregateStarted = resolve;
+    });
+    loadIncrementalAggregateMock.mockImplementation(async () => {
+      signalAggregateStarted();
+      await aggregateGate;
+      return aggregate;
+    });
+
+    const first = generateAndPersistPublicImpactSnapshot({ now: NOW });
+    await aggregateStarted;
+    const second = generateAndPersistPublicImpactSnapshot({ now: NOW });
+    releaseAggregate();
+
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    expect(firstResult).toBe(secondResult);
+    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
+    expect(advanceStateMock).toHaveBeenCalledOnce();
     expect(upsertSnapshotMock).toHaveBeenCalledOnce();
     expect(readLatestSnapshotMock).toHaveBeenCalledOnce();
   });

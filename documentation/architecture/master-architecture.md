@@ -121,7 +121,7 @@ Couplages à examiner lors d'un changement : `navigation ↔ registre ↔ rendu`
 
 Owner exécutable : `apps/web/src/lib/impact/public-impact-snapshot.ts` ; consommateurs de la homepage : `apps/web/src/lib/accueil/data.ts`.
 
-- **HIT :** `loadLatestPublicImpactSnapshot` retourne uniquement une charge valide, avec clé, version publique, mois courant, cohérence `generatedAt`/période et versions de méthodologie et de contrat de résultats correspondantes. La lecture ne persiste ni ne recalcule le snapshot.
+- **HIT :** `loadLatestPublicImpactSnapshot` retourne uniquement la charge valide la plus récente, avec clé, version publique, cohérence `generatedAt`/période et versions de méthodologie et de contrat de résultats correspondantes. Elle peut appartenir au mois précédent si aucune génération compatible du mois courant n'est persistée. La lecture ne persiste ni ne recalcule le snapshot.
 - **MISS :** en absence de snapshot valide, `loadLandingSummary` retourne un état indisponible ; la homepage conserve son shell et affiche des KPI vides, sans scanner les actions ni reconstruire une équivalence. Le dernier snapshot valide est servi même s'il appartient au mois précédent, afin qu'un échec du cron n'efface pas la dernière valeur publique connue.
 - **JOB :** `generateAndPersistPublicImpactSnapshot` peut réutiliser un snapshot courant sans avancer l'état ni recalculer. Sinon il avance l'état Actions, calcule puis persiste exactement le snapshot mensuel ; `force` et `rebuild` restent des relances explicites. Le job ne doit pas être décrit comme une simple lecture.
 - **ERREUR :** une défaillance de la source canonique doit produire un état explicite du domaine, jamais une valeur inventée.

@@ -64,6 +64,11 @@ export type GeneratePublicImpactSnapshotResult = {
   forced: boolean;
 };
 
+const inFlightImpactSnapshotGenerations = new Map<
+  string,
+  Promise<GeneratePublicImpactSnapshotResult>
+>();
+
 function toFiniteNonNegativeNumber(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -257,6 +262,40 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
   rebuild?: boolean;
 } = {}): Promise<GeneratePublicImpactSnapshotResult> {
   const now = params.now ?? new Date();
+  const monthDate = getImpactSnapshotMonthDate(now.toISOString());
+  const generationMode = params.rebuild
+    ? "rebuild"
+    : params.force
+      ? "force"
+      : "scheduled";
+  const generationKey = `${PUBLIC_IMPACT_SNAPSHOT_KEY}:${monthDate}:${generationMode}`;
+  const inFlight = inFlightImpactSnapshotGenerations.get(generationKey);
+
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const generation = generateAndPersistPublicImpactSnapshotOnce({
+    ...params,
+    now,
+  });
+  inFlightImpactSnapshotGenerations.set(generationKey, generation);
+
+  try {
+    return await generation;
+  } finally {
+    if (inFlightImpactSnapshotGenerations.get(generationKey) === generation) {
+      inFlightImpactSnapshotGenerations.delete(generationKey);
+    }
+  }
+}
+
+async function generateAndPersistPublicImpactSnapshotOnce(params: {
+  now: Date;
+  force?: boolean;
+  rebuild?: boolean;
+}): Promise<GeneratePublicImpactSnapshotResult> {
+  const now = params.now;
   const generatedAt = now.toISOString();
   const monthDate = getImpactSnapshotMonthDate(generatedAt);
   const current = await loadLatestPublicImpactSnapshot();

@@ -17,6 +17,10 @@ ne recalcule pas les équivalences et n'écrit aucun snapshot. Le calcul canoniq
 est réservé au job `impact-terrain` mensuel du scheduler `/api/cron/maintenance`
 et aux relances explicites `force`/`rebuild`.
 
+Le flux d'activité communautaire est indépendant des KPI : lorsqu'il est demandé
+par la section dédiée, il reste borné à trois actions récentes et ne reconstruit
+aucun indicateur d'impact.
+
 Le contrat de quota minimal est donc :
 
 - une visite de homepage : une lecture bornée du dernier snapshot public, sans
@@ -30,10 +34,22 @@ Le contrat de quota minimal est donc :
   de secours.
 
 La preuve locale est portée par les tests de `public-impact-snapshot`,
-`landing-summary`, `methodologie/page` et le contrat du scheduler. Elle mesure
-les appels nécessaires et l'absence de reconstruction dans le chemin public.
-Les volumes réels Supabase/Vercel et une preuve d'intégration distante restent
-à mesurer sur l'environnement concerné ; ils ne sont pas déduits des mocks.
+`landing-summary`, `methodologie/page`, la section de graphique et le contrat du
+scheduler. Le protocole comparable de comptage est : une exécution de
+`loadLandingSummary` = une lecture du snapshot public, zéro lecture Actions,
+zéro reconstruction et zéro écriture ; une exécution de la page méthodologie
+ajoute seulement sa lecture séparée du snapshot d'empreinte technique ; une
+exécution du job mensuel réutilisé = zéro RPC d'état, zéro agrégation et zéro
+écriture ; une exécution due = une avance d'état, une agrégation incrémentale et
+une écriture de snapshot. Les générations concurrentes d'un même mode sont
+coalescées dans une instance applicative et l'écriture persistée reste
+conditionnelle au gagnant le plus récent.
+
+Ces comptes sont des preuves locales de contrat et non une mesure de trafic.
+Les volumes réels Supabase/Vercel, le nombre d'invocations et la fréquence
+observée du calcul lourd restent `NOT_MEASURED` tant qu'un protocole distant
+comparable n'est pas exécuté ; aucune réduction de quota ni d'invocations n'est
+promise sur la seule base des mocks.
 
 ## Méthode
 

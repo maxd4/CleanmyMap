@@ -379,4 +379,17 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("fourchette");
     expect(markup).not.toContain("0,2 g");
   });
+
+  it("does not render a false participant total when the terrain snapshot is unavailable", async () => {
+    const { ImpactTerrain2026MethodologySection } = await import(
+      "./impact-terrain-2026-methodology-section"
+    );
+    const markup = renderToStaticMarkup(
+      <ImpactTerrain2026MethodologySection isFrench results={null} />,
+    );
+
+    expect(markup).toContain("Données d’impact indisponibles");
+    expect(markup).toContain("—<span");
+    expect(markup).not.toContain("0<span");
+  });
 });

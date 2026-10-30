@@ -17,7 +17,7 @@ export function ImpactTerrain2026ParticipantsPieChart({
   isFrench,
 }: {
   distribution: readonly ActionDistributionEntry[];
-  participantsTotal: number;
+  participantsTotal: number | null;
   isFrench: boolean;
 }) {
   const entries: ImpactTerrainPieChartEntry[] = distribution
@@ -31,7 +31,7 @@ export function ImpactTerrain2026ParticipantsPieChart({
   return (
     <ImpactTerrain2026PieChart
       entries={entries}
-      displayTotal={participantsTotal}
+      displayTotal={participantsTotal ?? "—"}
       totalLabel="participants"
       ariaLabel={isFrench ? "Répartition des actions par catégorie" : "Action distribution by category"}
       emptyMessage={isFrench ? "Aucune action classée n’est disponible dans l’agrégat public chargé." : "No classified action is available in the loaded public aggregate."}

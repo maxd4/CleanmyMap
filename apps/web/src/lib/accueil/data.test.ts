@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
 import {
   buildHomeCommunityActivity,
-  buildLandingSummaryFromContracts,
-  computeLandingCounters,
   formatLandingOverviewErrorMessage,
 } from "./data";
 
@@ -31,61 +29,6 @@ function makeContract(
 }
 
 describe("accueil data", () => {
-  it("builds landing counters only from approved actions", () => {
-    const counters = computeLandingCounters(
-      [
-        makeContract("approved", "approved", 10),
-        makeContract("pending", "pending", 99),
-        makeContract("rejected", "rejected", 88),
-      ],
-      "2026-01-01",
-    );
-
-    expect(counters.wasteKg).toBe(10);
-    expect(counters.butts).toBe(100);
-    expect(counters.volunteers).toBe(10);
-  });
-
-  it("keeps missing waste mass unavailable when only cigarette butts are known", () => {
-    const counters = computeLandingCounters(
-      [
-        buildActionDataContract({
-          id: "sheet-import",
-          type: "action",
-          status: "approved",
-          source: "google_sheet",
-          observedAt: "2026-04-10",
-          createdAt: "2026-04-10T08:00:00.000Z",
-          locationLabel: "Lyon 2e",
-          latitude: 48.84,
-          longitude: 2.39,
-          wasteKg: 0,
-          cigaretteButts: 3750,
-          volunteersCount: 8,
-        }),
-      ],
-      "2026-01-01",
-    );
-
-    expect(counters.wasteKg).toBe(0);
-    expect(counters.euro).toBe(0);
-  });
-
-  it("ignores approved spots and clean places even when they contain metrics", () => {
-    const counters = computeLandingCounters(
-      [
-        makeContract("approved-action", "approved", 10),
-        makeContract("approved-spot", "approved", 999, "spot"),
-        makeContract("approved-clean-place", "approved", 888, "clean_place"),
-      ],
-      "2026-01-01",
-    );
-
-    expect(counters.wasteKg).toBe(10);
-    expect(counters.butts).toBe(100);
-    expect(counters.volunteers).toBe(10);
-  });
-
   it("builds community activity only from approved actions", () => {
     const activity = buildHomeCommunityActivity(
       [
@@ -252,22 +195,4 @@ describe("accueil data", () => {
     );
   });
 
-  it("keeps the landing summary equivalent to the legacy contract projection", () => {
-    const contracts = [
-      makeContract("recent", "approved", 10),
-      makeContract("older", "approved", 4),
-      makeContract("pending", "pending", 99),
-    ];
-    const floorDate = "2026-01-01";
-
-    const summary = buildLandingSummaryFromContracts(contracts, floorDate);
-
-    expect(summary.counters).toEqual(
-      computeLandingCounters(contracts, floorDate),
-    );
-    expect(summary.activity).toEqual(
-      buildHomeCommunityActivity(contracts, floorDate),
-    );
-    expect(summary.dataAvailability.status).toBe("available");
-  });
 });

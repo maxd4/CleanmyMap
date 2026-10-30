@@ -5,18 +5,12 @@ import {
   getImpactSnapshotMonthDate,
 } from "@/lib/impact/public-impact-snapshot";
 import type { HomeImpactSnapshot } from "./config";
-import {
-  buildPublicImpactCalculationFromActions,
-  type PublicImpactCounters,
-} from "@/lib/impact/public-impact-kpis";
+import type { PublicImpactCounters } from "@/lib/impact/public-impact-kpis";
 import {
   getUserProvidedActionImageUrl,
   selectActionFallback,
 } from "./action-fallbacks";
-import {
-  aggregatePublicActionMetrics,
-  type PublicLandingActionAggregation,
-} from "./action-participant-aggregation";
+import type { PublicLandingActionAggregation } from "./action-participant-aggregation";
 
 type HomeCommunityActivityImage =
   | {
@@ -77,7 +71,6 @@ export type LandingSummary = {
 } & PublicLandingActionAggregation;
 
 const HOMEPAGE_COMMUNITY_ACTION_LIMIT = 3;
-const LANDING_FALLBACK_CONTRACT_LIMIT = 500;
 
 const ACCUEIL_TEST_MARKERS = [
   "test",
@@ -390,41 +383,12 @@ function buildHomeCommunityActivityFromRecentContracts(
   };
 }
 
-export function computeLandingCounters(
-  contracts: ActionDataContract[],
-  floorDate: string,
-): PublicImpactCounters {
-  const inWindow = getAccueilVisibleContracts(contracts, floorDate);
-  return buildPublicImpactCalculationFromActions(inWindow).counters;
-}
-
 const DEFAULT_LANDING_SOURCE_HEALTH: UnifiedSourceHealth = {
   partial: false,
   failedSources: [],
   availableSources: ["actions"],
   warnings: [],
 };
-
-export function buildLandingSummaryFromContracts(
-  contracts: ActionDataContract[],
-  floorDate: string,
-  sourceHealth: UnifiedSourceHealth = DEFAULT_LANDING_SOURCE_HEALTH,
-): LandingSummary {
-  const actionAggregation = aggregatePublicActionMetrics(
-    getAccueilVisibleContracts(contracts, floorDate),
-  );
-
-  return {
-    counters: computeLandingCounters(contracts, floorDate),
-    activity: buildHomeCommunityActivity(contracts, floorDate),
-    dataAvailability: {
-      status: sourceHealth.partial ? "partial" : "available",
-      sourceHealth,
-    },
-    impactSnapshot: null,
-    ...actionAggregation,
-  };
-}
 
 function buildLandingSummaryFromImpactSnapshot(
   payload: PublicImpactSnapshotPayload,
@@ -488,7 +452,7 @@ async function loadRecentCommunityActivityData(
   );
   const floorDate = snapshot?.payload.period.fromDate ?? buildLandingFloorDate();
   const recent = await fetchCachedUnifiedActionContracts({
-    limit: snapshot ? HOMEPAGE_COMMUNITY_ACTION_LIMIT : LANDING_FALLBACK_CONTRACT_LIMIT,
+    limit: HOMEPAGE_COMMUNITY_ACTION_LIMIT,
     status: "approved",
     floorDate,
     requireCoordinates: false,
