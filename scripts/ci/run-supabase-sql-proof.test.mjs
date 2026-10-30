@@ -23,6 +23,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/association-action-announcement-retry.pgtap.sql",
     "apps/web/supabase/tests/association-action-review-formalities.pgtap.sql",
     "apps/web/supabase/tests/chat-message-server-boundary.pgtap.sql",
+    "apps/web/supabase/tests/community-digest-runs-contract.pgtap.sql",
     "apps/web/supabase/tests/community-event-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/community-helper-skills-contract.pgtap.sql",
     "apps/web/supabase/tests/community-subscriptions-server-boundary.pgtap.sql",

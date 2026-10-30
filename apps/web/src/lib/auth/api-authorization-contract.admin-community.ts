@@ -347,4 +347,13 @@ export const adminCommunityAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "community/digest/refresh": {
+    POST: {
+      expected: "Authenticated member refreshes at most one in-app digest run per subscribed cadence and Paris period",
+      dimensions: ["authentication", "public-safe"],
+      actual: "requireAuthenticatedAccess + authenticated rate limit + service-role RPC with session userId",
+      evidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "access.userId", "commitCommunityDigestRun"],
+      evidenceScope: "module",
+    },
+  },
 } as const satisfies ApiAuthorizationContract;

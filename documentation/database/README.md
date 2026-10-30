@@ -55,3 +55,28 @@ canonique des besoins. Il ne sélectionne que les besoins ouverts, non expirés
 et réellement publiés, correspondant aux catégories choisies. Le territoire
 préféré et ses voisins canoniques ordonnent les résultats sans exclure les
 autres territoires. Aucune notification n'est générée par ce lot.
+
+### CURRENT — digest communautaire in-app
+
+`public.community_digest_runs` est la trace canonique d'une génération de
+digest par membre, cadence et période. Les périodes sont calculées en
+`Europe/Paris` : `daily` utilise `YYYY-MM-DD` et `weekly` utilise l'année et
+la semaine ISO (`YYYY-Www`), y compris aux frontières d'année et de changement
+d'heure. L'unicité `(user_id, cadence, period_key)` rend les retries
+idempotents.
+
+Le refresh `POST /api/community/digest/refresh` est authentifié, limité et
+déclenché depuis le parcours communautaire. Il consulte d'abord les
+abonnements actifs et les exécutions déjà enregistrées ; une période traitée
+ne relance pas l'agrégation. Les dates canoniques d'entrée dans la visibilité
+sont `published_at` pour les futures actions et les résultats publiés, et le
+maximum entre `published_at` de l'action et `created_at` du besoin pour les
+besoins. Seules les références publiques dues, dédoublonnées et limitées à dix
+entrées sont transmises à la RPC.
+
+La RPC `commit_community_digest_run` est réservée à `service_role` : elle
+verrouille la clé logique, persiste le run et crée, dans la même transaction,
+zéro notification pour un résultat vide ou une notification `community` unique
+pour un résultat non vide. Aucun cron, email ou abonnement implicite n'est
+introduit. Les contrats SQL statiques et le pgTAP sont présents ; leur
+exécution PostgreSQL reste à distinguer dans les preuves de validation.

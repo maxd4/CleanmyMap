@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, Leaf } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,10 +14,14 @@ import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
 import { JoinActionTabs } from "./rejoindre-une-action.tabs";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 import { ActionNeedsPanel } from "./community/action-needs-panel";
+import { refreshCommunityDigest } from "@/lib/community/digest-http";
 
 export function JoinActionSection() {
   const controller = useJoinFormSectionController();
   const [shareActionId, setShareActionId] = useState<string | null>(null);
+  useEffect(() => {
+    void refreshCommunityDigest();
+  }, []);
   const {
     fr,
     items,

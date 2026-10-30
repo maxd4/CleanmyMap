@@ -39,7 +39,27 @@ n'existe ni annuaire, ni badge, ni score, ni classement associé.
 ouverts, non expirés et correspondant aux catégories sélectionnées. Le
 territoire préféré du membre puis ses voisins canoniques servent seulement au
 classement ; les autres territoires restent éligibles. Ce flux ne génère pas
-de notification automatique. Le digest communautaire reste `PLAN`.
+de notification automatique.
+
+## État courant — digest communautaire in-app
+
+Les abonnements explicites `community_subscriptions` peuvent alimenter un
+digest in-app lors d'une visite du parcours communautaire. La génération est
+sans cron et sans email : elle ne promet donc pas une notification à une
+période où le membre ne revient pas dans l'application.
+
+`POST /api/community/digest/refresh` ne traite que les nouveautés entrées dans
+la visibilité publique pendant la période due : futures actions publiées,
+besoins ouverts publiés via leur action, et résultats publiés et approuvés.
+Les abonnements territoriaux utilisent la zone canonique et ses voisins
+autorisés ; les abonnements thématiques n'ajoutent pas de filtre territorial.
+Le payload est public, typé, dédoublonné et limité à dix références.
+
+`community_digest_runs` garantit au plus une exécution et une notification
+`community` par membre, cadence et période Paris. Un résultat vide persiste un
+run sans notification ; un résultat non vide relie exactement une notification
+au run dans une transaction atomique. Aucun run, abonnement ou destinataire
+n'est créé implicitement par la consultation d'une surface non communautaire.
 
 ## Intentions produit
 
