@@ -55,7 +55,6 @@ export function isEligibleForOfficialAssociationAnnouncement(
 ): boolean {
   return (
     action.access_mode === "public" &&
-    action.status === "approved" &&
     action.review_state === "approved" &&
     isPublishedFuturePreAction(action, now)
   );

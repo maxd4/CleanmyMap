@@ -148,12 +148,15 @@ historiques `not_required` restent compatibles.
 Après une approbation effective, seule la commande serveur de diffusion
 administrative peut créer l'annonce officielle `app_messages` du topic
 `evenements_associatifs`. Elle relit l'action publiée, publique, visible et
-future, utilise `action_id` comme identité canonique et refuse une action
-devenue privée, masquée ou annulée. Le compositeur utilisateur peut écrire un
-message dans ce topic mais ne peut pas fabriquer une annonce officielle en
-envoyant `message_kind = announcement`. La contrainte unique persistante
-garantit au plus une annonce par action ; un échec de fan-out conserve la
-décision et est relançable par un administrateur.
+future ; la prédiction temporelle canonique autorise les statuts `pending` et
+`approved` tant que la revue administrative est `approved`. Elle utilise
+`action_id` comme identité canonique et refuse une action devenue privée,
+masquée, annulée ou passée. Le compositeur utilisateur peut écrire un message
+dans ce topic mais ne peut pas fabriquer une annonce officielle en envoyant
+`message_kind = announcement`. La contrainte unique persistante garantit au
+plus une annonce par action ; la clé unique partielle des notifications et
+`ON CONFLICT DO NOTHING` rendent le fan-out sûr sous concurrence et retry. Un
+échec de fan-out conserve la décision et est relançable par un administrateur.
 
 ### Frontière de lecture de `GET /api/actions`
 

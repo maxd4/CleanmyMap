@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL("../../../../supabase/migrations/20261030000010_association_action_announcement.sql", import.meta.url),
   "utf8",
 );
+const idempotencyMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261030000014_association_action_notification_idempotency.sql", import.meta.url),
+  "utf8",
+);
 
 describe("association action announcement migration STATIC_CONTRACT", () => {
   it("uses action_id plus a partial unique key and never related_event_id", () => {
@@ -21,5 +25,23 @@ describe("association action announcement migration STATIC_CONTRACT", () => {
     expect(migration).toContain("association_action_publication");
     expect(migration).toContain("sourceId");
     expect(migration).toContain("evenements_associatifs");
+  });
+
+  it("adds a database uniqueness owner for concurrent official notification fan-out", () => {
+    expect(idempotencyMigration).toContain(
+      "create unique index if not exists app_notifications_association_action_publication_unique_idx",
+    );
+    expect(idempotencyMigration).toContain("type = 'community'");
+    expect(idempotencyMigration).toContain("payload ->> 'sourceType' = 'association_action_publication'");
+    expect(idempotencyMigration).toContain("payload ->> 'sourceId'");
+    expect(idempotencyMigration).toContain("on conflict do nothing");
+    expect(idempotencyMigration).toContain("set search_path = pg_catalog");
+    expect(idempotencyMigration).toContain("from public, anon, authenticated");
+    expect(idempotencyMigration).toContain("to service_role");
+  });
+
+  it("fails closed on pre-existing duplicates instead of deleting history", () => {
+    expect(idempotencyMigration).toContain("Duplicate official association-action notifications");
+    expect(idempotencyMigration).not.toMatch(/delete\s+from\s+public\.app_notifications/i);
   });
 });
