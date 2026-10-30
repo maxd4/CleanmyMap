@@ -10,7 +10,12 @@ import { ActionTimeSection } from "./steps/action-step-identity.time";
 import { ActionStepHarvest } from "./steps/ActionStepHarvest";
 import { ActionStepIdentity } from "./steps/ActionStepIdentity";
 import { ActionStepLocation } from "./steps/ActionStepLocation";
-import type { FormState, ValidationIssue } from "./model";
+import type {
+  ActionDeclarationValidationStatus,
+  FormState,
+  SubmissionState,
+  ValidationIssue,
+} from "./model";
 import {
   getActionValidationFieldErrorId,
   getActionValidationTargetId,
@@ -64,23 +69,23 @@ function ActionDeclarationReviewSummary({
   form,
   hasAttemptedSubmit,
   validationIssues,
-}: Pick<ActionDeclarationFormSectionsProps, "form" | "hasAttemptedSubmit" | "validationIssues">) {
-  const validationLabel = !hasAttemptedSubmit
-    ? "La validation complète sera lancée par le bouton principal."
-    : validationIssues.length === 0
-      ? "Validation locale réussie : le récapitulatif peut être confirmé."
-      : `${validationIssues.length} point${validationIssues.length > 1 ? "s" : ""} reste${validationIssues.length > 1 ? "nt" : ""} à corriger.`;
-  const validationTone = hasAttemptedSubmit && validationIssues.length === 0
-    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-    : hasAttemptedSubmit
-      ? "border-rose-200 bg-rose-50 text-rose-900"
-      : "border-sky-200 bg-sky-50 text-sky-950";
+  submissionState,
+  validationStatus,
+  errorMessage,
+}: Pick<ActionDeclarationFormSectionsProps, "form" | "hasAttemptedSubmit" | "validationIssues" | "submissionState" | "validationStatus" | "errorMessage">) {
+  const validationPresentation = getReviewValidationPresentation({
+    hasAttemptedSubmit,
+    validationIssues,
+    submissionState,
+    validationStatus,
+    errorMessage,
+  });
 
   return (
     <div className="space-y-4">
-      <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${validationTone}`} role="status" aria-live="polite">
-        {hasAttemptedSubmit && validationIssues.length === 0 ? <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden="true" /> : <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />}
-        <p>{validationLabel}</p>
+      <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${validationPresentation.tone}`} role="status" aria-live="polite">
+        {validationPresentation.success ? <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden="true" /> : <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />}
+        <p>{validationPresentation.label}</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-emerald-200/70 bg-white px-4 py-3">
@@ -108,6 +113,74 @@ function ActionDeclarationReviewSummary({
   );
 }
 
+function getReviewValidationPresentation({
+  hasAttemptedSubmit,
+  validationIssues,
+  submissionState,
+  validationStatus,
+  errorMessage,
+}: {
+  hasAttemptedSubmit: boolean;
+  validationIssues: ValidationIssue[];
+  submissionState: SubmissionState;
+  validationStatus: ActionDeclarationValidationStatus;
+  errorMessage: string | null;
+}) {
+  if (!hasAttemptedSubmit || validationStatus === "not_attempted") {
+    return {
+      label: "La validation complète sera lancée par le bouton principal.",
+      tone: "border-sky-200 bg-sky-50 text-sky-950",
+      success: false,
+    };
+  }
+
+  if (validationIssues.length > 0 || validationStatus === "field_errors") {
+    return {
+      label: `${validationIssues.length} point${validationIssues.length > 1 ? "s" : ""} reste${validationIssues.length > 1 ? "nt" : ""} à corriger.`,
+      tone: "border-rose-200 bg-rose-50 text-rose-900",
+      success: false,
+    };
+  }
+
+  if (submissionState === "pending") {
+    return {
+      label: "Transmission en cours…",
+      tone: "border-sky-200 bg-sky-50 text-sky-950",
+      success: false,
+    };
+  }
+
+  if (submissionState === "success" || validationStatus === "transmitted") {
+    return {
+      label: "Transmission réussie.",
+      tone: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      success: true,
+    };
+  }
+
+  if (submissionState === "error" && validationStatus === "transmission_error") {
+    return {
+      label: `Transmission impossible${errorMessage ? ` : ${errorMessage}` : "."}`,
+      tone: "border-rose-200 bg-rose-50 text-rose-900",
+      success: false,
+    };
+  }
+
+  if (validationStatus === "blocked" || submissionState === "error") {
+    return {
+      label: `Vérification bloquée${errorMessage ? ` : ${errorMessage}` : "."}`,
+      tone: "border-rose-200 bg-rose-50 text-rose-900",
+      success: false,
+    };
+  }
+
+  return {
+    label: "Validation locale réussie : le récapitulatif peut être confirmé.",
+    tone: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    success: true,
+  };
+}
+
 export type ActionDeclarationFormSectionsProps = {
   form: FormState;
   identity: IdentityProps;
@@ -117,6 +190,8 @@ export type ActionDeclarationFormSectionsProps = {
   hasAttemptedSubmit: boolean;
   validationIssues: ValidationIssue[];
   submissionState: "idle" | "pending" | "success" | "error";
+  validationStatus: ActionDeclarationValidationStatus;
+  errorMessage: string | null;
   onOpenExport: () => void;
 };
 
@@ -172,6 +247,8 @@ export function ActionDeclarationFormSections({
   hasAttemptedSubmit,
   validationIssues,
   submissionState,
+  validationStatus,
+  errorMessage,
   onOpenExport,
 }: ActionDeclarationFormSectionsProps) {
   const isActionMode = form.recordType === "action";
@@ -260,7 +337,14 @@ export function ActionDeclarationFormSections({
             Exporter le récapitulatif
           </button>
         </div>
-        <ActionDeclarationReviewSummary form={form} hasAttemptedSubmit={hasAttemptedSubmit} validationIssues={validationIssues} />
+        <ActionDeclarationReviewSummary
+          form={form}
+          hasAttemptedSubmit={hasAttemptedSubmit}
+          validationIssues={validationIssues}
+          submissionState={submissionState}
+          validationStatus={validationStatus}
+          errorMessage={errorMessage}
+        />
         <div className="sticky bottom-3 z-20 rounded-2xl border border-emerald-300/80 bg-[#F3FBF6]/95 p-4 shadow-[0_18px_36px_-20px_rgba(6,95,70,0.35)] backdrop-blur-xl">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-emerald-900/65">

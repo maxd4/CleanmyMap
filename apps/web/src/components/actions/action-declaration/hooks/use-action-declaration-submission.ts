@@ -20,6 +20,7 @@ import {
   normalizeActionDeclarationFormBeforeSubmit,
 } from "../utils/action-declaration-submission.model";
 import type {
+  ActionDeclarationValidationStatus,
   FormState,
   PostActionRetentionLoop,
   SubmissionState,
@@ -179,6 +180,7 @@ type ConfirmSubmitParams = UseActionDeclarationSubmissionParams & {
   setRecordedAction: Dispatch<SetStateAction<ActionEditorRecord | null>>;
   setRetentionLoop: Dispatch<SetStateAction<PostActionRetentionLoop | null>>;
   setActionMediaUpload: Dispatch<SetStateAction<ActionMediaUploadState>>;
+  setValidationStatus: Dispatch<SetStateAction<ActionDeclarationValidationStatus>>;
 };
 
 async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> {
@@ -190,12 +192,14 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
     return;
   }
   if (params.photoPreparationPending) {
+    params.setValidationStatus("blocked");
     params.setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
     params.setSubmissionState("error");
     params.setShowConfirmation(false);
     return;
   }
   if (params.draftStorageReadError && !params.initialActionId) {
+    params.setValidationStatus("blocked");
     params.setErrorMessage(
       "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
     );
@@ -206,6 +210,7 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
 
   const validationIssuesForSubmission = getSubmissionIssues(params);
   if (validationIssuesForSubmission.length > 0) {
+    params.setValidationStatus("field_errors");
     params.setValidationIssues(validationIssuesForSubmission);
     params.setHasAttemptedSubmit(true);
     params.setErrorMessage(validationIssuesForSubmission[0]?.message ?? null);
@@ -215,6 +220,7 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
   }
 
   params.setValidationIssues([]);
+  params.setValidationStatus("validated");
   params.setSubmissionState("pending");
   try {
     const persisted = await persistDeclarationSubmission({
@@ -247,6 +253,7 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
       });
     }
     params.setSubmissionState("success");
+    params.setValidationStatus("transmitted");
     params.setShowConfirmation(false);
     params.setLoadedActionPhase(
       params.initialActionId && params.loadedActionPhase === "pre_action"
@@ -255,6 +262,7 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
     );
     params.clearDraft();
   } catch (error: unknown) {
+    params.setValidationStatus("transmission_error");
     params.setSubmissionState("error");
     params.setErrorMessage(submissionErrorMessage(error));
     params.setShowConfirmation(false);
@@ -301,6 +309,8 @@ export function useActionDeclarationSubmission(
   const [retentionLoop, setRetentionLoop] =
     useState<PostActionRetentionLoop | null>(null);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+  const [validationStatus, setValidationStatus] =
+    useState<ActionDeclarationValidationStatus>("not_attempted");
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [actionMediaUpload, setActionMediaUpload] = useState<ActionMediaUploadState>({
     status: "idle",
@@ -335,12 +345,14 @@ export function useActionDeclarationSubmission(
     setHasAttemptedSubmit(true);
     if (!isAuthenticated) return false;
     if (photoPreparationPending) {
+      setValidationStatus("blocked");
       setValidationIssues([]);
       setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
       setSubmissionState("error");
       return false;
     }
     if (draftStorageReadError && !initialActionId) {
+      setValidationStatus("blocked");
       setValidationIssues([]);
       setErrorMessage(
         "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
@@ -359,6 +371,7 @@ export function useActionDeclarationSubmission(
       manualDrawingSource,
     });
     setValidationIssues(issues);
+    setValidationStatus(issues.length > 0 ? "field_errors" : "validated");
     setErrorMessage(null);
     setSubmissionState("idle");
     return issues.length === 0;
@@ -403,6 +416,7 @@ export function useActionDeclarationSubmission(
         setRecordedAction,
         setRetentionLoop,
         setActionMediaUpload,
+        setValidationStatus,
       });
     } finally {
       submissionInFlightRef.current = false;
@@ -416,6 +430,7 @@ export function useActionDeclarationSubmission(
     recordedAction,
     retentionLoop,
     validationIssues,
+    validationStatus,
     showConfirmation,
     setShowConfirmation,
     actionMediaUpload,

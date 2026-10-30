@@ -26,6 +26,8 @@ function buildActionDeclarationSectionProps(
     visionStatus,
     photoError,
     submissionState,
+    validationStatus,
+    errorMessage,
     validationIssues,
     hasAttemptedSubmit,
     smartAssist,
@@ -76,6 +78,8 @@ function buildActionDeclarationSectionProps(
     hasAttemptedSubmit,
     validationIssues,
     submissionState,
+    validationStatus,
+    errorMessage,
   };
 }
 

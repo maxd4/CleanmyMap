@@ -48,6 +48,7 @@ export function buildActionDeclarationFormResult({
     isHydratingAction: hydration.isHydratingAction,
     hydrationError: hydration.hydrationError,
     validationIssues: submission.validationIssues,
+    validationStatus: submission.validationStatus,
     hasAttemptedSubmit,
     showConfirmation: submission.showConfirmation,
     setShowConfirmation: submission.setShowConfirmation,

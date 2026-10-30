@@ -227,6 +227,14 @@ export function createInitialFormState(
 
 export type SubmissionState ="idle" |"pending" |"success" |"error";
 
+export type ActionDeclarationValidationStatus =
+ | "not_attempted"
+ | "field_errors"
+ | "blocked"
+ | "validated"
+ | "transmission_error"
+ | "transmitted";
+
 export type PostActionRetentionLoop = {
   summary: string;
   badge: string | null;
