@@ -37,20 +37,29 @@ export function useActionDeclarationFormPresentation({
   useEffect(() => {
     if (!hasAttemptedSubmit || validationIssues.length === 0) return;
     let frame = 0;
+    let focusObserver: MutationObserver | null = null;
+    const stopFocusObservation = () => {
+      focusObserver?.disconnect();
+      focusObserver = null;
+    };
     const focusFirstInvalidControl = () => {
       const issue = validationIssues[0];
       const targetId = ACTION_VALIDATION_FIELD_IDS[issue?.field ?? ""];
       if (!targetId) return;
       const focusTarget = resolveValidationFocusTarget(targetId);
-      if (focusTarget instanceof HTMLElement) focusTarget.focus();
+      if (!(focusTarget instanceof HTMLElement)) return;
+      focusTarget.focus();
+      if (document.activeElement === focusTarget) {
+        stopFocusObservation();
+      }
     };
-    const observer = typeof MutationObserver === "undefined"
+    focusObserver = typeof MutationObserver === "undefined"
       ? null
       : new MutationObserver(focusFirstInvalidControl);
-    observer?.observe(document.body, { childList: true, subtree: true });
+    focusObserver?.observe(document.body, { childList: true, subtree: true });
     frame = window.requestAnimationFrame(focusFirstInvalidControl);
     return () => {
-      observer?.disconnect();
+      stopFocusObservation();
       window.cancelAnimationFrame(frame);
     };
   }, [hasAttemptedSubmit, validationIssues]);

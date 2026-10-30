@@ -105,9 +105,16 @@ function buildValidationForm(participantOnly = false): FormState {
   return form;
 }
 
-function HarvestValidationHarness({ participantOnly = false }: { participantOnly?: boolean }) {
+function HarvestValidationHarness({
+  participantOnly = false,
+  delayValidationMount = false,
+}: {
+  participantOnly?: boolean;
+  delayValidationMount?: boolean;
+}) {
   const [form, setForm] = React.useState(() => buildValidationForm(participantOnly));
   const [validationIssues, setValidationIssues] = React.useState<ValidationIssue[]>([]);
+  const [renderedValidationIssues, setRenderedValidationIssues] = React.useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
   const presentation = useActionDeclarationFormPresentation({
     validationIssues,
@@ -137,6 +144,7 @@ function HarvestValidationHarness({ participantOnly = false }: { participantOnly
     });
     setHasAttemptedSubmit(true);
     setValidationIssues(issues);
+    if (!delayValidationMount || renderedValidationIssues.length > 0) setRenderedValidationIssues(issues);
   }
 
   function updateTriField(field: keyof FormState, value: string) {
@@ -146,8 +154,11 @@ function HarvestValidationHarness({ participantOnly = false }: { participantOnly
   return (
     <>
       <button type="button" onClick={validate}>Vérifier</button>
-      {hasAttemptedSubmit && validationIssues.length > 0 ? (
-        <ActionDeclarationValidationSummary validationIssues={validationIssues} />
+      {delayValidationMount && renderedValidationIssues.length === 0 && validationIssues.length > 0 ? (
+        <button type="button" onClick={() => setRenderedValidationIssues(validationIssues)}>Monter les contrôles tardifs</button>
+      ) : null}
+      {hasAttemptedSubmit && renderedValidationIssues.length > 0 ? (
+        <ActionDeclarationValidationSummary validationIssues={renderedValidationIssues} />
       ) : null}
       <HarvestWasteSection
         wasteKg={form.wasteKg}
@@ -168,10 +179,10 @@ function HarvestValidationHarness({ participantOnly = false }: { participantOnly
         wasteBenchmarkSourceCount={12}
         wasteDeltaPercent={0}
         comparisonTone="slate"
-        validationIssues={validationIssues}
+        validationIssues={renderedValidationIssues}
       />
       <output data-testid="confirmation-state">
-        {hasAttemptedSubmit && validationIssues.length === 0 ? "open" : "closed"}
+        {hasAttemptedSubmit && renderedValidationIssues.length === 0 ? "open" : "closed"}
       </output>
       <output data-testid="preparation-state">{presentation.showPreparationSummary ? "shown" : "hidden"}</output>
     </>
@@ -336,6 +347,63 @@ describe("HarvestWasteSection comparison", () => {
       act(() => { (container.querySelector("button") as HTMLButtonElement).click(); });
       expect(disclosure.getAttribute("aria-expanded")).toBe("false");
       expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
+    });
+
+    it("waits for late controls, then does not reclaim focus after an unrelated DOM mutation", async () => {
+      act(() => {
+        root = createRoot(container);
+        root.render(<HarvestValidationHarness delayValidationMount />);
+      });
+
+      const validateButton = () => container.querySelector("button") as HTMLButtonElement;
+      const firstControl = () => container.querySelector("#harvest-waste-recyclables-kg") as HTMLInputElement;
+      const secondControl = () => container.querySelector("#harvest-waste-glass-kg") as HTMLInputElement;
+
+      await act(async () => {
+        validateButton().click();
+        await Promise.resolve();
+      });
+      expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
+
+      await act(async () => {
+        const mountLateButton = [...container.querySelectorAll("button")]
+          .find((candidate) => candidate.textContent?.includes("Monter les contrôles tardifs")) as HTMLButtonElement;
+        mountLateButton.click();
+        await Promise.resolve();
+      });
+
+      expect(container.querySelector("#harvest-waste-tri-details")).not.toBeNull();
+      expect(document.activeElement).toBe(firstControl());
+      for (const id of [
+        "harvest-waste-recyclables-kg",
+        "harvest-waste-glass-kg",
+        "harvest-waste-household-kg",
+        "harvest-waste-other-kg",
+      ]) {
+        const control = container.querySelector(`#${id}`) as HTMLInputElement;
+        expect(control.getAttribute("aria-invalid")).toBe("true");
+        const describedBy = control.getAttribute("aria-describedby");
+        expect(describedBy).toBeTruthy();
+        expect(container.querySelector(`#${describedBy}`)).not.toBeNull();
+      }
+
+      act(() => secondControl().focus());
+      expect(document.activeElement).toBe(secondControl());
+      const foreignMutation = document.createElement("div");
+      foreignMutation.textContent = "Mutation DOM étrangère";
+      document.body.appendChild(foreignMutation);
+      const secondForeignMutation = document.createElement("aside");
+      document.body.appendChild(secondForeignMutation);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(document.activeElement).toBe(secondControl());
+
+      await act(async () => {
+        validateButton().click();
+        await Promise.resolve();
+      });
+      expect(document.activeElement).toBe(firstControl());
     });
   });
 
