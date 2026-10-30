@@ -31,6 +31,14 @@ function renderWasteSection(overrides: Partial<React.ComponentProps<typeof Harve
 }
 
 describe("HarvestWasteSection comparison", () => {
+  it("announces the optional sorting disclosure state and target", () => {
+    const markup = renderWasteSection();
+
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).toContain('aria-controls="harvest-waste-tri-details"');
+    expect(markup).not.toContain('id="harvest-waste-tri-details"');
+  });
+
   it("keeps the waste input and renders the compact visual comparison", () => {
     const markup = renderWasteSection();
 

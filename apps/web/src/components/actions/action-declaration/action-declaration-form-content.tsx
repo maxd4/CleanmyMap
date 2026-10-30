@@ -156,7 +156,7 @@ export function ActionDeclarationFormSurface({
   onReset,
 }: SurfaceProps) {
   return (
-    <div className={cn("relative w-full overflow-hidden px-4 py-6 text-emerald-50 md:px-6 lg:px-8", "bg-gradient-to-b", actClasses.gradientDeep)}>
+    <div className={cn("relative w-full overflow-visible px-4 py-6 text-emerald-50 md:px-6 lg:px-8", "bg-gradient-to-b", actClasses.gradientDeep)}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/40 to-transparent" />
         <div className="absolute -left-24 top-0 h-96 w-96 rounded-full bg-emerald-200/60 blur-[120px]" />
@@ -188,7 +188,7 @@ export function ActionDeclarationFormSurface({
             </div>
           </div>
         ) : null}
-        <form noValidate onSubmit={onSubmit} className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
+        <form noValidate onSubmit={onSubmit} className="overflow-visible rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
           <div className="relative space-y-8 p-6 md:p-10">
             <fieldset className="relative z-10 space-y-8">
               <header className="flex flex-wrap items-start justify-between gap-4">

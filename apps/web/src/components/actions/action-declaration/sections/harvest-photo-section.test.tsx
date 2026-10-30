@@ -75,4 +75,23 @@ describe("HarvestPhotoSection", () => {
     expect(markup).not.toContain("confiance du modèle");
     expect(markup).not.toContain("vision-hybrid-v1");
   });
+
+  it("keeps both photo pickers visibly focusable from the keyboard", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(HarvestPhotoSection, {
+        photoAssets: [],
+        visionEstimate: null,
+        visionStatus: "idle",
+        photoError: null,
+        estimatedWasteKgInterval: null,
+        hasPhotos: false,
+        onPhotoUpload: () => undefined,
+        onPhotoReplace: () => undefined,
+        onRemovePhoto: () => undefined,
+        onClearPhotos: () => undefined,
+      }),
+    );
+
+    expect(markup.match(/focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-2/g)).toHaveLength(2);
+  });
 });

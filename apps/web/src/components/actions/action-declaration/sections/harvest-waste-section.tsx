@@ -157,6 +157,8 @@ export function HarvestWasteSection({
         <button
           type="button"
           onClick={() => setTriOpen((v) => !v)}
+          aria-expanded={triOpen}
+          aria-controls="harvest-waste-tri-details"
           className="flex w-full items-center justify-between gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors"
         >
           <span>Détail du tri (optionnel)</span>
@@ -164,7 +166,7 @@ export function HarvestWasteSection({
         </button>
 
         {triOpen && (
-          <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div id="harvest-waste-tri-details" className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="grid grid-cols-2 gap-3">
               {[
                 { key: "wasteRecyclablesKg" as const, label: "Recyclables (kg)", value: wasteRecyclablesKg },

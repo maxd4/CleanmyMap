@@ -60,7 +60,7 @@ export function HarvestPhotoSection({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* Upload fichier */}
             <label className={cn(
-              "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 cursor-pointer transition-all hover:border-violet-300 hover:bg-violet-50/40"
+              "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 cursor-pointer transition-all hover:border-violet-300 hover:bg-violet-50/40 focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-2"
             )}>
               <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-violet-500 shadow-sm">
                 <Camera size={18} />
@@ -79,7 +79,7 @@ export function HarvestPhotoSection({
 
             {/* Prise de photo mobile */}
             <label className={cn(
-              "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 cursor-pointer transition-all hover:border-violet-300 hover:bg-violet-50/40"
+              "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 cursor-pointer transition-all hover:border-violet-300 hover:bg-violet-50/40 focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-2"
             )}>
               <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-violet-500 shadow-sm">
                 <Camera size={18} />
