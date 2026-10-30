@@ -95,7 +95,7 @@ Les migrations représentatives actuelles utilisent :
 
 - légal : `tone="slate"`, `size="lg"` ;
 - carte : `tone="sky"` ;
-- formulaire Actions : disclosures complémentaires « Détails de l’organisation », « Détails de la collecte », « Photos du bilan », « Parcours et géométrie » et « Détails temporels », en `tone="emerald"` ;
+- bilan après action : formulaire unique organisé en cinq groupes visibles (« Identifier l’action », « Déclarer les participants », « Déclarer les résultats collectés », « Documenter le terrain », « Vérifier et transmettre »). Les champs du bilan ne sont pas dispersés dans des disclosures autonomes ; les disclosures restent disponibles pour des contenus complémentaires de préparation ou de contexte ;
 - `QuestionCard` : tone dérivé de son état de source existant et `id` conservé.
 
 ## Modes d'affichage et mouvement
@@ -112,8 +112,8 @@ interdite ; les décisions visuelles appartiennent à `disclosure.css`.
 
 ## Gouvernance
 
-Le check dédié est `npm run check:disclosure`. Il protège la primitive et les
-quatre migrations représentatives sans interdire globalement `<details>` dans
+Le check dédié est `npm run check:disclosure`. Il protège la primitive, trois
+migrations représentatives et le formulaire d’action en cinq groupes, sans interdire globalement `<details>` dans
 le dépôt. Il détecte notamment le retour de recettes locales de bordure,
 surface, radius, padding, ombre, focus, chevron, rotation ou ouverture au
 hover.

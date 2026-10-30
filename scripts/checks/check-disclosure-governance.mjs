@@ -8,7 +8,7 @@ const files = {
   primitive: "apps/web/src/components/ui/cmm-disclosure.tsx",
   legal: "apps/web/src/app/conditions-generales-utilisation/legal-accordion.tsx",
   map: "apps/web/src/components/actions/map/layers/map-geometry-legend.tsx",
-  actionForm: "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
+  actionForm: "apps/web/src/components/actions/action-declaration/action-declaration-form-sections.tsx",
   quiz: "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
   documentation: "documentation/design-system/DISCLOSURE_ACCORDIONS.md",
 };
@@ -103,11 +103,6 @@ for (const marker of [
 const consumerScopes = {
   legal: extractScope(sources.legal, "export function LegalAccordion"),
   map: extractScope(sources.map, "export function MapGeometryLegend"),
-  actionForm: extractScope(
-    sources.actionForm,
-    '<div className="space-y-3">\n                  <CmmDisclosure\n                    id="action-disclosure-organization"',
-    '\n                </div>\n\n                <div className="sticky bottom-3',
-  ),
   quiz: extractScope(sources.quiz, "export function QuestionCard"),
 };
 
@@ -153,20 +148,36 @@ for (const [key, scope] of Object.entries(consumerScopes)) {
 for (const [key, required] of [
   ["legal", ['tone="slate"', 'size="lg"']],
   ["map", ['tone="sky"']],
-  [
-    "actionForm",
-    [
-      'tone="emerald"',
-      'id="action-disclosure-organization"',
-      'id="action-disclosure-collection"',
-      'id="action-disclosure-photos"',
-      'id="action-disclosure-route"',
-      'id="action-disclosure-time"',
-    ],
-  ],
   ["quiz", ["id={question.id}", "tone={getQuestionTone(question)}"]],
 ]) {
   for (const marker of required) requireText(key, marker, `migration contract marker is missing: ${marker}`);
+}
+
+for (const marker of [
+  'id="action-declaration-identify"',
+  'id="action-declaration-participants"',
+  'id="action-declaration-results"',
+  'id="action-declaration-terrain"',
+  'id="action-declaration-review"',
+  "Vérifier et envoyer",
+]) {
+  requireText("actionForm", marker, `five-group action form marker is missing: ${marker}`);
+}
+
+for (const marker of [
+  "ActionDeclarationDetails",
+  "action-disclosure-organization",
+  "action-disclosure-collection",
+  "action-disclosure-photos",
+  "action-disclosure-route",
+  "action-disclosure-time",
+]) {
+  forbidText(
+    sources.actionForm,
+    "actionForm",
+    marker,
+    "active after-action form must not restore autonomous disclosure",
+  );
 }
 
 if (violations.length > 0) {
@@ -174,5 +185,7 @@ if (violations.length > 0) {
   for (const violation of violations) console.error(`- ${violation}`);
   process.exitCode = 1;
 } else {
-  console.log("Disclosure governance check passed: primitive and four representative consumers are protected.");
+  console.log(
+    "Disclosure governance check passed: primitive, three representative consumers and five-group action form are protected.",
+  );
 }

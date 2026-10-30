@@ -26,6 +26,8 @@ type ParticipantSectionProps = {
   variant: "compact" | "supporting" | "counts";
   isActionMode: boolean;
   supportingFull?: boolean;
+  showOrganizerAccounts?: boolean;
+  showParticipantAccounts?: boolean;
 };
 
 function ParticipantCounts({
@@ -247,14 +249,20 @@ function SupportingParticipation({
   userId,
   isActionMode,
   full,
-}: Omit<ParticipantSectionProps, "variant"> & { full: boolean }) {
+  showOrganizerAccounts,
+  showParticipantAccounts,
+}: Omit<ParticipantSectionProps, "variant"> & {
+  full: boolean;
+  showOrganizerAccounts: boolean;
+  showParticipantAccounts: boolean;
+}) {
   if (!isActionMode) {
     return null;
   }
 
   return (
     <>
-      {form.organizerType !== "spontaneous" ? (
+      {showOrganizerAccounts && form.organizerType !== "spontaneous" ? (
         <div className="mt-3 space-y-1">
           {full ? (
             <div className="space-y-1">
@@ -299,20 +307,22 @@ function SupportingParticipation({
           ) : null}
         </div>
       ) : null}
-      <div className="mt-4">
-        <ActionParticipantPicker
-          currentUserId={userId}
-          value={form.participantAccounts}
-          onChange={(next) => updateField("participantAccounts", next)}
-          endpoint="/api/actions/account-options"
-          description={
-            full
-              ? "Ajoutez les comptes participants identifiés. Une sélection ne confirme pas leur présence terrain."
-              : "Comptes identifiés uniquement ; leur sélection ne confirme pas une présence terrain."
-          }
-          title="Comptes participants identifiés"
-        />
-      </div>
+      {showParticipantAccounts ? (
+        <div className="mt-4">
+          <ActionParticipantPicker
+            currentUserId={userId}
+            value={form.participantAccounts}
+            onChange={(next) => updateField("participantAccounts", next)}
+            endpoint="/api/actions/account-options"
+            description={
+              full
+                ? "Ajoutez les comptes participants identifiés. Une sélection ne confirme pas leur présence terrain."
+                : "Comptes identifiés uniquement ; leur sélection ne confirme pas une présence terrain."
+            }
+            title="Comptes participants identifiés"
+          />
+        </div>
+      ) : null}
     </>
   );
 }
@@ -324,6 +334,8 @@ export function ActionParticipantSection({
   variant,
   isActionMode,
   supportingFull,
+  showOrganizerAccounts = true,
+  showParticipantAccounts = true,
 }: ParticipantSectionProps) {
   if (variant === "compact") {
     return <ParticipantCounts form={form} updateField={updateField} compact />;
@@ -340,6 +352,8 @@ export function ActionParticipantSection({
       userId={userId}
       isActionMode={isActionMode}
       full={supportingFull ?? false}
+      showOrganizerAccounts={showOrganizerAccounts}
+      showParticipantAccounts={showParticipantAccounts}
     />
   );
 }

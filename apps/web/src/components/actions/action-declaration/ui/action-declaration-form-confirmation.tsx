@@ -25,6 +25,15 @@ type ActionDeclarationFormConfirmationProps = {
   isSubmitting: boolean;
 };
 
+function SummaryItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-emerald-200/70 bg-white px-4 py-3">
+      <dt className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700/75">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold text-emerald-950">{children}</dd>
+    </div>
+  );
+}
+
 export function ActionDeclarationFormConfirmation({
   form,
   payload,
@@ -33,14 +42,19 @@ export function ActionDeclarationFormConfirmation({
   onConfirm,
   isSubmitting,
 }: ActionDeclarationFormConfirmationProps) {
-  const isCleanPlaceMode =
-    payload.recordType === "clean_place" || payload.recordType === "spot";
+  const isCleanPlaceMode = payload.recordType === "clean_place" || payload.recordType === "spot";
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
   const event = deriveEventDurationMinutes(payload.eventStartTime, payload.eventEndTime);
   const organization = deriveOrganizationMinutes({
     actionDurationMinutes: payload.durationMinutes,
     eventDurationMinutes: event.eventDurationMinutes,
   });
+  const actor = userMetadata.displayName || userMetadata.handle || userMetadata.username || "Utilisateur";
+  const geometrySummary = payload.manualDrawing
+    ? `${formatGeometryPointCount(drawingSummary.pointCount)} · ${drawingSummary.message}`
+    : form.gpxImport
+      ? "Tracé GPX importé"
+      : "Aperçu géographique ou point disponible";
 
   return (
     <CmmDialog
@@ -51,231 +65,98 @@ export function ActionDeclarationFormConfirmation({
       ariaDescribedBy="action-declaration-confirmation-description"
       panelClassName="max-h-[90vh] rounded-[2.5rem] border border-emerald-200/70 bg-[#F3FBF6]/98 backdrop-blur-xl shadow-[0_24px_50px_-22px_rgba(34,197,94,0.18)]"
     >
-        {/* En-tête avec dégradé */}
-        <div className="cmm-modal-header-sticky overflow-hidden rounded-t-[2.5rem] bg-gradient-to-r from-emerald-50 via-[#EFFAF3] to-[#EAF7EF] px-8 py-6">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 shadow-sm" />
-            <h2 id="action-declaration-confirmation-title" className="text-2xl font-bold tracking-tight text-emerald-950">
-              {isCleanPlaceMode ? "Confirmation de votre lieu propre" : "Confirmation de votre action"}
-            </h2>
-          </div>
-          <p id="action-declaration-confirmation-description" className="cmm-text-body pl-6">
-            {isCleanPlaceMode
-              ? "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet le signalement."
-              : "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet la déclaration."}
-          </p>
+      <div className="cmm-modal-header-sticky rounded-t-[2.5rem] bg-gradient-to-r from-emerald-50 via-[#EFFAF3] to-[#EAF7EF] px-6 py-5 sm:px-8">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">Dernière vérification</p>
+        <h2 id="action-declaration-confirmation-title" className="mt-1 text-2xl font-black tracking-tight text-emerald-950">
+          {isCleanPlaceMode ? "Confirmer le lieu propre" : "Confirmer l’action réalisée"}
+        </h2>
+        <p id="action-declaration-confirmation-description" className="mt-2 text-sm leading-6 text-emerald-950">
+          Vérifiez ces éléments essentiels. Modifier revient au formulaire sans perdre vos valeurs.
+        </p>
+      </div>
+
+      <div className="space-y-5 p-6 sm:p-8">
+        <div className="rounded-2xl border border-emerald-200/80 bg-[#ECF8EF] px-4 py-3 text-sm text-emerald-950">
+          <span className="font-bold">Déclaré par :</span> {actor}
         </div>
 
-        <div className="space-y-5 p-8">
-          {/* Utilisateur */}
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-1">
-                  Déclaré par
-                </p>
-                <p className="text-base font-bold text-emerald-950">
-                  {userMetadata.displayName || userMetadata.handle || userMetadata.username || 'Utilisateur'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Structure */}
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-              Structure / Cadre d&apos;engagement
-            </p>
-            <p className="text-base font-bold text-emerald-950">
-              {payload.organizerName?.trim() || form.associationName || "Non renseignée"}
-            </p>
-            <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
-              Type de structure : {getOrganizerTypeLabel(payload.organizerType)}
-            </p>
-            {payload.recordType === "action" && (
-              <div className="cmm-text-small cmm-text-secondary mt-2 space-y-1">
-                {payload.organizerAccounts && payload.organizerAccounts.length > 0
-                    ? <p>Coorganisateurs déclarés : {payload.organizerAccounts.join(", ")}</p>
-                    : <p>Aucun coorganisateur n’est déclaré dans ces données.</p>}
-                <p>Le nombre de participants présents est déclaré séparément des comptes.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Date et lieu */}
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-                Date
-              </p>
-              <p className="text-base font-bold text-emerald-950">
-                {new Date(payload.actionDate).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
-
-            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-                Type de lieu
-              </p>
-              <p className="text-base font-bold text-emerald-950">
-                {form.placeType}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-              Temporalité de l’action
-            </p>
-            <p className="text-sm font-semibold text-emerald-950">
-              Temps d’action : {formatBusinessDurationMinutes(payload.durationMinutes)}
-            </p>
-            <p className="cmm-text-small cmm-text-secondary mt-1">
-              Créneau total : {event.status === "available"
-                ? `${payload.eventStartTime} — ${payload.eventEndTime} (${formatBusinessDurationMinutes(event.eventDurationMinutes)})`
-                : "non renseigné"}
-            </p>
-            {organization.status === "available" ? (
-              <p className="cmm-text-small cmm-text-secondary mt-1">
-                Organisation dérivée : {formatBusinessDurationMinutes(organization.organizationMinutes)}
-              </p>
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <SummaryItem label="Action">
+            {form.actionTitle.trim() || "Titre facultatif non renseigné"}
+          </SummaryItem>
+          <SummaryItem label="Date réelle">
+            {payload.actionDate || "Non renseignée"}
+          </SummaryItem>
+          <SummaryItem label="Organisateur">
+            {payload.organizerName?.trim() || form.associationName || "Non renseigné"}
+            <span className="mt-1 block text-xs font-normal text-emerald-900/60">{getOrganizerTypeLabel(payload.organizerType)}</span>
+            <span className="mt-1 block text-xs font-normal text-emerald-900/60">
+              {payload.organizerAccounts?.length
+                ? `Coorganisateurs : ${payload.organizerAccounts.join(", ")}`
+                : "Aucun coorganisateur n’est déclaré"}
+            </span>
+          </SummaryItem>
+          <SummaryItem label="Lieu de référence">
+            {payload.locationLabel || "Non renseigné"}
+            <span className="mt-1 block text-xs font-normal text-emerald-900/60">{form.placeType || "Environnement non renseigné"}</span>
+          </SummaryItem>
+          <SummaryItem label="Participants présents">
+            {isCleanPlaceMode ? "Non applicable" : `${payload.volunteersCount ?? "Non renseigné"}`}
+            {payload.volunteerParticipation ? (
+              <span className="mt-1 block text-xs font-normal text-emerald-900/60">
+                Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
+              </span>
             ) : null}
-          </div>
+            <span className="mt-1 block text-xs font-normal text-emerald-900/60">Le nombre de participants présents est déclaré séparément des comptes.</span>
+          </SummaryItem>
+          <SummaryItem label="Durée réelle">
+            {formatBusinessDurationMinutes(payload.durationMinutes)}
+            {organization.status === "available" ? <span className="mt-1 block text-xs font-normal text-emerald-900/60">Organisation : {formatBusinessDurationMinutes(organization.organizationMinutes)}</span> : null}
+          </SummaryItem>
+          <SummaryItem label={isCleanPlaceMode ? "Signalement" : "Déchets hors mégots"}>
+            {isCleanPlaceMode ? "Lieu propre" : payload.wasteKg == null ? "Non renseigné" : `${payload.wasteKg} kg`}
+          </SummaryItem>
+          {!isCleanPlaceMode ? (
+            <SummaryItem label="Mégots">
+              {payload.cigaretteButtsCount == null ? "Nombre non renseigné" : `${payload.cigaretteButtsCount} · `}
+              {payload.cigaretteButtsKg == null ? "masse non renseignée" : `${payload.cigaretteButtsKg} kg`}
+            </SummaryItem>
+          ) : null}
+        </dl>
 
-          {/* Localisation */}
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-[#EFFAF3] to-[#EAF7EF] p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-2">
-              Localisation
-            </p>
-            <p className="text-base font-bold text-emerald-950">
-              {payload.locationLabel}
-            </p>
-            {form.departureLocationLabel && (
-              <p className="cmm-text-small cmm-text-secondary mt-2">
-                Départ : {form.departureLocationLabel}
-                {form.arrivalLocationLabel && ` → Arrivée : ${form.arrivalLocationLabel}`}
-              </p>
-            )}
-          </div>
-
-          {/* Tracé retenu */}
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-              Tracé retenu
-            </p>
-            {payload.manualDrawing ? (
-              <div className="space-y-2">
-                <p className="text-base font-bold text-emerald-950">
-                  {payload.manualDrawing.kind === "polygon" ? "Polygone" : "Tracé"}
-                </p>
-                <p className="cmm-text-small cmm-text-secondary">
-                  {formatGeometryPointCount(drawingSummary.pointCount)} · {drawingSummary.message}
-                </p>
-              </div>
-            ) : (
-              <p className="cmm-text-small cmm-text-secondary">
-                Aucun tracé manuel validé. La carte utilisera le point disponible ou l&apos;aperçu géographique.
-              </p>
-            )}
-          </div>
-
-          {/* Déchets collectés */}
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-3">
-              {isCleanPlaceMode ? "Lieu propre" : "Mesure déclarée — déchets collectés"}
-            </p>
-            <p className="text-4xl font-bold text-emerald-950 tracking-tight">
-              {isCleanPlaceMode ? "Signalé" : payload.wasteKg == null ? "Non renseigné" : `${payload.wasteKg} kg`}
-            </p>
-            {isCleanPlaceMode ? (
-              <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
-                {payload.locationLabel}
-              </p>
-            ) : (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <p className="cmm-text-small cmm-text-secondary font-semibold">
-                  Nombre de mégots : {payload.cigaretteButtsCount == null ? "Non renseigné" : payload.cigaretteButtsCount}
-                </p>
-                <p className="cmm-text-small cmm-text-secondary font-semibold">
-                  Masse de mégots : {payload.cigaretteButtsKg == null ? "Non renseignée" : `${payload.cigaretteButtsKg} kg`}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Bénévoles et durée */}
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-                Participants présents
-              </p>
-              <p className="text-2xl font-bold text-emerald-950 tracking-tight">
-                {payload.volunteersCount}
-              </p>
-              {payload.volunteerParticipation ? (
-                <p className="cmm-text-small cmm-text-secondary mt-2">
-                  Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Adultes (hors retraités) {payload.volunteerParticipation.adultCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
-                  <br />
-                  Unités opérationnelles : {payload.volunteerParticipation.effectiveVolunteerUnits ?? "—"}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-                Durée
-              </p>
-              <p className="text-2xl font-bold text-emerald-950 tracking-tight">
-                {formatBusinessDurationMinutes(payload.durationMinutes)}
-              </p>
-            </div>
-          </div>
-
-          {/* Commentaire */}
-          {form.notes && (
-            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
-                Remarques
-              </p>
-              <p className="cmm-text-body whitespace-pre-wrap">
-                {form.notes}
-              </p>
-            </div>
-          )}
-
-          {/* Message de validation */}
-          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-[#EFFAF3] to-[#EAF7EF] p-5 shadow-sm">
-            <p className="cmm-text-body">
-              {isCleanPlaceMode
-                ? "Votre lieu propre sera visible sur la carte une fois le formulaire validé par les administrateurs. Merci pour votre signalement."
-                : "Votre action sera visible sur la carte une fois le formulaire validé et complété par les administrateurs. Merci pour votre contribution !"}
-            </p>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SummaryItem label="Terrain et géométrie">{geometrySummary}</SummaryItem>
+          <SummaryItem label="Horaires complémentaires">
+            {event.status === "available" ? `${payload.eventStartTime} – ${payload.eventEndTime}` : "Non renseignés"}
+          </SummaryItem>
         </div>
 
-        {/* Actions */}
-        <div className="cmm-modal-footer-sticky flex flex-col gap-3 bg-[#F3FBF6]/98 px-4 py-5 rounded-b-[2.5rem] sm:flex-row sm:gap-4 sm:px-8 sm:py-6">
-          <button
-            type="button"
-            onClick={onModify}
-            disabled={isSubmitting}
-            className="flex-1 rounded-2xl border-2 border-emerald-200 bg-[#F3FBF6] px-6 py-4 text-base font-bold text-emerald-900 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-[#ECF8EF] hover:shadow-lg active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Modifier avant envoi
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isSubmitting}
-            className="flex-1 rounded-2xl bg-emerald-600 px-6 py-4 text-base font-bold text-white shadow-[0_8px_28px_-10px_rgba(34,197,94,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_18px_38px_-10px_rgba(34,197,94,0.42)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? "Envoi en cours..." : "Confirmer et envoyer"}
-          </button>
-        </div>
+        {form.notes.trim() ? (
+          <div className="rounded-xl border border-emerald-200/70 bg-white px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700/75">Observations</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-emerald-950">{form.notes}</p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="cmm-modal-footer-sticky flex flex-col gap-3 rounded-b-[2.5rem] bg-[#F3FBF6]/98 px-4 py-5 sm:flex-row sm:gap-4 sm:px-8 sm:py-6">
+        <button
+          type="button"
+          onClick={onModify}
+          disabled={isSubmitting}
+          className="flex-1 rounded-2xl border-2 border-emerald-200 bg-[#F3FBF6] px-6 py-3.5 text-base font-bold text-emerald-900 shadow-sm transition-all hover:border-emerald-300 hover:bg-[#ECF8EF] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Modifier avant envoi
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={isSubmitting}
+          className="flex-1 rounded-2xl bg-emerald-600 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_28px_-10px_rgba(34,197,94,0.45)] transition-all hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting ? "Envoi en cours…" : "Confirmer et envoyer"}
+        </button>
+      </div>
     </CmmDialog>
   );
 }

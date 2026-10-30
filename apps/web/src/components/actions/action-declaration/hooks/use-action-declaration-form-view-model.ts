@@ -72,7 +72,6 @@ function buildActionDeclarationSectionProps(
     identity,
     harvest,
     location,
-    details: { summaries: presentation.summaries, disclosures: presentation.disclosures },
     showPreparationSummary: presentation.showPreparationSummary,
     hasAttemptedSubmit,
     validationIssues,
@@ -86,11 +85,8 @@ export function useActionDeclarationFormViewModel(
 ) {
   const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
   const [showRestrictionDialog, setShowRestrictionDialog] = useState(false);
-  const { form, photoAssets, manualDrawing, validationIssues, hasAttemptedSubmit, loadedActionPhase, submissionState } = state;
+  const { form, validationIssues, hasAttemptedSubmit, loadedActionPhase, submissionState } = state;
   const presentation = useActionDeclarationFormPresentation({
-    form,
-    photoAssets,
-    manualDrawing,
     validationIssues,
     hasAttemptedSubmit,
     initialActionId: props.initialActionId,

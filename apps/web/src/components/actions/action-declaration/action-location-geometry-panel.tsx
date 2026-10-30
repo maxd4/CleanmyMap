@@ -34,12 +34,12 @@ export function ActionLocationGeometryPanel({
   });
 
   return (
-    <>
+    <div id="action-location-geometry" className="space-y-4">
       <ActionLocationGpxImport form={form} gpxImport={gpxImport} gpxError={gpxError} onImportGpx={onImportGpx} onRemoveGpx={onRemoveGpx} />
       {viewModel.activeGeometry?.operationalRoute ? <OperationalRouteEditor operationalRoute={viewModel.activeGeometry.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} /> : null}
       <ActionGpxExportButton input={{ finalGeometry: viewModel.activeGeometry, operationalRoute: form.operationalRoute, drawing: manualDrawing, gpxImport, routeTopology: form.routeTopology, departureLabel: form.departureLocationLabel, midpointLabel: form.midRouteLocationLabel, midpointCoordinates: form.midRouteCoordinates, arrivalLabel: form.arrivalLocationLabel }} />
       <ActionLocationMapPanel form={form} gpxImport={gpxImport} setManualDrawing={setManualDrawing} onResetManualDrawing={onResetManualDrawing} viewModel={viewModel} />
       <ActionLocationAdjustmentNotes form={form} updateField={updateField} />
-    </>
+    </div>
   );
 }

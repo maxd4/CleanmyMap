@@ -38,10 +38,9 @@ describe("ActionDeclarationFormConfirmation", () => {
     const payload = makePayload({ wasteBreakdown: { plastiqueKg: 2.4 } });
     const markup = renderConfirmation(payload);
 
-    expect(markup).toContain("Mesure déclarée — déchets collectés");
-    expect(markup).toContain("Nombre de mégots : 10");
-    expect(markup).toContain("Masse de mégots : 0.2 kg");
-    expect(markup).not.toContain("dont 10 mégots");
+    expect(markup).toContain("Déchets hors mégots");
+    expect(markup).toContain("Mégots");
+    expect(markup).toContain("10 · 0.2 kg");
     expect(markup).not.toContain("Proxys d&#x27;impact");
     expect(markup).not.toContain("CO₂e évité");
     expect(markup).not.toContain("Eau protégée");
@@ -59,7 +58,8 @@ describe("ActionDeclarationFormConfirmation", () => {
       cigaretteButtsKg: null,
     }));
     expect(unknownMarkup).toContain("Non renseigné");
-    expect(unknownMarkup).toContain("Masse de mégots : Non renseignée");
+    expect(unknownMarkup).toContain("Nombre non renseigné");
+    expect(unknownMarkup).toContain("masse non renseignée");
     expect(unknownMarkup).not.toContain("null kg");
 
     const zeroMarkup = renderConfirmation(makePayload({
@@ -70,7 +70,6 @@ describe("ActionDeclarationFormConfirmation", () => {
     }));
 
     expect(zeroMarkup).toContain("0 kg");
-    expect(zeroMarkup).toContain("Nombre de mégots : 0");
-    expect(zeroMarkup).toContain("Masse de mégots : 0 kg");
+    expect(zeroMarkup).toContain("0 · 0 kg");
   });
 });
