@@ -167,6 +167,51 @@ describe("actions map geometry utils", () => {
     expect(geometry.multiLinePositions).toHaveLength(2);
   });
 
+  it("does not render a rejected multiline coverage as observed", () => {
+    const item = toActionMapItem(
+      buildActionDataContract({
+        id: "invalid-observed-map-coverage",
+        type: "action",
+        status: "approved",
+        source: "actions",
+        observedAt: "2026-04-08",
+        locationLabel: "Parc partiel",
+        latitude: 48.85,
+        longitude: 2.35,
+        geometrySource: "gps_tracking",
+        derivedGeometryKind: "multiline",
+        derivedGeometryGeoJson: JSON.stringify({
+          type: "MultiLineString",
+          coordinates: [
+            [[2.35, 48.85], [2.351, 48.851]],
+            [[2.36, 48.86], [2.361, 95]],
+          ],
+        }),
+        preparationData: {
+          observedCoverage: {
+            type: "MultiLineString",
+            coordinates: [
+              [[2.35, 48.85], [2.351, 48.851]],
+              [[2.36, 48.86], [2.361, 95]],
+            ],
+            traceCount: 2,
+            individualDistancesKm: [],
+            coverageDistanceKm: null,
+            coverageVersion: "observed-traces-v1",
+          },
+        },
+      }),
+    );
+
+    const geometry = resolveActionMapGeometryViewModel(item);
+
+    expect(geometry.multiLinePositions).toEqual([]);
+    expect(geometry.coverageTraceCount).toBe(0);
+    expect(geometry.presentation.reality).toBe("location_only");
+    expect(geometry.presentation.label).toBe("Localisation seule");
+    expect(geometry.renderMode).toBe("point");
+  });
+
   it("keeps an approximate reference as a point instead of public coverage", () => {
     const geometry = resolveActionMapGeometryViewModel(
       buildContractMapItem({ geometrySource: "reference", kind: "polygon" }),

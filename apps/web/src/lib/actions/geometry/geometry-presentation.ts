@@ -108,6 +108,16 @@ function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentatio
   );
 }
 
+function buildFallbackPointPresentation(): GeometryPresentation {
+  return buildPresentation(
+    "fallback_point",
+    "location_only",
+    "Localisation seule",
+    "point",
+    "point",
+  );
+}
+
 function observedTraceCount(item: ActionMapItem): number {
   return resolveObservedCoverageGeometry({
     preparationData: item.contract?.metadata.preparationData,
@@ -181,6 +191,12 @@ export function getGeometryPresentation(
   if (hasObservedCoverage) {
     return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
   }
+  if (
+    kind === "multiline" &&
+    (origin === "gps_tracking" || origin === "gpx_import")
+  ) {
+    return buildFallbackPointPresentation();
+  }
   switch (origin) {
     case "manual":
       return buildPresentation(origin, "declared", getManualLabel(kind), "solid", "declared");
@@ -198,6 +214,6 @@ export function getGeometryPresentation(
       return buildPresentation(origin, "contextual", "Zone indicative", "dashed", "indicative");
     case "fallback_point":
     default:
-      return buildPresentation("fallback_point", "location_only", "Localisation seule", "point", "point");
+      return buildFallbackPointPresentation();
   }
 }

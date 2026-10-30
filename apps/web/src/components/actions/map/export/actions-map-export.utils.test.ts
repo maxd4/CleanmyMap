@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
+import type { ActionObservedCoverage } from "@/lib/actions/types";
 import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
 import { buildActionsCsv } from "@/lib/reports/csv";
 import {
@@ -423,6 +424,114 @@ describe("actions map export utils", () => {
       geometry_reality: "contextual",
       historical_geometry_kind: "polygon",
       historical_geometry_source: "reference",
+    });
+  });
+
+  it("rejects partial observed coverage instead of exporting a partial observed line", () => {
+    const invalidCoverage: ActionObservedCoverage = {
+      type: "MultiLineString",
+      coordinates: [
+        [[2.34, 48.85], [2.341, 48.851]],
+        [[2.35, 48.86], [2.351, 95]],
+      ],
+      traceCount: 2,
+      sources: ["gpx_import", "gps_tracking"],
+      individualDistancesKm: [],
+      coverageDistanceKm: null,
+      coverageVersion: "observed-traces-v1",
+    };
+    const contract = buildActionDataContract({
+      id: "action-partial-observed-coverage",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parc partiel",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "gps_tracking",
+      derivedGeometryKind: "multiline",
+      derivedGeometryGeoJson: JSON.stringify(invalidCoverage),
+      preparationData: { observedCoverage: invalidCoverage },
+    });
+
+    const geojson = JSON.parse(
+      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+    ) as { features: Array<{ geometry: unknown; properties: Record<string, unknown> }> };
+
+    expect(geojson.features[0]?.geometry).toEqual({
+      type: "Point",
+      coordinates: [2.34, 48.85],
+    });
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "point",
+      geometry_source: "fallback_point",
+      geometry_sources: null,
+      geometry_reality: "location_only",
+      observed_trace_count: null,
+      historical_geometry_kind: "multiline",
+      historical_geometry_source: "gps_tracking",
+    });
+  });
+
+  it("keeps an invalid historical GPS source contextual when only a location remains", () => {
+    const contract = buildActionDataContract({
+      id: "action-historical-gps-without-geometry",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Lieu historique",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "gps_tracking",
+      derivedGeometryKind: "multiline",
+      derivedGeometryGeoJson: "{malformed-json",
+    });
+
+    const geojson = JSON.parse(
+      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+    ) as { features: Array<{ geometry: unknown; properties: Record<string, unknown> }> };
+
+    expect(geojson.features[0]?.geometry).toEqual({
+      type: "Point",
+      coordinates: [2.34, 48.85],
+    });
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_source: "fallback_point",
+      geometry_reality: "location_only",
+      historical_geometry_kind: "multiline",
+      historical_geometry_source: "gps_tracking",
+      observed_trace_count: null,
+    });
+  });
+
+  it("does not announce an observation when the historical source has no coordinates", () => {
+    const contract = buildActionDataContract({
+      id: "action-historical-gps-without-location",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Lieu inconnu",
+      latitude: null,
+      longitude: null,
+      geometrySource: "gps_tracking",
+      derivedGeometryKind: "multiline",
+      derivedGeometryGeoJson: "{malformed-json",
+    });
+
+    const geojson = JSON.parse(
+      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+    ) as { features: Array<{ geometry: unknown; properties: Record<string, unknown> }> };
+
+    expect(geojson.features[0]?.geometry).toBeNull();
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: null,
+      geometry_source: null,
+      geometry_reality: "location_only",
+      observed_trace_count: null,
+      historical_geometry_source: "gps_tracking",
     });
   });
 

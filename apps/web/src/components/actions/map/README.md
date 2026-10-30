@@ -64,6 +64,10 @@ plusieurs sources sont mélangées ou lorsqu'aucune source unique n'est connue.
 Les anciennes valeurs conservées pour compatibilité sont séparées dans
 `historical_geometry_kind`, `historical_geometry_source` et
 `historical_geometry_confidence`.
+Si une couverture observée est partiellement invalide, elle est rejetée en
+entier : aucune ligne, aucun compteur ou aucune source ne sont publiés comme
+observés. Un point de repli conserve seulement la localisation effective ; la
+provenance historique reste dans les propriétés `historical_geometry_*`.
 
 Les helpers purs liés à un rendu peuvent rester dans ce dossier lorsqu'ils
 appartiennent réellement à la carte. Un contrat réutilisable hors UI doit

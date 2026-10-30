@@ -20,6 +20,7 @@ import type { ActionCsvRowWithDrawing } from "@/lib/reports/csv";
 import { buildDeliverableBaseName } from "@/lib/reports/deliverable-name";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
+  parseObservedCoverageGeometry,
   resolveObservedCoverageGeometry,
   type ObservedCoverageGeometry,
 } from "@/lib/actions/map/observed-coverage";
@@ -137,17 +138,12 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
     }
 
     if (parsed?.type === "MultiLineString" && Array.isArray(parsed.coordinates)) {
-      const lines = (parsed.coordinates as unknown[]).map((line) =>
-        Array.isArray(line)
-          ? (line as unknown[]).flatMap((pair) => {
-              const coordinate = parseGeoJsonCoordinatePair(pair);
-              return coordinate ? [coordinate] : [];
-            })
-          : [],
-      );
-
-      if (lines.length > 0 && lines.every((line) => line.length >= 2)) {
-        return { type: "MultiLineString", coordinates: lines };
+      const observedCoverage = parseObservedCoverageGeometry(parsed);
+      if (observedCoverage) {
+        return {
+          type: "MultiLineString",
+          coordinates: observedCoverage.coordinates,
+        };
       }
     }
   } catch {
@@ -219,6 +215,26 @@ function observedGeometryLabel(
   return "Couverture observée";
 }
 
+function buildFallbackPointPresentation(): ReturnType<typeof getGeometryPresentation> {
+  return {
+    origin: "fallback_point",
+    reality: "location_only",
+    label: "Localisation seule",
+    strokeStyle: "point",
+    variant: "point",
+  };
+}
+
+function resolveFallbackPointPresentation(
+  item: ActionMapItem,
+): ReturnType<typeof getGeometryPresentation> {
+  const historicalPresentation = getGeometryPresentation(item);
+  return historicalPresentation.reality === "contextual" ||
+    historicalPresentation.reality === "location_only"
+    ? historicalPresentation
+    : buildFallbackPointPresentation();
+}
+
 function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
   const historicalKind = item.contract?.geometry.kind ?? item.geometry_kind ?? null;
   const historicalSource =
@@ -286,7 +302,7 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
     return {
       geometry: null,
       observedCoverage: null,
-      presentation: getGeometryPresentation(item),
+      presentation: resolveFallbackPointPresentation(item),
       effectiveKind: null,
       effectiveSource: null,
       effectiveSources: null,
@@ -303,7 +319,7 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
       coordinates: [coords.longitude, coords.latitude],
     },
     observedCoverage: null,
-    presentation: getGeometryPresentation(item),
+    presentation: resolveFallbackPointPresentation(item),
     effectiveKind: "point",
     effectiveSource: "fallback_point",
     effectiveSources: null,

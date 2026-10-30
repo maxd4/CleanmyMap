@@ -118,6 +118,9 @@ export type ActionGpxImportMetadata = {
   files?: ActionGpxImportFile[];
   fileName?: string;
 };
+export type ActionGpxImportRemovalTarget =
+  | { kind: "file"; fileId?: string; fileIndex: number }
+  | { kind: "segment"; fileId?: string; fileIndex: number; sourceFingerprint: string };
 export type ActionObservedCoverage = {
   type: "MultiLineString";
   coordinates: [number, number][][];

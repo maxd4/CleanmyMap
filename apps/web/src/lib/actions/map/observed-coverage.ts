@@ -26,13 +26,27 @@ function parseCoordinatePair(value: unknown): [number, number] | null {
   return [longitude, latitude];
 }
 
-function parseObservedSources(value: unknown): ObservedCoverageGeometry["sources"] {
+function parseObservedSources(
+  value: unknown,
+  traceCount: number,
+): ObservedCoverageGeometry["sources"] {
   if (!Array.isArray(value)) return undefined;
-  const sources = value.filter(
-    (source): source is Extract<ActionGeometrySource, "gps_tracking" | "gpx_import"> =>
-      source === "gps_tracking" || source === "gpx_import",
-  );
-  return [...new Set(sources)];
+  const sources = value as unknown[];
+  if (!sources.every((source) => source === "gps_tracking" || source === "gpx_import")) {
+    return undefined;
+  }
+  const uniqueSources = [
+    ...new Set(
+      sources as Extract<ActionGeometrySource, "gps_tracking" | "gpx_import">[],
+    ),
+  ];
+  if (
+    uniqueSources.length === 0 ||
+    (uniqueSources.length > 1 && uniqueSources.length !== traceCount)
+  ) {
+    return undefined;
+  }
+  return uniqueSources;
 }
 
 /** Validates the public observed-coverage shape without inventing or joining lines. */
@@ -46,24 +60,20 @@ export function parseObservedCoverageGeometry(raw: unknown): ObservedCoverageGeo
   };
   if (candidate.type !== "MultiLineString" || !Array.isArray(candidate.coordinates)) return null;
 
-  const coordinates = candidate.coordinates.flatMap((line): [number, number][][] => {
-    if (!Array.isArray(line)) return [];
-    const parsedLine = line.flatMap((point) => {
-      const parsed = parseCoordinatePair(point);
-      return parsed ? [parsed] : [];
-    });
-    return parsedLine.length >= 2 && parsedLine.length === line.length ? [parsedLine] : [];
-  });
+  const coordinates: [number, number][][] = [];
+  for (const line of candidate.coordinates) {
+    if (!Array.isArray(line) || line.length < 2) return null;
+    const parsedLine = line.map(parseCoordinatePair);
+    if (parsedLine.some((point) => point === null)) return null;
+    coordinates.push(parsedLine as [number, number][]);
+  }
   if (coordinates.length === 0) return null;
 
-  const declaredTraceCount = typeof candidate.traceCount === "number" && Number.isInteger(candidate.traceCount)
-    ? candidate.traceCount
-    : 0;
-  const sources = parseObservedSources(candidate.sources);
+  const sources = parseObservedSources(candidate.sources, coordinates.length);
   return {
     type: "MultiLineString",
     coordinates,
-    traceCount: declaredTraceCount >= coordinates.length ? declaredTraceCount : coordinates.length,
+    traceCount: coordinates.length,
     ...(sources && sources.length > 0 ? { sources } : {}),
   };
 }
