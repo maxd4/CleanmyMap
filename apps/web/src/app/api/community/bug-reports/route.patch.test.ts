@@ -124,7 +124,8 @@ describe("PATCH /api/community/bug-reports", () => {
 
       expect(response.status).toBe(400);
       expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
-      expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+       expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+       expect(updateCommunityBugReportStatusTransactionalMock).not.toHaveBeenCalled();
       expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
     },
   );
@@ -172,9 +173,10 @@ describe("PATCH /api/community/bug-reports", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledWith({
+     expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledWith({
       reportId: "report-1",
       status,
+       reason: "Traitement terminé",
       actorUserId: "reviewer-1",
       operationId: expect.stringMatching(/^feedback-status-/),
       expectedStatus: "open",
@@ -200,6 +202,19 @@ describe("PATCH /api/community/bug-reports", () => {
     expect(response.status).toBe(200);
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
     expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an overlong reason before loading or mutating the feedback", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      patchRequest({ reportId: "report-1", status: "treated", reason: "a".repeat(501) }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
+    expect(updateCommunityBugReportStatusTransactionalMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
   it("returns 409 without an extra audit when the transaction detects a conflict", async () => {

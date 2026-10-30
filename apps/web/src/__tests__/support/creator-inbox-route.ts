@@ -175,9 +175,13 @@ export function resetCreatorInboxMocks() {
     }),
   );
   updateCommunityBugReportStatusTransactionalMock.mockImplementation(
-    async ({ reportId, status }: { reportId: string; status: "treated" | "archived" }) => {
-      const record = await updateCommunityBugReportStatusMock({ reportId, status });
-      return { status: record ? "updated" : "not_found", record };
+    async ({ status }: { status: "treated" | "archived" }) => {
+      const record = {
+        ...feedbackRecord,
+        status,
+        creatorState: status === "treated" ? "treated" : "archived",
+      };
+      return { status: "updated", record, auditPersisted: true };
     },
   );
   removeCommunityBugReportFromActiveQueueMock.mockImplementation(

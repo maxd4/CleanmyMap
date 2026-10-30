@@ -419,6 +419,7 @@ function parseCommunityBugReportMutationResult(
 export async function updateCommunityBugReportStatusTransactional(params: {
   reportId: string;
   status: "open" | "treated" | "archived";
+  reason: string;
   actorUserId: string;
   operationId: string;
   expectedStatus: BugReportRecord["status"];
@@ -431,6 +432,7 @@ export async function updateCommunityBugReportStatusTransactional(params: {
   const result = await getSupabaseServerClient(true).rpc("update_community_bug_report_status", {
     p_feedback_id: params.reportId,
     p_status: params.status,
+    p_reason: params.reason,
     p_actor_user_id: params.actorUserId,
     p_operation_id: params.operationId,
     p_expected_status: params.expectedStatus,
@@ -491,6 +493,7 @@ export async function removeCommunityBugReportFromActiveQueue(params: {
 export async function updateCommunityBugReportStatus(params: {
   reportId: string;
   status: "open" | "treated" | "archived";
+  reason?: string;
   actorUserId?: string;
   operationId?: string;
   expectedStatus?: BugReportRecord["status"];
@@ -507,6 +510,7 @@ export async function updateCommunityBugReportStatus(params: {
     const result = await updateCommunityBugReportStatusTransactional({
       reportId: params.reportId,
       status: params.status,
+      reason: params.reason ?? "",
       actorUserId: params.actorUserId,
       operationId: params.operationId,
       expectedStatus: params.expectedStatus,

@@ -351,6 +351,7 @@ export async function PATCH(request: Request) {
   mutationResult = await updateCommunityBugReportStatusTransactional({
   reportId: parsed.data.reportId,
   status: parsed.data.status,
+   reason,
   actorUserId: identity.userId,
   operationId,
   expectedStatus: current.status,

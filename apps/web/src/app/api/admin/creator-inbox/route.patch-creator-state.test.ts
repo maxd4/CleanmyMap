@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { appendAdminOperationAuditMock, auditCalls, getCommunityBugReportByIdMock, getCurrentUserIdentityMock, makeRequest, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportCreatorStateMock, updateCommunityBugReportStatusMock } from "@/__tests__/support/creator-inbox-route";
+import { appendAdminOperationAuditMock, auditCalls, getCommunityBugReportByIdMock, getCurrentUserIdentityMock, makeRequest, requireCreatorAccessMock, resetCreatorInboxMocks, updateCommunityBugReportCreatorStateMock, updateCommunityBugReportStatusMock, updateCommunityBugReportStatusTransactionalMock } from "@/__tests__/support/creator-inbox-route";
 
 async function patchFeedbackArchive(reason = "Archivage demandé") {
   const { PATCH } = await import("./route");
@@ -32,8 +32,8 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
       },
     );
 
-    it.each(["", "nope", "    "])(
-      "rejects a short reason before mutation (%s)",
+    it.each(["", "nope", "    ", "a".repeat(501)])(
+      "rejects an invalid reason before mutation (%s)",
       async (reason) => {
         const { PATCH } = await import("./route");
         const response = await PATCH(
@@ -51,7 +51,7 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
       },
     );
 
-    it("audits feedback mark_treated with one success and canonical targetUserId", async () => {
+    it("passes the administrative reason to the transactional mark_treated mutation without a second audit", async () => {
       const { PATCH } = await import("./route");
       const response = await PATCH(
         makeRequest({
@@ -63,35 +63,16 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-      expect(auditCalls()[0]).toMatchObject({
+      expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledWith({
+        reportId: "feedback-1",
+        status: "treated",
+        reason: "Traitement terminé",
         actorUserId: "reviewer-1",
-        operationType: "admin_operation",
-        outcome: "success",
-        targetId: "feedback-1",
-        details: {
-          operation: "creator_inbox_update",
-          reason: "Traitement terminé",
-          targetUserId: "user-1",
-          previousValue: {
-            source: "feedback",
-            status: "open",
-            creatorState: "new",
-          },
-          newValue: {
-            source: "feedback",
-            status: "treated",
-            creatorState: "treated",
-          },
-        },
+        operationId: expect.any(String),
+        expectedStatus: "open",
+        expectedCreatorState: "new",
       });
-      expect(Object.keys(auditCalls()[0].details)).toEqual([
-        "operation",
-        "reason",
-        "targetUserId",
-        "previousValue",
-        "newValue",
-      ]);
+      expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
     });
 
     it("audits promotion and partner creator-state changes without changing source status", async () => {
@@ -157,39 +138,29 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
       const response = await patchFeedbackArchive();
 
       expect(response.status).toBe(200);
-      expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
-      expect(updateCommunityBugReportStatusMock).toHaveBeenCalledWith({
+      expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledTimes(1);
+      expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledWith({
         reportId: "feedback-1",
         status: "archived",
+        reason: "Archivage demandé",
+        actorUserId: "reviewer-1",
+        operationId: expect.any(String),
+        expectedStatus: "open",
+        expectedCreatorState: "new",
       });
+      expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
       expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
-      expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-      expect(auditCalls()[0]).toMatchObject({
-        operationType: "admin_operation",
-        outcome: "success",
-        details: {
-          previousValue: {
-            source: "feedback",
-            status: "open",
-            creatorState: "new",
-          },
-          newValue: {
-            source: "feedback",
-            status: "archived",
-            creatorState: "archived",
-          },
-        },
-      });
+      expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
     });
 
     it("audits feedback archive persistence failure without claiming a partial mutation", async () => {
       const statusError = "status persistence detail";
-      updateCommunityBugReportStatusMock.mockRejectedValueOnce(new Error(statusError));
+      updateCommunityBugReportStatusTransactionalMock.mockRejectedValueOnce(new Error(statusError));
       const response = await patchFeedbackArchive();
 
       expect(response.status).toBe(500);
       expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
-      expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
+      expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledTimes(1);
       expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
       expect(auditCalls()[0]).toMatchObject({
         operationType: "admin_operation",
@@ -203,12 +174,16 @@ describe("PATCH /api/admin/creator-inbox — creator-state mutations", () => {
     });
 
     it("does not claim feedback archive success when the canonical mutation returns no record", async () => {
-      updateCommunityBugReportStatusMock.mockResolvedValueOnce(null);
+      updateCommunityBugReportStatusTransactionalMock.mockResolvedValueOnce({
+        status: "updated",
+        record: null,
+        auditPersisted: true,
+      });
       const response = await patchFeedbackArchive();
 
       expect(response.status).toBe(500);
       expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
-      expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
+      expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledTimes(1);
       expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
       expect(auditCalls()[0]).toMatchObject({
         operationType: "admin_operation",

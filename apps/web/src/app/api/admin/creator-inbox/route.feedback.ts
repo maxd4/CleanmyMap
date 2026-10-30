@@ -202,17 +202,16 @@ async function markFeedbackTreated(params: FeedbackStateMutationParams) {
   const { itemId, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("feedback", current);
   let updated;
-  let mutationResult: Awaited<ReturnType<typeof updateCommunityBugReportStatusTransactional>>;
   try {
     const result = await updateCommunityBugReportStatusTransactional({
       reportId: itemId,
       status: "treated",
+      reason,
       actorUserId: params.actorUserId,
       operationId: params.operationId,
       expectedStatus: current.status,
       expectedCreatorState: current.creatorState,
     });
-    mutationResult = result;
     if (result.status === "conflict") {
       return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
     }
@@ -236,16 +235,6 @@ async function markFeedbackTreated(params: FeedbackStateMutationParams) {
     });
     return mutationErrorResponse();
   }
-  if (!mutationResult.auditPersisted) {
-    await appendCreatorInboxSuccessAudit({
-      audit,
-      targetId: itemId,
-      reason,
-      targetUserId: canonicalTargetUserId(current.submittedByUserId),
-      previousValue: buildSnapshot("feedback", current),
-      newValue: buildSnapshot("feedback", updated),
-    });
-  }
   return NextResponse.json({
     status: "ok",
     item: buildFeedbackInboxItem(updated),
@@ -256,17 +245,16 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
   const { itemId, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("feedback", current);
   let finalRecord: FeedbackRecord;
-  let mutationResult: Awaited<ReturnType<typeof updateCommunityBugReportStatusTransactional>>;
   try {
     const result = await updateCommunityBugReportStatusTransactional({
       reportId: itemId,
       status: "archived",
+      reason,
       actorUserId: params.actorUserId,
       operationId: params.operationId,
       expectedStatus: current.status,
       expectedCreatorState: current.creatorState,
     });
-    mutationResult = result;
     if (result.status === "conflict") {
       return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
     }
@@ -290,17 +278,6 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
       partialMutation: false,
     });
     return mutationErrorResponse();
-  }
-
-  if (!mutationResult.auditPersisted) {
-    await appendCreatorInboxSuccessAudit({
-      audit,
-      targetId: finalRecord.id,
-      reason,
-      targetUserId,
-      previousValue,
-      newValue: buildSnapshot("feedback", finalRecord),
-    });
   }
 
   return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(finalRecord) });

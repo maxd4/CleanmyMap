@@ -537,3 +537,40 @@ describe("community bug report personal history", () => {
     ]);
   });
 });
+
+describe("community bug report status persistence", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    canUseSupabaseServerPersistenceMock.mockReturnValue(true);
+  });
+
+  it("passes the administrative reason to the transactional status RPC", async () => {
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: { status: "not_found", item: null },
+      error: null,
+    });
+    getSupabaseServerClientMock.mockReturnValue({ rpc: rpcMock });
+
+    const { updateCommunityBugReportStatusTransactional } = await import("./bug-reports-store");
+    await expect(
+      updateCommunityBugReportStatusTransactional({
+        reportId: "feedback-1",
+        status: "archived",
+        reason: "Traitement terminé",
+        actorUserId: "max-owner",
+        operationId: "operation-status-1",
+        expectedStatus: "open",
+        expectedCreatorState: "new",
+      }),
+    ).resolves.toMatchObject({ status: "not_found", record: null, auditPersisted: true });
+    expect(rpcMock).toHaveBeenCalledWith("update_community_bug_report_status", {
+      p_feedback_id: "feedback-1",
+      p_status: "archived",
+      p_reason: "Traitement terminé",
+      p_actor_user_id: "max-owner",
+      p_operation_id: "operation-status-1",
+      p_expected_status: "open",
+      p_expected_creator_state: "new",
+    });
+  });
+});
