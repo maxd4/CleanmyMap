@@ -35,7 +35,7 @@ export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx
         <div><p className="flex items-center gap-2 text-sm font-semibold text-violet-950"><Upload size={16} aria-hidden="true" />Importer un tracé GPX</p><p className="mt-1 text-xs text-violet-900/70">Le tracé importé est conservé tel quel, sans reconstruction réseau.</p></div>
         <label htmlFor="gpx-import" className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 focus-within:ring-2 focus-within:ring-violet-500/20">
           <Upload size={14} aria-hidden="true" />Ajouter des fichiers GPX
-          <input id="gpx-import" type="file" multiple accept=".gpx,application/gpx+xml" className="sr-only" onChange={(event) => { const files = event.currentTarget.files; event.currentTarget.value = ""; void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onImportGpx(files); }} />
+          <input id="gpx-import" type="file" multiple accept=".gpx,application/gpx+xml" className="sr-only" onChange={(event) => { const files = Array.from(event.currentTarget.files ?? []); event.currentTarget.value = ""; void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onImportGpx(files); }} />
         </label>
       </div>
       {gpxImport ? <div className="mt-3 space-y-3 rounded-lg border border-violet-200 bg-white px-3 py-3 text-xs text-violet-950">

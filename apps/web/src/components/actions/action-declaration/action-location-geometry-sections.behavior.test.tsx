@@ -6,7 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
 import type { ActionLocationViewModel } from "./action-location.model";
-import { ActionLocationMapPanel } from "./action-location-geometry-sections";
+import { ActionLocationGpxImport, ActionLocationMapPanel } from "./action-location-geometry-sections";
 
 vi.mock("next/dynamic", () => ({
   default: () => function MockActionDrawingMap() {
@@ -119,5 +119,26 @@ describe("ActionLocationMapPanel reversible external clearing", () => {
     act(() => setDrawingFromHarness?.(replacement, "gpx_import"));
     expect(host?.textContent).not.toContain("Annuler");
     expect(host?.textContent).toContain("Tracé GPX importé");
+  });
+
+  it("copies a multiple FileList before clearing the native input", () => {
+    const onImportGpx = vi.fn().mockResolvedValue(undefined);
+    act(() => {
+      root = createRoot(host!);
+      root.render(<ActionLocationGpxImport
+        form={{ recordType: "action" } as never}
+        gpxImport={null}
+        gpxError={null}
+        onImportGpx={onImportGpx}
+        onRemoveGpx={vi.fn()}
+        onSetGpxIntent={vi.fn()}
+      />);
+    });
+    const input = host?.querySelector<HTMLInputElement>("#gpx-import");
+    expect(input?.multiple).toBe(true);
+    const file = new File(["<gpx />"], "trace.gpx", { type: "application/gpx+xml" });
+    Object.defineProperty(input, "files", { configurable: true, value: { 0: file, length: 1, item: () => file, [Symbol.iterator]: function* () { yield file; } } });
+    act(() => input?.dispatchEvent(new Event("change", { bubbles: true })));
+    expect(onImportGpx).toHaveBeenCalledWith([file]);
   });
 });
