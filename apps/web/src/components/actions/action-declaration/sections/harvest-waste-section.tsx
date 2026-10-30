@@ -158,7 +158,7 @@ export function HarvestWasteSection({
           type="button"
           onClick={() => setTriOpen((v) => !v)}
           aria-expanded={triOpen}
-          aria-controls="harvest-waste-tri-details"
+          aria-controls={triOpen ? "harvest-waste-tri-details" : undefined}
           className="flex w-full items-center justify-between gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors"
         >
           <span>Détail du tri (optionnel)</span>
