@@ -120,7 +120,7 @@ select throws_ok(
   'authenticated cannot bypass the server delete boundary'
 );
 
-set_config(
+select set_config(
   'request.jwt.claims',
   '{"role":"authenticated","sub":"subscription-outsider"}',
   true
