@@ -64,9 +64,14 @@ export type GeneratePublicImpactSnapshotResult = {
   forced: boolean;
 };
 
+type InFlightImpactSnapshotGeneration = {
+  token: symbol;
+  promise: Promise<GeneratePublicImpactSnapshotResult>;
+};
+
 const inFlightImpactSnapshotGenerations = new Map<
   string,
-  Promise<GeneratePublicImpactSnapshotResult>
+  InFlightImpactSnapshotGeneration
 >();
 
 function toFiniteNonNegativeNumber(value: unknown): number {
@@ -272,19 +277,22 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
   const inFlight = inFlightImpactSnapshotGenerations.get(generationKey);
 
   if (inFlight) {
-    return inFlight;
+    return await inFlight.promise;
   }
 
-  const generation = generateAndPersistPublicImpactSnapshotOnce({
-    ...params,
-    now,
-  });
+  const generation: InFlightImpactSnapshotGeneration = {
+    token: Symbol(generationKey),
+    promise: generateAndPersistPublicImpactSnapshotOnce({
+      ...params,
+      now,
+    }),
+  };
   inFlightImpactSnapshotGenerations.set(generationKey, generation);
 
   try {
-    return await generation;
+    return await generation.promise;
   } finally {
-    if (inFlightImpactSnapshotGenerations.get(generationKey) === generation) {
+    if (inFlightImpactSnapshotGenerations.get(generationKey)?.token === generation.token) {
       inFlightImpactSnapshotGenerations.delete(generationKey);
     }
   }

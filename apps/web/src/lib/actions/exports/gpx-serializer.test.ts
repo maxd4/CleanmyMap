@@ -92,6 +92,21 @@ describe("serializeActionGeometryToGpx", () => {
     );
   });
 
+  it("uses the normative namespace without performing network access", () => {
+    const fetchSpy = vi.fn(() => {
+      throw new Error("network access is not part of GPX serialization");
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    try {
+      const xml = serializeActionGeometryToGpx(simpleInput(openGeometry, "manual", "point_to_point"));
+      expect(xml).toContain('xmlns="http://www.topografix.com/GPX/1/1"');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps a loop closed and a point-to-point track open without artificial edits", () => {
     const loopXml = serializeActionGeometryToGpx(
       simpleInput(closedGeometry, "gpx_import", "loop"),

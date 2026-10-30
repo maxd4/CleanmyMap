@@ -267,7 +267,7 @@ async function main() {
 
   console.log(`Exported ${users.length} Clerk users.`);
   if (typeof totalCount === "number") {
-    console.log(`Clerk totalCount: ${totalCount}`);
+    console.log(`Clerk totalCount: ${sanitizeLogValue(totalCount)}`);
   }
   console.log(`JSON: ${sanitizeLogValue(path.resolve(jsonPath))}`);
   console.log(`CSV:  ${sanitizeLogValue(path.resolve(csvPath))}`);

@@ -4,7 +4,12 @@ import test from "node:test";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { isTrustedGitPath, resolveGitExecutable, trustedCommandEnvironment } from "./git-executable.mjs";
+import {
+  assertSafeGitRef,
+  isTrustedGitPath,
+  resolveGitExecutable,
+  trustedCommandEnvironment,
+} from "./git-executable.mjs";
 
 test("accepts the fixed Windows Git installation path without consulting PATH", () => {
   assert.equal(isTrustedGitPath("C:\\Program Files\\Git\\cmd\\git.exe", "win32"), true);
@@ -61,4 +66,11 @@ test("overrides a hostile child-process PATH with fixed executable directories",
   const environment = trustedCommandEnvironment({ PATH: process.platform === "win32" ? "C:\\attacker\\bin" : "/tmp/attacker/bin", SystemRoot: "C:\\Windows" }, [additionalExecutable]);
   assert.doesNotMatch(environment.PATH, /attacker/i);
   assert.match(environment.PATH, process.platform === "win32" ? /Program Files\\Supabase/i : /opt\/supabase\/bin/);
+});
+
+test("rejects option-like and control-bearing Git refs before rev-parse", () => {
+  for (const ref of ["--upload-pack=attacker", "HEAD;touch forged", "HEAD\nforged", "../HEAD", "HEAD@{1}"]) {
+    assert.throws(() => assertSafeGitRef(ref), /Unsafe Git ref/);
+  }
+  assert.equal(assertSafeGitRef("HEAD~1"), "HEAD~1");
 });

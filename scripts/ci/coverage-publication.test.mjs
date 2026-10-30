@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -596,6 +596,17 @@ test("rejects traversal-like candidate input and redirected publication roots", 
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
     fs.rmSync(linkedRoot, { recursive: true, force: true });
   }
+});
+
+test("rejects an option-like coverage Git ref before invoking Git", () => {
+  const result = spawnSync(
+    process.execPath,
+    [path.resolve(repositoryRoot, "scripts/ci/coverage-publication.mjs"), "--candidate-ref=--upload-pack=attacker"],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /Unsafe coverage Git ref/);
 });
 
 test("Web evidence rejects summary, configuration, or environment fingerprint mismatch", () => {

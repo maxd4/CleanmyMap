@@ -799,7 +799,7 @@ export async function main({
   );
   await writeFileImpl(`${outputBase}.csv`, toCsv(rows), "utf8");
 
-  log(formatAuditSummaryLog(summary));
+  log(sanitizeLogValue(formatAuditSummaryLog(summary)));
   log(`JSON: ${sanitizeLogValue(resolve(`${outputBase}.json`))}`);
   log(`CSV:  ${sanitizeLogValue(resolve(`${outputBase}.csv`))}`);
 

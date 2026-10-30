@@ -66,6 +66,7 @@ assert.match(e2e, /External pull requests cannot execute[\s\S]*?exit 1/);
 const sonarqube = readWorkflow("sonarqube-manual.yml");
 const sourceRequirement = readRepositoryFile("maintenance/python/requirements-sonarqube-source.txt");
 assert.match(sonarqube, /--require-hashes --no-binary=:all: -r maintenance\/python\/requirements-sonarqube-source\.txt/);
+assert.match(sonarqube, /--disable-pip-version-check --no-input --no-cache-dir --no-deps --require-hashes/);
 assert.match(sonarqube, /--only-binary=:all: -r maintenance\/python\/requirements-dev\.txt/);
 assert.match(sourceRequirement, /^fpdf==1\.7\.2 \\\n\s+--hash=sha256:[0-9a-f]{64}$/m);
 });
