@@ -79,13 +79,83 @@ describe("validateActionFormalitiesForPublication", () => {
     const sent = {
       ...prepared,
       progress: prepared.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
-        ? { ...item, userStatus: "sent" as const, validForQualification: true }
+        ? {
+            ...item,
+            userStatus: "sent" as const,
+            validForQualification: true,
+            proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-10-30T10:01:00.000Z" },
+          }
         : item),
     };
     const result = await validateActionFormalitiesForPublication(buildAction(sent));
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.formalitiesWorkflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot")?.userStatus).toBe("sent");
+  });
+
+  it.each([
+    ["without proof", null],
+    ["with an invalid proof kind", { kind: "nonsense", reference: null, recordedAt: "2026-10-30T10:01:00.000Z" }],
+  ])("blocks approval when a required formality is sent %s", async (_label, proof) => {
+    const prepared = buildWorkflow();
+    const sent = {
+      ...prepared,
+      progress: prepared.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
+        ? { ...item, userStatus: "sent" as const, validForQualification: true, proof }
+        : item),
+    };
+    const result = await validateActionFormalitiesForPublication(buildAction(sent));
+
+    expect(result).toEqual({
+      ok: false,
+      blockedFormalityIds: expect.arrayContaining(["paris-city-public-domain-aot"]),
+    });
+  });
+
+  it("accepts a user declaration with an optional reference", async () => {
+    const prepared = buildWorkflow();
+    const sent = {
+      ...prepared,
+      progress: prepared.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
+        ? {
+            ...item,
+            userStatus: "sent" as const,
+            validForQualification: true,
+            proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-10-30T10:01:00.000Z" },
+          }
+        : item),
+    };
+
+    expect((await validateActionFormalitiesForPublication(buildAction(sent))).ok).toBe(true);
+  });
+
+  it("rejects an absent or malformed workflow when a formalité is required", async () => {
+    expect((await validateActionFormalitiesForPublication(buildAction(null))).ok).toBe(false);
+
+    const malformed = {
+      ...buildWorkflow(),
+      progress: [42],
+    } as never;
+    expect((await validateActionFormalitiesForPublication(buildAction(malformed))).ok).toBe(false);
+  });
+
+  it("does not block a valid workflow with no required formalité", async () => {
+    const noRequiredFacts = {
+      ...factsWithRequiredFormality,
+      publicSpace: "private_domain" as const,
+      manager: { kind: "private" as const, label: null },
+    };
+    const noRequiredQualification = qualifyActionFormalities(noRequiredFacts);
+    const workflow = buildFormalitiesWorkflowState({
+      facts: noRequiredFacts,
+      qualification: noRequiredQualification,
+      actionDependencies: { locationLabel: "Paris", actionDate: "2026-12-01" },
+      now: "2026-10-30T10:00:00.000Z",
+    });
+    const action = buildAction(workflow);
+    action.preparation_data = { formalitiesContext: noRequiredFacts, formalitiesWorkflow: workflow };
+
+    expect((await validateActionFormalitiesForPublication(action)).ok).toBe(true);
   });
 
   it("requalifies and blocks a workflow when action dependencies changed", async () => {

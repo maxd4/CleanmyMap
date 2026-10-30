@@ -19,7 +19,7 @@ const ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION =
 
 type FormalitiesUserStatus = "not_started" | "prepared" | "sent";
 
-type FormalitySendProof = {
+export type FormalitySendProof = {
   kind: "user_declared" | "official_confirmation";
   reference: string | null;
   recordedAt: string;
@@ -75,6 +75,16 @@ export type FormalitiesWorkflowTransition = {
 
 function isMeaningful(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+export function isFormalitySendProof(value: unknown): value is FormalitySendProof {
+  if (!value || typeof value !== "object") return false;
+  const proof = value as Partial<FormalitySendProof>;
+  return (
+    (proof.kind === "user_declared" || proof.kind === "official_confirmation") &&
+    (proof.reference === null || typeof proof.reference === "string") &&
+    isMeaningful(proof.recordedAt)
+  );
 }
 
 function dependencyKeysForFormality(formalityId: string): Array<keyof FormalitiesFactsSnapshot> {
@@ -403,6 +413,7 @@ export function getBlockedRequiredFormalityIds(
     return !progress ||
       !progress.active ||
       !progress.validForQualification ||
-      progress.userStatus !== "sent";
+      progress.userStatus !== "sent" ||
+      !isFormalitySendProof(progress.proof);
   }).map((formality) => formality.id);
 }

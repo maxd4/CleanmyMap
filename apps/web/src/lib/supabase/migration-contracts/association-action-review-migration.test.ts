@@ -17,6 +17,10 @@ const robustnessMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261030000013_association_action_review_formalities_robustness.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
+const strictProofMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261030000016_association_action_review_formalities_strict_proof.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
 
 describe("association action review migration STATIC_CONTRACT", () => {
   it("separates review from moderation and preserves historical rows", () => {
@@ -97,5 +101,17 @@ describe("association action review migration STATIC_CONTRACT", () => {
     expect(robustnessMigration).toContain("create or replace function public.decide_association_action_review(");
     expect(robustnessMigration).toContain("corrigez et soumettez-la à nouveau");
     expect(robustnessMigration).toContain("revoke all on function public.decide_association_action_review");
+  });
+
+  it("closes NULL and malformed-proof bypasses in the corrective migration", () => {
+    expect(strictProofMigration).toContain("select coalesce(");
+    expect(strictProofMigration).toContain("jsonb_typeof(item -> 'proof') = 'object'");
+    expect(strictProofMigration).toContain("item -> 'proof' ->> 'kind' in ('user_declared', 'official_confirmation')");
+    expect(strictProofMigration).toContain("progress.item -> 'proof' ->> 'kind' in ('user_declared', 'official_confirmation')");
+    expect(strictProofMigration).toContain("is not true then");
+    expect(strictProofMigration).toContain("reference");
+    expect(strictProofMigration).toContain("grant execute on function public.decide_association_action_review");
+    expect(strictProofMigration).not.toContain("20261030000012");
+    expect(strictProofMigration).not.toContain("20261030000013");
   });
 });
