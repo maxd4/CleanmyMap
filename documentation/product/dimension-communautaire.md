@@ -10,17 +10,25 @@ CleanMyMap peut renforcer son utilite en transformant la participation ponctuell
 > politiques explicites. L'inclusion sociale et les bénéfices liés à
 > l'activité physique restent des objectifs, sans résultat mesuré déclaré.
 
-## État courant — 6A1
+## État courant — 6A2
 
 Le schéma canonique `public.action_needs` existe pour représenter les besoins
 structurés associés à une action. Il utilise exclusivement les huit catégories
 `COMMUNITY_HELP_CATEGORIES` et les statuts persistés `open`, `fulfilled` et
 `cancelled`. L'état `expired` reste dérivé de `expires_at` et n'est pas stocké.
 
-Cette étape ne livre pas encore les routes, l'interface, les offres d'aide, les
-préférences, les suggestions ni le digest. Ces capacités restent `PLAN` et
-doivent réutiliser cette table unique ainsi que les règles de publication
-actuelles des actions.
+Les offres d'aide sont désormais persistées dans `public.action_need_offers`
+avec les statuts `pending`, `accepted`, `declined` et `withdrawn`. Une seule
+offre active `pending` ou `accepted` est autorisée par membre et besoin. La
+proposition, la décision du gestionnaire canonique et le retrait passent par
+les routes `/api/community/needs/[needId]/offers` ; l'acceptation crée une
+notification in-app `community` idempotente pour l'offreur. Ce flux ne crée
+jamais d'inscription, de participation confirmée ou de permission sur
+l'action. La table et les notifications restent privées ; les identités des
+offreurs ne figurent pas dans les projections publiques.
+
+Les préférences, suggestions et digest restent `PLAN` et doivent réutiliser
+ces tables ainsi que les règles de publication actuelles des actions.
 
 ## Intentions produit
 

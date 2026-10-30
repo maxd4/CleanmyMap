@@ -299,4 +299,29 @@ export const adminCommunityAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "community/needs/[needId]/offers": {
+    GET: {
+      expected: "Authenticated offer author reads only their offer, while the canonical action manager reads the action offers",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireAuthenticatedAccess + loadActionNeedById + canManageActionNeed + author-scoped offer query",
+      evidence: ["requireAuthenticatedAccess", "loadActionNeedById", "canManageActionNeed", "access.userId"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authenticated member proposes help only through the server eligibility and active-offer boundary",
+      dimensions: ["authentication", "public-safe", "business permission"],
+      actual: "requireAuthenticatedAccess + createActionNeedOffer RPC with canonical public need and session identity",
+      evidence: ["requireAuthenticatedAccess", "createActionNeedOffer", "access.userId"],
+      evidenceScope: "module",
+    },
+  },
+  "community/needs/[needId]/offers/[offerId]": {
+    PATCH: {
+      expected: "Canonical manager accepts or declines, and offer author withdraws, through an atomic status transition",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireAuthenticatedAccess + transitionActionNeedOffer RPC rechecking actor, offer, need and action eligibility",
+      evidence: ["requireAuthenticatedAccess", "transitionActionNeedOffer", "access.userId"],
+      evidenceScope: "module",
+    },
+  },
 } as const satisfies ApiAuthorizationContract;

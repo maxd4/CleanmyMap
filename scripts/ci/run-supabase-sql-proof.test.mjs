@@ -17,6 +17,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.unregistered.length, 0);
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
+    "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
     "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
     "apps/web/supabase/tests/action-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/association-action-announcement-retry.pgtap.sql",
