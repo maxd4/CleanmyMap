@@ -9,6 +9,10 @@ const idempotencyMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261030000014_association_action_notification_idempotency.sql", import.meta.url),
   "utf8",
 );
+const retryProgressMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261030000017_association_action_notification_retry_progress.sql", import.meta.url),
+  "utf8",
+);
 
 describe("association action announcement migration STATIC_CONTRACT", () => {
   it("uses action_id plus a partial unique key and never related_event_id", () => {
@@ -43,5 +47,14 @@ describe("association action announcement migration STATIC_CONTRACT", () => {
   it("fails closed on pre-existing duplicates instead of deleting history", () => {
     expect(idempotencyMigration).toContain("Duplicate official association-action notifications");
     expect(idempotencyMigration).not.toMatch(/delete\s+from\s+public\.app_notifications/i);
+  });
+
+  it("excludes existing official notifications before the 250-row retry tranche", () => {
+    expect(retryProgressMigration).toContain("n.payload ->> 'sourceType' = 'association_action_publication'");
+    expect(retryProgressMigration).toContain("n.payload ->> 'sourceId' = v_message.official_action_publication_id::text");
+    expect(retryProgressMigration).toMatch(/not exists \([\s\S]+?\)\s+limit 250\s+on conflict do nothing;/i);
+    expect(retryProgressMigration).toContain("revoke all on function public.create_chat_notifications_for_message(uuid, text)");
+    expect(retryProgressMigration).toContain("grant execute on function public.create_chat_notifications_for_message(uuid, text)");
+    expect(retryProgressMigration).not.toMatch(/if\s+v_message\.channel_type\s*=\s*'dm'[\s\S]+?p_actor_user_id\s+is null/i);
   });
 });

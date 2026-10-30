@@ -40,8 +40,8 @@ const baseAction = {
 };
 
 function createAnnouncementSupabase(options: {
-  existingMessages?: Array<{ id: string } | null>;
-  insertedMessage?: { id: string } | null;
+  existingMessages?: Array<{ id: string; sender_id: string } | null>;
+  insertedMessage?: { id: string; sender_id: string } | null;
   insertError?: { message: string } | null;
 }) {
   let lookupIndex = 0;
@@ -101,7 +101,7 @@ describe("official association action announcement", () => {
   });
 
   it("announces a newly approved review while the action remains pending", async () => {
-    const supabase = createAnnouncementSupabase({ insertedMessage: { id: "message-1" } });
+    const supabase = createAnnouncementSupabase({ insertedMessage: { id: "message-1", sender_id: "admin-1" } });
     createChatNotificationsForMessageMock.mockResolvedValue(3);
 
     const publication = await publishOfficialAssociationActionAnnouncement({
@@ -131,7 +131,12 @@ describe("official association action announcement", () => {
   });
 
   it("reuses the durable message on retry and never creates a second announcement", async () => {
-    const supabase = createAnnouncementSupabase({ existingMessages: [{ id: "message-1" }, { id: "message-1" }] });
+    const supabase = createAnnouncementSupabase({
+      existingMessages: [
+        { id: "message-1", sender_id: "admin-1" },
+        { id: "message-1", sender_id: "admin-1" },
+      ],
+    });
     createChatNotificationsForMessageMock.mockResolvedValue(0);
 
     const first = await publishOfficialAssociationActionAnnouncement({
@@ -156,8 +161,56 @@ describe("official association action announcement", () => {
     expect(createChatNotificationsForMessageMock).toHaveBeenCalledTimes(2);
   });
 
+  it("uses the persisted sender when another administrator retries the fan-out", async () => {
+    const supabase = createAnnouncementSupabase({
+      existingMessages: [{ id: "message-1", sender_id: "admin-a" }],
+    });
+    createChatNotificationsForMessageMock.mockResolvedValue(2);
+
+    const publication = await publishOfficialAssociationActionAnnouncement({
+      supabase: supabase as never,
+      actionId: "action-1",
+      actorUserId: "admin-b",
+      operationId: "operation-admin-b",
+      retry: true,
+      now: new Date("2099-01-01T09:00:00.000Z"),
+    });
+
+    expect(publication).toMatchObject({ state: "already_diffused", messageId: "message-1" });
+    expect(createChatNotificationsForMessageMock).toHaveBeenCalledWith(
+      supabase,
+      "message-1",
+      "admin-a",
+    );
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({ actorUserId: "admin-b", operationId: "operation-admin-b:diffusion" }),
+    );
+  });
+
+  it("uses the sender from the message that wins an insertion race", async () => {
+    const supabase = createAnnouncementSupabase({
+      existingMessages: [null, { id: "message-winner", sender_id: "admin-a" }],
+      insertError: { message: "duplicate official announcement" },
+    });
+    createChatNotificationsForMessageMock.mockResolvedValue(1);
+
+    await publishOfficialAssociationActionAnnouncement({
+      supabase: supabase as never,
+      actionId: "action-1",
+      actorUserId: "admin-b",
+      operationId: "operation-race",
+      now: new Date("2099-01-01T09:00:00.000Z"),
+    });
+
+    expect(createChatNotificationsForMessageMock).toHaveBeenCalledWith(
+      supabase,
+      "message-winner",
+      "admin-a",
+    );
+  });
+
   it("keeps the message and returns a retryable partial result when fan-out fails", async () => {
-    const supabase = createAnnouncementSupabase({ insertedMessage: { id: "message-1" } });
+    const supabase = createAnnouncementSupabase({ insertedMessage: { id: "message-1", sender_id: "admin-1" } });
     createChatNotificationsForMessageMock.mockRejectedValueOnce(new Error("fanout unavailable"));
 
     const publication = await publishOfficialAssociationActionAnnouncement({
@@ -188,7 +241,7 @@ describe("official association action announcement", () => {
 
   it("does not announce a review that is no longer publicly eligible", async () => {
     loadActionByIdMock.mockResolvedValue({ ...baseAction, status: "rejected" });
-    const supabase = createAnnouncementSupabase({ insertedMessage: { id: "message-1" } });
+    const supabase = createAnnouncementSupabase({ insertedMessage: { id: "message-1", sender_id: "admin-1" } });
 
     const publication = await publishOfficialAssociationActionAnnouncement({
       supabase: supabase as never,

@@ -43,6 +43,11 @@ type ActionAnnouncementAction = Pick<
 
 type ServiceSupabaseClient = SupabaseClient;
 
+type OfficialAnnouncementMessage = {
+  id: string;
+  senderId: string;
+};
+
 function cleanText(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.replace(/\s+/g, " ").trim();
@@ -85,14 +90,16 @@ export function buildOfficialAssociationAnnouncementContent(
 async function findOfficialAnnouncement(
   supabase: ServiceSupabaseClient,
   actionId: string,
-): Promise<string | null> {
+): Promise<OfficialAnnouncementMessage | null> {
   const result = await supabase
     .from("app_messages")
-    .select("id")
+    .select("id, sender_id")
     .eq("official_action_publication_id", actionId)
     .maybeSingle();
   if (result.error) throw new Error(result.error.message);
-  return typeof result.data?.id === "string" ? result.data.id : null;
+  return typeof result.data?.id === "string" && typeof result.data.sender_id === "string"
+    ? { id: result.data.id, senderId: result.data.sender_id }
+    : null;
 }
 
 async function recordDiffusionAudit(params: {
@@ -184,9 +191,9 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
     return result(params.actionId, "not_eligible");
   }
 
-  let messageId: string | null = null;
+  let announcementMessage: OfficialAnnouncementMessage | null = null;
   try {
-    messageId = await findOfficialAnnouncement(params.supabase, action.id);
+    announcementMessage = await findOfficialAnnouncement(params.supabase, action.id);
   } catch {
     await recordDiffusionAudit({
       operationId: `${operationId}:diffusion`,
@@ -198,8 +205,8 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
     return result(params.actionId, "failed");
   }
 
-  let wasAlreadyPresent = Boolean(messageId);
-  if (!messageId) {
+  const wasAlreadyPresent = Boolean(announcementMessage);
+  if (!announcementMessage) {
     const announcement = buildOfficialAssociationAnnouncementContent(action);
     const insertResult = await params.supabase
       .from("app_messages")
@@ -221,21 +228,27 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
         action_id: action.id,
         official_action_publication_id: action.id,
       })
-      .select("id")
+      .select("id, sender_id")
       .single();
 
-    if (!insertResult.error && typeof insertResult.data?.id === "string") {
-      messageId = insertResult.data.id;
-      wasAlreadyPresent = false;
+    if (
+      !insertResult.error &&
+      typeof insertResult.data?.id === "string" &&
+      typeof insertResult.data.sender_id === "string"
+    ) {
+      announcementMessage = {
+        id: insertResult.data.id,
+        senderId: insertResult.data.sender_id,
+      };
     } else {
       // A unique-index race or a response lost after commit is reconciled by
       // reading the durable action key before declaring the publication failed.
       try {
-        messageId = await findOfficialAnnouncement(params.supabase, action.id);
+        announcementMessage = await findOfficialAnnouncement(params.supabase, action.id);
       } catch {
-        messageId = null;
+        announcementMessage = null;
       }
-      if (!messageId) {
+      if (!announcementMessage) {
         await recordDiffusionAudit({
           operationId: `${operationId}:diffusion`,
           actorUserId: params.actorUserId,
@@ -245,15 +258,14 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
         });
         return result(params.actionId, "failed");
       }
-      wasAlreadyPresent = true;
     }
   }
 
   try {
     const notificationCount = await createChatNotificationsForMessage(
       params.supabase,
-      messageId,
-      params.actorUserId,
+      announcementMessage.id,
+      announcementMessage.senderId,
     );
     await recordDiffusionAudit({
       operationId: `${operationId}:diffusion`,
@@ -265,7 +277,7 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
     return result(
       params.actionId,
       wasAlreadyPresent ? "already_diffused" : "diffused",
-      messageId,
+      announcementMessage.id,
       notificationCount,
     );
   } catch {
@@ -277,6 +289,6 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
       outcome: "error",
       partialMutation: true,
     });
-    return result(params.actionId, "partial", messageId);
+    return result(params.actionId, "partial", announcementMessage?.id ?? null);
   }
 }
