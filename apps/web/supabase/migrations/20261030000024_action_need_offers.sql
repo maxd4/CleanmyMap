@@ -147,6 +147,7 @@ security definer
 set search_path = pg_catalog, public
 as $$
 declare
+  v_locked record;
   v_need public.action_needs%rowtype;
   v_action public.actions%rowtype;
   v_offer public.action_need_offers%rowtype;
@@ -161,14 +162,19 @@ begin
     raise exception 'action_need_offer_message_too_long' using errcode = '22023';
   end if;
 
-  select into v_need, v_action
-    n, a
+  select n as need_row, a as action_row
+    into v_locked
     from public.action_needs n
     join public.actions a on a.id = n.action_id
    where n.id = p_need_id
    for update of n, a;
 
-  if not found or not public.is_public_open_action_need(v_need.id) then
+  if not found then
+    raise exception 'action_need_offer_not_public_or_open' using errcode = '42501';
+  end if;
+  v_need := v_locked.need_row;
+  v_action := v_locked.action_row;
+  if not public.is_public_open_action_need(v_need.id) then
     raise exception 'action_need_offer_not_public_or_open' using errcode = '42501';
   end if;
 
@@ -198,6 +204,7 @@ set search_path = pg_catalog, public
 as $$
 declare
   v_need_id uuid;
+  v_locked record;
   v_need public.action_needs%rowtype;
   v_action public.actions%rowtype;
   v_offer public.action_need_offers%rowtype;
@@ -220,8 +227,8 @@ begin
 
   -- Lock the action and need before reading eligibility. This serializes a
   -- close/publication change with accept/decline at the same resource boundary.
-  select into v_need, v_action
-    n, a
+  select n as need_row, a as action_row
+    into v_locked
     from public.action_needs n
     join public.actions a on a.id = n.action_id
    where n.id = v_need_id
@@ -229,6 +236,8 @@ begin
   if not found then
     raise exception 'action_need_offer_not_found' using errcode = 'P0002';
   end if;
+  v_need := v_locked.need_row;
+  v_action := v_locked.action_row;
 
   select * into v_offer
     from public.action_need_offers

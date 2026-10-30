@@ -155,6 +155,14 @@ it("allows only an explicitly hashed bounded migration repair", () => {
   );
 });
 
+it("withdraws the failed 00024/00026 repair hashes from the approved guard", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.doesNotMatch(source, /2628f5923c39cfbcf5aa1398878517985d1c0ce80deb97ebd6a862f626b1a184/);
+  assert.doesNotMatch(source, /fd19d17dfa2cce0ac10a8f2193c34a32e518b9a710bb8feb920e96f0f6a51f15/);
+  assert.match(source, /e04593971d7c4bea0a89645d96d1c3c8ec409e1b5e4d9b75906d6bc98d1f310c/);
+  assert.match(source, /5dcec92626543ce7aff34277db4d90220404bfabdfbb6ff99452fdf90a1fa09f/);
+});
+
 it("normalizes Buffer and UTF-8 string contents before comparing migrations", () => {
   const name = "20260101000000_published.sql";
   assert.deepEqual(

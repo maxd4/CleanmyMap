@@ -40,8 +40,8 @@ const EXTENSION_CASCADE_ALLOWLIST = new Map();
 const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
   ["20261012000022_spogomi_ticket_roster_and_team_composition.sql", new Set(["c272820f66ff466d42d9c4dab0fdad685b482f54927fe1df9927233d6e7e9cf4"])],
   ["20261013000007_spogomi_post_lock_mutation_guards.sql", new Set(["f4ca930cce616753addfd047badb2b96448ad8aed665b92d68f44079fbe11f1d"])],
-  ["20261030000024_action_need_offers.sql", new Set(["2628f5923c39cfbcf5aa1398878517985d1c0ce80deb97ebd6a862f626b1a184"])],
-  ["20261030000026_action_need_offers_need_identity.sql", new Set(["fd19d17dfa2cce0ac10a8f2193c34a32e518b9a710bb8feb920e96f0f6a51f15"])],
+  ["20261030000024_action_need_offers.sql", new Set(["e04593971d7c4bea0a89645d96d1c3c8ec409e1b5e4d9b75906d6bc98d1f310c"])],
+  ["20261030000026_action_need_offers_need_identity.sql", new Set(["5dcec92626543ce7aff34277db4d90220404bfabdfbb6ff99452fdf90a1fa09f"])],
 ]);
 
 function normalizeMigrationContent(content) {

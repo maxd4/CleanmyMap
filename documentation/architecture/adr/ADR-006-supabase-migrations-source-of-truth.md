@@ -217,44 +217,72 @@ séparément : le fichier a été introduit par `61285a3b7ecbb784cc86c8d9cf0b4f3
 désormais présent dans `main` publié par l'ascendance de ce commit ; cette
 provenance ne fait pas partie de l'exception syntaxique des migrations d'offres.
 
-Les trois seules corrections autorisées sont le déplacement de la clause
-`INTO` immédiatement après `SELECT`, forme PL/pgSQL non ambiguë, en conservant
-les expressions `n, a`, les cibles `v_need, v_action`, les jointures, le
-prédicat, `FOR UPDATE OF n, a`, la position des contrôles `FOUND` et l'ordre
-de verrouillage. Les changements exacts sont :
+La première tentative a uniquement déplacé la clause `INTO` immédiatement
+après `SELECT`. Elle reste invalide : PostgreSQL/PL/pgSQL n'accepte pas deux
+variables `%ROWTYPE` composites (`v_need, v_action`) comme cibles d'une même
+liste `SELECT INTO`. Les empreintes `AFTER_HASH` de cette tentative sont
+conservées comme historique d'une tentative échouée, mais retirées du garde
+d'immutabilité et ne constituent plus une réécriture approuvée.
+
+La correction bornée utilise une seule destination `record`, puis affecte les
+deux `%ROWTYPE` après le contrôle immédiat de `FOUND`, sans modifier les
+expressions, jointures, prédicats, `FOR UPDATE OF n, a`, l'ordre de verrouillage
+ou les transitions :
 
 ```text
-select n, a
-  into v_need, v_action
+select n as need_row, a as action_row
+  into v_locked
+  ...
+
+if not found then
+  -- exception existante inchangée
+end if;
+v_need := v_locked.need_row;
+v_action := v_locked.action_row;
 ```
 
-devient, aux deux occurrences de `20261030000024_action_need_offers.sql` et à
-l'unique occurrence de
-`20261030000026_action_need_offers_need_identity.sql` :
+Cette correction s'applique aux deux occurrences de
+`20261030000024_action_need_offers.sql` et à l'unique occurrence de
+`20261030000026_action_need_offers_need_identity.sql`. Elle conserve les
+signatures RPC, l'autorisation `service_role`, l'idempotence, les notifications
+et les identités `needId`/`offerId`.
 
 ```text
-select into v_need, v_action
-  n, a
+DECLARE
+  v_locked record;
+  v_need public.action_needs%rowtype;
+  v_action public.actions%rowtype;
+
+SELECT n AS need_row, a AS action_row
+  INTO v_locked
+  FROM public.action_needs n
+  JOIN public.actions a ON a.id = n.action_id
+ WHERE n.id = ...
+ FOR UPDATE OF n, a;
+
+-- FOUND est vérifié immédiatement avant ces affectations.
+v_need := v_locked.need_row;
+v_action := v_locked.action_row;
 ```
 
-Aucune règle métier, signature RPC, permission, notification, identité
-`needId`/`offerId` ou catégorie canonique n'est modifiée. Les empreintes
-SHA-256 UTF-8 des fichiers complets sont conservées ci-dessous :
+Les empreintes SHA-256 UTF-8 des fichiers complets sont conservées ci-dessous :
 
 ```text
 20261030000024_BEFORE_HASH: 70ff40ecf4177fc75e486d5ad8305e4a301b61cc8353feb4024037a79966f381
-20261030000024_AFTER_HASH:  2628f5923c39cfbcf5aa1398878517985d1c0ce80deb97ebd6a862f626b1a184
 20261030000026_BEFORE_HASH: da1d33e376e88b784639c1c0dc3d56c80a663c661738ca6fbcdab531c3f2fea8
-20261030000026_AFTER_HASH:  fd19d17dfa2cce0ac10a8f2193c34a32e518b9a710bb8feb920e96f0f6a51f15
+20261030000024_FAILED_ATTEMPT_HASH: 2628f5923c39cfbcf5aa1398878517985d1c0ce80deb97ebd6a862f626b1a184
+20261030000026_FAILED_ATTEMPT_HASH: fd19d17dfa2cce0ac10a8f2193c34a32e518b9a710bb8feb920e96f0f6a51f15
+20261030000024_AFTER_HASH: e04593971d7c4bea0a89645d96d1c3c8ec409e1b5e4d9b75906d6bc98d1f310c
+20261030000026_AFTER_HASH: 5dcec92626543ce7aff34277db4d90220404bfabdfbb6ff99452fdf90a1fa09f
 ```
 
-Seules les deux empreintes `AFTER_HASH` nouvelles sont ajoutées au garde
-d'immutabilité des migrations. Une réécriture différente de l'une de ces
-migrations, ou de toute autre migration publiée, reste refusée. Cette
-exception n'autorise ni `migration repair`, ni DDL manuelle, ni `db push`, ni
-aucune écriture distante ; une seconde application gouvernée devra être
-préparée après publication, vérification de `00027`, réconciliation de
-l'historique et nouveau dry-run.
+Seules les deux nouvelles empreintes `AFTER_HASH` sont autorisées par le garde
+d'immutabilité. Les deux `FAILED_ATTEMPT_HASH` précédentes, toute réécriture
+différente de ces migrations ou de toute autre migration publiée restent
+refusées. Cette exception n'autorise ni `migration repair`, ni DDL manuelle, ni
+`db push`, ni aucune écriture distante ; une seconde application gouvernée
+devra être préparée après publication, vérification de `00027`, réconciliation
+de l'historique et nouveau dry-run.
 
 ## Exception de réparation bornée — `20261012000022` et `20261013000007`
 

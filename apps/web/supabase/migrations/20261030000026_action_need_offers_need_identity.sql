@@ -25,6 +25,7 @@ security definer
 set search_path = pg_catalog, public
 as $$
 declare
+  v_locked record;
   v_need public.action_needs%rowtype;
   v_action public.actions%rowtype;
   v_offer public.action_need_offers%rowtype;
@@ -41,8 +42,8 @@ begin
   -- Lock the expected need and its action before resolving the offer. The
   -- second predicate binds the offer identity to that locked need, so a URL
   -- containing another need can never reach a status or notification write.
-  select into v_need, v_action
-    n, a
+  select n as need_row, a as action_row
+    into v_locked
     from public.action_needs n
     join public.actions a on a.id = n.action_id
    where n.id = p_need_id
@@ -50,6 +51,8 @@ begin
   if not found then
     raise exception 'action_need_offer_not_found' using errcode = 'P0002';
   end if;
+  v_need := v_locked.need_row;
+  v_action := v_locked.action_row;
 
   select * into v_offer
     from public.action_need_offers
