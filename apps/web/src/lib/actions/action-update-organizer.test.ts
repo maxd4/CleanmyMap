@@ -86,4 +86,37 @@ describe("resolveActionUpdateOrganizer", () => {
       associationName: "Association locale",
     });
   });
+
+  it("does not reuse the previous organizer id when the organizer type changes", async () => {
+    const calls: Array<{ field: string; value: string }> = [];
+    const supabase = {
+      from: () => ({
+        select() { return this; },
+        eq(field: string, value: string) { calls.push({ field, value }); return this; },
+        maybeSingle: async () => ({
+          data: {
+            id: "directory-student-association",
+            name: "Association étudiante locale",
+            normalized_name: "association etudiante locale",
+            organizer_type: "student_association",
+          },
+          error: null,
+        }),
+      }),
+    } as never;
+
+    await expect(resolveActionUpdateOrganizer({
+      supabase,
+      body: {
+        organizerType: "student_association",
+        organizerName: "Association étudiante locale",
+      } as ActionUpdateInput,
+      current: historicalCurrent(),
+    })).resolves.toMatchObject({
+      organizerType: "student_association",
+      organizerId: "directory-student-association",
+    });
+    expect(calls).not.toContainEqual({ field: "id", value: "directory-association" });
+    expect(calls).toContainEqual({ field: "organizer_type", value: "student_association" });
+  });
 });

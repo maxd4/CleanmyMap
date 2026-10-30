@@ -37,6 +37,7 @@ describe("GET /api/actions/organizers", () => {
           expect(projection).not.toContain("created_by_clerk_id");
           const query = {
             eq: () => query,
+            ilike: () => query,
             order: () => query,
             limit: async () => ({
               data: [{

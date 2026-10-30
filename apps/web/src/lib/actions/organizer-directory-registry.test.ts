@@ -5,6 +5,7 @@ import {
   normalizeOrganizerName,
   resolveCanonicalCreateActionPayload,
   resolveActionOrganizer,
+  searchOrganizerDirectory,
 } from "./organizer-directory-registry";
 
 describe("organizer directory registry", () => {
@@ -17,6 +18,58 @@ describe("organizer directory registry", () => {
     expect(associations.every((entry) => entry.organizerType === "association")).toBe(true);
     expect(studentAssociations.every((entry) => entry.organizerType === "student_association")).toBe(true);
     expect(new Set(associations.map((entry) => entry.id))).not.toEqual(new Set(studentAssociations.map((entry) => entry.id)));
+  });
+
+  it("pushes normalized text filtering into the persisted query before its limit", async () => {
+    const calls: Array<{ method: string; value?: string }> = [];
+    const target = {
+      id: "persisted-after-alphabetical-page",
+      name: "École des Ponts",
+      normalized_name: "ecole des ponts",
+      organizer_type: "association",
+    };
+    const query = {
+      select() { return this; },
+      eq(field: string, value: string) { calls.push({ method: field, value }); return this; },
+      ilike(field: string, value: string) { calls.push({ method: field, value }); return this; },
+      order(field: string) { calls.push({ method: "order", value: field }); return this; },
+      limit: async () => ({ data: [target], error: null }),
+    };
+    const supabase = { from: () => query } as never;
+
+    await expect(searchOrganizerDirectory({
+      supabase,
+      organizerType: "association",
+      query: "  ÉCOLE des ponts! ",
+    })).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: target.id, organizerType: "association" }),
+    ]));
+    expect(calls).toContainEqual({ method: "normalized_name", value: "%ecole des ponts%" });
+    expect(calls.filter((call) => call.method === "order")).toEqual([
+      { method: "order", value: "name" },
+      { method: "order", value: "id" },
+    ]);
+  });
+
+  it("bounds static name resolution to the requested organizer type", async () => {
+    const calls: string[] = [];
+    const supabase = {
+      from() {
+        calls.push("from");
+        return {
+          select() { return this; },
+          eq() { return this; },
+          maybeSingle: async () => ({ data: null, error: null }),
+        };
+      },
+    } as never;
+
+    await expect(resolveActionOrganizer({
+      supabase,
+      organizerType: "association",
+      organizerName: "SEA Plastics",
+    })).rejects.toThrow(/structure existante/i);
+    expect(calls).toEqual(["from"]);
   });
 
   it("rejects names that normalize to an empty value before touching the catalog", async () => {

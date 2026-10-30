@@ -17,11 +17,22 @@ export async function resolveActionUpdateOrganizer(params: {
     // directory id. Preserve it when the edit does not change the organizer.
     return body;
   }
+  const organizerType = body.organizerType ?? current.organizer_type ?? "spontaneous";
+  const organizerTypeChanged = body.organizerType !== undefined
+    && body.organizerType !== current.organizer_type;
   const resolved = await resolveActionOrganizer({
     supabase: params.supabase,
-    organizerType: body.organizerType ?? current.organizer_type ?? "spontaneous",
-    organizerId: body.organizerId ?? current.organizer_id,
-    organizerName: body.organizerName ?? current.organizer_name,
+    organizerType,
+    organizerId: body.organizerId !== undefined
+      ? body.organizerId
+      : organizerTypeChanged
+        ? null
+        : current.organizer_id,
+    organizerName: body.organizerName !== undefined
+      ? body.organizerName
+      : organizerTypeChanged
+        ? null
+        : current.organizer_name,
     actorName: current.actor_name,
   });
   return {

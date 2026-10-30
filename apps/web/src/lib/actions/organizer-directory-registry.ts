@@ -96,13 +96,19 @@ export function getCanonicalStaticOrganizerById(id: string | null | undefined) {
   return getStaticOrganizerById(id);
 }
 
-function getStaticOrganizerByNormalizedName(name: string) {
+function getStaticOrganizerByNormalizedName(
+  organizerType: Exclude<OrganizerType, "spontaneous">,
+  name: string,
+) {
   const normalizedName = normalizeOrganizerName(name);
   if (!normalizedName) return null;
   return ORGANIZER_DIRECTORY.find(
     (entry) =>
-      normalizeOrganizerName(entry.name) === normalizedName ||
-      normalizeOrganizerName(entry.value) === normalizedName,
+      entry.organizerType === organizerType
+      && (
+        normalizeOrganizerName(entry.name) === normalizedName
+        || normalizeOrganizerName(entry.value) === normalizedName
+      ),
   ) ?? null;
 }
 
@@ -115,16 +121,21 @@ export async function searchOrganizerDirectory(params: {
   if (!isCatalogOrganizerType(organizerType)) return [];
 
   const staticEntries = getStaticOrganizerSuggestions(organizerType, query);
-  const { data, error } = await supabase
+  const normalizedQuery = normalizeOrganizerName(query);
+  let persistedQuery = supabase
     .from("organizer_directory_entries")
     .select("id, name, normalized_name, organizer_type")
-    .eq("organizer_type", organizerType)
+    .eq("organizer_type", organizerType);
+  if (normalizedQuery) {
+    persistedQuery = persistedQuery.ilike("normalized_name", `%${normalizedQuery}%`);
+  }
+  const { data, error } = await persistedQuery
     .order("name", { ascending: true })
+    .order("id", { ascending: true })
     .limit(50);
 
   if (error) throw error;
   const persisted = ((data ?? []) as PersistedOrganizerRow[])
-    .filter((entry) => matchesQuery(entry.name, query))
     .map((entry) => ({
       id: entry.id,
       name: entry.name,
@@ -211,7 +222,7 @@ async function findExistingNamedOrganizer(
     throw new Error("Validation: le nom de l'organisateur doit contenir des caractères lisibles.");
   }
 
-  const normalizedStaticMatch = getStaticOrganizerByNormalizedName(enteredName);
+  const normalizedStaticMatch = getStaticOrganizerByNormalizedName(organizerType, enteredName);
   if (normalizedStaticMatch) {
     if (normalizedStaticMatch.organizerType !== organizerType) {
       throw new Error("L'organisateur saisi ne correspond pas au type choisi.");
