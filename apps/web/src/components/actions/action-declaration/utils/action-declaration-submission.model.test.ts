@@ -51,6 +51,61 @@ describe("action declaration submission model", () => {
     ]);
   });
 
+  it("aggregates errors from identity, participants, measures, and geometry", () => {
+    const form = createInitialFormState("Alex", "action");
+    form.organizerType = "";
+    form.associationName = "";
+    form.actionDate = "";
+    form.routeTopology = "point_to_point";
+    form.arrivalLocationLabel = "";
+    form.volunteersCount = "";
+    form.wasteKg = "";
+
+    const issues = getActionDeclarationSubmissionIssues({
+      form,
+      payload: buildCreateActionPayload({
+        form,
+        declarationMode: "complete",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        linkedEventId: undefined,
+      }),
+      isAuthenticated: true,
+      declarationMode: "complete",
+      hasValidDrawing: false,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    });
+
+    expect(issues.map((issue) => issue.field)).toEqual(expect.arrayContaining([
+      "organizerType",
+      "associationName",
+      "actionDate",
+      "arrivalLocationLabel",
+      "volunteersCount",
+      "wasteKg",
+      "manualDrawing",
+    ]));
+    expect(new Set(issues.map((issue) => `${issue.field}:${issue.message}`)).size).toBe(issues.length);
+  });
+
+  it("keeps authentication outside field validation", () => {
+    const form = createInitialFormState("Alex", "action");
+    expect(getActionDeclarationSubmissionIssues({
+      form,
+      payload: {} as never,
+      isAuthenticated: false,
+      declarationMode: "complete",
+      hasValidDrawing: false,
+      hasServerRouteInput: false,
+      isCleanPlaceMode: false,
+      manualDrawingSource: null,
+    })).toEqual([]);
+  });
+
   it("requires an explicit total for a post-action declaration", () => {
     const form = createInitialFormState("Alex", "action");
     form.organizerType = "spontaneous";

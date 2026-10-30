@@ -143,47 +143,39 @@ export function getActionDeclarationSubmissionIssues({
   manualDrawingSource,
 }: SubmissionValidationParams): ValidationIssue[] {
   if (!isAuthenticated) {
-    return [
-      {
-        field: "associationName",
-        message: "Connectez-vous pour compléter et envoyer ce formulaire.",
-      },
-    ];
+    return [];
   }
 
-  const stepOneIssues = getStepOneValidationIssues(form);
-  if (stepOneIssues.length > 0) return stepOneIssues;
+  const issues: ValidationIssue[] = [...getStepOneValidationIssues(form)];
 
   if (form.recordType === "action") {
     const totalInput = form.volunteersCount.trim();
     const total = Number(totalInput);
-    if (
+    const hasInvalidTotal =
       !totalInput ||
       !Number.isInteger(total) ||
       total < 1 ||
-      total > 500
-    ) {
-      return [
-        {
-          field: "volunteersCount",
-          message:
-            "Renseignez le nombre total de participants présents (un entier de 1 à 500).",
-        },
-      ];
-    }
-
-    const compositionMessage = getVolunteerActionCompositionValidationMessage({
-      volunteersCount: total,
-      childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
-      retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
-    });
-    if (compositionMessage) {
-      return [{ field: "volunteerParticipation", message: compositionMessage }];
+      total > 500;
+    if (hasInvalidTotal) {
+      issues.push({
+        field: "volunteersCount",
+        message:
+          "Renseignez le nombre total de participants présents (un entier de 1 à 500).",
+      });
+    } else {
+      const compositionMessage = getVolunteerActionCompositionValidationMessage({
+        volunteersCount: total,
+        childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
+        retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
+      });
+      if (compositionMessage) {
+        issues.push({ field: "volunteerParticipation", message: compositionMessage });
+      }
     }
   }
 
   const volunteerIssues = getVolunteerActionValidationIssues(payload);
-  if (volunteerIssues.length > 0) return volunteerIssues;
+  issues.push(...volunteerIssues);
 
   if (
     declarationMode === "complete" &&
@@ -191,24 +183,24 @@ export function getActionDeclarationSubmissionIssues({
     !hasServerRouteInput &&
     !isCleanPlaceMode
   ) {
-    return [
-      {
-        field: "manualDrawing",
-        message:
-          "Ajoute un tracé manuel valide ou un aperçu géographique avant l'envoi.",
-      },
-    ];
+    issues.push({
+      field: "manualDrawing",
+      message:
+        "Ajoute un tracé manuel valide ou un aperçu géographique avant l'envoi.",
+    });
   }
 
   if (gpxImport && manualDrawingSource !== "gpx_import") {
-    return [
-      {
-        field: "gpxImport",
-        message:
-          "Le tracé GPX sélectionné n’est plus présent. Supprimez-le ou réimportez-le.",
-      },
-    ];
+    issues.push({
+      field: "gpxImport",
+      message:
+        "Le tracé GPX sélectionné n’est plus présent. Supprimez-le ou réimportez-le.",
+    });
   }
 
-  return [];
+  return issues.filter((issue, index, allIssues) =>
+    allIssues.findIndex(
+      (candidate) => candidate.field === issue.field && candidate.message === issue.message,
+    ) === index,
+  );
 }

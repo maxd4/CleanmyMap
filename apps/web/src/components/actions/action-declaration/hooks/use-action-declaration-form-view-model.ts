@@ -106,8 +106,11 @@ export function useActionDeclarationFormViewModel(
       setShowRestrictionDialog(true);
       return;
     }
-    if (draftRecoveryBlocked) return;
-    state.setShowConfirmation(true);
+    if (draftRecoveryBlocked) {
+      state.validateBeforeConfirmation();
+      return;
+    }
+    if (state.validateBeforeConfirmation()) state.setShowConfirmation(true);
   }
 
   const canShowGroupInvite =
@@ -122,7 +125,14 @@ export function useActionDeclarationFormViewModel(
       userMetadata: props.userMetadata,
       showConfirmation: state.showConfirmation,
       onModify: () => state.setShowConfirmation(false),
-      onConfirm: () => { void /* fire-and-forget -- the confirmation overlay owns submission state and errors. */ state.handleConfirmSubmit(); },
+      onConfirm: () => {
+        if (!props.isAuthenticated) {
+          state.setShowConfirmation(false);
+          setShowRestrictionDialog(true);
+          return;
+        }
+        void /* fire-and-forget -- the confirmation overlay owns submission state and errors. */ state.handleConfirmSubmit();
+      },
       isSubmitting: submissionState === "pending",
       isExportPickerOpen,
       onCloseExport: () => setIsExportPickerOpen(false),

@@ -71,6 +71,7 @@ export function buildActionDeclarationFormResult({
     updateFields: updates.updateFields,
     handleResumeDraft: draft.handleResumeDraft,
     handleIgnoreDraft: draft.handleIgnoreDraft,
+    validateBeforeConfirmation: submission.validateBeforeConfirmation,
     handleConfirmSubmit: submission.handleConfirmSubmit,
     actionMediaUpload: submission.actionMediaUpload,
     retryActionMediaUploads: submission.retryActionMediaUploads,

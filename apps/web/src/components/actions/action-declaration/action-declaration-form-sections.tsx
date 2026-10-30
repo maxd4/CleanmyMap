@@ -8,6 +8,10 @@ import { ActionStepIdentity } from "./steps/ActionStepIdentity";
 import { ActionStepLocation } from "./steps/ActionStepLocation";
 import { ActionDeclarationDetails, type ActionDeclarationDetailsProps } from "./action-declaration-details";
 import type { FormState, ValidationIssue } from "./model";
+import {
+  getActionValidationFieldErrorId,
+  getActionValidationTargetId,
+} from "./action-declaration-form.model";
 
 type IdentityProps = Omit<ComponentProps<typeof ActionStepIdentity>, "mode">;
 type HarvestProps = Omit<ComponentProps<typeof ActionStepHarvest>, "mode">;
@@ -41,6 +45,49 @@ export type ActionDeclarationFormSectionsProps = {
   onOpenExport: () => void;
 };
 
+export function ActionDeclarationValidationSummary({
+  validationIssues,
+}: {
+  validationIssues: ValidationIssue[];
+}) {
+  return (
+    <section
+      id="action-declaration-validation-summary"
+      role="alert"
+      aria-labelledby="action-declaration-validation-summary-title"
+      aria-live="assertive"
+      className="rounded-2xl border border-rose-200 bg-[#FFF7F8] p-4 text-rose-950 shadow-sm"
+    >
+      <h3 id="action-declaration-validation-summary-title" className="text-sm font-bold">
+        Corrigez les points suivants avant de continuer
+      </h3>
+      <ul className="mt-2 space-y-1.5 pl-5 text-sm text-rose-800">
+        {Array.from(
+          validationIssues.reduce((groups, issue) => {
+            const messages = groups.get(issue.field) ?? [];
+            groups.set(issue.field, [...messages, issue.message]);
+            return groups;
+          }, new Map<string, string[]>()),
+        ).map(([field, messages]) => {
+          const targetId = getActionValidationTargetId(field);
+          const issueId = getActionValidationFieldErrorId(field);
+          return (
+            <li key={field} id={issueId}>
+              {targetId ? (
+                <a className="underline underline-offset-2" href={`#${targetId}`}>
+                  {messages.join(" ")}
+                </a>
+              ) : (
+                messages.join(" ")
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 export function ActionDeclarationFormSections({
   form,
   identity,
@@ -56,6 +103,9 @@ export function ActionDeclarationFormSections({
   return (
     <>
       <div className="space-y-6">
+        {hasAttemptedSubmit && validationIssues.length > 0 ? (
+          <ActionDeclarationValidationSummary validationIssues={validationIssues} />
+        ) : null}
         <section aria-labelledby="action-declaration-action" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm">
           <div>
             <h3 id="action-declaration-action" className="text-lg font-bold text-emerald-950">Action</h3>

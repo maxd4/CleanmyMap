@@ -183,6 +183,12 @@ type ConfirmSubmitParams = UseActionDeclarationSubmissionParams & {
 
 async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> {
   if (params.submissionState === "pending") return;
+  if (!params.isAuthenticated) {
+    params.setErrorMessage("Connectez-vous pour compléter et envoyer ce formulaire.");
+    params.setSubmissionState("error");
+    params.setShowConfirmation(false);
+    return;
+  }
   if (params.photoPreparationPending) {
     params.setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
     params.setSubmissionState("error");
@@ -301,6 +307,7 @@ export function useActionDeclarationSubmission(
     uploadedCount: 0,
     failed: [],
   });
+  const submissionInFlightRef = useRef(false);
 
   async function retryActionMediaUploads() {
     if (!createdId || actionMediaUpload.failed.length === 0) return;
@@ -324,42 +331,83 @@ export function useActionDeclarationSubmission(
       linkedEventId,
     });
 
-  const handleConfirmSubmit = () => executeConfirmSubmit({
-    form,
-    declarationMode,
-    isAuthenticated,
-    draftStorageReadError,
-    initialActionId,
-    loadedActionPhase,
-    manualDrawingEnabled,
-    manualDrawing,
-    manualDrawingSource,
-    drawingIsValid,
-    effectiveRoutePreviewDrawing,
-    routePreviewSource,
-    hasValidDrawing,
-    hasServerRouteInput,
-    isCleanPlaceMode,
-    payload,
-    linkedEventId,
-    photoAssets,
-    photoPreparationPending,
-    visionEstimate,
-    userMetadata,
-    clearDraft,
-    creationRequestId,
-    setLoadedActionPhase,
-    setHasAttemptedSubmit,
-    submissionState,
-    setSubmissionState,
-    setErrorMessage,
-    setValidationIssues,
-    setShowConfirmation,
-    setCreatedId,
-    setRecordedAction,
-    setRetentionLoop,
-    setActionMediaUpload,
-  });
+  const validateBeforeConfirmation = (): boolean => {
+    setHasAttemptedSubmit(true);
+    if (!isAuthenticated) return false;
+    if (photoPreparationPending) {
+      setValidationIssues([]);
+      setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
+      setSubmissionState("error");
+      return false;
+    }
+    if (draftStorageReadError && !initialActionId) {
+      setValidationIssues([]);
+      setErrorMessage(
+        "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
+      );
+      setSubmissionState("error");
+      return false;
+    }
+    const issues = getSubmissionIssues({
+      form,
+      payload,
+      isAuthenticated,
+      declarationMode,
+      hasValidDrawing,
+      hasServerRouteInput,
+      isCleanPlaceMode,
+      manualDrawingSource,
+    });
+    setValidationIssues(issues);
+    setErrorMessage(null);
+    setSubmissionState("idle");
+    return issues.length === 0;
+  };
+
+  const handleConfirmSubmit = async (): Promise<void> => {
+    if (submissionInFlightRef.current) return;
+    submissionInFlightRef.current = true;
+    try {
+      await executeConfirmSubmit({
+        form,
+        declarationMode,
+        isAuthenticated,
+        draftStorageReadError,
+        initialActionId,
+        loadedActionPhase,
+        manualDrawingEnabled,
+        manualDrawing,
+        manualDrawingSource,
+        drawingIsValid,
+        effectiveRoutePreviewDrawing,
+        routePreviewSource,
+        hasValidDrawing,
+        hasServerRouteInput,
+        isCleanPlaceMode,
+        payload,
+        linkedEventId,
+        photoAssets,
+        photoPreparationPending,
+        visionEstimate,
+        userMetadata,
+        clearDraft,
+        creationRequestId,
+        setLoadedActionPhase,
+        setHasAttemptedSubmit,
+        submissionState,
+        setSubmissionState,
+        setErrorMessage,
+        setValidationIssues,
+        setShowConfirmation,
+        setCreatedId,
+        setRecordedAction,
+        setRetentionLoop,
+        setActionMediaUpload,
+      });
+    } finally {
+      submissionInFlightRef.current = false;
+    }
+  };
 
   return {
     submissionState,
@@ -373,6 +421,7 @@ export function useActionDeclarationSubmission(
     actionMediaUpload,
     retryActionMediaUploads,
     trackFormStart,
+    validateBeforeConfirmation,
     handleConfirmSubmit,
   };
 }
