@@ -8,6 +8,7 @@ import {
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
 import {
+  getFallbackPointPresentation,
   getGeometryPresentation,
   isIndicativeRouteFallback,
 } from "@/lib/actions/geometry/geometry-presentation";
@@ -215,26 +216,6 @@ function observedGeometryLabel(
   return "Couverture observée";
 }
 
-function buildFallbackPointPresentation(): ReturnType<typeof getGeometryPresentation> {
-  return {
-    origin: "fallback_point",
-    reality: "location_only",
-    label: "Localisation seule",
-    strokeStyle: "point",
-    variant: "point",
-  };
-}
-
-function resolveFallbackPointPresentation(
-  item: ActionMapItem,
-): ReturnType<typeof getGeometryPresentation> {
-  const historicalPresentation = getGeometryPresentation(item);
-  return historicalPresentation.reality === "contextual" ||
-    historicalPresentation.reality === "location_only"
-    ? historicalPresentation
-    : buildFallbackPointPresentation();
-}
-
 function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
   const historicalKind = item.contract?.geometry.kind ?? item.geometry_kind ?? null;
   const historicalSource =
@@ -302,7 +283,7 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
     return {
       geometry: null,
       observedCoverage: null,
-      presentation: resolveFallbackPointPresentation(item),
+      presentation: getFallbackPointPresentation(item),
       effectiveKind: null,
       effectiveSource: null,
       effectiveSources: null,
@@ -319,7 +300,7 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
       coordinates: [coords.longitude, coords.latitude],
     },
     observedCoverage: null,
-    presentation: resolveFallbackPointPresentation(item),
+    presentation: getFallbackPointPresentation(item),
     effectiveKind: "point",
     effectiveSource: "fallback_point",
     effectiveSources: null,

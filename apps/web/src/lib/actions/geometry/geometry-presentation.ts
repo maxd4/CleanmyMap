@@ -118,6 +118,15 @@ function buildFallbackPointPresentation(): GeometryPresentation {
   );
 }
 
+/** Uses only the effective fallback representation when historical geometry is unavailable. */
+export function getFallbackPointPresentation(item: ActionMapItem): GeometryPresentation {
+  const historicalPresentation = getGeometryPresentation(item);
+  return historicalPresentation.reality === "contextual" ||
+    historicalPresentation.reality === "location_only"
+    ? historicalPresentation
+    : buildFallbackPointPresentation();
+}
+
 function observedTraceCount(item: ActionMapItem): number {
   return resolveObservedCoverageGeometry({
     preparationData: item.contract?.metadata.preparationData,

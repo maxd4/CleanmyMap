@@ -474,7 +474,7 @@ describe("actions map export utils", () => {
     });
   });
 
-  it("keeps an invalid historical GPS source contextual when only a location remains", () => {
+  it("keeps an invalid historical GPS source location-only when only a location remains", () => {
     const contract = buildActionDataContract({
       id: "action-historical-gps-without-geometry",
       type: "action",
