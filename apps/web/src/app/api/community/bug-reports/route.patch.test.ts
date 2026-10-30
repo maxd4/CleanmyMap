@@ -5,6 +5,7 @@ const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const getCommunityBugReportByIdMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportStatusMock = vi.hoisted(() => vi.fn());
+const updateCommunityBugReportStatusTransactionalMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn() }));
 
@@ -25,6 +26,7 @@ vi.mock("@/lib/community/bug-reports-store", () => ({
   appendCommunityBugReport: vi.fn(),
   getCommunityBugReportById: getCommunityBugReportByIdMock,
   updateCommunityBugReportStatus: updateCommunityBugReportStatusMock,
+  updateCommunityBugReportStatusTransactional: updateCommunityBugReportStatusTransactionalMock,
 }));
 
 vi.mock("@/lib/community/creator-inbox-email", () => ({
@@ -104,6 +106,11 @@ describe("PATCH /api/community/bug-reports", () => {
     updateCommunityBugReportStatusMock.mockImplementation(async ({ status }) =>
       updatedReport(status),
     );
+    updateCommunityBugReportStatusTransactionalMock.mockImplementation(async ({ status }) => ({
+      status: "updated",
+      record: updatedReport(status),
+      auditPersisted: true,
+    }));
   });
 
   it.each([undefined, "", "nope", "    "]) (
@@ -136,44 +143,100 @@ describe("PATCH /api/community/bug-reports", () => {
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
-  it("audits treated with the canonical before/after values exactly once", async () => {
+  it("rejects a role other than max before loading or mutating the feedback", async () => {
+    getCurrentUserActiveRoleMock.mockResolvedValueOnce("admin");
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      patchRequest({ reportId: "report-1", status: "treated", reason: "Rôle insuffisant" }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+    expect(updateCommunityBugReportStatusTransactionalMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["open", "treated", "archived"] as const)(
+    "uses the transactional mutation for %s without a second success audit",
+    async (status) => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
       patchRequest({
         reportId: "report-1",
-        status: "treated",
+        status,
         reason: "  Traitement terminé  ",
       }),
     );
 
     expect(response.status).toBe(200);
-    expect(updateCommunityBugReportStatusMock).toHaveBeenCalledWith({
+    expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledWith({
       reportId: "report-1",
-      status: "treated",
-    });
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith({
-      operationId: expect.any(String),
-      at: expect.any(String),
+      status,
       actorUserId: "reviewer-1",
-      operationType: "admin_operation",
-      outcome: "success",
-      targetId: "report-1",
-      details: {
-        operation: "update_bug_report_status",
-        reason: "Traitement terminé",
-        targetUserId: "user-1",
-        previousValue: { status: "open", creatorState: "new" },
-        newValue: { status: "treated", creatorState: "treated" },
-      },
+      operationId: expect.stringMatching(/^feedback-status-/),
+      expectedStatus: "open",
+      expectedCreatorState: "new",
     });
-    const details = appendAdminOperationAuditMock.mock.calls[0]?.[0].details;
-    expect(JSON.stringify(details)).not.toContain("private-");
-    expect(JSON.stringify(details)).not.toContain("/private-path");
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not add a second audit when the transaction is unchanged", async () => {
+    updateCommunityBugReportStatusTransactionalMock.mockResolvedValueOnce({
+      status: "unchanged",
+      record: report,
+      auditPersisted: true,
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      patchRequest({ reportId: "report-1", status: "treated", reason: "Déjà traité" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
   });
 
-  it("audits archive with the canonical before/after values", async () => {
+  it("returns 409 without an extra audit when the transaction detects a conflict", async () => {
+    updateCommunityBugReportStatusTransactionalMock.mockResolvedValueOnce({
+      status: "conflict",
+      record: { ...report, status: "treated", creatorState: "treated" },
+      auditPersisted: true,
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      patchRequest({ reportId: "report-1", status: "archived", reason: "Conflit détecté" }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the transaction reports a missing feedback", async () => {
+    updateCommunityBugReportStatusTransactionalMock.mockResolvedValueOnce({
+      status: "not_found",
+      record: null,
+      auditPersisted: true,
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      patchRequest({ reportId: "report-1", status: "archived", reason: "Feedback absent" }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the transactional archive result without a second success audit", async () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
@@ -181,19 +244,9 @@ describe("PATCH /api/community/bug-reports", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock.mock.calls[0]?.[0]).toMatchObject({
-      operationType: "admin_operation",
-      outcome: "success",
-      targetId: "report-1",
-      details: {
-        operation: "update_bug_report_status",
-        reason: "Archive validée",
-        targetUserId: "user-1",
-        previousValue: { status: "open", creatorState: "new" },
-        newValue: { status: "archived", creatorState: "archived" },
-      },
-    });
+    expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledTimes(1);
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
   it("audits a not-found lookup as one bounded error", async () => {
@@ -238,8 +291,7 @@ describe("PATCH /api/community/bug-reports", () => {
   });
 
   it.each([
-    ["throws", () => updateCommunityBugReportStatusMock.mockRejectedValueOnce(new Error("private update failure"))],
-    ["returns null", () => updateCommunityBugReportStatusMock.mockResolvedValueOnce(null)],
+    ["throws", () => updateCommunityBugReportStatusTransactionalMock.mockRejectedValueOnce(new Error("private update failure"))],
   ])("audits an update %s as one bounded error", async (_label, configure) => {
     configure();
     const { PATCH } = await import("./route");
@@ -266,6 +318,7 @@ describe("PATCH /api/community/bug-reports", () => {
       },
     });
     expect(JSON.stringify(audit.details)).not.toContain("private update failure");
+    expect(updateCommunityBugReportStatusMock).not.toHaveBeenCalled();
   });
 
   it("omits a non-canonical target user id from audit details", async () => {
@@ -277,8 +330,9 @@ describe("PATCH /api/community/bug-reports", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(appendAdminOperationAuditMock.mock.calls[0]?.[0].details).not.toHaveProperty(
-      "targetUserId",
+    expect(updateCommunityBugReportStatusTransactionalMock).toHaveBeenCalledWith(
+      expect.objectContaining({ actorUserId: "reviewer-1" }),
     );
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 });

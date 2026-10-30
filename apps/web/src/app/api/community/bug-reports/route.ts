@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
@@ -15,7 +16,7 @@ import {
  getCommunityBugReportById,
  listCommunityBugReportsForUser,
  parseCommunityBugReportHistoryCursor,
- updateCommunityBugReportStatus,
+  updateCommunityBugReportStatusTransactional,
 } from"@/lib/community/bug-reports-store";
 import type { BugReportRecord } from "@/lib/community/bug-reports-store";
 import type { PersonalFeedbackItem } from "@/lib/community/feedback-history-contract";
@@ -308,7 +309,7 @@ export async function PATCH(request: Request) {
  if (!parsed.ok) return parsed.response;
 
  const reason = parsed.data.reason;
- const operationId = `feedback-${parsed.data.reportId}-${Date.now()}`;
+  const operationId = `feedback-status-${randomUUID()}`;
  const auditContext: BugReportUpdateAuditContext = {
   operationId,
   actorUserId: identity.userId,
@@ -343,12 +344,18 @@ export async function PATCH(request: Request) {
  const previousValue = toBugReportAuditSnapshot(current);
  const newValue = expectedBugReportAuditSnapshot(parsed.data.status);
  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
- let updated;
+  let mutationResult: Awaited<
+   ReturnType<typeof updateCommunityBugReportStatusTransactional>
+  >;
  try {
- updated = await updateCommunityBugReportStatus({
- reportId: parsed.data.reportId,
- status: parsed.data.status,
- });
+  mutationResult = await updateCommunityBugReportStatusTransactional({
+  reportId: parsed.data.reportId,
+  status: parsed.data.status,
+  actorUserId: identity.userId,
+  operationId,
+  expectedStatus: current.status,
+  expectedCreatorState: current.creatorState,
+  });
  } catch {
  await appendBugReportUpdateAudit(auditContext, {
   outcome:"error",
@@ -361,24 +368,16 @@ export async function PATCH(request: Request) {
  return NextResponse.json({ error:"Unable to update report" }, { status: 500 });
  }
 
- if (!updated) {
- await appendBugReportUpdateAudit(auditContext, {
-  outcome:"error",
-  targetUserId,
-  previousValue,
-  newValue,
-  stage:"update",
-  partialMutation:false,
- });
- return NextResponse.json({ error:"Unable to update report" }, { status: 500 });
+  if (mutationResult.status === "conflict") {
+  return NextResponse.json(
+   { error:"Feedback state changed concurrently." },
+   { status: 409 },
+  );
  }
 
- await appendBugReportUpdateAudit(auditContext, {
-  outcome:"success",
-  targetUserId,
-  previousValue,
-  newValue: toBugReportAuditSnapshot(updated),
- });
+  if (mutationResult.status === "not_found" || !mutationResult.record) {
+  return NextResponse.json({ error:"Report not found" }, { status: 404 });
+  }
 
- return NextResponse.json({ status:"ok", item: updated });
+  return NextResponse.json({ status:"ok", item: mutationResult.record });
 }
