@@ -8,6 +8,7 @@ import type { CommunityEventLocationSource } from "@/lib/community/event-locatio
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext, ActionContextSource } from "@/lib/actions/action-context";
 import type { CommunitySubscriptionRow } from "@/lib/community/subscriptions";
+import type { ActionNeedRow } from "@/lib/community/action-needs";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -26,6 +27,7 @@ export type CommunityEventRow = {
   description: string | null;
 };
 export type { CommunitySubscriptionRow };
+export type { ActionNeedRow };
 export type ActionParticipantRow = {
   id: string;
   created_at: string;

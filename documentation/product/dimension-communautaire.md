@@ -10,6 +10,18 @@ CleanMyMap peut renforcer son utilite en transformant la participation ponctuell
 > politiques explicites. L'inclusion sociale et les bénéfices liés à
 > l'activité physique restent des objectifs, sans résultat mesuré déclaré.
 
+## État courant — 6A1
+
+Le schéma canonique `public.action_needs` existe pour représenter les besoins
+structurés associés à une action. Il utilise exclusivement les huit catégories
+`COMMUNITY_HELP_CATEGORIES` et les statuts persistés `open`, `fulfilled` et
+`cancelled`. L'état `expired` reste dérivé de `expires_at` et n'est pas stocké.
+
+Cette étape ne livre pas encore les routes, l'interface, les offres d'aide, les
+préférences, les suggestions ni le digest. Ces capacités restent `PLAN` et
+doivent réutiliser cette table unique ainsi que les règles de publication
+actuelles des actions.
+
 ## Intentions produit
 
 - Faire revenir les contributeurs grace a une reconnaissance utile, pas decorative.

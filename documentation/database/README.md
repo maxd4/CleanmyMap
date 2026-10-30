@@ -24,4 +24,19 @@
 4. Les modifications persistantes passent par l'unique arbre canonique de migrations et impliquent consommateurs, types, tests et rétrocompatibilité justifiée. Ne jamais appliquer un correctif silencieux directement sur une base distante.
 5. Distinguer explicitement `STATIC_CONTRACT`, test exécuté et validation transactionnelle PostgreSQL. Si les contraintes, triggers ou règles RLS n'ont pas été exécutés, déclarer `DB_SEMANTICS_NOT_EXECUTED`.
 
+### CURRENT — besoins structurés d'action (6A1)
+
+La représentation persistante canonique des besoins est `public.action_needs`.
+Elle porte les huit valeurs exactes de `COMMUNITY_HELP_CATEGORIES`, les
+statuts persistés `open`, `fulfilled` et `cancelled`, ainsi que les contraintes
+de longueur, de date et de cohérence de `fulfilled_at`. `expired` est une
+projection de lecture lorsque `status = open` et que `expires_at < now()` ; il
+n'est jamais persisté.
+
+La table est protégée par RLS et aucun rôle navigateur (`anon` ou
+`authenticated`) ne dispose d'une écriture directe. Les mutations futures
+passeront par un service serveur authentifié et autorisé ; les règles de
+publication et la lecture privée des besoins seront exposées par les lots
+API/UI ultérieurs, sans créer une seconde table ou un second statut effectif.
+
 Pour le classement des sources de stockage (Git, navigateur, Supabase, cache/ISR, Storage), voir **uniquement** `../architecture/data-governance.md` : aucun second tableau n'est maintenu ici. Les familles de tables sont inventoriées dans cette source et dans les migrations, pas dans cet index.
