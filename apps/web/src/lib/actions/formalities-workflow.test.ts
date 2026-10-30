@@ -4,6 +4,7 @@ import {
   applyFormalitiesWorkflowTransition,
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
+  getBlockedRequiredFormalityIds,
   isFormalitiesPublicationBlocked,
   normalizeActionFormalitiesWorkflow,
 } from "./formalities-workflow";
@@ -121,6 +122,37 @@ describe("formalities workflow", () => {
         proof: expect.objectContaining({ kind: "user_declared" }),
       }),
     );
+    expect(normalizeActionFormalitiesWorkflow(changed)).toEqual(changed);
+
+    const restored = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      previous: changed,
+      now: "2026-09-17T10:03:00.000Z",
+    });
+    expect(restored.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        active: true,
+        validForQualification: false,
+        contentVersion: restored.contentVersion,
+      }),
+    );
+    expect(getBlockedRequiredFormalityIds(qualification, restored)).toContain(
+      "paris-city-public-domain-aot",
+    );
+
+    const explicitlyResubmitted = applyFormalitiesWorkflowTransition({
+      workflow: applyFormalitiesWorkflowTransition({
+        workflow: restored,
+        transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" },
+        now: "2026-09-17T10:04:00.000Z",
+      }),
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+      now: "2026-09-17T10:05:00.000Z",
+    });
+    expect(normalizeActionFormalitiesWorkflow(explicitlyResubmitted)).toEqual(explicitlyResubmitted);
+    expect(isFormalitiesPublicationBlocked(qualification, explicitlyResubmitted)).toBe(false);
   });
 
   it("invalidates a qualification when the venue or date changes, without using the title as a dependency", () => {
@@ -258,6 +290,37 @@ describe("formalities workflow", () => {
           ...progress,
           contentVersion: "stale-content-version",
         })),
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps a structurally valid inactive historical progress with its old content version", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const historical = {
+      ...sent.progress[0]!,
+      formalityId: "removed-formality",
+      contentVersion: "historical-content-version",
+      active: false,
+      validForQualification: false,
+      invalidatedAt: "2026-09-17T10:02:00.000Z",
+    };
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [...sent.progress, historical],
+      }),
+    ).not.toBeNull();
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [
+          ...sent.progress,
+          { ...historical, proof: { ...historical.proof!, kind: "invalid" } },
+        ],
       }),
     ).toBeNull();
   });

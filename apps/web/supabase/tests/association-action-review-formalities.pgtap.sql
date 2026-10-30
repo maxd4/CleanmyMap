@@ -1,6 +1,6 @@
 begin;
 
-select plan(33);
+select plan(35);
 
 create temp table formalities_workflow_fixture (
   name text primary key,
@@ -77,6 +77,32 @@ values
     )
   )
 );
+
+insert into formalities_workflow_fixture (name, workflow)
+select
+  'complete_required_with_historical',
+  jsonb_set(
+    workflow,
+    '{progress}',
+    (workflow -> 'progress') || jsonb_build_array(
+      jsonb_build_object(
+        'formalityId', 'removed-historical',
+        'userStatus', 'sent',
+        'contentVersion', 'qualification-v0',
+        'statusChangedAt', '2026-10-29T10:00:00Z',
+        'proof', jsonb_build_object(
+          'kind', 'user_declared',
+          'reference', null,
+          'recordedAt', '2026-10-29T10:00:00Z'
+        ),
+        'active', false,
+        'validForQualification', false,
+        'invalidatedAt', '2026-10-30T10:00:00Z'
+      )
+    )
+  )
+from formalities_workflow_fixture
+where name = 'complete_required';
 
 select is(
   public.is_association_action_formalities_ready('{}'::jsonb),
@@ -224,6 +250,27 @@ select is(
   true,
   'a conforming user declaration with an optional reference is ready'
 );
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_required_with_historical'))
+  ),
+  true,
+  'a valid workflow with an inactive historical progress keeps its old content version'
+);
+select is(
+  public.is_association_action_formalities_ready(
+    jsonb_build_object(
+      'formalitiesWorkflow',
+      jsonb_set(
+        (select workflow from formalities_workflow_fixture where name = 'complete_required_with_historical'),
+        '{progress,1,proof,kind}',
+        '"invalid"'::jsonb
+      )
+    )
+  ),
+  false,
+  'an inactive historical progress remains subject to proof validation'
+);
 select ok(
   public.is_association_action_formalities_ready('{}'::jsonb) is not null,
   'the formalities helper is strictly boolean'
@@ -294,7 +341,7 @@ with invalid_action as (
   ) values (
     'review-fixture-user', current_date, 'Fixture location', 'Fixture association',
     'association', 'pre_action', 'pending',
-    jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_required')),
+    jsonb_build_object('formalitiesWorkflow', (select workflow from formalities_workflow_fixture where name = 'complete_required_with_historical')),
     'visible', null
   ) returning id
 )

@@ -426,7 +426,7 @@ export function normalizeActionFormalitiesWorkflow(
   const traceFormalityIds = new Set(candidate.trace.formalities.map((formality) => formality.id));
   const progressIds = candidate.progress.map((progress) => progress.formalityId);
   if (new Set(progressIds).size !== progressIds.length) return null;
-  if (candidate.progress.some((progress) => progress.contentVersion !== candidate.contentVersion)) {
+  if (candidate.progress.some((progress) => progress.active && progress.contentVersion !== candidate.contentVersion)) {
     return null;
   }
   const activeProgressIds = new Set(

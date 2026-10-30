@@ -25,6 +25,10 @@ const canonicalIntegrityMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261030000020_association_action_review_formalities_canonical_integrity.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
+const historicalProgressMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261030000023_association_action_review_formalities_historical_progress.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
 
 describe("association action review migration STATIC_CONTRACT", () => {
   it("separates review from moderation and preserves historical rows", () => {
@@ -133,5 +137,15 @@ describe("association action review migration STATIC_CONTRACT", () => {
     expect(canonicalIntegrityMigration).not.toContain("20261030000012");
     expect(canonicalIntegrityMigration).not.toContain("20261030000013");
     expect(canonicalIntegrityMigration).not.toContain("20261030000016");
+  });
+
+  it("keeps historical progress structurally strict while versioning only active progress", () => {
+    expect(historicalProgressMigration).toContain("item -> 'active' <> 'true'::jsonb");
+    expect(historicalProgressMigration).toContain("item ->> 'contentversion' = (select value ->> 'contentversion' from workflow)");
+    expect(historicalProgressMigration).toContain("jsonb_typeof(item -> 'validforqualification') = 'boolean'");
+    expect(historicalProgressMigration).toContain("pg_catalog.pg_input_is_valid");
+    expect(historicalProgressMigration).toContain("revoke all on function public.is_association_action_formalities_ready");
+    expect(historicalProgressMigration).toContain("grant execute on function public.is_association_action_formalities_ready");
+    expect(historicalProgressMigration).not.toContain("20261030000020");
   });
 });

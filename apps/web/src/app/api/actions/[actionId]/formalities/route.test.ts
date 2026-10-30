@@ -622,6 +622,85 @@ describe("/api/actions/:actionId/formalities", () => {
     expect(invalidatedProgress?.invalidatedAt).toBeTypeOf("string");
   });
 
+  it("persists and rereads a removed formality without reactivating its history", async () => {
+    const previousFacts = formalitiesFacts() as ActionFormalitiesFacts;
+    const previousQualification = qualifyActionFormalities(previousFacts);
+    const previousWorkflow = buildFormalitiesWorkflowState({
+      facts: previousFacts,
+      qualification: previousQualification,
+      actionDependencies: {
+        locationLabel: "Paris",
+        actionDate: "2026-09-01",
+        territoryFingerprint: buildFormalitiesTerritoryFingerprint(previousFacts.territory),
+      },
+      now: "2026-09-26T00:00:00.000Z",
+    });
+    previousWorkflow.progress = previousWorkflow.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
+      ? {
+          ...item,
+          userStatus: "sent" as const,
+          statusChangedAt: "2026-09-26T00:01:00.000Z",
+          proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-09-26T00:01:00.000Z" },
+          validForQualification: true,
+        }
+      : item);
+    const currentAction = {
+      ...action(),
+      preparation_data: {
+        formalitiesContext: previousFacts,
+        formalitiesWorkflow: previousWorkflow,
+      },
+    };
+    loadActionMock.mockResolvedValueOnce(currentAction);
+
+    const response = await PATCH(
+      formalitiesRequest({
+        method: "PATCH",
+        body: JSON.stringify({
+          facts: formalitiesFacts({
+            publicSpace: "private_domain",
+            manager: { kind: "private", label: null },
+            hasInstallations: false,
+            requiresPhysicalOccupation: false,
+          }),
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+    const body = await readFormalitiesResponse(response);
+    const persisted = (update.mock.calls[0]?.[0] as Record<string, unknown>).preparation_data;
+    const historical = body.workflow.progress.find(
+      (item) => item.formalityId === "paris-city-public-domain-aot",
+    );
+
+    expect(response.status).toBe(200);
+    expect(historical).toMatchObject({
+      userStatus: "sent",
+      validForQualification: false,
+      invalidatedAt: expect.any(String),
+    });
+    expect(update).toHaveBeenCalledTimes(1);
+
+    loadActionMock.mockResolvedValueOnce({
+      ...currentAction,
+      preparation_data: persisted as ActionRow["preparation_data"],
+    });
+    const rereadResponse = await GET(formalitiesRequest(), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+    const reread = await readFormalitiesResponse(rereadResponse);
+    const rereadHistorical = reread.workflow.progress.find(
+      (item) => item.formalityId === "paris-city-public-domain-aot",
+    );
+
+    expect(rereadResponse.status).toBe(200);
+    expect(rereadHistorical).toMatchObject({
+      userStatus: "sent",
+      validForQualification: false,
+      invalidatedAt: expect.any(String),
+    });
+  });
+
   it("requires action management permission before changing formalities", async () => {
     identityMock.mockResolvedValueOnce(identity("other-user"));
     authMock.mockResolvedValueOnce({ ok: true, userId: "other-user" });
