@@ -5,7 +5,7 @@ import { z } from "zod";
 const baseActionSchema = z.object({
   source: z.enum(["feedback", "promotion", "partner", "association_action"]),
   itemId: z.string().trim().min(1),
-  action: z.enum(["mark_treated", "responded", "archive", "delete", "change_priority", "qualify", "update_tracking", "approve_association_action", "reject_association_action"]),
+  action: z.enum(["mark_treated", "responded", "archive", "delete", "change_priority", "qualify", "update_tracking", "approve_association_action", "reject_association_action", "retry_association_action_announcement"]),
   priority: z.enum(["normal", "high", "critical"]).optional(),
   reason: z.string().trim().max(500).optional(),
   decision: z.enum(["pending", "needs_info", "accepted", "duplicate", "rejected"]).optional(),
@@ -38,6 +38,12 @@ export const actionSchema = baseActionSchema.superRefine((value, context) => {
   if (value.action === "approve_association_action" || value.action === "reject_association_action") {
     addIssueIf(context, value.source !== "association_action", "source", "Association action decisions require the association_action source.");
     addIssueIf(context, !value.reason || value.reason.length < 5, "reason", "A review reason of at least 5 characters is required.");
+    return;
+  }
+
+  if (value.action === "retry_association_action_announcement") {
+    addIssueIf(context, value.source !== "association_action", "source", "Association action diffusion retries require the association_action source.");
+    addIssueIf(context, !value.reason || value.reason.length < 5, "reason", "A retry reason of at least 5 characters is required.");
     return;
   }
 

@@ -35,6 +35,7 @@ type InboxItemCardProps = {
   onRejectPartner: (item: CreatorInboxItem) => void;
   onAcceptAssociationAction?: (item: CreatorInboxItem) => void;
   onRejectAssociationAction?: (item: CreatorInboxItem) => void;
+  onRetryAssociationActionAnnouncement?: (item: CreatorInboxItem) => void;
   onApplyInboxAction: (params: InboxActionParams) => void;
   onLegalDecision?: (params: LegalDecisionParams) => void;
   canQualify?: boolean;
@@ -73,6 +74,7 @@ export function InboxItemCard({
   onRejectPartner,
   onAcceptAssociationAction = () => undefined,
   onRejectAssociationAction = () => undefined,
+  onRetryAssociationActionAnnouncement = () => undefined,
   onApplyInboxAction,
   onLegalDecision,
   canQualify,
@@ -134,6 +136,7 @@ export function InboxItemCard({
         onRejectPartner={onRejectPartner}
         onAcceptAssociationAction={onAcceptAssociationAction}
         onRejectAssociationAction={onRejectAssociationAction}
+        onRetryAssociationActionAnnouncement={onRetryAssociationActionAnnouncement}
         onApplyInboxAction={onApplyInboxAction}
         onLegalDecision={onLegalDecision}
       />
@@ -162,6 +165,7 @@ function InboxItemCardActions({
   onRejectPartner,
   onAcceptAssociationAction = () => undefined,
   onRejectAssociationAction = () => undefined,
+  onRetryAssociationActionAnnouncement = () => undefined,
   onApplyInboxAction,
   onLegalDecision,
 }: Omit<InboxItemCardProps, "canQualify" | "feedbackOptions" | "onQualifyFeedback" | "onUpdateFeedbackTracking">) {
@@ -173,6 +177,7 @@ function InboxItemCardActions({
       {item.source === "promotion" && item.sourceStatus === "pending_owner_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={promotionReason} onReasonChange={onPromotionReasonChange} actionBusy={actionBusy} onAccept={onAcceptPromotion} onReject={onRejectPromotion} /> : null}
       {item.source === "partner" && item.sourceStatus === "pending_admin_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={partnerReason} onReasonChange={onPartnerReasonChange} actionBusy={actionBusy} onAccept={onAcceptPartner} onReject={onRejectPartner} /> : null}
       {item.source === "association_action" && item.sourceStatus === "pending_review" ? <InboxItemReviewActions item={item} locale={locale} copy={copy} reason={associationActionReason} onReasonChange={onAssociationActionReasonChange} actionBusy={actionBusy} onAccept={onAcceptAssociationAction} onReject={onRejectAssociationAction} /> : null}
+      {item.source === "association_action" && item.sourceStatus === "approved" ? <button type="button" className="rounded-md border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-50" disabled={actionBusy(item.source, item.sourceRecordId, "retry_announcement")} onClick={() => onRetryAssociationActionAnnouncement(item)}>{actionBusy(item.source, item.sourceRecordId, "retry_announcement") ? "Relance…" : "Relancer la diffusion"}</button> : null}
       {item.source !== "event" && item.source !== "legal_content_report" && item.source !== "association_action" ? <InboxItemProcessingActions item={item} copy={copy} actionReason={actionReason} actionBusy={actionBusy} onApplyInboxAction={onApplyInboxAction} /> : null}
     </div>
   );

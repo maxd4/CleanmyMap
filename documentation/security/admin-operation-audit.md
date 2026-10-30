@@ -129,6 +129,14 @@ dans `details.operation`. La transition `actions.review_state`, son motif et
 son `published_at` sont écrits dans la même transaction que l'audit; aucune
 description complète ni donnée personnelle n'est copiée dans l'audit.
 
+La diffusion post-approbation conserve la même frontière d'acteur administratif
+mais reste une phase distincte : les opérations
+`association_action_announcement_publish`,
+`association_action_announcement_retry` et leurs suffixes d'échec sont
+journalisées sur le `targetId` de l'action. Une panne de messagerie ne révoque
+pas la décision déjà validée ; l'erreur indique une mutation partielle
+relançable et la relance revalide l'éligibilité publique courante.
+
 `operationType` ne doit pas être utilisé comme substitut à l'opération métier détaillée. Pour les opérations génériques, `details.operation` porte un identifiant métier borné.
 
 ## 5. Règle d'identité

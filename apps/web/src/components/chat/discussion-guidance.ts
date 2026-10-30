@@ -378,6 +378,19 @@ export const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition
       icon: Trophy,
       accentClassName: "text-amber-500",
     },
+    {
+      id: "evenements_associatifs",
+      label: "Événements associatifs",
+      labelEn: "Association events",
+      description: "Découvrir les actions associatives validées et leurs informations pratiques.",
+      descriptionEn: "Discover approved association actions and their practical information.",
+      starterPrompt:
+        "Événements associatifs : je souhaite découvrir une action validée ou poser une question pratique.",
+      starterPromptEn:
+        "Association events: I would like to discover an approved action or ask a practical question.",
+      icon: ClipboardCheck,
+      accentClassName: "text-emerald-500",
+    },
   ],
   dm: [],
   admin_elu: [

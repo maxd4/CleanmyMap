@@ -121,6 +121,7 @@ export function CreatorInboxPanel({
                 onRejectPartner={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.rejectPartner(nextItem); }}
                 onAcceptAssociationAction={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.decideAssociationAction(nextItem, "approve"); }}
                 onRejectAssociationAction={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.decideAssociationAction(nextItem, "reject"); }}
+                onRetryAssociationActionAnnouncement={(nextItem) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.retryAssociationActionAnnouncement(nextItem); }}
                 onApplyInboxAction={(params) =>
                   void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ inbox.applyInboxAction({
                     ...params,

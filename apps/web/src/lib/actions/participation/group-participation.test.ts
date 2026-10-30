@@ -339,7 +339,7 @@ describe("group participation fallback handling", () => {
     });
   });
 
-  it("hides pre-actions that are not explicitly published as group forms", async () => {
+  it("keeps public future actions visible even without an open group form", async () => {
     const supabase = createSupabaseMock({
       actions: [
         {
@@ -373,7 +373,7 @@ describe("group participation fallback handling", () => {
       now: TEST_NOW,
     });
 
-    expect(items.map((item) => item.id)).toEqual(["action-2"]);
+    expect(items.map((item) => item.id)).toEqual(["action-1", "action-2"]);
   });
 
   it("hides pre-actions masked by moderation visibility", async () => {
@@ -483,7 +483,7 @@ describe("group participation fallback handling", () => {
       now: TEST_NOW,
     });
 
-    expect(items.map((item) => item.id)).toEqual(["future-approved"]);
+    expect(items.map((item) => item.id)).toEqual(["future-approved", "closed-form"]);
   });
 
   it("does not bypass publication rules when a hidden action is targeted directly", async () => {
@@ -521,8 +521,8 @@ describe("group participation fallback handling", () => {
       now: TEST_NOW,
     });
 
-    expect(items).toHaveLength(1);
-    expect(items[0]?.id).toBe("action-2");
+    expect(items).toHaveLength(2);
+    expect(items.map((item) => item.id)).toEqual(["action-1", "action-2"]);
   });
 
   it("returns an empty history instead of failing when participation history cannot be loaded", async () => {

@@ -139,4 +139,20 @@ describe("POST /api/chat — annonces et événements", () => {
     expect(response.status).toBe(400);
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
   });
+
+  it("rejects the official association topic from the ordinary announcement composer", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        channelType: "community",
+        topicId: "evenements_associatifs",
+        messageKind: "announcement",
+        content: "Annonce usurpée",
+      }),
+    }));
+    expect(response.status).toBe(400);
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
 });

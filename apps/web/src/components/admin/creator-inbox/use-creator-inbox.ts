@@ -82,6 +82,7 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
   const acceptPartner = (item: Parameters<ReturnType<typeof createReviewInboxActions>["acceptPartner"]>[0]) => reviewActions().acceptPartner(item);
   const rejectPartner = (item: Parameters<ReturnType<typeof createReviewInboxActions>["rejectPartner"]>[0]) => reviewActions().rejectPartner(item);
   const decideAssociationAction = (item: Parameters<ReturnType<typeof createReviewInboxActions>["decideAssociationAction"]>[0], decision: "approve" | "reject") => reviewActions().decideAssociationAction(item, decision);
+  const retryAssociationActionAnnouncement = (item: Parameters<ReturnType<typeof createReviewInboxActions>["retryAssociationActionAnnouncement"]>[0]) => reviewActions().retryAssociationActionAnnouncement(item);
   const copySummary = (item: Parameters<ReturnType<typeof createCopySummaryAction>>[0]) => createCopySummaryAction({ inboxLocale, copy, setCopiedKey, setErrorMessage, scheduleFeedbackTimer })(item);
   const decideLegalReport = (params: Parameters<ReturnType<typeof createLegalDecisionAction>>[0]) => createLegalDecisionAction(getSharedActions())(params);
 
@@ -131,6 +132,7 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
     acceptPartner,
     rejectPartner,
     decideAssociationAction,
+    retryAssociationActionAnnouncement,
     decideLegalReport,
   };
 }

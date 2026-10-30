@@ -17,6 +17,7 @@ describe("chat topic contract", () => {
       "besoin_ressources",
       "coordination_secteur",
       "spogomi",
+      "evenements_associatifs",
     ]);
     expect(CHAT_TOPIC_IDS_BY_CHANNEL.territory).toEqual([
       "mon_territoire",

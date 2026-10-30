@@ -8,6 +8,7 @@ export const CHAT_TOPIC_IDS = [
   "besoin_ressources",
   "coordination_secteur",
   "spogomi",
+  "evenements_associatifs",
   "arbitrages",
   "priorites",
   "suivi_decisions",
@@ -27,6 +28,7 @@ export const CHAT_TOPIC_IDS_BY_CHANNEL = {
     "besoin_ressources",
     "coordination_secteur",
     "spogomi",
+    "evenements_associatifs",
   ],
   territory: ["mon_territoire", "territoires_voisins"],
   admin_elu: [

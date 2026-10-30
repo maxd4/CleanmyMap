@@ -145,6 +145,16 @@ avec `admin_operations_audit`; le refus conserve l'action et son motif. Les
 publique, inscription, discussion et référence d'action, tandis que les lignes
 historiques `not_required` restent compatibles.
 
+Après une approbation effective, seule la commande serveur de diffusion
+administrative peut créer l'annonce officielle `app_messages` du topic
+`evenements_associatifs`. Elle relit l'action publiée, publique, visible et
+future, utilise `action_id` comme identité canonique et refuse une action
+devenue privée, masquée ou annulée. Le compositeur utilisateur peut écrire un
+message dans ce topic mais ne peut pas fabriquer une annonce officielle en
+envoyant `message_kind = announcement`. La contrainte unique persistante
+garantit au plus une annonce par action ; un échec de fan-out conserve la
+décision et est relançable par un administrateur.
+
 ### Frontière de lecture de `GET /api/actions`
 
 La lecture publique globale est toujours public-safe : une requête sans statut,

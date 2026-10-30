@@ -3,6 +3,9 @@ import type { ChatTopicId } from "./topics";
 export const CHAT_MESSAGE_KINDS = ["message", "announcement", "poll"] as const;
 export type ChatMessageKind = (typeof CHAT_MESSAGE_KINDS)[number];
 
+/** Server-generated publication topic; it is not a manual announcement template. */
+export const OFFICIAL_ASSOCIATION_ANNOUNCEMENT_TOPIC_ID = "evenements_associatifs" as const;
+
 export const COMMUNITY_ANNOUNCEMENT_TEMPLATES = [
   {
     key: "relais_associatif",
@@ -72,6 +75,12 @@ export function isCommunityAnnouncementTopicId(
   topicId: ChatTopicId | null | undefined,
 ): boolean {
   return COMMUNITY_ANNOUNCEMENT_TEMPLATES.some((template) => template.topicId === topicId);
+}
+
+export function isOfficialAssociationAnnouncementTopicId(
+  topicId: ChatTopicId | null | undefined,
+): boolean {
+  return topicId === OFFICIAL_ASSOCIATION_ANNOUNCEMENT_TOPIC_ID;
 }
 
 export function buildAnnouncementDraft(

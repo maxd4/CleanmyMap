@@ -95,7 +95,7 @@ export async function fetchCreatorInboxPage(params?: {
 export async function applyCreatorInboxAction(params: {
   source: CreatorInboxSource;
   itemId: string;
-  action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority" | "qualify" | "update_tracking" | "approve_association_action" | "reject_association_action";
+  action: "mark_treated" | "responded" | "archive" | "delete" | "change_priority" | "qualify" | "update_tracking" | "approve_association_action" | "reject_association_action" | "retry_association_action_announcement";
   reason: string;
   priority?: "normal" | "high" | "critical";
   decision?: "pending" | "needs_info" | "accepted" | "duplicate" | "rejected";
@@ -104,7 +104,7 @@ export async function applyCreatorInboxAction(params: {
   trackingPublicSummary?: string | null;
   trackingReference?: string | null;
   trackingShippedOn?: string | null;
-}): Promise<{ item?: CreatorInboxItem; deletedId?: string }> {
+}): Promise<{ item?: CreatorInboxItem; deletedId?: string; status?: string; diffusion?: { state?: string; retryable?: boolean } | null }> {
   const response = await fetch("/api/admin/creator-inbox", {
     method: "PATCH",
     headers: { "content-type": "application/json" },
@@ -116,7 +116,7 @@ export async function applyCreatorInboxAction(params: {
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Action failed."));
   }
-  const payload = await readJson<{ item?: CreatorInboxItem; deletedId?: string }>(response);
+  const payload = await readJson<{ item?: CreatorInboxItem; deletedId?: string; status?: string; diffusion?: { state?: string; retryable?: boolean } | null }>(response);
   return payload ?? {};
 }
 

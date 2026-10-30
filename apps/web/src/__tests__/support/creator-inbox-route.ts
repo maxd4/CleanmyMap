@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const creatorInboxMocks = vi.hoisted(() => ({
   requireCreatorAccessMock: vi.fn(),
   getCurrentUserIdentityMock: vi.fn(),

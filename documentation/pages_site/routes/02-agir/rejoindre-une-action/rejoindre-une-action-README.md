@@ -25,7 +25,7 @@ apps/web/src/lib/actions/permissions.ts
 
 La page canonique permet à un bénévole de :
 
-1. voir les actions de groupe ouvertes ;
+1. voir les actions futures publiques, y compris lorsque les inscriptions sont fermées ;
 2. envoyer une demande d'inscription future ;
 3. suivre son état ;
 4. annuler une demande ou une inscription future ;
@@ -81,8 +81,8 @@ explicite compatible ; l'identité `elu` seule ne confère pas cette capacité.
 
 ## Contrat de visibilité
 
-Une action future apparaît dans l'onglet public uniquement si le prédicat
-`isJoinableFuturePreAction(...)` est vrai, c'est-à-dire si :
+Une action future apparaît dans l'onglet public si le prédicat
+`isPublishedFuturePreAction(...)` est vrai et que son accès n'est pas privé :
 
 ```txt
 action_phase = pre_action
@@ -91,10 +91,17 @@ moderation_visibility = visible
 review_state ∈ {not_required, approved}
 published_at != null
 date/heure de début future selon Europe/Paris
-groupJoinEnabled = true
+access_mode != invite_link
 ```
 
-Le statut `pending` n'exclut donc pas automatiquement une pré-action de cette page.
+`groupJoinEnabled` ne gouverne plus la visibilité de la carte. Il gouverne
+uniquement la possibilité d'envoyer une demande d'inscription : une carte
+publique peut donc afficher explicitement `Inscriptions fermées` sans modifier
+les règles de comptabilisation des participants.
+
+Le statut `pending` n'exclut donc pas automatiquement une pré-action historique
+compatible de cette page ; une nouvelle action associative avec
+`review_state = pending_review` reste exclue par le prédicat de lecture publique.
 Pour une nouvelle action associative ou étudiante, `pending_review`, `draft` et
 `rejected` restent privés jusqu'à la décision administrative; la revue ne
 réactive pas l'ancien flux `community_events`.
@@ -141,6 +148,10 @@ l'acceptation passe à `confirmed`, le refus à `cancelled`, de manière
 authentifiée, atomique et idempotente.
 
 L'onglet `Actions futures` réutilise exclusivement `/api/actions/group-join`.
+Cette route renvoie aussi les actions publiées dont `groupJoinEnabled = false`,
+afin que la découverte et la participation restent deux décisions distinctes.
+La mutation de participation continue de refuser une inscription lorsque le
+formulaire est fermé.
 L'onglet `Actions passées` lit les références publiques d'actions terminées,
 publiées et visibles depuis la surface d'actions ; il ne lit pas l'historique
 personnel `historyItems` pour construire cette liste. Il permet en revanche le

@@ -7,6 +7,7 @@ import {
 import {
   getActionParisDate,
   isJoinableFuturePreAction,
+  isPublishedFuturePreAction,
 } from "@/lib/actions/temporal";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
@@ -64,6 +65,24 @@ export function isVisibleInGroupForms(
   now = new Date(),
 ): boolean {
   return action.access_mode !== "invite_link" && isJoinableFuturePreAction(action, metadata, now);
+}
+
+/** The agenda lists eligible public actions even when their registration form is closed. */
+export function isVisibleInFutureActions(
+  action: Pick<
+    ActionPreviewRow,
+    | "action_date"
+    | "event_start_time"
+    | "action_phase"
+    | "status"
+    | "review_state"
+    | "moderation_visibility"
+    | "published_at"
+    | "access_mode"
+  >,
+  now = new Date(),
+): boolean {
+  return action.access_mode !== "invite_link" && isPublishedFuturePreAction(action, now);
 }
 
 function configureJoinableActionQuery(
@@ -129,7 +148,7 @@ export async function loadJoinableActions(
       action,
       metadata: extractActionMetadataFromNotes(action.notes),
     }))
-    .filter(({ action, metadata }) => isVisibleInGroupForms(action, metadata, now))
+    .filter(({ action }) => isVisibleInFutureActions(action, now))
     .slice(0, params.limit);
 
   if (joinableActions.length === 0) {

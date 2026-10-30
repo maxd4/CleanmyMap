@@ -161,15 +161,38 @@ export function createReviewInboxActions({ ...deps }: SharedActionDeps & {
     deps.setUpdatingKey(`association_action:${item.sourceRecordId}:${decision === "approve" ? "accept" : "reject"}`);
     deps.setErrorMessage(null);
     try {
-      await applyCreatorInboxAction({ source: "association_action", itemId: item.sourceRecordId, action, reason });
+      const response = await applyCreatorInboxAction({ source: "association_action", itemId: item.sourceRecordId, action, reason });
       await deps.refreshInbox();
+      if (response.status === "partial") {
+        deps.setErrorMessage("Validation enregistrée, mais la diffusion officielle doit être relancée.");
+      }
     } catch (error) {
       deps.setErrorMessage(resolveInboxMessage(error, decision === "approve" ? deps.copy.messages.approvalError : deps.copy.messages.rejectionError));
     } finally {
       deps.setUpdatingKey(null);
     }
   };
-  return { acceptPromotion, rejectPromotion, acceptPartner, rejectPartner, decideAssociationAction };
+  const retryAssociationActionAnnouncement = async (item: CreatorInboxItem) => {
+    deps.setUpdatingKey(`association_action:${item.sourceRecordId}:retry_announcement`);
+    deps.setErrorMessage(null);
+    try {
+      const response = await applyCreatorInboxAction({
+        source: "association_action",
+        itemId: item.sourceRecordId,
+        action: "retry_association_action_announcement",
+        reason: "Relance administrative de la diffusion officielle.",
+      });
+      await deps.refreshInbox();
+      if (response.status === "partial") {
+        deps.setErrorMessage("La diffusion reste partielle ; vérifiez l’action puis relancez-la.");
+      }
+    } catch (error) {
+      deps.setErrorMessage(resolveInboxMessage(error, deps.copy.messages.approvalError));
+    } finally {
+      deps.setUpdatingKey(null);
+    }
+  };
+  return { acceptPromotion, rejectPromotion, acceptPartner, rejectPartner, decideAssociationAction, retryAssociationActionAnnouncement };
 }
 
 export function createCopySummaryAction({ inboxLocale, copy, setCopiedKey, setErrorMessage, scheduleFeedbackTimer }: Pick<SharedActionDeps, "inboxLocale" | "copy" | "setErrorMessage" | "scheduleFeedbackTimer"> & { setCopiedKey: Dispatch<SetStateAction<string | null>> }) {
