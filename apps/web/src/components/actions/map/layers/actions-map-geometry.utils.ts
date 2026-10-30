@@ -15,6 +15,7 @@ import {
   buildDrawingLeafletPositions,
   formatGeometryModeLabel,
 } from "./actions-map-geometry-render";
+import { resolveObservedCoverageGeometry } from "@/lib/actions/map/observed-coverage";
 
 type CoordinatePair = [number, number];
 
@@ -74,29 +75,11 @@ function resolveObservedCoverage(item: ActionMapItem): {
   positions: CoordinatePair[][];
   traceCount: number;
 } {
-  const storedCoverage = item.contract?.metadata.preparationData?.observedCoverage;
-  let coverage = storedCoverage;
-  if (!coverage && item.contract?.geometry.geojson) {
-    try {
-      const parsed = JSON.parse(item.contract.geometry.geojson) as {
-        type?: unknown;
-        coordinates?: unknown;
-      };
-      if (parsed.type === "MultiLineString" && Array.isArray(parsed.coordinates)) {
-        coverage = {
-          type: "MultiLineString",
-          coordinates: parsed.coordinates as [number, number][][],
-          traceCount: parsed.coordinates.length,
-          individualDistancesKm: [],
-          coverageDistanceKm: null,
-          coverageVersion: "observed-traces-v1",
-        };
-      }
-    } catch {
-      coverage = undefined;
-    }
-  }
-  if (!coverage || coverage.type !== "MultiLineString" || !Array.isArray(coverage.coordinates)) {
+  const coverage = resolveObservedCoverageGeometry({
+    preparationData: item.contract?.metadata.preparationData,
+    primaryGeoJson: item.contract?.geometry.geojson,
+  });
+  if (!coverage) {
     return { positions: [], traceCount: 0 };
   }
 
@@ -107,7 +90,7 @@ function resolveObservedCoverage(item: ActionMapItem): {
     .filter((line) => line.length >= 2);
   return {
     positions,
-    traceCount: Math.max(0, Math.trunc(Number(coverage.traceCount) || positions.length)),
+    traceCount: coverage.traceCount,
   };
 }
 

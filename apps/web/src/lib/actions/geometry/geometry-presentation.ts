@@ -1,5 +1,6 @@
 import type { ActionGeometryKind, ActionGeometryOrigin, ActionMapItem } from "../types";
 import { resolveGeometryOriginFromConfidence } from "./derived-geometry";
+import { resolveObservedCoverageGeometry } from "@/lib/actions/map/observed-coverage";
 
 type GeometryPresentationVariant =
   | "observed"
@@ -107,17 +108,17 @@ function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentatio
 }
 
 function observedTraceCount(item: ActionMapItem): number {
-  return Math.max(
-    0,
-    Math.trunc(Number(item.contract?.metadata.preparationData?.observedCoverage?.traceCount) || 0),
-  );
+  return resolveObservedCoverageGeometry({
+    preparationData: item.contract?.metadata.preparationData,
+    primaryGeoJson: item.contract?.geometry.geojson,
+  })?.traceCount ?? 0;
 }
 
 function hasStoredObservedCoverage(item: ActionMapItem): boolean {
-  return (
-    observedTraceCount(item) > 0 ||
-    item.contract?.geometry.kind === "multiline"
-  );
+  return resolveObservedCoverageGeometry({
+    preparationData: item.contract?.metadata.preparationData,
+    primaryGeoJson: item.contract?.geometry.geojson,
+  }) !== null;
 }
 
 function observedCoverageSources(item: ActionMapItem): ActionGeometryOrigin[] {

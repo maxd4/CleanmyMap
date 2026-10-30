@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
+import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
 import { buildActionsCsv } from "@/lib/reports/csv";
 import {
   buildActionsMapGeoJsonFilename,
@@ -180,6 +181,137 @@ describe("actions map export utils", () => {
       "Couverture observée multi-traces",
     );
     expect(geojson.features[0]?.properties.geometry_reality).toBe("observed");
+  });
+
+  it("prioritizes preparation coverage over a historical polygon in both map and export", () => {
+    const contract = buildActionDataContract({
+      id: "action-coverage-over-polygon",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parc historique",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "reference",
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "Polygon",
+        coordinates: [[[2.34, 48.85], [2.35, 48.85], [2.35, 48.86], [2.34, 48.85]]],
+      }),
+      manualDrawing: {
+        kind: "polygon",
+        coordinates: [[48.85, 2.34], [48.85, 2.35], [48.86, 2.35]],
+      },
+      preparationData: {
+        observedCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[2.34, 48.85], [2.341, 48.851]],
+            [[2.35, 48.86], [2.351, 48.861]],
+          ],
+          traceCount: 2,
+          individualDistancesKm: [0.2, 0.3],
+          sources: ["gpx_import", "gps_tracking"],
+          coverageDistanceKm: null,
+          coverageVersion: "observed-traces-v1",
+        },
+      },
+    });
+    const item = toActionMapItem(contract);
+    const mapGeometry = resolveActionMapGeometryViewModel(item);
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([item])) as {
+      features: Array<{ geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> }>;
+    };
+
+    expect(mapGeometry.kind).toBe("multiline");
+    expect(geojson.features[0]?.geometry).toEqual({
+      type: "MultiLineString",
+      coordinates: [
+        [[2.34, 48.85], [2.341, 48.851]],
+        [[2.35, 48.86], [2.351, 48.861]],
+      ],
+    });
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_reality: "observed",
+      geometry_label: "Couverture observée multi-traces",
+      observed_trace_count: 2,
+    });
+  });
+
+  it.each([
+    ["manual polyline", "manual" as const, "polyline" as const],
+    ["planned network", "routed" as const, "polyline" as const],
+  ])("prioritizes valid observed coverage over a %s", (_label, geometrySource, kind) => {
+    const contract = buildActionDataContract({
+      id: `action-${geometrySource}-coverage`,
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parcours",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource,
+      derivedGeometryKind: kind,
+      derivedGeometryGeoJson: JSON.stringify({ type: "LineString", coordinates: [[2.34, 48.85], [2.35, 48.86]] }),
+      preparationData: {
+        observedCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[2.4, 48.9], [2.41, 48.91]], [[2.5, 48.92], [2.51, 48.93]]],
+          traceCount: 2,
+          individualDistancesKm: [1, 2],
+          coverageDistanceKm: null,
+          coverageVersion: "observed-traces-v1",
+        },
+      },
+    });
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: { type: string; coordinates: unknown } | null }>;
+    };
+    expect(geojson.features[0]?.geometry?.type).toBe("MultiLineString");
+    expect(geojson.features[0]?.geometry?.coordinates).toEqual([
+      [[2.4, 48.9], [2.41, 48.91]],
+      [[2.5, 48.92], [2.51, 48.93]],
+    ]);
+  });
+
+  it("falls back when observed coverage is empty or malformed", () => {
+    const contract = buildActionDataContract({
+      id: "action-invalid-coverage",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Repère",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "reference",
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "Polygon",
+        coordinates: [[[2.34, 48.85], [2.35, 48.85], [2.34, 48.85]]],
+      }),
+      manualDrawing: {
+        kind: "polygon",
+        coordinates: [[48.85, 2.34], [48.85, 2.35], [48.86, 2.35]],
+      },
+      preparationData: {
+        observedCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[2.34, 95], [2.35, 95]]],
+          traceCount: 1,
+          individualDistancesKm: [1],
+          coverageDistanceKm: null,
+          coverageVersion: "observed-traces-v1",
+        },
+      },
+    });
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> }>;
+    };
+    expect(geojson.features[0]?.geometry?.type).toBe("Point");
+    expect(geojson.features[0]?.properties.geometry_reality).toBe("contextual");
   });
 
   it("exports contextual reference geometry as a location point, never as coverage", () => {

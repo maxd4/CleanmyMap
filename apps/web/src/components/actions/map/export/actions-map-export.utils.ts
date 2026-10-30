@@ -15,6 +15,7 @@ import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionCsvRowWithDrawing } from "@/lib/reports/csv";
 import { buildDeliverableBaseName } from "@/lib/reports/deliverable-name";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import { resolveObservedCoverageGeometry } from "@/lib/actions/map/observed-coverage";
 
 type GeoJsonGeometry =
   | {
@@ -160,6 +161,17 @@ function shouldExportPublicDrawing(item: ActionMapItem): boolean {
 }
 
 function resolveGeoJsonGeometry(item: ActionMapItem): GeoJsonGeometry | null {
+  const observedCoverage = resolveObservedCoverageGeometry({
+    preparationData: item.contract?.metadata.preparationData,
+    primaryGeoJson: item.contract?.geometry.geojson,
+  });
+  if (observedCoverage) {
+    return {
+      type: "MultiLineString",
+      coordinates: observedCoverage.coordinates,
+    };
+  }
+
   const contractGeometry = item.contract?.geometry.geojson ?? item.geometry_geojson ?? null;
   const geometry = shouldExportPublicDrawing(item)
     ? parseGeoJsonGeometry(contractGeometry) ?? parseGeoJsonGeometry(buildManualDrawingGeoJson(item))
