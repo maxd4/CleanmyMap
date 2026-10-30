@@ -46,6 +46,8 @@ export default async function MethodologiePage() {
   let impactGeneratedAt: string | null = null;
   let impactLaunchedAt: string | null = null;
   let impactTerrainResults: PublicLandingActionAggregation | null = null;
+  let impactTerrainGeneratedAt: string | null = null;
+  let impactTerrainMethodologyVersion: string | null = null;
   let impactElectricity = buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
   let impactWater = buildWaterEstimate({
     monthlyElectricityKwh: null,
@@ -87,6 +89,9 @@ export default async function MethodologiePage() {
   try {
     const impactSnapshot = await loadLatestPublicImpactSnapshot();
     impactTerrainResults = impactSnapshot?.payload.kpis ?? null;
+    impactTerrainGeneratedAt = impactSnapshot?.generatedAt ?? null;
+    impactTerrainMethodologyVersion =
+      impactSnapshot?.payload.methodologyVersion ?? null;
   } catch (error) {
     console.error("[MethodologiePage] Failed to load monthly public terrain snapshot", error);
   }
@@ -101,6 +106,8 @@ export default async function MethodologiePage() {
       impactGeneratedAt={impactGeneratedAt}
       impactLaunchedAt={impactLaunchedAt}
       impactTerrainResults={impactTerrainResults}
+      impactTerrainGeneratedAt={impactTerrainGeneratedAt}
+      impactTerrainMethodologyVersion={impactTerrainMethodologyVersion}
       impactElectricity={impactElectricity}
       impactWater={impactWater}
       githubStats={githubStats}

@@ -100,7 +100,9 @@ describe("/methodologie public page", () => {
     };
     snapshotOnlyMock.mockResolvedValueOnce(dashboard);
     const monthlyImpactSnapshot = {
+      generatedAt: "2026-06-26T08:00:00.000Z",
       payload: {
+        methodologyVersion: "impact-proxy-2026.04-v1",
         kpis: { participantsTotal: 31, impactTerrain: { wasteKg: 25.5 } },
       },
     };
@@ -130,6 +132,10 @@ describe("/methodologie public page", () => {
     expect(props.impactGeneratedAt).toBe("2026-06-26T08:00:00.000Z");
     expect(props.impactLaunchedAt).toBe("2026-01-01T00:00:00.000Z");
     expect(props.impactTerrainResults).toBe(monthlyImpactSnapshot.payload.kpis);
+    expect(props.impactTerrainGeneratedAt).toBe(monthlyImpactSnapshot.generatedAt);
+    expect(props.impactTerrainMethodologyVersion).toBe(
+      monthlyImpactSnapshot.payload.methodologyVersion,
+    );
     expect(props.impactElectricity).toMatchObject({
       factorKgCo2ePerKwh: 0.35,
       calculation: "missing",

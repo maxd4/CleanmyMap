@@ -29,6 +29,10 @@ const participantsMetric: PublicImpactMetric = {
 };
 
 const snapshot: HomeImpactSnapshot = {
+  snapshotDate: "2026-09-01",
+  generatedAt: "2026-09-08T03:00:00.000Z",
+  methodologyVersion: "impact-proxy-2026.04-v1",
+  resultsContractVersion: "impact-terrain-results-2026.09-v1",
   participantsTotal: 0,
   actionDistribution: [],
   impactTerrain: buildImpactTerrain2026PublicResults({ wasteKg: 55 }),

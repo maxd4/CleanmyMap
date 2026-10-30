@@ -288,11 +288,21 @@ function KpiMethodBlock({
 export function ImpactTerrain2026MethodologySection({
   isFrench,
   results = null,
+  generatedAt = null,
+  methodologyVersion = null,
 }: {
   isFrench: boolean;
   results?: PublicLandingActionAggregation | null;
+  generatedAt?: string | null;
+  methodologyVersion?: string | null;
 }) {
   const methodology = buildImpactTerrain2026Methodology();
+  const generatedAtLabel = generatedAt
+    ? new Intl.DateTimeFormat(isFrench ? "fr-FR" : "en-GB", {
+        dateStyle: "medium",
+        timeZone: "UTC",
+      }).format(new Date(generatedAt))
+    : null;
 
   return (
     <section
@@ -335,6 +345,19 @@ export function ImpactTerrain2026MethodologySection({
         <p className="text-xs font-medium cmm-text-small">
           {isFrench ? "Périmètre :" : "Scope:"} {localize(methodology.scope, isFrench)}
         </p>
+
+        <div
+          role="status"
+          className="rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-950"
+        >
+          {results
+            ? isFrench
+              ? `Dernier snapshot mensuel généré le ${generatedAtLabel ?? "date indisponible"}. Mise à jour mensuelle le 1er du mois. Version méthodologique : ${methodologyVersion ?? "indisponible"}.`
+              : `Latest monthly snapshot generated on ${generatedAtLabel ?? "date unavailable"}. Monthly update on the 1st. Methodology version: ${methodologyVersion ?? "unavailable"}.`
+            : isFrench
+              ? "Données d’impact indisponibles. Le dernier snapshot mensuel valide n’est pas disponible ; aucun calcul de secours n’est lancé."
+              : "Impact data unavailable. The latest valid monthly snapshot is unavailable; no fallback calculation is started."}
+        </div>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">

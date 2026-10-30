@@ -67,8 +67,10 @@ async function ActionsMapContent() {
 
   try {
     const summary = await loadLandingSummary();
-    counters = summary.counters;
-    hasData = true;
+    if (summary) {
+      counters = summary.counters;
+      hasData = Boolean(summary.impactSnapshot);
+    }
   } catch {
     // Keep the existing public KPI empty state when the server snapshot and
     // its canonical fallback are both unavailable.

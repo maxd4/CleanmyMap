@@ -2,7 +2,9 @@ import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import {
   type PublicImpactSnapshotPayload,
+  getImpactSnapshotMonthDate,
 } from "@/lib/impact/public-impact-snapshot";
+import type { HomeImpactSnapshot } from "./config";
 import {
   buildPublicImpactCalculationFromActions,
   type PublicImpactCounters,
@@ -71,6 +73,7 @@ export type LandingSummary = {
   counters: PublicImpactCounters;
   activity: HomeCommunityActivitySummary;
   dataAvailability: LandingDataAvailability;
+  impactSnapshot: HomeImpactSnapshot | null;
 } & PublicLandingActionAggregation;
 
 const HOMEPAGE_COMMUNITY_ACTION_LIMIT = 3;
@@ -418,6 +421,7 @@ export function buildLandingSummaryFromContracts(
       status: sourceHealth.partial ? "partial" : "available",
       sourceHealth,
     },
+    impactSnapshot: null,
     ...actionAggregation,
   };
 }
@@ -451,6 +455,16 @@ function buildLandingSummaryFromImpactSnapshot(
     dataAvailability: {
       status: sourceHealth.partial ? "partial" : "available",
       sourceHealth,
+    },
+    impactSnapshot: {
+      snapshotDate: getImpactSnapshotMonthDate(payload.generatedAt),
+      generatedAt: payload.generatedAt,
+      methodologyVersion: payload.methodologyVersion,
+      resultsContractVersion: payload.resultsContractVersion,
+      participantsTotal: kpis.participantsTotal,
+      actionDistribution: kpis.actionDistribution,
+      impactTerrain: kpis.impactTerrain,
+      streetCleaningSavings: kpis.streetCleaningSavings,
     },
     ...kpis,
   };
@@ -519,25 +533,13 @@ export async function loadRecentCommunityActivity(): Promise<HomeCommunityActivi
   };
 }
 
-export async function loadLandingSummary(): Promise<LandingSummary> {
+export async function loadLandingSummary(): Promise<LandingSummary | null> {
   const { loadLatestPublicImpactSnapshot } = await import(
     "@/lib/impact/public-impact-snapshot"
   );
   const snapshot = await loadLatestPublicImpactSnapshot();
   if (!snapshot) {
-    const fallback = await loadRecentCommunityActivityData(null, {
-      revalidateSeconds: 3600,
-    });
-    const summary = buildLandingSummaryFromContracts(
-      fallback.contracts,
-      fallback.floorDate,
-      fallback.sourceHealth,
-    );
-
-    return {
-      ...summary,
-      activity: fallback.activity,
-    };
+    return null;
   }
 
   return buildLandingSummaryFromImpactSnapshot(

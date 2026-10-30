@@ -59,6 +59,13 @@ export function HomeHero({
   metrics,
   impactSnapshot,
 }: HomeHeroProps) {
+  const snapshotDateLabel = impactSnapshot?.generatedAt
+    ? new Intl.DateTimeFormat("fr-FR", {
+        dateStyle: "medium",
+        timeZone: "UTC",
+      }).format(new Date(impactSnapshot.generatedAt))
+    : null;
+
   return (
     <section data-homepage-section="hero" className="relative isolate overflow-visible text-[#082f24]">
       <div className="cmm-page-width relative z-10 px-3 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-4 lg:pt-4">
@@ -118,6 +125,16 @@ export function HomeHero({
               <ArrowRight size={14} aria-hidden="true" />
             </CmmButton>
           </div>
+
+          <p
+            role="status"
+            data-impact-snapshot-version={impactSnapshot?.methodologyVersion ?? "unavailable"}
+            className="relative z-10 mt-2 px-1 text-xs font-semibold text-white/85 sm:px-2"
+          >
+            {impactSnapshot
+              ? `Dernières données générées le ${snapshotDateLabel}. Mise à jour mensuelle le 1er du mois.`
+              : "Données d’impact indisponibles. Mise à jour mensuelle le 1er du mois."}
+          </p>
 
           <div className="relative z-10 mt-5 grid w-full grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3 min-[768px]:px-2 min-[1200px]:grid-cols-6 min-[1200px]:gap-3 min-[1200px]:px-3">
             {metrics.map((metric) => (

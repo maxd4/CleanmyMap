@@ -34,8 +34,11 @@ async function loadReportCommunityEventsWithAvailability(limit: number) {
   }));
 }
 
-export async function loadReportsPublicSummary(): Promise<ReportsPublicSummary> {
+export async function loadReportsPublicSummary(): Promise<ReportsPublicSummary | null> {
   const summary = await loadLandingSummary();
+  if (!summary) {
+    return null;
+  }
   return {
     visibleActions: summary.activity.visibleActions,
     distinctLocations: summary.activity.distinctLocations,

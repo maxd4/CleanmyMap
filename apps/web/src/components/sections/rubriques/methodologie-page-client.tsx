@@ -42,6 +42,8 @@ export type MethodologiePageClientProps = {
   impactLaunchedAt: string | null;
   githubStats: GitHubRepositoryStats | null;
   impactTerrainResults?: PublicLandingActionAggregation | null;
+  impactTerrainGeneratedAt?: string | null;
+  impactTerrainMethodologyVersion?: string | null;
   impactElectricity?: EnvironmentalImpactElectricityEstimate | null;
   impactWater?: EnvironmentalImpactWaterEstimate | null;
 };
@@ -88,6 +90,8 @@ export function LegacyMethodologieContent({
   impactLaunchedAt,
   githubStats,
   impactTerrainResults = null,
+  impactTerrainGeneratedAt = null,
+  impactTerrainMethodologyVersion = null,
   impactElectricity,
   impactWater,
 }: LegacyMethodologieContentProps) {
@@ -110,6 +114,8 @@ export function LegacyMethodologieContent({
           includeMapAndRouteContent={includeMapAndRouteContent}
           includeReportsContent={includeReportsContent}
           impactTerrainResults={impactTerrainResults}
+          impactTerrainGeneratedAt={impactTerrainGeneratedAt}
+          impactTerrainMethodologyVersion={impactTerrainMethodologyVersion}
           isFrench={isFrench}
         />
         <MethodologieTransverseSections

@@ -271,11 +271,13 @@ statistiques GitHub du dépôt
 dates de génération et de lancement
 ```
 
-La page publique ne consomme qu’un snapshot d’impact courant et valide ; un
-snapshot simplement présent mais périmé, incompatible avec la version de la
-formule ou hors période courante est traité comme absent. La génération live
-des signaux opérationnels est séparée du rendu public et reste réservée aux
-parcours serveur, admin ou cron prévus à cet effet.
+La page publique ne consomme que le dernier snapshot mensuel d’impact valide et
+persisté ; un snapshot incompatible avec la version de la formule est traité
+comme absent. Le snapshot du mois précédent reste servi si le cron du mois
+courant échoue. La génération live des signaux opérationnels est séparée du
+rendu public et reste réservée aux parcours serveur, admin ou cron prévus à cet
+effet. Aucun KPI, graphique ou tooltip de la section Impact terrain ne recalcule
+localement une équivalence.
 
 Le cron mensuel Impact terrain publie ce snapshot depuis un état incrémental
 maintenu par les mutations de `public.actions` : les insertions, modifications,
@@ -288,10 +290,13 @@ il ne déclenche pas une reconstruction complète. Le paramètre exceptionnel
 méthodologie ou à une réparation contrôlée et peut réutiliser la RPC complète
 comme oracle de vérification.
 
-En l’absence de snapshot courant valide, ou si Supabase échoue, la page affiche
-un état partiel explicite avec les valeurs vides prévues ; cette indisponibilité
-ne doit pas rendre la page entière inutilisable et aucune donnée ne doit être
-inventée.
+En l’absence de snapshot valide, ou si Supabase échoue sans snapshot relisible,
+la page affiche « Données d’impact indisponibles » avec les valeurs vides
+prévues ; cette indisponibilité ne doit pas rendre la page entière inutilisable
+et aucun calcul de secours n'est lancé. Les chiffres publics peuvent donc avoir
+jusqu'à environ un mois de décalage. `generatedAt` et la version méthodologique
+du snapshot sont affichés avec les KPI lorsque disponibles. Le bloc d'empreinte
+technique reste explicitement séparé des KPI d'impact terrain.
 
 ## Palette
 

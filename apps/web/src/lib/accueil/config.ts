@@ -11,6 +11,10 @@ import type { ActionDistributionEntry } from "./action-participant-aggregation";
  * Les composants de présentation ne doivent pas reconstruire ces valeurs.
  */
 export type HomeImpactSnapshot = Readonly<{
+  snapshotDate?: string;
+  generatedAt?: string;
+  methodologyVersion?: string;
+  resultsContractVersion?: string;
   participantsTotal: number;
   actionDistribution: readonly ActionDistributionEntry[];
   impactTerrain: ImpactTerrain2026PublicResults;

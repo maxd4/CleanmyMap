@@ -197,9 +197,8 @@ function hasCoherentImpactSnapshotPeriod(
   );
 }
 
-export function isCurrentPublicImpactSnapshot(
+export function isValidPublicImpactSnapshot(
   snapshot: PublicImpactSnapshotRecord | null | undefined,
-  now = new Date(),
 ): snapshot is PublicImpactSnapshotRecord {
   if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {
     return false;
@@ -216,7 +215,6 @@ export function isCurrentPublicImpactSnapshot(
 
   return (
     snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
-    isCurrentImpactSnapshotPeriod(snapshot, now) &&
     snapshot.version === PUBLIC_IMPACT_SNAPSHOT_VERSION &&
     snapshot.generatedAt === payload.generatedAt &&
     hasCoherentImpactSnapshotPeriod(
@@ -231,14 +229,22 @@ export function isCurrentPublicImpactSnapshot(
   );
 }
 
-export async function loadLatestPublicImpactSnapshot(
+export function isCurrentPublicImpactSnapshot(
+  snapshot: PublicImpactSnapshotRecord | null | undefined,
   now = new Date(),
-): Promise<PublicImpactSnapshotRecord | null> {
+): snapshot is PublicImpactSnapshotRecord {
+  return (
+    isValidPublicImpactSnapshot(snapshot) &&
+    isCurrentImpactSnapshotPeriod(snapshot, now)
+  );
+}
+
+export async function loadLatestPublicImpactSnapshot(): Promise<PublicImpactSnapshotRecord | null> {
   const snapshot = await readLatestPublicSurfaceSnapshot<PublicImpactSnapshotPayload>(
     PUBLIC_IMPACT_SNAPSHOT_KEY,
   );
 
-  if (!isCurrentPublicImpactSnapshot(snapshot, now)) {
+  if (!isValidPublicImpactSnapshot(snapshot)) {
     return null;
   }
 
@@ -253,14 +259,7 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
   const now = params.now ?? new Date();
   const generatedAt = now.toISOString();
   const monthDate = getImpactSnapshotMonthDate(generatedAt);
-  const current = await loadLatestPublicImpactSnapshot(now);
-
-  const floorDate = buildLandingFloorDate(now);
-  if (params.rebuild) {
-    await rebuildPublicImpactActionState(floorDate);
-  } else {
-    await advancePublicImpactActionState(floorDate);
-  }
+  const current = await loadLatestPublicImpactSnapshot();
 
   if (
     !params.force &&
@@ -274,6 +273,13 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
       reused: true,
       forced: false,
     };
+  }
+
+  const floorDate = buildLandingFloorDate(now);
+  if (params.rebuild) {
+    await rebuildPublicImpactActionState(floorDate);
+  } else {
+    await advancePublicImpactActionState(floorDate);
   }
 
   const snapshot = await buildPublicImpactSnapshotToPersist({

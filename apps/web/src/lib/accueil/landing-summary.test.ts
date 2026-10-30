@@ -12,6 +12,7 @@ vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: fetchCachedUnifiedActionContractsMock,
 }));
 vi.mock("@/lib/impact/public-impact-snapshot", () => ({
+  getImpactSnapshotMonthDate: (value: string) => `${value.slice(0, 7)}-01`,
   loadLatestPublicImpactSnapshot: loadLatestPublicImpactSnapshotMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
@@ -26,24 +27,6 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { loadLandingSummary } from "./data";
-
-function actionContract() {
-  return buildActionDataContract({
-    id: "landing-action",
-    type: "action",
-    status: "approved",
-    source: "actions",
-    observedAt: "2026-08-27",
-    createdAt: "2026-08-27T10:00:00.000Z",
-    locationLabel: "Paris",
-    latitude: 48.85,
-    longitude: 2.35,
-    actorName: "Bénévole",
-    wasteKg: 2,
-    cigaretteButts: 100,
-    volunteersCount: 3,
-  });
-}
 
 function monthlyPayload(): PublicImpactSnapshotPayload {
   return {
@@ -96,6 +79,24 @@ function monthlyPayload(): PublicImpactSnapshotPayload {
   };
 }
 
+function actionContract() {
+  return buildActionDataContract({
+    id: "landing-action",
+    type: "action",
+    status: "approved",
+    source: "actions",
+    observedAt: "2026-08-27",
+    createdAt: "2026-08-27T10:00:00.000Z",
+    locationLabel: "Paris",
+    latitude: 48.85,
+    longitude: 2.35,
+    actorName: "Bénévole",
+    wasteKg: 2,
+    cigaretteButts: 100,
+    volunteersCount: 3,
+  });
+}
+
 describe("landing summary loading", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -119,6 +120,7 @@ describe("landing summary loading", () => {
   it("uses the monthly impact snapshot without pulling activity into the page ISR", async () => {
     const summary = await loadLandingSummary();
 
+    if (!summary) throw new Error("Expected a persisted impact snapshot.");
     expect(summary.counters).toMatchObject({
       wasteKg: 25.5,
       butts: 1250,
@@ -158,37 +160,20 @@ describe("landing summary loading", () => {
   it("does not rebuild the monthly KPI aggregate when a snapshot is available", async () => {
     const summary = await loadLandingSummary();
 
+    if (!summary) throw new Error("Expected a persisted impact snapshot.");
     expect(summary.participantsTotal).toBe(31);
     expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
     expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
     expect(storageListMock).not.toHaveBeenCalled();
   });
 
-  it("falls back to canonical approved contracts and exposes degraded source health", async () => {
+  it("returns an unavailable impact state without scanning actions when the snapshot is absent", async () => {
     loadLatestPublicImpactSnapshotMock.mockResolvedValueOnce(null);
-    fetchCachedUnifiedActionContractsMock.mockResolvedValueOnce({
-      items: [actionContract()],
-      isTruncated: false,
-      sourceHealth: {
-        partial: true,
-        failedSources: ["supabase"],
-        availableSources: ["local"],
-        warnings: ["Supabase indisponible"],
-      },
-    });
 
     const summary = await loadLandingSummary();
 
-    expect(summary.counters).toMatchObject({
-      wasteKg: 2,
-      butts: 100,
-      volunteers: 3,
-    });
-    expect(summary.activity.items[0]?.id).toBe("landing-action");
-    expect(summary.dataAvailability.status).toBe("partial");
-    expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 500 }),
-      { revalidateSeconds: 3600 },
-    );
+    expect(summary).toBeNull();
+    expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(storageListMock).not.toHaveBeenCalled();
   });
 });

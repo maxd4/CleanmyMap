@@ -27,13 +27,15 @@ type NavigationProps = {
   includeMapAndRouteContent: boolean;
   includeReportsContent: boolean;
   impactTerrainResults: PublicLandingActionAggregation | null;
+  impactTerrainGeneratedAt: string | null;
+  impactTerrainMethodologyVersion: string | null;
   isFrench: boolean;
 };
 
-export function MethodologieNavigationSections({ actionMapSection, includeMapAndRouteContent, includeReportsContent, impactTerrainResults, isFrench }: NavigationProps) {
+export function MethodologieNavigationSections({ actionMapSection, includeMapAndRouteContent, includeReportsContent, impactTerrainResults, impactTerrainGeneratedAt, impactTerrainMethodologyVersion, isFrench }: NavigationProps) {
   return (
     <>
-      {includeReportsContent ? <ImpactTerrain2026MethodologySection isFrench={isFrench} results={impactTerrainResults} /> : null}
+      {includeReportsContent ? <ImpactTerrain2026MethodologySection isFrench={isFrench} results={impactTerrainResults} generatedAt={impactTerrainGeneratedAt} methodologyVersion={impactTerrainMethodologyVersion} /> : null}
       {includeMapAndRouteContent ? actionMapSection : null}
       {includeMapAndRouteContent ? <RouteMethodologySection /> : null}
     </>

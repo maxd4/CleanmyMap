@@ -114,14 +114,7 @@ export default async function HomePage() {
 
   const hasOverviewData = Boolean(landingSummary);
   const metrics = buildPublicImpactMetrics(counters, hasOverviewData);
-  const impactSnapshot = landingSummary
-    ? {
-        participantsTotal: landingSummary.participantsTotal,
-        actionDistribution: landingSummary.actionDistribution,
-        impactTerrain: landingSummary.impactTerrain,
-        streetCleaningSavings: landingSummary.streetCleaningSavings,
-      }
-    : null;
+  const impactSnapshot = landingSummary?.impactSnapshot ?? null;
   const communityActivity = landingSummary?.activity ?? {
     visibleActions: 0,
     distinctLocations: 0,

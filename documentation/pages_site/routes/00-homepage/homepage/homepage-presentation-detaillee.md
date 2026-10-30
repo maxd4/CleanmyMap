@@ -9,6 +9,7 @@ La page accueille les visiteurs et présente la vocation de CleanMyMap. Elle ouv
 - **Hero** : proposition de valeur et CTA réels, reliés à leurs routes propriétaires. Les destinations, libellés et états responsive sont gouvernés par les composants réellement utilisés, non par une maquette historique.
 - **Preview cartographique** : aperçu public des Actions via `ActionsMapFeed`, avec politique d'actions `approved`, période `current_year` et références de pollution V6 de la carte canonique. La homepage peut limiter la quantité, adapter le viewport et masquer des contrôles, mais ne calcule ni score ni règle de couleur autonome.
 - **Découverte et crédibilité** : contenus de présentation et signaux communautaires uniquement depuis des faits publiés ou correctement contextualisés. Une vignette ou un indicateur non renseigné n'est pas une preuve de résultat terrain.
+- **KPI Impact terrain** : les six KPI, leurs équivalences et leurs bulles d'explication proviennent exclusivement du dernier snapshot mensuel public persisté par le cron Impact terrain. La homepage ne lance aucun agrégat, scan d'actions ou recalcul lors d'une visite. La date `generatedAt` et la mention de mise à jour mensuelle sont affichées lorsque le snapshot est disponible ; son absence produit « Données d’impact indisponibles » plutôt qu'un zéro.
 - **Navigation et approfondissement** : chaque carte ou CTA délègue les éventuels contrôles AuthN/AuthZ à la page, au handler et au domaine propriétaire.
 
 ## Preuves et limites de présentation

@@ -27,6 +27,7 @@ import {
   buildPublicImpactSnapshotPayload,
   generateAndPersistPublicImpactSnapshot,
   getImpactSnapshotMonthDate,
+  loadLatestPublicImpactSnapshot,
   isCurrentPublicImpactSnapshot,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "./public-impact-snapshot";
@@ -62,7 +63,7 @@ function existingSnapshot(overrides: Record<string, unknown> = {}) {
     payload: buildPublicImpactSnapshotPayload({
       aggregate,
       generatedAt: "2026-08-01T03:00:00.000Z",
-      floorDate: "2025-08-01",
+      floorDate: "2026-08-01",
     }),
     meta: {},
     ...overrides,
@@ -148,6 +149,14 @@ describe("public monthly impact snapshot", () => {
     );
   });
 
+  it("serves the latest valid previous-month snapshot when the current cron has not produced one", async () => {
+    const snapshot = existingSnapshot();
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+  });
+
   it("does not recalculate or persist a second snapshot in the same month", async () => {
     const snapshot = currentSnapshot();
     readLatestSnapshotMock.mockResolvedValue(snapshot);
@@ -156,7 +165,7 @@ describe("public monthly impact snapshot", () => {
 
     expect(result.reused).toBe(true);
     expect(result.persisted).toBe(false);
-    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(advanceStateMock).not.toHaveBeenCalled();
     expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
@@ -174,7 +183,7 @@ describe("public monthly impact snapshot", () => {
 
     expect(result.reused).toBe(true);
     expect(result.persisted).toBe(false);
-    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-26");
+    expect(advanceStateMock).not.toHaveBeenCalled();
     expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
