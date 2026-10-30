@@ -161,8 +161,8 @@ begin
     raise exception 'action_need_offer_message_too_long' using errcode = '22023';
   end if;
 
-  select n, a
-    into v_need, v_action
+  select into v_need, v_action
+    n, a
     from public.action_needs n
     join public.actions a on a.id = n.action_id
    where n.id = p_need_id
@@ -220,8 +220,8 @@ begin
 
   -- Lock the action and need before reading eligibility. This serializes a
   -- close/publication change with accept/decline at the same resource boundary.
-  select n, a
-    into v_need, v_action
+  select into v_need, v_action
+    n, a
     from public.action_needs n
     join public.actions a on a.id = n.action_id
    where n.id = v_need_id

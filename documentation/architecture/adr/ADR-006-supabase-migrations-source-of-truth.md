@@ -200,6 +200,62 @@ Cette exception ne généralise pas le droit de modifier les migrations
 publiées ; toute autre correction d'une migration historique reste soumise au
 principe append-only et aux conditions du présent ADR.
 
+## Exception syntaxique bornée — `20261030000024` et `20261030000026`
+
+Une seconde exception syntaxique strictement bornée est acceptée pour la
+première application des migrations d'offres d'aide. L'historique distant du
+projet Supabase canonique `trktzkgujgpgsgkoyndn`, relevé le 30 octobre 2026
+avec `supabase migration list --linked` et la liste des migrations du projet,
+s'arrête à `20261030000023`. Les versions locales `20261030000024` à
+`20261030000028` sont donc absentes de l'historique distant ; aucune de ces
+versions n'a été appliquée dans ce lot.
+
+La provenance de `20261030000027_community_digest_runs.sql` est documentée
+séparément : le fichier a été introduit par `61285a3b7ecbb784cc86c8d9cf0b4f3e8a40644a`
+(`feat: ajouter le digest communautaire in-app`), après la base de revue
+`9d43762f50651536d019ac7a9f23b542d9fb5db9`, où il était absent. Il est
+désormais présent dans `main` publié par l'ascendance de ce commit ; cette
+provenance ne fait pas partie de l'exception syntaxique des migrations d'offres.
+
+Les trois seules corrections autorisées sont le déplacement de la clause
+`INTO` immédiatement après `SELECT`, forme PL/pgSQL non ambiguë, en conservant
+les expressions `n, a`, les cibles `v_need, v_action`, les jointures, le
+prédicat, `FOR UPDATE OF n, a`, la position des contrôles `FOUND` et l'ordre
+de verrouillage. Les changements exacts sont :
+
+```text
+select n, a
+  into v_need, v_action
+```
+
+devient, aux deux occurrences de `20261030000024_action_need_offers.sql` et à
+l'unique occurrence de
+`20261030000026_action_need_offers_need_identity.sql` :
+
+```text
+select into v_need, v_action
+  n, a
+```
+
+Aucune règle métier, signature RPC, permission, notification, identité
+`needId`/`offerId` ou catégorie canonique n'est modifiée. Les empreintes
+SHA-256 UTF-8 des fichiers complets sont conservées ci-dessous :
+
+```text
+20261030000024_BEFORE_HASH: 70ff40ecf4177fc75e486d5ad8305e4a301b61cc8353feb4024037a79966f381
+20261030000024_AFTER_HASH:  2628f5923c39cfbcf5aa1398878517985d1c0ce80deb97ebd6a862f626b1a184
+20261030000026_BEFORE_HASH: da1d33e376e88b784639c1c0dc3d56c80a663c661738ca6fbcdab531c3f2fea8
+20261030000026_AFTER_HASH:  fd19d17dfa2cce0ac10a8f2193c34a32e518b9a710bb8feb920e96f0f6a51f15
+```
+
+Seules les deux empreintes `AFTER_HASH` nouvelles sont ajoutées au garde
+d'immutabilité des migrations. Une réécriture différente de l'une de ces
+migrations, ou de toute autre migration publiée, reste refusée. Cette
+exception n'autorise ni `migration repair`, ni DDL manuelle, ni `db push`, ni
+aucune écriture distante ; une seconde application gouvernée devra être
+préparée après publication, vérification de `00027`, réconciliation de
+l'historique et nouveau dry-run.
+
 ## Exception de réparation bornée — `20261012000022` et `20261013000007`
 
 Lors de la première application contrôlée de la série de migrations d'octobre

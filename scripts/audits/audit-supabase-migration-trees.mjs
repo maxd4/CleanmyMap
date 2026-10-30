@@ -34,12 +34,14 @@ const LEGACY_SPOTS_RUNTIME_SURFACE_HISTORICAL_ALLOWLIST = new Set([
 // not belong in the canonical replayable schema history.
 const EXTENSION_CASCADE_ALLOWLIST = new Map();
 
-// These two pending migrations were repaired after their first controlled
-// replay exposed executable SQL defects. The exact candidate hashes are
-// documented in ADR-006; no other published migration rewrite is accepted.
+// These four pending migrations were repaired after controlled review exposed
+// executable SQL defects. The exact candidate hashes are documented in ADR-006;
+// no other published migration rewrite is accepted.
 const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
   ["20261012000022_spogomi_ticket_roster_and_team_composition.sql", new Set(["c272820f66ff466d42d9c4dab0fdad685b482f54927fe1df9927233d6e7e9cf4"])],
   ["20261013000007_spogomi_post_lock_mutation_guards.sql", new Set(["f4ca930cce616753addfd047badb2b96448ad8aed665b92d68f44079fbe11f1d"])],
+  ["20261030000024_action_need_offers.sql", new Set(["2628f5923c39cfbcf5aa1398878517985d1c0ce80deb97ebd6a862f626b1a184"])],
+  ["20261030000026_action_need_offers_need_identity.sql", new Set(["fd19d17dfa2cce0ac10a8f2193c34a32e518b9a710bb8feb920e96f0f6a51f15"])],
 ]);
 
 function normalizeMigrationContent(content) {

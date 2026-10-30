@@ -41,8 +41,8 @@ begin
   -- Lock the expected need and its action before resolving the offer. The
   -- second predicate binds the offer identity to that locked need, so a URL
   -- containing another need can never reach a status or notification write.
-  select n, a
-    into v_need, v_action
+  select into v_need, v_action
+    n, a
     from public.action_needs n
     join public.actions a on a.id = n.action_id
    where n.id = p_need_id

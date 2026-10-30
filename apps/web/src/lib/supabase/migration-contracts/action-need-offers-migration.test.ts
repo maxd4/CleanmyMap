@@ -33,6 +33,10 @@ describe("action need offers migration [STATIC_CONTRACT]", () => {
     expect(migration).toContain("public.is_public_future_pre_action(");
     expect(migration).toContain("coalesce(a.access_mode, 'public') <> 'invite_link'");
     expect(migration).toContain("for update of n, a");
+    expect(migration.match(/select into v_need, v_action\s+n, a/g)).toHaveLength(2);
+    expect(correctionMigration.match(/select into v_need, v_action\s+n, a/g)).toHaveLength(1);
+    expect(migration).not.toMatch(/select n, a\s+into v_need, v_action/);
+    expect(correctionMigration).not.toMatch(/select n, a\s+into v_need, v_action/);
     expect(correctionMigration).toContain("where n.id = p_need_id");
     expect(correctionMigration).toMatch(/where id = p_offer_id\s+and need_id = v_need\.id/);
     expect(migration).toContain("action_need_offer_acceptance_notification_unique_idx");
