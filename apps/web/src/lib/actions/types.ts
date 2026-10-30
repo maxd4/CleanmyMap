@@ -66,6 +66,12 @@ void ACTION_GEOMETRY_SOURCES;
 export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionRouteTopology = "loop" | "point_to_point";
+export type ActionGeometryMethod =
+  | "automatic"
+  | "generator"
+  | "manual"
+  | "gpx_import"
+  | "location_only";
 export type ActionGpxImportIntent = "planned" | "observed";
 export type ActionGpxImportSegment = {
   fileName: string;
@@ -184,6 +190,8 @@ export type ActionPreparationData = {
   midRouteLocationLabel?: string;
   /** Canonical route topology; legacy payloads are normalized before persistence. */
   routeTopology?: ActionRouteTopology;
+  /** Explicit creation source selected in the canonical form. */
+  geometryMethod?: ActionGeometryMethod;
   /** Immutable route evidence captured before this action was created. */
   routeCalibrationContext?: RouteCalibrationContext;
   /** Mutable operational copy planned from the planner, kept separate from the snapshot. */

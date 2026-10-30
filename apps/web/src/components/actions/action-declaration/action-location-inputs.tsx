@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle2, Crosshair, Loader2, MapPin, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ActionAddressAutocomplete } from "./action-address-autocomplete";
+import type { ActionGeometryMethod } from "@/lib/actions/types";
 import type { ActionLocationInputProps } from "./action-location.types";
 
 function SectionTitle({ color, children }: { color: string; children: React.ReactNode }) {
@@ -98,6 +99,62 @@ export function RouteTopologyFieldset({
   );
 }
 
+function resolveGeometryMethod({
+  form,
+  manualDrawingSource,
+  routePreviewSource,
+  gpxImport,
+}: Pick<ActionLocationInputProps, "form" | "manualDrawingSource" | "routePreviewSource" | "gpxImport">): ActionGeometryMethod {
+  if (form.geometryMethod) return form.geometryMethod;
+  if (gpxImport || manualDrawingSource === "gpx_import") return "gpx_import";
+  if (manualDrawingSource === "manual") return "manual";
+  if (form.operationalRoute) return "generator";
+  if (routePreviewSource) return "automatic";
+  return "automatic";
+}
+
+function GeometryMethodFieldset({
+  form,
+  updateField,
+  manualDrawingSource,
+  routePreviewSource,
+  gpxImport,
+}: Pick<ActionLocationInputProps, "form" | "updateField" | "manualDrawingSource" | "routePreviewSource" | "gpxImport">) {
+  const selected = resolveGeometryMethod({ form, manualDrawingSource, routePreviewSource, gpxImport });
+  const options: Array<{ value: ActionGeometryMethod; title: string; description: string }> = [
+    { value: "automatic", title: "Proposition automatique", description: "Reconstruction serveur sur le réseau piéton quand elle est disponible." },
+    { value: "generator", title: "Parcours du générateur", description: "Conserve le parcours opérationnel préparé par le générateur." },
+    { value: "manual", title: "Dessin manuel", description: "Déclarez une ligne ou une zone ; aucun routage automatique n’est ajouté." },
+    { value: "gpx_import", title: "Import GPX", description: "Conserve les traces importées et leur provenance, sans les recoller." },
+    { value: "location_only", title: "Localisation seule", description: "Conserve le point sans fabriquer de parcours." },
+  ];
+  const hasGeneratorRoute = Boolean(form.operationalRoute?.routes.length);
+  const hasGpx = Boolean(gpxImport);
+
+  return (
+    <fieldset className="mt-4 rounded-xl border border-emerald-200/80 bg-white p-4">
+      <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900/65">Source du repère cartographique</legend>
+      <p className="mt-1 text-xs leading-5 text-emerald-900/60">Ce choix organise l’aperçu. Une trace GPS ou GPX déjà observée reste prioritaire et ne peut pas être remplacée par une reconstruction.</p>
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {options.map((option) => {
+          const isSelected = selected === option.value;
+          const missingSource =
+            (option.value === "generator" && !hasGeneratorRoute) ||
+            (option.value === "gpx_import" && !hasGpx);
+          return (
+            <label htmlFor={`geometry-method-${option.value}`} key={option.value} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition", isSelected ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-500/15" : "border-slate-200 bg-white hover:border-emerald-300")}>
+              <input id={`geometry-method-${option.value}`} type="radio" name="geometry-method" value={option.value} aria-label={option.title} checked={isSelected} onChange={() => updateField("geometryMethod", option.value)} className="mt-1 accent-emerald-600" />
+              <span><span className="block text-sm font-semibold text-emerald-950">{option.title}</span><span className="mt-0.5 block text-xs text-emerald-900/60">{option.description}</span>{missingSource ? <span className="mt-1 block text-xs font-medium text-amber-700">Source à fournir dans le formulaire.</span> : null}</span>
+            </label>
+          );
+        })}
+      </div>
+      {selected === "location_only" ? <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">Aucune ligne ne sera construite automatiquement ; la position saisie reste le repère.</p> : null}
+      {selected === "gpx_import" && hasGpx ? <p className="mt-3 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900">Les candidats GPX restent locaux jusqu’à la création et conservent leurs fichiers, segments et erreurs.</p> : null}
+    </fieldset>
+  );
+}
+
 export function ActionLocationInputs({
   form,
   updateField,
@@ -106,6 +163,9 @@ export function ActionLocationInputs({
   gpsStatus,
   gpsMessage,
   onAutofillGps,
+  manualDrawingSource,
+  routePreviewSource,
+  gpxImport,
   mode = "all",
 }: ActionLocationInputProps) {
   const isCleanPlaceMode = recordType === "clean_place";
@@ -180,6 +240,7 @@ export function ActionLocationInputs({
       </div>
 
       {!isCleanPlaceMode ? <RouteTopologyFieldset form={form} updateField={updateField} /> : null}
+      {!isCleanPlaceMode ? <GeometryMethodFieldset form={form} updateField={updateField} manualDrawingSource={manualDrawingSource} routePreviewSource={routePreviewSource} gpxImport={gpxImport} /> : null}
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <GpsButton gpsStatus={gpsStatus} gpsMessage={gpsMessage} onAutofillGps={onAutofillGps} />

@@ -201,6 +201,7 @@ function resolveInsertPreparationData(
 ): ActionPreparationData {
   const inputPreparation = normalizeInsertPreparationData(params.payload, routeTopology);
   const activeGeometry = resolveFinalActionGeometry({
+    geometryMethod: inputPreparation.geometryMethod,
     gpxDrawing: inputPreparation.gpxImport ? params.payload.manualDrawing : null,
     gpxImport: inputPreparation.gpxImport,
     manualDrawing: params.payload.manualDrawing,

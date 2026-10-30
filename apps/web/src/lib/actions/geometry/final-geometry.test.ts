@@ -103,6 +103,29 @@ describe("resolveFinalActionGeometry", () => {
     expect(result?.drawing.coordinates).toEqual(operationalRoute.routes[0]?.geometry.coordinates);
   });
 
+  it("honors an explicit creation source while preserving observed priority", () => {
+    expect(resolveFinalActionGeometry({
+      geometryMethod: "location_only",
+      manualDrawing,
+      operationalRoute,
+    })).toBeNull();
+    expect(resolveFinalActionGeometry({
+      geometryMethod: "generator",
+      manualDrawing,
+      operationalRoute,
+    })).toMatchObject({ source: "routed", operationalRoute });
+    expect(resolveFinalActionGeometry({
+      geometryMethod: "manual",
+      manualDrawing,
+      operationalRoute,
+    })).toMatchObject({ source: "manual", drawing: manualDrawing });
+    expect(resolveFinalActionGeometry({
+      geometryMethod: "location_only",
+      trackingDrawing,
+      trackingSource: "gps_tracking",
+    })).toMatchObject({ source: "gps_tracking", drawing: trackingDrawing });
+  });
+
   it("does not create an active GPX geometry from orphaned metadata", () => {
     const result = resolveFinalActionGeometry({
       gpxImport: {

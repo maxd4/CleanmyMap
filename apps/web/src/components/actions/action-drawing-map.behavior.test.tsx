@@ -13,6 +13,9 @@ type MockMap = {
   handlers: Map<string, Set<(event: unknown) => void>>;
   addLayer: (layer: unknown) => MockMap;
   removeLayer: (layer: unknown) => MockMap;
+  fitBounds: (bounds: unknown, options?: Record<string, unknown>) => MockMap;
+  setView: (coordinates: unknown, zoom?: number, options?: Record<string, unknown>) => MockMap;
+  getZoom: () => number;
   addControl: (control: unknown) => MockMap;
   removeControl: (control: unknown) => MockMap;
   on: (event: string, handler: (event: unknown) => void) => MockMap;
@@ -72,6 +75,8 @@ vi.mock("leaflet", () => {
     }
   }
 
+  class LayerGroup extends FeatureGroup {}
+
   class TestMap {
     container = document.createElement("div");
     layers = new Set<unknown>();
@@ -84,6 +89,15 @@ vi.mock("leaflet", () => {
     removeLayer(layer: unknown) {
       this.layers.delete(layer);
       return this;
+    }
+    fitBounds() {
+      return this;
+    }
+    setView() {
+      return this;
+    }
+    getZoom() {
+      return 5;
     }
     addControl(control: { onAdd?: () => HTMLElement; _container?: HTMLElement }) {
       this.controls.add(control);
@@ -171,6 +185,7 @@ vi.mock("leaflet", () => {
     Polyline,
     Polygon,
     FeatureGroup,
+    LayerGroup,
     Control: control,
     DomUtil: domUtil,
     DomEvent: domEvent,
@@ -211,6 +226,7 @@ type MockLayer = {
 type MockLeafletRuntime = {
   Map: new () => MockMap;
   FeatureGroup: new () => MockFeatureGroup;
+  LayerGroup: new () => MockFeatureGroup;
   Polyline: new (points: Array<[number, number]>) => MockLayer;
   Polygon: new (points: Array<[number, number]>) => MockLayer;
 };
@@ -280,14 +296,14 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
   }
 
   function group() {
-    return [...(mapState.map?.layers ?? [])].find((layer) => layer instanceof mockL.FeatureGroup) as MockFeatureGroup;
+    return [...(mapState.map?.layers ?? [])].find((layer) => layer instanceof mockL.FeatureGroup && !(layer instanceof mockL.LayerGroup)) as unknown as MockFeatureGroup;
   }
 
   it("initializes the map, FeatureGroup, controls, and accessible labels", async () => {
     mount({ onChange: vi.fn() });
     await settle();
 
-    expect(mapState.map?.layers.size).toBe(1);
+    expect(mapState.map?.layers.size).toBe(2);
     expect(mapState.map?.controls.size).toBe(2);
     expect(mapState.map?.container.querySelector(".cmm-undo-btn")?.getAttribute("aria-label")).toBe("Effacer le tracé dessiné");
     expect(mapState.map?.container.querySelector(".leaflet-draw-draw-polyline")?.getAttribute("aria-label")).toBe("Dessiner un tracé");
@@ -308,7 +324,7 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
     mapState.map = new mockL.Map();
     mount({ onChange: vi.fn() });
     await settle();
-    expect(host?.textContent).toContain("Tracé désactivé sur mobile");
+    expect(host?.textContent).toContain("Le dessin manuel est disponible sur ordinateur. Vous pouvez consulter votre tracé ici.");
     expect(mapState.map?.controls.size).toBe(0);
   });
 
@@ -461,7 +477,7 @@ describe("ActionDrawingMap Leaflet lifecycle", () => {
     mount({ value: polylineValue, onChange });
     await settle();
     const activeMap = mapState.map as MockMap;
-    expect(activeMap.layers.size).toBe(1);
+    expect(activeMap.layers.size).toBe(2);
     expect(activeMap.controls.size).toBe(2);
     expect([...activeMap.handlers.values()].every((handlers) => handlers.size > 0)).toBe(true);
 

@@ -241,6 +241,7 @@ export function buildActionDeclarationHydration(
       geometrySource: action.geometrySource,
       gpxImport: form.gpxImport,
       operationalRoute: form.operationalRoute,
+      geometryMethod: form.geometryMethod,
     }),
   };
 }

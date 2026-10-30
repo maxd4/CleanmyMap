@@ -258,6 +258,15 @@ reconstruit depuis l’état courant.
 
 ### Parcours opérationnel après création
 
+Le formulaire de création expose une sélection de source unique au-dessus de
+ce parcours opérationnel : proposition automatique, parcours du générateur,
+dessin manuel, import GPX ou localisation seule. La sélection est conservée
+dans `preparation_data.geometryMethod` lorsqu'elle est explicite, sans créer un
+second moteur de géométrie. Elle ne peut pas rétrograder une observation GPS ou
+GPX acceptée ; la localisation seule conserve le point et ne fabrique pas de
+ligne. L'aperçu mobile est en lecture seule, avec une emprise calculée depuis
+le point ou les lignes réellement disponibles.
+
 Le snapshot planner et le parcours opérationnel sont deux objets distincts.
 Lorsqu’une action est créée depuis le planner, le client initialise
 `preparationData.operationalRoute` avec une copie opérationnelle v1 de la ou

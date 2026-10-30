@@ -188,6 +188,7 @@ export async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
 ): Promise<ResolvedCreateActionDrawing> {
   const activeGeometry = resolveFinalActionGeometry({
+    geometryMethod: payload.preparationData?.geometryMethod,
     gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
     gpxImport: payload.preparationData?.gpxImport,
     manualDrawing: payload.manualDrawing,

@@ -64,6 +64,7 @@ const FORM_STATE_KEYS = [
   "departureLocationLabel",
   "arrivalLocationLabel",
   "routeTopology",
+  "geometryMethod",
   "routeStyle",
   "routeAdjustmentMessage",
   "plannedObjective",

@@ -65,5 +65,10 @@ describe("action location input modes", () => {
     expect(markup).toContain("Distance cible du parcours");
     expect(markup).toContain("ne mesure pas une distance parcourue");
     expect(markup).toContain("position actuelle de l&#x27;appareil");
+    expect(markup).toContain("Proposition automatique");
+    expect(markup).toContain("Parcours du générateur");
+    expect(markup).toContain("Dessin manuel");
+    expect(markup).toContain("Import GPX");
+    expect(markup).toContain("Localisation seule");
   });
 });

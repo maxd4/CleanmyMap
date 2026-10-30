@@ -63,4 +63,8 @@ export type ActionLocationInputProps = Pick<
   | "gpsMessage"
   | "onAutofillGps"
   | "mode"
->;
+> & {
+  manualDrawingSource?: ActionGeometrySource | null;
+  routePreviewSource?: ActionGeometrySource | null;
+  gpxImport?: ActionGpxImportMetadata | null;
+};

@@ -318,6 +318,65 @@ describe("server-side action route reconstruction", () => {
     expect(routeProviderMock).not.toHaveBeenCalled();
   });
 
+  it("rejects an explicitly declared midpoint that cannot be geocoded", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    }));
+    await expect(reconstructActionRoute({
+      topology: "loop",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      midpointLocationLabel: "Adresse introuvable midpoint 2026-10-30",
+      durationMinutes: 60,
+    })).rejects.toMatchObject({ fieldErrors: { midRouteLocationLabel: expect.any(Array) } });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unlocatable point-to-point arrival", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    }));
+    await expect(reconstructActionRoute({
+      topology: "point_to_point",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      arrivalLocationLabel: "Adresse introuvable arrival 2026-10-30",
+      durationMinutes: 60,
+    })).rejects.toMatchObject({ fieldErrors: { arrivalLocationLabel: expect.any(Array) } });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("returns no geometry when a free-form loop location has no usable origin", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    }));
+    await expect(reconstructActionRoute({
+      topology: "loop",
+      locationLabel: "Adresse introuvable origin 2026-10-30",
+      durationMinutes: 60,
+    })).resolves.toBeNull();
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("does not publish malformed provider coordinates as a route", async () => {
+    routeProviderMock.mockResolvedValue({
+      ...networkGeometry,
+      coordinates: [[48.85, 2.35]] as [number, number][],
+    });
+    await expect(reconstructActionRoute({
+      topology: "loop",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      durationMinutes: 60,
+    })).resolves.toBeNull();
+  });
+
   it("does not treat a clean-place complement as a route arrival", async () => {
     routeProviderMock.mockResolvedValueOnce(networkGeometry);
 

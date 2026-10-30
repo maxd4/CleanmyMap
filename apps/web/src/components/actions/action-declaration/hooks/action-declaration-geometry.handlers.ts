@@ -97,7 +97,7 @@ export function createActionDeclarationGeometryHandlers({
       setManualDrawingSource("gpx_import");
       setGpxError(candidates.some((candidate) => candidate.error) ? "Certains fichiers GPX n’ont pas été ajoutés : consultez leurs erreurs." : null);
       updateForm(
-        { gpxImport: metadata },
+        { gpxImport: metadata, geometryMethod: "gpx_import" },
         drawing ? { drawing, source: "gpx_import" } : null,
       );
     } catch (error: unknown) {
@@ -124,7 +124,7 @@ export function createActionDeclarationGeometryHandlers({
       setManualDrawingState(nextDrawing);
       setManualDrawingSource(nextDrawing ? "gpx_import" : null);
       setGpxError(null);
-      updateForm({ gpxImport: nextMetadata }, nextDrawing ? { drawing: nextDrawing, source: "gpx_import" } : null);
+      updateForm({ gpxImport: nextMetadata, geometryMethod: nextDrawing ? "gpx_import" : form.operationalRoute ? "generator" : "automatic" }, nextDrawing ? { drawing: nextDrawing, source: "gpx_import" } : null);
       return;
     }
     if (manualDrawingSource === "gpx_import") {
@@ -132,7 +132,7 @@ export function createActionDeclarationGeometryHandlers({
       setManualDrawingSource(null);
     }
     setGpxError(null);
-    updateForm({ gpxImport: null }, null);
+    updateForm({ gpxImport: null, geometryMethod: form.operationalRoute ? "generator" : "automatic" }, null);
   }
 
   function setGpxIntent(intent: "planned" | "observed") {

@@ -444,6 +444,16 @@ restent des lignes indépendantes : la carte peut les projeter en
 
 Les polylines disposent d'une zone de clic/touch invisible élargie. L'action « Voir tout le tracé » cadre explicitement la géométrie sans recentrage automatique à chaque sélection.
 
+Dans le formulaire de création, la carte partage cette grammaire de provenance
+avec une sélection explicite de source (`automatic`, `generator`, `manual`,
+`gpx_import`, `location_only`). Sur mobile, elle est chargée en lecture seule
+pour consulter un point, une reconstruction, un dessin, un GPX ou plusieurs
+traces ; le dessin manuel reste réservé à un écran d'ordinateur. L'emprise est
+calculée depuis les coordonnées présentes et une géométrie représentative d'une
+polyline est choisie sur sa longueur, jamais par moyenne arithmétique des
+sommets. Pour une `MultiLineString`, une seule ligne existante est choisie pour
+le point représentatif ; les lignes ne sont pas concaténées.
+
 Infrastructure :
 
 ```txt

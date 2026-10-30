@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import L, { type LeafletEvent } from "leaflet";
 import"leaflet-draw";
-import { MapContainer, TileLayer, useMap } from"react-leaflet";
+import { CircleMarker, MapContainer, TileLayer, useMap } from"react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import type { ActionDrawing, ActionGeometrySource } from"@/lib/actions/types";
@@ -340,6 +340,44 @@ function MapControlAccessibilityLabels() {
  return null;
 }
 
+function FitDrawingViewport({
+ drawing,
+ previewDrawings,
+ locationCoordinates,
+}: {
+ drawing: ActionDrawing | null;
+ previewDrawings: ActionDrawing[];
+ locationCoordinates: [number, number] | null;
+}) {
+ const map = useMap();
+ const geometryKey = JSON.stringify({ drawing, previewDrawings, locationCoordinates });
+
+ useEffect(() => {
+  const geometry = JSON.parse(geometryKey) as {
+   drawing: ActionDrawing | null;
+   previewDrawings: ActionDrawing[];
+   locationCoordinates: [number, number] | null;
+  };
+  const coordinates = [
+   ...(geometry.drawing?.coordinates ?? []),
+   ...geometry.previewDrawings.flatMap((preview) => preview.coordinates),
+   ...(geometry.locationCoordinates ? [geometry.locationCoordinates] : []),
+  ];
+  if (coordinates.length === 0) return;
+  if (coordinates.length === 1) {
+   map.setView(coordinates[0], Math.max(map.getZoom(), 15), { animate: false });
+   return;
+  }
+  map.fitBounds(L.latLngBounds(coordinates), {
+   padding: [28, 28],
+   maxZoom: 16,
+   animate: false,
+  });
+ }, [geometryKey, map]);
+
+ return null;
+}
+
 function applyMapControlAccessibilityLabels(container: HTMLElement): void {
  const labels: Array<[string, string]> = [
   [".leaflet-control-zoom-in", "Zoomer sur la carte"],
@@ -376,6 +414,7 @@ type ActionDrawingMapProps = {
  ) => void;
  drawingSource?: ActionGeometrySource | null;
  previewDrawings?: ActionDrawing[];
+ locationCoordinates?: [number, number] | null;
  readOnly?: boolean;
  onUndoAvailable?: (state: ActionDrawingUndoState | null) => void;
 };
@@ -387,6 +426,7 @@ export function ActionDrawingMap({
  onDrawingChange,
   drawingSource,
   previewDrawings = [],
+ locationCoordinates = null,
  readOnly = false,
   onUndoAvailable,
 }: ActionDrawingMapProps) {
@@ -448,9 +488,9 @@ export function ActionDrawingMap({
 
  return (
  <div className="relative overflow-hidden rounded-xl border border-slate-200">
- {isMobile && !readOnly && (
- <div className="absolute top-2 left-2 z-[1000] rounded-lg bg-amber-100 border border-amber-300 px-3 py-2 cmm-text-caption font-medium text-amber-800 shadow-sm">
- 📱 Tracé désactivé sur mobile
+ {isMobile && (
+ <div className="pointer-events-none absolute left-2 top-2 z-[1000] max-w-[calc(100%-1rem)] rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 cmm-text-caption font-medium text-amber-800 shadow-sm">
+ Le dessin manuel est disponible sur ordinateur. Vous pouvez consulter votre tracé ici.
  </div>
  )}
  <MapContainer
@@ -460,11 +500,13 @@ export function ActionDrawingMap({
  maxZoom={18}
  maxBounds={FRANCE_TERRITORY_LAT_LNG_BOUNDS}
  maxBoundsViscosity={0.9}
- scrollWheelZoom
+ scrollWheelZoom={!isMobile}
  className="bg-white"
  style={mapStyle}
  >
  <MapControlAccessibilityLabels />
+ <FitDrawingViewport drawing={currentValue} previewDrawings={previewDrawings} locationCoordinates={locationCoordinates} />
+ {locationCoordinates ? <CircleMarker center={locationCoordinates} radius={7} pathOptions={{ color: "#047857", fillColor: "#10b981", fillOpacity: 0.85, weight: 2 }} /> : null}
  {/* Couche de base avec noms de rues */}
  <TileLayer
  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

@@ -33,13 +33,20 @@ export function ActionLocationGeometryPanel({
     routePreviewSource,
     gpxImport,
   });
+  const handleDrawingChange = (
+    drawing: Parameters<typeof setManualDrawing>[0],
+    source: Parameters<typeof setManualDrawing>[1],
+  ) => {
+    setManualDrawing(drawing, source);
+    updateField("geometryMethod", drawing && source === "manual" ? "manual" : "automatic");
+  };
 
   return (
     <div id="action-location-geometry" className="space-y-4">
       <ActionLocationGpxImport form={form} gpxImport={gpxImport} gpxError={gpxError} onImportGpx={onImportGpx} onRemoveGpx={onRemoveGpx} onSetGpxIntent={onSetGpxIntent} />
       {viewModel.activeGeometry?.operationalRoute ? <OperationalRouteEditor operationalRoute={viewModel.activeGeometry.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} /> : null}
       <ActionGpxExportButton input={{ finalGeometry: viewModel.activeGeometry, operationalRoute: form.operationalRoute, drawing: manualDrawing, gpxImport, routeTopology: form.routeTopology, departureLabel: form.departureLocationLabel, midpointLabel: form.midRouteLocationLabel, midpointCoordinates: form.midRouteCoordinates, arrivalLabel: form.arrivalLocationLabel }} />
-      <ActionLocationMapPanel form={form} gpxImport={gpxImport} setManualDrawing={setManualDrawing} onResetManualDrawing={onResetManualDrawing} viewModel={viewModel} />
+      <ActionLocationMapPanel form={form} gpxImport={gpxImport} setManualDrawing={handleDrawingChange} onResetManualDrawing={onResetManualDrawing} viewModel={viewModel} />
       <ActionLocationAdjustmentNotes form={form} updateField={updateField} />
     </div>
   );

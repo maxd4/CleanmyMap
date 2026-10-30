@@ -820,6 +820,15 @@ Un polygone estimé ne doit pas devenir pointillé.
 
 Lorsqu'aucune géométrie exploitable n'existe, la carte affiche un point de localisation.
 
+Dans le formulaire canonique, la source cartographique est choisie explicitement
+entre `automatic`, `generator`, `manual`, `gpx_import` et `location_only`.
+Ce choix est une couche d'orchestration au-dessus des moteurs existants : il
+explique la conséquence affichée et se conserve dans le brouillon et la
+préparation. Une observation GPS ou GPX déjà acceptée reste prioritaire et le
+choix d'un autre mode ne l'efface ni ne la transforme en parcours prévu.
+Sur mobile, la carte reste consultable et cadre le point ou l'ensemble des
+traces ; le dessin manuel reste disponible sur ordinateur uniquement.
+
 ### Sélection
 
 L'épaisseur du trait peut augmenter pour indiquer la sélection de l'objet.

@@ -7,6 +7,7 @@ import type {
  ActionMegotsCondition,
  ActionRecordType,
  ActionRouteTopology,
+ ActionGeometryMethod,
  ActionAccessMode,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
@@ -56,6 +57,7 @@ export type FormState = {
  midRouteLocationLabel?: string;
  arrivalLocationLabel: string;
  routeTopology: ActionRouteTopology;
+ geometryMethod?: ActionGeometryMethod;
  interventionMode: ActionInterventionModeSelection | null;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;

@@ -35,6 +35,7 @@ export function buildActionLocationViewModel({
 }: ActionLocationGeometryInput): ActionLocationViewModel {
   const previewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
   const activeGeometry = resolveFinalActionGeometry({
+    geometryMethod: form.geometryMethod,
     trackingDrawing:
       manualDrawingSource === "gps_tracking" ? manualDrawing : null,
     trackingSource: manualDrawingSource === "gps_tracking" ? manualDrawingSource : null,

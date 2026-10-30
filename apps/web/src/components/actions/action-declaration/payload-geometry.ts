@@ -69,6 +69,7 @@ export function resolveCreateActionRouteParts(
   let longitude = hasCoordinatePair ? toOptionalNumber(form.longitude) ?? null : null;
   const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
   const finalGeometry = resolveFinalActionGeometry({
+    geometryMethod: form.geometryMethod,
     gpxDrawing: !isFixedArea && form.gpxImport ? normalizedManualDrawing : null,
     gpxImport: isFixedArea ? null : form.gpxImport,
     manualDrawing: normalizedManualDrawing,

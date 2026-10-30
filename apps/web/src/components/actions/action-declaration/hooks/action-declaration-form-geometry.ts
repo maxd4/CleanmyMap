@@ -61,6 +61,7 @@ export function resolveActionDeclarationGeometryState({
   const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
   const manualDrawingValidation = summarizeActionDrawingValidation(manualDrawing);
   const activeFinalGeometry = resolveFinalActionGeometry({
+    geometryMethod: form.geometryMethod,
     gpxDrawing: form.gpxImport ? manualDrawing : null,
     gpxImport: form.gpxImport,
     manualDrawing,

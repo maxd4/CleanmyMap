@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionGeometryMethod,
   ActionGeometrySource,
   ActionGpxImportMetadata,
 } from "@/lib/actions/types";
@@ -14,6 +15,8 @@ export type FinalActionGeometry = {
 };
 
 export type FinalActionGeometryInput = {
+  /** Explicit form source; observed candidates still remain authoritative. */
+  geometryMethod?: ActionGeometryMethod | null;
   /** A persisted field observation from a completed GPS mission. */
   trackingDrawing?: ActionDrawing | null;
   trackingSource?: ActionGeometrySource | null;
@@ -202,11 +205,30 @@ export function resolveFinalActionGeometry(
     resolveTrackingCandidate(input) ?? resolveGpxCandidate(input);
   if (observedCandidate) return observedCandidate;
 
+  if (input.geometryMethod === "location_only") return null;
+
   const gpxTagged = hasGpxTag(input);
   const { route: operationalRoute, candidate: operationalCandidate } =
     resolveOperationalCandidate(input);
 
-  if (canUseManualCandidate(input, gpxTagged)) {
+  if (input.geometryMethod === "gpx_import") {
+    return resolveGpxCandidate(input);
+  }
+
+  if (input.geometryMethod === "manual") {
+    return canUseManualCandidate(input, gpxTagged)
+      ? {
+          drawing: input.manualDrawing,
+          source: "manual",
+          operationalRoute: null,
+        }
+      : null;
+  }
+
+  if (
+    !input.geometryMethod &&
+    canUseManualCandidate(input, gpxTagged)
+  ) {
     return {
       drawing: input.manualDrawing,
       source: "manual",
@@ -214,14 +236,19 @@ export function resolveFinalActionGeometry(
     };
   }
 
-  if (operationalRoute && operationalCandidate) {
+  if (input.geometryMethod !== "automatic" && operationalRoute && operationalCandidate) {
     return {
       ...operationalCandidate,
       operationalRoute,
     };
   }
 
-  return resolvePersistedCandidate(input);
+  const persistedCandidate = resolvePersistedCandidate(input);
+  if (persistedCandidate) return persistedCandidate;
+
+  return input.geometryMethod === "automatic" ? null : operationalCandidate && operationalRoute
+    ? { ...operationalCandidate, operationalRoute }
+    : null;
 }
 
 /**
@@ -235,6 +262,7 @@ export function hydrateActionEditorGeometry(input: {
   geometrySource?: ActionGeometrySource | null;
   gpxImport?: ActionGpxImportMetadata | null;
   operationalRoute?: OperationalRoute | null;
+  geometryMethod?: ActionGeometryMethod | null;
 }): HydratedActionGeometry {
   const drawing = input.drawing ?? null;
   const source =
@@ -248,6 +276,7 @@ export function hydrateActionEditorGeometry(input: {
   const trackingInput = trackingHydrationInput(source, drawing);
   const persistedCandidate = isPersistedRouteSource(source) ? drawing : null;
   const finalGeometry = resolveFinalActionGeometry({
+    geometryMethod: input.geometryMethod,
     ...trackingInput,
     gpxDrawing: source === "gpx_import" ? drawing : null,
     gpxImport: input.gpxImport,

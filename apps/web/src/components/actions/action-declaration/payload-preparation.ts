@@ -34,6 +34,7 @@ function buildPreparationRouteFields(
   if (interventionMode?.mode === "fixed_area") {
     return {
       interventionMode,
+      ...(form.geometryMethod ? { geometryMethod: form.geometryMethod } : {}),
       ...buildPreparationLocationFields(form, routeTopology, false),
     };
   }
@@ -60,6 +61,7 @@ function buildPreparationLocationFields(
           ? form.arrivalLocationLabel.trim() || undefined
           : undefined } : {}),
     ...(includesRoute ? { routeTopology } : {}),
+    ...(form.geometryMethod ? { geometryMethod: form.geometryMethod } : {}),
     actionDate: form.actionDate.trim() || undefined,
     meetingTime: form.meetingTime.trim() || undefined,
     departureTime: form.departureTime.trim() || undefined,
@@ -182,6 +184,7 @@ function resolvePreparationContext(
 export function buildPreparationDataFromForm(
   form: FormState,
   finalGeometry: FinalActionGeometry | null = resolveFinalActionGeometry({
+    geometryMethod: form.geometryMethod,
     gpxImport: form.gpxImport,
     operationalRoute: form.operationalRoute,
   }),

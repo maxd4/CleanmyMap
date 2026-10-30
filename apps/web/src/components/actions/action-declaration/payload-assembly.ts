@@ -47,6 +47,7 @@ export async function prepareCreateActionPayload(
   const payload = buildCreateActionPayload(params);
   const normalizedRoutePreview = normalizeActionDrawing(params.routePreviewDrawing);
   const finalGeometry = resolveFinalActionGeometry({
+    geometryMethod: params.form.geometryMethod,
     gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
     gpxImport: payload.preparationData?.gpxImport,
     manualDrawing: payload.manualDrawing,
