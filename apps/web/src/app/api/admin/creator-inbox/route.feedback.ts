@@ -215,6 +215,9 @@ async function markFeedbackTreated(params: FeedbackStateMutationParams) {
     if (result.status === "conflict") {
       return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
     }
+    if (result.status === "not_found") {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    }
     updated = result.record;
     if (!updated) {
       throw new Error("feedback status update did not persist");
@@ -257,6 +260,9 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
     });
     if (result.status === "conflict") {
       return NextResponse.json({ error: "Feedback state changed concurrently." }, { status: 409 });
+    }
+    if (result.status === "not_found") {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
     const archivedRecord = result.record;
     if (!archivedRecord) {
