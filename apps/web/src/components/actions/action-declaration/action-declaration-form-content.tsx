@@ -188,7 +188,7 @@ export function ActionDeclarationFormSurface({
             </div>
           </div>
         ) : null}
-        <form onSubmit={onSubmit} className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
+        <form noValidate onSubmit={onSubmit} className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
           <div className="relative space-y-8 p-6 md:p-10">
             <fieldset className="relative z-10 space-y-8">
               <header className="flex flex-wrap items-start justify-between gap-4">
