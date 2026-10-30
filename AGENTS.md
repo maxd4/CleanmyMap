@@ -100,11 +100,8 @@ l'ascendance non publiée avec `git log --oneline origin/main..HEAD`, y compris 
   contrat doivent être intégrés au commit validé ; ne laisser aucun changement
   du lot dirty/untracked. Les chemins étrangers restent intacts et sont signalés.
 
-Hors mode de développement rapide : validation → commit isolé → push main →
-vérification de convergence.
-
-**Workflow normal** : validation → staging ciblé complet → commit isolé non
-signé → push fast-forward sur `main` → fetch → vérification
+**Workflow de chaque exécution de lot** : validation → staging ciblé complet →
+commit isolé non signé → push fast-forward sur `main` → fetch → vérification
 `HEAD = origin/main`, ahead/behind `0/0`. Un lot antérieur non poussé n'interdit
 pas de travailler ; il impose toutefois l'audit de l'ascendance avant
 publication. Un `main` distant qui a avancé ou divergé bloque ce push :
@@ -112,13 +109,14 @@ refetcher pour caractériser, **ne pas** intégrer silencieusement, réconcilier
 les fichiers étrangers ou forcer l'historique ; aucun `force-push`. Respecter tout blocage de garde,
 d'attribution, de sécurité ou d'index avant commit/push.
 
-Mode de développement rapide explicitement activé : commit local selon son
-protocole, sans push tant que le mode reste actif.
+Une interdiction explicite de committer ou pousser donnée par l'utilisateur
+reste prioritaire et doit être signalée comme exception. Le mode de
+développement rapide ne supprime pas l'exigence de commit et push ; il ne peut
+donc produire un commit local sans push que si cette interdiction est explicite.
 
 **Mode de développement rapide**, uniquement sur activation explicite : commit
-local isolé par lot selon `documentation/development/rapid-development-mode.md`,
-sans push tant que le mode est actif. Une demande explicite de ne pas committer
-ou pousser prévaut. Les mécanismes Git exacts, candidats `WORKTREE_LIVE`,
+isolé et push par lot selon `documentation/development/rapid-development-mode.md`.
+Une demande explicite de ne pas committer ou pousser prévaut. Les mécanismes Git exacts, candidats `WORKTREE_LIVE`,
 `STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE`, `DYNAMIC_CANDIDATE`, hooks
 Les hooks `pre-commit` et `pre-push` et cas d'environnement sont définis dans
 `scripts/AGENTS.md`,

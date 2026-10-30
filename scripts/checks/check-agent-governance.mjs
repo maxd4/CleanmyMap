@@ -108,8 +108,8 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
   }
 }
 
-const normalPublicationPolicy = "validation → commit isolé → push main → vérification de convergence";
-const rapidPublicationPolicy = "commit local selon son protocole, sans push tant que le mode reste actif";
+const publicationPolicyTerms = ["commit isolé", "push", "vérification de convergence"];
+const explicitNoPushExceptionTerms = ["mode de développement rapide", "interdiction explicite", "sans push"];
 const chatgptPublicationAuthorization = "ChatGPT est autorisé à modifier GitHub, committer et pousser";
 
 function validateCurrentWorkflowDoctrine(view, findings) {
@@ -154,11 +154,11 @@ function validateCurrentWorkflowDoctrine(view, findings) {
     ["CHATGPT.md", chatgpt, normalizedChatgpt],
   ]) {
     if (!content) continue;
-    if (!normalizedContent.includes(`Hors mode de développement rapide : ${normalPublicationPolicy}`)) {
-      findings.push(`${relativePath}: missing the normal commit/push/convergence policy.`);
+    if (!publicationPolicyTerms.every((term) => normalizedContent.includes(term))) {
+      findings.push(`${relativePath}: missing the mandatory commit/push/convergence policy for each lot.`);
     }
-    if (!normalizedContent.includes(`Mode de développement rapide explicitement activé : ${rapidPublicationPolicy}`)) {
-      findings.push(`${relativePath}: missing the explicit rapid-mode no-push exception.`);
+    if (!explicitNoPushExceptionTerms.every((term) => normalizedContent.includes(term))) {
+      findings.push(`${relativePath}: missing the explicit user-authorized no-push exception.`);
     }
   }
 

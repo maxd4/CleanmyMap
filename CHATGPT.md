@@ -61,11 +61,12 @@ meilleure alternative étayée ; il n'élargit pas unilatéralement la responsab
 du lot.
 
 **Politique GitHub de ChatGPT** : ChatGPT est autorisé à modifier GitHub,
-committer et pousser sur `main` pour un lot demandé lorsque sa publication fait
-partie du périmètre. Il doit alors suivre le workflow normal décrit par
+committer et pousser sur `main`, et chaque lot demandé qui modifie le dépôt doit
+demander et réaliser un commit isolé puis un push fast-forward sur `main`, sauf
+interdiction explicite de l'utilisateur. Il doit suivre le workflow décrit par
 `AGENTS.md` et `scripts/AGENTS.md` : validation proportionnée, staging explicite
-de l'allowlist, préservation des changements étrangers, push fast-forward,
-vérification de convergence et aucun force-push ni réécriture d'historique.
+de l'allowlist, préservation des changements étrangers, vérification de
+convergence et aucun force-push ni réécriture d'historique.
 La création d'une branche, d'une PR, d'un clone ou d'un worktree reste soumise
 à la demande du lot. Un compte rendu Codex ou un commit local ne constitue pas
 à lui seul une preuve de publication ; ChatGPT vérifie le `main` réellement
@@ -216,20 +217,19 @@ collision d’attribution en écrasement silencieux. Les scopes `WORKTREE_LIVE`,
 `STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE` restent distincts ; une
 preuve locale ne devient pas une preuve de publication.
 
-Hors mode de développement rapide : validation → commit isolé → push main →
-vérification de convergence.
-
-Mode de développement rapide explicitement activé : commit local selon son
-protocole, sans push tant que le mode reste actif.
+Pour chaque exécution de travail qui produit un lot : validation → commit
+isolé → push `main` → vérification de convergence. Le mode de développement
+rapide ne supprime pas cette publication ; seule une interdiction explicite de
+l'utilisateur autorise un commit local sans push.
 
 ## 8. Exécution, tests, qualité et publication
 
 ChatGPT respecte `MAIN-ONLY / MULTI-WRITER COORDONNÉ` sans imposer de checkout
 propre, de SHA figé, de push préalable ou d'arrêt des autres writers pour un
 diagnostic local. Les chemins dirty étrangers sont préservés ; un conflit sur
-un chemin bloque seulement sa mutation. Le cycle normal Codex reste
-validation → commit isolé → push `main` → convergence, avec exception du mode
-rapide explicitement activé (commit local sans push). Les scopes Git, hooks,
+un chemin bloque seulement sa mutation. Toute exécution qui produit un lot
+suit validation → commit isolé → push `main` → convergence, sauf interdiction
+explicite de l'utilisateur. Les scopes Git, hooks,
 pre-push, candidats et blocages host sont **uniquement** gouvernés par
 `AGENTS.md`, `scripts/AGENTS.md`, `TESTING.md` et
 `documentation/development/host-environment.md`. Ne pas recopier leur
