@@ -211,14 +211,12 @@ function attachMeetingOpportunities(
   input: RouteRecommendationResponseInput,
   groupRoutes: RouteGroupRoute[],
 ): RouteGroupRoute[] {
-  const mainStopIds = new Set(input.planning.plannedStops.map(({ candidate }) => candidate.id));
-  const evaluations = input.planning.plannerResult.audit.evaluations;
+  const mainStops = input.planning.plannedStops.map(({ candidate }) => candidate);
   return groupRoutes.map((group) => {
     const result = buildMeetingOpportunities({
       meetingPoint: group.meetingPoint ?? null,
       candidates: input.planning.candidates ?? [],
-      evaluations,
-      mainStopIds,
+      mainStops,
     });
     return {
       ...group,

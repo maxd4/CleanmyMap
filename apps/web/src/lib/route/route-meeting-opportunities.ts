@@ -57,7 +57,7 @@ export type MeetingOpportunityTrace = {
   skippedReason: "meeting_point_unavailable" | null;
 };
 
-type PlannerAdmissibilityEvaluation = {
+type PlannerEvaluation = {
   candidateId: string;
   feasible: boolean;
 };
@@ -96,13 +96,17 @@ function hasReliableSafetyAndAccessibility(candidate: RoutePlannerCandidate): bo
     safety.suitability > 0;
 }
 
-function validCoordinate(candidate: RoutePlannerCandidate): boolean {
+function validCoordinate(candidate: Pick<RoutePlannerCandidate, "latitude" | "longitude">): boolean {
   return Number.isFinite(candidate.latitude) &&
     Number.isFinite(candidate.longitude) &&
     candidate.latitude >= -90 &&
     candidate.latitude <= 90 &&
     candidate.longitude >= -180 &&
     candidate.longitude <= 180;
+}
+
+function coordinateKey(candidate: Pick<RoutePlannerCandidate, "latitude" | "longitude">): string {
+  return `${candidate.latitude.toFixed(6)},${candidate.longitude.toFixed(6)}`;
 }
 
 function traceEntry(
@@ -142,8 +146,9 @@ function compareAcceptedOpportunities(
 export function buildMeetingOpportunities(input: {
   meetingPoint: MeetingPointProjection | null | undefined;
   candidates: readonly RoutePlannerCandidate[];
-  evaluations?: readonly PlannerAdmissibilityEvaluation[];
-  mainStopIds?: ReadonlySet<string>;
+  /** Planner feasibility is budget-specific and is not local admissibility evidence. */
+  evaluations?: readonly PlannerEvaluation[];
+  mainStops?: readonly Pick<RoutePlannerCandidate, "id" | "latitude" | "longitude">[];
 }): MeetingOpportunityBuildResult {
   const trace: MeetingOpportunityTrace = {
     radiusMeters: MEETING_OPPORTUNITY_MAX_RADIUS_METERS,
@@ -155,7 +160,12 @@ export function buildMeetingOpportunities(input: {
   };
   if (!input.meetingPoint) return { opportunities: [], trace };
 
-  const evaluations = new Map((input.evaluations ?? []).map((evaluation) => [evaluation.candidateId, evaluation]));
+  const mainStopIds = new Set(input.mainStops?.map(({ id }) => id));
+  const mainStopCoordinateKeys = new Set(
+    input.mainStops
+      ?.filter(validCoordinate)
+      .map(coordinateKey),
+  );
   const accepted: AcceptedOpportunity[] = [];
   const seenCandidateIds = new Set<string>();
 
@@ -170,16 +180,14 @@ export function buildMeetingOpportunities(input: {
       trace.entries.push(traceEntry(candidate, null, "excluded", policyReason));
       continue;
     }
-    if (input.mainStopIds?.has(candidate.id)) {
+    if (
+      mainStopIds.has(candidate.id) ||
+      (validCoordinate(candidate) && mainStopCoordinateKeys.has(coordinateKey(candidate)))
+    ) {
       trace.entries.push(traceEntry(candidate, null, "excluded", "already_a_main_stop"));
       continue;
     }
     if (!isRoutePlannerCandidateEligible(candidate)) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", "not_admissible"));
-      continue;
-    }
-    const evaluation = evaluations.get(candidate.id);
-    if (evaluation && !evaluation.feasible) {
       trace.entries.push(traceEntry(candidate, null, "excluded", "not_admissible"));
       continue;
     }
@@ -201,12 +209,11 @@ export function buildMeetingOpportunities(input: {
       trace.entries.push(traceEntry(candidate, distanceMeters, "excluded", "outside_radius"));
       continue;
     }
-    const coordinateKey = `${candidate.latitude.toFixed(6)},${candidate.longitude.toFixed(6)}`;
     accepted.push({
       candidate,
       distanceMeters,
       score: candidate.finalPlannerContribution ?? candidate.score,
-      coordinateKey,
+      coordinateKey: coordinateKey(candidate),
     });
   }
 

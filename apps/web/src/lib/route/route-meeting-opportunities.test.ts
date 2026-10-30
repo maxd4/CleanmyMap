@@ -108,7 +108,7 @@ describe("buildMeetingOpportunities", () => {
     const result = buildMeetingOpportunities({
       meetingPoint,
       candidates: [inside, outside, unknown, trained, noPickup],
-      mainStopIds: new Set(["inside"]),
+      mainStops: [inside],
     });
 
     expect(result.opportunities).toEqual([]);
@@ -119,6 +119,24 @@ describe("buildMeetingOpportunities", () => {
       expect.objectContaining({ candidateId: "trained", reason: "trained_only" }),
       expect.objectContaining({ candidateId: "no-pickup", reason: "no_pickup" }),
     ]));
+  });
+
+  it("excludes a different candidate at the coordinates of a main stop", () => {
+    const mainStop = candidate("main-stop", ...coordinatesAtMeters(40));
+    const samePosition = candidate("same-position-different-id", mainStop.latitude, mainStop.longitude);
+    const result = buildMeetingOpportunities({
+      meetingPoint,
+      candidates: [samePosition],
+      mainStops: [mainStop],
+    });
+
+    expect(result.opportunities).toEqual([]);
+    expect(result.trace.entries).toEqual([
+      expect.objectContaining({
+        candidateId: "same-position-different-id",
+        reason: "already_a_main_stop",
+      }),
+    ]);
   });
 
   it("keeps observed and predicted provenance, bounds the result, and is deterministic", () => {
@@ -154,7 +172,7 @@ describe("buildMeetingOpportunities", () => {
     expect(forward.opportunities.every(({ distanceMeters }) => distanceMeters <= MEETING_OPPORTUNITY_MAX_RADIUS_METERS)).toBe(true);
   });
 
-  it("reuses an inadmissible planner evaluation without changing the route inputs", () => {
+  it("keeps a locally admissible candidate when the planner budget rejects it", () => {
     const local = candidate("local", ...coordinatesAtMeters(40));
     const result = buildMeetingOpportunities({
       meetingPoint,
@@ -162,11 +180,8 @@ describe("buildMeetingOpportunities", () => {
       evaluations: [{ candidateId: "local", feasible: false }],
     });
 
-    expect(result.opportunities).toEqual([]);
-    expect(result.trace.entries[0]).toMatchObject({
-      candidateId: "local",
-      reason: "not_admissible",
-    });
+    expect(result.opportunities.map(({ candidateId }) => candidateId)).toEqual(["local"]);
+    expect(result.trace.entries[0]).toMatchObject({ candidateId: "local", outcome: "selected" });
     expect(local.latitude).toBe(meetingPoint.coordinates[0]);
   });
 });
