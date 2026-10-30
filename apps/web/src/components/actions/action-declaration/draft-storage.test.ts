@@ -280,6 +280,41 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.arrivalCoordinates).toEqual(draft.arrivalCoordinates);
   });
 
+  it("preserves file and segment identities across GPX draft hydration", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    const drawing = {
+      kind: "polyline" as const,
+      coordinates: [[48.85, 2.35], [48.86, 2.36]] as [number, number][],
+    };
+    draft.gpxImport = {
+      source: "gpx_import",
+      observedDistanceKm: 1.2,
+      pointCount: 2,
+      inferredTopology: "point_to_point",
+      files: [{
+        fileId: "gpx-file-occurrence-1",
+        fileName: "terrain.gpx",
+        provenance: "unknown",
+        segments: [{
+          fileId: "gpx-file-occurrence-1",
+          fileName: "terrain.gpx",
+          traceIndex: 0,
+          segmentIndex: 0,
+          coordinates: drawing.coordinates,
+          distanceKm: 1.2,
+          pointCount: 2,
+          topology: "point_to_point",
+          sourceFingerprint: "gpx-source-stable",
+        }],
+      }],
+    };
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z", { drawing, source: "gpx_import" });
+
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"))?.form.gpxImport).toEqual(draft.gpxImport);
+  });
+
   it("drops orphaned GPX provenance and geometry on reload", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({

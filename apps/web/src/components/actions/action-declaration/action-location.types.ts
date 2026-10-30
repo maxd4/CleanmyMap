@@ -2,6 +2,7 @@ import type {
   ActionDrawing,
   ActionGeometrySource,
   ActionGpxImportMetadata,
+  ActionGpxImportRemovalTarget,
 } from "@/lib/actions/types";
 import type { FormState } from "./model";
 import type { UpdateFormField } from "./types";
@@ -22,7 +23,7 @@ export type ActionStepLocationProps = {
   gpxImport: ActionGpxImportMetadata | null;
   gpxError: string | null;
   onImportGpx: (files: FileList | readonly File[] | null) => Promise<void>;
-  onRemoveGpx: (sourceFingerprint?: string) => void;
+  onRemoveGpx: (target?: ActionGpxImportRemovalTarget | string) => void;
   onSetGpxIntent: (intent: "planned" | "observed") => void;
   onResetManualDrawing?: () => void;
   gpsStatus: "idle" | "locating" | "success" | "error";

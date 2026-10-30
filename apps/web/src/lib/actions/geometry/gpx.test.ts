@@ -136,6 +136,30 @@ describe("GPX track parsing", () => {
     }
   });
 
+  it("keeps successive imports distinct while preserving the technical retry fingerprint", async () => {
+    const xml = gpx(`${point(48.85, 2.35)}${point(48.851, 2.351)}`);
+    const makeFile = () => ({
+      name: "terrain.gpx",
+      type: "application/gpx+xml",
+      size: 100,
+      text: async () => xml,
+    }) as unknown as File;
+
+    const firstImport = await parseGpxFiles([makeFile()]);
+    const secondImport = await parseGpxFiles([makeFile()]);
+
+    expect(firstImport[0]?.ok).toBe(true);
+    expect(secondImport[0]?.ok).toBe(true);
+    if (firstImport[0]?.ok && secondImport[0]?.ok) {
+      const firstFile = firstImport[0].parsed.metadata.files?.[0];
+      const secondFile = secondImport[0].parsed.metadata.files?.[0];
+      expect(firstFile?.fileId).toBeTruthy();
+      expect(secondFile?.fileId).toBeTruthy();
+      expect(firstFile?.fileId).not.toBe(secondFile?.fileId);
+      expect(firstFile?.segments[0]?.sourceFingerprint).toBe(secondFile?.segments[0]?.sourceFingerprint);
+    }
+  });
+
   it("bounds the point count and file size", async () => {
     const tooManyPoints = Array.from({ length: 401 }, (_, index) =>
       point(40 + index / 10_000, 2 + index / 10_000),

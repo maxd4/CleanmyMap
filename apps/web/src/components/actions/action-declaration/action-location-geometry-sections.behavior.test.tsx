@@ -141,4 +141,46 @@ describe("ActionLocationMapPanel reversible external clearing", () => {
     act(() => input?.dispatchEvent(new Event("change", { bubbles: true })));
     expect(onImportGpx).toHaveBeenCalledWith([file]);
   });
+
+  it("keeps duplicate file and segment rows addressable by their occurrence", () => {
+    const onRemoveGpx = vi.fn();
+    const duplicateFiles = ["gpx-file-a", "gpx-file-b"].map((fileId, index) => ({
+      fileId,
+      fileName: "terrain.gpx",
+      provenance: "unknown" as const,
+      segments: [{
+        fileId,
+        fileName: "terrain.gpx",
+        traceIndex: 0,
+        segmentIndex: 0,
+        coordinates: [[48.85 + index / 100, 2.35], [48.851 + index / 100, 2.351]] as [number, number][],
+        distanceKm: 1,
+        pointCount: 2,
+        topology: "point_to_point" as const,
+        sourceFingerprint: "same-source-fingerprint",
+      }],
+    }));
+
+    act(() => {
+      root = createRoot(host!);
+      root.render(<ActionLocationGpxImport
+        form={{ recordType: "action" } as never}
+        gpxImport={{ source: "gpx_import", observedDistanceKm: 2, pointCount: 4, inferredTopology: "point_to_point", files: duplicateFiles }}
+        gpxError={null}
+        onImportGpx={vi.fn().mockResolvedValue(undefined)}
+        onRemoveGpx={onRemoveGpx}
+        onSetGpxIntent={vi.fn()}
+      />);
+    });
+
+    const fileButtons = [...(host?.querySelectorAll<HTMLButtonElement>('[aria-label="Supprimer terrain.gpx"]') ?? [])];
+    expect(fileButtons).toHaveLength(2);
+    act(() => fileButtons[1]?.click());
+    expect(onRemoveGpx).toHaveBeenCalledWith({ kind: "file", fileId: "gpx-file-b", fileIndex: 1 });
+
+    const segmentButtons = [...(host?.querySelectorAll<HTMLButtonElement>('[aria-label^="Supprimer le segment"]') ?? [])];
+    expect(segmentButtons).toHaveLength(2);
+    act(() => segmentButtons[1]?.click());
+    expect(onRemoveGpx).toHaveBeenLastCalledWith({ kind: "segment", fileId: "gpx-file-b", fileIndex: 1, sourceFingerprint: "same-source-fingerprint" });
+  });
 });

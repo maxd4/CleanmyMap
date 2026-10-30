@@ -3,6 +3,7 @@ import type {
   ActionDrawing,
   ActionGpxImportFile,
   ActionGpxImportMetadata,
+  ActionGpxImportRemovalTarget,
   ActionGeometrySource,
 } from "@/lib/actions/types";
 import type { ActionDeclarationDraftGeometry } from "../draft-storage";
@@ -32,6 +33,20 @@ export function createActionDeclarationGeometryHandlers({
   setGpxError,
   updateForm,
 }: ActionDeclarationGeometryHandlersParams) {
+  function ensureUniqueFileIdentities(existingFiles: ActionGpxImportFile[], incomingFiles: ActionGpxImportFile[]) {
+    const usedFileIds = new Set(existingFiles.flatMap((file) => file.fileId ? [file.fileId] : []));
+    return incomingFiles.map((file) => {
+      let fileId = file.fileId;
+      while (!fileId || usedFileIds.has(fileId)) fileId = createGpxFileIdentity();
+      usedFileIds.add(fileId);
+      return {
+        ...file,
+        fileId,
+        segments: file.segments.map((segment) => ({ ...segment, fileId })),
+      };
+    });
+  }
+
   function rebuildMetadata(files: ActionGpxImportFile[], intent: ActionGpxImportMetadata["intent"] = form.gpxImport?.intent ?? "planned") {
     const effectiveIntent = files.some((file) => file.provenance === "planned") ? "planned" : intent;
     const segments = files.flatMap((file) => file.segments);
@@ -45,7 +60,7 @@ export function createActionDeclarationGeometryHandlers({
       segmentDistancesKm: segments.map((segment) => segment.distanceKm),
       segmentPointCounts: segments.map((segment) => segment.pointCount),
       segmentCount: segments.length,
-      traceCount: new Set(segments.map((segment) => `${segment.fileId ?? segment.fileName}:${segment.traceIndex}`)).size,
+      traceCount: new Set(files.flatMap((file) => file.segments.map((segment) => `${file.fileId ?? segment.fileId ?? file.fileName}:${segment.traceIndex}`))).size,
       provenance: files.every((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
       intent: effectiveIntent,
       gpxImportProvenance: files.some((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
@@ -90,7 +105,7 @@ export function createActionDeclarationGeometryHandlers({
         if (!confirmed) return;
       }
       const existingFiles = form.gpxImport?.files ?? [];
-      const allFiles = [...existingFiles, ...candidates];
+      const allFiles = [...existingFiles, ...ensureUniqueFileIdentities(existingFiles, candidates)];
       const metadata = rebuildMetadata(allFiles);
       const firstSegment = allFiles.flatMap((file) => file.segments)[0];
       const drawing: ActionDrawing | null = firstSegment
@@ -112,19 +127,34 @@ export function createActionDeclarationGeometryHandlers({
     }
   }
 
-  function removeGpxImport(fileIdOrFingerprint?: string) {
-    if (fileIdOrFingerprint && form.gpxImport?.files) {
-      const removesFile = form.gpxImport.files.some((file) =>
-        file.fileId === fileIdOrFingerprint || (!file.fileId && file.fileName === fileIdOrFingerprint),
+  function removeGpxImport(target?: ActionGpxImportRemovalTarget | string) {
+    if (target && form.gpxImport?.files) {
+      const filesBeforeRemoval = form.gpxImport.files;
+      const legacyFileIndex = typeof target === "string"
+        ? filesBeforeRemoval.findIndex((file) => file.fileId === target || (!file.fileId && file.fileName === target))
+        : -1;
+      const normalizedTarget: ActionGpxImportRemovalTarget | null = typeof target === "string"
+        ? legacyFileIndex >= 0
+          ? { kind: "file", fileId: filesBeforeRemoval[legacyFileIndex]?.fileId, fileIndex: legacyFileIndex }
+          : { kind: "segment", fileIndex: -1, sourceFingerprint: target }
+        : target;
+      const matchesFile = (file: ActionGpxImportFile, fileIndex: number) => Boolean(
+        normalizedTarget &&
+        (normalizedTarget.fileId ? file.fileId === normalizedTarget.fileId : fileIndex === normalizedTarget.fileIndex),
       );
-      const files = form.gpxImport.files
-        .filter((file) => !removesFile || (file.fileId === fileIdOrFingerprint || (!file.fileId && file.fileName === fileIdOrFingerprint)) === false)
-        .map((file) => ({
-          ...file,
-          segments: removesFile
-            ? file.segments
-            : file.segments.filter((segment) => segment.sourceFingerprint !== fileIdOrFingerprint),
-        }))
+      const removesFile = normalizedTarget?.kind === "file";
+      const files = filesBeforeRemoval
+        .map((file, fileIndex) => {
+          if (removesFile && matchesFile(file, fileIndex)) return null;
+          if (normalizedTarget?.kind !== "segment") return file;
+          const removeEveryMatchingSegment = typeof target === "string" && normalizedTarget.fileIndex < 0;
+          if (!removeEveryMatchingSegment && !matchesFile(file, fileIndex)) return file;
+          return {
+            ...file,
+            segments: file.segments.filter((segment) => segment.sourceFingerprint !== normalizedTarget.sourceFingerprint),
+          };
+        })
+        .filter((file): file is ActionGpxImportFile => Boolean(file))
         .filter((file) => file.error ? true : file.segments.length > 0);
       const nextMetadata = files.length > 0 ? rebuildMetadata(files) : null;
       const firstSegment = files.flatMap((file) => file.segments)[0];

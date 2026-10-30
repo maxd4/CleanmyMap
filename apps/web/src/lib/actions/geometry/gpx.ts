@@ -372,15 +372,14 @@ export async function parseGpxFiles(files: readonly File[]): Promise<GpxFilePars
     const fileName = sanitizeFileName(file.name) ?? file.name ?? "GPX sans nom";
     fileNameCounts.set(fileName, (fileNameCounts.get(fileName) ?? 0) + 1);
   }
-  return Promise.all(files.map(async (file, fileIndex): Promise<GpxFileParseResult> => {
+  return Promise.all(files.map(async (file): Promise<GpxFileParseResult> => {
     const fileName = sanitizeFileName(file.name) ?? file.name ?? "GPX sans nom";
     try {
       assertUsableGpxFile(file);
-      const occurrence = files.slice(0, fileIndex).filter((candidate) =>
-        (sanitizeFileName(candidate.name) ?? candidate.name ?? "GPX sans nom") === fileName,
-      ).length;
       const xml = await file.text();
-      const fileId = createGpxFileIdentity(`${fileName}:${occurrence}:${xml}`);
+      // A fileId identifies this UI/draft occurrence, not the GPX content. The
+      // source fingerprint remains the technical retry identity below.
+      const fileId = createGpxFileIdentity();
       return {
         ok: true,
         fileName,

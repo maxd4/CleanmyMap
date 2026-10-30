@@ -53,10 +53,11 @@ export function parseGpxImport(value: unknown): ActionGpxImportMetadata | null {
   }
   if (value.inferredTopology !== "loop" && value.inferredTopology !== "point_to_point") return null;
 
-  const files: ActionGpxImportFile[] = isRecord(value.files) || !Array.isArray(value.files)
+  const files: ActionGpxImportFile[] = !Array.isArray(value.files)
     ? []
     : value.files.flatMap((file): ActionGpxImportFile[] => {
         if (!isRecord(file) || typeof file.fileName !== "string" || (file.provenance !== "planned" && file.provenance !== "unknown") || !Array.isArray(file.segments)) return [];
+        const fileId = typeof file.fileId === "string" && file.fileId.length > 0 ? file.fileId : undefined;
         const segments = file.segments.flatMap((segment): ActionGpxImportFile["segments"] => {
           if (!isRecord(segment) || typeof segment.fileName !== "string" || typeof segment.traceIndex !== "number" || typeof segment.segmentIndex !== "number" || !Array.isArray(segment.coordinates) || typeof segment.distanceKm !== "number" || typeof segment.pointCount !== "number" || (segment.topology !== "loop" && segment.topology !== "point_to_point") || typeof segment.sourceFingerprint !== "string") return [];
           const coordinates = segment.coordinates.flatMap((point): [number, number][] => {
@@ -64,10 +65,10 @@ export function parseGpxImport(value: unknown): ActionGpxImportMetadata | null {
             return parsed ? [parsed] : [];
           });
           return coordinates.length === segment.coordinates.length && coordinates.length >= 2
-            ? [{ fileName: segment.fileName, traceIndex: segment.traceIndex, segmentIndex: segment.segmentIndex, coordinates, distanceKm: segment.distanceKm, pointCount: segment.pointCount, topology: segment.topology, sourceFingerprint: segment.sourceFingerprint }]
+            ? [{ ...(typeof segment.fileId === "string" && segment.fileId.length > 0 ? { fileId: segment.fileId } : fileId ? { fileId } : {}), fileName: segment.fileName, traceIndex: segment.traceIndex, segmentIndex: segment.segmentIndex, coordinates, distanceKm: segment.distanceKm, pointCount: segment.pointCount, topology: segment.topology, sourceFingerprint: segment.sourceFingerprint }]
             : [];
         });
-        return [{ fileName: file.fileName, provenance: file.provenance, segments, ...(typeof file.error === "string" ? { error: file.error } : {}) }];
+        return [{ ...(fileId ? { fileId } : {}), fileName: file.fileName, provenance: file.provenance, segments, ...(typeof file.error === "string" ? { error: file.error } : {}) }];
       });
 
   return {
