@@ -5,6 +5,7 @@ import { decideAssociationActionReview, isAssociationActionReviewRequired } from
 import { emitAdministrativeRequirementNotifications } from "@/lib/actions/administrative-requirement-notifications";
 import { publishOfficialAssociationActionAnnouncement } from "@/lib/chat/association-action-announcement";
 import { buildAssociationActionReviewInboxItem, type CreatorInboxItem } from "@/lib/community/creator-inbox";
+import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities-publication-validation";
 import type { CreatorInboxAction } from "./route.shared";
 
 export async function handleCreatorInboxAssociationAction(params: {
@@ -50,6 +51,19 @@ export async function handleCreatorInboxAssociationAction(params: {
   }
 
   try {
+    if (params.action === "approve_association_action") {
+      const formalities = await validateActionFormalitiesForPublication(current);
+      if (!formalities.ok) {
+        return NextResponse.json(
+          {
+            error: "Une formalité requise n'est plus valide pour cette action.",
+            code: "required_formality_not_ready",
+            formalityIds: formalities.blockedFormalityIds,
+          },
+          { status: 422 },
+        );
+      }
+    }
     const decision = await decideAssociationActionReview({
       supabase,
       actionId: current.id,
@@ -65,6 +79,12 @@ export async function handleCreatorInboxAssociationAction(params: {
     }
     if (decision.status === "not_found") {
       return NextResponse.json({ error: "Action not found." }, { status: 404 });
+    }
+    if (decision.status === "formalities_not_ready") {
+      return NextResponse.json(
+        { error: "Une formalité requise n'est plus valide pour cette action.", code: "required_formality_not_ready" },
+        { status: 422 },
+      );
     }
     if (decision.review_state === "approved") {
       await emitAdministrativeRequirementNotifications({ supabase, actionId: current.id });

@@ -10,14 +10,9 @@ import { canPublishPreAction } from "@/lib/actions/publication";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
 import { emitAdministrativeRequirementNotifications } from "@/lib/actions/administrative-requirement-notifications";
 import type { ActionRow } from "@/types/database";
-import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities-action-context";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
-import {
-  buildFormalitiesWorkflowState,
-  getBlockedRequiredFormalityIds,
-  normalizeActionFormalitiesWorkflow,
-} from "@/lib/actions/formalities-workflow";
-import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
+import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities-publication-validation";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { isPublishedActionRow } from "@/lib/actions/runtime-contracts";
 import { parseActionSingleRow, parseActionSupabaseResult } from "@/lib/actions/query";
@@ -31,8 +26,8 @@ function buildPublicationUpdate(params: {
   currentPreparationData: ActionRow["preparation_data"];
   publishedAt: string;
   userId: string;
-  formalitiesContext: Awaited<ReturnType<typeof deriveActionFormalitiesFactsFromAction>>;
-  formalitiesWorkflow: ReturnType<typeof buildFormalitiesWorkflowState>;
+  formalitiesContext: ActionFormalitiesFacts;
+  formalitiesWorkflow: ActionFormalitiesWorkflowState;
 }) {
   const preparationData = initializeActionRouteVersioning({
     preparationData: params.currentPreparationData,
@@ -58,38 +53,19 @@ function buildPublicationUpdate(params: {
   };
 }
 
-function requiredFormalitiesNotReady(params: {
-  qualification: ReturnType<typeof qualifyActionFormalities>;
-  workflow: ReturnType<typeof buildFormalitiesWorkflowState>;
-}): string[] {
-  return getBlockedRequiredFormalityIds(params.qualification, params.workflow);
-}
-
 async function validateFormalitiesBeforePublication(current: ActionRow) {
-  const formalitiesContext = await deriveActionFormalitiesFactsFromAction(current);
-  const qualification = qualifyActionFormalities(formalitiesContext);
-  const formalitiesWorkflow = buildFormalitiesWorkflowState({
-    facts: formalitiesContext,
-    qualification,
-    previous: normalizeActionFormalitiesWorkflow(current.preparation_data?.formalitiesWorkflow),
-    actionDependencies: {
-      locationLabel: current.location_label,
-      actionDate: current.action_date,
-      territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
-    },
-  });
-  const blockedFormalities = requiredFormalitiesNotReady({ qualification, workflow: formalitiesWorkflow });
-  if (blockedFormalities.length > 0) {
+  const validation = await validateActionFormalitiesForPublication(current);
+  if (!validation.ok) {
     return NextResponse.json(
       {
         error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
         code: "required_formality_not_ready",
-        formalityIds: blockedFormalities,
+        formalityIds: validation.blockedFormalityIds,
       },
       { status: 422 },
     );
   }
-  return { formalitiesContext, formalitiesWorkflow };
+  return validation;
 }
 
 function spontaneousOrganizerPublicationError(
