@@ -205,7 +205,7 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
     return result(params.actionId, "failed");
   }
 
-  const wasAlreadyPresent = Boolean(announcementMessage);
+  let wasAlreadyPresent = Boolean(announcementMessage);
   if (!announcementMessage) {
     const announcement = buildOfficialAssociationAnnouncementContent(action);
     const insertResult = await params.supabase
@@ -258,6 +258,7 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
         });
         return result(params.actionId, "failed");
       }
+      wasAlreadyPresent = true;
     }
   }
 

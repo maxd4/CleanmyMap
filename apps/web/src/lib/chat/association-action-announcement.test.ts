@@ -194,7 +194,7 @@ describe("official association action announcement", () => {
     });
     createChatNotificationsForMessageMock.mockResolvedValue(1);
 
-    await publishOfficialAssociationActionAnnouncement({
+    const publication = await publishOfficialAssociationActionAnnouncement({
       supabase: supabase as never,
       actionId: "action-1",
       actorUserId: "admin-b",
@@ -202,6 +202,10 @@ describe("official association action announcement", () => {
       now: new Date("2099-01-01T09:00:00.000Z"),
     });
 
+    expect(publication).toMatchObject({
+      state: "already_diffused",
+      messageId: "message-winner",
+    });
     expect(createChatNotificationsForMessageMock).toHaveBeenCalledWith(
       supabase,
       "message-winner",

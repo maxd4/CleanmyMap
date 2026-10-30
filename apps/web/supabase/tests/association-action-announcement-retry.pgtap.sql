@@ -140,7 +140,7 @@ select throws_ok(
     (select ordinary_message_id from association_action_announcement_retry_fixture),
     'fanout-other-sender'
   )$$,
-  '42501',
+  'P0001',
   'Forbidden',
   'an ordinary message still rejects a different sender'
 );
