@@ -301,21 +301,21 @@ de nombreuses traces internes.
 Dans ce cas :
 
 ```text
-emprise de référence fiable
-→ polygone rempli principal
+emprise de référence historique
+→ repère contextuel non présenté comme couverture
 
-traces GPS terrain
-→ preuves complémentaires de parcours
+traces GPS / GPX terrain
+→ couverture observée multi-traces prioritaire
 ```
 
-Le polygone représente la zone d’action.
+Le polygone historique peut rester persisté pour compatibilité et audit, mais il
+ne doit pas être publié comme une zone nettoyée lorsque les traces observées
+sont disponibles. Les traces représentent les déplacements réellement observés
+et restent des lignes indépendantes.
 
-Les traces représentent les déplacements observés à l’intérieur de cette zone.
-
-Les traces ne doivent pas remplacer automatiquement une emprise de référence
-fiable par une grande polyline artificielle.
-
-L’UI peut permettre d’afficher la couverture GPS en surimpression ou en détail.
+La carte publique, le tableau, la sélection, les popups, les tooltips, le journal
+et l’export utilisent alors la couverture observée comme géométrie principale.
+L’itinéraire opérationnel prévu n’est pas superposé par défaut à ces traces.
 
 ## 8. Cycle de vie de la géométrie d’une action
 
@@ -371,9 +371,9 @@ distance cible
 ≠ distance de couverture unique
 ```
 
-La somme des distances individuelles peut être utile pour décrire le mouvement
-cumulé des groupes, mais elle ne doit jamais être libellée « distance du
-parcours de l’action ».
+Le runtime public conserve les distances individuelles et n’annonce aucune
+distance cumulée de couverture. La somme éventuelle des distances individuelles
+ne doit jamais être libellée « distance du parcours de l’action ».
 
 La distance de couverture unique doit rester `NA` tant que l’union spatiale
 n’est pas défendable.

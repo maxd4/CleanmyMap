@@ -207,7 +207,7 @@ export function ActionsMapTable({
  {drawing ? (
  <span
  className={`cmm-text-caption font-semibold px-2 py-0.5 rounded-full border ${
- geometry.reality ==="real"
+  geometry.reality ==="observed" || geometry.reality === "declared"
  ?"text-emerald-700 bg-emerald-50 border-emerald-100"
  :"text-amber-800 bg-amber-50 border-amber-100"
  }`}

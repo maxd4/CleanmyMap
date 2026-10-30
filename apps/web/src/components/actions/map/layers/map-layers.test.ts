@@ -129,11 +129,13 @@ vi.mock("../popup/action-popup-content", () => ({
 vi.mock("./map-geometry-tooltip-content", () => ({
   GeometryTooltipContent: ({
     title,
+    geometryModeLabel,
     color,
   }: {
     title: string;
+    geometryModeLabel: string;
     color: string;
-  }) => React.createElement("div", { "data-title": title, "data-color": color }, title),
+  }) => React.createElement("div", { "data-title": title, "data-mode": geometryModeLabel, "data-color": color }, `${geometryModeLabel} · ${title}`),
 }));
 
 import {
@@ -321,6 +323,52 @@ describe("ShapeLayers", () => {
     expect(markup).toContain('data-opacity="0"');
   });
 
+  it("does not overlay an operational route on observed GPS geometry", () => {
+    const observed = buildShapeItem("action", 20, "polyline", {
+      geometrySource: "gps_tracking",
+      preparationData: {
+        operationalRoute: {
+          version: "operational-route-v1",
+          initializedAt: "2026-06-01T10:00:00.000Z",
+          updatedAt: "2026-06-01T10:00:00.000Z",
+          source: "planner",
+          state: "planner_copy",
+          plannerGroupCount: 1,
+          routes: [{
+            routeId: "planner-group-1",
+            groupIndex: 1,
+            geometry: {
+              isLoop: false,
+              origin: [48.8566, 2.3522],
+              returnLeg: null,
+              coordinates: [[48.8566, 2.3522], [48.858, 2.354]],
+              distanceKm: 0.3,
+              durationMinutes: 5,
+              legs: [],
+              provider: "osrm",
+              profile: "foot",
+              mode: "network",
+              estimated: false,
+            },
+            plannerTechnicalStops: [],
+          }],
+          zones: {
+            departure: { label: null, coordinate: [48.8566, 2.3522] },
+            midpoint: { label: null, coordinate: [48.8573, 2.353] },
+            arrival: { label: null, coordinate: [48.858, 2.354] },
+          },
+        },
+      },
+    });
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, { items: [observed] }),
+    );
+
+    expect(markup).not.toContain("Itinéraire prévu sur le réseau");
+    expect(markup).toContain("Trace GPS enregistrée");
+  });
+
   it("keeps geometry markers absent at rest and exposes D/A plus three arrows when selected", () => {
     const normalMarkup = renderToStaticMarkup(
       React.createElement(ShapeLayers, {
@@ -352,7 +400,8 @@ describe("ShapeLayers", () => {
       day?: number;
       coordinates?: [number, number][];
       geometryConfidence?: number;
-      geometrySource?: "manual" | "routed";
+      geometrySource?: "manual" | "routed" | "gps_tracking";
+      preparationData?: Parameters<typeof buildActionDataContract>[0]["preparationData"];
     } = {},
   ): ActionMapItem {
     return toActionMapItem(
@@ -385,6 +434,7 @@ describe("ShapeLayers", () => {
         },
         geometryConfidence: overrides.geometryConfidence,
         geometrySource: overrides.geometrySource,
+        preparationData: overrides.preparationData,
       }),
     );
   }

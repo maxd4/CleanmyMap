@@ -371,27 +371,36 @@ La couleur porte uniquement la lecture de pollution. Elle ne porte jamais la
 fiabilité géométrique. La présentation publique distingue les provenances
 suivantes, sur la carte, dans la légende, les tooltips et les popups :
 
-- `Trace GPS observée` : trace terrain `gps_tracking` issue d'une mission mobile
-  liée, ou trace GPX `gpx_import` fournie par l'utilisateur, trait plein ;
-- `Couverture observée par plusieurs bénévoles` : plusieurs traces attribuées
+- `Trace GPS enregistrée` : trace terrain `gps_tracking` issue d'une mission
+  mobile liée, trait plein ;
+- `Trace GPX fournie` : trace `gpx_import` fournie et validée par l'utilisateur,
+  trait plein ;
+- `Couverture observée multi-traces` : plusieurs traces attribuées
   à une même action, rendues comme lignes indépendantes. Le libellé ne signifie
   ni un trajet commun ni une liaison entre les bénévoles ; les distances
   individuelles restent distinctes et la distance de couverture cumulée est
   indisponible sans politique de dédoublonnage versionnée ;
 - `Parcours déclaré` : parcours dessiné ou déclaré, trait plein ;
-- `Parcours reconstruit` : parcours piéton retourné par le réseau, trait
-  pointillé régulier et opacité réduite ;
-- `Parcours estimé` : estimation sans trace observée, trait pointillé plus
-  léger ;
-- `Liaison indicative à vol d'oiseau` : repli géographique quand le réseau
-  n'est pas disponible, trait pointillé léger ;
-- `Zone d'action`, `Zone de référence` et `Zone indicative` : surfaces à bord
-  plein, la zone indicative ayant un remplissage plus transparent ;
+- `Itinéraire prévu sur le réseau` : parcours piéton retourné par le réseau,
+  trait pointillé régulier ;
+- `Itinéraire prévu estimé` : estimation sans trace observée, trait pointillé ;
+- `Liaison indicative non routée` : repli géographique sans réseau, trait
+  pointillé léger uniquement pendant la préparation ; après action, le rendu
+  devient le point `Parcours non documenté` ;
+- `Zone d'action` : surface déclarée à bord plein ;
+- `Repère géographique indicatif` et `Zone indicative` : contexte spatial à
+  contour pointillé, jamais couverture nettoyée ;
 - `Localisation seule` : point sans tracé.
 
 Un trait pointillé représente une hypothèse géographique, jamais une trace GPS
 observée. L'épaisseur sert uniquement à la sélection et à la lisibilité ; elle
 ne constitue pas un score.
+
+Une couverture observée est prioritaire sur une géométrie manuelle, de référence
+ou planifiée. Une géométrie de référence déjà persistée reste conservée pour
+l'historique, mais n'est pas exposée comme un faux parcours public. Cette même
+provenance est reprise dans le tableau, la sélection, le journal et l'export
+GeoJSON ; l'export conserve les MultiLineString observées et leurs labels.
 
 La mission mobile, ses `gps_points` et les contributions sources restent privés
 et owner-scoped. `/actions/map` reçoit uniquement la projection bornée via le
@@ -416,13 +425,13 @@ quota est indisponible. Le runtime lit `routeGeometryMode` et
 indicative ; une ancienne donnée sans ces métadonnées reste rendue comme
 `Parcours estimé`, sans inventer un fournisseur.
 
-Les distances gardent leur provenance et ne sont pas recalculées sous un
-libellé générique : `Distance observée` pour un tracking GPS ou un GPX, `Distance du parcours
-reconstruit` pour un parcours réseau, `Parcours estimé` accompagné de
-`Distance cible` pour une estimation réseau, et `Distance indicative à vol
-d'oiseau` pour le repli. Une distance cible isolée reste libellée `Distance
-cible`. Le navigateur ne déclenche pas de routage pour produire ou recaler
-cette géométrie.
+Les distances gardent leur provenance : `Distance enregistrée` ou longueur
+calculée depuis la géométrie pour une observation, `Longueur du parcours
+planifié` pour le réseau, `Distance cible` lorsqu'aucune longueur planifiée
+n'est disponible, et `Longueur indicative non routée` uniquement pour une
+géométrie indicative encore affichée en préparation. Une couverture multi-traces
+n'annonce pas de distance cumulée. Le navigateur ne déclenche pas de routage
+pour produire ou recaler cette géométrie.
 
 Un fichier GPX valide constitue un tracé fourni par l'utilisateur : sa source
 reste `gpx_import`, sa longueur observée est calculée séparément de la distance

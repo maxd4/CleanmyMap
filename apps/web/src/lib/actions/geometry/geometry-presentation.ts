@@ -10,9 +10,20 @@ type GeometryPresentationVariant =
   | "indicative"
   | "point";
 
+export type GeometryPresentationReality =
+  | "observed"
+  | "declared"
+  | "planned"
+  | "contextual"
+  | "location_only"
+  /** @deprecated Compatibility for isolated renderer fixtures. */
+  | "real"
+  | "estimated"
+  | "fallback";
+
 export type GeometryPresentation = {
   origin: ActionGeometryOrigin;
-  reality: "real" | "estimated" | "fallback";
+  reality: GeometryPresentationReality;
   label: string;
   strokeStyle: "solid" | "dashed" | "point";
   variant?: GeometryPresentationVariant;
@@ -41,7 +52,7 @@ function toGeometryKind(item: ActionMapItem): ActionGeometryKind | null {
   return item.contract?.geometry.kind ?? item.manual_drawing?.kind ?? null;
 }
 
-function isIndicativeRouteFallback(item: ActionMapItem): boolean {
+export function isIndicativeRouteFallback(item: ActionMapItem): boolean {
   const preparationData = item.contract?.metadata.preparationData;
   return (
     preparationData?.routeGeometryMode === "fallback" ||
@@ -57,7 +68,7 @@ function getManualLabel(kind: ActionGeometryKind | null): string {
 
 function buildPresentation(
   origin: ActionGeometryOrigin,
-  reality: GeometryPresentation["reality"],
+  reality: GeometryPresentationReality,
   label: string,
   strokeStyle: GeometryPresentation["strokeStyle"],
   variant: GeometryPresentationVariant,
@@ -67,10 +78,20 @@ function buildPresentation(
 
 function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentation {
   if (isIndicativeRouteFallback(item)) {
+    if (item.contract?.metadata.actionPhase !== "pre_action") {
+      return buildPresentation(
+        "estimated_route",
+        "location_only",
+        "Parcours non documenté",
+        "point",
+        "point",
+      );
+    }
+
     return buildPresentation(
       "estimated_route",
-      "estimated",
-      "Liaison indicative à vol d’oiseau",
+      "planned",
+      "Liaison indicative non routée",
       "dashed",
       "indicative",
     );
@@ -78,8 +99,8 @@ function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentatio
 
   return buildPresentation(
     "estimated_route",
-    "estimated",
-    "Parcours estimé",
+    "planned",
+    "Itinéraire prévu estimé",
     "dashed",
     "estimated",
   );
@@ -92,10 +113,28 @@ function observedTraceCount(item: ActionMapItem): number {
   );
 }
 
-function observedLabel(item: ActionMapItem): string {
-  return observedTraceCount(item) > 1
-    ? "Couverture observée par plusieurs bénévoles"
-    : "Trace GPS observée";
+function hasStoredObservedCoverage(item: ActionMapItem): boolean {
+  return (
+    observedTraceCount(item) > 0 ||
+    item.contract?.geometry.kind === "multiline"
+  );
+}
+
+function observedCoverageSources(item: ActionMapItem): ActionGeometryOrigin[] {
+  return (item.contract?.metadata.preparationData?.observedCoverage?.sources ?? [])
+    .filter((source): source is ActionGeometryOrigin =>
+      source === "gpx_import" || source === "gps_tracking",
+    );
+}
+
+function observedLabel(
+  item: ActionMapItem,
+  origin: ActionGeometryOrigin | null,
+): string {
+  if (observedTraceCount(item) > 1) return "Couverture observée multi-traces";
+  return (origin === "gpx_import" || observedCoverageSources(item).includes("gpx_import"))
+    ? "Trace GPX fournie"
+    : "Trace GPS enregistrée";
 }
 
 /**
@@ -106,22 +145,26 @@ export function getGeometryPresentation(
 ): GeometryPresentation {
   const origin = toGeometryPresentationOrigin(item);
   const kind = toGeometryKind(item);
+  const hasObservedCoverage = hasStoredObservedCoverage(item);
+  if (hasObservedCoverage) {
+    return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
+  }
   switch (origin) {
     case "manual":
-      return buildPresentation(origin, "real", getManualLabel(kind), "solid", "declared");
+      return buildPresentation(origin, "declared", getManualLabel(kind), "solid", "declared");
     case "reference":
-      return buildPresentation(origin, "real", "Zone de référence", "solid", "reference");
+      return buildPresentation(origin, "contextual", "Repère géographique indicatif", "dashed", "reference");
     case "gpx_import":
     case "gps_tracking":
-      return buildPresentation(origin, "real", observedLabel(item), "solid", "observed");
+      return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
     case "routed":
-      return buildPresentation(origin, "estimated", "Parcours reconstruit", "dashed", "network");
+      return buildPresentation(origin, "planned", "Itinéraire prévu sur le réseau", "dashed", "network");
     case "estimated_route":
       return getEstimatedRoutePresentation(item);
     case "estimated_area":
-      return buildPresentation(origin, "estimated", "Zone indicative", "solid", "indicative");
+      return buildPresentation(origin, "contextual", "Zone indicative", "dashed", "indicative");
     case "fallback_point":
     default:
-      return buildPresentation("fallback_point", "fallback", "Localisation seule", "point", "point");
+      return buildPresentation("fallback_point", "location_only", "Localisation seule", "point", "point");
   }
 }

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ActionMapItem, ActionPreparationData } from "../types";
+import type { ActionMapItem, ActionPhase, ActionPreparationData } from "../types";
 import { getGeometryPresentation } from "./geometry-presentation";
 
 function buildItem(
   geometry_source: ActionMapItem["geometry_source"],
   kind: "polyline" | "polygon" = "polyline",
   preparationData: ActionPreparationData | null = null,
+  actionPhase: ActionPhase | null = null,
 ): ActionMapItem {
   return {
     id: "action-1",
@@ -29,7 +30,7 @@ function buildItem(
     },
     contract: preparationData
       ? ({
-          metadata: { preparationData },
+          metadata: { preparationData, actionPhase },
           geometry: { kind, geometrySource: geometry_source, origin: geometry_source },
         } as ActionMapItem["contract"])
       : undefined,
@@ -37,37 +38,37 @@ function buildItem(
 }
 
 describe("geometry presentation provenance", () => {
-  it("presents routed geometry as estimated and dashed", () => {
+  it("presents routed geometry as planned and dashed", () => {
     expect(getGeometryPresentation(buildItem("routed"))).toMatchObject({
-      reality: "estimated",
+      reality: "planned",
       strokeStyle: "dashed",
       variant: "network",
     });
   });
 
-  it("presents manual geometry as real and solid", () => {
+  it("presents manual geometry as declared and solid", () => {
     expect(getGeometryPresentation(buildItem("manual"))).toMatchObject({
-      reality: "real",
+      reality: "declared",
       strokeStyle: "solid",
       variant: "declared",
     });
   });
 
   it("keeps observation, declaration and reference wording distinct", () => {
-    expect(getGeometryPresentation(buildItem("gpx_import")).label).toBe(
-      "Trace GPS observée",
-    );
+    expect(getGeometryPresentation(buildItem("gpx_import")).label).toBe("Trace GPX fournie");
     expect(getGeometryPresentation(buildItem("gps_tracking"))).toMatchObject({
-      label: "Trace GPS observée",
-      reality: "real",
+      label: "Trace GPS enregistrée",
+      reality: "observed",
       variant: "observed",
     });
     expect(getGeometryPresentation(buildItem("manual")).label).toBe(
       "Parcours déclaré",
     );
-    expect(getGeometryPresentation(buildItem("reference", "polygon")).label).toBe(
-      "Zone de référence",
-    );
+    expect(getGeometryPresentation(buildItem("reference", "polygon"))).toMatchObject({
+      label: "Repère géographique indicatif",
+      reality: "contextual",
+      strokeStyle: "dashed",
+    });
   });
 
   it("distinguishes a network estimate from its geographic fallback", () => {
@@ -79,7 +80,21 @@ describe("geometry presentation provenance", () => {
         }),
       ),
     ).toMatchObject({
-      label: "Liaison indicative à vol d’oiseau",
+      label: "Parcours non documenté",
+      reality: "location_only",
+      variant: "point",
+      strokeStyle: "point",
+    });
+    expect(
+      getGeometryPresentation(
+        buildItem("estimated_route", "polyline", {
+          routeGeometryMode: "fallback",
+          routeGeometryProvider: "none",
+        }, "pre_action"),
+      ),
+    ).toMatchObject({
+      label: "Liaison indicative non routée",
+      reality: "planned",
       variant: "indicative",
     });
     expect(
@@ -89,6 +104,6 @@ describe("geometry presentation provenance", () => {
           routeGeometryProvider: "osrm",
         }),
       ),
-    ).toMatchObject({ label: "Parcours estimé", variant: "estimated" });
+    ).toMatchObject({ label: "Itinéraire prévu estimé", reality: "planned", variant: "estimated" });
   });
 });

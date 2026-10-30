@@ -5,7 +5,10 @@ import {
   mapItemDrawing,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
-import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
+import {
+  getGeometryPresentation,
+  isIndicativeRouteFallback,
+} from "@/lib/actions/geometry/geometry-presentation";
 import type { GeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { resolveGeometryMetric } from "./actions-map-geometry-metrics";
 import {
@@ -108,41 +111,44 @@ function resolveObservedCoverage(item: ActionMapItem): {
   };
 }
 
+function shouldRenderPublicDrawing(
+  item: ActionMapItem,
+  presentation: GeometryPresentation,
+): boolean {
+  if (presentation.reality === "contextual" || presentation.reality === "location_only") {
+    return false;
+  }
+
+  const isPreAction = item.contract?.metadata.actionPhase === "pre_action";
+  if (
+    presentation.origin === "estimated_route" &&
+    isIndicativeRouteFallback(item) &&
+    !isPreAction
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 export function resolveActionMapGeometryViewModel(
   item: ActionMapItem,
 ): ActionMapGeometryViewModel {
   const presentation = getGeometryPresentation(item);
-  const drawing = mapItemDrawing(item);
   const coverage = resolveObservedCoverage(item);
+  const storedDrawing = mapItemDrawing(item);
+  const drawing = shouldRenderPublicDrawing(item, presentation) ? storedDrawing : null;
   const coordinates = buildDrawingLeafletPositions(drawing);
   const confidence =
     item.contract?.geometry.confidence ?? item.geometry_confidence ?? null;
 
-  if (drawing && coordinates.length > 0) {
-    const kind = drawing.kind;
-    return {
-      kind,
-      renderMode: "drawing",
-      positions: coordinates,
-      multiLinePositions: coverage.positions,
-      coverageTraceCount: coverage.traceCount,
-      anchor: resolveAnchorFromCoordinates(coordinates),
-      pointCount: coordinates.length,
-      confidence,
-      metrics: resolveGeometryMetric(drawing.kind, coordinates, item, presentation),
-      label: formatGeometryModeLabel(kind, presentation),
-      presentation,
-      drawing,
-    };
-  }
-
   if (coverage.positions.length > 0) {
     const allCoordinates = coverage.positions.flat();
-    const kind = item.contract?.geometry.kind === "multiline" ? "multiline" : "polyline";
+    const kind = "multiline" as const;
     return {
       kind,
       renderMode: "drawing",
-      positions: kind === "multiline" ? [] : (coverage.positions[0] ?? []),
+      positions: [],
       multiLinePositions: coverage.positions,
       coverageTraceCount: coverage.traceCount,
       anchor: resolveAnchorFromCoordinates(allCoordinates),
@@ -155,9 +161,27 @@ export function resolveActionMapGeometryViewModel(
     };
   }
 
+  if (drawing && coordinates.length > 0) {
+    const kind = drawing.kind;
+    return {
+      kind,
+      renderMode: "drawing",
+      positions: coordinates,
+      multiLinePositions: [],
+      coverageTraceCount: 0,
+      anchor: resolveAnchorFromCoordinates(coordinates),
+      pointCount: coordinates.length,
+      confidence,
+      metrics: resolveGeometryMetric(drawing.kind, coordinates, item, presentation),
+      label: formatGeometryModeLabel(kind, presentation),
+      presentation,
+      drawing,
+    };
+  }
+
   const location = mapItemCoordinates(item);
   if (
-    mapItemShouldRenderPoint(item) &&
+    (mapItemShouldRenderPoint(item) || drawing === null) &&
     isFiniteCoordinate(location.latitude) &&
     isFiniteCoordinate(location.longitude)
   ) {

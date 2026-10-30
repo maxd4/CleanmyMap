@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
-import { Polyline } from "react-leaflet";
+import { Polyline, Tooltip } from "react-leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { groupActionsByCorridor } from "@/lib/actions/pollution/corridor-history";
 import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
@@ -62,7 +62,9 @@ function OperationalRouteLayers({ item }: { item: ActionMapItem }) {
             opacity: 0.78,
             dashArray: "10 7",
           }}
-        />
+        >
+          <Tooltip sticky>Itinéraire prévu sur le réseau</Tooltip>
+        </Polyline>
       ))}
     </>
   );
@@ -92,8 +94,10 @@ export function ShapeLayerItem({
   );
   const hasRenderableGeometry =
     geometry.positions.length > 0 || geometry.multiLinePositions.some((line) => line.length > 1);
+  const showOperationalRoute =
+    operationalRouteSegments.length > 0 && geometry.presentation.reality !== "observed";
   if (geometry.renderMode !== "drawing" || !hasRenderableGeometry) {
-    return operationalRouteSegments.length > 0 ? (
+    return showOperationalRoute ? (
       <OperationalRouteLayers item={item} />
     ) : null;
   }
@@ -126,7 +130,7 @@ export function ShapeLayerItem({
   });
   return (
     <>
-      <OperationalRouteLayers item={item} />
+      {showOperationalRoute ? <OperationalRouteLayers item={item} /> : null}
       <ShapeGeometryRenderer
         item={item}
         geometry={geometry}

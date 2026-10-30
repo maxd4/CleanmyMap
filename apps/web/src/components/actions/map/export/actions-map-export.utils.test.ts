@@ -131,6 +131,94 @@ describe("actions map export utils", () => {
     expect(geojson.features[0]?.properties.has_manual_drawing).toBe(false);
   });
 
+  it("exports observed multi-traces with their provenance and label", () => {
+    const contract = buildActionDataContract({
+      id: "action-multitrace-export",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Parc test",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "gpx_import",
+      derivedGeometryKind: "multiline",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "MultiLineString",
+        coordinates: [
+          [[2.34, 48.85], [2.341, 48.851]],
+          [[2.35, 48.86], [2.351, 48.861]],
+        ],
+      }),
+      preparationData: {
+        observedCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[2.34, 48.85], [2.341, 48.851]],
+            [[2.35, 48.86], [2.351, 48.861]],
+          ],
+          traceCount: 2,
+          individualDistancesKm: [0.2, 0.3],
+          coverageDistanceKm: null,
+          coverageVersion: "observed-traces-v1",
+        },
+      },
+    });
+
+    const geojson = JSON.parse(
+      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+    ) as {
+      features: Array<{
+        geometry: { type: string; coordinates: unknown } | null;
+        properties: Record<string, unknown>;
+      }>;
+    };
+
+    expect(geojson.features[0]?.geometry?.type).toBe("MultiLineString");
+    expect(geojson.features[0]?.geometry?.coordinates).toHaveLength(2);
+    expect(geojson.features[0]?.properties.geometry_label).toBe(
+      "Couverture observée multi-traces",
+    );
+    expect(geojson.features[0]?.properties.geometry_reality).toBe("observed");
+  });
+
+  it("exports contextual reference geometry as a location point, never as coverage", () => {
+    const contract = buildActionDataContract({
+      id: "action-reference-export",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Jardin test",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "reference",
+      manualDrawing: {
+        kind: "polygon",
+        coordinates: [
+          [48.85, 2.34],
+          [48.851, 2.341],
+          [48.852, 2.342],
+        ],
+      },
+    });
+
+    const geojson = JSON.parse(
+      buildActionsMapGeoJsonString([toActionMapItem(contract)]),
+    ) as {
+      features: Array<{
+        geometry: { type: string; coordinates: unknown } | null;
+        properties: Record<string, unknown>;
+      }>;
+    };
+
+    expect(geojson.features[0]?.geometry?.type).toBe("Point");
+    expect(geojson.features[0]?.properties.geometry_label).toBe(
+      "Repère géographique indicatif",
+    );
+    expect(geojson.features[0]?.properties.geometry_reality).toBe("contextual");
+  });
+
   it("builds stable filenames for geojson and png exports", () => {
     const date = new Date("2026-06-02T10:00:00.000Z");
 

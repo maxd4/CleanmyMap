@@ -7,6 +7,10 @@ import {
   mapItemType,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
+import {
+  getGeometryPresentation,
+  isIndicativeRouteFallback,
+} from "@/lib/actions/geometry/geometry-presentation";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionCsvRowWithDrawing } from "@/lib/reports/csv";
 import { buildDeliverableBaseName } from "@/lib/reports/deliverable-name";
@@ -23,6 +27,10 @@ type GeoJsonGeometry =
     }
   | {
       type: "Polygon";
+      coordinates: [number, number][][];
+    }
+  | {
+      type: "MultiLineString";
       coordinates: [number, number][][];
     };
 
@@ -119,6 +127,21 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
         return { type: "Polygon", coordinates: rings };
       }
     }
+
+    if (parsed?.type === "MultiLineString" && Array.isArray(parsed.coordinates)) {
+      const lines = (parsed.coordinates as unknown[]).map((line) =>
+        Array.isArray(line)
+          ? (line as unknown[]).flatMap((pair) => {
+              const coordinate = parseGeoJsonCoordinatePair(pair);
+              return coordinate ? [coordinate] : [];
+            })
+          : [],
+      );
+
+      if (lines.length > 0 && lines.every((line) => line.length >= 2)) {
+        return { type: "MultiLineString", coordinates: lines };
+      }
+    }
   } catch {
     return null;
   }
@@ -126,9 +149,21 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
   return null;
 }
 
+function shouldExportPublicDrawing(item: ActionMapItem): boolean {
+  const presentation = getGeometryPresentation(item);
+  if (presentation.reality === "contextual" || presentation.reality === "location_only") {
+    return false;
+  }
+
+  const isPreAction = item.contract?.metadata.actionPhase === "pre_action";
+  return !(presentation.origin === "estimated_route" && isIndicativeRouteFallback(item) && !isPreAction);
+}
+
 function resolveGeoJsonGeometry(item: ActionMapItem): GeoJsonGeometry | null {
   const contractGeometry = item.contract?.geometry.geojson ?? item.geometry_geojson ?? null;
-  const geometry = parseGeoJsonGeometry(contractGeometry) ?? parseGeoJsonGeometry(buildManualDrawingGeoJson(item));
+  const geometry = shouldExportPublicDrawing(item)
+    ? parseGeoJsonGeometry(contractGeometry) ?? parseGeoJsonGeometry(buildManualDrawingGeoJson(item))
+    : null;
 
   if (geometry) {
     return geometry;
@@ -148,6 +183,8 @@ function resolveGeoJsonGeometry(item: ActionMapItem): GeoJsonGeometry | null {
 function buildFeatureProperties(item: ActionMapItem): Record<string, unknown> {
   const geometrySource =
     item.contract?.geometry.geometrySource ?? item.geometry_source ?? null;
+  const presentation = getGeometryPresentation(item);
+  const observedCoverage = item.contract?.metadata.preparationData?.observedCoverage;
 
   return {
     id: item.id,
@@ -166,6 +203,10 @@ function buildFeatureProperties(item: ActionMapItem): Record<string, unknown> {
     geometry_kind: item.contract?.geometry.kind ?? item.geometry_kind ?? null,
     geometry_confidence: item.contract?.geometry.confidence ?? item.geometry_confidence ?? null,
     geometry_source: geometrySource,
+    geometry_label: presentation.label,
+    geometry_reality: presentation.reality,
+    geometry_variant: presentation.variant ?? null,
+    observed_trace_count: observedCoverage?.traceCount ?? null,
     has_manual_drawing: geometrySource === "manual",
   };
 }

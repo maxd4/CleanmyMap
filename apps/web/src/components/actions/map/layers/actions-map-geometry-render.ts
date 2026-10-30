@@ -53,8 +53,8 @@ export function resolveGeometryRenderStyle(
   if (geometry.kind === "polygon") {
     const isIndicative =
       geometry.presentation.variant === "indicative" ||
-      (geometry.presentation.variant === undefined &&
-        geometry.presentation.reality === "estimated");
+      geometry.presentation.reality === "contextual" ||
+      geometry.presentation.reality === "estimated";
     return {
       pointRadius: null,
       pointWeight: null,
@@ -63,7 +63,7 @@ export function resolveGeometryRenderStyle(
       strokeWeight: 2,
       strokeOpacity: isIndicative ? 0.68 : 0.95,
       fillOpacity: isIndicative ? 0.14 : 0.32,
-      dashArray: undefined,
+      dashArray: isIndicative ? "6 6" : undefined,
     };
   }
 
@@ -72,7 +72,9 @@ export function resolveGeometryRenderStyle(
     (geometry.presentation.variant === undefined &&
       geometry.presentation.strokeStyle === "dashed");
   const isIndicativeRoute =
-    geometry.presentation.variant === "indicative" &&
+    (geometry.presentation.variant === "indicative" ||
+      (geometry.presentation.reality === "contextual" ||
+        geometry.presentation.reality === "estimated")) &&
     geometry.presentation.strokeStyle === "dashed";
   const isEstimatedRoute =
     geometry.presentation.variant === "estimated" &&
@@ -117,7 +119,7 @@ export function resolveGeometryConfidenceLabel(
   presentation: Pick<GeometryPresentation, "reality">,
   confidence: number | null,
 ): string | null {
-  return presentation.reality === "estimated"
+  return presentation.reality === "planned" || presentation.reality === "estimated"
     ? formatGeometryConfidenceLabel(confidence)
     : null;
 }

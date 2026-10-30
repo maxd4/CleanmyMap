@@ -24,9 +24,9 @@ export function buildActionsMapGeoQuality(
       if (coords.latitude === null || coords.longitude === null) {
         acc.missingCoordinates += 1;
       }
-      if (geometry.reality === "real") {
+      if (geometry.reality === "real" || geometry.reality === "observed" || geometry.reality === "declared") {
         acc.realGeometry += 1;
-      } else if (geometry.reality === "estimated") {
+      } else if (geometry.reality === "estimated" || geometry.reality === "planned") {
         acc.estimatedGeometry += 1;
       } else {
         acc.fallbackPoint += 1;

@@ -13,22 +13,24 @@ describe("MapGeometryLegend", () => {
     const markup = renderToStaticMarkup(<MapGeometryLegend />);
 
     expect(markup).toContain(
-      "Trait plein : trace GPS observée, parcours déclaré ou zone connue",
+      "Trait plein : trace GPS enregistrée, trace GPX fournie ou couverture observée",
     );
     expect(markup).toContain(
-      "Pointillé régulier : parcours reconstruit par le réseau",
+      "Trait plein : parcours ou zone déclaré manuellement",
     );
     expect(markup).toContain(
-      "Pointillé léger : parcours estimé ou liaison indicative",
+      "Pointillé régulier : itinéraire prévu sur le réseau",
     );
-    expect(markup).toMatch(/Surface remplie : zone d(?:'|&#x27;)action/);
+    expect(markup).toContain(
+      "Contour contextuel : repère géographique, pas une couverture nettoyée",
+    );
     expect(markup).toContain("Point : localisation seule");
     expect(markup).toMatch(
       /L(?:'|&#x27;)opacité et le libellé précisent les zones indicatives\./,
     );
     expect(markup).toContain("bg-slate-700");
     expect(markup).toContain("border-dashed border-slate-700");
-    expect(markup).toContain("border-slate-700 bg-slate-500/25");
+    expect(markup).toContain("border-slate-700 bg-slate-500/10");
     expect(markup).toContain("border-slate-700 bg-slate-500/60");
     expect(markup).not.toMatch(
       /<span[^>]*class="[^"]*(?:bg|border)-sky-[^"]*"[^>]*aria-hidden="true"/,
@@ -69,13 +71,13 @@ describe("MapGeometryLegend", () => {
       "Les couleurs comparent le score réel de chaque action à la référence de son département.",
     );
     expect(markup).toContain(
-      "Trait plein : trace GPS observée, parcours déclaré ou zone connue",
+      "Trait plein : trace GPS enregistrée, trace GPX fournie ou couverture observée",
     );
     expect(markup).toContain(
-      "Pointillé régulier : parcours reconstruit par le réseau",
+      "Trait plein : parcours ou zone déclaré manuellement",
     );
     expect(markup).toContain(
-      "Pointillé léger : parcours estimé ou liaison indicative",
+      "Pointillé régulier : itinéraire prévu sur le réseau",
     );
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });

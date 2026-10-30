@@ -619,6 +619,7 @@ couleur de la carte :
   l'utilisateur ; ce n'est pas une observation GPS ;
 - `reference` = géométrie connue d'une emprise identifiable, notamment un parc,
   jardin, campus, place ou autre espace clos lorsqu'une emprise fiable existe ;
+  elle reste un repère contextuel et ne constitue pas une couverture nettoyée ;
 - `routed` = parcours reconstruit sur le réseau piéton ; c'est une hypothèse
   géographique, jamais un trajet réellement observé ;
 - `estimated_route` = reconstruction plus incertaine ou fallback géodésique ;
@@ -627,19 +628,41 @@ couleur de la carte :
   plus informative n'est exploitable.
 
 `loop` et `point_to_point` décrivent exclusivement une topologie. Ils ne
-constituent jamais une preuve de trajet réel. Un trait plein peut donc être une
-déclaration ou une référence ; un trait pointillé signale un parcours
-reconstruit, pas un niveau de pollution.
+constituent jamais une preuve de trajet réel. Un trait plein public peut donc
+être une observation ou une déclaration manuelle ; un trait pointillé signale
+un parcours prévu ou un contexte indicatif, pas un niveau de pollution.
+
+La carte publique expose les libellés de provenance suivants :
+
+| Provenance | Libellé public | Lecture |
+| --- | --- | --- |
+| `gps_tracking` | `Trace GPS enregistrée` | trajectoire observée issue des points GPS persistés |
+| `gpx_import` | `Trace GPX fournie` | trajectoire observée fournie puis validée |
+| plusieurs observations | `Couverture observée multi-traces` | traces conservées séparément, sans concaténation |
+| `manual` | `Parcours déclaré` ou `Zone d’action` | géométrie déclarée par l’utilisateur |
+| `routed` / `estimated_route` | `Itinéraire prévu sur le réseau` ou `Itinéraire prévu estimé` | hypothèse de planification, jamais observation |
+| `reference` / `estimated_area` | `Repère géographique indicatif` ou `Zone indicative` | contexte spatial, jamais couverture terrain |
+| fallback direct après action | `Parcours non documenté` | point de localisation, sans faux trajet public |
+| `fallback_point` | `Localisation seule` | aucune géométrie exploitable |
+
+Une couverture observée disponible est prioritaire sur tout parcours déclaré,
+référencé ou prévu dans la carte, le tableau, la sélection, les popups,
+tooltips, le journal et l’export GeoJSON. L’itinéraire opérationnel prévu n’est
+pas superposé par défaut à une trace observée. Une référence historique peut
+rester persistée pour compatibilité et audit, mais elle n’est pas publiée comme
+un faux parcours nettoyé.
 
 La hiérarchie de résolution canonique cible est :
 
-1. `gps_tracking` ;
-2. `gpx_import` ;
-3. `manual` ;
-4. `reference` ;
-5. `routed` ;
-6. `estimated_route` ;
-7. `fallback_point`.
+1. couverture observée `gps_tracking` / `gpx_import` ;
+2. `manual` ;
+3. `routed` ;
+4. `estimated_route` ;
+5. `fallback_point`.
+
+`reference` et `estimated_area` ne sont pas des sorties de couverture publique :
+ils peuvent fournir un contexte ou une origine de reconstruction, mais leur
+emprise n’est jamais présentée comme le tracé observé d’une action.
 
 Dans ce contrat `CURRENT`, `gps_tracking` et `gpx_import` sont les observations réelles
 prioritaires. Une action ne remplace jamais une observation valide par une
@@ -668,12 +691,13 @@ snapping réseau ; une mission liée éligible est promue comme `gps_tracking`
 depuis ses `gps_points` validés et sa distance serveur. Une promotion conserve
 `routeTargetDistanceKm` comme cible historique distincte de
 `routeObservedDistanceKm`. Avec plusieurs observations, la projection utilise
-une `MultiLineString` de couverture : les traces ne sont jamais concaténées,
+une `MultiLineString` de couverture prioritaire : les traces ne sont jamais concaténées,
 les recouvrements ne sont pas dédoublonnés scientifiquement et aucune distance
 collective n'est annoncée. Les distances individuelles restent visibles quand
-elles sont utiles. Pour un parc ou une zone close, le polygone reste la
-géométrie primaire et la couverture observée est complémentaire. Une
-observation ajoutée est append-only et idempotente.
+elles sont utiles. Pour un parc ou une zone close, une couverture observée
+remplace visuellement le repère contextuel ; le polygone historique reste
+persisté et auditable sans être publié comme preuve terrain. Une observation
+ajoutée est append-only et idempotente.
 
 ### Remédiation des géométries historiques
 
@@ -703,9 +727,10 @@ séparément et restent ponctuels ; l'archive `spots` n'est pas une cible de ce
 backfill.
 
 Dans le runtime `CURRENT`, après les géométries réellement fournies (`gps_tracking`,
-`gpx_import` et `manual`), le moteur de reconstruction suit donc : `référence
-pertinente → réseau piéton →
-reconstruction réseau hypothétique → vol d'oiseau → point`. Une adresse seule
+`gpx_import` et `manual`), le moteur de reconstruction peut utiliser la première
+coordonnée d'une référence pertinente comme origine technique, puis suit le
+réseau piéton ou une reconstruction hypothétique. La référence elle-même n'est
+jamais renvoyée comme géométrie publique. Une adresse seule
 ne prouve pas l'emprise d'une zone : le resolver générique ne fabrique plus
 d'ellipse 85×55 m ou 110×72 m. `estimated_area` est conservé uniquement pour
 la lecture compatible de géométries déjà persistées ; il ne constitue plus une
@@ -766,9 +791,20 @@ navigateur.
 
 ### Zones
 
-- polygone rempli avec bord plein : zone d'action ;
-- zone de référence fiable : remplissage plus net ;
-- zone indicative ou estimée : remplissage plus transparent et libellé explicite `Zone indicative`.
+- polygone rempli avec bord plein : zone d'action déclarée ;
+- repère de référence : contour contextuel pointillé, libellé explicite
+  `Repère géographique indicatif`, jamais couverture nettoyée ;
+- zone indicative historique : contour pointillé plus transparent et libellé
+  explicite `Zone indicative`.
+
+### Distances
+
+La cible de planification, la longueur du réseau et les observations restent
+séparées dans tous les consommateurs : `routeTargetDistanceKm` est une cible,
+`routeNetworkDistanceKm` une longueur planifiée fournie par le routeur et
+`routeObservedDistanceKm` une mesure terrain. Pour plusieurs traces, la
+couverture porte les distances individuelles ; aucune distance cumulée ou
+déduite de la surface n'est annoncée.
 
 Un polygone estimé ne doit pas devenir pointillé.
 

@@ -285,21 +285,15 @@ async function geocodeLabel(label: string): Promise<GeoPoint | null> {
   return value;
 }
 
-function referenceRoute(
+function referenceOrigin(
   locationLabel: string,
   departureLocationLabel: string,
-): ReconstructedActionRoute | null {
+): [number, number] | null {
   const referenceDrawing = findMatchingGeometry(
     departureLocationLabel || locationLabel,
   );
   if (!referenceDrawing || !referenceDrawing.coordinates[0]) return null;
-  const first = referenceDrawing.coordinates[0];
-  return {
-    drawing: referenceDrawing,
-    geometrySource: "reference",
-    routeGeometry: null,
-    origin: first,
-  };
+  return referenceDrawing.coordinates[0];
 }
 
 type ReconstructActionRouteParams = {
@@ -358,8 +352,8 @@ async function resolveReconstructionOrigin(
     params.midpointLocationLabel?.trim() || params.midpointCoordinates,
   );
   if (topology === "loop" && !midpointIsDeclared) {
-    const reference = referenceRoute(params.locationLabel, departureLabel);
-    if (reference) return reference;
+    const reference = referenceOrigin(params.locationLabel, departureLabel);
+    if (reference) return { originPair: reference };
   }
 
   if (existingOrigin) return { originPair: existingOrigin };
@@ -375,8 +369,10 @@ async function resolveReconstructionOrigin(
     });
   }
 
-  // Keep the reference geometry fallback explicit and separate from routing.
-  return referenceRoute(params.locationLabel, departureLabel);
+  // A reference can provide an approximate origin for preparation, but never
+  // becomes the public action coverage geometry.
+  const reference = referenceOrigin(params.locationLabel, departureLabel);
+  return reference ? { originPair: reference } : null;
 }
 
 async function resolveRouteStopPairs(

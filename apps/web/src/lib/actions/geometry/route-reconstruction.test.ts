@@ -136,7 +136,7 @@ describe("server-side action route reconstruction", () => {
     expect(result?.drawing.coordinates[0]).toEqual(result?.drawing.coordinates.at(-1));
   });
 
-  it("prefers a reliable closed-space reference before synthetic routing", async () => {
+  it("uses a reliable closed-space reference only as a routing origin", async () => {
     const result = await reconstructActionRoute({
       topology: "loop",
       latitude: 48.846,
@@ -145,8 +145,8 @@ describe("server-side action route reconstruction", () => {
       durationMinutes: 60,
     });
 
-    expect(routeProviderMock).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ geometrySource: "reference", drawing: { kind: "polygon" } });
+    expect(routeProviderMock).toHaveBeenCalledTimes(4);
+    expect(result).toMatchObject({ geometrySource: "routed", drawing: { kind: "polyline" } });
   });
 
   it("respects a loop midpoint before returning to the departure", async () => {
@@ -279,7 +279,7 @@ describe("server-side action route reconstruction", () => {
     ]);
   });
 
-  it("uses the deterministic reference fallback when free geocoding times out", async () => {
+  it("uses the deterministic reference origin when free geocoding times out", async () => {
     vi.useFakeTimers();
     try {
       const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
@@ -297,7 +297,7 @@ describe("server-side action route reconstruction", () => {
       await vi.advanceTimersByTimeAsync(4_000);
 
       await expect(routePromise).resolves.toMatchObject({
-        geometrySource: "reference",
+        geometrySource: "routed",
       });
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {

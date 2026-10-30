@@ -140,7 +140,7 @@ export function getGeometryTone(
     };
   }
 
-  if (reality === "real") {
+  if (reality === "real" || reality === "observed") {
     return {
       shell:
         "border-emerald-200/70 bg-emerald-50/80 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/25 dark:text-emerald-300",
@@ -149,7 +149,7 @@ export function getGeometryTone(
     };
   }
 
-  if (reality === "estimated") {
+  if (reality === "estimated" || reality === "planned") {
     return {
       shell:
         "border-amber-200/70 bg-amber-50/80 text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/25 dark:text-amber-300",

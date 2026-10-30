@@ -146,7 +146,11 @@ function resolveObservedPolylineMetric(
     (context.derivedDistanceKm === null ? null : context.derivedDistanceKm / 1000);
   return buildLengthMetric(
     distanceKm,
-    distanceKm === null ? null : `Distance observée · ${formatDistanceValue(distanceKm)}`,
+    distanceKm === null
+      ? null
+      : context.observedDistanceKm !== null
+        ? `Distance enregistrée · ${formatDistanceValue(distanceKm)}`
+        : `Longueur calculée à partir de la géométrie fournie · ${formatDistanceValue(distanceKm)}`,
   );
 }
 
@@ -157,7 +161,7 @@ function resolveNetworkPolylineMetric(
   return buildLengthMetric(
     networkDistanceKm ?? targetDistanceKm,
     networkDistanceKm !== null
-      ? `Distance du parcours reconstruit · ${formatDistanceValue(networkDistanceKm)}`
+      ? `Longueur du parcours planifié · ${formatDistanceValue(networkDistanceKm)}`
       : targetDistanceKm === null
         ? null
         : `Distance cible · ${formatDistanceValue(targetDistanceKm)}`,
@@ -182,7 +186,7 @@ function resolveEstimatedPolylineMetric(
     : ` · Distance cible · ${formatDistanceValue(targetDistanceKm)}`;
   return buildLengthMetric(
     networkDistanceKm,
-    `Parcours estimé · ${formatDistanceValue(networkDistanceKm)}${targetLabel}`,
+    `Longueur du parcours planifié · ${formatDistanceValue(networkDistanceKm)}${targetLabel}`,
   );
 }
 
@@ -195,7 +199,7 @@ function resolveIndicativePolylineMetric(
     distanceKm,
     distanceKm === null
       ? null
-      : `Distance indicative à vol d’oiseau · ${formatDistanceValue(distanceKm)}`,
+        : `Longueur indicative non routée · ${formatDistanceValue(distanceKm)}`,
   );
 }
 

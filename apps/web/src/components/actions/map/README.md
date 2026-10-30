@@ -35,6 +35,27 @@ taxonomie Actions, ni les règles de qualité, ni les calculs géographiques.
 Les données observées, prédites, réseau et fallback doivent rester distinguées
 dans l'affichage ; un état inconnu ne doit pas devenir une affirmation visuelle.
 
+## Provenance géométrique publique
+
+`getGeometryPresentation` est l'owner des libellés et de la réalité affichée :
+
+- `Trace GPS enregistrée` et `Trace GPX fournie` désignent des observations
+  terrain distinctes ; plusieurs traces deviennent `Couverture observée
+  multi-traces` sans concaténation ;
+- `Parcours déclaré` / `Zone d’action` désignent une déclaration manuelle ;
+- `Itinéraire prévu sur le réseau` et `Itinéraire prévu estimé` désignent une
+  planification, jamais une observation ;
+- `Repère géographique indicatif`, `Zone indicative` et `Localisation seule`
+  restent respectivement contextuel, indicatif et ponctuel.
+
+Les couches donnent priorité à une couverture observée et n'ajoutent pas la
+route opérationnelle prévue par-dessus. Les emprises de référence historiques
+restent lisibles pour compatibilité côté contrat, mais sont rendues comme
+contexte ou point et ne deviennent jamais une fausse couverture publique.
+L'export GeoJSON reprend le label, la réalité, la variante et les MultiLineString
+observées ; les distances affichent séparément cible, réseau, observation et
+distances individuelles de couverture.
+
 Les helpers purs liés à un rendu peuvent rester dans ce dossier lorsqu'ils
 appartiennent réellement à la carte. Un contrat réutilisable hors UI doit
 rejoindre son module domaine propriétaire.

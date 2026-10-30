@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
-import type { ActionMapItem, ActionObservedCoverage } from "@/lib/actions/types";
+import type { ActionMapItem, ActionObservedCoverage, ActionPhase } from "@/lib/actions/types";
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { normalizeActionDrawing } from "@/lib/actions/geometry/geometry-core";
 import { summarizeActionDrawingValidation } from "../../action-declaration/action-drawing-validation";
@@ -76,10 +76,12 @@ describe("actions map geometry utils", () => {
     geometrySource,
     kind = "polyline",
     preparationData,
+    actionPhase,
   }: {
     geometrySource: "manual" | "gpx_import" | "routed" | "estimated_route" | "reference" | "estimated_area";
     kind?: "polyline" | "polygon";
     preparationData?: Parameters<typeof buildActionDataContract>[0]["preparationData"];
+    actionPhase?: ActionPhase;
   }): ActionMapItem {
     return toActionMapItem(
       buildActionDataContract({
@@ -100,6 +102,7 @@ describe("actions map geometry utils", () => {
         },
         geometrySource,
         preparationData,
+        actionPhase,
       }),
     );
   }
@@ -136,7 +139,7 @@ describe("actions map geometry utils", () => {
     expect(geometry.multiLinePositions).toHaveLength(2);
     expect(geometry.positions).toEqual([]);
     expect(geometry.coverageTraceCount).toBe(2);
-    expect(geometry.presentation.label).toBe("Couverture observée par plusieurs bénévoles");
+    expect(geometry.presentation.label).toBe("Couverture observée multi-traces");
     expect(geometry.metrics.label).toContain("distances individuelles conservées");
   });
 
@@ -149,7 +152,7 @@ describe("actions map geometry utils", () => {
     expect(geometry.coverageTraceCount).toBe(2);
   });
 
-  it("keeps a primary closed polygon while rendering separate observed coverage", () => {
+  it("promotes observed coverage over a persisted primary drawing", () => {
     const item = buildContractMapItem({
       geometrySource: "manual",
       kind: "polygon",
@@ -159,9 +162,36 @@ describe("actions map geometry utils", () => {
     });
 
     const geometry = resolveActionMapGeometryViewModel(item);
-    expect(geometry.kind).toBe("polygon");
-    expect(geometry.positions).toHaveLength(3);
+    expect(geometry.kind).toBe("multiline");
+    expect(geometry.positions).toEqual([]);
     expect(geometry.multiLinePositions).toHaveLength(2);
+  });
+
+  it("keeps an approximate reference as a point instead of public coverage", () => {
+    const geometry = resolveActionMapGeometryViewModel(
+      buildContractMapItem({ geometrySource: "reference", kind: "polygon" }),
+    );
+
+    expect(geometry.renderMode).toBe("point");
+    expect(geometry.positions).toEqual([[48.85, 2.35]]);
+    expect(geometry.presentation.label).toBe("Repère géographique indicatif");
+  });
+
+  it("allows an indicative fallback only during preparation", () => {
+    const geometry = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "estimated_route",
+        actionPhase: "pre_action",
+        preparationData: {
+          routeGeometryMode: "fallback",
+          routeGeometryProvider: "none",
+        },
+      }),
+    );
+
+    expect(geometry.renderMode).toBe("drawing");
+    expect(geometry.presentation.label).toBe("Liaison indicative non routée");
+    expect(resolveGeometryRenderStyle(geometry).dashArray).toBe("4 8");
   });
 
   it("shows confidence only for estimated geometry and preserves stroke semantics", () => {
@@ -231,7 +261,7 @@ describe("actions map geometry utils", () => {
     ).toBe("Zone réelle · référence");
   });
 
-  it("renders estimated_area as a transparent solid indicative zone", () => {
+  it("renders estimated_area as a transparent dashed indicative zone", () => {
     for (const geometrySource of ["manual", "reference", "estimated_area"] as const) {
       const contractItem = toActionMapItem(
         buildActionDataContract({
@@ -257,28 +287,30 @@ describe("actions map geometry utils", () => {
         }),
       );
 
-      expect(getGeometryPresentation(contractItem).strokeStyle).toBe("solid");
+      expect(getGeometryPresentation(contractItem).strokeStyle).toBe(
+        geometrySource === "manual" ? "solid" : "dashed",
+      );
     }
 
     const style = resolveGeometryRenderStyle({
       kind: "polygon",
       presentation: {
         origin: "estimated_area",
-        reality: "estimated",
+        reality: "contextual",
         label: "Zone indicative · emprise estimée",
-        strokeStyle: "solid",
+        strokeStyle: "dashed",
       },
     });
 
     expect(style.fillOpacity).toBe(0.14);
     expect(style.strokeOpacity).toBe(0.68);
-    expect(style.dashArray).toBeUndefined();
+    expect(style.dashArray).toBe("6 6");
     expect(
       formatGeometryModeLabel("polygon", {
         origin: "estimated_area",
-        reality: "estimated",
+        reality: "contextual",
         label: "Zone indicative · emprise estimée",
-        strokeStyle: "solid",
+        strokeStyle: "dashed",
       }),
     ).toBe("Zone indicative · emprise estimée");
   });
@@ -581,21 +613,20 @@ describe("actions map geometry utils", () => {
       }),
     );
 
-    expect(observed.metrics.label).toBe("Distance observée · 2,4 km");
+    expect(observed.metrics.label).toBe("Distance enregistrée · 2,4 km");
     expect(reconstructed.metrics.label).toBe(
-      "Distance du parcours reconstruit · 2,1 km",
+      "Longueur du parcours planifié · 2,1 km",
     );
     expect(estimated.metrics.label).toBe(
-      "Parcours estimé · 2,1 km · Distance cible · 2,0 km",
+      "Longueur du parcours planifié · 2,1 km · Distance cible · 2,0 km",
     );
-    expect(fallback.metrics.label).toMatch(
-      /^Distance indicative à vol d’oiseau · /,
-    );
-    expect(resolveGeometryRenderStyle(fallback).dashArray).toBe("4 8");
-    expect(resolveGeometryRenderStyle(fallback).strokeOpacity).toBe(0.62);
+    expect(fallback.renderMode).toBe("point");
+    expect(fallback.metrics.label).toBeNull();
+    expect(resolveGeometryRenderStyle(fallback).dashArray).toBeUndefined();
+    expect(resolveGeometryRenderStyle(fallback).pointRadius).toBe(4.5);
     expect(targetOnly.metrics.label).toBe("Distance cible · 2,0 km");
-    expect(observed.metrics.label).not.toContain("Longueur");
-    expect(reconstructed.metrics.label).not.toContain("Longueur");
+    expect(observed.metrics.label).not.toContain("cible");
+    expect(reconstructed.metrics.label).toContain("planifié");
   });
 
   it("falls back to a point geometry when the drawing is invalid", () => {
