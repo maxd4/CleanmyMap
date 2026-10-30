@@ -6,6 +6,7 @@ import type {
   OperationalRouteZoneKey,
 } from "@/lib/route/route-operational";
 import {
+  getOperationalRouteMeetingPoint,
   getOperationalRouteLoopCount,
   removeOperationalRouteLoop,
   updateOperationalRouteZone,
@@ -44,6 +45,24 @@ export function OperationalRouteEditor({
       </div>
 
       <OperationalRouteMap operationalRoute={operationalRoute} />
+
+      <div className="grid gap-2 md:grid-cols-2" data-operational-meeting-points>
+        {operationalRoute.routes.map((route) => {
+          const meetingPoint = getOperationalRouteMeetingPoint(operationalRoute, route);
+          return (
+            <div key={`meeting-point-details-${route.routeId}`} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              <p className="font-bold">Rendez-vous intermédiaire · boucle {route.groupIndex}</p>
+              {meetingPoint ? (
+                <p className="mt-1">
+                  {meetingPoint.coordinates[0].toFixed(5)}, {meetingPoint.coordinates[1].toFixed(5)} · {meetingPoint.cumulativeDistanceKm === null ? "distance indisponible" : `${meetingPoint.cumulativeDistanceKm.toFixed(2)} km depuis le départ`} · {meetingPoint.estimatedDurationMinutes === null ? "temps relatif indisponible" : `${Math.round(meetingPoint.estimatedDurationMinutes)} min depuis le départ`}
+                </p>
+              ) : (
+                <p className="mt-1">Indisponible pour cette géométrie.</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       <div className="grid gap-3 md:grid-cols-3">
         {([

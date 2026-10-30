@@ -5,7 +5,10 @@ import type {
   ActionLocationCoordinates,
   ActionRouteTopology,
 } from "@/lib/actions/types";
-import type { OperationalRoute } from "@/lib/route/route-operational";
+import {
+  getOperationalRouteMeetingPoint,
+  type OperationalRoute,
+} from "@/lib/route/route-operational";
 import {
   resolveFinalActionGeometry,
   type FinalActionGeometry,
@@ -86,7 +89,7 @@ function routeWaypoints(params: {
   coordinates: readonly GpxCoordinate[];
   origin: GpxCoordinate | null;
   stops: ReadonlyArray<{ latitude: number; longitude: number; label: string }>;
-  midpoint?: { coordinate: GpxCoordinate; label?: string } | null;
+  meetingPoint?: { coordinate: GpxCoordinate; label?: string } | null;
   departureLabel?: string;
   arrivalLabel?: string;
 }): GpxWaypoint[] {
@@ -101,13 +104,13 @@ function routeWaypoints(params: {
     if (stopWaypoint) waypoints.push(stopWaypoint);
   }
 
-  if (params.midpoint) {
-    const midpointWaypoint = waypoint(
-      params.midpoint.coordinate,
-      params.midpoint.label,
-      "midpoint",
+  if (params.meetingPoint) {
+    const meetingPointWaypoint = waypoint(
+      params.meetingPoint.coordinate,
+      params.meetingPoint.label,
+      "meetingPoint",
     );
-    if (midpointWaypoint) waypoints.push(midpointWaypoint);
+    if (meetingPointWaypoint) waypoints.push(meetingPointWaypoint);
   }
 
   if (isValidCoordinate(arrival) && (!isValidCoordinate(departure) || !sameCoordinate(arrival, departure))) {
@@ -132,9 +135,10 @@ function trackFromOperationalRoute(
     : isValidCoordinate(operationalRoute.zones.departure.coordinate)
       ? operationalRoute.zones.departure.coordinate
       : coordinates[0] ?? null;
-  const midpoint = isValidCoordinate(operationalRoute.zones.midpoint.coordinate)
+  const projection = getOperationalRouteMeetingPoint(operationalRoute, route);
+  const meetingPoint = projection
     ? {
-        coordinate: operationalRoute.zones.midpoint.coordinate,
+        coordinate: projection.coordinates,
         label: operationalRoute.zones.midpoint.label ?? "Mi-parcours",
       }
     : null;
@@ -151,7 +155,7 @@ function trackFromOperationalRoute(
       coordinates,
       origin,
       stops: route.plannerTechnicalStops,
-      midpoint,
+      meetingPoint,
       departureLabel: labels.departureLabel,
       arrivalLabel: labels.arrivalLabel,
     }),
@@ -190,13 +194,13 @@ export function buildActionRouteGpxInput(
   const coordinates = finalGeometry.drawing.coordinates;
   if (!hasUsableTrack(coordinates)) return null;
   const origin = coordinates[0] ?? null;
-  const midpoint = isValidCoordinate(
+  const meetingPoint = isValidCoordinate(
     params.midpointCoordinates
       ? [params.midpointCoordinates.latitude, params.midpointCoordinates.longitude]
       : null,
   )
     ? {
-        coordinate: [params.midpointCoordinates!.latitude, params.midpointCoordinates!.longitude] as GpxCoordinate,
+          coordinate: [params.midpointCoordinates!.latitude, params.midpointCoordinates!.longitude] as GpxCoordinate,
         label: params.midpointLabel,
       }
     : null;
@@ -221,7 +225,7 @@ export function buildActionRouteGpxInput(
           coordinates,
           origin,
           stops: [],
-          midpoint,
+          meetingPoint,
           departureLabel: params.departureLabel,
           arrivalLabel: params.arrivalLabel,
         }),

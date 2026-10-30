@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { OperationalRoute } from "@/lib/route/route-operational";
-import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
+import { getOperationalRouteMeetingPoint, getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 import { TERRITORY_CENTER, buildTerritoryLeafletBounds } from "@/lib/geo/territory";
 
 function FitOperationalRouteBounds({ operationalRoute }: { operationalRoute: OperationalRoute }) {
@@ -22,9 +22,12 @@ export function OperationalRouteMap({ operationalRoute }: { operationalRoute: Op
   const segments = getPublicOperationalRouteSegments(operationalRoute);
   const zones = [
     ["Départ", operationalRoute.zones.departure.coordinate],
-    ["Mi-parcours", operationalRoute.zones.midpoint.coordinate],
     ["Arrivée", operationalRoute.zones.arrival.coordinate],
   ] as const;
+  const meetingPoints = operationalRoute.routes.flatMap((route) => {
+    const meetingPoint = getOperationalRouteMeetingPoint(operationalRoute, route);
+    return meetingPoint ? [{ route, meetingPoint }] : [];
+  });
 
   return (
     <div className="h-[320px] overflow-hidden rounded-2xl border border-emerald-200/70">
@@ -63,6 +66,18 @@ export function OperationalRouteMap({ operationalRoute }: { operationalRoute: Op
             </CircleMarker>
           ) : null,
         )}
+        {meetingPoints.map(({ route, meetingPoint }) => (
+          <CircleMarker
+            key={`meeting-point-${route.routeId}`}
+            center={meetingPoint.coordinates}
+            radius={7}
+            pathOptions={{ color: "#78350f", fillColor: "#f59e0b", fillOpacity: 0.98, weight: 3 }}
+          >
+            <Tooltip>
+              {`Rendez-vous intermédiaire · boucle ${route.groupIndex} · ${meetingPoint.cumulativeDistanceKm === null ? "distance indisponible" : `${meetingPoint.cumulativeDistanceKm.toFixed(2)} km`} · ${meetingPoint.estimatedDurationMinutes === null ? "temps indisponible" : `${Math.round(meetingPoint.estimatedDurationMinutes)} min`}`}
+            </Tooltip>
+          </CircleMarker>
+        ))}
       </MapContainer>
     </div>
   );

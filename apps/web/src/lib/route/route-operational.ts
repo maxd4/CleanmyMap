@@ -11,6 +11,7 @@ import {
   MAX_PLANNER_TECHNICAL_STOPS,
 } from "./route-geometry-validation";
 import type {
+  MeetingPointProjection,
   RouteGroupRoute,
   RouteOptions,
   RouteRecommendationResponse,
@@ -18,6 +19,7 @@ import type {
 import type { ActionPreparationData } from "@/lib/actions/types";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationContract } from "@/lib/actions/preparation-contract";
+import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 
@@ -27,6 +29,7 @@ export type OperationalRouteZoneKey = "departure" | "midpoint" | "arrival";
 export type OperationalRouteZone = {
   label: string | null;
   coordinate: [number, number] | null;
+  provenance?: "final_geometry_midpoint" | "manual_midpoint" | "legacy_midpoint";
 };
 
 type PlannerTechnicalStop = Pick<
@@ -95,7 +98,9 @@ export function createOperationalRouteFromRecommendation(
       }];
 
   const firstGeometry = routes[0]?.geometry ?? recommendation.routeGeometry;
-  const firstCoordinates = firstGeometry.coordinates;
+  const firstMeetingPoint = routes.length === 1
+    ? projectMeetingPointFromGeometry(firstGeometry)
+    : null;
   return {
     version: OPERATIONAL_ROUTE_VERSION,
     initializedAt: recommendation.generatedAt,
@@ -111,14 +116,135 @@ export function createOperationalRouteFromRecommendation(
       },
       midpoint: {
         label: null,
-        coordinate: firstCoordinates[Math.floor(firstCoordinates.length / 2)] ?? null,
+        coordinate: firstMeetingPoint?.coordinates ?? null,
+        ...(firstMeetingPoint ? { provenance: firstMeetingPoint.provenance } : {}),
       },
       arrival: {
         label: null,
-        coordinate: firstCoordinates.at(-1) ?? firstGeometry.origin,
+        coordinate: firstGeometry.coordinates.at(-1) ?? firstGeometry.origin,
       },
     },
   };
+}
+
+type MeetingPointCandidate = {
+  coordinate?: readonly [number, number] | null;
+  provenance?: OperationalRouteZone["provenance"];
+};
+
+function isFiniteCoordinate(value: readonly [number, number] | null | undefined): value is [number, number] {
+  return Boolean(
+    value &&
+      Number.isFinite(value[0]) &&
+      Number.isFinite(value[1]) &&
+      value[0] >= -90 &&
+      value[0] <= 90 &&
+      value[1] >= -180 &&
+      value[1] <= 180,
+  );
+}
+
+function isUsableGeometryCoordinates(
+  coordinates: readonly (readonly [number, number])[],
+): coordinates is readonly [number, number][] {
+  return coordinates.length >= 2 && coordinates.every(isFiniteCoordinate);
+}
+
+function projectAtCumulativeDistance(
+  coordinates: readonly [number, number][],
+  cumulativeDistances: readonly number[],
+  targetDistanceKm: number,
+): [number, number] {
+  for (let index = 1; index < coordinates.length; index += 1) {
+    const segmentStart = cumulativeDistances[index - 1]!;
+    const segmentEnd = cumulativeDistances[index]!;
+    if (targetDistanceKm > segmentEnd && index < coordinates.length - 1) continue;
+    const segmentDistance = segmentEnd - segmentStart;
+    const ratio = segmentDistance > 0 ? (targetDistanceKm - segmentStart) / segmentDistance : 0;
+    const left = coordinates[index - 1]!;
+    const right = coordinates[index]!;
+    return [
+      left[0] + (right[0] - left[0]) * Math.max(0, Math.min(1, ratio)),
+      left[1] + (right[1] - left[1]) * Math.max(0, Math.min(1, ratio)),
+    ];
+  }
+  return coordinates.at(-1)!;
+}
+
+function projectKnownCoordinate(
+  coordinates: readonly [number, number][],
+  cumulativeDistances: readonly number[],
+  coordinate: [number, number],
+): Pick<MeetingPointProjection, "cumulativeDistanceKm" | "progress"> {
+  const coordinateIndex = coordinates.findIndex(
+    ([latitude, longitude]) => latitude === coordinate[0] && longitude === coordinate[1],
+  );
+  if (coordinateIndex < 0) {
+    return { cumulativeDistanceKm: null, progress: null };
+  }
+  const totalDistanceKm = cumulativeDistances.at(-1) ?? 0;
+  return {
+    cumulativeDistanceKm: cumulativeDistances[coordinateIndex] ?? null,
+    progress: totalDistanceKm > 0 ? (cumulativeDistances[coordinateIndex] ?? 0) / totalDistanceKm : null,
+  };
+}
+
+/**
+ * Projects the rendezvous on the final planned geometry without changing the
+ * geometry, stops, or route order. The coordinate is interpolated at 50% of
+ * the cumulative geodesic distance, never at the central coordinate index.
+ */
+export function projectMeetingPointFromGeometry(
+  geometry: Pick<RouteGeometry, "coordinates" | "durationMinutes">,
+  candidate: MeetingPointCandidate = {},
+): MeetingPointProjection | null {
+  if (!isUsableGeometryCoordinates(geometry.coordinates)) return null;
+
+  const cumulativeDistances = [0];
+  for (let index = 1; index < geometry.coordinates.length; index += 1) {
+    cumulativeDistances.push(
+      cumulativeDistances[index - 1]! +
+        haversineDistanceKm(geometry.coordinates[index - 1]!, geometry.coordinates[index]!),
+    );
+  }
+  const totalDistanceKm = cumulativeDistances.at(-1) ?? 0;
+  if (!Number.isFinite(totalDistanceKm) || totalDistanceKm <= 0) return null;
+
+  const provenance = candidate.provenance ?? "final_geometry_midpoint";
+  const coordinate = provenance === "final_geometry_midpoint" || !isFiniteCoordinate(candidate.coordinate)
+    ? projectAtCumulativeDistance(geometry.coordinates, cumulativeDistances, totalDistanceKm / 2)
+    : candidate.coordinate;
+  const metrics = provenance === "final_geometry_midpoint"
+    ? { cumulativeDistanceKm: totalDistanceKm / 2, progress: 0.5 }
+    : projectKnownCoordinate(geometry.coordinates, cumulativeDistances, coordinate);
+  const duration = metrics.progress !== null && Number.isFinite(geometry.durationMinutes) && geometry.durationMinutes >= 0
+    ? geometry.durationMinutes * metrics.progress
+    : null;
+
+  return {
+    coordinates: coordinate,
+    cumulativeDistanceKm: metrics.cumulativeDistanceKm,
+    progress: metrics.progress,
+    estimatedDurationMinutes: duration,
+    provenance,
+  };
+}
+
+export function getOperationalRouteMeetingPoint(
+  operationalRoute: OperationalRoute,
+  route?: OperationalRouteLoop,
+): MeetingPointProjection | null {
+  if (!route && operationalRoute.routes.length > 1) return null;
+  const targetRoute = route ?? operationalRoute.routes[0];
+  if (!targetRoute) return null;
+  const hasIndependentRoutes = operationalRoute.routes.length > 1;
+  if (hasIndependentRoutes) return projectMeetingPointFromGeometry(targetRoute.geometry);
+
+  const midpoint = operationalRoute.zones.midpoint;
+  return projectMeetingPointFromGeometry(targetRoute.geometry, {
+    coordinate: midpoint.coordinate,
+    provenance: midpoint.provenance ?? (midpoint.coordinate ? "legacy_midpoint" : "final_geometry_midpoint"),
+  });
 }
 
 export function createPlannerActionPreparationData(
@@ -165,6 +291,13 @@ export function updateOperationalRouteZone(
   zone: OperationalRouteZoneKey,
   patch: Partial<OperationalRouteZone>,
 ): OperationalRoute {
+  const nextZone = {
+    ...structuredClone(operationalRoute.zones[zone]),
+    ...patch,
+  };
+  if (zone === "midpoint" && "coordinate" in patch && patch.coordinate !== operationalRoute.zones.midpoint.coordinate) {
+    nextZone.provenance = patch.provenance ?? "manual_midpoint";
+  }
   return {
     ...structuredClone(operationalRoute),
     updatedAt: new Date().toISOString(),
@@ -172,8 +305,7 @@ export function updateOperationalRouteZone(
     zones: {
       ...structuredClone(operationalRoute.zones),
       [zone]: {
-        ...structuredClone(operationalRoute.zones[zone]),
-        ...patch,
+        ...nextZone,
       },
     },
   };
@@ -183,11 +315,32 @@ export function removeOperationalRouteLoop(
   operationalRoute: OperationalRoute,
   routeId: string,
 ): OperationalRoute {
+  const routes = operationalRoute.routes.filter((route) => route.routeId !== routeId);
+  const midpoint = operationalRoute.zones.midpoint;
+  const nextMidpoint = routes.length === 1 &&
+    (midpoint.provenance === "final_geometry_midpoint" || midpoint.coordinate === null)
+    ? projectMeetingPointFromGeometry(routes[0]!.geometry)
+    : routes.length > 1
+      ? null
+      : midpoint.provenance === "final_geometry_midpoint"
+        ? null
+        : midpoint;
+  const nextMidpointCoordinate = nextMidpoint && "coordinates" in nextMidpoint
+    ? nextMidpoint.coordinates
+    : nextMidpoint?.coordinate ?? null;
   return {
     ...structuredClone(operationalRoute),
     updatedAt: new Date().toISOString(),
     state: "edited",
-    routes: operationalRoute.routes.filter((route) => route.routeId !== routeId),
+    routes,
+    zones: {
+      ...structuredClone(operationalRoute.zones),
+      midpoint: {
+        ...structuredClone(operationalRoute.zones.midpoint),
+        coordinate: nextMidpointCoordinate,
+        ...(nextMidpoint ? { provenance: nextMidpoint.provenance } : { provenance: undefined }),
+      },
+    },
   };
 }
 
@@ -392,7 +545,11 @@ function isOperationalRouteZone(value: unknown): value is OperationalRouteZone {
   const zone = value as Partial<OperationalRouteZone>;
   return (
     (zone.label === null || typeof zone.label === "string") &&
-    (zone.coordinate === null || isCoordinate(zone.coordinate))
+    (zone.coordinate === null || isCoordinate(zone.coordinate)) &&
+    (zone.provenance === undefined ||
+      zone.provenance === "final_geometry_midpoint" ||
+      zone.provenance === "manual_midpoint" ||
+      zone.provenance === "legacy_midpoint")
   );
 }
 

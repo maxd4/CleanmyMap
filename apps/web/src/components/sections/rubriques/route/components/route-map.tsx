@@ -20,7 +20,7 @@ import type {
   RouteMultiRouteDisplayMode,
 } from "../route-types";
 import { getRouteGroupVisualStyle } from "../route-types";
-import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
+import type { MeetingPointProjection, RouteGroupRoute } from "@/lib/route/route-response-contract";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 const EMPTY_CENTER: [number, number] = [48.8566, 2.3522];
@@ -101,6 +101,7 @@ function RouteOriginPicker({
 export function RouteMap({
   stops,
   routeGeometry,
+  meetingPoint = null,
   groupRoutes = [],
   representationMode = "colors",
   selectedGroupIndex = null,
@@ -113,6 +114,7 @@ export function RouteMap({
 }: {
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
+  meetingPoint?: MeetingPointProjection | null;
   groupRoutes?: RouteGroupRoute[];
   representationMode?: RouteMultiRouteDisplayMode;
   selectedGroupIndex?: number | null;
@@ -208,6 +210,28 @@ export function RouteMap({
             </Popup>
           </Marker>
         ) : null}
+        {(groupRoutes.length > 1
+          ? visibleGroupRoutes.flatMap((group) => group.meetingPoint ? [{ groupIndex: group.groupIndex, meetingPoint: group.meetingPoint }] : [])
+          : meetingPoint ? [{ groupIndex: null, meetingPoint }] : []
+        ).map(({ groupIndex, meetingPoint: point }) => (
+          <CircleMarker
+            key={`meeting-point-${groupIndex ?? "route"}`}
+            center={point.coordinates}
+            radius={8}
+            pathOptions={{ color: "#78350f", fillColor: "#fbbf24", fillOpacity: 0.95, weight: 3 }}
+          >
+            <Tooltip direction="top" offset={[0, -8]}>
+              {fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}
+            </Tooltip>
+            <Popup>
+              <strong>{fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}</strong>
+              <br />
+              {point.cumulativeDistanceKm === null ? (fr ? "Distance relative indisponible" : "Relative distance unavailable") : `${point.cumulativeDistanceKm.toFixed(2)} km ${fr ? "depuis le départ" : "from start"}`}
+              <br />
+              {point.estimatedDurationMinutes === null ? (fr ? "Temps relatif indisponible" : "Relative time unavailable") : `${Math.round(point.estimatedDurationMinutes)} min ${fr ? "depuis le départ" : "from start"}`}
+            </Popup>
+          </CircleMarker>
+        ))}
         {groupRoutes.length > 1
           ? visibleGroupRoutes.map((group) => {
               const visualStyle = getRouteGroupVisualStyle(group.groupIndex, representationMode);

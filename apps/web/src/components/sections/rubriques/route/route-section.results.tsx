@@ -7,7 +7,7 @@ import { RoutePdfExport } from "./components/route-pdf-export";
 import { RouteWeatherSummary } from "./components/route-weather-summary";
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type { RouteResponse, RouteOriginMode, RouteRecommendationOrigin } from "./route-types";
-import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
+import type { MeetingPointProjection, RouteGroupRoute } from "@/lib/route/route-response-contract";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -35,6 +35,40 @@ type RouteResultDisplayProps = {
   organizationMarginMinutes: number | null;
   onCreateAction: () => void;
 };
+
+function MeetingPointDetails({
+  meetingPoint,
+  fr,
+}: {
+  meetingPoint: MeetingPointProjection | null | undefined;
+  fr: boolean;
+}) {
+  if (!meetingPoint) {
+    return (
+      <p className="text-xs font-semibold text-amber-100/80" data-meeting-point-state="unavailable">
+        {fr ? "Rendez-vous intermédiaire indisponible pour ce tracé." : "Intermediate meeting point unavailable for this route."}
+      </p>
+    );
+  }
+  const distance = meetingPoint.cumulativeDistanceKm === null
+    ? (fr ? "distance relative indisponible" : "relative distance unavailable")
+    : `${meetingPoint.cumulativeDistanceKm.toFixed(2)} km ${fr ? "depuis le départ" : "from start"}`;
+  const duration = meetingPoint.estimatedDurationMinutes === null
+    ? (fr ? "temps relatif indisponible" : "relative time unavailable")
+    : `${Math.round(meetingPoint.estimatedDurationMinutes)} min ${fr ? "depuis le départ" : "from start"}`;
+  const provenance = meetingPoint.provenance === "manual_midpoint"
+    ? (fr ? "point manuel conservé" : "manual point preserved")
+    : (fr ? "projeté sur la géométrie finale" : "projected on final geometry");
+  return (
+    <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50" data-meeting-point-state="available">
+      <p className="font-black">{fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}</p>
+      <p className="mt-1 text-xs font-semibold text-amber-100/85">
+        {meetingPoint.coordinates[0].toFixed(5)}, {meetingPoint.coordinates[1].toFixed(5)} · {distance} · {duration}
+      </p>
+      <p className="mt-1 text-xs font-semibold text-amber-100/65">{provenance}</p>
+    </div>
+  );
+}
 
 function RouteResultSummary({
   data,
@@ -80,6 +114,7 @@ function RouteResultSummary({
             Créneau utilisateur : {eventBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {actionBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes === null ? "Non disponible" : `${organizationMarginMinutes} min`}.
           </p>
           {serviceMinutes === null ? <p className="text-xs font-semibold text-amber-100/80">La durée d’action complète n’est pas encore fiable ; le planner conserve son fonctionnement avec le temps réseau disponible.</p> : null}
+          <MeetingPointDetails meetingPoint={data.meetingPoint} fr={fr} />
           {data.isLoop ? <p className="text-sm font-semibold text-emerald-100/80">
             {groupRoutes.length > 1
               ? `${data.volunteers} bénévoles · ${data.groupCount} groupes · ${data.multiRoute.totalDistanceKm.toFixed(2)} km cumulés`
@@ -143,6 +178,7 @@ function RouteGroupSelection({
             <button type="button" onClick={() => setSelectedGroupIndex(group.groupIndex)} aria-label={groupLabel} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-300/40">
               <span className="flex items-center gap-3"><span aria-hidden="true" className="h-1.5 w-10 rounded-full" style={{ backgroundColor: visualStyle.color, backgroundImage: multiRouteDisplayMode === "patterns" ? `repeating-linear-gradient(90deg, ${visualStyle.color} 0 8px, transparent 8px 14px)` : undefined }} /><span className="font-black text-white">{groupLabel}</span></span>
               <p className="mt-2 text-xs text-slate-300">{group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} stops</p>
+              <div className="mt-3"><MeetingPointDetails meetingPoint={group.meetingPoint} fr={fr} /></div>
               <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{group.operationalBudget?.withinBudget === true ? "Budget d’action respecté" : group.operationalBudget?.withinBudget === false ? "Budget d’action dépassé" : "Budget d’action non vérifiable"}</p>
               {multiRouteDisplayMode === "patterns" ? <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{fr ? "Trait : " : "Line: "}{getRouteGroupPatternLabel(group.groupIndex, fr)}</p> : null}
             </button>
@@ -214,7 +250,7 @@ export function RouteResults({
         <RouteResultSummary data={data} fr={fr} groupRoutes={groupRoutes} totalKm={totalKm} totalMinutes={totalMinutes} serviceMinutes={serviceMinutes} operationalTotalMinutes={operationalTotalMinutes} actionDurationLabel={actionDurationLabel} operationalTotalLabel={operationalTotalLabel} eventBudgetMinutes={eventBudgetMinutes} actionBudgetMinutes={actionBudgetMinutes} organizationMarginMinutes={organizationMarginMinutes} onCreateAction={onCreateAction} />
         <RouteGroupSelection data={data} fr={fr} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} setSelectedGroupIndex={setSelectedGroupIndex} multiRouteDisplayMode={multiRouteDisplayMode} setMultiRouteDisplayMode={setMultiRouteDisplayMode} />
         {hasData ? <RouteMethodology data={data} fr={fr} /> : null}
-        <RouteMap stops={visibleStops} routeGeometry={visibleGeometry} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} representationMode={multiRouteDisplayMode} origin={data.origin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} fr={fr} />
+        <RouteMap stops={visibleStops} routeGeometry={visibleGeometry} meetingPoint={data.meetingPoint} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} representationMode={multiRouteDisplayMode} origin={data.origin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} fr={fr} />
         <RoutePdfExport data={data} displayMode={multiRouteDisplayMode} onUsePatterns={() => setMultiRouteDisplayMode("patterns")} />
         <RouteList hasRoute={hasRoute} picks={visibleStops} fr={fr} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} />
       </motion.div> : null}

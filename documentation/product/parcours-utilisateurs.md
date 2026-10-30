@@ -60,6 +60,12 @@ flowchart TD
   K --> L[Rapport, historique et coordination suivante]
 ```
 
+Pour un parcours planifié, le point de rendez-vous intermédiaire est calculé
+sur la géométrie finale retenue, à mi-distance cumulée. La distance et le temps
+relatif sont affichés avec leur provenance lorsqu'ils sont disponibles. Les
+boucles de groupes indépendants conservent un point par boucle ; aucune
+position unique commune n'est déduite.
+
 ### États et sorties attendues
 
 | Étape | État attendu | Échec / cas limite | Preuve indispensable |

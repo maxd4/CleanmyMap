@@ -67,6 +67,14 @@ export type RouteRecommendationOrigin = {
 
 export type RouteOriginMode = "browser" | "map";
 
+export type MeetingPointProjection = {
+  coordinates: [number, number];
+  cumulativeDistanceKm: number | null;
+  progress: number | null;
+  estimatedDurationMinutes: number | null;
+  provenance: "final_geometry_midpoint" | "manual_midpoint" | "legacy_midpoint";
+};
+
 export type RouteRecommendationResponse = {
   isLoop: true;
   planningMode: RoutePlanningMode;
@@ -148,6 +156,8 @@ export type RouteRecommendationResponse = {
   };
   groups: RouteGroupAssignment[];
   groupRoutes: RouteGroupRoute[];
+  /** Available only when one final route has an unambiguous rendezvous. */
+  meetingPoint?: MeetingPointProjection | null;
   multiRoute: RouteMultiRouteMetrics;
   partition: {
     metrics: RoutePartitionMetrics;
@@ -164,6 +174,8 @@ export type RouteGroupRoute = RouteGroupAssignment & {
   travelBudgetMinutes: number;
   withinBudget: boolean;
   operationalBudget?: RouteOperationalBudget;
+  /** Derived independently for this group's final geometry. */
+  meetingPoint?: MeetingPointProjection | null;
 };
 
 export type RouteMultiRouteMetrics = {

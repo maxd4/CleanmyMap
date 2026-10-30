@@ -3,12 +3,14 @@ import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import {
   createOperationalRouteFromRecommendation,
   createPlannerActionPreparationData,
+  getOperationalRouteMeetingPoint,
   getOperationalRouteLoopCount,
   getPublicOperationalRouteSegments,
   isOperationalRoute,
   normalizeActionPreparationData,
   normalizeOperationalRoute,
   removeOperationalRouteLoop,
+  projectMeetingPointFromGeometry,
   updateOperationalRouteZone,
 } from "./route-operational";
 import {
@@ -45,6 +47,61 @@ const recommendation = {
 } as const;
 
 describe("operational route contract", () => {
+  it("projects an irregular loop at 50% of cumulative distance, not the central coordinate", () => {
+    const irregularGeometry = {
+      ...geometry,
+      coordinates: [
+        [48.85, 2.34],
+        [48.851, 2.34],
+        [48.86, 2.34],
+        [48.861, 2.34],
+      ] as [number, number][],
+      durationMinutes: 100,
+    };
+    const projection = projectMeetingPointFromGeometry(irregularGeometry);
+
+    expect(projection).not.toBeNull();
+    expect(projection?.progress).toBe(0.5);
+    expect(projection?.estimatedDurationMinutes).toBe(50);
+    expect(projection?.coordinates[0]).toBeGreaterThan(48.851);
+    expect(projection?.coordinates[0]).toBeLessThan(48.86);
+    expect(projection?.provenance).toBe("final_geometry_midpoint");
+  });
+
+  it("keeps one midpoint owner for one route and no ambiguous shared point for independent groups", () => {
+    const single = createOperationalRouteFromRecommendation({ ...recommendation, groupCount: 1, groupRoutes: [] });
+    expect(single.zones.midpoint.coordinate).not.toBeNull();
+    expect(single.zones.midpoint.provenance).toBe("final_geometry_midpoint");
+    expect(getOperationalRouteMeetingPoint(single)?.coordinates).toEqual(single.zones.midpoint.coordinate);
+
+    const multi = createOperationalRouteFromRecommendation(recommendation);
+    expect(multi.zones.midpoint.coordinate).toBeNull();
+    expect(getOperationalRouteMeetingPoint(multi)).toBeNull();
+    expect(getOperationalRouteMeetingPoint(multi, multi.routes[0])?.provenance).toBe("final_geometry_midpoint");
+  });
+
+  it("preserves a manually edited midpoint and invalidates derived metrics when it is off trace", () => {
+    const single = createOperationalRouteFromRecommendation({ ...recommendation, groupCount: 1, groupRoutes: [] });
+    const edited = updateOperationalRouteZone(single, "midpoint", {
+      coordinate: [48.855, 2.4],
+    });
+
+    expect(edited.zones.midpoint.coordinate).toEqual([48.855, 2.4]);
+    expect(edited.zones.midpoint.provenance).toBe("manual_midpoint");
+    expect(getOperationalRouteMeetingPoint(edited)).toMatchObject({
+      coordinates: [48.855, 2.4],
+      cumulativeDistanceKm: null,
+      progress: null,
+      estimatedDurationMinutes: null,
+      provenance: "manual_midpoint",
+    });
+  });
+
+  it("returns no projection for an unreliable trace", () => {
+    expect(projectMeetingPointFromGeometry({ coordinates: [[91, 0], [91, 0]], durationMinutes: 20 })).toBeNull();
+    expect(projectMeetingPointFromGeometry({ coordinates: [[48.85, 2.34], [48.85, 2.34]], durationMinutes: 20 })).toBeNull();
+  });
+
   it("transfers only known planner preparation values without observations", () => {
     const preparation = createPlannerActionPreparationData(
       {

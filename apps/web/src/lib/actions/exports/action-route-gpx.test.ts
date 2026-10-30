@@ -138,6 +138,13 @@ describe("action-route-gpx export adapter", () => {
     expect(xml).toContain('lat="48.83" lon="2.33"');
   });
 
+  it("emits one meetingPoint waypoint from the final operational geometry", () => {
+    const xml = buildActionRouteGpxDocument({ operationalRoute });
+
+    expect(xml?.match(/<type>meetingPoint<\/type>/g)).toHaveLength(1);
+    expect(xml).not.toContain("<type>midpoint</type>");
+  });
+
   it("keeps multiple final operational routes as separate GPX tracks", () => {
     const second = structuredClone(operationalRoute.routes[0]!);
     second.routeId = "planner-group-2";
@@ -155,6 +162,7 @@ describe("action-route-gpx export adapter", () => {
     });
 
     expect(xml?.match(/<trk>/g)).toHaveLength(2);
+    expect(xml?.match(/<type>meetingPoint<\/type>/g)).toHaveLength(2);
     expect(xml).toContain('lat="48.9" lon="2.4"');
     expect(xml).toContain('lat="48.91" lon="2.41"');
     expect(xml).not.toContain('lon="2.35"></trkpt>\n        <trkpt lat="48.9"');

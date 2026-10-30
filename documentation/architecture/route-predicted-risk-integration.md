@@ -128,4 +128,10 @@ mesure réelle de pollution.
 
 Le snapshot est chargé localement avant le calcul. Aucun appel Paris Data ou
 autre appel externe n'est ajouté au calcul de pré-sélection. La géométrie réseau
-finale du provider reste la source de vérité de l'itinéraire affiché.
+finale du provider reste la source de vérité de l'itinéraire affiché. Le
+rendez-vous intermédiaire est une projection de cette géométrie : il vise 50 %
+de la distance cumulée des coordonnées finales, expose sa distance et son temps
+relatif lorsqu'ils sont disponibles, et porte sa provenance. Pour plusieurs
+groupes indépendants, chaque boucle porte sa propre projection ; aucun midpoint
+partagé ambigu n'est créé. Une géométrie insuffisante laisse le rendez-vous
+indisponible sans inventer de coordonnées ou d'ETA.

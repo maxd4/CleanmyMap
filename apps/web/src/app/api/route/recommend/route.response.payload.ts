@@ -105,6 +105,9 @@ function buildCommonPayload({
       audit: planning.groupPartition.audit,
     },
     groupRoutes: context.groupRoutes,
+    meetingPoint: context.groupRoutes.length === 1
+      ? context.groupRoutes[0]?.meetingPoint ?? null
+      : null,
     multiRoute: context.multiRoute,
   };
 }

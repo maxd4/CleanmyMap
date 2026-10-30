@@ -4,7 +4,11 @@ import type {
   ActionGeometrySource,
   ActionGpxImportMetadata,
 } from "@/lib/actions/types";
-import type { OperationalRoute } from "@/lib/route/route-operational";
+import {
+  getOperationalRouteMeetingPoint,
+  type OperationalRoute,
+} from "@/lib/route/route-operational";
+import type { MeetingPointProjection } from "@/lib/route/route-response-contract";
 import { isRenderableDrawing } from "./geometry-resolution";
 
 export type FinalActionGeometry = {
@@ -12,6 +16,8 @@ export type FinalActionGeometry = {
   source: ActionGeometrySource;
   /** Present only when the operational route itself is the active geometry. */
   operationalRoute: OperationalRoute | null;
+  /** Present only when the selected route has an unambiguous rendezvous. */
+  meetingPoint?: MeetingPointProjection | null;
 };
 
 export type FinalActionGeometryInput = {
@@ -227,7 +233,11 @@ export function resolveFinalActionGeometry(
 
   if (input.geometryMethod === "generator") {
     return operationalRoute && operationalCandidate
-      ? { ...operationalCandidate, operationalRoute }
+      ? {
+          ...operationalCandidate,
+          operationalRoute,
+          meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
+        }
       : null;
   }
 
@@ -246,6 +256,7 @@ export function resolveFinalActionGeometry(
     return {
       ...operationalCandidate,
       operationalRoute,
+      meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
     };
   }
 
@@ -253,7 +264,11 @@ export function resolveFinalActionGeometry(
   if (persistedCandidate) return persistedCandidate;
 
   return input.geometryMethod === "automatic" ? null : operationalCandidate && operationalRoute
-    ? { ...operationalCandidate, operationalRoute }
+    ? {
+        ...operationalCandidate,
+        operationalRoute,
+        meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
+      }
     : null;
 }
 

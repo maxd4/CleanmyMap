@@ -23,6 +23,7 @@ import {
   routeStopsFromPlanned,
   type RouteGroupRoutingResult,
 } from "./route-multi-route-group";
+import { projectMeetingPointFromGeometry } from "./route-operational";
 
 type Coordinate = [number, number];
 
@@ -155,6 +156,7 @@ export async function routePartitionedGroups(input: {
       travelMinutes: route.routeGeometry.durationMinutes,
       travelBudgetMinutes: input.travelBudgetMinutes,
       withinBudget: route.routeGeometry.durationMinutes <= input.travelBudgetMinutes,
+      meetingPoint: projectMeetingPointFromGeometry(route.routeGeometry),
     };
   });
   const metrics: RouteMultiRouteMetrics = {
@@ -247,5 +249,6 @@ export function buildSingleGroupRoute(input: {
     travelMinutes: input.routeGeometry.durationMinutes,
     travelBudgetMinutes: input.travelBudgetMinutes,
     withinBudget: input.routeGeometry.durationMinutes <= input.travelBudgetMinutes,
+    meetingPoint: projectMeetingPointFromGeometry(input.routeGeometry),
   };
 }
