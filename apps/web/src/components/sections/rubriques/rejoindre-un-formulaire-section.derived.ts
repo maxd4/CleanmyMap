@@ -61,7 +61,12 @@ function useJoinActionTargetState({ focusActionId, focusCommunityEventId, reques
   futureLoading: boolean;
   pastLoading: boolean;
 }) {
-  const targetResolution = useMemo(() => resolveJoinActionTarget({ actionId: focusActionId ?? focusCommunityEventId, futureActionIds, pastActionIds, futureLoading, pastLoading }), [focusActionId, focusCommunityEventId, futureActionIds, futureLoading, pastActionIds, pastLoading]);
+  const targetResolution = useMemo(
+    () => requestedTab === "needs"
+      ? "none"
+      : resolveJoinActionTarget({ actionId: focusActionId ?? focusCommunityEventId, futureActionIds, pastActionIds, futureLoading, pastLoading }),
+    [focusActionId, focusCommunityEventId, futureActionIds, futureLoading, pastActionIds, pastLoading, requestedTab],
+  );
   return { targetResolution, activeTab: resolveJoinActionTab(requestedTab, targetResolution) };
 }
 

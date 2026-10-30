@@ -40,7 +40,7 @@ export function buildJoinActionHref(actionId?: string | null): string {
 }
 
 export function buildJoinActionTabHref(
-  tab: "future" | "past",
+  tab: "future" | "past" | "needs",
   actionId?: string | null,
   searchParams?: QueryParamsInput,
 ): string {

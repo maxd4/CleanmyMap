@@ -40,10 +40,12 @@ function makeItem(overrides: Partial<ActionListItem> = {}): ActionListItem {
 }
 
 describe("join action model", () => {
-  it("defaults to future and accepts only the past tab", () => {
+  it("defaults to future and accepts the needs tab", () => {
     expect(resolveJoinActionTab(null)).toBe("future");
     expect(resolveJoinActionTab("past")).toBe("past");
     expect(resolveJoinActionTab("future")).toBe("future");
+    expect(resolveJoinActionTab("needs")).toBe("needs");
+    expect(resolveJoinActionTab("needs", "future")).toBe("needs");
   });
 
   it("resolves a deep link only from the authorized future or past lists", () => {

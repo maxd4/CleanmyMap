@@ -13,6 +13,7 @@ import { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
 import { JoinActionTabs } from "./rejoindre-une-action.tabs";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
+import { ActionNeedsPanel } from "./community/action-needs-panel";
 
 export function JoinActionSection() {
   const controller = useJoinFormSectionController();
@@ -87,6 +88,8 @@ export function JoinActionSection() {
             <JoinFormExplorer {...controller} onShareAction={setShareActionId} />
             <JoinFormSidebar {...controller} />
           </div>
+        ) : controller.activeTab === "needs" ? (
+          <ActionNeedsPanel fr={fr} focusActionId={controller.focusActionId} />
         ) : (
           <PastActionsPanel
             items={controller.visiblePastItems}

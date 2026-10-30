@@ -1,7 +1,7 @@
 import type { ActionListItem } from "@/lib/actions/types";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
 
-export type JoinActionTab = "future" | "past";
+export type JoinActionTab = "future" | "past" | "needs";
 
 export type JoinActionTargetResolution =
   | "none"
@@ -38,6 +38,7 @@ export function resolveJoinActionTab(
   rawTab: string | null,
   targetResolution: JoinActionTargetResolution = "none",
 ): JoinActionTab {
+  if (rawTab === "needs") return "needs";
   if (targetResolution === "past") return "past";
   if (targetResolution === "future") return "future";
   return rawTab === "past" ? "past" : "future";

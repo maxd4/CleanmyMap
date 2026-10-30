@@ -274,4 +274,29 @@ export const adminCommunityAuthorizationContract = {
       evidence: ["requireAuthenticatedAccess", "access.userId"],
     },
   },
+  "community/needs": {
+    GET: {
+      expected: "Public-safe needs with private manager projection scoped to actions the current member can manage",
+      dimensions: ["public-safe", "business permission"],
+      actual: "getSafeAuthSession + bounded listActionNeeds projection; the service resolves public eligibility and canonical manager scope",
+      evidence: ["getSafeAuthSession", "userId", "listActionNeeds"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authenticated canonical action manager creates a need with the session identity",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionById + canManageActionNeed; created_by_clerk_id comes from access.userId",
+      evidence: ["requireAuthenticatedAccess", "canManageActionNeed", "access.userId"],
+      evidenceScope: "module",
+    },
+  },
+  "community/needs/[needId]": {
+    PATCH: {
+      expected: "Authenticated canonical action manager applies only explicit transitions or updates to an open need",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionNeedById + canManageActionNeed + optimistic status/version predicates",
+      evidence: ["requireAuthenticatedAccess", "canManageActionNeed", "access.userId", "loadActionNeedById"],
+      evidenceScope: "module",
+    },
+  },
 } as const satisfies ApiAuthorizationContract;

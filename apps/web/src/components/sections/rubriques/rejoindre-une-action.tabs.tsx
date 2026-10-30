@@ -13,6 +13,7 @@ export type ActionTabDefinition = {
 const DEFAULT_TABS: readonly ActionTabDefinition[] = [
   { id: "future", label: "Action future", panelId: "join-action-panel-future" },
   { id: "past", label: "Action passée", panelId: "join-action-panel-past" },
+  { id: "needs", label: "Besoins", panelId: "join-action-panel-needs" },
 ];
 
 export function getNextActionTabId(

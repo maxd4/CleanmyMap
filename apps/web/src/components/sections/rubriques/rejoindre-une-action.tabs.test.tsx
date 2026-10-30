@@ -11,11 +11,13 @@ describe("JoinActionTabs", () => {
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain('id="join-action-tab-future"');
     expect(markup).toContain('id="join-action-tab-past"');
+    expect(markup).toContain('id="join-action-tab-needs"');
     expect(markup).toContain('role="tab"');
     expect(markup).toContain('aria-selected="true"');
     expect(markup).toContain('aria-selected="false"');
     expect(markup).toContain('aria-controls="join-action-panel-future"');
     expect(markup).toContain('aria-controls="join-action-panel-past"');
+    expect(markup).toContain('aria-controls="join-action-panel-needs"');
     expect(markup).toContain('tabindex="0"');
     expect(markup).toContain('tabindex="-1"');
     expect(markup).toContain("/sections/rejoindre-une-action?tab=past&amp;actionId=a-target");

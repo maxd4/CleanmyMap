@@ -15,8 +15,13 @@
 ```txt
 apps/web/src/app/(app)/sections/[sectionId]/page.tsx
 apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx
+apps/web/src/components/sections/rubriques/community/action-needs-panel.tsx
 apps/web/src/app/api/actions/group-join/route.ts
 apps/web/src/app/api/actions/[actionId]/group-join/route.ts
+apps/web/src/app/api/community/needs/route.ts
+apps/web/src/app/api/community/needs/[needId]/route.ts
+apps/web/src/lib/community/action-needs-service.ts
+apps/web/src/lib/community/needs-http.ts
 apps/web/src/lib/actions/participation/group-participation.ts
 apps/web/src/lib/actions/permissions.ts
 ```
@@ -31,6 +36,13 @@ La page canonique permet à un bénévole de :
 4. annuler une demande ou une inscription future ;
 5. ouvrir directement une action ciblée avec `actionId`.
 
+L’onglet `Besoins` liste les besoins structurés des actions futures publiquement
+éligibles. Un créateur ou un organisateur/coorganisateur canonique peut créer et
+administrer les besoins des actions qu’il gère ; ces contrôles ne sont jamais
+accordés par le seul rôle de coordinateur. La même surface permet de modifier
+un besoin ouvert, de le marquer pourvu ou de l’annuler, sans réouverture
+implicite d’un état terminal ou expiré.
+
 Le paramètre `actionId` est résolu uniquement contre les deux sources déjà
 autorisées par cette page : les pré-actions futures rejoignables et les
 actions passées publiques terminées. Une cible inconnue, supprimée ou
@@ -39,8 +51,8 @@ résolue sélectionne automatiquement l'onglet temporel correspondant, est
 remontée en tête sans modifier le tri des autres cartes et reçoit un repère
 visuel ainsi que le focus clavier.
 
-Les onglets sont l'état de navigation canonique de l'URL (`tab=future` ou
-`tab=past`) et conservent `actionId` lorsqu'il est présent. Ils exposent la
+Les onglets sont l'état de navigation canonique de l'URL (`tab=future`,
+`tab=past` ou `tab=needs`) et conservent `actionId` lorsqu'il est présent. Ils exposent la
 sémantique accessible `tablist` / `tab` / `tabpanel`, avec navigation clavier
 par flèches, `Home` et `End`. Sans deep link, l'onglet futur est sélectionné
 par défaut. Les filtres propres aux futures ne sont pas affichés dans la vue
@@ -93,6 +105,14 @@ published_at != null
 date/heure de début future selon Europe/Paris
 access_mode != invite_link
 ```
+
+La liste `Besoins` réutilise ce même prédicat d’éligibilité pour l’action. Elle
+retire les besoins `cancelled` des projections publiques ; `expired` est un
+statut effectif calculé à la lecture pour un besoin resté `open` dont
+`expires_at` est dépassé. Les gestionnaires autorisés peuvent consulter leurs
+besoins privés, y compris ceux d’une action encore en brouillon ou masquée, sans
+que cette projection ne soit mélangée à la liste publique. `created_by_clerk_id`
+reste exclusivement côté serveur.
 
 `groupJoinEnabled` ne gouverne plus la visibilité de la carte. Il gouverne
 uniquement la possibilité d'envoyer une demande d'inscription : une carte
@@ -187,6 +207,15 @@ contrats Actions. `POST /api/community/events` est conservé comme endpoint de
 compatibilité qui répond `410` ; il ne crée plus d’événement. Le paramètre
 `fromEventId` conserve seulement la référence de l’événement historique à
 l’origine de la préparation d’action.
+
+Les besoins structurés sont servis par `GET /api/community/needs`, créés par
+`POST /api/community/needs` et administrés par les opérations explicites
+`update`, `fulfill` et `cancel` de
+`PATCH /api/community/needs/[needId]`. La pagination est bornée ; une cible
+`actionId` qui n’est ni publique ni administrable renvoie une liste vide afin de
+ne pas révéler son existence. Le topic conversationnel historique
+`besoin_ressources` reste dans `/sections/messagerie` ; l’onglet ajoute
+seulement un lien contextuel vers ce topic lorsque l’action est identifiable.
 
 ## Contrat de participation
 
@@ -342,7 +371,7 @@ Toute évolution de cette logique doit rester idempotente.
 ## UI cible
 
 - hero court ;
-- onglets `Actions futures` et `Actions passées` ;
+- onglets `Actions futures`, `Actions passées` et `Besoins` ;
 - recherche et filtres sur les actions futures ;
 - cartes d'actions futures ouvertes ;
 - résultats publics finaux des actions passées ;
@@ -350,6 +379,8 @@ Toute évolution de cette logique doit rester idempotente.
 - distinction claire entre demande `pending` et participation `confirmed` ;
 - file de modération uniquement pour les reviewers autorisés ;
 - confirmation avant participation, annulation ou départ ;
+- création et administration des besoins structurés pour les gestionnaires
+  autorisés, avec états vide, chargement, erreur et expiration ;
 - états loading, empty, error et forbidden accessibles.
 
 Chaque carte d'action future publiée contient un bloc compact `Informations
