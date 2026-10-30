@@ -264,3 +264,36 @@ ultérieur d'organisateur ne réécrit pas les instantanés historiques.
   transactionnels, idempotents et refusent les propositions périmées ou
   concurrentes ; un changement de statut d'inscription révoque la
   responsabilité opérationnelle active sans supprimer son historique.
+
+## Binômes privés d'une action future
+
+Deux inscrits `confirmed` d'une même action future peuvent organiser un
+binôme sans créer de participation finale. L'éligibilité exige une pré-action
+publique, publiée, visible et non commencée selon le contrat temporel
+`Europe/Paris`; une action privée, masquée, non publiée, refusée, annulée ou
+déjà commencée ne permet pas de nouvelle demande ou disponibilité. Un compte
+organisateur, administrateur ou inscrit `pending` ne reçoit aucun droit
+implicite.
+
+Le parcours persiste trois objets privés :
+
+- `action_buddy_availability` indique que le mentor accepte d'être proposé
+  pour l'action ; la ligne est propre au compte Clerk courant ;
+- `action_buddy_requests` suit `open → matched` ou `open → cancelled` et
+  conserve le mentor actif et `matched_at` quand le binôme est formé ;
+- `action_buddy_proposals` suit `pending → accepted | declined | withdrawn`.
+
+Le demandeur lit sa demande et ses propositions ; le mentor lit uniquement
+les propositions qui lui sont adressées. Aucune liste publique de mentors n'est
+exposée. Les contraintes SQL garantissent une seule demande active par
+demandeur/action, une seule proposition `pending` par mentor/demande et un
+seul appariement actif d'un mentor par action. L'acceptation passe par la RPC
+serveur-only `accept_action_buddy_proposal`, qui verrouille et revalide les
+deux inscriptions `action_registrations` dans une transaction. Elle n'utilise
+jamais `action_participants`, qui reste réservé à la présence finale.
+
+Une annulation retire les propositions encore `pending` sans effacer
+l'historique. Un mentor peut retirer sa disponibilité ou une proposition selon
+son ownership, y compris lorsque les nouvelles demandes sont fermées ; ces
+opérations ne rouvrent jamais une demande et ne forment pas de binôme après le
+début de l'action.

@@ -95,6 +95,33 @@ export type ActionRegistrationRow = {
   manual_invitation_version?: number;
 };
 
+export type ActionBuddyAvailabilityRow = {
+  action_id: string;
+  mentor_user_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ActionBuddyRequestRow = {
+  id: string;
+  action_id: string;
+  requester_user_id: string;
+  status: "open" | "matched" | "cancelled";
+  matched_mentor_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  matched_at: string | null;
+};
+
+export type ActionBuddyProposalRow = {
+  id: string;
+  request_id: string;
+  mentor_user_id: string;
+  status: "pending" | "accepted" | "declined" | "withdrawn";
+  created_at: string;
+  resolved_at: string | null;
+};
+
 export type ActionRow = {
   id: string;
   created_at: string;

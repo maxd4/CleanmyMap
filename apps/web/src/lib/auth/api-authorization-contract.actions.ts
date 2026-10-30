@@ -467,6 +467,81 @@ export const actionsAuthorizationContract = {
       evidence: ["requireActionRequestAccess", "resolveActionFieldRoleAccess", "respondToActionFieldRoleTransfer"],
     },
   },
+  "actions/[actionId]/buddy": {
+    GET: {
+      expected: "Authenticated confirmed registrant reads only their private buddy state for an eligible future action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionBuddyState scopes availability, own request and own proposals to the Clerk session identity; no public mentor list is returned",
+      evidence: ["requireAuthenticatedAccess", "loadActionBuddyState"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Confirmed registrant creates one own open buddy request for an eligible future action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + createActionBuddyRequest uses only the Clerk session userId and the database partial unique index rejects a second active request",
+      evidence: ["requireAuthenticatedAccess", "createActionBuddyRequest"],
+      evidenceScope: "module",
+    },
+    DELETE: {
+      expected: "Confirmed request owner cancels only their own buddy request without reopening it",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + cancelActionBuddyRequest action-scopes the request by the session userId and preserves the cancelled history",
+      evidence: ["requireAuthenticatedAccess", "cancelActionBuddyRequest"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/buddy/availability": {
+    PUT: {
+      expected: "Confirmed registrant publishes only their own private mentor availability for an eligible future action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + setActionBuddyAvailability derives mentor_user_id exclusively from the Clerk session and writes through service_role",
+      evidence: ["requireAuthenticatedAccess", "setActionBuddyAvailability"],
+      evidenceScope: "module",
+    },
+    DELETE: {
+      expected: "Authenticated user withdraws only their own availability, including after new requests close",
+      dimensions: ["authentication", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + removeActionBuddyAvailability filters action_id and the session userId; browser roles have no direct table grant",
+      evidence: ["requireAuthenticatedAccess", "removeActionBuddyAvailability"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/buddy/requests/[requestId]/proposals": {
+    POST: {
+      expected: "Confirmed available mentor creates one pending proposal for an open request in the same action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + createActionBuddyProposal verifies action/request scope, confirmed registration, availability and self-match before the pending partial unique index",
+      evidence: ["requireAuthenticatedAccess", "createActionBuddyProposal"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/buddy/proposals/[proposalId]/accept": {
+    POST: {
+      expected: "Request owner accepts one proposal through the server-only transactional matching RPC",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + requester ownership check + service-only accept_action_buddy_proposal; PostgreSQL rechecks eligibility, locks resources deterministically and protects active matches with constraints",
+      evidence: ["requireAuthenticatedAccess", "acceptActionBuddyProposal"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/buddy/proposals/[proposalId]/decline": {
+    POST: {
+      expected: "Only the proposed mentor declines their own pending proposal",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + proposal ownership and action-scoped request checks in declineActionBuddyProposal",
+      evidence: ["requireAuthenticatedAccess", "declineActionBuddyProposal"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/buddy/proposals/[proposalId]": {
+    DELETE: {
+      expected: "Only the proposed mentor withdraws their own pending proposal and retains its history",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + proposal ownership and action-scoped request checks in withdrawActionBuddyProposal; terminal proposals cannot be rewritten",
+      evidence: ["requireAuthenticatedAccess", "withdrawActionBuddyProposal"],
+      evidenceScope: "module",
+    },
+  },
   ...actionRoleAttestationsAuthorizationContract,
   ...actionMediaAuthorizationContract,
   "actions/[actionId]/duplicate": {

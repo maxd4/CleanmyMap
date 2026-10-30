@@ -16,6 +16,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   const inventory = inventorySqlProofs();
   assert.equal(inventory.unregistered.length, 0);
   assert.deepEqual(inventory.pgtap, [
+    "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
     "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
@@ -36,6 +37,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   ]);
   assert.equal(inventory.contracts.length, 9);
   assert.deepEqual(inventory.multisession, [
+    "e2e/action-buddy-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",

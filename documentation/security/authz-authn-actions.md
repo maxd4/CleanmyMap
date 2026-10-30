@@ -366,3 +366,28 @@ intégration, les tokens seront séparés des profils métier, révocables,
 multi-appareils, supprimables lorsqu'ils sont invalides et incapables d'exposer
 des données privées excessives sur écran verrouillé. Le push consommera le même
 événement métier que l'in-app et ne créera jamais une seconde notification.
+
+### Binômes privés d'une action future
+
+Les routes `/api/actions/[actionId]/buddy*` exigent une session Clerk
+authentifiée et prennent l'identité exclusivement dans
+`requireAuthenticatedAccess`. Un `actionId`, `requestId` ou `proposalId`
+fourni par l'appelant ne constitue jamais une preuve d'ownership. Chaque
+service recalcule le scope de l'action, la propriété de la demande ou de la
+proposition et l'inscription future
+`action_registrations.registration_status = confirmed`.
+
+| Opération | Capacité effective | Protection métier |
+|---|---|---|
+| lire l'état buddy | acteur concerné | projection privée, aucune liste publique de mentors |
+| publier/retirer sa disponibilité | inscrit confirmé, puis retrait de sa propre ligne | action `pre_action` publique, publiée, visible et future pour la publication |
+| créer une demande | inscrit confirmé | une demande `open` ou `matched` par demandeur/action |
+| proposer un binôme | mentor confirmé et disponible | demande de la même action, ouverte, mentor distinct |
+| accepter | propriétaire de la demande | RPC `service_role` uniquement, revalidation et verrous SQL |
+| décliner/retirer une proposition | mentor de la proposition | ownership strict et états terminaux conservés |
+| annuler une demande | demandeur | aucune réouverture ; les propositions `pending` deviennent `withdrawn` |
+
+Les rôles organisateur, administrateur ou compte avec inscription `pending`
+n'obtiennent aucun droit implicite. Les rôles navigateur n'ont ni grant direct
+sur les trois tables ni droit d'exécuter `accept_action_buddy_proposal` ; le
+`service_role` reste confiné au serveur après les contrôles HTTP.

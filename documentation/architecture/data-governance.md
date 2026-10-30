@@ -387,3 +387,29 @@ Avant toute modification :
 - `apps/web/supabase/migrations/`.
 - `apps/mobile/README.md` et `architecture_gps_companion.md`.
 - `apps/web/scripts/action-backup-contract.mjs` et `export-actions-backup.mjs`.
+
+## 11. Binômes d'une action future
+
+Le domaine buddy est une extension privée de l'inscription future, introduite
+par la migration append-only `20261030000030_action_buddy_matching.sql`.
+`action_registrations` reste la seule source d'éligibilité : le demandeur et
+le mentor doivent être `confirmed` dans la même action future. La table
+`action_participants` décrit la présence finale et ne doit jamais être
+consultée pour autoriser un binôme.
+
+Les trois tables canoniques sont `action_buddy_availability`,
+`action_buddy_requests` et `action_buddy_proposals`. La demande porte le
+matching actif (`open | matched | cancelled`) ; aucune table de matching
+supplémentaire n'est créée. Les index uniques partiels garantissent une seule
+demande active par demandeur/action, une seule proposition `pending` par
+mentor/demande et un seul mentor apparié par action. La disponibilité, les
+demandes et les propositions restent des données privées et sont accessibles
+aux routes serveur uniquement.
+
+L'acceptation est une transaction PostgreSQL via
+`accept_action_buddy_proposal(uuid)`. Elle verrouille les ressources dans un
+ordre déterministe, revalide l'action publique future, les inscriptions, la
+disponibilité et les statuts, puis accepte une proposition et décline les
+concurrentes. Le verrou consultatif par action/mentor et les contraintes SQL
+protègent l'invariant sous concurrence. Les erreurs de conflit annulent toute
+la transaction ; les retraits et annulations conservent l'historique.

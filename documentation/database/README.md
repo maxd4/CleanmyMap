@@ -87,3 +87,24 @@ zéro notification pour un résultat vide ou une notification `community` unique
 pour un résultat non vide. Aucun cron, email ou abonnement implicite n'est
 introduit. Les contrats SQL statiques et le pgTAP sont présents ; leur
 exécution PostgreSQL reste à distinguer dans les preuves de validation.
+
+### CURRENT — matching buddy des actions futures (6C1)
+
+La migration append-only `20261030000030_action_buddy_matching.sql` ajoute les
+tables privées `action_buddy_availability`, `action_buddy_requests` et
+`action_buddy_proposals`. Les clés étrangères suivent `actions` et les
+requêtes, les statuts sont fermés par `CHECK`, et les index uniques partiels
+portent les invariants actifs : une demande `open|matched` par
+demandeur/action, une proposition `pending` par mentor/demande et un seul
+mentor `matched` par action. Le matching actif reste porté par la demande ;
+aucune quatrième table n'est utilisée.
+
+RLS est activé et les grants `anon`/`authenticated` sont révoqués pour les
+trois tables. Les routes serveur utilisent `service_role` après AuthN/AuthZ
+Clerk et ownership ; l'acceptation est limitée à
+`accept_action_buddy_proposal(uuid)`, qui verrouille l'action, la demande, la
+proposition, les inscriptions confirmées et la disponibilité avant de muter
+les états. Le pgtap `action-buddy-contract.pgtap.sql` couvre contraintes,
+grants, RLS, refus métier, replay et atomicité séquentielle ; la preuve
+multi-session est `e2e/action-buddy-concurrency.mjs`. Leur présence Git ne
+prouve pas une exécution PostgreSQL distante ou locale.
