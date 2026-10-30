@@ -290,7 +290,10 @@ est pur et sans réseau : il conserve l’ordre exact des coordonnées, la
 latitude/longitude et la topologie (boucle fermée ou parcours
 `point_to_point` ouvert), tandis que les arrêts et repères sont ajoutés comme
 waypoints sans modifier le track. Une géométrie `manual` reste exportable
-lorsqu’elle est la géométrie finale disponible. Un import `gpx_import` conserve
+lorsqu’elle est la géométrie finale disponible ; lorsqu'elle est planifiée et
+exploitable, l'export ajoute au plus un waypoint `meetingPoint` projeté sur le
+tracé si aucun point explicite n'est fourni, sans modifier les coordonnées du
+track. Un import `gpx_import` conserve
 ses coordonnées canoniques sans reroutage ni application de policy, mais son
 export porte l’intention effective : un GPX marqué `planned` reste planifié et
 ne peut pas devenir une observation par simple réimport ; un GPX non marqué

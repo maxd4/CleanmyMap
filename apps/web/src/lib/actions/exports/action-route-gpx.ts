@@ -7,6 +7,7 @@ import type {
 } from "@/lib/actions/types";
 import {
   getOperationalRouteMeetingPoint,
+  projectMeetingPointFromGeometry,
   type OperationalRoute,
 } from "@/lib/route/route-operational";
 import {
@@ -70,6 +71,20 @@ function trackingGeometryInput(params: ActionRouteGpxInput) {
 
 function sameCoordinate(left: GpxCoordinate, right: GpxCoordinate): boolean {
   return left[0] === right[0] && left[1] === right[1];
+}
+
+function isPlannedNonOperationalGeometry(
+  finalGeometry: FinalActionGeometry,
+  gpxImport: ActionGpxImportMetadata | null | undefined,
+): boolean {
+  if (finalGeometry.source === "manual" ||
+      finalGeometry.source === "reference" ||
+      finalGeometry.source === "routed" ||
+      finalGeometry.source === "estimated_route") {
+    return true;
+  }
+  return finalGeometry.source === "gpx_import" &&
+    (gpxImport?.intent === "planned" || gpxImport?.provenance === "planned");
 }
 
 function waypoint(
@@ -194,13 +209,23 @@ export function buildActionRouteGpxInput(
   const coordinates = finalGeometry.drawing.coordinates;
   if (!hasUsableTrack(coordinates)) return null;
   const origin = coordinates[0] ?? null;
-  const meetingPoint = isValidCoordinate(
-    params.midpointCoordinates
-      ? [params.midpointCoordinates.latitude, params.midpointCoordinates.longitude]
-      : null,
-  )
+  const midpointCoordinate = params.midpointCoordinates
+    ? [params.midpointCoordinates.latitude, params.midpointCoordinates.longitude] as GpxCoordinate
+    : null;
+  const explicitMeetingPoint = isValidCoordinate(midpointCoordinate)
     ? {
-          coordinate: [params.midpointCoordinates!.latitude, params.midpointCoordinates!.longitude] as GpxCoordinate,
+        coordinates: midpointCoordinate,
+        label: params.midpointLabel,
+      }
+    : null;
+  const derivedMeetingPoint = explicitMeetingPoint ?? (
+    isPlannedNonOperationalGeometry(finalGeometry, params.gpxImport)
+      ? projectMeetingPointFromGeometry({ coordinates })
+      : null
+  );
+  const meetingPoint = derivedMeetingPoint
+    ? {
+        coordinate: derivedMeetingPoint.coordinates,
         label: params.midpointLabel,
       }
     : null;

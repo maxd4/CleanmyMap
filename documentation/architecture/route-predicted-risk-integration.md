@@ -131,10 +131,16 @@ autre appel externe n'est ajouté au calcul de pré-sélection. La géométrie r
 finale du provider reste la source de vérité de l'itinéraire affiché. Le
 rendez-vous intermédiaire est une projection de cette géométrie : il vise 50 %
 de la distance cumulée des coordonnées finales, expose sa distance et son temps
-relatif lorsqu'ils sont disponibles, et porte sa provenance. Pour plusieurs
-groupes indépendants, chaque boucle porte sa propre projection ; aucun midpoint
-partagé ambigu n'est créé. Une géométrie insuffisante laisse le rendez-vous
-indisponible sans inventer de coordonnées ou d'ETA. Lorsque ce point existe,
+relatif lorsqu'ils sont disponibles, et porte sa provenance. Un point manuel
+conserve ses coordonnées enregistrées ; ses métriques sont projetées sur le
+segment le plus proche seulement lorsque le résidu géodésique est inférieur ou
+égal à 10 m, sinon elles restent inconnues. L'effacement d'un point manuel
+retire sa provenance manuelle avant toute éventuelle projection automatique.
+Pour plusieurs groupes indépendants, chaque boucle porte sa propre projection ;
+aucun midpoint partagé ambigu n'est créé et l'absence de rendez-vous commun est
+affichée séparément des rendez-vous disponibles dans les cartes de groupe. Une
+géométrie insuffisante laisse le rendez-vous indisponible sans inventer de
+coordonnées ou d'ETA. Lorsque ce point existe,
 le panneau peut proposer au plus trois opportunités locales issues du même pool
 de candidats admissibles, dans le rayon maximal de la policy
 `MEETING_OPPORTUNITY_POLICY` (150 m). Leur distance

@@ -89,6 +89,7 @@ describe("action-route-gpx export adapter", () => {
 
     expect(xml).toContain("Tracé GPX importé");
     expect(xml).toContain('cmm:provenance version="1" intent="observed"');
+    expect(xml?.match(/<type>meetingPoint<\/type>/g)).toBeNull();
     expect(xml).toContain('lat="48.8" lon="2.3"');
     expect(xml).not.toContain('lat="48.85" lon="2.35"');
     expect(xml).not.toContain('lat="48.86" lon="2.36"');
@@ -136,6 +137,36 @@ describe("action-route-gpx export adapter", () => {
     expect(xml).toContain('cmm:provenance version="1" intent="planned"');
     expect(xml).toContain('lat="48.82" lon="2.32"');
     expect(xml).toContain('lat="48.83" lon="2.33"');
+  });
+
+  it("derives one meetingPoint for a planned manual trace without changing its geometry", () => {
+    const coordinates: [number, number][] = [
+      [48.82, 2.32],
+      [48.83, 2.33],
+      [48.84, 2.34],
+    ];
+    const xml = buildActionRouteGpxDocument({
+      drawing: { coordinates },
+      drawingSource: "manual",
+      midpointLabel: "Rendez-vous choisi",
+    });
+
+    expect(xml?.match(/<type>meetingPoint<\/type>/g)).toHaveLength(1);
+    expect(xml).toContain("<name>Rendez-vous choisi</name>");
+    expect(parseGpxText(xml!).drawing.coordinates).toEqual(coordinates);
+    expect(parseGpxText(xml!).provenance).toBe("planned");
+  });
+
+  it("keeps an explicit meeting point instead of adding a second derived waypoint", () => {
+    const coordinates: [number, number][] = [[48.82, 2.32], [48.83, 2.33]];
+    const xml = buildActionRouteGpxDocument({
+      drawing: { coordinates },
+      drawingSource: "manual",
+      midpointCoordinates: { latitude: 48.821, longitude: 2.321 },
+    });
+    expect(xml?.match(/<type>meetingPoint<\/type>/g)).toHaveLength(1);
+    expect(xml).toContain('lat="48.821" lon="2.321"');
+    expect(parseGpxText(xml!).drawing.coordinates).toEqual(coordinates);
   });
 
   it("emits one meetingPoint waypoint from the final operational geometry", () => {

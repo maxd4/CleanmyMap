@@ -148,7 +148,18 @@ function RouteResultSummary({
             Créneau utilisateur : {eventBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {actionBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes === null ? "Non disponible" : `${organizationMarginMinutes} min`}.
           </p>
           {serviceMinutes === null ? <p className="text-xs font-semibold text-amber-100/80">La durée d’action complète n’est pas encore fiable ; le planner conserve son fonctionnement avec le temps réseau disponible.</p> : null}
-          <MeetingPointDetails meetingPoint={data.meetingPoint} meetingOpportunities={data.meetingOpportunities} fr={fr} />
+          {groupRoutes.length > 1 && !data.meetingPoint ? (
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50" data-meeting-point-state="group-specific">
+              <p className="font-black">{fr ? "Pas de rendez-vous commun" : "No shared meeting point"}</p>
+              <p className="mt-1 text-xs font-semibold text-amber-100/75">
+                {fr
+                  ? "Les rendez-vous intermédiaires disponibles pour chaque groupe sont affichés dans leurs cartes respectives."
+                  : "Available intermediate meeting points for each group are shown in their respective cards."}
+              </p>
+            </div>
+          ) : (
+            <MeetingPointDetails meetingPoint={data.meetingPoint} meetingOpportunities={data.meetingOpportunities} fr={fr} />
+          )}
           {data.isLoop ? <p className="text-sm font-semibold text-emerald-100/80">
             {groupRoutes.length > 1
               ? `${data.volunteers} bénévoles · ${data.groupCount} groupes · ${data.multiRoute.totalDistanceKm.toFixed(2)} km cumulés`

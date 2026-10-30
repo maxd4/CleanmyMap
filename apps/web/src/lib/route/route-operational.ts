@@ -22,6 +22,12 @@ import { normalizeActionPreparationContract } from "@/lib/actions/preparation-co
 import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
+/**
+ * Maximum geodesic distance from a manual rendezvous to a final-trace segment.
+ * The boundary is deliberately strict: a larger residual leaves metrics null.
+ */
+export const MANUAL_MEETING_POINT_MAX_DISTANCE_METERS = 10 as const;
+const METERS_PER_DEGREE_LATITUDE = 111_320;
 
 type OperationalRouteState = "planner_copy" | "edited";
 export type OperationalRouteZoneKey = "departure" | "midpoint" | "arrival";
@@ -176,16 +182,61 @@ function projectKnownCoordinate(
   cumulativeDistances: readonly number[],
   coordinate: [number, number],
 ): Pick<MeetingPointProjection, "cumulativeDistanceKm" | "progress"> {
-  const coordinateIndex = coordinates.findIndex(
-    ([latitude, longitude]) => latitude === coordinate[0] && longitude === coordinate[1],
-  );
-  if (coordinateIndex < 0) {
-    return { cumulativeDistanceKm: null, progress: null };
+  let nearest:
+    | { distanceMeters: number; cumulativeDistanceKm: number }
+    | null = null;
+  for (let index = 1; index < coordinates.length; index += 1) {
+    const start = coordinates[index - 1]!;
+    const end = coordinates[index]!;
+    const referenceLatitude = (start[0] + end[0]) / 2;
+    const longitudeScale = METERS_PER_DEGREE_LATITUDE * Math.max(
+      Math.abs(Math.cos((referenceLatitude * Math.PI) / 180)),
+      Number.EPSILON,
+    );
+    const point = {
+      x: coordinate[1] * longitudeScale,
+      y: coordinate[0] * METERS_PER_DEGREE_LATITUDE,
+    };
+    const segmentStart = {
+      x: start[1] * longitudeScale,
+      y: start[0] * METERS_PER_DEGREE_LATITUDE,
+    };
+    const segmentEnd = {
+      x: end[1] * longitudeScale,
+      y: end[0] * METERS_PER_DEGREE_LATITUDE,
+    };
+    const deltaX = segmentEnd.x - segmentStart.x;
+    const deltaY = segmentEnd.y - segmentStart.y;
+    const segmentLengthSquared = deltaX ** 2 + deltaY ** 2;
+    const ratio = segmentLengthSquared > 0
+      ? Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - segmentStart.x) * deltaX + (point.y - segmentStart.y) * deltaY) /
+              segmentLengthSquared,
+          ),
+        )
+      : 0;
+    const projectedCoordinate: [number, number] = [
+      start[0] + (end[0] - start[0]) * ratio,
+      start[1] + (end[1] - start[1]) * ratio,
+    ];
+    const distanceMeters = haversineDistanceKm(coordinate, projectedCoordinate) * 1_000;
+    const cumulativeDistanceKm =
+      (cumulativeDistances[index - 1] ?? 0) +
+      (cumulativeDistances[index]! - (cumulativeDistances[index - 1] ?? 0)) * ratio;
+    if (!nearest || distanceMeters < nearest.distanceMeters) {
+      nearest = { distanceMeters, cumulativeDistanceKm };
+    }
   }
   const totalDistanceKm = cumulativeDistances.at(-1) ?? 0;
+  if (!nearest || nearest.distanceMeters > MANUAL_MEETING_POINT_MAX_DISTANCE_METERS) {
+    return { cumulativeDistanceKm: null, progress: null };
+  }
   return {
-    cumulativeDistanceKm: cumulativeDistances[coordinateIndex] ?? null,
-    progress: totalDistanceKm > 0 ? (cumulativeDistances[coordinateIndex] ?? 0) / totalDistanceKm : null,
+    cumulativeDistanceKm: nearest.cumulativeDistanceKm,
+    progress: totalDistanceKm > 0 ? nearest.cumulativeDistanceKm / totalDistanceKm : null,
   };
 }
 
@@ -195,7 +246,7 @@ function projectKnownCoordinate(
  * the cumulative geodesic distance, never at the central coordinate index.
  */
 export function projectMeetingPointFromGeometry(
-  geometry: Pick<RouteGeometry, "coordinates" | "durationMinutes">,
+  geometry: Pick<RouteGeometry, "coordinates"> & Partial<Pick<RouteGeometry, "durationMinutes">>,
   candidate: MeetingPointCandidate = {},
 ): MeetingPointProjection | null {
   if (!isUsableGeometryCoordinates(geometry.coordinates)) return null;
@@ -210,14 +261,20 @@ export function projectMeetingPointFromGeometry(
   const totalDistanceKm = cumulativeDistances.at(-1) ?? 0;
   if (!Number.isFinite(totalDistanceKm) || totalDistanceKm <= 0) return null;
 
-  const provenance = candidate.provenance ?? "final_geometry_midpoint";
-  const coordinate = provenance === "final_geometry_midpoint" || !isFiniteCoordinate(candidate.coordinate)
+  const candidateCoordinate = isFiniteCoordinate(candidate.coordinate) ? candidate.coordinate : null;
+  const provenance = candidateCoordinate && candidate.provenance && candidate.provenance !== "final_geometry_midpoint"
+    ? candidate.provenance
+    : "final_geometry_midpoint";
+  const coordinate = provenance === "final_geometry_midpoint"
     ? projectAtCumulativeDistance(geometry.coordinates, cumulativeDistances, totalDistanceKm / 2)
-    : candidate.coordinate;
+    : candidateCoordinate!;
   const metrics = provenance === "final_geometry_midpoint"
     ? { cumulativeDistanceKm: totalDistanceKm / 2, progress: 0.5 }
     : projectKnownCoordinate(geometry.coordinates, cumulativeDistances, coordinate);
-  const duration = metrics.progress !== null && Number.isFinite(geometry.durationMinutes) && geometry.durationMinutes >= 0
+  const duration = metrics.progress !== null &&
+    typeof geometry.durationMinutes === "number" &&
+    Number.isFinite(geometry.durationMinutes) &&
+    geometry.durationMinutes >= 0
     ? geometry.durationMinutes * metrics.progress
     : null;
 
@@ -296,7 +353,9 @@ export function updateOperationalRouteZone(
     ...patch,
   };
   if (zone === "midpoint" && "coordinate" in patch && patch.coordinate !== operationalRoute.zones.midpoint.coordinate) {
-    nextZone.provenance = patch.provenance ?? "manual_midpoint";
+    nextZone.provenance = patch.coordinate === null
+      ? undefined
+      : patch.provenance ?? "manual_midpoint";
   }
   return {
     ...structuredClone(operationalRoute),

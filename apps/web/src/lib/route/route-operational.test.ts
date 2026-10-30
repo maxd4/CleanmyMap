@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import {
+  MANUAL_MEETING_POINT_MAX_DISTANCE_METERS,
   createOperationalRouteFromRecommendation,
   createPlannerActionPreparationData,
   getOperationalRouteMeetingPoint,
@@ -13,6 +14,7 @@ import {
   projectMeetingPointFromGeometry,
   updateOperationalRouteZone,
 } from "./route-operational";
+import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 import {
   MAX_OPERATIONAL_ROUTE_LOOPS,
   MAX_ROUTE_GEOMETRY_COORDINATES,
@@ -95,6 +97,77 @@ describe("operational route contract", () => {
       estimatedDurationMinutes: null,
       provenance: "manual_midpoint",
     });
+  });
+
+  it("projects manual midpoints on vertices and segments within the metric tolerance", () => {
+    const manualGeometry = {
+      ...geometry,
+      coordinates: [
+        [48.85, 2.34],
+        [48.851, 2.341],
+        [48.852, 2.342],
+      ] as [number, number][],
+      durationMinutes: 40,
+    };
+    const firstSegmentKm = haversineDistanceKm(manualGeometry.coordinates[0]!, manualGeometry.coordinates[1]!);
+    const vertex = projectMeetingPointFromGeometry(manualGeometry, {
+      coordinate: manualGeometry.coordinates[1],
+      provenance: "manual_midpoint",
+    });
+    const segment = projectMeetingPointFromGeometry(manualGeometry, {
+      coordinate: [48.8505, 2.3405],
+      provenance: "manual_midpoint",
+    });
+
+    expect(vertex).toMatchObject({
+      coordinates: manualGeometry.coordinates[1],
+      provenance: "manual_midpoint",
+    });
+    expect(vertex?.cumulativeDistanceKm).toBeCloseTo(firstSegmentKm, 6);
+    expect(vertex?.progress).toBeCloseTo(0.5, 5);
+    expect(vertex?.estimatedDurationMinutes).toBeCloseTo(20, 3);
+    expect(segment).toMatchObject({
+      coordinates: [48.8505, 2.3405],
+      provenance: "manual_midpoint",
+    });
+    expect(segment?.cumulativeDistanceKm).toBeCloseTo(firstSegmentKm / 2, 6);
+    expect(segment?.progress).toBeCloseTo(0.25, 5);
+    expect(segment?.estimatedDurationMinutes).toBeCloseTo(10, 3);
+    expect(MANUAL_MEETING_POINT_MAX_DISTANCE_METERS).toBe(10);
+  });
+
+  it("preserves an off-trace manual coordinate while leaving all derived metrics unknown", () => {
+    const manualGeometry = {
+      ...geometry,
+      coordinates: [[48.85, 2.34], [48.851, 2.341]] as [number, number][],
+      durationMinutes: 40,
+    };
+    const projection = projectMeetingPointFromGeometry(manualGeometry, {
+      coordinate: [48.8505, 2.3407],
+      provenance: "manual_midpoint",
+    });
+
+    expect(projection).toMatchObject({
+      coordinates: [48.8505, 2.3407],
+      cumulativeDistanceKm: null,
+      progress: null,
+      estimatedDurationMinutes: null,
+      provenance: "manual_midpoint",
+    });
+  });
+
+  it("clears manual provenance when a midpoint is deleted and restores a derived projection", () => {
+    const single = createOperationalRouteFromRecommendation({ ...recommendation, groupCount: 1, groupRoutes: [] });
+    const manual = updateOperationalRouteZone(single, "midpoint", {
+      coordinate: [48.8505, 2.3405],
+    });
+    const cleared = updateOperationalRouteZone(manual, "midpoint", { coordinate: null });
+    const projection = getOperationalRouteMeetingPoint(cleared);
+
+    expect(cleared.zones.midpoint.coordinate).toBeNull();
+    expect(cleared.zones.midpoint.provenance).toBeUndefined();
+    expect(projection?.provenance).toBe("final_geometry_midpoint");
+    expect(projection?.coordinates).not.toEqual([48.8505, 2.3405]);
   });
 
   it("returns no projection for an unreliable trace", () => {
