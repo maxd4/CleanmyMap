@@ -23,6 +23,7 @@ type UseChatShellContextParams = {
   initialMessage?: string;
   initialActionId?: string | null;
   initialMessageId?: string | null;
+  initialBuddyRequestId?: string | null;
   messagerieMode: boolean;
   activeFeedbackId: string | null;
   setActiveFeedbackId: Dispatch<SetStateAction<string | null>>;
@@ -37,6 +38,7 @@ export function useChatShellContext({
   initialMessage,
   initialActionId,
   initialMessageId,
+  initialBuddyRequestId,
   messagerieMode,
   activeFeedbackId,
   setActiveFeedbackId,
@@ -101,6 +103,7 @@ export function useChatShellContext({
 
   return {
     ...state,
+    buddyRequestId: initialBuddyRequestId ?? null,
     ...runtime,
     featureFlags,
     setActiveChannelType,

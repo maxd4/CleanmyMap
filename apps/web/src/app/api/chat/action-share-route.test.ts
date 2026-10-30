@@ -10,6 +10,7 @@ const rateResponseMock = vi.hoisted(() => vi.fn());
 const reserveMock = vi.hoisted(() => vi.fn());
 const notificationsMock = vi.hoisted(() => vi.fn());
 const loadActionMock = vi.hoisted(() => vi.fn());
+const buddyContactMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
@@ -19,6 +20,7 @@ vi.mock("@/lib/rate-limit/server", () => ({ verifyRateLimit: verifyMock, createS
 vi.mock("@/lib/community/discussion-rate-limit", () => ({ reserveDiscussionMessageSlot: reserveMock, toDiscussionRateLimitErrorPayload: vi.fn() }));
 vi.mock("@/lib/chat/chat-notifications", () => ({ createChatNotificationsForMessage: notificationsMock }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
+vi.mock("@/lib/actions/action-buddy", () => ({ resolveActionBuddyContact: buddyContactMock }));
 
 function futureAction(id: string) {
   return {
@@ -42,6 +44,7 @@ describe("POST /api/chat action shares", () => {
     reserveMock.mockResolvedValue({ allowed: true });
     notificationsMock.mockResolvedValue(undefined);
     loadActionMock.mockResolvedValue(null);
+    buddyContactMock.mockResolvedValue({ request: { id: "buddy-request-1", status: "matched" }, recipientUserId: "user-2" });
   });
 
   it("persists only action_id and uses normal chat notification fan-out", async () => {
@@ -122,5 +125,26 @@ describe("POST /api/chat action shares", () => {
     const response = await POST(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ channelType: "dm", recipientId: "user-2", actionId, content: "Résultat" }) }));
     expect(response.status).toBe(201);
     expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(expect.objectContaining({ action_id: actionId, recipient_id: "user-2" }));
+  });
+
+  it("allows a matched buddy to start the canonical DM without using action-share consent", async () => {
+    const actionId = "55555555-5555-4555-8555-555555555555";
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "buddy-message", created_at: "2098-12-01T10:00:00.000Z", content: "Bonjour", channel_type: "dm", sender_id: "user-1", recipient_id: "user-2", arrondissement_id: null, zone_name: null, action_id: actionId },
+      dmRows: [],
+    });
+    rlsMock.mockResolvedValue(supabaseMock.supabase);
+    serverMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ channelType: "dm", recipientId: "user-2", actionId, buddyRequestId: "66666666-6666-4666-8666-666666666666", content: "Bonjour" }) }));
+    expect(response.status).toBe(201);
+    expect(buddyContactMock).toHaveBeenCalledWith(supabaseMock.serviceSupabase, {
+      actionId,
+      requestId: "66666666-6666-4666-8666-666666666666",
+      userId: "user-1",
+    });
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(expect.objectContaining({ action_id: actionId, channel_type: "dm", recipient_id: "user-2" }));
   });
 });

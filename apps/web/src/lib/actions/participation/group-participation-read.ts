@@ -161,6 +161,20 @@ export async function loadJoinableActions(
     userId: params.userId,
   });
 
+  // This is an optional private orientation signal only. It reads final,
+  // confirmed history and never establishes eligibility for the future action.
+  let hasConfirmedFinalParticipation: boolean | null = null;
+  if (params.userId) {
+    const historyResult = await supabase
+      .from("action_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", params.userId)
+      .eq("participation_status", "confirmed");
+    if (!historyResult.error) {
+      hasConfirmedFinalParticipation = Number(historyResult.count ?? 0) > 0;
+    }
+  }
+
   const participantCounts = new Map<string, number>();
   const participantSummaryByActionId = new Map<string, ActionParticipantSummary>();
   for (const summary of participantSummaries) {
@@ -174,6 +188,7 @@ export async function loadJoinableActions(
       metadata,
       participantCounts.get(action.id) ?? 0,
       participantSummaryByActionId.get(action.id) ?? null,
+      hasConfirmedFinalParticipation,
     ),
   );
 }

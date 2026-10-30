@@ -94,6 +94,29 @@ describe("Rejoindre une action content contract", () => {
     expect(markup).toContain("Quai de Seine");
   });
 
+  it("shows the private buddy panel only after a confirmed registration", () => {
+    const confirmedMarkup = renderCard(buildItem({ joined: true, participationStatus: "confirmed" }));
+    expect(confirmedMarkup).toContain("binôme");
+    expect(confirmedMarkup).toContain("Chargement du panneau binôme");
+    expect(confirmedMarkup).not.toContain("user-");
+
+    const pendingMarkup = renderCard(buildItem({ awaitingApproval: true, participationStatus: "pending" }));
+    expect(pendingMarkup).not.toContain("Besoin d'un binôme ?");
+    const anonymousMarkup = renderToStaticMarkup(
+      <ActionCard
+        item={buildItem({ joined: true, participationStatus: "confirmed" })}
+        index={0}
+        fr
+        authenticated={false}
+        joining={false}
+        leaving={false}
+        onRequestJoin={() => undefined}
+        onRequestLeave={() => undefined}
+      />,
+    );
+    expect(anonymousMarkup).not.toContain("Besoin d'un binôme ?");
+  });
+
   it("shows organizer information separately from catalogue recommendations", () => {
     const markup = renderCard(buildItem({
       practicalInfo: {

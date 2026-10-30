@@ -297,3 +297,30 @@ l'historique. Un mentor peut retirer sa disponibilité ou une proposition selon
 son ownership, y compris lorsque les nouvelles demandes sont fermées ; ces
 opérations ne rouvrent jamais une demande et ne forment pas de binôme après le
 début de l'action.
+
+### Interface et contact privé
+
+Dans le parcours `Rejoindre une action`, le panneau `Besoin d'un binôme ?`
+reste privé et n'est rendu qu'après confirmation de l'inscription. Il affiche
+les CTA correspondant au rôle et au statut courant : demande, annulation,
+disponibilité, proposition, acceptation, refus, retrait et annulation du match.
+Chaque mutation attend la réponse serveur puis relit l'état canonique ; les
+états de chargement, vide, erreur et conflit sont explicites et aucun succès
+optimiste fictif n'est affiché.
+
+Les demandes ouvertes et propositions sont projetées sans identité de
+demandeur ou de mentor. Après `matched`, les deux acteurs reçoivent seulement
+le nom d'affichage et le handle de leur partenaire, sans email, téléphone ni
+identifiant Clerk rendu dans l'interface. Le signal « première action connue »
+réutilise, lorsqu'il est disponible, la présence finale `confirmed` de
+`action_participants`; une absence d'historique est inconnue et ne bloque pas
+un bénévole expérimenté.
+
+Le bouton `Contacter mon binôme` réutilise le DM canonique et porte un
+`buddyRequestId` technique. Le serveur vérifie à l'ouverture d'écriture que la
+demande est toujours `matched` et que l'acteur est l'un des deux participants.
+Il ne détourne pas `action_share_contact_requests`, ne crée pas de table de
+consentement concurrente et n'envoie aucun message automatique avant match.
+Les notifications de proposition, d'acceptation et d'annulation pertinente
+restent dans `app_notifications`, de type `community`, avec déduplication par
+événement et destinataire.

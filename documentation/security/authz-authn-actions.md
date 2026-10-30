@@ -384,6 +384,7 @@ proposition et l'inscription future
 | créer une demande | inscrit confirmé | une demande `open` ou `matched` par demandeur/action |
 | proposer un binôme | mentor confirmé et disponible | demande de la même action, ouverte, mentor distinct |
 | accepter | propriétaire de la demande | RPC `service_role` uniquement, revalidation et verrous SQL |
+| refuser une proposition | propriétaire de la demande | ownership strict, proposition `pending` uniquement |
 | décliner/retirer une proposition | mentor de la proposition | ownership strict et états terminaux conservés |
 | annuler une demande | demandeur | aucune réouverture ; les propositions `pending` deviennent `withdrawn` |
 
@@ -391,3 +392,14 @@ Les rôles organisateur, administrateur ou compte avec inscription `pending`
 n'obtiennent aucun droit implicite. Les rôles navigateur n'ont ni grant direct
 sur les trois tables ni droit d'exécuter `accept_action_buddy_proposal` ; le
 `service_role` reste confiné au serveur après les contrôles HTTP.
+
+Le panneau `Rejoindre une action` n'est rendu qu'après inscription `confirmed`.
+Il ne projette aucune liste publique ni identité dans les demandes ouvertes ou
+les propositions. Après `matched`, une projection minimale du partenaire est
+retournée aux deux acteurs. Le contact réutilise `app_messages` et le DM
+canonique ; un premier envoi sans conversation existante doit porter
+`actionId + buddyRequestId`, puis `resolveActionBuddyContact` vérifie à nouveau
+le match, le statut et l'acteur de session. Cette voie ne réutilise pas
+`action_share_contact_requests`, qui reste limitée au partage d'action. Les
+notifications buddy restent dans `app_notifications`, de type `community`, et
+sont dédupliquées par une clé d'événement stable et le destinataire.

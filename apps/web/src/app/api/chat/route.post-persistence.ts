@@ -77,12 +77,12 @@ async function persistFeedbackReply(context: ChatPostPersistenceContext): Promis
 
 async function persistRegularMessage(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
   const { serviceSupabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName, relatedEvent } = context;
-  const { data, messageKind, topicId, isExternalActionShare } = validated;
+  const { data, messageKind, topicId, isExternalActionShare, isBuddyContact } = validated;
   const rawInsertResult: unknown = await serviceSupabase.from("app_messages").insert({
     sender_id: userId, recipient_id: recipientId, channel_type: data.channelType, conversation_id: actionConversationId,
     topic_id: topicId, message_kind: messageKind, related_event_id: relatedEvent?.id ?? null,
     arrondissement_id: targetArrondissementId, zone_name: targetZoneName, content: data.content,
-    ...buildChatAttachmentPersistence(data), action_id: data.actionId && isExternalActionShare ? data.actionId : null,
+    ...buildChatAttachmentPersistence(data), action_id: data.actionId && (isExternalActionShare || isBuddyContact) ? data.actionId : null,
   }).select(messageSelect).single();
   const insertResult = parseChatSupabaseResult(rawInsertResult);
   if (insertResult.error) return handleApiError(insertResult.error, "POST /api/chat (insert)");

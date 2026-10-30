@@ -31,6 +31,7 @@ type UseChatSubmitParams = {
   isUploading: boolean;
   activeChannelType: ChatChannelType;
   activeActionId?: string | null;
+  buddyRequestId?: string | null;
   activeTopicId: ChatTopicId | null;
   messageKind: ChatMessageKind;
   pollOptions: string[];
@@ -119,6 +120,7 @@ async function sendPreparedChatMessage(params: {
   attachmentPath?: string;
   attachmentType?: string;
   attachmentSize?: number;
+  buddyRequestId?: string | null;
   feedbackId?: string | null;
   feedbackOperationIdRef: React.MutableRefObject<string | null>;
   sendChatMessage: (params: SendChatMessageParams) => Promise<ChatMessage>;
@@ -150,6 +152,7 @@ async function sendPreparedChatMessage(params: {
     body: {
       channelType: params.activeChannelType,
       actionId: params.activeChannelType === "action" ? params.activeActionId ?? undefined : undefined,
+      buddyRequestId: params.activeChannelType === "dm" ? params.buddyRequestId ?? undefined : undefined,
       messageKind: params.messageKind,
       pollOptions: params.messageKind === "poll" ? params.pollOptions : undefined,
       relatedEventId: params.relatedEvent?.id,
@@ -186,6 +189,7 @@ export function useChatSubmit({
   isUploading,
   activeChannelType,
   activeActionId,
+  buddyRequestId,
   activeTopicId,
   messageKind,
   pollOptions,
@@ -252,6 +256,7 @@ export function useChatSubmit({
               currentMessage,
               activeChannelType,
               activeActionId,
+              buddyRequestId,
               activeTopicId,
               messageKind,
               pollOptions,
@@ -327,6 +332,7 @@ export function useChatSubmit({
     activeChannelType,
     feedbackId,
     activeActionId,
+    buddyRequestId,
     activeTopicId,
     messageKind,
     pollOptions,

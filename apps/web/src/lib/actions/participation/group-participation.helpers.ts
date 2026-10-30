@@ -164,6 +164,7 @@ export function buildJoinableItem(
   metadata: JoinableActionMetadata,
   participantsCount: number,
   participantSummary: ActionParticipantSummary | null,
+  hasConfirmedFinalParticipation: boolean | null = null,
 ): JoinableActionItem {
   return {
     ...buildPublicActionFields(action),
@@ -178,6 +179,7 @@ export function buildJoinableItem(
     participationUpdatedAt:
       participantSummary?.myUpdatedAt ?? participantSummary?.myJoinedAt ?? null,
     groupJoinEnabled: metadata.groupJoinEnabled,
+    hasConfirmedFinalParticipation,
     pendingRequestsCount: resolvePendingRequestsCount(participantSummary, participantsCount),
     practicalInfo: buildPublicActionPracticalInformation(action.preparation_data, {
       confirmedParticipants: participantSummary ? participantsCount : null,

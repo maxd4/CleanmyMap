@@ -88,7 +88,7 @@ pour un résultat non vide. Aucun cron, email ou abonnement implicite n'est
 introduit. Les contrats SQL statiques et le pgTAP sont présents ; leur
 exécution PostgreSQL reste à distinguer dans les preuves de validation.
 
-### CURRENT — matching buddy des actions futures (6C1)
+### CURRENT — matching et échanges privés buddy des actions futures (6C2)
 
 La migration append-only `20261030000030_action_buddy_matching.sql` ajoute les
 tables privées `action_buddy_availability`, `action_buddy_requests` et
@@ -108,3 +108,13 @@ les états. Le pgtap `action-buddy-contract.pgtap.sql` couvre contraintes,
 grants, RLS, refus métier, replay et atomicité séquentielle ; la preuve
 multi-session est `e2e/action-buddy-concurrency.mjs`. Leur présence Git ne
 prouve pas une exécution PostgreSQL distante ou locale.
+
+Le panneau web reste conditionné à l'inscription future `confirmed` et ne
+projette aucune liste publique. Les demandes ouvertes et propositions n'ont
+pas d'identité affichée ; après un match, les deux acteurs reçoivent une
+projection minimale du partenaire. Les événements de proposition,
+acceptation et annulation pertinente utilisent `app_notifications` de type
+`community`, avec `eventKey` unique par destinataire. Le premier DM réutilise
+`app_messages` et vérifie le match `action_buddy_requests` au moment de
+l'envoi via `buddyRequestId`; `action_share_contact_requests` reste réservé au
+partage d'action.

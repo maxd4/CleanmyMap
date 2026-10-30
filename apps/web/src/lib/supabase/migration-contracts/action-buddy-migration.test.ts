@@ -64,4 +64,5 @@ describe("action buddy matching migration contract", () => {
     expect(migration).toContain("withdraw_action_buddy_proposals_on_request_cancel");
     expect(migration).toContain("enforce_action_buddy_proposal_request_open");
   });
+
 });

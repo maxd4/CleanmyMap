@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { buildChannelAccessHint, extractZoneContextFromMetadata } from "@/lib/chat/channels";
 import { resolveActionTerritoryDestination } from "@/lib/chat/action-sharing";
 import { createActionShareRequest } from "@/lib/chat/action-share-requests";
+import { resolveActionBuddyContact } from "@/lib/actions/action-buddy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { handleApiError } from "@/lib/http/api-errors";
@@ -55,12 +56,14 @@ async function resolveDmDestination({
   userId,
   data,
   isExternalActionShare,
+  isBuddyContact,
 }: {
   supabase: ChatSupabaseClient;
   serviceSupabase: ServiceSupabaseClient;
   userId: string;
   data: ValidatedChatPost["data"];
   isExternalActionShare: boolean;
+  isBuddyContact: boolean;
 }): Promise<DestinationPart | Response> {
   const recipientId = data.recipientId?.trim() ?? null;
   if (!recipientId) {
@@ -74,6 +77,22 @@ async function resolveDmDestination({
       { error: "Destinataire invalide", hint: "Vous ne pouvez pas vous partager une action." },
       { status: 400 },
     );
+  }
+  if (isBuddyContact) {
+    const actionId = data.actionId;
+    const requestId = data.buddyRequestId;
+    if (!actionId || !requestId) {
+      return NextResponse.json({ error: "Contact binôme invalide" }, { status: 400 });
+    }
+    const contact = await resolveActionBuddyContact(serviceSupabase, {
+      actionId,
+      requestId,
+      userId,
+    });
+    if (contact.recipientUserId !== recipientId) {
+      return NextResponse.json({ error: "Destinataire binôme invalide" }, { status: 403 });
+    }
+    return { recipientId, actionConversationId: null, targetArrondissementId: null, targetZoneName: null };
   }
   if (isExternalActionShare && !(await hasExistingDmConversation(supabase, recipientId))) {
     const requestResult = await createActionShareRequest(serviceSupabase, {
@@ -168,6 +187,7 @@ async function resolveChannelDestination({
   data,
   zone,
   isExternalActionShare,
+  isBuddyContact,
 }: {
   supabase: ChatSupabaseClient;
   serviceSupabase: ServiceSupabaseClient;
@@ -175,9 +195,10 @@ async function resolveChannelDestination({
   data: ValidatedChatPost["data"];
   zone: ChatPostZoneContext;
   isExternalActionShare: boolean;
+  isBuddyContact: boolean;
 }): Promise<DestinationPart | Response> {
   if (data.channelType === "dm") {
-    return resolveDmDestination({ supabase, serviceSupabase, userId, data, isExternalActionShare });
+    return resolveDmDestination({ supabase, serviceSupabase, userId, data, isExternalActionShare, isBuddyContact });
   }
   if (data.channelType === "territory") return resolveTerritoryDestination(data, zone);
   if (data.channelType === "bug_report") return resolveBugReportDestination();
@@ -282,6 +303,7 @@ export async function resolveChatPostDestination({
   validated,
   zone,
   isExternalActionShare,
+  isBuddyContact,
 }: {
   supabase: ChatSupabaseClient;
   serviceSupabase: ServiceSupabaseClient;
@@ -289,6 +311,7 @@ export async function resolveChatPostDestination({
   validated: ValidatedChatPost;
   zone: ChatPostZoneContext;
   isExternalActionShare: boolean;
+  isBuddyContact: boolean;
 }): Promise<ChatPostDestination | Response> {
   const { data } = validated;
   let relatedEvent: ChatRelatedEvent | null = null;
@@ -311,6 +334,7 @@ export async function resolveChatPostDestination({
     data,
     zone,
     isExternalActionShare,
+    isBuddyContact,
   });
   if (destination instanceof Response) return destination;
   return {

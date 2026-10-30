@@ -32,12 +32,13 @@ export const chatAuthorizationContract = {
         "admin/creator role",
       ],
       actual:
-        "auth() + getCurrentUserIdentity + canAccessChatChannel + resolveActionDiscussionAccess; inserted sender_id is the current user and sensitive reads/writes use Clerk-RLS",
+        "auth() + getCurrentUserIdentity + canAccessChatChannel + resolveActionDiscussionAccess; inserted sender_id is the current user, and a first DM for a matched buddy requires actionId + buddyRequestId to pass resolveActionBuddyContact",
       evidence: [
         "auth()",
         "getCurrentUserIdentity",
         "validateChatPostRequest",
         "processValidatedChatPost",
+        "resolveActionBuddyContact",
         "userId",
       ],
       evidenceScope: "module",

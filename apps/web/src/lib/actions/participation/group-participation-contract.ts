@@ -122,6 +122,8 @@ export type JoinableActionItem = {
   participationSource: JoinableParticipationSource | null;
   participationUpdatedAt: string | null;
   groupJoinEnabled: boolean;
+  /** Optional private-context signal; it never gates registration or matching. */
+  hasConfirmedFinalParticipation?: boolean | null;
   pendingRequestsCount: number;
   practicalInfo: PublicActionPracticalInformation;
 };

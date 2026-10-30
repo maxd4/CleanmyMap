@@ -1,6 +1,6 @@
 begin;
 
-select plan(38);
+select plan(42);
 
 select has_table('public', 'action_buddy_availability', 'buddy availability table exists');
 select has_table('public', 'action_buddy_requests', 'buddy requests table exists');
@@ -145,6 +145,16 @@ select is(
   'selected proposal is accepted'
 );
 select is(
+  (select count(*)::integer from public.app_notifications where user_id = 'requester-one' and type = 'community' and payload ->> 'kind' = 'action_buddy_proposal_created' and payload ->> 'proposalId' = (select proposal_one::text from action_buddy_fixture)),
+  1,
+  'new proposal creates one community notification for the requester'
+);
+select is(
+  (select count(*)::integer from public.app_notifications where user_id = 'mentor-one' and type = 'community' and payload ->> 'kind' = 'action_buddy_proposal_accepted' and payload ->> 'proposalId' = (select proposal_one::text from action_buddy_fixture)),
+  1,
+  'accepted proposal creates one community notification for the mentor'
+);
+select is(
   (select status from public.action_buddy_proposals where id = (select proposal_two from action_buddy_fixture)),
   'pending',
   'a competing request remains pending until its own acceptance is attempted'
@@ -186,6 +196,22 @@ select is(
   (select status from public.action_buddy_proposals where id = (select proposal_cancel from action_buddy_fixture)),
   'withdrawn',
   'cancelling a request withdraws its pending proposals atomically'
+);
+update public.action_buddy_requests
+set status = 'cancelled'
+where id = (select request_one from action_buddy_fixture);
+select is(
+  (select count(*)::integer from public.app_notifications where user_id = 'mentor-one' and type = 'community' and payload ->> 'kind' = 'action_buddy_request_cancelled' and payload ->> 'requestId' = (select request_one::text from action_buddy_fixture)),
+  1,
+  'cancelling a matched request notifies the former mentor once'
+);
+update public.action_buddy_requests
+set status = 'cancelled'
+where id = (select request_one from action_buddy_fixture);
+select is(
+  (select count(*)::integer from public.app_notifications where user_id = 'mentor-one' and type = 'community' and payload ->> 'kind' = 'action_buddy_request_cancelled' and payload ->> 'requestId' = (select request_one::text from action_buddy_fixture)),
+  1,
+  'replaying cancellation does not duplicate the notification'
 );
 
 reset role;

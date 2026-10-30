@@ -39,6 +39,15 @@ export type ActionBuddyState = {
   availability: ActionBuddyAvailabilityRow | null;
   request: ActionBuddyRequestRow | null;
   proposals: ActionBuddyProposalRow[];
+  sentProposals: ActionBuddyProposalRow[];
+  receivedProposals: ActionBuddyProposalRow[];
+  openRequests: Array<Pick<ActionBuddyRequestRow, "id" | "created_at">>;
+  matchedRequest: ActionBuddyRequestRow | null;
+  matchedPartner: {
+    userId: string;
+    displayName: string;
+    handle: string | null;
+  } | null;
 };
 
 function isUniqueViolation(error: unknown): boolean {
@@ -187,6 +196,69 @@ async function loadMentorProposals(
   });
 }
 
+async function loadOpenRequests(
+  supabase: SupabaseClient,
+  actionId: string,
+  excludedRequesterUserId: string,
+): Promise<Array<Pick<ActionBuddyRequestRow, "id" | "created_at">>> {
+  const result = await supabase
+    .from("action_buddy_requests")
+    .select("id, created_at")
+    .eq("action_id", actionId)
+    .eq("status", "open")
+    .neq("requester_user_id", excludedRequesterUserId)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  if (result.error) throwDatabaseError(result.error);
+  return (result.data ?? []) as Array<Pick<ActionBuddyRequestRow, "id" | "created_at">>;
+}
+
+async function loadMatchedRequestForMentor(
+  supabase: SupabaseClient,
+  actionId: string,
+  mentorUserId: string,
+): Promise<ActionBuddyRequestRow | null> {
+  const result = await supabase
+    .from("action_buddy_requests")
+    .select(REQUEST_COLUMNS)
+    .eq("action_id", actionId)
+    .eq("status", "matched")
+    .eq("matched_mentor_user_id", mentorUserId)
+    .order("matched_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (result.error) throwDatabaseError(result.error);
+  return result.data as ActionBuddyRequestRow | null;
+}
+
+async function loadMatchedPartner(
+  supabase: SupabaseClient,
+  currentUserId: string,
+  request: ActionBuddyRequestRow | null,
+): Promise<ActionBuddyState["matchedPartner"]> {
+  if (!request || request.status !== "matched" || !request.matched_mentor_user_id) return null;
+  const partnerUserId = request.requester_user_id === currentUserId
+    ? request.matched_mentor_user_id
+    : request.requester_user_id;
+  const result = await supabase
+    .from("profiles")
+    .select("id, display_name, handle")
+    .eq("id", partnerUserId)
+    .maybeSingle();
+  if (result.error) throwDatabaseError(result.error);
+  if (!result.data) return { userId: partnerUserId, displayName: "Membre", handle: null };
+  return {
+    userId: partnerUserId,
+    displayName: typeof result.data.display_name === "string" && result.data.display_name.trim()
+      ? result.data.display_name.trim()
+      : "Membre",
+    handle: typeof result.data.handle === "string" && result.data.handle.trim()
+      ? result.data.handle.trim()
+      : null,
+  };
+}
+
 export async function loadActionBuddyState(
   supabase: SupabaseClient,
   params: { actionId: string; userId: string },
@@ -197,18 +269,32 @@ export async function loadActionBuddyState(
   }
   await assertConfirmedRegistration(supabase, params.actionId, params.userId);
 
-  const [availability, request] = await Promise.all([
+  const [availability, request, matchedRequestForMentor] = await Promise.all([
     loadAvailability(supabase, params.actionId, params.userId),
     loadLatestRequest(supabase, params.actionId, params.userId),
+    loadMatchedRequestForMentor(supabase, params.actionId, params.userId),
   ]);
-  const [requestProposals, mentorProposals] = await Promise.all([
+  const [requestProposals, mentorProposals, openRequests] = await Promise.all([
     request ? loadRequestProposals(supabase, request.id) : Promise.resolve([]),
     loadMentorProposals(supabase, params.actionId, params.userId),
+    availability ? loadOpenRequests(supabase, params.actionId, params.userId) : Promise.resolve([]),
   ]);
   const proposals = [...new Map(
     [...requestProposals, ...mentorProposals].map((proposal) => [proposal.id, proposal]),
   ).values()];
-  return { actionId: params.actionId, availability, request, proposals };
+  const matchedRequest = request?.status === "matched" ? request : matchedRequestForMentor;
+  const matchedPartner = await loadMatchedPartner(supabase, params.userId, matchedRequest);
+  return {
+    actionId: params.actionId,
+    availability,
+    request,
+    proposals,
+    sentProposals: mentorProposals,
+    receivedProposals: requestProposals,
+    openRequests,
+    matchedRequest,
+    matchedPartner,
+  };
 }
 
 export async function createActionBuddyRequest(
@@ -393,6 +479,34 @@ export async function declineActionBuddyProposal(
   return { proposal: result.data as ActionBuddyProposalRow, alreadyDeclined: false };
 }
 
+export async function rejectActionBuddyProposal(
+  supabase: SupabaseClient,
+  params: { actionId: string; proposalId: string; requesterUserId: string },
+): Promise<{ proposal: ActionBuddyProposalRow; alreadyDeclined: boolean }> {
+  const proposal = await loadProposal(supabase, params.proposalId);
+  const request = await loadRequestById(supabase, params.actionId, proposal.request_id);
+  if (request.requester_user_id !== params.requesterUserId) throw new ActionBuddyForbiddenError();
+  if (proposal.status === "declined") return { proposal, alreadyDeclined: true };
+  if (request.status !== "open" || proposal.status !== "pending") {
+    throw new ActionBuddyConflictError("Action buddy conflict: proposal is not actionable.");
+  }
+  const result = await supabase
+    .from("action_buddy_proposals")
+    .update({ status: "declined", resolved_at: new Date().toISOString() })
+    .eq("id", params.proposalId)
+    .eq("status", "pending")
+    .select(PROPOSAL_COLUMNS)
+    .maybeSingle();
+  if (result.error) {
+    if (isNoRowsUpdate(result.error)) {
+      throw new ActionBuddyConflictError("Action buddy conflict: proposal changed while declining.");
+    }
+    throwDatabaseError(result.error);
+  }
+  if (!result.data) throw new ActionBuddyConflictError("Action buddy conflict: proposal changed while declining.");
+  return { proposal: result.data as ActionBuddyProposalRow, alreadyDeclined: false };
+}
+
 export async function acceptActionBuddyProposal(
   supabase: SupabaseClient,
   params: { actionId: string; proposalId: string; requesterUserId: string },
@@ -414,4 +528,21 @@ export async function acceptActionBuddyProposal(
   }
   const row = Array.isArray(result.data) ? result.data[0] : result.data;
   return (row ?? {}) as Record<string, unknown>;
+}
+
+export async function resolveActionBuddyContact(
+  supabase: SupabaseClient,
+  params: { actionId: string; requestId: string; userId: string },
+): Promise<{ request: ActionBuddyRequestRow; recipientUserId: string }> {
+  const request = await loadRequestById(supabase, params.actionId, params.requestId);
+  if (request.status !== "matched" || !request.matched_mentor_user_id) {
+    throw new ActionBuddyConflictError("Action buddy contact is not authorized.");
+  }
+  if (request.requester_user_id === params.userId) {
+    return { request, recipientUserId: request.matched_mentor_user_id };
+  }
+  if (request.matched_mentor_user_id === params.userId) {
+    return { request, recipientUserId: request.requester_user_id };
+  }
+  throw new ActionBuddyForbiddenError("Action buddy contact belongs to another participant.");
 }

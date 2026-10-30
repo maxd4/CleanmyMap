@@ -10,6 +10,7 @@ import { ActionCardActions } from "./rejoindre-un-formulaire-section.card-action
 import { ActionPracticalInformation } from "./rejoindre-un-formulaire-section.practical-info";
 import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
+import { ActionBuddyPanel } from "./action-buddy-panel";
 
 export function PillBadge({
   tone,
@@ -268,6 +269,14 @@ export function ActionCard({
       </div>
 
       <ActionPracticalInformation info={item.practicalInfo} fr={fr} />
+
+      {authenticated && isPreAction && item.joined && !item.awaitingApproval ? (
+        <ActionBuddyPanel
+          actionId={item.id}
+          fr={fr}
+          hasConfirmedFinalParticipation={item.hasConfirmedFinalParticipation}
+        />
+      ) : null}
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
         <span className="flex flex-wrap items-center gap-2">

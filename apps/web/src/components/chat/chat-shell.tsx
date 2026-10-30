@@ -32,6 +32,7 @@ export type ChatShellProps = {
   initialAnnouncementTemplate?: CommunityAnnouncementTemplateKey | null;
   initialEventId?: string | null;
   initialContactRequestId?: string | null;
+  initialBuddyRequestId?: string | null;
   initialRelatedEvent?: ChatRelatedEvent | null;
   announcementEventRequested?: boolean;
   announcementEventLoading?: boolean;
@@ -57,6 +58,7 @@ export function ChatShell({
   initialAnnouncementTemplate = null,
   initialEventId = null,
   initialContactRequestId = null,
+  initialBuddyRequestId = null,
   initialRelatedEvent = null,
   announcementEventRequested = false,
   announcementEventLoading = false,
@@ -90,6 +92,7 @@ export function ChatShell({
     initialMessage,
     initialActionId,
     initialMessageId,
+    initialBuddyRequestId,
     messagerieMode,
     activeFeedbackId,
     setActiveFeedbackId,

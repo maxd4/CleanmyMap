@@ -413,3 +413,16 @@ disponibilité et les statuts, puis accepte une proposition et décline les
 concurrentes. Le verrou consultatif par action/mentor et les contraintes SQL
 protègent l'invariant sous concurrence. Les erreurs de conflit annulent toute
 la transaction ; les retraits et annulations conservent l'historique.
+
+L'interface privée 6C2 réutilise ces trois entités sans annuaire : une
+inscription confirmée est nécessaire avant l'affichage des CTA, les demandes
+ouvertes et propositions ne contiennent aucune identité projetée, et le match
+retourne seulement la projection minimale du partenaire aux deux acteurs. Un
+signal d'historique final `action_participants.confirmed` peut mettre en avant
+une première action connue ; il est informatif et ne participe jamais à
+l'éligibilité future. Les notifications de proposition, acceptation et
+annulation sont des événements `community` idempotents dans
+`app_notifications`. Le bouton de contact réutilise `app_messages` ; le
+serveur revalide l'appartenance au match à chaque envoi avec `buddyRequestId`.
+Le mécanisme `action_share_contact_requests` conserve sa sémantique exclusive
+de partage d'action.

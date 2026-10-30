@@ -28,7 +28,7 @@ export async function processValidatedChatPost({
   identity: NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>;
   validated: ValidatedChatPost;
 }) {
-  const { data, isExternalActionShare } = validated;
+  const { data, isExternalActionShare, isBuddyContact } = validated;
   const serviceSupabase = getSupabaseServerClient(true);
   let feedbackReplyContext: FeedbackReplyContext | null = null;
   const isPrivilegedFeedbackReply = Boolean(data.feedbackId) && ["admin", "max"].includes(identity.activeRole);
@@ -55,7 +55,7 @@ export async function processValidatedChatPost({
   if (!canAccessChatChannel(data.channelType, { roleLabel: identity.activeRole, hasArrondissement: zone.hasArrondissement, hasGreaterParisZone: zone.hasGreaterParisZone, zoneContext: zone.zoneContext })) {
     return NextResponse.json({ error: "Canal indisponible", hint: buildChannelAccessHint(data.channelType) }, { status: 403 });
   }
-  const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated, zone, isExternalActionShare });
+  const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated, zone, isExternalActionShare, isBuddyContact });
   if (destination instanceof Response) return destination;
   const quota = await reserveDiscussionMessageSlot(serviceSupabase, {
     userId,

@@ -524,6 +524,15 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/buddy/proposals/[proposalId]/reject": {
+    POST: {
+      expected: "Request owner rejects only a pending proposal received for their own action buddy request",
+      dimensions: ["authentication", "business permission", "ownership", "audit"],
+      actual: "requireAuthenticatedAccess + requester ownership and action-scoped request checks in rejectActionBuddyProposal",
+      evidence: ["requireAuthenticatedAccess", "rejectActionBuddyProposal"],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/buddy/proposals/[proposalId]/decline": {
     POST: {
       expected: "Only the proposed mentor declines their own pending proposal",

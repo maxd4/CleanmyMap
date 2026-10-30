@@ -198,6 +198,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const requestedEventId = searchParams.get("eventId");
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
   const requestedContactRequestId = searchParams.get("contactRequestId")?.trim() || null;
+  const requestedBuddyRequestId = searchParams.get("buddyRequestId")?.trim() || null;
   const requestedFeedbackId = searchParams.get("feedbackId")?.trim() || null;
 
   const requestedAnnouncementTemplate = buildInitialAnnouncementTemplate(requestedTemplate);
@@ -320,5 +321,6 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     initialMessageId,
     initialEventId: requestedEventId,
     initialContactRequestId: requestedContactRequestId,
+    initialBuddyRequestId: requestedBuddyRequestId,
   };
 }

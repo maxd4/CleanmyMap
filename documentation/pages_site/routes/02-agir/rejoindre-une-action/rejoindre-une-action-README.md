@@ -412,6 +412,31 @@ queue-empty
 confirmation dialog
 ```
 
+## Binôme privé sur une action future
+
+Une carte d'action future n'affiche le panneau `Besoin d'un binôme ?` qu'à un
+inscrit confirmé. Un compte anonyme, non inscrit, `pending` ou annulé ne voit
+aucun CTA de binôme. Le panneau conserve ses états `loading`, `empty`, `error`,
+`conflict` et `success` et relit l'état serveur après chaque mutation.
+
+Le demandeur peut créer ou annuler sa demande et accepter ou refuser une
+proposition. Un inscrit confirmé peut publier sa disponibilité, la retirer et
+proposer son aide aux demandes ouvertes de cette action. Les identités ne sont
+pas affichées dans les demandes ouvertes ni les propositions ; après un match,
+seule la projection minimale du partenaire est visible aux deux acteurs.
+L'historique final confirmé peut signaler une première action connue, mais une
+absence d'historique reste inconnue et ne bloque jamais un bénévole expérimenté.
+
+Le panneau ne lit jamais `action_participants` pour établir l'inscription
+future : cette table sert uniquement au signal optionnel d'historique final.
+
+Les propositions, acceptations et annulations pertinentes alimentent
+`app_notifications` avec `type=community`, `actionId`, `requestId` et/ou
+`proposalId`, sous une clé d'événement idempotente. Après un match, le bouton
+`Contacter mon binôme` ouvre le DM canonique avec le `buddyRequestId` ; l'API
+revalide le match et le destinataire au moment de chaque envoi. Le mécanisme
+`action_share_contact_requests` reste réservé au partage d'action.
+
 ## Statut documentaire
 
 ```txt

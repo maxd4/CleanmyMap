@@ -22,14 +22,14 @@ export async function POST(request: Request) {
   if (!identity) return unauthorizedJsonResponse();
   const validation = await validateChatPostRequest(request, userId);
   if (!validation.ok) return validation.response;
-  const { data: parsedData, topicId, messageKind, isExternalActionShare } = validation.value;
+  const { data: parsedData, topicId, messageKind, isExternalActionShare, isBuddyContact } = validation.value;
 
   const supabaseResult = await getChatSupabaseOrResponse();
   if (supabaseResult instanceof Response) return supabaseResult;
   const supabase = supabaseResult;
 
   try {
-    return await processValidatedChatPost({ supabase, userId, identity, validated: { data: parsedData, topicId, messageKind, isExternalActionShare } });
+    return await processValidatedChatPost({ supabase, userId, identity, validated: { data: parsedData, topicId, messageKind, isExternalActionShare, isBuddyContact } });
   } catch (error) {
     return handleApiError(error, "POST /api/chat (general)");
   }

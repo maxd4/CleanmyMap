@@ -58,6 +58,7 @@ export type SendChatMessageParams = {
     attachmentType?: string;
     attachmentSize?: number;
     actionId?: string;
+    buddyRequestId?: string;
     feedbackId?: string;
     operationId?: string;
   };
