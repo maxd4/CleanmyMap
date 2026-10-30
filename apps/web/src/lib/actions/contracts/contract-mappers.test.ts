@@ -64,6 +64,49 @@ describe("canonical department attribution", () => {
     expect(empty.location.departmentName).toBeNull();
   });
 
+  it("reads the typed final composition into the unified contract", () => {
+    const contract = toActionContract(buildRow({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: 8,
+      retired_count: 0,
+      notes: "Bilan final sans composition metadata",
+      preparation_data: {
+        volunteerParticipation: {
+          childrenCount: 20,
+          adultCount: 8,
+          retiredCount: 0,
+        },
+      },
+    }) as never);
+
+    expect(contract.metadata.volunteerParticipation).toMatchObject({
+      childrenCount: 18,
+      adultCount: 8,
+      retiredCount: 0,
+      participantsCount: 26,
+    });
+    expect(contract.metadata.preparationData?.volunteerParticipation).toMatchObject({
+      childrenCount: 20,
+    });
+  });
+
+  it("keeps historical metadata as a compatibility fallback when typed columns are absent", () => {
+    const contract = toActionContract(buildRow({
+      volunteers_count: 4,
+      children_count: null,
+      adult_count: null,
+      retired_count: null,
+      notes: "[cmm-meta]{\"volunteerParticipation\":{\"childrenCount\":3,\"adultCount\":1,\"retiredCount\":0}}",
+    }) as never);
+
+    expect(contract.metadata.volunteerParticipation).toMatchObject({
+      childrenCount: 3,
+      adultCount: 1,
+      retiredCount: 0,
+    });
+  });
+
   it("writes explicit contract values and null defaults to actions persistence", () => {
     const payload = {
       actionDate: "2026-09-12",

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
+import {
+  buildActionInsertPayload,
+  buildCreateActionGeometry,
+} from "@/lib/actions/store-create-contract";
+import type { CreateActionPayload } from "@/lib/actions/types";
 import type { ActionRow } from "@/types/database";
 import {
   assessSchoolActionRecognitions,
@@ -132,6 +137,111 @@ describe("school action collective recognition", () => {
     expect(attestation.action.totalParticipants).toBe(26);
     expect(attestation.action.children).toBe(18);
     expect(attestation.action.adultSupervisors).toBe(8);
+  });
+
+  it("reads a complete final composition from typed columns without metadata duplication", () => {
+    const action = buildAction({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: 8,
+      retired_count: 0,
+      preparation_data: {
+        volunteerParticipation: {
+          childrenCount: 20,
+          adultCount: 8,
+          retiredCount: 0,
+          participantsCount: 28,
+          effectiveVolunteerUnits: 18,
+          effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+        },
+      },
+      notes: appendActionMetadataToNotes("Bilan final", {
+        wasteMeasurementMethod: "balance_suspendue",
+        wasteBreakdown: { recyclablesKg: 1, glassKg: 1, householdWasteKg: 1 },
+      }),
+    });
+
+    const attestation = buildSchoolActionAttestation({ action, canonicalOrganizerIds: ["organizer-1"] });
+    const debrief = mapAssessments(action).get("school_field_debrief");
+    expect(debrief?.qualified).toBe(true);
+    expect(attestation.action).toMatchObject({
+      totalParticipants: 26,
+      children: 18,
+      adultSupervisors: 8,
+    });
+  });
+
+  it("does not mask invalid typed columns with divergent historical metadata", () => {
+    const action = buildAction({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: null,
+      retired_count: 0,
+      notes: appendActionMetadataToNotes("Bilan final", {
+        volunteerParticipation: {
+          childrenCount: 20,
+          adultCount: 6,
+          retiredCount: 0,
+          participantsCount: 26,
+          effectiveVolunteerUnits: 16,
+          effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+        },
+      }),
+    });
+
+    const attestation = buildSchoolActionAttestation({ action, canonicalOrganizerIds: ["organizer-1"] });
+    expect(attestation.action.totalParticipants).toBeNull();
+    expect(mapAssessments(action).get("school_field_debrief")?.qualified).toBe(false);
+  });
+
+  it("covers creation, typed persistence, recognition, and attestation as one logical flow", () => {
+    const payload = {
+      actionDate: "2026-10-29",
+      locationLabel: "Cour de création",
+      wasteKg: 3,
+      cigaretteButts: 0,
+      volunteersCount: 26,
+      durationMinutes: 60,
+      actionPhase: "post_action_complete",
+      actionContext: "school",
+      volunteerParticipation: {
+        childrenCount: 18,
+        adultCount: 8,
+        retiredCount: 0,
+        participantsCount: 26,
+        effectiveVolunteerUnits: 17,
+        effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+      },
+      wasteMeasurementMethod: "balance_suspendue",
+      wasteBreakdown: { recyclablesKg: 1, glassKg: 1, householdWasteKg: 1 },
+    } satisfies CreateActionPayload;
+    const persisted = buildActionInsertPayload({
+      userId: "organizer-1",
+      payload,
+      persistedGeometry: buildCreateActionGeometry(payload, null),
+      finalDrawing: null,
+      status: "approved",
+    });
+    const action = buildAction({
+      ...persisted,
+      published_at: "2026-10-29T12:00:00.000Z",
+      notes: persisted.notes,
+      preparation_data: persisted.preparation_data,
+    });
+
+    expect(persisted).toMatchObject({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: 8,
+      retired_count: 0,
+    });
+    expect(persisted.notes).not.toContain("volunteerParticipation");
+    expect(mapAssessments(action).get("school_field_debrief")?.qualified).toBe(true);
+    expect(buildSchoolActionAttestation({ action, canonicalOrganizerIds: ["organizer-1"] }).action).toMatchObject({
+      totalParticipants: 26,
+      children: 18,
+      adultSupervisors: 8,
+    });
   });
 
   it("keeps participation unknown when only the forecast is present", () => {

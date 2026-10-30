@@ -20,6 +20,7 @@ import {
 import {
   getVolunteerActionCompositionValidationMessage,
   getVolunteerForecastValidationMessage,
+  resolvePersistedVolunteerParticipation,
 } from "./volunteer-participation";
 import { resolveActionContext } from "./action-context";
 
@@ -243,7 +244,13 @@ export async function prepareActionUpdate(params: {
         ? body.volunteerParticipation
         : body.volunteerParticipation !== undefined
         ? body.volunteerParticipation
-        : currentMetadata.volunteerParticipation;
+        : resolvePersistedVolunteerParticipation({
+            childrenCount: current.children_count,
+            adultCount: current.adult_count,
+            retiredCount: current.retired_count,
+            volunteersCount: current.volunteers_count,
+            legacyParticipation: currentMetadata.volunteerParticipation,
+          });
     const compositionMessage = getVolunteerActionCompositionValidationMessage({
       volunteersCount: isFinalization
         ? body.volunteersCount ?? null

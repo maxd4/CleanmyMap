@@ -268,10 +268,13 @@ cartographique, ni la collecte brute, ni la RPC globale historique
 `action_collection_reference_averages_v1()`.
 
 La composition connue est stockée dans `children_count`, `adult_count` et
-`retired_count`, avec cohérence atomique avec `volunteers_count`. Les actions
-historiques ambiguës restent `NULL` ; l'ancien `[cmm-meta]` n'est utilisé que
-pour la compatibilité de lecture et un backfill complet et vérifiable. Aucune
-valeur adulte n'est déduite du seul total.
+`retired_count`, avec cohérence atomique avec `volunteers_count`. Ces colonnes
+typées sont la source canonique de lecture lorsqu'elles sont complètes et
+cohérentes ; l'ancien `[cmm-meta]` n'est utilisé que comme compatibilité de
+lecture pour les lignes historiques dont les trois colonnes sont réellement
+absentes. Une ligne typée incomplète ou incohérente reste inconnue et ne peut
+pas être masquée par des métadonnées historiques divergentes. Aucune valeur
+adulte n'est déduite du seul total.
 
 Une revue de contexte supplémentaire est : Cook, E., Cano, N. S. de S. L. et
 Velis, C. A. (2024), « Informal recycling sector contribution to plastic

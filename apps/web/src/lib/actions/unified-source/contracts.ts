@@ -26,6 +26,7 @@ import { rebaseRouteTargetDistancePolicy } from "@/lib/actions/route-target-poli
 import type {
   TrashSpotterSpotRow,
 } from "./types";
+import { resolvePersistedVolunteerParticipation } from "../volunteer-participation";
 
 export type {
   TrashSpotterSpotRow,
@@ -120,7 +121,13 @@ function buildActionContractInput(
     geometrySource: row.geometry_source ?? null,
     wasteKg: row.waste_kg,
     cigaretteButtsMeasurements: parsedMetadata.cigaretteButtsMeasurements,
-    volunteerParticipation: parsedMetadata.volunteerParticipation,
+    volunteerParticipation: resolvePersistedVolunteerParticipation({
+      childrenCount: row.children_count,
+      adultCount: row.adult_count,
+      retiredCount: row.retired_count,
+      volunteersCount: row.volunteers_count,
+      legacyParticipation: parsedMetadata.volunteerParticipation,
+    }),
     cigaretteButtsKg: parsedMetadata.cigaretteButtsKg,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,

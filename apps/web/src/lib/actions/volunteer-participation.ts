@@ -368,3 +368,57 @@ export function normalizePersistedVolunteerComposition(params: {
   }
   return normalizeVolunteerParticipation({ childrenCount, adultCount, retiredCount });
 }
+
+/**
+ * Resolves a final composition from the typed action columns, with a bounded
+ * compatibility fallback for historical rows that have no typed values.
+ * Present but incomplete or incoherent typed values fail closed and never
+ * fall back to divergent historical metadata.
+ */
+export function resolvePersistedVolunteerParticipation(params: {
+  childrenCount: number | null | undefined;
+  adultCount: number | null | undefined;
+  retiredCount: number | null | undefined;
+  volunteersCount: number | null | undefined;
+  legacyParticipation?: ActionVolunteerParticipation | null;
+}): ActionVolunteerParticipation | null {
+  const hasTypedValue = [
+    params.childrenCount,
+    params.adultCount,
+    params.retiredCount,
+  ].some((value) => value !== null && value !== undefined);
+  const typedParticipation = normalizePersistedVolunteerComposition({
+    childrenCount: params.childrenCount,
+    adultCount: params.adultCount,
+    retiredCount: params.retiredCount,
+  });
+
+  if (hasTypedValue) {
+    const persisted = resolvePersistedVolunteerComposition({
+      participation: typedParticipation,
+      volunteersCount: params.volunteersCount,
+    });
+    return persisted.children_count === null
+      ? null
+      : normalizePersistedVolunteerComposition({
+          childrenCount: persisted.children_count,
+          adultCount: persisted.adult_count,
+          retiredCount: persisted.retired_count,
+        });
+  }
+
+  const legacyParticipation = params.legacyParticipation
+    ? normalizeVolunteerParticipation(params.legacyParticipation)
+    : null;
+  const persisted = resolvePersistedVolunteerComposition({
+    participation: legacyParticipation,
+    volunteersCount: params.volunteersCount,
+  });
+  return persisted.children_count === null
+    ? null
+    : normalizePersistedVolunteerComposition({
+        childrenCount: persisted.children_count,
+        adultCount: persisted.adult_count,
+        retiredCount: persisted.retired_count,
+      });
+}

@@ -5,8 +5,8 @@ import {
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import {
   normalizeActionVolunteerParticipationFromTotal,
-  normalizePersistedVolunteerComposition,
   resolvePersistedVolunteerComposition,
+  resolvePersistedVolunteerParticipation,
   normalizeVolunteerParticipation,
   resolveParticipantsCount,
   type ActionVolunteerParticipation,
@@ -162,10 +162,12 @@ function buildVolunteerMeasurementUpdate(params: {
   const resolveFromActionTotal =
     current.action_phase !== "pre_action" ||
     body.actionPhase === "post_action_complete";
-  const currentPersistedParticipation = normalizePersistedVolunteerComposition({
+  const currentPersistedParticipation = resolvePersistedVolunteerParticipation({
     childrenCount: current.children_count,
     adultCount: current.adult_count,
     retiredCount: current.retired_count,
+    volunteersCount: current.volunteers_count,
+    legacyParticipation: currentMetadata.volunteerParticipation,
   });
   const participation = hasUpdate
     ? body.volunteerParticipation === null || body.volunteerParticipation === undefined

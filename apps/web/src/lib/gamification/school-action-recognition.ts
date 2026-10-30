@@ -1,5 +1,8 @@
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import type { ActionVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import {
+  resolvePersistedVolunteerParticipation,
+  type ActionVolunteerParticipation,
+} from "@/lib/actions/volunteer-participation";
 import type { ActionRow } from "@/types/database";
 import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
 import {
@@ -58,12 +61,16 @@ function isNonNegativeInteger(value: unknown): value is number {
 }
 
 function getParticipation(
-  _action: ActionRow,
+  action: ActionRow,
   metadata: ReturnType<typeof extractActionMetadataFromNotes>,
 ): ActionVolunteerParticipation | null {
-  // The preparation split is a forecast. Once the action is finalized, only
-  // the canonical composition persisted in the final metadata may qualify.
-  return metadata.volunteerParticipation;
+  return resolvePersistedVolunteerParticipation({
+    childrenCount: action.children_count,
+    adultCount: action.adult_count,
+    retiredCount: action.retired_count,
+    volunteersCount: action.volunteers_count,
+    legacyParticipation: metadata.volunteerParticipation,
+  });
 }
 
 function hasValidParticipation(

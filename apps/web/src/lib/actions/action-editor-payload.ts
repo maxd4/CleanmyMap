@@ -6,7 +6,7 @@ import { normalizeClockTime } from "./time-contract";
 import { projectAdministrativeRequirementsForRead } from "./administrative-requirements";
 import { rebaseRouteTargetDistancePolicy } from "./route-target-policy-rebase";
 import { parseDrawingFromGeoJson } from "./geometry/derived-geometry";
-import { normalizePersistedVolunteerComposition } from "./volunteer-participation";
+import { resolvePersistedVolunteerParticipation } from "./volunteer-participation";
 
 type ActionEditorMetadata = ReturnType<typeof extractActionMetadataFromNotes>;
 type ParsedActionDrawing = ReturnType<typeof parseDrawingFromNotes>;
@@ -30,10 +30,12 @@ function buildEditorPreparationData(row: ActionRow) {
 }
 
 function buildEditorMeasurementFields(row: ActionRow, metadata: ActionEditorMetadata) {
-  const persistedParticipation = normalizePersistedVolunteerComposition({
+  const persistedParticipation = resolvePersistedVolunteerParticipation({
     childrenCount: row.children_count,
     adultCount: row.adult_count,
     retiredCount: row.retired_count,
+    volunteersCount: row.volunteers_count,
+    legacyParticipation: metadata.volunteerParticipation,
   });
   return {
     wasteKg: row.waste_kg,
@@ -47,9 +49,7 @@ function buildEditorMeasurementFields(row: ActionRow, metadata: ActionEditorMeta
       metadata.cigaretteButtsMeasurements?.cigaretteButtsCondition ?? null,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
-    // Typed columns are authoritative for current rows. Metadata remains a
-    // read-only compatibility fallback for historical rows.
-    volunteerParticipation: persistedParticipation ?? metadata.volunteerParticipation,
+    volunteerParticipation: persistedParticipation,
     durationMinutes: row.duration_minutes,
     eventStartTime: normalizeClockTime(row.event_start_time),
     eventEndTime: normalizeClockTime(row.event_end_time),

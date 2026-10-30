@@ -7,6 +7,7 @@ import {
   getVolunteerParticipationDisclosureDetail,
   normalizeActionVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
+  resolvePersistedVolunteerParticipation,
   resolveEffectiveVolunteerUnits,
   resolveParticipantsCount,
 } from "./volunteer-participation";
@@ -208,5 +209,62 @@ describe("volunteer participation contract", () => {
       effectiveVolunteerUnits: 2.5,
       effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
     });
+  });
+
+  it("prefers a complete coherent typed composition over historical metadata", () => {
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: 18,
+      adultCount: 8,
+      retiredCount: 0,
+      volunteersCount: 26,
+      legacyParticipation: {
+        childrenCount: 20,
+        adultCount: 6,
+        retiredCount: 0,
+        participantsCount: 26,
+        effectiveVolunteerUnits: 16,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    })).toMatchObject({
+      childrenCount: 18,
+      adultCount: 8,
+      retiredCount: 0,
+      participantsCount: 26,
+    });
+  });
+
+  it("uses coherent historical metadata only when typed columns are absent", () => {
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: null,
+      volunteersCount: 4,
+      legacyParticipation: {
+        childrenCount: 3,
+        adultCount: 1,
+        retiredCount: 0,
+        participantsCount: 4,
+        effectiveVolunteerUnits: 2.5,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    })).toMatchObject({ childrenCount: 3, adultCount: 1, retiredCount: 0 });
+  });
+
+  it.each([
+    { childrenCount: 18, adultCount: null, retiredCount: 0 },
+    { childrenCount: 18, adultCount: 9, retiredCount: 0 },
+  ])("does not hide invalid typed columns behind historical metadata", (typed) => {
+    expect(resolvePersistedVolunteerParticipation({
+      ...typed,
+      volunteersCount: 26,
+      legacyParticipation: {
+        childrenCount: 20,
+        adultCount: 6,
+        retiredCount: 0,
+        participantsCount: 26,
+        effectiveVolunteerUnits: 16,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    })).toBeNull();
   });
 });

@@ -98,9 +98,12 @@ La reconnaissance non compétitive est portée par l’action, pas par un compte
 élève. Elle exige une confirmation scolaire explicite par le créateur ou un
 organisateur canonique autorisé, une action approuvée, finalisée, publiée,
 visible et publique, puis les preuves propres à chaque jalon. La composition
-de participants projetée dans l’attestation vient du bilan final canonique,
-jamais de la prévision de préparation ; une donnée finale absente ou incohérente
-reste inconnue. Une correction, un rejet, une annulation, une dépublication,
+de participants projetée dans l’attestation vient des colonnes typées finales
+`children_count`, `adult_count` et `retired_count` lorsqu’elles sont complètes
+et cohérentes. Les métadonnées `[cmm-meta]` restent une compatibilité de
+lecture réservée aux historiques dont ces colonnes sont absentes ; une donnée
+typée absente, incomplète ou incohérente reste inconnue. La prévision de
+préparation n’est jamais utilisée comme mesure finale. Une correction, un rejet, une annulation, une dépublication,
 un masquage, une privatisation ou une reclassification désactive la projection
 sans supprimer sa trace d’invalidation. L’attestation est descriptive et ne
 constitue pas une certification officielle de l’Éducation nationale ; la

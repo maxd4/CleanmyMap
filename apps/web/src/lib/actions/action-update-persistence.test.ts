@@ -272,16 +272,16 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
       },
     });
     expect(prepared.updateData.volunteers_count).toBe(12);
+    expect(prepared.updateData).toMatchObject({
+      volunteers_count: 12,
+      children_count: 1,
+      adult_count: 11,
+      retired_count: 0,
+    });
     expect(
       extractActionMetadataFromNotes(prepared.updateData.notes as string)
         .volunteerParticipation,
-    ).toMatchObject({
-      childrenCount: 1,
-      adultCount: 11,
-      retiredCount: 0,
-      participantsCount: 12,
-      effectiveVolunteerUnits: 11.5,
-    });
+    ).toBeNull();
   });
 
   it("rejects a future effective date when finalizing an action", async () => {
@@ -428,6 +428,53 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
           volunteersCount,
           volunteerParticipation: { childrenCount, adultCount: 999, retiredCount },
         } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toMatchObject({ field: "volunteerParticipation" });
+  });
+
+  it("accepts a partial total PATCH when the current final composition is typed", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, {
+        action_phase: "post_action_complete",
+        volunteers_count: 26,
+        children_count: 18,
+        adult_count: 8,
+        retired_count: 0,
+        notes: "Bilan final sans composition metadata",
+      }),
+      parsedBody: ({ volunteersCount: 26 } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).toMatchObject({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: 8,
+      retired_count: 0,
+    });
+  });
+
+  it("rejects a partial total PATCH when typed columns are incomplete despite history", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}, {
+          action_phase: "post_action_complete",
+          volunteers_count: 26,
+          children_count: 18,
+          adult_count: null,
+          retired_count: 0,
+          notes: "[cmm-meta]{\"volunteerParticipation\":{\"childrenCount\":20,\"adultCount\":6,\"retiredCount\":0}}",
+        }),
+        parsedBody: ({ volunteersCount: 26 } as unknown as ActionUpdateInput),
       }),
     ).rejects.toMatchObject({ field: "volunteerParticipation" });
   });
