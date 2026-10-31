@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { ActionBuddyConflictError, loadActionBuddyState } from "./action-buddy";
+import { ActionBuddyConflictError, ActionBuddyNotFoundError, loadActionBuddyState } from "./action-buddy";
 import type { ActionRow } from "@/types/database";
 
 type Row = Record<string, unknown>;
@@ -127,6 +127,63 @@ function baseRows(userId: string, registrationStatus = "confirmed"): Record<stri
 }
 
 describe("loadActionBuddyState proposal privacy", () => {
+  it("rejects non-pre-actions and unconfirmed registrations before reading private buddy state", async () => {
+    await expect(loadActionBuddyState(fakeSupabase({
+      actions: [{ ...action, action_phase: "post_action_complete" }],
+    }), { actionId, userId: "requester-1" })).rejects.toBeInstanceOf(ActionBuddyNotFoundError);
+
+    const pending = baseRows("requester-1", "pending");
+    await expect(loadActionBuddyState(fakeSupabase(pending), { actionId, userId: "requester-1" }))
+      .rejects.toThrow("confirmed registration required");
+  });
+
+  it("loads open requests and a safe fallback partner while deduplicating shared proposals", async () => {
+    const rows = baseRows("mentor-1");
+    rows.action_buddy_availability = [{
+      action_id: actionId,
+      mentor_user_id: "mentor-1",
+      created_at: "2998-12-02T10:00:00.000Z",
+      updated_at: "2998-12-02T10:00:00.000Z",
+    }];
+    rows.action_buddy_requests = [
+      {
+        id: "request-open",
+        action_id: actionId,
+        requester_user_id: "requester-1",
+        status: "open",
+        matched_mentor_user_id: null,
+        created_at: "2998-12-02T10:00:00.000Z",
+        updated_at: "2998-12-02T10:00:00.000Z",
+        matched_at: null,
+      },
+      {
+        id: "request-matched",
+        action_id: actionId,
+        requester_user_id: "requester-2",
+        status: "matched",
+        matched_mentor_user_id: "mentor-1",
+        created_at: "2998-12-03T10:00:00.000Z",
+        updated_at: "2998-12-03T10:00:00.000Z",
+        matched_at: "2998-12-04T10:00:00.000Z",
+      },
+    ];
+    rows.action_buddy_proposals = [{
+      id: "proposal-shared",
+      request_id: "request-open",
+      mentor_user_id: "mentor-1",
+      status: "pending",
+      created_at: "2998-12-03T10:00:00.000Z",
+      resolved_at: null,
+      request: { action_id: actionId },
+    }];
+
+    const state = await loadActionBuddyState(fakeSupabase(rows), { actionId, userId: "mentor-1" });
+    expect(state.openRequests).toEqual([{ id: "request-open", created_at: "2998-12-02T10:00:00.000Z" }]);
+    expect(state.matchedRequest?.id).toBe("request-matched");
+    expect(state.matchedPartner).toEqual({ userId: "requester-2", displayName: "Membre", handle: null });
+    expect(state.proposals).toEqual([{ id: "proposal-shared", status: "pending" }]);
+  });
+
   it("projects requester proposals without the mentor identity, including historical states", async () => {
     const rows = baseRows("requester-1");
     rows.action_buddy_requests = [{

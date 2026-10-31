@@ -162,6 +162,20 @@ describe("Action Buddy lifecycle behavior", () => {
     await expect(cancelActionBuddyRequest(missing.client, { actionId: "action-1", requesterUserId: "requester-1" })).rejects.toBeInstanceOf(ActionBuddyNotFoundError);
   });
 
+  it("cancels a still-future matched request and refuses a request after the action started", async () => {
+    const cancelled = { ...request, status: "cancelled" };
+    const futureMatched = createSupabase({
+      action_buddy_requests: { maybeSingle: [ok({ ...request, status: "matched" }), ok(cancelled)] },
+    });
+    await expect(cancelActionBuddyRequest(futureMatched.client, { actionId: "action-1", requesterUserId: "requester-1" }))
+      .resolves.toMatchObject({ request: cancelled, alreadyCancelled: false });
+
+    fetchActionRowByIdMock.mockResolvedValue({ ...action, action_date: "2000-01-01", event_start_time: "10:00" });
+    const started = createSupabase({ action_buddy_requests: { maybeSingle: [ok(request)] } });
+    await expect(cancelActionBuddyRequest(started.client, { actionId: "action-1", requesterUserId: "requester-1" }))
+      .rejects.toThrow("action has started");
+  });
+
   it("keeps proposal decisions owner-scoped, terminal and retry-safe", async () => {
     const withdrawn = createSupabase({ action_buddy_proposals: { maybeSingle: [ok({ ...proposal, status: "withdrawn" })] }, action_buddy_requests: { maybeSingle: [ok(request)] } });
     await expect(withdrawActionBuddyProposal(withdrawn.client, { actionId: "action-1", proposalId: "proposal-1", mentorUserId: "mentor-1" })).resolves.toMatchObject({ alreadyWithdrawn: true });
@@ -191,5 +205,131 @@ describe("Action Buddy lifecycle behavior", () => {
     await expect(resolveActionBuddyContact(requester.client, { actionId: "action-1", requestId: "request-1", userId: "requester-1" })).resolves.toMatchObject({ recipientUserId: "mentor-1" });
     const stranger = createSupabase({ action_buddy_requests: { maybeSingle: [ok(matched)] } });
     await expect(resolveActionBuddyContact(stranger.client, { actionId: "action-1", requestId: "request-1", userId: "stranger" })).rejects.toBeInstanceOf(ActionBuddyForbiddenError);
+  });
+
+  it("fails closed for missing resources, non-confirmed mentors and database errors", async () => {
+    fetchActionRowByIdMock.mockResolvedValue(null);
+    await expect(createActionBuddyRequest(createSupabase().client, { actionId: "missing", requesterUserId: "requester-1" }))
+      .rejects.toBeInstanceOf(ActionBuddyNotFoundError);
+
+    fetchActionRowByIdMock.mockResolvedValue(action);
+    readActionRegistrationRecordMock.mockResolvedValue(null);
+    const unavailableMentor = createSupabase({
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(createActionBuddyProposal(unavailableMentor.client, { actionId: "action-1", requestId: "request-1", mentorUserId: "mentor-1" }))
+      .rejects.toThrow("confirmed registration required");
+
+    readActionRegistrationRecordMock.mockResolvedValue({ registration_status: "confirmed" });
+    const requestReadError = createSupabase({
+      action_buddy_requests: { single: [fail({ message: "request write failed" })] },
+    });
+    await expect(createActionBuddyRequest(requestReadError.client, { actionId: "action-1", requesterUserId: "requester-1" }))
+      .rejects.toThrow("request write failed");
+    const availabilityError = createSupabase({
+      action_buddy_availability: { single: [fail({ message: "availability write failed" })] },
+    });
+    await expect(setActionBuddyAvailability(availabilityError.client, { actionId: "action-1", mentorUserId: "mentor-1" }))
+      .rejects.toThrow("availability write failed");
+    const removalError = createSupabase({
+      action_buddy_availability: { maybeSingle: [fail({ message: "availability delete failed" })] },
+    });
+    await expect(removeActionBuddyAvailability(removalError.client, { actionId: "action-1", mentorUserId: "mentor-1" }))
+      .rejects.toThrow("availability delete failed");
+  });
+
+  it("rejects closed or missing requests before creating a proposal and maps database conflicts", async () => {
+    const closed = createSupabase({
+      action_buddy_requests: { maybeSingle: [ok({ ...request, status: "matched" })] },
+    });
+    await expect(createActionBuddyProposal(closed.client, { actionId: "action-1", requestId: "request-1", mentorUserId: "mentor-1" }))
+      .rejects.toThrow("request is not open");
+
+    const missing = createSupabase({ action_buddy_requests: { maybeSingle: [ok(null)] } });
+    await expect(createActionBuddyProposal(missing.client, { actionId: "action-1", requestId: "request-1", mentorUserId: "mentor-1" }))
+      .rejects.toBeInstanceOf(ActionBuddyNotFoundError);
+
+    const rpcDatabaseError = createSupabase(
+      { action_buddy_proposals: { maybeSingle: [ok(proposal)] }, action_buddy_requests: { maybeSingle: [ok(request)] } },
+      fail({ message: "rpc unavailable" }),
+    );
+    await expect(acceptActionBuddyProposal(rpcDatabaseError.client, { actionId: "action-1", proposalId: "proposal-1", requesterUserId: "requester-1" }))
+      .rejects.toThrow("rpc unavailable");
+
+    const notFoundRpc = createSupabase(
+      { action_buddy_proposals: { maybeSingle: [ok(proposal)] }, action_buddy_requests: { maybeSingle: [ok(request)] } },
+      fail({ message: "not_found: proposal" }),
+    );
+    await expect(acceptActionBuddyProposal(notFoundRpc.client, { actionId: "action-1", proposalId: "proposal-1", requesterUserId: "requester-1" }))
+      .rejects.toBeInstanceOf(ActionBuddyNotFoundError);
+  });
+
+  it("protects every proposal transition from terminal, ownership and optimistic-race mutations", async () => {
+    const withdrawnRace = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok(proposal), fail({ code: "PGRST116" })] },
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(withdrawActionBuddyProposal(withdrawnRace.client, { actionId: "action-1", proposalId: "proposal-1", mentorUserId: "mentor-1" }))
+      .rejects.toThrow("proposal changed while withdrawing");
+
+    const declinedTerminal = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok({ ...proposal, status: "accepted" })] },
+      action_buddy_requests: { maybeSingle: [ok({ ...request, status: "matched" })] },
+    });
+    await expect(declineActionBuddyProposal(declinedTerminal.client, { actionId: "action-1", proposalId: "proposal-1", mentorUserId: "mentor-1" }))
+      .rejects.toThrow("proposal is not actionable");
+
+    const rejectRace = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok(proposal), fail({ code: "PGRST116" })] },
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(rejectActionBuddyProposal(rejectRace.client, { actionId: "action-1", proposalId: "proposal-1", requesterUserId: "requester-1" }))
+      .rejects.toThrow("proposal changed while declining");
+
+    const forbiddenAccept = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok(proposal)] },
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(acceptActionBuddyProposal(forbiddenAccept.client, { actionId: "action-1", proposalId: "proposal-1", requesterUserId: "other" }))
+      .rejects.toBeInstanceOf(ActionBuddyForbiddenError);
+  });
+
+  it("records withdraw and decline transitions and keeps repeated terminal calls idempotent", async () => {
+    const withdrawnResult = { ...proposal, status: "withdrawn" };
+    const withdraw = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok(proposal), ok(withdrawnResult)] },
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(withdrawActionBuddyProposal(withdraw.client, { actionId: "action-1", proposalId: "proposal-1", mentorUserId: "mentor-1" }))
+      .resolves.toMatchObject({ proposal: withdrawnResult, alreadyWithdrawn: false });
+
+    const declinedResult = { ...proposal, status: "declined" };
+    const decline = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok(proposal), ok(declinedResult)] },
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(declineActionBuddyProposal(decline.client, { actionId: "action-1", proposalId: "proposal-1", mentorUserId: "mentor-1" }))
+      .resolves.toMatchObject({ proposal: declinedResult, alreadyDeclined: false });
+
+    const alreadyDeclined = createSupabase({
+      action_buddy_proposals: { maybeSingle: [ok(declinedResult)] },
+      action_buddy_requests: { maybeSingle: [ok(request)] },
+    });
+    await expect(declineActionBuddyProposal(alreadyDeclined.client, { actionId: "action-1", proposalId: "proposal-1", mentorUserId: "mentor-1" }))
+      .resolves.toMatchObject({ alreadyDeclined: true });
+  });
+
+  it("keeps matched contact bilateral and rejects cancelled or incomplete matches", async () => {
+    const matched = { ...request, status: "matched", matched_mentor_user_id: "mentor-1" };
+    const mentor = createSupabase({ action_buddy_requests: { maybeSingle: [ok(matched)] } });
+    await expect(resolveActionBuddyContact(mentor.client, { actionId: "action-1", requestId: "request-1", userId: "mentor-1" }))
+      .resolves.toMatchObject({ recipientUserId: "requester-1" });
+
+    const cancelled = createSupabase({ action_buddy_requests: { maybeSingle: [ok({ ...matched, status: "cancelled" })] } });
+    await expect(resolveActionBuddyContact(cancelled.client, { actionId: "action-1", requestId: "request-1", userId: "requester-1" }))
+      .rejects.toBeInstanceOf(ActionBuddyConflictError);
+    const incomplete = createSupabase({ action_buddy_requests: { maybeSingle: [ok({ ...request, status: "matched", matched_mentor_user_id: null })] } });
+    await expect(resolveActionBuddyContact(incomplete.client, { actionId: "action-1", requestId: "request-1", userId: "requester-1" }))
+      .rejects.toBeInstanceOf(ActionBuddyConflictError);
   });
 });

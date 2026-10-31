@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionListItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
 import { AppError } from "@/lib/errors/app-errors";
@@ -7,6 +8,8 @@ import { buildPublicActionReference } from "@/lib/chat/action-sharing";
 import { publicAction } from "@/fixtures/public-action";
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
 import { PublicActionContinuity } from "./rejoindre-une-action.public-continuity";
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 function communityEvent(canEditOwnOps: boolean): CommunityEventItem {
   return {
@@ -53,6 +56,138 @@ function participationHistory(overrides: Record<string, unknown> = {}) {
 }
 
 describe("PastActionsPanel", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("renders English loading, error and empty states without exposing private controls", () => {
+    const loading = renderToStaticMarkup(<PastActionsPanel items={[]} loading fr={false} error={null} />);
+    expect(loading).toContain("Loading past actions...");
+    expect(loading).not.toContain("I participated in this action");
+
+    const error = renderToStaticMarkup(<PastActionsPanel items={[]} loading={false} fr={false} error="History unavailable" />);
+    expect(error).toContain("History unavailable");
+    expect(error).toContain('role="alert"');
+
+    const empty = renderToStaticMarkup(<PastActionsPanel items={[]} loading={false} fr={false} error={null} />);
+    expect(empty).toContain("No public past action yet.");
+  });
+
+  it("renders the English confirmed projection and distinguishes unavailable values", () => {
+    const markup = renderToStaticMarkup(
+      <PastActionsPanel
+        items={[pastAction({ waste_kg: 2, cigarette_butts: 4 })]}
+        loading={false}
+        error={null}
+        fr={false}
+        authenticated
+        historyItems={[participationHistory({
+          participationStatus: "confirmed",
+          personalImpactAttribution: {
+            wasteKg: null,
+            wasteKind: "unavailable",
+            wasteEquivalentSecKg: null,
+            wasteMohsValue: null,
+            wasteMohsSource: null,
+            cigaretteButts: 1.5,
+            cigaretteButtsKind: "quote_part",
+            cigaretteButtsProvenance: "counted",
+            wasteInconsistent: false,
+            cigaretteButtsInconsistent: false,
+            wasteMohsEligible: false,
+            cigaretteButtsMohsEligible: true,
+          },
+        })]}
+      />,
+    );
+    expect(markup).toContain("Past actions");
+    expect(markup).toContain("Participation confirmed");
+    expect(markup).toContain("Your share of the results");
+    expect(markup).toContain("Unavailable");
+    expect(markup).toContain("Calculated share");
+    expect(markup).toContain("Action discussion");
+  });
+
+  it("keeps community history loading, error and pagination states observable", () => {
+    const loading = renderToStaticMarkup(
+      <PastActionsPanel items={[]} loading={false} error={null} fr={false} communityPastEvents={[communityEvent(false)]} communityPastEventsLoading />,
+    );
+    expect(loading).toContain("No public past action yet.");
+    expect(loading).toContain("Missions en cours de chargement…");
+
+    const error = renderToStaticMarkup(
+      <PastActionsPanel items={[]} loading={false} error={null} fr communityPastEventsError={new AppError({ kind: "network", status: 503, message: "Community history unavailable" })} />,
+    );
+    expect(error).toContain("Les missions ne sont pas disponibles pour le moment.");
+
+    const paged = renderToStaticMarkup(
+      <PastActionsPanel items={[]} loading={false} error={null} fr communityPastEventsHasMore communityPastEventsLoadingMore communityPastEventsLoadMore={vi.fn()} />,
+    );
+    expect(paged).toContain("Chargement…");
+  });
+
+  it("uses safe fallbacks for incomplete public results and keeps share scoped to the action", () => {
+    const onShareAction = vi.fn();
+    const item = pastAction({
+      location_label: "Quartier nord",
+      contract: { geometry: { coordinates: [] }, metadata: { actionTitle: "  ", actionPhase: "post_action_complete" } },
+      volunteers_count: 99,
+      duration_minutes: null,
+      waste_kg: null,
+      cigarette_butts: null,
+      association_name: "",
+      actor_name: "",
+      notes: "[EVENT_REF]community-event-1",
+    });
+    const markup = renderToStaticMarkup(<PastActionsPanel items={[item]} loading={false} error={null} fr authenticated={false} onShareAction={onShareAction} />);
+    expect(markup).toContain("Quartier nord");
+    expect(markup).toContain("Organisateur : —");
+    expect(markup).toContain("Localisation seule");
+    expect(markup).not.toContain("99 participants déclarés");
+    expect(markup).toContain("Partager le résultat");
+    expect(markup).toContain("Voir l’événement communautaire");
+    expect(markup).not.toContain("userId");
+  });
+
+  it("handles successful, invalid and network-failed participation claims through the real component", async () => {
+    const item = pastAction();
+    const response = (body: unknown, ok = true) => ({ ok, json: async () => body });
+    const claimResponses = [
+      response({ participationStatus: "pending", participationSource: "post_action_claim" }),
+      response({ error: "Already requested" }, false),
+      new Error("network down"),
+    ];
+    const fetchMock = vi.fn((input: unknown) => {
+      if (String(input).includes("/participation-claim")) {
+        const next = claimResponses.shift();
+        return next instanceof Error ? Promise.reject(next) : Promise.resolve(next);
+      }
+      return Promise.resolve(response({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<PastActionsPanel items={[item]} loading={false} error={null} fr authenticated />);
+    });
+    const claimButton = () => renderer.root.findAllByType("button").find((node) => node.children.join("").includes("J’ai participé"));
+    expect(claimButton()).toBeDefined();
+
+    await act(async () => { claimButton()!.props.onClick(); await Promise.resolve(); });
+    expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("/participation-claim"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.props.role === "status").some((node) => node.children.join("").includes("Participation à confirmer"))).toBe(true);
+
+    renderer.unmount();
+    act(() => {
+      renderer = create(<PastActionsPanel items={[item]} loading={false} error={null} fr authenticated />);
+    });
+    await act(async () => { claimButton()!.props.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findAll((node) => node.props.role === "alert").some((node) => node.children.join("").includes("Already requested"))).toBe(true);
+    await act(async () => { claimButton()!.props.onClick(); await Promise.resolve(); });
+    expect(renderer.root.findAll((node) => node.props.role === "alert").some((node) => node.children.join("").includes("La demande n’a pas pu être envoyée"))).toBe(true);
+    renderer.unmount();
+  });
+
   it("transmet le suivi historique au propriétaire et le masque aux autres utilisateurs", () => {
     const getOpsDraft = () => ({ attendanceCount: "4", postMortem: "Retour" });
     const updateOpsDraft = () => undefined;
