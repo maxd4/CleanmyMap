@@ -1,4 +1,4 @@
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ActionBuddyPanel } from "./action-buddy-panel";
 
@@ -15,8 +15,28 @@ const baseState = {
   matchedPartner: null,
 };
 
-function buttonWithLabel(renderer: ReturnType<typeof create>, label: string) {
-  return renderer.root.findAllByType("button").find((button) => button.props.children === label);
+type BuddyButtonProps = {
+  children?: string;
+  onClick?: () => void | Promise<void>;
+};
+
+function getButtonProps(button: ReactTestInstance): BuddyButtonProps {
+  return button.props as BuddyButtonProps;
+}
+
+function buttonWithLabel(renderer: ReturnType<typeof create>, label: string): ReactTestInstance | undefined {
+  return renderer.root.findAllByType("button").find((button) => getButtonProps(button).children === label);
+}
+
+function hasButtonWithLabel(renderer: ReturnType<typeof create>, label: string): boolean {
+  return renderer.root.findAllByType("button").some((button) => getButtonProps(button).children === label);
+}
+
+async function clickButton(renderer: ReturnType<typeof create>, label: string): Promise<void> {
+  const button = buttonWithLabel(renderer, label);
+  if (!button) return;
+  const onClick = getButtonProps(button).onClick;
+  await onClick?.();
 }
 
 function responseFor(state: object): Response {
@@ -50,12 +70,12 @@ describe("ActionBuddyPanel proposal decisions", () => {
       await Promise.resolve();
     });
 
-    expect(renderer.root.findAllByType("button").some((button) => button.props.children === "Retirer")).toBe(false);
+    expect(hasButtonWithLabel(renderer, "Retirer")).toBe(false);
     expect(buttonWithLabel(renderer, "Accepter")).toBeDefined();
     expect(buttonWithLabel(renderer, "Refuser")).toBeDefined();
 
-    await act(async () => { await buttonWithLabel(renderer, "Accepter")?.props.onClick(); });
-    await act(async () => { await buttonWithLabel(renderer, "Refuser")?.props.onClick(); });
+    await act(async () => { await clickButton(renderer, "Accepter"); });
+    await act(async () => { await clickButton(renderer, "Refuser"); });
 
     const calls = vi.mocked(fetch).mock.calls;
     expect(calls.some(([input, init]) => String(input).endsWith("/proposals/received-1/accept") && init?.method === "POST")).toBe(true);
@@ -81,12 +101,12 @@ describe("ActionBuddyPanel proposal decisions", () => {
       await Promise.resolve();
     });
 
-    expect(renderer.root.findAllByType("button").some((button) => button.props.children === "Accepter")).toBe(false);
-    expect(renderer.root.findAllByType("button").some((button) => button.props.children === "Refuser")).toBe(false);
+    expect(hasButtonWithLabel(renderer, "Accepter")).toBe(false);
+    expect(hasButtonWithLabel(renderer, "Refuser")).toBe(false);
     const withdraw = buttonWithLabel(renderer, "Retirer");
     expect(withdraw).toBeDefined();
 
-    await act(async () => { await withdraw?.props.onClick(); });
+    await act(async () => { await clickButton(renderer, "Retirer"); });
 
     const calls = vi.mocked(fetch).mock.calls;
     expect(calls.some(([input, init]) => String(input).endsWith("/proposals/sent-1") && init?.method === "DELETE")).toBe(true);
