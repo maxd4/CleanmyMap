@@ -382,6 +382,31 @@ describe("notification client", () => {
     expect(eqUserMock).toHaveBeenCalledWith("user_id", "user_123");
   });
 
+});
+
+describe("notification client decision responses", () => {
+  beforeEach(() => {
+    getSupabaseBrowserClientMock.mockReset();
+    getTokenMock.mockReset();
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function setupPendingQueryWithError(error: Error) {
+    const rangeMock = vi.fn().mockResolvedValue({ data: [], error });
+    const secondOrderMock = vi.fn(() => ({ range: rangeMock }));
+    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
+    const orMock = vi.fn(() => ({ order: orderMock }));
+    const eqMock = vi.fn(() => ({ or: orMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({ from: vi.fn(() => ({ select: selectMock })) });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+    return rangeMock;
+  }
+
   it("propagates Supabase errors for unread counts and read mutations without widening the query", async () => {
     const countError = new Error("notifications unavailable");
     const countQuery = {
@@ -390,11 +415,6 @@ describe("notification client", () => {
       is: vi.fn().mockResolvedValue({ count: null, error: countError }),
     };
     const updateError = new Error("read update denied");
-    const updateQuery = {
-      update: vi.fn(() => updateQuery),
-      eq: vi.fn(() => updateQuery),
-      then: undefined,
-    };
     const fromMock = vi.fn((table: string) => table === "app_notifications"
       ? { select: vi.fn(() => countQuery), update: vi.fn(() => ({
         eq: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: updateError }) })),
@@ -410,7 +430,6 @@ describe("notification client", () => {
     await expect(loadUnreadNotificationCountForCurrentUser("user_123", getTokenMock)).rejects.toBe(countError);
     await expect(markNotificationAsReadForCurrentUser("user_123", "notification-1", getTokenMock)).rejects.toBe(updateError);
     expect(fromMock).toHaveBeenCalledWith("app_notifications");
-    expect(updateQuery).toBeDefined();
   });
 
   it("normalizes contact, invitation and registration response lists while preserving HTTP errors", async () => {
@@ -500,14 +519,7 @@ describe("notification client", () => {
 
   it("fails closed when a paged notification query returns a Supabase error", async () => {
     const queryError = new Error("RLS denied");
-    const rangeMock = vi.fn().mockResolvedValue({ data: [], error: queryError });
-    const secondOrderMock = vi.fn(() => ({ range: rangeMock }));
-    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
-    const orMock = vi.fn(() => ({ order: orderMock }));
-    const eqMock = vi.fn(() => ({ or: orMock }));
-    const selectMock = vi.fn(() => ({ eq: eqMock }));
-    getSupabaseBrowserClientMock.mockReturnValue({ from: vi.fn(() => ({ select: selectMock })) });
-    getTokenMock.mockResolvedValue("clerk-supabase-token");
+    const rangeMock = setupPendingQueryWithError(queryError);
     const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
 
     await expect(loadPendingDecisionNotificationsForCurrentUser(

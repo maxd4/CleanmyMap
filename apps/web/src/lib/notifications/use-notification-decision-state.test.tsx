@@ -39,6 +39,7 @@ vi.mock("./action-result-client", () => ({
 
 import { useNotificationDecisionState } from "./use-notification-decision-state";
 import type { AppNotification } from "./client";
+import type { NotificationIdentity } from "./identity";
 
 type HookResult = ReturnType<typeof useNotificationDecisionState>;
 

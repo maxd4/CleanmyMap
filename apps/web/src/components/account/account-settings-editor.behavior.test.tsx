@@ -20,7 +20,7 @@ const initialData: AccountSettingsInitialData = {
   imageUrl: null,
   handle: "marie_curie",
   displayNameMode: "full_name",
-  locationPreferences: { residence: "Paris", work: "Lille" },
+  locationPreferences: { residence: null, work: null },
   activityStatus: "active",
   ageBand: "15_or_over",
 };
@@ -124,7 +124,7 @@ describe("AccountSettingsEditor behavior", () => {
 
   it("keeps location states independent and accepts the requested age-band fallback", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(response({ locationPreferences: { residence: "Paris", work: "Lille" } }))
+      .mockResolvedValueOnce(response({ locationPreferences: { residence: null, work: null } }))
       .mockResolvedValueOnce(response({ status: "clerk_updated_supabase_sync_pending" }, 503))
       .mockResolvedValueOnce(response(undefined))
       .mockResolvedValueOnce(response({ error: "unavailable" }, 503));

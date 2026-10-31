@@ -21,17 +21,20 @@ vi.mock("./chat-territory-selector", () => ({
 const Icon = () => null;
 
 const channels: ChatSidebarChannel[] = [
-  { channelType: "community", active: true, disabled: false, icon: Icon as ChatSidebarChannel["icon"], label: "Community", description: "Global", count: 2, unreadCount: 3, accentClass: "", chipClass: "", isLocked: false },
-  { channelType: "territory", active: false, disabled: false, icon: Icon as ChatSidebarChannel["icon"], label: "Territory", description: "Local", count: 1, unreadCount: 1, accentClass: "", chipClass: "", isLocked: false },
-  { channelType: "admin_elu", active: false, disabled: true, icon: Icon as ChatSidebarChannel["icon"], label: "Admin", description: "Restricted", count: 0, unreadCount: 0, accentClass: "", chipClass: "", isLocked: true },
-  { channelType: "dm", active: false, disabled: false, icon: Icon as ChatSidebarChannel["icon"], label: "DM", description: "Private", count: 4, unreadCount: 2, accentClass: "", chipClass: "", isLocked: false },
+  { channelType: "community", active: true, disabled: false, icon: Icon as unknown as ChatSidebarChannel["icon"], label: "Community", description: "Global", count: 2, unreadCount: 3, accentClass: "", chipClass: "", isLocked: false },
+  { channelType: "territory", active: false, disabled: false, icon: Icon as unknown as ChatSidebarChannel["icon"], label: "Territory", description: "Local", count: 1, unreadCount: 1, accentClass: "", chipClass: "", isLocked: false },
+  { channelType: "admin_elu", active: false, disabled: true, icon: Icon as unknown as ChatSidebarChannel["icon"], label: "Admin", description: "Restricted", count: 0, unreadCount: 0, accentClass: "", chipClass: "", isLocked: true },
+  { channelType: "dm", active: false, disabled: false, icon: Icon as unknown as ChatSidebarChannel["icon"], label: "DM", description: "Private", count: 4, unreadCount: 2, accentClass: "", chipClass: "", isLocked: false },
 ];
 
 const topics: ChatSidebarTopic[] = [{
-  id: "general" as ChatSidebarTopic["id"],
+  id: "relais_associatif" as ChatSidebarTopic["id"],
   label: "Sujet général",
   description: "Échanges ouverts",
-  icon: Icon as ChatSidebarTopic["icon"],
+  starterPrompt: "Je cherche un relais.",
+  accentClassName: "accent",
+  topicIds: ["relais_associatif"],
+  icon: Icon as unknown as ChatSidebarTopic["icon"],
   active: true,
   unreadCount: 5,
 }];
@@ -78,7 +81,7 @@ describe("ChatSidebarContent behavior", () => {
     expect(topicButton).toBeDefined();
     act(() => { topicButton?.props.onClick(); });
     expect(onSelectChannel).toHaveBeenCalledWith("community");
-    expect(onSelectTopic).toHaveBeenCalledWith("general");
+    expect(onSelectTopic).toHaveBeenCalledWith("relais_associatif");
     renderer.unmount();
   });
 
