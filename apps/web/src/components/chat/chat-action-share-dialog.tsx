@@ -52,6 +52,42 @@ function useShareConfirmation({ actionId, selectedDestination, selectedTerritory
   };
 }
 
+function useShareDestinations(
+  actionId: string,
+  setters: {
+    setDestinations: React.Dispatch<React.SetStateAction<ShareDestination[]>>;
+    setSelectedDestinationId: React.Dispatch<React.SetStateAction<string | null>>;
+    setSelectedTerritoryZone: React.Dispatch<React.SetStateAction<string>>;
+    setShareKind: React.Dispatch<React.SetStateAction<PublicActionShareKind>>;
+    setMessage: React.Dispatch<React.SetStateAction<string>>;
+    setError: React.Dispatch<React.SetStateAction<string | null>>;
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  },
+): void {
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/chat/share-destinations?actionId=${encodeURIComponent(actionId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw await readAppErrorResponse(response, "Les destinations de partage sont indisponibles.");
+        return (await response.json()) as { destinations?: ShareDestination[]; shareKind?: PublicActionShareKind };
+      })
+      .then((body) => {
+        if (!active) return;
+        const destinations = body.destinations ?? [];
+        const shareKind = body.shareKind ?? "invitation";
+        setters.setDestinations(destinations);
+        setters.setSelectedDestinationId(destinations[0]?.id ?? null);
+        setters.setSelectedTerritoryZone(destinations.find((item) => item.channelType === "territory")?.zoneName ?? "");
+        setters.setShareKind(shareKind);
+        setters.setMessage(shareKind === "result" ? "Je vous partage le résultat public de cette action." : "Je vous partage cette action future publiée.");
+        setters.setError(null);
+      })
+      .catch((reason: unknown) => { if (active) setters.setError(reason instanceof Error ? reason.message : "Destinations indisponibles."); })
+      .finally(() => { if (active) setters.setLoading(false); });
+    return () => { active = false; };
+  }, [actionId, setters]);
+}
+
 export function ChatActionShareDialog({
   actionId,
   onClose,
@@ -75,42 +111,7 @@ export function ChatActionShareDialog({
   const [error, setError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    let active = true;
-    void fetch(`/api/chat/share-destinations?actionId=${encodeURIComponent(actionId)}`, {
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw await readAppErrorResponse(response, "Les destinations de partage sont indisponibles.");
-        }
-        return (await response.json()) as { destinations?: ShareDestination[]; shareKind?: PublicActionShareKind };
-      })
-      .then((body) => {
-        if (!active) return;
-        const next = body.destinations ?? [];
-        setDestinations(next);
-        setSelectedDestinationId(next[0]?.id ?? null);
-        setSelectedTerritoryZone(
-          next.find((item) => item.channelType === "territory")?.zoneName ?? "",
-        );
-        const nextShareKind = body.shareKind ?? "invitation";
-        setShareKind(nextShareKind);
-        setMessage(nextShareKind === "result"
-          ? "Je vous partage le résultat public de cette action."
-          : "Je vous partage cette action future publiée.");
-        setError(null);
-      })
-      .catch((reason: unknown) => {
-        if (active) setError(reason instanceof Error ? reason.message : "Destinations indisponibles.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [actionId]);
+  const shareDestinationSetters = useMemo(() => ({ setDestinations, setSelectedDestinationId, setSelectedTerritoryZone, setShareKind, setMessage, setError, setLoading }), [setDestinations, setSelectedDestinationId, setSelectedTerritoryZone, setShareKind, setMessage, setError, setLoading]); useShareDestinations(actionId, shareDestinationSetters);
 
   useEffect(() => {
     const query = recipientQuery.trim();

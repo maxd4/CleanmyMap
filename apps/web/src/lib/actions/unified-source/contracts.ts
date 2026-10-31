@@ -120,6 +120,17 @@ function buildActionContractInput(
     geometryConfidence: row.geometry_confidence ?? null,
     geometrySource: row.geometry_source ?? null,
     wasteKg: row.waste_kg,
+    ...buildActionContractDetailFields(row, parsedNotes, parsedMetadata, preparationData),
+  };
+}
+
+function buildActionContractDetailFields(
+  row: ActionRow,
+  parsedNotes: ReturnType<typeof parseDrawingFromNotes>,
+  parsedMetadata: ReturnType<typeof extractActionMetadataFromNotes>,
+  preparationData: ActionRow["preparation_data"],
+) {
+  return {
     cigaretteButtsMeasurements: parsedMetadata.cigaretteButtsMeasurements,
     volunteerParticipation: resolvePersistedVolunteerParticipation({
       childrenCount: row.children_count,

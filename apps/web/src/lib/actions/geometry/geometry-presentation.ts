@@ -148,13 +148,27 @@ function observedCoverageSources(item: ActionMapItem): ActionGeometryOrigin[] {
     );
 }
 
-function getGpxProvenancePresentation(item: ActionMapItem): GeometryPresentation | null {
-  const preparationData = item.contract?.metadata.preparationData;
+function hasPlannedGpxProvenance(
+  preparationData: NonNullable<ActionMapItem["contract"]>["metadata"]["preparationData"] | undefined,
+): boolean {
   const gpxImport = preparationData?.gpxImport;
-  const isPlanned = preparationData?.gpxImportProvenance === "planned" ||
+  return preparationData?.gpxImportProvenance === "planned" ||
     gpxImport?.intent === "planned" ||
     gpxImport?.provenance === "planned";
-  if (isPlanned) {
+}
+
+function hasUnknownGpxProvenance(
+  preparationData: NonNullable<ActionMapItem["contract"]>["metadata"]["preparationData"] | undefined,
+): boolean {
+  const gpxImport = preparationData?.gpxImport;
+  return preparationData?.gpxImportProvenance === "unknown" ||
+    (gpxImport?.intent === "observed" && gpxImport.provenance === "unknown") ||
+    (Array.isArray(gpxImport?.files) && gpxImport.intent !== "observed");
+}
+
+function getGpxProvenancePresentation(item: ActionMapItem): GeometryPresentation | null {
+  const preparationData = item.contract?.metadata.preparationData;
+  if (hasPlannedGpxProvenance(preparationData)) {
     return buildPresentation(
       "gpx_import",
       "planned",
@@ -163,10 +177,7 @@ function getGpxProvenancePresentation(item: ActionMapItem): GeometryPresentation
       "planned_gpx",
     );
   }
-  const isUnknown = preparationData?.gpxImportProvenance === "unknown" ||
-    (gpxImport?.intent === "observed" && gpxImport.provenance === "unknown") ||
-    (Array.isArray(gpxImport?.files) && gpxImport.intent !== "observed");
-  if (isUnknown) {
+  if (hasUnknownGpxProvenance(preparationData)) {
     return buildPresentation(
       "gpx_import",
       "contextual",

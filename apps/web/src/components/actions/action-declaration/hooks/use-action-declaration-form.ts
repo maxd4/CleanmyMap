@@ -7,6 +7,101 @@ import { resolveActionDeclarationGeometryState } from "./action-declaration-form
 import { buildActionDeclarationFormResult } from "./use-action-declaration-form-result";
 import { createInitialFormState } from "../payload";
 
+type ActionDeclarationExecutionStateParams = {
+  lifecycle: ReturnType<typeof useActionDeclarationFormLifecycle>;
+  media: ReturnType<typeof useActionDeclarationFormMedia>;
+  geometry: ReturnType<typeof resolveActionDeclarationGeometryState>;
+  declarationMode: "complete";
+  isAuthenticated: boolean;
+  initialActionId: string | null;
+  linkedEventId?: string;
+  userMetadata: ActionDeclarationUserMetadata;
+  isCleanPlaceMode: boolean;
+  onBusinessDataChange: () => void;
+};
+
+function useActionDeclarationFormExecutionState(
+  params: ActionDeclarationExecutionStateParams,
+) {
+  const { lifecycle, media } = params;
+  return useActionDeclarationFormExecution({
+    form: lifecycle.form,
+    setForm: lifecycle.setForm,
+    declarationMode: params.declarationMode,
+    isAuthenticated: params.isAuthenticated,
+    draftStorageReadError: lifecycle.draft.draftStorageReadError,
+    initialActionId: params.initialActionId,
+    linkedEventId: params.linkedEventId,
+    userMetadata: params.userMetadata,
+    manualDrawingEnabled: lifecycle.manualDrawingEnabled,
+    manualDrawing: lifecycle.manualDrawing,
+    manualDrawingSource: lifecycle.manualDrawingSource,
+    photoAssets: media.photoAssets,
+    photoPreparationPending: media.photoPreparationPending,
+    visionEstimate: media.visionEstimate,
+    geometry: params.geometry,
+    isCleanPlaceMode: params.isCleanPlaceMode,
+    loadedActionPhase: lifecycle.hydration.loadedActionPhase,
+    setLoadedActionPhase: lifecycle.hydration.setLoadedActionPhase,
+    setHasAttemptedSubmit: lifecycle.setHasAttemptedSubmit,
+    clearDraft: lifecycle.draft.clearDraft,
+    creationRequestId: lifecycle.draft.creationRequestId,
+    persistedDrawing: lifecycle.persistedDrawing,
+    setPersistedDrawing: lifecycle.setPersistedDrawing,
+    setPersistedDrawingSource: lifecycle.setPersistedDrawingSource,
+    setManualDrawingState: lifecycle.setManualDrawingState,
+    setManualDrawingSource: lifecycle.setManualDrawingSource,
+    setGpxError: lifecycle.setGpxError,
+    onBusinessDataChange: params.onBusinessDataChange,
+    saveDraftIfAllowed: lifecycle.draft.saveDraftIfAllowed,
+  });
+}
+
+function buildResetForm(params: {
+  setForm: (state: ReturnType<typeof createInitialFormState>) => void;
+  resolvedDefaultActorName: string;
+  initialRecordType: "action";
+  setManualDrawingState: (value: null) => void;
+  setManualDrawingSource: (value: null) => void;
+  setPersistedDrawing: (value: null) => void;
+  setPersistedDrawingSource: (value: null) => void;
+  setGpxError: (value: null) => void;
+  clearPhotos: () => void;
+  resetSubmission: () => void;
+}) {
+  return () => {
+    params.setForm(createInitialFormState(params.resolvedDefaultActorName, params.initialRecordType));
+    params.setManualDrawingState(null);
+    params.setManualDrawingSource(null);
+    params.setPersistedDrawing(null);
+    params.setPersistedDrawingSource(null);
+    params.setGpxError(null);
+    params.clearPhotos();
+    params.resetSubmission();
+  };
+}
+
+function resolveFormGeometry(
+  lifecycle: ReturnType<typeof useActionDeclarationFormLifecycle>,
+) {
+  return resolveActionDeclarationGeometryState({
+    form: lifecycle.form,
+    manualDrawing: lifecycle.manualDrawing,
+    manualDrawingSource: lifecycle.manualDrawingSource,
+    persistedDrawing: lifecycle.persistedDrawing,
+    persistedDrawingSource: lifecycle.persistedDrawingSource,
+  });
+}
+
+function useSubmissionValidationInvalidation(
+  validationInvalidationRef: React.MutableRefObject<() => void>,
+  execution: { submission: { invalidateValidation: () => void } },
+) {
+  useEffect(() => {
+    validationInvalidationRef.current = execution.submission.invalidateValidation;
+  }, [execution.submission.invalidateValidation, validationInvalidationRef]);
+}
+
 type UseActionDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
@@ -40,14 +135,6 @@ export function useActionDeclarationForm({
   const {
     form,
     setForm,
-    manualDrawingEnabled,
-    manualDrawing,
-    manualDrawingSource,
-    persistedDrawing,
-    persistedDrawingSource,
-    setHasAttemptedSubmit,
-    hydration,
-    draft,
     setPersistedDrawing,
     setPersistedDrawingSource,
     setManualDrawingState,
@@ -57,61 +144,33 @@ export function useActionDeclarationForm({
   } = lifecycle;
   const isCleanPlaceMode = form.recordType === "clean_place";
   const media = useActionDeclarationFormMedia({ onPhotoMutation: invalidateValidation });
-  const { photoAssets, visionEstimate, photoPreparationPending } = media;
 
-  const geometry = resolveActionDeclarationGeometryState({
-    form,
-    manualDrawing,
-    manualDrawingSource,
-    persistedDrawing,
-    persistedDrawingSource,
-  });
-  // Network reconstruction is server-only; the browser never routes or calls
-  // a public routing provider for an action draft.
-  const execution = useActionDeclarationFormExecution({
-    form,
-    setForm,
+  const geometry = resolveFormGeometry(lifecycle);
+  const execution = useActionDeclarationFormExecutionState({
+    lifecycle,
+    media,
+    geometry,
     declarationMode,
     isAuthenticated,
-    draftStorageReadError: draft.draftStorageReadError,
     initialActionId,
     linkedEventId,
     userMetadata,
-    manualDrawingEnabled,
-    manualDrawing,
-    manualDrawingSource,
-    photoAssets,
-    photoPreparationPending,
-    visionEstimate,
-    geometry,
     isCleanPlaceMode,
-    loadedActionPhase: hydration.loadedActionPhase,
-    setLoadedActionPhase: hydration.setLoadedActionPhase,
-    setHasAttemptedSubmit,
-    clearDraft: draft.clearDraft,
-    creationRequestId: draft.creationRequestId,
-    persistedDrawing,
-    setPersistedDrawing,
-    setPersistedDrawingSource,
+    onBusinessDataChange: invalidateValidation,
+  });
+  useSubmissionValidationInvalidation(validationInvalidationRef, execution);
+
+  const resetForm = buildResetForm({
+    setForm,
+    resolvedDefaultActorName,
+    initialRecordType,
     setManualDrawingState,
     setManualDrawingSource,
+    setPersistedDrawing,
+    setPersistedDrawingSource,
     setGpxError,
-    onBusinessDataChange: invalidateValidation,
-    saveDraftIfAllowed: draft.saveDraftIfAllowed,
+    clearPhotos: media.clearPhotos,
+    resetSubmission: execution.submission.resetSubmission,
   });
-  useEffect(() => {
-    validationInvalidationRef.current = execution.submission.invalidateValidation;
-  }, [execution.submission.invalidateValidation]);
-
-  const resetForm = () => {
-    setForm(createInitialFormState(resolvedDefaultActorName, initialRecordType));
-    setManualDrawingState(null);
-    setManualDrawingSource(null);
-    setPersistedDrawing(null);
-    setPersistedDrawingSource(null);
-    setGpxError(null);
-    media.clearPhotos();
-    execution.submission.resetSubmission();
-  };
   return buildActionDeclarationFormResult({ lifecycle, media, geometry, execution, isCleanPlaceMode, resetForm });
 }

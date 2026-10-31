@@ -14,6 +14,7 @@ import {
 } from "./quiz-milestones";
 import {
   recordQuizProgression,
+  type QuizProgressionCommitResult,
   type QuizProgressionEventCandidate,
 } from "./progression-event-writer";
 import { refreshProgressionProfile } from "./progression-tracking";
@@ -99,16 +100,7 @@ export async function syncQuizQuestionTypeProgress(
     events: [...typeCandidates, ...balanceCandidates],
   });
 
-  const insertedSourceIds = new Set(commit.insertedEvents.map((event) => event.sourceId));
-  const typeAwards = computeQuizProgressAwards({
-    previousCount: commit.previousCount,
-    nextCount: commit.correctCount,
-    questionType: params.questionType,
-  }).filter((award) => insertedSourceIds.has(award.sourceId));
-  const balanceAwards = computeQuizBalanceAwards({
-    previousBalancedCount: commit.previousBalancedCount,
-    nextBalancedCount: commit.balancedCount,
-  }).filter((award) => insertedSourceIds.has(award.sourceId));
+  const { typeAwards, balanceAwards } = buildQuizAwardSets(commit, params.questionType);
 
   await announceQuizProgressAwards(supabase, params, typeAwards);
   await announceQuizBalanceAwards(supabase, params, balanceAwards, commit.balancedCount);
@@ -117,6 +109,33 @@ export async function syncQuizQuestionTypeProgress(
     await refreshProgressionProfile(supabase, params.userId);
   }
 
+  return buildQuizProgressResult(params, commit, typeAwards, balanceAwards);
+}
+
+function buildQuizAwardSets(
+  commit: QuizProgressionCommitResult,
+  questionType: string,
+): { typeAwards: QuizProgressAward[]; balanceAwards: QuizBalanceAward[] } {
+  const insertedSourceIds = new Set(commit.insertedEvents.map((event) => event.sourceId));
+  return {
+    typeAwards: computeQuizProgressAwards({
+      previousCount: commit.previousCount,
+      nextCount: commit.correctCount,
+      questionType,
+    }).filter((award) => insertedSourceIds.has(award.sourceId)),
+    balanceAwards: computeQuizBalanceAwards({
+      previousBalancedCount: commit.previousBalancedCount,
+      nextBalancedCount: commit.balancedCount,
+    }).filter((award) => insertedSourceIds.has(award.sourceId)),
+  };
+}
+
+function buildQuizProgressResult(
+  params: SyncQuizQuestionTypeProgressParams,
+  commit: QuizProgressionCommitResult,
+  typeAwards: QuizProgressAward[],
+  balanceAwards: QuizBalanceAward[],
+): QuizProgressSyncResult {
   return {
     questionType: params.questionType,
     questionTypeLabel: getQuizPedagogicalTypeLabel(params.questionType),

@@ -219,6 +219,21 @@ function resolveExplicitGeometryMethod(
   return undefined;
 }
 
+function resolveFallbackGeometry(
+  input: FinalActionGeometryInput,
+  operationalRoute: OperationalRoute | null,
+  operationalCandidate: Pick<FinalActionGeometry, "drawing" | "source"> | null,
+): FinalActionGeometry | null {
+  if (input.geometryMethod === "automatic" || !operationalRoute || !operationalCandidate) {
+    return null;
+  }
+  return {
+    ...operationalCandidate,
+    operationalRoute,
+    meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
+  };
+}
+
 /**
  * Selects the one active geometry without routing, snapping, or reconstruction.
  * The order is field tracking, GPX, manual drawing, operational route, persisted geometry, then
@@ -241,13 +256,7 @@ export function resolveFinalActionGeometry(
   const persistedCandidate = resolvePersistedCandidate(input);
   if (persistedCandidate) return persistedCandidate;
 
-  return input.geometryMethod === "automatic" ? null : operationalCandidate && operationalRoute
-    ? {
-        ...operationalCandidate,
-        operationalRoute,
-        meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
-      }
-    : null;
+  return resolveFallbackGeometry(input, operationalRoute, operationalCandidate);
 }
 
 /**

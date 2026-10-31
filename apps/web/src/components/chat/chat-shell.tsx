@@ -95,7 +95,25 @@ function useChatShellNavigationEffects({
   });
 }
 
-export function ChatShell({
+function ChatShellOutput(props: React.ComponentProps<typeof ChatShellView>) {
+  return <ChatShellView {...props} />;
+}
+
+function usePublicThreadVisibility(params: {
+  messagerieMode: boolean;
+  initialChannelType: ChatChannelType;
+  initialTopicId?: ChatTopicId | null;
+  initialActionId?: string | null;
+  initialMessageId?: string | null;
+}) {
+  return useState(() => shouldOpenPublicThreadOnMobile(params));
+}
+
+function useChatShellTone(tone: "light" | "dark"): boolean {
+  return tone === "light";
+}
+
+function ChatShellRuntime({
   initialChannelType = "community",
   initialArrondissement,
   initialZoneName,
@@ -123,15 +141,7 @@ export function ChatShell({
   const { locale } = useSitePreferences();
   const pathname = usePathname();
   const [activeFeedbackId, setActiveFeedbackId] = useState(initialFeedbackId);
-  const [isPublicThreadOpen, setIsPublicThreadOpen] = useState(
-    () => shouldOpenPublicThreadOnMobile({
-      messagerieMode,
-      initialChannelType,
-      initialTopicId,
-      initialActionId,
-      initialMessageId,
-    }),
-  );
+  const [isPublicThreadOpen, setIsPublicThreadOpen] = usePublicThreadVisibility({ messagerieMode, initialChannelType, initialTopicId, initialActionId, initialMessageId });
 
   const chatContext = useChatShellContext({
     initialChannelType,
@@ -169,14 +179,14 @@ export function ChatShell({
     setActiveFeedbackId,
   });
 
-  return <ChatShellView
+  return <ChatShellOutput
     context={chatContext}
     composer={controller.composer}
     submit={controller.submit}
     pollVoting={controller.pollVoting}
     pathname={pathname}
     locale={locale}
-    isLight={tone === "light"}
+    isLight={useChatShellTone(tone)}
     fullHeight={fullHeight}
     messagerieMode={messagerieMode}
     initialRecipient={initialRecipient}
@@ -186,4 +196,8 @@ export function ChatShell({
     isPublicThreadOpen={isPublicThreadOpen}
     setIsPublicThreadOpen={setIsPublicThreadOpen}
   />;
+}
+
+export function ChatShell(props: ChatShellProps) {
+  return <ChatShellRuntime {...props} />;
 }

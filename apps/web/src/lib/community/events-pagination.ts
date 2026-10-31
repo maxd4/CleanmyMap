@@ -31,6 +31,18 @@ function decodePart(value: string): string | null {
   }
 }
 
+function isValidCommunityEventsCursorParts(
+  parts: string[],
+  eventDate: string | null,
+  createdAt: string | null,
+  id: string | null,
+): boolean {
+  return parts[1] === "upcoming" || parts[1] === "past"
+    ? Boolean(eventDate && createdAt && id && EVENT_DATE_PATTERN.test(eventDate) && CREATED_AT_PATTERN.test(createdAt) &&
+      isValidDate(eventDate) && isValidDate(createdAt) && ID_PATTERN.test(id) && id.length <= MAX_ID_LENGTH)
+    : false;
+}
+
 export function buildCommunityEventsPageCursor(
   cursor: Omit<CommunityEventsPageCursor, "version">,
 ): string {
@@ -54,26 +66,15 @@ export function parseCommunityEventsPageCursor(
   const eventDate = decodePart(parts[2]);
   const createdAt = decodePart(parts[3]);
   const id = decodePart(parts[4]);
-  if (
-    (parts[1] !== "upcoming" && parts[1] !== "past") ||
-    !eventDate ||
-    !createdAt ||
-    !id ||
-    !EVENT_DATE_PATTERN.test(eventDate) ||
-    !CREATED_AT_PATTERN.test(createdAt) ||
-    !isValidDate(eventDate) ||
-    !isValidDate(createdAt) ||
-    !ID_PATTERN.test(id) ||
-    id.length > MAX_ID_LENGTH
-  ) {
+  if (!isValidCommunityEventsCursorParts(parts, eventDate, createdAt, id)) {
     return null;
   }
 
   return {
     version: 1,
-    phase: parts[1],
-    eventDate,
-    createdAt,
-    id,
+    phase: parts[1] as CommunityEventsPagePhase,
+    eventDate: eventDate!,
+    createdAt: createdAt!,
+    id: id!,
   };
 }

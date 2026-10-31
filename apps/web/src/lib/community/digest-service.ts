@@ -127,6 +127,54 @@ function requestedSources(subscriptions: readonly CommunitySubscriptionRow[]): S
   return sources;
 }
 
+function collectActionDigestReferences(
+  actions: readonly ActionRow[],
+  periods: readonly CommunityDigestPeriod[],
+  now: Date,
+  source: "future_actions" | "results",
+): CommunityDigestReference[] {
+  const references: CommunityDigestReference[] = [];
+  for (const action of actions) {
+    const visibleAt = source === "future_actions" ? actionPublicVisibilityAt(action) : action.results_published_at ?? null;
+    const visible = source === "future_actions"
+      ? isPublishedFuturePreAction(action, now)
+      : action.action_phase === "post_action_complete" && action.status === "approved";
+    if (!visible || !visibleAt || !isWithinAnyPeriod(visibleAt, periods)) continue;
+    const reference = toActionReference(action, source, visibleAt);
+    if (reference) references.push(reference);
+  }
+  return references;
+}
+
+async function collectNeedDigestReferences(
+  supabase: SupabaseClient,
+  actions: readonly ActionRow[],
+  periods: readonly CommunityDigestPeriod[],
+  now: Date,
+): Promise<CommunityDigestReference[]> {
+  const futureActions = actions.filter((action) => isPublishedFuturePreAction(action, now));
+  const actionById = new Map(futureActions.map((action) => [action.id, action]));
+  if (actionById.size === 0) return [];
+  const result = await supabase
+    .from("action_needs")
+    .select(ACTION_NEED_SELECT_FIELDS)
+    .in("action_id", [...actionById.keys()])
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(0, MAX_NEED_ROWS - 1);
+  if (result.error) throw new Error(result.error.message);
+  const references: CommunityDigestReference[] = [];
+  for (const rawNeed of result.data ?? []) {
+    const need = rawNeed as ActionNeedRow;
+    const action = actionById.get(need.action_id);
+    if (!action || getActionNeedEffectiveStatus(need, now) !== "open") continue;
+    const reference = toNeedReference(need, action);
+    if (reference && isWithinAnyPeriod(reference.visibleAt, periods)) references.push(reference);
+  }
+  return references;
+}
+
 export async function listEnabledCommunitySubscriptions(
   supabase: SupabaseClient,
   userId: string,
@@ -189,46 +237,9 @@ export async function loadPublicCommunityDigestReferences(
   const publicActions = actions.filter((action) => isReferencePublicForDigest(action, now));
   const references: CommunityDigestReference[] = [];
 
-  if (sources.has("future_actions")) {
-    for (const action of publicActions) {
-      const visibleAt = actionPublicVisibilityAt(action);
-      if (!isPublishedFuturePreAction(action, now) || !visibleAt || !isWithinAnyPeriod(visibleAt, periods)) continue;
-      const reference = toActionReference(action, "future_actions", visibleAt);
-      if (reference) references.push(reference);
-    }
-  }
-
-  if (sources.has("results")) {
-    for (const action of publicActions) {
-      const visibleAt = action.results_published_at ?? null;
-      if (action.action_phase !== "post_action_complete" || action.status !== "approved" || !visibleAt || !isWithinAnyPeriod(visibleAt, periods)) continue;
-      const reference = toActionReference(action, "results", visibleAt);
-      if (reference) references.push(reference);
-    }
-  }
-
-  if (sources.has("needs")) {
-    const futureActions = publicActions.filter((action) => isPublishedFuturePreAction(action, now));
-    const actionById = new Map(futureActions.map((action) => [action.id, action]));
-    if (actionById.size > 0) {
-      const result = await supabase
-        .from("action_needs")
-        .select(ACTION_NEED_SELECT_FIELDS)
-        .in("action_id", [...actionById.keys()])
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .range(0, MAX_NEED_ROWS - 1);
-      if (result.error) throw new Error(result.error.message);
-      for (const rawNeed of result.data ?? []) {
-        const need = rawNeed as ActionNeedRow;
-        const action = actionById.get(need.action_id);
-        if (!action || getActionNeedEffectiveStatus(need, now) !== "open") continue;
-        const reference = toNeedReference(need, action);
-        if (reference && isWithinAnyPeriod(reference.visibleAt, periods)) references.push(reference);
-      }
-    }
-  }
+  if (sources.has("future_actions")) references.push(...collectActionDigestReferences(publicActions, periods, now, "future_actions"));
+  if (sources.has("results")) references.push(...collectActionDigestReferences(publicActions, periods, now, "results"));
+  if (sources.has("needs")) references.push(...await collectNeedDigestReferences(supabase, publicActions, periods, now));
 
   return references;
 }

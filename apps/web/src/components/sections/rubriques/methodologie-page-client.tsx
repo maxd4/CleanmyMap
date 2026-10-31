@@ -78,6 +78,61 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
   return <ActionMapMethodologySectionImpl isFrench={isFrench} actionMapDoc={ACTION_MAP_DOC} />;
 }
 
+type LegacyMethodologieLayoutProps = Omit<LegacyMethodologieContentProps, "contentOnly" | "includeMapAndRouteContent" | "includeReportsContent" | "includeTransverseContent" | "impactTerrainResults" | "impactTerrainGeneratedAt" | "impactTerrainMethodologyVersion" | "impactElectricity" | "impactWater"> & {
+  contentOnly: boolean;
+  includeMapAndRouteContent: boolean;
+  includeReportsContent: boolean;
+  includeTransverseContent: boolean;
+  impactTerrainResults: PublicLandingActionAggregation | null;
+  impactTerrainGeneratedAt: string | null;
+  impactTerrainMethodologyVersion: string | null;
+  isFrench: boolean;
+  locale: "fr" | "en";
+  methodology: ReturnType<typeof buildActionImpactMethodology>;
+  sources: ReturnType<typeof buildActionImpactMethodology>["sources"];
+  version: string;
+  t: (key: string) => string;
+  electricity: ReturnType<typeof buildElectricityEstimate>;
+  water: ReturnType<typeof buildWaterEstimate>;
+};
+
+function LegacyMethodologieLayout({
+  contentOnly,
+  includeMapAndRouteContent,
+  includeReportsContent,
+  includeTransverseContent,
+  freePlanServices,
+  impactTotals,
+  impactSnapshots,
+  impactGeneratedAt,
+  impactLaunchedAt,
+  githubStats,
+  impactTerrainResults,
+  impactTerrainGeneratedAt,
+  impactTerrainMethodologyVersion,
+  isFrench,
+  locale,
+  methodology,
+  sources,
+  version,
+  t,
+  electricity,
+  water,
+}: LegacyMethodologieLayoutProps) {
+  return (
+    <div className={cn(contentOnly ? "space-y-10" : "relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-6")}>
+      {!contentOnly ? <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]" /> : null}
+      <div className={cn("flex flex-col space-y-10", !contentOnly && "cmm-page-width px-4 pt-2 sm:px-6 lg:px-8")}>
+        {!contentOnly ? <PageHeader align="center" tone="red" title={<span className="inline-flex items-center gap-3"><Beaker size={24} aria-hidden="true" /><span>{t("header_title")}</span></span>} subtitle={t("header_desc")} /> : null}
+        <MethodologieNavigationSections actionMapSection={<ActionMapMethodologySection isFrench={isFrench} />} includeMapAndRouteContent={includeMapAndRouteContent} includeReportsContent={includeReportsContent} impactTerrainResults={impactTerrainResults} impactTerrainGeneratedAt={impactTerrainGeneratedAt} impactTerrainMethodologyVersion={impactTerrainMethodologyVersion} isFrench={isFrench} />
+        <MethodologieTransverseSections freePlanServices={freePlanServices} githubStats={githubStats} impactTotals={impactTotals} includeTransverseContent={includeTransverseContent} isFrench={isFrench} locale={locale} methodology={methodology} quotaServicesDoc={QUOTA_SERVICES_DOC} />
+        <MethodologieReportSections electricity={electricity} freePlanServices={freePlanServices} githubStats={githubStats} impactDoc={IMPACT_DOC} impactGeneratedAt={impactGeneratedAt} impactLaunchedAt={impactLaunchedAt} impactSnapshots={impactSnapshots} impactTotals={impactTotals} includeReportsContent={includeReportsContent} isFrench={isFrench} methodology={methodology} sources={sources} t={t} water={water} />
+        <footer className="flex flex-col items-center justify-between gap-10 border-t border-rose-100 pt-10 sm:flex-row"><div className="space-y-3 text-center sm:text-left"><p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">CleanMyMap Engine v{version}</p><p className="max-w-md text-xs font-bold leading-relaxed text-rose-800">Les formules, sources et limites sont documentées dans les références associées à cette page.</p></div></footer>
+      </div>
+    </div>
+  );
+}
+
 export function LegacyMethodologieContent({
   contentOnly = false,
   includeMapAndRouteContent = true,
@@ -103,55 +158,29 @@ export function LegacyMethodologieContent({
   const electricity = impactElectricity ?? buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
   const water = impactWater ?? buildWaterEstimate({ monthlyElectricityKwh: null, monthlyDirectWaterConsumptionLiters: null, monthlyEvaporatedWaterLiters: null });
 
-  return (
-    <div className={cn(contentOnly ? "space-y-10" : "relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-6")}>
-      {!contentOnly ? <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]" /> : null}
-      <div className={cn("flex flex-col space-y-10", !contentOnly && "cmm-page-width px-4 pt-2 sm:px-6 lg:px-8")}>
-        {!contentOnly ? <PageHeader align="center" tone="red" title={<span className="inline-flex items-center gap-3"><Beaker size={24} aria-hidden="true" /><span>{t("header_title")}</span></span>} subtitle={t("header_desc")} /> : null}
-
-        <MethodologieNavigationSections
-          actionMapSection={<ActionMapMethodologySection isFrench={isFrench} />}
-          includeMapAndRouteContent={includeMapAndRouteContent}
-          includeReportsContent={includeReportsContent}
-          impactTerrainResults={impactTerrainResults}
-          impactTerrainGeneratedAt={impactTerrainGeneratedAt}
-          impactTerrainMethodologyVersion={impactTerrainMethodologyVersion}
-          isFrench={isFrench}
-        />
-        <MethodologieTransverseSections
-          freePlanServices={freePlanServices}
-          githubStats={githubStats}
-          impactTotals={impactTotals}
-          includeTransverseContent={includeTransverseContent}
-          isFrench={isFrench}
-          locale={locale}
-          methodology={methodology}
-          quotaServicesDoc={QUOTA_SERVICES_DOC}
-        />
-        <MethodologieReportSections
-          electricity={electricity}
-          freePlanServices={freePlanServices}
-          githubStats={githubStats}
-          impactDoc={IMPACT_DOC}
-          impactGeneratedAt={impactGeneratedAt}
-          impactLaunchedAt={impactLaunchedAt}
-          impactSnapshots={impactSnapshots}
-          impactTotals={impactTotals}
-          includeReportsContent={includeReportsContent}
-          isFrench={isFrench}
-          methodology={methodology}
-          sources={sources}
-          t={t}
-          water={water}
-        />
-
-        <footer className="flex flex-col items-center justify-between gap-10 border-t border-rose-100 pt-10 sm:flex-row">
-          <div className="space-y-3 text-center sm:text-left">
-            <p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">CleanMyMap Engine v{version}</p>
-            <p className="max-w-md text-xs font-bold leading-relaxed text-rose-800">Les formules, sources et limites sont documentées dans les références associées à cette page.</p>
-          </div>
-        </footer>
-      </div>
-    </div>
-  );
+  return <LegacyMethodologieLayout
+    {...{
+      contentOnly,
+      includeMapAndRouteContent,
+      includeReportsContent,
+      includeTransverseContent,
+      freePlanServices,
+      impactTotals,
+      impactSnapshots,
+      impactGeneratedAt,
+      impactLaunchedAt,
+      githubStats,
+      impactTerrainResults,
+      impactTerrainGeneratedAt,
+      impactTerrainMethodologyVersion,
+      isFrench,
+       locale: locale as "fr" | "en",
+      methodology,
+      sources,
+      version,
+      t,
+      electricity,
+      water,
+    }}
+  />;
 }

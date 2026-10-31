@@ -177,6 +177,32 @@ function projectAtCumulativeDistance(
   return coordinates.at(-1)!;
 }
 
+function projectKnownCoordinateOnSegment(
+  start: [number, number],
+  end: [number, number],
+  coordinate: [number, number],
+): { distanceMeters: number; ratio: number } {
+  const referenceLatitude = (start[0] + end[0]) / 2;
+  const longitudeScale = METERS_PER_DEGREE_LATITUDE * Math.max(
+    Math.abs(Math.cos((referenceLatitude * Math.PI) / 180)),
+    Number.EPSILON,
+  );
+  const point = { x: coordinate[1] * longitudeScale, y: coordinate[0] * METERS_PER_DEGREE_LATITUDE };
+  const segmentStart = { x: start[1] * longitudeScale, y: start[0] * METERS_PER_DEGREE_LATITUDE };
+  const segmentEnd = { x: end[1] * longitudeScale, y: end[0] * METERS_PER_DEGREE_LATITUDE };
+  const deltaX = segmentEnd.x - segmentStart.x;
+  const deltaY = segmentEnd.y - segmentStart.y;
+  const segmentLengthSquared = deltaX ** 2 + deltaY ** 2;
+  const ratio = segmentLengthSquared > 0
+    ? Math.max(0, Math.min(1, ((point.x - segmentStart.x) * deltaX + (point.y - segmentStart.y) * deltaY) / segmentLengthSquared))
+    : 0;
+  const projectedCoordinate: [number, number] = [
+    start[0] + (end[0] - start[0]) * ratio,
+    start[1] + (end[1] - start[1]) * ratio,
+  ];
+  return { distanceMeters: haversineDistanceKm(coordinate, projectedCoordinate) * 1_000, ratio };
+}
+
 function projectKnownCoordinate(
   coordinates: readonly [number, number][],
   cumulativeDistances: readonly number[],
@@ -188,44 +214,11 @@ function projectKnownCoordinate(
   for (let index = 1; index < coordinates.length; index += 1) {
     const start = coordinates[index - 1]!;
     const end = coordinates[index]!;
-    const referenceLatitude = (start[0] + end[0]) / 2;
-    const longitudeScale = METERS_PER_DEGREE_LATITUDE * Math.max(
-      Math.abs(Math.cos((referenceLatitude * Math.PI) / 180)),
-      Number.EPSILON,
-    );
-    const point = {
-      x: coordinate[1] * longitudeScale,
-      y: coordinate[0] * METERS_PER_DEGREE_LATITUDE,
-    };
-    const segmentStart = {
-      x: start[1] * longitudeScale,
-      y: start[0] * METERS_PER_DEGREE_LATITUDE,
-    };
-    const segmentEnd = {
-      x: end[1] * longitudeScale,
-      y: end[0] * METERS_PER_DEGREE_LATITUDE,
-    };
-    const deltaX = segmentEnd.x - segmentStart.x;
-    const deltaY = segmentEnd.y - segmentStart.y;
-    const segmentLengthSquared = deltaX ** 2 + deltaY ** 2;
-    const ratio = segmentLengthSquared > 0
-      ? Math.max(
-          0,
-          Math.min(
-            1,
-            ((point.x - segmentStart.x) * deltaX + (point.y - segmentStart.y) * deltaY) /
-              segmentLengthSquared,
-          ),
-        )
-      : 0;
-    const projectedCoordinate: [number, number] = [
-      start[0] + (end[0] - start[0]) * ratio,
-      start[1] + (end[1] - start[1]) * ratio,
-    ];
-    const distanceMeters = haversineDistanceKm(coordinate, projectedCoordinate) * 1_000;
+    const projected = projectKnownCoordinateOnSegment(start, end, coordinate);
+    const distanceMeters = projected.distanceMeters;
     const cumulativeDistanceKm =
       (cumulativeDistances[index - 1] ?? 0) +
-      (cumulativeDistances[index]! - (cumulativeDistances[index - 1] ?? 0)) * ratio;
+      (cumulativeDistances[index]! - (cumulativeDistances[index - 1] ?? 0)) * projected.ratio;
     if (!nearest || distanceMeters < nearest.distanceMeters) {
       nearest = { distanceMeters, cumulativeDistanceKm };
     }
@@ -238,6 +231,28 @@ function projectKnownCoordinate(
     cumulativeDistanceKm: nearest.cumulativeDistanceKm,
     progress: totalDistanceKm > 0 ? nearest.cumulativeDistanceKm / totalDistanceKm : null,
   };
+}
+
+function resolveMeetingPointProjectionMetrics(
+  geometry: Pick<RouteGeometry, "coordinates">,
+  candidate: MeetingPointCandidate,
+  cumulativeDistances: readonly number[],
+  totalDistanceKm: number,
+): { coordinate: [number, number]; provenance: NonNullable<MeetingPointProjection["provenance"]>; cumulativeDistanceKm: number | null; progress: number | null } {
+  const candidateCoordinate = isFiniteCoordinate(candidate.coordinate) ? candidate.coordinate : null;
+  const provenance = candidateCoordinate && candidate.provenance && candidate.provenance !== "final_geometry_midpoint"
+    ? candidate.provenance
+    : "final_geometry_midpoint";
+  if (provenance === "final_geometry_midpoint") {
+    return {
+      coordinate: projectAtCumulativeDistance(geometry.coordinates, cumulativeDistances, totalDistanceKm / 2),
+      provenance,
+      cumulativeDistanceKm: totalDistanceKm / 2,
+      progress: 0.5,
+    };
+  }
+  const metrics = projectKnownCoordinate(geometry.coordinates, cumulativeDistances, candidateCoordinate!);
+  return { coordinate: candidateCoordinate!, provenance, ...metrics };
 }
 
 /**
@@ -261,27 +276,19 @@ export function projectMeetingPointFromGeometry(
   const totalDistanceKm = cumulativeDistances.at(-1) ?? 0;
   if (!Number.isFinite(totalDistanceKm) || totalDistanceKm <= 0) return null;
 
-  const candidateCoordinate = isFiniteCoordinate(candidate.coordinate) ? candidate.coordinate : null;
-  const provenance = candidateCoordinate && candidate.provenance && candidate.provenance !== "final_geometry_midpoint"
-    ? candidate.provenance
-    : "final_geometry_midpoint";
-  const coordinate = provenance === "final_geometry_midpoint"
-    ? projectAtCumulativeDistance(geometry.coordinates, cumulativeDistances, totalDistanceKm / 2)
-    : candidateCoordinate!;
-  const metrics = provenance === "final_geometry_midpoint"
-    ? { cumulativeDistanceKm: totalDistanceKm / 2, progress: 0.5 }
-    : projectKnownCoordinate(geometry.coordinates, cumulativeDistances, coordinate);
-  const duration = metrics.progress !== null &&
+  const projection = resolveMeetingPointProjectionMetrics(geometry, candidate, cumulativeDistances, totalDistanceKm);
+  const { coordinate, provenance, cumulativeDistanceKm, progress } = projection;
+  const duration = progress !== null &&
     typeof geometry.durationMinutes === "number" &&
     Number.isFinite(geometry.durationMinutes) &&
     geometry.durationMinutes >= 0
-    ? geometry.durationMinutes * metrics.progress
+    ? geometry.durationMinutes * progress
     : null;
 
   return {
     coordinates: coordinate,
-    cumulativeDistanceKm: metrics.cumulativeDistanceKm,
-    progress: metrics.progress,
+    cumulativeDistanceKm,
+    progress,
     estimatedDurationMinutes: duration,
     provenance,
   };

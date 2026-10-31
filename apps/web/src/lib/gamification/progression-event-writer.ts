@@ -50,6 +50,69 @@ function toQuizProgressionRpcEvent(
   };
 }
 
+function readProgressionRpcNumber(payload: Record<string, unknown>, key: string): number {
+  const value = payload[key];
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error(`Quiz progression RPC returned invalid ${key}.`);
+  }
+  return value;
+}
+
+function resolveInsertedQuizEvent(
+  event: unknown,
+  userId: string,
+  candidates: readonly QuizProgressionEventCandidate[],
+  resolvedIdentityKeys: Set<string>,
+): QuizProgressionEventCandidate {
+  if (!event || typeof event !== "object" || Array.isArray(event)) {
+    throw new Error("Quiz progression RPC returned an invalid event.");
+  }
+  const rpcEvent = event as {
+    source_id?: unknown;
+    event_type?: unknown;
+    source_table?: unknown;
+    status_phase?: unknown;
+  };
+  const candidate = candidates.find((entry) =>
+    entry.userId === userId &&
+    entry.sourceId === rpcEvent.source_id &&
+    entry.eventType === rpcEvent.event_type &&
+    entry.sourceTable === rpcEvent.source_table &&
+    entry.statusPhase === rpcEvent.status_phase,
+  );
+  if (!candidate) throw new Error("Quiz progression RPC returned an unknown event.");
+  const identityKey = [candidate.userId, candidate.eventType, candidate.sourceTable, candidate.sourceId, candidate.statusPhase].join("\u001f");
+  if (resolvedIdentityKeys.has(identityKey)) throw new Error("Quiz progression RPC returned a duplicate event.");
+  resolvedIdentityKeys.add(identityKey);
+  return candidate;
+}
+
+function parseQuizProgressionCommit(
+  data: unknown,
+  userId: string,
+  candidates: readonly QuizProgressionEventCandidate[],
+): QuizProgressionCommitResult {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Quiz progression RPC returned an invalid payload.");
+  }
+  const payload = data as Record<string, unknown>;
+  const insertedEvents = payload.inserted_events;
+  if (!Array.isArray(insertedEvents)) {
+    throw new Error("Quiz progression RPC returned invalid inserted events.");
+  }
+  const resolvedIdentityKeys = new Set<string>();
+  const resolvedEvents = insertedEvents.map((event) =>
+    resolveInsertedQuizEvent(event, userId, candidates, resolvedIdentityKeys),
+  );
+  return {
+    previousCount: readProgressionRpcNumber(payload, "previous_count"),
+    correctCount: readProgressionRpcNumber(payload, "correct_count"),
+    previousBalancedCount: readProgressionRpcNumber(payload, "previous_balanced_count"),
+    balancedCount: readProgressionRpcNumber(payload, "balanced_count"),
+    insertedEvents: resolvedEvents,
+  };
+}
+
 export async function insertProgressionEvent(
   supabase: SupabaseClient,
   params: EventInsertParams,
@@ -99,67 +162,5 @@ export async function recordQuizProgression(
     throw error;
   }
 
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("Quiz progression RPC returned an invalid payload.");
-  }
-
-  const payload = data as Record<string, unknown>;
-  const numeric = (key: string): number => {
-    const value = payload[key];
-    if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
-      throw new Error(`Quiz progression RPC returned invalid ${key}.`);
-    }
-    return value;
-  };
-  const insertedEvents = payload.inserted_events;
-  if (!Array.isArray(insertedEvents)) {
-    throw new Error("Quiz progression RPC returned invalid inserted events.");
-  }
-
-  const resolvedIdentityKeys = new Set<string>();
-  const resolvedEvents = insertedEvents.map((event) => {
-    if (!event || typeof event !== "object" || Array.isArray(event)) {
-      throw new Error("Quiz progression RPC returned an invalid event.");
-    }
-    const rpcEvent = event as {
-      source_id?: unknown;
-      event_type?: unknown;
-      source_table?: unknown;
-      status_phase?: unknown;
-    };
-    const sourceId = rpcEvent.source_id;
-    const eventType = rpcEvent.event_type;
-    const sourceTable = rpcEvent.source_table;
-    const statusPhase = rpcEvent.status_phase;
-    const candidate = params.events.find((entry) =>
-      entry.userId === params.userId &&
-      entry.sourceId === sourceId &&
-      entry.eventType === eventType &&
-      entry.sourceTable === sourceTable &&
-      entry.statusPhase === statusPhase,
-    );
-    if (!candidate) {
-      throw new Error("Quiz progression RPC returned an unknown event.");
-    }
-    const identityKey = [
-      candidate.userId,
-      candidate.eventType,
-      candidate.sourceTable,
-      candidate.sourceId,
-      candidate.statusPhase,
-    ].join("\u001f");
-    if (resolvedIdentityKeys.has(identityKey)) {
-      throw new Error("Quiz progression RPC returned a duplicate event.");
-    }
-    resolvedIdentityKeys.add(identityKey);
-    return candidate;
-  });
-
-  return {
-    previousCount: numeric("previous_count"),
-    correctCount: numeric("correct_count"),
-    previousBalancedCount: numeric("previous_balanced_count"),
-    balancedCount: numeric("balanced_count"),
-    insertedEvents: resolvedEvents,
-  };
+  return parseQuizProgressionCommit(data, params.userId, params.events);
 }

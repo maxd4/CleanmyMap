@@ -55,6 +55,30 @@ type ActionListParams = {
 
 const PUBLIC_ACTION_PAGE_SIZE = 1000;
 
+function applyActionStatusFilter(
+  query: ActionQuery,
+  params: ActionListParams,
+  selectFields: string,
+): ActionQuery {
+  if (params.requirePublicCompletedActions) {
+    return query
+      .eq("status", "approved")
+      .eq("action_phase", "post_action_complete")
+      .not("published_at", "is", null)
+      .eq("moderation_visibility", "visible");
+  }
+  if (params.includeFuturePublicActions && params.status === "approved") {
+    const today = getActionParisDate();
+    return query.or(
+      `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),action_date.gte.${today})`,
+    );
+  }
+  if (params.status === "approved" && selectFields.includes("action_phase")) {
+    return query.eq("status", "approved").or("action_phase.neq.pre_action");
+  }
+  return params.status ? query.eq("status", params.status) : query;
+}
+
 function buildActionListQuery(
   query: ActionQuery,
   params: ActionListParams,
@@ -88,24 +112,8 @@ function buildActionListQuery(
     nextQuery = nextQuery.eq("access_mode", "public");
   }
 
-  if (params.requirePublicCompletedActions) {
-    nextQuery = nextQuery
-      .eq("status", "approved")
-      .eq("action_phase", "post_action_complete")
-      .not("published_at", "is", null)
-      .eq("moderation_visibility", "visible");
-  } else if (params.includeFuturePublicActions && params.status === "approved") {
-    const today = getActionParisDate();
-    nextQuery = nextQuery.or(
-      `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),action_date.gte.${today})`,
-    );
-  } else if (params.status === "approved" && selectFields.includes("action_phase")) {
-    // Public approved reads must never expose an unclassified/private
-    // pre-action, regardless of the creator's role.
-    nextQuery = nextQuery.eq("status", "approved").or("action_phase.neq.pre_action");
-  } else if (params.status) {
-    nextQuery = nextQuery.eq("status", params.status);
-  }
+  // Public approved reads must never expose an unclassified/private pre-action.
+  nextQuery = applyActionStatusFilter(nextQuery, params, selectFields);
   if (params.floorDate) {
     nextQuery = nextQuery.gte("action_date", params.floorDate);
   }

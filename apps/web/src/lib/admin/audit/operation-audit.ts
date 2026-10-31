@@ -16,6 +16,17 @@ import {
 } from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+type AdminAuditFilterQuery = {
+  eq(column: string, value: unknown): AdminAuditQuery;
+  gte(column: string, value: unknown): AdminAuditQuery;
+  lte(column: string, value: unknown): AdminAuditQuery;
+  or(filters: string): AdminAuditQuery;
+};
+type AdminAuditQuery = AdminAuditFilterQuery & {
+  order(column: string, options: { ascending: boolean }): AdminAuditQuery;
+  limit(count: number): Promise<{ error: { message: string } | null; data: unknown[] | null }>;
+};
+
 const AUDIT_FILE = join(
   process.cwd(),
   "data",
@@ -115,17 +126,7 @@ function parseProfileLookupRow(value: unknown): ProfileLookupRow | null {
 }
 
 function parseAdminOperationAuditDbRow(value: unknown): AdminOperationAuditDbRow | null {
-  if (!isRecord(value)) return null;
-  if (
-    typeof value.operation_id !== "string" ||
-    typeof value.at !== "string" ||
-    typeof value.actor_user_id !== "string" ||
-    !isAuditOperationType(value.operation_type) ||
-    !isAuditOutcome(value.outcome) ||
-    (value.target_id !== null && value.target_id !== undefined && typeof value.target_id !== "string") ||
-    (value.target_user_id !== null && value.target_user_id !== undefined && typeof value.target_user_id !== "string") ||
-    !isRecord(value.details)
-  ) return null;
+  if (!isRecord(value) || !isValidAdminOperationAuditDbRow(value)) return null;
   return {
     operation_id: value.operation_id,
     at: value.at,
@@ -136,6 +137,25 @@ function parseAdminOperationAuditDbRow(value: unknown): AdminOperationAuditDbRow
     target_user_id: value.target_user_id === undefined ? null : value.target_user_id,
     details: value.details,
   };
+}
+
+function isValidAdminOperationAuditDbRow(
+  value: Record<string, unknown>,
+): value is AdminOperationAuditDbRow {
+  return (
+    typeof value.operation_id === "string" &&
+    typeof value.at === "string" &&
+    typeof value.actor_user_id === "string" &&
+    isAuditOperationType(value.operation_type) &&
+    isAuditOutcome(value.outcome) &&
+    (value.target_id === null ||
+      value.target_id === undefined ||
+      typeof value.target_id === "string") &&
+    (value.target_user_id === null ||
+      value.target_user_id === undefined ||
+      typeof value.target_user_id === "string") &&
+    isRecord(value.details)
+  );
 }
 
 async function readStore(): Promise<AuditStore> {
@@ -251,6 +271,66 @@ async function normalizeSupabaseAuditRows(
     targetUserId: row.target_user_id ?? undefined,
     details: row.details,
   }));
+}
+
+function applyAdminAuditFilters(
+  query: AdminAuditQuery,
+  filters: AdminOperationAuditFilters,
+  cursor: { at: string; operationId: string } | null,
+): AdminAuditQuery {
+  let filtered = query;
+  if (filters.actorUserId?.trim()) filtered = filtered.eq("actor_user_id", filters.actorUserId.trim());
+  if (filters.operationType) filtered = filtered.eq("operation_type", filters.operationType);
+  if (filters.operation) filtered = filtered.eq("details->>operation", filters.operation.trim());
+  if (filters.outcome) filtered = filtered.eq("outcome", filters.outcome);
+  if (filters.targetId?.trim()) filtered = filtered.eq("target_id", filters.targetId.trim());
+  if (filters.from) filtered = filtered.gte("at", filters.from);
+  if (filters.to) filtered = filtered.lte("at", filters.to);
+  if (cursor) filtered = filtered.or(`at.lt.${cursor.at},and(at.eq.${cursor.at},operation_id.lt.${cursor.operationId})`);
+  return filtered;
+}
+
+async function tryListSupabaseAuditPage(
+  normalizedLimit: number,
+  filters: AdminOperationAuditFilters,
+  cursor: { at: string; operationId: string } | null,
+): Promise<AdminOperationAuditPage | null> {
+  try {
+    const supabase = getSupabaseServerClient(true);
+    const query = supabase
+      .from("admin_operations_audit")
+      .select("operation_id, at, actor_user_id, operation_type, outcome, target_id, target_user_id, details") as unknown as AdminAuditQuery;
+    const filteredQuery = applyAdminAuditFilters(query, filters, cursor);
+    const result = await filteredQuery.order("at", { ascending: false }).order("operation_id", { ascending: false }).limit(normalizedLimit + 1);
+    if (result.error) {
+      if (!allowLocalFileStoreFallback()) throw new Error(result.error.message);
+      return null;
+    }
+    const rows = await normalizeSupabaseAuditRows(result.data ?? []);
+    const hasMore = rows.length > normalizedLimit;
+    const items = rows.slice(0, normalizedLimit);
+    const last = items.at(-1);
+    return { items, hasMore, nextCursor: hasMore && last ? encodeAuditCursor({ at: last.at, operationId: last.operationId }) : null };
+  } catch (error) {
+    if (!allowLocalFileStoreFallback()) throw error;
+    return null;
+  }
+}
+
+async function listLocalAuditPage(
+  normalizedLimit: number,
+  filters: AdminOperationAuditFilters,
+  cursor: { at: string; operationId: string } | null,
+): Promise<AdminOperationAuditPage> {
+  const store = await readStore();
+  const records = store.records
+    .filter((record) => matchesAuditFilters(record, filters))
+    .filter((record) => !cursor || record.at < cursor.at || (record.at === cursor.at && record.operationId < cursor.operationId))
+    .sort((left, right) => right.at.localeCompare(left.at) || right.operationId.localeCompare(left.operationId));
+  const hasMore = records.length > normalizedLimit;
+  const items = records.slice(0, normalizedLimit).map((record) => ({ ...record, actorLabel: record.actorLabel ?? buildActorLabel(undefined, record.actorUserId) }));
+  const last = items.at(-1);
+  return { items, hasMore, nextCursor: hasMore && last ? encodeAuditCursor({ at: last.at, operationId: last.operationId }) : null };
 }
 
 function encodeAuditCursor(value: { at: string; operationId: string }): string {
@@ -386,66 +466,8 @@ export async function listAdminOperationAuditPage(
   if (filters.cursor && !cursor) throw new Error("Invalid admin audit cursor.");
 
   if (canUseSupabaseServerPersistence()) {
-    try {
-      const supabase = getSupabaseServerClient(true);
-      let query = supabase
-        .from("admin_operations_audit")
-        .select(
-          "operation_id, at, actor_user_id, operation_type, outcome, target_id, target_user_id, details",
-        );
-
-      if (filters.actorUserId?.trim()) query = query.eq("actor_user_id", filters.actorUserId.trim());
-      if (filters.operationType) query = query.eq("operation_type", filters.operationType);
-      if (filters.operation) query = query.eq("details->>operation", filters.operation.trim());
-      if (filters.outcome) query = query.eq("outcome", filters.outcome);
-      if (filters.targetId?.trim()) query = query.eq("target_id", filters.targetId.trim());
-      if (filters.from) query = query.gte("at", filters.from);
-      if (filters.to) query = query.lte("at", filters.to);
-      if (cursor) {
-        query = query.or(`at.lt.${cursor.at},and(at.eq.${cursor.at},operation_id.lt.${cursor.operationId})`);
-      }
-
-      const result = await query
-        .order("at", { ascending: false })
-        .order("operation_id", { ascending: false })
-        .limit(normalizedLimit + 1);
-
-      if (!result.error) {
-        const rows = await normalizeSupabaseAuditRows(result.data ?? []);
-        const hasMore = rows.length > normalizedLimit;
-        const items = rows.slice(0, normalizedLimit);
-        const last = items.at(-1);
-        return {
-          items,
-          hasMore,
-          nextCursor: hasMore && last ? encodeAuditCursor({ at: last.at, operationId: last.operationId }) : null,
-        };
-      }
-
-      if (!allowLocalFileStoreFallback()) {
-        throw new Error(result.error.message);
-      }
-    } catch (error) {
-      if (!allowLocalFileStoreFallback()) {
-        throw error;
-      }
-    }
+    const page = await tryListSupabaseAuditPage(normalizedLimit, filters, cursor);
+    if (page) return page;
   }
-
-  const store = await readStore();
-  const records = store.records
-    .filter((record) => matchesAuditFilters(record, filters))
-    .filter((record) => !cursor || record.at < cursor.at || (record.at === cursor.at && record.operationId < cursor.operationId))
-    .sort((left, right) => right.at.localeCompare(left.at) || right.operationId.localeCompare(left.operationId));
-  const hasMore = records.length > normalizedLimit;
-  const items = records.slice(0, normalizedLimit).map((record) => ({
-    ...record,
-    actorLabel: record.actorLabel ?? buildActorLabel(undefined, record.actorUserId),
-  }));
-  const last = items.at(-1);
-  return {
-    items,
-    hasMore,
-    nextCursor: hasMore && last ? encodeAuditCursor({ at: last.at, operationId: last.operationId }) : null,
-  };
+  return listLocalAuditPage(normalizedLimit, filters, cursor);
 }

@@ -168,6 +168,38 @@ export async function loadCreatorInboxPage(params?: {
   const sourceLimit = limit + 1;
   const feedbackOnly = params?.source === "feedback";
   const associationOnly = params?.source === "association_action";
+  const sources = await loadCreatorInboxSources(sourceLimit, cursor, feedbackOnly, associationOnly);
+  const { feedback, promotion, partner, legalContentReports, events, associationActions, feedbackMetrics } = sources;
+
+  const candidates: InboxCandidate[] = [
+    ...feedback.map((item) => ({ item: buildFeedbackInboxItem(item), source: "feedback" as const })),
+    ...promotion.map((item) => ({ item: buildPromotionInboxItem(item), source: "promotion" as const })),
+    ...partner.map((item) => ({ item: buildPartnerInboxItem(item), source: "partner" as const })),
+    ...legalContentReports.map((item) => ({ item: buildLegalContentReportInboxItem(item), source: "legal_content_report" as const })),
+    ...events.map((item) => ({ item, source: "event" as const })),
+    ...associationActions.map((item) => ({ item, source: "association_action" as const })),
+  ].sort(feedbackOnly ? compareFeedbackQueueCandidates : compareInboxCandidates);
+
+  const items = candidates.slice(0, limit).map(({ item }) => item);
+  const hasMore = candidates.length > limit;
+  if (!hasMore) {
+    return { items, count: items.length, hasMore: false, nextCursor: null, feedbackMetrics };
+  }
+  return {
+    items,
+    count: items.length,
+    hasMore: true,
+    nextCursor: buildCreatorInboxNextCursor(candidates, limit, cursor, feedbackOnly),
+    feedbackMetrics,
+  };
+}
+
+async function loadCreatorInboxSources(
+  sourceLimit: number,
+  cursor: CreatorInboxPageCursor,
+  feedbackOnly: boolean,
+  associationOnly: boolean,
+) {
   const [feedback, promotion, partner, legalContentReports, events, associationActions, feedbackMetrics] = await Promise.all([
     feedbackOnly
       ? listCommunityBugReports(sourceLimit, cursor.feedback, { activeOnly: true, order: "priority" })
@@ -181,34 +213,15 @@ export async function loadCreatorInboxPage(params?: {
       : loadAssociationActionReviewInbox(sourceLimit, cursor.association_action, { required: associationOnly }),
     loadCommunityBugReportFollowUpMetrics(),
   ]);
+  return { feedback, promotion, partner, legalContentReports, events, associationActions, feedbackMetrics };
+}
 
-  const candidates: InboxCandidate[] = [
-    ...feedback.map((item) => ({
-      item: buildFeedbackInboxItem(item),
-      source: "feedback" as const,
-    })),
-    ...promotion.map((item) => ({
-      item: buildPromotionInboxItem(item),
-      source: "promotion" as const,
-    })),
-    ...partner.map((item) => ({
-      item: buildPartnerInboxItem(item),
-      source: "partner" as const,
-    })),
-    ...legalContentReports.map((item) => ({
-      item: buildLegalContentReportInboxItem(item),
-      source: "legal_content_report" as const,
-    })),
-    ...events.map((item) => ({ item, source: "event" as const })),
-    ...associationActions.map((item) => ({ item, source: "association_action" as const })),
-  ].sort(feedbackOnly ? compareFeedbackQueueCandidates : compareInboxCandidates);
-
-  const items = candidates.slice(0, limit).map(({ item }) => item);
-  const hasMore = candidates.length > limit;
-  if (!hasMore) {
-    return { items, count: items.length, hasMore: false, nextCursor: null, feedbackMetrics };
-  }
-
+function buildCreatorInboxNextCursor(
+  candidates: InboxCandidate[],
+  limit: number,
+  cursor: CreatorInboxPageCursor,
+  feedbackOnly: boolean,
+): string {
   const nextCursor = { ...cursor };
   for (const candidate of candidates.slice(0, limit)) {
     const candidateCursor =
@@ -232,14 +245,7 @@ export async function loadCreatorInboxPage(params?: {
       ...candidateCursor,
     };
   }
-
-  return {
-    items,
-    count: items.length,
-    hasMore: true,
-    nextCursor: encodePageCursor(nextCursor),
-    feedbackMetrics,
-  };
+  return encodePageCursor(nextCursor);
 }
 
 export async function loadCreatorInboxItems(): Promise<CreatorInboxItem[]> {

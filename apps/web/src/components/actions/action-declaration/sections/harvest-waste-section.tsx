@@ -44,6 +44,58 @@ type HarvestWasteSectionProps = {
 const triInputCls = "w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15";
 const useDisclosureLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
+function HarvestWasteHeader() {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+          <Trash2 size={15} className="text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Déchets collectés</p>
+          <p className="text-xs text-slate-400">Masse totale en kilogrammes</p>
+        </div>
+      </div>
+      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
+        Mesure déclarée
+      </span>
+    </div>
+  );
+}
+
+function WastePrimaryMeasurement({
+  value,
+  hidden,
+  onChange,
+}: { value: string; hidden: boolean; onChange: (value: string) => void }) {
+  if (hidden) return null;
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-xs font-medium text-slate-500">Masse totale hors mégots (kg)</span>
+      <input id="harvest-waste-kg" inputMode="decimal" type="number" step={ACTION_WASTE_MASS_RESOLUTION_KG} min="0" max={ACTION_MEASUREMENT_MAX_KG} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Ex : 12,5" />
+    </label>
+  );
+}
+
+function WasteMeasurementMethod({
+  value,
+  onChange,
+}: { value: ActionWasteMeasurementMethod | ""; onChange: (value: ActionWasteMeasurementMethod | "") => void }) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-xs font-medium text-slate-500">Méthode de mesure (facultatif)</span>
+      <select value={value} onChange={(event) => onChange(event.target.value as ActionWasteMeasurementMethod | "")} className={triInputCls}>
+        <option value="">Non renseignée</option>
+        <option value="balance_suspendue">Balance suspendue</option>
+        <option value="balance_au_sol">Balance au sol</option>
+        <option value="estimation_visuelle">Estimation visuelle</option>
+        <option value="autre">Autre</option>
+        <option value="inconnue">Inconnue</option>
+      </select>
+    </label>
+  );
+}
+
 export function HarvestWasteSection({
   wasteKg,
   onWasteKgChange,
@@ -93,57 +145,9 @@ export function HarvestWasteSection({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-            <Trash2 size={15} className="text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Déchets collectés</p>
-            <p className="text-xs text-slate-400">Masse totale en kilogrammes</p>
-          </div>
-        </div>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
-          Mesure déclarée
-        </span>
-      </div>
-
-      {!hidePrimaryMeasurement ? (
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-slate-500">Masse totale hors mégots (kg)</span>
-          <input
-            id="harvest-waste-kg"
-            inputMode="decimal"
-            type="number"
-            step={ACTION_WASTE_MASS_RESOLUTION_KG}
-            min="0"
-            max={ACTION_MEASUREMENT_MAX_KG}
-            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300"
-            value={wasteKg}
-            onChange={(e) => onWasteKgChange(e.target.value)}
-            placeholder="Ex : 12,5"
-          />
-        </label>
-      ) : null}
-
-      <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-slate-500">Méthode de mesure (facultatif)</span>
-        <select
-          value={wasteMeasurementMethod}
-          onChange={(event) =>
-            onMeasurementMethodChange(event.target.value as ActionWasteMeasurementMethod | "")
-          }
-          className={triInputCls}
-        >
-          <option value="">Non renseignée</option>
-          <option value="balance_suspendue">Balance suspendue</option>
-          <option value="balance_au_sol">Balance au sol</option>
-          <option value="estimation_visuelle">Estimation visuelle</option>
-          <option value="autre">Autre</option>
-          <option value="inconnue">Inconnue</option>
-        </select>
-      </label>
+      <HarvestWasteHeader />
+      <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
+      <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
 
       <WasteComparisonVisual
         currentPerVolunteer={wasteCurrentPerVolunteer}

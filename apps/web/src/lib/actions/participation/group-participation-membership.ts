@@ -218,6 +218,39 @@ async function loadJoinableFutureAction(
   return actionResult;
 }
 
+async function buildExistingMembershipResult(
+  supabase: SupabaseClient,
+  params: { actionId: string; userId: string },
+  existing: ActionRegistrationStatusRow,
+  alreadyJoined: boolean,
+): Promise<ActionParticipationMutationResult> {
+  const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
+  return buildMembershipResult({
+    alreadyJoined,
+    joinedAt: resolveRegisteredAt(existing),
+    participationStatus: existing.registration_status,
+    participationSource: existing.registration_source,
+    participationUpdatedAt: resolveRegistrationUpdatedAt(existing),
+    participantsCount,
+  });
+}
+
+async function insertNewRegistration(
+  supabase: SupabaseClient,
+  params: { actionId: string; userId: string },
+  desiredStatus: ActionRegistrationStatusRow["registration_status"],
+  desiredSource: ActionRegistrationStatusRow["registration_source"],
+): Promise<ActionParticipationMutationResult> {
+  const insertedRecord = await insertActionRegistrationRecord(supabase, {
+    actionId: params.actionId,
+    userId: params.userId,
+    registeredAt: new Date().toISOString(),
+    registrationStatus: desiredStatus,
+    registrationSource: desiredSource,
+  });
+  return buildExistingMembershipResult(supabase, params, insertedRecord, false);
+}
+
 async function resolveExistingRegistration(
   supabase: SupabaseClient,
   params: { actionId: string; userId: string },
@@ -229,32 +262,10 @@ async function resolveExistingRegistration(
     existing.registration_status === ACTIVE_PARTICIPATION_STATUS &&
     desiredStatus === PENDING_PARTICIPATION_STATUS
   ) {
-    const participantsCount = await countActiveRegistrationsForAction(
-      supabase,
-      params.actionId,
-    );
-    return buildMembershipResult({
-      alreadyJoined: true,
-      joinedAt: resolveRegisteredAt(existing),
-      participationStatus: existing.registration_status,
-      participationSource: existing.registration_source,
-      participationUpdatedAt: resolveRegistrationUpdatedAt(existing),
-      participantsCount,
-    });
+    return buildExistingMembershipResult(supabase, params, existing, true);
   }
   if (existing.registration_status === desiredStatus) {
-    const participantsCount = await countActiveRegistrationsForAction(
-      supabase,
-      params.actionId,
-    );
-    return buildMembershipResult({
-      alreadyJoined: desiredStatus === ACTIVE_PARTICIPATION_STATUS,
-      joinedAt: resolveRegisteredAt(existing),
-      participationStatus: existing.registration_status,
-      participationSource: existing.registration_source,
-      participationUpdatedAt: resolveRegistrationUpdatedAt(existing),
-      participantsCount,
-    });
+    return buildExistingMembershipResult(supabase, params, existing, desiredStatus === ACTIVE_PARTICIPATION_STATUS);
   }
   const joinedAt = new Date().toISOString();
   try {
@@ -288,25 +299,7 @@ async function insertRegistrationWithRecovery(
 ): Promise<ActionParticipationMutationResult> {
   const joinedAt = new Date().toISOString();
   try {
-    const insertedRecord = await insertActionRegistrationRecord(supabase, {
-      actionId: params.actionId,
-      userId: params.userId,
-      registeredAt: joinedAt,
-      registrationStatus: desiredStatus,
-      registrationSource: desiredSource,
-    });
-    const participantsCount = await countActiveRegistrationsForAction(
-      supabase,
-      params.actionId,
-    );
-    return buildMembershipResult({
-      alreadyJoined: false,
-      joinedAt: resolveRegisteredAt(insertedRecord),
-      participationStatus: insertedRecord.registration_status,
-      participationSource: insertedRecord.registration_source,
-      participationUpdatedAt: resolveRegistrationUpdatedAt(insertedRecord),
-      participantsCount,
-    });
+    return await insertNewRegistration(supabase, params, desiredStatus, desiredSource);
   } catch (error) {
     if (!(error instanceof Error && "code" in error && (error as { code?: string }).code === "23505")) {
       throw error;
@@ -314,18 +307,7 @@ async function insertRegistrationWithRecovery(
     const duplicateRecord = await readActionRegistrationRecord(supabase, params);
     if (!duplicateRecord) throw error;
     if (duplicateRecord.registration_status === desiredStatus) {
-      const participantsCount = await countActiveRegistrationsForAction(
-        supabase,
-        params.actionId,
-      );
-      return buildMembershipResult({
-        alreadyJoined: desiredStatus === ACTIVE_PARTICIPATION_STATUS,
-        joinedAt: resolveRegisteredAt(duplicateRecord),
-        participationStatus: duplicateRecord.registration_status,
-        participationSource: duplicateRecord.registration_source,
-        participationUpdatedAt: resolveRegistrationUpdatedAt(duplicateRecord),
-        participantsCount,
-      });
+      return buildExistingMembershipResult(supabase, params, duplicateRecord, desiredStatus === ACTIVE_PARTICIPATION_STATUS);
     }
     try {
       return await updateRegistrationAndBuildResult(supabase, {

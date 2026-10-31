@@ -28,6 +28,17 @@ type StoredGpxSegment = {
   sourceFingerprint?: unknown;
 };
 
+type GpxImportPreparation = {
+  routeObservedDistanceKm?: number;
+  gpxImport?: {
+    fileName?: unknown;
+    segmentDistancesKm?: unknown;
+    intent?: unknown;
+    provenance?: unknown;
+    files?: unknown;
+  };
+};
+
 function fingerprint(value: string): string {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -92,6 +103,87 @@ function parseStoredGpxSegments(value: unknown): GpxContributionPayload["traces"
   });
 }
 
+function readGpxImportPreparation(updateData: Record<string, unknown>): GpxImportPreparation | undefined {
+  const preparationData = updateData["preparation_data"];
+  return preparationData && typeof preparationData === "object" && !Array.isArray(preparationData)
+    ? preparationData as GpxImportPreparation
+    : undefined;
+}
+
+function hasPlannedGpxProvenance(
+  preparationData: GpxImportPreparation | undefined,
+  files: Array<{ provenance?: unknown }>,
+): boolean {
+  return preparationData?.gpxImport?.provenance === "planned" ||
+    files.some((file) => file.provenance === "planned");
+}
+
+function readStoredContributionTraces(
+  files: Array<{ fileId?: unknown; segments?: unknown }>,
+): GpxContributionPayload["traces"] {
+  return parseStoredGpxSegments(files.flatMap((file) => Array.isArray(file.segments)
+    ? file.segments.map((segment: Record<string, unknown>) => ({ ...segment, fileId: segment.fileId ?? file.fileId }))
+    : []));
+}
+
+function buildContributionTraces(
+  traces: Array<{ geojson: string; observedDistanceKm: number }>,
+  storedTraces: GpxContributionPayload["traces"],
+  fileName: string,
+): GpxContributionPayload["traces"] {
+  const candidates = storedTraces.length > 0 ? storedTraces : traces.map((trace, index) => ({
+    ...trace,
+    sourceFingerprint: fingerprint(`${fileName}:${index}:${trace.geojson}`),
+  }));
+  return candidates;
+}
+
+function withObservedDistances(
+  traces: GpxContributionPayload["traces"],
+  segmentDistances: number[],
+  fallbackDistance: number | undefined,
+  fileName: string,
+): GpxContributionPayload["traces"] {
+  return traces.map((trace, index) => ({
+    ...trace,
+    observedDistanceKm: Number(segmentDistances[index] ?? trace.observedDistanceKm ?? fallbackDistance ?? 0),
+    sourceFingerprint: trace.sourceFingerprint || fingerprint(`${fileName}:${index}:${trace.geojson}`),
+  }));
+}
+
+function isGpxContributionIneligible(
+  preparationData: GpxImportPreparation | undefined,
+  candidateFiles: Array<{ provenance?: unknown }>,
+): boolean {
+  const intent = preparationData?.gpxImport?.intent;
+  return intent === "planned" ||
+    hasPlannedGpxProvenance(preparationData, candidateFiles) ||
+    (candidateFiles.length > 0 && intent !== "observed");
+}
+
+function readSegmentDistances(preparationData: GpxImportPreparation | undefined): number[] {
+  const values = preparationData?.gpxImport?.segmentDistancesKm;
+  return Array.isArray(values)
+    ? values.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+    : [];
+}
+
+function collectGpxContributionData(
+  preparationData: GpxImportPreparation | undefined,
+  traces: Array<{ geojson: string; observedDistanceKm: number }>,
+): { traces: GpxContributionPayload["traces"]; fileName: string; segmentDistances: number[] } | null {
+  const files = preparationData?.gpxImport?.files;
+  const candidateFiles = Array.isArray(files) ? files : [];
+  if (isGpxContributionIneligible(preparationData, candidateFiles)) return null;
+  const storedTraces = candidateFiles.length > 0 ? readStoredContributionTraces(candidateFiles) : [];
+  const fileName = typeof preparationData?.gpxImport?.fileName === "string"
+    ? preparationData.gpxImport.fileName
+    : "unknown";
+  const contributionTraces = buildContributionTraces(traces, storedTraces, fileName);
+  if (contributionTraces.length === 0) return null;
+  return { traces: contributionTraces, fileName, segmentDistances: readSegmentDistances(preparationData) };
+}
+
 function getGpxContributionPayload(
   updateData: Record<string, unknown>,
 ): GpxContributionPayload | null {
@@ -102,43 +194,12 @@ function getGpxContributionPayload(
     return null;
   }
 
-  const preparationData = updateData["preparation_data"] as
-    | {
-        routeObservedDistanceKm?: number;
-        gpxImport?: { fileName?: unknown; segmentDistancesKm?: unknown; intent?: unknown; provenance?: unknown; files?: unknown };
-      }
-    | undefined;
+  const preparationData = readGpxImportPreparation(updateData);
   const traces = parseGeoJsonTraces(updateData["derived_geometry_geojson"]);
-  const intent = preparationData?.gpxImport?.intent;
-  const files = preparationData?.gpxImport?.files && Array.isArray(preparationData.gpxImport.files)
-    ? preparationData.gpxImport.files
-    : [];
-  const hasCandidateFiles = files.length > 0;
-  const hasPlannedProvenance = preparationData?.gpxImport?.provenance === "planned" ||
-    files.some((file: { provenance?: unknown }) => file.provenance === "planned");
-  if (intent === "planned" || hasPlannedProvenance || (hasCandidateFiles && intent !== "observed")) return null;
-  const storedTraces = hasCandidateFiles
-    ? parseStoredGpxSegments(files.flatMap((file: { fileId?: unknown; segments?: unknown }) => Array.isArray(file.segments)
-      ? file.segments.map((segment: Record<string, unknown>) => ({ ...segment, fileId: segment.fileId ?? file.fileId }))
-      : []))
-    : [];
-  const contributionTraces = storedTraces.length > 0 ? storedTraces : traces.map((trace, index) => ({
-    ...trace,
-    sourceFingerprint: fingerprint(`${String(preparationData?.gpxImport?.fileName ?? "unknown")}:${index}:${trace.geojson}`),
-  }));
-  if (contributionTraces.length === 0) return null;
-  const fileName = typeof preparationData?.gpxImport?.fileName === "string"
-    ? preparationData.gpxImport.fileName
-    : "unknown";
-  const segmentDistances = Array.isArray(preparationData?.gpxImport?.segmentDistancesKm)
-    ? preparationData.gpxImport.segmentDistancesKm.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
-    : [];
+  const contributionData = collectGpxContributionData(preparationData, traces);
+  if (!contributionData) return null;
   return {
-    traces: contributionTraces.map((trace, index) => ({
-      ...trace,
-      observedDistanceKm: Number(segmentDistances[index] ?? trace.observedDistanceKm ?? preparationData?.routeObservedDistanceKm ?? 0),
-      sourceFingerprint: trace.sourceFingerprint || fingerprint(`${fileName}:${index}:${trace.geojson}`),
-    })),
+    traces: withObservedDistances(contributionData.traces, contributionData.segmentDistances, preparationData?.routeObservedDistanceKm, contributionData.fileName),
     technicalProvenance: {
       actionUpdate: true,
       gpxImport: preparationData?.gpxImport ?? null,

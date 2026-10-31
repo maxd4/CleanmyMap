@@ -106,15 +106,41 @@ function balanceRange(values: readonly number[]): number {
   return Math.max(...values) - Math.min(...values);
 }
 
-export async function routePartitionedGroups(input: {
+function buildRouteMultiGroup(
+  route: RouteGroupRoutingResult,
+  routedGroups: readonly RouteGroupRoutingResult[],
+  travelBudgetMinutes: number,
+): RouteGroupRoute {
+  const finalGroup = {
+    ...route.group,
+    candidateIds: route.finalCandidateIds,
+    targetCount: route.finalCandidateIds.length,
+    estimatedDistanceKm: round(route.routeGeometry.distanceKm, 2),
+    estimatedDurationMinutes: round(route.routeGeometry.durationMinutes, 2),
+  };
+  return {
+    ...finalGroup,
+    reservedCandidateIds: routedGroups
+      .filter(({ group }) => group.groupIndex !== route.group.groupIndex)
+      .flatMap(({ finalCandidateIds }) => finalCandidateIds),
+    stops: routeStopsFromPlanned(route.plannedStops, route.routeGeometry),
+    routeGeometry: route.routeGeometry,
+    travelDistanceKm: round(route.routeGeometry.distanceKm, 2),
+    travelMinutes: route.routeGeometry.durationMinutes,
+    travelBudgetMinutes,
+    withinBudget: route.routeGeometry.durationMinutes <= travelBudgetMinutes,
+    meetingPoint: projectMeetingPointFromGeometry(route.routeGeometry),
+  };
+}
+
+async function routeMultiGroups(input: {
   origin: RoutePlannerOrigin;
   candidates: readonly RoutePlannerCandidate[];
   partition: RouteGroupPartitionResult;
   travelBudgetMinutes: number;
-  effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
-}): Promise<RouteMultiRouteResult> {
+}): Promise<RouteGroupRoutingResult[]> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
   for (const group of [...input.partition.groups].sort((left, right) => left.groupIndex - right.groupIndex)) {
@@ -129,53 +155,29 @@ export async function routePartitionedGroups(input: {
       input.partition.groupCount,
     ));
   }
+  return routedGroups;
+}
 
-  const allFinalIds = new Set(routedGroups.flatMap(({ finalCandidateIds }) => finalCandidateIds));
-  const excludedCandidateIds = input.partition.groups
-    .flatMap(({ candidateIds }) => candidateIds)
-    .filter((candidateId) => !allFinalIds.has(candidateId));
-  const sharedDistanceKm = measuredSharedDistanceKm(routedGroups);
-  const totalDistanceKm = routedGroups.reduce((total, route) => total + route.routeGeometry.distanceKm, 0);
-  const totalDurationMinutes = routedGroups.reduce((total, route) => total + route.routeGeometry.durationMinutes, 0);
-  const groupRoutes: RouteGroupRoute[] = routedGroups.map((route) => {
-    const finalGroup = {
-      ...route.group,
-      candidateIds: route.finalCandidateIds,
-      targetCount: route.finalCandidateIds.length,
-      estimatedDistanceKm: round(route.routeGeometry.distanceKm, 2),
-      estimatedDurationMinutes: round(route.routeGeometry.durationMinutes, 2),
-    };
-    return {
-      ...finalGroup,
-      reservedCandidateIds: routedGroups
-        .filter(({ group }) => group.groupIndex !== route.group.groupIndex)
-        .flatMap(({ finalCandidateIds }) => finalCandidateIds),
-      stops: routeStopsFromPlanned(route.plannedStops, route.routeGeometry),
-      routeGeometry: route.routeGeometry,
-      travelDistanceKm: round(route.routeGeometry.distanceKm, 2),
-      travelMinutes: route.routeGeometry.durationMinutes,
-      travelBudgetMinutes: input.travelBudgetMinutes,
-      withinBudget: route.routeGeometry.durationMinutes <= input.travelBudgetMinutes,
-      meetingPoint: projectMeetingPointFromGeometry(route.routeGeometry),
-    };
-  });
-  const metrics: RouteMultiRouteMetrics = {
+function buildRouteMultiMetrics(
+  input: { candidates: readonly RoutePlannerCandidate[]; partition: RouteGroupPartitionResult },
+  routedGroups: readonly RouteGroupRoutingResult[],
+  groupRoutes: readonly RouteGroupRoute[],
+  sharedDistanceKm: number | null,
+  totalDistanceKm: number,
+  totalDurationMinutes: number,
+): RouteMultiRouteMetrics {
+  return {
     groupCount: input.partition.groupCount,
     volunteers: input.partition.volunteers,
     totalDistanceKm: round(totalDistanceKm, 2),
     totalDurationMinutes,
-    coverageGain: round(groupRoutes.reduce(
-      (total, route) => total + route.candidateIds.reduce((sum, candidateId) => {
-        const candidate = input.candidates.find(({ id }) => id === candidateId);
-        return sum + (candidate?.finalPlannerContribution ?? candidate?.score ?? 0) / 100;
-      }, 0),
-      0,
-    )),
+    coverageGain: round(groupRoutes.reduce((total, route) => total + route.candidateIds.reduce((sum, candidateId) => {
+      const candidate = input.candidates.find(({ id }) => id === candidateId);
+      return sum + (candidate?.finalPlannerContribution ?? candidate?.score ?? 0) / 100;
+    }, 0), 0)),
     sharedTargetRatio: sharedTargetRatio(routedGroups),
     sharedDistanceKm,
-    sharedDistanceRatio: sharedDistanceKm === null || totalDistanceKm === 0
-      ? null
-      : round(sharedDistanceKm / totalDistanceKm),
+    sharedDistanceRatio: sharedDistanceKm === null || totalDistanceKm === 0 ? null : round(sharedDistanceKm / totalDistanceKm),
     balanceDistance: round(balanceRange(groupRoutes.map(({ travelDistanceKm }) => travelDistanceKm)), 2),
     balanceDuration: round(balanceRange(groupRoutes.map(({ travelMinutes }) => travelMinutes)), 2),
     balanceTargetCount: balanceRange(groupRoutes.map(({ targetCount }) => targetCount)),
@@ -183,8 +185,18 @@ export async function routePartitionedGroups(input: {
     fallbackGroupCount: groupRoutes.filter(({ routeGeometry }) => routeGeometry.mode === "fallback").length,
     networkDistanceMeasured: sharedDistanceKm !== null,
   };
-  const partition: RouteGroupPartitionResult = {
-      ...input.partition,
+}
+
+function buildRouteMultiPartition(
+  input: { partition: RouteGroupPartitionResult },
+  groupRoutes: readonly RouteGroupRoute[],
+  metrics: RouteMultiRouteMetrics,
+  allFinalIds: ReadonlySet<string>,
+  excludedCandidateIds: readonly string[],
+  sharedDistanceKm: number | null,
+): RouteGroupPartitionResult {
+  return {
+    ...input.partition,
     groups: groupRoutes.map((group) => ({
       groupIndex: group.groupIndex,
       volunteerCount: group.volunteerCount,
@@ -203,15 +215,11 @@ export async function routePartitionedGroups(input: {
     },
     audit: {
       ...input.partition.audit,
-      excludedByPartitionBoundCandidateIds: [
-        ...new Set([
-          ...input.partition.audit.excludedByPartitionBoundCandidateIds,
-          ...excludedCandidateIds,
-        ]),
-      ],
-      assignments: input.partition.audit.assignments.filter(({ candidateId }) =>
-        allFinalIds.has(candidateId),
-      ),
+      excludedByPartitionBoundCandidateIds: [...new Set([
+        ...input.partition.audit.excludedByPartitionBoundCandidateIds,
+        ...excludedCandidateIds,
+      ])],
+      assignments: input.partition.audit.assignments.filter(({ candidateId }) => allFinalIds.has(candidateId)),
       overlapCosts: {
         ...input.partition.audit.overlapCosts,
         networkSharedDistanceKm: sharedDistanceKm,
@@ -219,6 +227,31 @@ export async function routePartitionedGroups(input: {
       },
     },
   };
+}
+
+export async function routePartitionedGroups(input: {
+  origin: RoutePlannerOrigin;
+  candidates: readonly RoutePlannerCandidate[];
+  partition: RouteGroupPartitionResult;
+  travelBudgetMinutes: number;
+  effectiveRiskFocus?: RouteRiskFocus;
+  operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
+}): Promise<RouteMultiRouteResult> {
+  const routedGroups = await routeMultiGroups(input);
+
+  const allFinalIds = new Set(routedGroups.flatMap(({ finalCandidateIds }) => finalCandidateIds));
+  const excludedCandidateIds = input.partition.groups
+    .flatMap(({ candidateIds }) => candidateIds)
+    .filter((candidateId) => !allFinalIds.has(candidateId));
+  const sharedDistanceKm = measuredSharedDistanceKm(routedGroups);
+  const totalDistanceKm = routedGroups.reduce((total, route) => total + route.routeGeometry.distanceKm, 0);
+  const totalDurationMinutes = routedGroups.reduce((total, route) => total + route.routeGeometry.durationMinutes, 0);
+  const groupRoutes = routedGroups.map((route) =>
+    buildRouteMultiGroup(route, routedGroups, input.travelBudgetMinutes),
+  );
+  const metrics = buildRouteMultiMetrics(input, routedGroups, groupRoutes, sharedDistanceKm, totalDistanceKm, totalDurationMinutes);
+  const partition = buildRouteMultiPartition(input, groupRoutes, metrics, allFinalIds, excludedCandidateIds, sharedDistanceKm);
   return {
     effectiveRiskFocus: input.effectiveRiskFocus ?? input.partition.audit.effectiveRiskFocus ?? "all",
     partition,

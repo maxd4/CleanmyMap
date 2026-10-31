@@ -107,6 +107,45 @@ function configureJoinableActionQuery(
   return nextQuery;
 }
 
+async function loadJoinableActionCandidates(
+  supabase: SupabaseClient,
+  params: { limit: number; actionId?: string | null },
+  now: Date,
+): Promise<Array<{ action: ActionPreviewRow; metadata: ReturnType<typeof extractActionMetadataFromNotes> }>> {
+  const fetchLimit = Math.max(params.limit * 4, params.limit);
+  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
+    configureJoinableActionQuery(query, now)
+      .order("action_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(fetchLimit),
+  );
+  if (actions.length === 0) return [];
+  let orderedActions = actions;
+  if (params.actionId) {
+    const focusedAction = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
+      configureJoinableActionQuery(query, now, params.actionId).maybeSingle(),
+    );
+    if (focusedAction) orderedActions = [focusedAction, ...actions.filter((action) => action.id !== params.actionId)].slice(0, fetchLimit);
+  }
+  return orderedActions
+    .map((action) => ({ action, metadata: extractActionMetadataFromNotes(action.notes) }))
+    .filter(({ action }) => isVisibleInFutureActions(action, now))
+    .slice(0, params.limit);
+}
+
+async function loadConfirmedFinalParticipation(
+  supabase: SupabaseClient,
+  userId: string | null,
+): Promise<boolean | null> {
+  if (!userId) return null;
+  const historyResult = await supabase
+    .from("action_participants")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("participation_status", "confirmed");
+  return historyResult.error ? null : Number(historyResult.count ?? 0) > 0;
+}
+
 export async function loadJoinableActions(
   supabase: SupabaseClient,
   params: {
@@ -117,39 +156,7 @@ export async function loadJoinableActions(
   },
 ): Promise<JoinableActionItem[]> {
   const now = params.now ?? new Date();
-  const fetchLimit = Math.max(params.limit * 4, params.limit);
-  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
-    configureJoinableActionQuery(query, now)
-      .order("action_date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(fetchLimit),
-  );
-  if (actions.length === 0) {
-    return [];
-  }
-
-  let orderedActions = actions;
-  if (params.actionId) {
-    const focusedAction = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
-      configureJoinableActionQuery(query, now, params.actionId)
-        .maybeSingle(),
-    );
-
-    if (focusedAction) {
-      orderedActions = [
-        focusedAction,
-        ...actions.filter((action) => action.id !== params.actionId),
-      ].slice(0, fetchLimit);
-    }
-  }
-
-  const joinableActions = orderedActions
-    .map((action) => ({
-      action,
-      metadata: extractActionMetadataFromNotes(action.notes),
-    }))
-    .filter(({ action }) => isVisibleInFutureActions(action, now))
-    .slice(0, params.limit);
+  const joinableActions = await loadJoinableActionCandidates(supabase, params, now);
 
   if (joinableActions.length === 0) {
     return [];
@@ -163,17 +170,7 @@ export async function loadJoinableActions(
 
   // This is an optional private orientation signal only. It reads final,
   // confirmed history and never establishes eligibility for the future action.
-  let hasConfirmedFinalParticipation: boolean | null = null;
-  if (params.userId) {
-    const historyResult = await supabase
-      .from("action_participants")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", params.userId)
-      .eq("participation_status", "confirmed");
-    if (!historyResult.error) {
-      hasConfirmedFinalParticipation = Number(historyResult.count ?? 0) > 0;
-    }
-  }
+  const hasConfirmedFinalParticipation = await loadConfirmedFinalParticipation(supabase, params.userId);
 
   const participantCounts = new Map<string, number>();
   const participantSummaryByActionId = new Map<string, ActionParticipantSummary>();

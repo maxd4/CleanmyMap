@@ -201,37 +201,44 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
 
 type ActionNeedsController = ReturnType<typeof useActionNeedsController>;
 
-function ActionNeedsManagerForms({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate, editingItem, setEditingId, submitEdit }: Pick<ActionNeedsController, "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate" | "editingItem" | "setEditingId" | "submitEdit"> & { fr: boolean }) {
+type ActionNeedsManagerFormProps = Pick<ActionNeedsController, "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate" | "editingItem" | "setEditingId" | "submitEdit"> & { fr: boolean };
+
+function CreateNeedForm({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate }: Pick<ActionNeedsManagerFormProps, "fr" | "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate">) {
+  if (managerActions.length === 0) return null;
+  return <form onSubmit={(event) => { void submitCreate(event); }} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+    <h3 className="text-lg font-black text-slate-900">{fr ? "Créer un besoin" : "Create a need"}</h3>
+    <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <label className="text-sm font-bold text-slate-700">{fr ? "Action" : "Action"}<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.actionId} onChange={(event) => setCreateForm((previous) => ({ ...previous, actionId: event.target.value }))}>{managerActions.map((action) => <option key={action.id} value={action.id}>{action.title} — {formatDate(action.actionDate, fr)}</option>)}</select></label>
+      <label className="text-sm font-bold text-slate-700">{fr ? "Catégorie" : "Category"}<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.category} onChange={(event) => setCreateForm((previous) => ({ ...previous, category: event.target.value as CommunityHelpCategory }))}>{COMMUNITY_HELP_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>)}</select></label>
+      <label className="text-sm font-bold text-slate-700 md:col-span-2">{fr ? "Titre" : "Title"}<input required minLength={3} maxLength={80} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.title} onChange={(event) => setCreateForm((previous) => ({ ...previous, title: event.target.value }))} /></label>
+      <label className="text-sm font-bold text-slate-700 md:col-span-2">{fr ? "Description" : "Description"}<textarea required maxLength={500} className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2" value={createForm.description} onChange={(event) => setCreateForm((previous) => ({ ...previous, description: event.target.value }))} /></label>
+      <label className="text-sm font-bold text-slate-700">{fr ? "Quantité" : "Quantity"}<input maxLength={80} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.quantityLabel ?? ""} onChange={(event) => setCreateForm((previous) => ({ ...previous, quantityLabel: event.target.value }))} /></label>
+      <label className="text-sm font-bold text-slate-700">{fr ? "Échéance (facultative)" : "Due date (optional)"}<input type="datetime-local" className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.expiresAt ?? ""} onChange={(event) => setCreateForm((previous) => ({ ...previous, expiresAt: event.target.value || null }))} /></label>
+    </div>
+    <button type="submit" disabled={busyId === "create" || !createForm.actionId} className="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50">{busyId === "create" ? (fr ? "Création…" : "Creating…") : (fr ? "Créer le besoin" : "Create need")}</button>
+  </form>;
+}
+
+function EditNeedForm({ fr, busyId, editingItem, setEditingId, submitEdit }: Pick<ActionNeedsManagerFormProps, "fr" | "busyId" | "editingItem" | "setEditingId" | "submitEdit">) {
+  if (!editingItem) return null;
+  return <form onSubmit={(event) => { void submitEdit(event); }} className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+    <h3 className="text-lg font-black text-slate-900">{fr ? "Modifier le besoin" : "Edit need"}</h3>
+    <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <label className="text-sm font-bold text-slate-700">{fr ? "Catégorie" : "Category"}<select name="category" defaultValue={editingItem.category} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3">{COMMUNITY_HELP_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>)}</select></label>
+      <label className="text-sm font-bold text-slate-700">{fr ? "Titre" : "Title"}<input name="title" required minLength={3} maxLength={80} defaultValue={editingItem.title} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" /></label>
+      <label className="text-sm font-bold text-slate-700 md:col-span-2">{fr ? "Description" : "Description"}<textarea name="description" required maxLength={500} defaultValue={editingItem.description} className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2" /></label>
+      <label className="text-sm font-bold text-slate-700">{fr ? "Quantité" : "Quantity"}<input name="quantityLabel" maxLength={80} defaultValue={editingItem.quantityLabel ?? ""} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" /></label>
+      <label className="text-sm font-bold text-slate-700">{fr ? "Échéance ISO" : "ISO due date"}<input name="expiresAt" defaultValue={editingItem.expiresAt ? editingItem.expiresAt.slice(0, 16) : ""} type="datetime-local" className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" /></label>
+    </div>
+    <div className="mt-4 flex gap-2"><button type="submit" disabled={busyId === editingItem.id} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{fr ? "Enregistrer" : "Save"}</button><button type="button" className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold" onClick={() => setEditingId(null)}>{fr ? "Fermer" : "Close"}</button></div>
+  </form>;
+}
+
+function ActionNeedsManagerForms({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate, editingItem, setEditingId, submitEdit }: ActionNeedsManagerFormProps) {
   return (
     <>
-      {managerActions.length > 0 ? (
-        <form onSubmit={(event) => { void submitCreate(event); }} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h3 className="text-lg font-black text-slate-900">{fr ? "Créer un besoin" : "Create a need"}</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <label className="text-sm font-bold text-slate-700">{fr ? "Action" : "Action"}<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.actionId} onChange={(event) => setCreateForm((previous) => ({ ...previous, actionId: event.target.value }))}>{managerActions.map((action) => <option key={action.id} value={action.id}>{action.title} — {formatDate(action.actionDate, fr)}</option>)}</select></label>
-            <label className="text-sm font-bold text-slate-700">{fr ? "Catégorie" : "Category"}<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.category} onChange={(event) => setCreateForm((previous) => ({ ...previous, category: event.target.value as CommunityHelpCategory }))}>{COMMUNITY_HELP_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>)}</select></label>
-            <label className="text-sm font-bold text-slate-700 md:col-span-2">{fr ? "Titre" : "Title"}<input required minLength={3} maxLength={80} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.title} onChange={(event) => setCreateForm((previous) => ({ ...previous, title: event.target.value }))} /></label>
-            <label className="text-sm font-bold text-slate-700 md:col-span-2">{fr ? "Description" : "Description"}<textarea required maxLength={500} className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2" value={createForm.description} onChange={(event) => setCreateForm((previous) => ({ ...previous, description: event.target.value }))} /></label>
-            <label className="text-sm font-bold text-slate-700">{fr ? "Quantité" : "Quantity"}<input maxLength={80} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.quantityLabel ?? ""} onChange={(event) => setCreateForm((previous) => ({ ...previous, quantityLabel: event.target.value }))} /></label>
-            <label className="text-sm font-bold text-slate-700">{fr ? "Échéance (facultative)" : "Due date (optional)"}<input type="datetime-local" className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.expiresAt ?? ""} onChange={(event) => setCreateForm((previous) => ({ ...previous, expiresAt: event.target.value || null }))} /></label>
-          </div>
-          <button type="submit" disabled={busyId === "create" || !createForm.actionId} className="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50">{busyId === "create" ? (fr ? "Création…" : "Creating…") : (fr ? "Créer le besoin" : "Create need")}</button>
-        </form>
-      ) : null}
-
-      {editingItem ? (
-        <form onSubmit={(event) => { void submitEdit(event); }} className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
-          <h3 className="text-lg font-black text-slate-900">{fr ? "Modifier le besoin" : "Edit need"}</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <label className="text-sm font-bold text-slate-700">{fr ? "Catégorie" : "Category"}<select name="category" defaultValue={editingItem.category} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3">{COMMUNITY_HELP_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>)}</select></label>
-            <label className="text-sm font-bold text-slate-700">{fr ? "Titre" : "Title"}<input name="title" required minLength={3} maxLength={80} defaultValue={editingItem.title} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" /></label>
-            <label className="text-sm font-bold text-slate-700 md:col-span-2">{fr ? "Description" : "Description"}<textarea name="description" required maxLength={500} defaultValue={editingItem.description} className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2" /></label>
-            <label className="text-sm font-bold text-slate-700">{fr ? "Quantité" : "Quantity"}<input name="quantityLabel" maxLength={80} defaultValue={editingItem.quantityLabel ?? ""} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" /></label>
-            <label className="text-sm font-bold text-slate-700">{fr ? "Échéance ISO" : "ISO due date"}<input name="expiresAt" defaultValue={editingItem.expiresAt ? editingItem.expiresAt.slice(0, 16) : ""} type="datetime-local" className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" /></label>
-          </div>
-          <div className="mt-4 flex gap-2"><button type="submit" disabled={busyId === editingItem.id} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{fr ? "Enregistrer" : "Save"}</button><button type="button" className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold" onClick={() => setEditingId(null)}>{fr ? "Fermer" : "Close"}</button></div>
-        </form>
-      ) : null}
+      <CreateNeedForm fr={fr} managerActions={managerActions} busyId={busyId} createForm={createForm} setCreateForm={setCreateForm} submitCreate={submitCreate} />
+      <EditNeedForm fr={fr} busyId={busyId} editingItem={editingItem} setEditingId={setEditingId} submitEdit={submitEdit} />
     </>
   );
 }

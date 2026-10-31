@@ -76,6 +76,132 @@ function asCoordinates(latLngs: L.LatLng[]): [number, number][] {
  return { kind:"polyline", coordinates: asCoordinates(latLngs) };
 }
 
+type DrawingControllerSetupParams = {
+ map: L.Map;
+ layerGroup: L.FeatureGroup;
+ currentDrawingRef: React.MutableRefObject<ReturnType<typeof createActionDrawingSnapshot>>;
+ drawingDisabled: boolean;
+ onChange: (drawing: ActionDrawing | null, geometrySource?: ActionGeometrySource | null) => void;
+ onUndoAvailable: (state: ActionDrawingUndoState | null) => void;
+};
+
+function createDrawControl(layerGroup: L.FeatureGroup, drawingDisabled: boolean): L.Control | null {
+ if (drawingDisabled) return null;
+ return new L.Control.Draw({
+  position:"topright",
+  draw: {
+   marker: false, rectangle: false, circle: false, circlemarker: false,
+   polyline: { metric: true, shapeOptions: { color: ACTION_DRAWING_EDIT_COLOR, weight: 4, opacity: 0.8 }, allowIntersection: false, showLength: true, repeatMode: false },
+   polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: ACTION_DRAWING_EDIT_COLOR, weight: 3, fillOpacity: 0.25, opacity: 0.8 }, repeatMode: false },
+  },
+  edit: { featureGroup: layerGroup, remove: true, edit: { selectedPathOptions: { opacity: 0.6 } } },
+ });
+}
+
+function createUndoControl(
+ layerGroup: L.FeatureGroup,
+ currentDrawingRef: DrawingControllerSetupParams["currentDrawingRef"],
+ onChange: DrawingControllerSetupParams["onChange"],
+ onUndoAvailable: DrawingControllerSetupParams["onUndoAvailable"],
+ drawingDisabled: boolean,
+): L.Control | null {
+ if (drawingDisabled) return null;
+ return new (L.Control.extend({
+  options: { position:"topright" },
+  onAdd: function() {
+   const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+   const button = L.DomUtil.create('a', 'cmm-undo-btn', container);
+   button.textContent ="↩";
+   button.href ="#";
+   button.setAttribute("role", "button");
+   button.setAttribute("aria-label", "Effacer le tracé dessiné");
+   button.title ="Effacer le tracé";
+   button.style.cursor ="pointer";
+   button.style.fontSize ="16px";
+   button.style.backgroundColor ="white";
+   button.style.padding ="4px 8px";
+   button.style.borderRadius ="4px";
+   button.style.boxShadow ="0 1px 3px rgba(0,0,0,0.3)";
+   L.DomEvent.on(button, 'click', (event) => {
+    L.DomEvent.stop(event);
+    const previousDrawing = currentDrawingRef.current;
+    currentDrawingRef.current = null;
+    layerGroup.clearLayers();
+    onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
+    onChange(null);
+   });
+   return container;
+  },
+ }))();
+}
+
+function emitNormalizedDrawing(
+ layer: DrawingLayer,
+ operation: "modified" | "replaced",
+ params: DrawingControllerSetupParams,
+): void {
+ const previousDrawing = params.currentDrawingRef.current;
+ const normalizedDrawing = normalizeActionDrawing(extractDrawing(layer));
+ if (!normalizedDrawing) {
+  params.currentDrawingRef.current = null;
+  params.onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
+  params.onChange(null);
+  return;
+ }
+ const resolved = normalizedDrawing.kind === "polygon"
+  ? createActionDrawingSnapshot(normalizedDrawing, "manual")
+  : (() => { const drawing = resolveDrawnGeometry(normalizedDrawing, null); return createActionDrawingSnapshot(drawing.drawing, drawing.geometrySource); })();
+ if (!resolved) {
+  params.currentDrawingRef.current = null;
+  params.onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
+  params.onChange(null);
+  return;
+ }
+ params.currentDrawingRef.current = resolved;
+ params.onUndoAvailable(createActionDrawingUndoState(previousDrawing, resolved, operation));
+ params.onChange(resolved.drawing, resolved.source);
+}
+
+function clearDrawing(params: DrawingControllerSetupParams): void {
+ const previousDrawing = params.currentDrawingRef.current;
+ params.currentDrawingRef.current = null;
+ params.onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
+ params.onChange(null);
+}
+
+function setupDrawingController(params: DrawingControllerSetupParams): () => void {
+ const { map, layerGroup, drawingDisabled } = params;
+ const drawControl = createDrawControl(layerGroup, drawingDisabled);
+ const undoButton = createUndoControl(layerGroup, params.currentDrawingRef, params.onChange, params.onUndoAvailable, drawingDisabled);
+ map.addLayer(layerGroup);
+ if (drawControl) map.addControl(drawControl);
+ if (undoButton) map.addControl(undoButton);
+ applyMapControlAccessibilityLabels(map.getContainer());
+ const labelTimer = window.setTimeout(() => applyMapControlAccessibilityLabels(map.getContainer()), 0);
+ const handleCreated = (event: LeafletEvent & { layer: DrawingLayer }) => {
+  layerGroup.clearLayers();
+  layerGroup.addLayer(event.layer);
+  void emitNormalizedDrawing(event.layer, "replaced", params);
+ };
+ const handleEdited = () => {
+  const layer = layerGroup.getLayers()[0] as DrawingLayer | undefined;
+  if (layer) void emitNormalizedDrawing(layer, "modified", params); else clearDrawing(params);
+ };
+ const handleDeleted = () => clearDrawing(params);
+ map.on(L.Draw.Event.CREATED, handleCreated);
+ map.on(L.Draw.Event.EDITED, handleEdited);
+ map.on(L.Draw.Event.DELETED, handleDeleted);
+ return () => {
+  map.off(L.Draw.Event.CREATED, handleCreated);
+  map.off(L.Draw.Event.EDITED, handleEdited);
+  map.off(L.Draw.Event.DELETED, handleDeleted);
+  if (drawControl) map.removeControl(drawControl);
+  if (undoButton) map.removeControl(undoButton);
+  window.clearTimeout(labelTimer);
+  map.removeLayer(layerGroup);
+ };
+}
+
 function DrawingController({
  value,
   drawingSource,
@@ -125,179 +251,25 @@ function DrawingController({
   return () => { previewLayerGroup.clearLayers(); };
  }, [map, previewDrawings]);
 
- useEffect(() => {
- const layerGroup = new L.FeatureGroup();
- layerGroupRef.current = layerGroup;
- map.addLayer(layerGroup);
-
- // Désactiver le tracé manuel sur mobile ou si readOnly
- const drawingDisabled = readOnly || isMobile;
-
- const drawControl = drawingDisabled
- ? null
- : new L.Control.Draw({
- position:"topright",
- draw: {
- marker: false,
- rectangle: false,
- circle: false,
- circlemarker: false,
- polyline: {
- metric: true,
- shapeOptions: {
- color: ACTION_DRAWING_EDIT_COLOR,
- weight: 4,
- opacity: 0.8
- },
- allowIntersection: false,
- showLength: true,
- repeatMode: false
- },
- polygon: {
- allowIntersection: false,
- showArea: true,
- shapeOptions: {
- color: ACTION_DRAWING_EDIT_COLOR,
- weight: 3, 
- fillOpacity: 0.25,
- opacity: 0.8
- },
- repeatMode: false
- },
- },
- edit: {
- featureGroup: layerGroup,
- remove: true,
- edit: {
- selectedPathOptions: { opacity: 0.6 }
- }
- },
- });
-
- const undoButton = drawingDisabled
- ? null
- : new (L.Control.extend({
- options: { position:"topright" },
- onAdd: function() {
- const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
- const button = L.DomUtil.create('a', 'cmm-undo-btn', container);
- button.textContent ="↩"; // CodeQL-safe: static text, not HTML
- button.href ="#";
- button.setAttribute("role", "button");
- button.setAttribute("aria-label", "Effacer le tracé dessiné");
- button.title ="Effacer le tracé";
- button.style.cursor ="pointer";
- button.style.fontSize ="16px";
- button.style.backgroundColor ="white";
- button.style.padding ="4px 8px";
- button.style.borderRadius ="4px";
- button.style.boxShadow ="0 1px 3px rgba(0,0,0,0.3)";
-
- L.DomEvent.on(button, 'click', (e) => {
- L.DomEvent.stop(e);
-  const previousDrawing = currentDrawingRef.current;
-  currentDrawingRef.current = null;
- layerGroup.clearLayers();
-  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
- onChange(null);
- });
- return container;
- }
- }))();
-
- if (drawControl) {
- map.addControl(drawControl);
- }
- if (undoButton) {
- map.addControl(undoButton);
- }
-
- applyMapControlAccessibilityLabels(map.getContainer());
- const labelTimer = window.setTimeout(() => {
- applyMapControlAccessibilityLabels(map.getContainer());
- }, 0);
-
- function normalizeAndEmit(layer: DrawingLayer, operation: "modified" | "replaced") {
- const previousDrawing = currentDrawingRef.current;
- const rawDrawing = extractDrawing(layer);
- const normalizedDrawing = normalizeActionDrawing(rawDrawing);
-
- if (!normalizedDrawing) {
- currentDrawingRef.current = null;
-  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
- onChange(null);
- return;
- }
-
- let nextDrawing;
- if (normalizedDrawing.kind ==="polygon") {
- // Les polygones représentent une zone, pas de snap automatique
-  nextDrawing = createActionDrawingSnapshot(normalizedDrawing, "manual");
- } else {
-  // Les tracés manuels restent les coordonnées saisies. Le routage réseau est
-  // réservé au serveur et ne doit pas être déclenché depuis le navigateur.
-  const resolved = resolveDrawnGeometry(normalizedDrawing, null);
-  nextDrawing = createActionDrawingSnapshot(resolved.drawing, resolved.geometrySource);
- }
- if (!nextDrawing) {
-  currentDrawingRef.current = null;
-  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
-  onChange(null);
-  return;
- }
- currentDrawingRef.current = nextDrawing;
- onUndoAvailable(createActionDrawingUndoState(previousDrawing, nextDrawing, operation));
- onChange(nextDrawing.drawing, nextDrawing.source);
- }
-
- function handleCreated(event: LeafletEvent & { layer: DrawingLayer }) {
- layerGroup.clearLayers();
- layerGroup.addLayer(event.layer);
- // Fire async normalization
- void normalizeAndEmit(event.layer, "replaced");
- }
-
- function handleEdited() {
- const firstLayer = layerGroup.getLayers()[0] as DrawingLayer | undefined;
- if (firstLayer) {
-  void normalizeAndEmit(firstLayer, "modified");
- } else {
- const previousDrawing = currentDrawingRef.current;
- currentDrawingRef.current = null;
-  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
- onChange(null);
- }
- }
-
- function handleDeleted() {
- const previousDrawing = currentDrawingRef.current;
- currentDrawingRef.current = null;
-  onUndoAvailable(createActionDrawingUndoState(previousDrawing, null, "removed"));
- onChange(null);
- }
-
- map.on(L.Draw.Event.CREATED, handleCreated);
- map.on(L.Draw.Event.EDITED, handleEdited);
- map.on(L.Draw.Event.DELETED, handleDeleted);
-
- return () => {
- map.off(L.Draw.Event.CREATED, handleCreated);
- map.off(L.Draw.Event.EDITED, handleEdited);
- map.off(L.Draw.Event.DELETED, handleDeleted);
- if (drawControl) {
- map.removeControl(drawControl);
- }
- if (undoButton) {
- map.removeControl(undoButton);
- }
- window.clearTimeout(labelTimer);
- map.removeLayer(layerGroup);
- if (previewLayerGroupRef.current) {
-  map.removeLayer(previewLayerGroupRef.current);
-  previewLayerGroupRef.current = null;
- }
- layerGroupRef.current = null;
- };
+useEffect(() => {
+  const layerGroup = new L.FeatureGroup();
+  layerGroupRef.current = layerGroup;
+  const cleanup = setupDrawingController({
+   map,
+   layerGroup,
+   currentDrawingRef,
+   drawingDisabled: readOnly || isMobile,
+   onChange,
+   onUndoAvailable,
+  });
+  return () => {
+   cleanup();
+   if (previewLayerGroupRef.current) {
+    map.removeLayer(previewLayerGroupRef.current);
+    previewLayerGroupRef.current = null;
+   }
+   layerGroupRef.current = null;
+  };
  }, [drawingSource, map, onChange, onUndoAvailable, readOnly, isMobile]);
 
  useEffect(() => {

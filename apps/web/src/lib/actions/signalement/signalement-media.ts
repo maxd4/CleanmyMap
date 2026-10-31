@@ -312,10 +312,10 @@ export async function createSignalementMediaUploadIntent(
   };
 }
 
-export async function finalizeSignalementMedia(
+async function loadSignalementMediaForFinalization(
   supabase: SupabaseClient,
   params: { userId: string; signalementId: string; mediaId: string },
-): Promise<SignalementMediaReadyResult> {
+): Promise<SignalementMediaRow> {
   const parent = await getParent(supabase, params.signalementId);
   await assertOwnerOrAdmin(params.userId, parent);
   const rawResult: unknown = await supabase
@@ -325,35 +325,67 @@ export async function finalizeSignalementMedia(
     .eq("signalement_id", params.signalementId)
     .maybeSingle();
   const result = parseActionSupabaseResult(rawResult);
-  if (result.error) {
-    throw normalizeStorageError("La preuve photo ne peut pas être finalisée.");
-  }
-  if (!result.data) {
-    throw new SignalementMediaError("Preuve photo introuvable.", "not_found");
-  }
-  if (!isSignalementMediaRow(result.data)) {
-    throw normalizeStorageError("La preuve photo ne peut pas être vérifiée.");
-  }
+  if (result.error) throw normalizeStorageError("La preuve photo ne peut pas être finalisée.");
+  if (!result.data) throw new SignalementMediaError("Preuve photo introuvable.", "not_found");
+  if (!isSignalementMediaRow(result.data)) throw normalizeStorageError("La preuve photo ne peut pas être vérifiée.");
   const row = result.data;
-  if (row.storage_bucket !== SIGNALEMENT_EVIDENCE_BUCKET) {
-    throw new SignalementMediaError("Le bucket de preuve est invalide.", "validation");
-  }
-  const expectedPath = buildSignalementEvidencePath(
-    params.signalementId,
-    row.id,
-    row.mime_type,
-  );
-  if (row.storage_path !== expectedPath) {
+  if (row.storage_bucket !== SIGNALEMENT_EVIDENCE_BUCKET) throw new SignalementMediaError("Le bucket de preuve est invalide.", "validation");
+  if (row.storage_path !== buildSignalementEvidencePath(params.signalementId, row.id, row.mime_type)) {
     throw new SignalementMediaError("Le chemin de preuve est invalide.", "validation");
   }
+  return row;
+}
+
+async function verifySignalementMediaRow(
+  supabase: SupabaseClient,
+  row: SignalementMediaRow,
+): Promise<void> {
+  const verification = await verifyMediaStorageObject(supabase, {
+    bucket: SIGNALEMENT_EVIDENCE_BUCKET,
+    storagePath: row.storage_path,
+    sizeBytes: row.size_bytes,
+    mimeType: row.mime_type,
+  });
+  if (verification !== "valid") throw storageVerificationError(verification);
+}
+
+async function markSignalementMediaReady(
+  supabase: SupabaseClient,
+  params: { signalementId: string },
+  row: SignalementMediaRow,
+): Promise<SignalementMediaReadyResult> {
+  const rawUpdated: unknown = await supabase
+    .from("signalement_media")
+    .update({ upload_state: "ready", failure_reason: null })
+    .eq("id", row.id)
+    .eq("signalement_id", params.signalementId)
+    .eq("upload_state", "pending")
+    .eq("storage_path", row.storage_path)
+    .select("*")
+    .maybeSingle();
+  const updated = parseActionSupabaseResult(rawUpdated);
+  if (updated.error) throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
+  if (updated.data && isSignalementMediaRow(updated.data)) return { media: toRecord(updated.data), alreadyReady: false };
+  const rawConcurrent: unknown = await supabase
+    .from("signalement_media")
+    .select("*")
+    .eq("id", row.id)
+    .eq("signalement_id", params.signalementId)
+    .maybeSingle();
+  const concurrent = parseActionSupabaseResult(rawConcurrent);
+  if (concurrent.error || !isSignalementMediaRow(concurrent.data)) throw normalizeStorageError("La preuve photo ne peut pas être relue après une concurrence.");
+  if (concurrent.data.upload_state !== "ready") throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
+  await verifySignalementMediaRow(supabase, concurrent.data);
+  return { media: toRecord(concurrent.data), alreadyReady: true };
+}
+
+export async function finalizeSignalementMedia(
+  supabase: SupabaseClient,
+  params: { userId: string; signalementId: string; mediaId: string },
+): Promise<SignalementMediaReadyResult> {
+  const row = await loadSignalementMediaForFinalization(supabase, params);
   if (row.upload_state === "ready") {
-    const readyVerification = await verifyMediaStorageObject(supabase, {
-      bucket: SIGNALEMENT_EVIDENCE_BUCKET,
-      storagePath: row.storage_path,
-      sizeBytes: row.size_bytes,
-      mimeType: row.mime_type,
-    });
-    if (readyVerification !== "valid") throw storageVerificationError(readyVerification);
+    await verifySignalementMediaRow(supabase, row);
     return { media: toRecord(row), alreadyReady: true };
   }
 
@@ -377,46 +409,7 @@ export async function finalizeSignalementMedia(
     throw storageVerificationError(verification);
   }
 
-  const rawUpdated: unknown = await supabase
-    .from("signalement_media")
-    .update({ upload_state: "ready", failure_reason: null })
-    .eq("id", row.id)
-    .eq("signalement_id", params.signalementId)
-    .eq("upload_state", "pending")
-    .eq("storage_path", row.storage_path)
-    .select("*")
-    .maybeSingle();
-  const updated = parseActionSupabaseResult(rawUpdated);
-  if (updated.error) {
-    throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
-  }
-  if (!updated.data) {
-    const rawConcurrent: unknown = await supabase
-      .from("signalement_media")
-      .select("*")
-      .eq("id", row.id)
-      .eq("signalement_id", params.signalementId)
-      .maybeSingle();
-    const concurrent = parseActionSupabaseResult(rawConcurrent);
-    if (concurrent.error || !isSignalementMediaRow(concurrent.data)) {
-      throw normalizeStorageError("La preuve photo ne peut pas être relue après une concurrence.");
-    }
-    if (concurrent.data.upload_state === "ready") {
-      const concurrentVerification = await verifyMediaStorageObject(supabase, {
-        bucket: SIGNALEMENT_EVIDENCE_BUCKET,
-        storagePath: concurrent.data.storage_path,
-        sizeBytes: concurrent.data.size_bytes,
-        mimeType: concurrent.data.mime_type,
-      });
-      if (concurrentVerification !== "valid") throw storageVerificationError(concurrentVerification);
-      return { media: toRecord(concurrent.data), alreadyReady: true };
-    }
-    throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
-  }
-  if (!isSignalementMediaRow(updated.data)) {
-    throw normalizeStorageError("La preuve photo ne peut pas être marquée comme prête.");
-  }
-  return { media: toRecord(updated.data), alreadyReady: false };
+  return markSignalementMediaReady(supabase, params, row);
 }
 
 async function assertCanReadSignalementMedia(

@@ -115,6 +115,70 @@ function assertSamePartnerOnboardingPayload(
   }
 }
 
+async function appendPartnerOnboardingRequestToSupabase(
+  record: PartnerOnboardingRequestRecord,
+  entry: ReturnType<typeof buildPublishedPartnerAnnuaireEntry>,
+): Promise<PartnerOnboardingAppendResult> {
+  const serializedEntry = serializePublishedPartnerAnnuaireEntry(entry);
+  const rawResult: unknown = await getSupabaseServerClient(true).rpc(
+    "create_partner_onboarding_request_with_annuaire",
+    {
+      p_request_id: record.id,
+      p_entry_id: entry.id,
+      p_created_at: record.createdAt,
+      p_submitted_by_user_id: record.submittedByUserId,
+      p_submitted_by_email: record.submittedByEmail,
+      p_idempotency_key: record.idempotencyKey,
+      p_organization_name: record.organizationName,
+      p_organization_type: record.organizationType,
+      p_partner_scope: record.partnerScope,
+      p_legal_identity: record.legalIdentity,
+      p_coverage: record.coverage,
+      p_contribution_types: record.contributionTypes,
+      p_relay_actions: record.relayActions,
+      p_availability: record.availability,
+      p_contact_name: record.contactName,
+      p_contact_channel: record.contactChannel,
+      p_contact_details: record.contactDetails,
+      p_motivation: record.motivation,
+      p_public_data: serializedEntry.public_data,
+      p_private_admin_contact: {
+        ...serializedEntry.private_admin_contact,
+        publicWebsiteConsent: record.publicWebsiteConsent,
+      },
+    },
+  );
+  if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) {
+    throw new Error("Supabase returned an invalid partner onboarding response.");
+  }
+  if (rawResult.error) {
+    const message = isRecord(rawResult.error) && typeof rawResult.error.message === "string"
+      ? rawResult.error.message
+      : "Partner onboarding RPC failed.";
+    if (message.toLowerCase().includes("partner onboarding idempotency conflict")) {
+      throw new PartnerOnboardingIdempotencyConflictError();
+    }
+    throw new Error(message);
+  }
+  const rpcRow = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
+  if (!isRecord(rpcRow) || typeof rpcRow.request_id !== "string") {
+    throw new Error("Supabase returned no partner onboarding request.");
+  }
+  const persisted = await persistSupabaseRecord(
+    getSupabaseServerClient(true)
+      .from("partner_onboarding_requests")
+      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+      .eq("id", rpcRow.request_id)
+      .single(),
+    normalizePartnerOnboardingSupabaseRow,
+    "Supabase returned an invalid partner onboarding request.",
+  );
+  return {
+    record: persisted,
+    replayed: rpcRow.request_id !== record.id,
+  };
+}
+
 export async function appendPartnerOnboardingRequestWithResult(params: {
   submittedByUserId: string;
   submittedByEmail?: string | null;
@@ -142,64 +206,7 @@ export async function appendPartnerOnboardingRequestWithResult(params: {
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const serializedEntry = serializePublishedPartnerAnnuaireEntry(entry);
-    const rawResult: unknown = await getSupabaseServerClient(true).rpc(
-      "create_partner_onboarding_request_with_annuaire",
-      {
-        p_request_id: record.id,
-        p_entry_id: entry.id,
-        p_created_at: record.createdAt,
-        p_submitted_by_user_id: record.submittedByUserId,
-        p_submitted_by_email: record.submittedByEmail,
-        p_idempotency_key: record.idempotencyKey,
-        p_organization_name: record.organizationName,
-        p_organization_type: record.organizationType,
-        p_partner_scope: record.partnerScope,
-        p_legal_identity: record.legalIdentity,
-        p_coverage: record.coverage,
-        p_contribution_types: record.contributionTypes,
-        p_relay_actions: record.relayActions,
-        p_availability: record.availability,
-        p_contact_name: record.contactName,
-        p_contact_channel: record.contactChannel,
-        p_contact_details: record.contactDetails,
-        p_motivation: record.motivation,
-        p_public_data: serializedEntry.public_data,
-        p_private_admin_contact: {
-          ...serializedEntry.private_admin_contact,
-          // This proof remains in the server-only transport object. The RPC
-          // persists it on the private source request, never in public_data.
-          publicWebsiteConsent: record.publicWebsiteConsent,
-        },
-      },
-    );
-    if (!isRecord(rawResult) || !("data" in rawResult) || !("error" in rawResult)) throw new Error("Supabase returned an invalid partner onboarding response.");
-    if (rawResult.error) {
-      const message = isRecord(rawResult.error) && typeof rawResult.error.message === "string"
-        ? rawResult.error.message
-        : "Partner onboarding RPC failed.";
-      if (message.toLowerCase().includes("partner onboarding idempotency conflict")) {
-        throw new PartnerOnboardingIdempotencyConflictError();
-      }
-      throw new Error(message);
-    }
-    const rpcRow = Array.isArray(rawResult.data) ? rawResult.data[0] : rawResult.data;
-    if (!isRecord(rpcRow) || typeof rpcRow.request_id !== "string") {
-      throw new Error("Supabase returned no partner onboarding request.");
-    }
-    const persisted = await persistSupabaseRecord(
-      getSupabaseServerClient(true)
-        .from("partner_onboarding_requests")
-        .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
-        .eq("id", rpcRow.request_id)
-        .single(),
-      normalizePartnerOnboardingSupabaseRow,
-      "Supabase returned an invalid partner onboarding request.",
-    );
-    return {
-      record: persisted,
-      replayed: rpcRow.request_id !== record.id,
-    };
+    return appendPartnerOnboardingRequestToSupabase(record, entry);
   } else {
     const store = await readStore();
     const existing = store.records.find(

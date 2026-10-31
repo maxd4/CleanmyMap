@@ -46,6 +46,98 @@ const POLLUTION_CATEGORY_LABELS = {
   unavailable: "Indisponible",
 } as const;
 
+function ActionsMapTableRow({
+  item,
+  selectedActionId,
+  selectedRowRef,
+  references,
+  scoreScope,
+  displayMode,
+  onSelectAction,
+}: {
+  item: ActionMapItem;
+  selectedActionId: string | null;
+  selectedRowRef: React.RefObject<HTMLTableRowElement | null>;
+  references: Parameters<typeof classifyPollutionColor>[1];
+  scoreScope: PollutionScoreScope;
+  displayMode: CurrentPlaceStateMode;
+  onSelectAction?: (actionId: string) => void;
+}) {
+  const drawing = mapItemDrawing(item);
+  const geometry = getGeometryPresentation(item);
+  const pollutionCategory = classifyPollutionColor(item, references, { scoreScope, displayMode });
+  const contextPresentation = ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"];
+  return (
+    <tr key={item.id} ref={selectedActionId === item.id ? selectedRowRef : null} className={["text-slate-700 transition-colors", selectedActionId === item.id ? "bg-sky-100 ring-1 ring-inset ring-sky-300/22" : "hover:bg-sky-100/70"].join(" ")}>
+            <td className="cmm-data-table__nowrap">{formatDate(mapItemObservedAt(item))}</td>
+            <td className="font-medium">{mapItemLocationLabel(item)}</td>
+            <td><span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 cmm-text-caption font-bold text-slate-700" aria-label={`Contexte ${contextPresentation.label}`}>{contextPresentation.glyph}<span>{contextPresentation.label}</span></span></td>
+            <td><span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-bold uppercase tracking-wide text-slate-700">{mapItemType(item) === "clean_place" ? "lieu" : mapItemType(item) === "spot" ? "spot" : "action"}</span></td>
+            <td>{drawing ? <span className={`cmm-text-caption font-semibold px-2 py-0.5 rounded-full border ${geometry.reality === "observed" || geometry.reality === "declared" ? "text-emerald-700 bg-emerald-50 border-emerald-100" : "text-amber-800 bg-amber-50 border-amber-100"}`}>{geometry.label}</span> : <span className="cmm-text-caption text-slate-500">Point discret</span>}</td>
+            <td><span className="cmm-text-small font-medium text-slate-700">{POLLUTION_CATEGORY_LABELS[pollutionCategory]}</span></td>
+            <td className="cmm-data-table__end"><div className="flex justify-end gap-1"><span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 cmm-text-caption font-bold text-emerald-800">{item.impact_level ?? "Indisponible"}</span><span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-bold text-slate-700">{item.quality_grade ?? "Non évalué"}</span></div></td>
+            <td className="cmm-data-table__end">{onSelectAction ? <button type="button" onClick={() => onSelectAction(item.id)} className="rounded-xl border border-sky-200/80 bg-sky-100 px-3 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500" aria-label={`Ouvrir le détail de ${mapItemLocationLabel(item)}`}>Ouvrir</button> : null}</td>
+    </tr>
+  );
+}
+
+function ActionsMapTableBody({
+  items,
+  selectedActionId,
+  selectedRowRef,
+  references,
+  scoreScope,
+  displayMode,
+  onSelectAction,
+}: {
+  items: ActionMapItem[];
+  selectedActionId: string | null;
+  selectedRowRef: React.RefObject<HTMLTableRowElement | null>;
+  references: Parameters<typeof classifyPollutionColor>[1];
+  scoreScope: PollutionScoreScope;
+  displayMode: CurrentPlaceStateMode;
+  onSelectAction?: (actionId: string) => void;
+}) {
+  return <tbody>{items.map((item) => <ActionsMapTableRow key={item.id} item={item} selectedActionId={selectedActionId} selectedRowRef={selectedRowRef} references={references} scoreScope={scoreScope} displayMode={displayMode} onSelectAction={onSelectAction} />)}</tbody>;
+}
+
+function HiddenActionsJournal({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-sky-200/80 bg-white px-5 py-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div><p className="cmm-text-small font-semibold text-slate-950">Journal caché</p><p className="mt-1 cmm-text-small text-slate-700">Affiche les 4 plus récentes.</p></div>
+        <button type="button" onClick={onOpen} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"><span aria-hidden="true">🗂️</span>Ouvrir le journal</button>
+      </div>
+    </div>
+  );
+}
+
+function ActionsMapTableFooter({
+  visibleCount,
+  totalCount,
+  hasMore,
+  isSelectionPinned,
+  onShowMore,
+  onHide,
+}: {
+  visibleCount: number;
+  totalCount: number;
+  hasMore: boolean;
+  isSelectionPinned: boolean;
+  onShowMore: () => void;
+  onHide: () => void;
+}) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <p className="cmm-text-caption text-slate-700">{visibleCount} action{visibleCount > 1 ? "s" : ""} sur {totalCount}</p>
+      <div className="flex flex-wrap gap-2">
+        {hasMore ? <button type="button" onClick={onShowMore} className="rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200">Afficher plus</button> : null}
+        {isSelectionPinned ? <span className="inline-flex items-center rounded-2xl border border-sky-200/80 bg-white px-4 py-2 cmm-text-small font-semibold text-slate-700">Sélection active</span> : <button type="button" onClick={onHide} className="rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200">Masquer le journal</button>}
+      </div>
+    </div>
+  );
+}
+
 export function ActionsMapTable({
   items,
   compact = false,
@@ -128,29 +220,7 @@ export function ActionsMapTable({
         </span>
       </div>
 
- {!isVisible ? (
- <div className="rounded-2xl border border-dashed border-sky-200/80 bg-white px-5 py-6">
- <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
- <div>
- <p className="cmm-text-small font-semibold text-slate-950">Journal caché</p>
- <p className="mt-1 cmm-text-small text-slate-700">
- Affiche les 4 plus récentes.
- </p>
- </div>
-        <button
-          type="button"
-          onClick={() => {
-            setIsManuallyVisible(true);
-            setVisibleCount(ACTIONS_BATCH_SIZE);
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"
-        >
-          <span aria-hidden="true">🗂️</span>
-          Ouvrir le journal
-        </button>
-      </div>
-    </div>
- ) : null}
+ {!isVisible ? <HiddenActionsJournal onOpen={() => { setIsManuallyVisible(true); setVisibleCount(ACTIONS_BATCH_SIZE); }} /> : null}
 
 {isVisible ? (
  <div className={compact ?"cmm-data-table-wrap max-h-[30rem] overflow-auto" :"cmm-data-table-wrap"}>
@@ -168,129 +238,12 @@ export function ActionsMapTable({
  <th scope="col" className="cmm-data-table__end">Action</th>
  </tr>
  </thead>
- <tbody>
- {visibleItems.map((item: ActionMapItem) => {
- const drawing = mapItemDrawing(item);
- const geometry = getGeometryPresentation(item);
- const pollutionCategory = classifyPollutionColor(item, references, { scoreScope, displayMode });
- return (
-          <tr
-            key={item.id}
-            ref={selectedActionId === item.id ? selectedRowRef : null}
-            className={[
-              "text-slate-700 transition-colors",
-              selectedActionId === item.id ? "bg-sky-100 ring-1 ring-inset ring-sky-300/22" : "hover:bg-sky-100/70",
-            ].join(" ")}
-          >
-            <td className="cmm-data-table__nowrap">
-              {formatDate(mapItemObservedAt(item))}
-            </td>
-            <td className="font-medium">
-              {mapItemLocationLabel(item)}
- </td>
- <td>
- <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 cmm-text-caption font-bold text-slate-700" aria-label={`Contexte ${ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"].label}`}>
- {ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"].glyph}
- <span>{ACTION_CONTEXT_PRESENTATIONS[item.contract?.metadata.actionContext ?? "unknown"].label}</span>
- </span>
- </td>
- <td>
- <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-bold uppercase tracking-wide text-slate-700">
- {mapItemType(item) ==="clean_place"
- ?"lieu"
- : mapItemType(item) ==="spot"
- ?"spot"
- :"action"}
- </span>
- </td>
- <td>
- {drawing ? (
- <span
- className={`cmm-text-caption font-semibold px-2 py-0.5 rounded-full border ${
-  geometry.reality ==="observed" || geometry.reality === "declared"
- ?"text-emerald-700 bg-emerald-50 border-emerald-100"
- :"text-amber-800 bg-amber-50 border-amber-100"
- }`}
- >
- {geometry.label}
- </span>
- ) : (
- <span className="cmm-text-caption text-slate-500">Point discret</span>
- )}
- </td>
- <td>
- <span className="cmm-text-small font-medium text-slate-700">
- {POLLUTION_CATEGORY_LABELS[pollutionCategory]}
- </span>
- </td>
- <td className="cmm-data-table__end">
- <div className="flex justify-end gap-1">
- <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 cmm-text-caption font-bold text-emerald-800">
- {item.impact_level ?? "Indisponible"}
- </span>
- <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-bold text-slate-700">
- {item.quality_grade ?? "Non évalué"}
- </span>
- </div>
- </td>
- <td className="cmm-data-table__end">
-   {onSelectAction ? (
-     <button
-       type="button"
-       onClick={() => onSelectAction(item.id)}
-       className="rounded-xl border border-sky-200/80 bg-sky-100 px-3 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
-       aria-label={`Ouvrir le détail de ${mapItemLocationLabel(item)}`}
-     >
-       Ouvrir
-     </button>
-   ) : null}
- </td>
- </tr>
- );
- })}
- </tbody>
+ <ActionsMapTableBody items={visibleItems} selectedActionId={selectedActionId} selectedRowRef={selectedRowRef} references={references} scoreScope={scoreScope} displayMode={displayMode} onSelectAction={onSelectAction} />
  </table>
  </div>
  ) : null}
 
-  {isVisible ? (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
- <p className="cmm-text-caption text-slate-700">
- {visibleItems.length} action{visibleItems.length > 1 ?"s" :""} sur {orderedItems.length}
- </p>
- <div className="flex flex-wrap gap-2">
- {hasMore ? (
- <button
- type="button"
- onClick={() =>
- setVisibleCount((current) =>
- Math.min(current + ACTIONS_BATCH_SIZE, orderedItems.length),
- )
- }
- className="rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"
- >
- Afficher plus
- </button>
- ) : null}
- {isSelectionPinned ? (
-   <span className="inline-flex items-center rounded-2xl border border-sky-200/80 bg-white px-4 py-2 cmm-text-small font-semibold text-slate-700">
-     Sélection active
-   </span>
- ) : (
- <button
- type="button"
- onClick={() => {
- setIsManuallyVisible(false);
- setVisibleCount(ACTIONS_BATCH_SIZE);
- }}
- className="rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"
- >
- Masquer le journal
- </button>
- )}
- </div>
- </div>
- ) : null}
+  {isVisible ? <ActionsMapTableFooter visibleCount={visibleItems.length} totalCount={orderedItems.length} hasMore={hasMore} isSelectionPinned={isSelectionPinned} onShowMore={() => setVisibleCount((current) => Math.min(current + ACTIONS_BATCH_SIZE, orderedItems.length))} onHide={() => { setIsManuallyVisible(false); setVisibleCount(ACTIONS_BATCH_SIZE); }} /> : null}
  </section>
  );
 }

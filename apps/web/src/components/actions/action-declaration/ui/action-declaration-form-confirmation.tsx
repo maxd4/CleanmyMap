@@ -34,6 +34,69 @@ function SummaryItem({ label, children }: { label: string; children: React.React
   );
 }
 
+function ConfirmationOrganizer({ form, payload }: { form: FormState; payload: CreateActionPayload }) {
+  return (
+    <SummaryItem label="Organisateur">
+      {payload.organizerName?.trim() || form.associationName || "Non renseigné"}
+      <span className="mt-1 block text-xs font-normal text-emerald-900/60">{getOrganizerTypeLabel(payload.organizerType)}</span>
+      <span className="mt-1 block text-xs font-normal text-emerald-900/60">{payload.organizerAccounts?.length ? `Coorganisateurs : ${payload.organizerAccounts.join(", ")}` : "Aucun coorganisateur n’est déclaré"}</span>
+    </SummaryItem>
+  );
+}
+
+function ConfirmationParticipants({ isCleanPlaceMode, payload }: { isCleanPlaceMode: boolean; payload: CreateActionPayload }) {
+  return (
+    <SummaryItem label="Participants présents">
+      {isCleanPlaceMode ? "Non applicable" : `${payload.volunteersCount ?? "Non renseigné"}`}
+      {payload.volunteerParticipation ? <span className="mt-1 block text-xs font-normal text-emerald-900/60">Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}</span> : null}
+      <span className="mt-1 block text-xs font-normal text-emerald-900/60">Le nombre de participants présents est déclaré séparément des comptes.</span>
+    </SummaryItem>
+  );
+}
+
+function ConfirmationDetails({
+  form,
+  payload,
+  isCleanPlaceMode,
+  geometrySummary,
+  event,
+  organization,
+}: {
+  form: FormState;
+  payload: CreateActionPayload;
+  isCleanPlaceMode: boolean;
+  geometrySummary: string;
+  event: ReturnType<typeof deriveEventDurationMinutes>;
+  organization: ReturnType<typeof deriveOrganizationMinutes>;
+}) {
+  return (
+    <>
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <SummaryItem label="Action">{form.actionTitle.trim() || "Titre facultatif non renseigné"}</SummaryItem>
+        <SummaryItem label="Date réelle">{payload.actionDate || "Non renseignée"}</SummaryItem>
+        <ConfirmationOrganizer form={form} payload={payload} />
+        <SummaryItem label="Lieu de référence">
+          {payload.locationLabel || "Non renseigné"}
+          <span className="mt-1 block text-xs font-normal text-emerald-900/60">{form.placeType || "Environnement non renseigné"}</span>
+        </SummaryItem>
+        <ConfirmationParticipants isCleanPlaceMode={isCleanPlaceMode} payload={payload} />
+        <SummaryItem label="Durée réelle">
+          {formatBusinessDurationMinutes(payload.durationMinutes)}
+          {organization.status === "available" ? <span className="mt-1 block text-xs font-normal text-emerald-900/60">Organisation : {formatBusinessDurationMinutes(organization.organizationMinutes)}</span> : null}
+        </SummaryItem>
+        <SummaryItem label={isCleanPlaceMode ? "Signalement" : "Déchets hors mégots"}>
+          {isCleanPlaceMode ? "Lieu propre" : payload.wasteKg == null ? "Non renseigné" : `${payload.wasteKg} kg`}
+        </SummaryItem>
+        {!isCleanPlaceMode ? <SummaryItem label="Mégots">{payload.cigaretteButtsCount == null ? "Nombre non renseigné" : `${payload.cigaretteButtsCount} · `}{payload.cigaretteButtsKg == null ? "masse non renseignée" : `${payload.cigaretteButtsKg} kg`}</SummaryItem> : null}
+      </dl>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <SummaryItem label="Terrain et géométrie">{geometrySummary}</SummaryItem>
+        <SummaryItem label="Horaires complémentaires">{event.status === "available" ? `${payload.eventStartTime} – ${payload.eventEndTime}` : "Non renseignés"}</SummaryItem>
+      </div>
+    </>
+  );
+}
+
 export function ActionDeclarationFormConfirmation({
   form,
   payload,
@@ -80,56 +143,7 @@ export function ActionDeclarationFormConfirmation({
           <span className="font-bold">Déclaré par :</span> {actor}
         </div>
 
-        <dl className="grid gap-3 sm:grid-cols-2">
-          <SummaryItem label="Action">
-            {form.actionTitle.trim() || "Titre facultatif non renseigné"}
-          </SummaryItem>
-          <SummaryItem label="Date réelle">
-            {payload.actionDate || "Non renseignée"}
-          </SummaryItem>
-          <SummaryItem label="Organisateur">
-            {payload.organizerName?.trim() || form.associationName || "Non renseigné"}
-            <span className="mt-1 block text-xs font-normal text-emerald-900/60">{getOrganizerTypeLabel(payload.organizerType)}</span>
-            <span className="mt-1 block text-xs font-normal text-emerald-900/60">
-              {payload.organizerAccounts?.length
-                ? `Coorganisateurs : ${payload.organizerAccounts.join(", ")}`
-                : "Aucun coorganisateur n’est déclaré"}
-            </span>
-          </SummaryItem>
-          <SummaryItem label="Lieu de référence">
-            {payload.locationLabel || "Non renseigné"}
-            <span className="mt-1 block text-xs font-normal text-emerald-900/60">{form.placeType || "Environnement non renseigné"}</span>
-          </SummaryItem>
-          <SummaryItem label="Participants présents">
-            {isCleanPlaceMode ? "Non applicable" : `${payload.volunteersCount ?? "Non renseigné"}`}
-            {payload.volunteerParticipation ? (
-              <span className="mt-1 block text-xs font-normal text-emerald-900/60">
-                Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
-              </span>
-            ) : null}
-            <span className="mt-1 block text-xs font-normal text-emerald-900/60">Le nombre de participants présents est déclaré séparément des comptes.</span>
-          </SummaryItem>
-          <SummaryItem label="Durée réelle">
-            {formatBusinessDurationMinutes(payload.durationMinutes)}
-            {organization.status === "available" ? <span className="mt-1 block text-xs font-normal text-emerald-900/60">Organisation : {formatBusinessDurationMinutes(organization.organizationMinutes)}</span> : null}
-          </SummaryItem>
-          <SummaryItem label={isCleanPlaceMode ? "Signalement" : "Déchets hors mégots"}>
-            {isCleanPlaceMode ? "Lieu propre" : payload.wasteKg == null ? "Non renseigné" : `${payload.wasteKg} kg`}
-          </SummaryItem>
-          {!isCleanPlaceMode ? (
-            <SummaryItem label="Mégots">
-              {payload.cigaretteButtsCount == null ? "Nombre non renseigné" : `${payload.cigaretteButtsCount} · `}
-              {payload.cigaretteButtsKg == null ? "masse non renseignée" : `${payload.cigaretteButtsKg} kg`}
-            </SummaryItem>
-          ) : null}
-        </dl>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SummaryItem label="Terrain et géométrie">{geometrySummary}</SummaryItem>
-          <SummaryItem label="Horaires complémentaires">
-            {event.status === "available" ? `${payload.eventStartTime} – ${payload.eventEndTime}` : "Non renseignés"}
-          </SummaryItem>
-        </div>
+        <ConfirmationDetails form={form} payload={payload} isCleanPlaceMode={isCleanPlaceMode} geometrySummary={geometrySummary} event={event} organization={organization} />
 
         {form.notes.trim() ? (
           <div className="rounded-xl border border-emerald-200/70 bg-white px-4 py-3">

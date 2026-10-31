@@ -270,6 +270,76 @@ function isGpxLoop(coordinates: readonly GeodesicCoordinate[]): boolean {
   );
 }
 
+function assertParsedGpxSegments(segments: GeodesicCoordinate[][]): number {
+  if (segments.some((segment) => segment.length < 2)) {
+    throw new GpxImportError("Chaque segment GPX doit contenir au moins 2 points.");
+  }
+  const pointCount = segments.reduce((total, segment) => total + segment.length, 0);
+  if (pointCount > MAX_GPX_POINTS) {
+    throw new GpxImportError(`Le GPX dépasse la limite de ${MAX_GPX_POINTS} points.`);
+  }
+  if ((segments[0] ?? []).length < 2) {
+    throw new GpxImportError("Le GPX doit contenir au moins 2 points exploitables.");
+  }
+  return pointCount;
+}
+
+function buildGpxImportFiles(
+  tracks: GeodesicCoordinate[][][],
+  fileName: string | undefined,
+  provenance: GpxImportProvenance,
+  options: { fileId?: string; preserveSourceFingerprint?: boolean },
+): ActionGpxImportFile[] {
+  if (!fileName) return [];
+  return [{
+    ...(options.fileId ? { fileId: options.fileId } : {}),
+    fileName,
+    provenance,
+    segments: tracks.flatMap((track, traceIndex) => track.map((segment, segmentIndex) => ({
+      ...(options.fileId ? { fileId: options.fileId } : {}),
+      fileName,
+      traceIndex,
+      segmentIndex,
+      coordinates: segment,
+      distanceKm: Number(polylineDistanceKm(segment).toFixed(3)),
+      pointCount: segment.length,
+      topology: inferGpxTopology(segment),
+      sourceFingerprint: createGpxSourceFingerprint(
+        fileName,
+        traceIndex,
+        segmentIndex,
+        segment,
+        options.preserveSourceFingerprint ? undefined : options.fileId,
+      ),
+    }))),
+  }];
+}
+
+function buildGpxMetadata(
+  segments: GeodesicCoordinate[][],
+  tracks: GeodesicCoordinate[][][],
+  pointCount: number,
+  distances: number[],
+  provenance: GpxImportProvenance,
+  fileName: string | undefined,
+  files: ActionGpxImportFile[],
+): ParsedGpxTrack["metadata"] {
+  return {
+    source: ACTION_GPX_SOURCE,
+    observedDistanceKm: Number(distances.reduce((total, distance) => total + distance, 0).toFixed(3)),
+    pointCount,
+    inferredTopology: inferGpxTopology(segments[0] ?? []),
+    segmentTopologies: segments.map(inferGpxTopology),
+    segmentDistancesKm: distances,
+    segmentPointCounts: segments.map((segment) => segment.length),
+    segmentCount: segments.length,
+    traceCount: tracks.length,
+    provenance,
+    fileName,
+    ...(files.length > 0 ? { files } : {}),
+  };
+}
+
 export function inferGpxTopology(
   coordinates: readonly GeodesicCoordinate[],
 ): ActionRouteTopology {
@@ -286,65 +356,19 @@ export function parseGpxText(
 
   const parsedSegments = parseTrackSegments(xml);
   const segments = parsedSegments.segments;
-  if (segments.some((segment) => segment.length < 2)) {
-    throw new GpxImportError("Chaque segment GPX doit contenir au moins 2 points.");
-  }
-  const pointCount = segments.reduce((total, segment) => total + segment.length, 0);
-  if (pointCount > MAX_GPX_POINTS) {
-    throw new GpxImportError(`Le GPX dépasse la limite de ${MAX_GPX_POINTS} points.`);
-  }
-
+  const pointCount = assertParsedGpxSegments(segments);
   const coordinates = segments[0] ?? [];
-  if (coordinates.length < 2) {
-    throw new GpxImportError("Le GPX doit contenir au moins 2 points exploitables.");
-  }
   const segmentDistancesKm = segments.map((segment) => Number(polylineDistanceKm(segment).toFixed(3)));
   const provenance = detectGpxProvenance(xml);
   const sanitizedFileName = sanitizeFileName(options.fileName);
-  const files: ActionGpxImportFile[] = sanitizedFileName
-    ? [{
-        ...(options.fileId ? { fileId: options.fileId } : {}),
-        fileName: sanitizedFileName,
-        provenance,
-        segments: parsedSegments.tracks.flatMap((track, traceIndex) => track.map((segment, segmentIndex) => ({
-          ...(options.fileId ? { fileId: options.fileId } : {}),
-          fileName: sanitizedFileName,
-          traceIndex,
-          segmentIndex,
-          coordinates: segment,
-          distanceKm: Number(polylineDistanceKm(segment).toFixed(3)),
-          pointCount: segment.length,
-          topology: inferGpxTopology(segment),
-          sourceFingerprint: createGpxSourceFingerprint(
-            sanitizedFileName,
-            traceIndex,
-            segmentIndex,
-            segment,
-            options.preserveSourceFingerprint ? undefined : options.fileId,
-          ),
-        }))),
-      }]
-    : [];
+  const files = buildGpxImportFiles(parsedSegments.tracks, sanitizedFileName, provenance, options);
 
   return {
     drawing: { kind: "polyline", coordinates },
     segments,
     tracks: parsedSegments.tracks,
     provenance,
-    metadata: {
-      source: ACTION_GPX_SOURCE,
-      observedDistanceKm: Number(segmentDistancesKm.reduce((total, distance) => total + distance, 0).toFixed(3)),
-      pointCount,
-      inferredTopology: inferGpxTopology(coordinates),
-      segmentTopologies: segments.map(inferGpxTopology),
-      segmentDistancesKm,
-      segmentPointCounts: segments.map((segment) => segment.length),
-      segmentCount: segments.length,
-      traceCount: parsedSegments.tracks.length,
-      provenance,
-      fileName: sanitizedFileName,
-      ...(files.length > 0 ? { files } : {}),
-    },
+    metadata: buildGpxMetadata(segments, parsedSegments.tracks, pointCount, segmentDistancesKm, provenance, sanitizedFileName, files),
   };
 }
 

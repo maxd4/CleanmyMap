@@ -48,6 +48,15 @@ type OfficialAnnouncementMessage = {
   senderId: string;
 };
 
+type OfficialAnnouncementParams = {
+  supabase: ServiceSupabaseClient;
+  actionId: string;
+  actorUserId: string;
+  operationId?: string;
+  retry?: boolean;
+  now?: Date;
+};
+
 function cleanText(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.replace(/\s+/g, " ").trim();
@@ -133,6 +142,98 @@ async function recordDiffusionAudit(params: {
   }
 }
 
+async function ensureOfficialAnnouncementMessage(
+  params: OfficialAnnouncementParams,
+  action: ActionAnnouncementAction,
+  operationId: string,
+  operation: string,
+): Promise<{ message: OfficialAnnouncementMessage; wasAlreadyPresent: boolean } | null> {
+  let message: OfficialAnnouncementMessage | null;
+  try {
+    message = await findOfficialAnnouncement(params.supabase, action.id);
+  } catch {
+    await recordDiffusionAudit({
+      operationId: `${operationId}:diffusion`,
+      actorUserId: params.actorUserId,
+      actionId: params.actionId,
+      operation: `${operation}_lookup_failure`,
+      outcome: "error",
+    });
+    return null;
+  }
+  if (message) return { message, wasAlreadyPresent: true };
+  const inserted = await insertOfficialAnnouncementMessage(params, action, operationId, operation);
+  return inserted;
+}
+
+async function insertOfficialAnnouncementMessage(
+  params: OfficialAnnouncementParams,
+  action: ActionAnnouncementAction,
+  operationId: string,
+  operation: string,
+): Promise<{ message: OfficialAnnouncementMessage; wasAlreadyPresent: boolean } | null> {
+  const announcement = buildOfficialAssociationAnnouncementContent(action);
+  let message: OfficialAnnouncementMessage | null = null;
+  const insertResult = await params.supabase
+    .from("app_messages")
+    .insert({
+      sender_id: params.actorUserId,
+      recipient_id: null,
+      channel_type: "community",
+      conversation_id: null,
+      topic_id: OFFICIAL_ASSOCIATION_ANNOUNCEMENT_TOPIC_ID,
+      message_kind: "announcement",
+      related_event_id: null,
+      arrondissement_id: null,
+      zone_name: null,
+      content: announcement.content,
+      attachment_url: null,
+      attachment_path: null,
+      attachment_type: null,
+      attachment_expires_at: null,
+      action_id: action.id,
+      official_action_publication_id: action.id,
+    })
+    .select("id, sender_id")
+    .single();
+  if (!insertResult.error && typeof insertResult.data?.id === "string" && typeof insertResult.data.sender_id === "string") {
+    return { message: { id: insertResult.data.id, senderId: insertResult.data.sender_id }, wasAlreadyPresent: false };
+  }
+  try {
+    message = await findOfficialAnnouncement(params.supabase, action.id);
+  } catch {
+    message = null;
+  }
+  if (message) return { message, wasAlreadyPresent: true };
+  await recordDiffusionAudit({
+    operationId: `${operationId}:diffusion`,
+    actorUserId: params.actorUserId,
+    actionId: params.actionId,
+    operation: `${operation}_insert_failure`,
+    outcome: "error",
+  });
+  return null;
+}
+
+async function loadAnnouncementAction(
+  params: OfficialAnnouncementParams,
+  operationId: string,
+  operation: string,
+): Promise<{ action: ActionAnnouncementAction | null; failed: boolean }> {
+  try {
+    return { action: await loadActionById(params.supabase, params.actionId), failed: false };
+  } catch {
+    await recordDiffusionAudit({
+      operationId: `${operationId}:diffusion`,
+      actorUserId: params.actorUserId,
+      actionId: params.actionId,
+      operation: `${operation}_lookup_failure`,
+      outcome: "error",
+    });
+    return { action: null, failed: true };
+  }
+}
+
 function result(
   actionId: string,
   state: AssociationActionAnnouncementState,
@@ -153,32 +254,15 @@ function result(
  * association action. Review approval and this diffusion deliberately remain
  * separate transactions so a chat outage cannot undo a valid decision.
  */
-export async function publishOfficialAssociationActionAnnouncement(params: {
-  supabase: ServiceSupabaseClient;
-  actionId: string;
-  actorUserId: string;
-  operationId?: string;
-  retry?: boolean;
-  now?: Date;
-}): Promise<AssociationActionAnnouncementResult> {
+export async function publishOfficialAssociationActionAnnouncement(params: OfficialAnnouncementParams): Promise<AssociationActionAnnouncementResult> {
   const operationId = params.operationId ?? randomUUID();
   const operation = params.retry
     ? "association_action_announcement_retry"
     : "association_action_announcement_publish";
 
-  let action: ActionRow | null;
-  try {
-    action = await loadActionById(params.supabase, params.actionId);
-  } catch {
-    await recordDiffusionAudit({
-      operationId: `${operationId}:diffusion`,
-      actorUserId: params.actorUserId,
-      actionId: params.actionId,
-      operation: `${operation}_lookup_failure`,
-      outcome: "error",
-    });
-    return result(params.actionId, "failed");
-  }
+  const loadedAction = await loadAnnouncementAction(params, operationId, operation);
+  if (loadedAction.failed) return result(params.actionId, "failed");
+  const action = loadedAction.action;
 
   if (!action || !isEligibleForOfficialAssociationAnnouncement(action, params.now)) {
     await recordDiffusionAudit({
@@ -191,76 +275,9 @@ export async function publishOfficialAssociationActionAnnouncement(params: {
     return result(params.actionId, "not_eligible");
   }
 
-  let announcementMessage: OfficialAnnouncementMessage | null = null;
-  try {
-    announcementMessage = await findOfficialAnnouncement(params.supabase, action.id);
-  } catch {
-    await recordDiffusionAudit({
-      operationId: `${operationId}:diffusion`,
-      actorUserId: params.actorUserId,
-      actionId: params.actionId,
-      operation: `${operation}_lookup_failure`,
-      outcome: "error",
-    });
-    return result(params.actionId, "failed");
-  }
-
-  let wasAlreadyPresent = Boolean(announcementMessage);
-  if (!announcementMessage) {
-    const announcement = buildOfficialAssociationAnnouncementContent(action);
-    const insertResult = await params.supabase
-      .from("app_messages")
-      .insert({
-        sender_id: params.actorUserId,
-        recipient_id: null,
-        channel_type: "community",
-        conversation_id: null,
-        topic_id: OFFICIAL_ASSOCIATION_ANNOUNCEMENT_TOPIC_ID,
-        message_kind: "announcement",
-        related_event_id: null,
-        arrondissement_id: null,
-        zone_name: null,
-        content: announcement.content,
-        attachment_url: null,
-        attachment_path: null,
-        attachment_type: null,
-        attachment_expires_at: null,
-        action_id: action.id,
-        official_action_publication_id: action.id,
-      })
-      .select("id, sender_id")
-      .single();
-
-    if (
-      !insertResult.error &&
-      typeof insertResult.data?.id === "string" &&
-      typeof insertResult.data.sender_id === "string"
-    ) {
-      announcementMessage = {
-        id: insertResult.data.id,
-        senderId: insertResult.data.sender_id,
-      };
-    } else {
-      // A unique-index race or a response lost after commit is reconciled by
-      // reading the durable action key before declaring the publication failed.
-      try {
-        announcementMessage = await findOfficialAnnouncement(params.supabase, action.id);
-      } catch {
-        announcementMessage = null;
-      }
-      if (!announcementMessage) {
-        await recordDiffusionAudit({
-          operationId: `${operationId}:diffusion`,
-          actorUserId: params.actorUserId,
-          actionId: params.actionId,
-          operation: `${operation}_insert_failure`,
-          outcome: "error",
-        });
-        return result(params.actionId, "failed");
-      }
-      wasAlreadyPresent = true;
-    }
-  }
+  const ensuredMessage = await ensureOfficialAnnouncementMessage(params, action, operationId, operation);
+  if (!ensuredMessage) return result(params.actionId, "failed");
+  const { message: announcementMessage, wasAlreadyPresent } = ensuredMessage;
 
   try {
     const notificationCount = await createChatNotificationsForMessage(

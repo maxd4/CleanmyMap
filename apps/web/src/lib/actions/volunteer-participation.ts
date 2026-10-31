@@ -106,13 +106,7 @@ export function getVolunteerActionCompositionValidationMessage(
   const childrenCount = input.childrenCount;
   const retiredCount = input.retiredCount;
 
-  if (
-    volunteersCount === null ||
-    volunteersCount === undefined ||
-    !Number.isInteger(volunteersCount) ||
-    volunteersCount < 1 ||
-    volunteersCount > 500
-  ) {
+  if (!isValidVolunteerTotal(volunteersCount)) {
     return "Renseignez un nombre total de participants entier compris entre 1 et 500.";
   }
 
@@ -125,14 +119,7 @@ export function getVolunteerActionCompositionValidationMessage(
     return "Renseignez les nombres entiers d’enfants et de retraités présents.";
   }
 
-  if (
-    !Number.isInteger(childrenCount) ||
-    !Number.isInteger(retiredCount) ||
-    childrenCount < 0 ||
-    retiredCount < 0 ||
-    childrenCount > 500 ||
-    retiredCount > 500
-  ) {
+  if (!areValidVolunteerCategories(childrenCount, retiredCount)) {
     return "Les nombres d’enfants et de retraités doivent être des entiers positifs ou nuls.";
   }
 
@@ -141,6 +128,18 @@ export function getVolunteerActionCompositionValidationMessage(
   }
 
   return null;
+}
+
+function isValidVolunteerTotal(value: number | null | undefined): value is number {
+  return value !== null && value !== undefined && Number.isInteger(value) && value >= 1 && value <= 500;
+}
+
+function areValidVolunteerCategories(
+  childrenCount: number,
+  retiredCount: number,
+): boolean {
+  return Number.isInteger(childrenCount) && Number.isInteger(retiredCount) &&
+    childrenCount >= 0 && retiredCount >= 0 && childrenCount <= 500 && retiredCount <= 500;
 }
 
 export function normalizeActionVolunteerParticipationFromTotal(input: {

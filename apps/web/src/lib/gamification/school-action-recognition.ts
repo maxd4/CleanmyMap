@@ -187,42 +187,69 @@ export function buildSchoolActionAttestation(input: {
   const measuredButts = hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements)
     ? metadata.cigaretteButtsMeasurements?.cigaretteButtsCount ?? null
     : null;
-  const limits = [
+  const limits = buildSchoolActionLimits(action, measuredButts, validParticipation);
+
+  return {
+    kind: "school_action_attestation",
+    version: "school-action-attestation-2026.10-v2",
+    actionId: action.id,
+    status: buildSchoolActionStatus(action, canonicalOrganizerIds),
+    isOfficialEducationCertification: false,
+    context: action.action_context ?? "unknown",
+    verifiedOrganizer: false,
+    organizerPresence: action.organizer_id && action.organizer_type ? "structured" : "not_provided",
+    action: buildSchoolActionProjection(action, participation, validParticipation),
+    measuredResults: buildSchoolMeasuredResults(action, metadata, measuredButts),
+    limits,
+    recognitions: recognitions.filter((recognition) => recognition.qualified),
+  };
+}
+
+function buildSchoolActionStatus(
+  action: ActionRow,
+  canonicalOrganizerIds: readonly string[],
+): "eligible" | "ineligible" {
+  return isEligibleForSchoolActionRecognition(action, canonicalOrganizerIds) ? "eligible" : "ineligible";
+}
+
+function buildSchoolActionLimits(
+  action: ActionRow,
+  measuredButts: number | null,
+  validParticipation: boolean,
+): string[] {
+  return [
     ...(action.waste_kg === null ? [UNKNOWN] : []),
     ...(measuredButts === null ? ["Les mégots non mesurés restent inconnus ; aucun total n’est déduit des adultes."] : []),
     ...(validParticipation ? [] : ["La participation catégorisée est incomplète ou incohérente."]),
     "Cette attestation est descriptive et ne constitue pas une certification officielle de l’Éducation nationale.",
     "Aucune donnée individuelle d’élève, note, résultat de quiz ou classement n’est exposé.",
   ];
+}
 
+function buildSchoolActionProjection(
+  action: ActionRow,
+  participation: ActionVolunteerParticipation | null,
+  validParticipation: boolean,
+) {
   return {
-    kind: "school_action_attestation",
-    version: "school-action-attestation-2026.10-v2",
-    actionId: action.id,
-    status: isEligibleForSchoolActionRecognition(action, canonicalOrganizerIds) ? "eligible" : "ineligible",
-    isOfficialEducationCertification: false,
-    context: action.action_context ?? "unknown",
-    verifiedOrganizer: false,
-    organizerPresence: action.organizer_id && action.organizer_type ? "structured" : "not_provided",
-    action: {
-      date: action.action_date,
-      locationLabel: action.location_label,
-      totalParticipants: validParticipation ? action.volunteers_count : null,
-      children: validParticipation ? participation.childrenCount : null,
-      adultSupervisors: validParticipation
-        ? (participation.adultCount ?? 0) + (participation.retiredCount ?? 0)
-        : null,
-    },
-    measuredResults: {
-      wasteKg: typeof action.waste_kg === "number" && Number.isFinite(action.waste_kg) && action.waste_kg >= 0
-        ? action.waste_kg
-        : null,
-      cigaretteButtsCount: measuredButts,
-      categories: measuredCategories(metadata),
-      observationsProvided: Boolean(metadata.cleanNotes?.trim()),
-    },
-    limits,
-    recognitions: recognitions.filter((recognition) => recognition.qualified),
+    date: action.action_date,
+    locationLabel: action.location_label,
+    totalParticipants: validParticipation ? action.volunteers_count : null,
+    children: validParticipation ? participation?.childrenCount ?? null : null,
+    adultSupervisors: validParticipation ? (participation?.adultCount ?? 0) + (participation?.retiredCount ?? 0) : null,
+  };
+}
+
+function buildSchoolMeasuredResults(
+  action: ActionRow,
+  metadata: ReturnType<typeof extractActionMetadataFromNotes>,
+  measuredButts: number | null,
+) {
+  return {
+    wasteKg: typeof action.waste_kg === "number" && Number.isFinite(action.waste_kg) && action.waste_kg >= 0 ? action.waste_kg : null,
+    cigaretteButtsCount: measuredButts,
+    categories: measuredCategories(metadata),
+    observationsProvided: Boolean(metadata.cleanNotes?.trim()),
   };
 }
 

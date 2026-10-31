@@ -19,6 +19,44 @@ type UseCreatorInboxParams = {
   initialFeedbackMetrics?: CommunityBugReportFollowUpMetrics;
 };
 
+function useCreatorInboxRefresh({
+  pagination,
+  copy,
+  setRefreshing,
+  setErrorMessage,
+  setCanQualify,
+  setFeedbackMetrics,
+  setSuccessMessage,
+  scheduleFeedbackTimer,
+}: {
+  pagination: ReturnType<typeof useCreatorInboxPagination>;
+  copy: ReturnType<typeof getCreatorInboxCopy>;
+  setRefreshing: React.Dispatch<React.SetStateAction<boolean>>;
+  setErrorMessage: React.Dispatch<React.SetStateAction<string | null>>;
+  setCanQualify: React.Dispatch<React.SetStateAction<boolean>>;
+  setFeedbackMetrics: React.Dispatch<React.SetStateAction<CommunityBugReportFollowUpMetrics | undefined>>;
+  setSuccessMessage: React.Dispatch<React.SetStateAction<string | null>>;
+  scheduleFeedbackTimer: (callback: () => void, delay: number) => void;
+}) {
+  return async function refreshInbox() {
+    const replacementGeneration = pagination.beginReplacement();
+    setRefreshing(true);
+    setErrorMessage(null);
+    try {
+      const page = await fetchCreatorInboxPage();
+      if (!pagination.replacePage(page, replacementGeneration)) return;
+      if (page.canQualify !== undefined) setCanQualify(page.canQualify);
+      if (page.feedbackMetrics) setFeedbackMetrics(page.feedbackMetrics);
+      setSuccessMessage(copy.messages.refreshSuccess);
+      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
+    } catch (error) {
+      if (pagination.cancelReplacement(replacementGeneration)) setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+}
+
 export function useCreatorInbox({ initialItems, initialHasMore = false, initialNextCursor = null, initialCanQualify = false, initialFeedbackMetrics }: UseCreatorInboxParams) {
   const { locale } = useSitePreferences();
   const inboxLocale: CreatorInboxLocale = locale === "fr" ? "fr" : "en";
@@ -55,23 +93,7 @@ export function useCreatorInbox({ initialItems, initialHasMore = false, initialN
   const { items, setItems, loadingNextPage, hasMore, loadNextPage } = pagination;
   const summary = useMemo<CreatorInboxSummary>(() => buildCreatorInboxSummary(items), [items]);
   const filteredItems = useMemo(() => filterAndSortCreatorInboxItems(items, { query, sourceFilter, statusFilter, priorityFilter, sortMode }), [items, priorityFilter, query, sortMode, sourceFilter, statusFilter]);
-  const refreshInbox = async () => {
-    const replacementGeneration = pagination.beginReplacement();
-    setRefreshing(true);
-    setErrorMessage(null);
-    try {
-      const page = await fetchCreatorInboxPage();
-      if (!pagination.replacePage(page, replacementGeneration)) return;
-      if (page.canQualify !== undefined) setCanQualify(page.canQualify);
-      if (page.feedbackMetrics) setFeedbackMetrics(page.feedbackMetrics);
-      setSuccessMessage(copy.messages.refreshSuccess);
-      scheduleFeedbackTimer(() => setSuccessMessage(null), 1800);
-    } catch (error) {
-      if (pagination.cancelReplacement(replacementGeneration)) setErrorMessage(resolveInboxMessage(error, copy.messages.refreshError));
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  const refreshInbox = useCreatorInboxRefresh({ pagination, copy, setRefreshing, setErrorMessage, setCanQualify, setFeedbackMetrics, setSuccessMessage, scheduleFeedbackTimer });
   const getSharedActions = () => ({ inboxLocale, copy, setItems, setUpdatingKey, setErrorMessage, setSuccessMessage, scheduleFeedbackTimer });
   const applyInboxAction = (params: Parameters<ReturnType<typeof createFeedbackInboxActions>["applyInboxAction"]>[0]) => createFeedbackInboxActions({ ...getSharedActions(), feedbackMetrics, setFeedbackMetrics }).applyInboxAction(params);
   const qualifyFeedback = (params: Parameters<ReturnType<typeof createFeedbackInboxActions>["qualifyFeedback"]>[0]) => createFeedbackInboxActions({ ...getSharedActions(), feedbackMetrics, setFeedbackMetrics }).qualifyFeedback(params);

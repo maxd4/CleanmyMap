@@ -149,32 +149,35 @@ async function sendPreparedChatMessage(params: {
 
   await params.sendChatMessage({
     optimisticMessage,
-    body: {
-      channelType: params.activeChannelType,
-      actionId: params.activeChannelType === "action" ? params.activeActionId ?? undefined : undefined,
-      buddyRequestId: params.activeChannelType === "dm" ? params.buddyRequestId ?? undefined : undefined,
-      messageKind: params.messageKind,
-      pollOptions: params.messageKind === "poll" ? params.pollOptions : undefined,
-      relatedEventId: params.relatedEvent?.id,
-      topicId: params.activeTopicId ?? undefined,
-      content: params.currentMessage,
-      recipientId: params.activeChannelType === "dm" ? params.selectedRecipient?.id : undefined,
-      arrondissementId:
-        params.activeChannelType === "territory" && !params.effectiveZone
-          ? params.territoryFocus ?? undefined
-          : undefined,
-      zoneName:
-        params.activeChannelType === "territory" && params.effectiveZone
-          ? params.effectiveZone
-          : undefined,
-      attachmentUrl: params.attachmentUrl,
-      attachmentPath: params.attachmentPath,
-      attachmentType: params.attachmentType,
-      attachmentSize: params.attachmentSize,
-      feedbackId: params.activeChannelType === "dm" ? params.feedbackId ?? undefined : undefined,
-      operationId: feedbackOperationId,
-    },
+    body: buildPreparedChatBody(params, feedbackOperationId),
   });
+}
+
+type PreparedChatMessageParams = Parameters<typeof sendPreparedChatMessage>[0];
+
+function buildPreparedChatBody(
+  params: PreparedChatMessageParams,
+  feedbackOperationId?: string,
+) {
+  return {
+    channelType: params.activeChannelType,
+    actionId: params.activeChannelType === "action" ? params.activeActionId ?? undefined : undefined,
+    buddyRequestId: params.activeChannelType === "dm" ? params.buddyRequestId ?? undefined : undefined,
+    messageKind: params.messageKind,
+    pollOptions: params.messageKind === "poll" ? params.pollOptions : undefined,
+    relatedEventId: params.relatedEvent?.id,
+    topicId: params.activeTopicId ?? undefined,
+    content: params.currentMessage,
+    recipientId: params.activeChannelType === "dm" ? params.selectedRecipient?.id : undefined,
+    arrondissementId: params.activeChannelType === "territory" && !params.effectiveZone ? params.territoryFocus ?? undefined : undefined,
+    zoneName: params.activeChannelType === "territory" && params.effectiveZone ? params.effectiveZone : undefined,
+    attachmentUrl: params.attachmentUrl,
+    attachmentPath: params.attachmentPath,
+    attachmentType: params.attachmentType,
+    attachmentSize: params.attachmentSize,
+    feedbackId: params.activeChannelType === "dm" ? params.feedbackId ?? undefined : undefined,
+    operationId: feedbackOperationId,
+  };
 }
 
 type ChatSubmitExecutionParams = UseChatSubmitParams & {

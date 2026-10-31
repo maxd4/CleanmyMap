@@ -12,6 +12,7 @@ import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-plac
 import { useActionsMapFilters } from "@/components/actions/map/filters/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import type { ActionContextFilter } from "@/lib/actions/action-context";
+import type { ActionsMapDateScope } from "@/components/actions/map/filters/actions-map-filters.utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,46 @@ export function ActionsMapPageClient({
   );
 }
 
+function ActionsMapPageHeader({ pageFamily, scoreScope, displayMode }: { pageFamily: ReturnType<typeof resolvePageFamily>; scoreScope: PollutionScoreScope; displayMode: CurrentPlaceStateMode }) {
+  return <header className="relative space-y-6 overflow-hidden pt-4 lg:pt-6">
+    <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
+    <PageHeader family={pageFamily} title={null} subtitle={scoreScope === "department" ? "Comparaison départementale active." : displayMode === "observed" ? "Mode observation actif." : "Mode projection actif."} className="w-full" />
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" /></CmmButton>
+      <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">Méthodologie <ArrowRight size={14} /></CmmButton>
+    </div>
+  </header>;
+}
+
+function useActionsMapSelectionHandlers({ router, pathname, searchParams, requestedActionId, filterControls }: { router: ReturnType<typeof useRouter>; pathname: string; searchParams: ReturnType<typeof useSearchParams>; requestedActionId: string | null; filterControls: ReturnType<typeof useActionsMapFilters> }) {
+  const { setDateScope, setZoneQuery, setContextFilter, toggleCategory, resetFilters } = filterControls;
+  const updateSelectionUrl = useCallback((actionId: string | null) => { router.push(buildActionsMapSelectionHref(pathname, searchParams.toString(), actionId), { scroll: false }); }, [pathname, router, searchParams]);
+  const handleSelectAction = useCallback((actionId: string) => updateSelectionUrl(requestedActionId === actionId ? null : actionId), [requestedActionId, updateSelectionUrl]);
+  const handleDateScopeChange = useCallback((dateScopeValue: ActionsMapDateScope) => { updateSelectionUrl(null); setDateScope(dateScopeValue); }, [setDateScope, updateSelectionUrl]);
+  const handleZoneQueryChange = useCallback((zoneQueryValue: string) => { updateSelectionUrl(null); setZoneQuery(zoneQueryValue); }, [setZoneQuery, updateSelectionUrl]);
+  const handleContextFilterChange = useCallback((contextFilterValue: ActionContextFilter) => { updateSelectionUrl(null); setContextFilter(contextFilterValue); }, [setContextFilter, updateSelectionUrl]);
+  const handleCategoryToggle = useCallback((category: MarkerCategory) => { updateSelectionUrl(null); toggleCategory(category); }, [toggleCategory, updateSelectionUrl]);
+  const handleResetFilters = useCallback(() => { updateSelectionUrl(null); resetFilters(); }, [resetFilters, updateSelectionUrl]);
+  const clearSelection = useCallback(() => updateSelectionUrl(null), [updateSelectionUrl]);
+  return { handleSelectAction, handleDateScopeChange, handleZoneQueryChange, handleContextFilterChange, handleCategoryToggle, handleResetFilters, clearSelection, updateSelectionUrl };
+}
+
+function useActionsMapPageData({ filters, requestedActionId, mapViewport, isInitialViewportResolved, hasInitialPublicActions, initialViewportError, scoreScope, displayMode }: { filters: ReturnType<typeof useActionsMapFilters>["filters"]; requestedActionId: string | null; mapViewport: ReturnType<typeof useActionsMapViewport>["viewport"]; isInitialViewportResolved: boolean; hasInitialPublicActions: boolean; initialViewportError: Error | null; scoreScope: PollutionScoreScope; displayMode: CurrentPlaceStateMode }) {
+  const mapFeedData = useMapFeedData({ types: "all", days: filters.days, dateScope: filters.dateScope, statusFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter, impactFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter, qualityMin: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin, zoneQuery: filters.zoneQuery, contextFilter: filters.contextFilter, visibleCategories: filters.visibleCategories, limit: 300, viewport: mapViewport, enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError, scoreScope, displayMode });
+  const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
+  const knownSelectedAction = useMemo(() => requestedActionId ? loadedItems.find((item) => item.id === requestedActionId) ?? null : null, [loadedItems, requestedActionId]);
+  const selectedActionLoad = useMapActionById(requestedActionId, knownSelectedAction);
+  const selectedAction = selectedActionLoad.item;
+  const mapFeedDataForView = useMemo(() => {
+    if (!selectedAction) return mapFeedData;
+    return { ...mapFeedData, allItems: mergeSelectedActionIntoMapItems(mapFeedData.allItems, selectedAction), items: mergeSelectedActionIntoMapItems(mapFeedData.items, selectedAction) };
+  }, [mapFeedData, selectedAction]);
+  const filteredMapItems = useMemo(() => mapFeedDataForView.items ?? [], [mapFeedDataForView.items]);
+  const visibleCount = filteredMapItems.length;
+  const loadedCount = mapFeedDataForView.allItems.length;
+  return { mapFeedData, mapFeedDataForView, selectedActionLoad, knownSelectedAction, filteredMapItems, visibleCount, loadedCount };
+}
+
 function ActionsMapPageContent({
   impactMetrics,
 }: ActionsMapPageClientProps) {
@@ -51,21 +92,11 @@ function ActionsMapPageContent({
   const pathname = usePathname();
   const router = useRouter();
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
+  const filterControls = useActionsMapFilters(getActionsMapCurrentYearDays());
   const {
     filters,
-    setDateScope,
-    setZoneQuery,
-    setContextFilter,
-    toggleCategory,
-    resetFilters,
-  } = useActionsMapFilters(getActionsMapCurrentYearDays());
-  const {
-    days,
-    dateScope,
-    zoneQuery,
-    contextFilter,
-    visibleCategories,
-  } = filters;
+  } = filterControls;
+  const { zoneQuery } = filters;
 
   const selectedActionId = requestedActionId;
   const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
@@ -89,126 +120,16 @@ function ActionsMapPageContent({
     setHasManualViewportInteraction(true);
     handleManualViewportInteraction();
   }, [handleManualViewportInteraction]);
-  const updateSelectionUrl = useCallback(
-    (actionId: string | null) => {
-      router.push(
-        buildActionsMapSelectionHref(pathname, searchParams.toString(), actionId),
-        { scroll: false },
-      );
-    },
-    [pathname, router, searchParams],
-  );
-  const handleSelectAction = useCallback((actionId: string) => {
-    const nextActionId = requestedActionId === actionId ? null : actionId;
-    updateSelectionUrl(nextActionId);
-  }, [requestedActionId, updateSelectionUrl]);
+  const { handleSelectAction, handleDateScopeChange, handleZoneQueryChange, handleContextFilterChange, handleCategoryToggle, handleResetFilters, clearSelection } = useActionsMapSelectionHandlers({ router, pathname, searchParams, requestedActionId, filterControls });
 
-  const handleDateScopeChange = useCallback((dateScopeValue: typeof dateScope) => {
-    updateSelectionUrl(null);
-    setDateScope(dateScopeValue);
-  }, [setDateScope, updateSelectionUrl]);
-
-  const handleZoneQueryChange = useCallback((zoneQueryValue: string) => {
-    updateSelectionUrl(null);
-    setZoneQuery(zoneQueryValue);
-  }, [setZoneQuery, updateSelectionUrl]);
-
-  const handleContextFilterChange = useCallback((contextFilterValue: ActionContextFilter) => {
-    updateSelectionUrl(null);
-    setContextFilter(contextFilterValue);
-  }, [setContextFilter, updateSelectionUrl]);
-
-  const handleCategoryToggle = useCallback((category: MarkerCategory) => {
-    updateSelectionUrl(null);
-    toggleCategory(category);
-  }, [toggleCategory, updateSelectionUrl]);
-
-  const handleResetFilters = useCallback(() => {
-    updateSelectionUrl(null);
-    resetFilters();
-  }, [resetFilters, updateSelectionUrl]);
-
-  const mapFeedData = useMapFeedData({
-    types: "all",
-    days,
-    dateScope,
-    statusFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter,
-    impactFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter,
-    qualityMin: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin,
-    zoneQuery,
-    contextFilter,
-    visibleCategories,
-    limit: 300,
-    viewport: mapViewport,
-    enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError,
-    scoreScope,
-    displayMode,
-  });
-  const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
-  const knownSelectedAction = useMemo(
-    () =>
-      requestedActionId
-        ? loadedItems.find((item) => item.id === requestedActionId) ?? null
-        : null,
-    [loadedItems, requestedActionId],
-  );
-  const selectedActionLoad = useMapActionById(
-    requestedActionId,
-    knownSelectedAction,
-  );
-  const selectedAction = selectedActionLoad.item;
-  const mapFeedDataForView = useMemo(() => {
-    if (!selectedAction) {
-      return mapFeedData;
-    }
-
-    const allItems = mergeSelectedActionIntoMapItems(
-      mapFeedData.allItems,
-      selectedAction,
-    );
-    const items = mergeSelectedActionIntoMapItems(mapFeedData.items, selectedAction);
-
-    return { ...mapFeedData, allItems, items };
-  }, [mapFeedData, selectedAction]);
-  const filteredMapItems = useMemo(() => mapFeedDataForView.items ?? [], [mapFeedDataForView.items]);
-  const visibleCount = filteredMapItems.length;
-  const loadedCount = mapFeedDataForView.allItems.length;
-
-  const clearSelection = useCallback(() => {
-    updateSelectionUrl(null);
-  }, [updateSelectionUrl]);
+  const { mapFeedDataForView, selectedActionLoad, knownSelectedAction, filteredMapItems, visibleCount, loadedCount } = useActionsMapPageData({ filters, requestedActionId, mapViewport, isInitialViewportResolved, hasInitialPublicActions, initialViewportError, scoreScope, displayMode });
 
   const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";
 
   return (
     <div className="min-h-screen text-slate-950 pb-24">
       <div className="cmm-page-width px-6 py-6 space-y-6">
-        {/* Premium Header - Lecture Spatiale */}
-        <header className="relative space-y-6 overflow-hidden pt-4 lg:pt-6">
-          <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
-
-          <PageHeader
-            family={pageFamily}
-            title={null}
-            subtitle={
-              scoreScope === "department"
-                ? "Comparaison départementale active."
-                : displayMode === "observed"
-                  ? "Mode observation actif."
-                  : "Mode projection actif."
-            }
-            className="w-full"
-          />
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
-              Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
-            </CmmButton>
-            <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
-              Méthodologie <ArrowRight size={14} />
-            </CmmButton>
-          </div>
-        </header>
+        <ActionsMapPageHeader pageFamily={pageFamily} scoreScope={scoreScope} displayMode={displayMode} />
 
         <section className="relative mx-auto w-full lg:left-1/2 lg:right-1/2 lg:w-[calc(100vw-1.5rem)] lg:-translate-x-1/2">
           <ActionsMapFeedContent
@@ -260,7 +181,7 @@ function ActionsMapPageContent({
               visibleCount={visibleCount}
               loadedCount={loadedCount}
               filteredMapItems={filteredMapItems}
-              freshnessLabel={mapFeedData.freshnessLabel}
+              freshnessLabel={mapFeedDataForView.freshnessLabel}
               mapExportTargetRef={mapExportTargetRef}
               viewport={mapViewport}
             />

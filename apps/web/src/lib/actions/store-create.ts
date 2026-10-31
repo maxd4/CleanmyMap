@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionGeometryMethod,
   ActionGeometrySource,
   ActionStatus,
   CreateActionPayload,
@@ -189,14 +190,7 @@ export async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
 ): Promise<ResolvedCreateActionDrawing> {
   const geometryMethod = payload.preparationData?.geometryMethod;
-  const activeGeometry = resolveFinalActionGeometry({
-    geometryMethod,
-    gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
-    gpxImport: payload.preparationData?.gpxImport,
-    manualDrawing: payload.manualDrawing,
-    manualDrawingSource: payload.geometrySource,
-    operationalRoute: payload.preparationData?.operationalRoute,
-  });
+  const activeGeometry = resolveActiveCreateActionGeometry(payload, geometryMethod);
   if (activeGeometry) {
     return {
       drawing: activeGeometry.drawing,
@@ -210,24 +204,28 @@ export async function resolveCreateActionDrawing(
     return { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
   }
 
-  if (geometryMethod === "manual") {
-    throw new ActionRouteReconstructionError({
-      manualDrawing: ["Un dessin manuel valide est requis pour la source cartographique sélectionnée."],
-    });
-  }
+  throwForUnavailableGeometryMethod(geometryMethod);
 
-  if (geometryMethod === "gpx_import") {
-    throw new ActionRouteReconstructionError({
-      gpxImport: ["Un tracé GPX exploitable est requis pour la source cartographique sélectionnée."],
-    });
-  }
+  return resolveReconstructedCreateActionDrawing(payload);
+}
 
-  if (geometryMethod === "generator") {
-    throw new ActionRouteReconstructionError({
-      geometryMethod: ["Le parcours opérationnel du générateur est indisponible. Choisissez une autre source."],
-    });
-  }
+function resolveActiveCreateActionGeometry(
+  payload: CreateActionPayload,
+  geometryMethod: ActionGeometryMethod | undefined,
+) {
+  return resolveFinalActionGeometry({
+    geometryMethod,
+    gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
+    gpxImport: payload.preparationData?.gpxImport,
+    manualDrawing: payload.manualDrawing,
+    manualDrawingSource: payload.geometrySource,
+    operationalRoute: payload.preparationData?.operationalRoute,
+  });
+}
 
+async function resolveReconstructedCreateActionDrawing(
+  payload: CreateActionPayload,
+): Promise<ResolvedCreateActionDrawing> {
   const route = await reconstructActionRoute({
     latitude: payload.latitude,
     longitude: payload.longitude,
@@ -256,6 +254,20 @@ export async function resolveCreateActionDrawing(
         origin: route.origin,
       }
     : { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
+}
+
+function throwForUnavailableGeometryMethod(
+  geometryMethod: ActionGeometryMethod | undefined,
+): never | void {
+  if (geometryMethod === "manual") {
+    throw new ActionRouteReconstructionError({ manualDrawing: ["Un dessin manuel valide est requis pour la source cartographique sélectionnée."] });
+  }
+  if (geometryMethod === "gpx_import") {
+    throw new ActionRouteReconstructionError({ gpxImport: ["Un tracé GPX exploitable est requis pour la source cartographique sélectionnée."] });
+  }
+  if (geometryMethod === "generator") {
+    throw new ActionRouteReconstructionError({ geometryMethod: ["Le parcours opérationnel du générateur est indisponible. Choisissez une autre source."] });
+  }
 }
 
 type CreateActionParams = {

@@ -133,7 +133,7 @@ function resolveActionPopupBodyPresentation({ compact, isAction, hasPollution }:
   };
 }
 
-export function ActionPopupContentBody({
+function ActionPopupContentBodyLayout({
   wasteKg,
   butts,
   volunteers,
@@ -150,27 +150,27 @@ export function ActionPopupContentBody({
   updateHref,
   joinHref,
   joinStatusLabel,
-  hasPollution,
   isAction,
   actionId = null,
   signalementId = null,
   onViewGeometry,
   geometryKind,
   compact = false,
-}: ActionPopupContentBodyProps) {
-  const presentation = resolveActionPopupBodyPresentation({ compact, isAction, hasPollution });
-
+  presentation,
+}: ActionPopupContentBodyProps & { presentation: ReturnType<typeof resolveActionPopupBodyPresentation> }) {
   return (
     <div className={compact ? "space-y-3 p-4" : "space-y-4 p-5"}>
       <ActionPopupMetricGrid compact={compact} wasteLabel={presentation.wasteLabel} buttsLabel={presentation.buttsLabel} metricCellClass={presentation.metricCellClass} metricLabelClass={presentation.metricLabelClass} metricValueClass={presentation.metricValueClass} wasteKg={wasteKg} butts={butts} volunteers={volunteers} durationMinutes={durationMinutes} />
 
       <ActionPopupMobilizationBlock compact={compact} operationalEngagementHours={operationalEngagementHours} />
-
       <ActionPopupContextBlock compact={compact} associationName={associationName} actionContextLabel={actionContextLabel} actionContextGlyph={actionContextGlyph} departure={departure} arrival={arrival} />
-
       <ActionPopupNotesBlock compact={compact} notes={notes} />
-
       <ActionPopupActions compact={compact} isAction={isAction} actionId={actionId} signalementId={signalementId} onViewGeometry={onViewGeometry} geometryKind={geometryKind} observedAt={observedAt} sourceLabel={sourceLabel} updateHref={updateHref} actionLabel={presentation.actionLabel} joinHref={joinHref} joinStatusLabel={joinStatusLabel} />
     </div>
   );
+}
+
+export function ActionPopupContentBody(props: ActionPopupContentBodyProps) {
+  const presentation = resolveActionPopupBodyPresentation(props);
+  return <ActionPopupContentBodyLayout {...props} presentation={presentation} />;
 }

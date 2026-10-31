@@ -158,132 +158,13 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
   } = {},
 ): ActionCigaretteButtsMeasurements {
   const existingMeasurements = options.existingMeasurements;
-  const effectiveInput: RawCigaretteButtsMeasurementInput = existingMeasurements
-    ? {
-        ...input,
-        cigaretteButtsCount:
-          input.cigaretteButtsCount !== undefined
-            ? input.cigaretteButtsCount
-            : existingMeasurements.cigaretteButtsCount,
-        cigaretteButtsMassKg:
-          input.cigaretteButtsMassKg !== undefined
-            ? input.cigaretteButtsMassKg
-            : existingMeasurements.cigaretteButtsMassKg,
-        cigaretteButtsVolumeLiters:
-          input.cigaretteButtsVolumeLiters !== undefined
-            ? input.cigaretteButtsVolumeLiters
-            : existingMeasurements.cigaretteButtsVolumeLiters,
-        cigaretteButtsCondition:
-          input.cigaretteButtsCondition !== undefined
-            ? input.cigaretteButtsCondition
-            : existingMeasurements.cigaretteButtsCondition,
-      }
-    : input;
-  const countExplicitlyCleared = Boolean(
-    existingMeasurements &&
-      input.cigaretteButtsCount === null &&
-      existingMeasurements.cigaretteButtsCount !== null,
-  );
-  const massExplicitlyCleared = Boolean(
-    existingMeasurements &&
-      input.cigaretteButtsMassKg === null &&
-      existingMeasurements.cigaretteButtsMassKg !== null,
-  );
-  const volumeExplicitlyCleared = Boolean(
-    existingMeasurements &&
-      input.cigaretteButtsVolumeLiters === null &&
-      existingMeasurements.cigaretteButtsVolumeLiters !== null,
-  );
-  const volumeClearRequested = Boolean(
-    existingMeasurements && input.cigaretteButtsVolumeLiters === null,
-  );
-
-  if (
-    existingMeasurements &&
-    volumeExplicitlyCleared &&
-    !countExplicitlyCleared &&
-    !massExplicitlyCleared
-  ) {
-    const volumeCleared = normalizeCigaretteButtsMeasurements({
-      ...effectiveInput,
-      deriveMissingFromMassOrCount: false,
-    });
-    if (volumeCleared.cigaretteButtsCount === existingMeasurements.cigaretteButtsCount) {
-      volumeCleared.cigaretteButtsCountProvenance =
-        existingMeasurements.cigaretteButtsCountProvenance;
-    }
-    if (volumeCleared.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg) {
-      volumeCleared.cigaretteButtsMassProvenance =
-        existingMeasurements.cigaretteButtsMassProvenance;
-    }
-    volumeCleared.cigaretteButtsVolumeProvenance = "unknown";
-    volumeCleared.cigaretteButtsConversionFormulaVersion =
-      existingMeasurements.cigaretteButtsConversionFormulaVersion;
-    return volumeCleared;
-  }
-
-  if (existingMeasurements && (countExplicitlyCleared || massExplicitlyCleared)) {
-    const persistedSource = inferCigaretteButtsInputSource(existingMeasurements);
-    const orphanedCount =
-      massExplicitlyCleared &&
-      persistedSource === "mass" &&
-      effectiveInput.cigaretteButtsCount === existingMeasurements.cigaretteButtsCount;
-    const orphanedMass =
-      countExplicitlyCleared &&
-      persistedSource === "count" &&
-      effectiveInput.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg;
-    const partiallyCleared = normalizeCigaretteButtsMeasurements({
-      ...effectiveInput,
-      cigaretteButtsCount: orphanedCount ? null : effectiveInput.cigaretteButtsCount,
-      cigaretteButtsMassKg: orphanedMass ? null : effectiveInput.cigaretteButtsMassKg,
-      deriveMissingFromMassOrCount: false,
-    });
-
-    if (!countExplicitlyCleared &&
-        partiallyCleared.cigaretteButtsCount === existingMeasurements.cigaretteButtsCount) {
-      partiallyCleared.cigaretteButtsCountProvenance =
-        existingMeasurements.cigaretteButtsCountProvenance;
-    }
-    if (!massExplicitlyCleared &&
-        partiallyCleared.cigaretteButtsMassKg === existingMeasurements.cigaretteButtsMassKg) {
-      partiallyCleared.cigaretteButtsMassProvenance =
-        existingMeasurements.cigaretteButtsMassProvenance;
-    }
-    if (!volumeExplicitlyCleared &&
-        partiallyCleared.cigaretteButtsVolumeLiters === existingMeasurements.cigaretteButtsVolumeLiters) {
-      partiallyCleared.cigaretteButtsVolumeProvenance =
-        existingMeasurements.cigaretteButtsVolumeProvenance;
-    }
-    partiallyCleared.cigaretteButtsConversionFormulaVersion = null;
-    return partiallyCleared;
-  }
-
-  const inputSource = resolveUserInputSource(effectiveInput, options.existingMeasurements);
-  const explicitInputSource =
-    effectiveInput.cigaretteButtsInputSource !== undefined ||
-    options.existingMeasurements !== null &&
-    options.existingMeasurements !== undefined;
-  const sourceSpecificInput = explicitInputSource
-    ? inputSource === "mass"
-      ? {
-          ...effectiveInput,
-          cigaretteButtsCount: null,
-          deriveMissingFromMassOrCount: true,
-        }
-      : inputSource === "count"
-        ? {
-            ...effectiveInput,
-            cigaretteButtsMassKg: null,
-            deriveMissingFromMassOrCount: true,
-          }
-        : {
-            ...effectiveInput,
-            deriveMissingFromMassOrCount: false,
-          }
-    : {
-        ...effectiveInput,
-        deriveMissingFromMassOrCount: true,
-      };
+  const effectiveInput = mergeExistingMeasurementInput(input, existingMeasurements);
+  const clearFlags = readMeasurementClearFlags(input, existingMeasurements);
+  const cleared = normalizeClearedMeasurements(effectiveInput, existingMeasurements, clearFlags);
+  if (cleared) return cleared;
+  const inputSource = resolveUserInputSource(effectiveInput, existingMeasurements);
+  const explicitInputSource = hasExplicitInputSource(effectiveInput, existingMeasurements);
+  const sourceSpecificInput = buildSourceSpecificInput(effectiveInput, inputSource, explicitInputSource);
   const normalized = normalizeCigaretteButtsMeasurements({
     cigaretteButtsCount: sourceSpecificInput.cigaretteButtsCount,
     cigaretteButtsMassKg: sourceSpecificInput.cigaretteButtsMassKg,
@@ -291,65 +172,163 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     cigaretteButtsCondition: sourceSpecificInput.cigaretteButtsCondition,
     deriveMissingFromMassOrCount: sourceSpecificInput.deriveMissingFromMassOrCount,
   });
+  preserveHistoricalMeasurementProvenance(
+    normalized,
+    existingMeasurements,
+    inputSource,
+    clearFlags,
+    explicitInputSource,
+  );
+  return applyExplicitMeasurementNulls(normalized, input, options);
+}
 
-  if (
-    existingMeasurements &&
-    !volumeClearRequested &&
-    normalized.cigaretteButtsVolumeLiters === existingMeasurements.cigaretteButtsVolumeLiters
-  ) {
-    normalized.cigaretteButtsVolumeProvenance =
-      existingMeasurements.cigaretteButtsVolumeProvenance;
+type MeasurementClearFlags = {
+  countExplicitlyCleared: boolean;
+  massExplicitlyCleared: boolean;
+  volumeExplicitlyCleared: boolean;
+  volumeClearRequested: boolean;
+};
+
+function mergeExistingMeasurementInput(
+  input: RawCigaretteButtsMeasurementInput,
+  existing: ActionCigaretteButtsMeasurements | null | undefined,
+): RawCigaretteButtsMeasurementInput {
+  if (!existing) return input;
+  return {
+    ...input,
+    cigaretteButtsCount: input.cigaretteButtsCount !== undefined ? input.cigaretteButtsCount : existing.cigaretteButtsCount,
+    cigaretteButtsMassKg: input.cigaretteButtsMassKg !== undefined ? input.cigaretteButtsMassKg : existing.cigaretteButtsMassKg,
+    cigaretteButtsVolumeLiters: input.cigaretteButtsVolumeLiters !== undefined ? input.cigaretteButtsVolumeLiters : existing.cigaretteButtsVolumeLiters,
+    cigaretteButtsCondition: input.cigaretteButtsCondition !== undefined ? input.cigaretteButtsCondition : existing.cigaretteButtsCondition,
+  };
+}
+
+function readMeasurementClearFlags(
+  input: RawCigaretteButtsMeasurementInput,
+  existing: ActionCigaretteButtsMeasurements | null | undefined,
+): MeasurementClearFlags {
+  return {
+    countExplicitlyCleared: Boolean(existing && input.cigaretteButtsCount === null && existing.cigaretteButtsCount !== null),
+    massExplicitlyCleared: Boolean(existing && input.cigaretteButtsMassKg === null && existing.cigaretteButtsMassKg !== null),
+    volumeExplicitlyCleared: Boolean(existing && input.cigaretteButtsVolumeLiters === null && existing.cigaretteButtsVolumeLiters !== null),
+    volumeClearRequested: Boolean(existing && input.cigaretteButtsVolumeLiters === null),
+  };
+}
+
+function normalizeClearedMeasurements(
+  effectiveInput: RawCigaretteButtsMeasurementInput,
+  existing: ActionCigaretteButtsMeasurements | null | undefined,
+  flags: MeasurementClearFlags,
+): ActionCigaretteButtsMeasurements | null {
+  if (!existing) return null;
+  if (flags.volumeExplicitlyCleared && !flags.countExplicitlyCleared && !flags.massExplicitlyCleared) {
+    return normalizeVolumeClearedMeasurements(effectiveInput, existing);
   }
+  if (!flags.countExplicitlyCleared && !flags.massExplicitlyCleared) return null;
+  const persistedSource = inferCigaretteButtsInputSource(existing);
+  const orphanedCount = flags.massExplicitlyCleared && persistedSource === "mass" && effectiveInput.cigaretteButtsCount === existing.cigaretteButtsCount;
+  const orphanedMass = flags.countExplicitlyCleared && persistedSource === "count" && effectiveInput.cigaretteButtsMassKg === existing.cigaretteButtsMassKg;
+  return normalizePartiallyClearedMeasurements(
+    effectiveInput,
+    existing,
+    flags,
+    orphanedCount,
+    orphanedMass,
+  );
+}
 
-  if (
-    existingMeasurements &&
-    inputSource === "unknown" &&
-    sameCountAndMass(normalized, existingMeasurements)
-  ) {
-    normalized.cigaretteButtsCountProvenance =
-      existingMeasurements.cigaretteButtsCountProvenance;
-    normalized.cigaretteButtsMassProvenance =
-      existingMeasurements.cigaretteButtsMassProvenance;
-    normalized.cigaretteButtsConversionFormulaVersion =
-      existingMeasurements.cigaretteButtsConversionFormulaVersion;
+function normalizeVolumeClearedMeasurements(
+  input: RawCigaretteButtsMeasurementInput,
+  existing: ActionCigaretteButtsMeasurements,
+): ActionCigaretteButtsMeasurements {
+  const result = normalizeCigaretteButtsMeasurements({ ...input, deriveMissingFromMassOrCount: false });
+  if (result.cigaretteButtsCount === existing.cigaretteButtsCount) result.cigaretteButtsCountProvenance = existing.cigaretteButtsCountProvenance;
+  if (result.cigaretteButtsMassKg === existing.cigaretteButtsMassKg) result.cigaretteButtsMassProvenance = existing.cigaretteButtsMassProvenance;
+  result.cigaretteButtsVolumeProvenance = "unknown";
+  result.cigaretteButtsConversionFormulaVersion = existing.cigaretteButtsConversionFormulaVersion;
+  return result;
+}
+
+function normalizePartiallyClearedMeasurements(
+  input: RawCigaretteButtsMeasurementInput,
+  existing: ActionCigaretteButtsMeasurements,
+  flags: MeasurementClearFlags,
+  orphanedCount: boolean,
+  orphanedMass: boolean,
+): ActionCigaretteButtsMeasurements {
+  const result = normalizeCigaretteButtsMeasurements({
+    ...input,
+    cigaretteButtsCount: orphanedCount ? null : input.cigaretteButtsCount,
+    cigaretteButtsMassKg: orphanedMass ? null : input.cigaretteButtsMassKg,
+    deriveMissingFromMassOrCount: false,
+  });
+  preserveUnclearedMeasurementProvenance(result, existing, flags);
+  result.cigaretteButtsConversionFormulaVersion = null;
+  return result;
+}
+
+function preserveUnclearedMeasurementProvenance(
+  result: ActionCigaretteButtsMeasurements,
+  existing: ActionCigaretteButtsMeasurements,
+  flags: MeasurementClearFlags,
+): void {
+  if (!flags.countExplicitlyCleared && result.cigaretteButtsCount === existing.cigaretteButtsCount) result.cigaretteButtsCountProvenance = existing.cigaretteButtsCountProvenance;
+  if (!flags.massExplicitlyCleared && result.cigaretteButtsMassKg === existing.cigaretteButtsMassKg) result.cigaretteButtsMassProvenance = existing.cigaretteButtsMassProvenance;
+  if (!flags.volumeExplicitlyCleared && result.cigaretteButtsVolumeLiters === existing.cigaretteButtsVolumeLiters) result.cigaretteButtsVolumeProvenance = existing.cigaretteButtsVolumeProvenance;
+}
+
+function hasExplicitInputSource(
+  input: RawCigaretteButtsMeasurementInput,
+  existing: ActionCigaretteButtsMeasurements | null | undefined,
+): boolean {
+  return input.cigaretteButtsInputSource !== undefined || existing !== null && existing !== undefined;
+}
+
+function buildSourceSpecificInput(
+  input: RawCigaretteButtsMeasurementInput,
+  source: CigaretteButtsInputSource,
+  explicit: boolean,
+): RawCigaretteButtsMeasurementInput & { deriveMissingFromMassOrCount: boolean } {
+  if (!explicit) return { ...input, deriveMissingFromMassOrCount: true };
+  if (source === "mass") return { ...input, cigaretteButtsCount: null, deriveMissingFromMassOrCount: true };
+  if (source === "count") return { ...input, cigaretteButtsMassKg: null, deriveMissingFromMassOrCount: true };
+  return { ...input, deriveMissingFromMassOrCount: false };
+}
+
+function preserveHistoricalMeasurementProvenance(
+  normalized: ActionCigaretteButtsMeasurements,
+  existing: ActionCigaretteButtsMeasurements | null | undefined,
+  inputSource: CigaretteButtsInputSource,
+  flags: MeasurementClearFlags,
+  explicitInputSource: boolean,
+): void {
+  if (existing && !flags.volumeClearRequested && normalized.cigaretteButtsVolumeLiters === existing.cigaretteButtsVolumeLiters) {
+    normalized.cigaretteButtsVolumeProvenance = existing.cigaretteButtsVolumeProvenance;
+  }
+  if (existing && inputSource === "unknown" && sameCountAndMass(normalized, existing)) {
+    normalized.cigaretteButtsCountProvenance = existing.cigaretteButtsCountProvenance;
+    normalized.cigaretteButtsMassProvenance = existing.cigaretteButtsMassProvenance;
+    normalized.cigaretteButtsConversionFormulaVersion = existing.cigaretteButtsConversionFormulaVersion;
   } else if (inputSource === "unknown" && explicitInputSource) {
-    // An ambiguous pair must remain explicitly unqualified. In particular,
-    // do not turn non-null historical values into counted/measured values.
     normalized.cigaretteButtsCountProvenance = "unknown";
     normalized.cigaretteButtsMassProvenance = "unknown";
     normalized.cigaretteButtsConversionFormulaVersion = null;
   }
+}
 
-  if (!options.preserveExplicitNulls && !options.explicitNullFields?.length) {
-    return normalized;
-  }
-
+function applyExplicitMeasurementNulls(
+  normalized: ActionCigaretteButtsMeasurements,
+  input: RawCigaretteButtsMeasurementInput,
+  options: { preserveExplicitNulls?: boolean; explicitNullFields?: Array<"cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"> },
+): ActionCigaretteButtsMeasurements {
+  if (!options.preserveExplicitNulls && !options.explicitNullFields?.length) return normalized;
   const result = { ...normalized };
   let hadExplicitNull = false;
-  const shouldPreserveNull = (
-    field: "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters",
-  ) =>
-    input[field] === null &&
-    (options.preserveExplicitNulls || options.explicitNullFields?.includes(field));
-
-  if (shouldPreserveNull("cigaretteButtsCount")) {
-    result.cigaretteButtsCount = null;
-    result.cigaretteButtsCountProvenance = "unknown";
-    hadExplicitNull = true;
-  }
-  if (shouldPreserveNull("cigaretteButtsMassKg")) {
-    result.cigaretteButtsMassKg = null;
-    result.cigaretteButtsMassProvenance = "unknown";
-    hadExplicitNull = true;
-  }
-  if (shouldPreserveNull("cigaretteButtsVolumeLiters")) {
-    result.cigaretteButtsVolumeLiters = null;
-    result.cigaretteButtsVolumeProvenance = "unknown";
-  }
-  if (hadExplicitNull) {
-    result.cigaretteButtsConversionFormulaVersion = null;
-  }
-
+  const shouldPreserve = (field: "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters") => input[field] === null && (options.preserveExplicitNulls || options.explicitNullFields?.includes(field));
+  if (shouldPreserve("cigaretteButtsCount")) { result.cigaretteButtsCount = null; result.cigaretteButtsCountProvenance = "unknown"; hadExplicitNull = true; }
+  if (shouldPreserve("cigaretteButtsMassKg")) { result.cigaretteButtsMassKg = null; result.cigaretteButtsMassProvenance = "unknown"; hadExplicitNull = true; }
+  if (shouldPreserve("cigaretteButtsVolumeLiters")) { result.cigaretteButtsVolumeLiters = null; result.cigaretteButtsVolumeProvenance = "unknown"; }
+  if (hadExplicitNull) result.cigaretteButtsConversionFormulaVersion = null;
   return result;
 }
 
@@ -388,26 +367,36 @@ function resolveUserInputSource(
       normalizeNullableNonNegative(input.cigaretteButtsMassKg),
       existingMeasurements.cigaretteButtsMassKg,
     );
-
-  // A changed field is evidence of a new form edit; the client hint only
-  // disambiguates the case where the form synchronously changed both fields.
-  if (countChanged && !massChanged) {
-    return persistedSource === "mass" && input.cigaretteButtsInputSource !== "count"
-      ? "mass"
-      : "count";
-  }
-  if (massChanged && !countChanged) {
-    return persistedSource === "count" && input.cigaretteButtsInputSource !== "mass"
-      ? "count"
-      : "mass";
-  }
-  if (countChanged && massChanged) {
-    if (input.cigaretteButtsInputSource === "count") return "count";
-    if (input.cigaretteButtsInputSource === "mass") return "mass";
-  }
+  const singleFieldSource = resolveSingleChangedInputSource(
+    countChanged,
+    massChanged,
+    persistedSource,
+    input.cigaretteButtsInputSource,
+  );
+  if (singleFieldSource) return singleFieldSource;
+  if (countChanged && massChanged) return resolveBothChangedInputSource(input.cigaretteButtsInputSource, persistedSource);
 
   // A condition-only edit must follow the persisted source. An ambiguous
   // historical pair stays ambiguous, regardless of a forged payload hint.
+  return persistedSource;
+}
+
+function resolveSingleChangedInputSource(
+  countChanged: boolean,
+  massChanged: boolean,
+  persistedSource: CigaretteButtsInputSource,
+  inputSource: CigaretteButtsInputSource | undefined,
+): CigaretteButtsInputSource | null {
+  if (countChanged && !massChanged) return persistedSource === "mass" && inputSource !== "count" ? "mass" : "count";
+  if (massChanged && !countChanged) return persistedSource === "count" && inputSource !== "mass" ? "count" : "mass";
+  return null;
+}
+
+function resolveBothChangedInputSource(
+  inputSource: CigaretteButtsInputSource | undefined,
+  persistedSource: CigaretteButtsInputSource,
+): CigaretteButtsInputSource {
+  if (inputSource === "count" || inputSource === "mass") return inputSource;
   return persistedSource;
 }
 

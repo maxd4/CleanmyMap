@@ -15,6 +15,74 @@ import type {
   EnvironmentalImpactScopeInput,
 } from "./types";
 
+type MonthlyUsageScope = EnvironmentalImpactScopeInput & {
+  monthlyPageViews: number;
+  monthlyActiveUsers: number;
+  monthlySessions: number;
+  monthlyEmailsSent: number;
+  monthlyPdfExports: number;
+  monthlyMapViews: number;
+  monthlyAiCalls: number;
+  monthlyStorageGbMonths: number;
+  monthlyApiRequests: number;
+  monthlyAuthEvents: number;
+};
+
+function emptyMonthlyUsageInput(): EnvironmentalImpactInfrastructureInput["usage"] {
+  return {
+    monthlyPageViews: null,
+    monthlyActiveUsers: null,
+    monthlySessions: null,
+    monthlyEmailsSent: null,
+    monthlyPdfExports: null,
+    monthlyMapViews: null,
+    monthlyAiCalls: null,
+    monthlyStorageGbMonths: null,
+    monthlyApiRequests: null,
+    monthlyAuthEvents: null,
+    growthRateMonthly: null,
+    seasonalityAmplitude: null,
+    horizonMonths: 12,
+  };
+}
+
+function populatedMonthlyUsageInput(
+  currentScope: MonthlyUsageScope,
+  previousScope: Pick<MonthlyUsageScope, "monthlyPageViews">,
+): EnvironmentalImpactInfrastructureInput["usage"] {
+  const growthRateMonthly = clamp(
+    ((currentScope.monthlyPageViews - previousScope.monthlyPageViews) /
+      Math.max(1, Math.max(previousScope.monthlyPageViews, currentScope.monthlyPageViews))) || 0,
+    -0.35,
+    0.35,
+  );
+  const seasonalityAmplitude = clamp(
+    Math.abs(currentScope.monthlyPageViews - previousScope.monthlyPageViews) /
+      Math.max(1, currentScope.monthlyPageViews + previousScope.monthlyPageViews),
+    0.04,
+    0.25,
+  );
+  return {
+    monthlyPageViews: currentScope.monthlyPageViews,
+    monthlyActiveUsers: currentScope.monthlyActiveUsers,
+    monthlySessions: currentScope.monthlySessions,
+    monthlyEmailsSent: currentScope.monthlyEmailsSent,
+    monthlyPdfExports: currentScope.monthlyPdfExports,
+    monthlyMapViews: currentScope.monthlyMapViews,
+    monthlyAiCalls: currentScope.monthlyAiCalls,
+    monthlyStorageGbMonths: currentScope.monthlyStorageGbMonths,
+    monthlyApiRequests: currentScope.monthlyApiRequests,
+    monthlyAuthEvents: currentScope.monthlyAuthEvents,
+    monthlyRealtimeEvents: Math.max(1, currentScope.monthlyActiveUsers * 8),
+    monthlyEgressGb: round6(Math.max(0.1, currentScope.monthlyPageViews * 0.00008 + currentScope.monthlyMapViews * 0.0012 + currentScope.monthlyStorageGbMonths * 0.12)),
+    monthlyBandwidthGb: round6(Math.max(0.1, currentScope.monthlyPageViews * 0.00011 + currentScope.monthlyMapViews * 0.001 + currentScope.monthlyPdfExports * 0.002)),
+    monthlyErrorEvents: currentScope.monthlyApiRequests > 0 ? Math.max(0, Math.round(currentScope.monthlyApiRequests * 0.0025)) : null,
+    growthRateMonthly: Number.isFinite(growthRateMonthly) ? growthRateMonthly : null,
+    seasonalityAmplitude: Number.isFinite(seasonalityAmplitude) ? seasonalityAmplitude : null,
+    horizonMonths: 12,
+  };
+}
+
 export function calculateCodexMonthlyUsageInput(
   snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
   generatedAt = new Date().toISOString(),
@@ -95,84 +163,22 @@ export function calculateMonthlyUsageInput(
     untilMs: Number.POSITIVE_INFINITY,
   }) as EnvironmentalImpactScopeInput & { monthlyPageViews: number };
 
-  const hasAnyCurrentSignal =
-    currentRows.actions.length +
-      currentRows.spots.length +
-      getFunnelEventCount(currentRows) +
-      currentRows.progressionEvents.length +
-      currentRows.reports.length +
-      currentRows.trainingExamples.length +
-      currentRows.serviceEmails.length +
-      currentRows.communityEvents.length +
-      currentRows.eventRsvps.length +
-      currentRows.appNotifications.length >
-    0;
+  const hasAnyCurrentSignal = hasCurrentProjectSignal(currentRows);
 
-  if (!hasAnyCurrentSignal) {
-    return {
-      monthlyPageViews: null,
-      monthlyActiveUsers: null,
-      monthlySessions: null,
-      monthlyEmailsSent: null,
-      monthlyPdfExports: null,
-      monthlyMapViews: null,
-      monthlyAiCalls: null,
-      monthlyStorageGbMonths: null,
-      monthlyApiRequests: null,
-      monthlyAuthEvents: null,
-      growthRateMonthly: null,
-      seasonalityAmplitude: null,
-      horizonMonths: 12,
-    };
-  }
+  return hasAnyCurrentSignal
+    ? populatedMonthlyUsageInput(currentScope, previousScope)
+    : emptyMonthlyUsageInput();
+}
 
-  const growthRateMonthly = clamp(
-    ((currentScope.monthlyPageViews - previousScope.monthlyPageViews) /
-      Math.max(1, Math.max(previousScope.monthlyPageViews, currentScope.monthlyPageViews))) || 0,
-    -0.35,
-    0.35,
-  );
-  const seasonalityAmplitude = clamp(
-    Math.abs(currentScope.monthlyPageViews - previousScope.monthlyPageViews) /
-      Math.max(1, currentScope.monthlyPageViews + previousScope.monthlyPageViews),
-    0.04,
-    0.25,
-  );
-
-  return {
-    monthlyPageViews: currentScope.monthlyPageViews,
-    monthlyActiveUsers: currentScope.monthlyActiveUsers,
-    monthlySessions: currentScope.monthlySessions,
-    monthlyEmailsSent: currentScope.monthlyEmailsSent,
-    monthlyPdfExports: currentScope.monthlyPdfExports,
-    monthlyMapViews: currentScope.monthlyMapViews,
-    monthlyAiCalls: currentScope.monthlyAiCalls,
-    monthlyStorageGbMonths: currentScope.monthlyStorageGbMonths,
-    monthlyApiRequests: currentScope.monthlyApiRequests,
-    monthlyAuthEvents: currentScope.monthlyAuthEvents,
-    monthlyRealtimeEvents: Math.max(1, currentScope.monthlyActiveUsers * 8),
-    monthlyEgressGb: round6(
-      Math.max(
-        0.1,
-        currentScope.monthlyPageViews * 0.00008 +
-          currentScope.monthlyMapViews * 0.0012 +
-          currentScope.monthlyStorageGbMonths * 0.12,
-      ),
-    ),
-    monthlyBandwidthGb: round6(
-      Math.max(
-        0.1,
-        currentScope.monthlyPageViews * 0.00011 +
-          currentScope.monthlyMapViews * 0.001 +
-          currentScope.monthlyPdfExports * 0.002,
-      ),
-    ),
-    monthlyErrorEvents:
-      currentScope.monthlyApiRequests > 0
-        ? Math.max(0, Math.round(currentScope.monthlyApiRequests * 0.0025))
-        : null,
-    growthRateMonthly: Number.isFinite(growthRateMonthly) ? growthRateMonthly : null,
-    seasonalityAmplitude: Number.isFinite(seasonalityAmplitude) ? seasonalityAmplitude : null,
-    horizonMonths: 12,
-  };
+function hasCurrentProjectSignal(rows: ProjectSignalRows): boolean {
+  return rows.actions.length +
+    rows.spots.length +
+    getFunnelEventCount(rows) +
+    rows.progressionEvents.length +
+    rows.reports.length +
+    rows.trainingExamples.length +
+    rows.serviceEmails.length +
+    rows.communityEvents.length +
+    rows.eventRsvps.length +
+    rows.appNotifications.length > 0;
 }

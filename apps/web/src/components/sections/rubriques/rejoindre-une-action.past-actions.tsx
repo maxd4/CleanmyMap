@@ -292,6 +292,14 @@ function PastActionItemsGrid({
   })}</div>;
 }
 
+function PastActionsStatus({ fr, loading, error, itemCount }: { fr: boolean; loading: boolean; error: string | null; itemCount: number }) {
+  return <>
+    {loading ? <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-sm font-semibold text-emerald-900">{fr ? "Chargement des actions passées..." : "Loading past actions..."}</p> : null}
+    {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-semibold text-rose-800">{error}</p> : null}
+    {!loading && !error && itemCount === 0 ? <p className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 px-4 py-4 text-sm text-slate-700">{fr ? "Aucune action passée publique pour le moment." : "No public past action yet."}</p> : null}
+  </>;
+}
+
 export function PastActionsPanel({
   items,
   loading,
@@ -354,9 +362,7 @@ export function PastActionsPanel({
         </p>
       </div>
 
-      {loading ? <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-sm font-semibold text-emerald-900">{fr ? "Chargement des actions passées..." : "Loading past actions..."}</p> : null}
-      {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-semibold text-rose-800">{error}</p> : null}
-      {!loading && !error && items.length === 0 ? <p className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 px-4 py-4 text-sm text-slate-700">{fr ? "Aucune action passée publique pour le moment." : "No public past action yet."}</p> : null}
+      <PastActionsStatus fr={fr} loading={loading} error={error} itemCount={items.length} />
 
       <PastActionItemsGrid items={items} fr={fr} focusedActionId={focusedActionId} authenticated={authenticated} claimOverrides={claimOverrides} historyByActionId={historyByActionId} claimingActionId={claimingActionId} claimErrors={claimErrors} requestClaim={requestClaim} onShareAction={onShareAction} />
 

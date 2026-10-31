@@ -8,6 +8,33 @@ import { ButtsComparisonVisual } from "../ui/harvest-gauges";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 
+function formatProvenance(provenance: string): string {
+  switch (provenance) {
+    case "counted": return "compté";
+    case "measured": return "mesuré";
+    case "weight_converted": return "dérivé par conversion de masse";
+    case "volume_converted": return "dérivé par conversion de volume";
+    case "estimated": return "estimé";
+    case "unknown": return "historique conservé, origine non qualifiée";
+    default: return "non renseigné";
+  }
+}
+
+function MegotsHeader({
+  megotsCount,
+  provenance,
+}: { megotsCount: number | null; provenance: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center"><Cigarette size={15} className="text-amber-600" /></div>
+        <div><p className="text-sm font-semibold text-slate-900">Mégots collectés</p><p className="text-xs text-slate-500">Nombre et masse restent tracés séparément</p></div>
+      </div>
+      {megotsCount !== null ? <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{provenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots</span> : null}
+    </div>
+  );
+}
+
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
   cigaretteButtsVolumeLiters: string;
@@ -53,43 +80,9 @@ export function HarvestMegotsSection({
   onMegotsConditionChange,
   hidePrimaryMeasurements = false,
 }: HarvestMegotsSectionProps) {
-  const formatProvenance = (provenance: string) => {
-    switch (provenance) {
-      case "counted":
-        return "compté";
-      case "measured":
-        return "mesuré";
-      case "weight_converted":
-        return "dérivé par conversion de masse";
-      case "volume_converted":
-        return "dérivé par conversion de volume";
-      case "estimated":
-        return "estimé";
-      case "unknown":
-        return "historique conservé, origine non qualifiée";
-      default:
-        return "non renseigné";
-    }
-  };
-
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center">
-            <Cigarette size={15} className="text-amber-600" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Mégots collectés</p>
-            <p className="text-xs text-slate-500">Nombre et masse restent tracés séparément</p>
-          </div>
-        </div>
-        {megotsCount !== null ? (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-            {cigaretteButtsCountProvenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots
-          </span>
-        ) : null}
-      </div>
+      <MegotsHeader megotsCount={megotsCount} provenance={cigaretteButtsCountProvenance} />
 
       <label className="block space-y-1.5">
         <span className="text-xs font-medium text-slate-500">État des mégots</span>

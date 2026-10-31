@@ -107,6 +107,7 @@ async function loadNeedsResponse(userId: string | null, query: Extract<ReturnTyp
       { status: "ok", ...result },
       {
         headers: {
+          // no-store: authenticated need responses vary by the requester and must not be shared.
           "Cache-Control": userId ? "private, no-store" : "public, max-age=15, stale-while-revalidate=30",
           Vary: "Cookie",
         },

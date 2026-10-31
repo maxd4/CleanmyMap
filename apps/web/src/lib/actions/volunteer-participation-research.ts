@@ -162,6 +162,125 @@ type AssignmentValidation =
   | { valid: true }
   | { valid: false; reason: string };
 
+type ModelCoefficients = (typeof MODEL_COEFFICIENTS)[CleanwalkResearchModel];
+
+function buildUnavailableYieldResult(
+  input: CleanwalkYieldSimulationInput,
+  model: CleanwalkResearchModel,
+  configuration: CleanwalkResearchConfiguration,
+  coefficients: ModelCoefficients,
+  availability: "INVALID_INPUT" | "NOT_APPLICABLE",
+  reason: string,
+  composition: ResearchComposition | null,
+  participation: ActionVolunteerParticipation | null,
+  notes: readonly string[],
+): CleanwalkYieldSimulationResult {
+  const waste = unavailableCapacity(availability, coefficients.waste);
+  const cigaretteButts = unavailableCapacity(availability, coefficients.cigaretteButts);
+  return {
+    status: CLEANWALK_YIELD_RESEARCH_STATUS,
+    version: CLEANWALK_YIELD_RESEARCH_VERSION,
+    model,
+    configuration,
+    availability,
+    reason,
+    composition,
+    participation,
+    capacities: { waste, cigaretteButts },
+    projections: {
+      waste: projection(waste, input.effectiveCollectionHours, input.referenceRates?.wasteKgPerUnitHour, "kg", "R_D × T_eff × U_D"),
+      cigaretteButts: projection(cigaretteButts, input.effectiveCollectionHours, input.referenceRates?.cigaretteButtsPerUnitHour, "cigarette-butts", "R_M × T_eff × U_M"),
+    },
+    assumptions: {
+      status: CLEANWALK_YIELD_RESEARCH_STATUS,
+      model,
+      configuration,
+      cigaretteButtCollectors: input.cigaretteButtCollectors ?? null,
+      notes,
+    },
+  };
+}
+
+function buildAvailableCigaretteButtCapacity(
+  model: CleanwalkResearchModel,
+  composition: ResearchComposition,
+  coefficients: ModelCoefficients,
+  assignment: CigaretteButtCollectorAssignment | null,
+): { capacity: ResearchCapacity; validation: AssignmentValidation | null } {
+  const validation = model === "C" && assignment
+    ? validateCigaretteButtCollectorAssignment(assignment, composition.adultCount)
+    : null;
+  if (model === "C") {
+    if (!assignment) return { capacity: unavailableCapacity("MISSING_ASSIGNMENT", coefficients.cigaretteButts), validation };
+    if (validation && !validation.valid) return { capacity: unavailableCapacity("INVALID_INPUT", coefficients.cigaretteButts, null, validation.reason), validation };
+    return {
+      capacity: { value: assignment.count, availability: "AVAILABLE", unit: "adult-equivalent-units", coefficients: coefficients.cigaretteButts, basis: "ASSIGNED", reason: null },
+      validation,
+    };
+  }
+  return {
+    capacity: {
+      value: composition.adultCount * coefficients.cigaretteButts.adult +
+        composition.childrenCount * (coefficients.cigaretteButts.children ?? 0) +
+        composition.retiredCount * (coefficients.cigaretteButts.retired ?? 0),
+      availability: "AVAILABLE",
+      unit: "adult-equivalent-units",
+      coefficients: coefficients.cigaretteButts,
+      basis: model === "A" ? "CURRENT" : "EXPERIMENTAL",
+      reason: null,
+    },
+    validation,
+  };
+}
+
+function buildAvailableYieldResult(
+  input: CleanwalkYieldSimulationInput,
+  model: CleanwalkResearchModel,
+  configuration: CleanwalkResearchConfiguration,
+  composition: ResearchComposition,
+  participation: ActionVolunteerParticipation,
+  coefficients: ModelCoefficients,
+  notes: readonly string[],
+): CleanwalkYieldSimulationResult {
+  const assignment = input.cigaretteButtCollectors ?? null;
+  const waste: ResearchCapacity = {
+    value: model === "A" ? composition.currentEffectiveVolunteerUnits : composition.adultCount * coefficients.waste.adult + composition.childrenCount * (coefficients.waste.children ?? 0) + composition.retiredCount * (coefficients.waste.retired ?? 0),
+    availability: "AVAILABLE",
+    unit: "adult-equivalent-units",
+    coefficients: coefficients.waste,
+    basis: model === "A" ? "CURRENT" : "EXPERIMENTAL",
+    reason: null,
+  };
+  const cigaretteButts = buildAvailableCigaretteButtCapacity(model, composition, coefficients, assignment);
+  const assignmentNote = !assignment
+    ? "Aucune affectation effective des adultes aux mégots n'est inventée."
+    : cigaretteButts.validation && !cigaretteButts.validation.valid
+      ? cigaretteButts.validation.reason
+      : `L'affectation des mégots est ${assignment.basis.toLowerCase()}${assignment.hypothesis ? ` (${assignment.hypothesis})` : ""}.`;
+  return {
+    status: CLEANWALK_YIELD_RESEARCH_STATUS,
+    version: CLEANWALK_YIELD_RESEARCH_VERSION,
+    model,
+    configuration,
+    availability: "AVAILABLE",
+    reason: null,
+    composition,
+    participation,
+    capacities: { waste, cigaretteButts: cigaretteButts.capacity },
+    projections: {
+      waste: projection(waste, input.effectiveCollectionHours, input.referenceRates?.wasteKgPerUnitHour, "kg", "R_D × T_eff × U_D"),
+      cigaretteButts: projection(cigaretteButts.capacity, input.effectiveCollectionHours, input.referenceRates?.cigaretteButtsPerUnitHour, "cigarette-butts", "R_M × T_eff × U_M"),
+    },
+    assumptions: {
+      status: CLEANWALK_YIELD_RESEARCH_STATUS,
+      model,
+      configuration,
+      cigaretteButtCollectors: assignment,
+      notes: [...notes, assignmentNote],
+    },
+  };
+}
+
 function validateCigaretteButtCollectorAssignment(
   assignment: CigaretteButtCollectorAssignment,
   adultCount: number,
@@ -229,56 +348,13 @@ export function simulateCleanwalkYield(
     "Résultat de recherche RESEARCH / NON NORMATIF; aucune performance terrain n'est mesurée.",
     "Les capacités sont des unités relatives hypothétiques et ne remplacent ni volunteersCount ni une quantité collectée.",
   ];
-  const assignment = input.cigaretteButtCollectors ?? null;
-
   const invalidInputReason = !modelIsValid
     ? "Le modèle expérimental est inconnu."
     : !configurationIsValid
       ? "La configuration est inconnue."
       : compositionResult.message;
 
-  if (invalidInputReason) {
-    return {
-      status: CLEANWALK_YIELD_RESEARCH_STATUS,
-      version: CLEANWALK_YIELD_RESEARCH_VERSION,
-      model,
-      configuration,
-      availability: "INVALID_INPUT",
-      reason: invalidInputReason,
-      composition: null,
-      participation: null,
-      capacities: {
-        waste: unavailableCapacity("INVALID_INPUT", coefficients.waste),
-        cigaretteButts: unavailableCapacity(
-          "INVALID_INPUT",
-          coefficients.cigaretteButts,
-        ),
-      },
-      projections: {
-        waste: projection(
-          unavailableCapacity("INVALID_INPUT", coefficients.waste),
-          input.effectiveCollectionHours,
-          input.referenceRates?.wasteKgPerUnitHour,
-          "kg",
-          "R_D × T_eff × U_D",
-        ),
-        cigaretteButts: projection(
-          unavailableCapacity("INVALID_INPUT", coefficients.cigaretteButts),
-          input.effectiveCollectionHours,
-          input.referenceRates?.cigaretteButtsPerUnitHour,
-          "cigarette-butts",
-          "R_M × T_eff × U_M",
-        ),
-      },
-      assumptions: {
-        status: CLEANWALK_YIELD_RESEARCH_STATUS,
-        model,
-        configuration,
-        cigaretteButtCollectors: assignment,
-        notes,
-      },
-    };
-  }
+  if (invalidInputReason) return buildUnavailableYieldResult(input, model, configuration, coefficients, "INVALID_INPUT", invalidInputReason, null, null, notes);
 
   const composition = compositionResult.composition as ResearchComposition;
   const participation = compositionResult.participation as ActionVolunteerParticipation;
@@ -294,150 +370,10 @@ export function simulateCleanwalkYield(
         : isSchoolConfiguration
           ? "Le modèle C ne définit aucun coefficient scolaire en présence de retraités."
           : "Le modèle C est défini uniquement pour une configuration scolaire.";
-    return {
-      status: CLEANWALK_YIELD_RESEARCH_STATUS,
-      version: CLEANWALK_YIELD_RESEARCH_VERSION,
-      model,
-      configuration,
-      availability: "NOT_APPLICABLE",
-      reason,
-      composition,
-      participation,
-      capacities: {
-        waste: unavailableCapacity("NOT_APPLICABLE", coefficients.waste),
-        cigaretteButts: unavailableCapacity(
-          "NOT_APPLICABLE",
-          coefficients.cigaretteButts,
-        ),
-      },
-      projections: {
-        waste: projection(
-          unavailableCapacity("NOT_APPLICABLE", coefficients.waste),
-          input.effectiveCollectionHours,
-          input.referenceRates?.wasteKgPerUnitHour,
-          "kg",
-          "R_D × T_eff × U_D",
-        ),
-        cigaretteButts: projection(
-          unavailableCapacity("NOT_APPLICABLE", coefficients.cigaretteButts),
-          input.effectiveCollectionHours,
-          input.referenceRates?.cigaretteButtsPerUnitHour,
-          "cigarette-butts",
-          "R_M × T_eff × U_M",
-        ),
-      },
-      assumptions: {
-        status: CLEANWALK_YIELD_RESEARCH_STATUS,
-        model,
-        configuration,
-        cigaretteButtCollectors: assignment,
-        notes: [...notes, reason],
-      },
-    };
+    return buildUnavailableYieldResult(input, model, configuration, coefficients, "NOT_APPLICABLE", reason, composition, participation, [...notes, reason]);
   }
 
-  const wasteValue =
-    model === "A"
-      ? composition.currentEffectiveVolunteerUnits
-      : composition.adultCount * coefficients.waste.adult +
-        composition.childrenCount * (coefficients.waste.children ?? 0) +
-        composition.retiredCount * (coefficients.waste.retired ?? 0);
-  const wasteCapacity: ResearchCapacity = {
-    value: wasteValue,
-    availability: "AVAILABLE",
-    unit: "adult-equivalent-units",
-    coefficients: coefficients.waste,
-    basis: model === "A" ? "CURRENT" : "EXPERIMENTAL",
-    reason: null,
-  };
-
-  let cigaretteButtCapacity: ResearchCapacity;
-  const assignmentValidation =
-    model === "C" && assignment
-      ? validateCigaretteButtCollectorAssignment(
-          assignment,
-          composition.adultCount,
-        )
-      : null;
-  if (model === "C") {
-    if (!assignment) {
-      cigaretteButtCapacity = unavailableCapacity(
-        "MISSING_ASSIGNMENT",
-        coefficients.cigaretteButts,
-      );
-    } else if (assignmentValidation && !assignmentValidation.valid) {
-      cigaretteButtCapacity = unavailableCapacity(
-        "INVALID_INPUT",
-        coefficients.cigaretteButts,
-        null,
-        assignmentValidation.reason,
-      );
-    } else {
-      cigaretteButtCapacity = {
-        value: assignment.count,
-        availability: "AVAILABLE",
-        unit: "adult-equivalent-units",
-        coefficients: coefficients.cigaretteButts,
-        basis: "ASSIGNED",
-        reason: null,
-      };
-    }
-  } else {
-    cigaretteButtCapacity = {
-      value:
-        composition.adultCount * coefficients.cigaretteButts.adult +
-        composition.childrenCount * (coefficients.cigaretteButts.children ?? 0) +
-        composition.retiredCount * (coefficients.cigaretteButts.retired ?? 0),
-      availability: "AVAILABLE",
-      unit: "adult-equivalent-units",
-      coefficients: coefficients.cigaretteButts,
-      basis: model === "A" ? "CURRENT" : "EXPERIMENTAL",
-      reason: null,
-    };
-  }
-
-  const assignmentNote = assignment
-    ? assignmentValidation && !assignmentValidation.valid
-      ? assignmentValidation.reason
-      : `L'affectation des mégots est ${assignment.basis.toLowerCase()}${assignment.hypothesis ? ` (${assignment.hypothesis})` : ""}.`
-    : "Aucune affectation effective des adultes aux mégots n'est inventée.";
-  return {
-    status: CLEANWALK_YIELD_RESEARCH_STATUS,
-    version: CLEANWALK_YIELD_RESEARCH_VERSION,
-    model,
-    configuration,
-    availability: "AVAILABLE",
-    reason: null,
-    composition,
-    participation,
-    capacities: {
-      waste: wasteCapacity,
-      cigaretteButts: cigaretteButtCapacity,
-    },
-    projections: {
-      waste: projection(
-        wasteCapacity,
-        input.effectiveCollectionHours,
-        input.referenceRates?.wasteKgPerUnitHour,
-        "kg",
-        "R_D × T_eff × U_D",
-      ),
-      cigaretteButts: projection(
-        cigaretteButtCapacity,
-        input.effectiveCollectionHours,
-        input.referenceRates?.cigaretteButtsPerUnitHour,
-        "cigarette-butts",
-        "R_M × T_eff × U_M",
-      ),
-    },
-    assumptions: {
-      status: CLEANWALK_YIELD_RESEARCH_STATUS,
-      model,
-      configuration,
-      cigaretteButtCollectors: assignment,
-      notes: [...notes, assignmentNote],
-    },
-  };
+  return buildAvailableYieldResult(input, model, configuration, composition, participation, coefficients, notes);
 }
 
 export function compareCleanwalkYieldModels(

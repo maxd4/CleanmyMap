@@ -71,41 +71,27 @@ function compareEvents(left: CommunityEventItem, right: CommunityEventItem, asce
   return right.id.localeCompare(left.id);
 }
 
-export function useCommunityEvents(enabled = true, focusEventId: string | null = null) {
-  const {
-    data: upcomingData,
-    error: upcomingError,
-    isLoading: upcomingLoading,
-    isValidating: upcomingValidating,
-    mutate: reloadUpcoming,
-  } = useSWR<CommunityEventsResponse, unknown>(
+
+function useCommunityEventQueries(enabled: boolean, focusEventId: string | null) {
+  const upcoming = useSWR<CommunityEventsResponse, unknown>(
     enabled ? ["section-community-events", "upcoming"] : null,
     () => fetchCommunityEvents({ limit: 120, phase: "upcoming" }),
     swrRecentViewOptions,
   );
-  const {
-    data: pastData,
-    error: pastError,
-    isLoading: pastLoading,
-    isValidating: pastValidating,
-    mutate: reloadPast,
-  } = useSWR<CommunityEventsResponse, unknown>(
+  const past = useSWR<CommunityEventsResponse, unknown>(
     enabled ? ["section-community-events", "past"] : null,
     () => fetchCommunityEvents({ limit: 120, phase: "past" }),
     swrRecentViewOptions,
   );
-  const {
-    data: focusedEventData,
-    error: focusedEventError,
-    isLoading: focusedEventLoading,
-    isValidating: focusedEventValidating,
-    mutate: reloadFocusedEvent,
-  } = useSWR<CommunityEventsResponse, unknown>(
+  const focused = useSWR<CommunityEventsResponse, unknown>(
     enabled && focusEventId ? ["section-community-event", focusEventId] : null,
     () => fetchCommunityEvents({ limit: 1, eventId: focusEventId }),
     swrRecentViewOptions,
   );
+  return { upcoming, past, focused };
+}
 
+function useCommunityEventsPaginationState() {
   const [paginationState, setPaginationState] = useState<Record<EventPhase, PhasePaginationState>>(createPhaseState);
   const paginationRef = useRef(paginationState);
   const generationRef = useRef<Record<EventPhase, number>>({ upcoming: 0, past: 0 });
@@ -115,7 +101,6 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     upcoming: undefined,
     past: undefined,
   });
-
   const updatePhaseState = useCallback(
     (phase: EventPhase, update: (current: PhasePaginationState) => PhasePaginationState) => {
       setPaginationState((current) => {
@@ -126,7 +111,18 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     },
     [],
   );
+  return { paginationState, paginationRef, generationRef, loadingMoreRef, baseSignaturesRef, reconciliationBaseRef, updatePhaseState };
+}
 
+type CommunityEventsPaginationState = ReturnType<typeof useCommunityEventsPaginationState>;
+
+function useCommunityEventsReconciliation(params: {
+  upcomingData: CommunityEventsResponse | undefined;
+  pastData: CommunityEventsResponse | undefined;
+  state: CommunityEventsPaginationState;
+}) {
+  const { upcomingData, pastData, state } = params;
+  const { paginationRef, generationRef, loadingMoreRef, baseSignaturesRef, reconciliationBaseRef, updatePhaseState } = state;
   const reconcileContinuationPages = useCallback(
     async (phase: EventPhase, base: CommunityEventsResponse | undefined, generation: number) => {
       if (generationRef.current[phase] !== generation) return;
@@ -134,16 +130,8 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
       let cursor = base?.nextCursor ?? null;
       const refreshedCursors: string[] = [];
       let refreshedEvents: CommunityEventItem[] = [];
-
       loadingMoreRef.current[phase] = true;
-      updatePhaseState(phase, (current) => ({
-        ...current,
-        error: null,
-        failedCursor: null,
-        failedOperation: null,
-        loadingMore: true,
-      }));
-
+      updatePhaseState(phase, (current) => ({ ...current, error: null, failedCursor: null, failedOperation: null, loadingMore: true }));
       try {
         for (let index = 0; index < loadedCursors.length && cursor; index += 1) {
           const requestCursor = cursor;
@@ -155,33 +143,16 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
         }
         if (generationRef.current[phase] !== generation) return;
         loadingMoreRef.current[phase] = false;
-        updatePhaseState(phase, (current) => ({
-          ...current,
-          additionalEvents: refreshedEvents,
-          continuationCursors: refreshedCursors,
-          nextCursor: cursor,
-          error: null,
-          failedCursor: null,
-          failedOperation: null,
-          loadingMore: false,
-        }));
+        updatePhaseState(phase, (current) => ({ ...current, additionalEvents: refreshedEvents, continuationCursors: refreshedCursors, nextCursor: cursor, error: null, failedCursor: null, failedOperation: null, loadingMore: false }));
       } catch (error) {
         if (generationRef.current[phase] !== generation) return;
         loadingMoreRef.current[phase] = false;
         const retryCursor = cursor ?? loadedCursors[refreshedCursors.length] ?? null;
-        updatePhaseState(phase, (current) => ({
-          ...current,
-          error,
-          failedCursor: retryCursor,
-          failedOperation: "reconciliation",
-          nextCursor: null,
-          loadingMore: false,
-        }));
+        updatePhaseState(phase, (current) => ({ ...current, error, failedCursor: retryCursor, failedOperation: "reconciliation", nextCursor: null, loadingMore: false }));
       }
     },
-    [updatePhaseState],
+    [generationRef, loadingMoreRef, paginationRef, updatePhaseState],
   );
-
   const reconcileBase = useCallback(
     (phase: EventPhase, base: CommunityEventsResponse | undefined, force = false) => {
       const signature = responseSignature(base);
@@ -191,16 +162,32 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
       const generation = ++generationRef.current[phase];
       return reconcileContinuationPages(phase, base, generation);
     },
-    [reconcileContinuationPages],
+    [baseSignaturesRef, generationRef, reconciliationBaseRef, reconcileContinuationPages],
   );
-
   useEffect(() => {
     if (upcomingData) void reconcileBase("upcoming", upcomingData);
   }, [reconcileBase, upcomingData]);
   useEffect(() => {
     if (pastData) void reconcileBase("past", pastData);
   }, [pastData, reconcileBase]);
+  return { reconcileBase, reconcileContinuationPages };
+}
 
+type CommunityEventsReconciliation = ReturnType<typeof useCommunityEventsReconciliation>;
+
+function useCommunityEventsPaginationActions(params: {
+  enabled: boolean;
+  upcomingData: CommunityEventsResponse | undefined;
+  pastData: CommunityEventsResponse | undefined;
+  reloadUpcoming: ReturnType<typeof useSWR<CommunityEventsResponse, unknown>>["mutate"];
+  reloadPast: ReturnType<typeof useSWR<CommunityEventsResponse, unknown>>["mutate"];
+  reloadFocusedEvent: ReturnType<typeof useSWR<CommunityEventsResponse, unknown>>["mutate"];
+  state: CommunityEventsPaginationState;
+  reconciliation: CommunityEventsReconciliation;
+}) {
+  const { enabled, upcomingData, pastData, reloadUpcoming, reloadPast, reloadFocusedEvent, state, reconciliation } = params;
+  const { paginationRef, generationRef, loadingMoreRef, reconciliationBaseRef, updatePhaseState } = state;
+  const { reconcileBase } = reconciliation;
   const loadMoreEvents = useCallback(
     async (phase: EventPhase = "upcoming", cursorOverride: string | null = null) => {
       const current = paginationRef.current[phase];
@@ -208,77 +195,45 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
       if (!enabled || loadingMoreRef.current[phase] || current.failedOperation === "reconciliation" || !requestCursor) return;
       const generation = ++generationRef.current[phase];
       loadingMoreRef.current[phase] = true;
-      updatePhaseState(phase, (state) => ({
-        ...state,
-        error: null,
-        failedCursor: null,
-        failedOperation: null,
-        loadingMore: true,
-      }));
+      updatePhaseState(phase, (currentState) => ({ ...currentState, error: null, failedCursor: null, failedOperation: null, loadingMore: true }));
       try {
         const page = await fetchCommunityEvents({ limit: 120, phase, cursor: requestCursor });
         if (generationRef.current[phase] !== generation) return;
-        updatePhaseState(phase, (state) => ({
-          ...state,
-          additionalEvents: mergeEvents(state.additionalEvents, page.items),
-          continuationCursors: [...state.continuationCursors, requestCursor],
-          nextCursor: page.nextCursor,
-          error: null,
-          failedCursor: null,
-          failedOperation: null,
-        }));
+        updatePhaseState(phase, (stateValue) => ({ ...stateValue, additionalEvents: mergeEvents(stateValue.additionalEvents, page.items), continuationCursors: [...stateValue.continuationCursors, requestCursor], nextCursor: page.nextCursor, error: null, failedCursor: null, failedOperation: null }));
       } catch (error) {
-        if (generationRef.current[phase] === generation) {
-          updatePhaseState(phase, (state) => ({
-            ...state,
-            error,
-            failedCursor: requestCursor,
-            failedOperation: "continuation",
-            loadingMore: false,
-          }));
-        }
+        if (generationRef.current[phase] === generation) updatePhaseState(phase, (stateValue) => ({ ...stateValue, error, failedCursor: requestCursor, failedOperation: "continuation", loadingMore: false }));
       } finally {
         if (generationRef.current[phase] === generation) {
           loadingMoreRef.current[phase] = false;
-          updatePhaseState(phase, (state) => ({ ...state, loadingMore: false }));
+          updatePhaseState(phase, (stateValue) => ({ ...stateValue, loadingMore: false }));
         }
       }
     },
-    [enabled, updatePhaseState],
+    [enabled, generationRef, loadingMoreRef, paginationRef, updatePhaseState],
   );
-
   const reloadPhase = useCallback(
     async (phase: EventPhase) => {
       const mutate = phase === "upcoming" ? reloadUpcoming : reloadPast;
       const generation = ++generationRef.current[phase];
       loadingMoreRef.current[phase] = true;
-      updatePhaseState(phase, (state) => ({
-        ...state,
-        error: null,
-        failedCursor: null,
-        loadingMore: true,
-      }));
+      updatePhaseState(phase, (stateValue) => ({ ...stateValue, error: null, failedCursor: null, loadingMore: true }));
       try {
         const refreshed = await mutate();
         if (generationRef.current[phase] !== generation) return;
         const base = (refreshed as CommunityEventsResponse | undefined) ?? (phase === "upcoming" ? upcomingData : pastData);
-        baseSignaturesRef.current[phase] = responseSignature(base);
-        reconciliationBaseRef.current[phase] = base;
-        await reconcileContinuationPages(phase, base, generation);
+        await reconcileBase(phase, base, true);
       } finally {
         if (generationRef.current[phase] === generation) {
           loadingMoreRef.current[phase] = false;
-          updatePhaseState(phase, (state) => ({ ...state, loadingMore: false }));
+          updatePhaseState(phase, (stateValue) => ({ ...stateValue, loadingMore: false }));
         }
       }
     },
-    [pastData, reconcileContinuationPages, reloadPast, reloadUpcoming, updatePhaseState, upcomingData],
+    [generationRef, loadingMoreRef, pastData, reconcileBase, reloadPast, reloadUpcoming, updatePhaseState, upcomingData],
   );
-
   const reloadAllEvents = useCallback(async () => {
     await Promise.all([reloadPhase("upcoming"), reloadPhase("past"), reloadFocusedEvent()]);
   }, [reloadFocusedEvent, reloadPhase]);
-
   const retryEvents = useCallback(
     async (phase: EventPhase) => {
       const current = paginationRef.current[phase];
@@ -295,19 +250,25 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
       }
       await reloadPhase(phase);
     },
-    [loadMoreEvents, reconcileBase, reloadPhase],
+    [loadMoreEvents, paginationRef, reconcileBase, reconciliationBaseRef, reloadPhase],
   );
+  return { loadMoreEvents, reloadAllEvents, retryEvents };
+}
 
-  const phaseErrors = useMemo(
-    () => ({
-      upcoming: toLoadError(upcomingError ?? paginationState.upcoming.error),
-      past: toLoadError(pastError ?? paginationState.past.error),
-    }),
-    [pastError, paginationState.past.error, paginationState.upcoming.error, upcomingError],
-  );
-  const rawEventsError = upcomingError ?? pastError ?? focusedEventError ?? paginationState.upcoming.error ?? paginationState.past.error;
-  const eventsLoadError = toLoadError(rawEventsError);
-
+export function useCommunityEvents(enabled = true, focusEventId: string | null = null) {
+  const queries = useCommunityEventQueries(enabled, focusEventId);
+  const { data: upcomingData, error: upcomingError, isLoading: upcomingLoading, isValidating: upcomingValidating, mutate: reloadUpcoming } = queries.upcoming;
+  const { data: pastData, error: pastError, isLoading: pastLoading, isValidating: pastValidating, mutate: reloadPast } = queries.past;
+  const { data: focusedEventData, error: focusedEventError, isLoading: focusedEventLoading, isValidating: focusedEventValidating, mutate: reloadFocusedEvent } = queries.focused;
+  const state = useCommunityEventsPaginationState();
+  const reconciliation = useCommunityEventsReconciliation({ upcomingData, pastData, state });
+  const actions = useCommunityEventsPaginationActions({ enabled, upcomingData, pastData, reloadUpcoming, reloadPast, reloadFocusedEvent, state, reconciliation });
+  const { paginationState } = state;
+  const phaseErrors = useMemo(() => ({
+    upcoming: toLoadError(upcomingError ?? paginationState.upcoming.error),
+    past: toLoadError(pastError ?? paginationState.past.error),
+  }), [pastError, paginationState.past.error, paginationState.upcoming.error, upcomingError]);
+  const eventsLoadError = toLoadError(upcomingError ?? pastError ?? focusedEventError ?? paginationState.upcoming.error ?? paginationState.past.error);
   const allEvents = useMemo(
     () => mergeEvents(
       mergeEvents(
@@ -319,16 +280,9 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     [focusedEventData?.items, paginationState.past.additionalEvents, paginationState.upcoming.additionalEvents, pastData?.items, upcomingData?.items],
   );
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const upcomingEvents = useMemo(
-    () => allEvents.filter((event) => event.eventDate >= todayIso).sort((a, b) => compareEvents(a, b, true)),
-    [allEvents, todayIso],
-  );
-  const pastEvents = useMemo(
-    () => allEvents.filter((event) => event.eventDate < todayIso).sort((a, b) => compareEvents(a, b, false)),
-    [allEvents, todayIso],
-  );
+  const upcomingEvents = useMemo(() => allEvents.filter((event) => event.eventDate >= todayIso).sort((a, b) => compareEvents(a, b, true)), [allEvents, todayIso]);
+  const pastEvents = useMemo(() => allEvents.filter((event) => event.eventDate < todayIso).sort((a, b) => compareEvents(a, b, false)), [allEvents, todayIso]);
   const myEvents = useMemo(() => allEvents.filter((event) => event.myRsvpStatus !== null), [allEvents]);
-
   return {
     eventsLoading: upcomingLoading || pastLoading || focusedEventLoading,
     eventsLoadingByPhase: { upcoming: upcomingLoading, past: pastLoading },
@@ -336,19 +290,13 @@ export function useCommunityEvents(enabled = true, focusEventId: string | null =
     eventsValidatingByPhase: { upcoming: upcomingValidating, past: pastValidating },
     eventsLoadError,
     eventsLoadErrorByPhase: phaseErrors,
-    reloadEvents: reloadAllEvents,
-    retryEvents,
+    reloadEvents: actions.reloadAllEvents,
+    retryEvents: actions.retryEvents,
     hasMore: Boolean(paginationState.upcoming.nextCursor),
-    hasMoreByPhase: {
-      upcoming: Boolean(paginationState.upcoming.nextCursor),
-      past: Boolean(paginationState.past.nextCursor),
-    },
+    hasMoreByPhase: { upcoming: Boolean(paginationState.upcoming.nextCursor), past: Boolean(paginationState.past.nextCursor) },
     loadingMore: paginationState.upcoming.loadingMore,
-    loadingMoreByPhase: {
-      upcoming: paginationState.upcoming.loadingMore,
-      past: paginationState.past.loadingMore,
-    },
-    loadMoreEvents,
+    loadingMoreByPhase: { upcoming: paginationState.upcoming.loadingMore, past: paginationState.past.loadingMore },
+    loadMoreEvents: actions.loadMoreEvents,
     allEvents,
     upcomingEvents,
     pastEvents,

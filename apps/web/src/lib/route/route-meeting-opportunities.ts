@@ -143,6 +143,72 @@ function compareAcceptedOpportunities(
     left.candidate.id.localeCompare(right.candidate.id);
 }
 
+function collectAcceptedMeetingOpportunities(
+  input: Parameters<typeof buildMeetingOpportunities>[0],
+  trace: MeetingOpportunityTrace,
+  mainStopIds: Set<string>,
+  mainStopCoordinateKeys: Set<string>,
+): AcceptedOpportunity[] {
+  const accepted: AcceptedOpportunity[] = [];
+  const seenCandidateIds = new Set<string>();
+  for (const candidate of input.candidates) {
+    if (seenCandidateIds.has(candidate.id)) {
+      trace.entries.push(traceEntry(candidate, null, "excluded", "duplicate_candidate"));
+      continue;
+    }
+    seenCandidateIds.add(candidate.id);
+    const policyReason = safetyPolicyReason(candidate);
+    if (policyReason) {
+      trace.entries.push(traceEntry(candidate, null, "excluded", policyReason));
+      continue;
+    }
+    if (mainStopIds.has(candidate.id) || (validCoordinate(candidate) && mainStopCoordinateKeys.has(coordinateKey(candidate)))) {
+      trace.entries.push(traceEntry(candidate, null, "excluded", "already_a_main_stop"));
+      continue;
+    }
+    if (!isRoutePlannerCandidateEligible(candidate)) {
+      trace.entries.push(traceEntry(candidate, null, "excluded", "not_admissible"));
+      continue;
+    }
+    if (!hasReliableSafetyAndAccessibility(candidate)) {
+      trace.entries.push(traceEntry(candidate, null, "excluded", "safety_or_accessibility_unknown"));
+      continue;
+    }
+    if (!validCoordinate(candidate)) {
+      trace.entries.push(traceEntry(candidate, null, "excluded", "invalid_coordinate"));
+      continue;
+    }
+    const distanceMetersExact = routeDistanceKm(
+      { latitude: input.meetingPoint!.coordinates[0], longitude: input.meetingPoint!.coordinates[1] },
+      candidate,
+    ) * 1_000;
+    const distanceMeters = Math.round(distanceMetersExact);
+    if (distanceMetersExact > MEETING_OPPORTUNITY_MAX_RADIUS_METERS) {
+      trace.entries.push(traceEntry(candidate, distanceMeters, "excluded", "outside_radius"));
+      continue;
+    }
+    accepted.push({ candidate, distanceMeters, score: candidate.finalPlannerContribution ?? candidate.score, coordinateKey: coordinateKey(candidate) });
+  }
+  return accepted;
+}
+
+function deduplicateAcceptedMeetingOpportunities(
+  accepted: AcceptedOpportunity[],
+  trace: MeetingOpportunityTrace,
+): AcceptedOpportunity[] {
+  const uniqueByCoordinate = new Map<string, AcceptedOpportunity>();
+  for (const item of accepted) {
+    const existing = uniqueByCoordinate.get(item.coordinateKey);
+    if (!existing || compareAcceptedOpportunities(item, existing) < 0) {
+      if (existing) trace.entries.push(traceEntry(existing.candidate, existing.distanceMeters, "excluded", "duplicate_coordinate"));
+      uniqueByCoordinate.set(item.coordinateKey, item);
+    } else {
+      trace.entries.push(traceEntry(item.candidate, item.distanceMeters, "excluded", "duplicate_coordinate"));
+    }
+  }
+  return [...uniqueByCoordinate.values()].sort(compareAcceptedOpportunities);
+}
+
 export function buildMeetingOpportunities(input: {
   meetingPoint: MeetingPointProjection | null | undefined;
   candidates: readonly RoutePlannerCandidate[];
@@ -166,76 +232,8 @@ export function buildMeetingOpportunities(input: {
       ?.filter(validCoordinate)
       .map(coordinateKey),
   );
-  const accepted: AcceptedOpportunity[] = [];
-  const seenCandidateIds = new Set<string>();
-
-  for (const candidate of input.candidates) {
-    if (seenCandidateIds.has(candidate.id)) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", "duplicate_candidate"));
-      continue;
-    }
-    seenCandidateIds.add(candidate.id);
-    const policyReason = safetyPolicyReason(candidate);
-    if (policyReason) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", policyReason));
-      continue;
-    }
-    if (
-      mainStopIds.has(candidate.id) ||
-      (validCoordinate(candidate) && mainStopCoordinateKeys.has(coordinateKey(candidate)))
-    ) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", "already_a_main_stop"));
-      continue;
-    }
-    if (!isRoutePlannerCandidateEligible(candidate)) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", "not_admissible"));
-      continue;
-    }
-    if (!hasReliableSafetyAndAccessibility(candidate)) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", "safety_or_accessibility_unknown"));
-      continue;
-    }
-    if (!validCoordinate(candidate)) {
-      trace.entries.push(traceEntry(candidate, null, "excluded", "invalid_coordinate"));
-      continue;
-    }
-
-    const distanceMetersExact = routeDistanceKm(
-      { latitude: input.meetingPoint.coordinates[0], longitude: input.meetingPoint.coordinates[1] },
-      candidate,
-    ) * 1_000;
-    const distanceMeters = Math.round(distanceMetersExact);
-    if (distanceMetersExact > MEETING_OPPORTUNITY_MAX_RADIUS_METERS) {
-      trace.entries.push(traceEntry(candidate, distanceMeters, "excluded", "outside_radius"));
-      continue;
-    }
-    accepted.push({
-      candidate,
-      distanceMeters,
-      score: candidate.finalPlannerContribution ?? candidate.score,
-      coordinateKey: coordinateKey(candidate),
-    });
-  }
-
-  const uniqueByCoordinate = new Map<string, AcceptedOpportunity>();
-  const duplicateAccepted: AcceptedOpportunity[] = [];
-  for (const item of accepted) {
-    const existing = uniqueByCoordinate.get(item.coordinateKey);
-    if (!existing) {
-      uniqueByCoordinate.set(item.coordinateKey, item);
-      continue;
-    }
-    if (compareAcceptedOpportunities(item, existing) < 0) {
-      uniqueByCoordinate.set(item.coordinateKey, item);
-      duplicateAccepted.push(existing);
-    } else {
-      duplicateAccepted.push(item);
-    }
-  }
-  for (const duplicate of duplicateAccepted) {
-    trace.entries.push(traceEntry(duplicate.candidate, duplicate.distanceMeters, "excluded", "duplicate_coordinate"));
-  }
-  const uniqueAccepted = [...uniqueByCoordinate.values()].sort(compareAcceptedOpportunities);
+  const accepted = collectAcceptedMeetingOpportunities(input, trace, mainStopIds, mainStopCoordinateKeys);
+  const uniqueAccepted = deduplicateAcceptedMeetingOpportunities(accepted, trace);
 
   const opportunities = uniqueAccepted.slice(0, MEETING_OPPORTUNITY_MAX_COUNT).map(({ candidate, distanceMeters }) => {
     const source = sourceFor(candidate);

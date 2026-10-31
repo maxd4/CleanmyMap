@@ -119,18 +119,37 @@ function buildMonthlyUsageNotes(
   return notes;
 }
 
+function isSnapshotInGeneratedWindow(
+  snapshot: EnvironmentalImpactCodexUsageWeeklySnapshotRecord,
+  generatedAtMs: number,
+): boolean {
+  if (!snapshot.weekStart || !Number.isFinite(generatedAtMs)) return Boolean(snapshot.weekStart);
+  const weekStartMs = new Date(`${snapshot.weekStart}T00:00:00.000Z`).getTime();
+  return Number.isFinite(weekStartMs) && weekStartMs <= generatedAtMs;
+}
+
+function calculateUsageConfidence(
+  snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
+): number {
+  return Math.min(
+    96,
+    Math.max(
+      50,
+      round6(
+        snapshots.reduce((acc, snapshot) => acc + snapshot.confidencePercent, 0) /
+          snapshots.length - Math.max(0, 6 - snapshots.length) * 1.5,
+      ),
+    ),
+  );
+}
+
 export function buildCodexMonthlyUsageEstimate(
   snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
   generatedAt = new Date().toISOString(),
 ): EnvironmentalImpactCodexUsageMonthlyEstimate {
   const generatedAtMs = new Date(generatedAt).getTime();
   const sortedSnapshots = [...snapshots]
-    .filter((snapshot) => {
-      if (!snapshot.weekStart) return false;
-      if (!Number.isFinite(generatedAtMs)) return true;
-      const weekStartMs = new Date(`${snapshot.weekStart}T00:00:00.000Z`).getTime();
-      return Number.isFinite(weekStartMs) && weekStartMs <= generatedAtMs;
-    })
+    .filter((snapshot) => isSnapshotInGeneratedWindow(snapshot, generatedAtMs))
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
   const recentSnapshots = sortedSnapshots.slice(-4);
 
@@ -143,17 +162,7 @@ export function buildCodexMonthlyUsageEstimate(
   const source: EnvironmentalImpactCodexUsageMonthlyEstimate["source"] =
     sourceKinds.size > 1 ? "mixed" : recentSnapshots[0].source;
   const totals = sumMonthlyUsageTotals(recentSnapshots);
-  const confidencePercent = Math.min(
-    96,
-    Math.max(
-      50,
-      round6(
-        recentSnapshots.reduce((acc, snapshot) => acc + snapshot.confidencePercent, 0) /
-          recentSnapshots.length -
-          Math.max(0, 6 - recentSnapshots.length) * 1.5,
-      ),
-    ),
-  );
+  const confidencePercent = calculateUsageConfidence(recentSnapshots);
 
   return {
     generatedAt,

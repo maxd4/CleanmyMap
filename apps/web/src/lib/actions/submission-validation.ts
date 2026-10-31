@@ -141,29 +141,9 @@ export function getVolunteerActionValidationIssues(
       message: compositionMessage,
     });
   }
-  const hasWasteMeasurement =
-    typeof payload.wasteKg === "number" && Number.isFinite(payload.wasteKg);
-  const hasAnyCigaretteButtsMeasurement =
-    hasCigaretteButtsMeasurement(payload.cigaretteButtsMeasurements) ||
-    (typeof payload.cigaretteButts === "number" &&
-      Number.isFinite(payload.cigaretteButts));
-  const hasCigaretteButtsWeightMeasurement =
-    typeof payload.cigaretteButtsKg === "number" &&
-    Number.isFinite(payload.cigaretteButtsKg);
-  const hasLegacyCigaretteButtsWeightMeasurement =
-    typeof payload.wasteBreakdown?.megotsKg === "number" &&
-    Number.isFinite(payload.wasteBreakdown.megotsKg);
+  const measurements = getVolunteerMeasurementFlags(payload);
 
-  if (
-    !compositionMessage &&
-    hasCompleteCategoryData &&
-    participation?.adultCount !==
-      deriveAdultCountFromTotal({
-        volunteersCount: payload.volunteersCount,
-        childrenCount: participation?.childrenCount,
-        retiredCount: participation?.retiredCount,
-      })
-  ) {
+  if (hasInconsistentAdultCount(payload, participation, compositionMessage, hasCompleteCategoryData)) {
     issues.push({
       field: "volunteerParticipation",
       message:
@@ -172,10 +152,10 @@ export function getVolunteerActionValidationIssues(
   }
 
   if (
-    !hasWasteMeasurement &&
-    !hasAnyCigaretteButtsMeasurement &&
-    !hasCigaretteButtsWeightMeasurement &&
-    !hasLegacyCigaretteButtsWeightMeasurement
+    !measurements.hasWasteMeasurement &&
+    !measurements.hasAnyCigaretteButtsMeasurement &&
+    !measurements.hasCigaretteButtsWeightMeasurement &&
+    !measurements.hasLegacyCigaretteButtsWeightMeasurement
   ) {
     issues.push({
       field: "wasteKg",
@@ -185,4 +165,29 @@ export function getVolunteerActionValidationIssues(
   }
 
   return issues;
+}
+
+function hasInconsistentAdultCount(
+  payload: VolunteerActionSubmissionLike,
+  participation: ReturnType<typeof normalizeVolunteerParticipation> | null,
+  compositionMessage: string | null,
+  hasCompleteCategoryData: boolean,
+): boolean {
+  if (compositionMessage || !hasCompleteCategoryData || !participation) return false;
+  return participation.adultCount !== deriveAdultCountFromTotal({
+    volunteersCount: payload.volunteersCount,
+    childrenCount: participation.childrenCount,
+    retiredCount: participation.retiredCount,
+  });
+}
+
+function getVolunteerMeasurementFlags(payload: VolunteerActionSubmissionLike) {
+  return {
+    hasWasteMeasurement: typeof payload.wasteKg === "number" && Number.isFinite(payload.wasteKg),
+    hasAnyCigaretteButtsMeasurement: hasCigaretteButtsMeasurement(payload.cigaretteButtsMeasurements) ||
+      (typeof payload.cigaretteButts === "number" && Number.isFinite(payload.cigaretteButts)),
+    hasCigaretteButtsWeightMeasurement: typeof payload.cigaretteButtsKg === "number" && Number.isFinite(payload.cigaretteButtsKg),
+    hasLegacyCigaretteButtsWeightMeasurement: typeof payload.wasteBreakdown?.megotsKg === "number" &&
+      Number.isFinite(payload.wasteBreakdown.megotsKg),
+  };
 }

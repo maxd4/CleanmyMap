@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useMemo } from "react";
 import {
   CircleMarker,
@@ -98,6 +97,241 @@ function RouteOriginPicker({
   return null;
 }
 
+type RouteMapProps = {
+  stops: RouteStop[];
+  routeGeometry: RouteGeometry;
+  meetingPoint?: MeetingPointProjection | null;
+  groupRoutes?: RouteGroupRoute[];
+  representationMode?: RouteMultiRouteDisplayMode;
+  selectedGroupIndex?: number | null;
+  selectedStopId?: string | null;
+  onSelectStop?: (stopId: string) => void;
+  origin?: RouteResponseOrigin | null;
+  onSelectOrigin?: (origin: RouteRecommendationOrigin) => void;
+  onClearOrigin?: () => void;
+  fr: boolean;
+};
+
+type RouteMapRenderProps = Omit<RouteMapProps, "groupRoutes" | "representationMode" | "selectedGroupIndex" | "selectedStopId" | "onSelectStop"> & {
+  groupRoutes: RouteGroupRoute[];
+  representationMode: RouteMultiRouteDisplayMode;
+  selectedGroupIndex: number | null;
+  selectedStopId: string | null;
+  onSelectStop?: (stopId: string) => void;
+};
+
+function RouteMapAnchors({ groupRoutes, visibleGroupRoutes, stops, selectedStopId }: Pick<RouteMapRenderProps, "groupRoutes" | "stops" | "selectedStopId"> & { visibleGroupRoutes: RouteGroupRoute[] }) {
+  return <>{(groupRoutes.length > 1 ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop) => ({ group, stop }))) : stops.map((stop) => ({ group: null, stop }))).map(({ group, stop }) => <CircleMarker key={`anchor-${group?.groupIndex ?? "route"}-${stop.id}`} center={[stop.latitude, stop.longitude]} radius={selectedStopId === stop.id ? 13 : 9} pathOptions={{ color: "#064e3b", fillColor: "#6ee7b7", fillOpacity: selectedStopId === stop.id ? 0.25 : 0.12, weight: 2 }} interactive={false} />)}</>;
+}
+
+function RouteMapOrigin({ origin, fr, onClearOrigin }: Pick<RouteMapRenderProps, "origin" | "fr" | "onClearOrigin">) {
+  if (!origin) return null;
+  const label = origin.source === "map"
+    ? (fr ? "Point choisi sur la carte" : "Point chosen on the map")
+    : (fr ? "Point de départ utilisé" : "Starting point used");
+  return <Marker position={[origin.latitude, origin.longitude]} icon={buildOriginIcon()}>
+    <Tooltip direction="top" offset={[0, -12]}>{label}</Tooltip>
+    <Popup>
+      {label}
+      {onClearOrigin ? <button type="button" onClick={onClearOrigin}>{fr ? "Réinitialiser" : "Reset"}</button> : null}
+    </Popup>
+  </Marker>;
+}
+
+function RouteMapLayers({
+  stops,
+  routeGeometry,
+  meetingPoint,
+  groupRoutes,
+  representationMode,
+  selectedGroupIndex,
+  selectedStopId,
+  onSelectStop,
+  origin,
+  onSelectOrigin,
+  onClearOrigin,
+  fr,
+  visibleGroupRoutes,
+  mapCoordinates,
+  routeCoordinates,
+}: RouteMapRenderProps & {
+  visibleGroupRoutes: RouteGroupRoute[];
+  mapCoordinates: [number, number][];
+  routeCoordinates: [number, number][];
+}) {
+  return (
+    <>
+      <RouteMapViewport coordinates={mapCoordinates} />
+      {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
+      <RouteMapOrigin origin={origin} fr={fr} onClearOrigin={onClearOrigin} />
+      {(groupRoutes.length > 1
+        ? visibleGroupRoutes.flatMap((group) => group.meetingPoint ? [{ groupIndex: group.groupIndex, meetingPoint: group.meetingPoint }] : [])
+        : meetingPoint ? [{ groupIndex: null, meetingPoint }] : []
+      ).map(({ groupIndex, meetingPoint: point }) => (
+        <CircleMarker
+          key={`meeting-point-${groupIndex ?? "route"}`}
+          center={point.coordinates}
+          radius={8}
+          pathOptions={{ color: "#78350f", fillColor: "#fbbf24", fillOpacity: 0.95, weight: 3 }}
+        >
+          <Tooltip direction="top" offset={[0, -8]}>
+            {fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}
+          </Tooltip>
+          <Popup>
+            <strong>{fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}</strong>
+            <br />
+            {point.cumulativeDistanceKm === null ? (fr ? "Distance relative indisponible" : "Relative distance unavailable") : `${point.cumulativeDistanceKm.toFixed(2)} km ${fr ? "depuis le départ" : "from start"}`}
+            <br />
+            {point.estimatedDurationMinutes === null ? (fr ? "Temps relatif indisponible" : "Relative time unavailable") : `${Math.round(point.estimatedDurationMinutes)} min ${fr ? "depuis le départ" : "from start"}`}
+          </Popup>
+        </CircleMarker>
+      ))}
+      {groupRoutes.length > 1
+        ? visibleGroupRoutes.map((group) => {
+            const visualStyle = getRouteGroupVisualStyle(group.groupIndex, representationMode);
+            return group.routeGeometry.coordinates.length >= 2 ? (
+              <Polyline
+                key={`group-route-${group.groupIndex}`}
+                positions={group.routeGeometry.coordinates}
+                pathOptions={{
+                  ...visualStyle,
+                  weight: selectedGroupIndex === group.groupIndex ? 7 : 5,
+                  opacity: selectedGroupIndex === null ? 0.82 : selectedGroupIndex === group.groupIndex ? 0.95 : 0.2,
+                  dashArray: group.routeGeometry.mode === "fallback"
+                    ? visualStyle.dashArray ?? "10 10"
+                    : visualStyle.dashArray,
+                }}
+              >
+                <Tooltip sticky>
+                  {fr ? `Groupe ${group.groupIndex} · ${group.travelDistanceKm.toFixed(2)} km · ${group.travelMinutes} min` : `Group ${group.groupIndex} · ${group.travelDistanceKm.toFixed(2)} km · ${group.travelMinutes} min`}
+                </Tooltip>
+              </Polyline>
+            ) : null;
+          })
+        : routeCoordinates.length >= 2 ? (
+        <Polyline
+          positions={routeCoordinates}
+          pathOptions={
+            routeGeometry.mode === "network"
+              ? { color: "#34d399", weight: 5, opacity: 0.9 }
+              : {
+                  color: "#fbbf24",
+                  weight: 5,
+                  opacity: 0.95,
+                  dashArray: "10 10",
+                }
+          }
+        >
+          <Tooltip sticky>
+            {routeGeometry.mode === "network"
+              ? fr
+                ? "Tracé suivant le réseau routable"
+                : "Network route"
+              : fr
+                ? "Tracé estimé entre les arrêts"
+                : "Estimated line between stops"}
+          </Tooltip>
+        </Polyline>
+      ) : null}
+      {(groupRoutes.length > 1
+        ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop, index) => ({ group, stop, index })))
+        : stops.map((stop, index) => ({ group: null, stop, index }))).map(({ group, stop, index }) => {
+        const selected = selectedStopId === stop.id;
+        return (
+          <Marker
+            key={`${group?.groupIndex ?? "route"}-${stop.id}`}
+            position={[stop.latitude, stop.longitude]}
+            icon={buildStopIcon(index, selected)}
+            eventHandlers={{
+              click: () => onSelectStop?.(stop.id),
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -12]}>
+              {`${group ? `G${group.groupIndex} · ` : ""}${index + 1}. ${stop.label}`}
+            </Tooltip>
+            <Popup>
+              <strong>{index + 1}. {stop.label}</strong>
+              <br />
+              {stop.segmentKm.toFixed(2)} km · {stop.estimatedMinutes} min
+            </Popup>
+          </Marker>
+        );
+      })}
+        <RouteMapAnchors groupRoutes={groupRoutes} visibleGroupRoutes={visibleGroupRoutes} stops={stops} selectedStopId={selectedStopId} />
+    </>
+  );
+}
+
+
+function RouteMapModeLabel({ groupRoutes, visibleGroupRoutes, routeGeometry, fr }: { groupRoutes: RouteGroupRoute[]; visibleGroupRoutes: RouteGroupRoute[]; routeGeometry: RouteGeometry; fr: boolean }) {
+  return <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/15 bg-slate-950/80 px-3 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
+    {groupRoutes.length > 1 ? `${fr ? "Boucles coordonnées" : "Coordinated loops"} · ${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau" : "network") : visibleGroupRoutes.some(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau + estimation" : "network + estimated") : (fr ? "estimées" : "estimated")}` : routeGeometry.mode === "network" ? `${fr ? "Réseau" : "Network"} · ${routeGeometry.provider.toUpperCase()} · ${fr ? "profil configuré" : "configured profile"}: ${routeGeometry.profile ?? "n/a"}` : fr ? "Itinéraire estimé · réseau indisponible" : "Estimated route · network unavailable"}
+  </div>;
+}
+
+function RouteMapProviderNotice({ routeGeometry }: { routeGeometry: RouteGeometry }) {
+  if (routeGeometry.mode !== "network" || routeGeometry.provider !== "fossgis-osrm") return null;
+  return <p className="border-t border-white/10 bg-slate-950/70 px-4 py-3 text-xs text-slate-200">Routage piéton FOSSGIS / <a className="underline decoration-emerald-300 underline-offset-2" href="https://www.openstreetmap.org" rel="noreferrer" target="_blank">OpenStreetMap</a> · <a className="underline decoration-emerald-300 underline-offset-2" href="https://www.openstreetmap.org/fixthemap" rel="noreferrer" target="_blank">Corriger la carte</a></p>;
+}
+
+function RouteMapCanvas({
+  stops,
+  routeGeometry,
+  meetingPoint,
+  groupRoutes,
+  representationMode,
+  selectedGroupIndex,
+  selectedStopId,
+  onSelectStop,
+  origin,
+  onSelectOrigin,
+  onClearOrigin,
+  fr,
+  visibleGroupRoutes,
+  mapCoordinates,
+  routeCoordinates,
+  center,
+}: RouteMapRenderProps & {
+  visibleGroupRoutes: RouteGroupRoute[];
+  mapCoordinates: [number, number][];
+  routeCoordinates: [number, number][];
+  center: [number, number];
+}) {  return (
+    <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[rgba(10,31,50,0.98)] shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
+      <RouteMapModeLabel groupRoutes={groupRoutes} visibleGroupRoutes={visibleGroupRoutes} routeGeometry={routeGeometry} fr={fr} />
+      <MapContainer
+        center={center}
+        zoom={13}
+        scrollWheelZoom={false}
+        className="h-[430px] w-full"
+      >
+        <TileLayer
+          attribution={CARTO_BASEMAPS.light.attribution}
+          url={CARTO_BASEMAPS.light.url}
+          crossOrigin="anonymous"
+        />
+        <RouteMapLayers
+          stops={stops}
+          routeGeometry={routeGeometry}
+          meetingPoint={meetingPoint}
+          groupRoutes={groupRoutes}
+          representationMode={representationMode}
+          selectedGroupIndex={selectedGroupIndex}
+          selectedStopId={selectedStopId}
+          onSelectStop={onSelectStop}
+          origin={origin}
+          onSelectOrigin={onSelectOrigin}
+          onClearOrigin={onClearOrigin}
+          fr={fr}
+          visibleGroupRoutes={visibleGroupRoutes}
+          mapCoordinates={mapCoordinates}
+          routeCoordinates={routeCoordinates}
+        />
+      </MapContainer>
+      <RouteMapProviderNotice routeGeometry={routeGeometry} />
+    </section>
+  );
+}
 export function RouteMap({
   stops,
   routeGeometry,
@@ -111,20 +345,7 @@ export function RouteMap({
   onSelectOrigin,
   onClearOrigin,
   fr,
-}: {
-  stops: RouteStop[];
-  routeGeometry: RouteGeometry;
-  meetingPoint?: MeetingPointProjection | null;
-  groupRoutes?: RouteGroupRoute[];
-  representationMode?: RouteMultiRouteDisplayMode;
-  selectedGroupIndex?: number | null;
-  selectedStopId?: string | null;
-  onSelectStop?: (stopId: string) => void;
-  origin?: RouteResponseOrigin | null;
-  onSelectOrigin?: (origin: RouteRecommendationOrigin) => void;
-  onClearOrigin?: () => void;
-  fr: boolean;
-}) {
+}: RouteMapProps) {
   const visibleGroupRoutes = selectedGroupIndex === null
     ? groupRoutes
     : groupRoutes.filter(({ groupIndex }) => groupIndex === selectedGroupIndex);
@@ -156,193 +377,22 @@ export function RouteMap({
     ? [origin.latitude, origin.longitude] as [number, number]
     : routeCoordinates[0] ?? EMPTY_CENTER;
 
-  return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[rgba(10,31,50,0.98)] shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-      <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/15 bg-slate-950/80 px-3 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-        {groupRoutes.length > 1
-          ? `${fr ? "Boucles coordonnées" : "Coordinated loops"} · ${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau" : "network") : visibleGroupRoutes.some(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau + estimation" : "network + estimated") : (fr ? "estimées" : "estimated")}`
-          : routeGeometry.mode === "network"
-          ? `${fr ? "Réseau" : "Network"} · ${routeGeometry.provider.toUpperCase()} · ${fr ? "profil configuré" : "configured profile"}: ${routeGeometry.profile ?? "n/a"}`
-          : fr
-            ? "Itinéraire estimé · réseau indisponible"
-            : "Estimated route · network unavailable"}
-      </div>
-      <MapContainer
-        center={center}
-        zoom={13}
-        scrollWheelZoom={false}
-        className="h-[430px] w-full"
-      >
-        <TileLayer
-          attribution={CARTO_BASEMAPS.light.attribution}
-          url={CARTO_BASEMAPS.light.url}
-          crossOrigin="anonymous"
-        />
-        <RouteMapViewport coordinates={mapCoordinates} />
-        {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
-        {origin ? (
-          <Marker
-            position={[origin.latitude, origin.longitude]}
-            icon={buildOriginIcon()}
-          >
-            <Tooltip direction="top" offset={[0, -12]}>
-              {origin.source === "map"
-                ? fr
-                  ? "Point choisi sur la carte"
-                  : "Point chosen on the map"
-                : fr
-                  ? "Point de départ utilisé"
-                  : "Starting point used"}
-            </Tooltip>
-            <Popup>
-              {origin.source === "map"
-                ? fr
-                  ? "Point choisi sur la carte"
-                  : "Point chosen on the map"
-                : fr
-                  ? "Point de départ utilisé"
-                  : "Starting point used"}
-              {onClearOrigin ? (
-                <button type="button" onClick={onClearOrigin}>
-                  {fr ? "Réinitialiser" : "Reset"}
-                </button>
-              ) : null}
-            </Popup>
-          </Marker>
-        ) : null}
-        {(groupRoutes.length > 1
-          ? visibleGroupRoutes.flatMap((group) => group.meetingPoint ? [{ groupIndex: group.groupIndex, meetingPoint: group.meetingPoint }] : [])
-          : meetingPoint ? [{ groupIndex: null, meetingPoint }] : []
-        ).map(({ groupIndex, meetingPoint: point }) => (
-          <CircleMarker
-            key={`meeting-point-${groupIndex ?? "route"}`}
-            center={point.coordinates}
-            radius={8}
-            pathOptions={{ color: "#78350f", fillColor: "#fbbf24", fillOpacity: 0.95, weight: 3 }}
-          >
-            <Tooltip direction="top" offset={[0, -8]}>
-              {fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}
-            </Tooltip>
-            <Popup>
-              <strong>{fr ? "Rendez-vous intermédiaire" : "Intermediate meeting point"}</strong>
-              <br />
-              {point.cumulativeDistanceKm === null ? (fr ? "Distance relative indisponible" : "Relative distance unavailable") : `${point.cumulativeDistanceKm.toFixed(2)} km ${fr ? "depuis le départ" : "from start"}`}
-              <br />
-              {point.estimatedDurationMinutes === null ? (fr ? "Temps relatif indisponible" : "Relative time unavailable") : `${Math.round(point.estimatedDurationMinutes)} min ${fr ? "depuis le départ" : "from start"}`}
-            </Popup>
-          </CircleMarker>
-        ))}
-        {groupRoutes.length > 1
-          ? visibleGroupRoutes.map((group) => {
-              const visualStyle = getRouteGroupVisualStyle(group.groupIndex, representationMode);
-              return group.routeGeometry.coordinates.length >= 2 ? (
-                <Polyline
-                  key={`group-route-${group.groupIndex}`}
-                  positions={group.routeGeometry.coordinates}
-                  pathOptions={{
-                    ...visualStyle,
-                    weight: selectedGroupIndex === group.groupIndex ? 7 : 5,
-                    opacity: selectedGroupIndex === null ? 0.82 : selectedGroupIndex === group.groupIndex ? 0.95 : 0.2,
-                    dashArray: group.routeGeometry.mode === "fallback"
-                      ? visualStyle.dashArray ?? "10 10"
-                      : visualStyle.dashArray,
-                  }}
-                >
-                  <Tooltip sticky>
-                    {fr ? `Groupe ${group.groupIndex} · ${group.travelDistanceKm.toFixed(2)} km · ${group.travelMinutes} min` : `Group ${group.groupIndex} · ${group.travelDistanceKm.toFixed(2)} km · ${group.travelMinutes} min`}
-                  </Tooltip>
-                </Polyline>
-              ) : null;
-            })
-          : routeCoordinates.length >= 2 ? (
-          <Polyline
-            positions={routeCoordinates}
-            pathOptions={
-              routeGeometry.mode === "network"
-                ? { color: "#34d399", weight: 5, opacity: 0.9 }
-                : {
-                    color: "#fbbf24",
-                    weight: 5,
-                    opacity: 0.95,
-                    dashArray: "10 10",
-                  }
-            }
-          >
-            <Tooltip sticky>
-              {routeGeometry.mode === "network"
-                ? fr
-                  ? "Tracé suivant le réseau routable"
-                  : "Network route"
-                : fr
-                  ? "Tracé estimé entre les arrêts"
-                  : "Estimated line between stops"}
-            </Tooltip>
-          </Polyline>
-        ) : null}
-        {(groupRoutes.length > 1
-          ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop, index) => ({ group, stop, index })))
-          : stops.map((stop, index) => ({ group: null, stop, index }))).map(({ group, stop, index }) => {
-          const selected = selectedStopId === stop.id;
-          return (
-            <Marker
-              key={`${group?.groupIndex ?? "route"}-${stop.id}`}
-              position={[stop.latitude, stop.longitude]}
-              icon={buildStopIcon(index, selected)}
-              eventHandlers={{
-                click: () => onSelectStop?.(stop.id),
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -12]}>
-                {`${group ? `G${group.groupIndex} · ` : ""}${index + 1}. ${stop.label}`}
-              </Tooltip>
-              <Popup>
-                <strong>{index + 1}. {stop.label}</strong>
-                <br />
-                {stop.segmentKm.toFixed(2)} km · {stop.estimatedMinutes} min
-              </Popup>
-            </Marker>
-          );
-        })}
-        {(groupRoutes.length > 1
-          ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop) => ({ group, stop })))
-          : stops.map((stop) => ({ group: null, stop }))).map(({ group, stop }) => (
-          <CircleMarker
-            key={`anchor-${group?.groupIndex ?? "route"}-${stop.id}`}
-            center={[stop.latitude, stop.longitude]}
-            radius={selectedStopId === stop.id ? 13 : 9}
-            pathOptions={{
-              color: "#064e3b",
-              fillColor: "#6ee7b7",
-              fillOpacity: selectedStopId === stop.id ? 0.25 : 0.12,
-              weight: 2,
-            }}
-            interactive={false}
-          />
-        ))}
-      </MapContainer>
-      {routeGeometry.mode === "network" &&
-      routeGeometry.provider === "fossgis-osrm" ? (
-        <p className="border-t border-white/10 bg-slate-950/70 px-4 py-3 text-xs text-slate-200">
-          Routage piéton FOSSGIS /{" "}
-          <a
-            className="underline decoration-emerald-300 underline-offset-2"
-            href="https://www.openstreetmap.org"
-            rel="noreferrer"
-            target="_blank"
-          >
-            OpenStreetMap
-          </a>{" "}
-          ·{" "}
-          <a
-            className="underline decoration-emerald-300 underline-offset-2"
-            href="https://www.openstreetmap.org/fixthemap"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Corriger la carte
-          </a>
-        </p>
-      ) : null}
-    </section>
-  );
+  return <RouteMapCanvas
+    stops={stops}
+    routeGeometry={routeGeometry}
+    meetingPoint={meetingPoint}
+    groupRoutes={groupRoutes}
+    representationMode={representationMode}
+    selectedGroupIndex={selectedGroupIndex}
+    selectedStopId={selectedStopId}
+    onSelectStop={onSelectStop}
+    origin={origin}
+    onSelectOrigin={onSelectOrigin}
+    onClearOrigin={onClearOrigin}
+    fr={fr}
+    visibleGroupRoutes={visibleGroupRoutes}
+    mapCoordinates={mapCoordinates}
+    routeCoordinates={routeCoordinates}
+    center={center}
+  />;
 }
