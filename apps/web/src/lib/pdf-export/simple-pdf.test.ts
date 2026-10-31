@@ -10,7 +10,12 @@ import {
   buildOfficialReportHtml,
   renderOfficialMarkdown,
 } from "./official-report-html";
-import { UnsupportedPdfTextError } from "./simple-pdf-primitives";
+import {
+  buildDonutChartOps,
+  escapePdfText,
+  parseDonutChartBlock,
+  UnsupportedPdfTextError,
+} from "./simple-pdf-primitives";
 import {
   measureSimplePdfText,
   SIMPLE_PDF_TEXT_MAX_WIDTH,
@@ -149,6 +154,84 @@ function extractTextOperators(pdf: Uint8Array): PdfTextOperator[] {
 }
 
 describe("simple PDF export", () => {
+  it("escapes PDF delimiters, controls, WinAnsi glyphs and narrow no-break spaces", () => {
+    expect(escapePdfText("(A)\\B\tC\nD\u202f€—")).toBe("\\(A\\)\\\\B\\011C\\012D \\200\\227");
+    expect(() => escapePdfText("🙂")).toThrow(UnsupportedPdfTextError);
+    try {
+      escapePdfText("🙂");
+    } catch (error) {
+      expect(error).toMatchObject({ name: "UnsupportedPdfTextError", codePoint: 0x1f642 });
+    }
+  });
+
+  it("parses complete donut metadata and derives totals only when metadata is absent", () => {
+    const block = parseDonutChartBlock([
+      "@@CMBR_START|Pression terrain|Évolution",
+      "@@CMBR_META|2026-05|0|0",
+      "@@CMBR_ITEM|0|plastic|Plastique|2.5|50|1|1.5|60|4",
+      "@@CMBR_ITEM|1|other|Autre|bad|na|3|bad|na|bad",
+      "ignored",
+    ]);
+
+    expect(block).toMatchObject({
+      kind: "donut",
+      modeLabel: "Pression terrain",
+      title: "Évolution",
+      previousSnapshotMonth: "2026-05",
+      totalValue: 2.5,
+      previousTotalValue: 4,
+      items: [
+        { id: "0:plastic", value: 2.5, deltaPercent: 60, count: 4 },
+        { id: "1:other", value: 0, deltaPercent: null, previousValue: 3, count: 0 },
+      ],
+    });
+    expect(parseDonutChartBlock(["plain text"])).toBeNull();
+    expect(parseDonutChartBlock(["@@CMBR_START|Stockage"])).toMatchObject({
+      title: "Camembert mensuel",
+      items: [],
+      totalValue: 0,
+    });
+  });
+
+  it("produces bounded chart operations for byte and pressure charts, including legend pagination", () => {
+    const items = Array.from({ length: 11 }, (_, index) => ({
+      id: String(index),
+      label: `Zone ${index}`,
+      value: index === 0 ? 1024 ** 3 : index,
+      previousValue: index,
+      deltaValue: 0,
+      deltaPercent: null,
+      sharePercent: index,
+      count: index,
+    }));
+    const byteChart = buildDonutChartOps({
+      kind: "donut",
+      modeLabel: "Stockage",
+      title: "Volumes",
+      previousSnapshotMonth: "2026-04",
+      totalValue: 0,
+      previousTotalValue: 0,
+      items,
+    }, 595, 40, 760);
+    const pressureChart = buildDonutChartOps({
+      kind: "donut",
+      modeLabel: "Pression terrain",
+      title: "Pression",
+      previousSnapshotMonth: null,
+      totalValue: 0,
+      previousTotalValue: 0,
+      items: [{ ...items[0], value: 0, sharePercent: 0 }],
+    }, 595, 40, 760);
+
+    expect(byteChart.height).toBe(254);
+    expect(byteChart.ops.join("\n")).toContain("Compar\\351 \\340 2026-04");
+    expect(byteChart.ops.join("\n")).toContain("GB");
+    expect(byteChart.ops.join("\n")).not.toContain("Zone 9");
+    expect(pressureChart.height).toBe(180);
+    expect(pressureChart.ops.join("\n")).toContain("pts");
+    expect(pressureChart.ops.filter((operation) => operation === "Q").length).toBeGreaterThan(0);
+  });
+
   it("builds the expected report filename", () => {
     expect(
       buildPdfReportFilename({

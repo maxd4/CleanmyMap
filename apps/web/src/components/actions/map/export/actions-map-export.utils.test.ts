@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 import type { ActionObservedCoverage } from "@/lib/actions/types";
 import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
@@ -7,6 +7,7 @@ import {
   buildActionsMapGeoJsonFilename,
   buildActionsMapGeoJsonString,
   buildActionsMapPngFilename,
+  downloadBlob,
   toActionsMapCsvRows,
 } from "./actions-map-export.utils";
 
@@ -605,5 +606,124 @@ describe("actions map export utils", () => {
     expect(buildActionsMapGeoJsonFilename(date)).toContain("carte_actions_cmm_02-06-2026");
     expect(buildActionsMapGeoJsonFilename(date)).toContain(".geojson");
     expect(buildActionsMapPngFilename(date)).toContain(".png");
+  });
+
+  it("exports valid polygons and preserves their measured geometry without inventing a route", () => {
+    const contract = buildActionDataContract({
+      id: "action-polygon-export",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-06-02",
+      locationLabel: "Square test",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "manual",
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "Polygon",
+        coordinates: [[[2.34, 48.85], [2.35, 48.85], [2.35, 48.86], [2.34, 48.85]]],
+      }),
+    });
+
+    const documentValue = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: unknown; properties: Record<string, unknown> }>;
+    };
+
+    expect(documentValue.features[0]?.geometry).toEqual({
+      type: "Polygon",
+      coordinates: [[[2.34, 48.85], [2.35, 48.85], [2.35, 48.86], [2.34, 48.85]]],
+    });
+    expect(documentValue.features[0]?.properties).toMatchObject({
+      geometry_kind: "polygon",
+      geometry_source: "manual",
+      geometry_reality: "declared",
+      has_manual_drawing: true,
+    });
+  });
+
+  it.each([
+    ["partial polygon", { type: "Polygon", coordinates: [[[2.34, 48.85], [2.35, 95]]] }],
+    ["empty line", { type: "LineString", coordinates: [] }],
+    ["partial multiline", { type: "MultiLineString", coordinates: [[[2.34, 48.85], [2.35, 95]]] }],
+    ["unknown geometry", { type: "GeometryCollection", geometries: [] }],
+  ])("falls back to the location for %s instead of exporting invalid geometry", (_label, geometry) => {
+    const contract = buildActionDataContract({
+      id: `action-invalid-${_label.replaceAll(" ", "-")}`,
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-06-02",
+      locationLabel: "Repère",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "reference",
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: JSON.stringify(geometry),
+    });
+
+    const documentValue = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: unknown; properties: Record<string, unknown> }>;
+    };
+
+    expect(documentValue.features[0]?.geometry).toEqual({
+      type: "Point",
+      coordinates: [2.34, 48.85],
+    });
+    expect(documentValue.features[0]?.properties.geometry_source).toBe("fallback_point");
+  });
+
+  it("leaves a malformed geometry absent when no coordinates can support a fallback point", () => {
+    const contract = buildActionDataContract({
+      id: "action-malformed-without-location",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-06-02",
+      locationLabel: "Lieu sans position",
+      latitude: null,
+      longitude: null,
+      geometrySource: "manual",
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: "{malformed",
+    });
+
+    const documentValue = JSON.parse(buildActionsMapGeoJsonString([toActionMapItem(contract)])) as {
+      features: Array<{ geometry: unknown; properties: Record<string, unknown> }>;
+    };
+
+    expect(documentValue.features[0]?.geometry).toBeNull();
+    expect(documentValue.features[0]?.properties.geometry_kind).toBeNull();
+  });
+
+  it("downloads a real Blob with its filename and revokes the temporary object URL", () => {
+    const anchor = {
+      href: "",
+      download: "",
+      rel: "",
+      click: vi.fn(),
+      remove: vi.fn(),
+    };
+    const createObjectURL = vi.fn(() => "blob:actions-export");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => anchor),
+      body: { appendChild: vi.fn() },
+    });
+
+    const blob = new Blob(["export"], { type: "application/geo+json;charset=utf-8;" });
+    downloadBlob(blob, "carte_actions.geojson");
+
+    expect(createObjectURL).toHaveBeenCalledWith(blob);
+    expect(anchor).toMatchObject({
+      href: "blob:actions-export",
+      download: "carte_actions.geojson",
+      rel: "noopener",
+    });
+    expect(anchor.click).toHaveBeenCalledOnce();
+    expect(anchor.remove).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:actions-export");
+    vi.unstubAllGlobals();
   });
 });
