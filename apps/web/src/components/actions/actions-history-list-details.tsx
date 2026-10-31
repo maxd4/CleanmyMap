@@ -92,6 +92,7 @@ function ActionHistoryEvidenceSections({
     {selectedItem.record_type === "action" ? (
       <div className="mt-4">
         <ActionRetrospectivePanel
+          key={selectedItem.id}
           actionId={actionId}
           actionPhase={selectedItem.contract?.metadata.actionPhase}
           status={selectedItem.status}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import {
@@ -65,23 +65,37 @@ export function ActionRetrospectivePanel({
   const [draft, setDraft] = useState<ActionRetrospectiveDraftInput>(EMPTY_DRAFT);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [readStatus, setReadStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [readActionId, setReadActionId] = useState<string | null>(null);
   const [busy, setBusy] = useState<"save" | "publish" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const readRequestRef = useRef(0);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const requestId = ++readRequestRef.current;
+    setReadStatus("loading");
+    setReadActionId(null);
+    setDraft(EMPTY_DRAFT);
+    setPublishedAt(null);
+    setEditing(false);
+    setBusy(null);
+    setError(null);
+    setNotice(null);
     try {
       const result = await fetchActionRetrospective(actionId);
+      if (requestId !== readRequestRef.current) return;
       setDraft(draftFromEditor(result.retrospective));
       setPublishedAt(result.retrospective?.publishedAt ?? null);
       setEditing(!result.retrospective?.publishedAt);
+      setReadActionId(actionId);
+      setReadStatus("ready");
       setError(null);
     } catch (reason) {
+      if (requestId !== readRequestRef.current) return;
+      setReadActionId(actionId);
+      setReadStatus("error");
       setError(displayError(reason, "Le retour d'expérience est indisponible."));
-    } finally {
-      setLoading(false);
     }
   }, [actionId]);
 
@@ -89,51 +103,67 @@ export function ActionRetrospectivePanel({
     // The effect starts the authenticated read; the state updates represent its response/error lifecycle.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load().catch((reason: unknown) => {
+      setReadStatus("error");
+      setReadActionId(actionId);
       setError(displayError(reason, "Le retour d'expérience est indisponible."));
-      setLoading(false);
     });
-  }, [load]);
+    return () => {
+      readRequestRef.current += 1;
+    };
+  }, [actionId, load]);
 
   if (actionPhase !== "post_action_complete" || status === "rejected" || status === "cancelled") {
     return null;
   }
 
+  const readReady = readStatus === "ready" && readActionId === actionId;
+  const readFailed = readStatus === "error" && readActionId === actionId;
+
   const updateField = (key: DraftField, value: string) => {
+    if (!readReady) return;
     setDraft((current) => ({ ...current, [key]: value.length > 0 ? value : null }));
     setNotice(null);
   };
 
   const saveDraft = async () => {
+    if (!readReady) return;
+    const requestId = readRequestRef.current;
     setBusy("save");
     setNotice(null);
     try {
       const saved = await saveActionRetrospectiveDraft(actionId, draft);
+      if (requestId !== readRequestRef.current) return;
       setDraft(draftFromEditor(saved));
       setPublishedAt(saved.publishedAt);
       setEditing(Boolean(saved.publishedAt));
       setError(null);
       setNotice("Brouillon enregistré.");
     } catch (reason) {
+      if (requestId !== readRequestRef.current) return;
       setError(displayError(reason, "Le brouillon n'a pas pu être enregistré."));
     } finally {
-      setBusy(null);
+      if (requestId === readRequestRef.current) setBusy(null);
     }
   };
 
   const publishDraft = async () => {
+    if (!readReady) return;
+    const requestId = readRequestRef.current;
     setBusy("publish");
     setNotice(null);
     try {
       const published = await publishActionRetrospectiveDraft(actionId);
+      if (requestId !== readRequestRef.current) return;
       setDraft(draftFromEditor(published));
       setPublishedAt(published.publishedAt);
       setEditing(false);
       setError(null);
       setNotice("Retour d'expérience publié.");
     } catch (reason) {
+      if (requestId !== readRequestRef.current) return;
       setError(displayError(reason, "Le retour d'expérience n'a pas pu être publié."));
     } finally {
-      setBusy(null);
+      if (requestId === readRequestRef.current) setBusy(null);
     }
   };
 
@@ -148,8 +178,16 @@ export function ActionRetrospectivePanel({
               : "A declarative record of the action. It produces no score or ranking."}
           </p>
         </div>
-        {loading ? <p role="status" className="text-sm text-emerald-800">Chargement du brouillon…</p> : null}
-        {!loading ? (
+        {!readReady && !readFailed ? <p role="status" className="text-sm text-emerald-800">Chargement du brouillon…</p> : null}
+        {readFailed ? (
+          <div className="space-y-3">
+            <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">{error ?? "Le retour d'expérience est indisponible."}</p>
+            <CmmButton type="button" tone="secondary" variant="pill" onClick={() => { void load(); }}>
+              Réessayer
+            </CmmButton>
+          </div>
+        ) : null}
+        {readReady ? (
           <>
             <div className="space-y-3">
               {FIELDS.map((field) => (
@@ -174,7 +212,7 @@ export function ActionRetrospectivePanel({
             </div>
             <div className="flex flex-wrap gap-2">
               {!publishedAt || editing ? (
-                <CmmButton type="button" tone="secondary" variant="pill" disabled={busy !== null} onClick={() => { saveDraft().catch((reason: unknown) => setError(displayError(reason, "Le brouillon n'a pas pu être enregistré."))); }}>
+                <CmmButton type="button" tone="secondary" variant="pill" disabled={!readReady || busy !== null} onClick={() => { saveDraft().catch((reason: unknown) => setError(displayError(reason, "Le brouillon n'a pas pu être enregistré."))); }}>
                   {busy === "save" ? "Enregistrement…" : "Enregistrer le brouillon"}
                 </CmmButton>
               ) : (
@@ -183,7 +221,7 @@ export function ActionRetrospectivePanel({
                 </CmmButton>
               )}
               {!publishedAt ? (
-                <CmmButton type="button" tone="primary" variant="pill" disabled={busy !== null} onClick={() => { publishDraft().catch((reason: unknown) => setError(displayError(reason, "Le retour d'expérience n'a pas pu être publié."))); }}>
+                <CmmButton type="button" tone="primary" variant="pill" disabled={!readReady || busy !== null} onClick={() => { publishDraft().catch((reason: unknown) => setError(displayError(reason, "Le retour d'expérience n'a pas pu être publié."))); }}>
                   {busy === "publish" ? "Publication…" : "Publier"}
                 </CmmButton>
               ) : (
@@ -193,7 +231,7 @@ export function ActionRetrospectivePanel({
           </>
         ) : null}
         {notice ? <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{notice}</p> : null}
-        {error ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">{error}</p> : null}
+        {error && !readFailed ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">{error}</p> : null}
       </div>
     </CmmCard>
   );
