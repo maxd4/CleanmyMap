@@ -17,6 +17,7 @@ import {
 } from "./route-access";
 
 export const runtime = "nodejs";
+// Justification Vercel: the private draft/publication state is actor-scoped and must be revalidated on every request.
 export const dynamic = "force-dynamic";
 
 type RetrospectiveRouteContext = {

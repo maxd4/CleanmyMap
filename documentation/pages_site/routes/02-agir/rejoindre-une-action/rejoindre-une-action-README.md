@@ -446,6 +446,23 @@ Les propositions, acceptations et annulations pertinentes alimentent
 revalide le match et le destinataire au moment de chaque envoi. Le mécanisme
 `action_share_contact_requests` reste réservé au partage d'action.
 
+## Covoiturage privé
+
+Une carte d'action future affiche le panneau `Covoiturage` uniquement à un
+inscrit confirmé. Les formulaires proposent une zone territoriale reconnue,
+un horaire de départ, une capacité bornée et une note facultative ; aucune
+adresse exacte, coordonnée ou contact ne doit y être saisi. Les états de
+chargement, vide, erreur, trajet ouvert/fermé/annulé et demande
+pending/accepted/declined/withdrawn sont relus depuis l'API privée après
+chaque mutation.
+
+Le conducteur voit les demandes de son trajet et peut accepter ou refuser ; le
+serveur vérifie la capacité sous verrou avant toute acceptation. Le passager
+peut retirer une demande et, après acceptation, ouvrir le DM Chat existant
+avec le conducteur. L'annulation d'un trajet informe une seule fois les
+passagers acceptés. Aucun champ libre, identifiant Clerk ou contact n'est
+projeté dans une carte publique.
+
 ## Statut documentaire
 
 ```txt

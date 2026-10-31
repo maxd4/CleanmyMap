@@ -6,6 +6,8 @@ import {
   ACTION_RIDE_SEATS_TOTAL_RANGE,
   normalizeActionRideOriginZone,
   validateActionRideFreeText,
+  validateActionRideInput,
+  validateActionRideRequestInput,
 } from "./action-rides";
 
 describe("action ride server input contract [EXECUTED_BEHAVIOR]", () => {
@@ -42,5 +44,33 @@ describe("action ride server input contract [EXECUTED_BEHAVIOR]", () => {
     ["75001 Paris", "address_like"],
   ] as const)("rejects manifest personal detail %s", (value, reason) => {
     expect(validateActionRideFreeText(value)).toEqual({ ok: false, reason });
+  });
+
+  it("validates the complete ride and request payloads before persistence", () => {
+    expect(validateActionRideInput({
+      originZoneName: "Paris 1er",
+      departureAt: "2030-06-15T08:00:00+02:00",
+      seatsTotal: 8,
+      note: "Départ groupé",
+    })).toEqual({
+      ok: true,
+      value: {
+        originZoneName: "1er arrondissement",
+        departureAt: "2030-06-15T06:00:00.000Z",
+        seatsTotal: 8,
+        note: "Départ groupé",
+      },
+    });
+    expect(validateActionRideInput({
+      originZoneName: "Paris 1er",
+      departureAt: "2030-06-15T08:00:00+02:00",
+      seatsTotal: 9,
+      note: null,
+    })).toMatchObject({ ok: false, field: "seatsTotal" });
+    expect(validateActionRideRequestInput({ seatsRequested: 4, message: "Je viens avec un sac." })).toEqual({
+      ok: true,
+      value: { seatsRequested: 4, message: "Je viens avec un sac." },
+    });
+    expect(validateActionRideRequestInput({ seatsRequested: 0, message: null })).toMatchObject({ ok: false, field: "seatsRequested" });
   });
 });

@@ -41,6 +41,17 @@ manifestes, avec une information explicite dans l'interface. Ce filtre
 réduit le risque mais ne garantit pas à lui seul l'absence de toute donnée
 personnelle.
 
+Les routes `/api/actions/[actionId]/rides` et leurs sous-routes utilisent la
+même garde d'authentification avant le client privilégié, puis délèguent les
+mutations sensibles aux RPC server-only. Le conducteur est le seul à modifier,
+fermer, annuler ou décider d'une demande ; le demandeur est le seul à retirer
+la sienne. `accept_action_ride_request` verrouille toujours le trajet puis la
+demande, relit `action_ride_capacity` et rend l'acceptation atomique. Le
+contact DM n'est résolu qu'après une demande `accepted`, avec une cible
+explicite lorsque le conducteur a plusieurs passagers. Les réponses HTTP sont
+privées et sans cache ; elles ne contiennent ni identifiant Clerk brut, ni
+adresse, ni coordonnée, ni roster pour un tiers.
+
 ### Organisateur
 
 Un organisateur autorisé peut, selon le contrat de l'action :

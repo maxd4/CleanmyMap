@@ -167,11 +167,15 @@ active du même passager et trajet est refusée.
 
 `action_ride_capacity` est l'unique owner du calcul
 `seats_total - somme(seats_requested des demandes accepted)`. `seats_available`
-n'est pas persisté. La garde SQL verrouille le trajet avant de relire ce calcul
-et refuse toute acceptation ou réduction de capacité qui rendrait le résultat
-négatif ; la réservation et ses transitions AuthZ détaillées appartiennent au
-lot 6E2. Les participants, les inscriptions futures et les champs libres ne
-sont jamais projetés sur les surfaces publiques.
+n'est pas persisté. Les RPC server-only `accept_action_ride_request`,
+`decline_action_ride_request`, `withdraw_action_ride_request`,
+`transition_action_ride` et `update_action_ride_details` verrouillent le trajet
+avant la demande lorsqu'une réservation est concernée, relisent l'éligibilité
+canonique et refusent toute acceptation ou réduction de capacité qui rendrait
+le résultat négatif. Une annulation résout les demandes `pending` et notifie au
+plus une fois les passagers `accepted` dans la même transaction. Les
+participants, les inscriptions futures et les champs libres ne sont jamais
+projetés sur les surfaces publiques.
 
 La phase distingue durablement `action_registrations` (inscription future) de
 `action_participants` (participation finale). Seules les participations

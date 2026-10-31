@@ -11,6 +11,7 @@ import { ActionPracticalInformation } from "./rejoindre-un-formulaire-section.pr
 import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
 import { ActionBuddyPanel } from "./action-buddy-panel";
+import { ActionRidesPanel } from "./action-rides-panel";
 
 export function PillBadge({
   tone,
@@ -271,11 +272,14 @@ export function ActionCard({
       <ActionPracticalInformation info={item.practicalInfo} fr={fr} />
 
       {authenticated && isPreAction && item.joined && !item.awaitingApproval ? (
-        <ActionBuddyPanel
-          actionId={item.id}
-          fr={fr}
-          hasConfirmedFinalParticipation={item.hasConfirmedFinalParticipation}
-        />
+        <>
+          <ActionBuddyPanel
+            actionId={item.id}
+            fr={fr}
+            hasConfirmedFinalParticipation={item.hasConfirmedFinalParticipation}
+          />
+          {item.participationStatus === "confirmed" ? <ActionRidesPanel actionId={item.id} fr={fr} /> : null}
+        </>
       ) : null}
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">

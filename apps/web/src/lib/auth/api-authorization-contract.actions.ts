@@ -320,6 +320,88 @@ export const actionsAuthorizationContract = {
       evidenceScope: "method",
     },
   },
+  "actions/[actionId]/retrospective": {
+    GET: {
+      expected: "Authenticated action actor or authorized organizer reads the private retrospective draft",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadRetrospectiveWriteContext before the service projection",
+      evidence: ["requireAuthenticatedAccess", "loadRetrospectiveWriteContext", "loadActionRetrospectiveForActor"],
+      evidenceScope: "module",
+    },
+    PUT: {
+      expected: "Authenticated action actor or authorized organizer saves the private retrospective draft",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadRetrospectiveWriteContext + server schema validation before saveActionRetrospective",
+      evidence: ["requireAuthenticatedAccess", "loadRetrospectiveWriteContext", "parseJsonBodyWithValidation", "saveActionRetrospective"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authenticated action actor or authorized organizer publishes an eligible retrospective",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadRetrospectiveWriteContext before publishActionRetrospective",
+      evidence: ["requireAuthenticatedAccess", "loadRetrospectiveWriteContext", "publishActionRetrospective"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/[actionId]/rides": {
+    GET: {
+      expected: "Authenticated confirmed member reads only the private ride projection for a public future action",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + confirmed-registration/action-state checks before service-role read",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+    POST: {
+      expected: "Authenticated confirmed member creates their own bounded ride for an eligible future action",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + confirmed-registration/action-state checks + server payload validation",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+  },
+  "actions/[actionId]/rides/[rideId]": {
+    PATCH: {
+      expected: "Authenticated ride driver modifies or closes only their own ride under the canonical SQL guards",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + driver ownership in service/RPC + transactional update/transition",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+    DELETE: {
+      expected: "Authenticated ride driver cancels only their own ride and triggers idempotent passenger information",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + driver ownership in transition_action_ride; cancellation notification is transaction-scoped",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+  },
+  "actions/[actionId]/rides/[rideId]/requests": {
+    POST: {
+      expected: "Authenticated confirmed member creates only one active request on another member's eligible open ride",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + confirmed-registration/action-state checks + server payload validation and database uniqueness",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+  },
+  "actions/[actionId]/rides/[rideId]/requests/[requestId]": {
+    PATCH: {
+      expected: "Authenticated driver accepts/declines their ride requests or passenger withdraws their own request",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + request/ride ownership in server-only transactional RPC",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+  },
+  "actions/[actionId]/rides/[rideId]/contact": {
+    GET: {
+      expected: "Authenticated confirmed ride actor resolves only the accepted counterparty for an existing private DM",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "requireActionRequestAccess + confirmed membership + accepted request relationship before minimal recipient projection",
+      evidence: ["resolveRideAuth"],
+      handlerEvidence: ["resolveRideAuth"],
+    },
+  },
   "actions/invitations": {
     GET: {
       expected: "Authenticated recipient-only read of pending manual action invitations",
