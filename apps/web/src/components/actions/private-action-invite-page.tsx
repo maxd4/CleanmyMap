@@ -55,6 +55,7 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
       participationSource?: string | null;
     } | null;
     if (response.status === 401) {
+      setBusy(false);
       router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`);
       return;
     }
