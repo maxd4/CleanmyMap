@@ -98,4 +98,61 @@ describe("ActionNeedsPanel behavior", () => {
     await act(async () => { await retry?.props.onClick(); });
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
+
+  it("keeps expired needs terminal and hides management commands for public readers", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(response({
+      status: "ok",
+      items: [{ ...item, id: "expired", effectiveStatus: "expired", canManage: true, ownerUserId: "private-owner" }],
+      managerActions: [],
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<ActionNeedsPanel fr focusActionId={null} />); });
+    await act(async () => { await settle(); });
+
+    expect(text(renderer)).toContain("Expiré");
+    expect(text(renderer)).not.toContain("private-owner");
+    const commands = renderer.root.findAllByType("button").filter((button) =>
+      ["Modifier", "Accomplir", "Annuler"].includes(button.props.children),
+    );
+    expect(commands).toHaveLength(3);
+    expect(commands.every((button) => button.props.disabled === true)).toBe(true);
+  });
+
+  it("cancels a managed need and reloads the public projection", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ status: "ok", items: [item], managerActions: [{ id: "action-1", title: "Action propre", actionDate: "2099-01-01" }] }))
+      .mockResolvedValueOnce(response({ status: "updated", item: { ...item, status: "cancelled", effectiveStatus: "cancelled" } }))
+      .mockResolvedValueOnce(response({ status: "ok", items: [{ ...item, status: "cancelled", effectiveStatus: "cancelled" }], managerActions: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<ActionNeedsPanel fr focusActionId="action-1" />); });
+    await act(async () => { await settle(); });
+
+    const cancel = renderer.root.findAllByType("button").find((button) => button.props.children === "Annuler");
+    await act(async () => { await cancel?.props.onClick(); });
+    expect(fetchMock).toHaveBeenCalledWith("/api/community/needs/need-1", expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify({ operation: "cancel" }),
+    }));
+    expect(text(renderer)).toContain("Besoin mis à jour.");
+    expect(text(renderer)).toContain("Annulé");
+  });
+
+  it("recovers from an invalid public response through the retry action", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ status: "invalid", items: null, managerActions: null }))
+      .mockResolvedValueOnce(response({ status: "ok", items: [], managerActions: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<ActionNeedsPanel fr focusActionId={null} />); });
+    await act(async () => { await settle(); });
+    expect(text(renderer)).toContain("La réponse des besoins est invalide.");
+
+    const retry = renderer.root.findAllByType("button").find((button) => button.props.children === "Réessayer");
+    await act(async () => { await retry?.props.onClick(); });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(text(renderer)).toContain("Aucun besoin à afficher pour le moment.");
+    expect(text(renderer)).not.toContain("La réponse des besoins est invalide.");
+  });
 });
