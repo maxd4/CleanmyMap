@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createReactDomHarness, deferred } from "@/__tests__/support/action-behavior-test-helpers";
 import { TrashSpotterObservationForm } from "./quick-signalement-form";
 
 const createActionMock = vi.hoisted(() => vi.fn());
@@ -21,25 +21,10 @@ vi.mock("@/lib/browser/geolocation", () => ({ canRequestGeolocation: () => false
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return { promise, resolve, reject };
-}
-
-let root: Root | null = null;
-let host: HTMLDivElement | null = null;
+const harness = createReactDomHarness();
 
 function mount(isAuthenticated = true) {
-  host = document.createElement("div");
-  document.body.append(host);
-  root = createRoot(host);
-  act(() => root?.render(<TrashSpotterObservationForm initialLocation={{ lat: 48.8566, lng: 2.3522 }} isAuthenticated={isAuthenticated} signInHref="/sign-in" />));
-  return host;
+  return harness.mount(<TrashSpotterObservationForm initialLocation={{ lat: 48.8566, lng: 2.3522 }} isAuthenticated={isAuthenticated} signInHref="/sign-in" />);
 }
 
 function findButton(label: string): HTMLButtonElement {
@@ -48,18 +33,8 @@ function findButton(label: string): HTMLButtonElement {
   return candidate!;
 }
 
-async function flush() {
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-}
-
 afterEach(() => {
-  if (root) act(() => root?.unmount());
-  host?.remove();
-  root = null;
-  host = null;
+  harness.cleanup();
   vi.clearAllMocks();
   window.sessionStorage.clear();
 });
@@ -89,7 +64,7 @@ describe("TrashSpotterObservationForm behavior", () => {
     expect(createActionMock).toHaveBeenCalledTimes(1);
 
     created.resolve({ id: "spot-1" });
-    await flush();
+    await harness.flush();
     expect(mounted.textContent).toContain("Lieu propre signalé");
     expect(releaseMock).toHaveBeenCalledTimes(1);
   });
@@ -99,7 +74,7 @@ describe("TrashSpotterObservationForm behavior", () => {
     const mounted = mount(false);
     act(() => findButton("Lieu constaté propre").click());
     act(() => findButton("Signaler le lieu propre").click());
-    await flush();
+    await harness.flush();
 
     expect(createActionMock).not.toHaveBeenCalled();
     expect(mounted.textContent).toContain("Connectez-vous pour transmettre");
@@ -115,7 +90,7 @@ describe("TrashSpotterObservationForm behavior", () => {
 
     act(() => findButton("Lieu constaté propre").click());
     act(() => findButton("Signaler le lieu propre").click());
-    await flush();
+    await harness.flush();
 
     expect(mounted.textContent).toContain("Transmission échouée");
     expect(mounted.textContent).not.toContain("Lieu propre signalé");
