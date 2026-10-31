@@ -94,4 +94,28 @@ describe("ActionBuddyPanel proposal decisions", () => {
     expect(calls.some(([input]) => String(input).includes("/proposals/sent-1/reject"))).toBe(false);
     expect(calls.filter(([, init]) => !init?.method).length).toBeGreaterThanOrEqual(2);
   });
+
+  it("shows the matched partner's canonical private DM link", async () => {
+    const matchedState = {
+      ...baseState,
+      request: { id: "request-matched", status: "matched" },
+      matchedRequest: { id: "request-matched", status: "matched" },
+      matchedPartner: { userId: "mentor-1", displayName: "Mentor privé", handle: "mentor" },
+      sentProposals: [],
+      receivedProposals: [],
+    };
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      if (init?.method) return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
+      return responseFor(matchedState);
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<ActionBuddyPanel actionId="action-matched" fr />);
+      await Promise.resolve();
+    });
+
+    const contactHref = "/sections/messagerie?tab=dm&channel=dm&actionId=action-matched&buddyRequestId=request-matched&recipientId=mentor-1&recipientLabel=Mentor%20priv%C3%A9&recipientHandle=mentor";
+    expect(renderer.root.findAllByProps({ href: contactHref }).length).toBeGreaterThan(0);
+  });
 });

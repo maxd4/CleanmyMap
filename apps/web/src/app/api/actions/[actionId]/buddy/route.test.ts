@@ -50,6 +50,29 @@ describe("/api/actions/[actionId]/buddy", () => {
     expect(loadActionBuddyStateMock).toHaveBeenCalledWith({ client: "service" }, { actionId: "action-1", userId: "session-user" });
   });
 
+  it("serializes proposal views without third-party identity while retaining the matched DM partner", async () => {
+    loadActionBuddyStateMock.mockResolvedValue({
+      actionId: "action-1",
+      availability: null,
+      request: { id: "request-1", status: "matched" },
+      proposals: [{ id: "proposal-1", status: "accepted" }],
+      sentProposals: [],
+      receivedProposals: [{ id: "proposal-1", status: "accepted" }],
+      openRequests: [],
+      matchedRequest: { id: "request-1", status: "matched" },
+      matchedPartner: { userId: "mentor-1", displayName: "Mentor", handle: "mentor" },
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
+    const body = await response.json();
+
+    expect(body.receivedProposals).toEqual([{ id: "proposal-1", status: "accepted" }]);
+    expect(body.receivedProposals[0]).not.toHaveProperty("mentor_user_id");
+    expect(body.receivedProposals[0]).not.toHaveProperty("requester_user_id");
+    expect(body.matchedPartner).toEqual({ userId: "mentor-1", displayName: "Mentor", handle: "mentor" });
+  });
+
   it("creates a request from the session identity and does not accept a forged body identity", async () => {
     const { POST } = await import("./route");
     const response = await POST(

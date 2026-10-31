@@ -34,13 +34,15 @@ export class ActionBuddyConflictError extends Error {
   }
 }
 
+export type ActionBuddyProposalView = Pick<ActionBuddyProposalRow, "id" | "status">;
+
 export type ActionBuddyState = {
   actionId: string;
   availability: ActionBuddyAvailabilityRow | null;
   request: ActionBuddyRequestRow | null;
-  proposals: ActionBuddyProposalRow[];
-  sentProposals: ActionBuddyProposalRow[];
-  receivedProposals: ActionBuddyProposalRow[];
+  proposals: ActionBuddyProposalView[];
+  sentProposals: ActionBuddyProposalView[];
+  receivedProposals: ActionBuddyProposalView[];
   openRequests: Array<Pick<ActionBuddyRequestRow, "id" | "created_at">>;
   matchedRequest: ActionBuddyRequestRow | null;
   matchedPartner: {
@@ -65,6 +67,10 @@ function isNoRowsUpdate(error: unknown): boolean {
 
 function throwDatabaseError(error: { message?: string } | null): never {
   throw new Error(error?.message || "Action buddy database operation failed.");
+}
+
+function projectProposal(proposal: ActionBuddyProposalRow): ActionBuddyProposalView {
+  return { id: proposal.id, status: proposal.status };
 }
 
 async function loadAction(supabase: SupabaseClient, actionId: string): Promise<ActionRow> {
@@ -279,8 +285,10 @@ export async function loadActionBuddyState(
     loadMentorProposals(supabase, params.actionId, params.userId),
     availability ? loadOpenRequests(supabase, params.actionId, params.userId) : Promise.resolve([]),
   ]);
+  const receivedProposals = requestProposals.map(projectProposal);
+  const sentProposals = mentorProposals.map(projectProposal);
   const proposals = [...new Map(
-    [...requestProposals, ...mentorProposals].map((proposal) => [proposal.id, proposal]),
+    [...receivedProposals, ...sentProposals].map((proposal) => [proposal.id, proposal]),
   ).values()];
   const matchedRequest = request?.status === "matched" ? request : matchedRequestForMentor;
   const matchedPartner = await loadMatchedPartner(supabase, params.userId, matchedRequest);
@@ -289,8 +297,8 @@ export async function loadActionBuddyState(
     availability,
     request,
     proposals,
-    sentProposals: mentorProposals,
-    receivedProposals: requestProposals,
+    sentProposals,
+    receivedProposals,
     openRequests,
     matchedRequest,
     matchedPartner,
