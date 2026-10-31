@@ -1947,14 +1947,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "91e8597ea18faf09",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Export XLSX et rankings exposent deux DTO distincts et conservent volontairement leur propre réponse d'erreur côté route.",
-      "evidence": "app/api/spogomi/events/[eventId]/export.xlsx/route.ts:17-24 et app/api/spogomi/events/[eventId]/rankings/route.ts:13-20 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "1edcc7ced2f72428",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les handlers d'export et d'attestation partagent seulement une réponse d'erreur d'autorisation ; les deux politiques et payloads restent indépendants.",
@@ -1971,35 +1963,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "035095276cf2d758",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux branches du flux identity-link convertissent des erreurs de persistance différentes ; leur proximité est du bruit textuel sans abstraction métier sûre.",
-      "evidence": "app/api/spogomi/events/[eventId]/identity-link/route.ts:76-84 et app/api/spogomi/events/[eventId]/identity-link/route.ts:92-100 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "edb40990dda2239f",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Import et composition automatique ont des entrées et permissions différentes ; la validation d'erreur reste attachée au handler qui la consomme.",
       "evidence": "apps/web/src/app/api/spogomi/events/[eventId]/imports/confirm/route.ts:19-28 et apps/web/src/app/api/spogomi/events/[eventId]/teams/auto/route.ts:25-34 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "b91d179d81573125",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Le parsing de mapping est centralisé ; la similarité restante correspond aux réponses d'erreur propres aux deux méthodes et ne doit pas masquer leurs contrats.",
-      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:18-29 et app/api/spogomi/events/[eventId]/imports/preview/route.ts:12-23 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "80ab3e857d4abcfd",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Preview et route GPX conservent des contrôles d'accès explicites pour deux ressources SPOGOMI différentes ; la duplication est une preuve locale de frontière serveur.",
-      "evidence": "app/api/spogomi/events/[eventId]/imports/preview/route.ts:7-21 et app/api/spogomi/events/[eventId]/route-gpx/route.ts:5-19 ; pair CURRENT relu.",
-      "reviewedRef": "1aa66dc7e0c133fc0974ed019d6abc34dbc1715e"
     },
     {
       "scope": "runtime",
@@ -2256,6 +2224,342 @@
       "reason": "Les deux cas payload.geometry vérifient des projections géométriques distinctes ; garder les entrées près de chaque assertion évite une fixture générique ambiguë.",
       "evidence": "components/actions/action-declaration/payload.geometry.test.ts:55-65 et components/actions/action-declaration/payload.geometry.test.ts:115-125 ; pair CURRENT relu.",
       "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "f6cf9d63ad10ccec",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les imports de modules restent propres à deux routes d'admission et de jonction ; une façade commune masquerait leurs frontières de mutation.",
+      "evidence": "app/api/spogomi/events/[eventId]/admission-requests/review/route.ts:1-8 et app/api/spogomi/events/[eventId]/team-join-requests/route.ts:1-8 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "3e20224d19c28d54",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux handlers d'admission conservent des garde-fous et réponses attachés à des méthodes distinctes.",
+      "evidence": "app/api/spogomi/events/[eventId]/admission-requests/review/route.ts:40-45 et app/api/spogomi/events/[eventId]/admission-requests/route.ts:29-34 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "bf5267b7544c7986",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les trois routes touchent des contrats d'identité ou de participation différents ; leurs imports de frontière restent intentionnellement locaux.",
+      "evidence": "app/api/spogomi/events/[eventId]/admission-requests/route.ts:1-8 et app/api/spogomi/events/[eventId]/identity-link/route.ts:1-8 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "7f29d36758efd122",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La vérification d'accès reste visible dans deux contrats d'identité ayant des transitions différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/admission-requests/route.ts:37-45 et app/api/spogomi/events/[eventId]/identity-link/route.ts:41-49 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "873b6a4f93b7a921",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Admission et demande de jonction appliquent des autorisations et effets métier différents malgré un préambule proche.",
+      "evidence": "app/api/spogomi/events/[eventId]/admission-requests/route.ts:37-45 et app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:26-34 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e38c1f22e27f1122",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les branches de lecture et d'action de l'admission portent des erreurs et transitions distinctes ; leur proximité ne constitue pas un contrat partagé.",
+      "evidence": "app/api/spogomi/events/[eventId]/admission-requests/route.ts:63-68 et app/api/spogomi/events/[eventId]/admission-requests/route.ts:86-91 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "5257ef10e8a3aa6a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Pointage et consolidation ont des capacités, validations et réponses différentes ; les gardes restent lisibles dans chaque route.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:29-34 et app/api/spogomi/events/[eventId]/consolidation/route.ts:17-22 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4a651c764a72a970",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le pointage et la revue de résultats ne partagent pas le même contrôle de capacité ni le même contrat HTTP.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:29-36 et app/api/spogomi/events/[eventId]/results/route.ts:18-25 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9a95a01d5a5e5c82",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Pointage et clôture conservent des contrôles de domaine séparés, même lorsque la résolution d'événement est similaire.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:32-37 et app/api/spogomi/events/[eventId]/closure/route.ts:25-30 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9fc4ee6d9b2d2126",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les contrôles d'accès de clôture et de pointage restent dans les handlers qui portent des permissions différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:46-53 et app/api/spogomi/events/[eventId]/closure/route.ts:35-42 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2d57a925b07e480b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Pointage et consolidation ont des opérations et limites de débit propres ; aucune abstraction de réponse commune n'est sûre.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:46-53 et app/api/spogomi/events/[eventId]/consolidation/route.ts:32-39 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "647c83d7e40ee31e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le pointage et les opérations terrain vérifient des capabilities distinctes avant des mutations différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:46-53 et app/api/spogomi/events/[eventId]/field-operations/route.ts:71-78 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2905fbd90223d35f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Galerie et pointage ne partagent ni la confidentialité des données ni les permissions de mutation ; la garde reste locale.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:46-53 et app/api/spogomi/events/[eventId]/gallery/route.ts:43-50 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c9dfc9fa03512a59",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les réponses d'accès de pointage et de résultats protègent des contrats de lecture différents.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:46-53 et app/api/spogomi/events/[eventId]/results/route.ts:31-38 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "753effd738064457",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le pointage et l'administration des reviewers ont des rôles et effets d'autorisation différents.",
+      "evidence": "app/api/spogomi/events/[eventId]/attendance/route.ts:48-53 et app/api/spogomi/events/[eventId]/reviewers/route.ts:32-37 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4ea58c7cb054910a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Clôture et galerie utilisent des services et DTO différents ; leurs réponses d'autorisation doivent rester rattachées aux routes.",
+      "evidence": "app/api/spogomi/events/[eventId]/closure/route.ts:23-29 et app/api/spogomi/events/[eventId]/gallery/route.ts:32-38 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "025df75a0be4d04e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La clôture et l'export lisent des projections privées différentes et conservent des contrats de réponse séparés.",
+      "evidence": "app/api/spogomi/events/[eventId]/closure/route.ts:25-30 et app/api/spogomi/events/[eventId]/export.xlsx/route.ts:18-23 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "bf38fc856441d4ea",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Clôture et publication des classements ont des permissions et états historiques différents ; ne pas fusionner leur garde.",
+      "evidence": "app/api/spogomi/events/[eventId]/closure/route.ts:25-30 et app/api/spogomi/events/[eventId]/rankings/route.ts:15-20 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "46f818c7b35d5437",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Clôture et opérations terrain protègent des capacités distinctes avant des écritures différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/closure/route.ts:35-42 et app/api/spogomi/events/[eventId]/field-operations/route.ts:71-78 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "956323d1b96dd454",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La clôture et la galerie ont des mutations et des contrôles de confidentialité indépendants.",
+      "evidence": "app/api/spogomi/events/[eventId]/closure/route.ts:35-42 et app/api/spogomi/events/[eventId]/gallery/route.ts:43-50 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "6af1c668d807c3ae",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Consolidation et assistance d'identité ont des propriétaires de données et des contrats d'erreur distincts.",
+      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:18-26 et app/api/spogomi/events/[eventId]/identity-assistance/requests/route.ts:12-20 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c7edc43c047c5352",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Export et rankings conservent des réponses d'accès et des projections de résultat distinctes.",
+      "evidence": "app/api/spogomi/events/[eventId]/export.xlsx/route.ts:19-25 et app/api/spogomi/events/[eventId]/rankings/route.ts:16-22 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c082f82fc87b0f12",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Import terrain et verrouillage d'équipes ont des capacités opérationnelles différentes ; la précondition ne doit pas être abstraite.",
+      "evidence": "app/api/spogomi/events/[eventId]/field-operations/import/confirm/route.ts:15-20 et app/api/spogomi/events/[eventId]/teams/lock/route.ts:13-18 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d82930c5e5a860b8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux aperçus utilisent des permissions et payloads de fichiers propres à leur sous-domaine.",
+      "evidence": "app/api/spogomi/events/[eventId]/field-operations/import/preview/route.ts:7-17 et app/api/spogomi/events/[eventId]/identity-assistance/invitation/route.ts:8-17 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "3abb756119c457a7",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les imports terrain et roster ont des schémas, owners et effets de persistance différents malgré un parsing de formulaire voisin.",
+      "evidence": "app/api/spogomi/events/[eventId]/field-operations/import/preview/route.ts:7-16 et app/api/spogomi/events/[eventId]/imports/preview/route.ts:8-16 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "da461d3afadf6ef2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux branches de field-operations couvrent des opérations terrain distinctes et gardent leurs erreurs localement auditables.",
+      "evidence": "app/api/spogomi/events/[eventId]/field-operations/route.ts:56-64 et app/api/spogomi/events/[eventId]/field-operations/route.ts:79-87 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "cc1ec7bb58385a62",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Assistance d'identité et jonction d'équipe ont des transitions et scopes de confidentialité distincts.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-assistance/requests/[requestId]/route.ts:19-25 et app/api/spogomi/events/[eventId]/team-join-requests/route.ts:20-25 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "572f10955155d13a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux routes manipulent des identifiants différents et ne peuvent partager leur contrat de validation.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-assistance/requests/[requestId]/route.ts:25-30 et app/api/spogomi/events/[eventId]/participants/[participantId]/identity-code/route.ts:15-21 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ef0526d45cb01539",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La réponse d'assistance et la demande de jonction ont des transitions de confidentialité différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-assistance/requests/[requestId]/route.ts:29-34 et app/api/spogomi/events/[eventId]/team-join-requests/route.ts:58-67 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "1462f63c38edc851",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les handlers d'assistance et de lecture événementielle exposent des réponses et droits distincts.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-assistance/requests/route.ts:8-16 et app/api/spogomi/events/[eventId]/route.ts:7-15 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a5780ee1dd3c8a9f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Identity-link et join-request gardent des contrôles d'identité visibles pour des transitions de participation différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-link/route.ts:44-49 et app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:29-34 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "eb6f5ab8b799ef63",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "L'import et l'attestation appliquent des contrôles de rôle et des effets de persistance différents.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:18-23 et app/api/spogomi/events/[eventId]/recognition/attestations/route.ts:18-23 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "01fd8f0e19ff18ba",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Preview et confirmation partagent le contrat de formulaire canonique mais gardent des statuts et validations de méthode différents.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:19-29 et app/api/spogomi/events/[eventId]/imports/preview/route.ts:12-22 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4c4af7b6f6734e2c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le roster et les mesures terrain ont des payloads, capacités et propriétaires de persistance différents.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/preview/route.ts:7-21 et app/api/spogomi/events/[eventId]/route-gpx/route.ts:5-19 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "0ab29c95b9433f8c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "POST et DELETE reviewers partagent un endpoint mais portent des effets de grant et revoke distincts.",
+      "evidence": "app/api/spogomi/events/[eventId]/reviewers/route.ts:34-44 et app/api/spogomi/events/[eventId]/reviewers/route.ts:58-68 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "0b14f406e9a887df",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La demande de jonction globale et celle d'une équipe ciblée gardent des scopes d'autorisation différents.",
+      "evidence": "app/api/spogomi/events/[eventId]/team-join-requests/route.ts:86-92 et app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:65-71 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "f5f6e25b4d727e52",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux demandes de jonction produisent des transitions et réponses propres à leur niveau d'affectation.",
+      "evidence": "app/api/spogomi/events/[eventId]/team-join-requests/route.ts:86-92 et app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:96-102 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "93597acf9add0d70",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les branches d'accès d'équipe ont des opérations de lecture et de mutation distinctes.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:32-39 et app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:50-57 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "83dc22dd05a0b601",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux branches de join-request appliquent des validations et transitions de décision différentes.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:34-41 et app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:52-59 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "703ba4d9d9638759",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La demande et la confirmation de jonction restent séparées pour préserver leurs transitions métier et leurs réponses.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:34-41 et app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts:75-82 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "5c3de7b68f183b9c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Verrouillage et déplacement d'équipe ont des permissions et mutations différentes malgré une résolution événementielle commune.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:13-18 et app/api/spogomi/events/[eventId]/teams/move/route.ts:13-18 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "86e80edb2275d8b1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les préconditions de verrouillage et de déplacement ne sont pas interchangeables et restent visibles dans les handlers.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:23-28 et app/api/spogomi/events/[eventId]/teams/move/route.ts:24-29 ; pair CURRENT relu.",
+      "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
     }
   ]
 }
