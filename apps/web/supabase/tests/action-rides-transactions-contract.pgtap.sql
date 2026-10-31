@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(43);
 
 select ok(to_regprocedure('public.accept_action_ride_request(uuid,text)') is not null, 'accept RPC exists');
 select ok(to_regprocedure('public.decline_action_ride_request(uuid,text)') is not null, 'decline RPC exists');
@@ -48,6 +48,94 @@ select like(
   '%on conflict do nothing%',
   'ride cancellation notifications are idempotent'
 );
+select like(
+  pg_get_functiondef(to_regprocedure('public.transition_action_ride(uuid,text,text)')),
+  '%where rr.ride_id = v_ride.id and rr.status = ''pending''%',
+  'pending request transition qualifies SQL columns'
+);
+select like(
+  pg_get_functiondef(to_regprocedure('public.update_action_ride_details(uuid,text,text,timestamptz,smallint,text)')),
+  '%or v_ride.status <> ''open''%',
+  'ride detail updates require an open ride'
+);
+
+create temp table action_ride_transition_fixture (action_id uuid primary key, close_ride_id uuid, cancel_ride_id uuid);
+
+select lives_ok($fixture$
+  do $$
+  declare
+    v_action_id uuid := gen_random_uuid();
+  begin
+    insert into public.actions (
+      id, created_by_clerk_id, action_date, location_label, status,
+      action_phase, published_at, moderation_visibility, access_mode,
+      review_state, event_start_time
+    ) values (
+      v_action_id, 'ride-transition-creator', current_date + 14, 'Ride transaction fixture',
+      'approved', 'pre_action', timezone('utc', now()), 'visible', 'public',
+      'not_required', time '10:00'
+    );
+    insert into public.action_registrations (action_id, user_id, registration_status)
+    values (v_action_id, 'ride-transition-driver', 'confirmed'),
+           (v_action_id, 'ride-transition-pending', 'confirmed'),
+           (v_action_id, 'ride-transition-accepted', 'confirmed');
+    insert into action_ride_transition_fixture (action_id) values (v_action_id);
+  end;
+  $$;
+$fixture$, 'transition fixtures have confirmed participants');
+
+select lives_ok($$insert into public.action_rides (action_id, driver_user_id, origin_zone_name, departure_at, seats_total)
+  values ((select action_id from action_ride_transition_fixture), 'ride-transition-driver', '1er arrondissement',
+    ((current_date + 14)::timestamp + time '08:00') at time zone 'Europe/Paris', 2)$$,
+  'open ride can be prepared for closure');
+update action_ride_transition_fixture
+set close_ride_id = (select id from public.action_rides where driver_user_id = 'ride-transition-driver' and status = 'open');
+select lives_ok($$select * from public.update_action_ride_details(
+    (select close_ride_id from action_ride_transition_fixture), 'ride-transition-driver',
+    '2e arrondissement', ((current_date + 14)::timestamp + time '08:15') at time zone 'Europe/Paris', 2, 'Horaire ajusté')$$,
+  'open ride can be modified');
+select is((select note from public.action_rides where id = (select close_ride_id from action_ride_transition_fixture)),
+  'Horaire ajusté', 'open ride modification is persisted');
+select lives_ok($$insert into public.action_ride_requests (ride_id, passenger_user_id, seats_requested)
+  values ((select close_ride_id from action_ride_transition_fixture), 'ride-transition-pending', 1)$$,
+  'pending request can be prepared for closure');
+select lives_ok($$select * from public.transition_action_ride(
+    (select close_ride_id from action_ride_transition_fixture), 'ride-transition-driver', 'closed')$$,
+  'closing a ride resolves pending requests');
+select throws_ok($$select * from public.update_action_ride_details(
+    (select close_ride_id from action_ride_transition_fixture), 'ride-transition-driver',
+    '2e arrondissement', ((current_date + 14)::timestamp + time '08:20') at time zone 'Europe/Paris', 2, 'Ne doit pas changer')$$,
+  'P0001', null, 'closed ride cannot be modified');
+select is((select note from public.action_rides where id = (select close_ride_id from action_ride_transition_fixture)),
+  'Horaire ajusté', 'closed ride remains unchanged');
+select is((select status from public.action_ride_requests where ride_id = (select close_ride_id from action_ride_transition_fixture)),
+  'declined', 'closure declines pending requests');
+
+select lives_ok($$insert into public.action_rides (action_id, driver_user_id, origin_zone_name, departure_at, seats_total)
+  values ((select action_id from action_ride_transition_fixture), 'ride-transition-driver', '1er arrondissement',
+    ((current_date + 14)::timestamp + time '08:00') at time zone 'Europe/Paris', 2)$$,
+  'open ride can be prepared for cancellation');
+update action_ride_transition_fixture
+set cancel_ride_id = (select id from public.action_rides where driver_user_id = 'ride-transition-driver' and status = 'open');
+select lives_ok($$insert into public.action_ride_requests (ride_id, passenger_user_id, seats_requested, status, resolved_at)
+  values ((select cancel_ride_id from action_ride_transition_fixture), 'ride-transition-accepted', 1, 'accepted', timezone('utc', now()))$$,
+  'accepted request can be prepared for cancellation');
+select lives_ok($$select * from public.transition_action_ride(
+    (select cancel_ride_id from action_ride_transition_fixture), 'ride-transition-driver', 'cancelled')$$,
+  'cancellation resolves accepted ride state');
+select throws_ok($$select * from public.update_action_ride_details(
+    (select cancel_ride_id from action_ride_transition_fixture), 'ride-transition-driver',
+    '2e arrondissement', ((current_date + 14)::timestamp + time '08:20') at time zone 'Europe/Paris', 2, 'Ne doit pas changer')$$,
+  'P0001', null, 'cancelled ride cannot be modified');
+select is((select status from public.action_rides where id = (select cancel_ride_id from action_ride_transition_fixture)),
+  'cancelled', 'cancelled ride remains terminal');
+select is((select count(*)::integer from public.app_notifications where payload ->> 'rideId' = (select cancel_ride_id::text from action_ride_transition_fixture)),
+  1, 'cancellation sends one passenger notification');
+select lives_ok($$select * from public.transition_action_ride(
+    (select cancel_ride_id from action_ride_transition_fixture), 'ride-transition-driver', 'cancelled')$$,
+  'repeating cancellation is idempotent');
+select is((select count(*)::integer from public.app_notifications where payload ->> 'rideId' = (select cancel_ride_id::text from action_ride_transition_fixture)),
+  1, 'repeated cancellation does not notify twice');
 
 select * from finish();
 rollback;

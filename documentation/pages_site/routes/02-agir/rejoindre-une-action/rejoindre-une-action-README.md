@@ -456,12 +456,13 @@ chargement, vide, erreur, trajet ouvert/fermé/annulé et demande
 pending/accepted/declined/withdrawn sont relus depuis l'API privée après
 chaque mutation.
 
-Le conducteur voit les demandes de son trajet et peut accepter ou refuser ; le
-serveur vérifie la capacité sous verrou avant toute acceptation. Le passager
-peut retirer une demande et, après acceptation, ouvrir le DM Chat existant
-avec le conducteur. L'annulation d'un trajet informe une seule fois les
-passagers acceptés. Aucun champ libre, identifiant Clerk ou contact n'est
-projeté dans une carte publique.
+Le conducteur voit les demandes de son trajet et peut modifier un trajet
+`open`, accepter ou refuser ; après fermeture ou annulation, la modification
+reste indisponible. Le serveur vérifie la capacité sous verrou avant toute
+acceptation. Le passager peut retirer une demande et, après acceptation, ouvrir
+le DM Chat existant avec le conducteur. L'annulation d'un trajet informe une
+seule fois les passagers acceptés. Aucun champ libre, identifiant Clerk ou
+contact n'est projeté dans une carte publique.
 
 ## Statut documentaire
 

@@ -68,6 +68,16 @@ export type ActionRideProjection = {
   requests: ActionRideRequestProjection[];
 };
 
+export type ActionRideUpdateProjection = {
+  id: string;
+  originZoneName: string;
+  departureAt: string;
+  seatsTotal: number;
+  seatsAvailable: number;
+  note: string | null;
+  status: ActionRideStatus;
+};
+
 export class ActionRideServiceError extends Error {
   readonly status: 400 | 403 | 404 | 409 | 422;
 
@@ -87,6 +97,10 @@ function rowError(_error: { message?: string } | null, fallback: string): never 
 
 function normalizeRows<T>(value: unknown): T[] {
   return Array.isArray(value) ? value as T[] : [];
+}
+
+function normalizeCompositeRow<T>(value: unknown): T | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as T : null;
 }
 
 function assertActionReadable(
@@ -254,6 +268,7 @@ export async function updateActionRide(
   await resolveConfirmedMember(supabase, params.actionId, params.userId, true);
   const ride = await loadRide(supabase, params.actionId, params.rideId);
   if (ride.driver_user_id !== params.userId) throw new ActionRideServiceError("Seul le conducteur peut modifier ce trajet.", 403);
+  if (ride.status !== "open") throw new ActionRideServiceError("Ce trajet n'est plus ouvert.", 409);
   const parsed = validateActionRideInput(params.input);
   if (!parsed.ok) throw new ActionRideServiceError(parsed.reason, 422);
   const result: { data: unknown; error: { message?: string } | null } = await supabase.rpc("update_action_ride_details", {
@@ -265,7 +280,22 @@ export async function updateActionRide(
     p_note: parsed.value.note,
   });
   if (result.error) rowError(result.error, "Le trajet n'a pas pu être modifié.");
-  return { ride: normalizeRows<ActionRideRow>(result.data)[0] ?? null };
+  const updatedRide = normalizeCompositeRow<ActionRideRow>(result.data);
+  if (!updatedRide || updatedRide.id !== params.rideId || updatedRide.action_id !== params.actionId || updatedRide.driver_user_id !== params.userId) {
+    throw new ActionRideServiceError("Le trajet modifié est indisponible.", 409);
+  }
+  const capacity = await loadCapacity(supabase, updatedRide.id);
+  return {
+    ride: {
+      id: updatedRide.id,
+      originZoneName: updatedRide.origin_zone_name,
+      departureAt: updatedRide.departure_at,
+      seatsTotal: updatedRide.seats_total,
+      seatsAvailable: capacity.seats_available,
+      note: updatedRide.note,
+      status: updatedRide.status,
+    } satisfies ActionRideUpdateProjection,
+  };
 }
 
 export async function transitionActionRide(

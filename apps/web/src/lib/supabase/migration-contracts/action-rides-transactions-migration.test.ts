@@ -5,7 +5,12 @@ const migration = readFileSync(
   new URL("../../../../supabase/migrations/20261031000005_action_rides_transactions.sql", import.meta.url),
   "utf8",
 ).toLowerCase();
+const correctiveMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261031000006_action_rides_transition_update_fix.sql", import.meta.url),
+  "utf8",
+).toLowerCase();
 const compactMigration = migration.replace(/\s+/gu, " ");
+const compactCorrectiveMigration = correctiveMigration.replace(/\s+/gu, " ");
 
 describe("action rides transaction migration contract [STATIC_CONTRACT]", () => {
   it("defines the complete server-only transition surface", () => {
@@ -39,5 +44,13 @@ describe("action rides transaction migration contract [STATIC_CONTRACT]", () => 
     expect(migration).toContain("on conflict do nothing");
     expect(migration).toContain("rr.status = 'accepted'");
     expect(migration).toContain("rr.passenger_user_id <> v_ride.driver_user_id");
+  });
+
+  it("records the forward-only fixes without changing the published migration", () => {
+    expect(correctiveMigration).toContain("create or replace function public.transition_action_ride");
+    expect(compactCorrectiveMigration).toContain("where rr.ride_id = v_ride.id and rr.status = 'pending'");
+    expect(compactCorrectiveMigration).toContain("or v_ride.status <> 'open'");
+    expect(compactCorrectiveMigration).toContain("returning ar.* into v_ride");
+    expect(migration).not.toContain("or v_ride.status <> 'open'");
   });
 });

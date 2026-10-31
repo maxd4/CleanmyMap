@@ -43,13 +43,14 @@ personnelle.
 
 Les routes `/api/actions/[actionId]/rides` et leurs sous-routes utilisent la
 même garde d'authentification avant le client privilégié, puis délèguent les
-mutations sensibles aux RPC server-only. Le conducteur est le seul à modifier,
-fermer, annuler ou décider d'une demande ; le demandeur est le seul à retirer
-la sienne. `accept_action_ride_request` verrouille toujours le trajet puis la
-demande, relit `action_ride_capacity` et rend l'acceptation atomique. Le
-contact DM n'est résolu qu'après une demande `accepted`, avec une cible
-explicite lorsque le conducteur a plusieurs passagers. Les réponses HTTP sont
-privées et sans cache ; elles ne contiennent ni identifiant Clerk brut, ni
+mutations sensibles aux RPC server-only. Le conducteur est le seul à modifier
+un trajet `open`, à le fermer, à l'annuler ou à décider d'une demande ; un
+trajet `closed` ou `cancelled` ne peut plus être modifié. Le demandeur est le
+seul à retirer la sienne. `accept_action_ride_request` verrouille toujours le
+trajet puis la demande, relit `action_ride_capacity` et rend l'acceptation
+atomique. Le contact DM n'est résolu qu'après une demande `accepted`, avec une
+cible explicite lorsque le conducteur a plusieurs passagers. Les réponses HTTP
+sont privées et sans cache ; elles ne contiennent ni identifiant Clerk brut, ni
 adresse, ni coordonnée, ni roster pour un tiers.
 
 ### Organisateur
