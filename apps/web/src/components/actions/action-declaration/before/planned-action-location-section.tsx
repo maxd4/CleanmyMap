@@ -7,6 +7,7 @@ import { OperationalRouteEditor } from "../operational-route-editor";
 import type { FormState } from "../model";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
+import { SectionHeading } from "./ui";
 import { hasValidCoordinatePair } from "../payload-numbers";
 
 export { hasValidCoordinatePair } from "../payload-numbers";
@@ -65,10 +66,6 @@ export function PlannedActionLocationSection({
       </CmmDisclosure>
     </section>
   );
-}
-
-function SectionHeading({ id, title }: { id: string; title: string }) {
-  return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
 }
 
 export function MeetingLocationFields({

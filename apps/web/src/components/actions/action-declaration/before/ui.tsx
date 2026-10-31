@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { Info, type LucideIcon } from "lucide-react";
 
+export function SectionHeading({ id, title }: { id: string; title: string }) {
+  return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
+}
+
 export function SectionLabel({
   icon: Icon,
   title,

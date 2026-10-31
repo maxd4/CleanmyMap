@@ -2,7 +2,7 @@ import {
   getVolunteerActionCompositionValidationMessage,
 } from "./volunteer-participation";
 
-export const ACTION_CONTEXT_VALUES = ["citizen", "company", "school"] as const;
+const ACTION_CONTEXT_VALUES = ["citizen", "company", "school"] as const;
 export type ActionContext = (typeof ACTION_CONTEXT_VALUES)[number];
 export const ACTION_CONTEXT_FILTER_VALUES = [
   "all",
@@ -36,11 +36,7 @@ export function matchesActionContextFilter(
   return context === filter;
 }
 
-export const ACTION_CONTEXT_SOURCE_VALUES = [
-  "explicit",
-  "automatic_children_ratio",
-] as const;
-export type ActionContextSource = (typeof ACTION_CONTEXT_SOURCE_VALUES)[number];
+export type ActionContextSource = "explicit" | "automatic_children_ratio";
 
 export type ActionContextClassification = {
   context: ActionContext | null;
@@ -55,15 +51,8 @@ export type ActionContextComposition = {
   retiredCount: number | null | undefined;
 };
 
-export function isActionContext(value: unknown): value is ActionContext {
+function isActionContext(value: unknown): value is ActionContext {
   return typeof value === "string" && ACTION_CONTEXT_VALUES.includes(value as ActionContext);
-}
-
-export function isActionContextSource(value: unknown): value is ActionContextSource {
-  return (
-    typeof value === "string" &&
-    ACTION_CONTEXT_SOURCE_VALUES.includes(value as ActionContextSource)
-  );
 }
 
 /**

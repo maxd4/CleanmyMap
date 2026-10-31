@@ -1,5 +1,6 @@
 import { CmmField, CmmInput, CmmTextarea } from "@/components/ui/cmm-field";
 import { hasValidationIssue, type BaseSectionProps } from "./section-contract";
+import { SectionHeading } from "./ui";
 
 export function PlannedActionPresentationSection({
   form,
@@ -38,8 +39,4 @@ export function PlannedActionPresentationSection({
       </div>
     </section>
   );
-}
-
-function SectionHeading({ id, title }: { id: string; title: string }) {
-  return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
 }

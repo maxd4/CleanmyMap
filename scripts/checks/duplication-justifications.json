@@ -2043,22 +2043,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "d37ce665cfba0492",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les champs de localisation et de présentation ont des payloads différents malgré une structure JSX commune ; aucune centralisation sûre n'est démontrée.",
-      "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-69 et components/actions/action-declaration/before/planned-action-presentation-section.tsx:38-45 ; pair CURRENT relu.",
-      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "7ec4792e91883d08",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Localisation et bénévolat exposent des champs métier différents ; la ressemblance est du bruit de composition de formulaire.",
-      "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:65-74 et components/actions/action-declaration/before/planned-action-volunteer-section.tsx:35-44 ; pair CURRENT relu.",
-      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "9447f444690121e0",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les résumés de quiz personnel et scolaire rendent des indicateurs similaires dans deux parcours pédagogiques indépendants ; une abstraction diminuerait l'autonomie de présentation.",

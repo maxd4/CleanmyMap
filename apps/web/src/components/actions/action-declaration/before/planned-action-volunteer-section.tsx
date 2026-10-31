@@ -6,6 +6,7 @@ import type { FormState } from "../model";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { DIFFICULTY_OPTIONS, PLANNED_OBJECTIVE_OPTIONS } from "./model";
 import { hasValidationIssue, type BaseSectionProps } from "./section-contract";
+import { SectionHeading } from "./ui";
 import { ExpectedWasteSection } from "./planned-action-waste-section";
 
 export function PlannedActionVolunteerSection({
@@ -35,10 +36,6 @@ export function PlannedActionVolunteerSection({
       <ExpectedWasteSection form={form} updateField={updateField} />
     </section>
   );
-}
-
-function SectionHeading({ id, title }: { id: string; title: string }) {
-  return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
 }
 
 export function SelectField({

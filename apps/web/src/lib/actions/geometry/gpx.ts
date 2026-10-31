@@ -17,7 +17,7 @@ const GPX_LOOP_CLOSURE_THRESHOLD_METERS = 50;
 let gpxFileIdentityCounter = 0;
 
 type GpxImportMetadata = ActionGpxImportMetadata;
-export type GpxImportProvenance = "planned" | "unknown";
+type GpxImportProvenance = "planned" | "unknown";
 
 function fingerprint(value: string): string {
   let hash = 2166136261;
@@ -37,7 +37,7 @@ export function createGpxFileIdentity(seed?: string): string {
   return `gpx-file-${Date.now().toString(36)}-${gpxFileIdentityCounter.toString(36)}`;
 }
 
-export function createGpxSourceFingerprint(
+function createGpxSourceFingerprint(
   fileName: string,
   traceIndex: number,
   segmentIndex: number,

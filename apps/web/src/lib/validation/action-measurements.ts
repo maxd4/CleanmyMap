@@ -18,7 +18,7 @@ const wasteMassSchema = z
     "La masse doit respecter une résolution de 0,1 kg.",
   );
 
-export const wasteBreakdownSchema = z.object({
+const wasteBreakdownSchema = z.object({
   recyclablesKg: wasteMassSchema.nullable().optional(),
   glassKg: wasteMassSchema.nullable().optional(),
   householdWasteKg: wasteMassSchema.nullable().optional(),
@@ -35,7 +35,7 @@ export const wasteBreakdownSchema = z.object({
   triQuality: z.enum(["faible", "moyenne", "elevee"]).optional(),
 });
 
-export const wasteMeasurementMethodSchema = z
+const wasteMeasurementMethodSchema = z
   .enum(ACTION_WASTE_MEASUREMENT_METHODS)
   .nullable()
   .optional();
@@ -125,7 +125,7 @@ export const visionEstimateSchema = z.object({
   }),
 });
 
-export const commonActionMeasurementSchemaFields = {
+const commonActionMeasurementSchemaFields = {
   wasteKg: wasteMassSchema.nullable().optional(),
   cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
   ...commonActionCigaretteButtSchemaFields,

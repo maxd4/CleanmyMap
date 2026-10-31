@@ -20,7 +20,7 @@ const ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION =
 
 type FormalitiesUserStatus = "not_started" | "prepared" | "sent";
 
-export type FormalitySendProof = {
+type FormalitySendProof = {
   kind: "user_declared" | "official_confirmation";
   reference: string | null;
   recordedAt: string;
@@ -97,7 +97,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export function isFormalitySendProof(value: unknown): value is FormalitySendProof {
+function isFormalitySendProof(value: unknown): value is FormalitySendProof {
   if (!isRecord(value)) return false;
   const proof = value as Partial<FormalitySendProof>;
   return (
