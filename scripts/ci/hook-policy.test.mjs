@@ -145,7 +145,24 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.doesNotMatch(scopeScript, /git rev-list/);
   assert.match(workflow, /web_coverage_relevant == 'true'[\s\S]*needs\.web-tests\.result == 'success'/);
   assert.doesNotMatch(extractJob(workflow, "web-coverage"), /needs\.scope\.outputs\.web_code_relevant/);
-  assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 3);
+  const toleratedSteps = workflow
+    .split(/\r?\n(?=      - name: )/)
+    .filter((step) => /continue-on-error:\s*true/.test(step));
+  const toleratedStepNames = toleratedSteps
+    .map((step) => step.match(/^      - name: ([^\r\n]+)/m)?.[1])
+    .filter(Boolean)
+    .sort();
+  assert.deepEqual(toleratedStepNames, [
+    "Download all FULL coverage evidence",
+    "Duplication ratchet",
+    "GitNexus cycle ratchet (skipped by policy)",
+  ].sort());
+  assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, toleratedSteps.length);
+  const fullCoverageDownload = toleratedSteps.find((step) => step.includes("Download all FULL coverage evidence")) ?? "";
+  assert.match(fullCoverageDownload, /uses: actions\/download-artifact@/);
+  assert.match(fullCoverageDownload, /pattern: '\*-coverage-evidence-\$\{\{ env\.CANDIDATE_SHA \}\}'/);
+  const fullCoverageGate = workflow.match(/  full-coverage-gate:[\s\S]*$/)?.[0] ?? "";
+  assert.match(fullCoverageGate, /Validate four-domain FULL coverage gate[\s\S]*node scripts\/ci\/full-coverage-gate\.mjs/);
   const qualityJobForGrace = extractJob(workflow, "web-quality");
   for (const stepName of ["Duplication ratchet", "GitNexus cycle ratchet"]) {
     const step = qualityJobForGrace.match(new RegExp(`- name: ${stepName}[\\s\\S]*?(?=\\n      - name:|\\n\\n  [a-z0-9-]+:)`))?.[0] ?? "";

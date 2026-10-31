@@ -269,7 +269,15 @@ assert.match(ciWorkflow, /fail-on-severity: high/);
 const dependencyReviewJob = ciWorkflow.match(/  dependency-review:[\s\S]*?\n\n  web-governance:/)?.[0] ?? "";
 assert.doesNotMatch(dependencyReviewJob, /secrets\./);
 assert.doesNotMatch(dependencyReviewJob, /actions\/checkout@/);
-assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 14);
+const checkoutSteps = [...ciWorkflow.matchAll(/uses:\s+actions\/checkout@[^\r\n]+/g)].map((match) => {
+  const nextStep = ciWorkflow.indexOf("\n      - name:", match.index + match[0].length);
+  return ciWorkflow.slice(match.index, nextStep === -1 ? ciWorkflow.length : nextStep);
+});
+assert.equal(checkoutSteps.length, 14);
+for (const checkoutStep of checkoutSteps) {
+  assert.match(checkoutStep, /persist-credentials:\s*false/);
+}
+assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, checkoutSteps.length);
 assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 13);
 assert.equal((ciWorkflow.match(/check-node-version-contract\.mjs/g) ?? []).length, 8);
 assert.doesNotMatch(ciWorkflow, /check:agent-skills/);
