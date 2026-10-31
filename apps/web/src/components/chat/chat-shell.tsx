@@ -45,6 +45,56 @@ export type ChatShellProps = {
   onNavigationChange?: (state: ChatShellNavigationState) => void;
 };
 
+function useChatShellNavigationEffects({
+  navigationState,
+  onNavigationChange,
+  initialRecipient,
+  initialContactRequestId,
+  initialAnnouncementTemplate,
+  initialEventId,
+  controller,
+  context,
+  activeFeedbackId,
+  setActiveFeedbackId,
+}: {
+  navigationState: ChatShellNavigationState | null;
+  onNavigationChange?: (state: ChatShellNavigationState) => void;
+  initialRecipient?: ChatUser | null;
+  initialContactRequestId?: string | null;
+  initialAnnouncementTemplate?: CommunityAnnouncementTemplateKey | null;
+  initialEventId?: string | null;
+  controller: ReturnType<typeof useChatShellController>;
+  context: ReturnType<typeof useChatShellContext>;
+  activeFeedbackId: string | null;
+  setActiveFeedbackId: React.Dispatch<React.SetStateAction<string | null>>;
+}) {
+  useChatShellNavigation({
+    navigationState,
+    onNavigationChange,
+    initialRecipient,
+    initialContactRequestId: initialContactRequestId ?? null,
+    initialAnnouncementTemplate: initialAnnouncementTemplate ?? null,
+    initialEventId: initialEventId ?? null,
+    announcementTemplate: controller.composer.announcementTemplate,
+    handleAnnouncementTemplateChange: controller.composer.handleAnnouncementTemplateChange,
+    handleComposerModeChange: controller.composer.handleComposerModeChange,
+    activeChannelType: context.activeChannelType,
+    activeTopicId: context.activeTopicId,
+    selectedActionId: context.selectedActionId,
+    selectedRecipient: context.selectedRecipient,
+    selectedZone: context.selectedZone,
+    territoryFocus: context.territoryFocus,
+    targetMessageIdForScope: context.targetMessageIdForScope,
+    activeFeedbackId,
+    setActiveChannelType: context.setActiveChannelType,
+    setSelectedActionId: context.setSelectedActionId,
+    setActiveTopicId: context.setActiveTopicId,
+    setSelectedRecipient: context.setSelectedRecipient,
+    setSelectedZone: context.setSelectedZone,
+    setActiveFeedbackId,
+  });
+}
+
 export function ChatShell({
   initialChannelType = "community",
   initialArrondissement,
@@ -106,29 +156,16 @@ export function ChatShell({
     announcementEventLoading,
     announcementEventError,
   });
-  useChatShellNavigation({
+  useChatShellNavigationEffects({
     navigationState,
     onNavigationChange,
     initialRecipient,
     initialContactRequestId,
     initialAnnouncementTemplate,
     initialEventId,
-    announcementTemplate: controller.composer.announcementTemplate,
-    handleAnnouncementTemplateChange: controller.composer.handleAnnouncementTemplateChange,
-    handleComposerModeChange: controller.composer.handleComposerModeChange,
-    activeChannelType: chatContext.activeChannelType,
-    activeTopicId: chatContext.activeTopicId,
-    selectedActionId: chatContext.selectedActionId,
-    selectedRecipient: chatContext.selectedRecipient,
-    selectedZone: chatContext.selectedZone,
-    territoryFocus: chatContext.territoryFocus,
-    targetMessageIdForScope: chatContext.targetMessageIdForScope,
+    controller,
+    context: chatContext,
     activeFeedbackId,
-    setActiveChannelType: chatContext.setActiveChannelType,
-    setSelectedActionId: chatContext.setSelectedActionId,
-    setActiveTopicId: chatContext.setActiveTopicId,
-    setSelectedRecipient: chatContext.setSelectedRecipient,
-    setSelectedZone: chatContext.setSelectedZone,
     setActiveFeedbackId,
   });
 

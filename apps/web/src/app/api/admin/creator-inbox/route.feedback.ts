@@ -339,6 +339,29 @@ async function rejectRespondedFeedback(params: {
   );
 }
 
+async function handleLoadedFeedbackAction(
+  params: CreatorInboxHandlerParams | FeedbackQualificationParams | FeedbackTrackingParams,
+  current: FeedbackRecord,
+  audit: CreatorInboxAudit,
+) {
+  const { itemId, action, reason, actorUserId, operationId } = params;
+  if (action === "delete") {
+    return deleteFeedbackInboxItem({ itemId, current, audit, reason, actorUserId, operationId });
+  }
+  if (action === "change_priority" && "priority" in params && params.priority) {
+    return changeFeedbackPriority({ itemId, current, reason, actorUserId, operationId, priority: params.priority });
+  }
+  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+  const previousValue = buildSnapshot("feedback", current);
+  if (action === "responded") {
+    return rejectRespondedFeedback({ itemId, reason, targetUserId, previousValue, audit });
+  }
+  if (action === "mark_treated") {
+    return markFeedbackTreated({ itemId, current, audit, reason, targetUserId, actorUserId, operationId });
+  }
+  return archiveFeedbackInboxItem({ itemId, current, audit, reason, targetUserId, actorUserId, operationId });
+}
+
 export async function handleCreatorInboxFeedback(
   params: CreatorInboxHandlerParams | FeedbackQualificationParams | FeedbackTrackingParams,
 ) {
@@ -356,60 +379,5 @@ export async function handleCreatorInboxFeedback(
   if ("response" in lookup) return lookup.response;
   const { current } = lookup;
 
-  if (action === "delete") {
-    return deleteFeedbackInboxItem({
-      itemId,
-      current,
-      audit,
-      reason,
-      actorUserId: params.actorUserId,
-      operationId: params.operationId,
-    });
-  }
-
-  if (action === "change_priority" && "priority" in params && params.priority) {
-    return changeFeedbackPriority({
-      itemId,
-      current,
-      reason,
-      actorUserId: params.actorUserId,
-      operationId: params.operationId,
-      priority: params.priority,
-    });
-  }
-
-  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
-  const previousValue = buildSnapshot("feedback", current);
-
-  if (action === "responded") {
-    return rejectRespondedFeedback({
-      itemId,
-      reason,
-      targetUserId,
-      previousValue,
-      audit,
-    });
-  }
-
-  if (action === "mark_treated") {
-    return markFeedbackTreated({
-      itemId,
-      current,
-      audit,
-      reason,
-      targetUserId,
-      actorUserId: params.actorUserId,
-      operationId: params.operationId,
-    });
-  }
-
-  return archiveFeedbackInboxItem({
-    itemId,
-    current,
-    audit,
-    reason,
-    targetUserId,
-    actorUserId: params.actorUserId,
-    operationId: params.operationId,
-  });
+  return handleLoadedFeedbackAction(params, current, audit);
 }

@@ -98,6 +98,31 @@ function parseGeoJsonCoordinatePair(pair: unknown): [number, number] | null {
   return Number.isFinite(lat) && Number.isFinite(lng) ? [lng, lat] : null;
 }
 
+function parseGeoJsonLine(coordinates: unknown): GeoJsonGeometry | null {
+  if (!Array.isArray(coordinates)) return null;
+  const parsed = coordinates.flatMap((pair) => {
+    const coordinate = parseGeoJsonCoordinatePair(pair);
+    return coordinate ? [coordinate] : [];
+  });
+  return parsed.length >= 2 ? { type: "LineString", coordinates: parsed } : null;
+}
+
+function parseGeoJsonPolygon(coordinates: unknown): GeoJsonGeometry | null {
+  if (!Array.isArray(coordinates)) return null;
+  const rings = coordinates.map((ring) => Array.isArray(ring) ? ring.flatMap((pair) => {
+    const coordinate = parseGeoJsonCoordinatePair(pair);
+    return coordinate ? [coordinate] : [];
+  }) : []);
+  return rings.length > 0 && rings.every((ring) => ring.length >= 3)
+    ? { type: "Polygon", coordinates: rings }
+    : null;
+}
+
+function parseGeoJsonMultiLine(parsed: { coordinates?: unknown }): GeoJsonGeometry | null {
+  const observedCoverage = parseObservedCoverageGeometry(parsed);
+  return observedCoverage ? { type: "MultiLineString", coordinates: observedCoverage.coordinates } : null;
+}
+
 function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry | null {
   if (!raw) {
     return null;
@@ -112,41 +137,9 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
       }
     }
 
-    if (parsed?.type === "LineString" && Array.isArray(parsed.coordinates)) {
-      const coordinates = (parsed.coordinates as unknown[]).flatMap((pair) => {
-        const coordinate = parseGeoJsonCoordinatePair(pair);
-        return coordinate ? [coordinate] : [];
-      });
-
-      if (coordinates.length >= 2) {
-        return { type: "LineString", coordinates };
-      }
-    }
-
-    if (parsed?.type === "Polygon" && Array.isArray(parsed.coordinates)) {
-      const rings = (parsed.coordinates as unknown[]).map((ring) =>
-        Array.isArray(ring)
-          ? (ring as unknown[]).flatMap((pair) => {
-              const coordinate = parseGeoJsonCoordinatePair(pair);
-              return coordinate ? [coordinate] : [];
-            })
-          : [],
-      );
-
-      if (rings.length > 0 && rings.every((ring) => ring.length >= 3)) {
-        return { type: "Polygon", coordinates: rings };
-      }
-    }
-
-    if (parsed?.type === "MultiLineString" && Array.isArray(parsed.coordinates)) {
-      const observedCoverage = parseObservedCoverageGeometry(parsed);
-      if (observedCoverage) {
-        return {
-          type: "MultiLineString",
-          coordinates: observedCoverage.coordinates,
-        };
-      }
-    }
+    if (parsed?.type === "LineString") return parseGeoJsonLine(parsed.coordinates);
+    if (parsed?.type === "Polygon") return parseGeoJsonPolygon(parsed.coordinates);
+    if (parsed?.type === "MultiLineString") return parseGeoJsonMultiLine(parsed);
   } catch {
     return null;
   }
@@ -199,6 +192,80 @@ function uniqueObservedSources(
   return sources.length > 0 ? sources : null;
 }
 
+function resolveObservedExportGeometry(
+  observedCoverage: ObservedCoverageGeometry,
+  historicalKind: ActionGeometryKind | null,
+  historicalSource: ActionGeometrySource | null,
+  historicalConfidence: number | null,
+): ResolvedExportGeometry {
+  const effectiveSource = resolveObservedSource(observedCoverage);
+  return {
+    geometry: { type: "MultiLineString", coordinates: observedCoverage.coordinates },
+    observedCoverage,
+    presentation: {
+      origin: effectiveSource ?? "fallback_point",
+      reality: "observed",
+      label: observedGeometryLabel(observedCoverage, effectiveSource),
+      strokeStyle: "solid",
+      variant: "observed",
+    },
+    effectiveKind: "multiline",
+    effectiveSource,
+    effectiveSources: uniqueObservedSources(observedCoverage),
+    effectiveConfidence: null,
+    historicalKind,
+    historicalSource,
+    historicalConfidence,
+  };
+}
+
+function resolveFallbackExportGeometry(
+  item: ActionMapItem,
+  historicalKind: ActionGeometryKind | null,
+  historicalSource: ActionGeometrySource | null,
+  historicalConfidence: number | null,
+): ResolvedExportGeometry {
+  const coords = mapItemCoordinates(item);
+  if (coords.latitude === null || coords.longitude === null) {
+    return { geometry: null, observedCoverage: null, presentation: getFallbackPointPresentation(item), effectiveKind: null, effectiveSource: null, effectiveSources: null, effectiveConfidence: null, historicalKind, historicalSource, historicalConfidence };
+  }
+  return {
+    geometry: { type: "Point", coordinates: [coords.longitude, coords.latitude] },
+    observedCoverage: null,
+    presentation: getFallbackPointPresentation(item),
+    effectiveKind: "point",
+    effectiveSource: "fallback_point",
+    effectiveSources: null,
+    effectiveConfidence: null,
+    historicalKind,
+    historicalSource,
+    historicalConfidence,
+  };
+}
+
+function resolveContractExportGeometry(
+  item: ActionMapItem,
+  geometry: GeoJsonGeometry,
+  historicalKind: ActionGeometryKind | null,
+  historicalSource: ActionGeometrySource | null,
+  historicalConfidence: number | null,
+): ResolvedExportGeometry {
+  const presentation = getGeometryPresentation(item);
+  const contextualPoint = geometry.type === "Point" && presentation.reality === "contextual";
+  return {
+    geometry,
+    observedCoverage: null,
+    presentation,
+    effectiveKind: geometryKind(geometry),
+    effectiveSource: contextualPoint ? "fallback_point" : historicalSource,
+    effectiveSources: null,
+    effectiveConfidence: contextualPoint ? null : historicalConfidence,
+    historicalKind,
+    historicalSource,
+    historicalConfidence,
+  };
+}
+
 function resolveObservedSource(
   observedCoverage: ObservedCoverageGeometry,
 ): ActionGeometrySource | null {
@@ -227,28 +294,7 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
     primaryGeoJson: item.contract?.geometry.geojson,
   });
   if (observedCoverage) {
-    const effectiveSource = resolveObservedSource(observedCoverage);
-    return {
-      geometry: {
-        type: "MultiLineString",
-        coordinates: observedCoverage.coordinates,
-      },
-      observedCoverage,
-      presentation: {
-        origin: effectiveSource ?? "fallback_point",
-        reality: "observed",
-        label: observedGeometryLabel(observedCoverage, effectiveSource),
-        strokeStyle: "solid",
-        variant: "observed",
-      },
-      effectiveKind: "multiline",
-      effectiveSource,
-      effectiveSources: uniqueObservedSources(observedCoverage),
-      effectiveConfidence: null,
-      historicalKind,
-      historicalSource,
-      historicalConfidence,
-    };
+    return resolveObservedExportGeometry(observedCoverage, historicalKind, historicalSource, historicalConfidence);
   }
 
   const contractGeometry = item.contract?.geometry.geojson ?? item.geometry_geojson ?? null;
@@ -256,59 +302,8 @@ function resolveExportGeometry(item: ActionMapItem): ResolvedExportGeometry {
     ? parseGeoJsonGeometry(contractGeometry) ?? parseGeoJsonGeometry(buildManualDrawingGeoJson(item))
     : null;
 
-  if (geometry) {
-    const presentation = getGeometryPresentation(item);
-    return {
-      geometry,
-      observedCoverage: null,
-      presentation,
-      effectiveKind: geometryKind(geometry),
-      effectiveSource:
-        geometry.type === "Point" && presentation.reality === "contextual"
-          ? "fallback_point"
-          : historicalSource,
-      effectiveSources: null,
-      effectiveConfidence:
-        geometry.type === "Point" && presentation.reality === "contextual"
-          ? null
-          : historicalConfidence,
-      historicalKind,
-      historicalSource,
-      historicalConfidence,
-    };
-  }
-
-  const coords = mapItemCoordinates(item);
-  if (coords.latitude === null || coords.longitude === null) {
-    return {
-      geometry: null,
-      observedCoverage: null,
-      presentation: getFallbackPointPresentation(item),
-      effectiveKind: null,
-      effectiveSource: null,
-      effectiveSources: null,
-      effectiveConfidence: null,
-      historicalKind,
-      historicalSource,
-      historicalConfidence,
-    };
-  }
-
-  return {
-    geometry: {
-      type: "Point",
-      coordinates: [coords.longitude, coords.latitude],
-    },
-    observedCoverage: null,
-    presentation: getFallbackPointPresentation(item),
-    effectiveKind: "point",
-    effectiveSource: "fallback_point",
-    effectiveSources: null,
-    effectiveConfidence: null,
-    historicalKind,
-    historicalSource,
-    historicalConfidence,
-  };
+  if (!geometry) return resolveFallbackExportGeometry(item, historicalKind, historicalSource, historicalConfidence);
+  return resolveContractExportGeometry(item, geometry, historicalKind, historicalSource, historicalConfidence);
 }
 
 function buildFeatureProperties(

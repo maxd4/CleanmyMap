@@ -25,6 +25,36 @@ const CADENCE_LABELS: Record<CommunitySubscriptionCadence, { fr: string; en: str
 
 type SubscriptionsResponse = { items?: CommunitySubscriptionRow[] };
 
+async function createSubscriptionRequest(body: {
+  kind: "territory" | "topic";
+  territoryZoneName?: string;
+  topicId?: CommunitySubscriptionTopicId;
+  cadence: CommunitySubscriptionCadence;
+}): Promise<CommunitySubscriptionRow> {
+  const response = await fetch("/api/community/subscriptions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const payload = await response.json().catch(() => null) as { item?: CommunitySubscriptionRow } | null;
+  if (!response.ok || !payload?.item) throw new Error("subscription creation failed");
+  return payload.item;
+}
+
+async function updateSubscriptionRequest(itemId: string, patch: { cadence?: CommunitySubscriptionCadence; enabled?: boolean }): Promise<CommunitySubscriptionRow> {
+  const response = await fetch(`/api/community/subscriptions/${itemId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
+  const payload = await response.json().catch(() => null) as { item?: CommunitySubscriptionRow } | null;
+  if (!response.ok || !payload?.item) throw new Error("subscription update failed");
+  return payload.item;
+}
+
+async function deleteSubscriptionRequest(itemId: string): Promise<void> {
+  const response = await fetch(`/api/community/subscriptions/${itemId}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("subscription deletion failed");
+}
+
+function getSubscriptionCopy(fr: boolean) {
+  return fr
+    ? { title: "Suivis communautaires", description: "Choisissez explicitement les territoires et thèmes que vous souhaitez suivre. Aucun suivi n’est créé par la navigation ou le profil.", cadence: "Cadence des nouveaux suivis", territory: "Territoires suivis", chooseTerritory: "Choisir un territoire", follow: "Suivre", unfollow: "Ne plus suivre", topics: "Thèmes suivis", disable: "Désactiver", enable: "Réactiver", unavailable: "Les suivis communautaires ne sont pas disponibles pour le moment.", loading: "Chargement des suivis…", emptyTerritory: "Aucun territoire suivi.", emptyTopic: "Aucun thème suivi." }
+    : { title: "Community follows", description: "Explicitly choose the territories and topics you want to follow. Browsing and profile changes never create a follow.", cadence: "Cadence for new follows", territory: "Followed territories", chooseTerritory: "Choose a territory", follow: "Follow", unfollow: "Unfollow", topics: "Followed topics", disable: "Disable", enable: "Enable", unavailable: "Community follows are temporarily unavailable.", loading: "Loading follows…", emptyTerritory: "No territory followed.", emptyTopic: "No topic followed." };
+}
+
 export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
   const fr = locale === "fr";
   const [items, setItems] = useState<CommunitySubscriptionRow[]>([]);
@@ -66,14 +96,8 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     setPendingKey(key);
     setError(false);
     try {
-      const response = await fetch("/api/community/subscriptions", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...body, cadence: newCadence }),
-      });
-      const payload = await response.json().catch(() => null) as { item?: CommunitySubscriptionRow } | null;
-      if (!response.ok || !payload?.item) throw new Error("subscription creation failed");
-      setItems((current) => [...current.filter((item) => item.id !== payload.item?.id), payload.item as CommunitySubscriptionRow]);
+      const created = await createSubscriptionRequest({ ...body, cadence: newCadence });
+      setItems((current) => [...current.filter((item) => item.id !== created.id), created]);
       if (body.kind === "territory") setSelectedTerritory("");
     } catch {
       setError(true);
@@ -86,14 +110,8 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     setPendingKey(item.id);
     setError(false);
     try {
-      const response = await fetch(`/api/community/subscriptions/${item.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(patch),
-      });
-      const payload = await response.json().catch(() => null) as { item?: CommunitySubscriptionRow } | null;
-      if (!response.ok || !payload?.item) throw new Error("subscription update failed");
-      setItems((current) => current.map((candidate) => candidate.id === item.id ? payload.item as CommunitySubscriptionRow : candidate));
+      const updated = await updateSubscriptionRequest(item.id, patch);
+      setItems((current) => current.map((candidate) => candidate.id === item.id ? updated : candidate));
     } catch {
       setError(true);
     } finally {
@@ -105,8 +123,7 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     setPendingKey(item.id);
     setError(false);
     try {
-      const response = await fetch(`/api/community/subscriptions/${item.id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("subscription deletion failed");
+      await deleteSubscriptionRequest(item.id);
       setItems((current) => current.filter((candidate) => candidate.id !== item.id));
     } catch {
       setError(true);
@@ -119,39 +136,7 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
   const territories = items.filter((item) => item.kind === "territory");
   const subscribedTopicIds = new Set(topics.map((item) => item.topic_id));
 
-  const copy = fr
-    ? {
-        title: "Suivis communautaires",
-        description: "Choisissez explicitement les territoires et thèmes que vous souhaitez suivre. Aucun suivi n’est créé par la navigation ou le profil.",
-        cadence: "Cadence des nouveaux suivis",
-        territory: "Territoires suivis",
-        chooseTerritory: "Choisir un territoire",
-        follow: "Suivre",
-        unfollow: "Ne plus suivre",
-        topics: "Thèmes suivis",
-        disable: "Désactiver",
-        enable: "Réactiver",
-        unavailable: "Les suivis communautaires ne sont pas disponibles pour le moment.",
-        loading: "Chargement des suivis…",
-        emptyTerritory: "Aucun territoire suivi.",
-        emptyTopic: "Aucun thème suivi.",
-      }
-    : {
-        title: "Community follows",
-        description: "Explicitly choose the territories and topics you want to follow. Browsing and profile changes never create a follow.",
-        cadence: "Cadence for new follows",
-        territory: "Followed territories",
-        chooseTerritory: "Choose a territory",
-        follow: "Follow",
-        unfollow: "Unfollow",
-        topics: "Followed topics",
-        disable: "Disable",
-        enable: "Enable",
-        unavailable: "Community follows are temporarily unavailable.",
-        loading: "Loading follows…",
-        emptyTerritory: "No territory followed.",
-        emptyTopic: "No topic followed.",
-      };
+  const copy = getSubscriptionCopy(fr);
 
   return (
     <section className="rounded-2xl border border-sky-200/70 bg-sky-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">

@@ -214,17 +214,7 @@ function consumeOpeningTag(tag: XmlTag, state: GpxParserState): void {
   if (!tag.selfClosing) state.stack.push(tag.name);
 }
 
-function parseTrackSegments(xml: string): { segments: GeodesicCoordinate[][]; tracks: GeodesicCoordinate[][][] } {
-  assertXmlSafe(xml);
-  const state: GpxParserState = {
-    stack: [],
-    segments: [],
-    tracks: [],
-    activeTrackSegments: null,
-    activeSegment: null,
-    rootSeen: false,
-    rootClosed: false,
-  };
+function consumeXmlTags(xml: string, state: GpxParserState): void {
   let cursor = 0;
   while (cursor < xml.length) {
     const tagStart = xml.indexOf("<", cursor);
@@ -237,13 +227,30 @@ function parseTrackSegments(xml: string): { segments: GeodesicCoordinate[][]; tr
     if (tag.closing) consumeClosingTag(tag, state);
     else consumeOpeningTag(tag, state);
   }
+}
 
+function assertCompletedGpxState(state: GpxParserState): void {
   if (state.stack.length > 0 || !state.rootSeen || !state.rootClosed) {
     throw new GpxImportError("Le fichier GPX n'est pas un XML bien formé.");
   }
   if (state.segments.length === 0) {
     throw new GpxImportError("Le GPX ne contient aucun segment de trace exploitable.");
   }
+}
+
+function parseTrackSegments(xml: string): { segments: GeodesicCoordinate[][]; tracks: GeodesicCoordinate[][][] } {
+  assertXmlSafe(xml);
+  const state: GpxParserState = {
+    stack: [],
+    segments: [],
+    tracks: [],
+    activeTrackSegments: null,
+    activeSegment: null,
+    rootSeen: false,
+    rootClosed: false,
+  };
+  consumeXmlTags(xml, state);
+  assertCompletedGpxState(state);
   return { segments: state.segments, tracks: state.tracks };
 }
 

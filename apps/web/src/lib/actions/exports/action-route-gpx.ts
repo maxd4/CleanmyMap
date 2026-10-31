@@ -177,10 +177,8 @@ function trackFromOperationalRoute(
   };
 }
 
-export function buildActionRouteGpxInput(
-  params: ActionRouteGpxInput,
-): GpxSerializerInput | null {
-  const finalGeometry = params.finalGeometry ?? resolveFinalActionGeometry({
+function resolveRouteFinalGeometry(params: ActionRouteGpxInput): FinalActionGeometry | null {
+  return params.finalGeometry ?? resolveFinalActionGeometry({
     ...trackingGeometryInput(params),
     gpxDrawing: params.gpxImport ? asPolylineDrawing(params.drawing) : null,
     gpxImport: params.gpxImport,
@@ -189,74 +187,85 @@ export function buildActionRouteGpxInput(
       params.drawingSource ?? (params.gpxImport ? "gpx_import" : "manual"),
     operationalRoute: params.operationalRoute,
   });
-  if (!finalGeometry) return null;
+}
 
-  if (finalGeometry.operationalRoute) {
-    if (finalGeometry.operationalRoute.routes.length === 0) return null;
-    const multipleRoutes = finalGeometry.operationalRoute.routes.length > 1;
-    const tracks = finalGeometry.operationalRoute.routes.map((route) =>
-      trackFromOperationalRoute(route, finalGeometry.operationalRoute!, params, multipleRoutes),
-    );
-    if (tracks.some((track) => track === null)) return null;
-    return {
-      name: "Itinéraire CleanMyMap",
-      description: "Export de la géométrie finale actuellement retenue.",
-      provenance: "planned",
-      tracks: tracks as GpxTrackInput[],
-    };
-  }
+function buildOperationalRouteGpx(
+  finalGeometry: FinalActionGeometry,
+  params: ActionRouteGpxInput,
+): GpxSerializerInput | null {
+  if (!finalGeometry.operationalRoute || finalGeometry.operationalRoute.routes.length === 0) return null;
+  const multipleRoutes = finalGeometry.operationalRoute.routes.length > 1;
+  const tracks = finalGeometry.operationalRoute.routes.map((route) =>
+    trackFromOperationalRoute(route, finalGeometry.operationalRoute!, params, multipleRoutes),
+  );
+  if (tracks.some((track) => track === null)) return null;
+  return {
+    name: "Itinéraire CleanMyMap",
+    description: "Export de la géométrie finale actuellement retenue.",
+    provenance: "planned",
+    tracks: tracks as GpxTrackInput[],
+  };
+}
 
-  const coordinates = finalGeometry.drawing.coordinates;
-  if (!hasUsableTrack(coordinates)) return null;
-  const origin = coordinates[0] ?? null;
+function resolveDrawingMeetingPoint(
+  finalGeometry: FinalActionGeometry,
+  params: ActionRouteGpxInput,
+  coordinates: GpxCoordinate[],
+) {
   const midpointCoordinate = params.midpointCoordinates
     ? [params.midpointCoordinates.latitude, params.midpointCoordinates.longitude] as GpxCoordinate
     : null;
   const explicitMeetingPoint = isValidCoordinate(midpointCoordinate)
-    ? {
-        coordinates: midpointCoordinate,
-        label: params.midpointLabel,
-      }
+    ? { coordinates: midpointCoordinate, label: params.midpointLabel }
     : null;
   const derivedMeetingPoint = explicitMeetingPoint ?? (
     isPlannedNonOperationalGeometry(finalGeometry, params.gpxImport)
-      ? projectMeetingPointFromGeometry({ coordinates })
+      ? projectMeetingPointFromGeometry({ coordinates: coordinates.map(([latitude, longitude]) => [latitude, longitude]) })
       : null
   );
-  const meetingPoint = derivedMeetingPoint
-    ? {
-        coordinate: derivedMeetingPoint.coordinates,
-        label: params.midpointLabel,
-      }
+  return derivedMeetingPoint
+    ? { coordinate: derivedMeetingPoint.coordinates, label: params.midpointLabel }
     : null;
+}
 
+function resolveDrawingProvenance(
+  finalGeometry: FinalActionGeometry,
+  params: ActionRouteGpxInput,
+) {
+  return finalGeometry.source === "gpx_import"
+    ? params.gpxImport?.intent === "planned" || params.gpxImport?.provenance === "planned" ? "planned" : "observed"
+    : finalGeometry.source === "gps_tracking" ? "observed" : "planned";
+}
+
+function buildDrawingRouteGpx(
+  finalGeometry: FinalActionGeometry,
+  params: ActionRouteGpxInput,
+): GpxSerializerInput | null {
+  const coordinates = finalGeometry.drawing.coordinates;
+  if (!hasUsableTrack(coordinates)) return null;
+  const origin = coordinates[0] ?? null;
+  const meetingPoint = resolveDrawingMeetingPoint(finalGeometry, params, coordinates);
+  const provenance = resolveDrawingProvenance(finalGeometry, params);
   return {
     name: "Itinéraire CleanMyMap",
     description: "Export de la géométrie finale actuellement retenue.",
-    provenance:
-      finalGeometry.source === "gpx_import"
-        ? params.gpxImport?.intent === "planned" || params.gpxImport?.provenance === "planned"
-          ? "planned"
-          : "observed"
-        : finalGeometry.source === "gps_tracking"
-          ? "observed"
-          : "planned",
-    tracks: [
-      {
-        geometry: { coordinates },
-        geometrySource: finalGeometry.source,
-        routeTopology: params.routeTopology ?? params.gpxImport?.inferredTopology,
-        waypoints: routeWaypoints({
-          coordinates,
-          origin,
-          stops: [],
-          meetingPoint,
-          departureLabel: params.departureLabel,
-          arrivalLabel: params.arrivalLabel,
-        }),
-      },
-    ],
+    provenance,
+    tracks: [{
+      geometry: { coordinates: coordinates.map(([latitude, longitude]) => [latitude, longitude]) },
+      geometrySource: finalGeometry.source,
+      routeTopology: params.routeTopology ?? params.gpxImport?.inferredTopology,
+      waypoints: routeWaypoints({ coordinates, origin, stops: [], meetingPoint, departureLabel: params.departureLabel, arrivalLabel: params.arrivalLabel }),
+    }],
   };
+}
+
+export function buildActionRouteGpxInput(params: ActionRouteGpxInput): GpxSerializerInput | null {
+  const finalGeometry = resolveRouteFinalGeometry(params);
+  if (!finalGeometry) return null;
+  if (finalGeometry.operationalRoute) {
+    return buildOperationalRouteGpx(finalGeometry, params);
+  }
+  return buildDrawingRouteGpx(finalGeometry, params);
 }
 
 export function buildActionRouteGpxDocument(

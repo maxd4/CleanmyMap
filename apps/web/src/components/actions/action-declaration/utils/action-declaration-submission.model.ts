@@ -134,6 +134,46 @@ type SubmissionValidationParams = {
   manualDrawingSource: ActionGeometrySource | null;
 };
 
+function getMeasurementIssues(form: FormState): ValidationIssue[] {
+  const fields = [
+    ["wasteKg", form.wasteKg], ["wasteRecyclablesKg", form.wasteRecyclablesKg],
+    ["wasteGlassKg", form.wasteGlassKg], ["wasteHouseholdKg", form.wasteHouseholdKg],
+    ["wasteOtherKg", form.wasteOtherKg], ["wasteMegotsKg", form.wasteMegotsKg],
+    ["cigaretteButtsCount", form.cigaretteButtsCount], ["cigaretteButtsVolumeLiters", form.cigaretteButtsVolumeLiters],
+  ] as const;
+  return fields.flatMap(([field, value]) => value.trim() && !Number.isFinite(Number(value))
+    ? [{ field: field as ValidationIssue["field"], message: "Saisissez une mesure numérique valide ou laissez ce champ vide." }]
+    : []);
+}
+
+function getParticipantIssues(form: FormState): ValidationIssue[] {
+  if (form.recordType !== "action") return [];
+  const totalInput = form.volunteersCount.trim();
+  const total = Number(totalInput);
+  if (!totalInput || !Number.isInteger(total) || total < 1 || total > 500) {
+    return [{ field: "volunteersCount", message: "Renseignez le nombre total de participants présents (un entier de 1 à 500)." }];
+  }
+  const compositionMessage = getVolunteerActionCompositionValidationMessage({ volunteersCount: total, childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount), retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount) });
+  return compositionMessage ? [{ field: "volunteerParticipation", message: compositionMessage }] : [];
+}
+
+function getGeometryIssues(params: Pick<SubmissionValidationParams, "form" | "payload" | "declarationMode" | "hasValidDrawing" | "hasServerRouteInput" | "isCleanPlaceMode" | "gpxImport" | "manualDrawingSource">): ValidationIssue[] {
+  const { form, payload, declarationMode, hasValidDrawing, hasServerRouteInput, isCleanPlaceMode, gpxImport, manualDrawingSource } = params;
+  const explicitGeometryMethod = form.geometryMethod;
+  const missingSource: ValidationIssue | null = explicitGeometryMethod === "manual" && manualDrawingSource !== "manual"
+    ? { field: "manualDrawing", message: "Un dessin manuel valide est requis pour la source cartographique sélectionnée." }
+    : explicitGeometryMethod === "gpx_import" && (manualDrawingSource !== "gpx_import" || !gpxImport)
+      ? { field: "gpxImport", message: "Un tracé GPX exploitable est requis pour la source cartographique sélectionnée." }
+      : explicitGeometryMethod === "generator" && !payload.preparationData?.operationalRoute?.routes?.length
+        ? { field: "geometryMethod", message: "Le parcours opérationnel du générateur est indisponible. Choisissez une autre source." }
+        : null;
+  const issues: ValidationIssue[] = missingSource ? [missingSource] : declarationMode === "complete" && !explicitGeometryMethod && !hasValidDrawing && !hasServerRouteInput && !isCleanPlaceMode
+    ? [{ field: "manualDrawing", message: "Ajoute un tracé manuel valide ou un aperçu géographique avant l'envoi." }]
+    : [];
+  if (gpxImport && manualDrawingSource !== "gpx_import") issues.push({ field: "gpxImport", message: "Le tracé GPX sélectionné n’est plus présent. Supprimez-le ou réimportez-le." });
+  return issues;
+}
+
 export function getActionDeclarationSubmissionIssues({
   form,
   payload,
@@ -151,50 +191,7 @@ export function getActionDeclarationSubmissionIssues({
 
   const issues: ValidationIssue[] = [...getStepOneValidationIssues(form)];
 
-  const rawMeasurementFields = [
-    ["wasteKg", form.wasteKg],
-    ["wasteRecyclablesKg", form.wasteRecyclablesKg],
-    ["wasteGlassKg", form.wasteGlassKg],
-    ["wasteHouseholdKg", form.wasteHouseholdKg],
-    ["wasteOtherKg", form.wasteOtherKg],
-    ["wasteMegotsKg", form.wasteMegotsKg],
-    ["cigaretteButtsCount", form.cigaretteButtsCount],
-    ["cigaretteButtsVolumeLiters", form.cigaretteButtsVolumeLiters],
-  ] as const;
-  for (const [field, rawValue] of rawMeasurementFields) {
-    if (rawValue.trim() && !Number.isFinite(Number(rawValue))) {
-      issues.push({
-        field,
-        message: "Saisissez une mesure numérique valide ou laissez ce champ vide.",
-      });
-    }
-  }
-
-  if (form.recordType === "action") {
-    const totalInput = form.volunteersCount.trim();
-    const total = Number(totalInput);
-    const hasInvalidTotal =
-      !totalInput ||
-      !Number.isInteger(total) ||
-      total < 1 ||
-      total > 500;
-    if (hasInvalidTotal) {
-      issues.push({
-        field: "volunteersCount",
-        message:
-          "Renseignez le nombre total de participants présents (un entier de 1 à 500).",
-      });
-    } else {
-      const compositionMessage = getVolunteerActionCompositionValidationMessage({
-        volunteersCount: total,
-        childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
-        retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
-      });
-      if (compositionMessage) {
-        issues.push({ field: "volunteerParticipation", message: compositionMessage });
-      }
-    }
-  }
+  issues.push(...getMeasurementIssues(form), ...getParticipantIssues(form));
 
   const measurementIssues = getActionMeasurementValidationIssues(payload);
   issues.push(...measurementIssues);
@@ -202,47 +199,7 @@ export function getActionDeclarationSubmissionIssues({
   const volunteerIssues = getVolunteerActionValidationIssues(payload);
   issues.push(...volunteerIssues);
 
-  const explicitGeometryMethod = form.geometryMethod;
-  const missingExplicitSource: ValidationIssue | null = explicitGeometryMethod === "manual" && manualDrawingSource !== "manual"
-    ? {
-        field: "manualDrawing",
-        message: "Un dessin manuel valide est requis pour la source cartographique sélectionnée.",
-      }
-    : explicitGeometryMethod === "gpx_import" && (manualDrawingSource !== "gpx_import" || !gpxImport)
-      ? {
-          field: "gpxImport",
-          message: "Un tracé GPX exploitable est requis pour la source cartographique sélectionnée.",
-        }
-      : explicitGeometryMethod === "generator" && !payload.preparationData?.operationalRoute?.routes?.length
-        ? {
-            field: "geometryMethod",
-            message: "Le parcours opérationnel du générateur est indisponible. Choisissez une autre source.",
-          }
-        : null;
-
-  if (missingExplicitSource) {
-    issues.push(missingExplicitSource);
-  } else if (
-    declarationMode === "complete" &&
-    !explicitGeometryMethod &&
-    !hasValidDrawing &&
-    !hasServerRouteInput &&
-    !isCleanPlaceMode
-  ) {
-    issues.push({
-      field: "manualDrawing",
-      message:
-        "Ajoute un tracé manuel valide ou un aperçu géographique avant l'envoi.",
-    });
-  }
-
-  if (gpxImport && manualDrawingSource !== "gpx_import") {
-    issues.push({
-      field: "gpxImport",
-      message:
-        "Le tracé GPX sélectionné n’est plus présent. Supprimez-le ou réimportez-le.",
-    });
-  }
+  issues.push(...getGeometryIssues({ form, payload, declarationMode, hasValidDrawing, hasServerRouteInput, isCleanPlaceMode, gpxImport, manualDrawingSource }));
 
   return issues.filter((issue, index, allIssues) =>
     allIssues.findIndex(

@@ -69,7 +69,11 @@ export function ChatActionModeration({ actionId, tone }: ChatActionModerationPro
     }, 200);
     return () => {
       controller.abort();
-      window.clearTimeout(timer);
+      if (typeof window === "undefined") {
+        clearTimeout(timer);
+      } else {
+        window.clearTimeout(timer);
+      }
     };
   }, [canModerate, query]);
 

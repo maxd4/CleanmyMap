@@ -23,6 +23,80 @@ type UseChatShellPollVotingParams = {
   mutateMessages: KeyedMutator<ChatMessagesResponse>;
 };
 
+async function fetchPollVotePayload(messageId: string, optionId: string | null) {
+  const response = await fetch(`/api/chat/polls/${encodeURIComponent(messageId)}/vote`, {
+    method: optionId ? "PUT" : "DELETE",
+    headers: optionId ? { "Content-Type": "application/json" } : undefined,
+    body: optionId ? JSON.stringify({ optionId }) : undefined,
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const errorPayload = payload as { hint?: unknown; error?: unknown } | null;
+    throw new Error(typeof errorPayload?.hint === "string" ? errorPayload.hint : typeof errorPayload?.error === "string" ? errorPayload.error : "Votre vote n'a pas pu être enregistré.");
+  }
+  return payload;
+}
+
+function requirePollVoteSummary(messageId: string, payload: unknown) {
+  const summary = normalizeChatPollVoteResponse(payload);
+  if (!summary) throw new Error("La réponse du sondage est invalide.");
+  if (summary.messageId !== messageId) throw new Error("La réponse du sondage ne correspond pas au sondage demandé.");
+  return summary;
+}
+
+async function fetchPollVoteSummary(messageId: string, optionId: string | null) {
+  return requirePollVoteSummary(messageId, await fetchPollVotePayload(messageId, optionId));
+}
+
+function updatePollCache(
+  mutateMessages: KeyedMutator<ChatMessagesResponse>,
+  messageId: string,
+  isCurrentRequest: () => boolean,
+  updateMessage: (message: ChatMessage) => ChatMessage,
+) {
+  return mutateMessages((data) => {
+    if (!isCurrentRequest()) return data;
+    return {
+      ...(data ?? { previousCursor: null, hasMore: false }),
+      messages: (data?.messages ?? []).map((message) => message.id === messageId ? updateMessage(message) : message),
+    };
+  }, { revalidate: false });
+}
+
+async function reconcilePollVoteFailure(params: {
+  error: unknown;
+  messageId: string;
+  optionId: string | null;
+  previousOptionId: string | null;
+  isCurrentRequest: () => boolean;
+  mutateMessages: KeyedMutator<ChatMessagesResponse>;
+  setPollVoteStates: React.Dispatch<React.SetStateAction<Record<string, ChatShellPollVoteState>>>;
+}) {
+  const { error, messageId, optionId, previousOptionId, isCurrentRequest, mutateMessages, setPollVoteStates } = params;
+  let reconciledData: ChatMessagesResponse | undefined;
+  try {
+    reconciledData = await mutateMessages(undefined, { revalidate: true });
+  } catch {
+    reconciledData = undefined;
+  }
+  if (!isCurrentRequest()) return;
+  const reconciledSelection = reconciledData?.messages.find((candidate) => candidate.id === messageId)?.selectedOptionId;
+  if (reconciledSelection === optionId) {
+    setPollVoteStates((states) => ({ ...states, [messageId]: { pending: false, error: null, retryOptionId: null } }));
+    return;
+  }
+  await mutateMessages((data) => {
+    if (!isCurrentRequest()) return data;
+    const serverSelection = reconciledData?.messages.find((candidate) => candidate.id === messageId)?.selectedOptionId;
+    return {
+      ...(data ?? { previousCursor: null, hasMore: false }),
+      messages: (data?.messages ?? []).map((message) => message.id === messageId && message.selectedOptionId === optionId && serverSelection !== optionId ? applyOptimisticChatPollVote(message, previousOptionId) : message),
+    };
+  }, { revalidate: false });
+  if (!isCurrentRequest()) return;
+  setPollVoteStates((states) => ({ ...states, [messageId]: { pending: false, error: error instanceof Error ? error.message : "Vote indisponible.", retryOptionId: optionId } }));
+}
+
 export function useChatShellPollVoting({
   messages,
   messagesKey,
@@ -40,7 +114,7 @@ export function useChatShellPollVoting({
     scopeKeyRef.current = messagesKey;
     activeRequestRef.current = {};
     pendingRequestRef.current = {};
-    setPollVoteStates({});
+    queueMicrotask(() => setPollVoteStates({}));
   }, [messagesKey]);
 
   const submitPollVote = useCallback(
@@ -71,124 +145,22 @@ export function useChatShellPollVoting({
 
       try {
         if (!isCurrentRequest()) return;
-        await mutateMessages(
-          (data) => {
-            if (!isCurrentRequest()) return data;
-            return {
-              ...(data ?? { previousCursor: null, hasMore: false }),
-              messages: (data?.messages ?? []).map((message) =>
-                message.id === messageId
-                  ? applyOptimisticChatPollVote(message, optionId)
-                  : message,
-              ),
-            };
-          },
-          { revalidate: false },
-        );
+        await updatePollCache(mutateMessages, messageId, isCurrentRequest, (message) => applyOptimisticChatPollVote(message, optionId));
         if (!isCurrentRequest()) return;
-        const response = await fetch(`/api/chat/polls/${encodeURIComponent(messageId)}/vote`, {
-          method: optionId ? "PUT" : "DELETE",
-          headers: optionId ? { "Content-Type": "application/json" } : undefined,
-          body: optionId ? JSON.stringify({ optionId }) : undefined,
-        });
-        const payload: unknown = await response.json().catch(() => null);
-        if (!response.ok) {
-          const errorPayload = payload as { hint?: unknown; error?: unknown } | null;
-          throw new Error(
-            typeof errorPayload?.hint === "string"
-              ? errorPayload.hint
-              : typeof errorPayload?.error === "string"
-                ? errorPayload.error
-                : "Votre vote n'a pas pu être enregistré.",
-          );
-        }
-
-        const summary = normalizeChatPollVoteResponse(payload);
-        if (!summary) {
-          throw new Error("La réponse du sondage est invalide.");
-        }
-        if (summary.messageId !== messageId) {
-          throw new Error("La réponse du sondage ne correspond pas au sondage demandé.");
-        }
+        const summary = await fetchPollVoteSummary(messageId, optionId);
 
         if (!isCurrentRequest()) {
           return;
         }
-        await mutateMessages(
-          (data) => {
-            if (!isCurrentRequest()) return data;
-            return {
-              ...(data ?? { previousCursor: null, hasMore: false }),
-              messages: (data?.messages ?? []).map((message) =>
-                message.id === messageId
-                  ? applyChatPollVoteSummary(message, summary)
-                  : message,
-              ),
-            };
-          },
-          { revalidate: false },
-        );
+        await updatePollCache(mutateMessages, messageId, isCurrentRequest, (message) => applyChatPollVoteSummary(message, summary));
         if (!isCurrentRequest()) return;
         setPollVoteStates((states) => ({
           ...states,
           [messageId]: { pending: false, error: null, retryOptionId: null },
         }));
       } catch (error) {
-        if (!isCurrentRequest()) {
-          return;
-        }
-
-        // A timeout may mean that the server committed the idempotent vote.
-        // Revalidate first; only inverse the optimistic transition if the
-        // current cache still exposes the optimistic selection.
         if (!isCurrentRequest()) return;
-        let reconciledData: ChatMessagesResponse | undefined;
-        try {
-          reconciledData = await mutateMessages(undefined, { revalidate: true });
-        } catch {
-          reconciledData = undefined;
-        }
-
-        if (!isCurrentRequest()) {
-          return;
-        }
-
-        const reconciledSelection = reconciledData?.messages.find(
-          (candidate) => candidate.id === messageId,
-        )?.selectedOptionId;
-        if (reconciledSelection === optionId) {
-          setPollVoteStates((states) => ({
-            ...states,
-            [messageId]: { pending: false, error: null, retryOptionId: null },
-          }));
-          return;
-        }
-
-        await mutateMessages(
-          (data) => {
-            if (!isCurrentRequest()) return data;
-            return {
-              ...(data ?? { previousCursor: null, hasMore: false }),
-              messages: (data?.messages ?? []).map((message) =>
-                message.id === messageId &&
-                message.selectedOptionId === optionId &&
-                reconciledData?.messages.find((candidate) => candidate.id === messageId)?.selectedOptionId !== optionId
-                  ? applyOptimisticChatPollVote(message, previousOptionId)
-                  : message,
-              ),
-            };
-          },
-          { revalidate: false },
-        );
-        if (!isCurrentRequest()) return;
-        setPollVoteStates((states) => ({
-          ...states,
-          [messageId]: {
-            pending: false,
-            error: error instanceof Error ? error.message : "Vote indisponible.",
-            retryOptionId: optionId,
-          },
-        }));
+        await reconcilePollVoteFailure({ error, messageId, optionId, previousOptionId, isCurrentRequest, mutateMessages, setPollVoteStates });
       } finally {
         if (activeRequestRef.current[messageId] === requestIdentity) {
           delete pendingRequestRef.current[messageId];

@@ -197,21 +197,13 @@ async function runActionModerationPostUpdateEffects(params: {
     reason,
     appendAuditOnce,
     setErrorStage,
-    previousImpactValue,
     shouldRefreshImpact,
-    isApprovalTransition,
-    isRejectionTransition,
     statusUpdate,
     visibilityUpdate,
-    dependencies,
   } = params;
 
   setErrorStage("post_update");
-  if (payload.status === "approved" && statusUpdate.source === "actions") {
-    const { recordRepollutionPredictionEvaluationForAction } =
-      await import("@/lib/actions/store");
-    await recordRepollutionPredictionEvaluationForAction(supabase, payload.id);
-  }
+  await recordApprovalEvaluation({ supabase, payload, statusUpdate });
   if (visibilityUpdate && !visibilityUpdate.found) {
     return actionNotFoundResponse({
       operationId,
@@ -228,46 +220,18 @@ async function runActionModerationPostUpdateEffects(params: {
   let copied = false;
   let refreshedProgressionUserIds: string[] = [];
   if (shouldRefreshImpact) {
-    const newImpactValue = await dependencies.loadActionImpactValues(
-      supabase,
-      payload.id,
-    );
-    refreshedProgressionUserIds = await refreshActionImpactProgressionDependents(
-      supabase,
-      {
-        actionId: payload.id,
-        creatorUserId:
-          newImpactValue?.createdByClerkId ??
-          previousImpactValue?.createdByClerkId ??
-          null,
-        refreshUsers: !isApprovalTransition && !isRejectionTransition,
-      },
-    );
+    refreshedProgressionUserIds = await refreshModerationImpact(params);
   }
   if (
     payload.status === "approved" &&
     requiredReasonOperation !== "restore_after_sanction"
   ) {
     setErrorStage("local_sync");
-    const syncResult = await copyValidatedActionToLocalStore(
-      supabase,
-      payload.id,
-      actorUserId,
-    );
+    const syncResult = await copyValidatedActionToLocalStore(supabase, payload.id, actorUserId);
     copied = syncResult.copied;
     setErrorStage("post_update");
   }
-  if (isApprovalTransition || isRejectionTransition) {
-    setErrorStage("post_update");
-    await runActionTransitionSideEffects(supabase, {
-      actionId: payload.id,
-      actorUserId,
-      approvalTransition: isApprovalTransition,
-      rejectionTransition: isRejectionTransition,
-      reason,
-      revision: statusUpdate.revision,
-    });
-  }
+  await runModerationTransition(params);
   await reconcileSchoolActionRecognitions({
     supabase,
     actionId: payload.id,
@@ -275,6 +239,34 @@ async function runActionModerationPostUpdateEffects(params: {
   });
 
   return { copied, refreshedProgressionUserIds };
+}
+
+async function recordApprovalEvaluation(params: Pick<Parameters<typeof runActionModerationPostUpdateEffects>[0], "supabase" | "payload" | "statusUpdate">): Promise<void> {
+  if (params.payload.status !== "approved" || params.statusUpdate.source !== "actions") return;
+  const { recordRepollutionPredictionEvaluationForAction } = await import("@/lib/actions/store");
+  await recordRepollutionPredictionEvaluationForAction(params.supabase, params.payload.id);
+}
+
+async function refreshModerationImpact(params: Parameters<typeof runActionModerationPostUpdateEffects>[0]): Promise<string[]> {
+  const newImpactValue = await params.dependencies.loadActionImpactValues(params.supabase, params.payload.id);
+  return refreshActionImpactProgressionDependents(params.supabase, {
+    actionId: params.payload.id,
+    creatorUserId: newImpactValue?.createdByClerkId ?? params.previousImpactValue?.createdByClerkId ?? null,
+    refreshUsers: !params.isApprovalTransition && !params.isRejectionTransition,
+  });
+}
+
+async function runModerationTransition(params: Parameters<typeof runActionModerationPostUpdateEffects>[0]): Promise<void> {
+  if (!params.isApprovalTransition && !params.isRejectionTransition) return;
+  params.setErrorStage("post_update");
+  await runActionTransitionSideEffects(params.supabase, {
+    actionId: params.payload.id,
+    actorUserId: params.actorUserId,
+    approvalTransition: params.isApprovalTransition,
+    rejectionTransition: params.isRejectionTransition,
+    reason: params.reason,
+    revision: params.statusUpdate.revision,
+  });
 }
 
 export async function completeActionModeration(params: {

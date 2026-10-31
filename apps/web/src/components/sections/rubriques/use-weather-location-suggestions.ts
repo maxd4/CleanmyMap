@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import useSWR from "swr";
 import {
   getLocalGeoAddressSuggestions,
@@ -20,6 +20,30 @@ type AddressSuggestionsResponse = {
   query: string;
   items: GeoAddressSuggestion[];
 };
+
+function useWeatherLocationDebounce(params: {
+  normalizedQuery: string;
+  lastQueryRef: MutableRefObject<string>;
+  generationRef: MutableRefObject<number>;
+  abortedQueryRef: MutableRefObject<Set<string>>;
+  abortActiveRequest: () => void;
+  setDebouncedQuery: (value: string) => void;
+  setPendingRevalidationQuery: (value: string | null) => void;
+}) {
+  const { normalizedQuery, lastQueryRef, generationRef, abortedQueryRef, abortActiveRequest, setDebouncedQuery, setPendingRevalidationQuery } = params;
+  useEffect(() => {
+    if (lastQueryRef.current !== normalizedQuery) {
+      lastQueryRef.current = normalizedQuery;
+      generationRef.current += 1;
+      abortActiveRequest();
+    }
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(normalizedQuery);
+      if (abortedQueryRef.current.has(normalizedQuery)) setPendingRevalidationQuery(normalizedQuery);
+    }, WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [abortActiveRequest, abortedQueryRef, generationRef, lastQueryRef, normalizedQuery, setDebouncedQuery, setPendingRevalidationQuery]);
+}
 
 export function useWeatherLocationSuggestions(locationQuery: string) {
   const locationSuggestionsAbortRef = useRef<AbortController | null>(null);
@@ -126,23 +150,7 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
     void revalidateLocationSuggestions().catch(() => undefined);
   }, [debouncedLocationQuery, pendingRevalidationQuery, revalidateLocationSuggestions]);
 
-  useEffect(() => {
-    const queryChanged = lastNormalizedLocationQueryRef.current !== normalizedLocationQuery;
-    if (queryChanged) {
-      lastNormalizedLocationQueryRef.current = normalizedLocationQuery;
-      locationQueryGenerationRef.current += 1;
-      abortActiveLocationRequest();
-    }
-
-    const timer = window.setTimeout(() => {
-      setDebouncedLocationQuery(normalizedLocationQuery);
-      if (abortedQueryRef.current.has(normalizedLocationQuery)) {
-        setPendingRevalidationQuery(normalizedLocationQuery);
-      }
-    }, WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [abortActiveLocationRequest, normalizedLocationQuery]);
+  useWeatherLocationDebounce({ normalizedQuery: normalizedLocationQuery, lastQueryRef: lastNormalizedLocationQueryRef, generationRef: locationQueryGenerationRef, abortedQueryRef, abortActiveRequest: abortActiveLocationRequest, setDebouncedQuery: setDebouncedLocationQuery, setPendingRevalidationQuery });
 
   useEffect(() => () => locationSuggestionsAbortRef.current?.abort(), []);
   useEffect(() => {

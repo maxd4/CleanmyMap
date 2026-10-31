@@ -70,6 +70,26 @@ function finiteNonNegativeNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
+function copyPublicRouteNumbers(input: Record<string, unknown>, output: Record<string, unknown>): void {
+  for (const key of ["routeTargetDistanceKm", "routeNetworkDistanceKm", "routeObservedDistanceKm"] as const) {
+    const value = finiteNonNegativeNumber(input[key]);
+    if (value !== undefined) output[key] = value;
+  }
+}
+
+function copyPublicRouteMetadata(input: Record<string, unknown>, output: Record<string, unknown>): void {
+  if (typeof input.geometryMethod === "string" && ["automatic", "generator", "manual", "gpx_import", "location_only"].includes(input.geometryMethod)) output.geometryMethod = input.geometryMethod;
+  if (input.gpxImportProvenance === "planned" || input.gpxImportProvenance === "unknown") output.gpxImportProvenance = input.gpxImportProvenance;
+  copyPublicRouteNumbers(input, output);
+  if (typeof input.routeGeometryMode === "string" && PUBLIC_ROUTE_GEOMETRY_MODES.has(input.routeGeometryMode)) output.routeGeometryMode = input.routeGeometryMode;
+  if (typeof input.routeGeometryProvider === "string" && PUBLIC_ROUTE_GEOMETRY_PROVIDERS.has(input.routeGeometryProvider)) output.routeGeometryProvider = input.routeGeometryProvider;
+}
+
+function copyPublicOperationalRoute(input: Record<string, unknown>, output: Record<string, unknown>): void {
+  const operationalRoute = getPublicOperationalRouteSegments(input.operationalRoute as Parameters<typeof getPublicOperationalRouteSegments>[0]);
+  if (operationalRoute.length > 0) output.operationalRoute = { routes: operationalRoute };
+}
+
 /** Public map contracts expose only the bounded cartographic preparation allowlist. */
 export function sanitizePublicObservedPreparationData(
   raw: unknown,
@@ -79,36 +99,8 @@ export function sanitizePublicObservedPreparationData(
   const output: Record<string, unknown> = {};
   const observedCoverage = parsePublicObservedCoverage(input.observedCoverage)?.observedCoverage;
   if (observedCoverage) output.observedCoverage = observedCoverage;
-
-  if (typeof input.geometryMethod === "string" && ["automatic", "generator", "manual", "gpx_import", "location_only"].includes(input.geometryMethod)) {
-    output.geometryMethod = input.geometryMethod;
-  }
-  if (input.gpxImportProvenance === "planned" || input.gpxImportProvenance === "unknown") {
-    output.gpxImportProvenance = input.gpxImportProvenance;
-  }
-
-  for (const key of [
-    "routeTargetDistanceKm",
-    "routeNetworkDistanceKm",
-    "routeObservedDistanceKm",
-  ] as const) {
-    const value = finiteNonNegativeNumber(input[key]);
-    if (value !== undefined) output[key] = value;
-  }
-
-  if (typeof input.routeGeometryMode === "string" && PUBLIC_ROUTE_GEOMETRY_MODES.has(input.routeGeometryMode)) {
-    output.routeGeometryMode = input.routeGeometryMode;
-  }
-  if (typeof input.routeGeometryProvider === "string" && PUBLIC_ROUTE_GEOMETRY_PROVIDERS.has(input.routeGeometryProvider)) {
-    output.routeGeometryProvider = input.routeGeometryProvider;
-  }
-
-  const operationalRoute = getPublicOperationalRouteSegments(
-    input.operationalRoute as Parameters<typeof getPublicOperationalRouteSegments>[0],
-  );
-  if (operationalRoute.length > 0) {
-    output.operationalRoute = { routes: operationalRoute };
-  }
+  copyPublicRouteMetadata(input, output);
+  copyPublicOperationalRoute(input, output);
 
   return Object.keys(output).length > 0 ? output as ActionPreparationData : undefined;
 }

@@ -8,60 +8,48 @@ import { buildAssociationActionReviewInboxItem, type CreatorInboxItem } from "@/
 import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities-publication-validation";
 import type { CreatorInboxAction } from "./route.shared";
 
-export async function handleCreatorInboxAssociationAction(params: {
+type AssociationActionParams = {
   operationId: string;
   actorUserId: string;
   itemId: string;
   action: CreatorInboxAction["action"];
   reason: string;
-}) {
-  if (params.action !== "approve_association_action" && params.action !== "reject_association_action" && params.action !== "retry_association_action_announcement") {
-    return NextResponse.json({ error: "Invalid association action decision." }, { status: 400 });
+};
+
+async function retryAssociationActionAnnouncement(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  current: NonNullable<Awaited<ReturnType<typeof loadActionById>>>,
+  params: AssociationActionParams,
+) {
+  if (!isAssociationActionReviewRequired(current) || current.review_state !== "approved") {
+    return NextResponse.json({ error: "Only an approved association action can be rediffused.", code: "state_conflict" }, { status: 409 });
   }
-  const supabase = getSupabaseServerClient(true);
-  const current = await loadActionById(supabase, params.itemId);
-  if (!current) return NextResponse.json({ error: "Action not found." }, { status: 404 });
-  if (params.action === "retry_association_action_announcement") {
-    if (!isAssociationActionReviewRequired(current) || current.review_state !== "approved") {
-      return NextResponse.json({ error: "Only an approved association action can be rediffused.", code: "state_conflict" }, { status: 409 });
-    }
-    try {
-      const diffusion = await publishOfficialAssociationActionAnnouncement({
-        supabase,
-        actionId: current.id,
-        actorUserId: params.actorUserId,
-        operationId: params.operationId,
-        retry: true,
-      });
-      const updated = await loadActionById(supabase, current.id);
-      const item = updated ? buildReviewItem(updated) : undefined;
-      return NextResponse.json(
-        { status: diffusion.state === "diffused" || diffusion.state === "already_diffused" ? "ok" : "partial", reviewState: current.review_state, diffusion, item },
-        { status: diffusion.retryable || diffusion.state === "not_eligible" ? 202 : 200 },
-      );
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Unable to retry association action diffusion." },
-        { status: 500 },
-      );
-    }
+  try {
+    const diffusion = await publishOfficialAssociationActionAnnouncement({ supabase, actionId: current.id, actorUserId: params.actorUserId, operationId: params.operationId, retry: true });
+    const updated = await loadActionById(supabase, current.id);
+    const item = updated ? buildReviewItem(updated) : undefined;
+    return NextResponse.json(
+      { status: diffusion.state === "diffused" || diffusion.state === "already_diffused" ? "ok" : "partial", reviewState: current.review_state, diffusion, item },
+      { status: diffusion.retryable || diffusion.state === "not_eligible" ? 202 : 200 },
+    );
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to retry association action diffusion." }, { status: 500 });
   }
+}
+
+async function decideAssociationAction(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  current: NonNullable<Awaited<ReturnType<typeof loadActionById>>>,
+  params: AssociationActionParams,
+) {
   if (!isAssociationActionReviewRequired(current) || current.review_state !== "pending_review") {
     return NextResponse.json({ error: "This review is no longer pending.", code: "state_conflict" }, { status: 409 });
   }
-
   try {
     if (params.action === "approve_association_action") {
       const formalities = await validateActionFormalitiesForPublication(current);
       if (!formalities.ok) {
-        return NextResponse.json(
-          {
-            error: "Une formalité requise n'est plus valide pour cette action.",
-            code: "required_formality_not_ready",
-            formalityIds: formalities.blockedFormalityIds,
-          },
-          { status: 422 },
-        );
+        return NextResponse.json({ error: "Une formalité requise n'est plus valide pour cette action.", code: "required_formality_not_ready", formalityIds: formalities.blockedFormalityIds }, { status: 422 });
       }
     }
     const decision = await decideAssociationActionReview({
@@ -74,42 +62,32 @@ export async function handleCreatorInboxAssociationAction(params: {
       expectedReviewState: "pending_review",
       expectedUpdatedAt: current.updated_at ?? null,
     });
-    if (decision.status === "conflict") {
-      return NextResponse.json({ error: "La demande a changé ; rechargez la file.", code: "state_conflict" }, { status: 409 });
-    }
-    if (decision.status === "not_found") {
-      return NextResponse.json({ error: "Action not found." }, { status: 404 });
-    }
-    if (decision.status === "formalities_not_ready") {
-      return NextResponse.json(
-        { error: "Une formalité requise n'est plus valide pour cette action.", code: "required_formality_not_ready" },
-        { status: 422 },
-      );
-    }
-    if (decision.review_state === "approved") {
-      await emitAdministrativeRequirementNotifications({ supabase, actionId: current.id });
-    }
+    if (decision.status === "conflict") return NextResponse.json({ error: "La demande a changé ; rechargez la file.", code: "state_conflict" }, { status: 409 });
+    if (decision.status === "not_found") return NextResponse.json({ error: "Action not found." }, { status: 404 });
+    if (decision.status === "formalities_not_ready") return NextResponse.json({ error: "Une formalité requise n'est plus valide pour cette action.", code: "required_formality_not_ready" }, { status: 422 });
+    if (decision.review_state === "approved") await emitAdministrativeRequirementNotifications({ supabase, actionId: current.id });
     const updated = await loadActionById(supabase, current.id);
     const diffusion = decision.review_state === "approved"
-      ? await publishOfficialAssociationActionAnnouncement({
-          supabase,
-          actionId: current.id,
-          actorUserId: params.actorUserId,
-          operationId: params.operationId,
-        })
+      ? await publishOfficialAssociationActionAnnouncement({ supabase, actionId: current.id, actorUserId: params.actorUserId, operationId: params.operationId })
       : null;
     const item: CreatorInboxItem | undefined = updated ? buildReviewItem(updated) : undefined;
     const partial = diffusion !== null && (diffusion.retryable || diffusion.state === "not_eligible");
-    return NextResponse.json(
-      { status: partial ? "partial" : "ok", reviewState: decision.review_state, diffusion, item },
-      { status: partial ? 202 : 200 },
-    );
+    return NextResponse.json({ status: partial ? "partial" : "ok", reviewState: decision.review_state, diffusion, item }, { status: partial ? 202 : 200 });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to decide association action review." },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to decide association action review." }, { status: 500 });
   }
+}
+
+export async function handleCreatorInboxAssociationAction(params: AssociationActionParams) {
+  const allowedAction = params.action === "approve_association_action" || params.action === "reject_association_action" || params.action === "retry_association_action_announcement";
+  if (!allowedAction) return NextResponse.json({ error: "Invalid association action decision." }, { status: 400 });
+  const supabase = getSupabaseServerClient(true);
+  const current = await loadActionById(supabase, params.itemId);
+  if (!current) return NextResponse.json({ error: "Action not found." }, { status: 404 });
+  if (params.action === "retry_association_action_announcement") {
+    return retryAssociationActionAnnouncement(supabase, current, params);
+  }
+  return decideAssociationAction(supabase, current, params);
 }
 
 function buildReviewItem(updated: Awaited<ReturnType<typeof loadActionById>>): CreatorInboxItem | undefined {

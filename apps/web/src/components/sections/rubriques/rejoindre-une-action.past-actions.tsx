@@ -263,6 +263,35 @@ function usePastActionFocus(focusedActionId: string | null | undefined, loading:
   }, [communityEventsLoading, communityEventCount, focusCommunityEventId]);
 }
 
+function PastActionItemsGrid({
+  items,
+  fr,
+  focusedActionId,
+  authenticated,
+  claimOverrides,
+  historyByActionId,
+  claimingActionId,
+  claimErrors,
+  requestClaim,
+  onShareAction,
+}: {
+  items: ActionListItem[];
+  fr: boolean;
+  focusedActionId?: string | null;
+  authenticated: boolean;
+  claimOverrides: Record<string, ClaimState>;
+  historyByActionId: Map<string, ClaimState>;
+  claimingActionId: string | null;
+  claimErrors: Record<string, string>;
+  requestClaim: (actionId: string) => Promise<void>;
+  onShareAction?: (actionId: string) => void;
+}) {
+  return <div className="grid gap-3 md:grid-cols-2">{items.map((item) => {
+    const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
+    return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => { void requestClaim(actionId); }} onShareAction={onShareAction} />;
+  })}</div>;
+}
+
 export function PastActionsPanel({
   items,
   loading,
@@ -329,12 +358,7 @@ export function PastActionsPanel({
       {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-semibold text-rose-800">{error}</p> : null}
       {!loading && !error && items.length === 0 ? <p className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 px-4 py-4 text-sm text-slate-700">{fr ? "Aucune action passée publique pour le moment." : "No public past action yet."}</p> : null}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {items.map((item) => {
-          const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
-          return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestClaim(actionId); }} onShareAction={onShareAction} />;
-        })}
-      </div>
+      <PastActionItemsGrid items={items} fr={fr} focusedActionId={focusedActionId} authenticated={authenticated} claimOverrides={claimOverrides} historyByActionId={historyByActionId} claimingActionId={claimingActionId} claimErrors={claimErrors} requestClaim={requestClaim} onShareAction={onShareAction} />
 
       <JoinCommunityEventsPanel
         fr={fr}

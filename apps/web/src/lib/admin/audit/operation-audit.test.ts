@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const readLocalRecordStoreMock = vi.hoisted(() => vi.fn());
+const writeLocalRecordStoreMock = vi.hoisted(() => vi.fn());
 const runtimeState = vi.hoisted(() => ({ allowFallback: false, useSupabase: true }));
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
@@ -12,7 +13,7 @@ vi.mock("@/lib/persistence/runtime-store", () => ({
 
 vi.mock("@/lib/persistence/local-record-store", () => ({
   readLocalRecordStore: readLocalRecordStoreMock,
-  writeLocalRecordStore: vi.fn(),
+  writeLocalRecordStore: writeLocalRecordStoreMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -131,6 +132,7 @@ describe("admin operation audit", () => {
         },
       ],
     });
+    writeLocalRecordStoreMock.mockResolvedValue(undefined);
   });
 
   it("filters by targetId and resolves the admin pseudo", async () => {
@@ -423,5 +425,130 @@ describe("admin operation audit", () => {
     });
     expect(second.items.map((item) => item.operationId)).toEqual(["op-c"]);
     expect(second.hasMore).toBe(false);
+  });
+
+  it("projects only the allowlisted audit details for private admin consumers", async () => {
+    const { projectAdminOperationAuditEntry } = await import("./operation-audit");
+    const projected = projectAdminOperationAuditEntry({
+      operationId: "op-1",
+      at: "2026-10-20T10:00:00Z",
+      actorUserId: "admin-1",
+      operationType: "moderation",
+      outcome: "success",
+      targetId: "action-1",
+      targetUserId: "member-1",
+      details: {
+        operation: "moderation_exclusion",
+        reason: "harassment",
+        partialMutation: true,
+        previousValue: { status: "open", secret: "hidden" },
+        newValue: { status: "blocked", internalId: "hidden" },
+        payload: { email: "personne@example.com" },
+      },
+    });
+
+    expect(projected.details).toEqual({
+      operation: "moderation_exclusion",
+      reason: "harassment",
+      partialMutation: true,
+      previousValue: { status: "open" },
+      newValue: { status: "blocked" },
+    });
+    expect(JSON.stringify(projected)).not.toContain("personne@example.com");
+  });
+
+  it("writes a normalized audit entry once after a successful Supabase insert", async () => {
+    const insertMock = vi.fn().mockResolvedValue({ error: null });
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn(() => ({ insert: insertMock })),
+    });
+    const { appendAdminOperationAudit } = await import("./operation-audit");
+    const entry = {
+      operationId: "op-append",
+      at: "2026-10-20T10:00:00Z",
+      actorUserId: "admin-1",
+      actorLabel: "Administrateur",
+      operationType: "moderation" as const,
+      outcome: "success" as const,
+      targetId: "action-1",
+      details: { operation: "moderation_exclusion" },
+    };
+
+    await expect(appendAdminOperationAudit(entry)).resolves.toBeUndefined();
+    expect(insertMock).toHaveBeenCalledWith({
+      operation_id: "op-append",
+      at: "2026-10-20T10:00:00Z",
+      actor_user_id: "admin-1",
+      operation_type: "moderation",
+      outcome: "success",
+      target_id: "action-1",
+      target_user_id: null,
+      details: { operation: "moderation_exclusion" },
+    });
+    expect(writeLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to local audit storage only when the explicit fallback is enabled", async () => {
+    runtimeState.allowFallback = true;
+    const insertMock = vi.fn().mockResolvedValue({ error: { message: "audit table unavailable" } });
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn(() => ({ insert: insertMock })),
+    });
+    const { appendAdminOperationAudit } = await import("./operation-audit");
+    await appendAdminOperationAudit({
+      operationId: "op-fallback",
+      at: "2026-10-20T10:00:00Z",
+      actorUserId: "admin-1",
+      operationType: "admin_operation",
+      outcome: "error",
+      details: { operation: "retry" },
+    });
+
+    expect(readLocalRecordStoreMock).toHaveBeenCalledTimes(1);
+    expect(writeLocalRecordStoreMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining([expect.objectContaining({ operationId: "op-fallback" })]),
+    );
+  });
+
+  it("does not hide a failed audit write when local fallback is forbidden", async () => {
+    const insertMock = vi.fn().mockResolvedValue({ error: { message: "audit write denied" } });
+    getSupabaseServerClientMock.mockReturnValue({
+      from: vi.fn(() => ({ insert: insertMock })),
+    });
+    const { appendAdminOperationAudit } = await import("./operation-audit");
+
+    await expect(appendAdminOperationAudit({
+      operationId: "op-denied",
+      at: "2026-10-20T10:00:00Z",
+      actorUserId: "admin-1",
+      operationType: "admin_operation",
+      outcome: "error",
+      details: { operation: "retry" },
+    })).rejects.toThrow("audit write denied");
+    expect(readLocalRecordStoreMock).not.toHaveBeenCalled();
+    expect(writeLocalRecordStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed cursors and caps local page limits without exposing extra records", async () => {
+    runtimeState.useSupabase = false;
+    readLocalRecordStoreMock.mockResolvedValue({
+      updatedAt: "2026-10-20T11:00:00Z",
+      records: Array.from({ length: 3 }, (_, index) => ({
+        operationId: `op-${index}`,
+        at: `2026-10-20T${String(10 - index).padStart(2, "0")}:00:00Z`,
+        actorUserId: "admin-1",
+        operationType: "admin_operation",
+        outcome: "success",
+        details: { operation: "audit" },
+      })),
+    });
+    const { listAdminOperationAuditPage } = await import("./operation-audit");
+
+    await expect(listAdminOperationAuditPage(0, { cursor: "not-base64-json" })).rejects.toThrow("Invalid admin audit cursor");
+    const page = await listAdminOperationAuditPage(1_000, { actorUserId: " admin-1 " });
+    expect(page.items).toHaveLength(3);
+    expect(page.hasMore).toBe(false);
+    expect(page.items.every((item) => item.actorLabel === "admin-1")).toBe(true);
   });
 });

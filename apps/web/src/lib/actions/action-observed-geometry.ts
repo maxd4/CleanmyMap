@@ -42,12 +42,7 @@ function pointInPolygon(point: LatLng, ring: LatLng[]): boolean {
   return inside;
 }
 
-function polygonRepresentative(ring: LatLng[]): LatLng | null {
-  const points = ring.length > 1 && ring[0]?.every((value, index) => value === ring.at(-1)?.[index])
-    ? ring.slice(0, -1)
-    : ring;
-  if (points.length < 3) return points[0] ?? null;
-
+function polygonCentroid(points: LatLng[]): LatLng | null {
   let twiceArea = 0;
   let centroidLatitude = 0;
   let centroidLongitude = 0;
@@ -63,7 +58,10 @@ function polygonRepresentative(ring: LatLng[]): LatLng | null {
     const centroid: LatLng = [centroidLatitude / (3 * twiceArea), centroidLongitude / (3 * twiceArea)];
     if (pointInPolygon(centroid, points)) return centroid;
   }
+  return null;
+}
 
+function polygonFallback(points: LatLng[]): LatLng | null {
   const latitudes = points.map(([latitude]) => latitude).sort((left, right) => left - right);
   const candidateLatitudes = [
     ...latitudes.slice(0, -1).map((latitude, index) => (latitude + latitudes[index + 1]) / 2),
@@ -96,6 +94,14 @@ function polygonRepresentative(ring: LatLng[]): LatLng | null {
     (left, right) => (left[0] - center[0]) ** 2 + (left[1] - center[1]) ** 2 -
       ((right[0] - center[0]) ** 2 + (right[1] - center[1]) ** 2),
   )[0] ?? null;
+}
+
+function polygonRepresentative(ring: LatLng[]): LatLng | null {
+  const points = ring.length > 1 && ring[0]?.every((value, index) => value === ring.at(-1)?.[index])
+    ? ring.slice(0, -1)
+    : ring;
+  if (points.length < 3) return points[0] ?? null;
+  return polygonCentroid(points) ?? polygonFallback(points);
 }
 
 function polylineRepresentative(coordinates: LatLng[]): LatLng | null {

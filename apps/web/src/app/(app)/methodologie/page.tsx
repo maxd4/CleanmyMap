@@ -1,17 +1,7 @@
 import type { Metadata } from "next";
-import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
-import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
-import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
-import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-composition";
-import type {
-  EnvironmentalImpactInfrastructureServiceEstimate,
-  EnvironmentalImpactPublicSnapshotPoint,
-} from "@/lib/environmental-impact-estimator/types";
-import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
-import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
-import { loadLatestPublicImpactSnapshot } from "@/lib/impact/public-impact-snapshot";
 import { buildPageMetadata } from "@/lib/metadata";
+import { loadMethodologiePageData } from "./methodologie-page-data";
 
 export const metadata: Metadata = buildPageMetadata("/methodologie", {
   title: "Méthodologie - Comment nous calculons l'impact",
@@ -34,83 +24,6 @@ export const metadata: Metadata = buildPageMetadata("/methodologie", {
 export const revalidate = 86400;
 
 export default async function MethodologiePage() {
-  let freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[] = [];
-  let impactSnapshots: EnvironmentalImpactPublicSnapshotPoint[] = [];
-  let githubStats: GitHubRepositoryStats | null = null;
-  let impactTotals = {
-    monthlyKgCo2eProxy: null as number | null,
-    annualKgCo2eProxy: null as number | null,
-    totalKgCo2eProxy: null as number | null,
-    generatedAt: null as string | null,
-  };
-  let impactGeneratedAt: string | null = null;
-  let impactLaunchedAt: string | null = null;
-  let impactTerrainResults: PublicLandingActionAggregation | null = null;
-  let impactTerrainGeneratedAt: string | null = null;
-  let impactTerrainMethodologyVersion: string | null = null;
-  let impactElectricity = buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
-  let impactWater = buildWaterEstimate({
-    monthlyElectricityKwh: null,
-    monthlyDirectWaterConsumptionLiters: null,
-    monthlyEvaporatedWaterLiters: null,
-  });
-
-  const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap", {
-    revalidateSeconds: 86400,
-  }).catch((error) => {
-    console.error("[MethodologiePage] Failed to load GitHub repository stats", error);
-    return null;
-  });
-
-  try {
-    const dashboard = await loadEnvironmentalImpactDashboardSnapshotOnly({ historyLimit: 24 });
-
-    if (dashboard) {
-      freePlanServices = dashboard.model.infrastructure.services;
-      impactTotals = {
-        monthlyKgCo2eProxy: dashboard.model.infrastructure.monthlyKgCo2eProxy ?? null,
-        annualKgCo2eProxy: dashboard.model.infrastructure.annualKgCo2eProxy ?? null,
-        totalKgCo2eProxy: dashboard.model.infrastructure.totalKgCo2eProxy ?? null,
-        generatedAt: dashboard.model.infrastructure.generatedAt ?? null,
-      };
-      impactElectricity = dashboard.model.methodology?.electricity ?? impactElectricity;
-      impactWater = dashboard.model.methodology?.water ?? dashboard.model.infrastructure?.water ?? impactWater;
-      impactSnapshots = dashboard.snapshots.map(({ snapshotDate, monthlyKgCo2eProxy }) => ({
-        snapshotDate,
-        monthlyKgCo2eProxy,
-      }));
-      impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
-      impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
-    }
-  } catch (error) {
-    console.error("[MethodologiePage] Failed to load public impact services", error);
-  }
-
-  try {
-    const impactSnapshot = await loadLatestPublicImpactSnapshot();
-    impactTerrainResults = impactSnapshot?.payload.kpis ?? null;
-    impactTerrainGeneratedAt = impactSnapshot?.generatedAt ?? null;
-    impactTerrainMethodologyVersion =
-      impactSnapshot?.payload.methodologyVersion ?? null;
-  } catch (error) {
-    console.error("[MethodologiePage] Failed to load monthly public terrain snapshot", error);
-  }
-
-  githubStats = await githubStatsPromise;
-
-  return (
-    <MethodologiePageClient
-      freePlanServices={freePlanServices}
-      impactTotals={impactTotals}
-      impactSnapshots={impactSnapshots}
-      impactGeneratedAt={impactGeneratedAt}
-      impactLaunchedAt={impactLaunchedAt}
-      impactTerrainResults={impactTerrainResults}
-      impactTerrainGeneratedAt={impactTerrainGeneratedAt}
-      impactTerrainMethodologyVersion={impactTerrainMethodologyVersion}
-      impactElectricity={impactElectricity}
-      impactWater={impactWater}
-      githubStats={githubStats}
-    />
-  );
+  const data = await loadMethodologiePageData();
+  return <MethodologiePageClient {...data} />;
 }

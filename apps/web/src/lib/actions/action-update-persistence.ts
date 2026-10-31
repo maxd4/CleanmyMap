@@ -40,6 +40,14 @@ export type PreparedActionUpdate = {
   updateData: Record<string, unknown>;
 };
 
+function getExplicitActionContext(body: ActionUpdateInput) {
+  const preparationContextProvided = body.preparationData !== undefined && Object.prototype.hasOwnProperty.call(body.preparationData ?? {}, "actionContextSelection");
+  return {
+    provided: Object.prototype.hasOwnProperty.call(body, "actionContext") || preparationContextProvided,
+    value: body.actionContext !== undefined ? body.actionContext : preparationContextProvided ? body.preparationData?.actionContextSelection : undefined,
+  };
+}
+
 function buildActionContextUpdate(params: {
   current: ActionRow;
   body: ActionUpdateInput;
@@ -49,40 +57,13 @@ function buildActionContextUpdate(params: {
   userId?: string;
 }): Record<string, unknown> {
   const { current, body, nextActionPhase, nextParticipation, nextVolunteersCount, userId } = params;
-  const preparationContextProvided =
-    body.preparationData !== undefined &&
-    Object.prototype.hasOwnProperty.call(body.preparationData ?? {}, "actionContextSelection");
-  const explicitContextProvided =
-    Object.prototype.hasOwnProperty.call(body, "actionContext") || preparationContextProvided;
-  const explicitContext =
-    body.actionContext !== undefined
-      ? body.actionContext
-      : preparationContextProvided
-        ? body.preparationData?.actionContextSelection
-        : undefined;
-  const participationChanged =
-    body.volunteersCount !== undefined || body.volunteerParticipation !== undefined;
-  const shouldResolve =
-    explicitContextProvided ||
-    (nextActionPhase === "post_action_complete" &&
-      (current.action_phase !== "post_action_complete" || participationChanged));
+  const explicitContext = getExplicitActionContext(body);
+  const shouldResolve = explicitContext.provided || (nextActionPhase === "post_action_complete" && (current.action_phase !== "post_action_complete" || body.volunteersCount !== undefined || body.volunteerParticipation !== undefined));
+  if (!shouldResolve || (!explicitContext.provided && current.action_context_source === "explicit")) return {};
 
-  if (!shouldResolve) return {};
-  if (!explicitContextProvided && current.action_context_source === "explicit") return {};
-
-  const classification =
-    nextActionPhase === "pre_action" && explicitContext === null
-      ? { context: null, source: null }
-      : nextActionPhase === "pre_action" && explicitContext === undefined
-        ? { context: null, source: null }
-        : resolveActionContext({
-            composition: {
-              volunteersCount: nextVolunteersCount,
-              childrenCount: nextParticipation?.childrenCount,
-              retiredCount: nextParticipation?.retiredCount,
-            },
-            explicitContext,
-          });
+  const classification = nextActionPhase === "pre_action" && explicitContext.value == null
+    ? { context: null, source: null }
+    : resolveActionContext({ composition: { volunteersCount: nextVolunteersCount, childrenCount: nextParticipation?.childrenCount, retiredCount: nextParticipation?.retiredCount }, explicitContext: explicitContext.value });
   const explicitSchool = classification.source === "explicit" && classification.context === "school";
   return {
     action_context: classification.context,
@@ -181,6 +162,58 @@ export async function persistActionUpdate(params: {
   };
 }
 
+function validateActionUpdateInput(params: {
+  current: ActionRow;
+  body: ActionUpdateInput;
+  nextActionPhase: ActionRow["action_phase"];
+  currentMetadata: ActionMetadata;
+}) {
+  const { current, body, nextActionPhase, currentMetadata } = params;
+  const submittedDrawing = getExplicitDrawing(body);
+  if (submittedDrawing && isManualDrawingReplacementBlocked(current, body.geometrySource)) {
+    throw new ActionUpdateValidationError("manualDrawing", "Un dessin manuel ne peut pas remplacer un tracé GPX ou GPS déjà observé.");
+  }
+  validateEffectiveActionDate(current, body, nextActionPhase);
+  validateEffectiveActionCoordinates(current, body);
+  if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
+    throw new ActionUpdateValidationError("accessMode", "Le mode privé sur invitation est réservé aux pré-actions.");
+  }
+  if (nextActionPhase === "pre_action" && body.preparationData) {
+    const forecastMessage = getVolunteerForecastValidationMessage({ volunteersExpected: body.preparationData.volunteersExpected, volunteerParticipation: body.preparationData.volunteerParticipation });
+    if (forecastMessage) throw new ActionUpdateValidationError("preparationData", forecastMessage);
+  }
+  const isFinalization = isNewFinalization(current, nextActionPhase);
+  const isParticipantSubmission = nextActionPhase === "post_action_complete" && (body.volunteersCount !== undefined || body.volunteerParticipation !== undefined);
+  if (isFinalization || isParticipantSubmission) validateParticipantUpdate({ current, body, currentMetadata, isFinalization });
+  const temporalMessage = getTimeContractValidationMessage({
+    actionDurationMinutes: body.durationMinutes !== undefined ? body.durationMinutes : current.duration_minutes,
+    startTime: body.eventStartTime !== undefined ? body.eventStartTime : current.event_start_time,
+    endTime: body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
+  });
+  if (temporalMessage) throw new ActionUpdateValidationError("eventStartTime", temporalMessage);
+  return { submittedDrawing };
+}
+
+function validateParticipantUpdate(params: {
+  current: ActionRow;
+  body: ActionUpdateInput;
+  currentMetadata: ActionMetadata;
+  isFinalization: boolean;
+}) {
+  const { current, body, currentMetadata, isFinalization } = params;
+  const participation = isFinalization
+    ? body.volunteerParticipation
+    : body.volunteerParticipation !== undefined
+      ? body.volunteerParticipation
+      : resolvePersistedVolunteerParticipation({ childrenCount: current.children_count, adultCount: current.adult_count, retiredCount: current.retired_count, volunteersCount: current.volunteers_count, legacyParticipation: currentMetadata.volunteerParticipation });
+  const compositionMessage = getVolunteerActionCompositionValidationMessage({
+    volunteersCount: isFinalization ? body.volunteersCount ?? null : body.volunteersCount ?? current.volunteers_count,
+    childrenCount: participation?.childrenCount ?? null,
+    retiredCount: participation?.retiredCount ?? null,
+  });
+  if (compositionMessage) throw new ActionUpdateValidationError("volunteerParticipation", compositionMessage);
+}
+
 export async function prepareActionUpdate(params: {
   current: ActionRow;
   parsedBody: ActionUpdateInput;
@@ -201,85 +234,9 @@ export async function prepareActionUpdate(params: {
   }
 
   const nextActionPhase = body.actionPhase ?? current.action_phase;
-  const submittedDrawing = getExplicitDrawing(body);
-  if (
-    submittedDrawing &&
-    isManualDrawingReplacementBlocked(current, body.geometrySource)
-  ) {
-    throw new ActionUpdateValidationError(
-      "manualDrawing",
-      "Un dessin manuel ne peut pas remplacer un tracé GPX ou GPS déjà observé.",
-    );
-  }
-  validateEffectiveActionDate(current, body, nextActionPhase);
-  validateEffectiveActionCoordinates(current, body);
-  if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
-    throw new ActionUpdateValidationError(
-      "accessMode",
-      "Le mode privé sur invitation est réservé aux pré-actions.",
-    );
-  }
-  if (nextActionPhase === "pre_action" && body.preparationData) {
-    const volunteerForecastMessage = getVolunteerForecastValidationMessage({
-      volunteersExpected: body.preparationData.volunteersExpected,
-      volunteerParticipation: body.preparationData.volunteerParticipation,
-    });
-    if (volunteerForecastMessage) {
-      throw new ActionUpdateValidationError(
-        "preparationData",
-        volunteerForecastMessage,
-      );
-    }
-  }
 
   const currentMetadata = extractActionMetadataFromNotes(current.notes);
-  const isFinalization = isNewFinalization(current, nextActionPhase);
-  const isParticipantSubmission =
-    nextActionPhase === "post_action_complete" &&
-    (body.volunteersCount !== undefined ||
-      body.volunteerParticipation !== undefined);
-  if (isFinalization || isParticipantSubmission) {
-    const participation =
-      isFinalization
-        ? body.volunteerParticipation
-        : body.volunteerParticipation !== undefined
-        ? body.volunteerParticipation
-        : resolvePersistedVolunteerParticipation({
-            childrenCount: current.children_count,
-            adultCount: current.adult_count,
-            retiredCount: current.retired_count,
-            volunteersCount: current.volunteers_count,
-            legacyParticipation: currentMetadata.volunteerParticipation,
-          });
-    const compositionMessage = getVolunteerActionCompositionValidationMessage({
-      volunteersCount: isFinalization
-        ? body.volunteersCount ?? null
-        : body.volunteersCount ?? current.volunteers_count,
-      childrenCount: participation?.childrenCount ?? null,
-      retiredCount: participation?.retiredCount ?? null,
-    });
-    if (compositionMessage) {
-      throw new ActionUpdateValidationError(
-        "volunteerParticipation",
-        compositionMessage,
-      );
-    }
-  }
-  const temporalMessage = getTimeContractValidationMessage({
-    actionDurationMinutes:
-      body.durationMinutes !== undefined
-        ? body.durationMinutes
-        : current.duration_minutes,
-    startTime:
-      body.eventStartTime !== undefined
-        ? body.eventStartTime
-        : current.event_start_time,
-    endTime:
-      body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
-  });
-  if (temporalMessage) {
-    throw new ActionUpdateValidationError("eventStartTime", temporalMessage);
-  }
+  const { submittedDrawing } = validateActionUpdateInput({ current, body, nextActionPhase, currentMetadata });
 
   const updateData = await buildActionUpdateFields({ current, body });
   const measurements = buildActionUpdateMeasurements({

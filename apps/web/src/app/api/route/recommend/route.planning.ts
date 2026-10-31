@@ -396,19 +396,7 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
         plannedStops.map(({ candidate }) => candidate.id),
       )
     : null;
-  const operationalPasses = groupRoutes.length > 1
-    ? groupRoutes.flatMap((group, index) =>
-        buildStreetCleaningStreetPassesFromGeometry({
-          routeId: `group-${group.groupIndex}`,
-          routeOrder: index,
-          routeGeometry: group.routeGeometry,
-        }),
-      )
-    : buildStreetCleaningStreetPassesFromGeometry({
-        routeId: "main",
-        routeOrder: 0,
-        routeGeometry,
-      });
+  const operationalPasses = buildOperationalPasses(groupRoutes ?? [], routeGeometry);
   const operationalCorridorPlan = planOperationalStreetCorridors({
     passes: operationalPasses,
   });
@@ -444,4 +432,13 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
     ),
     ...(input.weatherContext ? { weatherContext: structuredClone(input.weatherContext) } : {}),
   };
+}
+
+function buildOperationalPasses(
+  groupRoutes: NonNullable<RoutePlanningResult["groupRoutes"]>,
+  routeGeometry: RoutePlanningResult["routeGeometry"],
+) {
+  return groupRoutes.length > 1
+    ? groupRoutes.flatMap((group, index) => buildStreetCleaningStreetPassesFromGeometry({ routeId: `group-${group.groupIndex}`, routeOrder: index, routeGeometry: group.routeGeometry }))
+    : buildStreetCleaningStreetPassesFromGeometry({ routeId: "main", routeOrder: 0, routeGeometry });
 }

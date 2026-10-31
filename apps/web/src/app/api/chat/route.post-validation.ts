@@ -23,21 +23,29 @@ type ChatPostValidationResult =
   | { ok: true; value: ValidatedChatPost }
   | { ok: false; response: Response };
 
-function validateActionContract(data: SendChatMessageData): Response | null {
+function validateActionChannel(data: SendChatMessageData): Response | null {
   if (data.channelType === "action" && !data.actionId) {
     return NextResponse.json(
       { error: "Action requise", hint: "Sélectionnez une action publiée." },
       { status: 400 },
     );
   }
-  const isExternalActionShare =
-    data.channelType !== "action" && Boolean(data.actionId) && !data.buddyRequestId;
+  return null;
+}
+
+function validateBuddyContract(data: SendChatMessageData): Response | null {
   if (data.buddyRequestId && (data.channelType !== "dm" || !data.actionId)) {
     return NextResponse.json(
       { error: "Contact binôme invalide", hint: "Le contact d'un binôme doit rester lié à son action et à son DM." },
       { status: 400 },
     );
   }
+  return null;
+}
+
+function validateExternalActionShare(data: SendChatMessageData): Response | null {
+  const isExternalActionShare =
+    data.channelType !== "action" && Boolean(data.actionId) && !data.buddyRequestId;
   if (
     isExternalActionShare &&
     !["community", "territory", "dm"].includes(data.channelType)
@@ -147,7 +155,9 @@ export async function validateChatPostRequest(
     parsed.data.channelType !== "action" && Boolean(parsed.data.actionId) && !parsed.data.buddyRequestId;
   const isBuddyContact = Boolean(parsed.data.buddyRequestId);
   for (const response of [
-    validateActionContract(parsed.data),
+    validateActionChannel(parsed.data),
+    validateBuddyContract(parsed.data),
+    validateExternalActionShare(parsed.data),
     validateMessageContract(parsed.data, topicValidation.topicId),
     validateAttachmentContract(parsed.data),
   ]) {

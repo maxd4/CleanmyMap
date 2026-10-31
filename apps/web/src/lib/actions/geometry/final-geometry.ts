@@ -198,6 +198,27 @@ function resolvePersistedCandidate(
   };
 }
 
+function resolveExplicitGeometryMethod(
+  input: FinalActionGeometryInput,
+  gpxTagged: boolean,
+  operationalRoute: OperationalRoute | null,
+  operationalCandidate: Pick<FinalActionGeometry, "drawing" | "source"> | null,
+): FinalActionGeometry | null | undefined {
+  if (input.geometryMethod === "location_only") return null;
+  if (input.geometryMethod === "gpx_import") return resolveGpxCandidate(input);
+  if (input.geometryMethod === "manual" || (!input.geometryMethod && canUseManualCandidate(input, gpxTagged))) {
+    return canUseManualCandidate(input, gpxTagged)
+      ? { drawing: input.manualDrawing, source: "manual", operationalRoute: null }
+      : null;
+  }
+  if (input.geometryMethod === "generator" || (input.geometryMethod !== "automatic" && operationalRoute && operationalCandidate)) {
+    return operationalRoute && operationalCandidate
+      ? { ...operationalCandidate, operationalRoute, meetingPoint: getOperationalRouteMeetingPoint(operationalRoute) }
+      : null;
+  }
+  return undefined;
+}
+
 /**
  * Selects the one active geometry without routing, snapping, or reconstruction.
  * The order is field tracking, GPX, manual drawing, operational route, persisted geometry, then
@@ -211,54 +232,11 @@ export function resolveFinalActionGeometry(
     resolveTrackingCandidate(input) ?? resolveGpxCandidate(input);
   if (observedCandidate) return observedCandidate;
 
-  if (input.geometryMethod === "location_only") return null;
-
   const gpxTagged = hasGpxTag(input);
   const { route: operationalRoute, candidate: operationalCandidate } =
     resolveOperationalCandidate(input);
-
-  if (input.geometryMethod === "gpx_import") {
-    return resolveGpxCandidate(input);
-  }
-
-  if (input.geometryMethod === "manual") {
-    return canUseManualCandidate(input, gpxTagged)
-      ? {
-          drawing: input.manualDrawing,
-          source: "manual",
-          operationalRoute: null,
-        }
-      : null;
-  }
-
-  if (input.geometryMethod === "generator") {
-    return operationalRoute && operationalCandidate
-      ? {
-          ...operationalCandidate,
-          operationalRoute,
-          meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
-        }
-      : null;
-  }
-
-  if (
-    !input.geometryMethod &&
-    canUseManualCandidate(input, gpxTagged)
-  ) {
-    return {
-      drawing: input.manualDrawing,
-      source: "manual",
-      operationalRoute: null,
-    };
-  }
-
-  if (input.geometryMethod !== "automatic" && operationalRoute && operationalCandidate) {
-    return {
-      ...operationalCandidate,
-      operationalRoute,
-      meetingPoint: getOperationalRouteMeetingPoint(operationalRoute),
-    };
-  }
+  const explicitCandidate = resolveExplicitGeometryMethod(input, gpxTagged, operationalRoute, operationalCandidate);
+  if (explicitCandidate !== undefined) return explicitCandidate;
 
   const persistedCandidate = resolvePersistedCandidate(input);
   if (persistedCandidate) return persistedCandidate;

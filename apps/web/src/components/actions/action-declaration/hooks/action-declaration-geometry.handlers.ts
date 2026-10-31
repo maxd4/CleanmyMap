@@ -24,6 +24,38 @@ type ActionDeclarationGeometryHandlersParams = {
   updateForm: UpdateForm;
 };
 
+function ensureUniqueFileIdentities(existingFiles: ActionGpxImportFile[], incomingFiles: ActionGpxImportFile[]) {
+  const usedFileIds = new Set(existingFiles.flatMap((file) => file.fileId ? [file.fileId] : []));
+  return incomingFiles.map((file) => {
+    let fileId = file.fileId;
+    while (!fileId || usedFileIds.has(fileId)) fileId = createGpxFileIdentity();
+    usedFileIds.add(fileId);
+    return { ...file, fileId, segments: file.segments.map((segment) => ({ ...segment, fileId })) };
+  });
+}
+
+function rebuildGpxMetadata(files: ActionGpxImportFile[], routeTopology: FormState["routeTopology"], intent: ActionGpxImportMetadata["intent"] = "planned") {
+  const effectiveIntent = files.some((file) => file.provenance === "planned") ? "planned" : intent;
+  const segments = files.flatMap((file) => file.segments);
+  const first = segments[0];
+  return {
+    source: "gpx_import" as const,
+    observedDistanceKm: Number(segments.reduce((total, segment) => total + segment.distanceKm, 0).toFixed(3)),
+    pointCount: segments.reduce((total, segment) => total + segment.pointCount, 0),
+    inferredTopology: first?.topology ?? routeTopology,
+    segmentTopologies: segments.map((segment) => segment.topology),
+    segmentDistancesKm: segments.map((segment) => segment.distanceKm),
+    segmentPointCounts: segments.map((segment) => segment.pointCount),
+    segmentCount: segments.length,
+    traceCount: new Set(files.flatMap((file) => file.segments.map((segment) => `${file.fileId ?? segment.fileId ?? file.fileName}:${segment.traceIndex}`))).size,
+    provenance: files.every((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
+    intent: effectiveIntent,
+    gpxImportProvenance: files.some((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
+    files,
+    fileName: files.length === 1 ? files[0]?.fileName : undefined,
+  } satisfies ActionGpxImportMetadata;
+}
+
 export function createActionDeclarationGeometryHandlers({
   form,
   manualDrawing,
@@ -33,42 +65,6 @@ export function createActionDeclarationGeometryHandlers({
   setGpxError,
   updateForm,
 }: ActionDeclarationGeometryHandlersParams) {
-  function ensureUniqueFileIdentities(existingFiles: ActionGpxImportFile[], incomingFiles: ActionGpxImportFile[]) {
-    const usedFileIds = new Set(existingFiles.flatMap((file) => file.fileId ? [file.fileId] : []));
-    return incomingFiles.map((file) => {
-      let fileId = file.fileId;
-      while (!fileId || usedFileIds.has(fileId)) fileId = createGpxFileIdentity();
-      usedFileIds.add(fileId);
-      return {
-        ...file,
-        fileId,
-        segments: file.segments.map((segment) => ({ ...segment, fileId })),
-      };
-    });
-  }
-
-  function rebuildMetadata(files: ActionGpxImportFile[], intent: ActionGpxImportMetadata["intent"] = form.gpxImport?.intent ?? "planned") {
-    const effectiveIntent = files.some((file) => file.provenance === "planned") ? "planned" : intent;
-    const segments = files.flatMap((file) => file.segments);
-    const first = segments[0];
-    return {
-      source: "gpx_import" as const,
-      observedDistanceKm: Number(segments.reduce((total, segment) => total + segment.distanceKm, 0).toFixed(3)),
-      pointCount: segments.reduce((total, segment) => total + segment.pointCount, 0),
-      inferredTopology: first?.topology ?? form.routeTopology,
-      segmentTopologies: segments.map((segment) => segment.topology),
-      segmentDistancesKm: segments.map((segment) => segment.distanceKm),
-      segmentPointCounts: segments.map((segment) => segment.pointCount),
-      segmentCount: segments.length,
-      traceCount: new Set(files.flatMap((file) => file.segments.map((segment) => `${file.fileId ?? segment.fileId ?? file.fileName}:${segment.traceIndex}`))).size,
-      provenance: files.every((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
-      intent: effectiveIntent,
-      gpxImportProvenance: files.some((file) => file.provenance === "planned") ? "planned" as const : "unknown" as const,
-      files,
-      fileName: files.length === 1 ? files[0]?.fileName : undefined,
-    } satisfies ActionGpxImportMetadata;
-  }
-
   async function handleGpxImport(filesInput: FileList | readonly File[] | null) {
     const files = filesInput ? Array.from(filesInput) : [];
     if (files.length === 0) return;
@@ -106,7 +102,7 @@ export function createActionDeclarationGeometryHandlers({
       }
       const existingFiles = form.gpxImport?.files ?? [];
       const allFiles = [...existingFiles, ...ensureUniqueFileIdentities(existingFiles, candidates)];
-      const metadata = rebuildMetadata(allFiles);
+      const metadata = rebuildGpxMetadata(allFiles, form.routeTopology, form.gpxImport?.intent ?? "planned");
       const firstSegment = allFiles.flatMap((file) => file.segments)[0];
       const drawing: ActionDrawing | null = firstSegment
         ? { kind: "polyline", coordinates: firstSegment.coordinates }
@@ -156,7 +152,7 @@ export function createActionDeclarationGeometryHandlers({
         })
         .filter((file): file is ActionGpxImportFile => Boolean(file))
         .filter((file) => file.error ? true : file.segments.length > 0);
-      const nextMetadata = files.length > 0 ? rebuildMetadata(files) : null;
+      const nextMetadata = files.length > 0 ? rebuildGpxMetadata(files, form.routeTopology, form.gpxImport?.intent ?? "planned") : null;
       const firstSegment = files.flatMap((file) => file.segments)[0];
       const nextDrawing = firstSegment ? { kind: "polyline" as const, coordinates: firstSegment.coordinates } : null;
       setManualDrawingState(nextDrawing);

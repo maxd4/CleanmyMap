@@ -42,156 +42,106 @@ function hasValidLocalTestToken(request: Request): boolean {
   return Boolean(tokenFromHeader && tokenFromHeader === configuredToken);
 }
 
-export async function POST(request: Request) {
+type SendAccess = {
+  actorUserId: string | null;
+  adminActorUserId: string | null;
+  operationId: string | null;
+};
+
+async function resolveSendAccess(request: Request): Promise<SendAccess | Response> {
   const tokenAuthorized = hasValidLocalTestToken(request);
   const { userId: authenticatedUserId } = await auth();
-  let adminActorUserId: string | null = null;
-
-  if (!tokenAuthorized) {
-    const access = await requireAdminAccess();
-    if (!access.ok) {
-      return adminAccessErrorJsonResponse(access);
-    }
-    adminActorUserId = access.userId;
+  if (tokenAuthorized) {
+    return { actorUserId: authenticatedUserId, adminActorUserId: null, operationId: null };
   }
+  const access = await requireAdminAccess();
+  if (!access.ok) return adminAccessErrorJsonResponse(access);
+  return {
+    actorUserId: access.userId ?? authenticatedUserId,
+    adminActorUserId: access.userId,
+    operationId: createEmailTestAuditOperationId("send"),
+  };
+}
 
-  const actorUserId = adminActorUserId ?? authenticatedUserId;
-  const operationId = adminActorUserId
-    ? createEmailTestAuditOperationId("send")
-    : null;
-
-  const from = resolveEmailFrom();
-  const replyTo = resolveContactEmail();
-
-  if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
-    if (adminActorUserId && operationId) {
-      await tryAppendEmailTestAudit({
-        operationId,
-        actorUserId: adminActorUserId,
-        route: "send",
-        stage: "configuration",
-        code: "email_not_configured",
-      });
-    }
-    return NextResponse.json(
-      { error: "Resend not configured" },
-      { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
-    );
-  }
-
+async function parseSendPayload(request: Request, access: SendAccess): Promise<
+  | { ok: true; value: z.infer<typeof sendSchema> }
+  | { ok: false; response: Response }
+> {
   let rawPayload: unknown = {};
-
   try {
-    const contentType = request.headers.get("content-type") ?? "";
-    if (contentType.toLowerCase().includes("application/json")) {
+    if ((request.headers.get("content-type") ?? "").toLowerCase().includes("application/json")) {
       rawPayload = await request.json();
     }
   } catch {
-    if (adminActorUserId && operationId) {
-      await tryAppendEmailTestAudit({
-        operationId,
-        actorUserId: adminActorUserId,
-        route: "send",
-        stage: "validation",
-        code: "invalid_json",
-      });
+    if (access.adminActorUserId && access.operationId) {
+      await tryAppendEmailTestAudit({ operationId: access.operationId, actorUserId: access.adminActorUserId, route: "send", stage: "validation", code: "invalid_json" });
     }
-    return NextResponse.json(
-      { error: "Invalid JSON payload" },
-      { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
-    );
+    return { ok: false, response: NextResponse.json({ error: "Invalid JSON payload" }, { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS }) };
   }
-
   const parsed = sendSchema.safeParse(rawPayload);
-
   if (!parsed.success) {
-    if (adminActorUserId && operationId) {
-      await tryAppendEmailTestAudit({
-        operationId,
-        actorUserId: adminActorUserId,
-        route: "send",
-        stage: "validation",
-        code: "invalid_payload",
-      });
+    if (access.adminActorUserId && access.operationId) {
+      await tryAppendEmailTestAudit({ operationId: access.operationId, actorUserId: access.adminActorUserId, route: "send", stage: "validation", code: "invalid_payload" });
     }
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
-    );
+    return { ok: false, response: NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten().fieldErrors }, { status: 400, headers: EMAIL_PRIVATE_RESPONSE_HEADERS }) };
   }
+  return { ok: true, value: parsed.data };
+}
 
-  const payload = parsed.data;
-  const to = payload.to ?? replyTo;
+async function recordConfigurationFailure(access: SendAccess): Promise<Response> {
+  if (access.adminActorUserId && access.operationId) {
+    await tryAppendEmailTestAudit({ operationId: access.operationId, actorUserId: access.adminActorUserId, route: "send", stage: "configuration", code: "email_not_configured" });
+  }
+  return NextResponse.json({ error: "Resend not configured" }, { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS });
+}
 
+async function deliverSendEmail(params: {
+  access: SendAccess;
+  to: string | string[];
+  from: string;
+  replyTo: string;
+  subject?: string;
+  html?: string;
+}): Promise<Response> {
+  const { access, to, from, replyTo, subject, html } = params;
   try {
     const result = await sendEmail({
-      actorUserId,
+      actorUserId: access.actorUserId,
       from,
       to,
-      subject: payload.subject ?? "[CleanMyMap] Test Resend",
-      html:
-        payload.html ??
-        "<p>Test OK depuis <strong>CleanMyMap</strong> via l'API /api/send.</p>",
+      subject: subject ?? "[CleanMyMap] Test Resend",
+      html: html ?? "<p>Test OK depuis <strong>CleanMyMap</strong> via l'API /api/send.</p>",
       replyTo,
     });
-
-    let auditRecorded = true;
-    if (adminActorUserId && operationId) {
-      auditRecorded = await tryAppendEmailTestAudit({
-        operationId,
-        actorUserId: adminActorUserId,
-        route: "send",
-        stage: "send",
-        recipientCount: Array.isArray(to) ? to.length : 1,
-        deliveryStatus: result.status,
-      });
+    const auditRecorded = access.adminActorUserId && access.operationId
+      ? await tryAppendEmailTestAudit({ operationId: access.operationId, actorUserId: access.adminActorUserId, route: "send", stage: "send", recipientCount: Array.isArray(to) ? to.length : 1, deliveryStatus: result.status })
+      : true;
+    if (access.adminActorUserId && access.operationId && !auditRecorded) {
+      return NextResponse.json({ error: "Email sent, but its audit entry is unavailable.", status: "sent_audit_pending" }, { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS });
     }
-
-    if (adminActorUserId && operationId && !auditRecorded) {
-      return NextResponse.json(
-        { error: "Email sent, but its audit entry is unavailable.", status: "sent_audit_pending" },
-        { status: 503, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        ok: true,
-        status: result.status,
-        id: result.id ?? null,
-        to,
-      },
-      { headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
-    );
+    return NextResponse.json({ ok: true, status: result.status, id: result.id ?? null, to }, { headers: EMAIL_PRIVATE_RESPONSE_HEADERS });
   } catch (error) {
     const quotaExceeded = isEmailQuotaExceededError(error);
     const recipientCount = Array.isArray(to) ? to.length : 1;
-
-    if (adminActorUserId && operationId) {
-      await tryAppendEmailTestAudit({
-        operationId,
-        actorUserId: adminActorUserId,
-        route: "send",
-        stage: "send",
-        recipientCount,
-        code: quotaExceeded ? "email_quota_exceeded" : "send_failed",
-      });
+    if (access.adminActorUserId && access.operationId) {
+      await tryAppendEmailTestAudit({ operationId: access.operationId, actorUserId: access.adminActorUserId, route: "send", stage: "send", recipientCount, code: quotaExceeded ? "email_quota_exceeded" : "send_failed" });
     }
-
-    console.error("[Resend test] send failed", {
-      recipientCount,
-      code: quotaExceeded ? "email_quota_exceeded" : "send_failed",
-    });
-
-    return NextResponse.json(
-      {
-        error: quotaExceeded ? "Email quota exceeded" : "Resend send failed",
-        details: "Unavailable",
-      },
-      { status: quotaExceeded ? 429 : 502, headers: EMAIL_PRIVATE_RESPONSE_HEADERS },
-    );
+    console.error("[Resend test] send failed", { recipientCount, code: quotaExceeded ? "email_quota_exceeded" : "send_failed" });
+    return NextResponse.json({ error: quotaExceeded ? "Email quota exceeded" : "Resend send failed", details: "Unavailable" }, { status: quotaExceeded ? 429 : 502, headers: EMAIL_PRIVATE_RESPONSE_HEADERS });
   }
+}
+
+export async function POST(request: Request) {
+  const access = await resolveSendAccess(request);
+  if (access instanceof Response) return access;
+  const from = resolveEmailFrom();
+  const replyTo = resolveContactEmail();
+  if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
+    return recordConfigurationFailure(access);
+  }
+  const parsed = await parseSendPayload(request, access);
+  if (!parsed.ok) return parsed.response;
+  const payload = parsed.value;
+  const to = payload.to ?? replyTo;
+  return deliverSendEmail({ access, to, from, replyTo, subject: payload.subject, html: payload.html });
 }

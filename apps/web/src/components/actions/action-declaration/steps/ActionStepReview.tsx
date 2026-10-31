@@ -95,6 +95,34 @@ function DataRow({
   );
 }
 
+function ReviewWarnings({ warnings }: { warnings: string[] }) {
+  if (warnings.length === 0) return null;
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm space-y-3">
+      <div className="flex items-center gap-2"><AlertTriangle size={15} className="text-amber-600 shrink-0" /><h4 className="text-xs font-bold text-amber-800 uppercase tracking-wide">Points d&apos;attention ({warnings.length})</h4></div>
+      <ul className="space-y-2">{warnings.map((warning, i) => <li key={i} className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3 py-2.5"><span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /><p className="cmm-text-small text-slate-700 leading-5">{warning}</p></li>)}</ul>
+      <p className="cmm-text-caption text-amber-700">Ces points n&apos;empêchent pas l&apos;envoi. Ils facilitent la relecture et la vérification de votre déclaration.</p>
+    </section>
+  );
+}
+
+function ReviewSubmit({ showSubmitButton, isSubmitting, onSubmit }: Pick<ActionStepReviewProps, "showSubmitButton" | "isSubmitting" | "onSubmit">) {
+  if (!showSubmitButton) return null;
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+      <div className="flex items-start gap-3"><div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-100 flex items-center justify-center"><ShieldCheck size={15} className="text-emerald-600" /></div><div><p className="text-sm font-semibold text-slate-900">Dernière vérification</p><p className="text-xs text-slate-400 mt-0.5">Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.</p></div></div>
+      <CmmButton tone="primary" variant="default" size="md" className="w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" onClick={onSubmit} disabled={isSubmitting}>{isSubmitting ? <><Loader2 size={16} className="animate-spin" />Envoi en cours…</> : <><ClipboardCheck size={16} />Vérifier avant envoi</>}</CmmButton>
+    </section>
+  );
+}
+
+function getReviewReadyMessage(isCleanPlaceMode: boolean, hasWarnings: boolean) {
+  if (hasWarnings) return "Déclaration transmissible — certains éléments peuvent être améliorés.";
+  return isCleanPlaceMode
+    ? "Aucun point d’attention supplémentaire détecté pour ce lieu."
+    : "Aucun point d’attention supplémentaire détecté dans ce formulaire.";
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function ActionStepReview({
@@ -106,13 +134,8 @@ export function ActionStepReview({
 }: ActionStepReviewProps) {
   const isCleanPlaceMode =
     payload.recordType === "clean_place" || payload.recordType === "spot";
-  const hasWarnings = dataQuality.warnings.length > 0;
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
-  const readyMessage = hasWarnings
-    ? "Déclaration transmissible — certains éléments peuvent être améliorés."
-    : isCleanPlaceMode
-      ? "Aucun point d’attention supplémentaire détecté pour ce lieu."
-      : "Aucun point d’attention supplémentaire détecté dans ce formulaire.";
+  const readyMessage = getReviewReadyMessage(isCleanPlaceMode, dataQuality.warnings.length > 0);
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -239,68 +262,8 @@ export function ActionStepReview({
         </section>
       </div>
 
-      {/* ── 3. Points d'attention ────────────────────────────────────────── */}
-      {hasWarnings && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={15} className="text-amber-600 shrink-0" />
-            <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wide">
-              Points d&apos;attention ({dataQuality.warnings.length})
-            </h4>
-          </div>
-          <ul className="space-y-2">
-            {dataQuality.warnings.map((warning, i) => (
-              <li key={i} className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3 py-2.5">
-                <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                <p className="text-xs text-slate-700 leading-relaxed">{warning}</p>
-              </li>
-            ))}
-          </ul>
-          <p className="text-[10px] text-amber-700">
-            Ces points n&apos;empêchent pas l&apos;envoi. Ils facilitent la relecture et la vérification de votre déclaration.
-          </p>
-        </section>
-      )}
-
-      {/* ── 4. Bouton final ──────────────────────────────────────────────── */}
-      {showSubmitButton && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <ShieldCheck size={15} className="text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                Dernière vérification
-              </p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.
-              </p>
-            </div>
-          </div>
-
-          <CmmButton
-            tone="primary"
-            variant="default"
-            size="md"
-            className="w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2"
-            onClick={onSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Envoi en cours…
-              </>
-            ) : (
-              <>
-                <ClipboardCheck size={16} />
-                Vérifier avant envoi
-              </>
-            )}
-          </CmmButton>
-        </section>
-      )}
+      <ReviewWarnings warnings={dataQuality.warnings} />
+      <ReviewSubmit showSubmitButton={showSubmitButton} isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
     </div>
   );

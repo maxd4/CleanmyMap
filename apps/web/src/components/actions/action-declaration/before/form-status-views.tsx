@@ -25,23 +25,7 @@ export function ActionBeforeTerminalView({ status, createdId }: { status: "rejec
   );
 }
 
-export function ActionBeforePublicationView({
-  form,
-  publishedAction,
-  createdId,
-  publishedAt,
-  publicationState,
-  publicationError,
-  publicationConfirmationOpen,
-  guidedWorkflow,
-  guidedReadiness,
-  shareActionId,
-  onRequestPublish,
-  onCancelPublication,
-  onConfirmPublish,
-  onContinueComplete,
-  onShare,
-}: {
+type ActionBeforePublicationProps = {
   form: FormState;
   publishedAction: ActionEditorRecord | null;
   createdId: string | null;
@@ -57,7 +41,27 @@ export function ActionBeforePublicationView({
   onConfirmPublish: () => void | Promise<void>;
   onContinueComplete: () => void;
   onShare: (actionId: string | null) => void;
-}) {
+};
+
+function PublicationActions(props: ActionBeforePublicationProps & { isPublished: boolean; reviewPending: boolean; }) {
+  const { publishedAction, createdId, publicationState, isPublished, reviewPending, onRequestPublish, onContinueComplete, onShare } = props;
+  return <div className="flex flex-col gap-2">{!isPublished && !reviewPending ? <CmmButton tone="primary" variant="pill" size="md" onClick={onRequestPublish} disabled={publicationState === "pending"}>{publicationState === "pending" ? <Loader2 size={14} className="animate-spin" /> : null}{publicationState === "pending" ? "Envoi…" : "Soumettre pour validation"}</CmmButton> : null}{reviewPending ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">En attente de validation administrative. L’action reste privée.</p> : null}{createdId ? <CmmButton tone="secondary" variant="pill" size="md" href={`/actions/new?duplicateFrom=${encodeURIComponent(createdId)}`}>Réutiliser cette action</CmmButton> : null}{isPublished ? <><CmmButton tone="primary" variant="pill" size="md" href={`/actions/map?actionId=${encodeURIComponent(createdId ?? "")}`}>Voir l&apos;action</CmmButton><CmmButton tone="secondary" variant="pill" size="md" onClick={() => onShare(createdId)}>Partager dans la messagerie</CmmButton><CmmButton tone="secondary" variant="pill" size="md" href={buildJoinActionHref(createdId)}>Rejoindre une action</CmmButton></> : null}<AdministrativeRequirementsStatus actionId={createdId} initialAction={publishedAction} surface="summary" /><CmmButton tone="tertiary" variant="pill" size="md" onClick={onContinueComplete}>Passer au formulaire complet<ArrowRight size={14} /></CmmButton>{isPublished ? <CmmButton tone="tertiary" variant="pill" size="md" href="/sections/rejoindre-une-action">Voir les actions futures</CmmButton> : null}</div>;
+}
+
+function PublicationSummaryCard(props: ActionBeforePublicationProps & { summary: ReturnType<typeof buildPublicationSummary>; isPublished: boolean; reviewPending: boolean; readinessLabel: string; readinessTone: "emerald" | "amber" }) {
+  const { createdId, publicationError, guidedWorkflow, summary, isPublished, reviewPending, readinessLabel, readinessTone } = props;
+  return <div className="cmm-page-width"><CmmCard tone="emerald" variant="glass" size="lg">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between"><div className="space-y-3"><div className="flex flex-wrap items-center gap-2"><CmmPill tone={reviewPending ? "amber" : "emerald"} size="sm">{reviewPending ? "En validation" : publicationVisibilityLabel(isPublished)}</CmmPill>{!isPublished && !reviewPending && guidedWorkflow ? <CmmPill tone={readinessTone} size="sm">{readinessLabel}</CmmPill> : null}<span className="text-sm font-semibold text-emerald-950">{reviewPending ? "Action soumise à validation" : publicationStatusLabel(isPublished)}</span></div><h2 className="text-3xl font-black tracking-tight text-emerald-950">{reviewPending ? "Validation administrative en cours" : publicationReviewTitle(isPublished)}</h2><p className="max-w-2xl text-sm leading-6 text-emerald-900/68">{isPublished ? "Cette action future est publique. Les bénévoles peuvent la consulter et la rejoindre depuis le parcours canonique." : reviewPending ? "L’action reste privée jusqu’à la décision d’un administrateur." : "La pré-action reste privée tant que vous n'avez pas confirmé sa publication."}</p>{createdId ? <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p> : null}{publicationError ? <p className="text-sm font-semibold text-rose-700">{publicationError}</p> : null}</div><PublicationActions {...props} isPublished={isPublished} reviewPending={reviewPending} /></div>
+    <div className="mt-6 border-t border-emerald-200/70 pt-5" data-testid="action-publication-summary"><h3 className="text-lg font-black text-emerald-950">{isPublished ? "Synthèse de l'action publiée" : "Récapitulatif avant publication"}</h3><dl className="mt-4 grid gap-3 sm:grid-cols-2">{summary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}</dl></div>
+  </CmmCard></div>;
+}
+
+function PublicationConfirmationDialog({ open, summary, onClose, onConfirmPublish }: { open: boolean; summary: ReturnType<typeof buildPublicationSummary>; onClose: () => void; onConfirmPublish: () => void | Promise<void> }) {
+  return open ? <CmmDialog open ariaLabelledBy="publish-action-title" ariaDescribedBy="publish-action-description" onClose={onClose} size="lg" panelClassName="border border-emerald-200/80 bg-white p-5 shadow-2xl"><div className="space-y-5"><div><h2 id="publish-action-title" className="mt-1 text-2xl font-black text-emerald-950">Confirmer la publication</h2><p id="publish-action-description" className="mt-2 text-sm leading-6 text-emerald-900/70">La publication rend cette même action visible dans les parcours publics. Elle ne crée aucune action, participation ou conversation.</p></div><dl className="grid gap-3 sm:grid-cols-2">{summary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}</dl><div className="flex flex-wrap justify-end gap-2"><CmmButton tone="tertiary" variant="pill" size="md" onClick={onClose}>Annuler</CmmButton><CmmButton tone="primary" variant="pill" size="md" onClick={() => { void onConfirmPublish(); }}>Confirmer et publier</CmmButton></div></div></CmmDialog> : null;
+}
+
+export function ActionBeforePublicationView(props: ActionBeforePublicationProps) {
+  const { form, publishedAction, publishedAt, guidedReadiness, publicationConfirmationOpen, shareActionId, onCancelPublication, onConfirmPublish, onShare } = props;
   const isPublished = Boolean(publishedAt);
   const reviewPending = publishedAction?.reviewState === "pending_review";
   const publicationSummary = buildPublicationSummary(publishedAction ?? form);
@@ -65,14 +69,8 @@ export function ActionBeforePublicationView({
   const readinessTone = guidedReadiness === "ready" ? "emerald" : "amber";
   return (
     <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
-      <div className="cmm-page-width"><CmmCard tone="emerald" variant="glass" size="lg">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3"><div className="flex flex-wrap items-center gap-2"><CmmPill tone={reviewPending ? "amber" : "emerald"} size="sm">{reviewPending ? "En validation" : publicationVisibilityLabel(isPublished)}</CmmPill>{!isPublished && !reviewPending && guidedWorkflow ? <CmmPill tone={readinessTone} size="sm">{readinessLabel}</CmmPill> : null}<span className="text-sm font-semibold text-emerald-950">{reviewPending ? "Action soumise à validation" : publicationStatusLabel(isPublished)}</span></div><h2 className="text-3xl font-black tracking-tight text-emerald-950">{reviewPending ? "Validation administrative en cours" : publicationReviewTitle(isPublished)}</h2><p className="max-w-2xl text-sm leading-6 text-emerald-900/68">{isPublished ? "Cette action future est publique. Les bénévoles peuvent la consulter et la rejoindre depuis le parcours canonique." : reviewPending ? "L’action reste privée jusqu’à la décision d’un administrateur." : "La pré-action reste privée tant que vous n'avez pas confirmé sa publication."}</p>{createdId ? <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p> : null}{publicationError ? <p className="text-sm font-semibold text-rose-700">{publicationError}</p> : null}</div>
-          <div className="flex flex-col gap-2">{!isPublished && !reviewPending ? <CmmButton tone="primary" variant="pill" size="md" onClick={onRequestPublish} disabled={publicationState === "pending"}>{publicationState === "pending" ? <Loader2 size={14} className="animate-spin" /> : null}{publicationState === "pending" ? "Envoi…" : "Soumettre pour validation"}</CmmButton> : null}{reviewPending ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">En attente de validation administrative. L’action reste privée.</p> : null}{createdId ? <CmmButton tone="secondary" variant="pill" size="md" href={`/actions/new?duplicateFrom=${encodeURIComponent(createdId)}`}>Réutiliser cette action</CmmButton> : null}{isPublished ? <><CmmButton tone="primary" variant="pill" size="md" href={`/actions/map?actionId=${encodeURIComponent(createdId ?? "")}`}>Voir l&apos;action</CmmButton><CmmButton tone="secondary" variant="pill" size="md" onClick={() => onShare(createdId)}>Partager dans la messagerie</CmmButton><CmmButton tone="secondary" variant="pill" size="md" href={buildJoinActionHref(createdId)}>Rejoindre une action</CmmButton></> : null}<AdministrativeRequirementsStatus actionId={createdId} initialAction={publishedAction} surface="summary" /><CmmButton tone="tertiary" variant="pill" size="md" onClick={onContinueComplete}>Passer au formulaire complet<ArrowRight size={14} /></CmmButton>{isPublished ? <CmmButton tone="tertiary" variant="pill" size="md" href="/sections/rejoindre-une-action">Voir les actions futures</CmmButton> : null}</div>
-        </div>
-        <div className="mt-6 border-t border-emerald-200/70 pt-5" data-testid="action-publication-summary"><h3 className="text-lg font-black text-emerald-950">{isPublished ? "Synthèse de l'action publiée" : "Récapitulatif avant publication"}</h3><dl className="mt-4 grid gap-3 sm:grid-cols-2">{publicationSummary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}</dl></div>
-      </CmmCard></div>
-      {publicationConfirmationOpen ? <CmmDialog open ariaLabelledBy="publish-action-title" ariaDescribedBy="publish-action-description" onClose={onCancelPublication} size="lg" panelClassName="border border-emerald-200/80 bg-white p-5 shadow-2xl"><div className="space-y-5"><div><h2 id="publish-action-title" className="mt-1 text-2xl font-black text-emerald-950">Confirmer la publication</h2><p id="publish-action-description" className="mt-2 text-sm leading-6 text-emerald-900/70">La publication rend cette même action visible dans les parcours publics. Elle ne crée aucune action, participation ou conversation.</p></div><dl className="grid gap-3 sm:grid-cols-2">{publicationSummary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}</dl><div className="flex flex-wrap justify-end gap-2"><CmmButton tone="tertiary" variant="pill" size="md" onClick={onCancelPublication}>Annuler</CmmButton><CmmButton tone="primary" variant="pill" size="md" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onConfirmPublish(); }}>Confirmer et publier</CmmButton></div></div></CmmDialog> : null}
+      <PublicationSummaryCard {...props} summary={publicationSummary} isPublished={isPublished} reviewPending={reviewPending} readinessLabel={readinessLabel} readinessTone={readinessTone} />
+      <PublicationConfirmationDialog open={publicationConfirmationOpen} summary={publicationSummary} onClose={onCancelPublication} onConfirmPublish={onConfirmPublish} />
       {shareActionId ? <ChatActionShareDialog actionId={shareActionId} onClose={() => onShare(null)} /> : null}
     </div>
   );

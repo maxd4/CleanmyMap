@@ -258,6 +258,28 @@ export function filterPublicMapResponse(
   };
 }
 
+function buildMapCandidateItems(
+  result: Awaited<ReturnType<MapActionsRouteDependencies["fetchUnifiedActionContracts"]>>,
+  params: ParseMapActionsParams,
+  deps: MapActionsRouteDependencies,
+  now: Date,
+) {
+  const scopedContracts = deps.filterActionContractsByScope(
+    result.items
+      .filter((contract) => isPublicMapContract(contract, now))
+      .filter((contract) => matchesActionContextFilter(contract.metadata?.actionContext, params.contextFilter))
+      .map((contract) => toPublicMapContract(contract, now)),
+    params.scope,
+  );
+  return scopedContracts
+    .map((contract) => deps.toActionMapItem(contract, deps.buildActionInsights(contract, now)))
+    .filter((item) => {
+      const coordinates = { latitude: item.contract?.location?.latitude ?? item.latitude, longitude: item.contract?.location?.longitude ?? item.longitude };
+      return typeof coordinates.latitude === "number" && Number.isFinite(coordinates.latitude) && typeof coordinates.longitude === "number" && Number.isFinite(coordinates.longitude);
+    })
+    .filter((item) => (params.impact === null || item.impact_level === params.impact) && (params.qualityMin === null || Number(item.quality_score ?? 0) >= params.qualityMin));
+}
+
 export async function buildMapActionsRouteResult(
   url: URL,
   deps: MapActionsRouteDependencies,
@@ -277,41 +299,7 @@ export async function buildMapActionsRouteResult(
   });
 
   const sourceHealth = resolveMapSourceHealth(result.sourceHealth);
-  const candidateItems = deps
-    .filterActionContractsByScope(
-      result.items
-        .filter((contract) => isPublicMapContract(contract, now))
-        .filter((contract) =>
-          matchesActionContextFilter(contract.metadata?.actionContext, params.contextFilter),
-        )
-        .map((contract) => toPublicMapContract(contract, now)),
-      params.scope,
-    )
-    .map((contract) => {
-      const insights = deps.buildActionInsights(contract, now);
-      return deps.toActionMapItem(contract, insights);
-    })
-    .filter((item) => {
-      const coordinates = {
-        latitude: item.contract?.location?.latitude ?? item.latitude,
-        longitude: item.contract?.location?.longitude ?? item.longitude,
-      };
-      return (
-        typeof coordinates.latitude === "number" &&
-        Number.isFinite(coordinates.latitude) &&
-        typeof coordinates.longitude === "number" &&
-        Number.isFinite(coordinates.longitude)
-      );
-    })
-    .filter((item) => {
-      if (params.impact && item.impact_level !== params.impact) {
-        return false;
-      }
-      if (params.qualityMin !== null && Number(item.quality_score ?? 0) < params.qualityMin) {
-        return false;
-      }
-      return true;
-    });
+  const candidateItems = buildMapCandidateItems(result, params, deps, now);
   const boundedCandidateItems = candidateItems.slice(0, params.limit + 1);
   const isTruncated = result.isTruncated === true || boundedCandidateItems.length > params.limit;
   const items = boundedCandidateItems.slice(0, params.limit);

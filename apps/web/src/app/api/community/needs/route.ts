@@ -51,42 +51,62 @@ function forbiddenResponse() {
   return NextResponse.json({ error: "Vous n'avez pas accès à ce besoin.", kind: "permission" }, { status: 403 });
 }
 
-export async function GET(request: Request) {
-  const { userId } = await getSafeAuthSession();
-  const url = new URL(request.url);
-  const actionIdValue = url.searchParams.get("actionId")?.trim() || null;
-  if (actionIdValue && !isUuid(actionIdValue)) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action invalide."] });
+function parseNeedsActionId(url: URL): string | Response | null {
+  const value = url.searchParams.get("actionId")?.trim() || null;
+  return value && !isUuid(value)
+    ? validationErrorResponse({ actionId: ["Identifiant d'action invalide."] })
+    : value;
+}
+
+function parseNeedsCategory(url: URL): typeof COMMUNITY_HELP_CATEGORIES[number] | Response | null {
+  const value = url.searchParams.get("category")?.trim() || null;
+  if (!value) return null;
+  const parsed = categorySchema.safeParse(value);
+  return parsed.success
+    ? parsed.data
+    : validationErrorResponse({ category: ["Catégorie de besoin invalide."] });
+}
+
+function parseNeedsStatus(url: URL): (typeof ACTION_NEED_STATUSES[number] | "expired") | Response | null {
+  const value = url.searchParams.get("effectiveStatus")?.trim() || null;
+  if (!value) return null;
+  const parsed = effectiveStatusSchema.safeParse(value);
+  return parsed.success
+    ? parsed.data
+    : validationErrorResponse({ effectiveStatus: ["Statut de besoin invalide."] });
+}
+
+function parseNeedsQuery(url: URL):
+  | { ok: true; value: { actionId: string | null; category: typeof COMMUNITY_HELP_CATEGORIES[number] | null; effectiveStatus: (typeof ACTION_NEED_STATUSES[number] | "expired") | null; limit: number; offset: number } }
+  | { ok: false; response: Response } {
+  const actionId = parseNeedsActionId(url);
+  const category = parseNeedsCategory(url);
+  const effectiveStatus = parseNeedsStatus(url);
+  for (const value of [actionId, category, effectiveStatus]) {
+    if (value instanceof Response) return { ok: false, response: value };
   }
-
-  const categoryValue = url.searchParams.get("category")?.trim() || null;
-  const category = categoryValue ? categorySchema.safeParse(categoryValue) : null;
-  if (categoryValue && !category?.success) {
-    return validationErrorResponse({ category: ["Catégorie de besoin invalide."] });
-  }
-
-  const effectiveStatusValue = url.searchParams.get("effectiveStatus")?.trim() || null;
-  const effectiveStatus = effectiveStatusValue ? effectiveStatusSchema.safeParse(effectiveStatusValue) : null;
-  if (effectiveStatusValue && !effectiveStatus?.success) {
-    return validationErrorResponse({ effectiveStatus: ["Statut de besoin invalide."] });
-  }
-
-  const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 50, 20);
-  const offset = parsePositiveInteger(url.searchParams.get("offset"), 0, 1000, 0);
-
-  try {
-    const result = await listActionNeeds(getSupabaseServerClient(true), userId, {
+  const actionIdValue = actionId instanceof Response ? null : actionId;
+  const categoryValue = category instanceof Response ? null : category;
+  const effectiveStatusValue = effectiveStatus instanceof Response ? null : effectiveStatus;
+  return {
+    ok: true,
+    value: {
       actionId: actionIdValue,
-      category: category?.success ? category.data : null,
-      effectiveStatus: effectiveStatus?.success ? effectiveStatus.data : null,
-      limit,
-      offset,
-    });
+      category: categoryValue,
+      effectiveStatus: effectiveStatusValue,
+      limit: parsePositiveInteger(url.searchParams.get("limit"), 1, 50, 20),
+      offset: parsePositiveInteger(url.searchParams.get("offset"), 0, 1000, 0),
+    },
+  };
+}
+
+async function loadNeedsResponse(userId: string | null, query: Extract<ReturnType<typeof parseNeedsQuery>, { ok: true }>): Promise<Response> {
+  try {
+    const result = await listActionNeeds(getSupabaseServerClient(true), userId, query.value);
     return NextResponse.json(
       { status: "ok", ...result },
       {
         headers: {
-          // Vercel contract: authenticated need reads are private/no-store; anonymous previews may be short-lived public cache.
           "Cache-Control": userId ? "private, no-store" : "public, max-age=15, stale-while-revalidate=30",
           Vary: "Cookie",
         },
@@ -95,6 +115,14 @@ export async function GET(request: Request) {
   } catch (error) {
     return handleApiError(error, "GET /api/community/needs");
   }
+}
+
+export async function GET(request: Request) {
+  const { userId } = await getSafeAuthSession();
+  const parsedQuery = parseNeedsQuery(new URL(request.url));
+  if (!parsedQuery.ok) return parsedQuery.response;
+
+  return loadNeedsResponse(userId, parsedQuery);
 }
 
 export async function POST(request: Request) {

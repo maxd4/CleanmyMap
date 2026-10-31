@@ -74,23 +74,9 @@ export async function runActionUpdatePostProcessing(
     await recordRepollutionPredictionEvaluationForAction(supabase, actionId);
   }
 
-  if (!organizersAlreadySynced) {
-    await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
-  }
-  await syncUpdatedParticipants({ supabase, actionId, body, userId, identity, setErrorStage });
-  await reconcileSchoolActionRecognitions({
-    supabase,
-    actionId,
-    actorUserId: adminAuditActorUserId,
-  });
-  if (previousImpactSnapshot) {
-    await emitActionParticipantImpactNotifications({
-      supabase,
-      actionId,
-      previousSnapshot: previousImpactSnapshot,
-      persistedRevision: persistedActionRevision,
-    });
-  }
+  await syncActionUpdateParticipants({ supabase, actionId, body, userId, identity, organizersAlreadySynced, setErrorStage });
+  await reconcileSchoolActionRecognitions({ supabase, actionId, actorUserId: adminAuditActorUserId });
+  await notifyActionUpdateImpact({ supabase, actionId, previousImpactSnapshot, persistedActionRevision });
   await appendPostProcessingAudit({
     shouldAuditModeration,
     auditSnapshots,
@@ -101,6 +87,34 @@ export async function runActionUpdatePostProcessing(
     moderationReason,
     appendAdminAuditOnce,
     setErrorStage,
+  });
+}
+
+async function syncActionUpdateParticipants({
+  supabase,
+  actionId,
+  body,
+  userId,
+  identity,
+  organizersAlreadySynced,
+  setErrorStage,
+}: Pick<RunActionUpdatePostProcessingParams, "supabase" | "actionId" | "body" | "userId" | "identity" | "organizersAlreadySynced" | "setErrorStage">) {
+  if (!organizersAlreadySynced) await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
+  await syncUpdatedParticipants({ supabase, actionId, body, userId, identity, setErrorStage });
+}
+
+async function notifyActionUpdateImpact({
+  supabase,
+  actionId,
+  previousImpactSnapshot,
+  persistedActionRevision,
+}: Pick<RunActionUpdatePostProcessingParams, "supabase" | "actionId" | "previousImpactSnapshot" | "persistedActionRevision">) {
+  if (!previousImpactSnapshot) return;
+  await emitActionParticipantImpactNotifications({
+    supabase,
+    actionId,
+    previousSnapshot: previousImpactSnapshot,
+    persistedRevision: persistedActionRevision,
   });
 }
 

@@ -45,18 +45,24 @@ function buildSingleActionPopupMetrics(item: ActionMapItem) {
     hasPollution: wasteKg > 0 || butts > 0,
   };
 }
-function buildSingleActionPopupContext(item: ActionMapItem) {
-  const metadata = item.contract?.metadata;
 
+function buildPopupActionContext(metadata: NonNullable<ActionMapItem["contract"]>["metadata"] | undefined) {
+  const presentation = ACTION_CONTEXT_PRESENTATIONS[metadata?.actionContext ?? "unknown"];
   return {
-    associationName: metadata?.associationName?.trim() ?? null,
-    actionContextLabel:
-      ACTION_CONTEXT_PRESENTATIONS[metadata?.actionContext ?? "unknown"].label,
-    actionContextGlyph:
-      ACTION_CONTEXT_PRESENTATIONS[metadata?.actionContext ?? "unknown"].glyph,
+    actionContextLabel: presentation.label,
+    actionContextGlyph: presentation.glyph,
     notes: metadata?.notesPlain?.trim() || metadata?.notes?.trim() || null,
     departure: metadata?.departureLocationLabel?.trim() ?? null,
     arrival: metadata?.arrivalLocationLabel?.trim() ?? null,
+  };
+}
+function buildSingleActionPopupContext(item: ActionMapItem) {
+  const metadata = item.contract?.metadata;
+  const context = buildPopupActionContext(metadata);
+
+  return {
+    associationName: metadata?.associationName?.trim() ?? null,
+    ...context,
     operationalEngagementHours: getActionOperationalContext(item.contract).engagementHours,
   };
 }

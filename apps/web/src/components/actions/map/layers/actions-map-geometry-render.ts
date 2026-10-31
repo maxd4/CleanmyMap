@@ -33,21 +33,26 @@ export function formatActionGeometryTooltipTitle(
   return kind === "polygon" ? "Zone d'action" : "Parcours d'action";
 }
 
+function resolvePointRenderStyle(isFallback: boolean): ActionMapGeometryRenderStyle {
+  return { pointRadius: isFallback ? 4.5 : 6, pointWeight: isFallback ? 1.5 : 2, pointOpacity: isFallback ? 0.7 : 0.95, pointFillOpacity: isFallback ? 0.52 : 0.85, strokeWeight: null, strokeOpacity: null, fillOpacity: null, dashArray: undefined };
+}
+
+function resolvePolygonRenderStyle(isIndicative: boolean): ActionMapGeometryRenderStyle {
+  return { pointRadius: null, pointWeight: null, pointOpacity: null, pointFillOpacity: null, strokeWeight: 2, strokeOpacity: isIndicative ? 0.68 : 0.95, fillOpacity: isIndicative ? 0.14 : 0.32, dashArray: isIndicative ? "6 6" : undefined };
+}
+
+function resolveLineRenderStyle(presentation: GeometryPresentation): ActionMapGeometryRenderStyle {
+  const isNetworkRoute = presentation.variant === "network" || (presentation.variant === undefined && presentation.strokeStyle === "dashed");
+  const isIndicativeRoute = (presentation.variant === "indicative" || presentation.reality === "contextual" || presentation.reality === "estimated") && presentation.strokeStyle === "dashed";
+  const isEstimatedRoute = presentation.variant === "estimated" && presentation.strokeStyle === "dashed";
+  return { pointRadius: null, pointWeight: null, pointOpacity: null, pointFillOpacity: null, strokeWeight: 4, strokeOpacity: isNetworkRoute ? 0.75 : isIndicativeRoute ? 0.62 : 0.92, fillOpacity: null, dashArray: isNetworkRoute ? "8 8" : isIndicativeRoute || isEstimatedRoute ? "4 8" : undefined };
+}
+
 export function resolveGeometryRenderStyle(
   geometry: Pick<GeometryRenderInput, "kind" | "presentation">,
 ): ActionMapGeometryRenderStyle {
   if (geometry.kind === "point") {
-    const isFallback = geometry.presentation.strokeStyle === "point";
-    return {
-      pointRadius: isFallback ? 4.5 : 6,
-      pointWeight: isFallback ? 1.5 : 2,
-      pointOpacity: isFallback ? 0.7 : 0.95,
-      pointFillOpacity: isFallback ? 0.52 : 0.85,
-      strokeWeight: null,
-      strokeOpacity: null,
-      fillOpacity: null,
-      dashArray: undefined,
-    };
+    return resolvePointRenderStyle(geometry.presentation.strokeStyle === "point");
   }
 
   if (geometry.kind === "polygon") {
@@ -55,44 +60,9 @@ export function resolveGeometryRenderStyle(
       geometry.presentation.variant === "indicative" ||
       geometry.presentation.reality === "contextual" ||
       geometry.presentation.reality === "estimated";
-    return {
-      pointRadius: null,
-      pointWeight: null,
-      pointOpacity: null,
-      pointFillOpacity: null,
-      strokeWeight: 2,
-      strokeOpacity: isIndicative ? 0.68 : 0.95,
-      fillOpacity: isIndicative ? 0.14 : 0.32,
-      dashArray: isIndicative ? "6 6" : undefined,
-    };
+    return resolvePolygonRenderStyle(isIndicative);
   }
-
-  const isNetworkRoute =
-    geometry.presentation.variant === "network" ||
-    (geometry.presentation.variant === undefined &&
-      geometry.presentation.strokeStyle === "dashed");
-  const isIndicativeRoute =
-    (geometry.presentation.variant === "indicative" ||
-      (geometry.presentation.reality === "contextual" ||
-        geometry.presentation.reality === "estimated")) &&
-    geometry.presentation.strokeStyle === "dashed";
-  const isEstimatedRoute =
-    geometry.presentation.variant === "estimated" &&
-    geometry.presentation.strokeStyle === "dashed";
-  return {
-    pointRadius: null,
-    pointWeight: null,
-    pointOpacity: null,
-    pointFillOpacity: null,
-    strokeWeight: 4,
-    strokeOpacity: isNetworkRoute ? 0.75 : isIndicativeRoute ? 0.62 : 0.92,
-    fillOpacity: null,
-    dashArray: isNetworkRoute
-      ? "8 8"
-      : isIndicativeRoute || isEstimatedRoute
-        ? "4 8"
-        : undefined,
-  };
+  return resolveLineRenderStyle(geometry.presentation);
 }
 
 export function buildDrawingLeafletPositions(

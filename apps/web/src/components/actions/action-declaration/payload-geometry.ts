@@ -30,6 +30,37 @@ function getDrawingCentroid(drawing: ActionDrawing): {
   };
 }
 
+function resolveFinalGeometryForPayload(params: CreateActionPayloadParams, isFixedArea: boolean) {
+  const normalizedManualDrawing = normalizeActionDrawing(params.manualDrawing);
+  const finalGeometry = resolveFinalActionGeometry({
+    geometryMethod: params.form.geometryMethod,
+    gpxDrawing: !isFixedArea && params.form.gpxImport ? normalizedManualDrawing : null,
+    gpxImport: isFixedArea ? null : params.form.gpxImport,
+    manualDrawing: normalizedManualDrawing,
+    manualDrawingSource: params.manualDrawingSource,
+    operationalRoute: isFixedArea ? null : params.form.operationalRoute,
+    reconstructedDrawing: isFixedArea ? null : normalizeActionDrawing(params.routePreviewDrawing),
+    reconstructedSource: isFixedArea ? null : params.routePreviewSource,
+  });
+  return { finalGeometry, normalizedManualDrawing };
+}
+
+function applyGeometryCentroid(
+  params: CreateActionPayloadParams,
+  finalGeometry: FinalActionGeometry | null,
+  normalizedDrawing: ActionDrawing | null,
+  coordinates: { latitude: number | null; longitude: number | null },
+): void {
+  const shouldUseGeometryCentroid = params.declarationMode !== "quick" &&
+    normalizedDrawing &&
+    (params.effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || params.routePreviewDrawing);
+  if (shouldUseGeometryCentroid) {
+    const centroid = getDrawingCentroid(normalizedDrawing);
+    coordinates.latitude = centroid.latitude;
+    coordinates.longitude = centroid.longitude;
+  }
+}
+
 export function resolveCreateActionRouteParts(
   params: CreateActionPayloadParams,
 ): Pick<
@@ -44,14 +75,7 @@ export function resolveCreateActionRouteParts(
   | "normalizedDrawing"
   | "resolvedManualDrawingSource"
 > {
-  const {
-    form,
-    effectiveManualDrawingEnabled,
-    manualDrawing,
-    manualDrawingSource,
-    routePreviewDrawing,
-    routePreviewSource,
-  } = params;
+  const { form } = params;
   const departureLocationLabel = form.departureLocationLabel.trim();
   const arrivalLocationLabel = form.arrivalLocationLabel.trim();
   const routeTopology: ActionRouteTopology = resolveActionRouteTopology({
@@ -65,36 +89,21 @@ export function resolveCreateActionRouteParts(
       ? `${departureLocationLabel} → ${arrivalLocationLabel}`
       : departureLocationLabel || form.locationLabel.trim();
   const hasCoordinatePair = hasValidCoordinatePair(form.latitude, form.longitude);
-  let latitude = hasCoordinatePair ? toOptionalNumber(form.latitude) ?? null : null;
-  let longitude = hasCoordinatePair ? toOptionalNumber(form.longitude) ?? null : null;
-  const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
-  const finalGeometry = resolveFinalActionGeometry({
-    geometryMethod: form.geometryMethod,
-    gpxDrawing: !isFixedArea && form.gpxImport ? normalizedManualDrawing : null,
-    gpxImport: isFixedArea ? null : form.gpxImport,
-    manualDrawing: normalizedManualDrawing,
-    manualDrawingSource,
-    operationalRoute: isFixedArea ? null : form.operationalRoute,
-    reconstructedDrawing: isFixedArea ? null : normalizeActionDrawing(routePreviewDrawing),
-    reconstructedSource: isFixedArea ? null : routePreviewSource,
-  });
+  const latitude = hasCoordinatePair ? toOptionalNumber(form.latitude) ?? null : null;
+  const longitude = hasCoordinatePair ? toOptionalNumber(form.longitude) ?? null : null;
+  const geometry = resolveFinalGeometryForPayload(params, isFixedArea);
+  const { finalGeometry } = geometry;
   const normalizedDrawing = finalGeometry?.drawing ?? null;
   const resolvedManualDrawingSource = finalGeometry?.source ?? null;
-  const shouldUseGeometryCentroid = params.declarationMode !== "quick" &&
-    normalizedDrawing &&
-    (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || routePreviewDrawing);
-  if (shouldUseGeometryCentroid) {
-    const centroid = getDrawingCentroid(normalizedDrawing);
-    latitude = centroid.latitude;
-    longitude = centroid.longitude;
-  }
+  const coordinates = { latitude, longitude };
+  applyGeometryCentroid(params, finalGeometry, normalizedDrawing, coordinates);
   return {
     departureLocationLabel,
     arrivalLocationLabel,
     routeTopology,
     routeLocationLabel,
-    latitude,
-    longitude,
+    latitude: coordinates.latitude,
+    longitude: coordinates.longitude,
     finalGeometry,
     normalizedDrawing,
     resolvedManualDrawingSource,

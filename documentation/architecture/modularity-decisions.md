@@ -81,6 +81,11 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/lib/auth/api-authorization-contract.actions.ts` | ALREADY_MODULARIZED | NONE | conserver une seule façade d'assemblage et les clés sans collision | nouveau domaine d'autorisation indépendant consommé hors de la façade actions |
 | `apps/web/src/lib/spogomi/results-projection.ts` | ALREADY_MODULARIZED | NONE | préserver la façade projection/export et la validation publique fail-closed | nouveau contrat de projection ou parser public consommé indépendamment |
 | `apps/web/src/lib/actions/signalement/signalement-media.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, validation média, états d'upload et contrats de stockage | nouveau workflow média indépendant ou divergence entre validation et persistance |
+| `apps/web/src/lib/route/route-operational.ts` | COHESIVE_SINGLE_FILE | NONE | préserver la provenance planner/manual, les zones, les boucles et la compatibilité des routes historiques | nouveau contrat public de normalisation/validation ou consommateur indépendant de projection |
+| `apps/web/src/lib/actions/action-buddy.ts` | COHESIVE_SINGLE_FILE | NONE | préserver l'AuthZ d'action, l'idempotence, les transitions de demande/proposition et la résolution de contact | nouveau backend de buddy, contrat de lecture indépendant ou persistance séparée des mutations |
+| `apps/web/src/components/actions/action-drawing-map.tsx` | ALREADY_MODULARIZED | NONE | préserver la frontière client Leaflet, la provenance manual/routed, l'undo et l'accessibilité des contrôles | nouvelle responsabilité autonome de cycle de vie Leaflet ou de rendu hors de la façade |
+| `apps/web/src/lib/actions/volunteer-participation-research.ts` | COHESIVE_SINGLE_FILE | NONE | conserver le caractère RESEARCH / NON NORMATIF, les modèles A/B/C et la formule CURRENT séparée | nouveau modèle expérimental, source de référence ou contrat de simulation indépendant |
+| `apps/web/src/lib/actions/formalities-workflow.ts` | COHESIVE_SINGLE_FILE | NONE | préserver le fingerprint canonique, l'invalidation par dépendance et le blocage de publication | nouvelle famille de formalités, persistance ou qualification consommée indépendamment |
 
 ### Décisions établies — grille détaillée
 
@@ -1032,4 +1037,90 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver la modération admin et les mutations ordinaires de participation |
 | NEXT_TRIGGER | nouveau flux POST indépendant des décisions de modération |
+
+#### `apps/web/src/lib/route/route-operational.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | construction de la copie opérationnelle issue du planner, projection du meeting point, gestion des zones/boucles, préparation du handoff d'action et normalisation des formats historiques |
+| PUBLIC_CONTRACTS | `OperationalRoute`, `PublicOperationalRoute`, `createOperationalRouteFromRecommendation`, `projectMeetingPointFromGeometry`, `getOperationalRouteMeetingPoint`, `createPlannerActionPreparationData`, `updateOperationalRouteZone`, `removeOperationalRouteLoop`, `getPublicOperationalRouteSegments`, `isOperationalRoute`, `normalizeOperationalRoute` et `normalizeActionPreparationData` |
+| SIDE_EFFECTS | aucun accès réseau ni persistance ; construction et normalisation de valeurs en mémoire, avec clonage des géométries pour éviter les alias de mutation |
+| MAIN_CONSUMERS | planner et réponses de route, handoff vers la création d'action, refresh/versioning de route, préparation d'action, validation de contrat et suites `route-operational*.test.ts` |
+| TEST_BOUNDARY | tests de contrat de route opérationnelle, budget/meeting point, refresh, handoff et tests de validation de préparation ; les appels OSRM et la persistance restent dans leurs owners respectifs |
+| COUPLING | les zones, boucles, arrêts techniques et géométries partagent le même invariant de provenance planner/manual ; la normalisation legacy doit produire exactement le même modèle que la création actuelle |
+| NATURAL_EXTRACTION_BOUNDARY | un validateur/adaptateur de format pourrait être isolé si sa sortie devient un contrat consommé séparément ; les opérations de projection, édition et handoff doivent rester sous le même owner pour éviter une seconde vérité géométrique |
+| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
+| RATIONALE | le fichier dépasse le seuil REVIEW mais porte un contrat de domaine unique : transformer une recommandation en route opérationnelle et préserver sa provenance jusqu'au handoff. Les helpers de géométrie, calibration, planner et préparation sont déjà externalisés. Une extraction immédiate des type guards ou des petits adapters ne réduirait pas le couplage et risquerait de dissocier la compatibilité legacy de la normalisation canonique ; la conservation est donc justifiée jusqu'à l'apparition d'un contrat public indépendant |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la provenance planner/manual, les zones, les boucles et la compatibilité des routes historiques |
+| NEXT_TRIGGER | nouveau contrat public de normalisation/validation ou consommateur indépendant de projection |
+
+#### `apps/web/src/lib/actions/action-buddy.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | lecture de l'état buddy, disponibilité mentor, demandes, propositions, transitions de résolution et contact owner-scoped |
+| PUBLIC_CONTRACTS | `loadActionBuddyState`, `createActionBuddyRequest`, `setActionBuddyAvailability`, `removeActionBuddyAvailability`, `createActionBuddyProposal`, `cancelActionBuddyRequest`, `withdrawActionBuddyProposal`, `declineActionBuddyProposal`, `rejectActionBuddyProposal`, `acceptActionBuddyProposal` et `resolveActionBuddyContact` |
+| SIDE_EFFECTS | lectures et mutations Supabase sur availability/requests/proposals, avec contrôles d'action future, inscription confirmée, ownership, conflits d'unicité et transitions atomiques |
+| MAIN_CONSUMERS | routes `/api/actions/[actionId]/buddy/**`, panneau Action Buddy, contexte chat et suites de routes/panneau/migration contractuelles |
+| TEST_BOUNDARY | `action-buddy.test.ts`, routes buddy et tests UI du panneau ; les contrats de migrations vérifient les tables/RPC sans devenir un owner métier parallèle |
+| COUPLING | toutes les transitions réutilisent les mêmes règles temporelles, inscription confirmée, acteur courant, demande/proposition courante et erreurs fail-closed ; séparer lecture et écriture sans façade commune dupliquerait ces garde-fous |
+| NATURAL_EXTRACTION_BOUNDARY | lecture d'état et mutations pourraient devenir deux modules seulement si un contrat de lecture sans transitions ou un backend de mutation indépendant est consommé ; les erreurs et préconditions doivent rester partagées par un owner explicite |
+| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
+| RATIONALE | le fichier est un service métier unique, non un mélange de domaine et d'infrastructure : ses fonctions portent toutes le même protocole buddy et appellent les primitives de store/temporal déjà séparées. Une scission par fonction ou par endpoint créerait plusieurs owners des transitions et augmenterait le risque d'autorisation divergente ; le REVIEW est donc justifié tant qu'aucun contrat indépendant n'est démontré |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver l'AuthZ d'action, l'idempotence, les transitions de demande/proposition et la résolution de contact |
+| NEXT_TRIGGER | nouveau backend de buddy, contrat de lecture indépendant ou persistance séparée des mutations |
+
+#### `apps/web/src/components/actions/action-drawing-map.tsx`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade client de la carte, cycle de vie Leaflet Draw, conversion Leaflet → ActionDrawing, provenance de géométrie, viewport, accessibilité et undo |
+| PUBLIC_CONTRACTS | `ActionDrawingMapProps` et `ActionDrawingMap`, avec `value`/`drawing`, `onChange`/`onDrawingChange`, `drawingSource`, previews, read-only et undo |
+| SIDE_EFFECTS | montage/démontage de couches et contrôles Leaflet, abonnements media query, événements draw et callbacks contrôlés vers le formulaire ; aucune route réseau n'est déclenchée depuis le navigateur |
+| MAIN_CONSUMERS | sections de géométrie de déclaration d'action et tests `action-drawing-map.behavior.test.tsx`, `action-drawing-map.geometry.test.ts` et présentation |
+| TEST_BOUNDARY | tests jsdom du cycle de vie Leaflet, provenance manual/routed, polygon/polyline, read-only/mobile, accessibilité et restauration undo ; la résolution géométrique et l'undo ont leurs modules/tests dédiés |
+| COUPLING | la façade doit synchroniser valeur externe, couche Leaflet, undo et callbacks sans inventer de géométrie ; `action-drawing-map.geometry`, `presentation` et `undo` sont déjà des owners distincts |
+| NATURAL_EXTRACTION_BOUNDARY | un controller Leaflet autonome est possible si le cycle de vie des contrôles et événements croît encore ; le rendu de carte, l'accessibilité et l'undo ne doivent pas être recouplés dans un helper monolithique |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | le fichier est au-dessus de REVIEW mais la responsabilité publique est une façade de carte client et ses seams autonomes existent déjà : géométrie, présentation, undo et toast. Extraire seulement des lignes JSX ou déplacer le controller intact ne réduirait pas le couplage observable ; la décision conserve la façade et surveille la croissance du cycle de vie Leaflet avant un split substantiel |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la frontière client Leaflet, la provenance manual/routed, l'undo et l'accessibilité des contrôles |
+| NEXT_TRIGGER | nouvelle responsabilité autonome de cycle de vie Leaflet ou de rendu hors de la façade |
+
+#### `apps/web/src/lib/actions/volunteer-participation-research.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | modèle expérimental de rendement cleanwalk, validation d'affectation des collecteurs, projections avec références explicites, comparaison A/B/C et sensibilité au coefficient retraités |
+| PUBLIC_CONTRACTS | `simulateCleanwalkYield`, `compareCleanwalkYieldModels`, `compareRetiredWasteCoefficientSensitivity`, types de configuration/modèle/capacité/projection et marqueurs `RESEARCH / NON NORMATIF` |
+| SIDE_EFFECTS | aucun effet externe ; calculs purs, sans écriture ni lecture de mesure terrain ; les helpers de composition, projection et disponibilité sont déjà externalisés |
+| MAIN_CONSUMERS | uniquement les tests de recherche et les usages d'analyse explicitement non normatifs ; la formule CURRENT de participation reste dans `volunteer-participation.ts` |
+| TEST_BOUNDARY | `volunteer-participation-research.test.ts` couvre modèles, compositions invalides, affectations explicites, indisponibilités, projections, comparaisons et sensibilité ; les tests de participation CURRENT restent séparés |
+| COUPLING | les comparaisons et la sensibilité doivent appeler le même simulateur et conserver les mêmes coefficients, statuts et distinctions AVAILABLE/NOT_APPLICABLE/INVALID_INPUT |
+| NATURAL_EXTRACTION_BOUNDARY | un nouveau modèle expérimental ou une source de référence versionnée pourrait devenir un module de modèle ; les helpers génériques actuels sont déjà dans `volunteer-participation-research-helpers.ts` |
+| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
+| RATIONALE | le fichier dépasse REVIEW mais reste l'owner unique d'un contrat de recherche versionné. Les calculs internes partagent les coefficients, le statut non normatif et le simulateur ; scinder par modèle ou par fonction créerait des divergences silencieuses. La séparation avec la participation CURRENT est déjà explicite et testée ; aucune extraction supplémentaire n'est justifiée sans nouveau modèle ou consommateur autonome |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | conserver le caractère RESEARCH / NON NORMATIF, les modèles A/B/C et la formule CURRENT séparée |
+| NEXT_TRIGGER | nouveau modèle expérimental, source de référence ou contrat de simulation indépendant |
+
+#### `apps/web/src/lib/actions/formalities-workflow.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | schéma d'état server-managed, trace canonique des formalités, fingerprint de dépendances, construction de progression, transitions, normalisation et blocage de publication |
+| PUBLIC_CONTRACTS | `buildFormalitiesWorkflowState`, `applyFormalitiesWorkflowTransition`, `normalizeActionFormalitiesWorkflow`, préservation/sanitation de préparation et `isFormalitiesPublicationBlocked`/`getBlockedRequiredFormalityIds` |
+| SIDE_EFFECTS | aucun accès réseau ; création de snapshots et transitions en mémoire, avec conservation explicite du contexte server-managed pour les PATCH/create |
+| MAIN_CONSUMERS | panneaux de formalités et qualification, routes `/formalities` et `/publish`, validation de formulaire, préparation/update d'action et suites `formalities-workflow`/publication |
+| TEST_BOUNDARY | tests de workflow, qualification/publication, routes formalities/publish et persistance d'update ; les catalogues de formalités et la qualification restent leurs owners |
+| COUPLING | trace, progress, contentVersion et fingerprint doivent évoluer ensemble pour invalider une preuve devenue obsolète et bloquer la publication sans perte d'état server-managed |
+| NATURAL_EXTRACTION_BOUNDARY | un validateur de trace ou un calculateur de fingerprint pourrait être extrait si son contrat devient indépendant ; les transitions, la normalisation et la préservation de contexte doivent rester alignées sur le même schéma |
+| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
+| RATIONALE | le REVIEW signale un workflow dense mais cohésif : toutes les fonctions construisent, vérifient ou préservent le même état canonique et ses transitions. Une séparation par type guard ou par export déplacerait la logique sans réduire le couplage de version/invalidation ; la conservation est justifiée jusqu'à l'apparition d'un consommateur ou contrat autonome |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver le fingerprint canonique, l'invalidation par dépendance et le blocage de publication |
+| NEXT_TRIGGER | nouvelle famille de formalités, persistance ou qualification consommée indépendamment |
+
 <!-- RADAR:HUMAN_DECISIONS:END -->

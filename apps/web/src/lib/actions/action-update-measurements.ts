@@ -49,50 +49,37 @@ function buildButtsInput(
   const submittedMeasurements = body.cigaretteButtsMeasurements;
 
   if (submittedMeasurements === null) return {};
-  if (submittedMeasurements !== undefined) {
-    return {
-      cigaretteButtsCount:
-        submittedMeasurements.cigaretteButtsCount !== undefined
-          ? submittedMeasurements.cigaretteButtsCount
-          : currentCount,
-      cigaretteButtsMassKg:
-        submittedMeasurements.cigaretteButtsMassKg !== undefined
-          ? submittedMeasurements.cigaretteButtsMassKg
-          : currentMass,
-      cigaretteButtsVolumeLiters:
-        submittedMeasurements.cigaretteButtsVolumeLiters !== undefined
-          ? submittedMeasurements.cigaretteButtsVolumeLiters
-          : currentVolume,
-      cigaretteButtsCondition:
-        submittedMeasurements.cigaretteButtsCondition !== undefined
-          ? submittedMeasurements.cigaretteButtsCondition
-          : currentCondition,
-      cigaretteButtsInputSource: submittedMeasurements.cigaretteButtsInputSource,
-    };
-  }
-
-  return {
-    cigaretteButtsCount:
-      body.cigaretteButtsCount !== undefined
-        ? body.cigaretteButtsCount
-        : body.cigaretteButts !== undefined
-          ? body.cigaretteButts
-          : currentCount,
-    cigaretteButtsMassKg:
-      body.cigaretteButtsMassKg !== undefined
-        ? body.cigaretteButtsMassKg
-        : body.cigaretteButtsKg !== undefined
-          ? body.cigaretteButtsKg
-          : currentMass,
-    cigaretteButtsVolumeLiters:
-      body.cigaretteButtsVolumeLiters !== undefined
-        ? body.cigaretteButtsVolumeLiters
-        : currentVolume,
-    cigaretteButtsCondition:
-      body.cigaretteButtsCondition !== undefined
-        ? body.cigaretteButtsCondition
-        : currentCondition,
+  if (submittedMeasurements !== undefined) return {
+    cigaretteButtsCount: submittedMeasurements.cigaretteButtsCount !== undefined ? submittedMeasurements.cigaretteButtsCount : currentCount,
+    cigaretteButtsMassKg: submittedMeasurements.cigaretteButtsMassKg !== undefined ? submittedMeasurements.cigaretteButtsMassKg : currentMass,
+    cigaretteButtsVolumeLiters: submittedMeasurements.cigaretteButtsVolumeLiters !== undefined ? submittedMeasurements.cigaretteButtsVolumeLiters : currentVolume,
+    cigaretteButtsCondition: submittedMeasurements.cigaretteButtsCondition !== undefined ? submittedMeasurements.cigaretteButtsCondition : currentCondition,
+    cigaretteButtsInputSource: submittedMeasurements.cigaretteButtsInputSource,
   };
+  return buildLegacyButtsInput(body, currentCount, currentMass, currentVolume, currentCondition);
+}
+
+function buildLegacyButtsInput(
+  body: ActionUpdateInput,
+  currentCount: number | null,
+  currentMass: number | null,
+  currentVolume: number | null,
+  currentCondition: ActionCigaretteButtsMeasurements["cigaretteButtsCondition"] | null,
+) {
+  return {
+    cigaretteButtsCount: resolveLegacyCount(body, currentCount),
+    cigaretteButtsMassKg: resolveLegacyMass(body, currentMass),
+    cigaretteButtsVolumeLiters: body.cigaretteButtsVolumeLiters !== undefined ? body.cigaretteButtsVolumeLiters : currentVolume,
+    cigaretteButtsCondition: body.cigaretteButtsCondition !== undefined ? body.cigaretteButtsCondition : currentCondition,
+  };
+}
+
+function resolveLegacyCount(body: ActionUpdateInput, current: number | null) {
+  return body.cigaretteButtsCount !== undefined ? body.cigaretteButtsCount : body.cigaretteButts !== undefined ? body.cigaretteButts : current;
+}
+
+function resolveLegacyMass(body: ActionUpdateInput, current: number | null) {
+  return body.cigaretteButtsMassKg !== undefined ? body.cigaretteButtsMassKg : body.cigaretteButtsKg !== undefined ? body.cigaretteButtsKg : current;
 }
 
 function buildButtsOptions(body: ActionUpdateInput) {
@@ -146,14 +133,11 @@ function buildButtsMeasurementUpdate(params: {
   };
 }
 
-function buildVolunteerMeasurementUpdate(params: {
+function resolveVolunteerParticipationUpdate(params: {
   current: ActionRow;
   body: ActionUpdateInput;
   currentMetadata: ActionMetadata;
-}): {
-  participation: ActionVolunteerParticipation | null;
-  updateData: Record<string, unknown>;
-} {
+}) {
   const { current, body, currentMetadata } = params;
   const hasUpdate = Object.prototype.hasOwnProperty.call(
     body,
@@ -188,24 +172,38 @@ function buildVolunteerMeasurementUpdate(params: {
           volunteersCount: body.volunteersCount ?? current.volunteers_count,
           volunteerParticipation: participation,
         });
+  return { participation: normalizedParticipation, shouldPersist: hasUpdate || body.volunteersCount !== undefined };
+}
+
+function buildVolunteerUpdateData(params: {
+  current: ActionRow;
+  body: ActionUpdateInput;
+  participation: ActionVolunteerParticipation | null;
+  shouldPersist: boolean;
+}) {
+  if (!params.shouldPersist) return {};
+  const volunteersCount = resolveParticipantsCount({
+    volunteerParticipation: params.participation,
+    legacyVolunteersCount: params.body.volunteersCount ?? params.current.volunteers_count,
+  });
   return {
-    participation: normalizedParticipation,
-    updateData:
-      hasUpdate || body.volunteersCount !== undefined
-        ? (() => {
-            const volunteersCount = resolveParticipantsCount({
-              volunteerParticipation: normalizedParticipation,
-              legacyVolunteersCount: body.volunteersCount ?? current.volunteers_count,
-            });
-            return {
-              volunteers_count: volunteersCount,
-              ...resolvePersistedVolunteerComposition({
-                participation: normalizedParticipation,
-                volunteersCount,
-              }),
-            };
-          })()
-        : {},
+    volunteers_count: volunteersCount,
+    ...resolvePersistedVolunteerComposition({ participation: params.participation, volunteersCount }),
+  };
+}
+
+function buildVolunteerMeasurementUpdate(params: {
+  current: ActionRow;
+  body: ActionUpdateInput;
+  currentMetadata: ActionMetadata;
+}): {
+  participation: ActionVolunteerParticipation | null;
+  updateData: Record<string, unknown>;
+} {
+  const resolved = resolveVolunteerParticipationUpdate(params);
+  return {
+    participation: resolved.participation,
+    updateData: buildVolunteerUpdateData({ ...params, participation: resolved.participation, shouldPersist: resolved.shouldPersist }),
   };
 }
 

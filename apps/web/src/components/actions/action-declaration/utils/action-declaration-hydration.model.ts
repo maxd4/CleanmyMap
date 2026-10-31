@@ -122,47 +122,47 @@ function buildParticipationFields(action: ActionEditorRecord): Partial<FormState
   };
 }
 
+function resolveWasteMegotsKg(
+  action: ActionEditorRecord,
+  storedBreakdown: Record<string, unknown>,
+): string {
+  const measurements = action.cigaretteButtsMeasurements;
+  if (measurements?.cigaretteButtsMassKg !== null && measurements?.cigaretteButtsMassKg !== undefined) {
+    return String(measurements.cigaretteButtsMassKg);
+  }
+  if (action.cigaretteButtsKg !== undefined && action.cigaretteButtsKg !== null) {
+    return String(action.cigaretteButtsKg);
+  }
+  return toFormNumber(storedBreakdown.megotsKg);
+}
+
+function buildCigaretteMeasurementFields(
+  preparedForm: FormState,
+  action: ActionEditorRecord,
+  storedBreakdown: Record<string, unknown>,
+): Partial<FormState> {
+  const measurements = action.cigaretteButtsMeasurements;
+  return {
+    cigaretteButts: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
+    cigaretteButtsCount: measurements?.cigaretteButtsCount != null ? String(measurements.cigaretteButtsCount) : action.cigaretteButts === null ? "" : String(action.cigaretteButts),
+    cigaretteButtsInputSource: inferCigaretteButtsInputSource(measurements),
+    cigaretteButtsCountProvenance: measurements?.cigaretteButtsCountProvenance ?? "unknown",
+    cigaretteButtsMassProvenance: measurements?.cigaretteButtsMassProvenance ?? "unknown",
+    cigaretteButtsVolumeProvenance: measurements?.cigaretteButtsVolumeProvenance ?? "unknown",
+    cigaretteButtsConversionFormulaVersion: measurements?.cigaretteButtsConversionFormulaVersion ?? null,
+    cigaretteButtsCondition: measurements?.cigaretteButtsCondition ?? preparedForm.cigaretteButtsCondition,
+    cigaretteButtsVolumeLiters: toFormNumber(measurements?.cigaretteButtsVolumeLiters),
+    wasteMegotsKg: resolveWasteMegotsKg(action, storedBreakdown),
+    wasteMegotsCondition: measurements?.cigaretteButtsCondition ?? preparedForm.wasteMegotsCondition,
+  };
+}
+
 function buildCigaretteFields(
   preparedForm: FormState,
   action: ActionEditorRecord,
   storedBreakdown: Record<string, unknown>,
 ): Partial<FormState> {
-  const cigaretteMeasurements = action.cigaretteButtsMeasurements;
-  return {
-    cigaretteButts: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
-    cigaretteButtsCount:
-      cigaretteMeasurements?.cigaretteButtsCount !== null &&
-      cigaretteMeasurements?.cigaretteButtsCount !== undefined
-        ? String(cigaretteMeasurements.cigaretteButtsCount)
-        : action.cigaretteButts === null
-          ? ""
-          : String(action.cigaretteButts),
-    cigaretteButtsInputSource: inferCigaretteButtsInputSource(cigaretteMeasurements),
-    cigaretteButtsCountProvenance:
-      cigaretteMeasurements?.cigaretteButtsCountProvenance ?? "unknown",
-    cigaretteButtsMassProvenance:
-      cigaretteMeasurements?.cigaretteButtsMassProvenance ?? "unknown",
-    cigaretteButtsVolumeProvenance:
-      cigaretteMeasurements?.cigaretteButtsVolumeProvenance ?? "unknown",
-    cigaretteButtsConversionFormulaVersion:
-      cigaretteMeasurements?.cigaretteButtsConversionFormulaVersion ?? null,
-    cigaretteButtsCondition:
-      cigaretteMeasurements?.cigaretteButtsCondition ??
-      preparedForm.cigaretteButtsCondition,
-    cigaretteButtsVolumeLiters: toFormNumber(
-      cigaretteMeasurements?.cigaretteButtsVolumeLiters,
-    ),
-    wasteMegotsKg:
-      cigaretteMeasurements?.cigaretteButtsMassKg !== null &&
-      cigaretteMeasurements?.cigaretteButtsMassKg !== undefined
-        ? String(cigaretteMeasurements.cigaretteButtsMassKg)
-        : action.cigaretteButtsKg !== undefined && action.cigaretteButtsKg !== null
-          ? String(action.cigaretteButtsKg)
-          : toFormNumber(storedBreakdown.megotsKg),
-    wasteMegotsCondition:
-      cigaretteMeasurements?.cigaretteButtsCondition ??
-      preparedForm.wasteMegotsCondition,
-  };
+  return buildCigaretteMeasurementFields(preparedForm, action, storedBreakdown);
 }
 
 function buildWasteFields(

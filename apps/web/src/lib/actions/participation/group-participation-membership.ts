@@ -69,6 +69,36 @@ function isRegistrationStateConflict(error: unknown): error is RegistrationState
   return error instanceof RegistrationStateConflictError;
 }
 
+async function cancelRegistrationRecord(
+  supabase: SupabaseClient,
+  params: { actionId: string; userId: string },
+  existing: ActionRegistrationStatusRow,
+): Promise<{ record: ActionRegistrationStatusRow; alreadyCancelled: boolean }> {
+  try {
+    const record = await updateActionRegistrationRecord(supabase, {
+      actionId: params.actionId,
+      userId: params.userId,
+      registeredAt: resolveRegisteredAt(existing),
+      registrationStatus: "cancelled",
+      registrationSource: existing.registration_source,
+      expectedRegistrationStatus: existing.registration_status,
+      registrationCancellationReason: existing.registration_source !== "manual_add"
+        ? null
+        : existing.registration_status === "confirmed"
+          ? "accepted_cancelled"
+          : existing.registration_status === "pending"
+            ? "recipient_rejected"
+            : null,
+    });
+    return { record, alreadyCancelled: false };
+  } catch (error) {
+    if (!isRegistrationStateConflict(error)) throw error;
+    const latest = await readActionRegistrationRecord(supabase, params);
+    if (latest?.registration_status === "cancelled") return { record: latest, alreadyCancelled: true };
+    throw new ParticipationStateConflictError();
+  }
+}
+
 class ParticipationStateConflictError extends Error {
   constructor() {
     super("Participation conflict: the registration changed concurrently.");
@@ -134,43 +164,11 @@ export async function cancelActionParticipation(
     };
   }
 
-  let updatedRecord: ActionRegistrationStatusRow;
-  try {
-    updatedRecord = await updateActionRegistrationRecord(supabase, {
-      actionId: params.actionId,
-      userId: params.userId,
-      registeredAt: resolveRegisteredAt(existing),
-      registrationStatus: "cancelled",
-      registrationSource: existing.registration_source,
-      expectedRegistrationStatus: existing.registration_status,
-      registrationCancellationReason:
-        existing.registration_source !== "manual_add"
-          ? null
-          : existing.registration_status === "confirmed"
-            ? "accepted_cancelled"
-            : existing.registration_status === "pending"
-              ? "recipient_rejected"
-              : null,
-    });
-  } catch (error) {
-    if (!isRegistrationStateConflict(error)) throw error;
-    const latest = await readActionRegistrationRecord(supabase, params);
-    if (latest?.registration_status === "cancelled") {
-      return {
-        alreadyCancelled: true,
-        joinedAt: resolveRegisteredAt(latest),
-        participationStatus: latest.registration_status,
-        participationSource: latest.registration_source,
-        participationUpdatedAt: resolveRegistrationUpdatedAt(latest),
-        participantsCount: await countActiveRegistrationsForAction(supabase, params.actionId),
-      };
-    }
-    throw new ParticipationStateConflictError();
-  }
+  const { record: updatedRecord, alreadyCancelled } = await cancelRegistrationRecord(supabase, params, existing);
   const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
 
   return {
-    alreadyCancelled: false,
+    alreadyCancelled,
     joinedAt: resolveRegisteredAt(updatedRecord),
     participationStatus: updatedRecord.registration_status,
     participationSource: updatedRecord.registration_source,

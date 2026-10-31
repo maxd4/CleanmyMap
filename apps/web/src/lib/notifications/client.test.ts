@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseBrowserClientMock = vi.hoisted(() => vi.fn());
 const getTokenMock = vi.hoisted(() => vi.fn());
@@ -50,6 +50,10 @@ describe("notification client", () => {
     getSupabaseBrowserClientMock.mockReset();
     getTokenMock.mockReset();
     vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("uses a Clerk token before reading notifications", async () => {
@@ -376,5 +380,141 @@ describe("notification client", () => {
     });
     expect(eqNotificationMock).toHaveBeenCalledWith("id", "notification-1");
     expect(eqUserMock).toHaveBeenCalledWith("user_id", "user_123");
+  });
+
+  it("propagates Supabase errors for unread counts and read mutations without widening the query", async () => {
+    const countError = new Error("notifications unavailable");
+    const countQuery = {
+      select: vi.fn(() => countQuery),
+      eq: vi.fn(() => countQuery),
+      is: vi.fn().mockResolvedValue({ count: null, error: countError }),
+    };
+    const updateError = new Error("read update denied");
+    const updateQuery = {
+      update: vi.fn(() => updateQuery),
+      eq: vi.fn(() => updateQuery),
+      then: undefined,
+    };
+    const fromMock = vi.fn((table: string) => table === "app_notifications"
+      ? { select: vi.fn(() => countQuery), update: vi.fn(() => ({
+        eq: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: updateError }) })),
+      })) }
+      : undefined);
+    getSupabaseBrowserClientMock.mockReturnValue({ from: fromMock });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+
+    const {
+      loadUnreadNotificationCountForCurrentUser,
+      markNotificationAsReadForCurrentUser,
+    } = await import("./client");
+    await expect(loadUnreadNotificationCountForCurrentUser("user_123", getTokenMock)).rejects.toBe(countError);
+    await expect(markNotificationAsReadForCurrentUser("user_123", "notification-1", getTokenMock)).rejects.toBe(updateError);
+    expect(fromMock).toHaveBeenCalledWith("app_notifications");
+    expect(updateQuery).toBeDefined();
+  });
+
+  it("normalizes contact, invitation and registration response lists while preserving HTTP errors", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ requests: [{ id: " request-1 " }, { id: 4 }, null] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ invitations: [{ registration_id: " registration-1 " }, {}] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ requests: [{ registration_id: " registration-2 " }, null] })));
+    vi.stubGlobal("fetch", fetchMock);
+    const {
+      loadPendingNotificationDecisionIds,
+      loadPendingActionInvitationIds,
+      loadPendingActionRegistrationRequestIds,
+    } = await import("./client");
+
+    await expect(loadPendingNotificationDecisionIds()).resolves.toEqual(["request-1"]);
+    await expect(loadPendingActionInvitationIds()).resolves.toEqual(["registration-1"]);
+    await expect(loadPendingActionRegistrationRequestIds()).resolves.toEqual(["registration-2"]);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/chat/contact-requests", expect.objectContaining({ credentials: "same-origin" }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/actions/invitations", expect.objectContaining({ cache: "no-store" }));
+  });
+
+  it("converts JSON and non-JSON HTTP failures into bounded decision errors", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "session expirée" }), { status: 401 }))
+      .mockResolvedValueOnce(new Response("gateway unavailable", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { loadPendingNotificationDecisionIds } = await import("./client");
+
+    await expect(loadPendingNotificationDecisionIds()).rejects.toMatchObject({ message: "session expirée", status: 401 });
+    await expect(loadPendingNotificationDecisionIds()).rejects.toMatchObject({
+      message: "La décision de notification n'a pas pu être traitée.",
+      status: 503,
+    });
+  });
+
+  it("maps accepted decisions and rejects invalid server states instead of inventing a fallback", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "accepted", messageId: "message-1", actionId: "action-1" })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "unknown" })));
+    vi.stubGlobal("fetch", fetchMock);
+    const { respondToNotificationDecision } = await import("./client");
+
+    await expect(respondToNotificationDecision("request-1", "accept")).resolves.toEqual({
+      status: "accepted",
+      messageId: "message-1",
+      actionId: "action-1",
+      senderId: null,
+    });
+    await expect(respondToNotificationDecision("request-2", "reject")).rejects.toThrow("état valide");
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/chat/contact-requests", expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify({ requestId: "request-1", decision: "accept" }),
+    }));
+  });
+
+  it("keeps invitation and registration decisions idempotent and distinguishes unavailable states", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "unavailable", actionId: null })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", alreadyReviewed: true, participantId: "registration-1", actionId: "action-1" })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "accepted", registrationId: "registration-2", actionId: "action-2" })));
+    vi.stubGlobal("fetch", fetchMock);
+    const {
+      respondToActionInvitation,
+      respondToActionRegistrationRequest,
+    } = await import("./client");
+
+    await expect(respondToActionInvitation("registration-1", "accept")).resolves.toEqual({
+      status: "unavailable",
+      registrationId: "registration-1",
+      actionId: null,
+    });
+    await expect(respondToActionRegistrationRequest("action-1", "registration-1", "accept")).resolves.toEqual({
+      status: "unavailable",
+      registrationId: "registration-1",
+      actionId: "action-1",
+    });
+    await expect(respondToActionInvitation("registration-2", "accept")).resolves.toEqual({
+      status: "accepted",
+      registrationId: "registration-2",
+      actionId: "action-2",
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/actions/action-1/group-join", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ participantId: "registration-1", decision: "accept", requestKind: "registration_request" }),
+    }));
+  });
+
+  it("fails closed when a paged notification query returns a Supabase error", async () => {
+    const queryError = new Error("RLS denied");
+    const rangeMock = vi.fn().mockResolvedValue({ data: [], error: queryError });
+    const secondOrderMock = vi.fn(() => ({ range: rangeMock }));
+    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
+    const orMock = vi.fn(() => ({ order: orderMock }));
+    const eqMock = vi.fn(() => ({ or: orMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({ from: vi.fn(() => ({ select: selectMock })) });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+
+    await expect(loadPendingDecisionNotificationsForCurrentUser(
+      "user-123",
+      getTokenMock,
+      [{ kind: "action_result", requestId: "action-1" }],
+    )).rejects.toBe(queryError);
+    expect(rangeMock).toHaveBeenCalledWith(0, 49);
   });
 });

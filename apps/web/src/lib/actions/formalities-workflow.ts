@@ -123,26 +123,32 @@ function isCanonicalTraceFormality(value: unknown): value is ActionFormalitiesTr
     (value.sourceId === null || isMeaningful(value.sourceId));
 }
 
+function hasUniqueMeaningfulStrings(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isMeaningful) && new Set(value).size === value.length;
+}
+
+function hasCanonicalOfficialSources(value: unknown): value is ActionFormalitiesTrace["officialSources"] {
+  return Array.isArray(value) && value.every(isCanonicalOfficialSource) &&
+    new Set(value.map((source) => (source as { id: string }).id)).size === value.length;
+}
+
+function hasCanonicalFormalities(value: unknown): value is ActionFormalitiesTrace["formalities"] {
+  return Array.isArray(value) && value.every(isCanonicalTraceFormality) &&
+    new Set(value.map((formality) => formality.id)).size === value.length;
+}
+
 function isCanonicalFormalitiesTrace(value: unknown): value is ActionFormalitiesTrace {
   if (!isRecord(value)) return false;
-  const officialSourceIds = value.officialSourceIds;
-  const officialSources = value.officialSources;
-  const formalities = value.formalities;
-  return isIso8601Timestamp(value.qualifiedAt) &&
-    isNullableMeaningfulString(value.rulesetVersion) &&
-    Array.isArray(officialSourceIds) &&
-    officialSourceIds.every(isMeaningful) &&
-    new Set(officialSourceIds).size === officialSourceIds.length &&
-    Array.isArray(officialSources) &&
-    officialSources.every(isCanonicalOfficialSource) &&
-    new Set(officialSources.map((source) => (source as { id: string }).id)).size === officialSources.length &&
-    isNullableString(value.verifiedOn) &&
-    (value.verifiedOn === null || isMeaningful(value.verifiedOn)) &&
-    isMeaningful(value.actionDependencyFingerprint) &&
-    actionFormalitiesFactsSchema.safeParse(value.determiningFacts).success &&
-    Array.isArray(formalities) &&
-    formalities.every(isCanonicalTraceFormality) &&
-    new Set(formalities.map((formality) => formality.id)).size === formalities.length;
+  return [
+    isIso8601Timestamp(value.qualifiedAt),
+    isNullableMeaningfulString(value.rulesetVersion),
+    hasUniqueMeaningfulStrings(value.officialSourceIds),
+    hasCanonicalOfficialSources(value.officialSources),
+    isNullableString(value.verifiedOn) && (value.verifiedOn === null || isMeaningful(value.verifiedOn)),
+    isMeaningful(value.actionDependencyFingerprint),
+    actionFormalitiesFactsSchema.safeParse(value.determiningFacts).success,
+    hasCanonicalFormalities(value.formalities),
+  ].every(Boolean);
 }
 
 function isCanonicalProgress(value: unknown): value is ActionFormalityProgress {

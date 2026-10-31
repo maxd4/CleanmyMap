@@ -76,6 +76,9 @@ type CommunityEventsRowsPage = {
  nextCursor: string | null;
 };
 
+const COMMUNITY_EVENTS_SELECT_FIELDS =
+  "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
+
 function toCachedCommunityEventItem(
  event: CommunityEventRow,
  summary: { yesCount: number; maybeCount: number; noCount: number; totalCount: number } | undefined,
@@ -96,6 +99,64 @@ function toCachedCommunityEventItem(
  } satisfies CachedCommunityEventItem;
 }
 
+async function loadCommunityEventPhase(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  todayIso: string,
+  phase: "upcoming" | "past",
+  phaseLimit: number,
+  phaseCursor: CommunityEventsPageCursor | null,
+): Promise<CommunityEventRow[]> {
+  let query = supabase.from("community_events").select(COMMUNITY_EVENTS_SELECT_FIELDS);
+  if (phase === "upcoming") {
+    query = query
+      .gte("event_date", todayIso)
+      .order("event_date", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (phaseCursor) {
+      query = query.or(
+        `event_date.gt.${phaseCursor.eventDate},and(event_date.eq.${phaseCursor.eventDate},created_at.lt.${phaseCursor.createdAt}),and(event_date.eq.${phaseCursor.eventDate},created_at.eq.${phaseCursor.createdAt},id.lt.${phaseCursor.id})`,
+      );
+    }
+  } else {
+    query = query
+      .lt("event_date", todayIso)
+      .order("event_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (phaseCursor) {
+      query = query.or(
+        `event_date.lt.${phaseCursor.eventDate},and(event_date.eq.${phaseCursor.eventDate},created_at.lt.${phaseCursor.createdAt}),and(event_date.eq.${phaseCursor.eventDate},created_at.eq.${phaseCursor.createdAt},id.lt.${phaseCursor.id})`,
+      );
+    }
+  }
+  const result = await query.limit(phaseLimit);
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []) as CommunityEventRow[];
+}
+
+function buildCommunityEventsPage(
+  events: CommunityEventRow[],
+  limit: number,
+  phase: CommunityEventsPagePhase,
+  hasMore: boolean,
+): CommunityEventsRowsPage {
+  const pageEvents = events.slice(0, limit);
+  const last = pageEvents.at(-1);
+  return {
+    events: pageEvents,
+    hasMore,
+    nextCursor: hasMore && last
+      ? buildCommunityEventsPageCursor({
+          phase,
+          eventDate: last.event_date,
+          createdAt: last.created_at,
+          id: last.id,
+        })
+      : null,
+  };
+}
+
 async function loadCommunityEventRows(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   todayIso: string,
@@ -104,12 +165,10 @@ async function loadCommunityEventRows(
  cursor: CommunityEventsPageCursor | null,
  requestedPhase: CommunityEventsPagePhase | null,
 ): Promise<CommunityEventsRowsPage> {
-  const selectFields =
-    "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description";
   if (eventId) {
     const result = await supabase
       .from("community_events")
-      .select(selectFields)
+      .select(COMMUNITY_EVENTS_SELECT_FIELDS)
       .eq("id", eventId)
       .limit(limit);
     if (result.error) throw new Error(result.error.message);
@@ -120,85 +179,25 @@ async function loadCommunityEventRows(
     };
   }
 
-  const loadPhase = async (
-    phase: "upcoming" | "past",
-    phaseLimit: number,
-    phaseCursor: CommunityEventsPageCursor | null,
-  ): Promise<CommunityEventRow[]> => {
-    let query = supabase
-      .from("community_events")
-      .select(selectFields);
-    if (phase === "upcoming") {
-      query = query
-        .gte("event_date", todayIso)
-        .order("event_date", { ascending: true })
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
-      if (phaseCursor) {
-        query = query.or(
-          `event_date.gt.${phaseCursor.eventDate},and(event_date.eq.${phaseCursor.eventDate},created_at.lt.${phaseCursor.createdAt}),and(event_date.eq.${phaseCursor.eventDate},created_at.eq.${phaseCursor.createdAt},id.lt.${phaseCursor.id})`,
-        );
-      }
-    } else {
-      query = query
-        .lt("event_date", todayIso)
-        .order("event_date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
-      if (phaseCursor) {
-        query = query.or(
-          `event_date.lt.${phaseCursor.eventDate},and(event_date.eq.${phaseCursor.eventDate},created_at.lt.${phaseCursor.createdAt}),and(event_date.eq.${phaseCursor.eventDate},created_at.eq.${phaseCursor.createdAt},id.lt.${phaseCursor.id})`,
-        );
-      }
-    }
-    const result = await query.limit(phaseLimit);
-    if (result.error) throw new Error(result.error.message);
-    return (result.data ?? []) as CommunityEventRow[];
-  };
-
  if (requestedPhase) {
    const phase = requestedPhase;
-   const events = await loadPhase(phase, limit + 1, cursor);
-   const pageEvents = events.slice(0, limit);
-   const last = pageEvents.at(-1);
-   return {
-     events: pageEvents,
-     hasMore: events.length > limit,
-     nextCursor: events.length > limit && last
-       ? buildCommunityEventsPageCursor({
-           phase,
-           eventDate: last.event_date,
-           createdAt: last.created_at,
-           id: last.id,
-         })
-       : null,
-   };
+    const events = await loadCommunityEventPhase(supabase, todayIso, phase, limit + 1, cursor);
+    return buildCommunityEventsPage(events, limit, phase, events.length > limit);
  }
 
  const phase = cursor?.phase ?? "upcoming";
  const upcomingEvents = phase === "upcoming"
-   ? await loadPhase("upcoming", limit + 1, cursor)
+    ? await loadCommunityEventPhase(supabase, todayIso, "upcoming", limit + 1, cursor)
    : [];
  if (phase === "upcoming" && upcomingEvents.length > limit) {
-    const events = upcomingEvents.slice(0, limit);
-    const last = events.at(-1);
-    return {
-      events,
-      hasMore: true,
-      nextCursor: last
-        ? buildCommunityEventsPageCursor({
-            phase: "upcoming",
-            eventDate: last.event_date,
-            createdAt: last.created_at,
-            id: last.id,
-          })
-        : null,
-    };
+    return buildCommunityEventsPage(upcomingEvents, limit, "upcoming", true);
   }
 
   const remainingLimit = Math.max(0, limit - upcomingEvents.length);
  const pastCursor = phase === "past" ? cursor : null;
-  const pastEvents = await loadPhase(
+  const pastEvents = await loadCommunityEventPhase(
+    supabase,
+    todayIso,
     "past",
     phase === "past" ? limit + 1 : Math.max(1, remainingLimit + 1),
     pastCursor,
@@ -223,6 +222,42 @@ async function loadCommunityEventRows(
         })
       : null,
   };
+}
+
+type CommunityEventsRequest = {
+  limit: number;
+  eventId: string | null;
+  cursor: CommunityEventsPageCursor | null;
+  phase: CommunityEventsPagePhase | null;
+};
+
+function parseCommunityEventsRequest(url: URL):
+  | { ok: true; value: CommunityEventsRequest }
+  | { ok: false; response: NextResponse } {
+  const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 300, 120);
+  const eventId = url.searchParams.get("eventId")?.trim() || null;
+  if (eventId && !z.string().uuid().safeParse(eventId).success) {
+    return { ok: false, response: NextResponse.json({ error: "Identifiant d'événement invalide" }, { status: 400 }) };
+  }
+  const requestedCursor = url.searchParams.get("cursor")?.trim() || null;
+  const cursor = parseCommunityEventsPageCursor(requestedCursor);
+  if (requestedCursor && !cursor) {
+    return { ok: false, response: NextResponse.json({ error: "Curseur d'événement invalide" }, { status: 400 }) };
+  }
+  if (eventId && cursor) {
+    return { ok: false, response: NextResponse.json({ error: "Un événement ciblé ne peut pas utiliser un curseur" }, { status: 400 }) };
+  }
+  const requestedPhaseValue = url.searchParams.get("phase")?.trim() || null;
+  const phase = requestedPhaseValue === "upcoming" || requestedPhaseValue === "past"
+    ? requestedPhaseValue
+    : null;
+  if (requestedPhaseValue && !phase) {
+    return { ok: false, response: NextResponse.json({ error: "Phase d'événement invalide" }, { status: 400 }) };
+  }
+  if (phase && cursor && cursor.phase !== phase) {
+    return { ok: false, response: NextResponse.json({ error: "La phase ne correspond pas au curseur" }, { status: 400 }) };
+  }
+  return { ok: true, value: { limit, eventId, cursor, phase } };
 }
 
 async function buildCachedCommunityEventsPayload(
@@ -345,53 +380,12 @@ export async function GET(request: Request) {
  // If Clerk is unavailable, fail closed for that personal context and keep the
  // public event/count projection available with myRsvpStatus: null.
  const { userId } = await getSafeAuthSession();
- const url = new URL(request.url);
- const limit = parsePositiveInteger(
-  url.searchParams.get("limit"),
-  1,
-  300,
-  120,
- );
- const requestedEventId = url.searchParams.get("eventId")?.trim() || null;
- if (requestedEventId && !z.string().uuid().safeParse(requestedEventId).success) {
-  return NextResponse.json(
-   { error: "Identifiant d'événement invalide" },
-   { status: 400 },
-  );
- }
- const requestedCursor = url.searchParams.get("cursor")?.trim() || null;
- const cursor = parseCommunityEventsPageCursor(requestedCursor);
- if (requestedCursor && !cursor) {
-  return NextResponse.json(
-   { error: "Curseur d'événement invalide" },
-   { status: 400 },
-  );
- }
- if (requestedEventId && cursor) {
-  return NextResponse.json(
-   { error: "Un événement ciblé ne peut pas utiliser un curseur" },
-   { status: 400 },
-  );
- }
- const requestedPhaseValue = url.searchParams.get("phase")?.trim() || null;
- const requestedPhase: CommunityEventsPagePhase | null = requestedPhaseValue === "upcoming" || requestedPhaseValue === "past"
-  ? requestedPhaseValue
-  : null;
- if (requestedPhaseValue && !requestedPhase) {
-  return NextResponse.json(
-   { error: "Phase d'événement invalide" },
-   { status: 400 },
-  );
- }
- if (requestedPhase && cursor && cursor.phase !== requestedPhase) {
-  return NextResponse.json(
-   { error: "La phase ne correspond pas au curseur" },
-   { status: 400 },
-  );
- }
+  const parsedRequest = parseCommunityEventsRequest(new URL(request.url));
+  if (!parsedRequest.ok) return parsedRequest.response;
+  const { limit, eventId, cursor, phase } = parsedRequest.value;
 
  try {
- const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId, cursor, requestedPhase);
+  const payload = await loadCachedCommunityEvents(userId, limit, eventId, cursor, phase);
  return NextResponse.json(payload, {
   headers: userId
    ? COMMUNITY_EVENTS_USER_CACHE_HEADERS

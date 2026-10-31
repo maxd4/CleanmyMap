@@ -54,6 +54,28 @@ function isVisualAttachment(message: ChatMessage): boolean {
   }
 }
 
+function ChatPoll({ message, isLight, pollVotePending, pollVoteError, onPollVote, onPollVoteRetry }: Pick<ChatMessageItemProps, "message" | "pollVotePending" | "pollVoteError" | "onPollVote" | "onPollVoteRetry"> & { isLight: boolean }) {
+  const pollOptions = message.poll_options ?? [];
+  if (pollOptions.length === 0) return null;
+  return <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-pink-100 bg-pink-50/60" : "border-pink-400/20 bg-pink-500/10"}`}>
+    <div className="mb-2 flex items-center justify-between gap-3"><p className="cmm-text-caption font-semibold text-pink-700">{message.totalVotes ?? 0} vote{(message.totalVotes ?? 0) > 1 ? "s" : ""}</p>{pollVotePending ? <span className="cmm-text-caption font-bold text-slate-400" role="status">Enregistrement…</span> : null}</div>
+    <div className="space-y-2" role="group" aria-label="Options du sondage">{pollOptions.map((option) => {
+      const voteCount = option.voteCount ?? 0;
+      const totalVotes = message.totalVotes ?? 0;
+      const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+      const isSelected = message.selectedOptionId === option.id;
+      const content = <><span className={cn("absolute inset-y-0 left-0 rounded-lg transition-[width]", isLight ? "bg-pink-100/80" : "bg-pink-500/15")} style={{ width: `${percentage}%` }} aria-hidden="true" /><span className="relative flex min-w-0 flex-1 items-center gap-2 text-left"><span className="text-pink-500">{option.position}.</span><span className="break-words">{option.label}</span>{isSelected ? <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 cmm-text-caption font-semibold text-pink-600">Votre choix</span> : null}</span><span className="relative shrink-0 cmm-text-caption font-black text-slate-500">{voteCount} · {percentage} %</span></>;
+      return onPollVote ? <button key={option.id} type="button" disabled={pollVotePending || isSelected} aria-pressed={isSelected} onClick={() => onPollVote(message.id, option.id)} className={cn("relative flex w-full overflow-hidden rounded-lg border px-3 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400", isLight ? "border-pink-100 bg-white text-slate-700 hover:border-pink-300 disabled:cursor-default disabled:opacity-100" : "border-white/10 bg-white/5 text-slate-200 hover:border-pink-300/50 disabled:cursor-default disabled:opacity-100", pollVotePending && !isSelected ? "cursor-wait" : "")}>{content}</button> : <div key={option.id} className={cn("relative flex w-full overflow-hidden rounded-lg border px-3 py-2 text-xs font-bold", isLight ? "border-pink-100 bg-white text-slate-700" : "border-white/10 bg-white/5 text-slate-200")}>{content}</div>;
+    })}</div>
+    {onPollVote && message.selectedOptionId ? <button type="button" disabled={pollVotePending} onClick={() => onPollVote(message.id, null)} className="mt-3 cmm-text-caption font-semibold text-pink-700 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400">Retirer mon vote</button> : null}
+    {pollVoteError ? <div className="mt-2 flex flex-wrap items-center gap-2"><p className="cmm-text-caption font-bold text-rose-600" role="alert">{pollVoteError}</p>{onPollVoteRetry ? <button type="button" disabled={pollVotePending} onClick={() => onPollVoteRetry(message.id)} className="cmm-text-caption font-semibold text-pink-700 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400">Réessayer</button> : null}</div> : null}
+  </div>;
+}
+
+function ChatAttachment({ url, label, isVisual, isLight, isPrivateChannel }: { url: string; label: string; isVisual: boolean; isLight: boolean; isPrivateChannel: boolean }) {
+  return <div className="mb-3">{isVisual ? <div className="group/img relative overflow-hidden rounded-xl border border-black/5 inline-block"><Image src={url} alt="Pièce jointe" width={300} height={200} unoptimized className="max-h-48 w-auto object-cover" /></div> : <a href={url} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isPrivateChannel ? (isLight ? "border-indigo-100 bg-indigo-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700") : (isLight ? "border-pink-100 bg-pink-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700")}`}><div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isPrivateChannel ? (isLight ? "bg-indigo-100 text-indigo-500" : "bg-indigo-500/20 text-indigo-400") : (isLight ? "bg-pink-100 text-pink-600" : "bg-pink-500/20 text-pink-300")}`}><FileText size={16} /></div><div><p className={`break-words cmm-text-small font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{label}</p><p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-400"}`}>Document</p></div><Download size={14} className={isPrivateChannel ? (isLight ? "ml-2 text-indigo-500" : "ml-2 text-indigo-400") : (isLight ? "ml-2 text-pink-600" : "ml-2 text-pink-300")} /></a>}</div>;
+}
+
 export function ChatMessageItem({
   message,
   userId,
@@ -90,7 +112,6 @@ export function ChatMessageItem({
   const hasActionReference = Boolean(message.action_id);
   const hasStructuredCard = isAnnouncement || isPoll || hasActionReference;
   const hasStructuredMetadata = Boolean(topic || isAnnouncement || isPoll || hasActionReference);
-  const pollOptions = message.poll_options ?? [];
 
   return (
     <motion.div
@@ -206,146 +227,10 @@ export function ChatMessageItem({
             </div>
           ) : null}
 
-          {isPoll && pollOptions.length > 0 ? (
-            <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-pink-100 bg-pink-50/60" : "border-pink-400/20 bg-pink-500/10"}`}>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="cmm-text-caption font-semibold text-pink-700">
-                  {message.totalVotes ?? 0} vote{(message.totalVotes ?? 0) > 1 ? "s" : ""}
-                </p>
-                {pollVotePending ? (
-                  <span className="cmm-text-caption font-bold text-slate-400" role="status">
-                    Enregistrement…
-                  </span>
-                ) : null}
-              </div>
-              <div className="space-y-2" role="group" aria-label="Options du sondage">
-                {pollOptions.map((option) => {
-                  const voteCount = option.voteCount ?? 0;
-                  const totalVotes = message.totalVotes ?? 0;
-                  const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-                  const isSelected = message.selectedOptionId === option.id;
-                  const optionContent = (
-                    <>
-                      <span
-                        className={cn(
-                          "absolute inset-y-0 left-0 rounded-lg transition-[width]",
-                          isLight ? "bg-pink-100/80" : "bg-pink-500/15",
-                        )}
-                        style={{ width: `${percentage}%` }}
-                        aria-hidden="true"
-                      />
-                      <span className="relative flex min-w-0 flex-1 items-center gap-2 text-left">
-                        <span className="text-pink-500">{option.position}.</span>
-                        <span className="break-words">{option.label}</span>
-                        {isSelected ? (
-                          <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 cmm-text-caption font-semibold text-pink-600">
-                            Votre choix
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="relative shrink-0 cmm-text-caption font-black text-slate-500">
-                        {voteCount} · {percentage} %
-                      </span>
-                    </>
-                  );
-
-                  return onPollVote ? (
-                    <button
-                      key={option.id}
-                      type="button"
-                      disabled={pollVotePending || isSelected}
-                      aria-pressed={isSelected}
-                      onClick={() => onPollVote(message.id, option.id)}
-                      className={cn(
-                        "relative flex w-full overflow-hidden rounded-lg border px-3 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400",
-                        isLight
-                          ? "border-pink-100 bg-white text-slate-700 hover:border-pink-300 disabled:cursor-default disabled:opacity-100"
-                          : "border-white/10 bg-white/5 text-slate-200 hover:border-pink-300/50 disabled:cursor-default disabled:opacity-100",
-                        pollVotePending && !isSelected ? "cursor-wait" : "",
-                      )}
-                    >
-                      {optionContent}
-                    </button>
-                  ) : (
-                    <div
-                      key={option.id}
-                      className={cn(
-                        "relative flex w-full overflow-hidden rounded-lg border px-3 py-2 text-xs font-bold",
-                        isLight ? "border-pink-100 bg-white text-slate-700" : "border-white/10 bg-white/5 text-slate-200",
-                      )}
-                    >
-                      {optionContent}
-                    </div>
-                  );
-                })}
-              </div>
-              {onPollVote && message.selectedOptionId ? (
-                <button
-                  type="button"
-                  disabled={pollVotePending}
-                  onClick={() => onPollVote(message.id, null)}
-                  className="mt-3 cmm-text-caption font-semibold text-pink-700 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
-                >
-                  Retirer mon vote
-                </button>
-              ) : null}
-              {pollVoteError ? (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <p className="cmm-text-caption font-bold text-rose-600" role="alert">
-                    {pollVoteError}
-                  </p>
-                  {onPollVoteRetry ? (
-                    <button
-                      type="button"
-                      disabled={pollVotePending}
-                      onClick={() => onPollVoteRetry(message.id)}
-                      className="cmm-text-caption font-semibold text-pink-700 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
-                    >
-                      Réessayer
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+          {isPoll ? <ChatPoll message={message} isLight={isLight} pollVotePending={pollVotePending} pollVoteError={pollVoteError} onPollVote={onPollVote} onPollVoteRetry={onPollVoteRetry} /> : null}
 
           {/* Attachments */}
-          {safeAttachmentUrl && (
-            <div className="mb-3">
-              {hasVisualAttachment ? (
-                <div className="group/img relative overflow-hidden rounded-xl border border-black/5 inline-block">
-                  <Image
-                    src={safeAttachmentUrl}
-                    alt="Pièce jointe"
-                    width={300}
-                    height={200}
-                    unoptimized
-                    className="max-h-48 w-auto object-cover"
-                  />
-                </div>
-              ) : (
-                <a
-                  href={safeAttachmentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`inline-flex items-center gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isPrivateChannel ? (isLight ? "border-indigo-100 bg-indigo-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700") : (isLight ? "border-pink-100 bg-pink-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700")}`}
-                >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isPrivateChannel ? (isLight ? "bg-indigo-100 text-indigo-500" : "bg-indigo-500/20 text-indigo-400") : (isLight ? "bg-pink-100 text-pink-600" : "bg-pink-500/20 text-pink-300")}`}>
-                    <FileText size={16} />
-                  </div>
-                  <div>
-                    <p className={`break-words cmm-text-small font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
-                      {attachmentLabel}
-                    </p>
-                    <p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                      Document
-                    </p>
-                  </div>
-                  <Download size={14} className={isPrivateChannel ? (isLight ? "ml-2 text-indigo-500" : "ml-2 text-indigo-400") : (isLight ? "ml-2 text-pink-600" : "ml-2 text-pink-300")} />
-                </a>
-              )}
-            </div>
-          )}
+          {safeAttachmentUrl ? <ChatAttachment url={safeAttachmentUrl} label={attachmentLabel} isVisual={hasVisualAttachment} isLight={isLight} isPrivateChannel={isPrivateChannel} /> : null}
 
         </div>
       </div>

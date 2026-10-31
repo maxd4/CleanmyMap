@@ -188,6 +188,25 @@ function observedLabel(
     : "Trace GPS enregistrée";
 }
 
+function getOriginPresentation(
+  item: ActionMapItem,
+  origin: ActionGeometryOrigin,
+  kind: ActionGeometryKind | null,
+): GeometryPresentation {
+  if (origin === "gpx_import") {
+    return getGpxProvenancePresentation(item) ?? buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
+  }
+  if (origin === "gps_tracking") {
+    return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
+  }
+  if (origin === "estimated_route") return getEstimatedRoutePresentation(item);
+  if (origin === "manual") return buildPresentation(origin, "declared", getManualLabel(kind), "solid", "declared");
+  if (origin === "reference") return buildPresentation(origin, "contextual", "Repère géographique indicatif", "dashed", "reference");
+  if (origin === "routed") return buildPresentation(origin, "planned", "Itinéraire prévu sur le réseau", "dashed", "network");
+  if (origin === "estimated_area") return buildPresentation(origin, "contextual", "Zone indicative", "dashed", "indicative");
+  return buildFallbackPointPresentation();
+}
+
 /**
  * Retourne les propriétés visuelles et textuelles pour représenter la géométrie d'une action.
  */
@@ -206,23 +225,5 @@ export function getGeometryPresentation(
   ) {
     return buildFallbackPointPresentation();
   }
-  switch (origin) {
-    case "manual":
-      return buildPresentation(origin, "declared", getManualLabel(kind), "solid", "declared");
-    case "reference":
-      return buildPresentation(origin, "contextual", "Repère géographique indicatif", "dashed", "reference");
-    case "gpx_import":
-      return getGpxProvenancePresentation(item) ?? buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
-    case "gps_tracking":
-      return buildPresentation(origin, "observed", observedLabel(item, origin), "solid", "observed");
-    case "routed":
-      return buildPresentation(origin, "planned", "Itinéraire prévu sur le réseau", "dashed", "network");
-    case "estimated_route":
-      return getEstimatedRoutePresentation(item);
-    case "estimated_area":
-      return buildPresentation(origin, "contextual", "Zone indicative", "dashed", "indicative");
-    case "fallback_point":
-    default:
-      return buildFallbackPointPresentation();
-  }
+  return getOriginPresentation(item, origin, kind);
 }
