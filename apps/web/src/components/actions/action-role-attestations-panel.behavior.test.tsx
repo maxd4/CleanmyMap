@@ -44,7 +44,7 @@ describe("ActionRoleAttestationsPanel behavior", () => {
     expect(text(renderer)).toContain("Décision enregistrée");
   });
 
-  it("deduplicates paginated participants and hides review mutations without permission", async () => {
+  it("hides review mutations without permission", async () => {
     const first = { ...state, canReview: false, pagination: { hasMore: false, nextOffset: null } };
     const fetchMock = vi.fn().mockResolvedValueOnce(response(first));
     vi.stubGlobal("fetch", fetchMock);
@@ -54,5 +54,23 @@ describe("ActionRoleAttestationsPanel behavior", () => {
     expect(renderer.root.findAllByType("button")).toHaveLength(0);
     expect(text(renderer)).toContain("Participation confirmée");
     expect(fetchMock).toHaveBeenCalledWith("/api/actions/action-2/role-attestations?limit=100&offset=0", { cache: "no-store" });
+  });
+
+  it("loads the next participant page, deduplicates users, and hides pagination when complete", async () => {
+    const nextParticipant = { ...participant, userId: "user-2", displayName: "Autre bénévole", handle: "autre" };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(state))
+      .mockResolvedValueOnce(response({ ...state, participants: [participant, nextParticipant], pagination: { hasMore: false, nextOffset: null } }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<ActionRoleAttestationsPanel actionId="action-3" />); });
+    await act(async () => { await settleInitial(); });
+
+    expect(buttonByText(renderer, "Charger les participants suivants")).toBeDefined();
+    await act(async () => { await buttonByText(renderer, "Charger les participants suivants")!.props.onClick(); });
+
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/actions/action-3/role-attestations?limit=100&offset=1", { cache: "no-store" });
+    expect(renderer.root.findAllByType("h3").map((heading) => heading.props.children)).toEqual(["Bénévole", "Autre bénévole"]);
+    expect(buttonByText(renderer, "Charger les participants suivants")).toBeUndefined();
   });
 });
