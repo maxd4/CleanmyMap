@@ -18,6 +18,7 @@ select ok(not has_function_privilege('authenticated', 'public.publish_action_ret
 
 create temp table action_retrospective_fixture (action_id uuid not null);
 grant select on action_retrospective_fixture to anon, authenticated;
+grant select, insert on action_retrospective_fixture to service_role;
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"retro-service"}', true);
