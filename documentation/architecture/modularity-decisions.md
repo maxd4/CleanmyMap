@@ -20,6 +20,8 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/components/admin/admin-dashboard-ui.tsx` | ALREADY_MODULARIZED | NONE | préserver les exports UI, les tokens visuels et les contrats des cartes admin | nouvelle famille de panneau autonome ou état propre réintroduit dans la façade |
 | `apps/web/src/components/sections/rubriques/partners-network-directory.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrat de l'annuaire, les filtres et les résultats | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/chat/chat-shell.tsx` | ALREADY_MODULARIZED | NONE | aucun ; les frontières client restent séparées et les effets existants sont préservés | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
+| `apps/web/src/components/chat/ui/chat-message-item.tsx` | ALREADY_MODULARIZED | NONE | préserver le rendu des messages, les votes, les pièces jointes sûres et les références d’action | nouveau type de message ou cycle de rendu autonome consommé hors de la façade |
+| `apps/web/src/components/sections/rubriques/community/action-needs-panel.tsx` | COHESIVE_SINGLE_FILE | AFTER_ACTIVE_CHANGES | préserver les mutations de besoins, le scope des actions publiques et les formulaires manager | nouveau contrat de formulaire ou de persistance consommé indépendamment |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | ALREADY_MODULARIZED | NONE | conserver l'orchestration overview/navigation/panels | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/account/greater-paris-select.tsx` | ALREADY_MODULARIZED | NONE | préserver les façades et owners suggestions/controls/shell | nouveau contrat géographique autonome |
 | `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrôleur, les états de soumission et les sous-vues | nouvelle responsabilité autonome réintroduite dans la façade |
@@ -1122,5 +1124,39 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver le fingerprint canonique, l'invalidation par dépendance et le blocage de publication |
 | NEXT_TRIGGER | nouvelle famille de formalités, persistance ou qualification consommée indépendamment |
+
+#### `apps/web/src/components/chat/ui/chat-message-item.tsx`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | façade de message Chat, identité, métadonnées, annonces, sondages et pièces jointes sûres |
+| PUBLIC_CONTRACTS | `ChatMessageItem` et ses callbacks de vote/retry |
+| SIDE_EFFECTS | rendu contrôlé, callbacks de vote au boundary parent ; aucune persistance directe |
+| MAIN_CONSUMERS | listes Chat, messages de canal et tests comportementaux de rendu/vote |
+| TEST_BOUNDARY | `chat-message-item.behavior.test.tsx` couvre identité, sécurité des pièces jointes, annonces, sondages, retry et retrait de vote |
+| COUPLING | le shell fournit les états de vote et la façade conserve le même contrat de message ; les sous-rendus ne possèdent pas l'état métier |
+| NATURAL_EXTRACTION_BOUNDARY | un nouveau type de message avec état autonome ou une source de contenu distincte ; les helpers de rendu actuels restent cohésifs |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | le lot sépare le corps, l'en-tête, la présentation de surface et les règles de sécurité/formatage sans déplacer l'état de vote ni créer un second owner. Le finding de longueur a disparu ; la complexité restante est portée par la présentation conditionnelle et doit être réévaluée avant toute extraction supplémentaire |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver les URLs de pièces jointes validées, les callbacks de vote et les libellés produits |
+| NEXT_TRIGGER | nouveau type de message ou cycle de rendu autonome consommé indépendamment |
+
+#### `apps/web/src/components/sections/rubriques/community/action-needs-panel.tsx`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | lecture et mutation des besoins communautaires publics, formulaires de création/édition manager et rendu des cartes |
+| PUBLIC_CONTRACTS | `ActionNeedsPanel`, création/édition/accomplissement/annulation via `needs-http` |
+| SIDE_EFFECTS | lectures et mutations HTTP bornées à l'action publique, rechargement après mutation et affichage des erreurs |
+| MAIN_CONSUMERS | section communautaire et suites comportementales des besoins |
+| TEST_BOUNDARY | tests UI/API des besoins, avec contrats de visibilité publique et transitions manager ; les droits serveur restent dans `needs-http`/routes |
+| COUPLING | le controller partage le chargement et les transitions avec les formulaires ; la carte ne possède aucun droit supplémentaire |
+| NATURAL_EXTRACTION_BOUNDARY | un contrat indépendant de formulaire ou de persistance, ou une nouvelle famille de besoins ; ne pas extraire uniquement des lignes JSX |
+| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
+| RATIONALE | le lot sépare le controller de données et les formulaires manager dans le même owner afin de conserver le scope public, le rechargement et les erreurs. Le finding de complexité restant est mesuré et non masqué ; une extraction supplémentaire attend un contrat autonome pour ne pas fabriquer une façade concurrente |
+| PRIORITY | AFTER_ACTIVE_CHANGES |
+| DEPENDENCY_OR_BLOCKER | préserver les droits de gestion, le filtre des besoins annulés/privés et les transitions confirmées côté serveur |
+| NEXT_TRIGGER | nouveau contrat de formulaire/persistance consommé indépendamment |
 
 <!-- RADAR:HUMAN_DECISIONS:END -->
