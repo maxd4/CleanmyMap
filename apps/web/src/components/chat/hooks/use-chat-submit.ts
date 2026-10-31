@@ -271,41 +271,150 @@ async function executeChatSubmit(params: ChatSubmitExecutionParams): Promise<voi
   }
 }
 
+function useStableChatSubmitParams(
+  params: Omit<ChatSubmitExecutionParams, "currentMessage">,
+) {
+  const {
+    submitLockRef,
+    userId,
+    user,
+    senderDisplayName,
+    senderHandle,
+    message,
+    file,
+    isSending,
+    isUploading,
+    activeChannelType,
+    activeActionId,
+    buddyRequestId,
+    activeTopicId,
+    messageKind,
+    pollOptions,
+    relatedEvent,
+    selectedRecipient,
+    effectiveZone,
+    territoryFocus,
+    setIsSending,
+    setSendError,
+    setIsUploading,
+    supabase,
+    sendChatMessage,
+    feedbackId,
+    setMessage,
+    setFile,
+    setShowMentions,
+    setPollOptions,
+    feedbackOperationIdRef,
+    retrySubmitChatMessage,
+  } = params;
+
+  return useMemo(
+    () => ({
+      submitLockRef,
+      userId,
+      user,
+      senderDisplayName,
+      senderHandle,
+      message,
+      file,
+      isSending,
+      isUploading,
+      activeChannelType,
+      activeActionId,
+      buddyRequestId,
+      activeTopicId,
+      messageKind,
+      pollOptions,
+      relatedEvent,
+      selectedRecipient,
+      effectiveZone,
+      territoryFocus,
+      setIsSending,
+      setSendError,
+      setIsUploading,
+      supabase,
+      sendChatMessage,
+      feedbackId,
+      setMessage,
+      setFile,
+      setShowMentions,
+      setPollOptions,
+      feedbackOperationIdRef,
+      retrySubmitChatMessage,
+    }),
+    [
+      submitLockRef,
+      userId,
+      user,
+      senderDisplayName,
+      senderHandle,
+      message,
+      file,
+      isSending,
+      isUploading,
+      activeChannelType,
+      activeActionId,
+      buddyRequestId,
+      activeTopicId,
+      messageKind,
+      pollOptions,
+      relatedEvent,
+      selectedRecipient,
+      effectiveZone,
+      territoryFocus,
+      setIsSending,
+      setSendError,
+      setIsUploading,
+      supabase,
+      sendChatMessage,
+      feedbackId,
+      setMessage,
+      setFile,
+      setShowMentions,
+      setPollOptions,
+      feedbackOperationIdRef,
+      retrySubmitChatMessage,
+    ],
+  );
+}
+
 function useChatSubmitAction(
   params: Omit<ChatSubmitExecutionParams, "currentMessage">,
 ) {
+  const executionParams = useStableChatSubmitParams(params);
+  const submitLockRef = executionParams.submitLockRef;
+
   return useCallback(async () => {
-    const submitLockRef = params.submitLockRef;
-    const currentMessage = params.message.trim();
+    const currentMessage = executionParams.message.trim();
     const preconditionError = getChatSubmitPreconditionError({
-      submitLocked: params.submitLockRef.current,
-      userId: params.userId,
+      submitLocked: submitLockRef.current,
+      userId: executionParams.userId,
       currentMessage,
-      file: params.file,
-      isSending: params.isSending,
-      isUploading: params.isUploading,
-      activeChannelType: params.activeChannelType,
-      selectedRecipient: params.selectedRecipient,
-      activeActionId: params.activeActionId,
-      effectiveZone: params.effectiveZone,
-      territoryFocus: params.territoryFocus,
+      file: executionParams.file,
+      isSending: executionParams.isSending,
+      isUploading: executionParams.isUploading,
+      activeChannelType: executionParams.activeChannelType,
+      selectedRecipient: executionParams.selectedRecipient,
+      activeActionId: executionParams.activeActionId,
+      effectiveZone: executionParams.effectiveZone,
+      territoryFocus: executionParams.territoryFocus,
     });
     if (preconditionError !== null) {
-      if (preconditionError) params.setSendError(preconditionError);
+      if (preconditionError) executionParams.setSendError(preconditionError);
       return;
     }
-    if (!params.userId) return;
+    if (!executionParams.userId) return;
 
     submitLockRef.current = true;
-    params.setIsSending(true);
-    params.setSendError(null);
+    executionParams.setIsSending(true);
+    executionParams.setSendError(null);
     try {
-      await executeChatSubmit({ ...params, currentMessage });
+      await executeChatSubmit({ ...executionParams, currentMessage });
     } finally {
-      params.setIsSending(false);
+      executionParams.setIsSending(false);
       submitLockRef.current = false;
     }
-  }, [params]);
+  }, [executionParams, submitLockRef]);
 }
 
 export function useChatSubmit({

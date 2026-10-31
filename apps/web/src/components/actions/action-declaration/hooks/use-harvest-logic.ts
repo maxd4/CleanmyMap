@@ -19,7 +19,11 @@ type UseHarvestLogicParams = {
   updateFields: (updates: Partial<FormState>) => void;
 };
 
-function readValidComparisonNumber(rawValue: string, min: number, max: number): number | null {
+function readValidComparisonNumber(
+  rawValue: string,
+  min: number,
+  max: number,
+): number | null {
   if (rawValue.trim() === "") {
     return null;
   }
@@ -33,7 +37,9 @@ function readValidCount(rawValue: string): number | null {
     return null;
   }
   const parsed = Number(rawValue);
-  return Number.isInteger(parsed) && parsed >= 0 && parsed <= MAX_CIGARETTE_BUTTS_COUNT
+  return Number.isInteger(parsed) &&
+    parsed >= 0 &&
+    parsed <= MAX_CIGARETTE_BUTTS_COUNT
     ? parsed
     : null;
 }
@@ -43,7 +49,11 @@ function readValidMass(rawValue: string): number | null {
     return null;
   }
   const parsed = Number(rawValue);
-  return Number.isFinite(parsed) && parsed >= 0 && parsed <= ACTION_MEASUREMENT_MAX_KG ? parsed : null;
+  return Number.isFinite(parsed) &&
+    parsed >= 0 &&
+    parsed <= ACTION_MEASUREMENT_MAX_KG
+    ? parsed
+    : null;
 }
 
 function formatDerivedNumber(value: number): string {
@@ -119,17 +129,85 @@ export type UseHarvestLogicResult = {
 
 function parseParticipantCount(value: string): number | null {
   const parsed = Number(value);
-  return value.trim() !== "" && Number.isInteger(parsed) && parsed >= 0 && parsed <= 500 ? parsed : null;
+  return value.trim() !== "" &&
+    Number.isInteger(parsed) &&
+    parsed >= 0 &&
+    parsed <= 500
+    ? parsed
+    : null;
 }
 
-function deriveHarvestMetrics(form: FormState, contextualCollectionReferences: ReturnType<typeof useActionPollutionScoreReferences>["contextualCollectionReferences"]): Omit<UseHarvestLogicResult, "syncMegotsWeightFromWeight" | "syncMegotsWeightFromCount" | "syncMegotsVolume" | "syncMegotsCondition"> {
+type DerivedHarvestMetrics = Omit<
+  UseHarvestLogicResult,
+  | "syncMegotsWeightFromWeight"
+  | "syncMegotsWeightFromCount"
+  | "syncMegotsVolume"
+  | "syncMegotsCondition"
+>;
+
+function deriveHarvestMetrics(
+  form: FormState,
+  contextualCollectionReferences: ReturnType<
+    typeof useActionPollutionScoreReferences
+  >["contextualCollectionReferences"],
+): DerivedHarvestMetrics {
   const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
-  const contextualUnits = deriveContextualCollectionUnits({ actionContext: form.actionContext || null, childrenCount: parseParticipantCount(form.childrenCount), adultCount: parseParticipantCount(form.adultCount), retiredCount: parseParticipantCount(form.retiredCount) });
-  const collectionReferences = form.actionContext ? contextualCollectionReferences?.[form.actionContext] : undefined;
-  const wasteComparison = deriveWasteComparison({ wasteKg, operationalUnits: contextualUnits.wasteUnits, benchmarkPerVolunteer: collectionReferences?.wastePerEffectiveUnit ?? null, benchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0 });
-  const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput({ cigaretteButtsCount: readValidCount(form.cigaretteButtsCount), cigaretteButtsMassKg: readValidMass(form.wasteMegotsKg), cigaretteButtsVolumeLiters: readValidMass(form.cigaretteButtsVolumeLiters), cigaretteButtsCondition: form.wasteMegotsCondition, cigaretteButtsInputSource: form.cigaretteButtsInputSource }, { existingMeasurements: buildExistingMeasurements(form) });
-  const megotsComparison = deriveWasteComparison({ wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount, operationalUnits: contextualUnits.buttsUnits, benchmarkPerVolunteer: collectionReferences?.buttsPerEffectiveUnit ?? null, benchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0 });
-  return { wasteCurrentPerVolunteer: wasteComparison.currentPerVolunteer, wasteBenchmarkPerVolunteer: wasteComparison.benchmarkPerVolunteer, wasteBenchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0, wasteDeltaPercent: wasteComparison.deltaPercent, comparisonTone: wasteComparison.tone, megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg, megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount, megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer, megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer, megotsBenchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0, megotsDeltaPercent: megotsComparison.deltaPercent, megotsComparisonTone: megotsComparison.tone, cigaretteButtsCountProvenance: cigaretteButtsMeasurements.cigaretteButtsCountProvenance, cigaretteButtsMassProvenance: cigaretteButtsMeasurements.cigaretteButtsMassProvenance, cigaretteButtsVolumeProvenance: cigaretteButtsMeasurements.cigaretteButtsVolumeProvenance, cigaretteButtsConversionFormulaVersion: cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion };
+  const contextualUnits = deriveContextualCollectionUnits({
+    actionContext: form.actionContext || null,
+    childrenCount: parseParticipantCount(form.childrenCount),
+    adultCount: parseParticipantCount(form.adultCount),
+    retiredCount: parseParticipantCount(form.retiredCount),
+  });
+  const collectionReferences = form.actionContext
+    ? contextualCollectionReferences?.[form.actionContext]
+    : undefined;
+  const wasteComparison = deriveWasteComparison({
+    wasteKg,
+    operationalUnits: contextualUnits.wasteUnits,
+    benchmarkPerVolunteer: collectionReferences?.wastePerEffectiveUnit ?? null,
+    benchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
+  });
+  const cigaretteButtsMeasurements =
+    normalizeCigaretteButtsMeasurementsFromUserInput(
+      {
+        cigaretteButtsCount: readValidCount(form.cigaretteButtsCount),
+        cigaretteButtsMassKg: readValidMass(form.wasteMegotsKg),
+        cigaretteButtsVolumeLiters: readValidMass(
+          form.cigaretteButtsVolumeLiters,
+        ),
+        cigaretteButtsCondition: form.wasteMegotsCondition,
+        cigaretteButtsInputSource: form.cigaretteButtsInputSource,
+      },
+      { existingMeasurements: buildExistingMeasurements(form) },
+    );
+  const megotsComparison = deriveWasteComparison({
+    wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
+    operationalUnits: contextualUnits.buttsUnits,
+    benchmarkPerVolunteer: collectionReferences?.buttsPerEffectiveUnit ?? null,
+    benchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
+  });
+  return {
+    wasteCurrentPerVolunteer: wasteComparison.currentPerVolunteer,
+    wasteBenchmarkPerVolunteer: wasteComparison.benchmarkPerVolunteer,
+    wasteBenchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
+    wasteDeltaPercent: wasteComparison.deltaPercent,
+    comparisonTone: wasteComparison.tone,
+    megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
+    megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
+    megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer,
+    megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer,
+    megotsBenchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
+    megotsDeltaPercent: megotsComparison.deltaPercent,
+    megotsComparisonTone: megotsComparison.tone,
+    cigaretteButtsCountProvenance:
+      cigaretteButtsMeasurements.cigaretteButtsCountProvenance,
+    cigaretteButtsMassProvenance:
+      cigaretteButtsMeasurements.cigaretteButtsMassProvenance,
+    cigaretteButtsVolumeProvenance:
+      cigaretteButtsMeasurements.cigaretteButtsVolumeProvenance,
+    cigaretteButtsConversionFormulaVersion:
+      cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion,
+  };
 }
 
 export function useHarvestLogic({
