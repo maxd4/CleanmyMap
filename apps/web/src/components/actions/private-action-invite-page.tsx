@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -29,6 +29,7 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const redirectUrl = `/actions/invite/${encodeURIComponent(token)}`;
 
   useEffect(() => {
@@ -42,40 +43,55 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
   }, [token]);
 
   async function requestRegistration() {
+    if (busyRef.current) return;
+
+    busyRef.current = true;
     setBusy(true);
     setMessage(null);
     setError(null);
-    const response = await fetch(`/api/actions/invite/${encodeURIComponent(token)}`, { method: "POST" });
-    const body = await response.json().catch(() => null) as {
-      error?: string;
-      flow?: "pre_action" | "post_action_claim";
-      registrationStatus?: InviteProjection["registrationStatus"];
-      registrationSource?: string | null;
-      participationStatus?: InviteProjection["participationStatus"];
-      participationSource?: string | null;
-    } | null;
-    if (response.status === 401) {
+    try {
+      const response = await fetch(`/api/actions/invite/${encodeURIComponent(token)}`, { method: "POST" });
+      const body = await response.json().catch(() => null) as {
+        error?: string;
+        flow?: "pre_action" | "post_action_claim";
+        registrationStatus?: InviteProjection["registrationStatus"];
+        registrationSource?: string | null;
+        participationStatus?: InviteProjection["participationStatus"];
+        participationSource?: string | null;
+      } | null;
+      if (response.status === 401) {
+        router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`);
+        return;
+      }
+      if (!response.ok) {
+        setError(body?.error ?? "La demande n’a pas pu être envoyée.");
+        return;
+      }
+      if (body?.flow === "pre_action") {
+        setAction((current) => current ? {
+          ...current,
+          registrationStatus: body.registrationStatus ?? "confirmed",
+          registrationSource: body.registrationSource ?? "invite_link",
+        } : current);
+        setMessage("Votre inscription est confirmée pour cette action. Cette confirmation ne vaut pas présence sur le terrain.");
+        return;
+      }
+      if (body?.flow === "post_action_claim") {
+        setAction((current) => current ? {
+          ...current,
+          participationStatus: body.participationStatus ?? "pending",
+          participationSource: body.participationSource ?? "post_action_claim",
+        } : current);
+        setMessage("Votre demande est enregistrée et reste en attente de décision de l’organisateur.");
+        return;
+      }
+      setError("La réponse du serveur est invalide. Veuillez réessayer.");
+    } catch {
+      setError("Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.");
+    } finally {
+      busyRef.current = false;
       setBusy(false);
-      router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`);
-      return;
     }
-    if (!response.ok) setError(body?.error ?? "La demande n’a pas pu être envoyée.");
-    else if (body?.flow === "pre_action") {
-      setAction((current) => current ? {
-        ...current,
-        registrationStatus: body.registrationStatus ?? "confirmed",
-        registrationSource: body.registrationSource ?? "invite_link",
-      } : current);
-      setMessage("Votre inscription est confirmée pour cette action. Cette confirmation ne vaut pas présence sur le terrain.");
-    } else {
-      setAction((current) => current ? {
-        ...current,
-        participationStatus: body?.participationStatus ?? "pending",
-        participationSource: body?.participationSource ?? "post_action_claim",
-      } : current);
-      setMessage("Votre demande est enregistrée et reste en attente de décision de l’organisateur.");
-    }
-    setBusy(false);
   }
 
   function renderState() {
