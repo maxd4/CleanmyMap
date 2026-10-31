@@ -60,6 +60,10 @@ select like(
 );
 
 create temp table action_ride_transition_fixture (action_id uuid primary key, close_ride_id uuid, cancel_ride_id uuid);
+grant select, insert, update on action_ride_transition_fixture to service_role;
+
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"ride-transition-service"}', true);
 
 select lives_ok($fixture$
   do $$
