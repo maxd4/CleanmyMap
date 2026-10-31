@@ -394,9 +394,14 @@ sur les trois tables ni droit d'exécuter `accept_action_buddy_proposal` ; le
 `service_role` reste confiné au serveur après les contrôles HTTP.
 
 Le panneau `Rejoindre une action` n'est rendu qu'après inscription `confirmed`.
-Il ne projette aucune liste publique ni identité dans les demandes ouvertes ou
-les propositions. Après `matched`, une projection minimale du partenaire est
-retournée aux deux acteurs. Le contact réutilise `app_messages` et le DM
+Il ne projette aucune liste publique ni identité tierce dans les demandes
+ouvertes ou les propositions avant le matching. Les réponses HTTP de mutation
+respectent la même minimisation : une proposition est toujours projetée sur
+`{ id, status }` via `ActionBuddyProposalView`, y compris lors du premier
+refus et du rejeu d'un refus déjà enregistré ; une ligne Supabase brute ne doit
+jamais sérialiser `mentor_user_id`, `request_id` ou ses métadonnées internes
+vers le demandeur avant confirmation. Après `matched`, une projection minimale
+du partenaire est retournée aux deux acteurs. Le contact réutilise `app_messages` et le DM
 canonique ; un premier envoi sans conversation existante doit porter
 `actionId + buddyRequestId`, puis `resolveActionBuddyContact` vérifie à nouveau
 le match, le statut et l'acteur de session. Cette voie ne réutilise pas

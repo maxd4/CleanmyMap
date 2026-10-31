@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rejectActionBuddyProposal } from "@/lib/actions/action-buddy";
+import { rejectActionBuddyProposal, type ActionBuddyProposalView } from "@/lib/actions/action-buddy";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeActionId } from "@/lib/actions/action-id";
@@ -26,8 +26,12 @@ export async function POST(_request: Request, context: Context) {
       proposalId: proposalId.trim(),
       requesterUserId: access.userId,
     });
+    const proposal: ActionBuddyProposalView = {
+      id: result.proposal.id,
+      status: result.proposal.status,
+    };
     // Vercel contract: rejection state is authenticated and must stay private/no-store.
-    return NextResponse.json({ status: "ok", ...result }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ status: "ok", proposal, alreadyDeclined: result.alreadyDeclined }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return handleApiError(error, "POST /api/actions/[actionId]/buddy/proposals/[proposalId]/reject");
   }
