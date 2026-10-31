@@ -35,7 +35,10 @@ vi.mock("@/lib/spogomi/team-join-requests", () => ({
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: () => new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
 }));
-vi.mock("@/lib/http/api-errors", () => ({ handleApiError: () => new Response(JSON.stringify({ error: "Internal" }), { status: 500 }) }));
+vi.mock("@/lib/http/api-errors", () => ({
+  handleApiError: () => new Response(JSON.stringify({ error: "Internal" }), { status: 500 }),
+  validationErrorResponse: () => new Response(JSON.stringify({ error: "Invalid" }), { status: 400 }),
+}));
 
 describe("SPOGOMI public team join request", () => {
   const params = { eventId: "00000000-0000-4000-8000-000000000001", teamId: "00000000-0000-4000-8000-000000000002" };
@@ -69,6 +72,17 @@ describe("SPOGOMI public team join request", () => {
     const response = requireResponse(await POST(new Request("http://localhost", { method: "POST" }), { params: Promise.resolve(params) }));
     expect(response.status).toBe(401);
     expect(createRequestMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a foreign-shaped URL before reading or mutating a team request", async () => {
+    const { GET, POST, DELETE } = await import("./route");
+    const invalidParams = { eventId: "event-not-uuid", teamId: "team-not-uuid" };
+    expect(requireResponse(await GET(new Request("http://localhost"), { params: Promise.resolve(invalidParams) })).status).toBe(400);
+    expect(requireResponse(await POST(new Request("http://localhost", { method: "POST" }), { params: Promise.resolve(invalidParams) })).status).toBe(400);
+    expect(requireResponse(await DELETE(new Request("http://localhost", { method: "DELETE" }), { params: Promise.resolve(invalidParams) })).status).toBe(400);
+    expect(createRequestMock).not.toHaveBeenCalled();
+    expect(loadRequestMock).not.toHaveBeenCalled();
+    expect(transitionRequestMock).not.toHaveBeenCalled();
   });
 
   it("allows an authenticated account to create an idempotent pending request", async () => {
@@ -132,5 +146,13 @@ describe("SPOGOMI public team join request", () => {
       },
     });
     expect(transitionRequestMock).toHaveBeenCalledWith(expect.objectContaining({ actorKind: "requester", actorClerkId: "user-1", targetStatus: "cancelled" }));
+  });
+
+  it("does not cancel a request that is absent from the requester projection", async () => {
+    loadRequestMock.mockResolvedValueOnce(null);
+    const { DELETE } = await import("./route");
+    const response = requireResponse(await DELETE(new Request("http://localhost", { method: "DELETE" }), { params: Promise.resolve(params) }));
+    expect(response.status).toBe(404);
+    expect(transitionRequestMock).not.toHaveBeenCalled();
   });
 });

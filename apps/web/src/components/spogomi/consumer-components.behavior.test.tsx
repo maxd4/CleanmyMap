@@ -31,9 +31,33 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 type ButtonProps = { onClick: () => void | Promise<void> };
 type InputProps = { onChange: (event: React.ChangeEvent<HTMLInputElement>) => void };
 type ImageProps = { loading?: string; priority?: boolean; onLoad?: () => void; onError?: () => void };
+type SelectProps = { onChange: (event: { target: { value: string } }) => void; disabled?: boolean };
+type TextareaProps = { onChange: (event: { target: { value: string } }) => void };
 
 function propsOf<Props>(node: ReactTestInstance): Props {
   return node.props as unknown as Props;
+}
+
+function nodeText(node: ReactTestInstance): string {
+  return React.Children.toArray(node.props.children)
+    .filter((child): child is string => typeof child === "string")
+    .join("");
+}
+
+function findButton(renderer: ReturnType<typeof create>, label: string): ReactTestInstance {
+  const button = renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes(label))[0];
+  expect(button, `button containing ${label}`).toBeTruthy();
+  return button!;
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+}
+
+async function flushEffects(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await Promise.resolve();
+  await Promise.resolve();
 }
 
 import { SpogomiAdmissionRequestCard } from "./spogomi-admission-request-card";
@@ -217,5 +241,148 @@ describe("SPOGOMI consumer components", () => {
     expect(renderToStaticMarkup(<SpogomiTeamJoinRequestsPanel eventId="event-1" participants={[]} teams={[]} />)).toContain("Aucune demande de rattachement reçue");
     expect(renderToStaticMarkup(<SpogomiVolunteerAttestationPanel eventId="event-1" divisionId="division-1" participants={[]} />)).toContain("Missions bénévoles certifiées");
     expect(renderToStaticMarkup(<SpogomiObserverCockpitPanel eventId="event-1" view="results" />)).toContain("Chargement des données opérationnelles");
+  });
+
+  it("executes identity-assistance decisions, one-time code issuance and private invitation without leaking internal notes", async () => {
+    fetchMock.mockReset();
+    const pending = {
+      id: "request-1",
+      providedContext: "Contexte volontaire.",
+      status: "pending",
+      matchedParticipantId: null,
+      verificationNote: null,
+      resolutionNote: null,
+      handledAt: null,
+      createdAt: "2026-06-01T09:00:00.000Z",
+    };
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ requests: [pending, { ...pending, id: "request-treated", status: "treated", matchedParticipantId: "participant-1", verificationNote: "Note interne", resolutionNote: "Décision interne" }, { ...pending, id: "request-rejected", status: "rejected" }, { ...pending, id: "request-cancelled", status: "cancelled" }] }))
+      .mockResolvedValueOnce(jsonResponse({ status: "ok" }))
+      .mockResolvedValueOnce(jsonResponse({ requests: [{ ...pending, status: "treated", matchedParticipantId: "participant-1" }] }))
+      .mockResolvedValueOnce(jsonResponse({ code: "SPOGOMI-CODE-ONE-TIME" }))
+      .mockResolvedValueOnce(jsonResponse({ url: "/spogomi/assistance?token=opaque" }));
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiIdentityAssistancePanel eventId="event-1" participants={[{ id: "participant-1", display_name: "Participant historique", external_reference: "ticket-42", account_link_status: "pending", team_id: "team-1" }, { id: "participant-verified", display_name: "Déjà liée", external_reference: null, account_link_status: "verified", team_id: "team-1" }]} />); });
+    await act(flushEffects);
+
+    expect(JSON.stringify(renderer.toJSON())).toContain("Traitée — code à remettre manuellement");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Refusée");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Annulée");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Note interne");
+
+    act(() => { propsOf<SelectProps>(renderer.root.findByType("select")).onChange({ target: { value: "participant-1" } }); });
+    const textareas = renderer.root.findAllByType("textarea");
+    act(() => { propsOf<TextareaProps>(textareas[0]!).onChange({ target: { value: "Vérification indépendante documentée." } }); });
+    const decision = findButton(renderer, "Marquer vérifiée");
+    expect(decision.props.disabled).toBe(false);
+    await act(async () => { decision.props.onClick(); await flushEffects(); });
+
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/spogomi/events/event-1/identity-assistance/requests/request-1");
+    expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toMatchObject({
+      status: "treated",
+      matchedParticipantId: "participant-1",
+      verificationNote: "Vérification indépendante documentée.",
+    });
+
+    await act(async () => { findButton(renderer, "Émettre le code à remettre").props.onClick(); await flushEffects(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("SPOGOMI-CODE-ONE-TIME");
+    await act(async () => { findButton(renderer, "Créer une invitation privée").props.onClick(); await flushEffects(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("/spogomi/assistance?token=opaque");
+    renderer.unmount();
+  });
+
+  it("fails closed on an invalid identity-assistance response", async () => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [{ id: "malformed" }] }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiIdentityAssistancePanel eventId="event-1" participants={[]} />); });
+    await act(flushEffects);
+    expect(renderer.root.findByProps({ role: "alert" }).props.children).toContain("demande invalide");
+    renderer.unmount();
+  });
+
+  it("keeps observer projections event-scoped, filterable and free of roster identities", async () => {
+    fetchMock.mockReset();
+    let resolveFirst!: (response: Response) => void;
+    const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    const projection = (eventName: string, teamName: string) => ({
+      projection: {
+        event: { id: eventName, name: eventName, eventSlug: null, mode: "mixed", state: "active", startsAt: "2026-06-01T09:00:00.000Z", endsAt: null, publicVisibility: "private", publicResultsVisibility: "hidden" },
+        divisions: [{ id: "division-casual", divisionType: "casual", divisionKey: "casual" }, { id: "division-world", divisionType: "world_cup", divisionKey: "world" }],
+        teams: [{ id: `team-${eventName}`, divisionId: "division-world", teamNumber: 2, publicName: teamName, compositionState: "locked", submissionStatus: "submitted", submissionVersion: 3, submittedAt: "2026-06-01T10:00:00.000Z", certified: false }],
+        participation: { registered: 4, present: 2 },
+      },
+    });
+    fetchMock.mockReturnValueOnce(first).mockResolvedValueOnce(jsonResponse(projection("event-b", "Beta")));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiObserverCockpitPanel eventId="event-a" view="results" />); });
+    act(() => { renderer.update(<SpogomiObserverCockpitPanel eventId="event-b" view="results" />); });
+    await act(async () => { await flushEffects(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Beta");
+    resolveFirst(jsonResponse(projection("event-a", "Alpha")));
+    await act(async () => { await flushEffects(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Beta");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
+    expect(JSON.stringify(renderer.toJSON())).not.toMatch(/displayName|clerkId|email|ticket/i);
+    act(() => { findButton(renderer, "Toutes les divisions").props.onClick(); });
+    expect(findButton(renderer, "World Cup").props["aria-pressed"]).toBe(false);
+    act(() => { findButton(renderer, "World Cup").props.onClick(); });
+    expect(findButton(renderer, "World Cup").props["aria-pressed"]).toBe(true);
+    renderer.unmount();
+  });
+
+  it("surfaces an invalid observer projection instead of rendering partial private data", async () => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ projection: { teams: [] } }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiObserverCockpitPanel eventId="event-1" view="teams" />); });
+    await act(flushEffects);
+    expect(renderer.root.findByProps({ role: "alert" }).props.children).toContain("réponse invalide");
+    renderer.unmount();
+  });
+
+  it("requires an unverified roster identity and independent proof before approving a team request", async () => {
+    fetchMock.mockReset();
+    let resolveDecision!: (response: Response) => void;
+    const decision = new Promise<Response>((resolve) => { resolveDecision = resolve; });
+    const pending = { id: "join-1", teamId: "team-1", requesterClerkId: "requester-1", status: "pending", matchedParticipantId: null, verificationNote: null, resolutionNote: null, createdAt: "2026-06-01T09:00:00.000Z" };
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ requests: [pending] }))
+      .mockReturnValueOnce(decision)
+      .mockResolvedValueOnce(jsonResponse({ requests: [{ ...pending, status: "approved", matchedParticipantId: "participant-1" }] }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiTeamJoinRequestsPanel eventId="event-1" teams={[{ id: "team-1", public_name: "Alpha", team_number: 1 }]} participants={[{ id: "participant-1", display_name: "Historique Alpha", external_reference: "ref-1", account_link_status: "pending", team_id: "team-1" }, { id: "participant-verified", display_name: "Déjà liée", external_reference: "ref-2", account_link_status: "verified", team_id: "team-1" }]} />); });
+    await act(flushEffects);
+
+    const select = renderer.root.findByType("select");
+    expect(select.findAllByType("option").map((option) => option.props.value)).not.toContain("participant-verified");
+    const approval = findButton(renderer, "Accepter et lier l’identité");
+    expect(approval.props.disabled).toBe(true);
+    act(() => { propsOf<SelectProps>(select).onChange({ target: { value: "participant-1" } }); });
+    const verification = renderer.root.findAllByType("textarea")[0]!;
+    act(() => { propsOf<TextareaProps>(verification).onChange({ target: { value: "Vérification indépendante documentée." } }); });
+    const enabledApproval = findButton(renderer, "Accepter et lier l’identité");
+    expect(enabledApproval.props.disabled).toBe(false);
+    enabledApproval.props.onClick();
+    await act(async () => { await Promise.resolve(); });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(enabledApproval.props.disabled).toBe(true);
+    expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toMatchObject({ requestId: "join-1", status: "approved", matchedParticipantId: "participant-1" });
+    resolveDecision(jsonResponse({ status: "ok" }));
+    await act(async () => { await flushEffects(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Acceptée — identité liée");
+    renderer.unmount();
+  });
+
+  it("reports team-request loading failures without displaying a private roster", async () => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Accès refusé" }, 403));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiTeamJoinRequestsPanel eventId="event-foreign" teams={[]} participants={[]} />); });
+    await act(flushEffects);
+    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Accès refusé");
+    expect(JSON.stringify(renderer.toJSON())).not.toMatch(/requesterClerkId|external_reference|email/i);
+    renderer.unmount();
   });
 });

@@ -50,5 +50,17 @@ describe("SPOGOMI observer projection route", () => {
     expect(route).not.toHaveProperty("POST");
     expect(route).not.toHaveProperty("PATCH");
     expect(route).not.toHaveProperty("DELETE");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("distinguishes an event outside the observer scope from an unavailable backend", async () => {
+    mocks.loadSpogomiObserverProjection.mockResolvedValueOnce(null);
+    const missing = await route.GET(new Request("http://localhost"), context);
+    expect(missing.status).toBe(404);
+
+    mocks.loadSpogomiObserverProjection.mockRejectedValueOnce(new Error("database detail"));
+    const failed = await route.GET(new Request("http://localhost"), context);
+    expect(failed.status).toBe(500);
+    expect(mocks.handleApiError).toHaveBeenCalledWith(expect.any(Error), "spogomi.observer.read");
   });
 });
