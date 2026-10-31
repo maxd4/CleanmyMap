@@ -214,6 +214,34 @@ réaliser une extraction **substantielle**, sans reformater, raccourcir les lign
 déplacer intact un monolithe ou assouplir une baseline pour passer le seuil.
 Sans frontière sûre, signaler le blocage.
 
+### Garde-fous de construction pour Codex et les agents
+
+Ces règles s'appliquent **avant** l'écriture de code, pas seulement lors de
+l'audit final. La procédure détaillée et les seuils restent dans
+`documentation/development/conventions-modularisation.md`.
+
+- Décrire la responsabilité unique, l'owner, les entrées, la sortie et les
+  effets de la nouvelle unité avant de l'ajouter. Si deux responsabilités
+  autonomes sont nécessaires, choisir leurs frontières avant d'implémenter.
+- Garder les fonctions d'orchestration lisibles : utiliser des étapes nommées,
+  des prédicats explicites et des garde-fous précoces ; ne pas empiler des
+  ternaires imbriqués, des conditions booléennes indépendantes ou des
+  callbacks qui mélangent parsing, métier et effets.
+- Ne pas écrire dans une même unité une combinaison de validation/AuthN/AuthZ,
+  décision métier, persistance, télémétrie et formatage de réponse lorsqu'une
+  frontière cohésive existe. Extraire la responsabilité réelle, pas un bloc
+  arbitraire de lignes.
+- Si l'implémentation prévue crée une nouvelle violation actionnable de
+  `quality:complexity`, une croissance au-delà d'un ratchet ou un nouveau
+  mélange de responsabilités, arrêter l'écriture et revoir le découpage avant
+  d'ajouter du comportement. Il est interdit de résoudre ce signal par une
+  baseline, une exclusion, un seuil, une désactivation de règle ou un
+  raccourcissement cosmétique.
+- Après écriture, relire chaque fonction touchée au niveau de son flux complet,
+  puis vérifier que la complexité n'a pas été déplacée vers un helper, un
+  wrapper ou une callback et que chaque nouvelle frontière possède un owner,
+  un contrat et des tests adaptés.
+
 ### LEGACY / COMPATIBILITY
 
 Les anciens noms, coordinateurs et métadonnées de migration décrivent

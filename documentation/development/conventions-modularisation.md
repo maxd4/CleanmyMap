@@ -162,6 +162,52 @@ réorganiser la zone dans le même lot avant sa clôture. Pour un changement
 substantiel, le compte rendu final utilise le bloc court
 `PREVENTIVE_MODULARITY_REVIEW` ; il reste éphémère et ne crée pas de registre.
 
+### Garde-fous de complexité à l'écriture
+
+La complexité doit être maîtrisée pendant la construction, et non corrigée par
+un découpage mécanique après coup. Avant d'ajouter une unité significative,
+écrire mentalement ou dans le compte rendu le flux suivant :
+
+```text
+entrée → validation → décision → effet → sortie
+```
+
+Une fonction peut porter plusieurs étapes de ce flux lorsqu'elles forment un
+pipeline cohésif, mais elle ne doit pas devenir le propriétaire simultané de
+responsabilités autonomes. En particulier, éviter de mélanger dans la même
+unité :
+
+- parsing ou normalisation et règle métier ;
+- AuthN/AuthZ et détails de persistance ;
+- orchestration asynchrone et projection détaillée des données ;
+- mutation, télémétrie et formatage HTTP/UI ;
+- calcul métier et rendu de présentation.
+
+Pour garder le raisonnement local, privilégier des garde-fous précoces, des
+valeurs intermédiaires nommées, des prédicats métier lisibles, des fonctions
+pures pour les transformations et des helpers dont le nom exprime une seule
+opération du domaine. Éviter les ternaires imbriqués, les expressions
+booléennes qui combinent plusieurs règles indépendantes, les callbacks
+asynchrones qui orchestrent plusieurs effets et les objets JSX ou littéraux
+qui portent plusieurs niveaux de décision. Lorsqu'un de ces motifs est
+nécessaire pour préserver un contrat, le compte rendu doit expliquer pourquoi
+la frontière n'est pas autonome.
+
+Le point d'entrée doit coordonner des étapes nommées et déléguer les détails à
+leurs owners réels. Un helper n'est pas un refuge pour une fonction monolithique
+et un wrapper n'est pas une réduction de complexité. Avant le commit, relire
+les fonctions nouvelles et touchées ainsi que leurs callers ; si la nouvelle
+implémentation ajoute une violation actionnable de `quality:complexity`, une
+croissance au-delà d'un ratchet ou une seconde responsabilité autonome, stopper
+et redessiner la frontière concernée.
+
+Ce garde-fou ne crée aucun seuil parallèle. Les seuils, ratchets et contrôles
+existants restent l'autorité ; il est interdit de les modifier, de relever une
+baseline, d'ajouter une exclusion ou de désactiver une règle pour accepter un
+code plus complexe. Une extraction n'est recevable que si elle réduit une
+complexité réelle ou rend un contrat local plus clair, avec des tests adaptés
+à la frontière créée.
+
 #### Exemples de décisions
 
 - **A — `CREATE_MODULE`** : un composant de 350 lignes doit gérer une
