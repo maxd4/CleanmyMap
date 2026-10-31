@@ -218,7 +218,7 @@ describe("useChatShellPollVoting behavior", () => {
     voting.unmount();
   });
 
-  it("keeps the newest A intent authoritative after an A to B to A return", async () => {
+  it("keeps the newest A intent authoritative after deferred resets in an A to B to A return", async () => {
     const otherMessage = poll({ id: "poll-2", content: "Autre sondage" });
     const voting = renderVoting([poll(), otherMessage]);
     const oldResponse = deferred<Response>();
@@ -239,6 +239,9 @@ describe("useChatShellPollVoting behavior", () => {
     let newRequest!: Promise<unknown>;
     await act(async () => {
       newRequest = voting.latest.handlePollVote("poll-1", "no");
+      await Promise.resolve();
+    });
+    await act(async () => {
       await Promise.resolve();
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -276,6 +279,30 @@ describe("useChatShellPollVoting behavior", () => {
 
     expect(voting.cache.messages.find((message) => message.id === "poll-1")?.selectedOptionId).toBe("no");
     expect(voting.latest.pollVoteStates["poll-1"]).toEqual({ pending: false, error: null, retryOptionId: null });
+    voting.unmount();
+  });
+
+  it("clears an old retry state when the scope changes without a new request", async () => {
+    const voting = renderVoting();
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ error: "Vote refusé" }, false, 403));
+    vi.stubGlobal("fetch", fetchMock);
+    voting.setRevalidatedCache(response(poll()));
+
+    await act(async () => {
+      await voting.latest.handlePollVote("poll-1", "yes");
+    });
+    expect(voting.latest.pollVoteStates["poll-1"]).toMatchObject({
+      pending: false,
+      error: "Vote refusé",
+      retryOptionId: "yes",
+    });
+
+    voting.rerender([poll({ content: "Canal B" })], "scope-b");
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(voting.latest.pollVoteStates).toEqual({});
     voting.unmount();
   });
 

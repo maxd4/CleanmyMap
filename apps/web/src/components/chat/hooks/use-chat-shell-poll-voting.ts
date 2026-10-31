@@ -106,15 +106,27 @@ export function useChatShellPollVoting({
     Record<string, ChatShellPollVoteState>
   >({});
   const scopeKeyRef = useRef(messagesKey);
+  const scopeGenerationRef = useRef(0);
+  const initialScopeEffectRef = useRef(true);
   const requestIdentityRef = useRef(0);
   const activeRequestRef = useRef<Record<string, number>>({});
   const pendingRequestRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
+    const scopeGeneration = ++scopeGenerationRef.current;
+    const requestIdentityAtScopeChange = requestIdentityRef.current;
     scopeKeyRef.current = messagesKey;
     activeRequestRef.current = {};
     pendingRequestRef.current = {};
-    queueMicrotask(() => setPollVoteStates({}));
+    if (initialScopeEffectRef.current) {
+      initialScopeEffectRef.current = false;
+      return;
+    }
+    queueMicrotask(() => {
+      if (scopeGenerationRef.current !== scopeGeneration) return;
+      if (requestIdentityRef.current !== requestIdentityAtScopeChange) return;
+      setPollVoteStates({});
+    });
   }, [messagesKey]);
 
   const submitPollVote = useCallback(
@@ -124,8 +136,7 @@ export function useChatShellPollVoting({
         return;
       }
 
-      const currentState = pollVoteStates[messageId];
-      if (currentState?.pending || pendingRequestRef.current[messageId] || (!force && currentMessage.selectedOptionId === optionId)) {
+      if (pendingRequestRef.current[messageId] || (!force && currentMessage.selectedOptionId === optionId)) {
         return;
       }
 
@@ -167,7 +178,7 @@ export function useChatShellPollVoting({
         }
       }
     },
-    [messages, messagesKey, mutateMessages, pollVoteStates],
+    [messages, messagesKey, mutateMessages],
   );
 
   const handlePollVote = useCallback(
