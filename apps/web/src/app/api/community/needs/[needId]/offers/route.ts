@@ -17,6 +17,7 @@ import {
 import { actionNeedOfferMutationErrorResponse } from "./route.shared";
 
 export const runtime = "nodejs";
+// Vercel contract: need offers require a dynamic authorization-aware response.
 export const dynamic = "force-dynamic";
 
 const offerIdSchema = z.string().uuid();

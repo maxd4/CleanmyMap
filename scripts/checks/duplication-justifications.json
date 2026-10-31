@@ -739,22 +739,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "7e3897fcd34f0214",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/actions/map/layers/map-layers-point-markers.tsx:151-170 ; symboles: renderStyle, pointOpacity, isFallbackPoint, Popup et components/actions/map/layers/map-layers-point-markers.tsx:243-262 ; symboles: opacity, Popup, className, glass restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "components/actions/map/layers/map-layers-point-markers.tsx:186-202 et components/actions/map/layers/map-layers-point-markers.tsx:275-291 ; pair CURRENT relu sur le rapport jscpd du SHA audité avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "af26699ced6f2316",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/actions/map/scores/pollution-score-scope.ts:93-103 ; symboles: scores, computePollutionScoresRelativeToReferences, wasteKg, mapItemWasteKg et components/actions/map/scores/pollution-score-scope.ts:164-174 ; symboles: scores, computePollutionScoresRelativeToReferences, wasteKg, mapItemWasteKg restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/actions/map/scores/pollution-score-scope.ts:93-103 et apps/web/src/components/actions/map/scores/pollution-score-scope.ts:164-174 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "18967fcc10b60146",
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/admin/creator-inbox/inbox-filter-bar.tsx:67-74 ; symboles: SOURCE_FILTERS, option, value, label et components/partners/onboarding/sections/general-info-section.tsx:53-60 ; symboles: TYPE_OPTIONS, option, value, label reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
@@ -2279,14 +2263,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les assertions de form.test restent attachées à des cas de parcours différents malgré une fixture de base similaire ; l'autonomie de diagnostic est intentionnelle.",
       "evidence": "components/actions/action-declaration/before/form.test.ts:125-136 et components/actions/action-declaration/before/form.test.ts:312-323 ; pair CURRENT relu.",
-      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "edab44f06d41fa34",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les suites de récupération before et de soumission active couvrent des hooks et transitions différents ; partager le setup masquerait la frontière de cycle de vie.",
-      "evidence": "components/actions/action-declaration/before/use-before-action-recovery.test.tsx:8-15 et components/actions/action-declaration/hooks/use-action-declaration-submission.recovery.test.tsx:4-11 ; pair CURRENT relu.",
       "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {

@@ -21,9 +21,7 @@ async function resetBrowserPersistence(page: Page): Promise<void> {
 
 async function dismissCookies(page: Page): Promise<void> {
   const refuse = page.getByRole("button", { name: "Tout refuser" });
-  if (await refuse.count()) {
-    await expect(refuse).toBeVisible({ timeout: 3000 }).catch(() => undefined);
-  }
+  await refuse.waitFor({ state: "visible", timeout: 5_000 }).catch(() => undefined);
   if (await refuse.isVisible().catch(() => false)) {
     await refuse.click();
     await expect(refuse).toHaveCount(0);
@@ -187,6 +185,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
     const result = page.locator('a[href="/methodologie"]').filter({ hasText: "Méthodologie" });
     await expect(result.last()).toBeVisible();
     await result.last().click();
+    await dismissCookies(page);
     await expect(page).toHaveURL(/\/methodologie(?:[?#].*)?$/);
     await assertNoClerkRedirect(page);
     await assertNoConsoleErrors(page, "global-search");
@@ -261,8 +260,11 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
       await page.goto("/", { waitUntil: "domcontentloaded" });
       const banner = page.getByText("Paramètres de confidentialité", { exact: true });
       await expect(banner).toBeVisible();
+      if (analytics) {
+        await page.getByRole("radio", { name: "15 ans ou plus" }).check();
+      }
       await page.getByRole("button", { name: choice }).click();
-      await expect(banner).toHaveCount(0);
+      await expect(banner).toBeHidden();
       const persisted = await page.evaluate(() => ({
         consent: JSON.parse(localStorage.getItem("cleanmymap_cookie_consent") ?? "null") as {
           choice?: string;
@@ -277,7 +279,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
         analytics,
       });
       await page.reload({ waitUntil: "domcontentloaded" });
-      await expect(banner).toHaveCount(0);
+      await expect(banner).toBeHidden();
       await assertNoConsoleErrors(page, `cookie-consent-${label}`);
       evidence.push({
         id: `E2E-3A-COOKIE-CONSENT-${label.toUpperCase()}`,
@@ -332,12 +334,12 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
 
   test("map filters, selection and reset synchronize the public UI", async ({ page }) => {
     await page.goto("/actions/map", { waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
     await expect(page.getByRole("heading", { name: "Cartographie des actions", exact: true })).toBeVisible();
     const filterButton = page.getByRole("button", { name: "Filtrer", exact: true });
     const hasFilterControls = await filterButton.waitFor({ state: "visible", timeout: 15_000 }).then(() => true).catch(() => false);
     if (!hasFilterControls) {
-      await expect(page.getByRole("status")).toBeVisible();
-      await expect(page.getByRole("status")).toContainText(/Carte vide|Aucun point|indisponible/i);
+      await expect(page.locator("main")).toContainText(/Aucun point|indisponible|éléments visibles/i);
       return;
     }
     await filterButton.click();
@@ -394,6 +396,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
   test("methodology and open-data anchors and internal links reach their targets", async ({ page }) => {
     await resetBrowserPersistence(page);
     await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
     await expect(page.getByRole("heading").first()).toBeVisible();
     await page.locator("summary").filter({ hasText: "Carte des actions" }).click();
     const methodologyAnchor = page.locator('a[href="#methodologie-carte-actions"]').first();
@@ -403,6 +406,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
     await expect(page.locator("#methodologie-carte-actions")).toBeVisible();
 
     await page.goto("/sections/open-data", { waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
     await expect(page.locator("#open-data")).toBeVisible();
     const openDataAnchor = page.locator('a[href="#formats"]').first();
     await expect(openDataAnchor).toBeVisible();

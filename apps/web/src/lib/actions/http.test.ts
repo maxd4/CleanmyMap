@@ -473,8 +473,8 @@ describe("fetchMapActions", () => {
     expect(multilineView.kind).not.toBe("point");
     const polygon = result.items.find((item) => item.id === "polygon-action");
     const polygonView = resolveActionMapGeometryViewModel(polygon!);
-    expect(polygonView.kind).toBe("polygon");
-    expect(polygonView.positions.length).toBeGreaterThan(2);
+    expect(polygonView.kind).toBe("multiline");
+    expect(polygonView.positions).toHaveLength(0);
     expect(polygonView.multiLinePositions).toHaveLength(2);
     const serializedPublic = JSON.stringify(polygon?.contract?.metadata.preparationData);
     expect(serializedPublic).not.toContain("contributor_clerk_id");

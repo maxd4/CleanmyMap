@@ -82,6 +82,19 @@ describe("operational route contract", () => {
     expect(getOperationalRouteMeetingPoint(multi, multi.routes[0])?.provenance).toBe("final_geometry_midpoint");
   });
 
+  it("falls back to the final geometry when a legacy route has no zones", () => {
+    const legacyRoute = {
+      routes: [{
+        routeId: "legacy-route",
+        groupIndex: 1,
+        geometry,
+        plannerTechnicalStops: [],
+      }],
+    } as unknown as Parameters<typeof getOperationalRouteMeetingPoint>[0];
+
+    expect(getOperationalRouteMeetingPoint(legacyRoute)?.provenance).toBe("final_geometry_midpoint");
+  });
+
   it("preserves a manually edited midpoint and invalidates derived metrics when it is off trace", () => {
     const single = createOperationalRouteFromRecommendation({ ...recommendation, groupCount: 1, groupRoutes: [] });
     const edited = updateOperationalRouteZone(single, "midpoint", {

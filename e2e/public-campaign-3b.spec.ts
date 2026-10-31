@@ -85,6 +85,7 @@ test.describe("campaign 3B — public surfaces and late authentication", () => {
     const guard = installMutationGuard(page);
     const response = await page.goto("/sections/weather", { waitUntil: "domcontentloaded" });
     expect(response?.status()).toBe(200);
+    await dismissCookies(page);
     const location = page.getByRole("combobox", { name: "Ex. Lyon, Marseille, Nantes..." });
     await expect(location).toBeVisible();
     await expect(page).not.toHaveURL(/\/sign-(?:in|up)(?:[/?#]|$)/i);

@@ -485,8 +485,14 @@ describe("fetchActions", () => {
       requireCoordinates: true,
     });
 
-    expect(orCalls).toHaveLength(1);
-    expect(orCalls[0]?.[0]).toEqual(
+    expect(orCalls).toHaveLength(2);
+    expect(orCalls.map(([condition]) => condition)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("review_state.is.null,review_state.in.(not_required,approved)"),
+        expect.stringContaining("and(action_phase.eq.pre_action,published_at.not.is.null"),
+      ]),
+    );
+    expect(orCalls[1]?.[0]).toEqual(
       expect.stringContaining("and(action_phase.eq.pre_action,published_at.not.is.null"),
     );
   });

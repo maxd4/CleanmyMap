@@ -10,9 +10,11 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
+// Vercel contract: authenticated buddy availability requires a dynamic private response.
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ actionId: string }> };
+// Vercel contract: authenticated buddy availability is private and never shared through a cache.
 const privateHeaders = { "Cache-Control": "private, no-store" };
 
 async function resolveActionId(context: Context) {

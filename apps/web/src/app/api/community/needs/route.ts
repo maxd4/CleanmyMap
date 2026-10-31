@@ -23,6 +23,7 @@ import {
 import { loadActionById } from "@/lib/actions/store";
 
 export const runtime = "nodejs";
+// Vercel contract: need reads and mutations require a dynamic authorization-aware response.
 export const dynamic = "force-dynamic";
 
 const actionIdSchema = z.string().uuid();
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
       { status: "ok", ...result },
       {
         headers: {
+          // Vercel contract: authenticated need reads are private/no-store; anonymous previews may be short-lived public cache.
           "Cache-Control": userId ? "private, no-store" : "public, max-age=15, stale-while-revalidate=30",
           Vary: "Cookie",
         },

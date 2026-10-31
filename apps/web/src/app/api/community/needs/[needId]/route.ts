@@ -16,6 +16,7 @@ import {
 } from "@/lib/community/action-needs";
 
 export const runtime = "nodejs";
+// Vercel contract: need mutations require a dynamic authorization-aware response.
 export const dynamic = "force-dynamic";
 
 const categorySchema = z.enum(COMMUNITY_HELP_CATEGORIES);

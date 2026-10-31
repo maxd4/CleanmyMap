@@ -1,9 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function dismissCookies(page: Page): Promise<void> {
+  const rejectCookies = page.getByRole("button", { name: "Tout refuser" });
+  if (await rejectCookies.isVisible().catch(() => false)) {
+    await rejectCookies.click();
+    await expect(rejectCookies).toHaveCount(0);
+  }
+}
 
 test.describe("SPOGOMI public navigation", () => {
   test("orients each public role without changing permissions", async ({ page }) => {
     const response = await page.goto("/spogomi");
     expect(response?.status()).toBe(200);
+    await dismissCookies(page);
 
     await expect(page.getByRole("link", { name: "Voir les compétitions" }).first()).toHaveAttribute("href", "#spogomi-events");
     await expect(page.getByRole("link", { name: "Ouvrir le salon SPOGOMI" }).first()).toHaveAttribute(
@@ -12,6 +21,7 @@ test.describe("SPOGOMI public navigation", () => {
     );
     await expect(page.getByRole("tab", { name: "Bénévoles" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText("Rejoindre", { exact: true })).toBeVisible();
+    await dismissCookies(page);
 
     await page.getByRole("tab", { name: "Arbitres & modération" }).click();
     await expect(page.getByText("Certifier", { exact: true })).toBeVisible();
@@ -30,6 +40,7 @@ test.describe("SPOGOMI public navigation", () => {
 
     const joinResponse = await page.goto("/sections/rejoindre-une-action");
     expect(joinResponse?.status()).toBe(200);
+    await dismissCookies(page);
     await expect(page.getByText("Compétitions SPOGOMI", { exact: true })).toBeVisible();
     await page.getByRole("link", { name: "Découvrir SPOGOMI" }).click();
     await expect(page).toHaveURL(/\/spogomi$/);

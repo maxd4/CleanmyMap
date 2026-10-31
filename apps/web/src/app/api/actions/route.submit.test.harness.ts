@@ -40,12 +40,13 @@ export function mockAdminIdentity(options: { activeRole?: string } = {}) {
 
 export async function postSubmitPayload(payload: unknown) {
   const { POST } = await import("./route");
-  return POST(
+  const response = await POST(
     new Request("http://localhost/api/actions", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
   );
+  return response;
 }
 
 export function buildQuickPreActionPayload() {
@@ -101,6 +102,11 @@ export function buildSubmitPayload(overrides: Partial<SubmitPayloadInput> = {}) 
     wasteKg: 2.5,
     cigaretteButts: 0,
     volunteersCount: 4,
+    volunteerParticipation: {
+      childrenCount: 0,
+      adultCount: 4,
+      retiredCount: 0,
+    } as unknown as SubmitPayloadInput["volunteerParticipation"],
     durationMinutes: 45,
     notes: "Formulaire bénévole de test",
     organizerAccounts: ["user-test-1"],

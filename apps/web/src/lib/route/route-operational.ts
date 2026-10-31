@@ -297,7 +297,8 @@ export function getOperationalRouteMeetingPoint(
   const hasIndependentRoutes = operationalRoute.routes.length > 1;
   if (hasIndependentRoutes) return projectMeetingPointFromGeometry(targetRoute.geometry);
 
-  const midpoint = operationalRoute.zones.midpoint;
+  const midpoint = operationalRoute.zones?.midpoint;
+  if (!midpoint) return projectMeetingPointFromGeometry(targetRoute.geometry);
   return projectMeetingPointFromGeometry(targetRoute.geometry, {
     coordinate: midpoint.coordinate,
     provenance: midpoint.provenance ?? (midpoint.coordinate ? "legacy_midpoint" : "final_geometry_midpoint"),

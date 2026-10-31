@@ -15,6 +15,7 @@ import {
 } from "@/lib/community/digest-service";
 
 export const runtime = "nodejs";
+// Vercel contract: digest refresh is authenticated, dynamic and never shared through a cache.
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {

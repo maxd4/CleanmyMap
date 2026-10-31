@@ -164,6 +164,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
 
   test("action declaration exposes the guided pre-form before authentication", async ({ page }) => {
     await page.goto("/actions/new");
+    await dismissCookies(page);
     await expect(page.getByRole("heading", { name: "Organiser une action" })).toBeVisible();
 
     await page.getByRole("button", { name: /Essentiel/i }).click();
@@ -205,7 +206,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       await expect(page.getByLabel("Point de rendez-vous précis")).toBeVisible();
       await page.getByText("Cleanwalk itinérante", { exact: true }).click();
       await page.getByText("Départ → arrivée", { exact: true }).click();
-      await expect(page.getByRole("radio", { name: /Départ → arrivée.*Arrivée/ })).toBeChecked();
+      await expect(page.getByRole("radio", { name: "Départ → arrivée", exact: true })).toBeChecked();
       await page.getByRole("combobox", { name: "Arrivée" }).fill("Place de la République");
       await expect(page.getByRole("combobox", { name: "Arrivée" })).toHaveValue("Place de la République");
       await page.getByRole("button", { name: /Équipe et logistique/i }).click();
@@ -243,6 +244,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       }
     });
     await page.goto("/signalement?lat=48.8566&lng=2.3522");
+    await dismissCookies(page);
     await page.waitForTimeout(500);
     if (privateObservationResponses.length > 0) {
       expect(privateObservationResponses).toContain(401);

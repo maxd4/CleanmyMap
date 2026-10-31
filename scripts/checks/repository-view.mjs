@@ -62,6 +62,7 @@ function filterGitIgnoredPaths(root, paths) {
       input: Buffer.from(`${paths.join("\0")}\0`, "utf8"),
       maxBuffer: Math.max(1024 * 1024, paths.join("\0").length * 2),
       env: trustedCommandEnvironment(),
+      stdio: ["pipe", "pipe", "ignore"],
     });
     const ignored = new Set(output.toString("utf8").split("\0").filter(Boolean));
     return paths.filter((relativePath) => !ignored.has(relativePath));

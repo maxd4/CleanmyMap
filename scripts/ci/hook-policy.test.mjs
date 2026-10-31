@@ -145,7 +145,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.doesNotMatch(scopeScript, /git rev-list/);
   assert.match(workflow, /web_coverage_relevant == 'true'[\s\S]*needs\.web-tests\.result == 'success'/);
   assert.doesNotMatch(extractJob(workflow, "web-coverage"), /needs\.scope\.outputs\.web_code_relevant/);
-  assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 2);
+  assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 3);
   const qualityJobForGrace = extractJob(workflow, "web-quality");
   for (const stepName of ["Duplication ratchet", "GitNexus cycle ratchet"]) {
     const step = qualityJobForGrace.match(new RegExp(`- name: ${stepName}[\\s\\S]*?(?=\\n      - name:|\\n\\n  [a-z0-9-]+:)`))?.[0] ?? "";

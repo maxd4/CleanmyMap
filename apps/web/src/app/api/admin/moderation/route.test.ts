@@ -80,6 +80,7 @@ vi.mock("@/lib/public-surface-snapshots", () => ({
 }));
 
 vi.mock("@/lib/actions/store", () => ({
+  loadActionById: vi.fn().mockResolvedValue(null),
   recordRepollutionPredictionEvaluationForAction:
     recordRepollutionPredictionEvaluationForActionMock,
 }));

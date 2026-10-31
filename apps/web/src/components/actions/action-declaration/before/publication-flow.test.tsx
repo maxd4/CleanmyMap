@@ -139,7 +139,7 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
     );
 
     expect(html).toContain("Vérifier avant publication");
-    expect(html).toContain("Publier cette action");
+    expect(html).toContain("Soumettre pour validation");
     expect(html).toContain("La pré-action reste privée");
     expect(html).not.toContain("Partager dans la messagerie");
     expect(html).not.toContain("Rejoindre une action");

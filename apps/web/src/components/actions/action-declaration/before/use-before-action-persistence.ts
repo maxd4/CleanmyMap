@@ -20,12 +20,10 @@ export function useBeforeActionPersistence({
   initialActionId?: string | null;
 }) {
   const fallbackFormRef = useRef(fallbackForm);
-  const [persistenceStatus, setPersistenceStatus] = useState<BeforeActionPersistenceStatus>(() =>
-    resolvePersistenceStatus(
-      loadDraftSnapshotResult(fallbackForm, "action", initialActionId ?? null),
-      initialActionId,
-    ),
-  );
+  // Keep the first render identical on the server and client. localStorage is
+  // only available in the browser, so resolving it in the state initializer
+  // otherwise changes the markup during hydration when a draft exists.
+  const [persistenceStatus, setPersistenceStatus] = useState<BeforeActionPersistenceStatus>("clean");
   const [retryGeneration, setRetryGeneration] = useState(0);
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
+// Vercel contract: authenticated proposal state requires a dynamic private response.
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ actionId: string; proposalId: string }> };
@@ -25,6 +26,7 @@ export async function DELETE(_request: Request, context: Context) {
       proposalId: proposalId.trim(),
       mentorUserId: access.userId,
     });
+    // Vercel contract: proposal state is authenticated and must stay private/no-store.
     return NextResponse.json({ status: "ok", ...result }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return handleApiError(error, "DELETE /api/actions/[actionId]/buddy/proposals/[proposalId]");

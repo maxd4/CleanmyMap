@@ -281,6 +281,118 @@
       "reason": "Lecture publique bornée de l'attestation scolaire d'une action approuvée, terminée, publiée, visible et publique, après validation UUID et éligibilité scolaire confirmée ; la projection n'expose aucune identité individuelle.",
       "costContract": "GET borné à un actionId UUID validé ; une lecture de l'action puis une lecture des organisateurs canoniques relisent côté serveur les conditions approved/post_action_complete/published_at/visible/public et l'éligibilité scolaire confirmée avant projection sans identité individuelle ; cache HTTP public limité à max-age=60 et stale-while-revalidate=300.",
       "reviewedAt": "2026-10-30"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Surface authentifiée de demande, lecture et annulation du matching binôme d'une action, avec identités et transitions maintenues par le service buddy canonique.",
+      "costContract": "GET/POST/DELETE bornés à un actionId et à l'identité Clerk courante, avec état privé no-store, validation d'identifiant et mutations limitées au demandeur ou mentor autorisé ; aucune donnée de contact n'est exposée.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/availability/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Surface authentifiée de disponibilité mentor pour le matching binôme, séparée de la demande et des propositions.",
+      "costContract": "PUT/DELETE bornés à un actionId et à l'identité Clerk courante, avec validation serveur et réponse private/no-store ; aucune permission d'administration ni donnée de contact n'est ajoutée.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/accept/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Décision authentifiée d'acceptation d'une proposition de binôme dans le workflow buddy canonique.",
+      "costContract": "POST borné à l'action, à la proposition et à l'identité Clerk ; la transition est réalisée par le service serveur et la réponse reste private/no-store.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/decline/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Décision authentifiée de refus d'une proposition de binôme dans le workflow buddy canonique.",
+      "costContract": "POST borné à l'action, à la proposition et à l'identité Clerk ; la transition est contrôlée côté serveur et la réponse reste private/no-store.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/reject/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Décision authentifiée de rejet d'une proposition de binôme par le demandeur, distincte du refus mentor.",
+      "costContract": "POST borné à l'action, à la proposition et à l'identité Clerk ; la transition est contrôlée côté serveur et la réponse reste private/no-store.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Retrait authentifié d'une proposition de binôme par son mentor, sans second registre de propositions.",
+      "costContract": "DELETE borné à l'action, à la proposition et à l'identité Clerk ; la mutation est contrôlée par le service buddy et la réponse reste private/no-store.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/buddy/requests/[requestId]/proposals/route.ts",
+      "introducedBy": "8e278508e14af6cc29c95464859df990072dbaa0",
+      "reason": "Création authentifiée d'une proposition mentor sur une demande de binôme existante.",
+      "costContract": "POST borné à l'action, à la demande et à l'identité Clerk mentor ; validation serveur, statut 201 explicite et réponse private/no-store.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/digest/refresh/route.ts",
+      "introducedBy": "61285a3b7ecbb784cc86c8d9cf0b4f3e8a40644a",
+      "reason": "Rafraîchissement authentifié et idempotent du digest communautaire pour les abonnements activés du compte courant.",
+      "costContract": "POST borné à l'identité Clerk, aux périodes dues et à cinq appels par fenêtre de cinq minutes ; les runs traités sont relus avant commit et aucun contenu privé d'un autre compte n'est projeté.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/helper-skills/route.ts",
+      "introducedBy": "9d43762f50651536d019ac7a9f23b542d9fb5db9",
+      "reason": "Lecture et remplacement authentifiés des catégories d'aide proposées par le compte communautaire.",
+      "costContract": "GET/PUT bornés à l'identité Clerk, à la liste finie des catégories canoniques et à une validation Zod stricte ; aucune compétence d'un autre compte n'est exposée.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/needs/route.ts",
+      "introducedBy": "985d6098412ab209e05e0f8e707ee26be3e3b8c7",
+      "reason": "Projection et création authentifiées des besoins d'action communautaires, avec aperçu public borné lorsqu'il est explicitement autorisé.",
+      "costContract": "GET paginé et mutations bornés par actionId, catégorie, statut et identité Clerk ; les réponses authentifiées sont private/no-store, les aperçus anonymes sont limités à un cache public de quinze secondes.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/needs/[needId]/route.ts",
+      "introducedBy": "985d6098412ab209e05e0f8e707ee26be3e3b8c7",
+      "reason": "Mutation authentifiée d'un besoin communautaire existant dans le périmètre de son action et de son gestionnaire.",
+      "costContract": "PATCH/DELETE bornés à un needId validé et à l'autorisation serveur de l'action ; la projection et les transitions restent privées et sans cache partagé.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/needs/[needId]/offers/route.ts",
+      "introducedBy": "c61f28850a1c5bd650190e7fa547f51993e3df55",
+      "reason": "Création et lecture des offres d'aide liées à un besoin communautaire, avec droits serveur revalidés.",
+      "costContract": "GET/POST bornés à un needId et à l'identité Clerk, avec statut et texte validés ; les offres restent privées au périmètre communautaire autorisé.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/needs/[needId]/offers/[offerId]/route.ts",
+      "introducedBy": "a0e44b00d52249582d496ffec43d73cc8d480fef",
+      "reason": "Transition authentifiée d'une offre d'aide en la rattachant au besoin parent canonique.",
+      "costContract": "PATCH/DELETE bornés aux UUID du besoin et de l'offre, avec contrôle de cohérence parent, identité et statut côté serveur.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/needs/suggestions/route.ts",
+      "introducedBy": "9d43762f50651536d019ac7a9f23b542d9fb5db9",
+      "reason": "Suggestions authentifiées de besoins communautaires à partir des catégories d'aide du compte courant.",
+      "costContract": "GET borné à l'identité Clerk et aux catégories canoniques, avec projection limitée et réponse sans cache partagé.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/subscriptions/route.ts",
+      "introducedBy": "b2de93438cbbd075b7226cde7d711758283993c9",
+      "reason": "Lecture, création et mise à jour des abonnements communautaires explicites du compte authentifié.",
+      "costContract": "GET/POST/PATCH bornés à l'identité Clerk, aux cibles et cadences enumérées et aux transitions idempotentes ; aucune souscription d'un autre compte n'est retournée.",
+      "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/community/subscriptions/[subscriptionId]/route.ts",
+      "introducedBy": "b2de93438cbbd075b7226cde7d711758283993c9",
+      "reason": "Suppression authentifiée d'un abonnement communautaire appartenant au compte courant.",
+      "costContract": "DELETE borné à un subscriptionId et à l'identité Clerk, avec contrôle owner-scoped et réponse sans cache partagé.",
+      "reviewedAt": "2026-10-31"
     }
   ],
   "apiRoutes": [
@@ -294,6 +406,13 @@
     "apps/web/src/app/api/account/promotion-requests/route.ts",
     "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/availability/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/accept/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/decline/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/reject/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/proposals/[proposalId]/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/requests/[requestId]/proposals/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/buddy/route.ts",
     "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
     "apps/web/src/app/api/actions/[actionId]/day/route.ts",
     "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
@@ -352,11 +471,20 @@
     "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/intent/route.ts",
     "apps/web/src/app/api/community/bug-reports/[reportId]/screenshot/route.ts",
     "apps/web/src/app/api/community/bug-reports/route.ts",
+    "apps/web/src/app/api/community/digest/refresh/route.ts",
     "apps/web/src/app/api/community/events/ops/route.ts",
     "apps/web/src/app/api/community/events/route.ts",
     "apps/web/src/app/api/community/funnel.csv/route.ts",
+    "apps/web/src/app/api/community/helper-skills/route.ts",
+    "apps/web/src/app/api/community/needs/[needId]/offers/[offerId]/route.ts",
+    "apps/web/src/app/api/community/needs/[needId]/offers/route.ts",
+    "apps/web/src/app/api/community/needs/[needId]/route.ts",
+    "apps/web/src/app/api/community/needs/route.ts",
+    "apps/web/src/app/api/community/needs/suggestions/route.ts",
     "apps/web/src/app/api/community/promotion-requests/route.ts",
     "apps/web/src/app/api/community/rsvps/route.ts",
+    "apps/web/src/app/api/community/subscriptions/[subscriptionId]/route.ts",
+    "apps/web/src/app/api/community/subscriptions/route.ts",
     "apps/web/src/app/api/contact/route.ts",
     "apps/web/src/app/api/cron/environmental-impact/route.ts",
     "apps/web/src/app/api/cron/impact/route.ts",
