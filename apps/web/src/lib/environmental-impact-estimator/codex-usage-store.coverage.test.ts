@@ -57,13 +57,23 @@ describe("Codex usage store business rules", () => {
       source: "reconstructed",
     });
 
-    expect(result.weekStart).toBe("2026-10-11");
+    expect(result.weekStart).toBe("2026-10-12");
     expect(result.weekEnd).toBe("2026-10-12");
     expect(result.sessionCount).toBe(0);
     expect(result.activeMinutes).toBe(0);
     expect(result.estimatedKgCo2eProxy).toBeNull();
     expect(result.notes).toEqual(["ok", "Activité Codex observée; facteur physique audité absent, impact CO2e = NA."]);
     expect(result.confidencePercent).toBe(76);
+  });
+
+  it("uses the canonical Monday week boundary without consulting the host timezone", () => {
+    const result = buildCodexUsageWeeklySnapshot({
+      weekStart: "invalid",
+      weekEnd: "2026-10-11T23:30:00-02:00",
+    });
+
+    expect(result.weekStart).toBe("2026-10-12");
+    expect(result.weekEnd).toBe("2026-10-12");
   });
 
   it("repairs reversed ranges, filters duplicate local records and sorts the result", async () => {

@@ -1,4 +1,4 @@
-import { addDays, startOfWeek } from "date-fns";
+import { addDays } from "date-fns";
 import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
@@ -58,6 +58,14 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function startOfIsoWeekUtc(date: Date): Date {
+  const mondayOffset = (date.getUTCDay() + 6) % 7;
+  const result = new Date(date.getTime());
+  result.setUTCDate(result.getUTCDate() - mondayOffset);
+  result.setUTCHours(0, 0, 0, 0);
+  return result;
+}
+
 async function readStore(): Promise<CodexUsageStore> {
   return readLocalRecordStore(FILE_PATH, normalizeCodexUsageSnapshotRecord);
 }
@@ -76,7 +84,7 @@ function toNonNegativeNumber(value: number | null | undefined): number {
 
 function normalizeWeekRange(input: EnvironmentalImpactCodexUsageWeeklyInput) {
   const fallbackDate = parseDateOrNull(input.weekEnd) ?? parseDateOrNull(input.weekStart) ?? new Date();
-  const weekStartDate = parseDateOrNull(input.weekStart) ?? startOfWeek(fallbackDate, { weekStartsOn: 1 });
+  const weekStartDate = parseDateOrNull(input.weekStart) ?? startOfIsoWeekUtc(fallbackDate);
   const parsedWeekEnd = parseDateOrNull(input.weekEnd);
   const weekEndDate = parsedWeekEnd ?? addDays(weekStartDate, 6);
   const normalizedWeekEndDate =
