@@ -1,6 +1,7 @@
 import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 
+import { rendererText } from "@/__tests__/support/action-behavior-test-helpers";
 import { getQuizSchoolWorkshopAssessment } from "@/lib/learning/quiz/school/quiz-school-workshop-assessment";
 import { QuizSchoolWorkshopSession } from "./quiz-school-workshop-session";
 
@@ -13,24 +14,12 @@ type ButtonProps = {
   "aria-pressed"?: boolean;
 };
 
-function textOf(value: unknown): string {
-  if (typeof value === "string" || typeof value === "number") return String(value);
-  if (Array.isArray(value)) return value.map(textOf).join("");
-  if (value && typeof value === "object" && "children" in value) {
-    return textOf((value as { children?: unknown }).children);
-  }
-  if (value && typeof value === "object" && "props" in value) {
-    return textOf((value as { props?: { children?: unknown } }).props?.children);
-  }
-  return "";
-}
-
 function propsOf(node: ReactTestInstance): ButtonProps {
   return node.props as unknown as ButtonProps;
 }
 
 function buttonWithText(renderer: ReturnType<typeof create>, fragment: string): ReactTestInstance {
-  const button = renderer.root.findAllByType("button").find((node) => textOf(propsOf(node).children).includes(fragment));
+  const button = renderer.root.findAllByType("button").find((node) => String(propsOf(node).children ?? "").includes(fragment));
   if (!button) throw new Error(`Button not found: ${fragment}`);
   return button;
 }
@@ -63,7 +52,7 @@ function renderWorkshop(overrides: Partial<React.ComponentProps<typeof QuizSchoo
 }
 
 function clickChoice(renderer: ReturnType<typeof create>, label: string) {
-  const choice = renderer.root.findAllByType("button").find((node) => textOf(propsOf(node).children) === label);
+  const choice = renderer.root.findAllByType("button").find((node) => String(propsOf(node).children ?? "") === label);
   if (!choice) throw new Error(`Choice not found: ${label}`);
   act(() => { propsOf(choice).onClick?.(); });
 }
@@ -91,14 +80,14 @@ function completeWorkshop(
     answerCurrentQuestion(renderer, item.options[selectedId]?.fr);
   }
 
-  expect(textOf(renderer.toJSON())).toContain("Activité");
-  expect(textOf(renderer.toJSON())).toContain("30 min");
+  expect(rendererText(renderer)).toContain("Activité");
+  expect(rendererText(renderer)).toContain("30 min");
 
-  while (textOf(renderer.toJSON()).includes("Activité suivante")) {
+  while (rendererText(renderer).includes("Activité suivante")) {
     act(() => { propsOf(buttonWithText(renderer, "Activité suivante")).onClick?.(); });
   }
   act(() => { propsOf(buttonWithText(renderer, "Lancer le post-quiz")).onClick?.(); });
-  expect(textOf(renderer.toJSON())).toContain("Post-quiz");
+  expect(rendererText(renderer)).toContain("Post-quiz");
 
   for (const item of post) {
     const selectedId = item.isTransfer
@@ -120,15 +109,15 @@ describe("QuizSchoolWorkshopSession behavior", () => {
 
     act(() => { propsOf(buttonWithText(renderer, "Révéler la réponse")).onClick?.(); });
     expect(propsOf(choiceButton(renderer)).disabled).toBe(true);
-    expect(textOf(renderer.toJSON())).toContain("L’éco-citoyenneté consiste");
+    expect(rendererText(renderer)).toContain("L’éco-citoyenneté consiste");
 
     act(() => { propsOf(buttonWithText(renderer, "Révéler la réponse")).onClick?.(); });
-    expect(textOf(renderer.toJSON())).toContain("1 / 8");
+    expect(rendererText(renderer)).toMatch(/1\s*\/\s*8/);
 
     act(() => { propsOf(buttonWithText(renderer, "Question suivante")).onClick?.(); });
-    expect(textOf(renderer.toJSON())).toContain("2 / 8");
+    expect(rendererText(renderer)).toMatch(/2\s*\/\s*8/);
     act(() => { propsOf(buttonWithText(renderer, "Étape précédente")).onClick?.(); });
-    expect(textOf(renderer.toJSON())).toContain("1 / 8");
+    expect(rendererText(renderer)).toMatch(/1\s*\/\s*8/);
     expect(propsOf(choiceButton(renderer))["aria-pressed"]).toBe(true);
   });
 
@@ -138,11 +127,11 @@ describe("QuizSchoolWorkshopSession behavior", () => {
 
     completeWorkshop(renderer, level, "mixed");
 
-    expect(textOf(renderer.toJSON())).toContain("Bilan collectif");
-    expect(textOf(renderer.toJSON())).toContain("Transfert — séparé");
+    expect(rendererText(renderer)).toContain("Bilan collectif");
+    expect(rendererText(renderer)).toContain("Transfert — séparé");
     act(() => { propsOf(buttonWithText(renderer, "Relancer au même niveau")).onClick?.(); });
     expect(onRestart).toHaveBeenCalledOnce();
-    expect(textOf(renderer.toJSON())).toContain("Pré-quiz");
+    expect(rendererText(renderer)).toContain("Pré-quiz");
 
     // The format callback remains a separate terminal action from restarting.
     completeWorkshop(renderer, level, "first");

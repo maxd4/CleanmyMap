@@ -1,6 +1,6 @@
 import * as React from "react";
 import { act, create } from "react-test-renderer";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const confettiMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 
@@ -11,6 +11,7 @@ vi.mock("framer-motion", () => ({
 }));
 
 import { dispatchGamificationCelebration, GAMIFICATION_CELEBRATION_EVENT } from "@/lib/gamification/celebration";
+import { rendererText } from "@/__tests__/support/action-behavior-test-helpers";
 import { GamificationCelebrationHost } from "./GamificationCelebrationHost";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -41,6 +42,11 @@ function installWindow() {
 }
 
 describe("GamificationCelebrationHost behavior", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     confettiMock.mockClear();
   });
@@ -60,7 +66,7 @@ describe("GamificationCelebrationHost behavior", () => {
       });
     });
     expect(renderer.root.findByProps({ "data-motion-role": "transient" })).toBeTruthy();
-    expect(textOf(renderer.toJSON())).toContain("Première contribution confirmée");
+    expect(rendererText(renderer)).toContain("Première contribution confirmée");
     expect(confettiMock).toHaveBeenCalledTimes(2);
 
     act(() => {
@@ -70,8 +76,8 @@ describe("GamificationCelebrationHost behavior", () => {
         dedupeKey: "award:action-1",
       });
     });
-    expect(textOf(renderer.toJSON())).toContain("Première contribution confirmée");
-    expect(textOf(renderer.toJSON())).not.toContain("Cet effet ne doit pas se répéter");
+    expect(rendererText(renderer)).toContain("Première contribution confirmée");
+    expect(rendererText(renderer)).not.toContain("Cet effet ne doit pas se répéter");
 
     const close = renderer.root.findByProps({ "aria-label": "Fermer la notification de gamification" });
     act(() => { close.props.onClick(); });
@@ -80,7 +86,7 @@ describe("GamificationCelebrationHost behavior", () => {
     act(() => {
       dispatchGamificationCelebration({ title: "Nouveau", message: "Notification terminale", confetti: false, sound: false });
     });
-    expect(textOf(renderer.toJSON())).toContain("Notification terminale");
+    expect(rendererText(renderer)).toContain("Notification terminale");
     act(() => { timers.expireAll(); });
     expect(renderer.toJSON()).toBeNull();
     renderer.unmount();
@@ -99,12 +105,3 @@ describe("GamificationCelebrationHost behavior", () => {
     expect(renderer.toJSON()).toBeNull();
   });
 });
-
-function textOf(value: unknown): string {
-  if (typeof value === "string" || typeof value === "number") return String(value);
-  if (Array.isArray(value)) return value.map(textOf).join("");
-  if (value && typeof value === "object" && "children" in value) {
-    return textOf((value as { children?: unknown }).children);
-  }
-  return "";
-}
