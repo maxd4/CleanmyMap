@@ -180,7 +180,7 @@ export function normalizeActionCollectionContextReferenceRow(
   };
 }
 
-export async function fetchActionCollectionContextReferenceAverages(
+async function fetchActionCollectionContextReferenceAverages(
   supabase: SupabaseClient,
 ): Promise<ActionCollectionContextReferences> {
   const result = await supabase.rpc("action_collection_context_reference_averages_v1");

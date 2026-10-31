@@ -207,7 +207,7 @@ function hasCoherentImpactSnapshotPeriod(
   );
 }
 
-export function isValidPublicImpactSnapshot(
+function isValidPublicImpactSnapshot(
   snapshot: PublicImpactSnapshotRecord | null | undefined,
 ): snapshot is PublicImpactSnapshotRecord {
   if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {

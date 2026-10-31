@@ -263,7 +263,7 @@ export function normalizeVolunteerParticipation(
   };
 }
 
-export function normalizeVolunteerParticipationFromForm(
+function normalizeVolunteerParticipationFromForm(
   input: VolunteerParticipationFormInput,
 ): ActionVolunteerParticipation {
   const toCount = (value: string) => value.trim() === "" ? null : Number(value);
@@ -354,7 +354,7 @@ export function resolvePersistedVolunteerComposition(params: {
   };
 }
 
-export function normalizePersistedVolunteerComposition(params: {
+function normalizePersistedVolunteerComposition(params: {
   childrenCount: number | null | undefined;
   adultCount: number | null | undefined;
   retiredCount: number | null | undefined;

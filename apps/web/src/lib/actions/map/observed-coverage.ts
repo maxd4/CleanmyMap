@@ -26,22 +26,34 @@ function parseCoordinatePair(value: unknown): [number, number] | null {
   return [longitude, latitude];
 }
 
+function isObservedSource(
+  value: unknown,
+): value is Extract<ActionGeometrySource, "gps_tracking" | "gpx_import"> {
+  return value === "gps_tracking" || value === "gpx_import";
+}
+
+function isCoordinatePair(value: [number, number] | null): value is [number, number] {
+  return value !== null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function parseObservedSources(
   value: unknown,
   traceCount: number,
 ): ObservedCoverageGeometry["sources"] {
   if (!Array.isArray(value)) return undefined;
-  const sources = value as unknown[];
-  if (!sources.every((source) => source === "gps_tracking" || source === "gpx_import")) {
+  const sources: unknown[] = value;
+  if (!sources.every(isObservedSource)) {
     return undefined;
   }
   if (sources.length === 0 || (sources.length !== 1 && sources.length !== traceCount)) {
     return undefined;
   }
 
-  const uniqueSources = [...new Set(
-    sources as Extract<ActionGeometrySource, "gps_tracking" | "gpx_import">[],
-  )];
+  const uniqueSources = [...new Set(sources)];
   return uniqueSources;
 }
 
@@ -60,8 +72,8 @@ export function parseObservedCoverageGeometry(raw: unknown): ObservedCoverageGeo
   for (const line of candidate.coordinates) {
     if (!Array.isArray(line) || line.length < 2) return null;
     const parsedLine = line.map(parseCoordinatePair);
-    if (parsedLine.some((point) => point === null)) return null;
-    coordinates.push(parsedLine as [number, number][]);
+    if (!parsedLine.every(isCoordinatePair)) return null;
+    coordinates.push(parsedLine);
   }
   if (coordinates.length === 0) return null;
 
@@ -80,16 +92,16 @@ export function resolveObservedCoverageGeometry(input: {
   primaryGeoJson?: string | null;
 }): ObservedCoverageGeometry | null {
   const preparationData = input.preparationData;
-  if (preparationData && typeof preparationData === "object" && !Array.isArray(preparationData)) {
+  if (isRecord(preparationData)) {
     const stored = parseObservedCoverageGeometry(
-      (preparationData as { observedCoverage?: unknown }).observedCoverage,
+      preparationData.observedCoverage,
     );
     if (stored) return stored;
   }
 
   if (!input.primaryGeoJson) return null;
   try {
-    return parseObservedCoverageGeometry(JSON.parse(input.primaryGeoJson));
+    return parseObservedCoverageGeometry(JSON.parse(input.primaryGeoJson) as unknown);
   } catch {
     return null;
   }

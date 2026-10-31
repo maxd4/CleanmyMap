@@ -11,6 +11,23 @@ export type GeoAddressSuggestion = {
   importance: number | null;
 };
 
+export function isGeoAddressSuggestion(value: unknown): value is GeoAddressSuggestion {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Partial<GeoAddressSuggestion>;
+  return typeof candidate.label === "string"
+    && typeof candidate.subtitle === "string"
+    && typeof candidate.latitude === "number"
+    && Number.isFinite(candidate.latitude)
+    && candidate.latitude >= -90
+    && candidate.latitude <= 90
+    && typeof candidate.longitude === "number"
+    && Number.isFinite(candidate.longitude)
+    && candidate.longitude >= -180
+    && candidate.longitude <= 180
+    && (candidate.importance === null
+      || (typeof candidate.importance === "number" && Number.isFinite(candidate.importance)));
+}
+
 function normalizeSuggestionKey(suggestion: Pick<GeoAddressSuggestion, "label" | "latitude" | "longitude">): string {
   return `${suggestion.label.trim().toLowerCase()}|${suggestion.latitude}|${suggestion.longitude}`;
 }

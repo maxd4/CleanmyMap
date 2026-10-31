@@ -12,7 +12,7 @@ type GeometryPresentationVariant =
   | "planned_gpx"
   | "point";
 
-export type GeometryPresentationReality =
+type GeometryPresentationReality =
   | "observed"
   | "declared"
   | "planned"

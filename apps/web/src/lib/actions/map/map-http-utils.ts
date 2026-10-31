@@ -1,4 +1,5 @@
 import type { ActionMapItem, ActionRecordType, ActionStatus } from "@/lib/actions/types";
+import { toNullableFiniteNumber } from "@/lib/data/number-normalization";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { mapItemCoordinates } from "../contracts/contract-mappers";
 
@@ -56,13 +57,7 @@ export function setScopeQueryParams(
   }
 }
 
-export function toFiniteNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+export const toFiniteNumber = toNullableFiniteNumber;
 
 export function normalizeQualityMin(value: number | undefined): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) {

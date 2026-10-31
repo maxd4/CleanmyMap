@@ -1,11 +1,11 @@
-export type WasteProfileKey =
+type WasteProfileKey =
   | "megotsKg"
   | "plastiqueKg"
   | "verreKg"
   | "metalKg"
   | "mixteKg";
 
-export type WasteProfileCategory = {
+type WasteProfileCategory = {
   key: WasteProfileKey;
   label: string;
   kg: number;

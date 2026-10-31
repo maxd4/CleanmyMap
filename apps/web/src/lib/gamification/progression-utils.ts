@@ -2,6 +2,7 @@ import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import { parseDrawingFromGeoJson } from "@/lib/actions/geometry/derived-geometry";
 import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/quality/quality";
 import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
+import { toNullableFiniteNumber } from "@/lib/data/number-normalization";
 import { CURRENT_MILESTONES } from "./current-milestones";
 import { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
 import { CURRENT_GAMIFICATION_RULES_REVISION, CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
@@ -343,13 +344,7 @@ export function toFloat(value: unknown, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
-export function toNullableFloat(value: unknown): number | null {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+export const toNullableFloat = toNullableFiniteNumber;
 
 export function actionRowToListItem(row: ActionTimelineRow): ActionListItem {
   return {

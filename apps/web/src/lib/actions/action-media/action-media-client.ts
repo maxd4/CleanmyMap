@@ -10,7 +10,7 @@ import {
 } from "./action-media-contract";
 import type { ActionPhotoAsset } from "@/lib/actions/types";
 
-export type ActionMediaUploadAttempt = { asset: ActionPhotoAsset; sortOrder: number };
+type ActionMediaUploadAttempt = { asset: ActionPhotoAsset; sortOrder: number };
 export type ActionMediaUploadFailure = ActionMediaUploadAttempt & { message: string };
 export type ActionMediaUploadResult = { uploadedCount: number; failed: ActionMediaUploadFailure[] };
 type ActionMediaUploadInput = ActionPhotoAsset | ActionMediaUploadAttempt;

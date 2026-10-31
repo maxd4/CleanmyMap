@@ -72,8 +72,8 @@ export type ActionGeometryMethod =
   | "manual"
   | "gpx_import"
   | "location_only";
-export type ActionGpxImportIntent = "planned" | "observed";
-export type ActionGpxImportSegment = {
+type ActionGpxImportIntent = "planned" | "observed";
+type ActionGpxImportSegment = {
   /** UI candidate identity; older persisted segments may omit it. */
   fileId?: string;
   fileName: string;

@@ -24,7 +24,7 @@ import type {
   MeetingOpportunityTrace,
 } from "./route-meeting-opportunities";
 
-export type { MeetingOpportunity, MeetingOpportunityTrace } from "./route-meeting-opportunities";
+export type { MeetingOpportunity } from "./route-meeting-opportunities";
 
 export {
   isRoutePickupPreference,

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import useSWR from "swr";
 import {
   getLocalGeoAddressSuggestions,
+  isGeoAddressSuggestion,
   mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
@@ -20,6 +21,10 @@ type AddressSuggestionsResponse = {
   query: string;
   items: GeoAddressSuggestion[];
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
 
 function useWeatherLocationDebounce(params: {
   normalizedQuery: string;
@@ -105,7 +110,21 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
           throw new Error("location_suggestions_unavailable");
         }
 
-        const remote = (await response.json()) as AddressSuggestionsResponse;
+        const payload: unknown = await response.json();
+        const items = isRecord(payload)
+          ? payload.items
+          : null;
+        if (!Array.isArray(items) || !items.every(isGeoAddressSuggestion)) {
+          throw new Error("location_suggestions_invalid_response");
+        }
+        const status = isRecord(payload)
+          ? payload.status
+          : null;
+        const remote: AddressSuggestionsResponse = {
+          status: typeof status === "string" ? status : "error",
+          query: debouncedLocationQuery,
+          items,
+        };
         if (isStaleRequest()) {
           throw createAbortError();
         }
@@ -147,7 +166,11 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
     // mutate cannot revalidate the key that was just superseded.
     abortedQueryRef.current.delete(pendingRevalidationQuery);
     setPendingRevalidationQuery(null);
-    void revalidateLocationSuggestions().catch(() => undefined);
+    void revalidateLocationSuggestions().catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      // SWR owns the visible error state; this handler only prevents an
+      // effect-triggered retry from becoming an unhandled rejection.
+    });
   }, [debouncedLocationQuery, pendingRevalidationQuery, revalidateLocationSuggestions]);
 
   useWeatherLocationDebounce({ normalizedQuery: normalizedLocationQuery, lastQueryRef: lastNormalizedLocationQueryRef, generationRef: locationQueryGenerationRef, abortedQueryRef, abortActiveRequest: abortActiveLocationRequest, setDebouncedQuery: setDebouncedLocationQuery, setPendingRevalidationQuery });

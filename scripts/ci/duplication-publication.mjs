@@ -23,7 +23,7 @@ import {
 import { gitExecutable } from "./git-executable.mjs";
 
 export const DUPLICATION_PUBLICATION_SCHEMA_VERSION = 2;
-export const DUPLICATION_PUBLICATION_ROOT = path.join("artifacts", "duplication-publication");
+const DUPLICATION_PUBLICATION_ROOT = path.join("artifacts", "duplication-publication");
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const HASH_PATTERN = /^[0-9a-f]{64}$/i;
 const SCOPES = Object.freeze(["runtime", "tests", "fixtures/data"]);

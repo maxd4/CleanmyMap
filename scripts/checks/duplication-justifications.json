@@ -163,14 +163,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "467a2502fa7f53a6",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux objets de contexte dans le hook de soumission décrivent des étapes différentes du flux d’envoi ; leurs champs voisins servent à des callbacks distincts et non à une primitive de rendu commune.",
-      "evidence": "apps/web/src/components/chat/hooks/use-chat-submit.ts:30-39 et apps/web/src/components/chat/hooks/use-chat-submit.ts:108-117 ; les deux signatures appartiennent à des handlers distincts.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "cccddf216ecce787",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux formatages de date partagent l’amorce de normalisation, mais l’un sert l’affichage principal et l’autre la recherche avec une précision de jour différente.",
@@ -327,22 +319,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/group-join/route.test.ts:138-145 ; symboles: group, join, limit, count et app/api/actions/group-join/route.test.ts:224-231 ; symboles: count, items restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "app/api/actions/group-join/route.test.ts:138-145 et app/api/actions/group-join/route.test.ts:224-231 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "3229d00bbacf15d9",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/route.submit.test.ts:112-126 ; symboles: submissionMode, complete, POST, method et app/api/actions/route.submit.test.ts:146-160 ; symboles: submissionMode, quick, POST, method restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/actions/route.submit.test.ts:112-126 et app/api/actions/route.submit.test.ts:146-160 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "4548b96a44752c31",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/route.submit.test.ts:112-126 ; symboles: submissionMode, complete, POST, method et app/api/actions/route.submit.test.ts:217-231 ; symboles: recordType, POST, method, JSON restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/actions/route.submit.test.ts:112-126 et app/api/actions/route.submit.test.ts:217-231 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -543,30 +519,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT lib/actions/participation/group-participation.test.ts:94-99 et lib/gamification/progression-data.complete-actions.test.ts:35-39 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
       "evidence": "lib/actions/participation/group-participation.test.ts:94-99 et lib/gamification/progression-data.complete-actions.test.ts:35-39 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "cea148023236f1ec",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/actions/participation/group-participation.test.ts:250-262 ; symboles: keeps, joinable, list, available et lib/actions/participation/group-participation.test.ts:283-295 ; symboles: hides, that, explicitly, published restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/actions/participation/group-participation.test.ts:250-262 et lib/actions/participation/group-participation.test.ts:283-295 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "1bd5519fe7da7384",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/actions/participation/group-participation.test.ts:304-317 ; symboles: pending, action_phase, pre_action, notes et lib/actions/participation/group-participation.test.ts:343-356 ; symboles: moderation_visibility, visible, action_phase, pre_action restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/actions/participation/group-participation.test.ts:304-317 et lib/actions/participation/group-participation.test.ts:343-356 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "0fc666357c56f1d2",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/actions/participation/group-participation.test.ts:306-317 ; symboles: notes, appendActionMetadataToNotes, Ouverte, groupJoinEnabled et lib/actions/participation/group-participation.test.ts:416-427 ; symboles: notes, appendActionMetadataToNotes, Ferm, groupJoinEnabled restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/actions/participation/group-participation.test.ts:306-317 et lib/actions/participation/group-participation.test.ts:416-427 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -963,14 +915,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "47a8343a474f40dc",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/(app)/methodologie/page.test.ts:61-70 ; symboles: props, githubStats, impactElectricity, factorKgCo2ePerKwh et app/(app)/methodologie/page.test.ts:122-131 ; symboles: props, impactTerrainResults, monthlyImpactSnapshot, payload restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/(app)/methodologie/page.test.ts:61-70 et app/(app)/methodologie/page.test.ts:122-131 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "5e3d721692be4f24",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api-boundary.test.ts:1-7 et app/server-translation-boundary.test.ts:1-7 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
@@ -991,22 +935,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT app/api-boundary.test.ts:14-20 et lib/server-client-boundaries.test.ts:19-25 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
       "evidence": "app/api-boundary.test.ts:14-20 et lib/server-client-boundaries.test.ts:19-25 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "2bb95980d64b724a",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/action-share-route.test.ts:11-16 et app/api/chat/contact-requests/route.test.ts:5-10 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/action-share-route.test.ts:11-16 et app/api/chat/contact-requests/route.test.ts:5-10 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "5d8247b20d59d32f",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/action-share-route.test.ts:12-18 et app/api/chat/share-destinations/route.test.ts:8-14 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/action-share-route.test.ts:12-18 et app/api/chat/share-destinations/route.test.ts:8-14 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -2582,7 +2510,7 @@
       "fingerprint": "fb8e63cfbd715ce6",
       "classification": "KEEP_INTENTIONAL",
       "reason": "La pagination de continuation et le rechargement SWR des événements partagent un finally de verrou, mais leurs fetchs, erreurs récupérables et sources de données sont différents.",
-      "evidence": "components/sections/rubriques/community/use-community-events.ts:212-220 et :232-240 ; pair CURRENT relu.",
+      "evidence": "components/sections/rubriques/community/use-community-events.ts:212-220 et components/sections/rubriques/community/use-community-events.ts:232-240 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {
@@ -2590,7 +2518,7 @@
       "fingerprint": "cec1119a14c95058",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les lectures de l’inbox créateur portent sur community_events et actions de revue avec projections, filtres et résolution d’identité distincts.",
-      "evidence": "lib/community/creator-inbox-loader.ts:265-273 et :337-345 ; pair CURRENT relu.",
+      "evidence": "lib/community/creator-inbox-loader.ts:265-273 et lib/community/creator-inbox-loader.ts:337-345 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {
@@ -2638,7 +2566,7 @@
       "fingerprint": "29b89dafdd135612",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les notifications de jalons par type et d’équilibre ont des événements, messages, icônes et clés de déduplication différents ; une extraction masquerait leurs contrats événementiels.",
-      "evidence": "lib/gamification/quiz-progress.ts:168-173 et :192-197 ; pair CURRENT relu.",
+      "evidence": "lib/gamification/quiz-progress.ts:168-173 et lib/gamification/quiz-progress.ts:192-197 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {
@@ -2646,7 +2574,7 @@
       "fingerprint": "c6beac3b76d8e406",
       "classification": "KEEP_INTENTIONAL",
       "reason": "La lecture des offres et leur création restent dans la route pour préserver leurs validations, droits et réponses HTTP distincts.",
-      "evidence": "app/api/community/needs/[needId]/offers/route.ts:33-39 et :65-71 ; pair CURRENT relu.",
+      "evidence": "app/api/community/needs/[needId]/offers/route.ts:33-39 et app/api/community/needs/[needId]/offers/route.ts:65-71 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {
@@ -2670,7 +2598,7 @@
       "fingerprint": "df1eacd95cc2722c",
       "classification": "KEEP_INTENTIONAL",
       "reason": "La lecture d’une souscription et ses mutations ciblées ne partagent pas le même contrat d’autorisation, de validation ni de réponse.",
-      "evidence": "app/api/community/subscriptions/[subscriptionId]/route.ts:23-29 et :50-56 ; pair CURRENT relu.",
+      "evidence": "app/api/community/subscriptions/[subscriptionId]/route.ts:23-29 et app/api/community/subscriptions/[subscriptionId]/route.ts:50-56 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {
@@ -2678,7 +2606,7 @@
       "fingerprint": "9c4535c4ec0fdda8",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les mutations de statut et de priorité sont séparées car leurs RPC transactionnels et leurs préconditions attendues ne sont pas interchangeables.",
-      "evidence": "lib/community/bug-reports-store.ts:421-430 et :470-479 ; pair CURRENT relu.",
+      "evidence": "lib/community/bug-reports-store.ts:421-430 et lib/community/bug-reports-store.ts:470-479 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {
@@ -2686,7 +2614,7 @@
       "fingerprint": "42d45577cb6f7aff",
       "classification": "KEEP_INTENTIONAL",
       "reason": "La priorité et le retrait de la file active ont des contrats RPC et des états attendus différents, malgré un oracle de résultat partagé.",
-      "evidence": "lib/community/bug-reports-store.ts:434-445 et :482-493 ; pair CURRENT relu.",
+      "evidence": "lib/community/bug-reports-store.ts:434-445 et lib/community/bug-reports-store.ts:482-493 ; pair CURRENT relu.",
       "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     },
     {

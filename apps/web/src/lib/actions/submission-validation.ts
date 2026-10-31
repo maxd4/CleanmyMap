@@ -15,7 +15,7 @@ export type VolunteerActionValidationIssue = {
   message: string;
 };
 
-export type ActionMeasurementValidationField =
+type ActionMeasurementValidationField =
   | "wasteKg"
   | "wasteRecyclablesKg"
   | "wasteGlassKg"

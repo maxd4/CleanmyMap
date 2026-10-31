@@ -15,16 +15,15 @@ export const CLEANWALK_YIELD_RESEARCH_VERSION =
 
 export type CleanwalkResearchConfiguration = "ordinary" | "family" | "school";
 export type CleanwalkResearchModel = "A" | "B" | "C";
-export type CleanwalkResearchTask = "waste" | "cigaretteButts";
-export type ResearchAssignmentBasis = "OBSERVED" | "HYPOTHESIS";
+type ResearchAssignmentBasis = "OBSERVED" | "HYPOTHESIS";
 
-export type CigaretteButtCollectorAssignment = {
+type CigaretteButtCollectorAssignment = {
   count: number;
   basis: ResearchAssignmentBasis;
   hypothesis?: "ALL_ADULTS" | "EXPLICIT";
 };
 
-export type CleanwalkYieldReferenceRates = {
+type CleanwalkYieldReferenceRates = {
   wasteKgPerUnitHour?: number | null;
   cigaretteButtsPerUnitHour?: number | null;
 };
@@ -156,7 +155,7 @@ const MODEL_COEFFICIENTS = {
   },
 } as const;
 
-export const DEFAULT_RETIRED_WASTE_SENSITIVITY = [0.5, 0.8, 1] as const;
+const DEFAULT_RETIRED_WASTE_SENSITIVITY = [0.5, 0.8, 1] as const;
 
 type AssignmentValidation =
   | { valid: true }

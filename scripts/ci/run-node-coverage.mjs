@@ -4,13 +4,15 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 import { assertCoverageCandidateIdentity } from "./validation-evidence.mjs";
 import { resolveCoverageCandidate } from "./coverage-publication.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const require = createRequire(import.meta.url);
 const defaultC8Executable = process.platform === "win32" ? process.execPath : "c8";
-const defaultC8Script = path.join(repositoryRoot, "node_modules", "c8", "bin", "c8.js");
+const defaultC8Script = path.join(path.dirname(require.resolve("c8/package.json")), "bin", "c8.js");
 
 export function nodeCoverageCommands({
   c8Executable = defaultC8Executable,

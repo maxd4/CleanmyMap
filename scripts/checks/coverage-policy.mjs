@@ -317,7 +317,7 @@ const COVERAGE_RISK_CLASSIFICATION_RULES = Object.freeze([
 
 // Unmatched instrumentable files remain visible through the generic
 // `requires-risk-qualification` attribution in classifyCoverageFile().
-export const COVERAGE_RISK_CLASSIFICATION_REQUIRED_REASONS = Object.freeze({});
+const COVERAGE_RISK_CLASSIFICATION_REQUIRED_REASONS = Object.freeze({});
 
 const COVERAGE_RISK_POLICY_VERSION = 2;
 export const COVERAGE_UNCLASSIFIED_RISK_DOMAIN = "unclassified";

@@ -5,7 +5,7 @@ import {
   type RoutePlannerCandidate,
 } from "./route-planner";
 
-export const MEETING_OPPORTUNITY_POLICY = {
+const MEETING_OPPORTUNITY_POLICY = {
   maxRadiusMeters: 150,
   maxCount: 3,
   distanceType: "straight_line",
@@ -13,8 +13,8 @@ export const MEETING_OPPORTUNITY_POLICY = {
 export const MEETING_OPPORTUNITY_MAX_RADIUS_METERS = MEETING_OPPORTUNITY_POLICY.maxRadiusMeters;
 export const MEETING_OPPORTUNITY_MAX_COUNT = MEETING_OPPORTUNITY_POLICY.maxCount;
 
-export type MeetingOpportunityDistanceType = "straight_line";
-export type MeetingOpportunityProvenance = "observed" | "predicted";
+type MeetingOpportunityDistanceType = "straight_line";
+type MeetingOpportunityProvenance = "observed" | "predicted";
 
 export type MeetingOpportunity = {
   candidateId: string;
@@ -27,7 +27,7 @@ export type MeetingOpportunity = {
   modelVersion?: string;
 };
 
-export type MeetingOpportunityTraceReason =
+type MeetingOpportunityTraceReason =
   | "not_admissible"
   | "trained_only"
   | "no_pickup"
@@ -40,7 +40,7 @@ export type MeetingOpportunityTraceReason =
   | "rank_limit"
   | "selected_by_deterministic_rank";
 
-export type MeetingOpportunityTraceEntry = {
+type MeetingOpportunityTraceEntry = {
   candidateId: string;
   distanceMeters: number | null;
   provenance: MeetingOpportunityProvenance | null;
