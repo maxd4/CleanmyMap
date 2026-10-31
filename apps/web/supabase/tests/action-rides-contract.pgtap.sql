@@ -95,7 +95,9 @@ select lives_ok($fixture$
     insert into public.action_registrations (action_id, user_id, registration_status)
     values (v_action_id, 'ride-driver', 'confirmed'),
            (v_action_id, 'ride-driver-two', 'confirmed'),
-           (v_action_id, 'ride-passenger', 'confirmed');
+           (v_action_id, 'ride-passenger', 'confirmed'),
+           (v_action_id, 'ride-passenger-a', 'confirmed'),
+           (v_action_id, 'ride-passenger-b', 'confirmed');
     insert into action_ride_fixture (action_id) values (v_action_id);
   end;
   $$;
