@@ -159,12 +159,12 @@ describe("resolvePersistedCigaretteButts", () => {
     const metadata = extractActionMetadataFromNotes(notes);
 
     expect(metadata.cigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 3_000,
+      cigaretteButtsCount: 5_455,
       cigaretteButtsMassKg: 1.2,
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",
       cigaretteButtsConversionFormulaVersion:
-        "impact-terrain-2026-butts-mass-v1",
+        "impact-terrain-2026-butts-mass-v2",
     });
   });
 });

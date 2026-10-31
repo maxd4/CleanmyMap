@@ -70,6 +70,7 @@ export type ReportModel = {
     buttsMassKg?: number | null;
     buttsMassProvenance?: "measured" | "estimated" | "mixed" | "unknown" | null;
     buttsMassConversionVersions?: string[];
+    buttsRecalculationStatus?: string | null;
     volunteers: number;
     volunteersKnownActions?: number;
     volunteersActionCount?: number;

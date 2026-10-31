@@ -31,6 +31,7 @@ import {
   isCurrentPublicImpactSnapshot,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "./public-impact-snapshot";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 
 const NOW = new Date("2026-09-08T03:00:00.000Z");
 const LATER_IN_SAME_MONTH = new Date("2026-09-26T12:00:00.000Z");
@@ -151,6 +152,20 @@ describe("public monthly impact snapshot", () => {
 
   it("serves the latest valid previous-month snapshot when the current cron has not produced one", async () => {
     const snapshot = existingSnapshot();
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+  });
+
+  it("conserve la lecture d'un snapshot historique sans réutiliser sa méthode", async () => {
+    const snapshot = existingSnapshot({
+      payload: {
+        ...existingSnapshot().payload,
+        methodologyVersion: IMPACT_PROXY_CONFIG.configuredVersion,
+      },
+    });
+
     readLatestSnapshotMock.mockResolvedValue(snapshot);
 
     await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);

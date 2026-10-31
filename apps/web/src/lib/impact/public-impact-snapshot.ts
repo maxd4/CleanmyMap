@@ -9,7 +9,11 @@ import {
   buildPublicLandingActionMetricsFromAggregate,
   type PublicLandingActionAggregation,
 } from "@/lib/accueil/action-participant-aggregation";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import {
+  IMPACT_PROXY_CONFIG,
+  isCurrentImpactProxyVersion,
+  isKnownImpactProxyVersion,
+} from "@/lib/gamification/impact-proxy-config";
 import { IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION } from "./impact-terrain-2026-results";
 import {
   getPublicSurfaceSnapshotDate,
@@ -233,7 +237,7 @@ function isValidPublicImpactSnapshot(
       generatedDate,
       generatedFloorDate,
     ) &&
-    payload.methodologyVersion === IMPACT_PROXY_CONFIG.version &&
+    isKnownImpactProxyVersion(payload.methodologyVersion) &&
     payload.resultsContractVersion ===
       IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION
   );
@@ -245,7 +249,8 @@ export function isCurrentPublicImpactSnapshot(
 ): snapshot is PublicImpactSnapshotRecord {
   return (
     isValidPublicImpactSnapshot(snapshot) &&
-    isCurrentImpactSnapshotPeriod(snapshot, now)
+    isCurrentImpactSnapshotPeriod(snapshot, now) &&
+    isCurrentImpactProxyVersion(snapshot.payload.methodologyVersion)
   );
 }
 

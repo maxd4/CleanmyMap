@@ -32,7 +32,10 @@ describe("impact proxy configuration", () => {
 
     const { IMPACT_PROXY_CONFIG } = await import("./impact-proxy-config");
 
-    expect(IMPACT_PROXY_CONFIG.version).toBe("impact-proxy-test-v9");
+    expect(IMPACT_PROXY_CONFIG.configuredVersion).toBe("impact-proxy-test-v9");
+    expect(IMPACT_PROXY_CONFIG.version).toMatch(/^impact-proxy-test-v9\+factors-[0-9a-f]{8}$/);
+    expect(IMPACT_PROXY_CONFIG.effectiveVersion).toBe(IMPACT_PROXY_CONFIG.version);
+    expect(IMPACT_PROXY_CONFIG.factorsFingerprint).toHaveLength(8);
     expect(IMPACT_PROXY_CONFIG.factors).toMatchObject({
       waterLitersPerCigaretteButt: 600,
       co2KgPerWasteKg: 1.5,
@@ -51,7 +54,8 @@ describe("impact proxy configuration", () => {
 
     const { IMPACT_PROXY_CONFIG } = await import("./impact-proxy-config");
 
-    expect(IMPACT_PROXY_CONFIG.version).toBe("impact-proxy-2026.04-v1");
+    expect(IMPACT_PROXY_CONFIG.configuredVersion).toBe("impact-proxy-2026.04-v1");
+    expect(IMPACT_PROXY_CONFIG.version).toMatch(/^impact-proxy-2026\.04-v1\+factors-[0-9a-f]{8}$/);
     expect(IMPACT_PROXY_CONFIG.factors).toMatchObject({
       waterLitersPerCigaretteButt: 500,
       co2KgPerWasteKg: 1.2,
@@ -79,5 +83,26 @@ describe("impact proxy configuration", () => {
         qualityScore: 50,
       }).find((metric) => metric.id === "co2")?.value,
     ).toBe(0);
+  });
+
+  it("changes the effective version when an environment factor changes", async () => {
+    process.env.IMPACT_PROXY_VERSION = "same-configured-version";
+    process.env.IMPACT_PROXY_CO2_KG_PER_WASTE_KG = "1.2";
+    vi.resetModules();
+    const first = await import("./impact-proxy-config");
+
+    process.env.IMPACT_PROXY_CO2_KG_PER_WASTE_KG = "1.3";
+    vi.resetModules();
+    const second = await import("./impact-proxy-config");
+
+    expect(first.IMPACT_PROXY_CONFIG.configuredVersion).toBe(
+      second.IMPACT_PROXY_CONFIG.configuredVersion,
+    );
+    expect(first.IMPACT_PROXY_CONFIG.factorsFingerprint).not.toBe(
+      second.IMPACT_PROXY_CONFIG.factorsFingerprint,
+    );
+    expect(first.IMPACT_PROXY_CONFIG.version).not.toBe(
+      second.IMPACT_PROXY_CONFIG.version,
+    );
   });
 });

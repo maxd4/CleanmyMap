@@ -97,13 +97,13 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
       },
     });
 
-    expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsCount).toBe(1_850);
+    expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsCount).toBe(2_100);
     expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsLotsSummary).toMatchObject({
-      totalCount: 1_850,
+      totalCount: 2_100,
       countedCount: 100,
-      estimatedCount: 1_750,
+      estimatedCount: 2_000,
     });
-    expect(result.updateData).toEqual({ cigarette_butts: 1_850 });
+    expect(result.updateData).toEqual({ cigarette_butts: 2_100 });
   });
 
   it("refuses a legacy scalar PATCH that could silently replace persisted lots", () => {
@@ -134,13 +134,13 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
     });
 
     expect(result.nextCigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 2_500,
+      cigaretteButtsCount: 4_545,
       cigaretteButtsMassKg: 1,
       cigaretteButtsCondition: "propre",
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",
     });
-    expect(result.updateData).toEqual({ cigarette_butts: 2_500 });
+    expect(result.updateData).toEqual({ cigarette_butts: 4_545 });
   });
 
   it("preserves an independent historical pair when its source is unknown", () => {
@@ -327,7 +327,7 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
       cigaretteButtsCountProvenance: "counted",
     });
     expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsConversionFormulaVersion).toBe(
-      "impact-terrain-2026-butts-mass-v1",
+      "impact-terrain-2026-butts-mass-v2",
     );
   });
 
@@ -345,7 +345,7 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
     });
 
     expect(result.nextCigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 2_100,
+      cigaretteButtsCount: 2_400,
       cigaretteButtsMassKg: 1.2,
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",

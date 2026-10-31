@@ -51,6 +51,7 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   cigarette_butts_mass_kg?: number | null;
   cigarette_butts_mass_provenance?: "measured" | "estimated" | "mixed" | "unknown" | null;
   cigarette_butts_conversion_versions?: string | null;
+  cigarette_butts_recalculation_status?: string | null;
 };
 
 type ManualDrawingToGeoJson = (
@@ -126,6 +127,7 @@ function buildActionCsvRowProjection(
       impact.buttsMassConversionVersions.length > 0
         ? impact.buttsMassConversionVersions.join("|")
         : null,
+    cigarette_butts_recalculation_status: impact.buttsRecalculationStatus,
   };
 }
 
@@ -274,6 +276,7 @@ function buildActionsCsvHeader(): string[] {
     "cigarette_butts_mass_kg",
     "cigarette_butts_mass_provenance",
     "cigarette_butts_conversion_versions",
+    "cigarette_butts_recalculation_status",
     "volunteers_count",
     "duration_minutes",
     "status",
@@ -322,6 +325,7 @@ function buildActionsCsvCells(row: ActionCsvRowWithDrawing): Array<string | numb
     toCsvCellValue(row.cigarette_butts_mass_kg),
     toCsvCellValue(row.cigarette_butts_mass_provenance),
     toCsvCellValue(row.cigarette_butts_conversion_versions),
+    toCsvCellValue(row.cigarette_butts_recalculation_status),
     row.volunteers_count,
     row.duration_minutes,
     row.status,

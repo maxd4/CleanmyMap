@@ -165,6 +165,28 @@ describe("volunteer participation contract", () => {
     expect(resolveParticipantsCount({ legacyVolunteersCount: 7 })).toBe(7);
   });
 
+  it("preserves historical derived values when their category sources are unavailable", () => {
+    const result = normalizeVolunteerParticipation({
+      participantsCount: 7,
+      effectiveVolunteerUnits: 5.5,
+      effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v0",
+    });
+
+    expect(result).toMatchObject({
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: null,
+      participantsCount: 7,
+      effectiveVolunteerUnits: 5.5,
+      effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v0",
+      participantsCountProvenance: "historical_unknown",
+      effectiveVolunteerUnitsProvenance: "historical_unknown",
+      recalculationStatus: "not_recalculable",
+    });
+    expect(resolveParticipantsCount({ volunteerParticipation: result })).toBe(7);
+    expect(resolveEffectiveVolunteerUnits(result)).toBe(5.5);
+  });
+
   it("recalculates derived fields from category sources instead of trusting payload totals", () => {
     const participation = {
       childrenCount: 2,

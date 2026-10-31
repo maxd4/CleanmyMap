@@ -1,5 +1,8 @@
 import type { ActionWasteBreakdown } from "./types";
-import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import type {
+  ActionCigaretteButtsMeasurements,
+  CigaretteButtsRecalculationStatus,
+} from "@/lib/waste/cigarette-butts";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
@@ -43,6 +46,7 @@ export type ActionImpactKpis = {
   buttsMassKg: number | null;
   buttsMassProvenance: "measured" | "estimated" | "mixed" | "unknown" | null;
   buttsMassConversionVersions: string[];
+  buttsRecalculationStatus: CigaretteButtsRecalculationStatus | null;
   volunteers: number;
   volunteersKnown: boolean;
   co2AvoidedKg: number;
@@ -52,9 +56,17 @@ export type ActionImpactKpis = {
   euroSaved: number;
 };
 
+export type ActionImpactRecalculationStatus =
+  | CigaretteButtsRecalculationStatus
+  | "mixed";
+
 export type ActionImpactTotals = Omit<
   ActionImpactKpis,
-  "wasteKgSource" | "buttsCounted" | "buttsEstimated" | "buttsCompositionKnown"
+  | "wasteKgSource"
+  | "buttsCounted"
+  | "buttsEstimated"
+  | "buttsCompositionKnown"
+  | "buttsRecalculationStatus"
 > & {
   wasteKnownActions: number;
   wasteActionCount: number;
@@ -68,6 +80,7 @@ export type ActionImpactTotals = Omit<
   buttsCompositionActionCount: number;
   buttsCountedShare: number | null;
   buttsEstimatedShare: number | null;
+  buttsRecalculationStatus: ActionImpactRecalculationStatus | null;
   volunteersKnownActions: number;
   volunteersActionCount: number;
   volunteersCoverageRate: number;
@@ -159,6 +172,8 @@ export function computeActionImpactKpis(
           : []),
     ),
   ];
+  const buttsRecalculationStatus =
+    cigaretteButtsMeasurements?.cigaretteButtsRecalculationStatus ?? null;
   const volunteersKnown =
     contract.metadata.volunteersCount !== null &&
     contract.metadata.volunteersCount !== undefined &&
@@ -185,6 +200,7 @@ export function computeActionImpactKpis(
     buttsMassKg,
     buttsMassProvenance,
     buttsMassConversionVersions,
+    buttsRecalculationStatus,
     volunteers,
     volunteersKnown,
     co2AvoidedKg: wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
@@ -210,6 +226,14 @@ function accumulateActionImpactTotals(
       ? impact.buttsMassProvenance
       : totals.buttsMassProvenance === impact.buttsMassProvenance
         ? totals.buttsMassProvenance
+        : "mixed";
+  }
+  if (impact.buttsRecalculationStatus !== null) {
+    const current = totals.buttsRecalculationStatus;
+    totals.buttsRecalculationStatus = current === null
+      ? impact.buttsRecalculationStatus
+      : current === impact.buttsRecalculationStatus
+        ? current
         : "mixed";
   }
   totals.buttsMassConversionVersions = [
@@ -289,6 +313,7 @@ export function sumActionImpactKpis(
     buttsMassKg: null,
     buttsMassProvenance: null,
     buttsMassConversionVersions: [],
+    buttsRecalculationStatus: null,
     volunteers: 0,
     volunteersKnown: false,
     co2AvoidedKg: 0,

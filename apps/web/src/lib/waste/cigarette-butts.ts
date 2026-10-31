@@ -3,6 +3,7 @@ import {
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   computeButtsCount,
   estimateButtsWeightKg,
+  isCigaretteButtsMassConversionVersion,
 } from "@/lib/impact/impact-terrain-2026";
 
 export const MAX_CIGARETTE_BUTTS_COUNT = 5_000_000;
@@ -22,6 +23,11 @@ export const CIGARETTE_BUTTS_PROVENANCES = [
 
 export type CigaretteButtsProvenance =
   (typeof CIGARETTE_BUTTS_PROVENANCES)[number];
+
+export type CigaretteButtsRecalculationStatus =
+  | "recalculable"
+  | "not_recalculable"
+  | "not_applicable";
 
 /**
  * Identifies which field was manually observed in the form. `unknown` is
@@ -77,6 +83,8 @@ export type ActionCigaretteButtsMeasurements = {
   cigaretteButtsMassProvenance: CigaretteButtsProvenance;
   cigaretteButtsVolumeProvenance: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion: string | null;
+  /** Whether a derived value can be recomputed from a retained source. */
+  cigaretteButtsRecalculationStatus?: CigaretteButtsRecalculationStatus;
   /** Present only for the explicit multi-lot contract. */
   cigaretteButtsLots?: CigaretteButtsLotInput[];
   /** Server-calculated per-lot evidence retained with the metadata. */
@@ -297,6 +305,15 @@ export function normalizeCigaretteButtsMeasurements(
     cigaretteButtsMassProvenance: massProvenance,
     cigaretteButtsVolumeProvenance: volumeProvenance,
     cigaretteButtsConversionFormulaVersion: conversionFormulaVersion,
+    cigaretteButtsRecalculationStatus: resolveLegacyRecalculationStatus({
+      count,
+      massKg,
+      volumeLiters,
+      condition,
+      countProvenance,
+      massProvenance,
+      conversionFormulaVersion,
+    }),
   };
 }
 
@@ -357,10 +374,65 @@ function normalizeMeasurementsFromLots(
       : "unknown",
     cigaretteButtsConversionFormulaVersion:
       formulaVersions.size === 1 ? [...formulaVersions][0]! : null,
+    cigaretteButtsRecalculationStatus: resolveLotRecalculationStatus(
+      aggregated.results,
+    ),
     cigaretteButtsLots: aggregated.lots,
     cigaretteButtsLotResults: aggregated.results,
     cigaretteButtsLotsSummary: summary,
   };
+}
+
+function resolveLotRecalculationStatus(
+  results: CigaretteButtsLotResult[],
+): CigaretteButtsRecalculationStatus {
+  if (results.length === 0) return "not_applicable";
+  return results.every((result) => {
+    if (result.source === "mass_kg") {
+      return (
+        result.rawMassKg !== null &&
+        isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion)
+      );
+    }
+    if (result.source === "volume_l") {
+      return (
+        isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion) &&
+        result.volumeConversionFormulaVersion === CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION
+      );
+    }
+    return isCigaretteButtsMassConversionVersion(
+      result.massConversionFormulaVersion,
+    );
+  })
+    ? "recalculable"
+    : "not_recalculable";
+}
+
+function resolveLegacyRecalculationStatus(params: {
+  count: number | null;
+  massKg: number | null;
+  volumeLiters: number | null;
+  condition: ActionMegotsCondition | null;
+  countProvenance: CigaretteButtsProvenance;
+  massProvenance: CigaretteButtsProvenance;
+  conversionFormulaVersion: string | null;
+}): CigaretteButtsRecalculationStatus {
+  const hasSource =
+    params.count !== null || params.massKg !== null || params.volumeLiters !== null;
+  if (!hasSource) return "not_applicable";
+  if (params.countProvenance === "counted" && params.massProvenance === "measured") {
+    return "not_applicable";
+  }
+  const hasRecomputableDerivedValue =
+    params.condition !== null &&
+    isCigaretteButtsMassConversionVersion(params.conversionFormulaVersion) &&
+    ((params.massProvenance === "measured" &&
+      params.countProvenance === "weight_converted" &&
+      params.massKg !== null) ||
+      (params.countProvenance === "counted" &&
+        params.massProvenance === "weight_converted" &&
+        params.count !== null));
+  return hasRecomputableDerivedValue ? "recalculable" : "not_recalculable";
 }
 
 function isPersistedLotSnapshotForInputs(

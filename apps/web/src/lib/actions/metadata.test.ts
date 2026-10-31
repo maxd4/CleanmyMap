@@ -120,7 +120,7 @@ describe("action metadata notes", () => {
       cigaretteButtsMeasurements,
     );
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBe(1.2);
-    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCount).toBe(3_000);
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCount).toBe(5_455);
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCountProvenance).toBe(
       "weight_converted",
     );

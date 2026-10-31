@@ -1,6 +1,12 @@
 export const EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION =
   "effective-volunteer-units-v1" as const;
 
+export type VolunteerDerivedProvenance = "derived" | "historical_unknown" | null;
+export type VolunteerRecalculationStatus =
+  | "recalculable"
+  | "not_recalculable"
+  | "not_applicable";
+
 const VOLUNTEER_CATEGORY_WEIGHTS = {
   children: 0.5,
   adult: 1,
@@ -14,12 +20,19 @@ export type ActionVolunteerParticipation = {
   participantsCount: number | null;
   effectiveVolunteerUnits: number | null;
   effectiveVolunteerUnitsFormulaVersion: string | null;
+  participantsCountProvenance?: VolunteerDerivedProvenance;
+  effectiveVolunteerUnitsProvenance?: VolunteerDerivedProvenance;
+  recalculationStatus?: VolunteerRecalculationStatus;
 };
 
 export type VolunteerParticipationInput = {
   childrenCount?: number | null;
   adultCount?: number | null;
   retiredCount?: number | null;
+  /** Historical derived values are read-only compatibility inputs. */
+  participantsCount?: number | null;
+  effectiveVolunteerUnits?: number | null;
+  effectiveVolunteerUnitsFormulaVersion?: string | null;
 };
 
 export type VolunteerParticipationFormInput = {
@@ -67,6 +80,22 @@ function normalizeIntegerCount(value: number | null | undefined): number | null 
     return null;
   }
   return value;
+}
+
+function normalizeHistoricalParticipantsCount(
+  value: number | null | undefined,
+): number | null {
+  return value !== null && value !== undefined && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
+}
+
+function normalizeHistoricalEffectiveUnits(
+  value: number | null | undefined,
+): number | null {
+  return value !== null && value !== undefined && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
 }
 
 export function deriveAdultCountFromTotal(
@@ -232,13 +261,30 @@ export function normalizeVolunteerParticipation(
   });
 
   if (!complete) {
+    const historicalParticipantsCount = normalizeHistoricalParticipantsCount(
+      input?.participantsCount,
+    );
+    const historicalEffectiveUnits = normalizeHistoricalEffectiveUnits(
+      input?.effectiveVolunteerUnits,
+    );
     return {
       childrenCount,
       adultCount,
       retiredCount,
-      participantsCount: null,
-      effectiveVolunteerUnits: null,
-      effectiveVolunteerUnitsFormulaVersion: null,
+      participantsCount: historicalParticipantsCount,
+      effectiveVolunteerUnits: historicalEffectiveUnits,
+      effectiveVolunteerUnitsFormulaVersion:
+        historicalEffectiveUnits === null
+          ? null
+          : input?.effectiveVolunteerUnitsFormulaVersion ?? null,
+      participantsCountProvenance:
+        historicalParticipantsCount === null ? null : "historical_unknown",
+      effectiveVolunteerUnitsProvenance:
+        historicalEffectiveUnits === null ? null : "historical_unknown",
+      recalculationStatus:
+        historicalParticipantsCount !== null || historicalEffectiveUnits !== null
+          ? "not_recalculable"
+          : "not_applicable",
     };
   }
 
@@ -260,6 +306,9 @@ export function normalizeVolunteerParticipation(
     effectiveVolunteerUnits,
     effectiveVolunteerUnitsFormulaVersion:
       EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+    participantsCountProvenance: "derived",
+    effectiveVolunteerUnitsProvenance: "derived",
+    recalculationStatus: "recalculable",
   };
 }
 

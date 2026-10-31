@@ -203,10 +203,17 @@ historiques et leur correspondance sans suppression physique ni conversion
 silencieuse de `waste_type`.
 
 Les données de mesure gardent la distinction `NULL`/`NA`/zéro explicite. Les
-mesures de déchets et de mégots sont séparées, portent leur unité, leur méthode
-et leur provenance ; une masse ou un volume ne devient pas un comptage sans
-formule versionnée. Les mesures individuelles post-action appartiennent à la
-ligne confirmée de `action_participants` via la migration
+mesures de déchets et de mégots séparent explicitement la source déclarée ou
+observée, la valeur calculée, l'unité, l'état, la provenance et la version de
+méthode. Une masse ou un volume ne devient pas un comptage sans formule
+versionnée ; une valeur dérivée n'est recalculable que si sa source originale
+est identifiable. Une valeur historique dérivée sans source identifiable reste
+inchangée et est signalée comme non recalculable. Une modification de facteurs
+doit aussi modifier l'identité effective de la méthode, afin qu'aucune lecture
+ne confonde deux jeux de coefficients.
+
+Les mesures individuelles post-action appartiennent à la ligne confirmée de
+`action_participants` via la migration
 `20260926000001_action_participant_individual_impact.sql` et ne créent pas de
 table métier parallèle. `duration_minutes` décrit l'action de dépollution,
 tandis que `event_start_time`/`event_end_time` décrivent le créneau global ;

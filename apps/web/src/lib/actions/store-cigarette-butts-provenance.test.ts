@@ -35,7 +35,7 @@ describe("server cigarette-butt source resolution", () => {
     const metadata = extractActionMetadataFromNotes(notes);
 
     expect(metadata.cigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 1_750,
+      cigaretteButtsCount: 2_000,
       cigaretteButtsMassKg: 1,
       cigaretteButtsCountProvenance: "weight_converted",
       cigaretteButtsMassProvenance: "measured",
@@ -60,11 +60,11 @@ describe("server cigarette-butt source resolution", () => {
     const metadata = extractActionMetadataFromNotes(notes);
 
     expect(metadata.cigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 2_150,
+      cigaretteButtsCount: 2_400,
       cigaretteButtsLotsSummary: {
-        totalCount: 2_150,
+        totalCount: 2_400,
         countedCount: 100,
-        estimatedCount: 2_050,
+        estimatedCount: 2_300,
       },
       cigaretteButtsLots: [
         { id: "counted", source: "count", value: 100 },

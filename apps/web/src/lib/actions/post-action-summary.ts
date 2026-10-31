@@ -24,6 +24,7 @@ export type PostActionSummary = {
     cigaretteButtsMassKg: number | null;
     cigaretteButtsMassProvenance: "measured" | "estimated" | "mixed" | "unknown" | null;
     cigaretteButtsConversionVersions: string[];
+    cigaretteButtsRecalculationStatus: "recalculable" | "not_recalculable" | "not_applicable" | null;
     volunteersCount: number | null;
     effectiveVolunteerUnits: number | null;
     durationMinutes: number | null;
@@ -120,6 +121,7 @@ export function buildPostActionSummary(
       cigaretteButtsMassKg: impact.buttsMassKg,
       cigaretteButtsMassProvenance: impact.buttsMassProvenance,
       cigaretteButtsConversionVersions: impact.buttsMassConversionVersions,
+      cigaretteButtsRecalculationStatus: impact.buttsRecalculationStatus,
       volunteersCount,
       effectiveVolunteerUnits,
       durationMinutes,

@@ -40,6 +40,7 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsCountProvenance).toBe("counted");
     expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBeNull();
+    expect(measurement.cigaretteButtsRecalculationStatus).toBe("not_applicable");
   });
 
   it("keeps NULL distinct from an explicitly measured zero", () => {
@@ -70,6 +71,7 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsMassKg).toBe(1.2);
     expect(measurement.cigaretteButtsCountProvenance).toBe("weight_converted");
     expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
+    expect(measurement.cigaretteButtsRecalculationStatus).toBe("recalculable");
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBe(
       CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
     );
@@ -430,6 +432,26 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsMassKg).toBeNull();
     expect(measurement.cigaretteButtsCount).not.toBe(0);
     expect(measurement.cigaretteButtsMassKg).not.toBe(0);
+    expect(measurement.cigaretteButtsRecalculationStatus).toBe("not_applicable");
+  });
+
+  it("signals an ambiguous historical pair as unchanged and not recalculable", () => {
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCondition: null,
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsConversionFormulaVersion: null,
+    });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCountProvenance: "unknown",
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsRecalculationStatus: "not_recalculable",
+    });
   });
 
   it("aggregates distinct count, mass, and volume lots once", () => {
@@ -538,5 +560,46 @@ describe("historical cigarette-butt lot snapshots", () => {
       CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
     );
     expect(measurement.cigaretteButtsCount).not.toBe(Math.round(1 / 0.5 * 1_000));
+    expect(measurement.cigaretteButtsRecalculationStatus).toBe("recalculable");
+  });
+
+  it("retains an unknown historical lot formula and marks it non-recalculable", () => {
+    const historicalLot = {
+      id: "legacy-unknown",
+      source: "volume_l" as const,
+      value: 1,
+      condition: "propre" as const,
+    };
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [historicalLot],
+      cigaretteButtsLotResults: [{
+        ...historicalLot,
+        count: 600,
+        massKg: 0.22,
+        rawMassKg: null,
+        rawVolumeLiters: 1,
+        countProvenance: "volume_converted",
+        massProvenance: "weight_converted",
+        massConversionFormulaVersion: "historical-unknown",
+        volumeConversionFormulaVersion: "historical-unknown",
+      }],
+      cigaretteButtsLotsSummary: {
+        totalCount: 600,
+        countedCount: 0,
+        estimatedCount: 600,
+        totalMassKg: 0.22,
+        measuredMassKg: 0,
+        estimatedMassKg: 0.22,
+        totalVolumeLiters: 1,
+        countedShare: 0,
+        estimatedShare: 1,
+      },
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(600);
+    expect(measurement.cigaretteButtsLotResults?.[0]?.massConversionFormulaVersion).toBe(
+      "historical-unknown",
+    );
+    expect(measurement.cigaretteButtsRecalculationStatus).toBe("not_recalculable");
   });
 });

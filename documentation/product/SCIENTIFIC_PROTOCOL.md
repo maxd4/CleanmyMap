@@ -153,8 +153,13 @@ par le runtime actuel ni une formule à utiliser pour de nouveaux résultats.
 
 ### Version et configuration des proxys
 
-La version méthodologique par défaut est `impact-proxy-2026.04-v1`, exposée par
-`impact-proxy-config.ts` et attachée aux résultats qui utilisent ces facteurs.
+La version configurée par défaut est `impact-proxy-2026.04-v1`. Le runtime
+expose une empreinte effective calculée à partir de la version configurée et de
+tous les facteurs effectivement chargés (`IMPACT_PROXY_CONFIG.version`, aussi
+disponible sous `effectiveVersion`). Deux jeux de facteurs différents ne
+peuvent donc pas partager une identité de calcul, même si
+`IMPACT_PROXY_VERSION` reste inchangé. La version configurée reste disponible
+pour les lectures de compatibilité historiques.
 Les valeurs par défaut sont :
 
 | Facteur | Valeur par défaut | Unité |
