@@ -44,7 +44,7 @@ const wasteMeasurementMethodSchema = z
   .nullable()
   .optional();
 
-const cigaretteButtsLotsSchema = z
+export const cigaretteButtsLotsSchema = z
   .array(
     z.object({
       id: z.string().trim().min(1).max(120),

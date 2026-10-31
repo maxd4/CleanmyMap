@@ -6,6 +6,7 @@ import {
   WASTE_MOISTURE_NORMALIZATION_VERSION,
 } from "./individual-impact";
 import { normalizeVolunteerParticipation } from "../volunteer-participation";
+import { aggregateCigaretteButtsLots } from "@/lib/waste/cigarette-butts";
 
 function participant(id: string, measurement: ReturnType<typeof toIndividualImpactMeasurement> = null) {
   return { id, participationStatus: "confirmed", measurement };
@@ -270,5 +271,91 @@ describe("individual action impact attribution", () => {
     expect(buildStoredIndividualImpactMeasurement({ wasteKg: null }).wasteKg).toBeNull();
     expect(buildStoredIndividualImpactMeasurement({ cigaretteButtsCount: 0 }).cigaretteButtsCount).toBe(0);
     expect(buildStoredIndividualImpactMeasurement({ cigaretteButtsCount: null }).cigaretteButtsCount).toBeNull();
+  });
+
+  it("calculates mixed individual lots once and preserves raw and estimated parts", () => {
+    const lots = aggregateCigaretteButtsLots([
+      { id: "counted", source: "count", value: 10, condition: "propre" },
+      { id: "mass", source: "mass_kg", value: 1, condition: "humide" },
+      { id: "volume", source: "volume_l", value: 2, condition: "mouille" },
+    ]);
+    const measurement = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: lots.summary.totalCount,
+      individual_cigarette_butts_mass_kg: lots.summary.totalMassKg,
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_lots: lots,
+    });
+
+    expect(lots.results.map((lot) => lot.count)).toEqual([10, 1_750, 1_200]);
+    expect(measurement).toMatchObject({
+      cigaretteButtsLots: lots,
+      comparableButtsCount: 2_960,
+      comparableButtsProvenance: "derived",
+      cigaretteButtsCount: 2_960,
+      cigaretteButtsMassKg: lots.summary.totalMassKg,
+    });
+    expect(measurement?.cigaretteButtsLots?.summary.measuredMassKg).toBe(1);
+    expect(measurement?.cigaretteButtsLots?.results[1]?.countProvenance).toBe("weight_converted");
+    expect(measurement?.cigaretteButtsLots?.results[2]?.volumeConversionFormulaVersion).toBe("cleanmymap-butts-volume-v1");
+  });
+
+  it("keeps a zero lot distinct from no individual measurement", () => {
+    const zero = aggregateCigaretteButtsLots([
+      { id: "zero", source: "volume_l", value: 0, condition: "propre" },
+    ]);
+    expect(toIndividualImpactMeasurement({
+      individual_cigarette_butts_lots: zero,
+      individual_cigarette_butts_count: 0,
+      individual_cigarette_butts_mass_kg: 0,
+    })).toMatchObject({ comparableButtsCount: 0, cigaretteButtsLots: zero });
+    expect(toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: null,
+    })).toBeNull();
+  });
+
+  it("allocates mixed lots between confirmed participants without adding them to the action total", () => {
+    const aliceLots = aggregateCigaretteButtsLots([
+      { id: "a-count", source: "count", value: 100, condition: "propre" },
+      { id: "a-volume", source: "volume_l", value: 1, condition: "humide" },
+    ]);
+    const bobLots = aggregateCigaretteButtsLots([
+      { id: "b-mass", source: "mass_kg", value: 0.1, condition: "propre" },
+    ]);
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: null,
+      totalCigaretteButts: 1_000,
+      participants: [
+        participant("alice", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: aliceLots })),
+        participant("bob", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: bobLots })),
+        // The allocator must never include a non-confirmed row.
+        { ...participant("pending", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: aliceLots })), participationStatus: "pending" },
+      ],
+    });
+
+    expect(result.get("alice")).toMatchObject({ cigaretteButts: 700, cigaretteButtsKind: "individual" });
+    expect(result.get("bob")).toMatchObject({ cigaretteButts: 250, cigaretteButtsKind: "individual" });
+    expect(result.has("pending")).toBe(false);
+    expect(result.get("alice")?.cigaretteButtsInconsistent).toBe(false);
+  });
+
+  it("keeps legacy count and mass as one scalar measurement", () => {
+    expect(toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 7,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_condition: "humide",
+    })).toMatchObject({ comparableButtsCount: 7, cigaretteButtsLots: null });
+  });
+
+  it("fails closed when mixed individual lots exceed the collective total", () => {
+    const lots = aggregateCigaretteButtsLots([
+      { id: "a", source: "volume_l", value: 2, condition: "propre" },
+    ]);
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: null,
+      totalCigaretteButts: 1_000,
+      participants: [participant("alice", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: lots }))],
+    });
+    expect(result.get("alice")).toMatchObject({ cigaretteButts: 1_200, cigaretteButtsInconsistent: true, cigaretteButtsMohsEligible: false });
   });
 });

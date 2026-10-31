@@ -50,6 +50,7 @@ export type ActionParticipantRow = {
   individual_cigarette_butts_condition?: "propre" | "humide" | "mouille" | null;
   individual_cigarette_butts_provenance?: "counted" | "measured" | "derived" | null;
   individual_cigarette_butts_conversion_version?: string | null;
+  individual_cigarette_butts_lots?: unknown | null;
   individual_impact_measured_by?: string | null;
   individual_impact_measured_at?: string | null;
 };

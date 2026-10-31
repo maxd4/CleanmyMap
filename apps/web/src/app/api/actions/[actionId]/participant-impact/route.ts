@@ -8,6 +8,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { ACTION_WASTE_MEASUREMENT_METHODS } from "@/lib/waste/measurement";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
+import { cigaretteButtsLotsSchema } from "@/lib/validation/action-measurements";
 import {
   buildStoredIndividualImpactMeasurement,
   toIndividualImpactMeasurement,
@@ -30,15 +31,21 @@ const wasteSchema = z.object({
   measurementMethod: z.enum(ACTION_WASTE_MEASUREMENT_METHODS),
 });
 
-const buttsSchema = z
+const legacyButtsSchema = z
   .object({
     count: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
     massKg: z.number().min(0).max(100_000).nullable().optional(),
     condition: z.enum(["propre", "humide", "mouille"]),
   })
+  .strict()
   .refine((value) => value.count !== null && value.count !== undefined || value.massKg !== null && value.massKg !== undefined, {
     message: "Un comptage ou une masse de mégots est requis.",
   });
+
+const buttsSchema = z.union([
+  z.object({ lots: cigaretteButtsLotsSchema }).strict(),
+  legacyButtsSchema,
+]);
 
 const participantImpactSchema = z
   .object({
@@ -134,6 +141,9 @@ function resolveButtsMeasurement(
   current: ReturnType<typeof toIndividualImpactMeasurement>,
 ) {
   if (payload.butts !== undefined) return payload.butts;
+  if (current?.cigaretteButtsLots) {
+    return { lots: current.cigaretteButtsLots.lots };
+  }
   const hasButts = current?.cigaretteButtsCount !== null && current?.cigaretteButtsCount !== undefined
     || current?.cigaretteButtsMassKg !== null && current?.cigaretteButtsMassKg !== undefined;
   if (!hasButts) return null;
@@ -144,6 +154,23 @@ function resolveButtsMeasurement(
   };
 }
 
+function rejectAmbiguousLegacyReplacement(
+  payload: ParticipantImpactPayload,
+  current: ReturnType<typeof toIndividualImpactMeasurement>,
+): NextResponse | null {
+  if (
+    payload.butts !== undefined &&
+    payload.butts !== null &&
+    !("lots" in payload.butts) &&
+    current?.cigaretteButtsLots
+  ) {
+    return validationErrorResponse({
+      butts: ["Cette participation possède déjà des lots ; envoyez explicitement lots pour les remplacer."],
+    });
+  }
+  return null;
+}
+
 function buildMeasurementUpdate(
   payload: ParticipantImpactPayload,
   current: ReturnType<typeof toIndividualImpactMeasurement>,
@@ -151,15 +178,19 @@ function buildMeasurementUpdate(
 ): { measuredAt: string | null; updatePayload: IndividualImpactRow } {
   const nextWaste = resolveWasteMeasurement(payload, current);
   const nextButts = resolveButtsMeasurement(payload, current);
-  const hasMeasurement = nextWaste !== null || nextButts !== null;
+  const hasButtsMeasurement = nextButts !== null &&
+    ("lots" in nextButts ? nextButts.lots.length > 0 : nextButts.count !== null || nextButts.massKg !== null);
+  const hasMeasurement = nextWaste !== null || hasButtsMeasurement;
+  const nextLegacyButts = nextButts && "lots" in nextButts ? null : nextButts;
   const measuredAt = hasMeasurement ? new Date().toISOString() : null;
   const stored = buildStoredIndividualImpactMeasurement({
     wasteKg: nextWaste?.kg ?? null,
     wasteCondition: nextWaste?.condition ?? null,
     wasteMeasurementMethod: nextWaste?.measurementMethod ?? null,
-    cigaretteButtsCount: nextButts?.count ?? null,
-    cigaretteButtsMassKg: nextButts?.massKg ?? null,
-    cigaretteButtsCondition: nextButts?.condition ?? null,
+    cigaretteButtsCount: nextLegacyButts?.count ?? null,
+    cigaretteButtsMassKg: nextLegacyButts?.massKg ?? null,
+    cigaretteButtsCondition: nextLegacyButts?.condition ?? null,
+    cigaretteButtsLots: nextButts && "lots" in nextButts ? nextButts.lots : null,
     measuredBy: hasMeasurement ? actorUserId : null,
     measuredAt,
   });
@@ -175,6 +206,7 @@ function buildMeasurementUpdate(
       individual_cigarette_butts_condition: stored.cigaretteButtsCondition,
       individual_cigarette_butts_provenance: stored.cigaretteButtsProvenance,
       individual_cigarette_butts_conversion_version: stored.cigaretteButtsConversionVersion,
+      individual_cigarette_butts_lots: stored.cigaretteButtsLots,
       individual_impact_measured_by: stored.measuredBy,
       individual_impact_measured_at: stored.measuredAt,
     },
@@ -261,6 +293,8 @@ export async function PATCH(request: Request, ctx: ParticipantImpactRouteContext
     const supabase = getSupabaseServerClient(true);
     const context = await loadImpactContext(supabase, trimmedActionId, parsed.data.participantId, access.userId);
     if (context instanceof NextResponse) return context;
+    const ambiguity = rejectAmbiguousLegacyReplacement(parsed.data, context.current);
+    if (ambiguity) return ambiguity;
     return await persistParticipantImpact(supabase, trimmedActionId, parsed.data.participantId, parsed.data, context);
   } catch (error) {
     return handleApiError(error, "PATCH /api/actions/:actionId/participant-impact");

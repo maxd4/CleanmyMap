@@ -3,6 +3,12 @@ import {
   computeButtsCount,
 } from "@/lib/impact/impact-terrain-2026";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
+import {
+  aggregateCigaretteButtsLots,
+  type CigaretteButtsLotInput,
+  type CigaretteButtsLotResult,
+  type CigaretteButtsLotsSummary,
+} from "@/lib/waste/cigarette-butts";
 
 export const WASTE_MOISTURE_NORMALIZATION_VERSION =
   "impact-terrain-2026-waste-moisture-v1" as const;
@@ -10,6 +16,12 @@ export const WASTE_MOISTURE_NORMALIZATION_VERSION =
 const WASTE_MOISTURE_CONDITIONS = ["sec", "humide", "mouille"] as const;
 type WasteMoistureCondition = (typeof WASTE_MOISTURE_CONDITIONS)[number];
 type IndividualButtsProvenance = "counted" | "measured" | "derived";
+
+export type StoredIndividualCigaretteButtsLots = {
+  lots: CigaretteButtsLotInput[];
+  results: CigaretteButtsLotResult[];
+  summary: CigaretteButtsLotsSummary;
+};
 
 type IndividualImpactFields = {
   wasteKg: number | null;
@@ -21,6 +33,7 @@ type IndividualImpactFields = {
   cigaretteButtsCondition: ActionMegotsCondition | null;
   cigaretteButtsProvenance: IndividualButtsProvenance | null;
   cigaretteButtsConversionVersion: string | null;
+  cigaretteButtsLots?: StoredIndividualCigaretteButtsLots | null;
   measuredBy: string | null;
   measuredAt: string | null;
 };
@@ -38,6 +51,7 @@ export type IndividualImpactMeasurementInput = {
   cigaretteButtsCount?: number | null;
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsCondition?: ActionMegotsCondition | null;
+  cigaretteButtsLots?: CigaretteButtsLotInput[] | null;
   measuredBy?: string | null;
   measuredAt?: string | null;
 };
@@ -54,6 +68,7 @@ export type IndividualImpactRow = {
   individual_cigarette_butts_condition?: string | null;
   individual_cigarette_butts_provenance?: string | null;
   individual_cigarette_butts_conversion_version?: string | null;
+  individual_cigarette_butts_lots?: unknown | null;
   individual_impact_measured_by?: string | null;
   individual_impact_measured_at?: string | null;
 };
@@ -89,6 +104,46 @@ function wasteFactor(condition: WasteMoistureCondition): number {
       : 0.4;
 }
 
+function projectionCondition(
+  results: CigaretteButtsLotResult[],
+): ActionMegotsCondition | null {
+  const conditions = new Set(results.map((result) => result.condition));
+  return conditions.size === 1 ? results[0]?.condition ?? null : null;
+}
+
+function projectionVersion(
+  results: CigaretteButtsLotResult[],
+): string | null {
+  const versions = new Set(
+    results.flatMap((result) => [
+      result.massConversionFormulaVersion,
+      result.volumeConversionFormulaVersion,
+    ]).filter((version): version is string => Boolean(version)),
+  );
+  return versions.size === 1 ? [...versions][0] ?? null : null;
+}
+
+function buildStoredCigaretteButtsLots(
+  lots: CigaretteButtsLotInput[],
+): StoredIndividualCigaretteButtsLots | null {
+  if (lots.length === 0) return null;
+  const aggregate = aggregateCigaretteButtsLots(lots);
+  return aggregate.lots.length > 0 ? aggregate : null;
+}
+
+function isStoredCigaretteButtsLots(
+  value: unknown,
+): value is StoredIndividualCigaretteButtsLots {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<StoredIndividualCigaretteButtsLots>;
+  return Array.isArray(candidate.lots) &&
+    Array.isArray(candidate.results) &&
+    Boolean(candidate.summary && typeof candidate.summary === "object") &&
+    typeof candidate.summary?.totalCount === "number" &&
+    Number.isFinite(candidate.summary.totalCount) &&
+    candidate.summary.totalCount >= 0;
+}
+
 export function buildStoredIndividualImpactMeasurement(
   input: IndividualImpactMeasurementInput,
 ): StoredIndividualImpactMeasurement {
@@ -97,24 +152,33 @@ export function buildStoredIndividualImpactMeasurement(
   const cigaretteButtsCount = normalizeNullableInteger(input.cigaretteButtsCount);
   const cigaretteButtsMassKg = finiteNonNegative(input.cigaretteButtsMassKg);
   const cigaretteButtsCondition = normalizeButtsCondition(input.cigaretteButtsCondition);
-  const hasButts = cigaretteButtsCount !== null || cigaretteButtsMassKg !== null;
+  const cigaretteButtsLots = input.cigaretteButtsLots
+    ? buildStoredCigaretteButtsLots(input.cigaretteButtsLots)
+    : null;
+  const lotResults = cigaretteButtsLots?.results ?? [];
+  const hasButts = cigaretteButtsLots !== null || cigaretteButtsCount !== null || cigaretteButtsMassKg !== null;
 
   return {
     wasteKg,
     wasteCondition: wasteKg === null ? null : wasteCondition,
     wasteMeasurementMethod: wasteKg === null ? null : input.wasteMeasurementMethod?.trim() || null,
     wasteNormalizationVersion: wasteKg === null ? null : WASTE_MOISTURE_NORMALIZATION_VERSION,
-    cigaretteButtsCount,
-    cigaretteButtsMassKg,
-    cigaretteButtsCondition: hasButts ? cigaretteButtsCondition : null,
-    cigaretteButtsProvenance:
-      cigaretteButtsCount !== null
+    cigaretteButtsCount: cigaretteButtsLots?.summary.totalCount ?? cigaretteButtsCount,
+    cigaretteButtsMassKg: cigaretteButtsLots?.summary.totalMassKg ?? cigaretteButtsMassKg,
+    cigaretteButtsCondition: cigaretteButtsLots
+      ? projectionCondition(lotResults)
+      : hasButts ? cigaretteButtsCondition : null,
+    cigaretteButtsLots,
+    cigaretteButtsProvenance: cigaretteButtsLots
+      ? (cigaretteButtsLots.summary.estimatedCount === 0 ? "counted" : "derived")
+      : cigaretteButtsCount !== null
         ? "counted"
         : cigaretteButtsMassKg !== null
           ? "measured"
           : null,
-    cigaretteButtsConversionVersion:
-      cigaretteButtsCount === null && cigaretteButtsMassKg !== null
+    cigaretteButtsConversionVersion: cigaretteButtsLots
+      ? projectionVersion(lotResults)
+      : cigaretteButtsCount === null && cigaretteButtsMassKg !== null
         ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
         : null,
     measuredBy: input.measuredBy?.trim() || null,
@@ -136,29 +200,38 @@ export function toIndividualImpactMeasurement(
     measuredBy: row.individual_impact_measured_by,
     measuredAt: row.individual_impact_measured_at,
   });
-  const hasMeasurement = stored.wasteKg !== null || stored.cigaretteButtsCount !== null || stored.cigaretteButtsMassKg !== null;
+  const persistedLots = isStoredCigaretteButtsLots(row.individual_cigarette_butts_lots)
+    ? row.individual_cigarette_butts_lots
+    : null;
+  const canonicalStored = persistedLots ? { ...stored, cigaretteButtsLots: persistedLots } : stored;
+  const hasMeasurement = canonicalStored.wasteKg !== null || canonicalStored.cigaretteButtsLots !== null || canonicalStored.cigaretteButtsCount !== null || canonicalStored.cigaretteButtsMassKg !== null;
   if (!hasMeasurement) return null;
 
   const equivalentSecKg =
-    stored.wasteKg !== null && stored.wasteCondition !== null
-      ? stored.wasteKg * wasteFactor(stored.wasteCondition)
+    canonicalStored.wasteKg !== null && canonicalStored.wasteCondition !== null
+      ? canonicalStored.wasteKg * wasteFactor(canonicalStored.wasteCondition)
       : null;
   const comparableButtsCount =
-    stored.cigaretteButtsCount ??
-    (stored.cigaretteButtsMassKg !== null && stored.cigaretteButtsCondition !== null
-      ? computeButtsCount(stored.cigaretteButtsMassKg, stored.cigaretteButtsCondition)
+    canonicalStored.cigaretteButtsLots?.summary.totalCount ??
+    canonicalStored.cigaretteButtsCount ??
+    (canonicalStored.cigaretteButtsMassKg !== null && canonicalStored.cigaretteButtsCondition !== null
+      ? computeButtsCount(canonicalStored.cigaretteButtsMassKg, canonicalStored.cigaretteButtsCondition)
       : null);
 
   return {
-    ...stored,
+    ...canonicalStored,
     equivalentSecKg,
     comparableButtsCount,
     comparableButtsProvenance:
-      stored.cigaretteButtsCount !== null
-        ? "counted"
-        : comparableButtsCount !== null
-          ? "derived"
-          : null,
+      canonicalStored.cigaretteButtsLots
+        ? canonicalStored.cigaretteButtsLots.summary.estimatedCount === 0
+          ? "counted"
+          : comparableButtsCount !== null ? "derived" : null
+        : canonicalStored.cigaretteButtsCount !== null
+          ? "counted"
+          : comparableButtsCount !== null
+            ? "derived"
+            : null,
   };
 }
 
@@ -318,6 +391,7 @@ const INDIVIDUAL_IMPACT_COLUMN_LIST = [
   "individual_cigarette_butts_condition",
   "individual_cigarette_butts_provenance",
   "individual_cigarette_butts_conversion_version",
+  "individual_cigarette_butts_lots",
   "individual_impact_measured_by",
   "individual_impact_measured_at",
 ] as const;

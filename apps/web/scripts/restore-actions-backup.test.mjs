@@ -171,6 +171,23 @@ test("valid restore uses one atomic RPC and preserves action relations", async (
   assert.equal(calls[0][1].p_backup.tables.action_conversation_members[0].conversation_id, conversationId);
 });
 
+test("lot-bearing backups use the additive lot-aware restore RPC", async () => {
+  const backup = validBackup();
+  backup.tables.action_participants[0].individual_cigarette_butts_lots = {
+    lots: [{ id: "lot-1", source: "volume_l", value: 1, condition: "propre" }],
+    results: [],
+    summary: { totalCount: 600 },
+  };
+  const calls = [];
+  await restoreActionBackup({
+    backup,
+    apply: true,
+    confirmation: "RESTORE ACTION BACKUP",
+    supabase: { rpc: async (...args) => { calls.push(args); return { data: { restored: 1 }, error: null }; } },
+  });
+  assert.equal(calls[0][0], "restore_action_backup_with_individual_butts_lots");
+});
+
 test("apply refuses a near-miss confirmation before calling the database", async () => {
   const backup = validBackup();
   let calls = 0;

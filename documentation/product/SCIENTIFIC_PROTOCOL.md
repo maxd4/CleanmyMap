@@ -388,6 +388,16 @@ masse de déchets hors mégots, condition et méthode ; nombre de mégots et/ou
 masse, condition et provenance. Une mesure `NULL` n'est pas un zéro, et une
 valeur dérivée ne remplace jamais la valeur brute.
 
+Pour les mégots individuels, une participation confirmée peut porter plusieurs
+lots indépendants. Chaque lot conserve sa source, son état, sa provenance et
+les versions de conversion ; les résultats par lot sont calculés une seule
+fois puis additionnés pour produire le total comparable du participant. Ce
+total est une attribution du bilan collectif : il n'est jamais ajouté une
+seconde fois à `actions.cigarette_butts`. Les mesures individuelles comptées et
+estimées restent distinguées dans le récapitulatif ; les participations non
+mesurées continuent de recevoir le reliquat ou la quote-part selon le moteur
+existant.
+
 Le moteur d'estimation photo du formulaire `/actions/new` est conservé pour
 les itérations futures mais désactivé tant que sa maturité et sa validation ne
 sont pas suffisantes. Une photo de bilan reste une pièce documentaire et ne
@@ -417,6 +427,8 @@ versionnée `impact-terrain-2026-waste-moisture-v1` : `sec = 1,0`, `humide =
 ne modifie ni la masse collective ni les rapports. Les mégots réutilisent le
 moteur canonique `2500 mégots/kg`, avec les mêmes facteurs d'état ; un nombre
 compté explicitement est prioritaire sur toute conversion de masse.
+Une ancienne paire nombre/masse reste une mesure legacy unique et n'est jamais
+interprétée comme deux lots.
 
 Le total physique de présence reste séparé de cette attribution :
 `participantsCount = childrenCount + adultCount + retiredCount` inclut les

@@ -512,6 +512,16 @@ de comptage brute. Un volume historique sans relation de conversion fiable reste
 stocké seul, avec les dérivés à `NULL`; les nouveaux lots `volume_l` suivent le
 proxy versionné documenté ci-dessous.
 
+La même règle s'applique aux attributions individuelles post-action : seuls
+les comptes `action_participants` confirmés sont concernés. Un participant peut
+avoir plusieurs lots mixtes (`count`, `mass_kg`, `volume_l`) ; le moteur LOT 1
+calcule chaque lot une fois, arrondit le compte dérivé au niveau du lot, puis
+additionne les équivalents. Le total individuel sert uniquement à remplacer la
+quote-part de ce participant dans l'allocation du bilan ; il ne modifie pas et
+ne ré-alimente jamais `actions.cigarette_butts`. Une paire historique nombre /
+masse reste une mesure legacy unique, avec priorité au nombre, sans création
+silencieuse de deux lots.
+
 Pour les bilans multi-lots de mégots, la source de vérité est la collection de
 lots persistée dans les métadonnées de l'action. Chaque lot porte un identifiant
 stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur

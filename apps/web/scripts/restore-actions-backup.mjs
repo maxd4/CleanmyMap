@@ -41,7 +41,11 @@ export async function restoreActionBackup({
   }
 
   const hasFieldRoleTables = backup.fieldRoleTables && Object.values(backup.fieldRoleTables).some((rows) => rows.length > 0);
-  const result = await supabase.rpc(hasFieldRoleTables ? "restore_action_backup_with_field_roles" : "restore_action_backup", { p_backup: backup });
+  const hasIndividualButtsLots = backup.tables.action_participants.some((row) => row.individual_cigarette_butts_lots != null);
+  const rpcName = hasIndividualButtsLots
+    ? "restore_action_backup_with_individual_butts_lots"
+    : hasFieldRoleTables ? "restore_action_backup_with_field_roles" : "restore_action_backup";
+  const result = await supabase.rpc(rpcName, { p_backup: backup });
   if (result.error) throw new Error(`restore_action_backup: ${result.error.message}`);
   return {
     ...plan,

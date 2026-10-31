@@ -6,6 +6,7 @@ import {
   groupJoinMocks,
   seedGroupJoinTestDefaults,
 } from "@/__tests__/support/group-join-action-id-route";
+import { aggregateCigaretteButtsLots } from "@/lib/waste/cigarette-butts";
 
 const {
   authMock,
@@ -329,5 +330,105 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
       individual_impact_measured_by: null,
       individual_impact_measured_at: null,
     });
+  });
+
+  it("persists mixed lots as one server-calculated attribution and leaves the action total untouched", async () => {
+    const action = createGroupJoinAction({ status: "approved", actionPhase: "post_action_complete" });
+    const participant = createParticipantWithStatus("confirmed");
+    configureParticipantImpactSupabase([participant]);
+    const beforeActionTotal = (action as Record<string, unknown>).cigarette_butts;
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: {
+        lots: [
+          { id: "count", source: "count", value: 100, condition: "propre" },
+          { id: "mass", source: "mass_kg", value: 0.1, condition: "humide" },
+          { id: "volume", source: "volume_l", value: 1, condition: "mouille" },
+        ],
+      },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact).toMatchObject({
+      comparableButtsCount: 875,
+      cigaretteButtsLots: expect.objectContaining({
+        lots: expect.arrayContaining([
+          expect.objectContaining({ id: "count", source: "count", value: 100 }),
+          expect.objectContaining({ id: "mass", source: "mass_kg", value: 0.1 }),
+          expect.objectContaining({ id: "volume", source: "volume_l", value: 1 }),
+        ]),
+        summary: expect.objectContaining({ totalCount: 875, measuredMassKg: 0.1, totalVolumeLiters: 1 }),
+      }),
+    });
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_count: 875,
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_lots: expect.objectContaining({
+        results: expect.arrayContaining([expect.objectContaining({ volumeConversionFormulaVersion: "cleanmymap-butts-volume-v1" })]),
+      }),
+    });
+    expect((action as Record<string, unknown>).cigarette_butts).toBe(beforeActionTotal);
+  });
+
+  it("replaces and then deletes individual lots without treating legacy fields as separate lots", async () => {
+    const first = aggregateCigaretteButtsLots([{ id: "first", source: "count", value: 10, condition: "propre" }]);
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_cigarette_butts_count: first.summary.totalCount,
+      individual_cigarette_butts_mass_kg: first.summary.totalMassKg,
+      individual_cigarette_butts_lots: first,
+    });
+    configureParticipantImpactSupabase([participant]);
+
+    const replacement = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { lots: [{ id: "replacement", source: "volume_l", value: 0, condition: "propre" }] },
+    });
+    expect(replacement.status).toBe(200);
+    expect(participant.individual_cigarette_butts_lots).toMatchObject({
+      lots: [{ id: "replacement", source: "volume_l", value: 0 }],
+    });
+    expect((await replacement.json()).individualImpact.comparableButtsCount).toBe(0);
+
+    const cleared = await patchParticipantImpact({ participantId: "participant-1", butts: null });
+    expect(cleared.status).toBe(200);
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: null,
+      individual_cigarette_butts_lots: null,
+    });
+  });
+
+  it("rejects a payload that combines legacy scalar fields and lots", async () => {
+    configureParticipantImpactSupabase([createParticipantWithStatus("confirmed")]);
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: {
+        count: 10,
+        massKg: null,
+        condition: "propre",
+        lots: [{ id: "ambiguous", source: "count", value: 10, condition: "propre" }],
+      },
+    });
+    expect(response.status).toBe(422);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a legacy replacement when the participant already has canonical lots", async () => {
+    const lots = aggregateCigaretteButtsLots([{ id: "existing", source: "count", value: 12, condition: "propre" }]);
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_cigarette_butts_count: lots.summary.totalCount,
+      individual_cigarette_butts_mass_kg: lots.summary.totalMassKg,
+      individual_cigarette_butts_lots: lots,
+    });
+    configureParticipantImpactSupabase([participant]);
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: 1, massKg: null, condition: "propre" },
+    });
+    expect(response.status).toBe(422);
+    expect(participant.individual_cigarette_butts_lots).toMatchObject({ lots: [{ id: "existing" }] });
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
 });

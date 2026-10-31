@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
 import type { IndividualImpactMeasurement } from "@/lib/actions/participation/individual-impact";
 import { ActionParticipantImpactEditor } from "./action-participant-impact-editor";
+import { aggregateCigaretteButtsLots } from "@/lib/waste/cigarette-butts";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
@@ -236,6 +237,64 @@ describe("ActionParticipantImpactEditor behavior", () => {
     });
     expect(onSaved).toHaveBeenCalledTimes(1);
     expect(findButton(renderer, "Saisir une mesure")).toBeTruthy();
+    renderer.unmount();
+  });
+
+  it("edits mixed lots and sends only the explicit lot contract", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <ActionParticipantImpactEditor
+          actionId="action-1"
+          participants={[participant()]}
+          fr
+          onSaved={vi.fn()}
+        />,
+      );
+    });
+
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Saisir une mesure")!).onClick?.(); });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Saisir plusieurs lots")!).onClick?.(); });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Ajouter un lot")!).onClick?.(); });
+    const inputs = renderer.root.findAllByType("input");
+    await act(async () => {
+      propsOf<InputProps>(inputs[0]!).onChange?.({ target: { value: "2" } } as React.ChangeEvent<HTMLInputElement>);
+      propsOf<InputProps>(inputs[1]!).onChange?.({ target: { value: "15" } } as React.ChangeEvent<HTMLInputElement>);
+    });
+    await act(async () => { propsOf<ButtonProps>(findButton(renderer, "Enregistrer la mesure")!).onClick?.(); });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      participantId: "participant-1",
+      waste: { kg: 2, condition: "sec", measurementMethod: "balance_au_sol" },
+      butts: { lots: [{ id: expect.any(String), source: "count", value: 15, condition: "propre" }] },
+    });
+    expect(JSON.stringify(renderer.toJSON())).toContain("lots");
+    renderer.unmount();
+  });
+
+  it("renders persisted lot results and the counted/estimated split", () => {
+    const lots = aggregateCigaretteButtsLots([
+      { id: "count", source: "count", value: 10, condition: "propre" },
+      { id: "volume", source: "volume_l", value: 1, condition: "humide" },
+    ]);
+    let renderer!: ReturnType<typeof create>;
+    act(() => {
+      renderer = create(
+        <ActionParticipantImpactEditor
+          actionId="action-1"
+          participants={[participant({ individualImpact: measurement({ cigaretteButtsLots: lots, cigaretteButtsCount: lots.summary.totalCount, cigaretteButtsMassKg: lots.summary.totalMassKg, comparableButtsCount: lots.summary.totalCount }) })]}
+          fr
+          onSaved={vi.fn()}
+        />,
+      );
+    });
+    const markup = JSON.stringify(renderer.toJSON());
+    expect(markup).toContain("lot(s)");
+    expect(markup).toContain("part estimée");
+    expect(markup).toContain("comptés");
+    expect(markup).toContain("→");
     renderer.unmount();
   });
 });
