@@ -129,6 +129,126 @@ reste inchangé. Une couverture Web complète doit être régénérée sur le SH
 exact du candidat après cette évolution de l'empreinte ; un rapport WORKTREE
 ou antérieur à cette reclassification ne constitue pas cette preuve.
 
+### Photographie mesurée du 31 octobre 2026 — cible 80 %
+
+La mesure ci-dessous est rattachée au candidat
+`e99974f003c62def97073732f5591eaac69ba19d`, avec la méthode canonique et les
+rapports ignorés par Git. Le rapport d'audit reproductible est
+`artifacts/quality-audits/e99974f003c62def97073732f5591eaac69ba19d/coverage--7c71b018-4ba8-4a98-b2db-da6b4aef554f--report.json` ; son résumé est
+dans le même répertoire. Le moteur utilisé est
+`scripts/checks/check-coverage-insights.mjs`, invoqué par
+`npm run audit:quality -- coverage` ; aucun calcul de couverture monorepo n'est
+effectué. Les pourcentages sont calculés sur les compteurs `covered / total` et
+affichés à deux décimales ; le minimum supplémentaire est
+`max(0, ceil(0,80 × total) - covered)`.
+
+| Périmètre | Métrique | Couvert / total | Mesure | Écart à 80 % | Minimum supplémentaire | Preuve |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| Web | statements | 57 744 / 72 991 | 79,11 % | -0,89 pt | 649 | `MEASURED` |
+| Web | branches | 51 753 / 75 651 | 68,41 % | -11,59 pt | 8 768 | `MEASURED` |
+| Web | functions | 15 295 / 19 722 | 77,55 % | -2,45 pt | 483 | `MEASURED` |
+| Web | lines | 53 202 / 65 078 | 81,75 % | +1,75 pt | 0 | `MEASURED` |
+| Mobile | statements | 1 769 / 1 942 | 91,09 % | +11,09 pt | 0 | `MEASURED` |
+| Mobile | branches | 1 152 / 1 342 | 85,84 % | +5,84 pt | 0 | `MEASURED` |
+| Mobile | functions | 555 / 656 | 84,60 % | +4,60 pt | 0 | `MEASURED` |
+| Mobile | lines | 1 500 / 1 557 | 96,34 % | +16,34 pt | 0 | `MEASURED` |
+| Node | statements | 42 969 / 62 630 | 68,60 % | -11,40 pt | 7 135 | `DIAGNOSTIC_ONLY` |
+| Node | branches | 11 288 / 14 438 | 78,18 % | -1,82 pt | 263 | `DIAGNOSTIC_ONLY` |
+| Node | functions | 2 026 / 2 553 | 79,35 % | -0,65 pt | 17 | `DIAGNOSTIC_ONLY` |
+| Node | lines | 42 969 / 62 630 | 68,60 % | -11,40 pt | 7 135 | `DIAGNOSTIC_ONLY` |
+| Python | statements | — | `NOT_MEASURED` | — | — | Cobertura ne mesure pas cette métrique |
+| Python | branches | 562 / 766 | 73,37 % | -6,63 pt | 51 | `MEASURED` |
+| Python | functions | — | `NOT_MEASURED` | — | — | Cobertura ne publie pas cette métrique |
+| Python | lines | 2 451 / 2 883 | 85,02 % | +5,02 pt | 0 | `MEASURED` |
+
+Les compteurs Mobile proviennent de `apps/mobile/coverage/coverage-summary.json`;
+le provider affiche `96,33 %` pour les lignes, tandis que le ratio exact
+`1 500 / 1 557` arrondi à deux décimales donne `96,34 %`. Node a produit
+`scripts/coverage/coverage-summary.json`, mais `npm run test:coverage:node` a
+échoué sur trois contrats (`check-complexity-policy.test.mjs` deux fois et
+`generate-modularity-radar.test.mjs` une fois) : aucun rapport Node n'est donc
+attesté pour ce candidat et ses compteurs ne doivent pas être utilisés comme
+preuve d'intégration. Python a exécuté `137` tests et a produit
+`maintenance/python/coverage.xml`. Les preuves Web, Mobile et Python sont sous
+`artifacts/coverage-publication/<SHA>/<scope>/`.
+
+La suite Web exacte a exécuté `1 590` fichiers de test (`1` ignoré), soit
+`9 339` tests (`1` ignoré), avec `npm run test:coverage -w apps/web`. Elle a
+été exécutée après le commit Vercel `f664ed0d1`; les commits ultérieurs jusqu'à
+`e99974f` ne modifient que `scripts/checks/duplication-justifications.json`.
+La preuve finale a donc été recalculée et attestée pour `e99974f`, sans
+réutiliser un rapport Web d'un autre périmètre instrumenté. L'audit global reste
+`MIXED` tant que Node ne possède pas de preuve publiée.
+
+#### Déficits Web observés par fichier
+
+Le rapport d'audit contient la liste exhaustive des `2 405` fichiers Web, les
+compteurs par métrique, les fonctions `FN/FNDA` issues du LCOV et les lignes de
+branches non couvertes. Les premiers fichiers sous 80 %, classés par taux
+croissant, sont :
+
+| Métrique | Fichier | Domaine | Couvert / total | Taux | Non couvert | Indications LCOV / branches |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| Branches | `components/sections/rubriques/promotion-request-form.tsx` | `business` | 0 / 92 | 0 % | 92 | lignes 42, 53, 55, 60, 65, 86, 90, 95, 98, 100, 103, 115, 119, 123, 125, 142, 148, 164, 168, 173, 211, 215, 220, 231, 249, 252, 260, 267, 270, 278, 290, 301, 312, 315, 318, 323, 331, 341, 348, 350, 353, 360, 370 |
+| Branches | `components/sections/rubriques/trash-spotter-section.tsx` | `business` | 0 / 84 | 0 % | 84 | lignes 18, 19, 20, 23, 26, 27, 31, 32, 39 |
+| Branches | `components/chat/hooks/use-chat-shell-sidebar.ts` | `security` | 0 / 72 | 0 % | 72 | lignes 65, 77, 79–84, 113, 117, 123, 144, 146–151, 155, 157, 159, 167–174, 180–186, 190–191 |
+| Functions | `components/admin/creator-inbox-panel.tsx` | `security` | 0 / 28 | 0 % | 28 | `FNDA:0` pour les 28 fonctions du fichier |
+| Functions | `components/account/account-settings-editor.view.tsx` | `security` | 0 / 23 | 0 % | 23 | `FNDA:0` pour les 23 fonctions du fichier |
+| Statements | `components/chat/hooks/use-chat-state.ts` | `security` | 0 / 50 | 0 % | 50 | LCOV `DA` non exécutées |
+| Lines | `components/profil/use-impact-profile-actions.ts` | `security` | 0 / 39 | 0 % | 39 | LCOV `DA` non exécutées |
+
+Les noms de fonctions non exécutées restent ceux du LCOV, notamment
+`requestPublish`, `cancelPublication` et `confirmPublish` dans
+`use-before-action-workflow.ts`, `parseGeoJsonPolygon`, `parseGeoJsonMultiLine`
+et `downloadBlob` dans `actions-map-export.utils.ts`, ainsi que
+`useChatShellSidebar` dans `use-chat-shell-sidebar.ts`. Les lignes de branches
+et fonctions de tous les autres fichiers sont dans le rapport d'audit et dans
+`apps/web/coverage/lcov.info`; aucune liste partielle ci-dessus ne remplace
+l'inventaire exhaustif.
+
+#### Classement du potentiel de traitement
+
+Ce classement est déterministe : branches non couvertes décroissantes, puis
+fonctions non couvertes, statements, lines et chemin. Il mesure un volume
+observé, pas un gain de test garanti.
+
+| Rang | Fichier | Domaine | Branches non couvertes | Fonctions non couvertes | Scénarios comportementaux à préparer |
+| ---: | --- | --- | ---: | ---: | --- |
+| 1 | `components/sections/rubriques/promotion-request-form.tsx` | `business` | 92 | 16 | validation, rôles, soumission, erreurs et reprise |
+| 2 | `components/sections/rubriques/trash-spotter-section.tsx` | `business` | 84 | 6 | états vide, données invalides, urgence et affichage |
+| 3 | `lib/actions/action-buddy.ts` | `business` | 81 | 2 | AuthZ, projection privée, conflits et erreurs DB |
+| 4 | `components/sections/rubriques/rejoindre-une-action.past-actions.tsx` | `business` | 80 | 10 | historique, pagination, claim et erreurs |
+| 5 | `components/sections/rubriques/community/action-needs-panel.tsx` | `business` | 79 | 11 | projection publique/privée, cache, états et absence de données |
+| 6 | `components/actions/map/export/actions-map-export.utils.ts` | `business` | 79 | 6 | GeoJSON polygon/multiline, données vides et téléchargement |
+| 7 | `lib/pdf-export/simple-pdf-primitives.ts` | `business` | 74 | 22 | nombres, métadonnées, couleurs et entrées malformées |
+| 8 | `components/chat/hooks/use-chat-shell-sidebar.ts` | `security` | 72 | 8 | AuthN/AuthZ, sélection, chargement, reprise et effets |
+| 9 | `components/actions/action-declaration/before/use-before-action-workflow.ts` | `business` | 71 | 11 | pré-actions, publication, annulation et transitions |
+| 10 | `components/spogomi/spogomi-admission-request-card.tsx` | `business` | 70 | 24 | modération, rôles, soumission, annulation et erreurs |
+
+#### Plan de campagnes vers 80 %
+
+Les campagnes sont ordonnées par risque et responsabilité, en priorisant les
+contrats AuthN/AuthZ, API/persistance, modération et géométrie avant la UI
+présentative. Les gains et les déficits résiduels après campagne sont
+`NON MESURÉS` : ils devront être recalculés après l'exécution des tests ; aucun
+gain prévisionnel n'est déduit du volume de lignes.
+
+| Priorité | Campagne indépendante | Périmètre / invariants | Preuve attendue | Gain et résidu |
+| ---: | --- | --- | --- | --- |
+| P0 | Sécurité et frontières privées | `use-chat-shell-*`, account, creator inbox, `app-errors`, routes API ; AuthN/AuthZ, erreurs 4xx/5xx, no-store et absence de fuite | tests comportementaux Web + routes HTTP | `NON MESURÉ` jusqu'au run |
+| P1 | Actions et soumission | formulaire de promotion, action-buddy, past-actions, before workflow ; rôles actifs, transitions, idempotence, erreurs de persistance | tests composant/API et fixtures canoniques | `NON MESURÉ` jusqu'au run |
+| P1 | Cartographie et exports | `actions-map-export.utils`, map-feed et géométrie ; topologie, GeoJSON, données absentes et export | tests de contrat et intégration locale | `NON MESURÉ` jusqu'au run |
+| P1 | SPOGOMI et modération | admission card/panels, review/closure/import routes ; autorisation, transitions et refus | tests HTTP/route + contrats de service | `NON MESURÉ` jusqu'au run |
+| P2 | Communauté et apprentissage | action-needs, trash-spotter, quiz, gamification ; projections, états vides et branches de contenu | tests comportementaux ciblés | `NON MESURÉ` jusqu'au run |
+| P3 | UI présentative | navigation ribbon/theme, feedback callout et composants sans effet métier | tests de rendu/interaction, sans déplacer les seuils métier | `NON MESURÉ` jusqu'au run |
+
+Après chaque campagne, le même producteur et le même moteur doivent être
+rejoués ; l'acceptation est le compteur exact `covered / total`, la preuve
+candidate du même SHA, zéro test échoué et le recalcul indépendant des quatre
+métriques. Une couverture Vitest ne constitue toujours pas une preuve
+`EXECUTED_DB_CONTRACT` pour PostgreSQL/RLS/RPC/triggers, ni une preuve Clerk,
+production ou d'intégration SonarQube Cloud.
+
 Les métriques globales Web, mobile, Node et Python restent des indicateurs de
 suivi ; cette politique ne crée aucun objectif global obligatoire de 70 % ou
 80 %, et ne remplace aucune baseline sans nouvelle mesure fiable ratifiée.
