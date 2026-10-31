@@ -47,6 +47,60 @@ function mountLogic(initialForm: FormState) {
 }
 
 describe("useHarvestLogic cigarette-butt synchronization", () => {
+  it("calculates mixed explicit lots once and keeps counted and estimated parts", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      cigaretteButtsLots: [
+        { id: "count", source: "count", value: "100", condition: "propre" },
+        { id: "mass", source: "mass_kg", value: "1", condition: "propre" },
+        { id: "volume", source: "volume_l", value: "0.5", condition: "humide" },
+      ],
+    });
+
+    expect(harness.latest.logic.megotsCount).toBe(2_900);
+    expect(harness.latest.logic.megotsCounted).toBe(100);
+    expect(harness.latest.logic.megotsEstimated).toBe(2_800);
+    expect(harness.latest.logic.megotsMeasuredMassKg).toBe(1);
+    expect(harness.latest.logic.megotsLotResults.map((lot) => lot.id)).toEqual([
+      "count",
+      "mass",
+      "volume",
+    ]);
+
+    act(() => harness.latest.logic.moveMegotsLot("volume", -1));
+    expect(harness.latest.form.cigaretteButtsLots?.map((lot) => lot.id)).toEqual([
+      "count",
+      "volume",
+      "mass",
+    ]);
+
+    act(() => harness.latest.logic.removeMegotsLot("volume"));
+    expect(harness.latest.form.cigaretteButtsLots?.map((lot) => lot.id)).toEqual([
+      "count",
+      "mass",
+    ]);
+    expect(harness.latest.logic.megotsCount).toBe(2_600);
+
+    harness.renderer.unmount();
+  });
+
+  it("does not turn an empty lot into zero and supports adding a stable lot", () => {
+    const harness = mountLogic(createInitialFormState("Test"));
+
+    act(() => harness.latest.logic.addMegotsLot());
+
+    expect(harness.latest.form.cigaretteButtsLots).toHaveLength(1);
+    expect(harness.latest.form.cigaretteButtsLots?.[0]?.id).toBeTruthy();
+    expect(harness.latest.form.cigaretteButtsLots?.[0]?.value).toBe("");
+    expect(harness.latest.logic.megotsCount).toBeNull();
+
+    act(() => harness.latest.logic.updateMegotsLot(harness.latest.form.cigaretteButtsLots![0]!.id, { source: "volume_l", value: "0" }));
+    expect(harness.latest.logic.megotsCount).toBe(0);
+    expect(harness.latest.form.cigaretteButtsCount).toBe("0");
+
+    harness.renderer.unmount();
+  });
+
   it("derives mass from the count and keeps the conversion provenance", () => {
     const harness = mountLogic({
       ...createInitialFormState("Test"),

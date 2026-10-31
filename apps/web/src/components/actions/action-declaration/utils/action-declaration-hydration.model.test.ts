@@ -170,4 +170,25 @@ describe("action declaration hydration model", () => {
     expect(result.cigaretteButtsCountProvenance).toBe("counted");
     expect(result.cigaretteButtsMassProvenance).toBe("measured");
   });
+
+  it("hydrates explicit cigarette-butt lots without collapsing their sources", () => {
+    const result = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        cigaretteButtsMeasurements: {
+          cigaretteButtsLots: [
+            { id: "lot-count", source: "count", value: 12, condition: "propre" },
+            { id: "lot-mass", source: "mass_kg", value: 0.4, condition: "humide" },
+            { id: "lot-volume", source: "volume_l", value: 0, condition: "mouille" },
+          ],
+        } as ActionEditorRecord["cigaretteButtsMeasurements"],
+      }),
+    );
+
+    expect(result.cigaretteButtsLots).toEqual([
+      { id: "lot-count", source: "count", value: "12", condition: "propre" },
+      { id: "lot-mass", source: "mass_kg", value: "0.4", condition: "humide" },
+      { id: "lot-volume", source: "volume_l", value: "0", condition: "mouille" },
+    ]);
+  });
 });

@@ -10,6 +10,16 @@ import { toOptionalNumber, toRequiredNumber } from "./payload-numbers";
 import { resolveOrganizerPayload } from "./organizer-payload";
 import type { DeclarationMode } from "./types";
 
+function resolveCigaretteButtsLots(form: FormState) {
+  if (form.cigaretteButtsLots === null) return undefined;
+  return form.cigaretteButtsLots.map((lot) => ({
+    id: lot.id,
+    source: lot.source,
+    value: Number(lot.value),
+    condition: lot.condition,
+  }));
+}
+
 export function buildVolunteerParticipationFromForm(
   form: FormState,
 ): VolunteerParticipationInput {
@@ -67,6 +77,7 @@ export function resolveCreateActionMeasurementParts(
     cigaretteButtsMassKg: enteredMegotsKg,
     cigaretteButtsVolumeLiters: enteredVolumeLiters,
     cigaretteButtsCondition,
+    cigaretteButtsLots: resolveCigaretteButtsLots(form),
     cigaretteButtsInputSource: form.cigaretteButtsInputSource,
   };
   const volunteerParticipationInput =
@@ -96,6 +107,7 @@ export function buildCreateActionPayloadMeasurementFields(
   return {
     wasteKg: toOptionalNumber(form.wasteKg) ?? null,
     cigaretteButtsMeasurements: parts.rawCigaretteButtsMeasurements,
+    cigaretteButtsLots: parts.rawCigaretteButtsMeasurements.cigaretteButtsLots,
     cigaretteButtsMassKg: enteredMegotsKg,
     cigaretteButtsVolumeLiters: enteredVolumeLiters,
     cigaretteButtsCondition,

@@ -62,6 +62,26 @@ export function restoreDraftFields(
       if (typeof value === "boolean") next[key] = value;
       continue;
     }
+    if (key === "cigaretteButtsLots") {
+      if (
+        value === null ||
+        (Array.isArray(value) && value.every((lot) => {
+          if (!lot || typeof lot !== "object") return false;
+          const candidate = lot as Record<string, unknown>;
+          return (
+            typeof candidate.id === "string" &&
+            (candidate.source === "count" || candidate.source === "mass_kg" || candidate.source === "volume_l") &&
+            typeof candidate.value === "string" &&
+            (candidate.condition === "propre" ||
+              candidate.condition === "humide" ||
+              candidate.condition === "mouille")
+          );
+        }))
+      ) {
+        next.cigaretteButtsLots = value as FormState["cigaretteButtsLots"];
+      }
+      continue;
+    }
     if (typeof value === "string") next[key] = value;
   }
 }

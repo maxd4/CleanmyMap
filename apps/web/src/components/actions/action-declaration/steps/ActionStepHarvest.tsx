@@ -154,6 +154,10 @@ function HarvestStepContent({
     cigaretteButtsMassProvenance,
     cigaretteButtsVolumeProvenance,
     cigaretteButtsConversionFormulaVersion,
+    megotsCounted,
+    megotsEstimated,
+    megotsMeasuredMassKg,
+    megotsEstimatedMassKg,
     syncMegotsWeightFromWeight,
     syncMegotsWeightFromCount,
     syncMegotsCondition,
@@ -232,6 +236,15 @@ function HarvestStepContent({
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
             cigaretteButtsVolumeProvenance={cigaretteButtsVolumeProvenance}
             cigaretteButtsConversionFormulaVersion={cigaretteButtsConversionFormulaVersion}
+            megotsLots={form.cigaretteButtsLots}
+            megotsCounted={megotsCounted}
+            megotsEstimated={megotsEstimated}
+            megotsMeasuredMassKg={megotsMeasuredMassKg}
+            megotsEstimatedMassKg={megotsEstimatedMassKg}
+            onAddMegotsLot={harvest.addMegotsLot}
+            onUpdateMegotsLot={harvest.updateMegotsLot}
+            onRemoveMegotsLot={harvest.removeMegotsLot}
+            onMoveMegotsLot={harvest.moveMegotsLot}
             onMegotsWeightChange={syncMegotsWeightFromWeight}
             onMegotsVolumeChange={harvest.syncMegotsVolume}
             onMegotsCountChange={syncMegotsWeightFromCount}

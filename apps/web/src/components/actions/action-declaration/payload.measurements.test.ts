@@ -181,4 +181,30 @@ describe("action declaration payload mesures", () => {
     expect(payload.cigaretteButtsCondition).toBe("mouille");
     expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCondition).toBe("mouille");
   });
+
+  it("serializes distinct lots as the sole source while retaining legacy mirrors", () => {
+    const form = buildBaseForm();
+    form.cigaretteButtsLots = [
+      { id: "count", source: "count", value: "100", condition: "propre" },
+      { id: "mass", source: "mass_kg", value: "1", condition: "humide" },
+      { id: "volume", source: "volume_l", value: "0.5", condition: "mouille" },
+    ];
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.cigaretteButtsLots).toEqual(form.cigaretteButtsLots.map((lot) => ({
+      ...lot,
+      value: Number(lot.value),
+    })));
+    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsLots).toHaveLength(3);
+    expect(payload.cigaretteButts).toBeNull();
+  });
 });

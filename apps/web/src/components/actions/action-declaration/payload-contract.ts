@@ -9,7 +9,10 @@ import type {
 import type { FinalActionGeometry } from "../../../lib/actions/geometry/final-geometry";
 import type { VolunteerParticipationInput } from "../../../lib/actions/volunteer-participation";
 import type { DeclarationMode, FormState } from "./types";
-import type { CigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
+import type {
+  CigaretteButtsInputSource,
+  CigaretteButtsLotInput,
+} from "@/lib/waste/cigarette-butts";
 
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
 
@@ -58,6 +61,7 @@ export type CreateActionPayloadParts = {
     cigaretteButtsVolumeLiters: number | null;
     cigaretteButtsCondition: ActionMegotsCondition;
     cigaretteButtsInputSource: CigaretteButtsInputSource;
+    cigaretteButtsLots?: CigaretteButtsLotInput[];
   };
   volunteerParticipationInput: VolunteerParticipationInput;
   volunteerParticipation: ReturnType<

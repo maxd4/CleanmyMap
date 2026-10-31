@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  CIGARETTE_BUTTS_PER_VOLUME_LITER,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+  aggregateCigaretteButtsLots,
   normalizeCigaretteButtsMeasurements,
   normalizeCigaretteButtsMeasurementsFromUserInput,
   type ActionCigaretteButtsMeasurements,
@@ -426,5 +429,66 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsMassKg).toBeNull();
     expect(measurement.cigaretteButtsCount).not.toBe(0);
     expect(measurement.cigaretteButtsMassKg).not.toBe(0);
+  });
+
+  it("aggregates distinct count, mass, and volume lots once", () => {
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [
+        { id: "count-1", source: "count", value: 100, condition: "propre" },
+        { id: "mass-1", source: "mass_kg", value: 1.2, condition: "humide" },
+        { id: "volume-1", source: "volume_l", value: 0.5, condition: "mouille" },
+      ],
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(2_500);
+    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 / 2_500 + 300 / (2_500 * 0.4), 10);
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(0.5);
+    expect(measurement.cigaretteButtsLotsSummary).toMatchObject({
+      totalCount: 2_500,
+      countedCount: 100,
+      estimatedCount: 2_400,
+      measuredMassKg: 1.2,
+    });
+    expect(measurement.cigaretteButtsLotResults?.map((lot) => lot.count)).toEqual([100, 2_100, 300]);
+    expect(measurement.cigaretteButtsLotResults?.[1]?.massKg).toBe(1.2);
+    expect(measurement.cigaretteButtsLotResults?.[2]?.volumeConversionFormulaVersion).toBe(
+      CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+    );
+  });
+
+  it("rounds each derived lot before aggregation and preserves measured precision", () => {
+    const aggregated = aggregateCigaretteButtsLots([
+      { id: "volume-a", source: "volume_l", value: 1.234, condition: "propre" },
+      { id: "mass-a", source: "mass_kg", value: 0.123456, condition: "humide" },
+    ]);
+
+    expect(aggregated.results[0]?.count).toBe(Math.round(1.234 * CIGARETTE_BUTTS_PER_VOLUME_LITER));
+    expect(aggregated.results[1]?.massKg).toBe(0.123456);
+    expect(aggregated.summary.totalCount).toBe(740 + Math.trunc(0.123456 * 2_500 * 0.7));
+    expect(aggregated.summary.measuredMassKg).toBe(0.123456);
+  });
+
+  it("keeps explicit zero distinct from an empty or null lots collection", () => {
+    const zero = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [{ id: "zero", source: "count", value: 0, condition: "propre" }],
+    });
+    const empty = normalizeCigaretteButtsMeasurements({ cigaretteButtsLots: [] });
+    const nullLots = normalizeCigaretteButtsMeasurementsFromUserInput({ cigaretteButtsLots: null });
+
+    expect(zero.cigaretteButtsCount).toBe(0);
+    expect(zero.cigaretteButtsLots).toHaveLength(1);
+    expect(empty.cigaretteButtsCount).toBeNull();
+    expect(empty.cigaretteButtsLots).toEqual([]);
+    expect(nullLots.cigaretteButtsCount).toBeNull();
+  });
+
+  it("does not double count a repeated lot identifier in the domain projection", () => {
+    const aggregated = aggregateCigaretteButtsLots([
+      { id: "same", source: "count", value: 500, condition: "propre" },
+      { id: "same", source: "count", value: 700, condition: "propre" },
+    ]);
+
+    expect(aggregated.lots).toHaveLength(1);
+    expect(aggregated.summary.totalCount).toBe(500);
   });
 });

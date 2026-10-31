@@ -6,7 +6,16 @@ import { ReportsImpactReadingsSection } from "./reports-impact-readings-section"
 
 const report = {
   generatedAt: "2026-08-26T12:00:00.000Z",
-  totals: { actions: 2, kg: 12.3, butts: 4, volunteers: 3, hours: 4.5 },
+  totals: {
+    actions: 2,
+    kg: 12.3,
+    butts: 4,
+    buttsCounted: 1,
+    buttsEstimated: 3,
+    buttsCompositionKnownActions: 1,
+    volunteers: 3,
+    hours: 4.5,
+  },
   map: {
     points: 2,
     traces: 1,
@@ -97,6 +106,8 @@ describe("ReportsImpactReadingsSection contract", () => {
     expect(markup).toContain("81,2 %");
     expect(markup).toContain("Couverture des traces");
     expect(markup).toContain("63,4 %");
+    expect(markup).toContain("Mégots comptés / estimés");
+    expect(markup).toContain("1 comptés · 3 estimés");
   });
 
   it("does not turn quality or proxy fields into environmental claims", () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ActionRow } from "@/types/database";
 import {
+  AmbiguousCigaretteButtsLotsUpdateError,
   buildActionUpdateMeasurements,
   type ActionUpdateMeasurements,
 } from "./action-update-measurements";
@@ -75,6 +76,50 @@ function updateMeasurements(
 }
 
 describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
+  it("replaces, reprojects, and aggregates explicit lots without double counting", () => {
+    const initial = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [
+        { id: "count", source: "count", value: 100, condition: "propre" },
+        { id: "volume", source: "volume_l", value: 1, condition: "propre" },
+      ],
+    });
+    const notes = buildPersistedNotes({
+      notes: "Action lots",
+      cigaretteButtsMeasurements: initial,
+    }, { resolvedCigaretteButtsMeasurements: initial });
+
+    const result = updateMeasurements(buildCurrent(notes), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsLots: [
+          { id: "count", source: "count", value: 100, condition: "propre" },
+          { id: "mass", source: "mass_kg", value: 1, condition: "humide" },
+        ],
+      },
+    });
+
+    expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsCount).toBe(1_850);
+    expect(result.nextCigaretteButtsMeasurements?.cigaretteButtsLotsSummary).toMatchObject({
+      totalCount: 1_850,
+      countedCount: 100,
+      estimatedCount: 1_750,
+    });
+    expect(result.updateData).toEqual({ cigarette_butts: 1_850 });
+  });
+
+  it("refuses a legacy scalar PATCH that could silently replace persisted lots", () => {
+    const initial = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [{ id: "count", source: "count", value: 100, condition: "propre" }],
+    });
+    const notes = buildPersistedNotes({
+      notes: "Action lots",
+      cigaretteButtsMeasurements: initial,
+    }, { resolvedCigaretteButtsMeasurements: initial });
+
+    expect(() => updateMeasurements(buildCurrent(notes), { cigaretteButtsCount: 999 })).toThrow(
+      AmbiguousCigaretteButtsLotsUpdateError,
+    );
+  });
+
   it("recalculates only the derived count after a hydrated mass-source condition change", () => {
     const { notes } = buildMeasurementsMetadata("mass");
 

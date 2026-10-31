@@ -60,6 +60,10 @@ describe("report csv helpers", () => {
         longitude: 2.3522,
         waste_kg: 12.5,
         cigarette_butts: 120,
+        cigarette_butts_counted: 100,
+        cigarette_butts_estimated: 20,
+        cigarette_butts_counted_share: 100 / 120,
+        cigarette_butts_estimated_share: 20 / 120,
         volunteers_count: 3,
         duration_minutes: 60,
         status: "pending",
@@ -85,6 +89,9 @@ describe("report csv helpers", () => {
     expect(csv).toContain('"Rue, Paris"');
     expect(csv).toContain('"ligne 1\nligne 2"');
     expect(csv).toContain("geometry_kind");
+    expect(csv).toContain("cigarette_butts_counted");
+    expect(csv).toContain("cigarette_butts_estimated");
+    expect(csv).toContain("100");
     expect(csv).toContain("geometry_confidence");
     expect(csv).toContain("manual_drawing_geojson");
     expect(csv).toContain("geometry_provenance");

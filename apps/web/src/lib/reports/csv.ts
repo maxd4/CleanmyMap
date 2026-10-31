@@ -43,6 +43,10 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   measures_provenance?: "measured" | "derived" | "estimated" | "missing" | null;
   geometry_provenance?: ActionGeometryProvenance | null;
   impact_provenance?: "derived" | null;
+  cigarette_butts_counted?: number | null;
+  cigarette_butts_estimated?: number | null;
+  cigarette_butts_counted_share?: number | null;
+  cigarette_butts_estimated_share?: number | null;
 };
 
 type ManualDrawingToGeoJson = (
@@ -103,6 +107,14 @@ function buildActionCsvRowProjection(
     observed_at: contract.dates.observedAt,
     ...buildManualDrawingCsvFields(contract.metadata.manualDrawing, manualDrawingToGeoJson),
     ...buildDataQualityCsvFields(contract),
+    cigarette_butts_counted:
+      contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary?.countedCount ?? null,
+    cigarette_butts_estimated:
+      contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary?.estimatedCount ?? null,
+    cigarette_butts_counted_share:
+      contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary?.countedShare ?? null,
+    cigarette_butts_estimated_share:
+      contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary?.estimatedShare ?? null,
   };
 }
 
@@ -244,6 +256,10 @@ function buildActionsCsvHeader(): string[] {
     "longitude",
     "waste_kg",
     "cigarette_butts",
+    "cigarette_butts_counted",
+    "cigarette_butts_estimated",
+    "cigarette_butts_counted_share",
+    "cigarette_butts_estimated_share",
     "volunteers_count",
     "duration_minutes",
     "status",
@@ -285,6 +301,10 @@ function buildActionsCsvCells(row: ActionCsvRowWithDrawing): Array<string | numb
     row.longitude,
     row.waste_kg,
     row.cigarette_butts,
+    toCsvCellValue(row.cigarette_butts_counted),
+    toCsvCellValue(row.cigarette_butts_estimated),
+    toCsvCellValue(row.cigarette_butts_counted_share),
+    toCsvCellValue(row.cigarette_butts_estimated_share),
     row.volunteers_count,
     row.duration_minutes,
     row.status,

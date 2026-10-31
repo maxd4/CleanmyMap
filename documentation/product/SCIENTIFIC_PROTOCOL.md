@@ -82,6 +82,36 @@ Le facteur par défaut est `500 L/mégot`. Les conversions en piscines
 équivalences pédagogiques et ne signifient pas qu'un volume équivalent d'eau a
 été dépollué ou économisé.
 
+### Collectes de mégots multi-lots — `cleanmymap-butts-volume-v1`
+
+Le bilan peut conserver plusieurs lots distincts. Chaque lot possède un
+identifiant stable, une seule source (`count`, `mass_kg` ou `volume_l`), une
+valeur non négative et un état (`propre`, `humide` ou `mouille`). Les unités ne
+sont donc additionnées qu'entre lots différents ; un même lot n'est jamais
+recompté à partir de ses équivalents.
+
+Le proxy de volume est versionné `cleanmymap-butts-volume-v1` et utilise
+`600 mégots/L`. Le proxy masse/nombre existant reste inchangé :
+`impact-terrain-2026-butts-mass-v1`, `2 500 mégots/kg`, avec les facteurs d'état
+`1`, `0,7` et `0,4` pour `propre`, `humide` et `mouille`. Un lot est calculé une
+seule fois ; le nombre dérivé est arrondi au niveau du lot avant toute
+agrégation, tandis que la masse mesurée conserve sa précision.
+
+Le contrat conserve la mesure source brute et qualifie chaque équivalent : un
+compte est `counted`, une conversion de masse est `weight_converted` et une
+conversion de volume est `volume_converted`. Les masses issues d'un compte ou
+d'un volume restent estimées ; une masse saisie reste mesurée. Les récapitulatifs,
+KPI et exports peuvent ainsi signaler les parts comptée et estimée sans changer
+les formules environnementales existantes. Une valeur `0` explicite est
+distincte de `null`, y compris pour un lot de volume nul.
+
+La projection `actions.cigarette_butts` est recalculée côté serveur depuis les
+lots validés. Elle n'est jamais un total client de confiance. Les créations et
+PATCH qui omettent les lots d'une action déjà persistée avec des lots sont
+refusés comme ambigus ; les historiques sans source reconstructible restent
+lisibles sans leur inventer une composition. La persistance réutilise les
+métadonnées d'action existantes et ne crée pas de table de collecte parallèle.
+
 ### CO2e potentiellement évité (proxy)
 
 Observation : masse de déchets retenue en kilogrammes. Le CO2e n'est pas

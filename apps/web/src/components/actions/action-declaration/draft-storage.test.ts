@@ -176,6 +176,21 @@ describe("action declaration draft storage", () => {
     );
   });
 
+  it("persists ordered multi-lot cigarette-butt drafts including explicit zero", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    draft.cigaretteButtsLots = [
+      { id: "lot-a", source: "mass_kg", value: "0.25", condition: "humide" },
+      { id: "lot-b", source: "volume_l", value: "0", condition: "mouille" },
+    ];
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z");
+
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"))?.form.cigaretteButtsLots).toEqual(
+      draft.cigaretteButtsLots,
+    );
+  });
+
   it("keeps legacy checklist prose without marking a structured item", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({

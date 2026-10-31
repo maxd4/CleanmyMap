@@ -15,6 +15,8 @@ import {
 import type { FormState, ValidationIssue } from "../model";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getVolunteerActionCompositionValidationMessage } from "@/lib/actions/volunteer-participation";
+import { MAX_CIGARETTE_BUTTS_COUNT, MAX_CIGARETTE_BUTTS_LOTS } from "@/lib/waste/cigarette-butts";
+import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste/measurement";
 
 export function normalizeActionDeclarationFormBeforeSubmit(
   form: FormState,
@@ -141,9 +143,33 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
     ["wasteOtherKg", form.wasteOtherKg], ["wasteMegotsKg", form.wasteMegotsKg],
     ["cigaretteButtsCount", form.cigaretteButtsCount], ["cigaretteButtsVolumeLiters", form.cigaretteButtsVolumeLiters],
   ] as const;
-  return fields.flatMap(([field, value]) => value.trim() && !Number.isFinite(Number(value))
+  const issues = fields.flatMap(([field, value]) => value.trim() && !Number.isFinite(Number(value))
     ? [{ field: field as ValidationIssue["field"], message: "Saisissez une mesure numérique valide ou laissez ce champ vide." }]
     : []);
+  if (form.cigaretteButtsLots === null) return issues;
+  if (form.cigaretteButtsLots.length > MAX_CIGARETTE_BUTTS_LOTS) {
+    issues.push({ field: "cigaretteButtsLots", message: `Limitez les collectes de mégots à ${MAX_CIGARETTE_BUTTS_LOTS} lots.` });
+  }
+  const seen = new Set<string>();
+  for (const lot of form.cigaretteButtsLots) {
+    const value = lot.value.trim();
+    const numericValue = Number(value);
+    if (!lot.id.trim() || seen.has(lot.id.trim())) {
+      issues.push({ field: "cigaretteButtsLots", message: "Chaque lot de mégots doit avoir un identifiant unique." });
+    }
+    seen.add(lot.id.trim());
+    if (!value || !Number.isFinite(numericValue) || numericValue < 0) {
+      issues.push({ field: "cigaretteButtsLots", message: "Chaque lot de mégots doit contenir une valeur numérique non négative." });
+      continue;
+    }
+    if (lot.source === "count" && (!Number.isInteger(numericValue) || numericValue > MAX_CIGARETTE_BUTTS_COUNT)) {
+      issues.push({ field: "cigaretteButtsLots", message: `Un lot compté doit être un entier compris entre 0 et ${MAX_CIGARETTE_BUTTS_COUNT}.` });
+    }
+    if (lot.source !== "count" && numericValue > ACTION_MEASUREMENT_MAX_KG) {
+      issues.push({ field: "cigaretteButtsLots", message: `La masse ou le volume d’un lot doit rester inférieur ou égal à ${ACTION_MEASUREMENT_MAX_KG}.` });
+    }
+  }
+  return issues;
 }
 
 function getParticipantIssues(form: FormState): ValidationIssue[] {

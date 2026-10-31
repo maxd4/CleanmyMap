@@ -7,7 +7,7 @@ import {
 import {
   applyPreparationDataToForm,
 } from "../payload";
-import type { FormState } from "../model";
+import type { CigaretteButtsLotDraft, FormState } from "../model";
 import { parseOrganizerAccounts } from "../payload";
 import { inferCigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
 
@@ -136,6 +136,18 @@ function resolveWasteMegotsKg(
   return toFormNumber(storedBreakdown.megotsKg);
 }
 
+function hydrateCigaretteButtsLots(
+  measurements: ActionEditorRecord["cigaretteButtsMeasurements"],
+): CigaretteButtsLotDraft[] | null {
+  if (!measurements || !Array.isArray(measurements.cigaretteButtsLots)) return null;
+  return measurements.cigaretteButtsLots.map((lot) => ({
+    id: lot.id,
+    source: lot.source,
+    value: String(lot.value),
+    condition: lot.condition,
+  }));
+}
+
 function buildCigaretteMeasurementFields(
   preparedForm: FormState,
   action: ActionEditorRecord,
@@ -152,6 +164,7 @@ function buildCigaretteMeasurementFields(
     cigaretteButtsConversionFormulaVersion: measurements?.cigaretteButtsConversionFormulaVersion ?? null,
     cigaretteButtsCondition: measurements?.cigaretteButtsCondition ?? preparedForm.cigaretteButtsCondition,
     cigaretteButtsVolumeLiters: toFormNumber(measurements?.cigaretteButtsVolumeLiters),
+    cigaretteButtsLots: hydrateCigaretteButtsLots(measurements),
     wasteMegotsKg: resolveWasteMegotsKg(action, storedBreakdown),
     wasteMegotsCondition: measurements?.cigaretteButtsCondition ?? preparedForm.wasteMegotsCondition,
   };

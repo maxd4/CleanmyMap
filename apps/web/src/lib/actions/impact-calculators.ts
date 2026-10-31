@@ -1,4 +1,5 @@
 import type { ActionWasteBreakdown } from "./types";
+import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
@@ -17,6 +18,7 @@ export type ActionImpactInput = {
     actionPhase?: string | null;
     wasteKg?: number | null;
     cigaretteButts?: number | null;
+    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
     volunteersCount?: number | null;
     durationMinutes?: number | null;
     wasteBreakdown?: ActionWasteBreakdown | null;
@@ -33,6 +35,9 @@ export type ActionImpactKpis = {
   wasteKgSource: ActionWasteKgSource;
   butts: number;
   buttsKnown: boolean;
+  buttsCounted: number | null;
+  buttsEstimated: number | null;
+  buttsCompositionKnown: boolean;
   volunteers: number;
   volunteersKnown: boolean;
   co2AvoidedKg: number;
@@ -42,13 +47,22 @@ export type ActionImpactKpis = {
   euroSaved: number;
 };
 
-export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource"> & {
+export type ActionImpactTotals = Omit<
+  ActionImpactKpis,
+  "wasteKgSource" | "buttsCounted" | "buttsEstimated" | "buttsCompositionKnown"
+> & {
   wasteKnownActions: number;
   wasteActionCount: number;
   wasteCoverageRate: number;
   buttsKnownActions: number;
   buttsActionCount: number;
   buttsCoverageRate: number;
+  buttsCounted: number;
+  buttsEstimated: number;
+  buttsCompositionKnownActions: number;
+  buttsCompositionActionCount: number;
+  buttsCountedShare: number | null;
+  buttsEstimatedShare: number | null;
   volunteersKnownActions: number;
   volunteersActionCount: number;
   volunteersCoverageRate: number;
@@ -109,6 +123,7 @@ export function computeActionImpactKpis(
     Number.isFinite(Number(rawButts)) &&
     Number(rawButts) >= 0;
   const butts = buttsKnown ? Number(rawButts) : 0;
+  const lotSummary = contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary;
   const volunteersKnown =
     contract.metadata.volunteersCount !== null &&
     contract.metadata.volunteersCount !== undefined &&
@@ -129,6 +144,9 @@ export function computeActionImpactKpis(
     wasteKgSource: resolveActionWasteKgSource(contract),
     butts,
     buttsKnown,
+    buttsCounted: lotSummary?.countedCount ?? null,
+    buttsEstimated: lotSummary?.estimatedCount ?? null,
+    buttsCompositionKnown: lotSummary !== undefined,
     volunteers,
     volunteersKnown,
     co2AvoidedKg: wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
@@ -146,6 +164,11 @@ function accumulateActionImpactTotals(
 ): { wasteKnown: boolean; buttsKnown: boolean; volunteersKnown: boolean } {
   totals.wasteKg += impact.wasteKg;
   totals.butts += impact.butts;
+  if (impact.buttsCompositionKnown) {
+    totals.buttsCounted += impact.buttsCounted ?? 0;
+    totals.buttsEstimated += impact.buttsEstimated ?? 0;
+    totals.buttsCompositionKnownActions += 1;
+  }
   totals.volunteers += impact.volunteers;
   return {
     wasteKnown: impact.wasteKnown,
@@ -170,6 +193,14 @@ function finalizeActionImpactTotals(
   totals.buttsKnownActions = counts.buttsKnown;
   totals.buttsActionCount = counts.buttsTotal;
   totals.buttsCoverageRate = counts.buttsTotal > 0 ? (counts.buttsKnown / counts.buttsTotal) * 100 : 0;
+  totals.buttsCompositionActionCount = counts.buttsTotal;
+  const compositionTotal = totals.buttsCounted + totals.buttsEstimated;
+  totals.buttsCountedShare = compositionTotal > 0
+    ? totals.buttsCounted / compositionTotal
+    : null;
+  totals.buttsEstimatedShare = compositionTotal > 0
+    ? totals.buttsEstimated / compositionTotal
+    : null;
   totals.buttsKnown = counts.buttsKnown > 0;
   totals.volunteersKnownActions = counts.volunteersKnown;
   totals.volunteersActionCount = counts.volunteersTotal;
@@ -190,6 +221,12 @@ export function sumActionImpactKpis(
     buttsKnownActions: 0,
     buttsActionCount: 0,
     buttsCoverageRate: 0,
+    buttsCounted: 0,
+    buttsEstimated: 0,
+    buttsCompositionKnownActions: 0,
+    buttsCompositionActionCount: 0,
+    buttsCountedShare: null,
+    buttsEstimatedShare: null,
     buttsKnown: false,
     volunteersKnownActions: 0,
     volunteersActionCount: 0,

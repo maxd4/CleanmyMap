@@ -14,6 +14,7 @@ import type {
 import type {
   CigaretteButtsInputSource,
   CigaretteButtsProvenance,
+  CigaretteButtsLotSource,
 } from "@/lib/waste/cigarette-butts";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
@@ -97,6 +98,8 @@ export type FormState = {
   cigaretteButtsConversionFormulaVersion: string | null;
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
  cigaretteButtsVolumeLiters: string;
+  /** null keeps the legacy single-measurement path; [] explicitly clears lots. */
+  cigaretteButtsLots: CigaretteButtsLotDraft[] | null;
  volunteersCount: string;
  childrenCount: string;
  adultCount: string;
@@ -123,6 +126,13 @@ export type FormState = {
  plannerProof?: RoutePlannerProof | null;
 };
 
+export type CigaretteButtsLotDraft = {
+  id: string;
+  source: CigaretteButtsLotSource;
+  value: string;
+  condition: ActionMegotsCondition;
+};
+
 export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
  wasteKg: "",
  wasteMeasurementMethod: "",
@@ -141,6 +151,7 @@ export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
   cigaretteButtsConversionFormulaVersion: null,
  cigaretteButtsCondition: "propre",
  cigaretteButtsVolumeLiters: "",
+  cigaretteButtsLots: null,
 } as const;
 
 export const initialState: FormState = {
@@ -272,6 +283,7 @@ export type ValidationIssue = {
  |"wasteMegotsKg"
  |"cigaretteButtsCount"
  |"cigaretteButtsVolumeLiters"
+ |"cigaretteButtsLots"
  |"volunteersCount"
  |"volunteerParticipation"
  |"durationMinutes"

@@ -2,6 +2,8 @@ import type { ActionMegotsCondition } from "@/lib/actions/types";
 import {
   MAX_CIGARETTE_BUTTS_COUNT,
   normalizeCigaretteButtsMeasurementsFromUserInput,
+  type CigaretteButtsLotInput,
+  type CigaretteButtsLotResult,
   type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
 import { deriveWasteComparison, type WasteComparisonTone } from "../utils/harvest-utils";
@@ -12,7 +14,7 @@ import {
   deriveContextualCollectionUnits,
 } from "@/lib/actions/action-collection-reference-averages";
 
-import type { FormState } from "../model";
+import type { CigaretteButtsLotDraft, FormState } from "../model";
 
 type UseHarvestLogicParams = {
   form: FormState;
@@ -104,6 +106,47 @@ function buildMeasurementContextUpdates(
   };
 }
 
+function parseDraftLot(draft: CigaretteButtsLotDraft): CigaretteButtsLotInput | null {
+  if (!draft.id.trim() || draft.value.trim() === "") return null;
+  const value = Number(draft.value);
+  if (!Number.isFinite(value) || value < 0) return null;
+  if (draft.source === "count" && !Number.isInteger(value)) return null;
+  return { id: draft.id, source: draft.source, value, condition: draft.condition };
+}
+
+function buildLegacyLotDraft(form: FormState): CigaretteButtsLotDraft[] {
+  if (form.cigaretteButtsInputSource === "count" && form.cigaretteButtsCount.trim()) {
+    return [{ id: "legacy-count", source: "count", value: form.cigaretteButtsCount, condition: form.wasteMegotsCondition }];
+  }
+  if (form.cigaretteButtsInputSource === "mass" && form.wasteMegotsKg.trim()) {
+    return [{ id: "legacy-mass", source: "mass_kg", value: form.wasteMegotsKg, condition: form.wasteMegotsCondition }];
+  }
+  if (form.cigaretteButtsCount.trim() && !form.wasteMegotsKg.trim()) {
+    return [{ id: "legacy-count", source: "count", value: form.cigaretteButtsCount, condition: form.wasteMegotsCondition }];
+  }
+  if (form.wasteMegotsKg.trim() && !form.cigaretteButtsCount.trim()) {
+    return [{ id: "legacy-mass", source: "mass_kg", value: form.wasteMegotsKg, condition: form.wasteMegotsCondition }];
+  }
+  if (form.cigaretteButtsVolumeLiters.trim() && !form.cigaretteButtsCount.trim() && !form.wasteMegotsKg.trim()) {
+    return [{ id: "legacy-volume", source: "volume_l", value: form.cigaretteButtsVolumeLiters, condition: form.wasteMegotsCondition }];
+  }
+  return [];
+}
+
+function buildLotMirrorUpdates(lots: CigaretteButtsLotDraft[]): Partial<FormState> {
+  const inputs = lots.map(parseDraftLot).filter((lot): lot is CigaretteButtsLotInput => lot !== null);
+  const normalized = normalizeCigaretteButtsMeasurementsFromUserInput({ cigaretteButtsLots: inputs });
+  return {
+    cigaretteButtsCount: normalized.cigaretteButtsCount === null ? "" : String(normalized.cigaretteButtsCount),
+    wasteMegotsKg: normalized.cigaretteButtsMassKg === null ? "" : formatDerivedNumber(normalized.cigaretteButtsMassKg),
+    cigaretteButtsVolumeLiters: normalized.cigaretteButtsVolumeLiters === null ? "" : formatDerivedNumber(normalized.cigaretteButtsVolumeLiters),
+    cigaretteButtsInputSource: null,
+    cigaretteButtsCondition: normalized.cigaretteButtsCondition ?? "propre",
+    wasteMegotsCondition: normalized.cigaretteButtsCondition ?? "propre",
+    ...buildMeasurementContextUpdates(normalized),
+  };
+}
+
 export type UseHarvestLogicResult = {
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
@@ -121,6 +164,16 @@ export type UseHarvestLogicResult = {
   cigaretteButtsMassProvenance: string;
   cigaretteButtsVolumeProvenance: string;
   cigaretteButtsConversionFormulaVersion: string | null;
+  megotsCounted: number;
+  megotsEstimated: number;
+  megotsMeasuredMassKg: number;
+  megotsEstimatedMassKg: number;
+  megotsLotResults: CigaretteButtsLotResult[];
+  hasExplicitMegotsLots: boolean;
+  addMegotsLot: () => void;
+  updateMegotsLot: (id: string, patch: Partial<Omit<CigaretteButtsLotDraft, "id">>) => void;
+  removeMegotsLot: (id: string) => void;
+  moveMegotsLot: (id: string, direction: -1 | 1) => void;
   syncMegotsWeightFromWeight: (rawValue: string) => void;
   syncMegotsWeightFromCount: (rawValue: string) => void;
   syncMegotsVolume: (rawValue: string) => void;
@@ -143,6 +196,10 @@ type DerivedHarvestMetrics = Omit<
   | "syncMegotsWeightFromCount"
   | "syncMegotsVolume"
   | "syncMegotsCondition"
+   | "addMegotsLot"
+   | "updateMegotsLot"
+   | "removeMegotsLot"
+   | "moveMegotsLot"
 >;
 
 function deriveHarvestMetrics(
@@ -168,18 +225,24 @@ function deriveHarvestMetrics(
     benchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
   });
   const cigaretteButtsMeasurements =
-    normalizeCigaretteButtsMeasurementsFromUserInput(
-      {
-        cigaretteButtsCount: readValidCount(form.cigaretteButtsCount),
-        cigaretteButtsMassKg: readValidMass(form.wasteMegotsKg),
-        cigaretteButtsVolumeLiters: readValidMass(
-          form.cigaretteButtsVolumeLiters,
-        ),
-        cigaretteButtsCondition: form.wasteMegotsCondition,
-        cigaretteButtsInputSource: form.cigaretteButtsInputSource,
-      },
-      { existingMeasurements: buildExistingMeasurements(form) },
-    );
+    form.cigaretteButtsLots !== null
+      ? normalizeCigaretteButtsMeasurementsFromUserInput({
+          cigaretteButtsLots: form.cigaretteButtsLots
+            .map(parseDraftLot)
+            .filter((lot): lot is CigaretteButtsLotInput => lot !== null),
+        })
+      : normalizeCigaretteButtsMeasurementsFromUserInput(
+          {
+            cigaretteButtsCount: readValidCount(form.cigaretteButtsCount),
+            cigaretteButtsMassKg: readValidMass(form.wasteMegotsKg),
+            cigaretteButtsVolumeLiters: readValidMass(
+              form.cigaretteButtsVolumeLiters,
+            ),
+            cigaretteButtsCondition: form.wasteMegotsCondition,
+            cigaretteButtsInputSource: form.cigaretteButtsInputSource,
+          },
+          { existingMeasurements: buildExistingMeasurements(form) },
+        );
   const megotsComparison = deriveWasteComparison({
     wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
     operationalUnits: contextualUnits.buttsUnits,
@@ -207,6 +270,12 @@ function deriveHarvestMetrics(
       cigaretteButtsMeasurements.cigaretteButtsVolumeProvenance,
     cigaretteButtsConversionFormulaVersion:
       cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion,
+    megotsCounted: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.countedCount ?? 0,
+    megotsEstimated: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.estimatedCount ?? 0,
+    megotsMeasuredMassKg: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.measuredMassKg ?? 0,
+    megotsEstimatedMassKg: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.estimatedMassKg ?? 0,
+    megotsLotResults: cigaretteButtsMeasurements.cigaretteButtsLotResults ?? [],
+    hasExplicitMegotsLots: form.cigaretteButtsLots !== null,
   };
 }
 
@@ -217,6 +286,44 @@ export function useHarvestLogic({
   const { contextualCollectionReferences = {} } = useActionPollutionScoreReferences();
 
   const derived = useMemo(() => deriveHarvestMetrics(form, contextualCollectionReferences), [form, contextualCollectionReferences]);
+
+  const addMegotsLot = useCallback(() => {
+    const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
+    if (form.cigaretteButtsLots === null && currentLots.length === 0 &&
+      (form.cigaretteButtsCount.trim() && form.wasteMegotsKg.trim())) {
+      return;
+    }
+    const id = typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : `lot-${Date.now()}-${currentLots.length}`;
+    updateFields({
+      cigaretteButtsLots: [...currentLots, { id, source: "count", value: "", condition: form.wasteMegotsCondition }],
+      ...buildLotMirrorUpdates(currentLots),
+    });
+  }, [form, updateFields]);
+
+  const updateMegotsLot = useCallback((id: string, patch: Partial<Omit<CigaretteButtsLotDraft, "id">>) => {
+    const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
+    const nextLots = currentLots.map((lot) => lot.id === id ? { ...lot, ...patch } : lot);
+    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots) });
+  }, [form, updateFields]);
+
+  const removeMegotsLot = useCallback((id: string) => {
+    const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
+    const nextLots = currentLots.filter((lot) => lot.id !== id);
+    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots) });
+  }, [form, updateFields]);
+
+  const moveMegotsLot = useCallback((id: string, direction: -1 | 1) => {
+    const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
+    const index = currentLots.findIndex((lot) => lot.id === id);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= currentLots.length) return;
+    const nextLots = [...currentLots];
+    const [lot] = nextLots.splice(index, 1);
+    nextLots.splice(nextIndex, 0, lot!);
+    updateFields({ cigaretteButtsLots: nextLots, ...buildLotMirrorUpdates(nextLots) });
+  }, [form, updateFields]);
 
   const syncMegotsWeightFromWeight = useCallback(
     (rawValue: string) => {
@@ -317,5 +424,9 @@ export function useHarvestLogic({
     syncMegotsWeightFromCount,
     syncMegotsVolume,
     syncMegotsCondition,
+    addMegotsLot,
+    updateMegotsLot,
+    removeMegotsLot,
+    moveMegotsLot,
   };
 }

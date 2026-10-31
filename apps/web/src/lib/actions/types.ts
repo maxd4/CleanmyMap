@@ -477,6 +477,8 @@ export type CreateActionPayload = {
   longitude?: number;
   wasteKg: number | null;
   cigaretteButtsMeasurements?: RawCigaretteButtsMeasurementInput | null;
+  /** Explicit multi-lot input; when present it is the sole cigarette-butt source. */
+  cigaretteButtsLots?: RawCigaretteButtsMeasurementInput["cigaretteButtsLots"];
   volunteerParticipation?: ActionVolunteerParticipation | null;
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsVolumeLiters?: number | null;

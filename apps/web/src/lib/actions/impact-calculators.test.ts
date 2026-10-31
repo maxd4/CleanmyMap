@@ -9,6 +9,7 @@ import {
   resolveActionWasteKgSource,
   sumActionImpactKpis,
 } from "./impact-calculators";
+import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 function makeContract(
   overrides: Partial<Parameters<typeof buildActionDataContract>[0]> = {},
@@ -141,6 +142,9 @@ describe("canonical action impact calculation", () => {
       wasteKgSource: "none",
       butts: 0,
       buttsKnown: false,
+      buttsCounted: null,
+      buttsEstimated: null,
+      buttsCompositionKnown: false,
       volunteers: 0,
       volunteersKnown: false,
       co2AvoidedKg: 0,
@@ -185,6 +189,12 @@ describe("canonical action impact calculation", () => {
       buttsKnownActions: 2,
       buttsActionCount: 2,
       buttsCoverageRate: 100,
+      buttsCounted: 0,
+      buttsEstimated: 0,
+      buttsCompositionKnownActions: 0,
+      buttsCompositionActionCount: 2,
+      buttsCountedShare: null,
+      buttsEstimatedShare: null,
       buttsKnown: true,
       butts: 2600,
       volunteers: 3,
@@ -204,6 +214,45 @@ describe("canonical action impact calculation", () => {
         upperBoundEuros: 3,
       },
       euroSaved: 3,
+    });
+  });
+
+  it("reports counted and estimated lot composition without changing the butt total", () => {
+    const cigaretteButtsMeasurements = {
+      cigaretteButtsLotsSummary: {
+        totalCount: 400,
+        countedCount: 100,
+        estimatedCount: 300,
+        totalMassKg: 0.2,
+        measuredMassKg: 0,
+        estimatedMassKg: 0.2,
+        totalVolumeLiters: 0.5,
+        countedShare: 0.25,
+        estimatedShare: 0.75,
+      },
+    } as ActionCigaretteButtsMeasurements;
+    const impact = computeActionImpactKpis(
+      makeContract({
+        cigaretteButts: 400,
+        cigaretteButtsMeasurements,
+      }),
+    );
+
+    expect(impact).toMatchObject({
+      butts: 400,
+      buttsCounted: 100,
+      buttsEstimated: 300,
+      buttsCompositionKnown: true,
+    });
+    expect(sumActionImpactKpis([makeContract({
+      cigaretteButts: 400,
+      cigaretteButtsMeasurements,
+    })])).toMatchObject({
+      buttsCounted: 100,
+      buttsEstimated: 300,
+      buttsCountedShare: 0.25,
+      buttsEstimatedShare: 0.75,
+      buttsCompositionKnownActions: 1,
     });
   });
 

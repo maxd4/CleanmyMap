@@ -508,8 +508,23 @@ masse de mégots, même qualifiée, reste distincte de `waste_kg` et les mesures
 exposent séparément compteur, masse, volume, état et provenance. Une masse brute
 de `1,2 kg` peut donc conserver un nombre dérivé de `3000` avec la provenance
 `weight_converted` et sa version de formule sans remplacer une éventuelle valeur
-de comptage brute. Un volume sans relation de conversion fiable reste stocké
-seul, avec les dérivés à `NULL`.
+de comptage brute. Un volume historique sans relation de conversion fiable reste
+stocké seul, avec les dérivés à `NULL`; les nouveaux lots `volume_l` suivent le
+proxy versionné documenté ci-dessous.
+
+Pour les bilans multi-lots de mégots, la source de vérité est la collection de
+lots persistée dans les métadonnées de l'action. Chaque lot porte un identifiant
+stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur
+non négative et l'état de la collecte. Le volume est une mesure source valide,
+pas un champ informatif : `cleanmymap-butts-volume-v1` applique `600 mégots/L`.
+Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v1` pour la masse et
+le nombre, arrondit chaque nombre dérivé avant la somme, et conserve les masses
+brutes mesurées séparément des masses estimées. Les KPI et exports exposent la
+part comptée et la part estimée seulement lorsque cette composition est connue.
+Le champ `actions.cigarette_butts` reste la projection serveur de cette somme.
+Une omission de lots lors d'un PATCH d'une action qui en possède déjà est
+ambiguë et n'autorise pas le remplacement silencieux ; les historiques
+ambigus conservent leurs valeurs et leur provenance disponibles.
 
 Le score `departmentRelativeScore` est une comparaison relative interne à un
 `department_code` conservé comme chaîne (par exemple `01`, `2A`, `2B` ou un

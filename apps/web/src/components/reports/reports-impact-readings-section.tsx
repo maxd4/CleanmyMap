@@ -25,6 +25,9 @@ type SnapshotGroup = {
 function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
   const sourceCount = Object.keys(report.impactMethodology.sources ?? {}).length;
   const bucketCount = Object.values(report.community.sourceBuckets).filter((value) => value > 0).length;
+  const buttsComposition = (report.totals.buttsCompositionKnownActions ?? 0) > 0
+    ? `${toFrInt(report.totals.buttsCounted ?? 0)} comptés · ${toFrInt(report.totals.buttsEstimated ?? 0)} estimés`
+    : "Non qualifiée";
 
   return [
     {
@@ -40,6 +43,7 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
         },
         { label: "Fréquence", value: `${toFrInt(report.totals.actions)} actions`, icon: CalendarDays },
         { label: "Types de flux", value: `${bucketCount}`, icon: Sparkles },
+        { label: "Mégots comptés / estimés", value: buttsComposition, icon: FileText },
         {
           label: "Ratio collecte",
           value: `${toFrNumber(report.totals.kg / Math.max(report.totals.actions, 1), 2)} kg/action`,

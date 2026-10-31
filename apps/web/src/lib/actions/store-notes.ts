@@ -35,6 +35,7 @@ type PersistedActionNotesPayload = Partial<Pick<
   | "cigaretteButtsMassKg"
   | "cigaretteButtsVolumeLiters"
   | "cigaretteButtsCondition"
+   | "cigaretteButtsLots"
   | "volunteerParticipation"
   >> & {
   photos?: Array<
@@ -111,6 +112,7 @@ function resolveActionCigaretteButtsMeasurements(
     | "cigaretteButtsMassKg"
     | "cigaretteButtsVolumeLiters"
     | "cigaretteButtsCondition"
+     | "cigaretteButtsLots"
     | "cigaretteButtsKg"
     | "wasteBreakdown"
   >>,
@@ -122,6 +124,7 @@ function resolveActionCigaretteButtsMeasurements(
   }
 
   return normalizeCigaretteButtsMeasurementsFromUserInput({
+    cigaretteButtsLots: payload.cigaretteButtsLots,
     cigaretteButtsCount: payload.cigaretteButtsCount ?? payload.cigaretteButts,
     cigaretteButtsMassKg:
       payload.cigaretteButtsMassKg ??

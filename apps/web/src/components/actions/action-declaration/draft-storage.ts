@@ -102,6 +102,7 @@ const FORM_STATE_KEYS = [
   "cigaretteButtsConversionFormulaVersion",
   "cigaretteButtsCondition",
   "cigaretteButtsVolumeLiters",
+  "cigaretteButtsLots",
   "volunteersCount",
   "childrenCount",
   "adultCount",

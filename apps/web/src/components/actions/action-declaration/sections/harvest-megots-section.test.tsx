@@ -90,4 +90,28 @@ describe("HarvestMegotsSection", () => {
 
     expect(markup).not.toContain('data-testid="butts-comparison-visual"');
   });
+
+  it("renders explicit multi-lot sources and counted/estimated totals", () => {
+    const markup = renderMegots({
+      megotsLots: [
+        { id: "counted", source: "count", value: "100", condition: "propre" },
+        { id: "volume", source: "volume_l", value: "0.5", condition: "humide" },
+      ],
+      megotsCounted: 100,
+      megotsEstimated: 300,
+      megotsMeasuredMassKg: 0,
+      megotsEstimatedMassKg: 0.24,
+      onAddMegotsLot: () => undefined,
+      onUpdateMegotsLot: () => undefined,
+      onRemoveMegotsLot: () => undefined,
+      onMoveMegotsLot: () => undefined,
+    });
+
+    expect(markup).toContain("Ajoutez un lot par collecte distincte");
+    expect(markup).toContain("100 comptés");
+    expect(markup).toContain("300 estimés");
+    expect(markup).toContain("600 mégots/L");
+    expect(markup).toContain('data-testid="megots-lot-counted"');
+    expect(markup).toContain('data-testid="megots-lot-volume"');
+  });
 });

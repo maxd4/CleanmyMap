@@ -41,4 +41,36 @@ describe("server cigarette-butt source resolution", () => {
       cigaretteButtsMassProvenance: "measured",
     });
   });
+
+  it("persists distinct lots and a server-derived total in the metadata projection", () => {
+    const notes = buildPersistedNotes(
+      buildPayload({
+        cigaretteButts: null,
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: null,
+        cigaretteButtsMeasurements: {
+          cigaretteButtsLots: [
+            { id: "counted", source: "count", value: 100, condition: "propre" },
+            { id: "weighed", source: "mass_kg", value: 1, condition: "humide" },
+            { id: "volume", source: "volume_l", value: 0.5, condition: "mouille" },
+          ],
+        },
+      }),
+    );
+    const metadata = extractActionMetadataFromNotes(notes);
+
+    expect(metadata.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: 2_150,
+      cigaretteButtsLotsSummary: {
+        totalCount: 2_150,
+        countedCount: 100,
+        estimatedCount: 2_050,
+      },
+      cigaretteButtsLots: [
+        { id: "counted", source: "count", value: 100 },
+        { id: "weighed", source: "mass_kg", value: 1 },
+        { id: "volume", source: "volume_l", value: 0.5 },
+      ],
+    });
+  });
 });

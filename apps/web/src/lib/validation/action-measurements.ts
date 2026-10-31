@@ -7,7 +7,11 @@ import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
 } from "@/lib/waste/measurement";
-import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
+import {
+  CIGARETTE_BUTTS_LOT_SOURCES,
+  MAX_CIGARETTE_BUTTS_COUNT,
+  MAX_CIGARETTE_BUTTS_LOTS,
+} from "@/lib/waste/cigarette-butts";
 
 const wasteMassSchema = z
   .number()
@@ -40,6 +44,58 @@ const wasteMeasurementMethodSchema = z
   .nullable()
   .optional();
 
+const cigaretteButtsLotsSchema = z
+  .array(
+    z.object({
+      id: z.string().trim().min(1).max(120),
+      source: z.enum(CIGARETTE_BUTTS_LOT_SOURCES),
+      value: z.number().finite().min(0),
+      condition: z.enum(["propre", "humide", "mouille"]),
+    }).superRefine((lot, ctx) => {
+      if (lot.source === "count" && !Number.isInteger(lot.value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["value"],
+          message: "Un lot saisi en nombre doit être un entier.",
+        });
+      }
+      if (lot.source === "count" && lot.value > MAX_CIGARETTE_BUTTS_COUNT) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          origin: "number",
+          path: ["value"],
+          maximum: MAX_CIGARETTE_BUTTS_COUNT,
+          inclusive: true,
+          message: "Le nombre de mégots dépasse la limite autorisée.",
+        });
+      }
+      if (lot.source !== "count" && lot.value > ACTION_MEASUREMENT_MAX_KG) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          origin: "number",
+          path: ["value"],
+          maximum: ACTION_MEASUREMENT_MAX_KG,
+          inclusive: true,
+          message: "La mesure du lot dépasse la limite autorisée.",
+        });
+      }
+    }),
+  )
+  .max(MAX_CIGARETTE_BUTTS_LOTS)
+  .superRefine((lots, ctx) => {
+    const ids = new Set<string>();
+    lots.forEach((lot, index) => {
+      if (ids.has(lot.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, "id"],
+          message: "Chaque lot doit avoir un identifiant distinct.",
+        });
+      }
+      ids.add(lot.id);
+    });
+  });
+
 const cigaretteButtsMeasurementsSchema = z
   .object({
     // Server assigns provenance and formula versions.
@@ -56,6 +112,9 @@ const cigaretteButtsMeasurementsSchema = z
       .enum(["count", "mass", "unknown"])
       .nullable()
       .optional(),
+    cigaretteButtsLots: cigaretteButtsLotsSchema
+      .nullable()
+      .optional(),
   })
   .nullable()
   .optional();
@@ -66,6 +125,7 @@ export const commonActionCigaretteButtSchemaFields = {
   cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
   cigaretteButtsKg: z.number().min(0).max(ACTION_MEASUREMENT_MAX_KG).nullable().optional(),
   cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+  cigaretteButtsLots: cigaretteButtsLotsSchema.nullable().optional(),
 };
 
 const volunteerParticipationInputSchema = z

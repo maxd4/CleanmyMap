@@ -16,6 +16,10 @@ export type PostActionSummary = {
     actionDate: string;
     wasteKg: number | null;
     cigaretteButts: number | null;
+    cigaretteButtsCounted: number | null;
+    cigaretteButtsEstimated: number | null;
+    cigaretteButtsCountedShare: number | null;
+    cigaretteButtsEstimatedShare: number | null;
     volunteersCount: number | null;
     effectiveVolunteerUnits: number | null;
     durationMinutes: number | null;
@@ -77,6 +81,7 @@ export function buildPostActionSummary(
   const wasteKg = toNonNegativeNumber(action.wasteKg);
   const cigaretteButtsValue = toNonNegativeNumber(action.cigaretteButts);
   const cigaretteButts = cigaretteButtsValue === null ? null : Math.trunc(cigaretteButtsValue);
+  const lotSummary = action.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary;
   const volunteersValue = toNonNegativeNumber(action.volunteersCount);
   const volunteersCount =
     volunteersValue === null ? null : Math.trunc(volunteersValue);
@@ -95,6 +100,10 @@ export function buildPostActionSummary(
       actionDate: action.actionDate,
       wasteKg: roundNullable(wasteKg),
       cigaretteButts,
+      cigaretteButtsCounted: lotSummary?.countedCount ?? null,
+      cigaretteButtsEstimated: lotSummary?.estimatedCount ?? null,
+      cigaretteButtsCountedShare: lotSummary?.countedShare ?? null,
+      cigaretteButtsEstimatedShare: lotSummary?.estimatedShare ?? null,
       volunteersCount,
       effectiveVolunteerUnits,
       durationMinutes,

@@ -6,7 +6,10 @@ import { isActionDateInFuture } from "./temporal";
 import { getTimeContractValidationMessage } from "./time-contract";
 import { prepareActionUpdateBody } from "./action-update-preparation";
 import { buildActionUpdateFields, getExplicitDrawing } from "./action-update-fields";
-import { buildActionUpdateMeasurements } from "./action-update-measurements";
+import {
+  AmbiguousCigaretteButtsLotsUpdateError,
+  buildActionUpdateMeasurements,
+} from "./action-update-measurements";
 import {
   buildActionUpdateNotes,
   preserveManualDrawing,
@@ -239,11 +242,19 @@ export async function prepareActionUpdate(params: {
   const { submittedDrawing } = validateActionUpdateInput({ current, body, nextActionPhase, currentMetadata });
 
   const updateData = await buildActionUpdateFields({ current, body });
-  const measurements = buildActionUpdateMeasurements({
-    current,
-    body,
-    currentMetadata,
-  });
+  let measurements: ReturnType<typeof buildActionUpdateMeasurements>;
+  try {
+    measurements = buildActionUpdateMeasurements({
+      current,
+      body,
+      currentMetadata,
+    });
+  } catch (error) {
+    if (error instanceof AmbiguousCigaretteButtsLotsUpdateError) {
+      throw new ActionUpdateValidationError("cigaretteButtsMeasurements", error.message);
+    }
+    throw error;
+  }
   Object.assign(updateData, measurements.updateData);
   Object.assign(
     updateData,

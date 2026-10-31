@@ -20,6 +20,13 @@ export type ActionUpdateMeasurements = {
   nextVolunteerParticipation: ActionVolunteerParticipation | null;
 };
 
+export class AmbiguousCigaretteButtsLotsUpdateError extends Error {
+  constructor() {
+    super("Les lots de mégots existants doivent être envoyés explicitement pour éviter de les remplacer silencieusement.");
+    this.name = "AmbiguousCigaretteButtsLotsUpdateError";
+  }
+}
+
 function hasButtsMeasurementUpdate(body: ActionUpdateInput): boolean {
   return [
     "cigaretteButtsMeasurements",
@@ -27,6 +34,7 @@ function hasButtsMeasurementUpdate(body: ActionUpdateInput): boolean {
     "cigaretteButtsMassKg",
     "cigaretteButtsVolumeLiters",
     "cigaretteButtsCondition",
+    "cigaretteButtsLots",
     "cigaretteButtsKg",
     "cigaretteButts",
   ].some((key) => Object.prototype.hasOwnProperty.call(body, key));
@@ -47,6 +55,11 @@ function buildButtsInput(
   const currentVolume = currentMeasurements?.cigaretteButtsVolumeLiters ?? null;
   const currentCondition = currentMeasurements?.cigaretteButtsCondition ?? null;
   const submittedMeasurements = body.cigaretteButtsMeasurements;
+  const submittedLots = body.cigaretteButtsLots ?? submittedMeasurements?.cigaretteButtsLots;
+
+  if (currentMeasurements?.cigaretteButtsLots !== undefined && submittedLots === undefined) {
+    throw new AmbiguousCigaretteButtsLotsUpdateError();
+  }
 
   if (submittedMeasurements === null) return {};
   if (submittedMeasurements !== undefined) return {
@@ -55,8 +68,9 @@ function buildButtsInput(
     cigaretteButtsVolumeLiters: submittedMeasurements.cigaretteButtsVolumeLiters !== undefined ? submittedMeasurements.cigaretteButtsVolumeLiters : currentVolume,
     cigaretteButtsCondition: submittedMeasurements.cigaretteButtsCondition !== undefined ? submittedMeasurements.cigaretteButtsCondition : currentCondition,
     cigaretteButtsInputSource: submittedMeasurements.cigaretteButtsInputSource,
+    cigaretteButtsLots: submittedLots,
   };
-  return buildLegacyButtsInput(body, currentCount, currentMass, currentVolume, currentCondition);
+  return buildLegacyButtsInput(body, currentCount, currentMass, currentVolume, currentCondition, submittedLots);
 }
 
 function buildLegacyButtsInput(
@@ -65,12 +79,14 @@ function buildLegacyButtsInput(
   currentMass: number | null,
   currentVolume: number | null,
   currentCondition: ActionCigaretteButtsMeasurements["cigaretteButtsCondition"] | null,
+  submittedLots?: ActionUpdateInput["cigaretteButtsLots"],
 ) {
   return {
     cigaretteButtsCount: resolveLegacyCount(body, currentCount),
     cigaretteButtsMassKg: resolveLegacyMass(body, currentMass),
     cigaretteButtsVolumeLiters: body.cigaretteButtsVolumeLiters !== undefined ? body.cigaretteButtsVolumeLiters : currentVolume,
     cigaretteButtsCondition: body.cigaretteButtsCondition !== undefined ? body.cigaretteButtsCondition : currentCondition,
+    cigaretteButtsLots: submittedLots,
   };
 }
 

@@ -61,6 +61,12 @@ export type ReportModel = {
     buttsKnownActions?: number;
     buttsActionCount?: number;
     buttsCoverageRate?: number;
+    buttsCounted?: number;
+    buttsEstimated?: number;
+    buttsCompositionKnownActions?: number;
+    buttsCompositionActionCount?: number;
+    buttsCountedShare?: number | null;
+    buttsEstimatedShare?: number | null;
     volunteers: number;
     volunteersKnownActions?: number;
     volunteersActionCount?: number;
