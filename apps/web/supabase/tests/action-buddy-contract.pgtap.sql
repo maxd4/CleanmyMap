@@ -220,7 +220,7 @@ where id = (select request_one from action_buddy_fixture);
 select is(
   (select count(*)::integer from public.app_notifications where user_id = 'mentor-one' and type = 'community' and payload ->> 'kind' = 'action_buddy_request_cancelled' and payload ->> 'requestId' = (select request_one::text from action_buddy_fixture)),
   1,
-  'replaying cancellation does not duplicate the notification'
+  'replaying an unchanged cancelled status does not duplicate the notification'
 );
 
 reset role;
