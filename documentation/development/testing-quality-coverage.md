@@ -152,10 +152,10 @@ affichés à deux décimales ; le minimum supplémentaire est
 | Mobile | branches | 1 152 / 1 342 | 85,84 % | +5,84 pt | 0 | `MEASURED` |
 | Mobile | functions | 555 / 656 | 84,60 % | +4,60 pt | 0 | `MEASURED` |
 | Mobile | lines | 1 500 / 1 557 | 96,34 % | +16,34 pt | 0 | `MEASURED` |
-| Node | statements | 42 969 / 62 630 | 68,60 % | -11,40 pt | 7 135 | `DIAGNOSTIC_ONLY` |
+| Node | statements | 42 969 / 62 630 | 68,61 % | -11,39 pt | 7 135 | `DIAGNOSTIC_ONLY` |
 | Node | branches | 11 288 / 14 438 | 78,18 % | -1,82 pt | 263 | `DIAGNOSTIC_ONLY` |
-| Node | functions | 2 026 / 2 553 | 79,35 % | -0,65 pt | 17 | `DIAGNOSTIC_ONLY` |
-| Node | lines | 42 969 / 62 630 | 68,60 % | -11,40 pt | 7 135 | `DIAGNOSTIC_ONLY` |
+| Node | functions | 2 026 / 2 553 | 79,36 % | -0,64 pt | 17 | `DIAGNOSTIC_ONLY` |
+| Node | lines | 42 969 / 62 630 | 68,61 % | -11,39 pt | 7 135 | `DIAGNOSTIC_ONLY` |
 | Python | statements | — | `NOT_MEASURED` | — | — | Cobertura ne mesure pas cette métrique |
 | Python | branches | 562 / 766 | 73,37 % | -6,63 pt | 51 | `MEASURED` |
 | Python | functions | — | `NOT_MEASURED` | — | — | Cobertura ne publie pas cette métrique |
