@@ -1946,22 +1946,6 @@
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
-      "scope": "tests",
-      "fingerprint": "a62ec1ab468761a1",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les deux constructions PATCH dans la suite de formalités réutilisent le même contexte de requête pour tester séparément l'erreur de persistance et l'interdiction post-action ; les invariants et statuts attendus restent indépendants et doivent rester lisibles dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:274-283 et app/api/actions/[actionId]/formalities/route.test.ts:292-302 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "9186be9a3ad1994c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les imports et mocks statiques analogues entre inbox et réponse de feedback sont nécessaires à deux frontières API de chat distinctes ; mutualiser ce setup créerait un harness transversal sans sémantique propre et réduirait l'autonomie des suites.",
-      "evidence": "app/api/chat/inbox/route.test.ts:2-7 et app/api/chat/route.feedback-reply.test.ts:8-13 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
       "scope": "runtime",
       "fingerprint": "91e8597ea18faf09",
       "classification": "KEEP_INTENTIONAL",
