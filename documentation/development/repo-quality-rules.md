@@ -131,7 +131,35 @@ existants sont réutilisés sans copie ni contournement. Les réglages réelleme
 actifs sur SonarQube Cloud doivent être distingués de la configuration
 versionnée et des analyses historiques observées.
 
-### État vérifié au 29 octobre 2026
+### État observé le 31 octobre 2026 — capture SonarQube Cloud
+
+La capture fournie avec le présent lot affiche le projet public
+[`maxd4_CleanMyMap`](https://sonarcloud.io/project/overview?id=maxd4_CleanMyMap)
+avec une dernière analyse indiquée au **31 octobre 2026 à 06:27**. Elle
+affiche environ **435 k lignes de code** et les langages
+`TypeScript, JavaScript, ...`. Les valeurs ci-dessous sont une observation du
+tableau de bord, pas une relecture API ni une preuve rattachée à un SHA.
+
+| Indicateur affiché | Valeur observée | Provenance et limite |
+| --- | ---: | --- |
+| Sécurité | rating `C`, compteur `4` | capture du tableau de bord ; la catégorie exacte du compteur n'est pas déduite au-delà du libellé affiché |
+| Fiabilité | rating `D`, compteur `17` | capture du tableau de bord ; aucune liste de findings ni sévérité détaillée fournie |
+| Maintenabilité | rating `A`, compteur `3` | capture du tableau de bord ; aucune dette ou liste de code smells fournie |
+| Security Hotspots reviewed | `100 %`, rating `A` | capture du tableau de bord ; aucun détail des hotspots fourni |
+| Couverture | `70,3 %` | capture du tableau de bord ; rapport LCOV, périmètre et import non vérifiés |
+| Duplications | `5,5 %` | capture du tableau de bord ; périmètre et méthode de calcul non vérifiés |
+| Lignes de code | environ `435 k` | capture du tableau de bord ; le dénominateur exact n'est pas fourni |
+
+La capture ne permet pas d'établir l'`ANALYZED_SHA`, la branche, le run
+GitHub ou le workflow producteur, le Quality Gate, les règles actives, les
+exclusions, les rapports de couverture importés ni l'évolution par rapport à
+une autre analyse. Ces valeurs ne doivent donc pas être fusionnées avec le
+relevé API du 29 octobre, ni utilisées seules comme preuve de release, de
+couverture locale ou de correction d'un finding. Une comparaison complète
+reste `NON_COMPARABLE` tant que ces éléments ne sont pas rapprochés par une
+analyse réelle de même périmètre.
+
+### Historique vérifié au 29 octobre 2026 — API publique
 
 La dernière analyse SonarQube Cloud réellement publiée est celle du
 [workflow manuel GitHub 40952480989](https://github.com/maxd4/CleanMyMap/actions/runs/40952480989),
