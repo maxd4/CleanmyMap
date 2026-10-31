@@ -64,7 +64,7 @@ projection Supabase relue.
 | Famille | Tables / ressources identifiées | Responsabilité | Règle d'accès |
 |---|---|---|---|
 | Identité produit | `profiles` | Profil, identifiant Clerk, rôles et préférences | Profil ciblé et AuthZ explicite |
-| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_retrospectives`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, retour déclaratif post-action, mission prévue et attestation historique ; les spécialisations gamification en sont une projection réconciliée | Ressource + owner/organisateur/participant + état ; le retour reste privé en brouillon et public seulement après publication éligible ; attestation server-only, XP uniquement via `progression_events` |
+| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_retrospectives`, `action_rides`, `action_ride_requests`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, retour déclaratif post-action, covoiturage privé par action, mission prévue et attestation historique ; les spécialisations gamification en sont une projection réconciliée | Ressource + owner/organisateur/participant + état ; le retour et le covoiturage restent server-only selon leur destinataire ; attestation server-only, XP uniquement via `progression_events` |
 | Médias / entraînement | `training_examples`, Supabase Storage | Provenance média, pièces liées aux actions | Accès selon action et contrat Storage |
 | Conversations d'action | `action_conversations`, `action_conversation_members`, `action_conversation_exclusions`, `action_share_contact_requests` | Échanges et audiences associées à l'action | Membres, exclusions, acteur et capacité |
 | Observations carte | `public.trash_spotter_spots` | Signalement (`spot`) et lieu propre (`clean_place`) | Projection publique filtrée, mutation autorisée |
@@ -85,6 +85,8 @@ erDiagram
   actions ||--o{ action_organizers : "organisateurs"
   actions ||--o{ action_registrations : "inscriptions"
   actions ||--o{ action_participants : "participants"
+  actions ||--o{ action_rides : "trajets privés"
+  action_rides ||--o{ action_ride_requests : "demandes privées"
   actions ||--o{ action_field_role_assignments : "missions prévues"
   actions ||--o{ action_role_attestations : "missions attestées"
   actions ||--o{ forms : "formulaires"
@@ -111,6 +113,7 @@ erDiagram
 - Les membres de conversation référencent `action_conversations.id` dans la migration dédiée.
 - `report_generation_pdf_shares.generation_id` référence `report_generations.id` et `artifact_id` référence `report_generation_pdf_artifacts.id`, avec suppression en cascade dans la migration `20261018000002_report_generation_pdf_shares.sql`. Le token est conservé uniquement sous hash SHA-256, avec expiration et révocation. Une policy et des grants limitent la table à `service_role` ; les handlers authentifiés contrôlent le propriétaire.
 - `report_generation_publications` ne contient aucun snapshot : `generation_id` et `artifact_id` relient l'historique immuable et l'artefact PDF privé à une projection minimale (titre, période, périmètre autorisé, thème, date, auteur public optionnel). La projection est refusée côté serveur si le snapshot contient des données brutes, identifiants internes, PII, coordonnées, médias privés ou un périmètre mono-action. RLS et grants rendent la table server-only ; les routes publiques ne servent que les lignes non révoquées et relisent l'artefact exact depuis le serveur.
+- `action_rides.action_id` référence `actions.id` avec suppression en cascade et `action_ride_requests.ride_id` référence `action_rides.id` avec suppression en cascade. Une contrainte d'unicité partielle conserve au plus une demande `pending` ou `accepted` par passager et trajet ; les champs libres et la capacité restent hors projection publique.
 
 Ne pas généraliser ces exemples au reste du schéma sans inspection de la dernière migration qui affecte chaque table.
 
@@ -141,6 +144,34 @@ d'événement `(recipient, actionId)` et `ON CONFLICT DO NOTHING` rendent les
 replays silencieux. La modification d'un retour déjà publié ne crée pas une
 nouvelle première publication et ne modifie ni l'action, ni ses mesures, ni
 les participations.
+
+### Covoiturage privé par action
+
+`action_rides` et `action_ride_requests` sont les sources canoniques du
+covoiturage préparé pour une action future. Une ligne de trajet conserve
+uniquement une zone d'origine reconnue par le référentiel territorial déjà
+utilisé par la communauté, une heure de départ, une capacité bornée et une
+note facultative. Aucun champ d'adresse exacte, de coordonnées, de téléphone,
+d'e-mail, de plaque ou de localisation structurée n'est accepté. Les notes et
+messages sont des champs libres privés : le serveur rejette les coordonnées,
+adresses et contacts manifestes, mais ce filtre ne constitue pas une garantie
+absolue d'absence de donnée personnelle ; l'interface doit prévenir l'auteur.
+
+Les deux tables sont RLS et grants server-only. Un conducteur ou passager doit
+avoir une session Clerk valide, une inscription `action_registrations.confirmed`
+à l'action et une action `pre_action` future, publiée, visible, publique et
+compatible avec sa revue. Le départ doit être le même jour local Europe/Paris
+et précéder l'heure de début déclarée ; en l'absence d'heure de début, la
+validation est fail-closed. Une demande sur son propre trajet ou une demande
+active du même passager et trajet est refusée.
+
+`action_ride_capacity` est l'unique owner du calcul
+`seats_total - somme(seats_requested des demandes accepted)`. `seats_available`
+n'est pas persisté. La garde SQL verrouille le trajet avant de relire ce calcul
+et refuse toute acceptation ou réduction de capacité qui rendrait le résultat
+négatif ; la réservation et ses transitions AuthZ détaillées appartiennent au
+lot 6E2. Les participants, les inscriptions futures et les champs libres ne
+sont jamais projetés sur les surfaces publiques.
 
 La phase distingue durablement `action_registrations` (inscription future) de
 `action_participants` (participation finale). Seules les participations

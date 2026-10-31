@@ -17,6 +17,30 @@ Exemples :
 
 Le rôle seul ne permet pas de modifier une action d'un tiers.
 
+### Covoiturage par action
+
+Les trajets et demandes de covoiturage sont des données privées et restent
+derrière RLS, grants et fonctions `service_role`. Une route doit authentifier
+la session Clerk, vérifier l'identité Clerk utilisée pour le conducteur ou le
+passager, puis relire l'action et la relation canonique
+`action_registrations.registration_status = confirmed`. Le rôle UX seul ne
+crée aucun droit.
+
+L'action doit être `pre_action`, future selon le prédicat Europe/Paris,
+explicitement publiée, visible, publique et compatible avec la revue. Le
+départ doit être cohérent avec l'heure de début de l'action ; une heure de
+début absente ne permet pas de valider le trajet. Un conducteur ne peut pas
+demander une place sur son propre trajet, et un passager ne peut pas créer une
+seconde demande `pending` ou `accepted` pour le même trajet.
+
+`origin_zone_name` est normalisé par le référentiel territorial canonique. Les
+notes et messages sont visibles uniquement au conducteur et au demandeur
+selon le cas ; ils ne sont pas indexables et ne rejoignent aucune projection
+publique. La validation serveur rejette les coordonnées, adresses et contacts
+manifestes, avec une information explicite dans l'interface. Ce filtre
+réduit le risque mais ne garantit pas à lui seul l'absence de toute donnée
+personnelle.
+
 ### Organisateur
 
 Un organisateur autorisé peut, selon le contrat de l'action :
