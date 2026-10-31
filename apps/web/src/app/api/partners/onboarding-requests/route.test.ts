@@ -99,6 +99,18 @@ describe("POST /api/partners/onboarding-requests", () => {
     expect(mocks.sendCreatorInboxEmail).toHaveBeenCalledOnce();
   });
 
+  it("rejects a missing Clerk user before persistence or notifications", async () => {
+    mocks.auth.mockResolvedValueOnce({ userId: null });
+
+    const response = await POST(request({ "Idempotency-Key": "partner-onboarding-1700000000000" }));
+
+    expect(response.status).toBe(401);
+    expect(mocks.appendPartnerOnboardingRequestWithResult).not.toHaveBeenCalled();
+    expect(mocks.ensureEmailQuotaAvailable).not.toHaveBeenCalled();
+    expect(mocks.sendEmail).not.toHaveBeenCalled();
+    expect(mocks.sendCreatorInboxEmail).not.toHaveBeenCalled();
+  });
+
   it("returns the original result for a replay without sending duplicate notifications", async () => {
     mocks.appendPartnerOnboardingRequestWithResult.mockResolvedValueOnce({
       record: storedRecord(),

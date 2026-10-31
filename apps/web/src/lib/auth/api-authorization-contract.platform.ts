@@ -45,6 +45,7 @@ export const platformAuthorizationContract = {
       dimensions: ["authentication", "ownership"],
       actual: "auth() + submittedByUserId from current session",
       evidence: ["auth()", "submittedByUserId"],
+      evidenceScope: "module",
     },
   },
   "partners/published-directory": {
@@ -259,6 +260,7 @@ export const platformAuthorizationContract = {
       dimensions: ["admin/creator role"],
       actual: "hasValidLocalTestToken permits only the explicitly configured development/test token on /api/send; every other request uses requireAdminAccess before sendEmail",
       evidence: ["hasValidLocalTestToken", "requireAdminAccess", "sendEmail"],
+      evidenceScope: "module",
     },
   },
   services: {

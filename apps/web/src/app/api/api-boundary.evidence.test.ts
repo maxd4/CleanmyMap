@@ -256,4 +256,67 @@ describe("API security evidence analysis", () => {
     expect(missingEvidence(entry, routeEntry, "PATCH")).toEqual([]);
     expect(routeEntry.methodEvidenceSources?.get("PATCH")).toContain("appendActionModerationAudit");
   });
+
+  it("follows an authenticated helper delegated through withServerRateLimit", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { withServerRateLimit } from "./rate-limit";
+        import { handleAuthenticatedPost } from "./authenticated-post";
+        export async function POST(request: Request) {
+          return withServerRateLimit(request, { limit: 3 }, () => handleAuthenticatedPost(request));
+        }
+      `,
+      {
+        "authenticated-post.ts": `
+          export async function handleAuthenticatedPost() {
+            const { userId } = await auth();
+            if (!userId) return unauthorizedJsonResponse();
+            return Response.json({ submittedByUserId: userId });
+          }
+        `,
+        "rate-limit.ts": "export function withServerRateLimit(_request: Request, _options: unknown, handler: () => Promise<Response>) { return handler(); }",
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "authenticated onboarding submission",
+      dimensions: ["authentication", "ownership"],
+      actual: "POST delegates to the authenticated rate-limited helper",
+      evidence: ["auth()", "submittedByUserId"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "POST")).toEqual([]);
+    expect(routeEntry.methodEvidenceSources?.get("POST")).toContain("submittedByUserId");
+  });
+
+  it("does not follow a guard that is only returned as a callback value", () => {
+    const routeEntry = buildInlineRouteEntry(
+      `
+        import { withServerRateLimit } from "./rate-limit";
+        import { handleAuthenticatedPost } from "./authenticated-post";
+        export async function POST(request: Request) {
+          return withServerRateLimit(request, { limit: 3 }, () => handleAuthenticatedPost);
+        }
+      `,
+      {
+        "authenticated-post.ts": `
+          export async function handleAuthenticatedPost() {
+            const { userId } = await auth();
+            return Response.json({ submittedByUserId: userId });
+          }
+        `,
+        "rate-limit.ts": "export function withServerRateLimit(_request: Request, _options: unknown, handler: () => Promise<Response>) { return handler(); }",
+      },
+    );
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "reachable authentication",
+      dimensions: ["authentication", "ownership"],
+      actual: "POST must execute the authenticated helper",
+      evidence: ["auth()", "submittedByUserId"],
+      evidenceScope: "module",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "POST")).toEqual(["auth()", "submittedByUserId"]);
+    expect(routeEntry.methodEvidenceSources?.get("POST")).not.toContain("submittedByUserId");
+  });
 });

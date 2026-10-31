@@ -226,7 +226,9 @@ const callbackInvokingFunctions = new Set([
   "handleCreatorInboxPromotion",
   "runDecisionWorkflow",
   "applyRoleAccountMutation",
+  "withServerRateLimit",
 ]);
+const strictCallbackInvokingFunctions = new Set(["withServerRateLimit"]);
 
 function collectCalledIdentifiers(
   source: string,
@@ -296,6 +298,9 @@ function collectCalledIdentifiers(
       const calleeIdentifier = getCalleeIdentifier(node.expression);
       if (calleeIdentifier) addCallableReference(calleeIdentifier);
       if (includeCallbackArguments && invokesCallbackArgument(node.expression)) {
+        const strictCallbackTraversal =
+          calleeIdentifier !== null &&
+          strictCallbackInvokingFunctions.has(calleeIdentifier);
         for (const argument of node.arguments) {
           let callback = argument;
           while (ts.isParenthesizedExpression(callback)) {
@@ -303,6 +308,10 @@ function collectCalledIdentifiers(
           }
           if (ts.isIdentifier(callback)) {
             addCallableReference(callback.text);
+          } else if (strictCallbackTraversal) {
+            for (const reference of collectCalledIdentifiers(argument.getText(sourceFile), true, true)) {
+              addCallableReference(reference);
+            }
           } else {
             for (const reference of collectIdentifierReferencesFromNode(argument, true)) {
               addCallableReference(reference);
