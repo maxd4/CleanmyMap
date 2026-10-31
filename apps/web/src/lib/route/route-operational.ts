@@ -138,22 +138,10 @@ type MeetingPointCandidate = {
   provenance?: OperationalRouteZone["provenance"];
 };
 
-function isFiniteCoordinate(value: readonly [number, number] | null | undefined): value is [number, number] {
-  return Boolean(
-    value &&
-      Number.isFinite(value[0]) &&
-      Number.isFinite(value[1]) &&
-      value[0] >= -90 &&
-      value[0] <= 90 &&
-      value[1] >= -180 &&
-      value[1] <= 180,
-  );
-}
-
 function isUsableGeometryCoordinates(
   coordinates: readonly (readonly [number, number])[],
 ): coordinates is readonly [number, number][] {
-  return coordinates.length >= 2 && coordinates.every(isFiniteCoordinate);
+  return coordinates.length >= 2 && coordinates.every(isCoordinate);
 }
 
 function projectAtCumulativeDistance(
@@ -239,7 +227,7 @@ function resolveMeetingPointProjectionMetrics(
   cumulativeDistances: readonly number[],
   totalDistanceKm: number,
 ): { coordinate: [number, number]; provenance: NonNullable<MeetingPointProjection["provenance"]>; cumulativeDistanceKm: number | null; progress: number | null } {
-  const candidateCoordinate = isFiniteCoordinate(candidate.coordinate) ? candidate.coordinate : null;
+  const candidateCoordinate = isCoordinate(candidate.coordinate) ? candidate.coordinate : null;
   const provenance = candidateCoordinate && candidate.provenance && candidate.provenance !== "final_geometry_midpoint"
     ? candidate.provenance
     : "final_geometry_midpoint";

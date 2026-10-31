@@ -10,6 +10,7 @@ import {
   projectMeetingPointFromGeometry,
   type OperationalRoute,
 } from "@/lib/route/route-operational";
+import { isCoordinate } from "@/lib/route/route-geometry-validation";
 import {
   resolveFinalActionGeometry,
   type FinalActionGeometry,
@@ -39,20 +40,8 @@ export type ActionRouteGpxInput = {
   arrivalLabel?: string;
 };
 
-function isValidCoordinate(value: readonly [number, number] | null | undefined): value is GpxCoordinate {
-  return Boolean(
-    value &&
-      Number.isFinite(value[0]) &&
-      Number.isFinite(value[1]) &&
-      value[0] >= -90 &&
-      value[0] <= 90 &&
-      value[1] >= -180 &&
-      value[1] <= 180,
-  );
-}
-
 function hasUsableTrack(coordinates: readonly GpxCoordinate[]): boolean {
-  return coordinates.length >= 2 && coordinates.every(isValidCoordinate);
+  return coordinates.length >= 2 && coordinates.every(isCoordinate);
 }
 
 function asPolylineDrawing(
@@ -92,7 +81,7 @@ function waypoint(
   name: string | undefined,
   role: GpxWaypoint["role"],
 ): GpxWaypoint | null {
-  if (!isValidCoordinate(coordinates)) return null;
+  if (!isCoordinate(coordinates)) return null;
   return {
     coordinates,
     name: name?.trim() || (role === "departure" ? "Départ" : role === "arrival" ? "Arrivée" : "Mi-parcours"),
@@ -128,7 +117,7 @@ function routeWaypoints(params: {
     if (meetingPointWaypoint) waypoints.push(meetingPointWaypoint);
   }
 
-  if (isValidCoordinate(arrival) && (!isValidCoordinate(departure) || !sameCoordinate(arrival, departure))) {
+  if (isCoordinate(arrival) && (!isCoordinate(departure) || !sameCoordinate(arrival, departure))) {
     const arrivalWaypoint = waypoint(arrival, params.arrivalLabel, "arrival");
     if (arrivalWaypoint) waypoints.push(arrivalWaypoint);
   }
@@ -145,9 +134,9 @@ function trackFromOperationalRoute(
   const coordinates = route.geometry.coordinates;
   if (!hasUsableTrack(coordinates)) return null;
 
-  const origin = isValidCoordinate(route.geometry.origin)
+  const origin = isCoordinate(route.geometry.origin)
     ? route.geometry.origin
-    : isValidCoordinate(operationalRoute.zones.departure.coordinate)
+    : isCoordinate(operationalRoute.zones.departure.coordinate)
       ? operationalRoute.zones.departure.coordinate
       : coordinates[0] ?? null;
   const projection = getOperationalRouteMeetingPoint(operationalRoute, route);
@@ -215,7 +204,7 @@ function resolveDrawingMeetingPoint(
   const midpointCoordinate = params.midpointCoordinates
     ? [params.midpointCoordinates.latitude, params.midpointCoordinates.longitude] as GpxCoordinate
     : null;
-  const explicitMeetingPoint = isValidCoordinate(midpointCoordinate)
+  const explicitMeetingPoint = isCoordinate(midpointCoordinate)
     ? { coordinates: midpointCoordinate, label: params.midpointLabel }
     : null;
   const derivedMeetingPoint = explicitMeetingPoint ?? (

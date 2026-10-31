@@ -467,6 +467,70 @@
       "maxBytes": 22372
     },
     {
+      "path": "apps/web/src/lib/route/route-operational.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 644,
+      "maxBytes": 24647
+    },
+    {
+      "path": "apps/web/src/components/chat/ui/chat-message-item.tsx",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 618,
+      "maxBytes": 20280
+    },
+    {
+      "path": "apps/web/src/lib/community/bug-reports-store.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 586,
+      "maxBytes": 19868
+    },
+    {
+      "path": "apps/web/src/lib/auth/api-authorization-contract.actions.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 575,
+      "maxBytes": 30399
+    },
+    {
+      "path": "apps/web/src/lib/actions/action-buddy.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 565,
+      "maxBytes": 22253
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-submit.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 514,
+      "maxBytes": 15313
+    },
+    {
+      "path": "apps/web/src/lib/actions/formalities-workflow.ts",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 512,
+      "maxBytes": 18378
+    },
+    {
+      "path": "apps/web/src/components/actions/action-drawing-map.tsx",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",
+      "maxLines": 507,
+      "maxBytes": 16972
+    },
+    {
       "path": "apps/web/src/lib/route/route-predicted-targets.ts",
       "kind": "runtime",
       "status": "IMPROVED",
