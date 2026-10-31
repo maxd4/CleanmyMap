@@ -23,3 +23,20 @@ export function parseSpogomiImportMapping(value: FormDataEntryValue | null) {
     return { ok: false as const };
   }
 }
+
+function readOptionalText(form: FormData, key: string) {
+  const value = form.get(key);
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+export function readSpogomiRosterImportForm(form: FormData) {
+  return {
+    file: form.get("file"),
+    mappingResult: parseSpogomiImportMapping(form.get("mapping")),
+    divisionId: readOptionalText(form, "divisionId"),
+    sheetName: readOptionalText(form, "sheetName"),
+    headerRow: readOptionalText(form, "headerRow"),
+    acceptedRowNumbers: readOptionalText(form, "acceptedRowNumbers"),
+    allowIncompatibleMapping: form.get("allowIncompatibleMapping") === "true",
+  };
+}

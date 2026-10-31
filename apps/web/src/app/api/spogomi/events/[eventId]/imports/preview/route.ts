@@ -4,7 +4,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { previewRosterImportChanges } from "@/lib/spogomi/preparation-service";
 import { previewRosterFile } from "@/lib/spogomi/preparation";
-import { parseSpogomiImportMapping } from "@/lib/spogomi/import-route-schemas";
+import { readSpogomiRosterImportForm } from "@/lib/spogomi/import-route-schemas";
 import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 
 export const runtime = "nodejs";
@@ -19,15 +19,10 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     if ("response" in authorized) return authorized.response;
     const { event } = authorized;
     const form = await request.formData();
-    const file = form.get("file");
+    const { file, mappingResult, divisionId, sheetName, headerRow, allowIncompatibleMapping } = readSpogomiRosterImportForm(form);
     if (!(file instanceof File)) return NextResponse.json({ error: "Fichier CSV, TSV, XLSX, XLS ou ODS requis." }, { status: 422 });
-    const mappingResult = parseSpogomiImportMapping(form.get("mapping"));
     if (!mappingResult.ok) return NextResponse.json({ error: "La correspondance de colonnes est invalide." }, { status: 422 });
     const mapping = mappingResult.mapping;
-    const sheetName = form.get("sheetName");
-    const headerRow = form.get("headerRow");
-    const allowIncompatibleMapping = form.get("allowIncompatibleMapping") === "true";
-    const divisionId = typeof form.get("divisionId") === "string" && form.get("divisionId") ? String(form.get("divisionId")) : undefined;
     const options = { mapping, ...(typeof sheetName === "string" && sheetName ? { sheetName } : {}), ...(typeof headerRow === "string" && headerRow ? { headerRow: Number(headerRow) } : {}), ...(allowIncompatibleMapping ? { allowIncompatibleMapping: true } : {}) };
     const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(file, Object.keys(options).length ? options : undefined), divisionId);
     return NextResponse.json(preview);

@@ -2,16 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
-  getSupabaseServerClient: vi.fn(),
-  loadSpogomiEventForOrganizer: vi.fn(),
+  loadAuthorizedSpogomiEvent: vi.fn(),
   loadSpogomiClosureSummary: vi.fn(),
   setSpogomiTeamClosureDecision: vi.fn(),
   handleApiError: vi.fn(() => new Response(JSON.stringify({ error: "Internal error" }), { status: 500 })),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupabaseServerClient }));
-vi.mock("@/lib/spogomi/preparation-service", () => ({ loadSpogomiEventForOrganizer: mocks.loadSpogomiEventForOrganizer }));
+vi.mock("@/lib/spogomi/route-auth", () => ({ loadAuthorizedSpogomiEvent: mocks.loadAuthorizedSpogomiEvent }));
 vi.mock("@/lib/spogomi/closure-service", () => ({ loadSpogomiClosureSummary: mocks.loadSpogomiClosureSummary, setSpogomiTeamClosureDecision: mocks.setSpogomiTeamClosureDecision }));
 vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: mocks.handleApiError,
@@ -38,8 +36,7 @@ describe("SPOGOMI closure route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "organizer-a" });
-    mocks.getSupabaseServerClient.mockReturnValue({ client: true });
-    mocks.loadSpogomiEventForOrganizer.mockResolvedValue({ id: "event-a" });
+    mocks.loadAuthorizedSpogomiEvent.mockResolvedValue({ supabase: { client: true }, authorized: { event: { id: "event-a" } } });
     mocks.loadSpogomiClosureSummary.mockResolvedValue({ fieldCompetition: "finished", blockers: [], action: "pending" });
     mocks.setSpogomiTeamClosureDecision.mockResolvedValue({ id: "decision-a", status: "forfeit" });
   });
@@ -47,11 +44,11 @@ describe("SPOGOMI closure route", () => {
   it("reads the private summary only after AuthN and organizer authorization", async () => {
     const response = await route.GET(new Request("http://localhost"), context);
     expect(response.status).toBe(200);
-    expect(mocks.loadSpogomiEventForOrganizer).toHaveBeenCalledWith({ client: true }, "event-a", "organizer-a");
+    expect(mocks.loadAuthorizedSpogomiEvent).toHaveBeenCalledWith("event-a", "organizer-a");
     expect(mocks.loadSpogomiClosureSummary).toHaveBeenCalledWith({ supabase: { client: true }, eventId: "event-a" });
     expect(response.headers.get("cache-control")).toBe("no-store");
 
-    mocks.loadSpogomiEventForOrganizer.mockResolvedValueOnce(false);
+    mocks.loadAuthorizedSpogomiEvent.mockResolvedValueOnce({ supabase: {}, authorized: { response: new Response("Forbidden", { status: 403 }) } });
     expect((await route.GET(new Request("http://localhost"), context)).status).toBe(403);
   });
 
@@ -61,7 +58,7 @@ describe("SPOGOMI closure route", () => {
     expect(mocks.setSpogomiTeamClosureDecision).not.toHaveBeenCalled();
 
     expect((await route.POST(jsonRequest({ action: "decide", teamId: "not-a-uuid" }), context)).status).toBe(400);
-    expect(mocks.loadSpogomiEventForOrganizer).not.toHaveBeenCalled();
+    expect(mocks.loadAuthorizedSpogomiEvent).not.toHaveBeenCalled();
   });
 
   it("records a scoped decision without granting any implicit certification", async () => {

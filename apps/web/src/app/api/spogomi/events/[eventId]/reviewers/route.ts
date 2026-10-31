@@ -24,6 +24,13 @@ const reviewerSchema = z.object({
   role: z.enum(["observer", "referee", "checkin", "timekeeper", "weigher", "data_entry", "arbiter", "certifier"]).default("referee"),
 }).strict();
 
+const operationalReviewerRoles = ["timekeeper", "weigher", "data_entry", "arbiter", "certifier"] as const;
+type ReviewerRole = z.infer<typeof reviewerSchema>["role"];
+
+function isOperationalReviewerRole(role: ReviewerRole): role is (typeof operationalReviewerRoles)[number] {
+  return operationalReviewerRoles.includes(role as (typeof operationalReviewerRoles)[number]);
+}
+
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
@@ -32,9 +39,11 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   const parsed = reviewerSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return validationErrorResponse({ body: ["L’identifiant ou l’habilitation SPOGOMI est invalide."] });
   try {
-    const params = { supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
-    const reviewer = parsed.data.role === "timekeeper" || parsed.data.role === "weigher" || parsed.data.role === "data_entry" || parsed.data.role === "arbiter" || parsed.data.role === "certifier"
-      ? await setSpogomiOperationalAccess({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, role: parsed.data.role, operation: "grant", actorClerkId: access.userId })
+    const supabase = getSupabaseServerClient(true);
+    const eventId = (await context.params).eventId;
+    const params = { supabase, eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
+    const reviewer = isOperationalReviewerRole(parsed.data.role)
+      ? await setSpogomiOperationalAccess({ supabase, eventId, clerkId: parsed.data.clerkId, role: parsed.data.role, operation: "grant", actorClerkId: access.userId })
       : parsed.data.role === "observer"
       ? await assignSpogomiObserver(params)
       : parsed.data.role === "checkin"
@@ -54,8 +63,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ even
   const parsed = reviewerSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return validationErrorResponse({ body: ["L’identifiant ou l’habilitation SPOGOMI est invalide."] });
   try {
-    const params = { supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
-    if (parsed.data.role === "timekeeper" || parsed.data.role === "weigher" || parsed.data.role === "data_entry" || parsed.data.role === "arbiter" || parsed.data.role === "certifier") await setSpogomiOperationalAccess({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, role: parsed.data.role, operation: "revoke", actorClerkId: access.userId });
+    const supabase = getSupabaseServerClient(true);
+    const eventId = (await context.params).eventId;
+    const params = { supabase, eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
+    if (isOperationalReviewerRole(parsed.data.role)) await setSpogomiOperationalAccess({ supabase, eventId, clerkId: parsed.data.clerkId, role: parsed.data.role, operation: "revoke", actorClerkId: access.userId });
     else if (parsed.data.role === "observer") await revokeSpogomiObserver(params);
     else if (parsed.data.role === "checkin") await revokeSpogomiCheckin(params);
     else await revokeSpogomiReferee(params);

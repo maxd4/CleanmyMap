@@ -30,6 +30,14 @@ const bodySchema = z.object({
 }).refine((body) => !body.assistance || !body.code, { message: "Choisissez une seule voie de liaison." });
 type RouteContext = { params: Promise<{ eventId: string }> };
 
+async function loadIdentityLinkProjection(supabase: ReturnType<typeof getSupabaseServerClient>, eventId: string, clerkId: string) {
+  const state = await loadSpogomiIdentityState(supabase, { eventId, clerkId });
+  const recognition = state.participantId
+    ? await loadSpogomiEventRecognitionForUser(supabase, { eventId, userId: clerkId })
+    : null;
+  return { ...state, recognition };
+}
+
 async function authenticateIdentityLinkRequest(request: Request) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return { response: unauthorizedJsonResponse() } as const;
@@ -44,21 +52,12 @@ export async function GET(request: Request, context: RouteContext) {
 
   try {
     const { eventId } = await context.params;
-    const state = await loadSpogomiIdentityState(getSupabaseServerClient(true), {
-      eventId,
-      clerkId: authentication.access.userId,
-    });
-    const recognition = state.participantId
-      ? await loadSpogomiEventRecognitionForUser(getSupabaseServerClient(true), {
-        eventId,
-        userId: authentication.access.userId,
-      })
-      : null;
+    const projection = await loadIdentityLinkProjection(getSupabaseServerClient(true), eventId, authentication.access.userId);
     const assistance = await loadSpogomiIdentityAssistanceRequestForRequester(getSupabaseServerClient(true), {
       eventId,
       requesterClerkId: authentication.access.userId,
     });
-    return NextResponse.json({ status: "ok", ...state, recognition, assistance });
+    return NextResponse.json({ status: "ok", ...projection, assistance });
   } catch (error) {
     return handleApiError(error, "spogomi.identity-link.read");
   }
@@ -87,18 +86,11 @@ export async function POST(request: Request, context: RouteContext) {
         code: parsed.data.code,
         clerkId: access.userId,
       });
-      const state = await loadSpogomiIdentityState(supabase, {
-        eventId,
-        clerkId: access.userId,
-      });
-      const recognition = state.participantId
-        ? await loadSpogomiEventRecognitionForUser(supabase, { eventId, userId: access.userId })
-        : null;
+      const projection = await loadIdentityLinkProjection(supabase, eventId, access.userId);
       return NextResponse.json({
         status: "ok",
         linkStatus: link.linkStatus,
-        ...state,
-        recognition,
+        ...projection,
         note: "La liaison du compte ne confirme pas la présence. Utilisez ensuite la demande de participation ; seule la confirmation organisateur déclenche la gamification normale.",
       });
     }
@@ -119,13 +111,12 @@ export async function POST(request: Request, context: RouteContext) {
       eventId,
       clerkId: access.userId,
     });
-    const recognition = state.participantId
-      ? await loadSpogomiEventRecognitionForUser(supabase, { eventId, userId: access.userId })
-      : null;
+    const projection = state.participantId
+      ? { ...state, recognition: await loadSpogomiEventRecognitionForUser(supabase, { eventId, userId: access.userId }) }
+      : { ...state, recognition: null };
     return NextResponse.json({
       status: "ok",
-      ...state,
-      recognition,
+      ...projection,
       note: "La liaison du compte ne confirme pas la présence. Seule la confirmation organisateur d’une participation CleanMyMap déclenche la gamification normale.",
     });
   } catch (error) {

@@ -82,6 +82,15 @@ const mocks = vi.hoisted(() => {
   const issueSpogomiTeamAccessGrant = vi.fn();
   const revokeSpogomiTeamAccessGrant = vi.fn();
   const parseSpogomiImportMapping = vi.fn();
+  const readSpogomiRosterImportForm = vi.fn((form: FormData) => ({
+    file: form.get("file"),
+    mappingResult: parseSpogomiImportMapping(form.get("mapping")),
+    divisionId: typeof form.get("divisionId") === "string" && form.get("divisionId") ? String(form.get("divisionId")) : undefined,
+    sheetName: typeof form.get("sheetName") === "string" && form.get("sheetName") ? String(form.get("sheetName")) : undefined,
+    headerRow: typeof form.get("headerRow") === "string" && form.get("headerRow") ? String(form.get("headerRow")) : undefined,
+    acceptedRowNumbers: typeof form.get("acceptedRowNumbers") === "string" && form.get("acceptedRowNumbers") ? String(form.get("acceptedRowNumbers")) : undefined,
+    allowIncompatibleMapping: form.get("allowIncompatibleMapping") === "true",
+  }));
   const previewRosterFile = vi.fn();
   const loadPublishedSpogomiEventForAction = vi.fn();
   const buildXlsxWorkbook = vi.fn();
@@ -149,6 +158,7 @@ const mocks = vi.hoisted(() => {
     issueSpogomiTeamAccessGrant,
     revokeSpogomiTeamAccessGrant,
     parseSpogomiImportMapping,
+    readSpogomiRosterImportForm,
     previewRosterFile,
     loadPublishedSpogomiEventForAction,
     buildXlsxWorkbook,
@@ -243,7 +253,7 @@ vi.mock("@/lib/spogomi/identity-link", () => ({
   issueSpogomiIdentityCode: mocks.issueSpogomiIdentityCode,
   SpogomiIdentityLinkError: mocks.SpogomiIdentityLinkError,
 }));
-vi.mock("@/lib/spogomi/import-route-schemas", () => ({ parseSpogomiImportMapping: mocks.parseSpogomiImportMapping }));
+vi.mock("@/lib/spogomi/import-route-schemas", () => ({ parseSpogomiImportMapping: mocks.parseSpogomiImportMapping, readSpogomiRosterImportForm: mocks.readSpogomiRosterImportForm }));
 vi.mock("@/lib/spogomi/preparation", () => ({ previewRosterFile: mocks.previewRosterFile }));
 vi.mock("@/lib/spogomi/public-service", () => ({ loadPublishedSpogomiEventForAction: mocks.loadPublishedSpogomiEventForAction }));
 vi.mock("@/lib/spogomi/ticket-reconciliation", () => ({ isCachanTicketCompositionEligible: vi.fn(() => true) }));
