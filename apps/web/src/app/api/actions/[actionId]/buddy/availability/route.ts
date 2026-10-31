@@ -12,6 +12,8 @@ import { BUDDY_PRIVATE_HEADERS, resolveBuddyActionId, type BuddyActionContext } 
 export const runtime = "nodejs";
 // Vercel contract: authenticated buddy availability requires a dynamic private response.
 export const dynamic = "force-dynamic";
+// Vercel cache justification: authenticated availability responses contain
+// private state and use no-store; they must not be shared.
 
 export async function PUT(_request: Request, context: BuddyActionContext) {
   const access = await requireAuthenticatedAccess();

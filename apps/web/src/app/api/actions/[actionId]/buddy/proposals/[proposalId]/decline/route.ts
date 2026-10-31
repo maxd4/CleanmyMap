@@ -9,6 +9,8 @@ import { BUDDY_PRIVATE_HEADERS, resolveBuddyResourceParams, type BuddyResourceCo
 export const runtime = "nodejs";
 // Vercel contract: authenticated proposal decline requires a dynamic private response.
 export const dynamic = "force-dynamic";
+// Vercel cache justification: authenticated proposal responses contain private
+// state and use no-store; they must not be shared.
 
 export async function POST(_request: Request, context: BuddyResourceContext) {
   const access = await requireAuthenticatedAccess();
