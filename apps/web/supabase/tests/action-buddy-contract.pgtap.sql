@@ -1,6 +1,6 @@
 begin;
 
-select plan(42);
+select plan(43);
 
 select has_table('public', 'action_buddy_availability', 'buddy availability table exists');
 select has_table('public', 'action_buddy_requests', 'buddy requests table exists');
@@ -196,6 +196,15 @@ select is(
   (select status from public.action_buddy_proposals where id = (select proposal_cancel from action_buddy_fixture)),
   'withdrawn',
   'cancelling a request withdraws its pending proposals atomically'
+);
+select is(
+  (select count(*)::integer
+   from public.app_notifications
+   where type = 'community'
+     and payload ->> 'kind' = 'action_buddy_request_cancelled'
+     and payload ->> 'requestId' = (select request_cancel::text from action_buddy_fixture)),
+  0,
+  'cancelling a request without a matched mentor emits no notification'
 );
 update public.action_buddy_requests
 set status = 'cancelled'
