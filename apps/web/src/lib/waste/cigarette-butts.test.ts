@@ -8,6 +8,7 @@ import {
   normalizeCigaretteButtsMeasurementsFromUserInput,
   type ActionCigaretteButtsMeasurements,
 } from "./cigarette-butts";
+import { CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 } from "@/lib/impact/impact-terrain-2026";
 
 function buildExistingMeasurements(
   overrides: Partial<ActionCigaretteButtsMeasurements> = {},
@@ -65,7 +66,7 @@ describe("cigarette-butt raw and derived measurements", () => {
       deriveMissingFromMassOrCount: true,
     });
 
-    expect(measurement.cigaretteButtsCount).toBe(3_000);
+    expect(measurement.cigaretteButtsCount).toBe(5_455);
     expect(measurement.cigaretteButtsMassKg).toBe(1.2);
     expect(measurement.cigaretteButtsCountProvenance).toBe("weight_converted");
     expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
@@ -82,7 +83,7 @@ describe("cigarette-butt raw and derived measurements", () => {
     });
 
     expect(measurement.cigaretteButtsCount).toBe(3_000);
-    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(3_000 / 1_750, 10);
+    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(3_000 * 0.5 / 1_000, 10);
     expect(measurement.cigaretteButtsCountProvenance).toBe("counted");
     expect(measurement.cigaretteButtsMassProvenance).toBe("weight_converted");
   });
@@ -110,7 +111,7 @@ describe("cigarette-butt raw and derived measurements", () => {
     });
 
     expect(measurement.cigaretteButtsMassKg).toBe(1);
-    expect(measurement.cigaretteButtsCount).toBe(1_750);
+    expect(measurement.cigaretteButtsCount).toBe(2_000);
     expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
     expect(measurement.cigaretteButtsCountProvenance).toBe("weight_converted");
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBe(
@@ -127,7 +128,7 @@ describe("cigarette-butt raw and derived measurements", () => {
     });
 
     expect(measurement.cigaretteButtsCount).toBe(1_750);
-    expect(measurement.cigaretteButtsMassKg).toBe(1);
+    expect(measurement.cigaretteButtsMassKg).toBe(0.875);
     expect(measurement.cigaretteButtsCountProvenance).toBe("counted");
     expect(measurement.cigaretteButtsMassProvenance).toBe("weight_converted");
   });
@@ -138,7 +139,7 @@ describe("cigarette-butt raw and derived measurements", () => {
       cigaretteButtsCondition: "humide",
     });
 
-    expect(measurement.cigaretteButtsCount).toBe(1_750);
+    expect(measurement.cigaretteButtsCount).toBe(2_000);
     expect(measurement.cigaretteButtsCountProvenance).toBe("weight_converted");
     expect(measurement.cigaretteButtsMassProvenance).toBe("measured");
   });
@@ -440,16 +441,16 @@ describe("cigarette-butt raw and derived measurements", () => {
       ],
     });
 
-    expect(measurement.cigaretteButtsCount).toBe(2_500);
-    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 / 2_500 + 300 / (2_500 * 0.4), 10);
+    expect(measurement.cigaretteButtsCount).toBe(2_800);
+    expect(measurement.cigaretteButtsMassKg).toBeCloseTo(1.2 + 100 * 0.22 / 1_000 + 300 * 0.5 / 1_000, 10);
     expect(measurement.cigaretteButtsVolumeLiters).toBe(0.5);
     expect(measurement.cigaretteButtsLotsSummary).toMatchObject({
-      totalCount: 2_500,
+      totalCount: 2_800,
       countedCount: 100,
-      estimatedCount: 2_400,
+      estimatedCount: 2_700,
       measuredMassKg: 1.2,
     });
-    expect(measurement.cigaretteButtsLotResults?.map((lot) => lot.count)).toEqual([100, 2_100, 300]);
+    expect(measurement.cigaretteButtsLotResults?.map((lot) => lot.count)).toEqual([100, 2_400, 300]);
     expect(measurement.cigaretteButtsLotResults?.[1]?.massKg).toBe(1.2);
     expect(measurement.cigaretteButtsLotResults?.[2]?.volumeConversionFormulaVersion).toBe(
       CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
@@ -464,7 +465,7 @@ describe("cigarette-butt raw and derived measurements", () => {
 
     expect(aggregated.results[0]?.count).toBe(Math.round(1.234 * CIGARETTE_BUTTS_PER_VOLUME_LITER));
     expect(aggregated.results[1]?.massKg).toBe(0.123456);
-    expect(aggregated.summary.totalCount).toBe(740 + Math.trunc(0.123456 * 2_500 * 0.7));
+    expect(aggregated.summary.totalCount).toBe(740 + Math.round(0.123456 * 1_000 / 0.5));
     expect(aggregated.summary.measuredMassKg).toBe(0.123456);
   });
 
@@ -490,5 +491,52 @@ describe("cigarette-butt raw and derived measurements", () => {
 
     expect(aggregated.lots).toHaveLength(1);
     expect(aggregated.summary.totalCount).toBe(500);
+  });
+
+});
+
+describe("historical cigarette-butt lot snapshots", () => {
+  it("rehydrates a persisted snapshot without recalculating it", () => {
+    const historicalLot = {
+      id: "legacy-humide",
+      source: "mass_kg" as const,
+      value: 1,
+      condition: "humide" as const,
+    };
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [historicalLot],
+      cigaretteButtsLotResults: [{
+        ...historicalLot,
+        count: 1_750,
+        massKg: 1,
+        rawMassKg: 1,
+        rawVolumeLiters: null,
+        countProvenance: "weight_converted",
+        massProvenance: "measured",
+        massConversionFormulaVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+        volumeConversionFormulaVersion: null,
+      }],
+      cigaretteButtsLotsSummary: {
+        totalCount: 1_750,
+        countedCount: 0,
+        estimatedCount: 1_750,
+        totalMassKg: 1,
+        measuredMassKg: 1,
+        estimatedMassKg: 0,
+        totalVolumeLiters: 0,
+        countedShare: 0,
+        estimatedShare: 1,
+      },
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(1_750);
+    expect(measurement.cigaretteButtsConversionFormulaVersion).toBe(
+      CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+    );
+    expect(measurement.cigaretteButtsLotResults?.[0]?.count).toBe(1_750);
+    expect(measurement.cigaretteButtsLotResults?.[0]?.massConversionFormulaVersion).toBe(
+      CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+    );
+    expect(measurement.cigaretteButtsCount).not.toBe(Math.round(1 / 0.5 * 1_000));
   });
 });

@@ -1,6 +1,7 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import type { ActionGeometryProvenance } from "@/lib/actions/quality/data-quality-types";
+import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 import { buildUtcDateFloor } from "@/lib/time/utc-runtime";
 import { buildDeliverableFilename } from "./deliverable-name";
@@ -47,6 +48,9 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   cigarette_butts_estimated?: number | null;
   cigarette_butts_counted_share?: number | null;
   cigarette_butts_estimated_share?: number | null;
+  cigarette_butts_mass_kg?: number | null;
+  cigarette_butts_mass_provenance?: "measured" | "estimated" | "mixed" | "unknown" | null;
+  cigarette_butts_conversion_versions?: string | null;
 };
 
 type ManualDrawingToGeoJson = (
@@ -99,6 +103,7 @@ function buildActionCsvRowProjection(
   contract: ActionDataContract,
   manualDrawingToGeoJson: ManualDrawingToGeoJson,
 ): ActionCsvRowWithDrawing {
+  const impact = computeActionImpactKpis(contract);
   return {
     ...buildActionsExportBaseFields(contract),
     created_at: contract.dates.createdAt ?? "",
@@ -115,6 +120,12 @@ function buildActionCsvRowProjection(
       contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary?.countedShare ?? null,
     cigarette_butts_estimated_share:
       contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary?.estimatedShare ?? null,
+    cigarette_butts_mass_kg: impact.buttsMassKg,
+    cigarette_butts_mass_provenance: impact.buttsMassProvenance,
+    cigarette_butts_conversion_versions:
+      impact.buttsMassConversionVersions.length > 0
+        ? impact.buttsMassConversionVersions.join("|")
+        : null,
   };
 }
 
@@ -260,6 +271,9 @@ function buildActionsCsvHeader(): string[] {
     "cigarette_butts_estimated",
     "cigarette_butts_counted_share",
     "cigarette_butts_estimated_share",
+    "cigarette_butts_mass_kg",
+    "cigarette_butts_mass_provenance",
+    "cigarette_butts_conversion_versions",
     "volunteers_count",
     "duration_minutes",
     "status",
@@ -305,6 +319,9 @@ function buildActionsCsvCells(row: ActionCsvRowWithDrawing): Array<string | numb
     toCsvCellValue(row.cigarette_butts_estimated),
     toCsvCellValue(row.cigarette_butts_counted_share),
     toCsvCellValue(row.cigarette_butts_estimated_share),
+    toCsvCellValue(row.cigarette_butts_mass_kg),
+    toCsvCellValue(row.cigarette_butts_mass_provenance),
+    toCsvCellValue(row.cigarette_butts_conversion_versions),
     row.volunteers_count,
     row.duration_minutes,
     row.status,

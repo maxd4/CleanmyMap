@@ -286,12 +286,12 @@ describe("individual action impact attribution", () => {
       individual_cigarette_butts_lots: lots,
     });
 
-    expect(lots.results.map((lot) => lot.count)).toEqual([10, 1_750, 1_200]);
+    expect(lots.results.map((lot) => lot.count)).toEqual([10, 2_000, 1_200]);
     expect(measurement).toMatchObject({
       cigaretteButtsLots: lots,
-      comparableButtsCount: 2_960,
+      comparableButtsCount: 3_210,
       comparableButtsProvenance: "derived",
-      cigaretteButtsCount: 2_960,
+      cigaretteButtsCount: 3_210,
       cigaretteButtsMassKg: lots.summary.totalMassKg,
     });
     expect(measurement?.cigaretteButtsLots?.summary.measuredMassKg).toBe(1);
@@ -324,7 +324,7 @@ describe("individual action impact attribution", () => {
     ]);
     const result = allocateActionParticipantImpact({
       totalWasteKg: null,
-      totalCigaretteButts: 1_000,
+      totalCigaretteButts: 1_200,
       participants: [
         participant("alice", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: aliceLots })),
         participant("bob", toIndividualImpactMeasurement({ individual_cigarette_butts_lots: bobLots })),
@@ -334,7 +334,7 @@ describe("individual action impact attribution", () => {
     });
 
     expect(result.get("alice")).toMatchObject({ cigaretteButts: 700, cigaretteButtsKind: "individual" });
-    expect(result.get("bob")).toMatchObject({ cigaretteButts: 250, cigaretteButtsKind: "individual" });
+    expect(result.get("bob")).toMatchObject({ cigaretteButts: 455, cigaretteButtsKind: "individual" });
     expect(result.has("pending")).toBe(false);
     expect(result.get("alice")?.cigaretteButtsInconsistent).toBe(false);
   });

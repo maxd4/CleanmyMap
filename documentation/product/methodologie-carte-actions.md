@@ -527,10 +527,16 @@ lots persistée dans les métadonnées de l'action. Chaque lot porte un identifi
 stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur
 non négative et l'état de la collecte. Le volume est une mesure source valide,
 pas un champ informatif : `cleanmymap-butts-volume-v1` applique `600 mégots/L`.
-Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v1` pour la masse et
-le nombre, arrondit chaque nombre dérivé avant la somme, et conserve les masses
-brutes mesurées séparément des masses estimées. Les KPI et exports exposent la
-part comptée et la part estimée seulement lorsque cette composition est connue.
+Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v2` pour une nouvelle
+saisie : `0,22 g/mégot` propre/sec, `0,50 g/mégot` humide et le même proxy pour
+mouille faute de référence indépendante. Le volume conserve `600 mégots/L`.
+Ces coefficients sont des ordres de grandeur variables et estimatifs, non une
+densité ou une masse physique universelle ; les anciennes mesures gardent leur
+version `impact-terrain-2026-butts-mass-v1` et leurs valeurs. Le moteur arrondit
+chaque nombre dérivé avant la somme et conserve les masses brutes mesurées
+séparément des masses estimées. Les KPI et exports exposent la part comptée, la
+part estimée, la provenance de masse et les versions utilisées afin de ne pas
+mélanger les calculs.
 Le champ `actions.cigarette_butts` reste la projection serveur de cette somme.
 Une omission de lots lors d'un PATCH d'une action qui en possède déjà est
 ambiguë et n'autorise pas le remplacement silencieux ; les historiques

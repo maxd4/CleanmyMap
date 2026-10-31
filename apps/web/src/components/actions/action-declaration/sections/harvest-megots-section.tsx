@@ -11,6 +11,9 @@ import {
   calculateCigaretteButtsLot,
   type CigaretteButtsLotInput,
 } from "@/lib/waste/cigarette-butts";
+import {
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+} from "@/lib/impact/impact-terrain-2026";
 import type { CigaretteButtsLotDraft } from "../model";
 
 function formatProvenance(provenance: string): string {
@@ -185,12 +188,12 @@ export function HarvestMegotsSection({
           <option value="mouille">Très mouillé</option>
         </select>
         <span className="block text-xs leading-snug text-slate-400">
-          L’état modifie uniquement la conversion proxy entre nombre et masse.
+          Conversion estimative versionnée : 0,22 g/mégot sec, 0,50 g/mégot humide ou mouillé ; le mouillé réutilise le proxy humide faute de référence indépendante.
         </span>
       </label>
 
       <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-        Ajoutez un lot par collecte distincte. Un lot possède une seule mesure source ; les équivalents sont calculés côté serveur et le total ne compte jamais deux fois le même lot.
+        Ajoutez un lot par collecte distincte. Un lot possède une seule mesure source ; les équivalents sont calculés côté serveur et le total ne compte jamais deux fois le même lot. Le volume utilise le repère estimatif de 600 mégots/L.
       </p>
 
       {megotsLots !== null ? (
@@ -201,6 +204,7 @@ export function HarvestMegotsSection({
             <p className="font-semibold text-slate-800">Total des lots</p>
             <p>{formatCount(megotsCounted)} comptés · {formatCount(megotsEstimated)} estimés</p>
             <p>{formatKg(megotsMeasuredMassKg)} kg mesurés · {formatKg(megotsEstimatedMassKg)} kg estimés</p>
+            <p className="mt-1 text-slate-500">Conversion masse/nombre : {CIGARETTE_BUTTS_MASS_CONVERSION_VERSION}. Les valeurs sont des ordres de grandeur variables, pas une masse physique universelle.</p>
           </div>
         </div>
       ) : null}

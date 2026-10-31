@@ -7,6 +7,7 @@ import {
 import { evaluateActionQuality } from "./quality/quality";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { resolveEffectiveVolunteerUnits } from "./volunteer-participation";
+import { computeActionImpactKpis } from "./impact-calculators";
 
 export type PostActionSummary = {
   action: {
@@ -20,6 +21,9 @@ export type PostActionSummary = {
     cigaretteButtsEstimated: number | null;
     cigaretteButtsCountedShare: number | null;
     cigaretteButtsEstimatedShare: number | null;
+    cigaretteButtsMassKg: number | null;
+    cigaretteButtsMassProvenance: "measured" | "estimated" | "mixed" | "unknown" | null;
+    cigaretteButtsConversionVersions: string[];
     volunteersCount: number | null;
     effectiveVolunteerUnits: number | null;
     durationMinutes: number | null;
@@ -82,6 +86,15 @@ export function buildPostActionSummary(
   const cigaretteButtsValue = toNonNegativeNumber(action.cigaretteButts);
   const cigaretteButts = cigaretteButtsValue === null ? null : Math.trunc(cigaretteButtsValue);
   const lotSummary = action.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary;
+  const impact = computeActionImpactKpis({
+    metadata: {
+      cigaretteButts: action.cigaretteButts,
+      cigaretteButtsMeasurements: action.cigaretteButtsMeasurements,
+      wasteKg: action.wasteKg,
+      volunteersCount: action.volunteersCount,
+      durationMinutes: action.durationMinutes,
+    },
+  });
   const volunteersValue = toNonNegativeNumber(action.volunteersCount);
   const volunteersCount =
     volunteersValue === null ? null : Math.trunc(volunteersValue);
@@ -104,6 +117,9 @@ export function buildPostActionSummary(
       cigaretteButtsEstimated: lotSummary?.estimatedCount ?? null,
       cigaretteButtsCountedShare: lotSummary?.countedShare ?? null,
       cigaretteButtsEstimatedShare: lotSummary?.estimatedShare ?? null,
+      cigaretteButtsMassKg: impact.buttsMassKg,
+      cigaretteButtsMassProvenance: impact.buttsMassProvenance,
+      cigaretteButtsConversionVersions: impact.buttsMassConversionVersions,
       volunteersCount,
       effectiveVolunteerUnits,
       durationMinutes,

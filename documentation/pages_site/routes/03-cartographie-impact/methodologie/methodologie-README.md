@@ -118,8 +118,7 @@ La masse ou le nombre dérivé réutilise `BUTTS_PER_KG_REFERENCE` et
 `CONDITION_WEIGHT_FACTORS` :
 
 ```txt
-masse_qualifiée_kg = somme(mégots_état / (2500 × facteur_état))
-masse_non_qualifiée_kg = mégots_non_qualifiés / 2500
+masse_qualifiée_kg = somme(mégots_état × grammes_par_mégot_version / 1000)
 masse_estimée_kg = masse_qualifiée_kg + masse_non_qualifiée_kg
 ```
 
@@ -128,10 +127,13 @@ dans les métadonnées de l’action. Les mégots historiques sans qualification
 sont pas attribués arbitrairement à `propre`, `humide` ou `mouille` ; ils sont
 signalés séparément comme non qualifiés. Chaque mesure porte une provenance
 (`counted`, `measured`, `weight_converted`, `volume_converted`, `estimated` ou
-`unknown`) et la conversion masse ↔ nombre conserve la version
-`impact-terrain-2026-butts-mass-v1`. Une mesure brute n'est jamais remplacée
-par son dérivé. Le volume est conservé sans conversion lorsqu'aucune relation
-fiable et documentée n'est disponible. La conversion pédagogique de distance
+`unknown`) et la conversion masse ↔ nombre porte sa version. La version courante
+`impact-terrain-2026-butts-mass-v2` utilise `0,22 g/mégot` propre/sec et
+`0,50 g/mégot` humide ou mouille (proxy explicite faute de référence indépendante) ;
+`cleanmymap-butts-volume-v1` reste à `600 mégots/L`. Les valeurs sont des ordres
+de grandeur variables, non une densité universelle. Une mesure brute n'est jamais
+remplacée par son dérivé et une mesure historique n'est jamais recalculée avec
+la version courante. La conversion pédagogique de distance
 reste : `distance_m = mégots × 0,025`, soit un repère de 2,5 cm par mégot. Ce
 repère ne modifie ni le compteur ni la masse canonique.
 

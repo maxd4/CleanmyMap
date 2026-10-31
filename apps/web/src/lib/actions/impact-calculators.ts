@@ -3,6 +3,8 @@ import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-but
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+  CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT,
   computeImpactTerrain2026StreetCleaningSavings,
   STREET_CLEANING_EUROS_PER_WASTE_KG,
   type ImpactTerrain2026StreetCleaningSavings,
@@ -38,6 +40,9 @@ export type ActionImpactKpis = {
   buttsCounted: number | null;
   buttsEstimated: number | null;
   buttsCompositionKnown: boolean;
+  buttsMassKg: number | null;
+  buttsMassProvenance: "measured" | "estimated" | "mixed" | "unknown" | null;
+  buttsMassConversionVersions: string[];
   volunteers: number;
   volunteersKnown: boolean;
   co2AvoidedKg: number;
@@ -74,6 +79,8 @@ export type ActionImpactMethodology = {
   sources: typeof IMPACT_PROXY_CONFIG.sources;
   factors: typeof IMPACT_PROXY_CONFIG.factors;
   buttsPerKg: number;
+  buttsMassConversionVersion: string;
+  buttsMassFactorsGPerButt: Record<"propre" | "humide" | "mouille", number>;
   formulas: {
     wasteKg: string;
     butts: string;
@@ -123,7 +130,35 @@ export function computeActionImpactKpis(
     Number.isFinite(Number(rawButts)) &&
     Number(rawButts) >= 0;
   const butts = buttsKnown ? Number(rawButts) : 0;
-  const lotSummary = contract.metadata.cigaretteButtsMeasurements?.cigaretteButtsLotsSummary;
+  const cigaretteButtsMeasurements = contract.metadata.cigaretteButtsMeasurements;
+  const lotSummary = cigaretteButtsMeasurements?.cigaretteButtsLotsSummary;
+  const buttsMassKg = cigaretteButtsMeasurements?.cigaretteButtsMassKg ?? null;
+  const buttsMassProvenance = lotSummary
+    ? lotSummary.measuredMassKg > 0 && lotSummary.estimatedMassKg > 0
+      ? "mixed"
+      : lotSummary.measuredMassKg > 0
+        ? "measured"
+        : lotSummary.totalMassKg > 0
+          ? "estimated"
+          : "unknown"
+    : cigaretteButtsMeasurements?.cigaretteButtsMassProvenance === "measured"
+      ? "measured"
+      : buttsMassKg === null
+        ? null
+        : "estimated";
+  const buttsMassConversionVersions = [
+    ...new Set(
+      cigaretteButtsMeasurements?.cigaretteButtsLotResults
+        ?.flatMap((result) => [
+          result.massConversionFormulaVersion,
+          result.volumeConversionFormulaVersion,
+        ])
+        .filter((version): version is string => Boolean(version)) ??
+        (cigaretteButtsMeasurements?.cigaretteButtsConversionFormulaVersion
+          ? [cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion]
+          : []),
+    ),
+  ];
   const volunteersKnown =
     contract.metadata.volunteersCount !== null &&
     contract.metadata.volunteersCount !== undefined &&
@@ -147,6 +182,9 @@ export function computeActionImpactKpis(
     buttsCounted: lotSummary?.countedCount ?? null,
     buttsEstimated: lotSummary?.estimatedCount ?? null,
     buttsCompositionKnown: lotSummary !== undefined,
+    buttsMassKg,
+    buttsMassProvenance,
+    buttsMassConversionVersions,
     volunteers,
     volunteersKnown,
     co2AvoidedKg: wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
@@ -164,6 +202,22 @@ function accumulateActionImpactTotals(
 ): { wasteKnown: boolean; buttsKnown: boolean; volunteersKnown: boolean } {
   totals.wasteKg += impact.wasteKg;
   totals.butts += impact.butts;
+  if (impact.buttsMassKg !== null) {
+    totals.buttsMassKg = (totals.buttsMassKg ?? 0) + impact.buttsMassKg;
+  }
+  if (impact.buttsMassProvenance !== null) {
+    totals.buttsMassProvenance = totals.buttsMassProvenance === null
+      ? impact.buttsMassProvenance
+      : totals.buttsMassProvenance === impact.buttsMassProvenance
+        ? totals.buttsMassProvenance
+        : "mixed";
+  }
+  totals.buttsMassConversionVersions = [
+    ...new Set([
+      ...totals.buttsMassConversionVersions,
+      ...impact.buttsMassConversionVersions,
+    ]),
+  ];
   if (impact.buttsCompositionKnown) {
     totals.buttsCounted += impact.buttsCounted ?? 0;
     totals.buttsEstimated += impact.buttsEstimated ?? 0;
@@ -232,6 +286,9 @@ export function sumActionImpactKpis(
     volunteersActionCount: 0,
     volunteersCoverageRate: 0,
     butts: 0,
+    buttsMassKg: null,
+    buttsMassProvenance: null,
+    buttsMassConversionVersions: [],
     volunteers: 0,
     volunteersKnown: false,
     co2AvoidedKg: 0,
@@ -276,6 +333,11 @@ export function buildActionImpactMethodology(): ActionImpactMethodology {
     sources,
     factors,
     buttsPerKg: BUTTS_PER_KG_REFERENCE,
+    buttsMassConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    buttsMassFactorsGPerButt:
+      CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[
+        CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
+      ],
     formulas: {
       wasteKg: "wasteKg = valeur déclarée de déchets; null = métrique non renseignée; les mégots restent une composante distincte",
       butts: "butts = max(0, cigaretteButts)",

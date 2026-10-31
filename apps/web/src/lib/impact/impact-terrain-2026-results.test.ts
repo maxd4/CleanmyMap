@@ -4,6 +4,7 @@ import {
   buildImpactTerrain2026PublicResultsFromActions,
   buildImpactTerrain2026PublicResultsFromAggregate,
 } from "./impact-terrain-2026-results";
+import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 describe("Impact terrain 2026 public results", () => {
   it("converts waste into 50 L bags and mechanical Vélib' equivalents", () => {
@@ -55,10 +56,7 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.qualifiedButtsTotal).toBe(300);
     expect(result.unqualifiedButtsTotal).toBe(700);
     expect(result.buttsByCondition.some((entry) => entry.count === 0)).toBe(false);
-    expect(result.estimatedButtsWeightKg).toBeCloseTo(
-      100 / 2_500 + 200 / (2_500 * 0.7),
-      10,
-    );
+    expect(result.estimatedButtsWeightKg).toBeCloseTo(100 * 0.22 / 1_000 + 200 * 0.5 / 1_000, 10);
     expect(result.buttsDistanceMeters).toBe(25);
   });
 
@@ -79,7 +77,38 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.buttsTotal).toBe(1_000);
     expect(result.qualifiedButtsTotal).toBe(700);
     expect(result.unqualifiedButtsTotal).toBe(300);
-    expect(result.estimatedButtsWeightKg).toBeCloseTo(700 / (2_500 * 0.4), 10);
+    expect(result.estimatedButtsWeightKg).toBeCloseTo(700 * 1 / 1_000, 10);
+  });
+
+  it("keeps mixed historical and current lot versions separate in the public result", () => {
+    const current = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [{ id: "current", source: "count", value: 1_000, condition: "propre" }],
+    });
+    const historical = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [{ id: "historical", source: "count", value: 1_000, condition: "humide" }],
+    });
+    const historicalResult = historical.cigaretteButtsLotResults![0]!;
+    const historicalSnapshot = {
+      ...historical,
+      cigaretteButtsLotResults: [{
+        ...historicalResult,
+        massKg: 1 / 1.75,
+        massConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
+      }],
+    };
+
+    const result = buildImpactTerrain2026PublicResultsFromActions([
+      { wasteKg: 0, cigaretteButts: 1_000, cigaretteButtsMeasurements: current },
+      { wasteKg: 0, cigaretteButts: 1_000, cigaretteButtsMeasurements: historicalSnapshot },
+    ]);
+
+    expect(result.buttsTotal).toBe(2_000);
+    expect(result.estimatedButtsWeightKg).toBeCloseTo(0.22 + 1 / 1.75, 10);
+    expect(result.buttsMassProvenance).toBe("estimated");
+    expect(result.buttsMassConversionVersions).toEqual([
+      "impact-terrain-2026-butts-mass-v2",
+      "impact-terrain-2026-butts-mass-v1",
+    ]);
   });
 
   it("normalizes the structured RPC result without inventing a condition", () => {
@@ -97,7 +126,7 @@ describe("Impact terrain 2026 public results", () => {
       expect.objectContaining({ condition: "propre", count: 100 }),
     ]);
     expect(result.unqualifiedButtsTotal).toBe(400);
-    expect(result.estimatedButtsWeightKg).toBeCloseTo(100 / 2_500, 10);
+    expect(result.estimatedButtsWeightKg).toBeCloseTo(100 * 0.4 / 1_000, 10);
     expect(
       buildImpactTerrain2026PublicResultsFromAggregate({
         cigaretteButts: "400",

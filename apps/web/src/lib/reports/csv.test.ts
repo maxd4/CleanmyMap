@@ -64,6 +64,9 @@ describe("report csv helpers", () => {
         cigarette_butts_estimated: 20,
         cigarette_butts_counted_share: 100 / 120,
         cigarette_butts_estimated_share: 20 / 120,
+        cigarette_butts_mass_kg: 0.5,
+        cigarette_butts_mass_provenance: "estimated",
+        cigarette_butts_conversion_versions: "impact-terrain-2026-butts-mass-v2",
         volunteers_count: 3,
         duration_minutes: 60,
         status: "pending",
@@ -91,6 +94,8 @@ describe("report csv helpers", () => {
     expect(csv).toContain("geometry_kind");
     expect(csv).toContain("cigarette_butts_counted");
     expect(csv).toContain("cigarette_butts_estimated");
+    expect(csv).toContain("cigarette_butts_mass_provenance");
+    expect(csv).toContain("impact-terrain-2026-butts-mass-v2");
     expect(csv).toContain("100");
     expect(csv).toContain("geometry_confidence");
     expect(csv).toContain("manual_drawing_geojson");

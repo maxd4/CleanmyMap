@@ -91,11 +91,17 @@ sont donc additionnées qu'entre lots différents ; un même lot n'est jamais
 recompté à partir de ses équivalents.
 
 Le proxy de volume est versionné `cleanmymap-butts-volume-v1` et utilise
-`600 mégots/L`. Le proxy masse/nombre existant reste inchangé :
-`impact-terrain-2026-butts-mass-v1`, `2 500 mégots/kg`, avec les facteurs d'état
-`1`, `0,7` et `0,4` pour `propre`, `humide` et `mouille`. Un lot est calculé une
-seule fois ; le nombre dérivé est arrondi au niveau du lot avant toute
-agrégation, tandis que la masse mesurée conserve sa précision.
+`600 mégots/L`, indépendamment de l'état. La version courante du proxy
+masse/nombre est `impact-terrain-2026-butts-mass-v2` : `0,22 g/mégot` pour
+`propre`, `0,50 g/mégot` pour `humide` et le même proxy `0,50 g/mégot` pour
+`mouille`, faute de référence indépendante. La version historique
+`impact-terrain-2026-butts-mass-v1` et ses facteurs enregistrés restent
+disponibles pour les mesures anciennes. Les valeurs sont des ordres de grandeur
+variables, pas une densité ni une masse physique universelle ; les références
+sont le [mode opératoire World Cleanup Day France](https://www.worldcleanupday.fr/wp-content/uploads/2025/03/Mode-operatoire-dune-collecte-megots-2025.pdf)
+et le [guide Mégothon](https://trash-spotter.green/wp-content/uploads/2025/01/Guide_Megothon_COLLECTIVITE.pdf).
+Un lot est calculé une seule fois ; le nombre dérivé est arrondi au niveau du
+lot avant toute agrégation, tandis que la masse mesurée conserve sa précision.
 
 Le contrat conserve la mesure source brute et qualifie chaque équivalent : un
 compte est `counted`, une conversion de masse est `weight_converted` et une
@@ -424,9 +430,12 @@ et bloque l'éligibilité à de nouveaux crédits Mohs pour la métrique concern
 Pour la gamification uniquement, la masse brute de déchets reçoit l'hypothèse
 versionnée `impact-terrain-2026-waste-moisture-v1` : `sec = 1,0`, `humide =
 0,7`, `mouille = 0,4`. L'équivalent sec est donc `masse_brute × facteur` ; il
-ne modifie ni la masse collective ni les rapports. Les mégots réutilisent le
-moteur canonique `2500 mégots/kg`, avec les mêmes facteurs d'état ; un nombre
-compté explicitement est prioritaire sur toute conversion de masse.
+ne modifie ni la masse collective ni les rapports. Le moteur canonique porte la
+version `impact-terrain-2026-butts-mass-v2` pour les nouvelles saisies ou les
+modifications explicites, tandis que chaque mesure historique conserve sa
+version et sa valeur. Un nombre compté explicitement est prioritaire sur toute
+conversion de masse ; une mesure historique sans version reconstructible n'est
+jamais recalculée avec v2.
 Une ancienne paire nombre/masse reste une mesure legacy unique et n'est jamais
 interprétée comme deux lots.
 

@@ -67,6 +67,9 @@ export type ReportModel = {
     buttsCompositionActionCount?: number;
     buttsCountedShare?: number | null;
     buttsEstimatedShare?: number | null;
+    buttsMassKg?: number | null;
+    buttsMassProvenance?: "measured" | "estimated" | "mixed" | "unknown" | null;
+    buttsMassConversionVersions?: string[];
     volunteers: number;
     volunteersKnownActions?: number;
     volunteersActionCount?: number;

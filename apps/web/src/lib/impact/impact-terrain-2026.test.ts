@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2,
+  CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT,
   buildImpactTerrain2026Methodology,
   computeButtsCount,
   estimateButtsWeightKg,
@@ -52,7 +55,12 @@ describe("Impact terrain 2026 methodology domain", () => {
       methodology.kpis.map((kpi) => [kpi.key, kpi]),
     );
 
-    expect(BUTTS_PER_KG_REFERENCE).toBe(2_500);
+    expect(BUTTS_PER_KG_REFERENCE).toBeCloseTo(1_000 / 0.22, 10);
+    expect(CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2]).toEqual({
+      propre: 0.22,
+      humide: 0.5,
+      mouille: 0.5,
+    });
     expect(byKey.co2?.formula.fr).toContain(
       String(IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg),
     );
@@ -122,9 +130,11 @@ describe("Impact terrain 2026 methodology domain", () => {
     expect(computeButtsCount(Number.NaN, "propre")).toBe(0);
     expect(computeButtsCount(Number.POSITIVE_INFINITY, "propre")).toBe(0);
     expect(computeButtsCount(1, "unknown" as never)).toBe(0);
-    expect(computeButtsCount(1, "humide")).toBe(1_750);
-    expect(estimateButtsWeightKg(1_750, "humide")).toBeCloseTo(1, 10);
-    expect(estimateButtsWeightKg(1_000, "unknown" as never)).toBeCloseTo(0.4, 10);
+    expect(computeButtsCount(1, "humide")).toBe(2_000);
+    expect(estimateButtsWeightKg(2_000, "humide")).toBeCloseTo(1, 10);
+    expect(estimateButtsWeightKg(1_000, "unknown" as never)).toBeCloseTo(0.22, 10);
+    expect(computeButtsCount(1, "humide", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1)).toBe(1_750);
+    expect(estimateButtsWeightKg(1_750, "humide", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1)).toBeCloseTo(1, 10);
   });
 
   it("keeps proxy conversion outputs finite and non-negative for ordinary extreme inputs", () => {

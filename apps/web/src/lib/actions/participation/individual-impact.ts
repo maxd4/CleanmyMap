@@ -1,6 +1,8 @@
 import {
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   computeButtsCount,
+  isCigaretteButtsMassConversionVersion,
 } from "@/lib/impact/impact-terrain-2026";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import {
@@ -52,6 +54,7 @@ export type IndividualImpactMeasurementInput = {
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsCondition?: ActionMegotsCondition | null;
   cigaretteButtsLots?: CigaretteButtsLotInput[] | null;
+  cigaretteButtsConversionVersion?: string | null;
   measuredBy?: string | null;
   measuredAt?: string | null;
 };
@@ -178,9 +181,10 @@ export function buildStoredIndividualImpactMeasurement(
           : null,
     cigaretteButtsConversionVersion: cigaretteButtsLots
       ? projectionVersion(lotResults)
-      : cigaretteButtsCount === null && cigaretteButtsMassKg !== null
-        ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
-        : null,
+      : input.cigaretteButtsConversionVersion ??
+        (cigaretteButtsCount === null && cigaretteButtsMassKg !== null
+          ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
+          : null),
     measuredBy: input.measuredBy?.trim() || null,
     measuredAt: input.measuredAt ?? null,
   };
@@ -197,6 +201,13 @@ export function toIndividualImpactMeasurement(
     cigaretteButtsCount: normalizeNullableInteger(row.individual_cigarette_butts_count),
     cigaretteButtsMassKg: finiteNonNegative(row.individual_cigarette_butts_mass_kg),
     cigaretteButtsCondition: normalizeButtsCondition(row.individual_cigarette_butts_condition),
+    cigaretteButtsConversionVersion:
+      row.individual_cigarette_butts_conversion_version ??
+      (row.individual_cigarette_butts_count === null &&
+      row.individual_cigarette_butts_mass_kg !== null &&
+      row.individual_cigarette_butts_mass_kg !== undefined
+        ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1
+        : null),
     measuredBy: row.individual_impact_measured_by,
     measuredAt: row.individual_impact_measured_at,
   });
@@ -214,8 +225,13 @@ export function toIndividualImpactMeasurement(
   const comparableButtsCount =
     canonicalStored.cigaretteButtsLots?.summary.totalCount ??
     canonicalStored.cigaretteButtsCount ??
-    (canonicalStored.cigaretteButtsMassKg !== null && canonicalStored.cigaretteButtsCondition !== null
-      ? computeButtsCount(canonicalStored.cigaretteButtsMassKg, canonicalStored.cigaretteButtsCondition)
+    (canonicalStored.cigaretteButtsMassKg !== null && canonicalStored.cigaretteButtsCondition !== null &&
+    isCigaretteButtsMassConversionVersion(canonicalStored.cigaretteButtsConversionVersion)
+      ? computeButtsCount(
+          canonicalStored.cigaretteButtsMassKg,
+          canonicalStored.cigaretteButtsCondition,
+          canonicalStored.cigaretteButtsConversionVersion,
+        )
       : null);
 
   return {

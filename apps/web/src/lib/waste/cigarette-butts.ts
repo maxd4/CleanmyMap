@@ -94,6 +94,9 @@ export type CigaretteButtsMeasurementInput = {
   cigaretteButtsVolumeProvenance?: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion?: string | null;
   cigaretteButtsLots?: CigaretteButtsLotInput[] | null;
+  /** Persisted calculation snapshot; never accepted from raw HTTP input. */
+  cigaretteButtsLotResults?: CigaretteButtsLotResult[];
+  cigaretteButtsLotsSummary?: CigaretteButtsLotsSummary;
   cigaretteButtsInputSource?: CigaretteButtsInputSource;
   deriveMissingFromMassOrCount?: boolean;
 };
@@ -250,7 +253,7 @@ export function normalizeCigaretteButtsMeasurements(
   input: CigaretteButtsMeasurementInput,
 ): ActionCigaretteButtsMeasurements {
   if (input.cigaretteButtsLots !== undefined && input.cigaretteButtsLots !== null) {
-    return normalizeMeasurementsFromLots(input.cigaretteButtsLots);
+    return normalizeMeasurementsFromLots(input.cigaretteButtsLots, input);
   }
 
   let count = normalizeCount(input.cigaretteButtsCount);
@@ -299,8 +302,18 @@ export function normalizeCigaretteButtsMeasurements(
 
 function normalizeMeasurementsFromLots(
   lots: CigaretteButtsLotInput[],
+  persisted?: Pick<
+    ActionCigaretteButtsMeasurements,
+    "cigaretteButtsLotResults" | "cigaretteButtsLotsSummary"
+  >,
 ): ActionCigaretteButtsMeasurements {
-  const aggregated = aggregateCigaretteButtsLots(lots);
+  const aggregated = isPersistedLotSnapshotForInputs(lots, persisted)
+    ? {
+        lots: lots.map((lot) => ({ ...lot, id: lot.id.trim() })),
+        results: persisted.cigaretteButtsLotResults!,
+        summary: persisted.cigaretteButtsLotsSummary!,
+      }
+    : aggregateCigaretteButtsLots(lots);
   const { summary } = aggregated;
   const hasLots = aggregated.lots.length > 0;
   const countProvenance = !hasLots
@@ -348,6 +361,34 @@ function normalizeMeasurementsFromLots(
     cigaretteButtsLotResults: aggregated.results,
     cigaretteButtsLotsSummary: summary,
   };
+}
+
+function isPersistedLotSnapshotForInputs(
+  lots: CigaretteButtsLotInput[],
+  persisted: Pick<
+    ActionCigaretteButtsMeasurements,
+    "cigaretteButtsLotResults" | "cigaretteButtsLotsSummary"
+  > | undefined,
+): persisted is Required<
+  Pick<
+    ActionCigaretteButtsMeasurements,
+    "cigaretteButtsLotResults" | "cigaretteButtsLotsSummary"
+  >
+> {
+  const results = persisted?.cigaretteButtsLotResults;
+  const summary = persisted?.cigaretteButtsLotsSummary;
+  if (!results || !summary || results.length !== lots.length) return false;
+  if (!Number.isFinite(summary.totalCount) || summary.totalCount < 0) return false;
+  return lots.every((lot, index) => {
+    const result = results[index];
+    return result !== undefined &&
+      result.id.trim() === lot.id.trim() &&
+      result.source === lot.source &&
+      result.value === lot.value &&
+      result.condition === lot.condition &&
+      Number.isFinite(result.count) && result.count >= 0 &&
+      Number.isFinite(result.massKg) && result.massKg >= 0;
+  });
 }
 
 /**

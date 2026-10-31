@@ -23,23 +23,75 @@ export {
   WATER_LITERS_PER_CIGARETTE_BUTT,
 } from "./impact-terrain-2026-constants";
 
-export const BUTTS_PER_KG_REFERENCE = 2_500;
-export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION =
+/**
+ * Version kept for historical rows written before the WCD/Mégothon recalibration.
+ * Its factors are deliberately never used as the default for new measurements.
+ */
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 =
   "impact-terrain-2026-butts-mass-v1" as const;
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 =
+  "impact-terrain-2026-butts-mass-v2" as const;
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION =
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2;
+export type CigaretteButtsMassConversionVersion =
+  | typeof CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1
+  | typeof CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2;
+
+/**
+ * Current clean-butt reference expressed as butts per kilogram. The runtime
+ * uses the condition-specific grams-per-butt values below for all conversions.
+ */
+export const BUTTS_PER_KG_REFERENCE = 1_000 / 0.22;
 export const WASTE_KG_PER_50L_BAG = 5;
 export const WASTE_KG_PER_MECHANICAL_BICYCLE = 20;
 export const BUTT_LENGTH_METERS = 0.025;
 
 export const MEGOTS_CONDITIONS = ["propre", "humide", "mouille"] as const;
 
-const CONDITION_WEIGHT_FACTORS: Record<
-  ActionMegotsCondition,
-  number
+type CigaretteButtsMassFactors = Record<ActionMegotsCondition, number>;
+
+/**
+ * Grams per butt, sourced from the World Cleanup Day France operating guide
+ * and the Mégothon guide. `mouille` intentionally reuses `humide`: no
+ * independent reference was found for this state, so this is an explicit
+ * proxy limitation rather than a physical density claim.
+ */
+export const CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT: Record<
+  CigaretteButtsMassConversionVersion,
+  CigaretteButtsMassFactors
 > = {
-  propre: 1,
-  humide: 0.7,
-  mouille: 0.4,
+  [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1]: {
+    propre: 1_000 / 2_500,
+    humide: 1_000 / 1_750,
+    mouille: 1_000 / 1_000,
+  },
+  [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2]: {
+    propre: 0.22,
+    humide: 0.5,
+    mouille: 0.5,
+  },
 };
+
+function resolveMassFactors(
+  version: string | null | undefined,
+): CigaretteButtsMassFactors | null {
+  if (!version) {
+    return CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[
+      CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
+    ];
+  }
+  return version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 ||
+    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2
+    ? CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT[version]
+    : null;
+}
+
+export function isCigaretteButtsMassConversionVersion(
+  version: unknown,
+): version is CigaretteButtsMassConversionVersion {
+  return version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 ||
+    version === CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2;
+}
 
 export const MEGOTS_CONDITION_LABELS: Record<
   ActionMegotsCondition,
@@ -53,30 +105,35 @@ export const MEGOTS_CONDITION_LABELS: Record<
 export function computeButtsCount(
   weightKg: number,
   condition: ActionMegotsCondition,
+  version: string = CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
 ): number {
   if (!Number.isFinite(weightKg) || !MEGOTS_CONDITIONS.includes(condition)) {
     return 0;
   }
 
+  const factors = resolveMassFactors(version);
+  if (!factors) return 0;
+
   return Math.round(
-    Math.max(0, weightKg) *
-      BUTTS_PER_KG_REFERENCE *
-      CONDITION_WEIGHT_FACTORS[condition],
+    (Math.max(0, weightKg) * 1_000) / factors[condition],
   );
 }
 
 export function estimateButtsWeightKg(
   count: number,
   condition?: ActionMegotsCondition | null,
+  version: string = CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
 ): number {
   if (!Number.isFinite(count) || count <= 0) {
     return 0;
   }
 
-  const factor = condition && MEGOTS_CONDITIONS.includes(condition)
-    ? CONDITION_WEIGHT_FACTORS[condition]
-    : 1;
-  return count / (BUTTS_PER_KG_REFERENCE * factor);
+  const factors = resolveMassFactors(version);
+  if (!factors) return 0;
+  const gramsPerButt = condition && MEGOTS_CONDITIONS.includes(condition)
+    ? factors[condition]
+    : factors.propre;
+  return (count * gramsPerButt) / 1_000;
 }
 
 export type ImpactTerrain2026Co2Conversions = {
@@ -293,8 +350,8 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
           ),
         },
         formula: text(
-          `butts_action = max(0, cigaretteButts) ; distance_m = butts_total × ${BUTT_LENGTH_METERS} ; masse_qualifiee = somme(cigaretteButts_condition / (${BUTTS_PER_KG_REFERENCE} × facteur_etat))`,
-          `butts_action = max(0, cigaretteButts); distance_m = total_butts × ${BUTT_LENGTH_METERS}; qualified_mass = sum(condition_butts / (${BUTTS_PER_KG_REFERENCE} × condition_factor))`,
+          `butts_action = max(0, cigaretteButts) ; distance_m = butts_total × ${BUTT_LENGTH_METERS} ; masse_estimée_kg = somme(nombre_état × grammes_par_mégot_état / 1 000) ; version = ${CIGARETTE_BUTTS_MASS_CONVERSION_VERSION}`,
+          `butts_action = max(0, cigaretteButts); distance_m = total_butts × ${BUTT_LENGTH_METERS}; estimated_mass_kg = sum(condition_count × grams_per_butt_condition / 1,000); version = ${CIGARETTE_BUTTS_MASS_CONVERSION_VERSION}`,
         ),
         assumptions: [
           text(
@@ -308,14 +365,18 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "cigaretteButts field in the action contract.",
           ),
           text(
-            "Configuration runtime Impact terrain 2026.",
-            "Impact terrain 2026 runtime configuration.",
+            "World Cleanup Day France, mode opératoire 2025 ; Mégothon, guide collectivité : 0,22 g sec, 0,50 g humide et 600 mégots/L.",
+            "World Cleanup Day France 2025 operating guide; Mégothon local-authority guide: 0.22 g dry, 0.50 g damp and 600 butts/L.",
           ),
         ],
         limits: [
           text(
             "La répartition qualifiée ne comprend que les mégots dont l’état est réellement disponible ; les autres restent non qualifiés.",
             "The qualified distribution only includes butts whose condition is actually available; the others remain unqualified.",
+          ),
+          text(
+            "Ces masses sont des ordres de grandeur variables, pas une densité ni une masse physique universelle. Mouillé réutilise le proxy humide faute de référence indépendante.",
+            "These masses are variable orders of magnitude, not a density or universal physical mass. Wet reuses the damp proxy because no independent reference is available.",
           ),
         ],
       },

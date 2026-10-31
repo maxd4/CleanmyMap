@@ -1,7 +1,13 @@
 import type { ActionMegotsCondition, ActionWasteBreakdown } from "@/lib/actions/types";
+import type {
+  ActionCigaretteButtsMeasurements,
+  CigaretteButtsLotResult,
+} from "@/lib/waste/cigarette-butts";
 import { estimateActionWasteKg } from "@/lib/actions/impact-calculators";
 import {
   BUTT_LENGTH_METERS,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   computeImpactTerrain2026Co2Conversions,
   computeImpactTerrain2026WaterConversions,
   MEGOTS_CONDITIONS,
@@ -15,17 +21,33 @@ import type { ImpactTerrain2026LocalizedText } from "./impact-terrain-2026";
 export type ImpactTerrainActionMetricsInput = {
   wasteKg?: number | null;
   cigaretteButts?: number | null;
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
   wasteBreakdown?: Pick<
     ActionWasteBreakdown,
     "megotsCondition" | "megotsKg"
   > | null;
 };
 
-type ImpactTerrain2026ButtsDistributionEntry = {
+type ImpactTerrain2026ButtsMassProvenance =
+  | "measured"
+  | "estimated"
+  | "mixed"
+  | "unknown";
+
+type ImpactTerrain2026ButtsMassContribution = {
+  count: number;
+  massKg: number | null;
+  massProvenance: "measured" | "estimated" | "unknown";
+  conversionVersion: string | null;
+};
+
+export type ImpactTerrain2026ButtsDistributionEntry = {
   condition: ActionMegotsCondition;
   label: ImpactTerrain2026LocalizedText;
   count: number;
-  estimatedWeightKg: number;
+  estimatedWeightKg: number | null;
+  massProvenance: ImpactTerrain2026ButtsMassProvenance;
+  conversionVersions: string[];
 };
 
 export type ImpactTerrain2026PublicResults = {
@@ -39,6 +61,8 @@ export type ImpactTerrain2026PublicResults = {
   unqualifiedButtsTotal: number;
   buttsByCondition: ImpactTerrain2026ButtsDistributionEntry[];
   estimatedButtsWeightKg: number | null;
+  buttsMassProvenance: ImpactTerrain2026ButtsMassProvenance | null;
+  buttsMassConversionVersions: string[];
   buttsDistanceMeters: number;
   co2eKg: number;
   co2eGrams: number;
@@ -61,14 +85,72 @@ function toFiniteNonNegativeNumber(value: unknown): number {
 
 function buildConditionEntries(
   counts: ImpactTerrain2026ConditionCounts,
+  massContributions: Partial<
+    Record<ActionMegotsCondition, ImpactTerrain2026ButtsMassContribution[]>
+  > = {},
+  fallbackVersion: string = CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
 ): ImpactTerrain2026ButtsDistributionEntry[] {
   return MEGOTS_CONDITIONS.map((condition) => {
-    const count = toFiniteNonNegativeNumber(counts[condition]);
+    const contributions = massContributions[condition];
+    const count = contributions
+      ? contributions.reduce((sum, contribution) => sum + contribution.count, 0)
+      : toFiniteNonNegativeNumber(counts[condition]);
+    const resolvedContributions = contributions ?? (count > 0
+      ? [{
+          count,
+          massKg: null,
+          massProvenance: "unknown" as const,
+          conversionVersion: fallbackVersion,
+        }]
+      : []);
+    const resolvedMasses = resolvedContributions.map((contribution) => ({
+      ...contribution,
+      massKg: contribution.massKg ?? (
+        contribution.conversionVersion
+          ? estimateButtsWeightKg(
+              contribution.count,
+              condition,
+              contribution.conversionVersion,
+            )
+          : null
+      ),
+      massProvenance: contribution.massKg !== null
+        ? contribution.massProvenance
+        : contribution.conversionVersion
+          ? "estimated" as const
+          : "unknown" as const,
+    }));
+    const knownMasses = resolvedMasses.filter(
+      (contribution) => contribution.massKg !== null,
+    );
+    const massProvenanceValues = new Set(
+      resolvedMasses.map((contribution) => contribution.massProvenance),
+    );
+    const massProvenance: ImpactTerrain2026ButtsMassProvenance =
+      resolvedMasses.length === 0
+        ? "unknown"
+        : knownMasses.length !== resolvedMasses.length
+          ? "unknown"
+          : massProvenanceValues.size === 1
+            ? [...massProvenanceValues][0] as "measured" | "estimated"
+            : "mixed";
+    const conversionVersions = [...new Set(
+      resolvedMasses
+        .map((contribution) => contribution.conversionVersion)
+        .filter((version): version is string => Boolean(version)),
+    )];
     return {
       condition,
       label: MEGOTS_CONDITION_LABELS[condition],
       count,
-      estimatedWeightKg: estimateButtsWeightKg(count, condition),
+      estimatedWeightKg:
+        count === 0
+          ? 0
+          : knownMasses.length === resolvedMasses.length
+            ? knownMasses.reduce((sum, contribution) => sum + (contribution.massKg ?? 0), 0)
+            : null,
+      massProvenance,
+      conversionVersions,
     };
   }).filter((entry) => entry.count > 0);
 }
@@ -79,6 +161,10 @@ export function buildImpactTerrain2026PublicResults(params: {
   wasteActionCount?: number | null;
   buttsTotal?: number | null;
   qualifiedButtsByCondition?: ImpactTerrain2026ConditionCounts;
+  qualifiedButtsMassByCondition?: Partial<
+    Record<ActionMegotsCondition, ImpactTerrain2026ButtsMassContribution[]>
+  >;
+  buttsMassConversionVersion?: string;
 }): ImpactTerrain2026PublicResults {
   const wasteKg = toFiniteNonNegativeNumber(params.wasteKg);
   const wasteKnownActions = toFiniteNonNegativeNumber(params.wasteKnownActions);
@@ -86,6 +172,8 @@ export function buildImpactTerrain2026PublicResults(params: {
   const buttsTotal = toFiniteNonNegativeNumber(params.buttsTotal);
   const buttsByCondition = buildConditionEntries(
     params.qualifiedButtsByCondition ?? {},
+    params.qualifiedButtsMassByCondition,
+    params.buttsMassConversionVersion,
   );
   const qualifiedButtsTotal = Math.min(
     buttsTotal,
@@ -93,9 +181,20 @@ export function buildImpactTerrain2026PublicResults(params: {
   );
   const unqualifiedButtsTotal = Math.max(0, buttsTotal - qualifiedButtsTotal);
   const qualifiedWeightKg = buttsByCondition.reduce(
-    (sum, entry) => sum + entry.estimatedWeightKg,
+    (sum, entry) => sum + (entry.estimatedWeightKg ?? 0),
     0,
   );
+  const buttsMassConversionVersions = [...new Set(
+    buttsByCondition.flatMap((entry) => entry.conversionVersions),
+  )];
+  const buttsMassProvenance =
+    qualifiedButtsTotal === 0
+      ? null
+      : buttsByCondition.some((entry) => entry.massProvenance === "unknown")
+        ? "unknown"
+        : new Set(buttsByCondition.map((entry) => entry.massProvenance)).size === 1
+          ? buttsByCondition[0]?.massProvenance ?? "unknown"
+          : "mixed";
   const co2Conversions = computeImpactTerrain2026Co2Conversions(wasteKg);
   const waterConversions =
     computeImpactTerrain2026WaterConversions(buttsTotal);
@@ -113,11 +212,13 @@ export function buildImpactTerrain2026PublicResults(params: {
     unqualifiedButtsTotal,
     buttsByCondition,
     estimatedButtsWeightKg:
-      qualifiedButtsTotal > 0
+      qualifiedButtsTotal > 0 && buttsByCondition.every((entry) => entry.estimatedWeightKg !== null)
         ? qualifiedWeightKg
         : buttsTotal === 0
           ? 0
           : null,
+    buttsMassProvenance,
+    buttsMassConversionVersions,
     buttsDistanceMeters: buttsTotal * BUTT_LENGTH_METERS,
     co2eKg: co2Conversions.co2eKg,
     co2eGrams: co2Conversions.co2eGrams,
@@ -149,6 +250,9 @@ export function buildImpactTerrain2026PublicResultsFromActions(
   let wasteKnownActions = 0;
   let buttsTotal = 0;
   const qualifiedButtsByCondition: ImpactTerrain2026ConditionCounts = {};
+  const qualifiedButtsMassByCondition: Partial<
+    Record<ActionMegotsCondition, ImpactTerrain2026ButtsMassContribution[]>
+  > = {};
 
   for (const action of actions) {
     const actionButts = toFiniteNonNegativeNumber(action.cigaretteButts);
@@ -159,10 +263,27 @@ export function buildImpactTerrain2026PublicResultsFromActions(
     }
     buttsTotal += actionButts;
 
-    const condition = action.wasteBreakdown?.megotsCondition;
-    if (condition && actionButts > 0) {
-      qualifiedButtsByCondition[condition] =
-        (qualifiedButtsByCondition[condition] ?? 0) + actionButts;
+    const lotContributions = action.cigaretteButtsMeasurements?.cigaretteButtsLotResults;
+    if (lotContributions && lotContributions.length > 0) {
+      for (const result of lotContributions) {
+        if (result.count <= 0) continue;
+        qualifiedButtsByCondition[result.condition] =
+          (qualifiedButtsByCondition[result.condition] ?? 0) + result.count;
+        qualifiedButtsMassByCondition[result.condition] = [
+          ...(qualifiedButtsMassByCondition[result.condition] ?? []),
+          toMassContribution(result),
+        ];
+      }
+    } else {
+      const condition = action.wasteBreakdown?.megotsCondition;
+      if (condition && actionButts > 0) {
+        qualifiedButtsByCondition[condition] =
+          (qualifiedButtsByCondition[condition] ?? 0) + actionButts;
+        qualifiedButtsMassByCondition[condition] = [
+          ...(qualifiedButtsMassByCondition[condition] ?? []),
+          toActionMassContribution(action, actionButts),
+        ];
+      }
     }
   }
 
@@ -172,7 +293,42 @@ export function buildImpactTerrain2026PublicResultsFromActions(
     wasteActionCount: actions.length,
     buttsTotal,
     qualifiedButtsByCondition,
+    qualifiedButtsMassByCondition,
   });
+}
+
+function toMassContribution(
+  result: CigaretteButtsLotResult,
+): ImpactTerrain2026ButtsMassContribution {
+  return {
+    count: result.count,
+    massKg: result.massKg,
+    massProvenance: result.massProvenance === "measured"
+      ? "measured"
+      : "estimated",
+    conversionVersion:
+      result.massConversionFormulaVersion ?? result.volumeConversionFormulaVersion,
+  };
+}
+
+function toActionMassContribution(
+  action: ImpactTerrainActionMetricsInput,
+  count: number,
+): ImpactTerrain2026ButtsMassContribution {
+  const measurements = action.cigaretteButtsMeasurements;
+  const massKg = measurements?.cigaretteButtsMassKg ?? null;
+  return {
+    count,
+    massKg,
+    massProvenance: massKg === null
+      ? "unknown"
+      : measurements?.cigaretteButtsMassProvenance === "measured"
+        ? "measured"
+        : "estimated",
+    conversionVersion: measurements
+      ? measurements.cigaretteButtsConversionFormulaVersion ?? null
+      : CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+  };
 }
 
 export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
@@ -181,6 +337,7 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
   wasteActionCount?: unknown;
   cigaretteButts?: unknown;
   buttsByCondition?: unknown;
+  buttsMassConversionVersion?: string;
 }): ImpactTerrain2026PublicResults {
   const qualifiedButtsByCondition: ImpactTerrain2026ConditionCounts = {};
   if (Array.isArray(params.buttsByCondition)) {
@@ -204,6 +361,8 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
     wasteActionCount: Number(params.wasteActionCount ?? 0),
     buttsTotal: Number(params.cigaretteButts ?? 0),
     qualifiedButtsByCondition,
+    buttsMassConversionVersion:
+      params.buttsMassConversionVersion ?? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   });
 }
 
