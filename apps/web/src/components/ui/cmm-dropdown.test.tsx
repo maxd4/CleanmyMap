@@ -5,13 +5,21 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Link from "next/link";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CmmDropdown } from "./cmm-dropdown";
 
 const source = readFileSync(resolve(process.cwd(), "src/components/ui/cmm-dropdown.tsx"), "utf8");
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+const activeRenderers: ReactTestRenderer[] = [];
+
+afterEach(() => {
+  for (const renderer of activeRenderers.splice(0)) renderer.unmount();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("CmmDropdown", () => {
   beforeEach(() => {
@@ -146,6 +154,7 @@ describe("CmmDropdown", () => {
         },
       );
     });
+    activeRenderers.push(renderer);
 
     const trigger = renderer.root.findByProps({ "aria-label": "Open interactive menu" });
     act(() => {
@@ -160,8 +169,5 @@ describe("CmmDropdown", () => {
     expect(renderer.root.findAll((node) => node.type === "div" && node.props.id === "interactive-dropdown")).toHaveLength(0);
     expect(focus).toHaveBeenCalled();
 
-    act(() => {
-      renderer.unmount();
-    });
   });
 });

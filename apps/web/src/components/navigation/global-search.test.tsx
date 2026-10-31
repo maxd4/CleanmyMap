@@ -21,8 +21,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-    React.createElement("a", props, children),
+  default: (props: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props),
 }));
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
@@ -86,6 +85,14 @@ describe("GlobalSearch", () => {
     act(() => {
       trigger.props.onClick();
     });
+  }
+
+  function changeQuery(renderer: ReactTestRenderer, value: string) {
+    const input = renderer.root.findByType("input");
+    act(() => {
+      input.props.onChange({ target: { value } });
+    });
+    return input;
   }
 
   it("uses the shared non-modal dropdown without a viewport overlay", () => {
@@ -172,15 +179,10 @@ describe("GlobalSearch", () => {
     expect(renderer.root.findByProps({ "aria-label": "Rechercher une rubrique, un outil ou une aide" })).toBeTruthy();
     expect(renderer.root.findByProps({ children: "Explorez les rubriques accessibles" })).toBeTruthy();
 
-    const input = renderer.root.findByType("input");
-    act(() => {
-      input.props.onChange({ target: { value: "carte" } });
-    });
+    changeQuery(renderer, "carte");
     expect(renderer.root.findAllByType("a").length).toBeGreaterThan(0);
 
-    act(() => {
-      input.props.onChange({ target: { value: "[terme-inexistant]" } });
-    });
+    changeQuery(renderer, "[terme-inexistant]");
     expect(renderer.root.findByProps({ children: "Aucun résultat pour cette recherche" })).toBeTruthy();
     renderer.unmount();
   });
@@ -190,10 +192,7 @@ describe("GlobalSearch", () => {
     openSearch(renderer);
     expect(focus).toHaveBeenCalled();
 
-    const input = renderer.root.findByType("input");
-    act(() => {
-      input.props.onChange({ target: { value: "carte" } });
-    });
+    changeQuery(renderer, "carte");
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
     });
@@ -219,10 +218,7 @@ describe("GlobalSearch", () => {
     try {
       const { renderer } = renderSearch();
       openSearch(renderer);
-      const input = renderer.root.findByType("input");
-      act(() => {
-        input.props.onChange({ target: { value: "carte" } });
-      });
+      changeQuery(renderer, "carte");
       expect(renderer.root.findAllByType("a").length).toBeGreaterThan(0);
 
       mocks.pathname = "/sections/methodologie";

@@ -6,9 +6,32 @@ import { vi } from "vitest";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 
 vi.mock("next/dynamic", () => ({
-  default: () => function DynamicSectionStub(props: Record<string, unknown>) {
-    return React.createElement("div", { "data-dynamic-section": "true", ...props });
-  },
+  default: (() => {
+    const modulePaths = [
+      "./feedback",
+      "./actors-section",
+      "./gamification",
+      "./leaderboard",
+      "./annuaire",
+      "./elus-section",
+      "./funding-section",
+      "./open-data-section",
+      "./trash-spotter-section",
+      "./recycling-section",
+      "./compost",
+      "./climate",
+      "./compare-section",
+      "./rejoindre-un-formulaire-section",
+      "./connect-section",
+    ];
+    let index = 0;
+    return () => {
+      const modulePath = modulePaths[index++] ?? "unknown";
+      return function DynamicSectionStub(props: Record<string, unknown>) {
+        return React.createElement("div", { ...props, "data-dynamic-section": modulePath });
+      };
+    };
+  })(),
 }));
 
 vi.mock("next/link", () => ({
@@ -55,6 +78,23 @@ describe("composed Climate heading contract", () => {
   });
 
   it("dispatches every finalized section through its registered renderer", () => {
+    const expectedModules: Record<string, string[]> = {
+      feedback: ["./feedback"],
+      gamification: ["./gamification"],
+      leaderboard: ["./leaderboard"],
+      actors: ["./actors-section"],
+      annuaire: ["./annuaire"],
+      "open-data": ["./open-data-section"],
+      funding: ["./funding-section"],
+      "trash-spotter": ["./trash-spotter-section"],
+      "rejoindre-une-action": ["./rejoindre-un-formulaire-section"],
+      recycling: ["./recycling-section"],
+      compost: ["./compost"],
+      climate: ["./climate", "./compare-section"],
+      messagerie: ["./connect-section"],
+      elus: ["./elus-section"],
+    };
+
     for (const [id, render] of Object.entries(FINALIZED_SECTION_RENDERERS)) {
       const output = render(
         id === "funding" ? "/sections/funding?source=test" : undefined,
@@ -67,6 +107,11 @@ describe("composed Climate heading contract", () => {
       );
 
       expect(React.isValidElement(output), `${id} must return a React element`).toBe(true);
+      const markup = renderToStaticMarkup(
+        React.createElement(SitePreferencesProvider, null, output),
+      );
+      const modules = [...markup.matchAll(/data-dynamic-section="([^"]+)"/g)].map((match) => match[1]);
+      expect(modules, `${id} must use its registered component(s)`).toEqual(expectedModules[id]);
     }
   });
 
