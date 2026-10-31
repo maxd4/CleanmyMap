@@ -413,6 +413,27 @@ Ordonnanceur périodique canonique :
   est rapporté sans empêcher les jobs indépendants de s'exécuter et peut être
   rattrapé par l'appel quotidien suivant.
 
+Pour une évolution de méthode scientifique, l'ordre de dépendance est explicite
+dans les propriétaires existants :
+
+1. l'état incrémental `public_impact_action_*` vérifie sa
+   `methodology_version` et reconstruit les contributions dérivées depuis
+   `actions` si nécessaire ;
+2. l'agrégat `load_public_landing_action_summary_incremental` doit retourner la
+   même méthode avant qu'un snapshot public courant soit généré ;
+3. le snapshot mensuel public est refusé comme `CURRENT` si sa méthode de proxy
+   ou sa version de projection est incompatible ;
+4. la RPC des références du score pollution et son snapshot hebdomadaire sont
+   validés par `pollution-score-references-v2`, séparément des moyennes
+   contextualisées du formulaire.
+
+Une reconstruction est transactionnelle et protégée par le verrou advisory de
+l'état public ; un nouvel appel reprend donc sans doubler les compteurs. Les
+observations brutes et les valeurs historiques dont la provenance est inconnue
+ne sont pas recalculées. Les snapshots historiques et les PDF publiés restent
+immutables. Une erreur laisse le job en état dégradé et le cron quotidien le
+réessaie ; aucun cache incompatible n'est servi en remplacement silencieux.
+
 Code clé:
 
 - [apps/web/vercel.json](../../apps/web/vercel.json)

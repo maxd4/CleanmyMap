@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+  ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+} from "@/lib/impact/scientific-projection-versions";
 import type { ActionContext } from "./action-context";
 
 export type ActionCollectionReferenceAverages = {
@@ -8,6 +12,7 @@ export type ActionCollectionReferenceAverages = {
   wasteSourceCount: number;
   buttsSourceCount: number;
   eligibleActionCount: number;
+  formulaVersion: string;
   updatedAt: string | null;
 };
 
@@ -60,6 +65,7 @@ type ActionCollectionReferenceAverageRow = {
   waste_source_count?: number | string | null;
   butts_source_count?: number | string | null;
   eligible_action_count?: number | string | null;
+  formula_version?: string | null;
   updated_at?: string | null;
 };
 
@@ -81,6 +87,12 @@ let serverCache:
   | null = null;
 let serverFetchInFlight: Promise<ActionCollectionReferenceAverages | null> | null = null;
 
+export function isCurrentActionCollectionReferenceAverage(
+  value: ActionCollectionReferenceAverages | null | undefined,
+): value is ActionCollectionReferenceAverages {
+  return value?.formulaVersion === ACTION_COLLECTION_REFERENCE_FORMULA_VERSION;
+}
+
 function toNonNegativeInteger(value: number | string | null | undefined): number | null {
   const candidate = Number(value);
   return Number.isInteger(candidate) && candidate >= 0 ? candidate : null;
@@ -101,7 +113,13 @@ export function normalizeActionCollectionReferenceAverageRow(
   const wasteSourceCount = toNonNegativeInteger(row.waste_source_count);
   const buttsSourceCount = toNonNegativeInteger(row.butts_source_count);
   const eligibleActionCount = toNonNegativeInteger(row.eligible_action_count);
-  if (wasteSourceCount === null || buttsSourceCount === null || eligibleActionCount === null) {
+  if (
+    wasteSourceCount === null ||
+    buttsSourceCount === null ||
+    eligibleActionCount === null ||
+    typeof row.formula_version !== "string" ||
+    row.formula_version.trim() === ""
+  ) {
     return null;
   }
 
@@ -111,6 +129,7 @@ export function normalizeActionCollectionReferenceAverageRow(
     wasteSourceCount,
     buttsSourceCount,
     eligibleActionCount,
+    formulaVersion: row.formula_version,
     updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
   };
 }
@@ -126,12 +145,17 @@ export async function fetchActionCollectionReferenceAverages(
   const row = Array.isArray(result.data)
     ? (result.data[0] as ActionCollectionReferenceAverageRow | undefined)
     : (result.data as ActionCollectionReferenceAverageRow | null);
-  return normalizeActionCollectionReferenceAverageRow(row);
+  const references = normalizeActionCollectionReferenceAverageRow(row);
+  return isCurrentActionCollectionReferenceAverage(references) ? references : null;
 }
 
 export async function loadActionCollectionReferenceAverages(): Promise<ActionCollectionReferenceAverages | null> {
   const now = Date.now();
-  if (serverCache && serverCache.expiresAt > now) {
+  if (
+    serverCache &&
+    serverCache.expiresAt > now &&
+    isCurrentActionCollectionReferenceAverage(serverCache.references)
+  ) {
     return serverCache.references;
   }
   if (serverFetchInFlight) {
@@ -140,8 +164,11 @@ export async function loadActionCollectionReferenceAverages(): Promise<ActionCol
 
   serverFetchInFlight = fetchActionCollectionReferenceAverages(getSupabaseServerClient(true))
     .then((references) => {
-      serverCache = { references, expiresAt: Date.now() + SERVER_CACHE_TTL_MS };
-      return references;
+      const current = isCurrentActionCollectionReferenceAverage(references)
+        ? references
+        : null;
+      serverCache = { references: current, expiresAt: Date.now() + SERVER_CACHE_TTL_MS };
+      return current;
     })
     .finally(() => {
       serverFetchInFlight = null;
@@ -202,12 +229,25 @@ let contextServerFetchInFlight: Promise<ActionCollectionContextReferences> | nul
 
 export async function loadActionCollectionContextReferenceAverages(): Promise<ActionCollectionContextReferences> {
   const now = Date.now();
-  if (contextServerCache && contextServerCache.expiresAt > now) return contextServerCache.references;
+  if (contextServerCache && contextServerCache.expiresAt > now) {
+    return Object.fromEntries(
+      Object.entries(contextServerCache.references).filter(
+        ([, reference]) =>
+          reference.formulaVersion === ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+      ),
+    ) as ActionCollectionContextReferences;
+  }
   if (contextServerFetchInFlight) return contextServerFetchInFlight;
   contextServerFetchInFlight = fetchActionCollectionContextReferenceAverages(getSupabaseServerClient(true))
     .then((references) => {
-      contextServerCache = { references, expiresAt: Date.now() + SERVER_CACHE_TTL_MS };
-      return references;
+      const current = Object.fromEntries(
+        Object.entries(references).filter(
+          ([, reference]) =>
+            reference.formulaVersion === ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+        ),
+      ) as ActionCollectionContextReferences;
+      contextServerCache = { references: current, expiresAt: Date.now() + SERVER_CACHE_TTL_MS };
+      return current;
     })
     .finally(() => {
       contextServerFetchInFlight = null;

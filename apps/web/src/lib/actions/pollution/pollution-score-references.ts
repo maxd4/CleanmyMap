@@ -4,6 +4,7 @@ import {
   type PollutionScoreReferences,
   type DepartmentPollutionScoreReference,
 } from "./pollution-score";
+import { POLLUTION_SCORE_REFERENCE_FORMULA_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 type PollutionScoreReferenceRow = {
   scope?: string | null;
@@ -14,6 +15,7 @@ type PollutionScoreReferenceRow = {
   waste_source_count?: number | null;
   butts_source_count?: number | null;
   eligible_action_count?: number | null;
+  formula_version?: string | null;
   updated_at?: string | null;
 };
 
@@ -113,7 +115,11 @@ export async function fetchActionPollutionScoreReferences(
   }
 
   const now = Date.now();
-  if (serverCache && serverCache.expiresAt > now) {
+  if (
+    serverCache &&
+    serverCache.expiresAt > now &&
+    serverCache.references?.formulaVersion === POLLUTION_SCORE_REFERENCE_FORMULA_VERSION
+  ) {
     return serverCache.references;
   }
   if (serverFetchInFlight) {
@@ -156,7 +162,7 @@ async function fetchUncachedActionPollutionScoreReferences(
       candidate.department_name === null,
   );
   const global = row ? toGlobalReference(row) : null;
-  if (!global) {
+  if (!global || row?.formula_version !== POLLUTION_SCORE_REFERENCE_FORMULA_VERSION) {
     return null;
   }
 
@@ -177,5 +183,6 @@ async function fetchUncachedActionPollutionScoreReferences(
   return {
     global,
     departmentReferences,
+    formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
   };
 }

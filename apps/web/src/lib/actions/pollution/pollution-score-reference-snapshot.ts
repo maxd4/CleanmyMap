@@ -14,6 +14,7 @@ import {
 } from "@/lib/public-surface-snapshots";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
+import { POLLUTION_SCORE_REFERENCE_FORMULA_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
 export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population";
@@ -23,6 +24,7 @@ export type PollutionScoreReferenceSnapshotPayload = {
     global: PollutionScoreReference;
     departments: Readonly<Record<string, DepartmentPollutionScoreReference>>;
   };
+  formulaVersion: typeof POLLUTION_SCORE_REFERENCE_FORMULA_VERSION;
   source: "action_pollution_score_references_v2";
   weekStart: string;
 };
@@ -94,6 +96,7 @@ function isValidPayload(value: unknown): value is PollutionScoreReferenceSnapsho
     return false;
   }
   return (
+    payload.formulaVersion === POLLUTION_SCORE_REFERENCE_FORMULA_VERSION &&
     payload.source === "action_pollution_score_references_v2" &&
     typeof payload.weekStart === "string" &&
     Boolean(payload.references) &&
@@ -113,6 +116,9 @@ export function buildPollutionScoreReferenceSnapshot(params: {
 }): PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload> {
   if (!isValidGlobalReference(params.references.global)) {
     throw new Error("Une référence globale V2 valide est nécessaire pour le snapshot.");
+  }
+  if (params.references.formulaVersion !== POLLUTION_SCORE_REFERENCE_FORMULA_VERSION) {
+    throw new Error("Une version courante des références V2 est nécessaire pour le snapshot.");
   }
   const departments = params.references.departmentReferences ?? {};
   if (
@@ -137,6 +143,7 @@ export function buildPollutionScoreReferenceSnapshot(params: {
     title: "Référence hebdomadaire du score pollution",
     payload: {
       references: { global: params.references.global, departments },
+      formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
       source: "action_pollution_score_references_v2",
       weekStart,
     },
@@ -214,6 +221,7 @@ export async function loadPollutionScoreReferencesForMap(params: {
       references: {
         global: snapshot.payload.references.global,
         departmentReferences: snapshot.payload.references.departments,
+        formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
       },
       source: "weekly_snapshot",
       snapshotDate: snapshot.snapshotDate,
@@ -226,7 +234,10 @@ export async function loadPollutionScoreReferencesForMap(params: {
     fetchActionPollutionScoreReferences(getSupabaseServerClient(true)));
   const references = await loadFallback();
   return {
-    references: references?.global && isValidGlobalReference(references.global)
+    references:
+      references?.formulaVersion === POLLUTION_SCORE_REFERENCE_FORMULA_VERSION &&
+      references.global &&
+      isValidGlobalReference(references.global)
       ? references
       : null,
     source: "rpc_fallback",

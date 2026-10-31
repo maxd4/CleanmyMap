@@ -15,6 +15,8 @@ export type DepartmentPollutionScoreReference = PollutionScoreReference & {
 export type PollutionScoreReferences = {
   global: PollutionScoreReference;
   departmentReferences?: Readonly<Record<string, DepartmentPollutionScoreReference>>;
+  /** Version of the maximum-reference calculation used by the projection. */
+  formulaVersion?: string;
 };
 
 export type PollutionScoreBreakdown = {

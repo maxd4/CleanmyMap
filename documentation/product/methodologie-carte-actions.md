@@ -278,6 +278,37 @@ petit échantillon et ne constitue pas une calibration scientifique. Cette
 lecture descriptive ne modifie ni le score cartographique, ni les mesures
 brutes, ni la RPC globale historique.
 
+### Identité des projections et convergence
+
+Les références et agrégats dérivés portent l'identité de la méthode qui les a
+produits. Les propriétaires actuels sont distincts :
+
+- `action-collection-reference-averages-v1` pour la moyenne globale historique
+  du formulaire ;
+- `contextual-effective-units-v1` pour les moyennes contextualisées
+  `citizen`, `company` et `school` du formulaire ;
+- `pollution-score-references-v2` pour les maxima globaux et départementaux du
+  score cartographique ;
+- `impact-terrain-public-2026.09-v3` pour l'état incrémental et les agrégats
+  mensuels de l'impact public.
+
+Ces identités ne sont pas interchangeables : une moyenne contextualisée n'est
+pas le maximum de référence du score cartographique, et aucune de ces
+projections ne remplace une observation brute. Lorsqu'une version publique
+change, le job de maintenance reconstruit l'état dérivé si sa méthode ne
+correspond plus à la version courante, puis produit l'agrégat et le snapshot
+public compatibles. Le snapshot hebdomadaire des références cartographiques
+est rafraîchi séparément ; un cache ou un snapshot d'une autre méthode est
+refusé comme `CURRENT` et déclenche le chemin de recalcul.
+
+Le recalcul ne porte que sur les valeurs dérivées dont la source canonique est
+encore identifiable. Une masse réellement pesée, un compte déclaré, une
+mesure historique sans provenance exploitable et un snapshot publié restent
+inchangés. Les snapshots historiques et les PDF déjà publiés sont conservés ;
+ils peuvent être relus comme historiques, mais ne sont jamais réécrits avec la
+méthode courante. Les écritures de reconstruction sont transactionnelles,
+protégées par le verrou d'état public et rejouables après échec.
+
 Le score doit être présenté comme :
 
 > Pollution constatée avant l'action

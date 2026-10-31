@@ -2,9 +2,11 @@ import {
   generateAndPersistPublicImpactSnapshot,
   getImpactSnapshotMonthDate,
   loadLatestPublicImpactSnapshot,
+  isCurrentPublicImpactSnapshot,
   PUBLIC_IMPACT_SNAPSHOT_KEY,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "@/lib/impact/public-impact-snapshot";
+import { POLLUTION_SCORE_REFERENCE_FORMULA_VERSION } from "@/lib/impact/scientific-projection-versions";
 import {
   loadGovernanceMonthlyReport,
 } from "@/lib/governance/governance-monthly-report-store";
@@ -71,7 +73,8 @@ async function hasImpactSnapshot(period: string): Promise<boolean> {
     snapshot &&
       snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
       snapshot.snapshotDate === period &&
-      snapshot.version === PUBLIC_IMPACT_SNAPSHOT_VERSION,
+      snapshot.version === PUBLIC_IMPACT_SNAPSHOT_VERSION &&
+      isCurrentPublicImpactSnapshot(snapshot, new Date(`${period}T12:00:00.000Z`)),
   );
 }
 
@@ -87,17 +90,36 @@ async function hasWeeklySnapshot(
 type WeeklySnapshotIdentity = {
   snapshotDate: string;
   version: string;
+  payload?: unknown;
 };
 
 export function isWeeklySnapshotProduced(
   snapshot: WeeklySnapshotIdentity | null | undefined,
   version: string,
   period: string,
+  expectedFormulaVersion?: string,
 ): boolean {
   return Boolean(
     snapshot &&
       snapshot.snapshotDate === period &&
-      snapshot.version === version,
+      snapshot.version === version
+  ) &&
+    (expectedFormulaVersion === undefined ||
+      (snapshot?.payload !== null &&
+        typeof snapshot?.payload === "object" &&
+        (snapshot.payload as { formulaVersion?: unknown }).formulaVersion ===
+          expectedFormulaVersion));
+}
+
+async function hasMapPollutionReferenceSnapshot(period: string): Promise<boolean> {
+  const snapshot = await readLatestPublicSurfaceSnapshot<WeeklySnapshotIdentity>(
+    MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY,
+  );
+  return isWeeklySnapshotProduced(
+    snapshot,
+    MAP_POLLUTION_REFERENCES_VERSION,
+    period,
+    POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
   );
 }
 
@@ -137,12 +159,7 @@ export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
     id: "map-pollution-references",
     cadence: "weekly",
     getPeriod: getUtcWeekStart,
-    isProduced: (period) =>
-      hasWeeklySnapshot(
-        MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY,
-        MAP_POLLUTION_REFERENCES_VERSION,
-        period,
-      ),
+    isProduced: hasMapPollutionReferenceSnapshot,
     run: async (now) => runPollutionScoreReferencesJob({ now }),
   },
   {

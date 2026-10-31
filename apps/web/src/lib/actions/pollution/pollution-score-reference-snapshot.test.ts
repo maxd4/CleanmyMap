@@ -5,6 +5,7 @@ import {
   loadPollutionScoreReferencesForMap,
   runPollutionScoreReferencesJob,
 } from "./pollution-score-reference-snapshot";
+import { POLLUTION_SCORE_REFERENCE_FORMULA_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 const global = {
   wastePerVolunteer: 12,
@@ -20,7 +21,11 @@ const department = {
   buttsSourceCount: 2,
   eligibleActionCount: 2,
 };
-const references = { global, departmentReferences: { "01": department } };
+const references = {
+  global,
+  departmentReferences: { "01": department },
+  formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
+};
 
 function snapshot(date = "2026-09-07") {
   return {
@@ -32,6 +37,7 @@ function snapshot(date = "2026-09-07") {
     title: "Référence hebdomadaire du score pollution",
     payload: {
       references: { global, departments: references.departmentReferences },
+      formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
       source: "action_pollution_score_references_v2" as const,
       weekStart: date,
     },
@@ -80,6 +86,7 @@ describe("pollution score reference snapshot V2", () => {
 
     expect(snapshot.payload).toEqual({
       references: { global, departments: references.departmentReferences },
+      formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
       source: "action_pollution_score_references_v2",
       weekStart: "2026-09-14",
     });
@@ -109,7 +116,11 @@ describe("pollution score reference snapshot V2", () => {
     });
 
     expect(result.source).toBe("weekly_snapshot");
-    expect(result.references).toEqual(references);
+    expect(result.references).toEqual({
+      global,
+      departmentReferences: references.departmentReferences,
+      formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
+    });
     expect(loadFallback).not.toHaveBeenCalled();
   });
 

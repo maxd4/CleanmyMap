@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+  ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+} from "@/lib/impact/scientific-projection-versions";
+import {
   deriveContextualCollectionUnits,
   normalizeActionCollectionContextReferenceRow,
   fetchActionCollectionReferenceAverages,
@@ -47,7 +51,7 @@ describe("action collection reference averages", () => {
       waste_source_count: 2,
       butts_source_count: 2,
       eligible_action_count: 2,
-      formula_version: "contextual-effective-units-v1",
+      formula_version: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
       updated_at: null,
     })).toMatchObject({ wastePerEffectiveUnit: 0, buttsPerEffectiveUnit: 0 });
     expect(normalizeActionCollectionContextReferenceRow({
@@ -55,7 +59,7 @@ describe("action collection reference averages", () => {
       waste_source_count: "NaN",
       butts_source_count: 2,
       eligible_action_count: 2,
-      formula_version: "contextual-effective-units-v1",
+      formula_version: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
     })).toBeNull();
   });
   beforeEach(() => {
@@ -69,6 +73,7 @@ describe("action collection reference averages", () => {
       waste_source_count: 2,
       butts_source_count: 3,
       eligible_action_count: 4,
+      formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
       updated_at: "2026-10-29T03:00:00.000Z",
     })).toEqual({
       wastePerVolunteer: 6,
@@ -76,6 +81,7 @@ describe("action collection reference averages", () => {
       wasteSourceCount: 2,
       buttsSourceCount: 3,
       eligibleActionCount: 4,
+      formulaVersion: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
       updatedAt: "2026-10-29T03:00:00.000Z",
     });
   });
@@ -88,6 +94,7 @@ describe("action collection reference averages", () => {
         waste_source_count: 2,
         butts_source_count: 3,
         eligible_action_count: 4,
+        formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
         updated_at: "2026-10-29T03:00:00.000Z",
       }],
       error: null,
@@ -110,5 +117,21 @@ describe("action collection reference averages", () => {
       butts_source_count: 3,
       eligible_action_count: 4,
     })).toBeNull();
+  });
+
+  it("does not serve a reference fetched with an obsolete formula version", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        waste_per_volunteer: 6,
+        butts_per_volunteer: 200,
+        waste_source_count: 2,
+        butts_source_count: 3,
+        eligible_action_count: 4,
+        formula_version: "action-collection-reference-averages-v0",
+      }],
+      error: null,
+    });
+
+    await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toBeNull();
   });
 });

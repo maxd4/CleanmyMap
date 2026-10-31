@@ -84,6 +84,30 @@ describe("maintenance job registry", () => {
         "2026-09-14",
       ),
     ).toBe(false);
+    expect(
+      isWeeklySnapshotProduced(
+        {
+          snapshotDate: "2026-09-14",
+          version: "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+          payload: { formulaVersion: "pollution-score-references-v1" },
+        },
+        "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        "2026-09-14",
+        "pollution-score-references-v2",
+      ),
+    ).toBe(false);
+    expect(
+      isWeeklySnapshotProduced(
+        {
+          snapshotDate: "2026-09-14",
+          version: "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+          payload: { formulaVersion: "pollution-score-references-v2" },
+        },
+        "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        "2026-09-14",
+        "pollution-score-references-v2",
+      ),
+    ).toBe(true);
   });
 
   it("déclare exactement les cinq jobs et leurs cadences", () => {

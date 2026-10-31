@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
 import type { PublicLandingActionAggregationRow } from "./action-participant-aggregation";
 
 export type PublicLandingActionSummaryRow =
@@ -9,6 +10,7 @@ export type PublicLandingActionSummaryRow =
     waste_source_count?: number | string | null;
     cigarette_butts: number | string | null;
     volunteers: number | string | null;
+    methodology_version: string;
   };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,7 +49,10 @@ function parsePublicLandingActionSummaryRow(value: unknown): PublicLandingAction
     "waste_source_count",
     "cigarette_butts",
   ];
-  if (metricKeys.some((key) => !isMetricField(value[key]))) return null;
+  if (
+    metricKeys.some((key) => !isMetricField(value[key])) ||
+    value.methodology_version !== PUBLIC_IMPACT_PROJECTION_VERSION
+  ) return null;
   return {
     visible_actions: readMetricField(value, "visible_actions") ?? null,
     distinct_locations: readMetricField(value, "distinct_locations") ?? null,
@@ -62,6 +67,7 @@ function parsePublicLandingActionSummaryRow(value: unknown): PublicLandingAction
     waste_source_count: readMetricField(value, "waste_source_count") ?? null,
     cigarette_butts: readMetricField(value, "cigarette_butts") ?? null,
     butts_by_condition: value.butts_by_condition,
+    methodology_version: value.methodology_version,
   };
 }
 
@@ -91,6 +97,7 @@ export async function advancePublicImpactActionState(
 ): Promise<void> {
   await callImpactStateRpc("advance_public_impact_action_state", {
     p_floor_date: floorDate,
+    p_methodology_version: PUBLIC_IMPACT_PROJECTION_VERSION,
   });
 }
 
@@ -99,6 +106,7 @@ export async function rebuildPublicImpactActionState(
 ): Promise<void> {
   await callImpactStateRpc("rebuild_public_impact_action_state", {
     p_floor_date: floorDate,
+    p_methodology_version: PUBLIC_IMPACT_PROJECTION_VERSION,
   });
 }
 

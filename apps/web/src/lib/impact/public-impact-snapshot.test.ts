@@ -32,6 +32,7 @@ import {
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "./public-impact-snapshot";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 const NOW = new Date("2026-09-08T03:00:00.000Z");
 const LATER_IN_SAME_MONTH = new Date("2026-09-26T12:00:00.000Z");
@@ -51,6 +52,7 @@ const aggregate = {
   ],
   classification_warnings: [],
   butts_by_condition: [{ condition: "propre", count: 200 }],
+  methodology_version: "impact-terrain-public-2026.09-v3",
 };
 
 function existingSnapshot(overrides: Record<string, unknown> = {}) {
@@ -122,6 +124,7 @@ describe("public monthly impact snapshot", () => {
       toDate: "2026-09-08",
       timezone: "UTC",
     });
+    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v3");
     expect(payload.kpis).toMatchObject({
       participantsTotal: 6,
       totalDurationMinutes: 120,
@@ -235,6 +238,18 @@ describe("public monthly impact snapshot", () => {
       },
     });
 
+    await expectSnapshotRegenerated(snapshot);
+  });
+
+  it("rejects a same-month snapshot when its projection version is stale", async () => {
+    const snapshot = currentSnapshot({
+      payload: {
+        ...currentSnapshot().payload,
+        projectionVersion: "impact-terrain-public-2026.09-v2",
+      },
+    });
+
+    expect(snapshot.payload.projectionVersion).not.toBe(PUBLIC_IMPACT_PROJECTION_VERSION);
     await expectSnapshotRegenerated(snapshot);
   });
 

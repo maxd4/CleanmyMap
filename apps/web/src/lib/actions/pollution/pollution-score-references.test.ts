@@ -3,6 +3,7 @@ import {
   fetchActionPollutionScoreReferences,
   invalidateActionPollutionScoreReferencesCache,
 } from "./pollution-score-references";
+import { POLLUTION_SCORE_REFERENCE_FORMULA_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 const globalReference = {
   wastePerVolunteer: 12,
@@ -26,6 +27,7 @@ describe("fetchActionPollutionScoreReferences", () => {
         butts_per_volunteer: "345",
         waste_source_count: 7,
         butts_source_count: 6,
+        formula_version: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
         updated_at: "2026-09-13T03:00:00.000Z",
       }],
       error: null,
@@ -34,7 +36,11 @@ describe("fetchActionPollutionScoreReferences", () => {
     const references = await fetchActionPollutionScoreReferences({ rpc } as never);
 
     expect(rpc).toHaveBeenCalledWith("action_pollution_score_references_v2");
-    expect(references).toEqual({ global: globalReference, departmentReferences: {} });
+    expect(references).toEqual({
+      global: globalReference,
+      departmentReferences: {},
+      formulaVersion: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
+    });
   });
 
   it("normalizes distinct string department codes and keeps insufficient rows", async () => {
@@ -49,6 +55,7 @@ describe("fetchActionPollutionScoreReferences", () => {
           waste_source_count: 8,
           butts_source_count: 7,
           eligible_action_count: 9,
+          formula_version: POLLUTION_SCORE_REFERENCE_FORMULA_VERSION,
         },
         {
           scope: "department",
@@ -142,6 +149,24 @@ describe("fetchActionPollutionScoreReferences", () => {
         butts_per_volunteer: 345,
         waste_source_count: 2,
         butts_source_count: 2,
+      }],
+      error: null,
+    });
+
+    await expect(fetchActionPollutionScoreReferences({ rpc } as never)).resolves.toBeNull();
+  });
+
+  it("does not serve a global reference fetched with an obsolete formula version", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        scope: "global",
+        department_code: null,
+        department_name: null,
+        waste_per_volunteer: 12,
+        butts_per_volunteer: 345,
+        waste_source_count: 7,
+        butts_source_count: 6,
+        formula_version: "pollution-score-references-v1",
       }],
       error: null,
     });

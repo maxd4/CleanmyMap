@@ -14,6 +14,10 @@ import {
   isCurrentImpactProxyVersion,
   isKnownImpactProxyVersion,
 } from "@/lib/gamification/impact-proxy-config";
+import {
+  isKnownPublicImpactProjectionVersion,
+  PUBLIC_IMPACT_PROJECTION_VERSION,
+} from "./scientific-projection-versions";
 import { IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION } from "./impact-terrain-2026-results";
 import {
   getPublicSurfaceSnapshotDate,
@@ -37,6 +41,7 @@ export type PublicImpactSnapshotPayload = {
   };
   generatedAt: string;
   methodologyVersion: string;
+  projectionVersion?: string;
   resultsContractVersion: string;
   kpis: PublicLandingActionAggregation;
   aggregates: {
@@ -108,6 +113,7 @@ export function buildPublicImpactSnapshotPayload(params: {
     },
     generatedAt: params.generatedAt,
     methodologyVersion: IMPACT_PROXY_CONFIG.version,
+    projectionVersion: PUBLIC_IMPACT_PROJECTION_VERSION,
     resultsContractVersion: IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION,
     kpis,
     aggregates: {
@@ -154,6 +160,8 @@ function isPublicImpactSnapshotPayload(
       payload.period.timezone === "UTC" &&
       typeof payload.generatedAt === "string" &&
       typeof payload.methodologyVersion === "string" &&
+      (payload.projectionVersion === undefined ||
+        typeof payload.projectionVersion === "string") &&
       typeof payload.resultsContractVersion === "string" &&
       typeof payload.kpis === "object" &&
       payload.kpis !== null &&
@@ -238,6 +246,8 @@ function isValidPublicImpactSnapshot(
       generatedFloorDate,
     ) &&
     isKnownImpactProxyVersion(payload.methodologyVersion) &&
+    (payload.projectionVersion === undefined ||
+      isKnownPublicImpactProjectionVersion(payload.projectionVersion)) &&
     payload.resultsContractVersion ===
       IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION
   );
@@ -250,7 +260,8 @@ export function isCurrentPublicImpactSnapshot(
   return (
     isValidPublicImpactSnapshot(snapshot) &&
     isCurrentImpactSnapshotPeriod(snapshot, now) &&
-    isCurrentImpactProxyVersion(snapshot.payload.methodologyVersion)
+    isCurrentImpactProxyVersion(snapshot.payload.methodologyVersion) &&
+    snapshot.payload.projectionVersion === PUBLIC_IMPACT_PROJECTION_VERSION
   );
 }
 
@@ -316,8 +327,8 @@ async function generateAndPersistPublicImpactSnapshotOnce(params: {
   if (
     !params.force &&
     !params.rebuild &&
-    current?.snapshotDate === monthDate &&
-    current.version === PUBLIC_IMPACT_SNAPSHOT_VERSION
+    current &&
+    isCurrentPublicImpactSnapshot(current, now)
   ) {
     return {
       snapshot: current,

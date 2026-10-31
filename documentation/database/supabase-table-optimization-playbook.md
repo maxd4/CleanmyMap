@@ -275,6 +275,12 @@ Contrat existant :
 - la sévérité conserve la règle métier existante fondée sur le maximum des
   composantes utiles.
 
+La projection est identifiée par `pollution-score-references-v2`. Le snapshot
+hebdomadaire ne peut être réutilisé que si sa période, sa version de snapshot
+et cette identité de formule concordent ; sinon le job recharge la RPC. Cette
+garde est indépendante des moyennes contextualisées du formulaire et ne
+recalcule aucune observation historique.
+
 L'ancienne RPC `action_pollution_score_references()` n'a plus de consommateur
 applicatif et est retirée par migration append-only. Les migrations historiques
 qui la définissaient restent conservées comme historique Git, mais elle ne
