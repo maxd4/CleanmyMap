@@ -107,7 +107,10 @@ async function loadNeedsResponse(userId: string | null, query: Extract<ReturnTyp
       { status: "ok", ...result },
       {
         headers: {
-          // no-store: authenticated need responses vary by the requester and must not be shared.
+          // Authenticated responses may include a user-specific projection, so
+          // they stay private, fresh, and unshared. Anonymous responses contain
+          // only the public projection and may use this short bounded cache;
+          // Vary: Cookie keeps the two representations separated.
           "Cache-Control": userId ? "private, no-store" : "public, max-age=15, stale-while-revalidate=30",
           Vary: "Cookie",
         },

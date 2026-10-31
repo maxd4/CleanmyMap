@@ -100,6 +100,35 @@ describe("community needs API", () => {
     expect(listActionNeedsMock).toHaveBeenCalledWith(undefined, null, expect.objectContaining({ category: "materiel", effectiveStatus: "expired", limit: 50, offset: 10 }));
   });
 
+  it("keeps authenticated projections private and fresh", async () => {
+    safeSessionMock.mockResolvedValue({ userId });
+    const authenticatedItem = { ...item, canManage: true };
+    listActionNeedsMock.mockResolvedValue({ items: [authenticatedItem], managerActions: [], limit: 20, offset: 0, hasMore: false });
+
+    const response = await GET(new Request("http://localhost/api/community/needs"));
+    const body = await response.json();
+
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(response.headers.get("Vary")).toBe("Cookie");
+    expect(body.items[0]).toMatchObject({ id: needId, canManage: true });
+    expect(listActionNeedsMock).toHaveBeenCalledWith(undefined, userId, expect.objectContaining({ limit: 20, offset: 0 }));
+  });
+
+  it("bounds anonymous projections to the public short-lived cache", async () => {
+    safeSessionMock.mockResolvedValue({ userId: null });
+    const publicItem = { ...item, canManage: false };
+    listActionNeedsMock.mockResolvedValue({ items: [publicItem], managerActions: [], limit: 20, offset: 0, hasMore: false });
+
+    const response = await GET(new Request("http://localhost/api/community/needs"));
+    const body = await response.json();
+
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=15, stale-while-revalidate=30");
+    expect(response.headers.get("Vary")).toBe("Cookie");
+    expect(body.items[0]).toMatchObject({ id: needId, canManage: false });
+    expect(body.items[0]).not.toHaveProperty("created_by_clerk_id");
+    expect(body.items[0]).not.toHaveProperty("createdByClerkId");
+  });
+
   it("rejects unauthenticated creation and client-owned privileged fields", async () => {
     authzMock.mockResolvedValue({ ok: false });
     expect((await POST(jsonRequest({ actionId, category: "materiel", title: "Gants", description: "Besoin", status: "fulfilled" }))).status).toBe(401);
