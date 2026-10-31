@@ -1,10 +1,28 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { buildBeforeActionFormFromAction, buildBeforeActionInitialForm } from "./before-action-form-conversions";
-import { applyPreparationContextToForm, mergeBeforeActionHydrationWithLocalChanges, resolveBeforeActionMutationId } from "./use-before-action-workflow";
+import { applyPreparationContextToForm, mergeBeforeActionHydrationWithLocalChanges, persistBeforeAction, resolveBeforeActionMutationId } from "./use-before-action-workflow";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("before-action resume hydration", () => {
+  it("keeps creation idempotency on create and the canonical action id on update", async () => {
+    const create = vi.fn().mockResolvedValue({ id: "action-created" });
+    const update = vi.fn().mockResolvedValue({ actionId: "action-existing" });
+    const payload = { actionTitle: "Action test" } as never;
+
+    await expect(persistBeforeAction(null, payload, { create, update }, "creation-request-1")).resolves.toEqual({
+      actionId: "action-created",
+      created: true,
+    });
+    expect(create).toHaveBeenCalledWith(payload, { idempotencyKey: "creation-request-1" });
+
+    await expect(persistBeforeAction("action-existing", payload, { create, update }, "ignored-request")).resolves.toEqual({
+      actionId: "action-existing",
+      created: false,
+    });
+    expect(update).toHaveBeenCalledWith("action-existing", payload);
+  });
+
   it("keeps the first server id as the mutation owner for later saves", () => {
     expect(resolveBeforeActionMutationId(null, null)).toBeNull();
     expect(resolveBeforeActionMutationId(null, "action-new")).toBe("action-new");

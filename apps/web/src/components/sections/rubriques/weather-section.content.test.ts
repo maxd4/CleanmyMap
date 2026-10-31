@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { getDurationLabel, getReportLabel, getWeatherStateCopy } from "./weather-section.helpers";
+import {
+  getCurrentWindowLabel,
+  getDurationLabel,
+  getForecastConditionLabel,
+  getForecastHourLabel,
+  getForecastLocalClockTime,
+  getReportLabel,
+  getWeatherStateCopy,
+} from "./weather-section.helpers";
 import { evaluateWeatherRisk } from "@/lib/weather/ops-weather";
 
 describe("Weather content contract", () => {
@@ -66,6 +74,56 @@ describe("Weather content contract", () => {
 
     expect(riskText).not.toMatch(/obligatoire|obligatoires/);
     expect(riskText).not.toContain("<=");
+  });
+
+  it.each([
+    ["2026-10-21T09:05", "2026-10-21T10:35", "21/10 09:05 → 21/10 10:35"],
+    [undefined, "2026-10-21T10:35", "Pas de fenêtre horaire claire"],
+    ["not-a-date", "also-not-a-date", "not-a-date → also-not-a-date"],
+  ] as const)("keeps the current weather window explicit for %s", (from, to, expected) => {
+    expect(getCurrentWindowLabel(from, to, "fr")).toBe(expected);
+  });
+
+  it("formats forecast hours without inventing a timezone for local values", () => {
+    expect(getForecastHourLabel("2026-10-21T09:05")).toBe("09:05");
+    expect(getForecastLocalClockTime("2026-10-21T9:05")).toBeNull();
+    expect(getForecastLocalClockTime("2026-10-21T09:05")).toBe("09:05");
+    expect(getForecastHourLabel("not-a-date")).toBe("not-a-date");
+  });
+
+  it.each([
+    [95, "Orage"],
+    [61, "Pluie"],
+    [45, "Brouillard"],
+    [0, "Ensoleillé"],
+  ] as const)("uses the authoritative weather code %s before fallback heuristics", (weatherCode, expected) => {
+    expect(getForecastConditionLabel({
+      time: "2026-10-21T10:00",
+      temperature: null,
+      rain: null,
+      precipitationProbability: null,
+      wind: null,
+      weatherCode,
+    }, 4).label).toBe(expected);
+  });
+
+  it("uses explicit fallback observations when no weather code is available", () => {
+    expect(getForecastConditionLabel({
+      time: "2026-10-21T22:00",
+      temperature: null,
+      rain: null,
+      precipitationProbability: null,
+      wind: null,
+      weatherCode: null,
+    }, 2).label).toBe("Ciel clair");
+    expect(getForecastConditionLabel({
+      time: "2026-10-21T12:00",
+      temperature: 12,
+      rain: null,
+      precipitationProbability: null,
+      wind: 18,
+      weatherCode: null,
+    }, 2).label).toBe("Vent léger");
   });
 
   it("does not use the retired pedagogical preparation blocks", async () => {

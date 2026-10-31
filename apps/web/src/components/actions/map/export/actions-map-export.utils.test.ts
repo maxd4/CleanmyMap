@@ -524,6 +524,52 @@ describe("actions map export utils", () => {
     });
   });
 
+  it("preserves asymmetric latitude/longitude order and does not invent missing coordinates", () => {
+    const withLocation = toActionMapItem(buildActionDataContract({
+      id: "action-asymmetric-coordinates",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Coordonnées asymétriques",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      wasteKg: null,
+      cigaretteButts: null,
+      volunteersCount: null,
+      durationMinutes: null,
+      notes: null,
+    }));
+    const withLocationGeoJson = JSON.parse(buildActionsMapGeoJsonString([withLocation])) as {
+      features: Array<{ geometry: { type: string; coordinates: unknown } | null }>;
+    };
+    expect(withLocationGeoJson.features[0]?.geometry).toEqual({
+      type: "Point",
+      coordinates: [2.3522, 48.8566],
+    });
+
+    const withoutLocation = toActionMapItem(buildActionDataContract({
+      id: "action-no-coordinates",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Lieu sans coordonnées",
+      latitude: null,
+      longitude: null,
+      wasteKg: null,
+      cigaretteButts: null,
+      volunteersCount: null,
+      durationMinutes: null,
+      notes: null,
+    }));
+    const withoutLocationGeoJson = JSON.parse(buildActionsMapGeoJsonString([withoutLocation])) as {
+      features: Array<{ geometry: unknown; properties: Record<string, unknown> }>;
+    };
+    expect(withoutLocationGeoJson.features[0]?.geometry).toBeNull();
+    expect(withoutLocationGeoJson.features[0]?.properties.geometry_reality).toBe("location_only");
+  });
+
   it("does not announce an observation when the historical source has no coordinates", () => {
     const contract = buildActionDataContract({
       id: "action-historical-gps-without-location",
