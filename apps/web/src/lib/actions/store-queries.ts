@@ -44,6 +44,7 @@ type ActionListParams = {
   limit: number | null;
   status: ActionStatus | null;
   includeFuturePublicActions?: boolean;
+  futurePublicPreActionsOnly?: boolean;
   futureOnly?: boolean;
   floorDate?: string;
   requireCoordinates?: boolean;
@@ -51,7 +52,7 @@ type ActionListParams = {
   viewport?: ActionMapViewportQuery;
   ceilingDate?: string;
   includePrivateActions?: boolean;
-  locationLabels?: readonly string[];
+  locationLabelPattern?: string;
   departmentCode?: string;
 };
 
@@ -68,6 +69,13 @@ function applyActionStatusFilter(
       .eq("action_phase", "post_action_complete")
       .not("published_at", "is", null)
       .eq("moderation_visibility", "visible");
+  }
+  if (params.futurePublicPreActionsOnly && params.status === "approved") {
+    return query
+      .in("status", ["approved", "pending"])
+      .eq("action_phase", "pre_action")
+      .not("published_at", "is", null)
+      .gte("action_date", getActionParisDate());
   }
   if (params.includeFuturePublicActions && params.status === "approved") {
     const today = getActionParisDate();
@@ -97,8 +105,8 @@ function buildActionListQuery(
   if (params.actionIds && params.actionIds.length > 0) {
     nextQuery = nextQuery.in("id", params.actionIds);
   }
-  if (params.locationLabels && params.locationLabels.length > 0) {
-    nextQuery = nextQuery.in("location_label", params.locationLabels);
+  if (params.locationLabelPattern) {
+    nextQuery = nextQuery.imatch("location_label", params.locationLabelPattern);
   }
   if (params.departmentCode) {
     nextQuery = nextQuery.eq("department_code", params.departmentCode);
@@ -193,7 +201,7 @@ export async function fetchActionRows(
     try {
       const rows = await fetchActionRowsWithSelect(
         supabase,
-        { ...params, includeFuturePublicActions: false },
+        { ...params, includeFuturePublicActions: false, futurePublicPreActionsOnly: false },
         ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE,
       );
       const normalized = rows.map(normalizeStoredAction);
@@ -206,7 +214,7 @@ export async function fetchActionRows(
       }
       const rows = await fetchActionRowsWithSelect(
         supabase,
-        { ...params, includeFuturePublicActions: false },
+        { ...params, includeFuturePublicActions: false, futurePublicPreActionsOnly: false },
           ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE,
       );
       const normalized = rows.map(normalizeStoredAction);

@@ -3,6 +3,7 @@ import type { ActionRow } from "@/types/database";
 import { publicAction } from "@/fixtures/public-action";
 import {
   derivePublicActionRecommendations,
+  getPublicActionRecommendationReadScope,
   resolveCanonicalPublicActionTerritory,
 } from "./public-action-recommendations";
 import { ALL_NEIGHBORHOODS } from "@/lib/geo/paris-neighborhood";
@@ -42,6 +43,16 @@ describe("public action recommendations", () => {
       label: "Paris",
       kind: "department",
     });
+
+    const normalizedZone = row({ location_label: " １１E   ARRONDISSEMENT " });
+    expect(resolveCanonicalPublicActionTerritory(normalizedZone)).toEqual({
+      key: "zone:75:11e arrondissement",
+      label: "11e arrondissement",
+      kind: "zone",
+    });
+    expect(getPublicActionRecommendationReadScope(normalizedZone)).toMatchObject({
+      locationLabelPattern: expect.stringMatching(/\[1１\]\[1１\]/u),
+    });
   });
 
   it("ranks the same zone before known neighbors, then date, time and id", () => {
@@ -66,6 +77,11 @@ describe("public action recommendations", () => {
       "same-id-b",
     ]);
 
+    const normalizedCandidate = derivePublicActionRecommendations(source, [
+      futureCandidate("normalized", { location_label: " １１Ｅ   ＡＲＲＯＮＤＩＳＳＥＭＥＮＴ " }),
+    ], now);
+    expect(normalizedCandidate.map((item) => item.id)).toEqual(["normalized"]);
+
     const crossDepartment = derivePublicActionRecommendations(
       row({ id: "source-cross", action_date: "2026-10-01", location_label: "16e arrondissement", action_phase: "post_action_complete" }),
       [futureCandidate("neighbor-cross", { location_label: "Neuilly-sur-Seine", department_code: "92", department_name: "Hauts-de-Seine" })],
@@ -87,6 +103,8 @@ describe("public action recommendations", () => {
       source,
       valid,
       futureCandidate("unknown", { location_label: "Berges de Seine", department_code: null, department_name: null }),
+      futureCandidate("free-label", { location_label: " 11e arrondissement - secteur libre " }),
+      futureCandidate("ambiguous-zone", { location_label: "Montreuil", department_code: "75", department_name: "Paris" }),
       futureCandidate("hidden", { moderation_visibility: "hidden" }),
       futureCandidate("draft", { review_state: "draft" }),
       futureCandidate("private", { access_mode: "invite_link" }),

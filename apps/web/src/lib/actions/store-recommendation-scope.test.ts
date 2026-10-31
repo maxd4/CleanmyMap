@@ -4,24 +4,41 @@ import { fetchActions } from "./store";
 vi.mock("server-only", () => ({}));
 
 describe("public recommendation query scope", () => {
-  it("applies territorial filters before paginating a complete public read", async () => {
-    const inCalls: unknown[][] = [];
+  it("applies normalized territorial and future pre-action filters before paginating", async () => {
+    const imatchCalls: unknown[][] = [];
+    const statusInCalls: unknown[][] = [];
     const eqCalls: unknown[][] = [];
+    const gteCalls: unknown[][] = [];
+    const orCalls: unknown[][] = [];
+    const rangeCalls: unknown[][] = [];
     const query = {
       select: () => query,
       order: () => query,
-      range: () => query,
+      range: (...args: unknown[]) => {
+        rangeCalls.push(args);
+        return query;
+      },
       limit: () => query,
       eq: (...args: unknown[]) => {
         eqCalls.push(args);
         return query;
       },
       in: (...args: unknown[]) => {
-        inCalls.push(args);
+        statusInCalls.push(args);
         return query;
       },
-      or: () => query,
-      gte: () => query,
+      imatch: (...args: unknown[]) => {
+        imatchCalls.push(args);
+        return query;
+      },
+      or: (...args: unknown[]) => {
+        orCalls.push(args);
+        return query;
+      },
+      gte: (...args: unknown[]) => {
+        gteCalls.push(args);
+        return query;
+      },
       not: () => query,
       then: (resolve: (value: unknown) => void) => resolve({ data: [], error: null }),
     };
@@ -30,11 +47,16 @@ describe("public recommendation query scope", () => {
       limit: null,
       status: "approved",
       includeFuturePublicActions: true,
+      futurePublicPreActionsOnly: true,
       futureOnly: true,
-      locationLabels: ["11e arrondissement", "12e arrondissement"],
+      locationLabelPattern: "^[[:space:]]*(?:11e|12e)[[:space:]]*$",
     });
 
-    expect(inCalls).toContainEqual(["location_label", ["11e arrondissement", "12e arrondissement"]]);
-    expect(eqCalls).not.toContainEqual(["location_label", expect.anything()]);
+    expect(imatchCalls).toEqual([["location_label", "^[[:space:]]*(?:11e|12e)[[:space:]]*$"]]);
+    expect(statusInCalls).toContainEqual(["status", ["approved", "pending"]]);
+    expect(eqCalls).toContainEqual(["action_phase", "pre_action"]);
+    expect(gteCalls).toEqual([["action_date", expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)]]);
+    expect(orCalls).not.toContainEqual([expect.stringContaining("action_phase.neq.pre_action")]);
+    expect(rangeCalls).toEqual([[0, 999]]);
   });
 });

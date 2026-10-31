@@ -23,12 +23,36 @@ type PublicActionTerritory = {
 };
 
 export type PublicActionRecommendationReadScope =
-  | { locationLabels: readonly string[]; departmentCode?: never }
-  | { locationLabels?: never; departmentCode: string };
+  | { locationLabelPattern: string; departmentCode?: never }
+  | { locationLabelPattern?: never; departmentCode: string };
 
 function normalizeTerritoryLabel(value: string): string {
   return value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("fr-FR");
 }
+
+function escapeTerritoryRegexCharacter(value: string): string {
+  return value.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&");
+}
+
+function territoryRegexToken(value: string): string {
+  if (value === " ") return "(?:[[:space:]]|　)+";
+  const codePoint = value.codePointAt(0) ?? 0;
+  const fullWidthCodePoint = codePoint >= 0x21 && codePoint <= 0x7e
+    ? codePoint + 0xfee0
+    : null;
+  if (fullWidthCodePoint !== null) {
+    return `[${escapeTerritoryRegexCharacter(value)}${escapeTerritoryRegexCharacter(String.fromCodePoint(fullWidthCodePoint))}]`;
+  }
+  return escapeTerritoryRegexCharacter(value);
+}
+
+function buildTerritoryReadPattern(labels: readonly string[]): string {
+  const alternatives = labels.map((label) =>
+    [...normalizeTerritoryLabel(label)].map(territoryRegexToken).join(""),
+  );
+  return `^[[:space:]]*(?:${alternatives.join("|")})[[:space:]]*$`;
+}
+
 function resolveCanonicalZone(action: Pick<ActionRow, "location_label" | "department_code">): PublicActionTerritory | null {
   const label = normalizeTerritoryLabel(action.location_label);
   if (!label) return null;
@@ -105,7 +129,7 @@ export function getPublicActionRecommendationReadScope(
     const locationLabels = ALL_NEIGHBORHOODS
       .filter((candidate) => scopedKeys.has(`zone:${candidate.department}:${normalizeTerritoryLabel(candidate.name)}`))
       .map((candidate) => candidate.name);
-    return { locationLabels: [...new Set(locationLabels)] };
+    return { locationLabelPattern: buildTerritoryReadPattern([...new Set(locationLabels)]) };
   }
 
   const departmentCode = action.department_code?.trim().toUpperCase() ?? "";

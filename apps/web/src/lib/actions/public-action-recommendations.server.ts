@@ -16,10 +16,11 @@ export async function loadPublicActionRecommendations(
   if (!readScope) return [];
 
   const candidates = await fetchActions(supabase, {
-    // The territorial filter bounds the read; the store's paged safety bound prevents an unbounded request.
+    // The territorial and future-pre-action filters are applied before the store pages the result.
     limit: null,
     status: "approved",
     includeFuturePublicActions: true,
+    futurePublicPreActionsOnly: true,
     futureOnly: true,
     ...readScope,
   });

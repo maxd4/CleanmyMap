@@ -122,6 +122,7 @@ export type ActionQuery = PromiseLike<ActionQueryResult<unknown>> & {
   order: (...args: unknown[]) => ActionQuery;
   limit: (...args: unknown[]) => ActionQuery;
   in: (...args: unknown[]) => ActionQuery;
+  imatch: (...args: unknown[]) => ActionQuery;
   neq: (...args: unknown[]) => ActionQuery;
   is: (...args: unknown[]) => ActionQuery;
   not: (...args: unknown[]) => ActionQuery;

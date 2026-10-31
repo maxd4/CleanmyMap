@@ -40,7 +40,7 @@ describe("loadPublicActionRecommendations", () => {
     vi.clearAllMocks();
   });
 
-  it("loads the territorial scope without a global limit before selecting the first three dates", async () => {
+  it("loads only future pre-actions in the territorial scope before selecting the first three dates", async () => {
     const candidates = Array.from({ length: 61 }, (_, index) => {
       const date = new Date(Date.UTC(2026, 10, 1 + index)).toISOString().slice(0, 10);
       return futureCandidate(`same-${index.toString().padStart(2, "0")}`, { action_date: date });
@@ -63,9 +63,10 @@ describe("loadPublicActionRecommendations", () => {
       expect.anything(),
       expect.objectContaining({
         limit: null,
-        locationLabels: expect.arrayContaining(["11e arrondissement"]),
+        locationLabelPattern: expect.stringMatching(/\[1１\]\[1１\]/u),
         status: "approved",
         includeFuturePublicActions: true,
+        futurePublicPreActionsOnly: true,
         futureOnly: true,
       }),
     );
@@ -88,6 +89,20 @@ describe("loadPublicActionRecommendations", () => {
     );
 
     expect(recommendations.map((item) => item.id)).toEqual(["same-late", "neighbor-early"]);
+  });
+
+  it("keeps a published pending pre-action when its public permissions are valid", async () => {
+    fetchActionsMock.mockResolvedValue([
+      futureCandidate("pending", { status: "pending" }),
+    ]);
+
+    const recommendations = await loadPublicActionRecommendations(
+      {} as never,
+      row({ id: "source", action_date: "2026-10-01", action_phase: "post_action_complete", location_label: "11e arrondissement" }),
+      now,
+    );
+
+    expect(recommendations.map((item) => item.id)).toEqual(["pending"]);
   });
 
   it("applies time and id tie-breakers without duplicate recommendations", async () => {
