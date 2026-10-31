@@ -178,7 +178,7 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
             </div>
             <div className="mt-3 space-y-2">
               {territories.length === 0 ? <p className="text-sm text-slate-700">{copy.emptyTerritory}</p> : territories.map((item) => (
-                <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} onError={() => setError(true)} />
+                <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} mutationsLocked={pendingKey !== null} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} onError={() => setError(true)} />
               ))}
             </div>
           </div>
@@ -189,7 +189,7 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
               {COMMUNITY_SUBSCRIPTION_TOPIC_IDS.map((topicId) => {
                 const item = topics.find((candidate) => candidate.topic_id === topicId);
                 return item ? (
-                  <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} onError={() => setError(true)} />
+                  <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} mutationsLocked={pendingKey !== null} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} onError={() => setError(true)} />
                 ) : (
                   <div key={topicId} className="flex flex-col gap-2 rounded-xl border border-sky-100 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-sm font-semibold text-slate-900">{TOPIC_LABELS[topicId][fr ? "fr" : "en"]}</span>
@@ -212,6 +212,7 @@ function SubscriptionRow({
   item,
   fr,
   pending,
+  mutationsLocked,
   copy,
   onUpdate,
   onDelete,
@@ -220,6 +221,7 @@ function SubscriptionRow({
   item: CommunitySubscriptionRow;
   fr: boolean;
   pending: boolean;
+  mutationsLocked: boolean;
   copy: { unfollow: string; disable: string; enable: string };
   onUpdate: (item: CommunitySubscriptionRow, patch: { cadence?: CommunitySubscriptionCadence; enabled?: boolean }) => Promise<void>;
   onDelete: (item: CommunitySubscriptionRow) => Promise<void>;
@@ -234,14 +236,14 @@ function SubscriptionRow({
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs font-semibold text-slate-700">
           <span className="sr-only">{label}</span>
-          <select aria-label={`${label} cadence`} value={item.cadence} disabled={pending} onChange={(event) => { onUpdate(item, { cadence: event.target.value as CommunitySubscriptionCadence }).catch(onError); }} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs">
+          <select aria-label={`${label} cadence`} value={item.cadence} disabled={mutationsLocked} onChange={(event) => { onUpdate(item, { cadence: event.target.value as CommunitySubscriptionCadence }).catch(onError); }} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs">
             {COMMUNITY_SUBSCRIPTION_CADENCES.map((cadence) => <option key={cadence} value={cadence}>{CADENCE_LABELS[cadence][fr ? "fr" : "en"]}</option>)}
           </select>
         </label>
-        <CmmButton type="button" tone="tertiary" variant="pill" disabled={pending} onClick={() => { onUpdate(item, { enabled: !item.enabled }).catch(onError); }}>
+        <CmmButton type="button" tone="tertiary" variant="pill" disabled={mutationsLocked} loading={pending} onClick={() => { onUpdate(item, { enabled: !item.enabled }).catch(onError); }}>
           {item.enabled ? copy.disable : copy.enable}
         </CmmButton>
-        <CmmButton type="button" tone="tertiary" variant="pill" disabled={pending} onClick={() => { onDelete(item).catch(onError); }}>
+        <CmmButton type="button" tone="tertiary" variant="pill" disabled={mutationsLocked} loading={pending} onClick={() => { onDelete(item).catch(onError); }}>
           {copy.unfollow}
         </CmmButton>
       </div>
