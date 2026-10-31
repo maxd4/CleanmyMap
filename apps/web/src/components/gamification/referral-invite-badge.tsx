@@ -3,6 +3,7 @@
 import {
   useCallback,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -45,6 +46,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
     [summary],
   );
   const [isCreating, setIsCreating] = useState(false);
+  const isCreatingRef = useRef(false);
   const [copied, setCopied] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,12 +59,13 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
   }, [currentSummary.inviteUrl]);
 
   async function handleCreateInvite() {
-    if (currentSummary.inviteUrl) {
+    if (isCreatingRef.current || currentSummary.inviteUrl) {
       return;
     }
 
     try {
       setErrorMessage(null);
+      isCreatingRef.current = true;
       setIsCreating(true);
       const response = await fetch("/api/gamification/referrals", {
         method: "POST",
@@ -90,6 +93,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
       console.error("Referral invite creation failed", error);
       setErrorMessage("Impossible de créer le lien d'invitation pour le moment.");
     } finally {
+      isCreatingRef.current = false;
       setIsCreating(false);
     }
   }

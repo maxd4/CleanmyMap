@@ -86,4 +86,56 @@ describe("QuizPersonalProgressOverview", () => {
     expect(markup).toContain("Régularité");
     expect(markup).toContain("Amélioration");
   });
+
+  it("fails closed for no session and keeps compact views bounded", () => {
+    expect(renderToStaticMarkup(
+      React.createElement(QuizPersonalProgressOverview, { locale: "fr", snapshot: null }),
+    )).toBe("");
+
+    const session = mergeQuizPersonalProgress(null, {
+      mode: "terrain",
+      score: 1,
+      totalQuestions: 2,
+      questions: [
+        makeQuestion("compact-1", "terrain", "action-terrain"),
+        makeQuestion("compact-2", "estimation", "climat-biodiversite"),
+      ],
+      results: { "compact-1": true, "compact-2": false },
+      errorCounts: { "erreur terrain": 1, "erreur estimation": 2, "erreur troisième": 3 },
+      playedAt: "2026-10-30T08:00:00.000Z",
+    });
+    const snapshot = buildQuizPersonalProgressSnapshot(session);
+    expect(snapshot).not.toBeNull();
+
+    const markup = renderToStaticMarkup(
+      React.createElement(QuizPersonalProgressOverview, {
+        locale: "en",
+        density: "compact",
+        snapshot: {
+          ...snapshot!,
+          badges: [
+            { id: "badge-unlocked", label: "Unlocked", description: "Done", detail: "Done", href: "/learn", tone: "emerald", unlocked: true, attempts: 2, targetAttempts: 2, accuracy: 1, thresholdAccuracy: 0.8 },
+            { id: "badge-locked", label: "Locked", description: "Next", detail: "Next", href: "/learn", tone: "sky", unlocked: false, attempts: 1, targetAttempts: 3, accuracy: 0.33, thresholdAccuracy: 0.8 },
+          ],
+          errorStats: [
+            { label: "First", count: 1, lastSeenAt: null },
+            { label: "Second", count: 2, lastSeenAt: null },
+            { label: "Third", count: 3, lastSeenAt: null },
+          ],
+          reviewTargets: [
+            { label: "First target", href: "/learn/first", attempts: 2, correctAnswers: 1, accuracy: 0.4, lastSeenAt: null },
+            { label: "Second target", href: "/learn/second", attempts: 2, correctAnswers: 0, accuracy: 0.2, lastSeenAt: null },
+            { label: "Third target", href: "/learn/third", attempts: 3, correctAnswers: 0, accuracy: 0.1, lastSeenAt: null },
+          ],
+        },
+      }),
+    );
+
+    expect(markup).toContain("Personal progress");
+    expect(markup).toContain("1 badge unlocked");
+    expect(markup).toContain("First target");
+    expect(markup).toContain("Second target");
+    expect(markup).not.toContain("Third target");
+    expect(markup).not.toContain("Third</span>");
+  });
 });
