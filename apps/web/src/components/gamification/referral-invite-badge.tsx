@@ -120,7 +120,7 @@ function ReferralInviteBadgeContent({
               type="button"
               tone="primary"
               variant="pill"
-              onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onCreate(); }}
+              onClick={onCreate}
               disabled={isCreating}
               className="min-w-[220px]"
             >
@@ -132,7 +132,7 @@ function ReferralInviteBadgeContent({
                 type="button"
                 tone="primary"
                 variant="pill"
-                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onCopy(); }}
+                onClick={onCopy}
                 className="min-w-[180px]"
               >
                 <Copy size={14} />
@@ -142,7 +142,7 @@ function ReferralInviteBadgeContent({
                 type="button"
                 tone="secondary"
                 variant="pill"
-                onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ onShare(); }}
+                onClick={onShare}
                 className="min-w-[170px]"
               >
                 <Share2 size={14} />
@@ -266,10 +266,15 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
     if (!currentSummary.inviteUrl || typeof navigator === "undefined") {
       return;
     }
-
-    await navigator.clipboard.writeText(currentSummary.inviteUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    try {
+      await navigator.clipboard.writeText(currentSummary.inviteUrl);
+      setErrorMessage(null);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch (error) {
+      console.error("Referral invite copy failed", error);
+      setErrorMessage("Impossible de copier le lien d’invitation pour le moment.");
+    }
   }
 
   async function handleShare() {
@@ -277,11 +282,17 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
       return;
     }
 
-    await navigator.share({
-      title: "CleanMyMap - Invitation",
-      text: shareText,
-      url: currentSummary.inviteUrl,
-    });
+    try {
+      await navigator.share({
+        title: "CleanMyMap - Invitation",
+        text: shareText,
+        url: currentSummary.inviteUrl,
+      });
+      setErrorMessage(null);
+    } catch (error) {
+      console.error("Referral invite share failed", error);
+      setErrorMessage("Impossible de partager le lien d’invitation pour le moment.");
+    }
   }
 
   const hasInviteUrl = Boolean(currentSummary.inviteUrl);
@@ -293,9 +304,9 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
     isQrOpen={isQrOpen}
     errorMessage={errorMessage}
     hasInviteUrl={hasInviteUrl}
-    onCreate={() => { void handleCreateInvite(); }}
-    onCopy={() => { void handleCopy(); }}
-    onShare={() => { void handleShare(); }}
+    onCreate={() => { handleCreateInvite().catch((error) => { console.error("Referral invite creation boundary failed", error); setErrorMessage("Impossible de créer le lien d’invitation pour le moment."); }); }}
+    onCopy={() => { handleCopy().catch((error) => { console.error("Referral invite copy boundary failed", error); setErrorMessage("Impossible de copier le lien d’invitation pour le moment."); }); }}
+    onShare={() => { handleShare().catch((error) => { console.error("Referral invite share boundary failed", error); setErrorMessage("Impossible de partager le lien d’invitation pour le moment."); }); }}
     onOpenQr={() => setIsQrOpen(true)}
     onCloseQr={() => setIsQrOpen(false)}
   />;

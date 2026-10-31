@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import { AdminPanelShell } from "./admin-panel-shell";
 
@@ -13,6 +13,8 @@ export function AdminOperationsAuditPanel({
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const loadingRef = useRef(false);
   const [actorUserId, setActorUserId] = useState("");
   const [operation, setOperation] = useState("");
   const [operationType, setOperationType] = useState("");
@@ -22,7 +24,10 @@ export function AdminOperationsAuditPanel({
   const [to, setTo] = useState("");
 
   const load = async (append: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
+    setError(null);
     try {
       const search = new URLSearchParams({ limit: "50" });
       if (actorUserId.trim()) search.set("actorUserId", actorUserId.trim());
@@ -40,7 +45,10 @@ export function AdminOperationsAuditPanel({
       setItems((current) => append ? [...current, ...payload.items!] : payload.items!);
       setCursor(payload.nextCursor ?? null);
       setHasMore(payload.hasMore === true);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Le journal administratif est indisponible.");
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   };
@@ -72,7 +80,7 @@ export function AdminOperationsAuditPanel({
           <input aria-label="Ressource cible" value={targetId} onChange={(event) => setTargetId(event.target.value)} placeholder="Identifiant cible" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
           <input aria-label="Début de période" type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
           <input aria-label="Fin de période" type="date" value={to} onChange={(event) => setTo(event.target.value)} className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
-          <button type="button" onClick={() => { setCursor(null); void load(false); }} disabled={loading} className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{loading ? "Chargement…" : "Filtrer"}</button>
+          <button type="button" onClick={() => { setCursor(null); load(false).catch((loadError) => setError(loadError instanceof Error ? loadError.message : "Le journal administratif est indisponible.")); }} disabled={loading} className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{loading ? "Chargement…" : "Filtrer"}</button>
         </div>
         {items.length === 0 ? (
           <p className="rounded-xl border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-600">
@@ -118,7 +126,8 @@ export function AdminOperationsAuditPanel({
             );
           })
         )}
-        {hasMore ? <button type="button" onClick={() => void load(true)} disabled={loading} className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 disabled:opacity-60">Charger la suite</button> : null}
+        {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p> : null}
+        {hasMore ? <button type="button" onClick={() => load(true).catch((loadError) => setError(loadError instanceof Error ? loadError.message : "Le journal administratif est indisponible."))} disabled={loading} className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 disabled:opacity-60">Charger la suite</button> : null}
       </div>
     </AdminPanelShell>
   );

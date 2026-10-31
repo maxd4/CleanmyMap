@@ -12,7 +12,7 @@ export const COMMUNITY_HELP_CATEGORIES = [
 export type CommunityHelpCategory = (typeof COMMUNITY_HELP_CATEGORIES)[number];
 
 export const ACTION_NEED_STATUSES = ["open", "fulfilled", "cancelled"] as const;
-export type ActionNeedStatus = (typeof ACTION_NEED_STATUSES)[number];
+type ActionNeedStatus = (typeof ACTION_NEED_STATUSES)[number];
 export type ActionNeedEffectiveStatus = ActionNeedStatus | "expired";
 
 export const ACTION_NEED_TITLE_MIN_LENGTH = 3;

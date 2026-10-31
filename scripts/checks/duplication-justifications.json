@@ -2560,6 +2560,142 @@
       "reason": "Les préconditions de verrouillage et de déplacement ne sont pas interchangeables et restent visibles dans les handlers.",
       "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:23-28 et app/api/spogomi/events/[eventId]/teams/move/route.ts:24-29 ; pair CURRENT relu.",
       "reviewedRef": "326a272fc367ee00d46bba9691d29eea561c14c9"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "42c5339d601fda82",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les chaînes de chargement des préférences d’aide et des suivis communautaires se ressemblent, mais leurs endpoints, états privés et contrats de projection sont distincts ; un hook commun créerait une façade concurrente.",
+      "evidence": "components/account/community-helper-skills-setting.tsx:45-56 et components/account/community-subscriptions-setting.tsx:78-89 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d548d5708748e9f3",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux sections de compte affichent un état vide et une erreur, mais notifications et abonnements ont des règles d’opt-in et des mutations différentes.",
+      "evidence": "components/account/community-subscriptions-setting.tsx:149-156 et components/account/notification-preferences-setting.tsx:69-76 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "fb8e63cfbd715ce6",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La pagination de continuation et le rechargement SWR des événements partagent un finally de verrou, mais leurs fetchs, erreurs récupérables et sources de données sont différents.",
+      "evidence": "components/sections/rubriques/community/use-community-events.ts:212-220 et :232-240 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "cec1119a14c95058",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les lectures de l’inbox créateur portent sur community_events et actions de revue avec projections, filtres et résolution d’identité distincts.",
+      "evidence": "lib/community/creator-inbox-loader.ts:265-273 et :337-345 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "89d76d0f0018c129",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le chargement des événements communautaires et celui des signalements légaux partagent la pagination PostgREST, mais leurs tables, données personnelles et propriétaires métier restent distincts.",
+      "evidence": "lib/community/creator-inbox-loader.ts:265-273 et lib/legal-content-report/legal-content-report-store.ts:185-193 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e237424241ea2924",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le patron de lecture cursorisé est commun au niveau Supabase, mais l’inbox d’événements et l’onboarding partenaire appliquent des projections et autorisations propres.",
+      "evidence": "lib/community/creator-inbox-loader.ts:265-272 et lib/partners/onboarding-requests-store.ts:260-267 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "64928ed006036d1a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La lecture des actions de revue et celle des signalements légaux ne partagent pas un contrat de réponse : leurs projections, identités résolues et décisions sont différents.",
+      "evidence": "lib/community/creator-inbox-loader.ts:338-345 et lib/legal-content-report/legal-content-report-store.ts:186-193 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "806c5121ffd6585a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les parseurs de parties calendaires servent des contrats de fuseau et de précision différents ; les fusionner modifierait la sémantique des périodes de digest ou introduirait un owner temporel concurrent.",
+      "evidence": "lib/community/digest-periods.ts:30-43 et lib/time/civil-date.ts:29-42 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "06c6991eb1c5fe07",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les candidats de progression par type et par équilibre partagent une forme RPC mais portent des métriques, seuils, source tables et métadonnées de récompense distincts.",
+      "evidence": "lib/gamification/quiz-balance-progress.ts:57-69 et lib/gamification/quiz-progress.ts:68-80 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "29b89dafdd135612",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les notifications de jalons par type et d’équilibre ont des événements, messages, icônes et clés de déduplication différents ; une extraction masquerait leurs contrats événementiels.",
+      "evidence": "lib/gamification/quiz-progress.ts:168-173 et :192-197 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c6beac3b76d8e406",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La lecture des offres et leur création restent dans la route pour préserver leurs validations, droits et réponses HTTP distincts.",
+      "evidence": "app/api/community/needs/[needId]/offers/route.ts:33-39 et :65-71 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "fb78cfe478e752ce",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les gardes de besoin et d’offre se ressemblent mais contrôlent des ressources et transitions métier différentes ; l’offre ne doit pas hériter implicitement des droits du besoin.",
+      "evidence": "app/api/community/needs/[needId]/offers/route.ts:64-71 et app/api/community/needs/[needId]/route.ts:61-68 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9e8dc5a86924585a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La collection de besoins et la ressource d’un besoin ont des scopes de lecture, validations d’identifiant et projections distincts.",
+      "evidence": "app/api/community/needs/[needId]/route.ts:22-28 et app/api/community/needs/route.ts:31-37 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "df1eacd95cc2722c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La lecture d’une souscription et ses mutations ciblées ne partagent pas le même contrat d’autorisation, de validation ni de réponse.",
+      "evidence": "app/api/community/subscriptions/[subscriptionId]/route.ts:23-29 et :50-56 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9c4535c4ec0fdda8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les mutations de statut et de priorité sont séparées car leurs RPC transactionnels et leurs préconditions attendues ne sont pas interchangeables.",
+      "evidence": "lib/community/bug-reports-store.ts:421-430 et :470-479 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "42d45577cb6f7aff",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La priorité et le retrait de la file active ont des contrats RPC et des états attendus différents, malgré un oracle de résultat partagé.",
+      "evidence": "lib/community/bug-reports-store.ts:434-445 et :482-493 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4fadefc55f7432c4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les stores communauté et signalements légaux partagent seulement la forme d’une mutation persistée ; leurs droits, tables et audits restent distincts.",
+      "evidence": "lib/community/bug-reports-store.ts:540-549 et lib/legal-content-report/legal-content-report-store.ts:289-297 ; pair CURRENT relu.",
+      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
     }
   ]
 }

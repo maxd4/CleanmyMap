@@ -187,14 +187,10 @@ export type GamificationBadgeDefinition = {
   legacyThresholds?: readonly { label: string; minimum: number }[];
 };
 
-export const CURRENT_SCHOOL_COLLECTIVE_RECOGNITION_IDS = [
-  "school_first_mission",
-  "school_documented_sorting",
-  "school_field_debrief",
-] as const;
-
 export type CurrentSchoolCollectiveRecognitionId =
-  (typeof CURRENT_SCHOOL_COLLECTIVE_RECOGNITION_IDS)[number];
+  | "school_first_mission"
+  | "school_documented_sorting"
+  | "school_field_debrief";
 
 export type SchoolCollectiveRecognitionDefinition = {
   id: CurrentSchoolCollectiveRecognitionId;

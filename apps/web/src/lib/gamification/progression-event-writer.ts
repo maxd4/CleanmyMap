@@ -152,12 +152,13 @@ export async function recordQuizProgression(
   },
 ): Promise<QuizProgressionCommitResult> {
   const rpcEvents = params.events.map(toQuizProgressionRpcEvent);
-  const { data, error } = await supabase.rpc("record_quiz_progression", {
+  const rpcResponse = await supabase.rpc("record_quiz_progression", {
     p_user_id: params.userId,
     p_question_type: params.questionType,
     p_question_types: [...params.questionTypes],
     p_events: rpcEvents,
-  });
+  }) as unknown as { data: unknown; error: { message?: string } | null };
+  const { data, error } = rpcResponse;
   if (error) {
     throw error;
   }

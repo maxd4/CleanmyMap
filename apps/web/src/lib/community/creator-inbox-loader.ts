@@ -325,7 +325,7 @@ async function loadAssociationActionReviewInbox(
   const selected = supabase
     .from("actions")
     .select("id, created_at, created_by_clerk_id, actor_name, organizer_type, organizer_name, action_date, event_start_time, event_end_time, location_label, notes, review_state, review_reason, preparation_data");
-  if (!selected || typeof (selected as { eq?: unknown }).eq !== "function") {
+  if (typeof (selected as { eq?: unknown }).eq !== "function") {
     if (options?.required) {
       throw new Error("Creator inbox association action query is unavailable");
     }

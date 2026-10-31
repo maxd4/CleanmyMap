@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getSupportedChatTerritoryOptions } from "@/lib/chat/channels";
 import {
@@ -63,12 +63,13 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
   const [loading, setLoading] = useState(true);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const pendingKeyRef = useRef<string | null>(null);
 
   const territoryOptions = useMemo(() => getSupportedChatTerritoryOptions(), []);
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/community/subscriptions")
+    fetch("/api/community/subscriptions")
       .then(async (response) => {
         if (!response.ok) throw new Error("subscriptions unavailable");
         return response.json() as Promise<SubscriptionsResponse>;
@@ -79,7 +80,7 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
       .catch(() => {
         if (active) setError(true);
       })
-      .finally(() => {
+      .then(() => {
         if (active) setLoading(false);
       });
     return () => {
@@ -93,6 +94,8 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     topicId?: CommunitySubscriptionTopicId;
   }) {
     const key = body.kind === "territory" ? `territory:${body.territoryZoneName}` : `topic:${body.topicId}`;
+    if (pendingKeyRef.current !== null) return;
+    pendingKeyRef.current = key;
     setPendingKey(key);
     setError(false);
     try {
@@ -102,11 +105,14 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     } catch {
       setError(true);
     } finally {
+      pendingKeyRef.current = null;
       setPendingKey(null);
     }
   }
 
   async function updateSubscription(item: CommunitySubscriptionRow, patch: { cadence?: CommunitySubscriptionCadence; enabled?: boolean }) {
+    if (pendingKeyRef.current !== null) return;
+    pendingKeyRef.current = item.id;
     setPendingKey(item.id);
     setError(false);
     try {
@@ -115,11 +121,14 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     } catch {
       setError(true);
     } finally {
+      pendingKeyRef.current = null;
       setPendingKey(null);
     }
   }
 
   async function deleteSubscription(item: CommunitySubscriptionRow) {
+    if (pendingKeyRef.current !== null) return;
+    pendingKeyRef.current = item.id;
     setPendingKey(item.id);
     setError(false);
     try {
@@ -128,6 +137,7 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
     } catch {
       setError(true);
     } finally {
+      pendingKeyRef.current = null;
       setPendingKey(null);
     }
   }
@@ -162,13 +172,13 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
                   {territoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </label>
-              <CmmButton type="button" tone="secondary" variant="pill" disabled={!selectedTerritory || pendingKey !== null} onClick={() => { void createSubscription({ kind: "territory", territoryZoneName: selectedTerritory }); }}>
+              <CmmButton type="button" tone="secondary" variant="pill" disabled={!selectedTerritory || pendingKey !== null} onClick={() => { createSubscription({ kind: "territory", territoryZoneName: selectedTerritory }).catch(() => setError(true)); }}>
                 {copy.follow}
               </CmmButton>
             </div>
             <div className="mt-3 space-y-2">
               {territories.length === 0 ? <p className="text-sm text-slate-700">{copy.emptyTerritory}</p> : territories.map((item) => (
-                <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} />
+                <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} onError={() => setError(true)} />
               ))}
             </div>
           </div>
@@ -179,11 +189,11 @@ export function CommunitySubscriptionsSetting({ locale }: { locale: Locale }) {
               {COMMUNITY_SUBSCRIPTION_TOPIC_IDS.map((topicId) => {
                 const item = topics.find((candidate) => candidate.topic_id === topicId);
                 return item ? (
-                  <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} />
+                  <SubscriptionRow key={item.id} item={item} fr={fr} pending={pendingKey === item.id} copy={copy} onUpdate={updateSubscription} onDelete={deleteSubscription} onError={() => setError(true)} />
                 ) : (
                   <div key={topicId} className="flex flex-col gap-2 rounded-xl border border-sky-100 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-sm font-semibold text-slate-900">{TOPIC_LABELS[topicId][fr ? "fr" : "en"]}</span>
-                    <CmmButton type="button" tone="secondary" variant="pill" disabled={pendingKey !== null || subscribedTopicIds.has(topicId)} onClick={() => { void createSubscription({ kind: "topic", topicId }); }}>
+                    <CmmButton type="button" tone="secondary" variant="pill" disabled={pendingKey !== null || subscribedTopicIds.has(topicId)} onClick={() => { createSubscription({ kind: "topic", topicId }).catch(() => setError(true)); }}>
                       {copy.follow}
                     </CmmButton>
                   </div>
@@ -205,6 +215,7 @@ function SubscriptionRow({
   copy,
   onUpdate,
   onDelete,
+  onError,
 }: {
   item: CommunitySubscriptionRow;
   fr: boolean;
@@ -212,6 +223,7 @@ function SubscriptionRow({
   copy: { unfollow: string; disable: string; enable: string };
   onUpdate: (item: CommunitySubscriptionRow, patch: { cadence?: CommunitySubscriptionCadence; enabled?: boolean }) => Promise<void>;
   onDelete: (item: CommunitySubscriptionRow) => Promise<void>;
+  onError: () => void;
 }) {
   const label = item.kind === "topic" && item.topic_id
     ? TOPIC_LABELS[item.topic_id][fr ? "fr" : "en"]
@@ -222,14 +234,14 @@ function SubscriptionRow({
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs font-semibold text-slate-700">
           <span className="sr-only">{label}</span>
-          <select aria-label={`${label} cadence`} value={item.cadence} disabled={pending} onChange={(event) => { void onUpdate(item, { cadence: event.target.value as CommunitySubscriptionCadence }); }} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs">
+          <select aria-label={`${label} cadence`} value={item.cadence} disabled={pending} onChange={(event) => { onUpdate(item, { cadence: event.target.value as CommunitySubscriptionCadence }).catch(onError); }} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs">
             {COMMUNITY_SUBSCRIPTION_CADENCES.map((cadence) => <option key={cadence} value={cadence}>{CADENCE_LABELS[cadence][fr ? "fr" : "en"]}</option>)}
           </select>
         </label>
-        <CmmButton type="button" tone="tertiary" variant="pill" disabled={pending} onClick={() => { void onUpdate(item, { enabled: !item.enabled }); }}>
+        <CmmButton type="button" tone="tertiary" variant="pill" disabled={pending} onClick={() => { onUpdate(item, { enabled: !item.enabled }).catch(onError); }}>
           {item.enabled ? copy.disable : copy.enable}
         </CmmButton>
-        <CmmButton type="button" tone="tertiary" variant="pill" disabled={pending} onClick={() => { void onDelete(item); }}>
+        <CmmButton type="button" tone="tertiary" variant="pill" disabled={pending} onClick={() => { onDelete(item).catch(onError); }}>
           {copy.unfollow}
         </CmmButton>
       </div>

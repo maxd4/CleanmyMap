@@ -31,7 +31,7 @@ export function createEmailTestAuditOperationId(
   return `email-test-${route}-${randomUUID()}`;
 }
 
-export async function appendEmailTestAudit(
+async function appendEmailTestAudit(
   params: EmailTestAuditParams,
 ): Promise<void> {
   const details: Record<string, unknown> = {

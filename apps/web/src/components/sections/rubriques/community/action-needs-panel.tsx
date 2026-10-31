@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   createCommunityNeed,
   fetchCommunityNeeds,
@@ -111,6 +111,8 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const busyRef = useRef<string | null>(null);
+  const loadGenerationRef = useRef(0);
   const [createForm, setCreateForm] = useState<CreateActionNeedInput>({
     actionId: "",
     category: COMMUNITY_HELP_CATEGORIES[0],
@@ -121,27 +123,42 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
   });
 
   const load = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError(null);
     try {
       const result = await fetchCommunityNeeds({ actionId: focusActionId, limit: 50 });
+      if (loadGenerationRef.current !== generation) return;
       setItems(result.items);
       setManagerActions(result.managerActions);
       setCreateForm((previous) => ({ ...previous, actionId: previous.actionId || result.managerActions[0]?.id || "" }));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : (fr ? "Les besoins sont indisponibles." : "Needs are unavailable."));
+      if (loadGenerationRef.current === generation) {
+        setError(loadError instanceof Error ? loadError.message : (fr ? "Les besoins sont indisponibles." : "Needs are unavailable."));
+      }
     } finally {
-      setLoading(false);
+      if (loadGenerationRef.current === generation) setLoading(false);
     }
   }, [focusActionId, fr]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => load());
-  }, [load]);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      load().catch((loadError) => {
+        if (active) setError(loadError instanceof Error ? loadError.message : (fr ? "Les besoins sont indisponibles." : "Needs are unavailable."));
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [fr, load]);
 
   const editingItem = useMemo(() => items.find((item) => item.id === editingId) ?? null, [editingId, items]);
 
   async function mutate(item: ActionNeedItem, operation: "fulfill" | "cancel") {
+    if (busyRef.current !== null) return;
+    busyRef.current = item.id;
     setBusyId(item.id);
     setNotice(null);
     try {
@@ -151,12 +168,15 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : (fr ? "La mise à jour a échoué." : "The update failed."));
     } finally {
+      busyRef.current = null;
       setBusyId(null);
     }
   }
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busyRef.current !== null) return;
+    busyRef.current = "create";
     setBusyId("create");
     setError(null);
     try {
@@ -167,6 +187,7 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : (fr ? "La création a échoué." : "Creation failed."));
     } finally {
+      busyRef.current = null;
       setBusyId(null);
     }
   }
@@ -174,6 +195,8 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
   async function submitEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingItem) return;
+    if (busyRef.current !== null) return;
+    busyRef.current = editingItem.id;
     const form = new FormData(event.currentTarget);
     setBusyId(editingItem.id);
     setError(null);
@@ -192,20 +215,27 @@ function useActionNeedsController(fr: boolean, focusActionId: string | null) {
     } catch (editError) {
       setError(editError instanceof Error ? editError.message : (fr ? "La modification a échoué." : "Edit failed."));
     } finally {
+      busyRef.current = null;
       setBusyId(null);
     }
   }
 
-  return { items, managerActions, loading, error, busyId, editingItem, notice, createForm, setCreateForm, setEditingId, load, mutate, submitCreate, submitEdit };
+  const runAsync = useCallback((task: () => Promise<void>) => {
+    task().catch((taskError) => {
+      setError(taskError instanceof Error ? taskError.message : (fr ? "Une erreur est survenue." : "Something went wrong."));
+    });
+  }, [fr]);
+
+  return { items, managerActions, loading, error, busyId, editingItem, notice, createForm, setCreateForm, setEditingId, load, mutate, submitCreate, submitEdit, runAsync };
 }
 
 type ActionNeedsController = ReturnType<typeof useActionNeedsController>;
 
-type ActionNeedsManagerFormProps = Pick<ActionNeedsController, "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate" | "editingItem" | "setEditingId" | "submitEdit"> & { fr: boolean };
+type ActionNeedsManagerFormProps = Pick<ActionNeedsController, "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate" | "editingItem" | "setEditingId" | "submitEdit" | "runAsync"> & { fr: boolean };
 
-function CreateNeedForm({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate }: Pick<ActionNeedsManagerFormProps, "fr" | "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate">) {
+function CreateNeedForm({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate, runAsync }: Pick<ActionNeedsManagerFormProps, "fr" | "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate" | "runAsync">) {
   if (managerActions.length === 0) return null;
-  return <form onSubmit={(event) => { void submitCreate(event); }} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+  return <form onSubmit={(event) => runAsync(() => submitCreate(event))} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
     <h3 className="text-lg font-black text-slate-900">{fr ? "Créer un besoin" : "Create a need"}</h3>
     <div className="mt-3 grid gap-3 md:grid-cols-2">
       <label className="text-sm font-bold text-slate-700">{fr ? "Action" : "Action"}<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3" value={createForm.actionId} onChange={(event) => setCreateForm((previous) => ({ ...previous, actionId: event.target.value }))}>{managerActions.map((action) => <option key={action.id} value={action.id}>{action.title} — {formatDate(action.actionDate, fr)}</option>)}</select></label>
@@ -219,9 +249,9 @@ function CreateNeedForm({ fr, managerActions, busyId, createForm, setCreateForm,
   </form>;
 }
 
-function EditNeedForm({ fr, busyId, editingItem, setEditingId, submitEdit }: Pick<ActionNeedsManagerFormProps, "fr" | "busyId" | "editingItem" | "setEditingId" | "submitEdit">) {
+function EditNeedForm({ fr, busyId, editingItem, setEditingId, submitEdit, runAsync }: Pick<ActionNeedsManagerFormProps, "fr" | "busyId" | "editingItem" | "setEditingId" | "submitEdit" | "runAsync">) {
   if (!editingItem) return null;
-  return <form onSubmit={(event) => { void submitEdit(event); }} className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+  return <form onSubmit={(event) => runAsync(() => submitEdit(event))} className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
     <h3 className="text-lg font-black text-slate-900">{fr ? "Modifier le besoin" : "Edit need"}</h3>
     <div className="mt-3 grid gap-3 md:grid-cols-2">
       <label className="text-sm font-bold text-slate-700">{fr ? "Catégorie" : "Category"}<select name="category" defaultValue={editingItem.category} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3">{COMMUNITY_HELP_CATEGORIES.map((category) => <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>)}</select></label>
@@ -234,18 +264,18 @@ function EditNeedForm({ fr, busyId, editingItem, setEditingId, submitEdit }: Pic
   </form>;
 }
 
-function ActionNeedsManagerForms({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate, editingItem, setEditingId, submitEdit }: ActionNeedsManagerFormProps) {
+function ActionNeedsManagerForms({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate, editingItem, setEditingId, submitEdit, runAsync }: ActionNeedsManagerFormProps) {
   return (
     <>
-      <CreateNeedForm fr={fr} managerActions={managerActions} busyId={busyId} createForm={createForm} setCreateForm={setCreateForm} submitCreate={submitCreate} />
-      <EditNeedForm fr={fr} busyId={busyId} editingItem={editingItem} setEditingId={setEditingId} submitEdit={submitEdit} />
+      <CreateNeedForm fr={fr} managerActions={managerActions} busyId={busyId} createForm={createForm} setCreateForm={setCreateForm} submitCreate={submitCreate} runAsync={runAsync} />
+      <EditNeedForm fr={fr} busyId={busyId} editingItem={editingItem} setEditingId={setEditingId} submitEdit={submitEdit} runAsync={runAsync} />
     </>
   );
 }
 
 export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActionId: string | null }) {
   const controller = useActionNeedsController(fr, focusActionId);
-  const { items, managerActions, loading, error, busyId, editingItem, notice, createForm, setCreateForm, setEditingId, load, mutate, submitCreate, submitEdit } = controller;
+  const { items, managerActions, loading, error, busyId, editingItem, notice, createForm, setCreateForm, setEditingId, load, mutate, submitCreate, submitEdit, runAsync } = controller;
 
   if (loading) return <div role="status" className="rounded-2xl border border-emerald-100 bg-white px-4 py-6 text-sm font-semibold text-emerald-900">{fr ? "Chargement des besoins…" : "Loading needs…"}</div>;
 
@@ -259,12 +289,12 @@ export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActi
         </Link>
       </div>
 
-      {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800"><p>{error}</p><button type="button" className="mt-3 font-bold underline" onClick={() => { void load(); }}>{fr ? "Réessayer" : "Retry"}</button></div> : null}
+      {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800"><p>{error}</p><button type="button" className="mt-3 font-bold underline" onClick={() => runAsync(load)}>{fr ? "Réessayer" : "Retry"}</button></div> : null}
       {notice ? <p role="status" className="text-sm font-semibold text-emerald-800">{notice}</p> : null}
 
-      <ActionNeedsManagerForms fr={fr} managerActions={managerActions} busyId={busyId} createForm={createForm} setCreateForm={setCreateForm} submitCreate={submitCreate} editingItem={editingItem} setEditingId={setEditingId} submitEdit={submitEdit} />
+      <ActionNeedsManagerForms fr={fr} managerActions={managerActions} busyId={busyId} createForm={createForm} setCreateForm={setCreateForm} submitCreate={submitCreate} editingItem={editingItem} setEditingId={setEditingId} submitEdit={submitEdit} runAsync={runAsync} />
 
-      {items.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">{fr ? "Aucun besoin à afficher pour le moment." : "No needs to display yet."}</div> : <div className="grid gap-4">{items.map((item) => <NeedCard key={item.id} item={item} fr={fr} busy={busyId === item.id} onEdit={() => setEditingId(item.id)} onFulfill={() => { void mutate(item, "fulfill"); }} onCancel={() => { void mutate(item, "cancel"); }} />)}</div>}
+      {items.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">{fr ? "Aucun besoin à afficher pour le moment." : "No needs to display yet."}</div> : <div className="grid gap-4">{items.map((item) => <NeedCard key={item.id} item={item} fr={fr} busy={busyId === item.id} onEdit={() => setEditingId(item.id)} onFulfill={() => runAsync(() => mutate(item, "fulfill"))} onCancel={() => runAsync(() => mutate(item, "cancel"))} />)}</div>}
     </section>
   );
 }

@@ -1,8 +1,6 @@
 import type { User } from "@clerk/nextjs/server";
-import {
-  syncClerkUserToSupabase,
-  type SyncClerkUserOptions,
-} from "./sync-orchestration";
+import { syncClerkUserToSupabase } from "./sync-orchestration";
+import type { SyncClerkUserOptions } from "./sync";
 
 export async function trySyncClerkUserToSupabase(
   user: User | null,

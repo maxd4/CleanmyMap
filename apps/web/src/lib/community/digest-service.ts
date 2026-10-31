@@ -25,8 +25,8 @@ import {
   type CommunityDigestPeriod,
 } from "./digest-periods";
 
-export const COMMUNITY_DIGEST_SOURCES = ["future_actions", "needs", "results"] as const;
-export type CommunityDigestSource = (typeof COMMUNITY_DIGEST_SOURCES)[number];
+const COMMUNITY_DIGEST_SOURCES = ["future_actions", "needs", "results"] as const;
+type CommunityDigestSource = (typeof COMMUNITY_DIGEST_SOURCES)[number];
 
 export type CommunityDigestReference = {
   type: CommunityDigestSource;

@@ -33,7 +33,7 @@ export function CommunityHelperSkillsSetting({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/community/helper-skills")
+    fetch("/api/community/helper-skills")
       .then(async (response) => {
         if (!response.ok) throw new Error("helper skills unavailable");
         return response.json() as Promise<SkillsResponse>;
@@ -47,7 +47,7 @@ export function CommunityHelperSkillsSetting({ locale }: { locale: Locale }) {
       .catch(() => {
         if (active) setError(true);
       })
-      .finally(() => {
+      .then(() => {
         if (active) setLoading(false);
       });
     return () => {
@@ -123,7 +123,7 @@ export function CommunityHelperSkillsSetting({ locale }: { locale: Locale }) {
           </fieldset>
           {error ? <p className="mt-3 text-sm font-semibold text-rose-700" role="alert">{copy.unavailable}</p> : null}
           {saved ? <p className="mt-3 text-sm font-semibold text-emerald-700" role="status">{copy.saved}</p> : null}
-          <div className="mt-4"><CmmButton type="button" tone="secondary" variant="pill" disabled={saving} loading={saving} onClick={() => { void save(); }}>{saving ? copy.saving : copy.save}</CmmButton></div>
+          <div className="mt-4"><CmmButton type="button" tone="secondary" variant="pill" disabled={saving} loading={saving} onClick={() => { save().catch(() => setError(true)); }}>{saving ? copy.saving : copy.save}</CmmButton></div>
         </>
       )}
     </section>

@@ -7,7 +7,7 @@ import type { ActionRow } from "@/types/database";
 import { createChatNotificationsForMessage } from "./chat-notifications";
 import { OFFICIAL_ASSOCIATION_ANNOUNCEMENT_TOPIC_ID } from "./announcements";
 
-export type AssociationActionAnnouncementState =
+type AssociationActionAnnouncementState =
   | "diffused"
   | "already_diffused"
   | "not_eligible"

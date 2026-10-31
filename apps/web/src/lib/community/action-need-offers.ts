@@ -1,13 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const ACTION_NEED_OFFER_STATUSES = [
-  "pending",
-  "accepted",
-  "declined",
-  "withdrawn",
-] as const;
-
-export type ActionNeedOfferStatus = (typeof ACTION_NEED_OFFER_STATUSES)[number];
+type ActionNeedOfferStatus = "pending" | "accepted" | "declined" | "withdrawn";
 export const ACTION_NEED_OFFER_OPERATIONS = ["accept", "decline", "withdraw"] as const;
 export type ActionNeedOfferOperation = (typeof ACTION_NEED_OFFER_OPERATIONS)[number];
 

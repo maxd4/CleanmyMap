@@ -77,12 +77,6 @@ export function isCommunityAnnouncementTopicId(
   return COMMUNITY_ANNOUNCEMENT_TEMPLATES.some((template) => template.topicId === topicId);
 }
 
-export function isOfficialAssociationAnnouncementTopicId(
-  topicId: ChatTopicId | null | undefined,
-): boolean {
-  return topicId === OFFICIAL_ASSOCIATION_ANNOUNCEMENT_TOPIC_ID;
-}
-
 export function buildAnnouncementDraft(
   key: CommunityAnnouncementTemplateKey | null | undefined,
 ): string {

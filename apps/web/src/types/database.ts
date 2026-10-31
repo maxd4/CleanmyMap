@@ -7,11 +7,6 @@ import type {
 import type { CommunityEventLocationSource } from "@/lib/community/event-location";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext, ActionContextSource } from "@/lib/actions/action-context";
-import type { CommunitySubscriptionRow } from "@/lib/community/subscriptions";
-import type { ActionNeedRow } from "@/lib/community/action-needs";
-import type { ActionNeedOfferRow } from "@/lib/community/action-need-offers";
-import type { CommunityHelperSkillRow } from "@/lib/community/helper-skills";
-import type { CommunityDigestCadence } from "@/lib/community/digest-periods";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -28,19 +23,6 @@ export type CommunityEventRow = {
   longitude: number | null;
   location_source: CommunityEventLocationSource | null;
   description: string | null;
-};
-export type { CommunitySubscriptionRow };
-export type { ActionNeedRow };
-export type { ActionNeedOfferRow };
-export type { CommunityHelperSkillRow };
-export type CommunityDigestRunRow = {
-  id: string;
-  user_id: string;
-  cadence: CommunityDigestCadence;
-  period_key: string;
-  generated_at: string;
-  item_count: number;
-  notification_id: string | null;
 };
 export type ActionParticipantRow = {
   id: string;

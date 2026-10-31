@@ -165,11 +165,19 @@ function useCommunityEventsReconciliation(params: {
     [baseSignaturesRef, generationRef, reconciliationBaseRef, reconcileContinuationPages],
   );
   useEffect(() => {
-    if (upcomingData) void reconcileBase("upcoming", upcomingData);
-  }, [reconcileBase, upcomingData]);
+    if (upcomingData) {
+      reconcileBase("upcoming", upcomingData).catch((error) => {
+        updatePhaseState("upcoming", (current) => ({ ...current, error, failedOperation: "reconciliation", loadingMore: false }));
+      });
+    }
+  }, [reconcileBase, updatePhaseState, upcomingData]);
   useEffect(() => {
-    if (pastData) void reconcileBase("past", pastData);
-  }, [pastData, reconcileBase]);
+    if (pastData) {
+      reconcileBase("past", pastData).catch((error) => {
+        updatePhaseState("past", (current) => ({ ...current, error, failedOperation: "reconciliation", loadingMore: false }));
+      });
+    }
+  }, [pastData, reconcileBase, updatePhaseState]);
   return { reconcileBase, reconcileContinuationPages };
 }
 

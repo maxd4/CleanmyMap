@@ -16,10 +16,7 @@ import {
   resolveWritableClient,
   upsertSyncedProfile,
 } from "./sync-persistence";
-
-export type SyncClerkUserOptions = {
-  allowServiceRoleFallback?: boolean;
-};
+import type { SyncClerkUserOptions } from "./sync";
 
 /**
  * Syncs a Clerk user profile to the Supabase 'profiles' table.

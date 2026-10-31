@@ -53,7 +53,7 @@ export function computeQuizProgressAwards(params: {
   });
 }
 
-export function buildQuizProgressEventCandidates(params: {
+function buildQuizProgressEventCandidates(params: {
   userId: string;
   questionType: string;
   questionId: string;

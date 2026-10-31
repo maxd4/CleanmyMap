@@ -385,7 +385,7 @@ export async function getCommunityBugReportById(
   return findRecordInList(store.records, (record) => record.id === reportId);
 }
 
-export type CommunityBugReportMutationStatus =
+type CommunityBugReportMutationStatus =
   | "updated"
   | "unchanged"
   | "not_found"

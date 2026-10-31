@@ -1,6 +1,5 @@
-export const COMMUNITY_DIGEST_TIME_ZONE = "Europe/Paris";
-export const COMMUNITY_DIGEST_CADENCES = ["daily", "weekly"] as const;
-export type CommunityDigestCadence = (typeof COMMUNITY_DIGEST_CADENCES)[number];
+const COMMUNITY_DIGEST_TIME_ZONE = "Europe/Paris";
+export type CommunityDigestCadence = "daily" | "weekly";
 
 export type CommunityDigestPeriod = {
   cadence: CommunityDigestCadence;
