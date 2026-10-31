@@ -269,36 +269,57 @@ async function executeConfirmSubmit(params: ConfirmSubmitParams): Promise<void> 
   }
 }
 
+type SubmissionActionBuilderParams = UseActionDeclarationSubmissionParams & {
+  submissionState: SubmissionState;
+  setSubmissionState: Dispatch<SetStateAction<SubmissionState>>;
+  setErrorMessage: Dispatch<SetStateAction<string | null>>;
+  setValidationIssues: Dispatch<SetStateAction<ValidationIssue[]>>;
+  setShowConfirmation: Dispatch<SetStateAction<boolean>>;
+  setCreatedId: Dispatch<SetStateAction<string | null>>;
+  setRecordedAction: Dispatch<SetStateAction<ActionEditorRecord | null>>;
+  setRetentionLoop: Dispatch<SetStateAction<PostActionRetentionLoop | null>>;
+  setActionMediaUpload: Dispatch<SetStateAction<ActionMediaUploadState>>;
+  setValidationStatus: Dispatch<SetStateAction<ActionDeclarationValidationStatus>>;
+};
+
+function buildSubmissionActions(params: SubmissionActionBuilderParams) {
+  const validateBeforeConfirmation = (): boolean => {
+    params.setHasAttemptedSubmit(true);
+    if (!params.isAuthenticated) return false;
+    if (params.photoPreparationPending) {
+      params.setValidationStatus("blocked");
+      params.setValidationIssues([]);
+      params.setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
+      params.setSubmissionState("error");
+      return false;
+    }
+    if (params.draftStorageReadError && !params.initialActionId) {
+      params.setValidationStatus("blocked");
+      params.setValidationIssues([]);
+      params.setErrorMessage(
+        "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
+      );
+      params.setSubmissionState("error");
+      return false;
+    }
+    const issues = getSubmissionIssues(params);
+    params.setValidationIssues(issues);
+    params.setValidationStatus(issues.length > 0 ? "field_errors" : "validated");
+    params.setErrorMessage(null);
+    params.setSubmissionState("idle");
+    return issues.length === 0;
+  };
+
+  const handleConfirmSubmit = async (): Promise<void> => {
+    await executeConfirmSubmit(params);
+  };
+
+  return { validateBeforeConfirmation, handleConfirmSubmit };
+}
+
 export function useActionDeclarationSubmission(
   params: UseActionDeclarationSubmissionParams,
 ) {
-  const {
-  form,
-  declarationMode,
-  isAuthenticated,
-  draftStorageReadError,
-  initialActionId,
-  loadedActionPhase,
-  manualDrawingEnabled,
-  manualDrawing,
-  manualDrawingSource,
-  drawingIsValid,
-  effectiveRoutePreviewDrawing,
-  routePreviewSource,
-  hasValidDrawing,
-  hasServerRouteInput,
-  isCleanPlaceMode,
-  payload,
-  linkedEventId,
-  photoAssets,
-  photoPreparationPending,
-  visionEstimate,
-  userMetadata,
-  clearDraft,
-  creationRequestId,
-  setLoadedActionPhase,
-  setHasAttemptedSubmit,
-  } = params;
   const hasTrackedStartRef = useRef<boolean>(false);
   const [submissionState, setSubmissionState] =
     useState<SubmissionState>("idle");
@@ -326,7 +347,7 @@ export function useActionDeclarationSubmission(
     setValidationStatus("not_attempted");
     setValidationIssues([]);
     setErrorMessage(null);
-    setHasAttemptedSubmit(false);
+    params.setHasAttemptedSubmit(false);
     setShowConfirmation(false);
   }
 
@@ -343,7 +364,7 @@ export function useActionDeclarationSubmission(
     setValidationStatus("not_attempted");
     setShowConfirmation(false);
     setActionMediaUpload({ status: "idle", uploadedCount: 0, failed: [] });
-    setHasAttemptedSubmit(false);
+    params.setHasAttemptedSubmit(false);
   }
 
   async function retryActionMediaUploads() {
@@ -363,88 +384,30 @@ export function useActionDeclarationSubmission(
   const trackFormStart = () =>
     trackActionDeclarationFormStart({
       hasTrackedStartRef,
-      declarationMode,
-      form,
-      linkedEventId,
+      declarationMode: params.declarationMode,
+      form: params.form,
+      linkedEventId: params.linkedEventId,
     });
 
-  const validateBeforeConfirmation = (): boolean => {
-    setHasAttemptedSubmit(true);
-    if (!isAuthenticated) return false;
-    if (photoPreparationPending) {
-      setValidationStatus("blocked");
-      setValidationIssues([]);
-      setErrorMessage("Attendez la fin de la préparation des photos avant d’envoyer la déclaration.");
-      setSubmissionState("error");
-      return false;
-    }
-    if (draftStorageReadError && !initialActionId) {
-      setValidationStatus("blocked");
-      setValidationIssues([]);
-      setErrorMessage(
-        "La lecture du brouillon local doit réussir avant de créer une nouvelle action. Réessayez sa lecture puis confirmez l’envoi.",
-      );
-      setSubmissionState("error");
-      return false;
-    }
-    const issues = getSubmissionIssues({
-      form,
-      payload,
-      isAuthenticated,
-      declarationMode,
-      hasValidDrawing,
-      hasServerRouteInput,
-      isCleanPlaceMode,
-      manualDrawingSource,
-    });
-    setValidationIssues(issues);
-    setValidationStatus(issues.length > 0 ? "field_errors" : "validated");
-    setErrorMessage(null);
-    setSubmissionState("idle");
-    return issues.length === 0;
-  };
-
+  const submissionActions = buildSubmissionActions({
+    ...params,
+    submissionState,
+    setSubmissionState,
+    setErrorMessage,
+    setValidationIssues,
+    setShowConfirmation,
+    setCreatedId,
+    setRecordedAction,
+    setRetentionLoop,
+    setActionMediaUpload,
+    setValidationStatus,
+  });
+  const { validateBeforeConfirmation } = submissionActions;
   const handleConfirmSubmit = async (): Promise<void> => {
     if (submissionInFlightRef.current) return;
     submissionInFlightRef.current = true;
     try {
-      await executeConfirmSubmit({
-        form,
-        declarationMode,
-        isAuthenticated,
-        draftStorageReadError,
-        initialActionId,
-        loadedActionPhase,
-        manualDrawingEnabled,
-        manualDrawing,
-        manualDrawingSource,
-        drawingIsValid,
-        effectiveRoutePreviewDrawing,
-        routePreviewSource,
-        hasValidDrawing,
-        hasServerRouteInput,
-        isCleanPlaceMode,
-        payload,
-        linkedEventId,
-        photoAssets,
-        photoPreparationPending,
-        visionEstimate,
-        userMetadata,
-        clearDraft,
-        creationRequestId,
-        setLoadedActionPhase,
-        setHasAttemptedSubmit,
-        submissionState,
-        setSubmissionState,
-        setErrorMessage,
-        setValidationIssues,
-        setShowConfirmation,
-        setCreatedId,
-        setRecordedAction,
-        setRetentionLoop,
-        setActionMediaUpload,
-        setValidationStatus,
-      });
+      await submissionActions.handleConfirmSubmit();
     } finally {
       submissionInFlightRef.current = false;
     }

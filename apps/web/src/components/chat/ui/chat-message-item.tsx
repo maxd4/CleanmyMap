@@ -35,6 +35,24 @@ type ChatMessageItemProps = {
 
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"]);
 
+function getChatAttachmentLabel(type: string | null | undefined): string {
+  if (!type) return "FICHIER";
+  return type.split("/").pop()?.replace(/\+xml$/i, "").toUpperCase() ?? "FICHIER";
+}
+
+function getSafeChatAttachmentUrl(url: string | null | undefined): string | null {
+  return isSafeChatAttachmentUrl(url) ? url ?? null : null;
+}
+
+function getChatMessageMotion(displayMode: string, reducedMotion: boolean | null) {
+  const shouldAnimate = reducedMotion !== true && displayMode !== "sobre";
+  return {
+    initial: shouldAnimate ? { opacity: 1, y: displayMode === "minimaliste" ? 2 : 10 } : false,
+    animate: shouldAnimate ? { opacity: 1, y: 0 } : undefined,
+    transition: { duration: shouldAnimate ? (displayMode === "minimaliste" ? 0.1 : 0.18) : 0 },
+  };
+}
+
 function isVisualAttachment(message: ChatMessage): boolean {
   if (!isSafeChatAttachmentUrl(message.attachment_url)) {
     return false;
@@ -76,6 +94,137 @@ function ChatAttachment({ url, label, isVisual, isLight, isPrivateChannel }: { u
   return <div className="mb-3">{isVisual ? <div className="group/img relative overflow-hidden rounded-xl border border-black/5 inline-block"><Image src={url} alt="Pièce jointe" width={300} height={200} unoptimized className="max-h-48 w-auto object-cover" /></div> : <a href={url} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isPrivateChannel ? (isLight ? "border-indigo-100 bg-indigo-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700") : (isLight ? "border-pink-100 bg-pink-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700")}`}><div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isPrivateChannel ? (isLight ? "bg-indigo-100 text-indigo-500" : "bg-indigo-500/20 text-indigo-400") : (isLight ? "bg-pink-100 text-pink-600" : "bg-pink-500/20 text-pink-300")}`}><FileText size={16} /></div><div><p className={`break-words cmm-text-small font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{label}</p><p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-400"}`}>Document</p></div><Download size={14} className={isPrivateChannel ? (isLight ? "ml-2 text-indigo-500" : "ml-2 text-indigo-400") : (isLight ? "ml-2 text-pink-600" : "ml-2 text-pink-300")} /></a>}</div>;
 }
 
+type ChatMessageBodyProps = Pick<
+  ChatMessageItemProps,
+  "message" | "tone" | "pollVotePending" | "pollVoteError" | "onPollVote" | "onPollVoteRetry"
+> & {
+  tone: "light" | "dark";
+  isLight: boolean;
+  isPrivateChannel: boolean;
+  safeAttachmentUrl: string | null;
+  attachmentLabel: string;
+  hasVisualAttachment: boolean;
+  topic: ReturnType<typeof getDiscussionTopic>;
+  isAnnouncement: boolean;
+  isPoll: boolean;
+  hasActionReference: boolean;
+  hasStructuredMetadata: boolean;
+};
+
+function ChatMessageBody({
+  message,
+  tone,
+  pollVotePending,
+  pollVoteError,
+  onPollVote,
+  onPollVoteRetry,
+  isLight,
+  isPrivateChannel,
+  safeAttachmentUrl,
+  attachmentLabel,
+  hasVisualAttachment,
+  topic,
+  isAnnouncement,
+  isPoll,
+  hasActionReference,
+  hasStructuredMetadata,
+}: ChatMessageBodyProps) {
+  return (
+    <div className="pl-[52px]">
+      <ChatMessageContent content={message.content} tone={tone} />
+
+      {message.action_id ? <ChatActionReferenceCard actionId={message.action_id} tone={tone} /> : null}
+
+      {hasStructuredMetadata ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {isAnnouncement ? <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-semibold ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}><Megaphone size={10} aria-hidden="true" /> Annonce / Relai</span> : null}
+          {isPoll ? <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-semibold ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}><BarChart3 size={10} aria-hidden="true" /> Sondage</span> : null}
+          {topic ? <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}`}>{topic.label}</span> : null}
+          {hasActionReference ? <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>Action</span> : null}
+        </div>
+      ) : null}
+
+      {isAnnouncement && message.related_event ? (
+        <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
+          <p className="cmm-text-caption font-semibold text-rose-500">Cleanup associé</p>
+          <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>{message.related_event.title}</p>
+          <div className="mt-2 flex flex-wrap gap-3 cmm-text-caption font-bold text-slate-500">
+            <span className="inline-flex items-center gap-1"><Calendar size={12} /> {message.related_event.event_date}</span>
+            <span className="inline-flex items-center gap-1"><MapPin size={12} /> {message.related_event.location_label}</span>
+          </div>
+        </div>
+      ) : null}
+
+      {isPoll ? <ChatPoll message={message} isLight={isLight} pollVotePending={pollVotePending} pollVoteError={pollVoteError} onPollVote={onPollVote} onPollVoteRetry={onPollVoteRetry} /> : null}
+      {safeAttachmentUrl ? <ChatAttachment url={safeAttachmentUrl} label={attachmentLabel} isVisual={hasVisualAttachment} isLight={isLight} isPrivateChannel={isPrivateChannel} /> : null}
+    </div>
+  );
+}
+
+function getChatMessageSurfaceClass(params: {
+  isLight: boolean;
+  isPoll: boolean;
+  hasActionReference: boolean;
+  hasStructuredCard: boolean;
+  isHighlighted: boolean;
+}) {
+  const cardClass = params.hasStructuredCard
+    ? "rounded-[1.5rem] border p-4 shadow-sm"
+    : "border-b pb-4";
+  const toneClass = !params.hasStructuredCard
+    ? params.isLight
+      ? "border-slate-200/80"
+      : "border-slate-700/80"
+    : params.isLight
+      ? params.isPoll
+        ? "border-pink-200 bg-pink-50/30 shadow-sm"
+        : params.hasActionReference
+          ? "border-pink-200 bg-pink-50/40"
+          : "border-rose-200 bg-rose-50/30"
+      : params.isPoll
+        ? "border-pink-400/20 bg-pink-500/5 shadow-sm"
+        : params.hasActionReference
+          ? "border-pink-400/20 bg-pink-500/5"
+          : "border-rose-400/20 bg-rose-500/5";
+  return cn(
+    "w-full transition-all duration-300",
+    cardClass,
+    params.isHighlighted ? "ring-2 ring-pink-400 ring-offset-2 ring-offset-rose-50" : "",
+    toneClass,
+  );
+}
+
+function ChatMessageHeader({ message, isLight, isPrivateChannel, isMe }: { message: ChatMessage; isLight: boolean; isPrivateChannel: boolean; isMe: boolean }) {
+  const avatarTone = isPrivateChannel
+    ? isLight
+      ? "bg-indigo-50 text-indigo-700"
+      : "bg-indigo-500/20 text-indigo-300"
+    : isLight
+      ? "bg-pink-50 text-pink-700"
+      : "bg-pink-500/20 text-pink-300";
+  const badgeTone = isPrivateChannel
+    ? isLight
+      ? "bg-indigo-50 text-indigo-600"
+      : "bg-indigo-500/20 text-indigo-300"
+    : avatarTone;
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-3">
+        <ChatAvatar src={message.sender.avatar_url} name={message.sender.display_name} size="md" tone={isLight ? "light" : "dark"} className={avatarTone} />
+        <div>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-bold ${isLight ? "text-slate-800" : "text-slate-200"}`}>{message.sender.display_name}</span>
+            {isMe ? <span className={`rounded px-1.5 py-0.5 cmm-text-caption font-semibold ${badgeTone}`}>Moi</span> : null}
+          </div>
+          <span className={`cmm-text-caption ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+            {formatDistanceToNow(new Date(message.created_at), { locale: fr, addSuffix: true })}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ChatMessageItem({
   message,
   userId,
@@ -91,20 +240,12 @@ export function ChatMessageItem({
   const reducedMotion = useReducedMotion();
   const isMe = message.sender_id === userId;
   const isPrivateChannel = message.channel_type === "dm";
-  const shouldAnimate = reducedMotion !== true && displayMode !== "sobre";
-  const safeAttachmentUrl = isSafeChatAttachmentUrl(message.attachment_url)
-    ? message.attachment_url
-    : null;
+  const motionProps = getChatMessageMotion(displayMode, reducedMotion);
+  const safeAttachmentUrl = getSafeChatAttachmentUrl(message.attachment_url);
   const hasAttachment = Boolean(safeAttachmentUrl);
   const hasVisualAttachment = hasAttachment && isVisualAttachment(message);
   
-  const attachmentLabel = message.attachment_type
-    ? message.attachment_type
-        .split("/")
-        .pop()
-        ?.replace(/\+xml$/i, "")
-        .toUpperCase() ?? "FICHIER"
-    : "FICHIER";
+  const attachmentLabel = getChatAttachmentLabel(message.attachment_type);
 
   const topic = getDiscussionTopic(message.channel_type, message.topic_id);
   const isAnnouncement = message.message_kind === "announcement";
@@ -118,121 +259,34 @@ export function ChatMessageItem({
       id={`chat-message-${message.id}`}
       tabIndex={isHighlighted ? -1 : undefined}
       data-chat-message-id={message.id}
-      initial={shouldAnimate ? { opacity: 1, y: displayMode === "minimaliste" ? 2 : 10 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
-      transition={{ duration: shouldAnimate ? (displayMode === "minimaliste" ? 0.1 : 0.18) : 0 }}
+      initial={motionProps.initial}
+      animate={motionProps.animate}
+      transition={motionProps.transition}
       className="flex w-full group mb-4"
     >
       <div 
-        className={cn(
-          "w-full transition-all duration-300",
-          hasStructuredCard
-            ? "rounded-[1.5rem] border p-4 shadow-sm"
-            : "border-b pb-4",
-          isHighlighted ? "ring-2 ring-pink-400 ring-offset-2 ring-offset-rose-50" : "",
-          hasStructuredCard
-            ? isLight
-              ? isPoll
-                ? "border-pink-200 bg-pink-50/30 shadow-sm"
-                : hasActionReference
-                  ? "border-pink-200 bg-pink-50/40"
-                  : "border-rose-200 bg-rose-50/30"
-              : isPoll
-                ? "border-pink-400/20 bg-pink-500/5 shadow-sm"
-                : hasActionReference
-                  ? "border-pink-400/20 bg-pink-500/5"
-                  : "border-rose-400/20 bg-rose-500/5"
-            : isLight
-              ? "border-slate-200/80"
-              : "border-slate-700/80",
-        )}
+        className={getChatMessageSurfaceClass({ isLight, isPoll, hasActionReference, hasStructuredCard, isHighlighted })}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <ChatAvatar
-              src={message.sender.avatar_url}
-              name={message.sender.display_name}
-              size="md"
-              tone={isLight ? "light" : "dark"}
-              className={isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-700" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${isLight ? "text-slate-800" : "text-slate-200"}`}>
-                  {message.sender.display_name}
-                </span>
-                {isMe && (
-                  <span className={`rounded px-1.5 py-0.5 cmm-text-caption font-semibold ${isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}`}>
-                    Moi
-                  </span>
-                )}
-              </div>
-              <span className={`cmm-text-caption ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                {formatDistanceToNow(new Date(message.created_at), { locale: fr, addSuffix: true })}
-              </span>
-            </div>
-          </div>
-        </div>
+        <ChatMessageHeader message={message} isLight={isLight} isPrivateChannel={isPrivateChannel} isMe={isMe} />
 
-        {/* Content */}
-        <div className="pl-[52px]">
-          <ChatMessageContent content={message.content} tone={tone} />
-
-          {message.action_id ? (
-            <ChatActionReferenceCard actionId={message.action_id} tone={tone} />
-          ) : null}
-
-          {hasStructuredMetadata ? (
-            <div className="mb-3 flex flex-wrap gap-2">
-              {isAnnouncement ? (
-                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-semibold ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
-                  <Megaphone size={10} aria-hidden="true" /> Annonce / Relai
-                </span>
-              ) : null}
-              {isPoll ? (
-                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-semibold ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
-                  <BarChart3 size={10} aria-hidden="true" /> Sondage
-                </span>
-              ) : null}
-              {topic ? (
-                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}`}>
-                  {topic.label}
-                </span>
-              ) : null}
-              {hasActionReference ? (
-                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
-                  Action
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-
-          {isAnnouncement && message.related_event ? (
-            <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
-              <p className="cmm-text-caption font-semibold text-rose-500">
-                Cleanup associé
-              </p>
-              <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
-                {message.related_event.title}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-3 cmm-text-caption font-bold text-slate-500">
-                <span className="inline-flex items-center gap-1">
-                  <Calendar size={12} /> {message.related_event.event_date}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <MapPin size={12} /> {message.related_event.location_label}
-                </span>
-              </div>
-            </div>
-          ) : null}
-
-          {isPoll ? <ChatPoll message={message} isLight={isLight} pollVotePending={pollVotePending} pollVoteError={pollVoteError} onPollVote={onPollVote} onPollVoteRetry={onPollVoteRetry} /> : null}
-
-          {/* Attachments */}
-          {safeAttachmentUrl ? <ChatAttachment url={safeAttachmentUrl} label={attachmentLabel} isVisual={hasVisualAttachment} isLight={isLight} isPrivateChannel={isPrivateChannel} /> : null}
-
-        </div>
+          <ChatMessageBody
+            message={message}
+            tone={tone}
+            pollVotePending={pollVotePending}
+            pollVoteError={pollVoteError}
+            onPollVote={onPollVote}
+            onPollVoteRetry={onPollVoteRetry}
+            isLight={isLight}
+            isPrivateChannel={isPrivateChannel}
+            safeAttachmentUrl={safeAttachmentUrl}
+            attachmentLabel={attachmentLabel}
+            hasVisualAttachment={hasVisualAttachment}
+            topic={topic}
+            isAnnouncement={isAnnouncement}
+            isPoll={isPoll}
+            hasActionReference={hasActionReference}
+            hasStructuredMetadata={hasStructuredMetadata}
+          />
       </div>
     </motion.div>
   );

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type MutableRefObject } from "react";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
 import { ACTION_VISION_ESTIMATION_ENABLED, normalizeActionPhotos } from "@/lib/actions/vision";
 import {
@@ -27,6 +27,84 @@ type ActionDeclarationFormMediaParams = {
   onPhotoMutation?: () => void;
 };
 
+type PhotoUploadPreparationParams = {
+  files: FileList | null;
+  photoAssetsRef: MutableRefObject<ActionPhotoAsset[]>;
+  photoErrorRef: MutableRefObject<string | null>;
+  pendingPreparationCountRef: MutableRefObject<number>;
+  mutationVersionRef: MutableRefObject<number>;
+  commitPhotoAssets: (next: ActionPhotoAsset[]) => void;
+  commitPhotoError: (next: string | null) => void;
+  setPhotoPreparationPending: (pending: boolean) => void;
+  setVisionStatus: (status: "idle" | "processing" | "ready" | "error") => void;
+  setVisionEstimate: (estimate: ActionVisionEstimate | null) => void;
+  onPhotoMutation?: () => void;
+};
+
+async function preparePhotoUpload({
+  files,
+  photoAssetsRef,
+  photoErrorRef,
+  pendingPreparationCountRef,
+  mutationVersionRef,
+  commitPhotoAssets,
+  commitPhotoError,
+  setPhotoPreparationPending,
+  setVisionStatus,
+  setVisionEstimate,
+  onPhotoMutation,
+}: PhotoUploadPreparationParams) {
+  const selected = files ? Array.from(files) : [];
+  if (selected.length === 0) return;
+  const availableSlots = ACTION_MEDIA_MAX_MEDIA - photoAssetsRef.current.length - pendingPreparationCountRef.current;
+  if (availableSlots <= 0) {
+    commitPhotoError(`La limite de ${ACTION_MEDIA_MAX_MEDIA} photos est atteinte. Supprimez ou remplacez une photo.`);
+    setVisionStatus("error");
+    return;
+  }
+  const acceptedFiles = selected.slice(0, availableSlots);
+  onPhotoMutation?.();
+  const operationVersion = mutationVersionRef.current;
+  pendingPreparationCountRef.current += acceptedFiles.length;
+  setPhotoPreparationPending(true);
+  commitPhotoError(null);
+  setVisionStatus("processing");
+  const prepared: ActionPhotoAsset[] = [];
+  const failures: string[] = [];
+  try {
+    for (const file of acceptedFiles) {
+      try {
+        prepared.push(await normalizeOnePhoto(file));
+      } catch (error) {
+        failures.push(error instanceof Error ? error.message : "Une photo n’a pas pu être préparée.");
+      }
+    }
+  } finally {
+    pendingPreparationCountRef.current -= acceptedFiles.length;
+    if (pendingPreparationCountRef.current === 0) setPhotoPreparationPending(false);
+  }
+  if (operationVersion !== mutationVersionRef.current) {
+    if (pendingPreparationCountRef.current === 0) setVisionStatus("idle");
+    return;
+  }
+  const current = photoAssetsRef.current;
+  const retained = prepared.slice(0, ACTION_MEDIA_MAX_MEDIA - current.length);
+  const overflowCount = prepared.length - retained.length;
+  commitPhotoAssets([...current, ...retained]);
+  setVisionEstimate(null);
+  const rejectedCount = selected.length - acceptedFiles.length + overflowCount;
+  const messages = [
+    ...failures,
+    rejectedCount > 0
+      ? `Sélection limitée à ${ACTION_MEDIA_MAX_MEDIA} photos : ${rejectedCount} photo(s) refusée(s), car la limite est atteinte ou une préparation concurrente occupait les places disponibles.`
+      : null,
+  ].filter((message): message is string => Boolean(message));
+  if (messages.length > 0 || !photoErrorRef.current) {
+    commitPhotoError(messages.length > 0 ? messages.join(" ") : null);
+  }
+  setVisionStatus(pendingPreparationCountRef.current > 0 ? "processing" : messages.length > 0 ? "error" : "idle");
+}
+
 export function useActionDeclarationFormMedia({ onPhotoMutation }: ActionDeclarationFormMediaParams = {}) {
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
@@ -48,70 +126,7 @@ export function useActionDeclarationFormMedia({ onPhotoMutation }: ActionDeclara
     setPhotoError(next);
   }
 
-  async function handlePhotoUpload(files: FileList | null) {
-    const selected = files ? Array.from(files) : [];
-    if (selected.length === 0) return;
-    const availableSlots =
-      ACTION_MEDIA_MAX_MEDIA -
-      photoAssetsRef.current.length -
-      pendingPreparationCountRef.current;
-    if (availableSlots <= 0) {
-      commitPhotoError(`La limite de ${ACTION_MEDIA_MAX_MEDIA} photos est atteinte. Supprimez ou remplacez une photo.`);
-      setVisionStatus("error");
-      return;
-    }
-
-    const acceptedFiles = selected.slice(0, availableSlots);
-    onPhotoMutation?.();
-    const operationVersion = mutationVersionRef.current;
-    pendingPreparationCountRef.current += acceptedFiles.length;
-    setPhotoPreparationPending(true);
-    commitPhotoError(null);
-    setVisionStatus("processing");
-    const prepared: ActionPhotoAsset[] = [];
-    const failures: string[] = [];
-    try {
-      for (const file of acceptedFiles) {
-        try {
-          prepared.push(await normalizeOnePhoto(file));
-        } catch (error) {
-          failures.push(error instanceof Error ? error.message : "Une photo n’a pas pu être préparée.");
-        }
-      }
-    } finally {
-      pendingPreparationCountRef.current -= acceptedFiles.length;
-      if (pendingPreparationCountRef.current === 0) setPhotoPreparationPending(false);
-    }
-
-    if (operationVersion !== mutationVersionRef.current) {
-      if (pendingPreparationCountRef.current === 0) setVisionStatus("idle");
-      return;
-    }
-
-    const current = photoAssetsRef.current;
-    const remainingSlots = ACTION_MEDIA_MAX_MEDIA - current.length;
-    const retained = prepared.slice(0, remainingSlots);
-    const overflowCount = prepared.length - retained.length;
-    commitPhotoAssets([...current, ...retained]);
-    setVisionEstimate(null);
-    const rejectedCount = selected.length - acceptedFiles.length + overflowCount;
-    const messages = [
-      ...failures,
-      rejectedCount > 0
-        ? `Sélection limitée à ${ACTION_MEDIA_MAX_MEDIA} photos : ${rejectedCount} photo(s) refusée(s), car la limite est atteinte ou une préparation concurrente occupait les places disponibles.`
-        : null,
-    ].filter((message): message is string => Boolean(message));
-    if (messages.length > 0 || !photoErrorRef.current) {
-      commitPhotoError(messages.length > 0 ? messages.join(" ") : null);
-    }
-    setVisionStatus(
-      pendingPreparationCountRef.current > 0
-        ? "processing"
-        : messages.length > 0
-        ? "error"
-        : "idle",
-    );
-  }
+  const handlePhotoUpload = (files: FileList | null) => preparePhotoUpload({ files, photoAssetsRef, photoErrorRef, pendingPreparationCountRef, mutationVersionRef, commitPhotoAssets, commitPhotoError, setPhotoPreparationPending, setVisionStatus, setVisionEstimate, onPhotoMutation });
 
   async function handlePhotoReplace(photoId: string, file: File | null) {
     if (!file) return;

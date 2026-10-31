@@ -151,6 +151,26 @@ describe("ChatMessageItem behavior", () => {
     renderer.unmount();
   });
 
+  it("routes option and vote removal clicks to the chat vote owner", () => {
+    const onPollVote = vi.fn();
+    const renderer = renderMessage(
+      {
+        message_kind: "poll",
+        selectedOptionId: "a",
+        poll_options: [{ id: "a", position: 1, label: "Oui", voteCount: 1 }],
+      },
+      { onPollVote },
+    );
+
+    const buttons = renderer.root.findAllByType("button");
+    act(() => buttons[0]?.props.onClick());
+    act(() => buttons[1]?.props.onClick());
+
+    expect(onPollVote).toHaveBeenNthCalledWith(1, "message-1", "a");
+    expect(onPollVote).toHaveBeenNthCalledWith(2, "message-1", null);
+    renderer.unmount();
+  });
+
   it("renders structured announcements and action references without inventing cards", () => {
     const renderer = renderMessage({
       message_kind: "announcement",

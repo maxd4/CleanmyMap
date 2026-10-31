@@ -177,6 +177,134 @@ async function sendPreparedChatMessage(params: {
   });
 }
 
+type ChatSubmitExecutionParams = UseChatSubmitParams & {
+  currentMessage: string;
+  feedbackOperationIdRef: React.MutableRefObject<string | null>;
+  retrySubmitChatMessage: () => void;
+};
+
+async function sendChatSubmission(params: ChatSubmitExecutionParams): Promise<void> {
+  await sendChatMessageWithAttachmentLifecycle({
+        uploadAttachment: () =>
+          uploadChatAttachmentIfNeeded({
+            file: params.file,
+            supabase: params.supabase,
+            userId: params.userId as string,
+            activeChannelType: params.activeChannelType,
+            setIsUploading: params.setIsUploading,
+          }),
+        sendMessage: (uploadedAttachment) =>
+          sendPreparedChatMessage({
+            userId: params.userId as string,
+            currentMessage: params.currentMessage,
+            activeChannelType: params.activeChannelType,
+            activeActionId: params.activeActionId,
+            buddyRequestId: params.buddyRequestId,
+            activeTopicId: params.activeTopicId,
+            messageKind: params.messageKind,
+            pollOptions: params.pollOptions,
+            relatedEvent: params.relatedEvent,
+            selectedRecipient: params.selectedRecipient,
+            effectiveZone: params.effectiveZone,
+            territoryFocus: params.territoryFocus,
+            senderDisplayName: params.senderDisplayName,
+            senderHandle: params.senderHandle,
+            user: params.user,
+            attachmentUrl: uploadedAttachment?.url,
+            attachmentPath: uploadedAttachment?.objectPath,
+            attachmentType: uploadedAttachment?.type,
+            attachmentSize: uploadedAttachment?.size,
+            feedbackId: params.feedbackId,
+            feedbackOperationIdRef: params.feedbackOperationIdRef,
+            sendChatMessage: params.sendChatMessage,
+          }),
+        removeAttachment: (attachment) =>
+          removeChatAttachment({
+            supabase: params.supabase as SupabaseClient,
+            attachment,
+          }),
+  });
+}
+
+async function executeChatSubmit(params: ChatSubmitExecutionParams): Promise<void> {
+  const retrySubmitChatMessage = params.retrySubmitChatMessage;
+  try {
+    try {
+      await sendChatSubmission(params);
+    } catch (uploadError) {
+      if (uploadError instanceof ChatAttachmentUploadError) {
+        reportChatAttachmentError(uploadError.cause, {
+          setSendError: params.setSendError,
+          retrySubmitChatMessage,
+        });
+        return;
+      }
+      throw uploadError;
+    }
+    if (params.feedbackId) params.feedbackOperationIdRef.current = null;
+    params.setMessage("");
+    params.setFile(null);
+    if (params.messageKind === "poll") params.setPollOptions(["", ""]);
+    params.setShowMentions(false);
+    params.setSendError(null);
+  } catch (err) {
+    const appError = isAppError(err)
+      ? err
+      : toAppError(err, {
+          kind: "server",
+          message: "Une erreur est survenue lors de l'envoi de votre message. Réessaye dans un instant.",
+        });
+    params.setSendError(appError.message);
+    if (appError.kind === "network") {
+      notifyNetworkToast({
+        title: "Connexion perdue",
+        message: appError.message,
+        retryLabel: "Réessayer maintenant",
+        onRetry: retrySubmitChatMessage,
+        refreshLabel: "Rafraîchir",
+        onRefresh: () => window.location.reload(),
+      });
+    }
+  }
+}
+
+function useChatSubmitAction(
+  params: Omit<ChatSubmitExecutionParams, "currentMessage">,
+) {
+  return useCallback(async () => {
+    const submitLockRef = params.submitLockRef;
+    const currentMessage = params.message.trim();
+    const preconditionError = getChatSubmitPreconditionError({
+      submitLocked: params.submitLockRef.current,
+      userId: params.userId,
+      currentMessage,
+      file: params.file,
+      isSending: params.isSending,
+      isUploading: params.isUploading,
+      activeChannelType: params.activeChannelType,
+      selectedRecipient: params.selectedRecipient,
+      activeActionId: params.activeActionId,
+      effectiveZone: params.effectiveZone,
+      territoryFocus: params.territoryFocus,
+    });
+    if (preconditionError !== null) {
+      if (preconditionError) params.setSendError(preconditionError);
+      return;
+    }
+    if (!params.userId) return;
+
+    submitLockRef.current = true;
+    params.setIsSending(true);
+    params.setSendError(null);
+    try {
+      await executeChatSubmit({ ...params, currentMessage });
+    } finally {
+      params.setIsSending(false);
+      submitLockRef.current = false;
+    }
+  }, [params]);
+}
+
 export function useChatSubmit({
   submitLockRef,
   userId,
@@ -214,152 +342,39 @@ export function useChatSubmit({
     void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitChatMessageRef.current?.();
   }, []);
 
-  const submitChatMessage = useCallback(async () => {
-    const currentMessage = message.trim();
-    const preconditionError = getChatSubmitPreconditionError({
-      submitLocked: submitLockRef.current,
-      userId,
-      currentMessage,
-      file,
-      isSending,
-      isUploading,
-      activeChannelType,
-      selectedRecipient,
-      activeActionId,
-      effectiveZone,
-      territoryFocus,
-    });
-    if (preconditionError !== null) {
-      if (preconditionError) setSendError(preconditionError);
-      return;
-    }
-    if (!userId) return;
-
-    submitLockRef.current = true;
-    setIsSending(true);
-    setSendError(null);
-
-    try {
-      try {
-        await sendChatMessageWithAttachmentLifecycle({
-          uploadAttachment: () =>
-            uploadChatAttachmentIfNeeded({
-              file,
-              supabase,
-              userId,
-              activeChannelType,
-              setIsUploading,
-            }),
-          sendMessage: (uploadedAttachment) =>
-            sendPreparedChatMessage({
-              userId,
-              currentMessage,
-              activeChannelType,
-              activeActionId,
-              buddyRequestId,
-              activeTopicId,
-              messageKind,
-              pollOptions,
-              relatedEvent,
-              selectedRecipient,
-              effectiveZone,
-              territoryFocus,
-              senderDisplayName,
-              senderHandle,
-              user,
-              attachmentUrl: uploadedAttachment?.url,
-              attachmentPath: uploadedAttachment?.objectPath,
-              attachmentType: uploadedAttachment?.type,
-              attachmentSize: uploadedAttachment?.size,
-              feedbackId,
-              feedbackOperationIdRef,
-              sendChatMessage,
-            }),
-          removeAttachment: (attachment) =>
-            removeChatAttachment({
-              supabase: supabase as SupabaseClient,
-              attachment,
-            }),
-        });
-      } catch (uploadError) {
-        if (uploadError instanceof ChatAttachmentUploadError) {
-          reportChatAttachmentError(uploadError.cause, {
-            setSendError,
-            retrySubmitChatMessage,
-          });
-          return;
-        }
-        throw uploadError;
-      }
-
-      if (feedbackId) {
-        feedbackOperationIdRef.current = null;
-      }
-
-      setMessage("");
-      setFile(null);
-      if (messageKind === "poll") {
-        setPollOptions(["", ""]);
-      }
-      setShowMentions(false);
-      setSendError(null);
-    } catch (err) {
-      const appError = isAppError(err)
-        ? err
-        : toAppError(err, {
-            kind: "server",
-            message:
-              "Une erreur est survenue lors de l'envoi de votre message. Réessaye dans un instant.",
-          });
-
-      setSendError(appError.message);
-
-      if (appError.kind === "network") {
-        notifyNetworkToast({
-          title: "Connexion perdue",
-          message: appError.message,
-          retryLabel: "Réessayer maintenant",
-          onRetry: retrySubmitChatMessage,
-          refreshLabel: "Rafraîchir",
-          onRefresh: () => window.location.reload(),
-        });
-      }
-    } finally {
-      setIsSending(false);
-      submitLockRef.current = false;
-    }
-  }, [
+  const submitChatMessage = useChatSubmitAction({
+    feedbackOperationIdRef,
+    retrySubmitChatMessage,
+    submitLockRef,
+    userId,
+    user,
+    senderDisplayName,
+    senderHandle,
+    message,
+    file,
+    isSending,
+    isUploading,
     activeChannelType,
-    feedbackId,
     activeActionId,
     buddyRequestId,
     activeTopicId,
     messageKind,
     pollOptions,
     relatedEvent,
-    effectiveZone,
-    file,
-    isSending,
-    isUploading,
-    message,
     selectedRecipient,
-    sendChatMessage,
-    setFile,
-    setIsSending,
-    setIsUploading,
-    setMessage,
-    setPollOptions,
-    setSendError,
-    setShowMentions,
-    submitLockRef,
-    supabase,
+    effectiveZone,
     territoryFocus,
-    senderDisplayName,
-    senderHandle,
-    user,
-    userId,
-    retrySubmitChatMessage,
-  ]);
+    setIsSending,
+    setSendError,
+    setIsUploading,
+    supabase,
+    sendChatMessage,
+    feedbackId,
+    setMessage,
+    setFile,
+    setShowMentions,
+    setPollOptions,
+  });
 
   useEffect(() => {
     if (!feedbackId) {

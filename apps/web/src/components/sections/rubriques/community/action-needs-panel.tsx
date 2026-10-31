@@ -103,7 +103,7 @@ function NeedCard({
   );
 }
 
-export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActionId: string | null }) {
+function useActionNeedsController(fr: boolean, focusActionId: string | null) {
   const [items, setItems] = useState<ActionNeedItem[]>([]);
   const [managerActions, setManagerActions] = useState<ActionNeedActionSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,10 +127,7 @@ export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActi
       const result = await fetchCommunityNeeds({ actionId: focusActionId, limit: 50 });
       setItems(result.items);
       setManagerActions(result.managerActions);
-      setCreateForm((previous) => ({
-        ...previous,
-        actionId: previous.actionId || result.managerActions[0]?.id || "",
-      }));
+      setCreateForm((previous) => ({ ...previous, actionId: previous.actionId || result.managerActions[0]?.id || "" }));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : (fr ? "Les besoins sont indisponibles." : "Needs are unavailable."));
     } finally {
@@ -199,21 +196,14 @@ export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActi
     }
   }
 
-  if (loading) return <div role="status" className="rounded-2xl border border-emerald-100 bg-white px-4 py-6 text-sm font-semibold text-emerald-900">{fr ? "Chargement des besoins…" : "Loading needs…"}</div>;
+  return { items, managerActions, loading, error, busyId, editingItem, notice, createForm, setCreateForm, setEditingId, load, mutate, submitCreate, submitEdit };
+}
 
+type ActionNeedsController = ReturnType<typeof useActionNeedsController>;
+
+function ActionNeedsManagerForms({ fr, managerActions, busyId, createForm, setCreateForm, submitCreate, editingItem, setEditingId, submitEdit }: Pick<ActionNeedsController, "managerActions" | "busyId" | "createForm" | "setCreateForm" | "submitCreate" | "editingItem" | "setEditingId" | "submitEdit"> & { fr: boolean }) {
   return (
-    <section aria-labelledby="community-needs-title" className="space-y-5">
-      <div className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
-        <h2 id="community-needs-title" className="text-xl font-black text-slate-900">{fr ? "Besoins de la communauté" : "Community needs"}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-800">{fr ? "Trouvez une aide concrète pour les actions publiées. Les besoins annulés et les informations privées restent masqués." : "Find concrete ways to help public actions. Cancelled needs and private information stay hidden."}</p>
-        <Link className="mt-3 inline-block text-sm font-bold text-emerald-800 underline-offset-4 hover:underline" href="/sections/messagerie?tab=discussions&channel=community&topicId=besoin_ressources">
-          {fr ? "Ouvrir le topic conversationnel besoin_ressources" : "Open the besoin_ressources conversation topic"}
-        </Link>
-      </div>
-
-      {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800"><p>{error}</p><button type="button" className="mt-3 font-bold underline" onClick={() => { void load(); }}>{fr ? "Réessayer" : "Retry"}</button></div> : null}
-      {notice ? <p role="status" className="text-sm font-semibold text-emerald-800">{notice}</p> : null}
-
+    <>
       {managerActions.length > 0 ? (
         <form onSubmit={(event) => { void submitCreate(event); }} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <h3 className="text-lg font-black text-slate-900">{fr ? "Créer un besoin" : "Create a need"}</h3>
@@ -242,6 +232,30 @@ export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActi
           <div className="mt-4 flex gap-2"><button type="submit" disabled={busyId === editingItem.id} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{fr ? "Enregistrer" : "Save"}</button><button type="button" className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold" onClick={() => setEditingId(null)}>{fr ? "Fermer" : "Close"}</button></div>
         </form>
       ) : null}
+    </>
+  );
+}
+
+export function ActionNeedsPanel({ fr, focusActionId }: { fr: boolean; focusActionId: string | null }) {
+  const controller = useActionNeedsController(fr, focusActionId);
+  const { items, managerActions, loading, error, busyId, editingItem, notice, createForm, setCreateForm, setEditingId, load, mutate, submitCreate, submitEdit } = controller;
+
+  if (loading) return <div role="status" className="rounded-2xl border border-emerald-100 bg-white px-4 py-6 text-sm font-semibold text-emerald-900">{fr ? "Chargement des besoins…" : "Loading needs…"}</div>;
+
+  return (
+    <section aria-labelledby="community-needs-title" className="space-y-5">
+      <div className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+        <h2 id="community-needs-title" className="text-xl font-black text-slate-900">{fr ? "Besoins de la communauté" : "Community needs"}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-800">{fr ? "Trouvez une aide concrète pour les actions publiées. Les besoins annulés et les informations privées restent masqués." : "Find concrete ways to help public actions. Cancelled needs and private information stay hidden."}</p>
+        <Link className="mt-3 inline-block text-sm font-bold text-emerald-800 underline-offset-4 hover:underline" href="/sections/messagerie?tab=discussions&channel=community&topicId=besoin_ressources">
+          {fr ? "Ouvrir le topic conversationnel besoin_ressources" : "Open the besoin_ressources conversation topic"}
+        </Link>
+      </div>
+
+      {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800"><p>{error}</p><button type="button" className="mt-3 font-bold underline" onClick={() => { void load(); }}>{fr ? "Réessayer" : "Retry"}</button></div> : null}
+      {notice ? <p role="status" className="text-sm font-semibold text-emerald-800">{notice}</p> : null}
+
+      <ActionNeedsManagerForms fr={fr} managerActions={managerActions} busyId={busyId} createForm={createForm} setCreateForm={setCreateForm} submitCreate={submitCreate} editingItem={editingItem} setEditingId={setEditingId} submitEdit={submitEdit} />
 
       {items.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">{fr ? "Aucun besoin à afficher pour le moment." : "No needs to display yet."}</div> : <div className="grid gap-4">{items.map((item) => <NeedCard key={item.id} item={item} fr={fr} busy={busyId === item.id} onEdit={() => setEditingId(item.id)} onFulfill={() => { void mutate(item, "fulfill"); }} onCancel={() => { void mutate(item, "cancel"); }} />)}</div>}
     </section>
