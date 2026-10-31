@@ -36,6 +36,14 @@ export class ActionBuddyConflictError extends Error {
 
 export type ActionBuddyProposalView = Pick<ActionBuddyProposalRow, "id" | "status">;
 
+type ActionBuddyAcceptanceResult = {
+  status?: "matched" | "already_matched";
+  request_id?: string;
+  proposal_id?: string;
+  mentor_user_id?: string;
+  matched_at?: string | null;
+};
+
 export type ActionBuddyState = {
   actionId: string;
   availability: ActionBuddyAvailabilityRow | null;
@@ -518,7 +526,7 @@ export async function rejectActionBuddyProposal(
 export async function acceptActionBuddyProposal(
   supabase: SupabaseClient,
   params: { actionId: string; proposalId: string; requesterUserId: string },
-): Promise<Record<string, unknown>> {
+): Promise<ActionBuddyAcceptanceResult> {
   const proposal = await loadProposal(supabase, params.proposalId);
   const request = await loadRequestById(supabase, params.actionId, proposal.request_id);
   if (request.requester_user_id !== params.requesterUserId) throw new ActionBuddyForbiddenError();
@@ -534,8 +542,8 @@ export async function acceptActionBuddyProposal(
     if (result.error.message?.includes("action_buddy_conflict")) throw new ActionBuddyConflictError(result.error.message);
     throwDatabaseError(result.error);
   }
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  return (row ?? {}) as Record<string, unknown>;
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as ActionBuddyAcceptanceResult | null;
+  return row ?? {};
 }
 
 export async function resolveActionBuddyContact(

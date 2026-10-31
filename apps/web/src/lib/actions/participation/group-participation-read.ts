@@ -68,7 +68,7 @@ export function isVisibleInGroupForms(
 }
 
 /** The agenda lists eligible public actions even when their registration form is closed. */
-export function isVisibleInFutureActions(
+function isVisibleInFutureActions(
   action: Pick<
     ActionPreviewRow,
     | "action_date"

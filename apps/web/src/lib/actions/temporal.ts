@@ -53,7 +53,7 @@ export type ActionPublicFutureCandidate = Pick<
   review_state?: "not_required" | "draft" | "pending_review" | "approved" | "rejected" | null;
 };
 
-export function isPublicActionReviewState(
+function isPublicActionReviewState(
   reviewState: ActionPublicFutureCandidate["review_state"],
 ): boolean {
   return reviewState === undefined || reviewState === null || reviewState === "not_required" || reviewState === "approved";
