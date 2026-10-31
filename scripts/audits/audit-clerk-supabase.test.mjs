@@ -259,19 +259,20 @@ describe("audit-clerk-supabase canonical role contract", () => {
       },
     });
 
-    assert.doesNotMatch(logLine, /forged|\n|\r/);
+    assert.doesNotMatch(logLine, /forged|[\r\n\u0000-\u001f\u007f-\u009f]/);
     assert.match(logLine, /"totalCount":null/);
     assert.match(logLine, /"role_projection_source":"present"/);
     assert.doesNotMatch(logLine, /injected|role_projection_synced_at/);
   });
 
   it("bounds and neutralizes external diagnostic values at the output boundary", () => {
-    const externalPath = "artifacts/diagnostic\n\u001b[31mforged";
+    const externalPath = "artifacts/diagnostic\n\u0000\u001b[31mforged";
     const logLine = `JSON: ${sanitizeLogValue(externalPath)}`;
 
     assert.ok(logLine.length < 256);
     assert.doesNotMatch(logLine, /[\r\n\u0000-\u001f\u007f-\u009f]/);
     assert.match(logLine, /\\u000a/);
+    assert.match(logLine, /\\u0000/);
   });
 });
 
@@ -669,8 +670,18 @@ describe("audit-clerk-supabase orchestration", () => {
       assert.equal(fixture.calls.filter((call) => call.url).length, 1);
       assert.equal(fixture.calls.filter((call) => call.table === "profiles").length > 0, true);
       assert.equal(logs.length, 3);
+      const summaryLog = JSON.parse(logs[0]);
+      assert.ok(logs[0].length > 350);
+      assert.deepEqual(summaryLog.counts, json.summary.counts);
+      assert.deepEqual(summaryLog.supabase.profileProjectionColumns, {
+        role_projection_source: "present",
+        role_projection_synced_at: "absent",
+      });
+      assert.doesNotMatch(logs[0], /[\r\n\u0000-\u001f\u007f-\u009f]/);
       assert.doesNotMatch(logs.join("\n"), /synthetic-clerk-key|synthetic-service-role-key/);
       assert.doesNotMatch(logs.join("\n"), /privateMetadata|unsafeMetadata/);
+      assert.equal(logs[1], `JSON: ${path.resolve(directory, "artifacts/synthetic-audit.json")}`);
+      assert.equal(logs[2], `CSV:  ${path.resolve(directory, "artifacts/synthetic-audit.csv")}`);
     });
   });
 

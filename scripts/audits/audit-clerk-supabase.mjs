@@ -8,6 +8,10 @@ import { sanitizeLogValue } from "../security/safe-log-value.mjs";
 
 const DEFAULT_PAGE_SIZE = 500;
 const DEFAULT_OUTPUT_BASE = join("artifacts", "audits", "clerk-supabase-audit");
+// This is a closed projection of normalized timestamps, safe integer counters,
+// booleans and allowlisted projection statuses. Keep it sanitized while
+// allowing the complete JSON summary through; external values keep 256.
+const AUDIT_SUMMARY_MAX_LOG_LENGTH = 2048;
 const CLERK_API_BASE = "https://api.clerk.com/v1";
 const ENV_FILE_CANDIDATES = [
   join(process.cwd(), "apps", "web", ".env.local"),
@@ -799,7 +803,7 @@ export async function main({
   );
   await writeFileImpl(`${outputBase}.csv`, toCsv(rows), "utf8");
 
-  log(sanitizeLogValue(formatAuditSummaryLog(summary)));
+  log(sanitizeLogValue(formatAuditSummaryLog(summary), AUDIT_SUMMARY_MAX_LOG_LENGTH));
   log(`JSON: ${sanitizeLogValue(resolve(`${outputBase}.json`))}`);
   log(`CSV:  ${sanitizeLogValue(resolve(`${outputBase}.csv`))}`);
 
