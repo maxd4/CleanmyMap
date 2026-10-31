@@ -64,6 +64,7 @@ export function ChatActionReferenceCard({
           <span className="font-semibold">Organisateur : {data.organizerLabel}</span>
           {data.route ? <span className="inline-flex items-center gap-2"><Route size={13} />Itinéraire prévu ({data.route.kind})</span> : null}
           {data.event ? <span className="font-semibold">Événement associé : {data.event.title}</span> : null}
+          {data.shareKind === "result" && data.retrospectivePreview ? <span className="border-t border-slate-200 pt-2"><strong>Retour d’expérience : </strong>{data.retrospectivePreview}</span> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link

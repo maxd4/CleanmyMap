@@ -4,10 +4,14 @@ import { loadActionById } from "@/lib/actions/store";
 import {
   buildPublicActionReference,
   eventReferenceFromAction,
+  getPublicActionShareKind,
   isPublicActionReferenceAvailable,
 } from "@/lib/chat/action-sharing";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPublicActionRetrospective } from "@/lib/actions/action-retrospectives";
+import { loadPublicActionRecommendations } from "@/lib/actions/public-action-recommendations.server";
+import type { PublicActionRecommendation } from "@/lib/actions/public-action-recommendations";
+import { logWarning } from "@/lib/logging/failure-log";
 import {
   isPublicCommunityEventRow,
 } from "@/lib/actions/runtime-contracts";
@@ -78,9 +82,20 @@ export async function GET(
     }
 
     const retrospective = await loadPublicActionRetrospective(supabase, action.id);
+    let recommendations: PublicActionRecommendation[] = [];
+    if (getPublicActionShareKind(action) === "result") {
+      try {
+        recommendations = await loadPublicActionRecommendations(supabase, action);
+      } catch (error) {
+        logWarning("Actions/PublicRecommendations", "Public action recommendations unavailable", {
+          actionId: action.id,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
 
     return NextResponse.json(
-      { reference: buildPublicActionReference(action, event, retrospective) },
+      { reference: buildPublicActionReference(action, event, retrospective, { recommendations }) },
       { headers: PUBLIC_NO_STORE_HEADERS },
     );
   } catch (error) {

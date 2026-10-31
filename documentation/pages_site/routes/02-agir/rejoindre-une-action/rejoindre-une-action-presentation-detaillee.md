@@ -19,6 +19,7 @@
   - le CTA principal oriente vers une demande d'inscription future, pas vers une création de rubrique distincte ;
   - le CTA secondaire sur une inscription existante permet l'annulation sans effacer l'historique ;
   - le vocabulaire UI actif est `Rejoindre une action`, avec `Actions futures` et `Actions passées`.
+  - depuis une carte passée, le lien de continuité relit la référence publique 6D1 : remerciement, retour publié et jusqu'à trois suggestions fiables ; le bloc de suggestions reste absent si le territoire canonique est inconnu ou si aucun candidat public ne correspond.
 
 ## Frontière inscription / participation
 
@@ -50,3 +51,4 @@ automatiquement les effectifs ou les résultats.
 - La file de modération doit rester visible comme un bloc métier à part entière, et non comme un simple détail de la liste.
 - Le retrait d'une inscription future doit conserver la trace dans `action_registrations` et rester visible dans l'historique de l'utilisateur.
 - Une participation finale ne peut être créée que par un flux post-action dédié dans `action_participants`; elle reste distincte de l'inscription future.
+- La continuité post-action est une projection de lecture sans stockage secondaire : elle ne crée ni score de proximité, ni notification, ni attestation, et les suggestions restent des orientations opérationnelles, jamais une prédiction d'impact ou une garantie de proximité.

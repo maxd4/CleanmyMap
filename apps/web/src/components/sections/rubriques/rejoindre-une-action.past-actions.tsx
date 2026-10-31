@@ -11,8 +11,14 @@ import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
+import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { JoinCommunityEventsPanel } from "./rejoindre-une-action.community-events";
+import {
+  PublicActionContinuity,
+  usePublicActionContinuity,
+  type PublicActionContinuityState,
+} from "./rejoindre-une-action.public-continuity";
 import type { OpsDraft } from "./community/types";
 
 function actionTitle(item: ActionListItem): string {
@@ -166,6 +172,7 @@ function PastActionCardActions({
     <div className="space-y-2 border-t border-slate-100 pt-3">
       {claimState ? <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p> : authenticated ? <CmmButton type="button" tone="primary" variant="pill" className="w-full justify-center text-xs" loading={claiming} onClick={() => onRequestClaim(item.id)}>{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton> : <CmmButton href={buildSignInRedirectHref("/sections/rejoindre-une-action?tab=past")} tone="primary" variant="pill" className="w-full justify-center text-xs">{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton>}
       {authenticated && claimState?.participationStatus === "confirmed" ? <CmmButton href={`/sections/messagerie?channel=action&actionId=${encodeURIComponent(item.id)}`} tone="secondary" variant="pill" className="w-full justify-center text-xs">{fr ? "Discussion de l’action" : "Action discussion"}</CmmButton> : null}
+      <CmmButton href={buildJoinActionTabHref("past", item.id)} tone="tertiary" variant="pill" className="w-full justify-center text-xs">{fr ? "Voir le retour et les prochaines actions" : "View the retrospective and next actions"}</CmmButton>
       <SpogomiContextLink actionId={item.id} />
       {claimError ? <p className="text-xs font-semibold text-rose-700" role="alert">{claimError}</p> : null}
     </div>
@@ -182,6 +189,7 @@ function PastActionCard({
   claimError,
   onRequestClaim,
   onShareAction,
+  continuity,
 }: {
   item: ActionListItem;
   fr: boolean;
@@ -192,6 +200,7 @@ function PastActionCard({
   claimError?: string;
   onRequestClaim: (actionId: string) => void;
   onShareAction?: (actionId: string) => void;
+  continuity?: PublicActionContinuityState;
 }) {
   return (
     <article
@@ -209,6 +218,7 @@ function PastActionCard({
         <PastActionCardSummary item={item} fr={fr} onShareAction={onShareAction} />
         <PastActionCardAttribution claimState={claimState} fr={fr} />
         <PastActionCardActions item={item} fr={fr} authenticated={authenticated} claimState={claimState} claiming={claiming} claimError={claimError} onRequestClaim={onRequestClaim} />
+        {focused && continuity ? <PublicActionContinuity state={continuity} fr={fr} /> : null}
       </div>
     </article>
   );
@@ -274,6 +284,7 @@ function PastActionItemsGrid({
   claimErrors,
   requestClaim,
   onShareAction,
+  continuity,
 }: {
   items: ActionListItem[];
   fr: boolean;
@@ -285,10 +296,11 @@ function PastActionItemsGrid({
   claimErrors: Record<string, string>;
   requestClaim: (actionId: string) => Promise<void>;
   onShareAction?: (actionId: string) => void;
+  continuity?: PublicActionContinuityState;
 }) {
   return <div className="grid gap-3 md:grid-cols-2">{items.map((item) => {
     const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
-    return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => { void requestClaim(actionId); }} onShareAction={onShareAction} />;
+    return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => { void requestClaim(actionId); }} onShareAction={onShareAction} continuity={continuity} />;
   })}</div>;
 }
 
@@ -348,6 +360,10 @@ export function PastActionsPanel({
   onSaveEventOps?: (event: import("@/lib/community/http").CommunityEventItem) => Promise<void>;
 }) {
   const { claimOverrides, claimingActionId, claimErrors, historyByActionId, requestClaim } = usePastActionClaims(historyItems, fr);
+  const continuity = usePublicActionContinuity(
+    items.some((item) => item.id === focusedActionId) ? focusedActionId : null,
+    fr,
+  );
   usePastActionFocus(focusedActionId, loading, items.length, focusCommunityEventId, communityPastEventsLoading, communityPastEvents.length);
 
   return (
@@ -364,7 +380,7 @@ export function PastActionsPanel({
 
       <PastActionsStatus fr={fr} loading={loading} error={error} itemCount={items.length} />
 
-      <PastActionItemsGrid items={items} fr={fr} focusedActionId={focusedActionId} authenticated={authenticated} claimOverrides={claimOverrides} historyByActionId={historyByActionId} claimingActionId={claimingActionId} claimErrors={claimErrors} requestClaim={requestClaim} onShareAction={onShareAction} />
+      <PastActionItemsGrid items={items} fr={fr} focusedActionId={focusedActionId} authenticated={authenticated} claimOverrides={claimOverrides} historyByActionId={historyByActionId} claimingActionId={claimingActionId} claimErrors={claimErrors} requestClaim={requestClaim} onShareAction={onShareAction} continuity={continuity} />
 
       <JoinCommunityEventsPanel
         fr={fr}

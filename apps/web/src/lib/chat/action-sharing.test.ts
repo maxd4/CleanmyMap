@@ -62,6 +62,22 @@ describe("action sharing contract", () => {
       publishedAt: "2026-10-31T10:00:00.000Z",
     }));
     expect(reference.retrospective).not.toHaveProperty("authoredByClerkId");
+    expect(reference.retrospectivePreview).toContain("Merci à toutes et tous");
+  });
+
+  it("bounds the chat preview and never creates one for a draft", () => {
+    const retrospective = {
+      thanksMessage: "Merci ".concat("x".repeat(500)),
+      workedWell: "Coordination",
+      blockers: null,
+      improveNextTime: null,
+      publishedAt: "2026-10-31T10:00:00.000Z",
+      updatedAt: "2026-10-31T10:00:00.000Z",
+    };
+    const reference = buildPublicActionReference(baseAction, null, retrospective);
+    expect(reference.retrospectivePreview?.length).toBeLessThanOrEqual(280);
+    expect(reference.retrospectivePreview?.endsWith("…")).toBe(true);
+    expect(buildPublicActionReference(baseAction, null, null).retrospectivePreview).toBeNull();
   });
 
   it("resolves an action territory only from a canonical Paris label", () => {

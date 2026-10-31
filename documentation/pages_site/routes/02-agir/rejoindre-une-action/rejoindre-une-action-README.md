@@ -179,6 +179,15 @@ claim rétroactif décrit ci-dessus, sans transformer une inscription antérieur
 en preuve de présence. L'historique personnel et le partage d'une référence
 d'action restent des capacités distinctes de ce parcours.
 
+Lorsqu'une action passée est ouverte avec son `actionId`, la fiche relit la
+projection publique canonique de l'action. Elle affiche le remerciement et les
+champs du retour publié, puis masque entièrement la continuité si aucune
+prochaine action fiable n'est disponible. Les suggestions sont dérivées à la
+volée, limitées à trois actions `pre_action` futures publiques et visibles, et
+classées par territoire canonique identique, voisinage connu, date/heure puis
+identifiant stable. Elles ne déduisent ni présence, ni impact, ni proximité
+réelle ; un territoire libre ou inconnu n'est pas transformé en correspondance.
+
 Les événements communautaires affichés dans ces onglets restent une source de
 compatibilité historique : leurs RSVP `yes` / `maybe` / `no` restent dans
 `event_rsvps`, et leur suivi `attendanceCount` / `postMortem` passe par

@@ -9,6 +9,7 @@ import {
 } from "@/lib/chat/channels";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import type { ActionRetrospectivePublic } from "@/lib/actions/action-retrospective-contract";
+import type { PublicActionRecommendation } from "@/lib/actions/public-action-recommendations";
 
 type ShareDestinationChannel = "community" | "territory" | "dm";
 
@@ -49,6 +50,8 @@ export type PublicActionReference = {
   } | null;
   groupJoinEnabled: boolean;
   retrospective?: ActionRetrospectivePublic | null;
+  retrospectivePreview?: string | null;
+  recommendations?: PublicActionRecommendation[];
   event: {
     id: string;
     title: string;
@@ -60,6 +63,27 @@ export type PublicActionReference = {
 export type PublicActionShareKind = "invitation" | "result";
 
 export type PublicActionEvent = NonNullable<PublicActionReference["event"]>;
+
+const RETROSPECTIVE_PREVIEW_LIMIT = 280;
+
+function buildRetrospectivePreview(
+  retrospective: ActionRetrospectivePublic | null,
+): string | null {
+  if (!retrospective) return null;
+  const text = [
+    retrospective.thanksMessage,
+    retrospective.workedWell,
+    retrospective.blockers,
+    retrospective.improveNextTime,
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" ")
+    .replace(/\s+/gu, " ")
+    .trim();
+  if (!text) return null;
+  if (text.length <= RETROSPECTIVE_PREVIEW_LIMIT) return text;
+  return `${text.slice(0, RETROSPECTIVE_PREVIEW_LIMIT - 1).trimEnd()}…`;
+}
 
 export function isShareableFutureAction(
   action: Pick<
@@ -147,6 +171,7 @@ export function buildPublicActionReference(
   row: ActionRow,
   event: PublicActionEvent | null = null,
   retrospective: ActionRetrospectivePublic | null = null,
+  options: { recommendations?: PublicActionRecommendation[] } = {},
 ): PublicActionReference {
   const contract = toActionContract(row);
   const preparation = contract.metadata.preparationData;
@@ -179,6 +204,8 @@ export function buildPublicActionReference(
     groupJoinEnabled:
       contract.metadata.groupJoinEnabled === true || preparation?.groupJoinEnabled === true,
     retrospective,
+    retrospectivePreview: buildRetrospectivePreview(retrospective),
+    recommendations: options.recommendations ?? [],
     event,
   };
 }

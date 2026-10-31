@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { ActionListItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
 import { AppError } from "@/lib/errors/app-errors";
+import { buildPublicActionReference } from "@/lib/chat/action-sharing";
+import { publicAction } from "@/fixtures/public-action";
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
+import { PublicActionContinuity } from "./rejoindre-une-action.public-continuity";
 
 function communityEvent(canEditOwnOps: boolean): CommunityEventItem {
   return {
@@ -262,5 +265,46 @@ describe("PastActionsPanel", () => {
 
     expect(markup).toContain("Demande refusée");
     expect(markup).not.toContain("Votre part des résultats");
+  });
+
+  it("affiche la projection publique 6D1 et les suggestions bornées", () => {
+    const reference = buildPublicActionReference(
+      {
+        ...publicAction,
+        action_date: "2026-08-01",
+        action_phase: "post_action_complete",
+      },
+      null,
+      {
+        thanksMessage: "Merci à toutes et tous",
+        workedWell: "Bonne coordination",
+        blockers: null,
+        improveNextTime: null,
+        publishedAt: "2026-08-02T10:00:00.000Z",
+        updatedAt: "2026-08-02T10:00:00.000Z",
+      },
+      {
+        recommendations: [{
+          id: "future-action",
+          title: "Nettoyage du quartier",
+          actionDate: "2026-08-15",
+          eventStartTime: "09:30",
+          sector: "11e arrondissement",
+        }],
+      },
+    );
+    const markup = renderToStaticMarkup(
+      <PublicActionContinuity
+        fr
+        state={{ actionId: reference.id, loading: false, error: null, reference }}
+      />,
+    );
+
+    expect(markup).toContain("Merci aux participants");
+    expect(markup).toContain("Retour d’expérience");
+    expect(markup).toContain("Prochaines actions près de ce secteur");
+    expect(markup).toContain("Nettoyage du quartier");
+    expect(markup).toContain("11e arrondissement");
+    expect(markup).not.toContain("authoredByClerkId");
   });
 });
