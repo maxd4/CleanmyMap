@@ -7,6 +7,7 @@ import {
   isPublicActionReferenceAvailable,
 } from "@/lib/chat/action-sharing";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadPublicActionRetrospective } from "@/lib/actions/action-retrospectives";
 import {
   isPublicCommunityEventRow,
 } from "@/lib/actions/runtime-contracts";
@@ -76,8 +77,10 @@ export async function GET(
       }
     }
 
+    const retrospective = await loadPublicActionRetrospective(supabase, action.id);
+
     return NextResponse.json(
-      { reference: buildPublicActionReference(action, event) },
+      { reference: buildPublicActionReference(action, event, retrospective) },
       { headers: PUBLIC_NO_STORE_HEADERS },
     );
   } catch (error) {

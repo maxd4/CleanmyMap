@@ -8,6 +8,7 @@ import {
   type ZoneContext,
 } from "@/lib/chat/channels";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
+import type { ActionRetrospectivePublic } from "@/lib/actions/action-retrospective-contract";
 
 type ShareDestinationChannel = "community" | "territory" | "dm";
 
@@ -47,6 +48,7 @@ export type PublicActionReference = {
     geojson: string;
   } | null;
   groupJoinEnabled: boolean;
+  retrospective?: ActionRetrospectivePublic | null;
   event: {
     id: string;
     title: string;
@@ -144,6 +146,7 @@ function objectiveLabel(value: unknown): string | null {
 export function buildPublicActionReference(
   row: ActionRow,
   event: PublicActionEvent | null = null,
+  retrospective: ActionRetrospectivePublic | null = null,
 ): PublicActionReference {
   const contract = toActionContract(row);
   const preparation = contract.metadata.preparationData;
@@ -175,6 +178,7 @@ export function buildPublicActionReference(
     route,
     groupJoinEnabled:
       contract.metadata.groupJoinEnabled === true || preparation?.groupJoinEnabled === true,
+    retrospective,
     event,
   };
 }

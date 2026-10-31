@@ -47,6 +47,23 @@ describe("action sharing contract", () => {
     expect(reference).not.toHaveProperty("waste_kg");
   });
 
+  it("carries only the public retrospective projection when supplied", () => {
+    const reference = buildPublicActionReference(baseAction, null, {
+      thanksMessage: "Merci à toutes et tous",
+      workedWell: "Bonne coordination",
+      blockers: null,
+      improveNextTime: "Prévoir plus de sacs",
+      publishedAt: "2026-10-31T10:00:00.000Z",
+      updatedAt: "2026-10-31T10:00:00.000Z",
+    });
+
+    expect(reference.retrospective).toEqual(expect.objectContaining({
+      thanksMessage: "Merci à toutes et tous",
+      publishedAt: "2026-10-31T10:00:00.000Z",
+    }));
+    expect(reference.retrospective).not.toHaveProperty("authoredByClerkId");
+  });
+
   it("resolves an action territory only from a canonical Paris label", () => {
     expect(resolveActionTerritoryDestination({ location_label: "Place de la République, 75003 Paris" })).toEqual({
       zoneName: "3e arrondissement",

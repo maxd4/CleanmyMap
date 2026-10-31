@@ -64,7 +64,7 @@ projection Supabase relue.
 | Famille | Tables / ressources identifiées | Responsabilité | Règle d'accès |
 |---|---|---|---|
 | Identité produit | `profiles` | Profil, identifiant Clerk, rôles et préférences | Profil ciblé et AuthZ explicite |
-| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, mission prévue et attestation historique ; les spécialisations gamification en sont une projection réconciliée | Ressource + owner/organisateur/participant + état ; attestation server-only, XP uniquement via `progression_events` |
+| Actions | `public.actions`, `action_organizers`, `action_registrations`, `action_participants`, `action_retrospectives`, `action_field_role_assignments`, `action_role_attestations`, `forms` | Action, organisation, inscription, présence finale, retour déclaratif post-action, mission prévue et attestation historique ; les spécialisations gamification en sont une projection réconciliée | Ressource + owner/organisateur/participant + état ; le retour reste privé en brouillon et public seulement après publication éligible ; attestation server-only, XP uniquement via `progression_events` |
 | Médias / entraînement | `training_examples`, Supabase Storage | Provenance média, pièces liées aux actions | Accès selon action et contrat Storage |
 | Conversations d'action | `action_conversations`, `action_conversation_members`, `action_conversation_exclusions`, `action_share_contact_requests` | Échanges et audiences associées à l'action | Membres, exclusions, acteur et capacité |
 | Observations carte | `public.trash_spotter_spots` | Signalement (`spot`) et lieu propre (`clean_place`) | Projection publique filtrée, mutation autorisée |
@@ -119,6 +119,28 @@ Ne pas généraliser ces exemples au reste du schéma sans inspection de la dern
 Les statuts d'action actuellement consommés sont `pending`, `approved` et
 `rejected` ; `validated` n'est pas un alias à réintroduire sans évolution
 coordonnée du schéma, des types, des routes, de l'UI et des tests.
+
+### Retour d'expérience post-action
+
+`action_retrospectives` est une extension déclarative de l'action, avec une
+clé primaire `action_id` et donc un seul retour canonique par action. Les quatre
+champs éditoriaux (`thanks_message`, `worked_well`, `blockers` et
+`improve_next_time`) sont normalisés côté serveur et bornés aussi par des
+contraintes SQL. `authored_by_clerk_id`, le brouillon, `notified_at` et les
+audits restent des données serveur ; ils ne font jamais partie de la
+projection publique.
+
+La création et l'édition exigent le créateur ou une relation actuelle dans
+`action_organizers`. Un rôle global sans relation ne suffit pas. La publication
+est une transition idempotente et serveur-only : elle verrouille l'action et le
+retour, vérifie `post_action_complete`, `approved`, la publication, la
+visibilité, le mode public et la revue compatible, puis publie le retour et
+notifie dans la même transaction les seules participations finales
+`action_participants.participation_status = confirmed`, hors auteur. La clé
+d'événement `(recipient, actionId)` et `ON CONFLICT DO NOTHING` rendent les
+replays silencieux. La modification d'un retour déjà publié ne crée pas une
+nouvelle première publication et ne modifie ni l'action, ni ses mesures, ni
+les participations.
 
 La phase distingue durablement `action_registrations` (inscription future) de
 `action_participants` (participation finale). Seules les participations

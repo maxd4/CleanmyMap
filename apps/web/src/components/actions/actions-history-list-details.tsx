@@ -1,4 +1,5 @@
 import { ActionParticipantImpactManager } from "@/components/actions/action-participant-impact-manager";
+import { ActionRetrospectivePanel } from "@/components/actions/action-retrospective-panel";
 import { ActionRoleAttestationsPanel } from "@/components/actions/action-role-attestations-panel";
 import { ActionMediaProofs } from "@/components/actions/action-media/action-media-proofs";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -88,6 +89,16 @@ function ActionHistoryEvidenceSections({
   selectedItem: NonNullable<ActionsHistoryListDetailsProps["selectedItem"]>;
 }) {
   return <>
+    {selectedItem.record_type === "action" ? (
+      <div className="mt-4">
+        <ActionRetrospectivePanel
+          actionId={actionId}
+          actionPhase={selectedItem.contract?.metadata.actionPhase}
+          status={selectedItem.status}
+          fr={fr}
+        />
+      </div>
+    ) : null}
     <ActionParticipantImpactManager actionId={actionId} fr={fr} />
     <ActionMediaProofs actionId={actionId} />
     <ActionHistoryAuditSection

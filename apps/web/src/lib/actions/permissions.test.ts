@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canManageAction,
+  canManageActionByRelation,
   canManageActionsGlobally,
   canModerateActionsGlobally,
   canOverrideActionParticipants,
@@ -11,6 +12,12 @@ import {
 } from "./permissions";
 
 describe("action permissions", () => {
+  it("keeps retrospective ownership relation-only, including for privileged roles", () => {
+    const action = { createdByClerkId: "creator-1" };
+    expect(canManageActionByRelation({ userId: "creator-1" }, action, [])).toBe(true);
+    expect(canManageActionByRelation({ userId: "coorganizer-1" }, action, ["coorganizer-1"])).toBe(true);
+    expect(canManageActionByRelation({ userId: "admin-1" }, action, [])).toBe(false);
+  });
   it.each(["admin", "max", "elu"] as const)(
     "allows the privileged active role %s to validate administrative requirements",
     (activeRole) => {

@@ -13,6 +13,7 @@ describe("GET /api/actions/[actionId]/public", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getSupabaseServerClientMock.mockReturnValue({
+      rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),

@@ -70,6 +70,21 @@ export function canManageAction(
 }
 
 /**
+ * Retrospective ownership is deliberately relation-only. Global roles without
+ * a creator or action_organizers relation do not gain this write capability.
+ */
+export function canManageActionByRelation(
+  identity: Pick<ActionPermissionIdentity, "userId"> | null | undefined,
+  action: Pick<ActionPermissionTarget, "createdByClerkId">,
+  organizerIds: string[],
+): boolean {
+  const userId = normalizeUserId(identity?.userId);
+  if (!userId) return false;
+  return normalizeUserId(action.createdByClerkId) === userId ||
+    organizerIds.some((organizerId) => normalizeUserId(organizerId) === userId);
+}
+
+/**
  * Dedicated administrative-requirements capability.
  * The action creator is not a substitute for an organizer relation here.
  */

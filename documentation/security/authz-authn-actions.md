@@ -59,6 +59,35 @@ admin demande normalement à rejoindre l'action d'un tiers
 
 Le rôle privilégié ne doit pas transformer automatiquement cette demande en participation confirmée.
 
+## Retour d'expérience post-action
+
+Le retour d'expérience est une capacité relationnelle distincte des capacités
+globales de modération. `GET`, `PUT` et `POST /api/actions/:actionId/retrospective`
+exigent une session Clerk puis relisent l'action et les relations
+`action_organizers` côté serveur. Seuls le créateur et un organisateur ou
+coorganisateur relationnel peuvent lire le brouillon, l'enregistrer ou le
+publier ; `admin`, `max` ou tout autre rôle sans relation ne gagne pas cette
+capacité par son rôle seul.
+
+Le brouillon est privé et est persisté par `save_action_retrospective`, qui
+normalise les espaces et applique les limites SQL (500 caractères pour le
+message de remerciement, 1000 pour chacun des trois autres champs). La
+publication est déléguée à `publish_action_retrospective`, exécutée uniquement
+avec `service_role` après la garde HTTP. Elle verrouille l'action et le retour,
+revalide `post_action_complete`, `approved`, `published_at`, la visibilité
+`visible`, `access_mode = public` et une revue `not_required|approved`, puis
+exige au moins un champ éditorial renseigné.
+
+La première publication conserve son horodatage. Dans la même transaction, la
+RPC crée une notification `community` intitulée « Merci pour votre
+participation » pour les seules lignes finales
+`action_participants.participation_status = confirmed`, hors auteur, avec une
+identité d'événement stable. La contrainte unique et `ON CONFLICT DO NOTHING`
+empêchent les doubles notifications lors d'une réédition ou d'un replay. Une
+erreur de fan-out annule également la publication ; aucune publication ou
+notification partielle n'est conservée. La projection publique Actions expose
+uniquement les quatre champs éditoriaux et leurs métadonnées de publication.
+
 ## Dérogation administrative
 
 Une dérogation doit être distincte du flux normal.
