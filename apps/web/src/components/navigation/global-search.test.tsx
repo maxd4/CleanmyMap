@@ -1,12 +1,93 @@
+// @vitest-environment jsdom
+
+import React from "react";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { resolve } from "node:path";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getNavigationSpacesForProfile } from "../../lib/navigation";
+import { GlobalSearch } from "./global-search";
 
-const searchSource = readFileSync(new URL("./global-search.tsx", import.meta.url), "utf8");
-const dropdownSource = readFileSync(new URL("../ui/cmm-dropdown.tsx", import.meta.url), "utf8");
+const mocks = vi.hoisted(() => ({
+  pathname: "/sections/map",
+  router: { push: vi.fn() },
+  preferences: { locale: "fr" as const, displayMode: "exhaustif" as const },
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => mocks.pathname,
+  useRouter: () => mocks.router,
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement("a", props, children),
+}));
+
+vi.mock("@/components/ui/site-preferences-provider", () => ({
+  useSitePreferences: () => mocks.preferences,
+}));
+
+vi.mock("@/components/ui/cmm-dropdown", () => ({
+  CmmDropdown: ({
+    children,
+    open,
+    onOpenChange,
+    renderTrigger,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (nextOpen: boolean) => void;
+    renderTrigger: (props: Record<string, unknown>) => React.ReactNode;
+  }) => (
+    <div data-dropdown-open={String(Boolean(open))}>
+      {renderTrigger({
+        type: "button",
+        "aria-expanded": Boolean(open),
+        "aria-controls": "global-search-popover",
+        onMouseDown: () => undefined,
+        onMouseEnter: () => undefined,
+        onKeyDown: () => undefined,
+        onClick: () => onOpenChange?.(!open),
+      })}
+      {open ? children : null}
+    </div>
+  ),
+}));
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+const searchSource = readFileSync(resolve(process.cwd(), "src/components/navigation/global-search.tsx"), "utf8");
+const dropdownSource = readFileSync(resolve(process.cwd(), "src/components/ui/cmm-dropdown.tsx"), "utf8");
 
 describe("GlobalSearch", () => {
+  beforeEach(() => {
+    mocks.pathname = "/sections/map";
+    mocks.router.push.mockReset();
+  });
+
+  function renderSearch() {
+    let renderer!: ReactTestRenderer;
+    const focus = vi.fn();
+    act(() => {
+      renderer = create(<GlobalSearch currentProfile="benevole" />, {
+        createNodeMock: (element) =>
+          element.type === "input" || element.type === "button"
+            ? { focus }
+            : {},
+      });
+    });
+    return { renderer, focus };
+  }
+
+  function openSearch(renderer: ReactTestRenderer) {
+    const trigger = renderer.root.findByProps({ "aria-label": "Rechercher" });
+    act(() => {
+      trigger.props.onClick();
+    });
+  }
+
   it("uses the shared non-modal dropdown without a viewport overlay", () => {
     expect(searchSource).toContain('import { CmmDropdown } from "@/components/ui/cmm-dropdown"');
     expect(searchSource).toContain('<CmmDropdown');
@@ -82,5 +163,78 @@ describe("GlobalSearch", () => {
     expect(searchSource).toContain("focus-visible:ring-2 focus-visible:ring-emerald-300");
     expect(searchSource).not.toContain("translate-x-1");
     expect(searchSource).not.toContain("scale-110");
+  });
+
+  it("covers the empty, filtered and no-result states from the rendered index", () => {
+    const { renderer } = renderSearch();
+    openSearch(renderer);
+
+    expect(renderer.root.findByProps({ "aria-label": "Rechercher une rubrique, un outil ou une aide" })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: "Explorez les rubriques accessibles" })).toBeTruthy();
+
+    const input = renderer.root.findByType("input");
+    act(() => {
+      input.props.onChange({ target: { value: "carte" } });
+    });
+    expect(renderer.root.findAllByType("a").length).toBeGreaterThan(0);
+
+    act(() => {
+      input.props.onChange({ target: { value: "[terme-inexistant]" } });
+    });
+    expect(renderer.root.findByProps({ children: "Aucun résultat pour cette recherche" })).toBeTruthy();
+    renderer.unmount();
+  });
+
+  it("keeps keyboard selection, Enter navigation, focus and explicit close working", () => {
+    const { renderer, focus } = renderSearch();
+    openSearch(renderer);
+    expect(focus).toHaveBeenCalled();
+
+    const input = renderer.root.findByType("input");
+    act(() => {
+      input.props.onChange({ target: { value: "carte" } });
+    });
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
+    });
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    });
+
+    expect(mocks.router.push).toHaveBeenCalledTimes(1);
+    expect(mocks.router.push.mock.calls[0]?.[0]).toMatch(/^\//u);
+    expect(renderer.root.findByProps({ "data-dropdown-open": "false" })).toBeTruthy();
+
+    openSearch(renderer);
+    const closeButton = renderer.root.findByProps({ "aria-label": "Fermer la recherche" });
+    act(() => {
+      closeButton.props.onClick();
+    });
+    expect(renderer.root.findByProps({ "data-dropdown-open": "false" })).toBeTruthy();
+    renderer.unmount();
+  });
+
+  it("clears query and closes when the pathname changes", () => {
+    vi.useFakeTimers();
+    try {
+      const { renderer } = renderSearch();
+      openSearch(renderer);
+      const input = renderer.root.findByType("input");
+      act(() => {
+        input.props.onChange({ target: { value: "carte" } });
+      });
+      expect(renderer.root.findAllByType("a").length).toBeGreaterThan(0);
+
+      mocks.pathname = "/sections/methodologie";
+      act(() => {
+        renderer.update(<GlobalSearch currentProfile="benevole" />);
+        vi.runAllTimers();
+      });
+
+      expect(renderer.root.findByProps({ "data-dropdown-open": "false" })).toBeTruthy();
+      renderer.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

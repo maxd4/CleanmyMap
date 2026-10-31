@@ -1,13 +1,28 @@
+// @vitest-environment jsdom
+
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import Link from "next/link";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CmmDropdown } from "./cmm-dropdown";
 
-const source = readFileSync(new URL("./cmm-dropdown.tsx", import.meta.url), "utf8");
+const source = readFileSync(resolve(process.cwd(), "src/components/ui/cmm-dropdown.tsx"), "utf8");
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 describe("CmmDropdown", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    vi.stubGlobal("getComputedStyle", () => ({ zoom: "" }));
+  });
+
   it("renders one centered non-modal panel and arrow contract", () => {
     const markup = renderToStaticMarkup(
       <CmmDropdown
@@ -95,5 +110,58 @@ describe("CmmDropdown", () => {
     expect(source).toContain("backgroundImage: panelStyle?.backgroundImage");
     expect(source).toContain('borderColor: "rgba(15, 23, 42, 0.34)"');
     expect(source).not.toContain("border-white/15");
+  });
+
+  it("opens from the native trigger, dismisses on Escape and restores focus", async () => {
+    const focus = vi.fn();
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        <CmmDropdown
+          id="interactive-dropdown"
+          ariaLabel="Interactive menu"
+          renderTrigger={(triggerProps) => (
+            <button {...triggerProps} aria-label="Open interactive menu">
+              Open
+            </button>
+          )}
+        >
+          <span>Interactive content</span>
+        </CmmDropdown>,
+        {
+          createNodeMock: (element) =>
+            element.type === "button"
+              ? {
+                  focus,
+                  getBoundingClientRect: () => ({
+                    top: 10,
+                    bottom: 50,
+                    left: 20,
+                    width: 100,
+                  }),
+                  parentElement: null,
+                }
+              : {},
+        },
+      );
+    });
+
+    const trigger = renderer.root.findByProps({ "aria-label": "Open interactive menu" });
+    act(() => {
+      trigger.props.onClick({ defaultPrevented: false });
+    });
+    expect(renderer.root.findByProps({ id: "interactive-dropdown" })).toBeTruthy();
+
+    await act(async () => {
+      trigger.props.onKeyDown({ key: "Escape", preventDefault: vi.fn() });
+      await Promise.resolve();
+    });
+    expect(renderer.root.findAll((node) => node.type === "div" && node.props.id === "interactive-dropdown")).toHaveLength(0);
+    expect(focus).toHaveBeenCalled();
+
+    act(() => {
+      renderer.unmount();
+    });
   });
 });
