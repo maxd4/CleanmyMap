@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 type Participant = {
@@ -45,7 +45,7 @@ function statusLabel(status: RequestStatus): string {
   return "En attente";
 }
 
-export function SpogomiTeamJoinRequestsPanel({
+function SpogomiTeamJoinRequestsPanelContent({
   eventId,
   participants,
   teams,
@@ -60,6 +60,7 @@ export function SpogomiTeamJoinRequestsPanel({
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
   const teamLabels = useMemo(() => new Map(teams.map((team) => [team.id, `${team.public_name} · équipe ${team.team_number}`])), [teams]);
 
   const loadRequests = useCallback(async () => {
@@ -67,15 +68,21 @@ export function SpogomiTeamJoinRequestsPanel({
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) throw new Error(errorMessage(body, "Les demandes de rattachement sont indisponibles."));
     if (!isRecord(body) || !Array.isArray(body.requests) || !body.requests.every(isJoinRequest)) throw new Error("La réponse des demandes de rattachement est invalide.");
+    if (!mounted.current) return;
     setRequests(body.requests);
   }, [eventId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void loadRequests().catch((reason) => setError(reason instanceof Error ? reason.message : "Les demandes de rattachement sont indisponibles."));
+      void loadRequests().catch((reason) => { if (mounted.current) setError(reason instanceof Error ? reason.message : "Les demandes de rattachement sont indisponibles."); });
     }, 0);
     return () => window.clearTimeout(timer);
   }, [loadRequests]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   async function decide(request: JoinRequest, status: "approved" | "rejected") {
     setBusy(request.id);
@@ -94,11 +101,11 @@ export function SpogomiTeamJoinRequestsPanel({
       });
       const body: unknown = await response.json().catch(() => null);
       if (!response.ok) throw new Error(errorMessage(body, "La décision n’a pas pu être enregistrée."));
-      await loadRequests();
+      if (mounted.current) await loadRequests();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "La décision n’a pas pu être enregistrée.");
+      if (mounted.current) setError(reason instanceof Error ? reason.message : "La décision n’a pas pu être enregistrée.");
     } finally {
-      setBusy(null);
+      if (mounted.current) setBusy(null);
     }
   }
 
@@ -129,4 +136,8 @@ export function SpogomiTeamJoinRequestsPanel({
       })}</div>}
     </section>
   );
+}
+
+export function SpogomiTeamJoinRequestsPanel(props: { eventId: string; participants: Participant[]; teams: Team[] }) {
+  return <SpogomiTeamJoinRequestsPanelContent key={props.eventId} {...props} />;
 }

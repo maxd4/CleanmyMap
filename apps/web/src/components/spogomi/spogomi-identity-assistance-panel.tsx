@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 type Participant = { id: string; display_name: string | null; external_reference: string | null; account_link_status: string; team_id: string | null };
@@ -82,7 +82,7 @@ function statusLabel(status: AssistanceRequest["status"]): string {
   return "En attente";
 }
 
-export function SpogomiIdentityAssistancePanel({ eventId, participants }: { eventId: string; participants: Participant[] }) {
+function SpogomiIdentityAssistancePanelContent({ eventId, participants }: { eventId: string; participants: Participant[] }) {
   const [requests, setRequests] = useState<AssistanceRequest[]>([]);
   const [selectedParticipants, setSelectedParticipants] = useState<Record<string, string>>({});
   const [verificationNotes, setVerificationNotes] = useState<Record<string, string>>({});
@@ -91,20 +91,27 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
   const participantLabel = useMemo(() => new Map(participants.map((participant) => [participant.id, participant.display_name ?? "Place à identifier"])), [participants]);
 
   const loadRequests = useCallback(async () => {
     const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-assistance/requests`, { cache: "no-store" });
     const body = await readAssistanceResponse(response);
+    if (!mounted.current) return;
     setRequests(body.requests ?? []);
   }, [eventId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void loadRequests().catch((reason) => setError(reason instanceof Error ? reason.message : "Les demandes d’assistance sont indisponibles."));
+      void loadRequests().catch((reason) => { if (mounted.current) setError(reason instanceof Error ? reason.message : "Les demandes d’assistance sont indisponibles."); });
     }, 0);
     return () => window.clearTimeout(timer);
   }, [loadRequests]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   async function decide(request: AssistanceRequest, status: "treated" | "rejected") {
     setBusy(request.id);
@@ -121,10 +128,12 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
         }),
       });
       await readAssistanceResponse(response);
-      await loadRequests();
+      if (mounted.current) await loadRequests();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "La décision n’a pas pu être enregistrée.");
-    } finally { setBusy(null); }
+      if (mounted.current) setError(reason instanceof Error ? reason.message : "La décision n’a pas pu être enregistrée.");
+    } finally {
+      if (mounted.current) setBusy(null);
+    }
   }
 
   async function issueCode(request: AssistanceRequest) {
@@ -136,10 +145,12 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
       const body = await readAssistanceResponse(response);
       const code = body.code;
       if (!code) throw new Error("Le service d’assistance n’a pas renvoyé de code.");
-      setIssuedCodes((current) => ({ ...current, [request.id]: code }));
+      if (mounted.current) setIssuedCodes((current) => ({ ...current, [request.id]: code }));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Le code n’a pas pu être émis.");
-    } finally { setBusy(null); }
+      if (mounted.current) setError(reason instanceof Error ? reason.message : "Le code n’a pas pu être émis.");
+    } finally {
+      if (mounted.current) setBusy(null);
+    }
   }
 
   async function createInvitation() {
@@ -149,14 +160,16 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
       const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-assistance/invitation`, { method: "POST" });
       const body = await readAssistanceResponse(response);
       if (!body.url) throw new Error("Le service d’assistance n’a pas renvoyé d’invitation.");
-      setInvitationUrl(body.url);
+      if (mounted.current) setInvitationUrl(body.url);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "L’invitation n’a pas pu être créée.");
-    } finally { setBusy(null); }
+      if (mounted.current) setError(reason instanceof Error ? reason.message : "L’invitation n’a pas pu être créée.");
+    } finally {
+      if (mounted.current) setBusy(null);
+    }
   }
 
   function runAction(action: () => Promise<void>): void {
-    void action().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "L’opération d’assistance a échoué."));
+    void action().catch((reason: unknown) => { if (mounted.current) setError(reason instanceof Error ? reason.message : "L’opération d’assistance a échoué."); });
   }
 
   return <section className="space-y-4" aria-labelledby="spogomi-identity-assistance-title">
@@ -165,4 +178,8 @@ export function SpogomiIdentityAssistancePanel({ eventId, participants }: { even
     {error ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-800">{error}</p> : null}
     {!requests.length ? <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">Aucune demande reçue.</p> : <div className="space-y-3">{requests.map((request) => <article key={request.id} className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold text-slate-900">Demande reçue le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(request.createdAt))}</p><p className="text-sm font-semibold text-slate-700">{statusLabel(request.status)}</p></div>{request.matchedParticipantId ? <p className="text-sm text-slate-700">Roster rapproché : {participantLabel.get(request.matchedParticipantId) ?? "entrée sélectionnée"}</p> : null}</div>{request.providedContext ? <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-800"><span className="font-bold">Élément fourni :</span> {request.providedContext}</p> : <p className="text-sm text-slate-600">Aucun élément supplémentaire fourni.</p>}{request.status === "pending" ? <div className="grid gap-3 md:grid-cols-2"><label className="text-sm font-bold text-slate-800">Entrée roster après vérification<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={selectedParticipants[request.id] ?? ""} onChange={(event) => setSelectedParticipants((current) => ({ ...current, [request.id]: event.target.value }))}><option value="">Choisir une entrée</option>{participants.filter((participant) => participant.account_link_status !== "verified").map((participant) => <option key={participant.id} value={participant.id}>{participant.display_name ?? "Place à identifier"}{participant.external_reference ? ` · ${participant.external_reference}` : ""}</option>)}</select></label><label className="text-sm font-bold text-slate-800">Vérification indépendante<textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={3} minLength={10} maxLength={1200} value={verificationNotes[request.id] ?? ""} onChange={(event) => setVerificationNotes((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="Décrire la vérification hors bande effectuée." /></label><label className="text-sm font-bold text-slate-800 md:col-span-2">Note de décision <span className="font-normal text-slate-500">(facultatif)</span><textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={2} maxLength={1200} value={resolutionNotes[request.id] ?? ""} onChange={(event) => setResolutionNotes((current) => ({ ...current, [request.id]: event.target.value }))} /></label></div> : null}{request.status === "pending" ? <div className="flex flex-wrap gap-2"><CmmButton type="button" tone="primary" disabled={busy !== null || !selectedParticipants[request.id] || (verificationNotes[request.id] ?? "").trim().length < 10} loading={busy === request.id} onClick={() => runAction(() => decide(request, "treated"))}>Marquer vérifiée</CmmButton><CmmButton type="button" tone="critical" disabled={busy !== null} loading={busy === request.id} onClick={() => runAction(() => decide(request, "rejected"))}>Refuser</CmmButton></div> : null}{request.status === "treated" && request.matchedParticipantId ? <div className="space-y-2"><CmmButton type="button" tone="primary" disabled={busy !== null} loading={busy === request.id} onClick={() => runAction(() => issueCode(request))}>Émettre le code à remettre</CmmButton>{issuedCodes[request.id] ? <p className="rounded-lg bg-emerald-50 p-2 font-mono text-xs text-emerald-950">{issuedCodes[request.id]}<br /><span className="font-sans">Affiché une seule fois · remise directe uniquement.</span></p> : null}</div> : null}</article>)}</div>}
   </section>;
+}
+
+export function SpogomiIdentityAssistancePanel(props: { eventId: string; participants: Participant[] }) {
+  return <SpogomiIdentityAssistancePanelContent key={props.eventId} {...props} />;
 }

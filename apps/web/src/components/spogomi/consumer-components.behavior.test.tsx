@@ -108,6 +108,15 @@ const publishedResults = {
   environmental: { status: "available", totalWasteMassGrams: 1250, cigaretteButtsMassGrams: 80, cigaretteButtsCount: 8, participantsPresent: 3, projectionVersion: "projection-v1", sourceHash: "hash-v1" },
 } as unknown as SpogomiPublicResultsData;
 
+const observerProjection = (eventName: string, teamName: string) => ({
+  projection: {
+    event: { id: eventName, name: eventName, eventSlug: null, mode: "mixed", state: "active", startsAt: "2026-06-01T09:00:00.000Z", endsAt: null, publicVisibility: "private", publicResultsVisibility: "hidden" },
+    divisions: [{ id: "division-casual", divisionType: "casual", divisionKey: "casual" }, { id: "division-world", divisionType: "world_cup", divisionKey: "world" }],
+    teams: [{ id: `team-${eventName}`, divisionId: "division-world", teamNumber: 2, publicName: teamName, compositionState: "locked", submissionStatus: "submitted", submissionVersion: 3, submittedAt: "2026-06-01T10:00:00.000Z", certified: false }],
+    participation: { registered: 4, present: 2 },
+  },
+});
+
 describe("SPOGOMI consumer components", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -302,25 +311,93 @@ describe("SPOGOMI consumer components", () => {
     renderer.unmount();
   });
 
+  it("clears identity-assistance state and ignores a late decision from the previous event", async () => {
+    fetchMock.mockReset();
+    let rejectDecision!: (reason: unknown) => void;
+    const staleDecision = new Promise<Response>((_resolve, reject) => { rejectDecision = reject; });
+    let resolveEventB!: (response: Response) => void;
+    const eventBLoad = new Promise<Response>((resolve) => { resolveEventB = resolve; });
+    const requestA = { id: "request-a", providedContext: "Contexte privé A", status: "pending", matchedParticipantId: null, verificationNote: null, resolutionNote: null, handledAt: null, createdAt: "2026-06-01T09:00:00.000Z" };
+    const requestB = { ...requestA, id: "request-b", providedContext: "Contexte privé B" };
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [requestA] })).mockReturnValueOnce(staleDecision);
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiIdentityAssistancePanel eventId="event-a" participants={[{ id: "participant-a", display_name: "Participant A", external_reference: "ref-a", account_link_status: "pending", team_id: "team-a" }]} />); });
+    await act(flushEffects);
+    act(() => { propsOf<SelectProps>(renderer.root.findByType("select")).onChange({ target: { value: "participant-a" } }); });
+    act(() => { propsOf<TextareaProps>(renderer.root.findAllByType("textarea")[0]!).onChange({ target: { value: "Vérification A hors bande." } }); });
+    await act(async () => { findButton(renderer, "Marquer vérifiée").props.onClick(); await Promise.resolve(); });
+
+    fetchMock.mockReturnValueOnce(eventBLoad);
+    act(() => { renderer.update(<SpogomiIdentityAssistancePanel eventId="event-b" participants={[{ id: "participant-b", display_name: "Participant B", external_reference: "ref-b", account_link_status: "pending", team_id: "team-b" }]} />); });
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Contexte privé A");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Participant A");
+
+    rejectDecision(new Error("Réponse tardive de A"));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Réponse tardive de A");
+
+    resolveEventB(jsonResponse({ requests: [requestB] }));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Contexte privé B");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Contexte privé A");
+    expect(renderer.root.findByType("select").props.value).toBe("");
+    expect(renderer.root.findAllByType("textarea").map((textarea) => textarea.props.value)).toEqual(["", ""]);
+    renderer.unmount();
+  });
+
+  it("does not reintroduce identity codes or private invitations across A to B to A", async () => {
+    fetchMock.mockReset();
+    let resolveCode!: (response: Response) => void;
+    const staleCode = new Promise<Response>((resolve) => { resolveCode = resolve; });
+    let resolveEventB!: (response: Response) => void;
+    const eventBLoad = new Promise<Response>((resolve) => { resolveEventB = resolve; });
+    let resolveInvitation!: (response: Response) => void;
+    const staleInvitation = new Promise<Response>((resolve) => { resolveInvitation = resolve; });
+    let resolveEventA2!: (response: Response) => void;
+    const eventA2Load = new Promise<Response>((resolve) => { resolveEventA2 = resolve; });
+    const treatedA = { id: "request-a", providedContext: "Traité A", status: "treated", matchedParticipantId: "participant-a", verificationNote: null, resolutionNote: null, handledAt: null, createdAt: "2026-06-01T09:00:00.000Z" };
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [treatedA] })).mockReturnValueOnce(staleCode);
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiIdentityAssistancePanel eventId="event-a" participants={[{ id: "participant-a", display_name: "Participant A", external_reference: "ref-a", account_link_status: "pending", team_id: "team-a" }]} />); });
+    await act(flushEffects);
+    await act(async () => { findButton(renderer, "Émettre le code à remettre").props.onClick(); await Promise.resolve(); });
+
+    fetchMock.mockReturnValueOnce(eventBLoad);
+    act(() => { renderer.update(<SpogomiIdentityAssistancePanel eventId="event-b" participants={[]} />); });
+    await act(flushEffects);
+    resolveCode(jsonResponse({ code: "CODE-A" }));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("CODE-A");
+    resolveEventB(jsonResponse({ requests: [] }));
+    await act(flushEffects);
+
+    fetchMock.mockReturnValueOnce(staleInvitation).mockReturnValueOnce(eventA2Load);
+    await act(async () => { findButton(renderer, "Créer une invitation privée").props.onClick(); await Promise.resolve(); });
+    act(() => { renderer.update(<SpogomiIdentityAssistancePanel eventId="event-a" participants={[]} />); });
+    await act(flushEffects);
+    resolveInvitation(jsonResponse({ url: "/spogomi/event-b/private-invitation" }));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("private-invitation");
+    resolveEventA2(jsonResponse({ requests: [] }));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("private-invitation");
+    renderer.unmount();
+  });
+
   it("keeps observer projections event-scoped, filterable and free of roster identities", async () => {
     fetchMock.mockReset();
     let resolveFirst!: (response: Response) => void;
     const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
-    const projection = (eventName: string, teamName: string) => ({
-      projection: {
-        event: { id: eventName, name: eventName, eventSlug: null, mode: "mixed", state: "active", startsAt: "2026-06-01T09:00:00.000Z", endsAt: null, publicVisibility: "private", publicResultsVisibility: "hidden" },
-        divisions: [{ id: "division-casual", divisionType: "casual", divisionKey: "casual" }, { id: "division-world", divisionType: "world_cup", divisionKey: "world" }],
-        teams: [{ id: `team-${eventName}`, divisionId: "division-world", teamNumber: 2, publicName: teamName, compositionState: "locked", submissionStatus: "submitted", submissionVersion: 3, submittedAt: "2026-06-01T10:00:00.000Z", certified: false }],
-        participation: { registered: 4, present: 2 },
-      },
-    });
-    fetchMock.mockReturnValueOnce(first).mockResolvedValueOnce(jsonResponse(projection("event-b", "Beta")));
+    fetchMock.mockReturnValueOnce(first).mockResolvedValueOnce(jsonResponse(observerProjection("event-b", "Beta")));
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiObserverCockpitPanel eventId="event-a" view="results" />); });
     act(() => { renderer.update(<SpogomiObserverCockpitPanel eventId="event-b" view="results" />); });
     await act(async () => { await flushEffects(); });
     expect(JSON.stringify(renderer.toJSON())).toContain("Beta");
-    resolveFirst(jsonResponse(projection("event-a", "Alpha")));
+    resolveFirst(jsonResponse(observerProjection("event-a", "Alpha")));
     await act(async () => { await flushEffects(); });
     expect(JSON.stringify(renderer.toJSON())).toContain("Beta");
     expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
@@ -329,6 +406,39 @@ describe("SPOGOMI consumer components", () => {
     expect(findButton(renderer, "World Cup").props["aria-pressed"]).toBe(false);
     act(() => { findButton(renderer, "World Cup").props.onClick(); });
     expect(findButton(renderer, "World Cup").props["aria-pressed"]).toBe(true);
+    renderer.unmount();
+  });
+
+  it("clears a loaded observer projection before B and ignores late B data during A to B to A", async () => {
+    fetchMock.mockReset();
+    let resolveEventB!: (response: Response) => void;
+    const eventBLoad = new Promise<Response>((resolve) => { resolveEventB = resolve; });
+    let resolveEventA2!: (response: Response) => void;
+    const eventA2Load = new Promise<Response>((resolve) => { resolveEventA2 = resolve; });
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(observerProjection("event-a", "Alpha")))
+      .mockReturnValueOnce(eventBLoad)
+      .mockReturnValueOnce(eventA2Load);
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiObserverCockpitPanel eventId="event-a" view="results" />); });
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Alpha");
+
+    act(() => { renderer.update(<SpogomiObserverCockpitPanel eventId="event-b" view="results" />); });
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Chargement des données opérationnelles");
+
+    act(() => { renderer.update(<SpogomiObserverCockpitPanel eventId="event-a" view="results" />); });
+    await act(flushEffects);
+    resolveEventB(jsonResponse(observerProjection("event-b", "Beta")));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Beta");
+    resolveEventA2(jsonResponse(observerProjection("event-a", "Alpha 2")));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Alpha 2");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Beta");
     renderer.unmount();
   });
 
@@ -383,6 +493,53 @@ describe("SPOGOMI consumer components", () => {
     await act(flushEffects);
     expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Accès refusé");
     expect(JSON.stringify(renderer.toJSON())).not.toMatch(/requesterClerkId|external_reference|email/i);
+    renderer.unmount();
+  });
+
+  it("clears team join selections and ignores a late decision error from the previous event", async () => {
+    fetchMock.mockReset();
+    let rejectDecision!: (reason: unknown) => void;
+    const staleDecision = new Promise<Response>((_resolve, reject) => { rejectDecision = reject; });
+    let resolveEventB!: (response: Response) => void;
+    const eventBLoad = new Promise<Response>((resolve) => { resolveEventB = resolve; });
+    let resolveEventA2!: (response: Response) => void;
+    const eventA2Load = new Promise<Response>((resolve) => { resolveEventA2 = resolve; });
+    const requestA = { id: "join-a", teamId: "team-a", requesterClerkId: "requester-a", status: "pending", matchedParticipantId: null, verificationNote: null, resolutionNote: null, createdAt: "2026-06-01T09:00:00.000Z" };
+    const requestB = { ...requestA, id: "join-b", teamId: "team-b", requesterClerkId: "requester-b" };
+    const requestA2 = { ...requestA, id: "join-a2", requesterClerkId: "requester-a2" };
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [requestA] })).mockReturnValueOnce(staleDecision);
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiTeamJoinRequestsPanel eventId="event-a" teams={[{ id: "team-a", public_name: "Alpha", team_number: 1 }]} participants={[{ id: "participant-a", display_name: "Participant A", external_reference: "ref-a", account_link_status: "pending", team_id: "team-a" }]} />); });
+    await act(flushEffects);
+    act(() => { propsOf<SelectProps>(renderer.root.findByType("select")).onChange({ target: { value: "participant-a" } }); });
+    act(() => { propsOf<TextareaProps>(renderer.root.findAllByType("textarea")[0]!).onChange({ target: { value: "Vérification A hors bande." } }); });
+    await act(async () => { findButton(renderer, "Accepter et lier l’identité").props.onClick(); await Promise.resolve(); });
+
+    fetchMock.mockReturnValueOnce(eventBLoad);
+    act(() => { renderer.update(<SpogomiTeamJoinRequestsPanel eventId="event-b" teams={[{ id: "team-b", public_name: "Beta", team_number: 2 }]} participants={[{ id: "participant-b", display_name: "Participant B", external_reference: "ref-b", account_link_status: "pending", team_id: "team-b" }]} />); });
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("requester-a");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
+
+    rejectDecision(new Error("Erreur tardive de A"));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Erreur tardive de A");
+    resolveEventB(jsonResponse({ requests: [requestB] }));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).toContain("requester-b");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("requester-a");
+    expect(renderer.root.findByType("select").props.value).toBe("");
+    expect(renderer.root.findAllByType("textarea").map((textarea) => textarea.props.value)).toEqual(["", ""]);
+
+    fetchMock.mockReturnValueOnce(eventA2Load);
+    act(() => { renderer.update(<SpogomiTeamJoinRequestsPanel eventId="event-a" teams={[{ id: "team-a", public_name: "Alpha", team_number: 1 }]} participants={[{ id: "participant-a", display_name: "Participant A", external_reference: "ref-a", account_link_status: "pending", team_id: "team-a" }]} />); });
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("requester-b");
+    resolveEventA2(jsonResponse({ requests: [requestA2] }));
+    await act(flushEffects);
+    expect(JSON.stringify(renderer.toJSON())).toContain("requester-a2");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("requester-b");
     renderer.unmount();
   });
 });

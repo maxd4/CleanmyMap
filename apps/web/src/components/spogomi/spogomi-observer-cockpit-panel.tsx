@@ -46,7 +46,7 @@ function statusLabel(value: string | null): string {
   return value ?? "Aucune soumission";
 }
 
-export function SpogomiObserverCockpitPanel({ eventId, view }: { eventId: string; view: "teams" | "results" }) {
+function SpogomiObserverCockpitPanelContent({ eventId, view }: { eventId: string; view: "teams" | "results" }) {
   const [projection, setProjection] = useState<ObserverProjection | null>(null);
   const [divisionId, setDivisionId] = useState("all");
   const [error, setError] = useState<string | null>(null);
@@ -91,4 +91,8 @@ export function SpogomiObserverCockpitPanel({ eventId, view }: { eventId: string
       {view === "results" ? <p className="text-sm text-slate-700">Les décisions d’arbitrage et les classements publiés apparaissent dans les sections autorisées correspondantes.</p> : null}
     </CmmCard>
   </div>;
+}
+
+export function SpogomiObserverCockpitPanel(props: { eventId: string; view: "teams" | "results" }) {
+  return <SpogomiObserverCockpitPanelContent key={props.eventId} {...props} />;
 }
