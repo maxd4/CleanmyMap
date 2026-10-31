@@ -334,6 +334,17 @@ une métrique manipulée, un test artificiel ou une extension hors périmètre.
 Les tests restent déterministes, maintenables et proportionnés au risque ; les
 propriétés importantes non prouvées restent explicitement signalées.
 
+La structure de toute campagne doit limiter la duplication : rechercher d'abord
+les scénarios, fixtures, mocks, builders et helpers du domaine ; paramétrer les
+variantes d'un même oracle ; n'extraire un helper que s'il supprime une
+répétition significative sans masquer les assertions ou les frontières de
+sécurité ; conserver séparés les tests qui prouvent des routes, permissions ou
+frontières d'exécution distinctes. Pour une campagne ajoutant ou étendant des
+tests, contrôler le scope `tests` de jscpd avec `quality:duplication`, qualifier
+les nouveaux clones et distinguer la dette préexistante de celle introduite par
+le lot. La méthode détaillée est dans
+[`documentation/development/testing-quality-structure.md`](documentation/development/testing-quality-structure.md) ; elle n'impose pas `FULL` aux petits correctifs.
+
 `npm run checks:full` / `FULL` **uniquement** sur demande explicite dédiée ou
 préparation immédiate, explicitement demandée, d'un déploiement Vercel. Ne
 jamais en faire la STOP CONDITION d'un lot ordinaire ; hors de ces cas, renvoyer

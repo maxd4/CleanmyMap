@@ -13,6 +13,52 @@ encore contenir des clones actionnables ; un scope au-dessus de 3 % expose un
 la plus récente est
 [`duplication-reference-2026-10-26.md`](../operations/audits/duplication-reference-2026-10-26.md).
 
+## Structure anti-duplication des tests
+
+Cette méthode s'applique aux petits correctifs comme aux campagnes massives. Elle
+complète les contrats de preuve et de couverture de [`TESTING.md`](./TESTING.md)
+et réutilise le contrôle jscpd existant ; elle ne crée ni second contrôle, ni
+seuil, ni baseline, ni exclusion.
+
+Avant d'ajouter un test, rechercher dans le domaine concerné les scénarios déjà
+couverts, fixtures, mocks, builders, factories et helpers disponibles. Pour
+chaque cas proposé, identifier l'invariant et comparer ses entrées, son oracle,
+sa transition et sa frontière d'exécution avec les tests existants :
+
+1. si seules les données varient et que le même oracle reste valable, utiliser
+   un test paramétré ou une table de cas ;
+2. si une préparation répétitive est réellement commune, réutiliser une fixture
+   ou un builder existant ; créer un helper seulement si la répétition est
+   significative et que ses paramètres, ses effets et ses assertions restent
+   lisibles dans le test appelant ;
+3. si la route, la permission, l'ownership, le scope, le transport ou la
+   frontière d'exécution diffère, conserver un test indépendant, même si le
+   code de préparation se ressemble ;
+4. refuser tout test qui répète les mêmes entrées, assertions et invariant sans
+   ajouter une frontière, une transition, une erreur ou une preuve distincte.
+
+Un helper ne doit jamais absorber l'assertion métier ou de sécurité, transformer
+une différence de contrat en option opaque, ni rendre les tests dépendants entre
+eux. Une duplication conservée pour démontrer deux frontières indépendantes doit
+être justifiée par cette preuve, pas par la seule commodité de la fixture.
+
+Toute campagne qui ajoute ou étend des tests exécute ensuite le contrôle existant
+`npm run quality:duplication` et examine explicitement son scope `tests`. Le
+rapport jscpd est lu sur le candidat de travail concerné ; un nouveau fingerprint
+ou une hausse injustifiée des lignes/tokens du scope `tests` impose de
+paramétrer, factoriser lisiblement ou restructurer les tests avant clôture. Une
+qualification `KEEP_INTENTIONAL` ou `NO_ACTION_NOISE` suit exclusivement le
+registre et les preuves déjà définis par la politique jscpd ; elle ne modifie
+jamais le détecteur.
+
+La comparaison doit séparer la duplication préexistante, portée par les
+baselines/fingerprints antérieurs, de la duplication introduite par le lot,
+observée sur le même candidat. Une dette préexistante reste signalée mais n'est
+pas attribuée artificiellement au lot ; un clone nouvellement introduit reste
+non qualifié et bloquant tant qu'il n'est pas supprimé ou documenté selon la
+politique existante. Ce contrôle ciblé ne déclenche pas `FULL` par lui-même et
+ne transforme pas un résultat `NOT_RUN` ou `SKIPPED` en `PASS`.
+
 La preuve de publication jscpd est produite par le même moteur via
 `scripts/ci/duplication-publication.mjs` lorsqu'un candidat complet est
 préparé. Elle lie le SHA et l'arbre Git du candidat, l'empreinte de politique,
