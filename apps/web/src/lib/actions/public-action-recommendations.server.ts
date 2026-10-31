@@ -3,21 +3,25 @@ import { fetchActions } from "./store";
 import type { ActionRow } from "@/types/database";
 import {
   derivePublicActionRecommendations,
+  getPublicActionRecommendationReadScope,
   type PublicActionRecommendation,
 } from "./public-action-recommendations";
-
-const PUBLIC_RECOMMENDATION_READ_LIMIT = 60;
 
 export async function loadPublicActionRecommendations(
   supabase: SupabaseClient,
   source: ActionRow,
   now = new Date(),
 ): Promise<PublicActionRecommendation[]> {
+  const readScope = getPublicActionRecommendationReadScope(source);
+  if (!readScope) return [];
+
   const candidates = await fetchActions(supabase, {
-    limit: PUBLIC_RECOMMENDATION_READ_LIMIT,
+    // The territorial filter bounds the read; the store's paged safety bound prevents an unbounded request.
+    limit: null,
     status: "approved",
     includeFuturePublicActions: true,
     futureOnly: true,
+    ...readScope,
   });
   return derivePublicActionRecommendations(source, candidates, now);
 }

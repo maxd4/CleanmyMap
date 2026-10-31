@@ -22,6 +22,10 @@ type PublicActionTerritory = {
   adjacentKeys: ReadonlySet<string>;
 };
 
+export type PublicActionRecommendationReadScope =
+  | { locationLabels: readonly string[]; departmentCode?: never }
+  | { locationLabels?: never; departmentCode: string };
+
 function normalizeTerritoryLabel(value: string): string {
   return value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("fr-FR");
 }
@@ -90,6 +94,22 @@ function territoryForRanking(
     kind: "department",
     adjacentKeys: new Set(),
   };
+}
+
+export function getPublicActionRecommendationReadScope(
+  action: Pick<ActionRow, "location_label" | "department_code" | "department_name">,
+): PublicActionRecommendationReadScope | null {
+  const zone = resolveCanonicalZone(action);
+  if (zone) {
+    const scopedKeys = new Set([zone.key, ...zone.adjacentKeys]);
+    const locationLabels = ALL_NEIGHBORHOODS
+      .filter((candidate) => scopedKeys.has(`zone:${candidate.department}:${normalizeTerritoryLabel(candidate.name)}`))
+      .map((candidate) => candidate.name);
+    return { locationLabels: [...new Set(locationLabels)] };
+  }
+
+  const departmentCode = action.department_code?.trim().toUpperCase() ?? "";
+  return departmentCode ? { departmentCode } : null;
 }
 
 function recommendationRank(

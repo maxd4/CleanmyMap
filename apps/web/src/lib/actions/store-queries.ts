@@ -51,6 +51,8 @@ type ActionListParams = {
   viewport?: ActionMapViewportQuery;
   ceilingDate?: string;
   includePrivateActions?: boolean;
+  locationLabels?: readonly string[];
+  departmentCode?: string;
 };
 
 const PUBLIC_ACTION_PAGE_SIZE = 1000;
@@ -89,17 +91,17 @@ function buildActionListQuery(
     .select(selectFields)
     .order("action_date", { ascending: false })
     .order("id", { ascending: false });
-  if (params.limit !== null) {
-    nextQuery = nextQuery.limit(params.limit);
-  }
-  if (pageRange) {
-    nextQuery = nextQuery.range(pageRange.from, pageRange.to);
-  }
   if (params.actionId) {
     nextQuery = nextQuery.eq("id", params.actionId);
   }
   if (params.actionIds && params.actionIds.length > 0) {
     nextQuery = nextQuery.in("id", params.actionIds);
+  }
+  if (params.locationLabels && params.locationLabels.length > 0) {
+    nextQuery = nextQuery.in("location_label", params.locationLabels);
+  }
+  if (params.departmentCode) {
+    nextQuery = nextQuery.eq("department_code", params.departmentCode);
   }
 
   if (selectFields.includes("moderation_visibility")) {
@@ -129,6 +131,12 @@ function buildActionListQuery(
       .lte("latitude", params.viewport.north)
       .gte("longitude", params.viewport.west)
       .lte("longitude", params.viewport.east);
+  }
+  if (params.limit !== null) {
+    nextQuery = nextQuery.limit(params.limit);
+  }
+  if (pageRange) {
+    nextQuery = nextQuery.range(pageRange.from, pageRange.to);
   }
 
   return nextQuery;
