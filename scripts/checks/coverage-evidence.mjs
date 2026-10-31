@@ -25,7 +25,7 @@ export const MOBILE_COVERAGE_EVIDENCE_RELATIVE_PATH = path.join("apps", "mobile"
 
 const SCOPE_CONFIGURATION_FILES = Object.freeze({
   web: Object.freeze([
-    "apps/web/vitest.config.ts",
+    "apps/web/vitest.config.mts",
     "apps/web/package.json",
     "package.json",
     "package-lock.json",

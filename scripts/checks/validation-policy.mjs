@@ -15,6 +15,8 @@ export const FULL_SUITE_INCLUDE_GLOBS = Object.freeze([
   "src/**/*.test.tsx",
 ]);
 
+export const WEB_VITEST_CONFIG_PATH = "apps/web/vitest.config.mts";
+
 export const VITEST_GROUPS = Object.freeze({
   security: Object.freeze([
     "src/lib/security/validation.test.ts",
@@ -101,7 +103,7 @@ export function isWebRelevantFile(file) {
     normalized.startsWith("apps/web/scripts/") ||
     normalized === "apps/web/package.json" ||
     normalized === "apps/web/package-lock.json" ||
-    normalized === "apps/web/vitest.config.ts" ||
+    normalized === WEB_VITEST_CONFIG_PATH ||
     /^apps\/web\/(next|postcss|tailwind|tsconfig|eslint|sentry)[^.]*\./.test(normalized)
   );
 }
@@ -193,7 +195,7 @@ export function fullSuiteCoversFiles(files, includeGlobs = FULL_SUITE_INCLUDE_GL
 }
 
 export function assertFullSuiteCoverage({ configText } = {}) {
-  const source = configText ?? readFileSync(path.join(WEB_ROOT, "vitest.config.ts"), "utf8");
+  const source = configText ?? readFileSync(path.join(REPO_ROOT, WEB_VITEST_CONFIG_PATH), "utf8");
   const missingGlobs = FULL_SUITE_INCLUDE_GLOBS.filter((glob) => !source.includes(glob));
   const groupFiles = getVitestFiles({ groups: Object.keys(VITEST_GROUPS) });
   const uncoveredFiles = groupFiles.filter(
@@ -232,7 +234,7 @@ export function createValidationPlan({ scope = "changed", changedFiles = [] } = 
   const dependencyGraphRelevant = normalizedFiles.some(isDependencyGraphRelevantFile);
   const dependencyAuditRelevant = dependencyGraphRelevant || normalizedFiles.some(isDependencyAuditRelevantFile);
   const securityToolingRelevant = normalizedFiles.some(isSecurityToolingRelevantFile);
-  const fullVitest = (full && webRuntimeRelevant) || normalizedFiles.includes("apps/web/vitest.config.ts");
+  const fullVitest = (full && webRuntimeRelevant) || normalizedFiles.includes(WEB_VITEST_CONFIG_PATH);
   const changedWebTestFiles = getChangedWebTestFiles(normalizedFiles);
 
   return {

@@ -75,7 +75,7 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
 ## Validation et captures
 
 - Les tests web utilisent Vitest, avec la configuration dans
-  `apps/web/vitest.config.ts`.
+  `apps/web/vitest.config.mts`.
 - Les captures de pages utilisent Playwright et Sharp via
   `documentation/pages_site/screen/capture-pages.mjs`.
 - Les règles de test, de publication et de sélection documentaire sont

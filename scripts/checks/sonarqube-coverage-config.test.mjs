@@ -23,7 +23,8 @@ test("CI isolates manual FULL runs from cancellable DEVELOPMENT runs", () => {
 });
 
 test("Vitest keeps JSON summaries and emits LCOV for both workspaces", () => {
-  for (const configPath of ["apps/web/vitest.config.ts", "apps/mobile/vitest.config.ts"]) {
+  assert.equal(fs.existsSync(path.join(root, "apps/web/vitest.config.ts")), false);
+  for (const configPath of ["apps/web/vitest.config.mts", "apps/mobile/vitest.config.ts"]) {
     const config = read(configPath);
     assert.match(config, /json-summary/);
     assert.match(config, /lcovonly/);

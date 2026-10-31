@@ -21,7 +21,7 @@ const strykerConfig = {
   ],
   testRunner: "vitest",
   vitest: {
-    configFile: "vitest.config.ts",
+    configFile: "vitest.config.mts",
     dir: ".",
     related: true,
   },

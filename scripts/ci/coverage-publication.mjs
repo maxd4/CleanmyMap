@@ -52,7 +52,7 @@ function isWebFile(file) {
 }
 
 const WEB_COVERAGE_CONTROL_FILES = Object.freeze(new Set([
-  "apps/web/vitest.config.ts",
+  "apps/web/vitest.config.mts",
   "apps/web/package.json",
   "package.json",
   "package-lock.json",

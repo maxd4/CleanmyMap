@@ -23,7 +23,7 @@ function fixture() {
   fs.mkdirSync(path.join(root, "apps", "web"), { recursive: true });
   fs.mkdirSync(path.join(root, "scripts", "checks"), { recursive: true });
   for (const relativePath of [
-    "apps/web/vitest.config.ts",
+    "apps/web/vitest.config.mts",
     "apps/web/package.json",
     "package.json",
     "package-lock.json",
@@ -92,6 +92,31 @@ test("coverage evidence accepts the same candidate/configuration", () => {
     const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
     assert.doesNotThrow(() => validateCoverageEvidence({ repositoryRoot: root, expectedCandidateSha: candidateSha }));
     assert.throws(() => validateCoverageEvidence({ repositoryRoot: root, expectedCandidateSha: "f".repeat(40) }), /candidate mismatch/);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("Web coverage evidence binds the real Vitest MTS config to an exact Git candidate", () => {
+  const root = fixture();
+  try {
+    const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const configurationFingerprint = computeConfigurationFingerprint({ repositoryRoot: root, candidateRef: sha });
+    const evidence = writeCoverageEvidence({ repositoryRoot: root });
+
+    assert.equal(evidence.gitHead, sha);
+    assert.equal(evidence.configurationFingerprint, configurationFingerprint);
+    assert.doesNotThrow(() => validateCoverageEvidence({
+      repositoryRoot: root,
+      expectedCandidateSha: sha,
+      candidateRef: sha,
+    }));
+
+    fs.appendFileSync(path.join(root, "apps", "web", "vitest.config.mts"), "\n// candidate configuration change\n", "utf8");
+    assert.throws(
+      () => validateCoverageEvidence({ repositoryRoot: root }),
+      /configurationFingerprint/,
+    );
   } finally {
     cleanup(root);
   }

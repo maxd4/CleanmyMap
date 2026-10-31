@@ -6,6 +6,7 @@ import {
   assertFullSuiteCoverage,
   createValidationPlan,
   getVitestFiles,
+  WEB_VITEST_CONFIG_PATH,
 } from "./validation-policy.mjs";
 
 test("targeted Vitest validation deduplicates overlapping group files", () => {
@@ -32,6 +33,22 @@ test("full validation covers the affected Web suite without relaunching groups",
   assert.doesNotMatch(runChecks, /npm run test:security/);
   assert.doesNotMatch(runChecks, /npm run test:regression-gates/);
   assertFullSuiteCoverage();
+});
+
+test("the renamed Web Vitest configuration is a full-suite validation trigger", () => {
+  const plan = createValidationPlan({
+    scope: "changed",
+    changedFiles: [WEB_VITEST_CONFIG_PATH],
+  });
+  const stalePlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["apps/web/vitest.config.ts"],
+  });
+
+  assert.equal(WEB_VITEST_CONFIG_PATH, "apps/web/vitest.config.mts");
+  assert.equal(plan.testMode, "full");
+  assert.ok(plan.serialHeavy.includes("vitest"));
+  assert.equal(stalePlan.webRelevant, false);
 });
 
 test("documentation-only changed scope skips the web build", () => {
