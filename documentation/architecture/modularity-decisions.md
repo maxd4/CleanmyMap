@@ -21,6 +21,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/components/sections/rubriques/partners-network-directory.tsx` | ALREADY_MODULARIZED | NONE | préserver le contrat de l'annuaire, les filtres et les résultats | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/chat/chat-shell.tsx` | ALREADY_MODULARIZED | NONE | aucun ; les frontières client restent séparées et les effets existants sont préservés | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/components/chat/ui/chat-message-item.tsx` | ALREADY_MODULARIZED | NONE | préserver les URLs de pièces jointes validées, les callbacks de vote et les libellés produits | nouveau type de message ou cycle de rendu autonome consommé indépendamment |
+| `apps/web/src/components/chat/hooks/use-chat-submit.ts` | COHESIVE_SINGLE_FILE | NONE | préserver le verrou de soumission, les états d'upload/envoi et la séparation des helpers de pièces jointes | nouveau contrat de soumission ou état de transport consommé indépendamment |
 | `apps/web/src/components/sections/rubriques/community/action-needs-panel.tsx` | COHESIVE_SINGLE_FILE | AFTER_ACTIVE_CHANGES | préserver les droits de gestion, le filtre des besoins annulés/privés et les transitions confirmées côté serveur | nouveau contrat de formulaire/persistance consommé indépendamment |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | ALREADY_MODULARIZED | NONE | conserver l'orchestration overview/navigation/panels | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/account/greater-paris-select.tsx` | ALREADY_MODULARIZED | NONE | préserver les façades et owners suggestions/controls/shell | nouveau contrat géographique autonome |
@@ -1141,6 +1142,23 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver les URLs de pièces jointes validées, les callbacks de vote et les libellés produits |
 | NEXT_TRIGGER | nouveau type de message ou cycle de rendu autonome consommé indépendamment |
+
+#### `apps/web/src/components/chat/hooks/use-chat-submit.ts`
+
+| Champ | Valeur |
+| --- | --- |
+| RESPONSIBILITIES | orchestration client de la soumission Chat, verrou anti-double envoi, états d'upload/envoi et construction du message optimiste |
+| PUBLIC_CONTRACTS | `useChatSubmit` et `buildOptimisticChatMessage` |
+| SIDE_EFFECTS | upload/suppression de pièces jointes et envoi du message via les owners HTTP/stockage ; affichage d'erreur délégué aux états du formulaire |
+| MAIN_CONSUMERS | `chat-shell`, composition Chat et tests de soumission/attachement |
+| TEST_BOUNDARY | tests Chat de soumission, verrou, upload, échec réseau, retry et nettoyage de pièce jointe |
+| COUPLING | le hook coordonne plusieurs états de formulaire mais les étapes de cycle de vie de pièce jointe sont externalisées dans `use-chat-submit.helpers` |
+| NATURAL_EXTRACTION_BOUNDARY | un nouveau contrat de transport ou état autonome de composition pourrait devenir un owner séparé ; l'orchestration du verrou et des états reste cohésive |
+| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
+| RATIONALE | le fichier dépasse le seuil REVIEW mais reste l'orchestrateur unique du verrou et de la transition formulaire -> message ; les helpers d'upload, de préconditions et de nettoyage sont déjà séparés par responsabilité. Une extraction supplémentaire déplacerait l'état sans créer de frontière autonome démontrée |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver le verrou de soumission, les états d'upload/envoi et la séparation des helpers de pièces jointes |
+| NEXT_TRIGGER | nouveau contrat de soumission ou état de transport consommé indépendamment |
 
 #### `apps/web/src/components/sections/rubriques/community/action-needs-panel.tsx`
 
