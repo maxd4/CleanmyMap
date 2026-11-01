@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   isVolunteerRouteEligible,
@@ -10,6 +10,7 @@ import {
   observedCandidateContribution,
   safetyForObservedCandidate,
 } from "./route-additionality";
+import * as parisPressureLookup from "@/lib/geo/paris-pressure-lookup";
 
 function candidate(wasteCategories: readonly WasteCategorySlug[] | null = ["plastic"]) {
   const contract = buildActionDataContract({
@@ -144,5 +145,44 @@ describe("route additionality observed safety", () => {
     });
     expect(contribution.volunteerAdditionality).toEqual(expect.any(Number));
     expect(contribution.additionality?.eligible).toBe(true);
+  });
+
+  it("réutilise la pression déjà calculée pour le même snapshot", () => {
+    const observed = candidate();
+    const pressure = parisPressureLookup.findNearestParisPressureZone(observed, pressureSnapshot);
+    const lookupSpy = vi.spyOn(parisPressureLookup, "findNearestParisPressureZone");
+    lookupSpy.mockClear();
+
+    try {
+      const contribution = observedCandidateContribution({
+        candidate: { ...observed, score: 82, parisPressure: pressure },
+        pressureSnapshot,
+        municipalCleaningSnapshot: null,
+        geographicSafety: { status: "safe", suitability: 1, confidence: 1 },
+      });
+
+      expect(lookupSpy).not.toHaveBeenCalled();
+      expect(contribution.additionality?.eligible).toBe(true);
+    } finally {
+      lookupSpy.mockRestore();
+    }
+  });
+
+  it("recherche encore la zone lorsque la pression est explicitement nulle", () => {
+    const observed = candidate();
+    const lookupSpy = vi.spyOn(parisPressureLookup, "findNearestParisPressureZone");
+
+    try {
+      observedCandidateContribution({
+        candidate: { ...observed, score: 82, parisPressure: null },
+        pressureSnapshot,
+        municipalCleaningSnapshot: null,
+        geographicSafety: { status: "safe", suitability: 1, confidence: 1 },
+      });
+
+      expect(lookupSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      lookupSpy.mockRestore();
+    }
   });
 });

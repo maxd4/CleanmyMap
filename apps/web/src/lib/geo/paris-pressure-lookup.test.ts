@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { findNearestParisPressureZone } from "./paris-pressure-lookup";
 import type { ParisPressureSnapshot } from "./paris-pressure-contract";
 import { parisPressureSnapshot as snapshot } from "./__tests__/paris-pressure-fixture";
+import * as geometry from "./paris-pressure-geometry";
 
 describe("Paris pressure lookup", () => {
   it("is spatially bounded and deterministic", () => {
@@ -34,6 +35,28 @@ describe("Paris pressure lookup", () => {
     } satisfies ParisPressureSnapshot;
     expect(findNearestParisPressureZone({ latitude: 48.865, longitude: 2.355 }, completeSnapshot)).toBeNull();
     expect(findNearestParisPressureZone({ latitude: 48.80, longitude: 2.355 }, completeSnapshot)).toBeNull();
+  });
+
+  it("ne recalcule ni validité ni aire lorsque la couverture géométrique est complète", () => {
+    const completeSnapshot = {
+      ...snapshot,
+      coverage: { ...snapshot.coverage, geometryZoneCount: 1, geometryComplete: true, missingGeometryZoneCount: 0, complete: true },
+      zones: [{ ...snapshot.zones[0], geometry: { type: "Polygon" as const, coordinates: [[[2.35, 48.85], [2.36, 48.85], [2.36, 48.86], [2.35, 48.86], [2.35, 48.85]]] } }],
+    } satisfies ParisPressureSnapshot;
+    const validitySpy = vi.spyOn(geometry, "isValidParisPressureGeometry");
+    const areaSpy = vi.spyOn(geometry, "parisPressureGeometryAreaKm2");
+
+    try {
+      expect(findNearestParisPressureZone({ latitude: 48.855, longitude: 2.355 }, completeSnapshot)).toMatchObject({
+        zoneId: "751010101",
+        matchMethod: "point-in-polygon",
+      });
+      expect(validitySpy).not.toHaveBeenCalled();
+      expect(areaSpy).not.toHaveBeenCalled();
+    } finally {
+      validitySpy.mockRestore();
+      areaSpy.mockRestore();
+    }
   });
 
   it("n'effectue aucun appel réseau", () => {

@@ -36,15 +36,18 @@ export function findNearestParisPressureZone(
     snapshot.zones.length === 0
   ) return null;
 
-  const usableGeometry = (zone: ParisPressureZone) =>
-    isValidParisPressureGeometry(zone.geometry) &&
-    parisPressureGeometryAreaKm2(zone.geometry) !== null;
-  const usableGeometryCount = snapshot.zones.filter(usableGeometry).length;
-  const geometryComplete = snapshot.coverage.geometryComplete === true ||
-    (snapshot.coverage.geometryComplete === undefined &&
+  let usableGeometry: (zone: ParisPressureZone) => boolean = () => false;
+  let geometryComplete = snapshot.coverage.geometryComplete === true;
+  if (!geometryComplete) {
+    usableGeometry = (zone: ParisPressureZone) =>
+      isValidParisPressureGeometry(zone.geometry) &&
+      parisPressureGeometryAreaKm2(zone.geometry) !== null;
+    const usableGeometryCount = snapshot.zones.filter(usableGeometry).length;
+    geometryComplete = snapshot.coverage.geometryComplete === undefined &&
       snapshot.coverage.complete &&
       snapshot.coverage.zoneCount === snapshot.zones.length &&
-      usableGeometryCount === snapshot.zones.length);
+      usableGeometryCount === snapshot.zones.length;
+  }
 
   const containing = snapshot.zones
     .filter((zone) => pointInParisPressureGeometry(point, zone.geometry))

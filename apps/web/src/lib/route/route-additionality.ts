@@ -150,15 +150,15 @@ export function observedCandidateContribution(input: {
 }): RoutePlannerContribution {
   const safety = safetyForObservedCandidate(input.candidate, input.geographicSafety);
   const pressureSnapshot = input.pressureSnapshot;
-  const nearest = pressureSnapshot
-    ? findNearestParisPressureZone(input.candidate, pressureSnapshot)
-    : null;
+  const pressure = input.candidate.parisPressure ?? (
+    pressureSnapshot
+      ? findNearestParisPressureZone(input.candidate, pressureSnapshot)
+      : null
+  );
   const zone = pressureSnapshot
-    ? input.candidate.parisPressure?.zoneId
-      ? pressureSnapshot.zones.find((candidate) => candidate.id === input.candidate.parisPressure?.zoneId)
-      : nearest
-        ? pressureSnapshot.zones.find((candidate) => candidate.id === nearest.zoneId)
-        : undefined
+    ? pressure?.zoneId
+      ? pressureSnapshot.zones.find((candidate) => candidate.id === pressure.zoneId)
+      : undefined
     : undefined;
   if (!zone || !pressureSnapshot || safety.status !== "safe") {
     return {

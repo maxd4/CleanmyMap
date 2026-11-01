@@ -14,6 +14,16 @@ describe("Paris pressure route adapter", () => {
     expect(candidates[0]?.score).toBe(100);
   });
 
+  it("preserves a null human-pressure signal without inventing a score or provenance", () => {
+    const nullPressureSnapshot = {
+      ...snapshot,
+      zones: [{ ...snapshot.zones[0], humanPressure: null }],
+    };
+    const candidate = { id: "spot-1", latitude: 48.8566, longitude: 2.3522, score: 50, reason: "base" };
+
+    expect(applyParisPressureToCandidates([candidate], nullPressureSnapshot)).toEqual([candidate]);
+  });
+
   it("preserves observed family and evidence while applying pressure", () => {
     const evidence = {
       family: "observed" as const,
