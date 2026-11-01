@@ -4,18 +4,24 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  extractSqlFunctionDefinitions,
   extractScientificMethodIdentity,
   resolveBaseRef,
   validateScientificFormulaIdentity,
 } from "./check-scientific-formula-version.mjs";
 
-const waste = (volume, version) => `
-export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V1 = 600;
+const waste = (volume, version, volumeV1 = 600, volumeV2Factor = "CIGARETTE_BUTTS_PER_VOLUME_LITER_V2") => `
+export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V1 = ${volumeV1};
 export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V2 = ${volume};
+export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1 = "volume-v1";
 export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2 = "${version}";
 export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION = CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
 export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION = "mass-v2";
 export const CIGARETTE_BUTTS_MASS_FACTORS = { [CIGARETTE_BUTTS_MASS_CONVERSION_VERSION]: { propre: 0.22, humide: 0.5, mouille: 0.5 } };
+const CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER = {
+  [CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1]: CIGARETTE_BUTTS_PER_VOLUME_LITER_V1,
+  [CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2]: ${volumeV2Factor},
+};
 export function calculateCigaretteButtsLot(input) {
   return Math.round(input.value * ${volume});
 }
@@ -42,6 +48,30 @@ test("fails when a volume factor changes without a method identity change", () =
   const result = validateScientificFormulaIdentity({
     baseWasteSource: waste(600, "volume-v1"),
     currentWasteSource: waste(700, "volume-v1"),
+    baseImpactSource: impact,
+    currentImpactSource: impact,
+    projectionSource: { base: projection("projection-v1"), current: projection("projection-v1") },
+    sqlSource: sql("projection-v1"),
+  });
+  assert.match(result.issues.join("\n"), /volume factor changed/);
+});
+
+test("fails when the historical v1 volume factor changes without a new identity", () => {
+  const result = validateScientificFormulaIdentity({
+    baseWasteSource: waste(700, "volume-v1", 600),
+    currentWasteSource: waste(700, "volume-v1", 650),
+    baseImpactSource: impact,
+    currentImpactSource: impact,
+    projectionSource: { base: projection("projection-v1"), current: projection("projection-v1") },
+    sqlSource: sql("projection-v1"),
+  });
+  assert.match(result.issues.join("\n"), /volume factor changed/);
+});
+
+test("fails when the effective v2 table maps to the historical coefficient", () => {
+  const result = validateScientificFormulaIdentity({
+    baseWasteSource: waste(700, "volume-v1"),
+    currentWasteSource: waste(700, "volume-v1", 600, "CIGARETTE_BUTTS_PER_VOLUME_LITER_V1"),
     baseImpactSource: impact,
     currentImpactSource: impact,
     projectionSource: { base: projection("projection-v1"), current: projection("projection-v1") },
@@ -105,6 +135,45 @@ test("rejects a TypeScript/SQL projection identity divergence", () => {
     sqlSource: sql("projection-v0"),
   });
   assert.match(result.issues.join("\n"), /SQL projection identity/);
+});
+
+test("ignores a commented SQL function definition after the effective definition", () => {
+  const definitions = extractSqlFunctionDefinitions(
+    `${sql("projection-v6")}\n-- ${sql("projection-v7")}`,
+  );
+  assert.deepEqual(definitions.map((definition) => definition.body.match(/select\s+'([^']+)'/i)?.[1]), ["projection-v6"]);
+});
+
+test("ignores a fake SQL function definition inside a SQL string", () => {
+  const definitions = extractSqlFunctionDefinitions(
+    `${sql("projection-v6")}\nselect '${"create or replace function public.current_public_impact_projection_version() returns text as $$ select projection-v7 $$;"}';`,
+  );
+  assert.deepEqual(definitions.map((definition) => definition.body.match(/select\s+'([^']+)'/i)?.[1]), ["projection-v6"]);
+});
+
+test("does not scan function text inside a dollar-quoted SQL body", () => {
+  const definitions = extractSqlFunctionDefinitions(
+    `${sql("projection-v6")}\ndo $body$ begin perform 'create or replace function public.fake() returns text as $$ select 'projection-v7' $$;'; end $body$;`,
+  );
+  assert.deepEqual(definitions.map((definition) => definition.name), [
+    "public.current_public_impact_projection_version",
+  ]);
+});
+
+test("reports the last executable SQL definition when TypeScript diverges", () => {
+  const result = validateScientificFormulaIdentity({
+    baseWasteSource: waste(600, "volume-v1"),
+    currentWasteSource: waste(600, "volume-v1"),
+    baseImpactSource: impact,
+    currentImpactSource: impact,
+    projectionSource: { base: projection("projection-v6"), current: projection("projection-v7") },
+    sqlSources: [
+      { name: "001.sql", source: sql("projection-v6") },
+      { name: "002-comment.sql", source: `-- ${sql("projection-v7")}` },
+    ],
+  });
+  assert.equal(result.sqlProjectionVersion, "projection-v6");
+  assert.match(result.issues.join("\n"), /SQL projection identity projection-v6 differs from TypeScript projection-v7/);
 });
 
 test("fails when mass factors change without a new mass identity", () => {

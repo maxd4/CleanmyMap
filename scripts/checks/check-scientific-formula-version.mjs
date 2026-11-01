@@ -13,7 +13,7 @@ export const SCIENTIFIC_FORMULA_PATHS = Object.freeze({
   sqlDirectory: "apps/web/supabase/migrations",
 });
 
-const SQL_FUNCTION_PATTERN = /create\s+(?:or\s+replace\s+)?function\s+(public\.[a-z0-9_]+)\s*\(([^)]*)\)([\s\S]*?)\bas\s+\$([a-z0-9_]*)\$([\s\S]*?)\$\4\$/gi;
+const SQL_FUNCTION_PATTERN = /^create\s+(?:or\s+replace\s+)?function\s+(public\.[a-z0-9_]+)\s*\(([^)]*)\)([\s\S]*?)\bas\s+\$([a-z0-9_]*)\$([\s\S]*?)\$\4\$/i;
 const WASTE_ENGINE_PATH = "apps/web/src/lib/waste/cigarette-butts-engine.ts";
 
 function normalizeExpression(value) {
@@ -54,6 +54,34 @@ function readMassV2Factors(source) {
   );
 }
 
+function readVolumeFactorTable(source) {
+  const assignments = readConstAssignments(source);
+  const table = String(source).match(
+    /CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER\s*(?::[\s\S]*?)?=\s*\{([\s\S]*?)\n\s*\};/,
+  )?.[1] ?? "";
+  const entries = new Map();
+  for (const match of table.matchAll(
+    /\[\s*([A-Z][A-Z0-9_]*)\s*\]\s*:\s*([^,\n]+)\s*,?/g,
+  )) {
+    entries.set(match[1], {
+      version: resolveAssignment(assignments, match[1]) ?? "missing",
+      factor: normalizeExpression(resolveAssignment(assignments, match[2].trim()) ?? match[2]),
+    });
+  }
+
+  const versionConstants = [...assignments.keys()]
+    .filter((name) => /^CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_[A-Z0-9]+$/.test(name))
+    .sort();
+  const recognized = versionConstants.map((name) => ({
+    name,
+    ...(entries.get(name) ?? { version: resolveAssignment(assignments, name) ?? "missing", factor: "missing" }),
+  }));
+  const extra = [...entries.entries()]
+    .filter(([name]) => !versionConstants.includes(name))
+    .map(([name, value]) => ({ name, ...value }));
+  return [...recognized, ...extra];
+}
+
 function readFunctionBody(source, name) {
   return normalizeExpression(
     source.match(new RegExp(`export function ${name}\\([\\s\\S]*?\\n\\}`))?.[0] ?? "missing",
@@ -65,12 +93,89 @@ function normalizeSqlSignature(name, argumentsList) {
 }
 
 export function extractSqlFunctionDefinitions(source, sourceName = "<inline>") {
-  return [...String(source ?? "").matchAll(SQL_FUNCTION_PATTERN)].map((match) => ({
-    signature: normalizeSqlSignature(match[1], match[2]),
-    name: match[1].toLowerCase(),
-    body: match[5],
-    sourceName,
-  }));
+  const text = String(source ?? "");
+  const definitions = [];
+  let index = 0;
+
+  while (index < text.length) {
+    if (text.startsWith("--", index)) {
+      const lineEnd = text.indexOf("\n", index + 2);
+      index = lineEnd < 0 ? text.length : lineEnd + 1;
+      continue;
+    }
+    if (text.startsWith("/*", index)) {
+      index = skipSqlBlockComment(text, index);
+      continue;
+    }
+    if (text[index] === "'" || text[index] === '"') {
+      index = skipSqlQuotedText(text, index, text[index]);
+      continue;
+    }
+    const functionMatch = text.slice(index).match(SQL_FUNCTION_PATTERN);
+    const previousCharacter = text[index - 1] ?? "";
+    if (functionMatch && !/[A-Z0-9_$]/i.test(previousCharacter)) {
+      definitions.push({
+        signature: normalizeSqlSignature(functionMatch[1], functionMatch[2]),
+        name: functionMatch[1].toLowerCase(),
+        body: functionMatch[5],
+        sourceName,
+      });
+      index += functionMatch[0].length;
+      continue;
+    }
+    const dollarDelimiter = readSqlDollarDelimiter(text, index);
+    if (dollarDelimiter) {
+      const bodyStart = index + dollarDelimiter.length;
+      const bodyEnd = text.indexOf(dollarDelimiter, bodyStart);
+      index = bodyEnd < 0 ? text.length : bodyEnd + dollarDelimiter.length;
+      continue;
+    }
+    index += 1;
+  }
+  return definitions;
+}
+
+function skipSqlBlockComment(source, start) {
+  let depth = 1;
+  let index = start + 2;
+  while (index < source.length && depth > 0) {
+    if (source.startsWith("/*", index)) {
+      depth += 1;
+      index += 2;
+    } else if (source.startsWith("*/", index)) {
+      depth -= 1;
+      index += 2;
+    } else {
+      index += 1;
+    }
+  }
+  return index;
+}
+
+function skipSqlQuotedText(source, start, quote) {
+  let index = start + 1;
+  while (index < source.length) {
+    if (source[index] === "\\") {
+      index += 2;
+      continue;
+    }
+    if (source[index] !== quote) {
+      index += 1;
+      continue;
+    }
+    if (source[index + 1] === quote) {
+      index += 2;
+      continue;
+    }
+    return index + 1;
+  }
+  return source.length;
+}
+
+function readSqlDollarDelimiter(source, start) {
+  if (source[start] !== "$") return null;
+  const match = source.slice(start).match(/^\$(?:[a-z_][a-z0-9_]*)?\$/i);
+  return match?.[0] ?? null;
 }
 
 export function resolveEffectiveSqlFunctions(sqlSources) {
@@ -135,6 +240,7 @@ export function extractScientificMethodIdentity({ wasteSource, impactSource, pro
     massV2Factors: readMassV2Factors(impactSource ?? ""),
     lotFormula: readFunctionBody(wasteSource, "calculateCigaretteButtsLot"),
     computeMassFormula: readFunctionBody(impactSource ?? "", "computeButtsCount"),
+    volumeFactors: readVolumeFactorTable(wasteSource),
     projectionVersion,
   });
 }
@@ -164,8 +270,17 @@ export function validateScientificFormulaIdentity({
   const effectiveSqlFunctions = resolveEffectiveSqlFunctions(
     sqlSources ?? (sqlSource === undefined ? [] : [{ name: "<inline>", source: sqlSource }]),
   );
+  const volumeFactorsChanged = base &&
+    JSON.stringify(base.volumeFactors) !== JSON.stringify(current.volumeFactors);
+  const incompleteVolumeFactors = current.volumeFactors.some(
+    (factor) => factor.version === "missing" || factor.factor === "missing",
+  );
 
-  if (base && base.volumeV2 !== current.volumeV2 && base.volumeVersion === current.volumeVersion) {
+  if (incompleteVolumeFactors) {
+    issues.push("effective volume factor table is missing a recognized conversion version or factor");
+  }
+
+  if (base && volumeFactorsChanged && base.volumeVersion === current.volumeVersion) {
     issues.push("volume factor changed without changing the effective volume conversion identity");
   }
   const massMethodChanged = base && (
@@ -173,7 +288,7 @@ export function validateScientificFormulaIdentity({
     base.computeMassFormula !== current.computeMassFormula
   );
   if (base &&
-    (base.volumeV2 !== current.volumeV2 || massMethodChanged) &&
+    (volumeFactorsChanged || massMethodChanged) &&
     base.projectionVersion === current.projectionVersion) {
     issues.push("scientific factor changed without changing the public projection identity");
   }
