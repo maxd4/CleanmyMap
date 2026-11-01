@@ -10,7 +10,9 @@ import {
   type CigaretteButtsLotInput,
   type CigaretteButtsLotResult,
   type CigaretteButtsLotsSummary,
-  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+  MAX_CIGARETTE_BUTTS_COUNT,
+  projectCurrentCigaretteButts,
+  type CigaretteButtsRecalculationStatus,
   isCigaretteButtsVolumeConversionVersion,
   resolveLotRecalculationStatus,
 } from "@/lib/waste/cigarette-butts";
@@ -47,6 +49,8 @@ export type IndividualImpactMeasurement = IndividualImpactFields & {
   equivalentSecKg: number | null;
   comparableButtsCount: number | null;
   comparableButtsProvenance: "counted" | "derived" | null;
+  /** Read-only status of an explicit recalculation attempt. */
+  cigaretteButtsRecalculationStatus: CigaretteButtsRecalculationStatus | null;
 };
 
 export type IndividualImpactMeasurementInput = {
@@ -152,7 +156,7 @@ function buildStoredCigaretteButtsLots(
 ): StoredIndividualCigaretteButtsLots | null {
   if (lots.length === 0) return null;
   const aggregate = aggregateCigaretteButtsLots(lots, {
-    totalCountLimit: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+    totalCountLimit: MAX_CIGARETTE_BUTTS_COUNT,
   });
   return aggregate.lots.length > 0 ? aggregate : null;
 }
@@ -244,14 +248,27 @@ export function toIndividualImpactMeasurement(
   const persistedLotsStatus = persistedLots
     ? resolveLotRecalculationStatus(persistedLots.results)
     : "not_applicable";
-  const recalculatedLots = options.recalculateDerived &&
+  const currentProjection = options.recalculateDerived &&
     persistedLots &&
     persistedLotsStatus === "recalculable" &&
     canRecalculatePersistedLots(persistedLots)
+    ? projectCurrentCigaretteButts({
+        cigaretteButtsCount: persistedLots.summary.totalCount,
+        cigaretteButtsCountProvenance: persistedLots.summary.estimatedCount === 0
+          ? "counted"
+          : "estimated",
+        cigaretteButtsLots: persistedLots.lots,
+        cigaretteButtsLotResults: persistedLots.results,
+      }, persistedLots.summary.totalCount)
+    : null;
+  const recalculatedLots = currentProjection &&
+    currentProjection.status !== "not_recalculable" &&
+    persistedLots
     ? aggregateCigaretteButtsLots(persistedLots.lots, {
-        totalCountLimit: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+        totalCountLimit: MAX_CIGARETTE_BUTTS_COUNT,
       })
     : null;
+  const cigaretteButtsRecalculationStatus = currentProjection?.status ?? persistedLotsStatus;
   const canonicalStored = recalculatedLots
     ? {
         ...stored,
@@ -303,6 +320,7 @@ export function toIndividualImpactMeasurement(
           : comparableButtsCount !== null
             ? "derived"
             : null,
+    cigaretteButtsRecalculationStatus,
   };
 }
 
@@ -472,6 +490,7 @@ function isCigaretteButtsProjectionNotRecalculable(
   measurement: IndividualImpactMeasurement | null,
 ): boolean {
   if (!measurement) return false;
+  if (measurement.cigaretteButtsRecalculationStatus === "not_recalculable") return true;
   if (measurement.cigaretteButtsLots) {
     return resolveLotRecalculationStatus(measurement.cigaretteButtsLots.results) === "not_recalculable";
   }

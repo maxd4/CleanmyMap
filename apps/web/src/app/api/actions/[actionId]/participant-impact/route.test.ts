@@ -8,7 +8,7 @@ import {
 } from "@/__tests__/support/group-join-action-id-route";
 import {
   aggregateCigaretteButtsLots,
-  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+  MAX_CIGARETTE_BUTTS_COUNT,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
 } from "@/lib/waste/cigarette-butts";
@@ -378,7 +378,7 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     });
   });
 
-  it("accepts the PostgreSQL individual-lot limit exactly and leaves the action total untouched", async () => {
+  it("accepts the public individual-lot limit exactly and leaves the action total untouched", async () => {
     const action = createGroupJoinAction({ status: "approved", actionPhase: "post_action_complete" });
     const participant = createParticipantWithStatus("confirmed");
     configureParticipantImpactSupabase([participant]);
@@ -388,23 +388,22 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
       participantId: "participant-1",
       butts: {
         lots: [
-          { id: "mass-a", source: "mass_kg", value: 100_000, condition: "propre" },
-          { id: "mass-b", source: "mass_kg", value: 10_000, condition: "propre" },
+          { id: "count-a", source: "count", value: MAX_CIGARETTE_BUTTS_COUNT, condition: "propre" },
         ],
       },
     });
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.individualImpact.cigaretteButtsCount).toBe(MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT);
+    expect(body.individualImpact.cigaretteButtsCount).toBe(MAX_CIGARETTE_BUTTS_COUNT);
     expect(participant).toMatchObject({
-      individual_cigarette_butts_count: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+      individual_cigarette_butts_count: MAX_CIGARETTE_BUTTS_COUNT,
       individual_cigarette_butts_lots: expect.any(Object),
     });
     expect((action as Record<string, unknown>).cigarette_butts).toBe(beforeActionTotal);
   });
 
-  it("rejects an individual-lot total just above PostgreSQL without writing or auditing", async () => {
+  it("rejects an individual-lot total above the public limit without writing or auditing", async () => {
     const participant = createParticipantWithStatus("confirmed");
     configureParticipantImpactSupabase([participant]);
 
@@ -412,8 +411,7 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
       participantId: "participant-1",
       butts: {
         lots: [
-          { id: "mass-a", source: "mass_kg", value: 100_000, condition: "propre" },
-          { id: "mass-b", source: "mass_kg", value: 10_000.0001, condition: "propre" },
+          { id: "count-a", source: "count", value: MAX_CIGARETTE_BUTTS_COUNT + 1, condition: "propre" },
         ],
       },
     });

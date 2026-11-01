@@ -12,7 +12,6 @@ import {
   CIGARETTE_BUTTS_LOT_SOURCES,
   getCigaretteButtsLotsTotalLimitMessage,
   MAX_CIGARETTE_BUTTS_COUNT,
-  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   MAX_CIGARETTE_BUTTS_LOTS,
 } from "@/lib/waste/cigarette-butts";
 
@@ -113,10 +112,8 @@ export function createCigaretteButtsLotsSchema(
 }
 
 export const cigaretteButtsLotsSchema = createCigaretteButtsLotsSchema();
-/** Individual attributions follow action_participants' wider PostgreSQL bound. */
-export const individualCigaretteButtsLotsSchema = createCigaretteButtsLotsSchema(
-  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
-);
+/** Individual lot writes use the same scientific/public bound as action lots. */
+export const individualCigaretteButtsLotsSchema = createCigaretteButtsLotsSchema();
 
 const cigaretteButtsMeasurementsSchema = z
   .object({

@@ -33,6 +33,7 @@ function measurement(
     equivalentSecKg: 2,
     comparableButtsCount: 12,
     comparableButtsProvenance: "counted",
+    cigaretteButtsRecalculationStatus: "not_applicable",
     ...overrides,
   };
 }
