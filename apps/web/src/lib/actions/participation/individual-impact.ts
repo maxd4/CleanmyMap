@@ -14,7 +14,7 @@ import {
   projectCurrentCigaretteButts,
   type CigaretteButtsRecalculationStatus,
   isCigaretteButtsVolumeConversionVersion,
-  resolveLotRecalculationStatus,
+  resolveCigaretteButtsLotSnapshotStatus,
 } from "@/lib/waste/cigarette-butts";
 
 export const WASTE_MOISTURE_NORMALIZATION_VERSION =
@@ -246,12 +246,11 @@ export function toIndividualImpactMeasurement(
     ? row.individual_cigarette_butts_lots
     : null;
   const persistedLotsStatus = persistedLots
-    ? resolveLotRecalculationStatus(persistedLots.results)
+    ? resolveCigaretteButtsLotSnapshotStatus(persistedLots.lots, persistedLots.results)
     : "not_applicable";
   const currentProjection = options.recalculateDerived &&
     persistedLots &&
-    persistedLotsStatus === "recalculable" &&
-    canRecalculatePersistedLots(persistedLots)
+    persistedLotsStatus === "recalculable"
     ? projectCurrentCigaretteButts({
         cigaretteButtsCount: persistedLots.summary.totalCount,
         cigaretteButtsCountProvenance: persistedLots.summary.estimatedCount === 0
@@ -331,24 +330,6 @@ function normalizeIndividualButtsProvenance(
   return value === "counted" || value === "measured" || value === "derived" || value === "unknown"
     ? value
     : null;
-}
-
-function canRecalculatePersistedLots(
-  persistedLots: StoredIndividualCigaretteButtsLots,
-): boolean {
-  return persistedLots.results.length === persistedLots.lots.length && persistedLots.lots.every((lot) => {
-    const result = persistedLots.results.find((candidate) => candidate.id === lot.id);
-    if (!result || result.source !== lot.source || result.value !== lot.value || result.condition !== lot.condition) {
-      return false;
-    }
-    if (result.source === "volume_l") {
-      return result.rawVolumeLiters !== null &&
-        isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion) &&
-        isCigaretteButtsVolumeConversionVersion(result.volumeConversionFormulaVersion);
-    }
-    if (result.source === "mass_kg" && result.rawMassKg === null) return false;
-    return isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion);
-  });
 }
 
 function recalculateLegacyDerivedButts(
@@ -492,7 +473,10 @@ function isCigaretteButtsProjectionNotRecalculable(
   if (!measurement) return false;
   if (measurement.cigaretteButtsRecalculationStatus === "not_recalculable") return true;
   if (measurement.cigaretteButtsLots) {
-    return resolveLotRecalculationStatus(measurement.cigaretteButtsLots.results) === "not_recalculable";
+    return resolveCigaretteButtsLotSnapshotStatus(
+      measurement.cigaretteButtsLots.lots,
+      measurement.cigaretteButtsLots.results,
+    ) === "not_recalculable";
   }
   if (measurement.cigaretteButtsProvenance !== "derived") return false;
   const version = measurement.cigaretteButtsConversionVersion;

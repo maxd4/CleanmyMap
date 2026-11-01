@@ -27,6 +27,7 @@ import {
   MAX_CIGARETTE_BUTTS_LOTS,
   MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   projectCurrentCigaretteButts,
+  resolveCigaretteButtsLotSnapshotStatus,
   resolveLotRecalculationStatus,
   type ActionCigaretteButtsMeasurements,
   type CigaretteButtsInputSource,
@@ -59,6 +60,7 @@ export {
   MAX_CIGARETTE_BUTTS_LOTS,
   MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   projectCurrentCigaretteButts,
+  resolveCigaretteButtsLotSnapshotStatus,
   resolveLotRecalculationStatus,
 };
 

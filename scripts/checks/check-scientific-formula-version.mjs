@@ -14,6 +14,7 @@ export const SCIENTIFIC_FORMULA_PATHS = Object.freeze({
 });
 
 const SQL_FUNCTION_PATTERN = /create\s+(?:or\s+replace\s+)?function\s+(public\.[a-z0-9_]+)\s*\(([^)]*)\)([\s\S]*?)\bas\s+\$([a-z0-9_]*)\$([\s\S]*?)\$\4\$/gi;
+const WASTE_ENGINE_PATH = "apps/web/src/lib/waste/cigarette-butts-engine.ts";
 
 function normalizeExpression(value) {
   return String(value)
@@ -299,14 +300,18 @@ function readSqlSources(repositoryRoot) {
 
 function readCurrentWasteSource(repositoryRoot) {
   const primaryPath = path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.waste);
-  const enginePath = path.join(
-    repositoryRoot,
-    "apps/web/src/lib/waste/cigarette-butts-engine.ts",
-  );
+  const enginePath = path.join(repositoryRoot, WASTE_ENGINE_PATH);
   const primarySource = readFileSync(primaryPath, "utf8");
   return existsSync(enginePath)
     ? `${primarySource}\n${readFileSync(enginePath, "utf8")}`
     : primarySource;
+}
+
+function readWasteSourceAtRef(repositoryRoot, ref) {
+  const primarySource = gitShow(repositoryRoot, ref, SCIENTIFIC_FORMULA_PATHS.waste);
+  if (primarySource === null) return null;
+  const engineSource = gitShow(repositoryRoot, ref, WASTE_ENGINE_PATH);
+  return engineSource === null ? primarySource : `${primarySource}\n${engineSource}`;
 }
 
 function main() {
@@ -334,7 +339,10 @@ function main() {
   }
   const baseFiles = Object.entries(SCIENTIFIC_FORMULA_PATHS)
     .filter(([key]) => key !== "sqlDirectory")
-    .map(([key, file]) => [key, gitShow(repositoryRoot, baseRef, file)]);
+    .map(([key, file]) => [
+      key,
+      key === "waste" ? readWasteSourceAtRef(repositoryRoot, baseRef) : gitShow(repositoryRoot, baseRef, file),
+    ]);
   const missingBaseFiles = baseFiles.filter(([, source]) => source === null).map(([key]) => key);
   if (missingBaseFiles.length > 0) {
     throw new Error(
