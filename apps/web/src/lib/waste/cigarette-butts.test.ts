@@ -621,4 +621,133 @@ describe("historical cigarette-butt lot snapshots", () => {
     });
     expect(currentProjection.results?.[0]?.count).toBe(600);
   });
+
+  it("rehydrates an unknown historical mass without adopting the current formula", () => {
+    const lot = {
+      id: "legacy-count",
+      source: "count" as const,
+      value: 1_000,
+      condition: "propre" as const,
+    };
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [lot],
+      cigaretteButtsLotResults: [{
+        ...lot,
+        count: 1_000,
+        massKg: null,
+        rawMassKg: null,
+        rawVolumeLiters: null,
+        countProvenance: "counted",
+        massProvenance: "unknown",
+        massConversionFormulaVersion: "historical-unknown",
+        volumeConversionFormulaVersion: null,
+      }],
+      cigaretteButtsLotsSummary: {
+        totalCount: 1_000,
+        countedCount: 1_000,
+        estimatedCount: 0,
+        totalMassKg: null,
+        measuredMassKg: 0,
+        estimatedMassKg: null,
+        totalVolumeLiters: 0,
+        countedShare: 1,
+        estimatedShare: 0,
+      },
+    });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: 1_000,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsRecalculationStatus: "not_applicable",
+    });
+    expect(measurement.cigaretteButtsLotResults?.[0]?.massKg).toBeNull();
+    expect(measurement.cigaretteButtsLotResults?.[0]?.massConversionFormulaVersion)
+      .toBe("historical-unknown");
+  });
+
+  it("accepts a coherent volume snapshot whose derived mass is unknown", () => {
+    const lot = {
+      id: "legacy-volume-unknown-mass",
+      source: "volume_l" as const,
+      value: 1,
+      condition: "propre" as const,
+    };
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [lot],
+      cigaretteButtsLotResults: [{
+        ...lot,
+        count: 600,
+        massKg: null,
+        rawMassKg: null,
+        rawVolumeLiters: 1,
+        countProvenance: "volume_converted",
+        massProvenance: "unknown",
+        massConversionFormulaVersion: "historical-unknown",
+        volumeConversionFormulaVersion: "historical-unknown",
+      }],
+      cigaretteButtsLotsSummary: {
+        totalCount: 600,
+        countedCount: 0,
+        estimatedCount: 600,
+        totalMassKg: null,
+        measuredMassKg: 0,
+        estimatedMassKg: null,
+        totalVolumeLiters: 1,
+        countedShare: 0,
+        estimatedShare: 1,
+      },
+    });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: 600,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsMassProvenance: "unknown",
+      cigaretteButtsRecalculationStatus: "not_recalculable",
+    });
+    expect(measurement.cigaretteButtsLotResults?.[0]?.count).toBe(600);
+    expect(measurement.cigaretteButtsLotResults?.[0]?.massKg).toBeNull();
+  });
+
+  it("does not replace an incoherent persisted snapshot with a current calculation", () => {
+    const lot = {
+      id: "legacy-volume",
+      source: "volume_l" as const,
+      value: 1,
+      condition: "propre" as const,
+    };
+    const measurement = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: [lot],
+      cigaretteButtsLotResults: [{
+        ...lot,
+        value: 2,
+        count: 1_200,
+        massKg: null,
+        rawMassKg: null,
+        rawVolumeLiters: 2,
+        countProvenance: "volume_converted",
+        massProvenance: "unknown",
+        massConversionFormulaVersion: "historical-unknown",
+        volumeConversionFormulaVersion: "historical-unknown",
+      }],
+      cigaretteButtsLotsSummary: {
+        totalCount: 600,
+        countedCount: 0,
+        estimatedCount: 600,
+        totalMassKg: null,
+        measuredMassKg: 0,
+        estimatedMassKg: null,
+        totalVolumeLiters: 1,
+        countedShare: 0,
+        estimatedShare: 1,
+      },
+    });
+
+    expect(measurement.cigaretteButtsCount).toBe(600);
+    expect(measurement.cigaretteButtsMassKg).toBeNull();
+    expect(measurement.cigaretteButtsLotResults?.[0]?.count).toBe(1_200);
+    expect(measurement.cigaretteButtsLotResults?.[0]?.volumeConversionFormulaVersion)
+      .toBe("historical-unknown");
+    expect(measurement.cigaretteButtsRecalculationStatus).toBe("not_recalculable");
+  });
 });

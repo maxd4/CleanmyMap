@@ -90,6 +90,7 @@ export const CIGARETTE_BUTTS_PROVENANCES = [
   "weight_converted",
   "volume_converted",
   "estimated",
+  "mixed",
   "unknown",
 ] as const;
 
@@ -131,7 +132,8 @@ export type CigaretteButtsConversionOptions = {
 
 export type CigaretteButtsLotResult = CigaretteButtsLotInput & {
   count: number;
-  massKg: number;
+  /** Null when the historical mass conversion cannot be demonstrated. */
+  massKg: number | null;
   rawMassKg: number | null;
   rawVolumeLiters: number | null;
   countProvenance: CigaretteButtsProvenance;
@@ -144,9 +146,9 @@ export type CigaretteButtsLotsSummary = {
   totalCount: number;
   countedCount: number;
   estimatedCount: number;
-  totalMassKg: number;
+  totalMassKg: number | null;
   measuredMassKg: number;
-  estimatedMassKg: number;
+  estimatedMassKg: number | null;
   totalVolumeLiters: number;
   countedShare: number | null;
   estimatedShare: number | null;
@@ -299,13 +301,20 @@ export function aggregateCigaretteButtsLots(
     (total, result) => total + (result.rawMassKg ?? 0),
     0,
   );
-  const totalMassKg = results.reduce((total, result) => total + result.massKg, 0);
+  const hasUnknownMass = results.some((result) => result.massKg === null);
+  const totalKnownMassKg = results.reduce(
+    (total, result) => total + (result.massKg ?? 0),
+    0,
+  );
+  const totalMassKg = hasUnknownMass ? null : totalKnownMassKg;
   const totalVolumeLiters = results.reduce(
     (total, result) => total + (result.rawVolumeLiters ?? 0),
     0,
   );
   const estimatedCount = totalCount - countedCount;
-  const estimatedMassKg = totalMassKg - measuredMassKg;
+  const estimatedMassKg = totalMassKg === null
+    ? null
+    : totalMassKg - measuredMassKg;
   if (getCigaretteButtsLotsTotalLimitMessage(totalCount, options.totalCountLimit)) {
     throw new CigaretteButtsLotsTotalLimitError(totalCount, options.totalCountLimit);
   }
@@ -443,22 +452,68 @@ export function resolveLotRecalculationStatus(
   return recalculable ? "recalculable" : "not_recalculable";
 }
 
+export function resolveCigaretteButtsLotsMassProvenance(
+  results: Pick<
+    CigaretteButtsLotResult,
+    "source" | "massKg" | "massProvenance" | "massConversionFormulaVersion"
+  >[],
+): "measured" | "estimated" | "mixed" | "unknown" {
+  if (results.length === 0) return "unknown";
+  const provenances = new Set(
+    results.map((result) => {
+      if (result.massKg === null || result.massProvenance === "unknown") {
+        return "unknown";
+      }
+      if (result.massProvenance === "measured") {
+        return result.source === "mass_kg" ? "measured" : "unknown";
+      }
+      return result.source !== "mass_kg" &&
+        isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion)
+        ? "estimated"
+        : "unknown";
+    }),
+  );
+  if (provenances.has("unknown")) return "unknown";
+  if (provenances.size > 1) return "mixed";
+  return [...provenances][0] as "measured" | "estimated";
+}
+
+export function isCigaretteButtsLotResultStructurallyValid(
+  lot: CigaretteButtsLotInput,
+  result: CigaretteButtsLotResult | undefined,
+): result is CigaretteButtsLotResult {
+  if (!result || result.id.trim() !== lot.id.trim() || result.source !== lot.source ||
+    result.value !== lot.value || result.condition !== lot.condition) {
+    return false;
+  }
+  if (!Number.isFinite(result.count) || result.count < 0) return false;
+  if (result.massKg !== null && (!Number.isFinite(result.massKg) || result.massKg < 0)) {
+    return false;
+  }
+  if (result.massKg === null && result.massProvenance !== "unknown") return false;
+  if (lot.source === "count") {
+    return result.rawMassKg === null && result.rawVolumeLiters === null;
+  }
+  if (lot.source === "mass_kg") {
+    return result.rawMassKg === lot.value &&
+      result.rawVolumeLiters === null && result.massKg !== null;
+  }
+  return result.rawMassKg === null && result.rawVolumeLiters === lot.value;
+}
+
 function isCompleteCigaretteButtsLotResult(
   lot: CigaretteButtsLotInput,
   result: CigaretteButtsLotResult | undefined,
 ): boolean {
-  if (!result || result.id !== lot.id || result.source !== lot.source || result.value !== lot.value || result.condition !== lot.condition) {
-    return false;
-  }
-  if (!Number.isFinite(result.count) || result.count < 0 || !Number.isFinite(result.massKg) || result.massKg < 0) {
-    return false;
-  }
+  if (!isCigaretteButtsLotResultStructurallyValid(lot, result)) return false;
   if (lot.source === "count") return true;
   if (lot.source === "mass_kg") {
     return result.rawMassKg === lot.value &&
+      result.massKg !== null &&
       isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion);
   }
-  return result.rawVolumeLiters === lot.value &&
+  return result.massKg !== null &&
+    result.rawVolumeLiters === lot.value &&
     isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion) &&
     isCigaretteButtsVolumeConversionVersion(result.volumeConversionFormulaVersion);
 }

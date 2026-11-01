@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildActionsCsv,
+  buildActionsCsvRows,
   buildActionsCsvFilename,
   buildDateFloor,
   escapeCsvCell,
@@ -10,6 +11,8 @@ import {
   parseStatusParam,
   resolveReportQuery,
 } from "./csv";
+import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
+import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 describe("report csv helpers", () => {
   it("parses status safely", () => {
@@ -102,6 +105,44 @@ describe("report csv helpers", () => {
     expect(csv).toContain("geometry_provenance");
     expect(csv).toContain("declared");
     expect(csv).toContain('"{""type"":""Polygon""}"');
+  });
+
+  it("exports unknown historical butt mass without relabeling it", () => {
+    const contract = buildActionDataContract({
+      id: "unknown-mass-action",
+      type: "action",
+      status: "approved",
+      source: "test",
+      observedAt: "2026-04-01",
+      locationLabel: "Lieu historique",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      cigaretteButts: 1_000,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsMassKg: null,
+        cigaretteButtsMassProvenance: "unknown",
+        cigaretteButtsLotResults: [{
+          id: "unknown",
+          source: "count",
+          value: 1_000,
+          condition: "propre",
+          count: 1_000,
+          massKg: null,
+          rawMassKg: null,
+          rawVolumeLiters: null,
+          countProvenance: "counted",
+          massProvenance: "unknown",
+          massConversionFormulaVersion: "historical-unknown",
+          volumeConversionFormulaVersion: null,
+        }],
+      } as ActionCigaretteButtsMeasurements,
+    });
+
+    const row = buildActionsCsvRows([contract], () => null)[0];
+    expect(row).toMatchObject({
+      cigarette_butts_mass_kg: null,
+      cigarette_butts_mass_provenance: "unknown",
+    });
   });
 
   it("neutralizes formula-like csv cells", () => {

@@ -27,6 +27,8 @@ import {
   MAX_CIGARETTE_BUTTS_LOTS,
   MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   projectCurrentCigaretteButts,
+  isCigaretteButtsLotResultStructurallyValid,
+  resolveCigaretteButtsLotsMassProvenance,
   resolveCigaretteButtsLotSnapshotStatus,
   resolveLotRecalculationStatus,
   type ActionCigaretteButtsMeasurements,
@@ -60,6 +62,8 @@ export {
   MAX_CIGARETTE_BUTTS_LOTS,
   MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   projectCurrentCigaretteButts,
+  isCigaretteButtsLotResultStructurallyValid,
+  resolveCigaretteButtsLotsMassProvenance,
   resolveCigaretteButtsLotSnapshotStatus,
   resolveLotRecalculationStatus,
 };
@@ -116,7 +120,7 @@ export function normalizeCigaretteButtsMeasurements(
   input: CigaretteButtsMeasurementInput,
 ): ActionCigaretteButtsMeasurements {
   if (input.cigaretteButtsLots !== undefined && input.cigaretteButtsLots !== null) {
-    return normalizeMeasurementsFromLots(input.cigaretteButtsLots, input);
+    return normalizeMeasurementsFromLots(input.cigaretteButtsLots, input, input);
   }
 
   let count = normalizeCount(input.cigaretteButtsCount);
@@ -178,8 +182,13 @@ function normalizeMeasurementsFromLots(
     ActionCigaretteButtsMeasurements,
     "cigaretteButtsLotResults" | "cigaretteButtsLotsSummary"
   >,
+  fallbackInput?: CigaretteButtsMeasurementInput,
 ): ActionCigaretteButtsMeasurements {
-  const aggregated = isPersistedLotSnapshotForInputs(lots, persisted)
+  const persistedSnapshot = isPersistedLotSnapshotForInputs(lots, persisted);
+  if (!persistedSnapshot && hasPersistedLotSnapshot(persisted)) {
+    return preserveUnrecalculableLotSnapshot(lots, persisted, fallbackInput ?? {});
+  }
+  const aggregated = persistedSnapshot
     ? {
         lots: lots.map((lot) => ({ ...lot, id: lot.id.trim() })),
         results: persisted.cigaretteButtsLotResults!,
@@ -197,13 +206,12 @@ function normalizeMeasurementsFromLots(
           ? "volume_converted"
           : "weight_converted"
         : "estimated";
-  const hasMeasuredMassSource = aggregated.results.some((result) => result.source === "mass_kg");
-  const hasUnknownMassSource = aggregated.results.some((result) => result.massProvenance === "unknown" ||
-    (result.source !== "mass_kg" && !isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion)));
-  const hasEstimatedMassSource = aggregated.results.some((result) => result.source !== "mass_kg" &&
-    isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion));
-  const massProvenance = !hasLots || hasUnknownMassSource ? "unknown" : hasMeasuredMassSource && hasEstimatedMassSource
-    ? "estimated" : hasMeasuredMassSource ? "measured" : "weight_converted";
+  const lotMassProvenance = !hasLots
+    ? "unknown"
+    : resolveCigaretteButtsLotsMassProvenance(aggregated.results);
+  const massProvenance = lotMassProvenance === "estimated"
+    ? "weight_converted"
+    : lotMassProvenance;
   const formulaVersions = new Set(
     aggregated.results.flatMap((result) => [
       result.massConversionFormulaVersion,
@@ -281,13 +289,79 @@ function isPersistedLotSnapshotForInputs(
   const summary = persisted?.cigaretteButtsLotsSummary;
   if (!results || !summary || results.length !== lots.length) return false;
   if (!Number.isFinite(summary.totalCount) || summary.totalCount < 0) return false;
+  if (summary.totalMassKg !== null &&
+    (!Number.isFinite(summary.totalMassKg) || summary.totalMassKg < 0)) return false;
+  if (!Number.isFinite(summary.measuredMassKg) || summary.measuredMassKg < 0) return false;
+  if (summary.estimatedMassKg !== null &&
+    (!Number.isFinite(summary.estimatedMassKg) || summary.estimatedMassKg < 0)) return false;
   return lots.every((lot, index) => {
     const result = results[index];
     if (!result) return false;
-    return result.id.trim() === lot.id.trim() && result.source === lot.source && result.value === lot.value &&
-      result.condition === lot.condition && Number.isFinite(result.count) && result.count >= 0 &&
-      Number.isFinite(result.massKg) && result.massKg >= 0;
+    return isCigaretteButtsLotResultStructurallyValid(lot, result);
   });
+}
+
+function hasPersistedLotSnapshot(
+  persisted: Pick<
+    ActionCigaretteButtsMeasurements,
+    "cigaretteButtsLotResults" | "cigaretteButtsLotsSummary"
+  > | undefined,
+): boolean {
+  return persisted?.cigaretteButtsLotResults !== undefined ||
+    persisted?.cigaretteButtsLotsSummary !== undefined;
+}
+
+function preserveUnrecalculableLotSnapshot(
+  lots: CigaretteButtsLotInput[],
+  persisted: Pick<
+    ActionCigaretteButtsMeasurements,
+    "cigaretteButtsLotResults" | "cigaretteButtsLotsSummary"
+  > | undefined,
+  fallbackInput: CigaretteButtsMeasurementInput,
+): ActionCigaretteButtsMeasurements {
+  const normalizedLots = lots.map((lot) => ({ ...lot, id: lot.id.trim() }));
+  const results = persisted?.cigaretteButtsLotResults ?? [];
+  const summary = persisted?.cigaretteButtsLotsSummary;
+  const count = summary?.totalCount ?? normalizeCount(fallbackInput.cigaretteButtsCount);
+  const massKg = summary
+    ? summary.totalMassKg
+    : normalizeNullableNonNegative(fallbackInput.cigaretteButtsMassKg);
+  const hasDerivedLot = normalizedLots.some((lot) => lot.source !== "count");
+  const hasVolumeLot = normalizedLots.some((lot) => lot.source === "volume_l");
+  const formulaVersions = new Set(
+    results.flatMap((result) => [
+      result.massConversionFormulaVersion,
+      result.volumeConversionFormulaVersion,
+    ]).filter((version): version is string => Boolean(version)),
+  );
+  return {
+    cigaretteButtsCount: count,
+    cigaretteButtsMassKg: massKg,
+    cigaretteButtsVolumeLiters: hasVolumeLot
+      ? summary?.totalVolumeLiters ?? normalizeNullableNonNegative(fallbackInput.cigaretteButtsVolumeLiters)
+      : null,
+    cigaretteButtsCondition: results[0]?.condition ?? normalizedLots[0]?.condition ??
+      resolveCondition(fallbackInput.cigaretteButtsCondition),
+    cigaretteButtsCountProvenance: normalizedLots.length > 0 &&
+      normalizedLots.every((lot) => lot.source === "count")
+      ? "counted"
+      : "unknown",
+    cigaretteButtsMassProvenance: results.length === 0 && massKg !== null
+      ? resolveProvenance(fallbackInput.cigaretteButtsMassProvenance, "unknown")
+      : "unknown",
+    cigaretteButtsVolumeProvenance: hasVolumeLot
+      ? resolveProvenance(fallbackInput.cigaretteButtsVolumeProvenance, "measured")
+      : "unknown",
+    cigaretteButtsConversionFormulaVersion: formulaVersions.size === 1
+      ? [...formulaVersions][0]!
+      : fallbackInput.cigaretteButtsConversionFormulaVersion ?? null,
+    cigaretteButtsRecalculationStatus: hasDerivedLot
+      ? "not_recalculable"
+      : "not_applicable",
+    cigaretteButtsLots: normalizedLots,
+    cigaretteButtsLotResults: results,
+    cigaretteButtsLotsSummary: summary,
+  };
 }
 
 /**

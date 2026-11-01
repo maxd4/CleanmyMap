@@ -3,12 +3,14 @@ import type {
   ActionCigaretteButtsMeasurements,
   CigaretteButtsRecalculationStatus,
 } from "@/lib/waste/cigarette-butts";
+import { resolveCigaretteButtsLotsMassProvenance } from "@/lib/waste/cigarette-butts";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   CIGARETTE_BUTTS_MASS_FACTORS_G_PER_BUTT,
   computeImpactTerrain2026StreetCleaningSavings,
+  isCigaretteButtsMassConversionVersion,
   STREET_CLEANING_EUROS_PER_WASTE_KG,
   type ImpactTerrain2026StreetCleaningSavings,
   VOLUNTEER_ACTION_EUROS_PER_HOUR,
@@ -134,25 +136,25 @@ function resolveButtsMassProvenance(
   measurements: ActionCigaretteButtsMeasurements | null | undefined,
   massKg: number | null,
 ): ActionImpactKpis["buttsMassProvenance"] {
+  if (!measurements) return null;
   const lotResults = measurements?.cigaretteButtsLotResults;
   if (lotResults) {
-    const hasMeasuredSource = lotResults.some((result) => result.source === "mass_kg");
-    const hasDerivedSource = lotResults.some((result) => result.source !== "mass_kg");
-    if (hasMeasuredSource && hasDerivedSource) return "mixed";
-    if (hasMeasuredSource) return "measured";
-    if (hasDerivedSource) return "estimated";
-    return "unknown";
+    return resolveCigaretteButtsLotsMassProvenance(lotResults);
   }
 
   const declaredProvenance = measurements?.cigaretteButtsMassProvenance;
+  if (massKg === null) return "unknown";
   if (declaredProvenance === "measured") return "measured";
   if (
     declaredProvenance === "estimated" ||
     declaredProvenance === "weight_converted" ||
     declaredProvenance === "volume_converted"
-  ) return "estimated";
-  if (declaredProvenance === "unknown") return "unknown";
-  return massKg === null ? null : "measured";
+  ) {
+    return isCigaretteButtsMassConversionVersion(
+      measurements.cigaretteButtsConversionFormulaVersion,
+    ) ? "estimated" : "unknown";
+  }
+  return "unknown";
 }
 
 export function computeActionImpactKpis(
@@ -234,15 +236,16 @@ function accumulateActionImpactTotals(
 ): { wasteKnown: boolean; buttsKnown: boolean; volunteersKnown: boolean } {
   totals.wasteKg += impact.wasteKg;
   totals.butts += impact.butts;
-  if (impact.buttsMassKg !== null) {
+  if (impact.buttsMassProvenance === "unknown" || totals.buttsMassProvenance === "unknown") {
+    totals.buttsMassKg = null;
+  } else if (impact.buttsMassKg !== null) {
     totals.buttsMassKg = (totals.buttsMassKg ?? 0) + impact.buttsMassKg;
   }
   if (impact.buttsMassProvenance !== null) {
-    totals.buttsMassProvenance = totals.buttsMassProvenance === null
-      ? impact.buttsMassProvenance
-      : totals.buttsMassProvenance === impact.buttsMassProvenance
-        ? totals.buttsMassProvenance
-        : "mixed";
+    totals.buttsMassProvenance = mergeButtsMassProvenance(
+      totals.buttsMassProvenance,
+      impact.buttsMassProvenance,
+    );
   }
   if (impact.buttsRecalculationStatus !== null) {
     const current = totals.buttsRecalculationStatus;
@@ -269,6 +272,15 @@ function accumulateActionImpactTotals(
     buttsKnown: impact.buttsKnown,
     volunteersKnown: impact.volunteersKnown,
   };
+}
+
+function mergeButtsMassProvenance(
+  current: ActionImpactTotals["buttsMassProvenance"],
+  incoming: NonNullable<ActionImpactKpis["buttsMassProvenance"]>,
+): ActionImpactTotals["buttsMassProvenance"] {
+  if (current === null) return incoming;
+  if (current === "unknown" || incoming === "unknown") return "unknown";
+  return current === incoming ? current : "mixed";
 }
 
 function finalizeActionImpactTotals(

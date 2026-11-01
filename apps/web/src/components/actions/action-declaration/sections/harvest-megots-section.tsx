@@ -138,7 +138,7 @@ function MegotsLotEditor({
           </select>
         </label>
       </div>
-      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {formatKg(result.massKg)} kg {result.massProvenance === "measured" ? "mesurés" : "estimés"}{result.source === "volume_l" ? ` · proxy ${CIGARETTE_BUTTS_PER_VOLUME_LITER} mégots/L` : ""}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative pour calculer ce lot.</p>}
+      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {result.massKg === null ? "masse indisponible" : `${formatKg(result.massKg)} kg ${result.massProvenance === "measured" ? "mesurés" : "estimés"}`}{result.source === "volume_l" ? ` · proxy ${CIGARETTE_BUTTS_PER_VOLUME_LITER} mégots/L` : ""}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative pour calculer ce lot.</p>}
     </div>
   );
 }
