@@ -5,6 +5,7 @@ import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { resolveRouteDataLayers } from "@/lib/route/route-data-status";
 import type { applyOriginRouteGeometryLegs } from "@/lib/route/route-contract";
+import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "@/lib/route/route-planning-mode";
 import { buildRouteRecommendationResponse } from "./route.response";
 import {
   buildEmptyRouteResponsePayload,
@@ -297,6 +298,75 @@ function installDefaultMocks() {
   });
 }
 
+const guidedBudget = {
+  totalMinutes: 90,
+  organizationMarginMinutes: 15,
+  minimumCollectionMinutes: 45,
+  travelMaxMinutes: 30,
+} as const;
+
+function guidedGroupRoute(
+  groupIndex: number,
+  distanceKm: number,
+  durationMinutes: number,
+  withinBudget: boolean,
+) {
+  const waypoint = {
+    id: `group-${groupIndex}-waypoint`,
+    label: `Passage ${groupIndex}`,
+    latitude: 48.851 + groupIndex / 1000,
+    longitude: 2.351,
+    order: 0,
+  };
+  const geometry = {
+    ...routeGeometry("network"),
+    coordinates: [
+      [48.85, 2.35],
+      [waypoint.latitude, waypoint.longitude],
+      [48.85, 2.35],
+    ] as [number, number][],
+    distanceKm,
+    durationMinutes,
+  };
+  return {
+    groupIndex,
+    label: `Groupe ${groupIndex}`,
+    volunteerCount: 5,
+    origin,
+    candidateIds: [],
+    reservedCandidateIds: [],
+    estimatedDistanceKm: distanceKm,
+    estimatedDurationMinutes: durationMinutes,
+    targetCount: 0,
+    stops: [],
+    routeGeometry: geometry,
+    travelDistanceKm: distanceKm,
+    travelMinutes: durationMinutes,
+    travelBudgetMinutes: guidedBudget.travelMaxMinutes,
+    withinBudget,
+    plannedWaypoints: [waypoint],
+    plannedSector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+    guidedBudget,
+    guidedRouting: {
+      availability: "network" as const,
+      loopVerified: true,
+      originVerified: true,
+      waypointOrderVerified: true,
+      waypointIds: [waypoint.id],
+      sectorDeviationKm: 0,
+      sectorWithinBounds: true,
+      sectorStatus: "within" as const,
+      warning: withinBudget ? null : "La boucle guidée ne respecte pas le budget utilisateur déclaré.",
+      budget: {
+        ...guidedBudget,
+        travelMinutes: durationMinutes,
+        collectionMinutesAvailable: Math.max(0, guidedBudget.totalMinutes - guidedBudget.organizationMarginMinutes - durationMinutes),
+        withinBudget,
+      },
+    },
+  };
+}
+
 describe("route recommendation response trace contract", () => {
   it("keeps the operational, proof and payload stages independently aligned", async () => {
     installDefaultMocks();
@@ -474,6 +544,97 @@ describe("route recommendation response trace contract", () => {
     });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);
+  });
+
+  it("publishes real guided loops without turning planned waypoints into scientific stops", async () => {
+    installDefaultMocks();
+    const response = buildRouteRecommendationResponse(responseInput({
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: guidedBudget,
+        groups: [
+          { sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 }, waypoints: [{ id: "group-1-waypoint", label: "Passage 1", latitude: 48.852, longitude: 2.351 }] },
+          { sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 }, waypoints: [{ id: "group-2-waypoint", label: "Passage 2", latitude: 48.853, longitude: 2.351 }] },
+        ],
+      },
+      guidedBudget,
+      volunteers: 10,
+      groupCount: 2,
+      planning: {
+        groupRoutes: [guidedGroupRoute(1, 4, 20, true), guidedGroupRoute(2, 5, 25, true)],
+        multiRouteMetrics: {
+          groupCount: 2,
+          volunteers: 10,
+          totalDistanceKm: 9,
+          totalDurationMinutes: 45,
+          coverageGain: 0,
+          sharedTargetRatio: 0,
+          sharedDistanceKm: null,
+          sharedDistanceRatio: null,
+          balanceDistance: 1,
+          balanceDuration: 5,
+          balanceTargetCount: 0,
+          balanceVolunteerCount: 0,
+          fallbackGroupCount: 0,
+          networkDistanceMeasured: true,
+        },
+      },
+    }));
+    const payload = await readRouteResponse(response);
+
+    expect(payload.travelDistanceKm).toBe(9);
+    expect(payload.travelMinutes).toBe(45);
+    expect(payload.withinBudget).toBe(true);
+    expect(payload.stops).toEqual([]);
+    expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
+    expect(payload.groupRoutes.map(({ travelDistanceKm, travelMinutes }) => ({ travelDistanceKm, travelMinutes })))
+      .toEqual([{ travelDistanceKm: 4, travelMinutes: 20 }, { travelDistanceKm: 5, travelMinutes: 25 }]);
+    expect(payload.trace.multiRoute?.groups.map(({ targetCount, guidedRouting }) => ({
+      targetCount,
+      warning: guidedRouting?.warning,
+    }))).toEqual([{ targetCount: 0, warning: null }, { targetCount: 0, warning: null }]);
+  });
+
+  it("uses the guided budget for a single group and rejects a 40-minute loop capped at 30", async () => {
+    installDefaultMocks();
+    const response = buildRouteRecommendationResponse(responseInput({
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: guidedBudget,
+        groups: [{ sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 }, waypoints: [{ id: "group-1-waypoint", label: "Passage 1", latitude: 48.852, longitude: 2.351 }] }],
+      },
+      guidedBudget,
+      planning: {
+        groupRoutes: [guidedGroupRoute(1, 6, 40, false)],
+        multiRouteMetrics: {
+          groupCount: 1,
+          volunteers: 5,
+          totalDistanceKm: 6,
+          totalDurationMinutes: 40,
+          coverageGain: 0,
+          sharedTargetRatio: 0,
+          sharedDistanceKm: null,
+          sharedDistanceRatio: null,
+          balanceDistance: 0,
+          balanceDuration: 0,
+          balanceTargetCount: 0,
+          balanceVolunteerCount: 0,
+          fallbackGroupCount: 0,
+          networkDistanceMeasured: true,
+        },
+      },
+    }));
+    const payload = await readRouteResponse(response);
+
+    expect(payload.travelDistanceKm).toBe(6);
+    expect(payload.travelMinutes).toBe(40);
+    expect(payload.groupRoutes[0]?.withinBudget).toBe(false);
+    expect(payload.groupRoutes[0]?.guidedRouting?.budget.withinBudget).toBe(false);
+    expect(payload.withinBudget).toBe(false);
+    expect(payload.groupRoutes[0]?.guidedRouting?.warning).toContain("budget");
+    expect(payload.tradeoffs).toContain(payload.groupRoutes[0]?.guidedRouting?.warning);
   });
 
   it("returns the explicit pickup preference in constraints and trace", async () => {

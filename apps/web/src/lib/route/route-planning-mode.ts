@@ -72,7 +72,7 @@ export function isRouteGuidedBudget(value: unknown): value is RouteGuidedBudget 
     organizationMarginMinutes < 0 ||
     typeof minimumCollectionMinutes !== "number" ||
     !Number.isFinite(minimumCollectionMinutes) ||
-    minimumCollectionMinutes <= 0 ||
+    minimumCollectionMinutes < 0 ||
     minimumCollectionMinutes > MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES ||
     typeof travelMaxMinutes !== "number" ||
     !Number.isFinite(travelMaxMinutes) ||
@@ -145,7 +145,7 @@ export function routeGuidedBudgetForMode(
   if (mode.version === ROUTE_TERRITORIAL_GUIDED_VERSION) return { ...mode.budget };
   return {
     totalMinutes: fallbackTotalMinutes,
-    organizationMarginMinutes: 15,
+    organizationMarginMinutes: 0,
     minimumCollectionMinutes: 0,
     travelMaxMinutes: fallbackTotalMinutes,
   };

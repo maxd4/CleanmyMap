@@ -103,7 +103,9 @@ Le mode `territorial-guided` courant reçoit la version
 `route-territorial-guided-v2`, un secteur borné, des waypoints ordonnés par
 groupe et un budget utilisateur décomposé en créneau total, marge
 d’organisation, collecte minimale et plafond de déplacement. La version v1
-reste lisible pour compatibilité et reçoit un budget de compatibilité interne.
+reste lisible pour compatibilité et reçoit un budget interne conservant sa
+sémantique historique : tout le créneau de v1 reste disponible pour le
+déplacement, sans marge d’organisation ni collecte minimale artificielles.
 Chaque groupe reprend exactement l’origine commune et produit une boucle
 fermée, y compris lorsque le pool de signalements est vide. Les
 `plannedWaypoints` restent séparés des `stops` : ils ne portent ni score,

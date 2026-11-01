@@ -29,6 +29,35 @@ type CommonPayloadInput = {
   proactiveAssistant: RouteRecommendationResponse["proactiveAssistant"];
 };
 
+function finalGeometryTotals(context: OperationalContext): {
+  distanceKm: number;
+  durationMinutes: number;
+} {
+  if (context.groupRoutes.length === 0) {
+    return {
+      distanceKm: context.multiRoute.totalDistanceKm,
+      durationMinutes: context.multiRoute.totalDurationMinutes,
+    };
+  }
+  return context.groupRoutes.reduce(
+    (totals, group) => ({
+      distanceKm: totals.distanceKm + Math.max(0, group.routeGeometry.distanceKm),
+      durationMinutes: totals.durationMinutes + Math.max(0, group.routeGeometry.durationMinutes),
+    }),
+    { distanceKm: 0, durationMinutes: 0 },
+  );
+}
+
+function guidedGroupsWithinBudget(
+  input: RouteRecommendationResponseInput,
+  context: OperationalContext,
+): boolean | null {
+  if (input.planningMode?.type !== "territorial-guided") return null;
+  return context.groupRoutes.length > 0 && context.groupRoutes.every((group) =>
+    group.withinBudget && group.guidedRouting?.budget.withinBudget === true,
+  );
+}
+
 function buildCommonPayload({
   input,
   context,
@@ -144,42 +173,59 @@ export function buildResultRouteResponsePayload(
   proofs: ProofContext,
 ): RouteRecommendationResponse {
   const { candidateData, planning } = input;
-  const totalDistance = context.multiRoute.totalDistanceKm;
-  const travelMinutes = Math.max(0, context.multiRoute.totalDurationMinutes);
-  const averagePriority = planning.plannedStops.reduce(
-    (acc, { candidate }) => acc + candidate.score,
-    0,
-  ) / planning.plannedStops.length;
-  const hotspots = buildHotspots({
-    candidates: candidateData.candidates,
-    pressureByArrondissement: input.eventPressureContext.pressureByArrondissement,
-    userArrondissement: input.locationPreference?.arrondissement ?? null,
-  });
-  const proactiveAssistant = buildProactiveAssistant({
-    stops: planning.plannedStops.map(({ candidate }) => ({
-      label: candidate.label,
-      score: candidate.score,
-    })),
-    hotspots,
-    eventSignals: input.eventPressureContext.eventSignals,
-  });
+  const { distanceKm: totalDistance, durationMinutes: finalTravelMinutes } = finalGeometryTotals(context);
+  const travelMinutes = Math.max(0, finalTravelMinutes);
+  const hasScientificStops = planning.plannedStops.length > 0;
+  const averagePriority = hasScientificStops
+    ? planning.plannedStops.reduce((acc, { candidate }) => acc + candidate.score, 0) /
+      planning.plannedStops.length
+    : 0;
+  const hotspots = hasScientificStops
+    ? buildHotspots({
+        candidates: candidateData.candidates,
+        pressureByArrondissement: input.eventPressureContext.pressureByArrondissement,
+        userArrondissement: input.locationPreference?.arrondissement ?? null,
+      })
+    : [];
+  const proactiveAssistant = hasScientificStops
+    ? buildProactiveAssistant({
+        stops: planning.plannedStops.map(({ candidate }) => ({
+          label: candidate.label,
+          score: candidate.score,
+        })),
+        hotspots,
+        eventSignals: input.eventPressureContext.eventSignals,
+      })
+    : { ...defaultRouteAssistantPayload() };
+  const guidedWithinBudget = guidedGroupsWithinBudget(input, context);
+  const guidedWarnings = [...new Set(
+    context.groupRoutes
+      .map(({ guidedRouting }) => guidedRouting?.warning)
+      .filter((warning): warning is string => Boolean(warning)),
+  )];
+  const tradeoffs = hasScientificStops
+    ? [
+        `Pondération opérationnelle: ${input.priorityVsTravel}% priorité / ${100 - input.priorityVsTravel}% déplacement.`,
+        ...guidedWarnings,
+      ]
+    : ["Parcours guidé planifié sans signalement admissible.", ...guidedWarnings];
   return buildCommonPayload({
     input,
     context,
     proofs,
-    withinBudget: context.groupRoutes.length > 1
+    withinBudget: guidedWithinBudget ?? (context.groupRoutes.length > 1
       ? context.groupRoutes.every(({ withinBudget }) => withinBudget)
-      : context.operationalBudget.withinBudget ?? travelMinutes <= input.travelBudgetMinutes,
+      : context.operationalBudget.withinBudget ?? travelMinutes <= input.travelBudgetMinutes),
     travelDistanceKm: totalDistance,
     travelMinutes,
     stops: proofs.snapshotStops,
-    scoreBreakdown: {
-      priority: Number(averagePriority.toFixed(1)),
-      distance: Number(Math.max(0, 100 - totalDistance * 5).toFixed(1)),
-    },
-    tradeoffs: [
-      `Pondération opérationnelle: ${input.priorityVsTravel}% priorité / ${100 - input.priorityVsTravel}% déplacement.`,
-    ],
+    scoreBreakdown: hasScientificStops
+      ? {
+          priority: Number(averagePriority.toFixed(1)),
+          distance: Number(Math.max(0, 100 - totalDistance * 5).toFixed(1)),
+        }
+      : { priority: 0, distance: 0 },
+    tradeoffs,
     proactiveAssistant,
   });
 }

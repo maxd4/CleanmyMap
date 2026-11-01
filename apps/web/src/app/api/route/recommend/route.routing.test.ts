@@ -250,6 +250,10 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       return routeGeometry.isLoop && first?.[0] === last?.[0] && first?.[1] === last?.[1];
     })).toBe(true);
     expect(payload.stops).toEqual([]);
+    expect(payload.travelDistanceKm).toBeGreaterThan(0);
+    expect(payload.travelMinutes).toBeGreaterThan(0);
+    expect(payload.withinBudget).toBe(true);
+    expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
     expect(payload.prediction.selected).toBe(0);
     expect(payload.trace.multiRoute?.groups.map(({ volunteerCount, candidateIds, plannedWaypoints }) => ({
       volunteerCount,
