@@ -22,7 +22,14 @@ import { isRoutePlannerProofShape } from "@/lib/route/route-planner-proof-contra
 import { isRoutePlannerSnapshot } from "@/lib/route/route-planner-snapshot-validation";
 import { isOperationalRoute, type OperationalRoute } from "@/lib/route/route-operational";
 import type { RoutePlannerSnapshot } from "@/lib/route/route-calibration-types";
-import { validateRouteGroupInput } from "@/lib/route/route-group-partition";
+import {
+  balancedVolunteerCounts,
+  validateRouteGroupInput,
+} from "@/lib/route/route-group-partition";
+import type {
+  RoutePlanningMode,
+  RouteTerritorialGuidedGroup,
+} from "@/lib/route/route-planning-mode";
 import { loadActionParticipantSummaries } from "@/lib/actions/participation/participant-summaries";
 import { loadRouteFreshnessSignal } from "@/lib/route/route-refresh-signals-loader";
 import {
@@ -48,6 +55,83 @@ function conflict(message: string) {
   return NextResponse.json({ error: message, code: "state_conflict" }, { status: 409 });
 }
 
+function guidedModeStructure(mode: Extract<RoutePlanningMode, { type: "territorial-guided" }>) {
+  return JSON.stringify({
+    type: mode.type,
+    version: mode.version,
+    groups: mode.groups.map((group) => {
+      const structuralGroup: RouteTerritorialGuidedGroup = { ...group };
+      delete structuralGroup.volunteerCount;
+      return structuralGroup;
+    }),
+    budget: "budget" in mode ? mode.budget : undefined,
+  });
+}
+
+function hasDeterministicGuidedVolunteerCounts(
+  mode: Extract<RoutePlanningMode, { type: "territorial-guided" }>,
+  volunteers: number,
+): boolean {
+  let expectedCounts: number[];
+  try {
+    expectedCounts = balancedVolunteerCounts(volunteers, mode.groups.length);
+  } catch {
+    return false;
+  }
+  const actualCounts = mode.groups.map(({ volunteerCount }) => volunteerCount);
+  return actualCounts.every((count, index) =>
+    Number.isInteger(count) && count === expectedCounts[index],
+  ) && actualCounts.reduce<number>((total, count) => total + (count ?? 0), 0) === volunteers;
+}
+
+function guidedRouteParametersMatchActiveVersion(
+  current: ActionRouteVersioning["active"]["calculation"]["parameters"],
+  next: RoutePlannerSnapshot["parameters"],
+): boolean {
+  const currentMode = current.planningMode;
+  const nextMode = next.planningMode;
+  if (currentMode.type !== "territorial-guided" || nextMode.type !== "territorial-guided") {
+    return false;
+  }
+  if (
+    current.groupCount !== next.groupCount ||
+    currentMode.groups.length !== current.groupCount ||
+    nextMode.groups.length !== next.groupCount ||
+    guidedModeStructure(currentMode) !== guidedModeStructure(nextMode)
+  ) {
+    return false;
+  }
+  if (JSON.stringify({
+    ...current,
+    planningMode: undefined,
+    volunteers: undefined,
+    groupCount: undefined,
+    origin: { ...current.origin, source: undefined },
+  }) !== JSON.stringify({
+    ...next,
+    planningMode: undefined,
+    volunteers: undefined,
+    groupCount: undefined,
+    origin: { ...next.origin, source: undefined },
+  })) {
+    return false;
+  }
+
+  const nextCounts = nextMode.groups.map(({ volunteerCount }) => volunteerCount);
+  const currentCounts = currentMode.groups.map(({ volunteerCount }) => volunteerCount);
+  const hasAnyNextCount = nextCounts.some((count) => count !== undefined);
+  const hasCompleteNextCounts = nextCounts.every((count) => count !== undefined);
+  const hasCompleteCurrentCounts = currentCounts.every((count) => count !== undefined);
+  if (currentMode.version === "route-territorial-guided-v2" &&
+    (!hasCompleteCurrentCounts || !hasCompleteNextCounts)) {
+    return false;
+  }
+  if (hasAnyNextCount && !hasCompleteNextCounts) return false;
+  if (current.volunteers !== next.volunteers && !hasCompleteNextCounts) return false;
+  return !hasCompleteNextCounts ||
+    hasDeterministicGuidedVolunteerCounts(nextMode, next.volunteers);
+}
+
 function routeParametersMatchActiveVersion(
   current: ActionRouteVersioning["active"]["calculation"]["parameters"],
   next: RoutePlannerSnapshot["parameters"],
@@ -60,6 +144,14 @@ function routeParametersMatchActiveVersion(
     validateRouteGroupInput(next.volunteers, next.groupCount);
   } catch {
     return false;
+  }
+  if (current.planningMode.type === "territorial-guided" ||
+    next.planningMode.type === "territorial-guided") {
+    if (!guidedRouteParametersMatchActiveVersion(current, next)) return false;
+    return confirmedParticipants !== null || (
+      current.volunteers === next.volunteers &&
+      current.groupCount === next.groupCount
+    );
   }
   return JSON.stringify({
     ...current,

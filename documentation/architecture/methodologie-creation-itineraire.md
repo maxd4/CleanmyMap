@@ -402,7 +402,15 @@ sans partition côté interface. La version active reste inchangée jusqu’à
 `Utiliser le nouvel itinéraire`. Un changement du nombre de participants
 confirmés ou du découpage en groupes peut donc produire une nouvelle version,
 mais les autres paramètres canoniques du planner restent stables pendant ce
-refresh. L'application utilise une concurrence optimiste sur `actions.updated_at`
+refresh. Pour un parcours `territorial-guided`, l’application serveur autorise
+uniquement la redistribution déterministe des `volunteerCount` des groupes
+existants : type et version du mode, nombre et ordre des groupes, labels,
+secteurs, passages ordonnés, budget et paramètres du planner restent strictement
+identiques. Les effectifs proposés doivent être des entiers positifs, équilibrés
+selon le répartiteur canonique, totaliser le nouvel effectif et correspondre au
+comptage `confirmed` lorsqu’il est disponible ; sans preuve serveur, une hausse
+ou baisse d’effectif est refusée. Le mode guidé v1 conserve son absence de
+budget v2. L’application utilise une concurrence optimiste sur `actions.updated_at`
 et refuse par `409` une proposition construite depuis un état devenu obsolète,
 afin de ne pas écraser une modification concurrente de `preparation_data`.
 

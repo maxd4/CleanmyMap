@@ -3,6 +3,10 @@ import { buildRoutePlannerSnapshot } from "@/lib/route/route-calibration";
 import { createRoutePlannerSnapshotInput } from "@/lib/route/route-calibration-test-fixtures";
 import { createOperationalRouteFromRecommendation } from "@/lib/route/route-operational";
 import { createRoutePlannerProof } from "@/lib/route/route-planner-proof";
+import {
+  createDefaultRouteTerritorialGuidedMode,
+  ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
+} from "@/lib/route/route-planning-mode";
 import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const authMock = vi.hoisted(() => vi.fn());
@@ -63,6 +67,63 @@ function snapshot(
       groupIndex: index + 1,
       volunteerCount: quotient + (index < remainder ? 1 : 0),
       routeGeometry: geometry,
+    })),
+  });
+}
+
+function guidedSnapshot(
+  generatedAt: string,
+  volunteers: number,
+  groupCount: number,
+  options: {
+    version?: "route-territorial-guided-v1" | "route-territorial-guided-v2";
+    waypointCount?: number;
+  } = {},
+) {
+  const input = createRoutePlannerSnapshotInput(2);
+  const defaultMode = createDefaultRouteTerritorialGuidedMode(volunteers, groupCount);
+  const groups = defaultMode.groups.map((group, groupIndex) => ({
+    ...group,
+    waypoints: Array.from({ length: options.waypointCount ?? 2 }, (_, waypointIndex) => ({
+      id: `group-${groupIndex + 1}-waypoint-${waypointIndex + 1}`,
+      label: `Passage ${groupIndex + 1}.${waypointIndex + 1}`,
+      latitude: group.sector.center.latitude + (waypointIndex === 0 ? (groupIndex === 0 ? 0.0004 : -0.0004) : 0.0001),
+      longitude: group.sector.center.longitude,
+    })),
+  }));
+  const version = options.version ?? "route-territorial-guided-v2";
+  const planningMode = version === ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION
+    ? {
+        type: "territorial-guided" as const,
+        version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
+        groups: groups.map((group) => {
+          const structuralGroup = { ...group };
+          delete structuralGroup.volunteerCount;
+          return structuralGroup;
+        }),
+      }
+    : { ...defaultMode, groups };
+  const baseGroup = input.groups[0]!;
+  return buildRoutePlannerSnapshot({
+    ...input,
+    generatedAt,
+    volunteers,
+    groupCount,
+    planningMode,
+    ...(version === "route-territorial-guided-v2"
+      ? { guidedBudget: defaultMode.budget }
+      : {}),
+    groups: groups.map((group, index) => ({
+      ...baseGroup,
+      groupIndex: index + 1,
+      volunteerCount: group.volunteerCount!,
+      routeGeometry: input.routeGeometry,
+      label: group.label,
+      plannedSector: group.sector,
+      plannedWaypoints: group.waypoints.map((waypoint, order) => ({ ...waypoint, order })),
+      ...(version === "route-territorial-guided-v2"
+        ? { guidedBudget: defaultMode.budget }
+        : {}),
     })),
   });
 }
@@ -296,6 +357,25 @@ describe("POST /api/actions/:actionId/route-version", () => {
     expect(supabase.chain.eq).toHaveBeenCalledWith("updated_at", current.updated_at);
   });
 
+  it("keeps event-centered refreshes on the historical parameter comparison", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
+    currentSnapshot.parameters = {
+      ...currentSnapshot.parameters,
+      planningMode: { type: "event-centered", eventId: "event-1" },
+    };
+    nextSnapshot.parameters = {
+      ...nextSnapshot.parameters,
+      planningMode: { type: "event-centered", eventId: "event-1" },
+    };
+    preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(200);
+    expect(await parseJsonSafely(response)).toMatchObject({ status: "applied" });
+  });
+
   it("accepts a participant refresh when the server confirms the proposed volunteer count", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3, { volunteers: 5 });
@@ -304,6 +384,302 @@ describe("POST /api/actions/:actionId/route-version", () => {
 
     expect(response.status).toBe(200);
     expect(await parseJsonSafely(response)).toMatchObject({ status: "applied" });
+  });
+
+  it("applies a balanced guided refresh from 10 to 12 volunteers and preserves constraints", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
+    const { current, supabase } = preparePostScenario(currentSnapshot, {
+      confirmedParticipants: 12,
+    });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+    const body = await parseJsonSafely(response);
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: "applied",
+      activeRouteVersion: {
+        calculation: {
+          parameters: {
+            volunteers: 12,
+            groupCount: 2,
+            planningMode: {
+              type: "territorial-guided",
+              groups: [
+                { volunteerCount: 6 },
+                { volunteerCount: 6 },
+              ],
+            },
+          },
+        },
+      },
+    });
+    const updateCall = firstMockArgument(supabase.chain.update);
+    expect(updateCall).toMatchObject({
+      preparation_data: {
+        routeCalibrationContext: current.preparation_data.routeCalibrationContext,
+        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
+      },
+    });
+    if (!isRecord(updateCall) || !isRecord(updateCall.preparation_data) ||
+      !isRecord(updateCall.preparation_data.routeVersioning)) {
+      throw new Error("Expected guided route versioning data in the update payload");
+    }
+    expect(isRecord(updateCall.preparation_data.routeVersioning.active)).toBe(true);
+    expect(Array.isArray(updateCall.preparation_data.routeVersioning.history)).toBe(true);
+    expect(supabase.chain.eq).toHaveBeenCalledWith("updated_at", current.updated_at);
+  });
+
+  it("applies the deterministic 6/5 guided refresh from 10 to 11 volunteers", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 11, 2);
+    preparePostScenario(currentSnapshot, { confirmedParticipants: 11 });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+    const body = await parseJsonSafely(response);
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: "applied",
+      activeRouteVersion: {
+        calculation: {
+          parameters: {
+            planningMode: {
+              groups: [
+                { volunteerCount: 6 },
+                { volunteerCount: 5 },
+              ],
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("does not overwrite a concurrent guided action update", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
+    const { supabase } = preparePostScenario(currentSnapshot, {
+      confirmedParticipants: 12,
+      updateResult: { data: null, error: null },
+    });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(await parseJsonSafely(response)).toMatchObject({ code: "state_conflict" });
+    expect(supabase.chain.eq).toHaveBeenCalledWith("updated_at", "2026-09-27T09:00:00.000Z");
+  });
+
+  it.each([
+    "group count",
+    "sector",
+    "waypoint",
+    "waypoint order",
+    "label",
+    "budget",
+  ] as const)("rejects a guided refresh that changes the %s", async (mutation) => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const changedSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, mutation === "group count" ? 3 : 2);
+    const mode = changedSnapshot.parameters.planningMode;
+    if (mode.type !== "territorial-guided") throw new Error("Expected guided mode");
+
+    if (mutation === "sector") {
+      mode.groups[0] = {
+        ...mode.groups[0]!,
+        sector: { ...mode.groups[0]!.sector, radiusKm: 0.5 },
+      };
+    } else if (mutation === "waypoint") {
+      mode.groups[0] = {
+        ...mode.groups[0]!,
+        waypoints: mode.groups[0]!.waypoints.map((waypoint, index) =>
+          index === 0 ? { ...waypoint, latitude: waypoint.latitude + 0.0002 } : waypoint,
+        ),
+      };
+    } else if (mutation === "waypoint order") {
+      mode.groups[0] = {
+        ...mode.groups[0]!,
+        waypoints: [...mode.groups[0]!.waypoints].reverse(),
+      };
+    } else if (mutation === "label") {
+      mode.groups[0] = { ...mode.groups[0]!, label: "Groupe modifié" };
+    } else if (mutation === "budget") {
+      if (mode.version !== "route-territorial-guided-v2") throw new Error("Expected guided v2 mode");
+      mode.budget = {
+        ...mode.budget,
+        minimumCollectionMinutes: 46,
+        travelMaxMinutes: 29,
+      };
+    }
+
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 12 });
+    const response = await postRouteVersion(routeVersionPayload(changedSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it.each(["mode version", "mode type", "top-level planner parameter"] as const)(
+    "rejects a guided refresh that changes the %s",
+    async (mutation) => {
+      const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+      const changedSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
+      const mode = changedSnapshot.parameters.planningMode;
+      if (mode.type !== "territorial-guided") throw new Error("Expected guided mode");
+
+      if (mutation === "mode version") {
+        changedSnapshot.parameters = {
+          ...changedSnapshot.parameters,
+          planningMode: {
+            type: "territorial-guided",
+            version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
+            groups: mode.groups.map((group) => {
+              const structuralGroup = { ...group };
+              delete structuralGroup.volunteerCount;
+              return structuralGroup;
+            }),
+          },
+        };
+      } else if (mutation === "mode type") {
+        changedSnapshot.parameters = {
+          ...changedSnapshot.parameters,
+          planningMode: { type: "free" },
+        };
+      } else {
+        changedSnapshot.parameters = {
+          ...changedSnapshot.parameters,
+          travelBudgetMinutes: 59,
+        };
+      }
+
+      const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 12 });
+      const response = await postRouteVersion(routeVersionPayload(changedSnapshot));
+
+      expect(response.status).toBe(409);
+      expect(supabase.from).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { name: "unbalanced", counts: [7, 5], status: 409 },
+    { name: "zero", counts: [0, 12], status: 422 },
+    { name: "fractional", counts: [6.5, 5.5], status: 422 },
+  ] as const)("rejects $name guided group counts", async ({ counts, status }) => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const changedSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
+    const mode = changedSnapshot.parameters.planningMode;
+    if (mode.type !== "territorial-guided") throw new Error("Expected guided mode");
+    mode.groups = mode.groups.map((group, index) => ({
+      ...group,
+      volunteerCount: counts[index],
+    }));
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 12 });
+
+    const response = await postRouteVersion(routeVersionPayload(changedSnapshot));
+
+    expect(response.status).toBe(status);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("requires confirmed participants before applying a guided volunteer change", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
+    const { supabase } = preparePostScenario(currentSnapshot);
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects a guided proposal when confirmed participants do not match", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 11 });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("does not create a second version when an identical guided proposal is replayed", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const current = actionWithSnapshot(currentSnapshot);
+    loadActionMock.mockResolvedValueOnce(current);
+    const supabase = { from: vi.fn() };
+    supabaseMock.mockReturnValue(supabase);
+
+    const response = await postRouteVersion(routeVersionPayload(currentSnapshot));
+
+    expect(response.status).toBe(200);
+    expect(await parseJsonSafely(response)).toMatchObject({ status: "unchanged" });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("keeps guided v1 compatible without manufacturing a v2 budget", async () => {
+    const currentSnapshot = guidedSnapshot(
+      "2026-09-01T09:00:00.000Z",
+      10,
+      2,
+      { version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION },
+    );
+    const current = actionWithSnapshot(currentSnapshot);
+    loadActionMock.mockResolvedValueOnce(current);
+    const supabase = { from: vi.fn() };
+    supabaseMock.mockReturnValue(supabase);
+
+    const response = await postRouteVersion(routeVersionPayload(currentSnapshot));
+    const body = await parseJsonSafely(response);
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({ status: "unchanged" });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("accepts a representable guided v1 redistribution without adding a budget", async () => {
+    const currentSnapshot = guidedSnapshot(
+      "2026-09-01T09:00:00.000Z",
+      10,
+      2,
+      { version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION },
+    );
+    const nextSnapshot = guidedSnapshot(
+      "2026-09-27T09:00:00.000Z",
+      11,
+      2,
+      { version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION },
+    );
+    const nextMode = nextSnapshot.parameters.planningMode;
+    if (nextMode.type !== "territorial-guided") throw new Error("Expected guided mode");
+    nextMode.groups = nextMode.groups.map((group, index) => ({
+      ...group,
+      volunteerCount: index === 0 ? 6 : 5,
+    }));
+    preparePostScenario(currentSnapshot, { confirmedParticipants: 11 });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+    const body = await parseJsonSafely(response);
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: "applied",
+      activeRouteVersion: {
+        calculation: {
+          parameters: {
+            planningMode: {
+              version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
+              groups: [
+                { volunteerCount: 6 },
+                { volunteerCount: 5 },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(body).not.toHaveProperty("activeRouteVersion.calculation.parameters.planningMode.budget");
   });
 
   it("rejects a forged volunteer count that differs from the current server count", async () => {
