@@ -3,7 +3,10 @@ import type {
   ActionCigaretteButtsMeasurements,
   CigaretteButtsRecalculationStatus,
 } from "@/lib/waste/cigarette-butts";
-import { resolveCigaretteButtsLotsMassProvenance } from "@/lib/waste/cigarette-butts";
+import {
+  isPersistedCigaretteButtsLotSnapshotForInputs,
+  resolveCigaretteButtsLotsMassProvenance,
+} from "@/lib/waste/cigarette-butts";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
@@ -139,6 +142,15 @@ function resolveButtsMassProvenance(
   if (!measurements) return null;
   const lotResults = measurements?.cigaretteButtsLotResults;
   if (lotResults) {
+    const lots = measurements.cigaretteButtsLots;
+    const snapshotIsComplete = lots !== undefined &&
+      isPersistedCigaretteButtsLotSnapshotForInputs(lots, {
+        cigaretteButtsLotResults: lotResults,
+        cigaretteButtsLotsSummary: measurements.cigaretteButtsLotsSummary,
+      });
+    if (!snapshotIsComplete || measurements.cigaretteButtsMassProvenance === "unknown") {
+      return "unknown";
+    }
     return resolveCigaretteButtsLotsMassProvenance(lotResults);
   }
 

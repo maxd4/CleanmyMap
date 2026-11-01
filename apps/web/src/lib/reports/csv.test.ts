@@ -12,7 +12,11 @@ import {
   resolveReportQuery,
 } from "./csv";
 import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
-import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  aggregateCigaretteButtsLots,
+  normalizeCigaretteButtsMeasurements,
+  type ActionCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 
 describe("report csv helpers", () => {
   it("parses status safely", () => {
@@ -141,6 +145,45 @@ describe("report csv helpers", () => {
     const row = buildActionsCsvRows([contract], () => null)[0];
     expect(row).toMatchObject({
       cigarette_butts_mass_kg: null,
+      cigarette_butts_mass_provenance: "unknown",
+    });
+  });
+
+  it("exports unknown provenance for an incomplete lot snapshot", () => {
+    const aggregate = aggregateCigaretteButtsLots([
+      {
+        id: "measured",
+        source: "mass_kg",
+        value: 1,
+        condition: "propre",
+      },
+      {
+        id: "counted",
+        source: "count",
+        value: 1_000,
+        condition: "propre",
+      },
+    ]);
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: aggregate.lots,
+      cigaretteButtsLotResults: [aggregate.results[0]!],
+      cigaretteButtsLotsSummary: aggregate.summary,
+    });
+    const contract = buildActionDataContract({
+      id: "incomplete-mass-snapshot",
+      type: "action",
+      status: "approved",
+      source: "test",
+      observedAt: "2026-04-01",
+      locationLabel: "Lieu historique",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      cigaretteButts: aggregate.summary.totalCount,
+      cigaretteButtsMeasurements: measurements,
+    });
+
+    expect(buildActionsCsvRows([contract], () => null)[0]).toMatchObject({
+      cigarette_butts_mass_kg: aggregate.summary.totalMassKg,
       cigarette_butts_mass_provenance: "unknown",
     });
   });

@@ -184,7 +184,7 @@ function normalizeMeasurementsFromLots(
   >,
   fallbackInput?: CigaretteButtsMeasurementInput,
 ): ActionCigaretteButtsMeasurements {
-  const persistedSnapshot = isPersistedLotSnapshotForInputs(lots, persisted);
+  const persistedSnapshot = isPersistedCigaretteButtsLotSnapshotForInputs(lots, persisted);
   if (!persistedSnapshot && hasPersistedLotSnapshot(persisted)) {
     return preserveUnrecalculableLotSnapshot(lots, persisted, fallbackInput ?? {});
   }
@@ -273,7 +273,7 @@ function resolveLegacyRecalculationStatus(params: {
   return hasRecomputableDerivedValue ? "recalculable" : "not_recalculable";
 }
 
-function isPersistedLotSnapshotForInputs(
+export function isPersistedCigaretteButtsLotSnapshotForInputs(
   lots: CigaretteButtsLotInput[],
   persisted: Pick<
     ActionCigaretteButtsMeasurements,
