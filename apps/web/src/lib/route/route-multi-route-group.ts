@@ -28,12 +28,12 @@ import {
   type RouteOperationalBudgetDependency,
 } from "./route-operational-budget";
 import { buildCleanupWorkload } from "./route-cleanup-workload";
+import { collectionCoordinatesForSectorAudit } from "./route-guided-geometry-audit";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 type Coordinate = [number, number];
 type RoutePoint = { latitude: number; longitude: number };
 const GUIDED_WAYPOINT_MATCH_RADIUS_KM = 0.1;
-const GUIDED_WAYPOINT_COORDINATE_EPSILON = 1e-6;
 
 export type RouteGroupRoutingResult = {
   group: RouteGroupAssignment;
@@ -151,149 +151,6 @@ type GuidedSectorAudit = {
 
 function unknownGuidedSectorAudit(): GuidedSectorAudit {
   return { deviationKm: null, status: "unknown" };
-}
-
-function coordinatesMatchWaypoint(
-  coordinate: Coordinate,
-  waypoint: RoutePlannedWaypoint,
-): boolean {
-  return Math.abs(coordinate[0] - waypoint.latitude) <= GUIDED_WAYPOINT_COORDINATE_EPSILON &&
-    Math.abs(coordinate[1] - waypoint.longitude) <= GUIDED_WAYPOINT_COORDINATE_EPSILON;
-}
-
-function exactWaypointCoordinateIndexes(
-  geometry: RouteGeometry,
-  waypoints: readonly RoutePlannedWaypoint[],
-  topology: RouteTopology,
-  arrival?: RoutePlannerOrigin,
-): number[] | null {
-  if (
-    waypoints.length === 0 ||
-    geometry.coordinates.length < waypoints.length + 2 ||
-    geometry.legs.length !== (topology === "loop" || arrival ? waypoints.length + 1 : waypoints.length) ||
-    geometry.legs.some((leg, index) =>
-      leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
-    )
-  ) {
-    return null;
-  }
-
-  const lastCoordinateIndex = geometry.coordinates.length - 1;
-  let coordinateIndex = 1;
-  const indexes: number[] = [];
-  for (const waypoint of waypoints) {
-    const matchingIndexes = geometry.coordinates.flatMap((coordinate, index) =>
-      index >= coordinateIndex &&
-      index < lastCoordinateIndex &&
-      coordinatesMatchWaypoint(coordinate, waypoint)
-        ? [index]
-        : [],
-    );
-    if (matchingIndexes.length !== 1) return null;
-    const matchIndex = matchingIndexes[0];
-    if (matchIndex === undefined) return null;
-    indexes.push(matchIndex);
-    coordinateIndex = matchIndex + 1;
-  }
-  return indexes;
-}
-
-function validStepCoordinates(
-  steps: RouteGeometry["legs"][number]["steps"],
-): Coordinate[] | null {
-  if (!steps || steps.length === 0) return null;
-  const coordinates: Coordinate[] = [];
-  for (const step of steps) {
-    if (!step.geometry || step.geometry.length < 2 || step.geometry.some(([latitude, longitude]) =>
-      !Number.isFinite(latitude) || !Number.isFinite(longitude),
-    )) {
-      return null;
-    }
-    const first = step.geometry[0];
-    const previous = coordinates.at(-1);
-    if (previous && first &&
-      (Math.abs(previous[0] - first[0]) > GUIDED_WAYPOINT_COORDINATE_EPSILON ||
-        Math.abs(previous[1] - first[1]) > GUIDED_WAYPOINT_COORDINATE_EPSILON)) {
-      return null;
-    }
-    for (const coordinate of step.geometry) {
-      const last = coordinates.at(-1);
-      if (!last || last[0] !== coordinate[0] || last[1] !== coordinate[1]) {
-        coordinates.push(coordinate);
-      }
-    }
-  }
-  return coordinates.length >= 2 ? coordinates : null;
-}
-
-function collectionCoordinatesFromLegSteps(
-  geometry: RouteGeometry,
-  waypoints: readonly RoutePlannedWaypoint[],
-  topology: RouteTopology,
-  arrival?: RoutePlannerOrigin,
-): Coordinate[] | null {
-  if (waypoints.length < 2) return null;
-  const collectionLegs = geometry.legs.slice(1, topology === "loop" || arrival ? -1 : undefined);
-  if (collectionLegs.length !== waypoints.length - 1) return null;
-  const collectionCoordinates: Coordinate[] = [];
-  for (const leg of collectionLegs) {
-    const legCoordinates = validStepCoordinates(leg.steps);
-    if (!legCoordinates) return null;
-    for (const coordinate of legCoordinates) {
-      const last = collectionCoordinates.at(-1);
-      if (!last || last[0] !== coordinate[0] || last[1] !== coordinate[1]) {
-        collectionCoordinates.push(coordinate);
-      }
-    }
-  }
-  return collectionCoordinates.length >= 2 ? collectionCoordinates : null;
-}
-
-function collectionCoordinatesFromFinalGeometry(
-  geometry: RouteGeometry,
-  waypoints: readonly RoutePlannedWaypoint[],
-  topology: RouteTopology,
-  arrival?: RoutePlannerOrigin,
-): Coordinate[] | null {
-  if (waypoints.length < 2) return null;
-  const waypointIndexes = exactWaypointCoordinateIndexes(geometry, waypoints, topology, arrival);
-  if (!waypointIndexes) return null;
-  const collectionCoordinates: Coordinate[] = [];
-  for (let waypointIndex = 1; waypointIndex < waypointIndexes.length; waypointIndex += 1) {
-    const fromCoordinateIndex = waypointIndexes[waypointIndex - 1]!;
-    const toCoordinateIndex = waypointIndexes[waypointIndex]!;
-    const collectionLegCoordinates = geometry.coordinates.slice(
-      fromCoordinateIndex,
-      toCoordinateIndex + 1,
-    );
-    if (collectionLegCoordinates.length < 2) return null;
-    collectionCoordinates.push(...collectionLegCoordinates);
-  }
-  return collectionCoordinates.length >= 2 ? collectionCoordinates : null;
-}
-
-function collectionCoordinatesForSectorAudit(
-  geometry: RouteGeometry,
-  waypoints: readonly RoutePlannedWaypoint[],
-  topology: RouteTopology,
-  arrival?: RoutePlannerOrigin,
-): Coordinate[] | null {
-  if (
-    waypoints.length < 2 ||
-    geometry.coordinates.length < waypoints.length + 2 ||
-    geometry.legs.length !== (topology === "loop" || arrival ? waypoints.length + 1 : waypoints.length) ||
-    geometry.legs.some((leg, index) =>
-      leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
-    )
-  ) {
-    return null;
-  }
-
-  // Provider step geometries are the strongest per-leg boundary evidence. When
-  // they are absent, only exact waypoint coordinates in the final polyline are
-  // accepted; proximity alone cannot certify a collection boundary.
-  return collectionCoordinatesFromLegSteps(geometry, waypoints, topology, arrival) ??
-    collectionCoordinatesFromFinalGeometry(geometry, waypoints, topology, arrival);
 }
 
 function guidedSectorDeviationKm(
