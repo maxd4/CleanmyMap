@@ -92,6 +92,125 @@ function withStepGeometries(
 }
 
 describe("guided sector geometry certification", () => {
+  it("reports outside when the final polyline leaves the sector within the coherence tolerance", async () => {
+    const origin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypoints = [
+      { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 },
+      { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
+    ];
+    const sector = { center: { latitude: 48.85705, longitude: 2.3509 }, radiusKm: 0.1 };
+    const finalDetour: [number, number] = [48.85705, 2.35244];
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
+      const geometry = networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!, coordinates[1]!, finalDetour, coordinates[2]!, coordinates.at(-1)!,
+      ]);
+      return withStepGeometries(geometry, { 1: [[coordinates[1]!, coordinates[2]!]] });
+    });
+
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartitionFor(origin, sector, waypoints),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes[0]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "outside",
+      sectorWithinBounds: false,
+    }));
+    expect(result.groupRoutes[0]?.guidedRouting?.sectorDeviationKm).toBeGreaterThan(0);
+  });
+
+  it("reports outside when steps leave the sector while the final polyline remains inside", async () => {
+    const origin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypoints = [
+      { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 },
+      { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
+    ];
+    const sector = { center: { latitude: 48.85705, longitude: 2.3509 }, radiusKm: 0.1 };
+    const stepDetour: [number, number] = [48.85705, 2.35244];
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
+      const geometry = networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!, coordinates[1]!, coordinates[2]!, coordinates.at(-1)!,
+      ]);
+      return withStepGeometries(geometry, { 1: [[coordinates[1]!, stepDetour, coordinates[2]!]] });
+    });
+
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartitionFor(origin, sector, waypoints),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes[0]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "outside",
+      sectorWithinBounds: false,
+    }));
+    expect(result.groupRoutes[0]?.guidedRouting?.sectorDeviationKm).toBeGreaterThan(0);
+  });
+
+  it("keeps a coherent collection inside the sector as within", async () => {
+    const origin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypoints = [
+      { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 },
+      { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
+    ];
+    const sector = { center: { latitude: 48.85705, longitude: 2.3522 }, radiusKm: 0.1 };
+    const midpoint: [number, number] = [48.85705, 2.3522];
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
+      const geometry = networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!, coordinates[1]!, midpoint, coordinates[2]!, coordinates.at(-1)!,
+      ]);
+      return withStepGeometries(geometry, { 1: [[coordinates[1]!, midpoint, coordinates[2]!]] });
+    });
+
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartitionFor(origin, sector, waypoints),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes[0]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "within",
+      sectorWithinBounds: true,
+      sectorDeviationKm: 0,
+    }));
+  });
+
+  it("keeps an incoherent steps/polyline pair unknown", async () => {
+    const origin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypoints = [
+      { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 },
+      { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
+    ];
+    const sector = { center: { latitude: 48.85705, longitude: 2.3509 }, radiusKm: 0.1 };
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
+      const geometry = networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!, coordinates[1]!, [48.86, 2.3522], coordinates[2]!, coordinates.at(-1)!,
+      ]);
+      return withStepGeometries(geometry, { 1: [[coordinates[1]!, coordinates[2]!]] });
+    });
+
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartitionFor(origin, sector, waypoints),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes[0]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "unknown",
+      sectorWithinBounds: false,
+      sectorDeviationKm: null,
+    }));
+  });
+
   it("does not certify steps that contradict the final collection polyline", async () => {
     const origin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
     const waypoints = [

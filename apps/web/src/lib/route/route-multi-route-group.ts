@@ -162,14 +162,16 @@ function guidedSectorDeviationKm(
   arrival?: RoutePlannerOrigin,
 ): GuidedSectorAudit {
   if (!sector || !routeVerified) return unknownGuidedSectorAudit();
-  const collectionCoordinates = collectionCoordinatesForSectorAudit(geometry, waypoints, topology, arrival);
-  if (!collectionCoordinates || collectionCoordinates.length === 0 || collectionCoordinates.some((coordinate) =>
+  // When both provider representations are verifiable, the audit returns both
+  // collection polylines so neither admissible geometry can hide an excursion.
+  const verifiedCollectionCoordinates = collectionCoordinatesForSectorAudit(geometry, waypoints, topology, arrival);
+  if (!verifiedCollectionCoordinates || verifiedCollectionCoordinates.length === 0 || verifiedCollectionCoordinates.some((coordinate) =>
     coordinate.length !== 2 || !Number.isFinite(coordinate[0]) || !Number.isFinite(coordinate[1]),
   )) {
     return unknownGuidedSectorAudit();
   }
 
-  const deviationKm = Math.max(0, ...collectionCoordinates.map((coordinate) =>
+  const deviationKm = Math.max(0, ...verifiedCollectionCoordinates.map((coordinate) =>
     routeDistanceKm(
       sector.center,
       { latitude: coordinate[0], longitude: coordinate[1] },

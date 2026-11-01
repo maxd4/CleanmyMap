@@ -259,9 +259,10 @@ function collectionCoordinatesFromVerifiedSteps(
   if (!hasStepPayload) return null;
   const stepCoordinates = collectionCoordinatesFromLegSteps(geometry, waypoints, topology, arrival);
   const finalCoordinates = collectionCoordinatesFromFinalGeometry(geometry, waypoints, topology, arrival);
-  return stepCoordinates && finalCoordinates && polylinesAreCoherent(stepCoordinates, finalCoordinates)
-    ? stepCoordinates
-    : null;
+  if (!stepCoordinates || !finalCoordinates || !polylinesAreCoherent(stepCoordinates, finalCoordinates)) {
+    return null;
+  }
+  return [...stepCoordinates, ...finalCoordinates];
 }
 
 export function collectionCoordinatesForSectorAudit(
