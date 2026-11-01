@@ -44,7 +44,9 @@ function buildPreparationRouteFields(
     ...buildPreparationDistanceFields(form, resolvedTarget),
     ...buildPreparationGeometryFields(form, routeTopology, finalGeometry),
     routeCalibrationContext: form.routeCalibrationContext ?? undefined,
-    operationalRoute: finalGeometry?.operationalRoute ?? undefined,
+    // Keep the planned operational copy even when a GPX/GPS/manual geometry
+    // is selected. Planned loops remain distinct from observed geometry.
+    operationalRoute: form.operationalRoute ?? finalGeometry?.operationalRoute ?? undefined,
   };
 }
 

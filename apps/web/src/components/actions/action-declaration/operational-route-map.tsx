@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { Circle, CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 import { getOperationalRouteMeetingPoint, getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
@@ -10,7 +10,15 @@ import { TERRITORY_CENTER, buildTerritoryLeafletBounds } from "@/lib/geo/territo
 function FitOperationalRouteBounds({ operationalRoute }: { operationalRoute: OperationalRoute }) {
   const map = useMap();
   useEffect(() => {
-    const points = getPublicOperationalRouteSegments(operationalRoute).flatMap(({ coordinates }) => coordinates);
+    const routePoints = getPublicOperationalRouteSegments(operationalRoute).flatMap(({ coordinates }) => coordinates);
+    const guidedPoints = operationalRoute.routes.flatMap((route) => [
+      ...(route.plannedWaypoints ?? []).map(({ latitude, longitude }) => [latitude, longitude] as [number, number]),
+      ...(route.plannedSector ? [
+        [route.plannedSector.center.latitude, route.plannedSector.center.longitude] as [number, number],
+        [route.plannedSector.center.latitude + route.plannedSector.radiusKm / 111, route.plannedSector.center.longitude] as [number, number],
+      ] : []),
+    ]);
+    const points = [...routePoints, ...guidedPoints];
     if (points.length >= 2) {
       map.fitBounds(points, { padding: [24, 24], maxZoom: 16, animate: false });
     }
@@ -28,6 +36,8 @@ export function OperationalRouteMap({ operationalRoute }: { operationalRoute: Op
     const meetingPoint = getOperationalRouteMeetingPoint(operationalRoute, route);
     return meetingPoint ? [{ route, meetingPoint }] : [];
   });
+  const guidedPlans = operationalRoute.routes.flatMap((route) => route.plannedSector ? [{ route, sector: route.plannedSector }] : []);
+  const guidedWaypoints = operationalRoute.routes.flatMap((route) => (route.plannedWaypoints ?? []).map((waypoint) => ({ route, waypoint })));
 
   return (
     <div className="h-[320px] overflow-hidden rounded-2xl border border-emerald-200/70">
@@ -53,6 +63,26 @@ export function OperationalRouteMap({ operationalRoute }: { operationalRoute: Op
             positions={segment.coordinates}
             pathOptions={{ color: index % 2 === 0 ? "#059669" : "#2563eb", weight: 5, opacity: 0.88 }}
           />
+        ))}
+        {guidedPlans.map(({ route, sector }) => (
+          <Circle
+            key={`guided-sector-${route.routeId}`}
+            center={[sector.center.latitude, sector.center.longitude]}
+            radius={sector.radiusKm * 1_000}
+            pathOptions={{ color: route.groupIndex % 2 === 0 ? "#2563eb" : "#059669", fillOpacity: 0.08, weight: 2, dashArray: "6 5" }}
+          >
+            <Tooltip>{`Secteur planifié · groupe ${route.groupIndex} · rayon ${sector.radiusKm} km`}</Tooltip>
+          </Circle>
+        ))}
+        {guidedWaypoints.map(({ route, waypoint }) => (
+          <CircleMarker
+            key={`guided-waypoint-${route.routeId}-${waypoint.id}`}
+            center={[waypoint.latitude, waypoint.longitude]}
+            radius={7}
+            pathOptions={{ color: "#312e81", fillColor: route.groupIndex % 2 === 0 ? "#60a5fa" : "#34d399", fillOpacity: 0.98, weight: 2 }}
+          >
+            <Tooltip>{`${waypoint.order + 1}. ${waypoint.label} · passage planifié · aucune observation`}</Tooltip>
+          </CircleMarker>
         ))}
         {zones.map(([label, coordinate]) =>
           coordinate ? (

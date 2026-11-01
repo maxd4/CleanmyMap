@@ -82,6 +82,8 @@ export function buildRoutePlannerSnapshot(input: {
   returnDistanceKm: number;
   returnMinutes: number;
   groups: readonly RoutePlannerSnapshotGroup[];
+  guidedBudget?: RoutePlannerSnapshot["guidedBudget"];
+  plannerWarnings?: RoutePlannerSnapshot["plannerWarnings"];
   dataStatus: RouteDataStatus;
   dataLayers: RouteDataLayers;
   sourceHealth: UnifiedSourceHealth;
@@ -134,6 +136,10 @@ export function buildRoutePlannerSnapshot(input: {
     },
     geometry: structuredClone(input.routeGeometry),
     groups: input.groups.map((group) => structuredClone(group)),
+    ...(input.guidedBudget ? { guidedBudget: structuredClone(input.guidedBudget) } : {}),
+    ...(input.plannerWarnings && input.plannerWarnings.length > 0
+      ? { plannerWarnings: [...input.plannerWarnings] }
+      : {}),
     provenance: {
       dataStatus: input.dataStatus,
       dataLayers: structuredClone(input.dataLayers),

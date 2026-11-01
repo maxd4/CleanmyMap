@@ -4,10 +4,12 @@ import type { RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
 import {
   MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
-  MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES,
   MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
   ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
   ROUTE_TERRITORIAL_GUIDED_VERSION,
+  isRouteGuidedBudget,
+  isRouteGuidedSector,
+  isRoutePlannedWaypoint,
 } from "./route-planning-mode";
 import { routeDistanceKm, type RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
@@ -70,7 +72,9 @@ function validateRoutePlannerSnapshotV1(
       snapshot.selectedCandidateIds,
     ) &&
     isRoutePlannerSnapshotProvenance(snapshot.provenance) &&
-    (snapshot.weatherContext === undefined || isPlannerWeatherContext(snapshot.weatherContext))
+    (snapshot.weatherContext === undefined || isPlannerWeatherContext(snapshot.weatherContext)) &&
+    (snapshot.guidedBudget === undefined || isRouteGuidedBudget(snapshot.guidedBudget)) &&
+    (snapshot.plannerWarnings === undefined || isStringArray(snapshot.plannerWarnings))
   );
 }
 
@@ -193,7 +197,52 @@ function isRoutePlannerSnapshotGroup(
     finiteNonNegative(group.travelBudgetMinutes) &&
     typeof group.withinBudget === "boolean" &&
     isRouteGeometry(group.routeGeometry) &&
-    (group.operationalBudget === null || isRouteOperationalBudget(group.operationalBudget))
+    (group.operationalBudget === null || isRouteOperationalBudget(group.operationalBudget)) &&
+    (group.label === undefined || isNonEmptyString(group.label)) &&
+    (group.plannedSector === undefined || isRouteGuidedSector(group.plannedSector)) &&
+    (group.plannedWaypoints === undefined || (
+      group.plannedWaypoints.length <= MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP &&
+      group.plannedWaypoints.every(isRoutePlannedWaypoint) &&
+      group.plannedWaypoints.every((waypoint, index) => waypoint.order === index)
+    )) &&
+    (group.guidedBudget === undefined || isRouteGuidedBudget(group.guidedBudget)) &&
+    (group.guidedSegments === undefined || group.guidedSegments.every(isRouteGuidedSegment)) &&
+    (group.guidedRouting === undefined || isRouteGuidedRoutingAudit(group.guidedRouting))
+  );
+}
+
+function isRouteGuidedSegment(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const segment = value as Record<string, unknown>;
+  return (
+    segment.kind === "origin-link" || segment.kind === "collection"
+  ) &&
+    (segment.fromWaypointId === null || typeof segment.fromWaypointId === "string") &&
+    (segment.toWaypointId === null || typeof segment.toWaypointId === "string") &&
+    finiteNonNegative(segment.distanceKm) &&
+    finiteNonNegative(segment.estimatedMinutes) &&
+    typeof segment.estimated === "boolean";
+}
+
+function isRouteGuidedRoutingAudit(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const audit = value as Record<string, unknown>;
+  const budget = audit.budget as Record<string, unknown> | undefined;
+  const guidedBudget = isRouteGuidedBudget(budget) ? budget : null;
+  return (
+    (audit.availability === "network" || audit.availability === "fallback-estimated") &&
+    typeof audit.loopVerified === "boolean" &&
+    typeof audit.originVerified === "boolean" &&
+    typeof audit.waypointOrderVerified === "boolean" &&
+    isStringArray(audit.waypointIds) &&
+    finiteNonNegative(audit.sectorDeviationKm) &&
+    typeof audit.sectorWithinBounds === "boolean" &&
+    (audit.warning === null || typeof audit.warning === "string") &&
+    Boolean(budget) &&
+    guidedBudget !== null &&
+    finiteNonNegative((budget as Record<string, unknown>).travelMinutes) &&
+    finiteNonNegative((budget as Record<string, unknown>).collectionMinutesAvailable) &&
+    typeof (budget as Record<string, unknown>).withinBudget === "boolean"
   );
 }
 
@@ -312,24 +361,6 @@ function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
       routeDistanceKm(sector.center, waypoint) <= sector.radiusKm,
     );
   });
-}
-
-function isRouteGuidedBudget(value: unknown): boolean {
-  if (!value || typeof value !== "object") return false;
-  const budget = value as Record<string, unknown>;
-  const totalMinutes = budget.totalMinutes;
-  const organizationMarginMinutes = budget.organizationMarginMinutes;
-  const minimumCollectionMinutes = budget.minimumCollectionMinutes;
-  const travelMaxMinutes = budget.travelMaxMinutes;
-  if (!finiteNumberBetween(totalMinutes, Number.MIN_VALUE, MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES) ||
-    !finiteNonNegative(organizationMarginMinutes) ||
-    !finiteNumberBetween(minimumCollectionMinutes, Number.MIN_VALUE, MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES) ||
-    !finiteNumberBetween(travelMaxMinutes, Number.MIN_VALUE, MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES)) {
-    return false;
-  }
-  return Math.abs(
-    totalMinutes - organizationMarginMinutes - minimumCollectionMinutes - travelMaxMinutes,
-  ) <= Number.EPSILON * Math.max(1, Math.abs(totalMinutes));
 }
 
 function isStringArray(value: unknown): value is string[] {

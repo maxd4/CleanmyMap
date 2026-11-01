@@ -33,6 +33,84 @@ export type RoutePlannedWaypoint = RouteGuidedWaypoint & {
   order: number;
 };
 
+export function isRouteGuidedSector(value: unknown): value is RouteGuidedSector {
+  if (!value || typeof value !== "object") return false;
+  const sector = value as { center?: { latitude?: unknown; longitude?: unknown }; radiusKm?: unknown };
+  const latitude = sector.center?.latitude;
+  const longitude = sector.center?.longitude;
+  const radiusKm = sector.radiusKm;
+  return Boolean(
+    typeof latitude === "number" &&
+      Number.isFinite(latitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      typeof longitude === "number" &&
+      Number.isFinite(longitude) &&
+      longitude >= -180 &&
+      longitude <= 180 &&
+      typeof radiusKm === "number" &&
+      Number.isFinite(radiusKm) &&
+      radiusKm > 0 &&
+      radiusKm <= MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
+  );
+}
+
+export function isRouteGuidedBudget(value: unknown): value is RouteGuidedBudget {
+  if (!value || typeof value !== "object") return false;
+  const budget = value as Record<string, unknown>;
+  const totalMinutes = budget.totalMinutes;
+  const organizationMarginMinutes = budget.organizationMarginMinutes;
+  const minimumCollectionMinutes = budget.minimumCollectionMinutes;
+  const travelMaxMinutes = budget.travelMaxMinutes;
+  if (
+    typeof totalMinutes !== "number" ||
+    !Number.isFinite(totalMinutes) ||
+    totalMinutes <= 0 ||
+    totalMinutes > MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES ||
+    typeof organizationMarginMinutes !== "number" ||
+    !Number.isFinite(organizationMarginMinutes) ||
+    organizationMarginMinutes < 0 ||
+    typeof minimumCollectionMinutes !== "number" ||
+    !Number.isFinite(minimumCollectionMinutes) ||
+    minimumCollectionMinutes <= 0 ||
+    minimumCollectionMinutes > MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES ||
+    typeof travelMaxMinutes !== "number" ||
+    !Number.isFinite(travelMaxMinutes) ||
+    travelMaxMinutes <= 0 ||
+    travelMaxMinutes > MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES
+  ) {
+    return false;
+  }
+  return Math.abs(
+    totalMinutes - organizationMarginMinutes - minimumCollectionMinutes - travelMaxMinutes,
+  ) <= Number.EPSILON * Math.max(1, Math.abs(totalMinutes));
+}
+
+export function isRoutePlannedWaypoint(value: unknown): value is RoutePlannedWaypoint {
+  if (!value || typeof value !== "object") return false;
+  const waypoint = value as Record<string, unknown>;
+  const latitude = waypoint.latitude;
+  const longitude = waypoint.longitude;
+  const order = waypoint.order;
+  return Boolean(
+    typeof waypoint.id === "string" &&
+      waypoint.id.length > 0 &&
+      typeof waypoint.label === "string" &&
+      typeof latitude === "number" &&
+      Number.isFinite(latitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      typeof longitude === "number" &&
+      Number.isFinite(longitude) &&
+      longitude >= -180 &&
+      longitude <= 180 &&
+      typeof order === "number" &&
+      Number.isInteger(order) &&
+      order >= 0 &&
+      order < MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
+  );
+}
+
 export type RouteTerritorialGuidedGroup = {
   sector: RouteGuidedSector;
   waypoints: RouteGuidedWaypoint[];

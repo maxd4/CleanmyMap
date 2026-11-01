@@ -17,6 +17,7 @@ function buildPlannerSnapshotGroups(
   return (context.groupRoutes.length > 0
     ? context.groupRoutes.map((group) => ({
         groupIndex: group.groupIndex,
+        ...(group.label ? { label: group.label } : {}),
         volunteerCount: group.volunteerCount,
         candidateIds: [...group.candidateIds],
         reservedCandidateIds: [...group.reservedCandidateIds],
@@ -27,9 +28,15 @@ function buildPlannerSnapshotGroups(
         withinBudget: group.withinBudget,
         routeGeometry: group.routeGeometry,
         operationalBudget: group.operationalBudget ?? null,
+        ...(group.plannedSector ? { plannedSector: structuredClone(group.plannedSector) } : {}),
+        ...(group.plannedWaypoints ? { plannedWaypoints: structuredClone(group.plannedWaypoints) } : {}),
+        ...(group.guidedBudget ? { guidedBudget: structuredClone(group.guidedBudget) } : {}),
+        ...(group.guidedSegments ? { guidedSegments: structuredClone(group.guidedSegments) } : {}),
+        ...(group.guidedRouting ? { guidedRouting: structuredClone(group.guidedRouting) } : {}),
       }))
     : planning.groupPartition.groups.map((group) => ({
         groupIndex: group.groupIndex,
+        ...(group.label ? { label: group.label } : {}),
         volunteerCount: group.volunteerCount,
         candidateIds: [...group.candidateIds],
         reservedCandidateIds: [],
@@ -40,6 +47,9 @@ function buildPlannerSnapshotGroups(
         withinBudget: group.estimatedDurationMinutes <= input.travelBudgetMinutes,
         routeGeometry: planning.routeGeometry,
         operationalBudget: null,
+        ...(group.plannedSector ? { plannedSector: structuredClone(group.plannedSector) } : {}),
+        ...(group.plannedWaypoints ? { plannedWaypoints: structuredClone(group.plannedWaypoints) } : {}),
+        ...(group.guidedBudget ? { guidedBudget: structuredClone(group.guidedBudget) } : {}),
       })));
 }
 
@@ -71,6 +81,7 @@ export function buildRoutePlannerSnapshotForProof(
   predictionSummary: ProofContext["predictionSummary"],
   dataLayers: ReturnType<typeof resolveRouteDataLayers>,
   snapshotStops: RouteStop[],
+  plannerWarnings: readonly string[] = [],
 ): ReturnType<typeof buildRoutePlannerSnapshot> {
   const { candidateData, planning } = input;
   return buildRoutePlannerSnapshot({
@@ -99,6 +110,13 @@ export function buildRoutePlannerSnapshotForProof(
     prediction: predictionSummary,
     durationModelVersion: context.operationalBudget.durationModelVersion,
     weatherContext: input.weatherContext,
+    guidedBudget: input.guidedBudget,
+    plannerWarnings: [...new Set([
+      ...plannerWarnings,
+      ...context.groupRoutes
+        .map((group) => group.guidedRouting?.warning)
+        .filter((warning): warning is string => Boolean(warning)),
+    ])],
   });
 }
 

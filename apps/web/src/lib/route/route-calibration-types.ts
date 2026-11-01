@@ -10,7 +10,16 @@ import type { CleanupWorkload } from "./route-cleanup-workload";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { RouteDataLayers, RouteDataStatus } from "./route-data-status";
 import type { RouteGeometry, RouteStop } from "./route-contract";
-import type { RoutePlanningMode } from "./route-planning-mode";
+import type {
+  RouteGuidedBudget,
+  RouteGuidedSector,
+  RoutePlanningMode,
+  RoutePlannedWaypoint,
+} from "./route-planning-mode";
+import type {
+  RouteGuidedRoutingAudit,
+  RouteGuidedSegment,
+} from "./route-response-contract";
 import type { RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
@@ -53,6 +62,7 @@ export type RouteCalibrationContextCandidate = {
 
 export type RoutePlannerSnapshotGroup = {
   groupIndex: number;
+  label?: string;
   volunteerCount: number;
   candidateIds: string[];
   reservedCandidateIds: string[];
@@ -63,6 +73,11 @@ export type RoutePlannerSnapshotGroup = {
   withinBudget: boolean;
   routeGeometry: RouteGeometry;
   operationalBudget: RouteOperationalBudget | null;
+  plannedSector?: RouteGuidedSector;
+  plannedWaypoints?: RoutePlannedWaypoint[];
+  guidedBudget?: RouteGuidedBudget;
+  guidedSegments?: RouteGuidedSegment[];
+  guidedRouting?: RouteGuidedRoutingAudit;
 };
 
 /**
@@ -103,6 +118,8 @@ export type RoutePlannerSnapshot = {
   };
   geometry: RouteGeometry;
   groups: RoutePlannerSnapshotGroup[];
+  guidedBudget?: RouteGuidedBudget;
+  plannerWarnings?: string[];
   provenance: {
     dataStatus: RouteDataStatus;
     dataLayers: RouteDataLayers;

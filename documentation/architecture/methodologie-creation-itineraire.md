@@ -304,13 +304,32 @@ supprimée boucle par boucle sans toucher à
 `routeCalibrationContext.plannerSnapshot`. Elle décrit le parcours prévu, pas
 un trajet GPS observé : le futur contrat `executedRoute` est hors de ce lot.
 
-`operationalRoute` conserve les géométries et les arrêts techniques du planner
-sous `plannerTechnicalStops`, sans durée par arrêt. Le rendu public de la carte
-ne dessine que les lignes des boucles et les trois zones éditables — départ,
-mi-parcours et arrivée — ; les arrêts techniques du planner ne sont pas
-affichés comme étapes publiques. Le nombre historique `plannerGroupCount` reste
-immuable, même après suppression de toutes les boucles ; le nombre courant de
-boucles n’est jamais présenté comme une répartition de bénévoles.
+`operationalRoute` conserve les deux géométries et les arrêts techniques du
+planner sous `plannerTechnicalStops`, sans durée par arrêt. Pour une
+planification `territorial-guided`, chaque boucle conserve en plus son nom,
+son effectif, son secteur, ses `plannedWaypoints` dans leur ordre, son budget,
+ses segments et l’audit de routage ; le budget global et les avertissements du
+planner restent au niveau de l’objet. Ces données décrivent une intention
+planifiée : elles ne sont ni des `stops`, ni des observations, ni des
+prédictions et ne reçoivent aucun score, priorité scientifique ou provenance
+de pollution.
+
+Le rendu public de la carte dessine les lignes des boucles avec leurs couleurs,
+les secteurs et les passages planifiés explicitement marqués ; les arrêts
+techniques du planner ne sont pas affichés comme étapes publiques. Une
+géométrie de fallback reste visible mais porte son état estimé et son
+avertissement fournisseur : elle ne devient pas un parcours piéton réseau
+validé. Le nombre historique `plannerGroupCount` reste immuable, même après
+suppression de toutes les boucles ; le nombre courant de boucles n’est jamais
+présenté comme une répartition de bénévoles.
+
+Le handoff et la création d’action transportent l’objet `operationalRoute`
+avec le snapshot et la preuve serveur. Une modification partielle ou un
+rafraîchissement qui ne fournit pas de nouveau parcours conserve les deux
+boucles et leurs métadonnées ; seul un recalcul explicitement appliqué peut
+remplacer la version active. La sélection ultérieure d’une trace GPS, GPX ou
+manuelle reste une géométrie d’exécution distincte et n’efface pas le parcours
+guidé planifié.
 
 L’export GPX de la surface itinéraire réutilise cette géométrie finale
 `operationalRoute`, issue du handoff de `RouteRecommendationResponse`, et non

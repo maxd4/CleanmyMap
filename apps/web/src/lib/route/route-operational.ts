@@ -13,9 +13,19 @@ import {
 import type {
   MeetingPointProjection,
   RouteGroupRoute,
+  RouteGuidedRoutingAudit,
+  RouteGuidedSegment,
   RouteOptions,
   RouteRecommendationResponse,
 } from "./route-response-contract";
+import {
+  isRouteGuidedBudget,
+  isRouteGuidedSector,
+  isRoutePlannedWaypoint,
+  type RouteGuidedBudget,
+  type RouteGuidedSector,
+  type RoutePlannedWaypoint,
+} from "./route-planning-mode";
 import type { ActionPreparationData } from "@/lib/actions/types";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationContract } from "@/lib/actions/preparation-contract";
@@ -46,9 +56,17 @@ type PlannerTechnicalStop = Pick<
 type OperationalRouteLoop = {
   routeId: string;
   groupIndex: number;
+  label?: string;
+  volunteerCount?: number;
   geometry: RouteGeometry;
   /** Planner provenance only; never an observed or public marker source. */
   plannerTechnicalStops: PlannerTechnicalStop[];
+  /** Guided planning context; separate from observed/predicted planner stops. */
+  plannedSector?: RouteGuidedSector;
+  plannedWaypoints?: RoutePlannedWaypoint[];
+  guidedBudget?: RouteGuidedBudget;
+  guidedSegments?: RouteGuidedSegment[];
+  guidedRouting?: RouteGuidedRoutingAudit;
 };
 
 export type OperationalRoute = {
@@ -60,6 +78,9 @@ export type OperationalRoute = {
   plannerGroupCount: number;
   routes: OperationalRouteLoop[];
   zones: Record<OperationalRouteZoneKey, OperationalRouteZone>;
+  /** Optional guided context added to the existing operational-route-v1 shape. */
+  guidedBudget?: RouteGuidedBudget;
+  plannerWarnings?: string[];
 };
 
 export type PublicOperationalRoute = {
@@ -84,7 +105,9 @@ export type PlannerActionHandoff = {
 export function createOperationalRouteFromRecommendation(
   recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry"> & {
     stops: readonly RouteStop[];
-    groupRoutes: ReadonlyArray<Pick<RouteGroupRoute, "groupIndex" | "routeGeometry"> & {
+    guidedBudget?: RouteGuidedBudget;
+    trace?: { warnings: readonly string[] };
+    groupRoutes: ReadonlyArray<Pick<RouteGroupRoute, "groupIndex" | "routeGeometry"> & Partial<Pick<RouteGroupRoute, "label" | "volunteerCount" | "plannedSector" | "plannedWaypoints" | "guidedBudget" | "guidedSegments" | "guidedRouting">> & {
       stops: readonly RouteStop[];
     }>;
   },
@@ -93,8 +116,15 @@ export function createOperationalRouteFromRecommendation(
     ? recommendation.groupRoutes.map((group) => ({
         routeId: `planner-group-${group.groupIndex}`,
         groupIndex: group.groupIndex,
+        ...(group.label ? { label: group.label } : {}),
+        ...(group.volunteerCount !== undefined ? { volunteerCount: group.volunteerCount } : {}),
         geometry: structuredClone(group.routeGeometry),
         plannerTechnicalStops: group.stops.map(toPlannerTechnicalStop),
+        ...(group.plannedSector ? { plannedSector: structuredClone(group.plannedSector) } : {}),
+        ...(group.plannedWaypoints ? { plannedWaypoints: structuredClone(group.plannedWaypoints) } : {}),
+        ...(group.guidedBudget ? { guidedBudget: structuredClone(group.guidedBudget) } : {}),
+        ...(group.guidedSegments ? { guidedSegments: structuredClone(group.guidedSegments) } : {}),
+        ...(group.guidedRouting ? { guidedRouting: structuredClone(group.guidedRouting) } : {}),
       }))
     : [{
         routeId: "planner-group-1",
@@ -115,6 +145,8 @@ export function createOperationalRouteFromRecommendation(
     state: "planner_copy",
     plannerGroupCount: recommendation.groupCount,
     routes,
+    ...(recommendation.guidedBudget ? { guidedBudget: structuredClone(recommendation.guidedBudget) } : {}),
+    ...(recommendation.trace?.warnings ? { plannerWarnings: [...recommendation.trace.warnings] } : {}),
     zones: {
       departure: {
         label: null,
@@ -459,7 +491,9 @@ export function isOperationalRoute(value: unknown): value is OperationalRoute {
     hasUniqueRoutePropertyValues(route.routes, "routeId") &&
     hasUniqueRoutePropertyValues(route.routes, "groupIndex") &&
     route.routes.every(isOperationalRouteLoop) &&
-    isOperationalRouteZones(route.zones)
+    isOperationalRouteZones(route.zones) &&
+    (route.guidedBudget === undefined || isRouteGuidedBudget(route.guidedBudget)) &&
+    (route.plannerWarnings === undefined || (Array.isArray(route.plannerWarnings) && route.plannerWarnings.every((warning) => typeof warning === "string")))
   );
 }
 
@@ -558,7 +592,47 @@ function isOperationalRouteLoop(value: unknown): value is OperationalRouteLoop {
     isRouteGeometry(route.geometry) &&
     Array.isArray(route.plannerTechnicalStops) &&
     route.plannerTechnicalStops.length <= MAX_PLANNER_TECHNICAL_STOPS &&
-    route.plannerTechnicalStops.every(isPlannerTechnicalStop)
+    route.plannerTechnicalStops.every(isPlannerTechnicalStop) &&
+    (route.label === undefined || (typeof route.label === "string" && route.label.length > 0)) &&
+    (route.volunteerCount === undefined || (Number.isInteger(route.volunteerCount) && route.volunteerCount > 0 && route.volunteerCount <= 500)) &&
+    (route.plannedSector === undefined || isRouteGuidedSector(route.plannedSector)) &&
+    (route.plannedWaypoints === undefined || (Array.isArray(route.plannedWaypoints) && route.plannedWaypoints.every(isRoutePlannedWaypoint))) &&
+    (route.guidedBudget === undefined || isRouteGuidedBudget(route.guidedBudget)) &&
+    (route.guidedSegments === undefined || (Array.isArray(route.guidedSegments) && route.guidedSegments.every(isRouteGuidedSegment))) &&
+    (route.guidedRouting === undefined || isRouteGuidedRoutingAudit(route.guidedRouting))
+  );
+}
+
+function isRouteGuidedSegment(value: unknown): value is RouteGuidedSegment {
+  if (!value || typeof value !== "object") return false;
+  const segment = value as Partial<RouteGuidedSegment>;
+  return (
+    (segment.kind === "origin-link" || segment.kind === "collection") &&
+    (segment.fromWaypointId === null || typeof segment.fromWaypointId === "string") &&
+    (segment.toWaypointId === null || typeof segment.toWaypointId === "string") &&
+    typeof segment.distanceKm === "number" && Number.isFinite(segment.distanceKm) && segment.distanceKm >= 0 &&
+    typeof segment.estimatedMinutes === "number" && Number.isFinite(segment.estimatedMinutes) && segment.estimatedMinutes >= 0 &&
+    typeof segment.estimated === "boolean"
+  );
+}
+
+function isRouteGuidedRoutingAudit(value: unknown): value is RouteGuidedRoutingAudit {
+  if (!value || typeof value !== "object") return false;
+  const audit = value as Partial<RouteGuidedRoutingAudit>;
+  const budget = audit.budget;
+  return (
+    (audit.availability === "network" || audit.availability === "fallback-estimated") &&
+    typeof audit.loopVerified === "boolean" &&
+    typeof audit.originVerified === "boolean" &&
+    typeof audit.waypointOrderVerified === "boolean" &&
+    Array.isArray(audit.waypointIds) && audit.waypointIds.every((id) => typeof id === "string") &&
+    typeof audit.sectorDeviationKm === "number" && Number.isFinite(audit.sectorDeviationKm) && audit.sectorDeviationKm >= 0 &&
+    typeof audit.sectorWithinBounds === "boolean" &&
+    (audit.warning === null || typeof audit.warning === "string") &&
+    Boolean(budget) && isRouteGuidedBudget(budget) &&
+    typeof budget?.travelMinutes === "number" && Number.isFinite(budget.travelMinutes) && budget.travelMinutes >= 0 &&
+    typeof budget?.collectionMinutesAvailable === "number" && Number.isFinite(budget.collectionMinutesAvailable) && budget.collectionMinutesAvailable >= 0 &&
+    typeof budget?.withinBudget === "boolean"
   );
 }
 

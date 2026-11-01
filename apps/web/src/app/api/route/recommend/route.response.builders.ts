@@ -420,6 +420,7 @@ export function buildRouteProofContext(
     predictionSummary,
     dataLayers,
     snapshotStops,
+    trace.warnings,
   );
   const plannerProof = createRoutePlannerProof({
     snapshot: plannerSnapshot,

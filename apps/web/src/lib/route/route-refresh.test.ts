@@ -138,6 +138,73 @@ describe("route refresh proposal", () => {
     );
   });
 
+  it("copies both guided loops into an explicit refresh proposal without changing the current action", () => {
+    const current = action();
+    const snapshot = structuredClone(current.preparationData!.routeCalibrationContext!.plannerSnapshot!);
+    snapshot.generatedAt = "2026-09-27T09:00:00.000Z";
+    snapshot.parameters = {
+      ...snapshot.parameters,
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: "route-territorial-guided-v2",
+        budget: { totalMinutes: 90, organizationMarginMinutes: 15, minimumCollectionMinutes: 45, travelMaxMinutes: 30 },
+        groups: [1, 2].map((index) => ({
+          sector: { center: { latitude: 48.844 + index / 1000, longitude: 2.35 }, radiusKm: 1 },
+          waypoints: [{ id: `guided-${index}`, label: `Passage ${index}`, latitude: 48.844 + index / 1000, longitude: 2.35 }],
+        })),
+      },
+    };
+    snapshot.groups = [1, 2].map((index) => ({
+      ...snapshot.groups[0]!,
+      groupIndex: index,
+      volunteerCount: 5,
+      routeGeometry: snapshot.geometry,
+      plannedSector: { center: { latitude: 48.844 + index / 1000, longitude: 2.35 }, radiusKm: 1 },
+      plannedWaypoints: [{ id: `guided-${index}`, label: `Passage ${index}`, latitude: 48.844 + index / 1000, longitude: 2.35, order: 0 }],
+      guidedBudget: { totalMinutes: 90, organizationMarginMinutes: 15, minimumCollectionMinutes: 45, travelMaxMinutes: 30 },
+    }));
+    const response = recommendationResponse(snapshot);
+    response.groupCount = 2;
+    response.volunteers = 10;
+    response.planningMode = snapshot.parameters.planningMode;
+    response.guidedBudget = {
+      totalMinutes: 90,
+      organizationMarginMinutes: 15,
+      minimumCollectionMinutes: 45,
+      travelMaxMinutes: 30,
+    };
+    response.groupRoutes = snapshot.groups.map((group) => ({
+      ...group,
+      origin: snapshot.parameters.origin,
+      candidateIds: [],
+      reservedCandidateIds: [],
+      estimatedDistanceKm: group.travelDistanceKm,
+      estimatedDurationMinutes: group.travelMinutes,
+      stops: [],
+      travelDistanceKm: group.travelDistanceKm,
+      travelMinutes: group.travelMinutes,
+      travelBudgetMinutes: group.travelBudgetMinutes,
+      withinBudget: true,
+    })) as unknown as RouteRecommendationResponse["groupRoutes"];
+
+    const proposal = buildRouteRefreshProposal(response);
+    expect(proposal?.operationalRoute.routes).toHaveLength(2);
+    const guidedRoutes = proposal?.operationalRoute.routes.map((route) => ({
+      volunteerCount: route.volunteerCount,
+      waypoint: route.plannedWaypoints?.[0]?.id,
+      sector: route.plannedSector?.center.latitude,
+    }));
+    expect(guidedRoutes?.map(({ volunteerCount, waypoint }) => ({ volunteerCount, waypoint }))).toEqual([
+      { volunteerCount: 5, waypoint: "guided-1" },
+      { volunteerCount: 5, waypoint: "guided-2" },
+    ]);
+    expect(guidedRoutes?.[0]?.sector).toBeCloseTo(48.845, 10);
+    expect(guidedRoutes?.[1]?.sector).toBeCloseTo(48.846, 10);
+    expect(current.preparationData?.operationalRoute?.routes).toHaveLength(1);
+  });
+
   it("falls back to trace warnings and rejects responses without the trust boundary", () => {
     const current = action();
     const snapshot = current.preparationData!.routeCalibrationContext!.plannerSnapshot!;

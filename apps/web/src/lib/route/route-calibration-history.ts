@@ -10,6 +10,9 @@ export function preserveHistoricalRouteCalibrationContext(
   if (!currentContext) {
     return {
       ...next,
+      ...(current?.operationalRoute && next.operationalRoute === undefined
+        ? { operationalRoute: structuredClone(current.operationalRoute) }
+        : {}),
       ...(currentVersioning ? { routeVersioning: structuredClone(currentVersioning) } : {}),
     };
   }
@@ -23,6 +26,9 @@ export function preserveHistoricalRouteCalibrationContext(
   return {
     ...next,
     routeCalibrationContext: structuredClone(currentContext),
+    ...(current?.operationalRoute && next.operationalRoute === undefined
+      ? { operationalRoute: structuredClone(current.operationalRoute) }
+      : {}),
     ...(currentVersioning
       ? { routeVersioning: structuredClone(currentVersioning) }
       : {}),

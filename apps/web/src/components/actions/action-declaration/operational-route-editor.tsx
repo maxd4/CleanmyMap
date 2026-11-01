@@ -85,12 +85,22 @@ export function OperationalRouteEditor({
         <p className="text-xs font-semibold text-emerald-900/65">
           {getOperationalRouteLoopCount(operationalRoute) ?? 0} boucle(s) opérationnelle(s) conservée(s).
         </p>
+        {operationalRoute.guidedBudget ? (
+          <p className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-950">
+            Planification guidée · {operationalRoute.guidedBudget.totalMinutes} min au total · {operationalRoute.guidedBudget.organizationMarginMinutes} min organisation · {operationalRoute.guidedBudget.travelMaxMinutes} min déplacement max · {operationalRoute.guidedBudget.minimumCollectionMinutes} min collecte réservée
+          </p>
+        ) : null}
+        {operationalRoute.plannerWarnings?.map((warning) => (
+          <p key={warning} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+            Avertissement planner : {warning}
+          </p>
+        ))}
         {operationalRoute.routes.length > 0 ? operationalRoute.routes.map((route) => (
           <div key={route.routeId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-white px-3 py-2">
             <div className="text-sm text-emerald-950">
-              <span className="font-bold">Boucle {route.groupIndex}</span>
+              <span className="font-bold">{route.label || `Groupe ${route.groupIndex}`} · boucle {route.groupIndex}</span>
               <span className="ml-2 text-xs text-emerald-900/55">
-                {route.geometry.coordinates.length} points · {route.plannerTechnicalStops.length} arrêts planner
+                {route.volunteerCount ? `${route.volunteerCount} bénévoles · ` : ""}{route.geometry.coordinates.length} points · {route.plannerTechnicalStops.length} arrêts planner · {route.plannedWaypoints?.length ?? 0} passages planifiés
               </span>
             </div>
             <button
@@ -100,6 +110,14 @@ export function OperationalRouteEditor({
             >
               Supprimer cette boucle
             </button>
+            {route.plannedSector || route.plannedWaypoints?.length || route.guidedRouting ? (
+              <div className="basis-full rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-950">
+                {route.plannedSector ? <p>Secteur : centre {route.plannedSector.center.latitude.toFixed(5)}, {route.plannedSector.center.longitude.toFixed(5)} · rayon {route.plannedSector.radiusKm} km</p> : null}
+                {route.plannedWaypoints?.length ? <p className="mt-1">Passages : {route.plannedWaypoints.map((waypoint) => `${waypoint.order + 1}. ${waypoint.label}`).join(" · ")}</p> : null}
+                {route.guidedBudget ? <p className="mt-1">Budget : {route.guidedBudget.totalMinutes} min total · {route.guidedBudget.travelMaxMinutes} min déplacement max · {route.guidedBudget.minimumCollectionMinutes} min collecte réservée</p> : null}
+                {route.guidedRouting ? <p className="mt-1">Routage : {route.guidedRouting.availability === "network" ? "réseau piéton" : "fallback estimé"} · boucle {route.guidedRouting.loopVerified ? "fermée" : "à vérifier"} · ordre {route.guidedRouting.waypointOrderVerified ? "conservé" : "à vérifier"}{route.guidedRouting.warning ? ` · ${route.guidedRouting.warning}` : ""}</p> : null}
+              </div>
+            ) : null}
           </div>
         )) : (
           <p className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">

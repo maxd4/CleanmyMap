@@ -14,6 +14,7 @@ import {
   projectMeetingPointFromGeometry,
   updateOperationalRouteZone,
 } from "./route-operational";
+import { createDefaultRouteTerritorialGuidedMode } from "./route-planning-mode";
 import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 import {
   MAX_OPERATIONAL_ROUTE_LOOPS,
@@ -46,6 +47,48 @@ const recommendation = {
     { groupIndex: 1, stops: [], routeGeometry: geometry },
     { groupIndex: 2, stops: [], routeGeometry: geometry },
   ],
+} as const;
+
+const guidedMode = createDefaultRouteTerritorialGuidedMode(10, 2);
+const guidedRecommendation = {
+  ...recommendation,
+  planningMode: guidedMode,
+  guidedBudget: guidedMode.budget,
+  trace: { warnings: ["Le réseau réel reste la preuve du tracé piéton."] },
+  groupRoutes: guidedMode.groups.map((group, index) => ({
+    groupIndex: index + 1,
+    label: index === 0 ? "Panthéon" : "Jardin des Plantes",
+    volunteerCount: 5,
+    stops: [],
+    routeGeometry: geometry,
+    plannedSector: group.sector,
+    plannedWaypoints: group.waypoints.map((waypoint, order) => ({ ...waypoint, order })),
+    guidedBudget: guidedMode.budget,
+    guidedSegments: [{
+      kind: "origin-link" as const,
+      fromWaypointId: null,
+      toWaypointId: group.waypoints[0]!.id,
+      distanceKm: 0.2,
+      estimatedMinutes: 3,
+      estimated: false,
+    }],
+    guidedRouting: {
+      availability: "network" as const,
+      loopVerified: true,
+      originVerified: true,
+      waypointOrderVerified: true,
+      waypointIds: [group.waypoints[0]!.id],
+      sectorDeviationKm: 0,
+      sectorWithinBounds: true,
+      warning: null,
+      budget: {
+        ...guidedMode.budget,
+        travelMinutes: 3,
+        collectionMinutesAvailable: 45,
+        withinBudget: true,
+      },
+    },
+  })),
 } as const;
 
 describe("operational route contract", () => {
@@ -226,6 +269,31 @@ describe("operational route contract", () => {
     expect(operationalRoute.plannerGroupCount).toBe(2);
     expect(operationalRoute.routes[0]?.plannerTechnicalStops).toEqual([]);
     expect(isOperationalRoute(operationalRoute)).toBe(true);
+  });
+
+  it("carries guided groups, sectors, ordered passages, budgets and warnings without observations", () => {
+    const operationalRoute = createOperationalRouteFromRecommendation(guidedRecommendation);
+
+    expect(operationalRoute.routes).toHaveLength(2);
+    expect(operationalRoute.routes.map((route) => ({
+      label: route.label,
+      volunteerCount: route.volunteerCount,
+      sector: route.plannedSector,
+      waypoints: route.plannedWaypoints?.map(({ id, order }) => ({ id, order })),
+      stops: route.plannerTechnicalStops,
+      availability: route.guidedRouting?.availability,
+    }))).toEqual([
+      expect.objectContaining({ label: "Panthéon", volunteerCount: 5, availability: "network", stops: [] }),
+      expect.objectContaining({ label: "Jardin des Plantes", volunteerCount: 5, availability: "network", stops: [] }),
+    ]);
+    expect(operationalRoute.guidedBudget).toEqual(guidedMode.budget);
+    expect(operationalRoute.plannerWarnings).toEqual(guidedRecommendation.trace.warnings);
+    expect(isOperationalRoute(operationalRoute)).toBe(true);
+
+    const normalized = normalizeOperationalRoute(operationalRoute);
+    expect(normalized?.routes[0]?.plannedWaypoints?.[0]?.order).toBe(0);
+    expect(normalized?.routes[1]?.plannedSector).toEqual(guidedMode.groups[1]?.sector);
+    expect(normalized?.routes.every((route) => route.plannerTechnicalStops.length === 0)).toBe(true);
   });
 
   it("reads legacy actualRoute data and normalizes it without writing the old key", () => {

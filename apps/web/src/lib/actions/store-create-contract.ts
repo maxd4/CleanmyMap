@@ -159,7 +159,7 @@ function normalizeActiveRoutePreparationData(
       ...preparation,
       ...(activeGeometry?.operationalRoute
         ? { operationalRoute: activeGeometry.operationalRoute }
-        : !activeGeometry && preparation.operationalRoute
+        : preparation.operationalRoute
           ? { operationalRoute: preparation.operationalRoute }
           : { operationalRoute: undefined }),
       ...(activeGeometry?.source === "gpx_import"
