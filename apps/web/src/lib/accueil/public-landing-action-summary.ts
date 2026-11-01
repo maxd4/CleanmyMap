@@ -1,5 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
+import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
+import { projectCurrentCigaretteButts } from "@/lib/waste/cigarette-butts";
 import type { PublicLandingActionAggregationRow } from "./action-participant-aggregation";
 
 export type PublicLandingActionSummaryRow =
@@ -92,21 +94,91 @@ async function callImpactStateRpc(
   return result.data;
 }
 
+type PublicImpactProjectionActionRow = {
+  id: string;
+  updated_at: string;
+  cigarette_butts: number | string | null;
+  notes: string | null;
+};
+
+function parseProjectionActionRow(value: unknown): PublicImpactProjectionActionRow | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    typeof row.updated_at !== "string" ||
+    (row.cigarette_butts !== null &&
+      typeof row.cigarette_butts !== "number" &&
+      typeof row.cigarette_butts !== "string") ||
+    (row.notes !== null && typeof row.notes !== "string")
+  ) return null;
+  return {
+    id: row.id,
+    updated_at: row.updated_at,
+    cigarette_butts: row.cigarette_butts as number | string | null,
+    notes: row.notes as string | null,
+  };
+}
+
+function toNullableNonNegativeInteger(value: number | string | null): number | null {
+  if (value === null) return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : null;
+}
+
+function buildCurrentButtsProjectionRows(
+  rows: readonly unknown[],
+): Array<Record<string, unknown>> {
+  return rows.map((value) => {
+    const row = parseProjectionActionRow(value);
+    if (!row) throw new Error("Public Impact projection source returned an invalid action row.");
+    const measurements = extractActionMetadataFromNotes(row.notes).cigaretteButtsMeasurements;
+    const projection = projectCurrentCigaretteButts(
+      measurements,
+      toNullableNonNegativeInteger(row.cigarette_butts),
+    );
+    return {
+      action_id: row.id,
+      source_updated_at: row.updated_at,
+      projected_count: projection.source === "lots" ? projection.count : null,
+      recalculation_status: projection.status,
+      projection_version: PUBLIC_IMPACT_PROJECTION_VERSION,
+      projected_lot_results: projection.source === "lots" ? projection.results : null,
+    };
+  });
+}
+
+async function loadCurrentCigaretteButtsProjectionRows(): Promise<Array<Record<string, unknown>>> {
+  const supabase = getSupabaseServerClient(true);
+  const source = await supabase
+    .from("actions")
+    .select("id, updated_at, cigarette_butts, notes");
+  if (source.error) throw source.error;
+  const rows = buildCurrentButtsProjectionRows(
+    Array.isArray(source.data) ? source.data : [],
+  );
+  return rows;
+}
+
 export async function advancePublicImpactActionState(
   floorDate: string,
 ): Promise<void> {
+  const projectionRows = await loadCurrentCigaretteButtsProjectionRows();
   await callImpactStateRpc("advance_public_impact_action_state", {
     p_floor_date: floorDate,
     p_methodology_version: PUBLIC_IMPACT_PROJECTION_VERSION,
+    p_projection_rows: projectionRows,
   });
 }
 
 export async function rebuildPublicImpactActionState(
   floorDate: string,
 ): Promise<void> {
+  const projectionRows = await loadCurrentCigaretteButtsProjectionRows();
   await callImpactStateRpc("rebuild_public_impact_action_state", {
     p_floor_date: floorDate,
     p_methodology_version: PUBLIC_IMPACT_PROJECTION_VERSION,
+    p_projection_rows: projectionRows,
   });
 }
 

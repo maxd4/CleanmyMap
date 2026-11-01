@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 const rpcMock = vi.hoisted(() => vi.fn());
+const fromMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: () => ({ rpc: rpcMock }),
+  getSupabaseServerClient: () => ({ rpc: rpcMock, from: fromMock }),
 }));
 
 import {
@@ -16,6 +17,9 @@ import {
 describe("public incremental impact projection contract", () => {
   it("passes the current methodology version to both state transitions", async () => {
     rpcMock.mockResolvedValue({ data: null, error: null });
+    fromMock.mockReturnValue({
+      select: vi.fn().mockResolvedValue({ data: [], error: null }),
+    });
 
     await advancePublicImpactActionState("2026-09-08");
     await rebuildPublicImpactActionState("2026-09-08");
@@ -26,6 +30,7 @@ describe("public incremental impact projection contract", () => {
       {
         p_floor_date: "2026-09-08",
         p_methodology_version: PUBLIC_IMPACT_PROJECTION_VERSION,
+        p_projection_rows: [],
       },
     );
     expect(rpcMock).toHaveBeenNthCalledWith(
@@ -34,6 +39,7 @@ describe("public incremental impact projection contract", () => {
       {
         p_floor_date: "2026-09-08",
         p_methodology_version: PUBLIC_IMPACT_PROJECTION_VERSION,
+        p_projection_rows: [],
       },
     );
   });

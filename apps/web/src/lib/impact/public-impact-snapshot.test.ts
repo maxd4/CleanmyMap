@@ -60,7 +60,7 @@ const aggregate = {
       conversionVersion: "impact-terrain-2026-butts-mass-v2",
     }],
   }],
-  methodology_version: "impact-terrain-public-2026.09-v6",
+  methodology_version: "impact-terrain-public-2026.09-v7",
 };
 
 function existingSnapshot(overrides: Record<string, unknown> = {}) {
@@ -132,7 +132,7 @@ describe("public monthly impact snapshot", () => {
       toDate: "2026-09-08",
       timezone: "UTC",
     });
-    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v6");
+    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v7");
     expect(payload.kpis).toMatchObject({
       participantsTotal: 6,
       totalDurationMinutes: 120,

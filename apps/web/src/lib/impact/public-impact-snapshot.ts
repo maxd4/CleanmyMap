@@ -29,7 +29,7 @@ import {
 
 export const PUBLIC_IMPACT_SNAPSHOT_KEY = "cleanmymap-impact-terrain-2026";
 export const PUBLIC_IMPACT_SNAPSHOT_VERSION =
-  "impact-terrain-public-2026.09-v6-butt-mass-provenance";
+  "impact-terrain-public-2026.09-v7-volume-lot-reconciliation";
 const PUBLIC_IMPACT_SNAPSHOT_TITLE =
   "Snapshot public mensuel Impact terrain 2026";
 
@@ -141,6 +141,7 @@ export function buildPublicImpactSnapshotPayload(params: {
         "apps/web/supabase/migrations/20260913000002_public_impact_kpi_parity.sql",
         "apps/web/supabase/migrations/20260913000006_restore_historical_waste_null_semantics.sql",
         "apps/web/supabase/migrations/20261101000008_public_impact_butt_mass_provenance.sql",
+        "apps/web/supabase/migrations/20261101000012_scientific_projection_volume_lot_reconciliation.sql",
       ],
     },
   };

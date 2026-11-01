@@ -416,9 +416,10 @@ Ordonnanceur périodique canonique :
 Pour une évolution de méthode scientifique, l'ordre de dépendance est explicite
 dans les propriétaires existants :
 
-1. l'état incrémental `public_impact_action_*` vérifie sa
-   `methodology_version` et reconstruit les contributions dérivées depuis
-   `actions` si nécessaire ;
+1. le job de maintenance réévalue d'abord les lots conservés avec le moteur
+   TypeScript canonique, puis l'état incrémental `public_impact_action_*`
+   vérifie sa `methodology_version` et reconstruit les contributions dérivées
+   depuis cette projection de service ;
 2. l'agrégat `load_public_landing_action_summary_incremental` doit retourner la
    même méthode avant qu'un snapshot public courant soit généré ;
 3. le snapshot mensuel public est refusé comme `CURRENT` si sa méthode de proxy

@@ -130,8 +130,11 @@ La projection `actions.cigarette_butts` est recalculée côté serveur depuis le
 lots validés. Elle n'est jamais un total client de confiance. Les créations et
 PATCH qui omettent les lots d'une action déjà persistée avec des lots sont
 refusés comme ambigus ; les historiques sans source reconstructible restent
-lisibles sans leur inventer une composition. La persistance réutilise les
-métadonnées d'action existantes et ne crée pas de table de collecte parallèle.
+lisibles sans leur inventer une composition. Lors d'une convergence publique,
+le moteur TypeScript réévalue les lots conservés et transmet leurs résultats à
+la projection SQL de service ; cette projection dérivée ne modifie ni
+`actions`, ni les snapshots historiques, et ne constitue pas une table de
+collecte parallèle.
 
 ### CO2e potentiellement évité (proxy)
 
@@ -505,11 +508,13 @@ contribution d'un enfant est comprise dans celle du compte accompagnateur.
 
 ### Répartition publique des mégots par état
 
-La projection publique `impact-terrain-public-2026.09-v6` additionne les
-résultats canoniques des lots persistés séparément pour `propre`, `humide` et
+La projection publique `impact-terrain-public-2026.09-v7` additionne les
+résultats courants canoniques des lots persistés séparément pour `propre`, `humide` et
 `mouille`. Elle transporte aussi, par état, les masses mesurées ou estimées,
 leur provenance et leur version de conversion : elle ne reconvertit jamais les
-unités en SQL et ne remplace pas le total d'action source. Les actions
+unités en SQL et ne remplace pas le total d'action source. Le moteur TypeScript
+fournit les résultats courants des lots volumétriques à la reconstruction SQL.
+Les actions
 historiques sans résultats de lots utilisent encore leur qualification
 `megotsCondition` lorsqu'elle est fiable ; une provenance absente ou ambiguë
 n'est pas attribuée artificiellement à un état ni à un facteur de masse.

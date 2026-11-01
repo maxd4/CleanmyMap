@@ -287,6 +287,93 @@ export function aggregateCigaretteButtsLots(
   };
 }
 
+export type CurrentCigaretteButtsProjection = {
+  count: number | null;
+  results: CigaretteButtsLotResult[] | null;
+  status: CigaretteButtsRecalculationStatus;
+  source: "lots" | "historical" | "none";
+  volumeConversionVersion: string | null;
+};
+
+/**
+ * Builds the current public projection without rewriting the stored action
+ * measurement. Only retained volume lots move to the current volume proxy;
+ * counted lots and mass lots keep their own historical source/version where it
+ * is known. A scalar historical value without retained lots is never invented.
+ */
+export function projectCurrentCigaretteButts(
+  measurements: Pick<
+    ActionCigaretteButtsMeasurements,
+    | "cigaretteButtsCount"
+    | "cigaretteButtsCountProvenance"
+    | "cigaretteButtsLots"
+    | "cigaretteButtsLotResults"
+  > | null | undefined,
+  historicalCount: number | null = measurements?.cigaretteButtsCount ?? null,
+): CurrentCigaretteButtsProjection {
+  const normalizedHistoricalCount = normalizeCount(historicalCount);
+  const lots = measurements?.cigaretteButtsLots;
+  if (!lots || lots.length === 0) {
+    if (normalizedHistoricalCount === null) {
+      return {
+        count: null,
+        results: null,
+        status: "not_applicable",
+        source: "none",
+        volumeConversionVersion: null,
+      };
+    }
+    return {
+      count: normalizedHistoricalCount,
+      results: null,
+      status: measurements?.cigaretteButtsCountProvenance === "counted"
+        ? "not_applicable"
+        : "not_recalculable",
+      source: "historical",
+      volumeConversionVersion: null,
+    };
+  }
+
+  const persistedResults = measurements?.cigaretteButtsLotResults ?? [];
+  const results = lots.map((lot, index) => {
+    const persisted = persistedResults[index];
+    if (
+      lot.source === "mass_kg" &&
+      persisted?.source === lot.source &&
+      !isCigaretteButtsMassConversionVersion(persisted.massConversionFormulaVersion)
+    ) {
+      return persisted;
+    }
+    return calculateCigaretteButtsLot(lot, {
+      massConversionVersion:
+        lot.source === "mass_kg" && persisted?.source === lot.source
+          ? persisted.massConversionFormulaVersion ?? undefined
+          : undefined,
+      volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+    });
+  });
+  const count = results.reduce((total, result) => total + result.count, 0);
+  const hasVolumeLot = lots.some((lot) => lot.source === "volume_l");
+  if (count > MAX_CIGARETTE_BUTTS_COUNT) {
+    return {
+      count: normalizedHistoricalCount,
+      results: persistedResults.length === lots.length ? persistedResults : null,
+      status: "not_recalculable",
+      source: "historical",
+      volumeConversionVersion: null,
+    };
+  }
+  return {
+    count,
+    results,
+    status: hasVolumeLot ? "recalculable" : "not_applicable",
+    source: "lots",
+    volumeConversionVersion: hasVolumeLot
+      ? CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION
+      : null,
+  };
+}
+
 export function calculateCigaretteButtsLotsTotalCount(
   lots: CigaretteButtsLotInput[],
   options: CigaretteButtsConversionOptions = {},

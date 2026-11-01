@@ -14,6 +14,7 @@ import {
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
   aggregateCigaretteButtsLots,
+  projectCurrentCigaretteButts,
 } from "@/lib/waste/cigarette-butts";
 import {
   toIndividualImpactMeasurement,
@@ -61,6 +62,41 @@ describe("scientific formula change transverse integration", () => {
     expect(current.summary.totalCount).toBe(
       current.results.reduce((total, lot) => total + lot.count, 0),
     );
+
+    const persistedHistoricalMeasurement = {
+      cigaretteButtsCount: historical.summary.totalCount,
+      cigaretteButtsCountProvenance: "estimated" as const,
+      cigaretteButtsLots: historical.lots,
+      cigaretteButtsLotResults: historical.results,
+    };
+    const currentProjection = projectCurrentCigaretteButts(
+      persistedHistoricalMeasurement,
+    );
+    expect(currentProjection.status).toBe("recalculable");
+    expect(currentProjection.count).toBe(4_200);
+    expect(currentProjection.results?.map((lot) => lot.count)).toEqual([100, 2_000, 2_100]);
+    expect(currentProjection.results?.[2]?.volumeConversionFormulaVersion).toBe(
+      CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+    );
+
+    const countedProjection = projectCurrentCigaretteButts({
+      cigaretteButtsCount: 100,
+      cigaretteButtsCountProvenance: "counted",
+      cigaretteButtsLots: [SOURCE_LOTS[0]!],
+      cigaretteButtsLotResults: historical.results.slice(0, 1),
+    });
+    expect(countedProjection.count).toBe(100);
+    expect(countedProjection.status).toBe("not_applicable");
+
+    const ambiguousProjection = projectCurrentCigaretteButts({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsCountProvenance: "unknown",
+    });
+    expect(ambiguousProjection).toMatchObject({
+      count: 1_700,
+      status: "not_recalculable",
+      source: "historical",
+    });
 
     const historicalAction = buildPublicImpactCalculationFromActions([{
       metadata: {
@@ -168,7 +204,7 @@ describe("scientific formula change transverse integration", () => {
       floorDate: "2026-01-01",
     });
     expect(snapshot.projectionVersion).toBe(PUBLIC_IMPACT_PROJECTION_VERSION);
-    expect(PUBLIC_IMPACT_SNAPSHOT_VERSION).toContain("v6");
+    expect(PUBLIC_IMPACT_SNAPSHOT_VERSION).toContain("v7");
     expect(JSON.stringify(snapshot)).not.toMatch(/user|email|participant_id/i);
   });
 

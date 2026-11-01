@@ -289,10 +289,12 @@ produits. Les propriétaires actuels sont distincts :
   `citizen`, `company` et `school` du formulaire ;
 - `pollution-score-references-v2` pour les maxima globaux et départementaux du
   score cartographique ;
-- `impact-terrain-public-2026.09-v6` pour l'état incrémental et les agrégats,
+- `impact-terrain-public-2026.09-v7` pour l'état incrémental et les agrégats,
   dont la répartition publique des mégots par état et la masse par état issue
-  des résultats de lots persistés. Les masses transportent leur provenance et
-  leur version de conversion ; aucun agrégat SQL ne réapplique un facteur.
+  des résultats de lots persistés. Le moteur TypeScript fournit les résultats
+  courants des lots conservés à la projection SQL de service ; les masses
+  transportent leur provenance et leur version de conversion, et aucun agrégat
+  SQL ne réapplique un facteur.
   Les actions legacy ne sont classées par état que si leur qualification
   historique est fiable ; une provenance ambiguë reste non classée et une
   masse sans source identifiable reste inconnue, y compris dans les agrégats
