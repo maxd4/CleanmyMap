@@ -29,6 +29,7 @@ import {
   getImpactSnapshotMonthDate,
   loadLatestPublicImpactSnapshot,
   isCurrentPublicImpactSnapshot,
+  HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "./public-impact-snapshot";
 import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
@@ -92,6 +93,40 @@ function currentSnapshot(overrides: Record<string, unknown> = {}) {
     }),
     ...overrides,
   });
+}
+
+function historicalV1Snapshot(overrides: Record<string, unknown> = {}) {
+  const current = existingSnapshot();
+  const generatedAt = "2026-09-01T03:00:00.000Z";
+  const payload = current.payload;
+
+  return {
+    ...current,
+    snapshotDate: "2026-09-01",
+    generatedAt,
+    version: HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION,
+    payload: {
+      period: {
+        fromDate: "2026-09-01",
+        toDate: "2026-09-01",
+        timezone: "UTC" as const,
+      },
+      generatedAt,
+      methodologyVersion: "impact-proxy-2026.04-v1",
+      resultsContractVersion: payload.resultsContractVersion,
+      kpis: payload.kpis,
+      aggregates: payload.aggregates,
+      provenance: {
+        sourceRpc: "public.load_public_landing_action_summary" as const,
+        scope: {
+          ...payload.provenance.scope,
+          floorDate: "2026-09-01",
+        },
+        calculationDomain: payload.provenance.calculationDomain,
+      },
+    },
+    ...overrides,
+  };
 }
 
 async function expectSnapshotRegenerated(snapshot: ReturnType<typeof currentSnapshot>) {
@@ -168,6 +203,37 @@ describe("public monthly impact snapshot", () => {
 
     await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
     expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+  });
+
+  it("reads the observed v1 historical envelope without rewriting its contract", async () => {
+    const snapshot = historicalV1Snapshot();
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(snapshot.version).toBe("impact-terrain-public-2026.09-v1");
+    expect(snapshot.payload.provenance.sourceRpc).toBe(
+      "public.load_public_landing_action_summary",
+    );
+    expect("sourceMode" in snapshot.payload.provenance).toBe(false);
+    expect("projectionVersion" in snapshot.payload).toBe(false);
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown historical envelope or provenance", async () => {
+    const snapshot = historicalV1Snapshot({
+      payload: {
+        ...historicalV1Snapshot().payload,
+        provenance: {
+          ...historicalV1Snapshot().payload.provenance,
+          sourceRpc: "public.unknown_snapshot_source",
+        },
+      },
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 
   it("conserve la lecture d'un snapshot historique sans réutiliser sa méthode", async () => {

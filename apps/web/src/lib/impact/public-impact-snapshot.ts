@@ -30,6 +30,8 @@ import {
 export const PUBLIC_IMPACT_SNAPSHOT_KEY = "cleanmymap-impact-terrain-2026";
 export const PUBLIC_IMPACT_SNAPSHOT_VERSION =
   "impact-terrain-public-2026.09-v7-volume-lot-reconciliation";
+export const HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION =
+  "impact-terrain-public-2026.09-v1";
 const PUBLIC_IMPACT_SNAPSHOT_TITLE =
   "Snapshot public mensuel Impact terrain 2026";
 
@@ -49,8 +51,10 @@ export type PublicImpactSnapshotPayload = {
     distinctLocations: number;
   };
   provenance: {
-    sourceRpc: "public.load_public_landing_action_summary_incremental";
-    sourceMode: "incremental" | "rebuild";
+    sourceRpc:
+      | "public.load_public_landing_action_summary_incremental"
+      | "public.load_public_landing_action_summary";
+    sourceMode?: "incremental" | "rebuild";
     scope: {
       actionType: "action";
       status: "approved";
@@ -170,16 +174,23 @@ function isPublicImpactSnapshotPayload(
       typeof payload.aggregates === "object" &&
       payload.aggregates !== null &&
       payload.provenance &&
-      payload.provenance.sourceRpc ===
-        "public.load_public_landing_action_summary_incremental" &&
-      (payload.provenance.sourceMode === "incremental" ||
+      (payload.provenance.sourceRpc ===
+        "public.load_public_landing_action_summary_incremental" ||
+        payload.provenance.sourceRpc ===
+          "public.load_public_landing_action_summary") &&
+      (payload.provenance.sourceMode === undefined ||
+        payload.provenance.sourceMode === "incremental" ||
         payload.provenance.sourceMode === "rebuild") &&
       payload.provenance.scope &&
       payload.provenance.scope.actionType === "action" &&
       payload.provenance.scope.status === "approved" &&
       payload.provenance.scope.visibility === "visible" &&
       payload.provenance.scope.excludesTestDemoData === true &&
-      typeof payload.provenance.scope.floorDate === "string",
+      typeof payload.provenance.scope.floorDate === "string" &&
+      Array.isArray(payload.provenance.calculationDomain) &&
+      payload.provenance.calculationDomain.every(
+        (entry) => typeof entry === "string",
+      ),
   );
 }
 
@@ -247,12 +258,59 @@ function isValidPublicImpactSnapshot(
       generatedDate,
       generatedFloorDate,
     ) &&
+    payload.provenance.sourceRpc ===
+      "public.load_public_landing_action_summary_incremental" &&
+    (payload.provenance.sourceMode === "incremental" ||
+      payload.provenance.sourceMode === "rebuild") &&
     isKnownImpactProxyVersion(payload.methodologyVersion) &&
     (payload.projectionVersion === undefined ||
       isKnownPublicImpactProjectionVersion(payload.projectionVersion)) &&
     payload.resultsContractVersion ===
       IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION
   );
+}
+
+function isValidHistoricalPublicImpactSnapshot(
+  snapshot: PublicImpactSnapshotRecord | null | undefined,
+): snapshot is PublicImpactSnapshotRecord {
+  if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {
+    return false;
+  }
+
+  if (!Number.isFinite(new Date(snapshot.generatedAt).getTime())) {
+    return false;
+  }
+
+  const generatedAt = new Date(snapshot.generatedAt);
+  const generatedDate = getPublicSurfaceSnapshotDate(snapshot.generatedAt);
+  const generatedFloorDate = buildLandingFloorDate(generatedAt);
+  const payload = snapshot.payload;
+
+  return (
+    snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
+    snapshot.version === HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION &&
+    snapshot.generatedAt === payload.generatedAt &&
+    payload.projectionVersion === undefined &&
+    payload.provenance.sourceRpc ===
+      "public.load_public_landing_action_summary" &&
+    payload.provenance.sourceMode === undefined &&
+    hasCoherentImpactSnapshotPeriod(
+      snapshot,
+      payload,
+      generatedDate,
+      generatedFloorDate,
+    ) &&
+    isKnownImpactProxyVersion(payload.methodologyVersion) &&
+    payload.resultsContractVersion ===
+      IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION
+  );
+}
+
+function isReadablePublicImpactSnapshot(
+  snapshot: PublicImpactSnapshotRecord | null | undefined,
+): snapshot is PublicImpactSnapshotRecord {
+  return isValidPublicImpactSnapshot(snapshot) ||
+    isValidHistoricalPublicImpactSnapshot(snapshot);
 }
 
 export function isCurrentPublicImpactSnapshot(
@@ -272,7 +330,7 @@ export async function loadLatestPublicImpactSnapshot(): Promise<PublicImpactSnap
     PUBLIC_IMPACT_SNAPSHOT_KEY,
   );
 
-  if (!isValidPublicImpactSnapshot(snapshot)) {
+  if (!isReadablePublicImpactSnapshot(snapshot)) {
     return null;
   }
 
