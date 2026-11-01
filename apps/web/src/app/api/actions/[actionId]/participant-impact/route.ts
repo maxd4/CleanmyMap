@@ -69,6 +69,7 @@ type ParticipantImpactPayload = z.infer<typeof participantImpactSchema>;
 type ImpactParticipant = Record<string, unknown> & {
   user_id: string;
   participation_status: "pending" | "confirmed" | "cancelled";
+  updated_at?: string | null;
 };
 
 type ImpactContext = {
@@ -231,77 +232,117 @@ async function persistParticipantImpact(
   payload: ParticipantImpactPayload,
   context: ImpactContext,
 ) {
-  const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
-    await captureActionParticipantImpactSnapshot(supabase, actionId);
-  const measurementUpdate = buildMeasurementUpdate(payload, context.current, context.reviewerUserId);
-  const atomicResult = await supabase.rpc("persist_action_participant_individual_impact", {
-    p_action_id: actionId,
-    p_participant_id: participantId,
-    p_reviewer_user_id: context.reviewerUserId,
-    p_admin_override: context.reviewerCanOverride,
-    p_individual_waste_kg: measurementUpdate.updatePayload.individual_waste_kg,
-    p_individual_waste_condition: measurementUpdate.updatePayload.individual_waste_condition,
-    p_individual_waste_measurement_method: measurementUpdate.updatePayload.individual_waste_measurement_method,
-    p_individual_waste_normalization_version: measurementUpdate.updatePayload.individual_waste_normalization_version,
-    p_individual_cigarette_butts_count: measurementUpdate.updatePayload.individual_cigarette_butts_count,
-    p_individual_cigarette_butts_mass_kg: measurementUpdate.updatePayload.individual_cigarette_butts_mass_kg,
-    p_individual_cigarette_butts_condition: measurementUpdate.updatePayload.individual_cigarette_butts_condition,
-    p_individual_cigarette_butts_provenance: measurementUpdate.updatePayload.individual_cigarette_butts_provenance,
-    p_individual_cigarette_butts_conversion_version: measurementUpdate.updatePayload.individual_cigarette_butts_conversion_version,
-    p_individual_cigarette_butts_lots: measurementUpdate.updatePayload.individual_cigarette_butts_lots,
-    p_individual_impact_measured_by: measurementUpdate.updatePayload.individual_impact_measured_by,
-    p_individual_impact_measured_at: measurementUpdate.updatePayload.individual_impact_measured_at,
-  });
-  if (atomicResult.error) throw new Error(atomicResult.error.message);
-  const persisted = atomicResult.data as {
-    ok?: unknown;
-    code?: unknown;
-    id?: unknown;
-    updatedAt?: unknown;
-    userId?: unknown;
-  } | null;
-  if (!persisted || persisted.ok !== true) {
-    return NextResponse.json(
-      { error: "La participation ou l'autorisation n'est plus éligible à cette mesure." },
-      { status: 409 },
+  let currentContext = context;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
+      await captureActionParticipantImpactSnapshot(supabase, actionId);
+    const measurementUpdate = buildMeasurementUpdate(
+      payload,
+      currentContext.current,
+      currentContext.reviewerUserId,
     );
-  }
-  const nextMeasurement = toIndividualImpactMeasurement(
-    measurementUpdate.updatePayload,
-  );
-  await appendActionModerationAudit({
-    operationId: `action-participant-impact-${actionId}-${participantId}-${Date.now()}`,
-    actorUserId: context.reviewerUserId,
-    targetActionId: actionId,
-    targetUserId: context.participant.user_id,
-    operation: "record_individual_impact_measurement",
-    outcome: "success",
-    reason: payload.reason ?? null,
-    previousValue: context.current,
-    newValue: nextMeasurement,
-    details: { participantId, actionId, measuredAt: measurementUpdate.measuredAt },
-  });
-  if (previousImpactSnapshot) {
-    await emitActionParticipantImpactNotifications({
-      supabase,
+    const atomicResult = await supabase.rpc("persist_action_participant_individual_impact", {
+      p_action_id: actionId,
+      p_participant_id: participantId,
+      p_reviewer_user_id: currentContext.reviewerUserId,
+      p_admin_override: currentContext.reviewerCanOverride,
+      p_expected_participant_updated_at: currentContext.participant.updated_at ?? null,
+      p_individual_waste_kg: measurementUpdate.updatePayload.individual_waste_kg,
+      p_individual_waste_condition: measurementUpdate.updatePayload.individual_waste_condition,
+      p_individual_waste_measurement_method: measurementUpdate.updatePayload.individual_waste_measurement_method,
+      p_individual_waste_normalization_version: measurementUpdate.updatePayload.individual_waste_normalization_version,
+      p_individual_cigarette_butts_count: measurementUpdate.updatePayload.individual_cigarette_butts_count,
+      p_individual_cigarette_butts_mass_kg: measurementUpdate.updatePayload.individual_cigarette_butts_mass_kg,
+      p_individual_cigarette_butts_condition: measurementUpdate.updatePayload.individual_cigarette_butts_condition,
+      p_individual_cigarette_butts_provenance: measurementUpdate.updatePayload.individual_cigarette_butts_provenance,
+      p_individual_cigarette_butts_conversion_version: measurementUpdate.updatePayload.individual_cigarette_butts_conversion_version,
+      p_individual_cigarette_butts_lots: measurementUpdate.updatePayload.individual_cigarette_butts_lots,
+      p_individual_impact_measured_by: measurementUpdate.updatePayload.individual_impact_measured_by,
+      p_individual_impact_measured_at: measurementUpdate.updatePayload.individual_impact_measured_at,
+    });
+    if (atomicResult.error) throw new Error(atomicResult.error.message);
+    const persisted = atomicResult.data as {
+      ok?: unknown;
+      code?: unknown;
+      changed?: unknown;
+      id?: unknown;
+      updatedAt?: unknown;
+      userId?: unknown;
+    } | null;
+    if (persisted?.ok !== true) {
+      if (persisted?.code === "revision_conflict" && attempt === 0) {
+        const refreshed = await loadImpactContext(
+          supabase,
+          actionId,
+          participantId,
+          currentContext.reviewerUserId,
+        );
+        if (refreshed instanceof NextResponse) return refreshed;
+        const ambiguity = rejectAmbiguousLegacyReplacement(payload, refreshed.current);
+        if (ambiguity) return ambiguity;
+        currentContext = refreshed;
+        continue;
+      }
+      return NextResponse.json(
+        {
+          error: persisted?.code === "revision_conflict"
+            ? "La mesure a été modifiée en parallèle. Rechargez la participation puis réessayez."
+            : "La participation ou l'autorisation n'est plus éligible à cette mesure.",
+          code: persisted?.code === "revision_conflict" ? "revision_conflict" : "impact_target_not_eligible",
+        },
+        { status: 409 },
+      );
+    }
+    if (persisted.changed === false) {
+      return NextResponse.json({
+        status: "ok",
+        actionId,
+        participantId,
+        participantUserId: currentContext.participant.user_id,
+        individualImpact: currentContext.current,
+      });
+    }
+    const nextMeasurement = toIndividualImpactMeasurement(
+      measurementUpdate.updatePayload,
+    );
+    await appendActionModerationAudit({
+      operationId: `action-participant-impact-${actionId}-${participantId}-${Date.now()}`,
+      actorUserId: currentContext.reviewerUserId,
+      targetActionId: actionId,
+      targetUserId: currentContext.participant.user_id,
+      operation: "record_individual_impact_measurement",
+      outcome: "success",
+      reason: payload.reason ?? null,
+      previousValue: currentContext.current,
+      newValue: nextMeasurement,
+      details: { participantId, actionId, measuredAt: measurementUpdate.measuredAt },
+    });
+    if (previousImpactSnapshot) {
+      await emitActionParticipantImpactNotifications({
+        supabase,
+        actionId,
+        previousSnapshot: previousImpactSnapshot,
+        persistedRevision:
+          typeof persisted.updatedAt === "string" && typeof persisted.id === "string"
+            ? `participant:${persisted.id}:${persisted.updatedAt}`
+            : null,
+      });
+    }
+    await refreshProgressionProfile(supabase, currentContext.participant.user_id, {
+      reconcileLegacyImpact: true,
+    }).catch(() => null);
+    return NextResponse.json({
+      status: "ok",
       actionId,
-      previousSnapshot: previousImpactSnapshot,
-      persistedRevision:
-        typeof persisted.updatedAt === "string" && typeof persisted.id === "string"
-          ? `participant:${persisted.id}:${persisted.updatedAt}`
-          : null,
+      participantId,
+      participantUserId: currentContext.participant.user_id,
+      individualImpact: nextMeasurement,
     });
   }
-  await refreshProgressionProfile(supabase, context.participant.user_id, {
-    reconcileLegacyImpact: true,
-  }).catch(() => null);
-  return NextResponse.json({
-    status: "ok",
-    actionId,
-    participantId,
-    participantUserId: context.participant.user_id,
-    individualImpact: nextMeasurement,
-  });
+  return NextResponse.json(
+    { error: "La mesure a été modifiée en parallèle. Rechargez la participation puis réessayez.", code: "revision_conflict" },
+    { status: 409 },
+  );
 }
 
 export async function PATCH(request: Request, ctx: ParticipantImpactRouteContext) {

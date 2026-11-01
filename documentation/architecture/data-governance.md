@@ -315,6 +315,13 @@ un dépassement avant toute écriture. L'écriture passe par la RPC atomique
 `persist_action_participant_individual_impact`, qui revalide au dernier instant
 l'action `approved`, la participation `confirmed` et le droit du relecteur ;
 un échec ne déclenche ni audit de succès, ni notification, ni réconciliation.
+La lecture transmet le jeton de révision `action_participants.updated_at` à la
+RPC ; après verrouillage dans l'ordre action, participation, organisateurs puis
+projection de rôle, une révision obsolète renvoie `revision_conflict` sans
+écriture. La route relit alors l'état courant au plus une fois et reconstruit
+le PATCH depuis les seuls champs fournis. Un rejeu dont les valeurs sources
+sont identiques est un no-op persistant : il ne duplique ni audit, ni
+notification, ni rafraîchissement de progression.
 
 #### Temporalité déclarée et valeur technique de compatibilité
 

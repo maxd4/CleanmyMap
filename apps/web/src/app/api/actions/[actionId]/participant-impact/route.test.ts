@@ -468,6 +468,143 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
 
+  it("retries a stale partial PATCH from the fresh participant revision without losing an independent change", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      updated_at: "2026-11-01T10:00:00.000Z",
+      individual_waste_kg: 8,
+      individual_waste_condition: "sec",
+      individual_waste_measurement_method: "balance_au_sol",
+    });
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      participants: [participant],
+    }) as {
+      rpc: { mockImplementationOnce: (implementation: () => Promise<unknown>) => unknown; mock: { calls: unknown[][] } };
+    };
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+    supabase.rpc.mockImplementationOnce(async () => {
+      participant.individual_waste_kg = 9;
+      participant.updated_at = "2026-11-01T10:00:01.000Z";
+      return { data: { ok: false, code: "revision_conflict" }, error: null };
+    });
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: 12, massKg: null, condition: "propre" },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact).toMatchObject({ wasteKg: 9, cigaretteButtsCount: 12 });
+    expect(participant).toMatchObject({
+      individual_waste_kg: 9,
+      individual_cigarette_butts_count: 12,
+    });
+    expect(supabase.rpc.mock.calls).toHaveLength(2);
+    expect(supabase.rpc.mock.calls[1]?.[1]).toMatchObject({
+      p_expected_participant_updated_at: "2026-11-01T10:00:01.000Z",
+    });
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a distinct conflict after the bounded retry and emits no side effect", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      updated_at: "2026-11-01T11:00:00.000Z",
+    });
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      participants: [participant],
+    }) as {
+      rpc: { mockImplementation: (implementation: () => Promise<unknown>) => unknown };
+    };
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+    supabase.rpc.mockImplementation(async () => ({
+      data: { ok: false, code: "revision_conflict" },
+      error: null,
+    }));
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body).toMatchObject({ code: "revision_conflict" });
+    expect(participant).not.toHaveProperty("individual_waste_kg");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+    expect(groupJoinMocks.refreshProgressionProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("treats an identical replay as a no-op without duplicating the audit or progression refresh", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      updated_at: "2026-11-01T11:30:00.000Z",
+    });
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      participants: [participant],
+    });
+    let callCount = 0;
+    supabase.rpc.mockImplementation(async (_functionName, args) => {
+      callCount += 1;
+      if (callCount === 2) {
+        return {
+          data: { ok: true, changed: false, id: participant.id, updatedAt: participant.updated_at, userId: participant.user_id },
+          error: null,
+        };
+      }
+      for (const [key, value] of Object.entries(args ?? {})) {
+        if (key.startsWith("p_individual_")) {
+          (participant as Record<string, unknown>)[key.slice(2)] = value;
+        }
+      }
+      return {
+        data: { ok: true, changed: true, id: participant.id, updatedAt: participant.updated_at, userId: participant.user_id },
+        error: null,
+      };
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const payload = {
+      participantId: "participant-1",
+      butts: { count: 12, massKg: null, condition: "propre" },
+    };
+    expect((await patchParticipantImpact(payload)).status).toBe(200);
+    expect((await patchParticipantImpact(payload)).status).toBe(200);
+
+    expect(callCount).toBe(2);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(groupJoinMocks.refreshProgressionProfileMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops the retry when the participant is cancelled after the stale read", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      updated_at: "2026-11-01T12:00:00.000Z",
+    });
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      participants: [participant],
+    }) as {
+      rpc: { mockImplementationOnce: (implementation: () => Promise<unknown>) => unknown };
+    };
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+    supabase.rpc.mockImplementationOnce(async () => {
+      participant.participation_status = "cancelled";
+      participant.updated_at = "2026-11-01T12:00:01.000Z";
+      return { data: { ok: false, code: "revision_conflict" }, error: null };
+    });
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+
+    expect(response.status).toBe(422);
+    expect(participant).not.toHaveProperty("individual_waste_kg");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+    expect(groupJoinMocks.refreshProgressionProfileMock).not.toHaveBeenCalled();
+  });
+
   it("rechecks organizer eligibility before writing", async () => {
     const action = createGroupJoinAction({ createdByClerkId: "owner-1", status: "approved" });
     const participant = createParticipantWithStatus("confirmed");

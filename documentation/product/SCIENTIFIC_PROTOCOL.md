@@ -445,6 +445,13 @@ RPC atomique que l'action est approuvée, que le participant est confirmé et
 que l'organisateur ou l'administrateur conserve son droit au moment de la
 mutation ; une perte d'éligibilité ne produit aucun effet secondaire de
 succès.
+La concurrence est contrôlée par le jeton `action_participants.updated_at`
+capturé avec la lecture initiale. La RPC verrouille dans un ordre stable
+action, participation, organisateurs puis rôle projeté ; une révision obsolète
+retourne `revision_conflict` sans écrire. Le serveur relit l'état courant et
+reprend au plus une fois le PATCH partiel depuis ses seuls champs explicites.
+Un rejeu identique est traité comme un no-op et ne recrée pas d'audit, de
+notification ou de progression.
 
 Le moteur d'estimation photo du formulaire `/actions/new` est conservé pour
 les itérations futures mais désactivé tant que sa maturité et sa validation ne

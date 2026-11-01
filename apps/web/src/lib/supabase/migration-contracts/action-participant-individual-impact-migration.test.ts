@@ -13,6 +13,10 @@ const atomicPatchMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261101000007_action_participant_individual_impact_atomic_patch.sql", import.meta.url),
   "utf8",
 );
+const optimisticConcurrencyMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261101000009_action_participant_individual_impact_optimistic_concurrency.sql", import.meta.url),
+  "utf8",
+);
 
 describe("individual action impact migration", () => {
   it("is append-only and keeps action_participants as the canonical table", () => {
@@ -55,5 +59,23 @@ describe("individual action impact migration", () => {
     expect(atomicPatchMigration).toContain("grant execute on function public.persist_action_participant_individual_impact");
     expect(atomicPatchMigration).toContain("from public, anon, authenticated");
     expect(atomicPatchMigration).not.toMatch(/create\s+table/i);
+  });
+
+  it("upgrades the canonical RPC with a revision guard and deterministic dependency locks", () => {
+    expect(optimisticConcurrencyMigration).toContain("drop function if exists public.persist_action_participant_individual_impact");
+    expect(optimisticConcurrencyMigration).toContain("p_expected_participant_updated_at timestamptz");
+    expect(optimisticConcurrencyMigration).toContain("from public.actions");
+    expect(optimisticConcurrencyMigration).toContain("from public.action_participants");
+    expect(optimisticConcurrencyMigration).toContain("from public.action_organizers as ao");
+    expect(optimisticConcurrencyMigration).toContain("from public.profiles as p");
+    expect(optimisticConcurrencyMigration).toContain("v_reviewer_active_role in ('admin', 'max')");
+    expect(optimisticConcurrencyMigration).toContain("for update");
+    expect(optimisticConcurrencyMigration).toContain("code', 'revision_conflict'");
+    expect(optimisticConcurrencyMigration).toContain("'changed', false");
+    expect(optimisticConcurrencyMigration).toContain("'changed', true");
+    expect(optimisticConcurrencyMigration).toContain("v_participant.updated_at is distinct from p_expected_participant_updated_at");
+    expect(optimisticConcurrencyMigration).toContain("grant execute on function public.persist_action_participant_individual_impact");
+    expect(optimisticConcurrencyMigration).not.toMatch(/actions\.cigarette_butts\s*=/i);
+    expect(optimisticConcurrencyMigration).not.toMatch(/create\s+table/i);
   });
 });
