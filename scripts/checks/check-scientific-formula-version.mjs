@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -297,12 +297,21 @@ function readSqlSources(repositoryRoot) {
     }));
 }
 
+function readCurrentWasteSource(repositoryRoot) {
+  const primaryPath = path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.waste);
+  const enginePath = path.join(
+    repositoryRoot,
+    "apps/web/src/lib/waste/cigarette-butts-engine.ts",
+  );
+  const primarySource = readFileSync(primaryPath, "utf8");
+  return existsSync(enginePath)
+    ? `${primarySource}\n${readFileSync(enginePath, "utf8")}`
+    : primarySource;
+}
+
 function main() {
   const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
-  const currentWasteSource = readFileSync(
-    path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.waste),
-    "utf8",
-  );
+  const currentWasteSource = readCurrentWasteSource(repositoryRoot);
   const currentImpactSource = readFileSync(
     path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.impact),
     "utf8",
