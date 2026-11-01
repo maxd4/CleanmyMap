@@ -30,7 +30,7 @@ describe("buildImpactInsight", () => {
 
     expect(insight.lines).toEqual([
       "≈ 346,9 m de mégots alignés",
-      "≈ 5,6 kg de mégots",
+      "≈ 3,1 kg de mégots",
     ]);
   });
 

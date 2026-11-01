@@ -100,7 +100,7 @@ describe("ActionStepHarvest compact modes", () => {
     expect(updateFields).toHaveBeenCalledWith(
       expect.objectContaining({
         cigaretteButtsCount: "1750",
-        wasteMegotsKg: "0.7",
+        wasteMegotsKg: "0.385",
       }),
     );
     renderer.unmount();

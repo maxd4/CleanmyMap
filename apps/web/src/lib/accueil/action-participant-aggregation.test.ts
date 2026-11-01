@@ -173,6 +173,8 @@ describe("action participant aggregation", () => {
         buttsByCondition: [],
         estimatedButtsWeightKg: 0,
         buttsDistanceMeters: 0,
+        buttsMassConversionVersions: [],
+        buttsMassProvenance: null,
         co2eKg: 0,
         co2eGrams: 0,
         co2CarKilometers: 0,

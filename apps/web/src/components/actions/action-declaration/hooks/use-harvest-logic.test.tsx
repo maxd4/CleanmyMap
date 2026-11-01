@@ -57,9 +57,9 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ],
     });
 
-    expect(harness.latest.logic.megotsCount).toBe(2_900);
+    expect(harness.latest.logic.megotsCount).toBe(4_945);
     expect(harness.latest.logic.megotsCounted).toBe(100);
-    expect(harness.latest.logic.megotsEstimated).toBe(2_800);
+    expect(harness.latest.logic.megotsEstimated).toBe(4_845);
     expect(harness.latest.logic.megotsMeasuredMassKg).toBe(1);
     expect(harness.latest.logic.megotsLotResults.map((lot) => lot.id)).toEqual([
       "count",
@@ -79,7 +79,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       "count",
       "mass",
     ]);
-    expect(harness.latest.logic.megotsCount).toBe(2_600);
+    expect(harness.latest.logic.megotsCount).toBe(4_645);
 
     harness.renderer.unmount();
   });
@@ -112,13 +112,13 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     });
 
     expect(harness.latest.form.cigaretteButtsCount).toBe("1750");
-    expect(harness.latest.form.wasteMegotsKg).toBe("1");
+    expect(harness.latest.form.wasteMegotsKg).toBe("0.875");
     expect(harness.latest.form.cigaretteButtsInputSource).toBe("count");
     expect(harness.latest.logic.megotsCount).toBe(1750);
-    expect(harness.latest.logic.megotsKg).toBe(1);
+    expect(harness.latest.logic.megotsKg).toBe(0.875);
     expect(harness.latest.logic.cigaretteButtsCountProvenance).toBe("counted");
     expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("weight_converted");
-    expect(harness.latest.logic.cigaretteButtsConversionFormulaVersion).toBe("impact-terrain-2026-butts-mass-v1");
+    expect(harness.latest.logic.cigaretteButtsConversionFormulaVersion).toBe("impact-terrain-2026-butts-mass-v2");
 
     harness.renderer.unmount();
   });
@@ -135,7 +135,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
     expect(harness.latest.form.cigaretteButtsInputSource).toBe("mass");
-    expect(harness.latest.form.cigaretteButtsCount).toBe("2500");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("4545");
     expect(harness.latest.logic.cigaretteButtsCountProvenance).toBe("weight_converted");
     expect(harness.latest.logic.cigaretteButtsMassProvenance).toBe("measured");
 
@@ -145,7 +145,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     expect(harness.latest.form.wasteMegotsCondition).toBe("mouille");
     expect(harness.latest.form.cigaretteButtsCondition).toBe("mouille");
-    expect(harness.latest.form.cigaretteButtsCount).toBe("1000");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("2000");
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
 
     harness.renderer.unmount();
@@ -198,7 +198,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     });
 
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
-    expect(harness.latest.form.cigaretteButtsCount).toBe("2500");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("4545");
     expect(harness.latest.form.cigaretteButtsInputSource).toBe("mass");
     expect(harness.latest.form.cigaretteButtsCondition).toBe("propre");
 
