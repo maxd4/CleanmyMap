@@ -87,7 +87,9 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
     expect(supabase.rpc).not.toHaveBeenCalled();
     if (decision === "accept") {
       expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
-      expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2");
+      expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2", {
+        reconcileLegacyImpact: true,
+      });
     } else {
       expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
       expect(refreshProgressionProfileMock).not.toHaveBeenCalled();

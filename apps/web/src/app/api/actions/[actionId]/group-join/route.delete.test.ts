@@ -108,7 +108,9 @@ describe("DELETE /api/actions/:actionId/group-join", () => {
     const { response, body } = await deleteAndReadResponse();
     expectSuccessfulDelete(response, body, 0);
     expect(participants[0]?.participation_status).toBe("cancelled");
-    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-1");
+    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-1", {
+      reconcileLegacyImpact: true,
+    });
   }, 15000);
 
   it("lets a participant leave an accepted form", async () => {

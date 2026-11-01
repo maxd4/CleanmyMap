@@ -200,9 +200,26 @@ async function finalizeReviewResult(params: {
     "requestKind" in data && data.requestKind === "registration_request" && alreadyReviewed;
   const isPostActionClaim = result.participationSource === POST_ACTION_CLAIM_PARTICIPATION_SOURCE;
 
-  if (!staleRegistrationRequest && ("participantUserId" in data || data.decision === "accept")) {
-    await rebuildUserGamificationBadges(params.supabase, result.participantUserId).catch(() => null);
-    await refreshProgressionProfile(params.supabase, result.participantUserId).catch(() => null);
+  const wasConfirmed = result.previousValue?.participationStatus === "confirmed";
+  const alreadyRejectedTransition = alreadyReviewed && "decision" in data && data.decision === "reject";
+  const requiresImpactReconciliation =
+    !staleRegistrationRequest &&
+    ("participantUserId" in data || data.decision === "accept" || wasConfirmed || alreadyRejectedTransition);
+  if (requiresImpactReconciliation) {
+    let progressionRefreshed = false;
+    try {
+      await refreshProgressionProfile(params.supabase, result.participantUserId, {
+        reconcileLegacyImpact: true,
+      });
+      progressionRefreshed = true;
+    } catch {
+      // The participation mutation is already persisted. Keep the HTTP
+      // transition idempotent, but do not refresh badges from a stale Mohs
+      // projection; a later retry can converge the same user again.
+    }
+    if (progressionRefreshed) {
+      await rebuildUserGamificationBadges(params.supabase, result.participantUserId).catch(() => null);
+    }
   }
 
   if (!staleRegistrationRequest && (isPostActionClaim || canOverrideActionParticipants(access.identity))) {

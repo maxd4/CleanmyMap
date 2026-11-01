@@ -88,10 +88,12 @@ export async function refreshProgressionProfile(
 }
 
 /**
- * Reprojects the impact-dependent progression for every confirmed participant
- * of an action after its collective measurement, visibility or roster has
- * changed. The action source is read after the mutation; rejected actions
- * therefore remove their derived Mohs awards while LEGACY rows remain intact.
+ * Reprojects the impact-dependent progression for every account present in the
+ * action participant history after its collective measurement, visibility or
+ * roster has changed. Reading all persisted statuses is intentional: a
+ * cancelled/rejected row is the retained evidence needed to reconcile the
+ * account that just lost eligibility, while the scientific loader still uses
+ * only confirmed rows as sources. LEGACY rows remain intact.
  */
 export async function reconcileActionParticipantImpactProgression(
   supabase: SupabaseClient,
@@ -100,20 +102,19 @@ export async function reconcileActionParticipantImpactProgression(
   const result = await supabase
     .from("action_participants")
     .select("user_id", { count: "exact" })
-    .eq("action_id", actionId)
-    .eq("participation_status", "confirmed");
+    .eq("action_id", actionId);
   if (result.error) throw new Error(result.error.message);
   if (!Array.isArray(result.data)) {
-    throw new Error("La liste des participants confirmés est incomplète.");
+    throw new Error("La liste historique des participants est incomplète.");
   }
   if (typeof result.count === "number" && result.count !== result.data.length) {
-    throw new Error("La liste des participants confirmés est tronquée.");
+    throw new Error("La liste historique des participants est tronquée.");
   }
 
   const userIds = [...new Set(
     result.data.map((row) => {
       if (!row || typeof row !== "object" || typeof row.user_id !== "string") {
-        throw new Error("La liste des participants confirmés contient une ligne invalide.");
+        throw new Error("La liste historique des participants contient une ligne invalide.");
       }
       return row.user_id.trim();
     }).filter(Boolean),

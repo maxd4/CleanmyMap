@@ -211,6 +211,7 @@ describe("progression tracking behavioral boundaries", () => {
     const query = {
       select: vi.fn(() => query),
       eq: vi.fn(() => query),
+      limit: vi.fn(async () => ({ data: [], error: null })),
       then: (
         resolve: (value: unknown) => unknown,
         reject: (reason: unknown) => unknown,
@@ -226,5 +227,28 @@ describe("progression tracking behavioral boundaries", () => {
       .rejects.toThrow("tronquée");
     expect(reconcileImpactMock).not.toHaveBeenCalled();
     expect(persistProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("includes retained cancelled participants so their Mohs projection can be removed", async () => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      limit: vi.fn(async () => ({ data: [], error: null })),
+      then: (
+        resolve: (value: unknown) => unknown,
+        reject: (reason: unknown) => unknown,
+      ) => Promise.resolve({
+        data: [{ user_id: "user-former" }, { user_id: "user-new" }],
+        count: 2,
+        error: null,
+      }).then(resolve, reject),
+    };
+    const cancelled = { from: vi.fn(() => query) } as unknown as SupabaseClient;
+
+    await reconcileActionParticipantImpactProgression(cancelled, "action-1");
+
+    expect(reconcileImpactMock).toHaveBeenCalledWith(cancelled, "user-former");
+    expect(reconcileImpactMock).toHaveBeenCalledWith(cancelled, "user-new");
+    expect(persistProfileMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -309,6 +309,12 @@ constitue pas une preuve d'absence scientifique. Une liste vide issue d'une
 lecture complète reste, elle, une absence confirmée et peut entraîner la
 suppression normale des seuls événements CURRENT devenus injustifiés.
 
+Après une mutation de roster, la réconciliation parcourt aussi les lignes
+`action_participants` conservées avec un statut `cancelled` ou rejeté afin
+d'identifier les comptes sortants. Ces lignes servent uniquement à déterminer
+les comptes à recalculer ; le moteur scientifique continue de retenir les
+participations `confirmed` comme seules sources d'attribution.
+
 La réconciliation Mohs appelle la RPC
 `apply_mohs_impact_reconciliation`. Celle-ci verrouille la projection par
 utilisateur, compare un instantané complet, puis applique suppressions,

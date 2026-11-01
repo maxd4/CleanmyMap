@@ -168,7 +168,9 @@ export async function DELETE(
       userId,
     });
 
-    await refreshProgressionProfile(supabase, userId).catch(() => null);
+    await refreshProgressionProfile(supabase, userId, {
+      reconcileLegacyImpact: true,
+    }).catch(() => null);
 
     return NextResponse.json({
       status: "ok",

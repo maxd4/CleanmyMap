@@ -238,6 +238,10 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(body.participationStatus).toBe("cancelled");
     expect(body.participantsCount).toBe(0);
     expect(participants[0]?.participation_status).toBe("cancelled");
+    expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
+    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2", {
+      reconcileLegacyImpact: true,
+    });
     expect(lastAudit()).toMatchObject({
         actorUserId: "admin-1",
         targetActionId: "action-1",
@@ -253,6 +257,34 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
           participationSource: "group_form",
         },
     });
+  }, 15000);
+
+  it("does not rebuild badges from a stale projection when a confirmed rejection refresh fails", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-1",
+        created_at: "2026-06-01T10:00:00Z",
+        joined_at: "2026-06-01T10:00:00Z",
+        participation_status: "confirmed",
+        participation_source: "group_form",
+        action_id: "action-1",
+        user_id: "user-2",
+      }),
+    ];
+    seedApprovedActionParticipants(participants, {
+      createdByClerkId: "user-1",
+      profiles: [createAliceProfile()],
+    });
+    refreshProgressionProfileMock.mockRejectedValueOnce(new Error("scientific read unavailable"));
+
+    const { response } = await postActionGroupJoinJson<GroupJoinModerationBody>({
+      participantId: "participant-1",
+      decision: "reject",
+      reason: "Participant indisponible confirmé.",
+    });
+
+    expect(response.status).toBe(200);
+    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("rejects admin direct participant add without a valid reason", async () => {
@@ -422,7 +454,9 @@ describe("POST /api/actions/:actionId/group-join", () => {
 
     expectAcceptedGroupJoin(response, body, participants);
     expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
-    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2");
+    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2", {
+      reconcileLegacyImpact: true,
+    });
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         actorUserId: "user-1",
