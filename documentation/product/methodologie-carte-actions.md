@@ -289,8 +289,11 @@ produits. Les propriétaires actuels sont distincts :
   `citizen`, `company` et `school` du formulaire ;
 - `pollution-score-references-v2` pour les maxima globaux et départementaux du
   score cartographique ;
-- `impact-terrain-public-2026.09-v4` pour l'état incrémental et les agrégats
-  mensuels de l'impact public.
+- `impact-terrain-public-2026.09-v5` pour l'état incrémental et les agrégats,
+  dont la répartition publique des mégots par état issue des résultats de lots
+  persistés. Les actions legacy ne sont classées par état que si leur
+  qualification historique est fiable ; une provenance ambiguë reste
+  non classée, y compris dans les agrégats mensuels de l'impact public.
 
 Ces identités ne sont pas interchangeables : une moyenne contextualisée n'est
 pas le maximum de référence du score cartographique, et aucune de ces

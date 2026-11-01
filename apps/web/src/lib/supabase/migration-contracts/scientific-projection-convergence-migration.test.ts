@@ -28,12 +28,20 @@ const volumeProxyMigration = readFileSync(
   ),
   "utf8",
 );
+const currentProjectionMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261101000005_public_impact_butt_condition_distribution.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("scientific projection convergence migration STATIC_CONTRACT", () => {
   it("keeps SQL and TypeScript version identities in parity", () => {
     expect(convergenceMigration).toContain(`'${ACTION_COLLECTION_REFERENCE_FORMULA_VERSION}'`);
     expect(convergenceMigration).toContain(`'${POLLUTION_SCORE_REFERENCE_FORMULA_VERSION}'`);
-    expect(volumeProxyMigration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(volumeProxyMigration).toContain("'impact-terrain-public-2026.09-v4'");
+    expect(currentProjectionMigration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
     expect(contextualMigration).toContain(`'${ACTION_COLLECTION_CONTEXT_FORMULA_VERSION}'`);
   });
 

@@ -52,7 +52,7 @@ const aggregate = {
   ],
   classification_warnings: [],
   butts_by_condition: [{ condition: "propre", count: 200 }],
-  methodology_version: "impact-terrain-public-2026.09-v4",
+  methodology_version: "impact-terrain-public-2026.09-v5",
 };
 
 function existingSnapshot(overrides: Record<string, unknown> = {}) {
@@ -124,7 +124,7 @@ describe("public monthly impact snapshot", () => {
       toDate: "2026-09-08",
       timezone: "UTC",
     });
-    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v4");
+    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v5");
     expect(payload.kpis).toMatchObject({
       participantsTotal: 6,
       totalDurationMinutes: 120,

@@ -29,7 +29,7 @@ import {
 
 export const PUBLIC_IMPACT_SNAPSHOT_KEY = "cleanmymap-impact-terrain-2026";
 export const PUBLIC_IMPACT_SNAPSHOT_VERSION =
-  "impact-terrain-public-2026.09-v4-volume-proxy";
+  "impact-terrain-public-2026.09-v5-butt-condition-distribution";
 const PUBLIC_IMPACT_SNAPSHOT_TITLE =
   "Snapshot public mensuel Impact terrain 2026";
 
