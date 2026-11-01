@@ -12,6 +12,7 @@ const fetchRecommendationMock = vi.hoisted(() => vi.fn());
 const buildSubmissionMock = vi.hoisted(() => vi.fn());
 const buildProposalMock = vi.hoisted(() => vi.fn());
 const compareRefreshMock = vi.hoisted(() => vi.fn());
+const guidedRefreshReasonMock = vi.hoisted(() => vi.fn<() => string | null>(() => null));
 
 vi.mock("@/lib/actions/http", () => ({ fetchActionById: fetchActionMock }));
 vi.mock("@/lib/actions/route-version-http", () => ({
@@ -26,6 +27,7 @@ vi.mock("@/lib/route/route-refresh", () => ({
   buildRouteRefreshSubmission: buildSubmissionMock,
   compatibleRouteGroupCounts: (volunteers: number) => volunteers >= 2 ? [2, 3] : [],
   compareRouteRefresh: compareRefreshMock,
+  guidedRouteRefreshUnavailableReason: guidedRefreshReasonMock,
 }));
 vi.mock("@/lib/route/route-refresh-signals", () => ({
   addRouteRefreshGroupReason: (signals: RouteRefreshSignals, groupCount: number) => ({
@@ -84,14 +86,45 @@ const action = {
   preparationData: { routeVersioning: { active: { calculation: currentCalculation } } },
 } as never;
 
+const guidedAction = Object.assign({}, action as object, {
+  preparationData: {
+    routeVersioning: {
+      active: {
+        calculation: {
+          ...currentCalculation,
+          parameters: {
+            volunteers: 10,
+            groupCount: 2,
+            planningMode: {
+              type: "territorial-guided",
+              version: "route-territorial-guided-v2",
+              budget: {
+                totalMinutes: 90,
+                organizationMarginMinutes: 15,
+                minimumCollectionMinutes: 45,
+                travelMaxMinutes: 30,
+              },
+              groups: [1, 2].map((index) => ({
+                label: `Secteur ${index}`,
+                sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+                waypoints: [{ id: `waypoint-${index}`, label: `Passage ${index}`, latitude: 48.85, longitude: 2.35 }],
+              })),
+            },
+          },
+        },
+      },
+    },
+  },
+}) as never;
+
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 
-function mount() {
+function mount(item = action) {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  act(() => root?.render(<ActionRouteRefreshPanel action={action} />));
+  act(() => root?.render(<ActionRouteRefreshPanel action={item} />));
   return host;
 }
 
@@ -114,6 +147,8 @@ afterEach(() => {
   root = null;
   host = null;
   vi.clearAllMocks();
+  guidedRefreshReasonMock.mockReset();
+  guidedRefreshReasonMock.mockReturnValue(null);
 });
 
 describe("ActionRouteRefreshPanel behavior", () => {
@@ -191,6 +226,61 @@ describe("ActionRouteRefreshPanel behavior", () => {
     expect(fetchActionMock).toHaveBeenCalledWith("action-route-refresh");
     expect(fetchSignalsMock).toHaveBeenCalledTimes(2);
     expect(mounted.textContent).toContain("Aucune version supplémentaire n'a été créée");
+  });
+
+  it("keeps guided groups fixed, proposes a balanced refresh, and allows explicit refusal", async () => {
+    const guidedSignals = {
+      ...signals,
+      participants: { used: 10, confirmed: 12 },
+      groupCount: 2,
+    };
+    fetchSignalsMock.mockResolvedValue(guidedSignals);
+    fetchRecommendationMock.mockResolvedValue({});
+    buildSubmissionMock.mockReturnValue({ submission: true });
+    buildProposalMock.mockReturnValue(proposal);
+    compareRefreshMock.mockReturnValue({
+      identical: false,
+      current: currentCalculation,
+      proposal: proposal.calculation,
+      keptStopIds: [],
+      addedStopIds: [],
+      removedStopIds: [],
+      priorityChanges: [],
+    });
+    const mounted = mount(guidedAction);
+    await flush();
+
+    expect(mounted.textContent).toContain("conservera 2 groupe(s)");
+    expect(mounted.querySelectorAll('input[type="radio"]')).toHaveLength(0);
+    await act(async () => {
+      button("Actualiser l'itinéraire").click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(buildSubmissionMock).toHaveBeenCalledWith(guidedAction, { volunteers: 12, groupCount: 2 });
+    expect(mounted.textContent).toContain("Nouvelle proposition");
+
+    await act(async () => {
+      button("Conserver l'itinéraire actuel").click();
+    });
+    expect(applyVersionMock).not.toHaveBeenCalled();
+    expect(mounted.textContent).toContain("L'itinéraire actuel est conservé.");
+  });
+
+  it("blocks a non-representable guided refresh before transport", async () => {
+    guidedRefreshReasonMock.mockReturnValue("Le recalcul territorial guidé conserve 2 groupe(s) : aucun éditeur de nouveaux secteurs et passages n'est disponible ici.");
+    fetchSignalsMock.mockResolvedValue({
+      ...signals,
+      participants: { used: 10, confirmed: 12 },
+      groupCount: 2,
+    });
+    const mounted = mount(guidedAction);
+    await flush();
+
+    expect(mounted.textContent).toContain("aucun éditeur de nouveaux secteurs");
+    expect(button("Actualiser l'itinéraire").disabled).toBe(true);
+    expect(fetchRecommendationMock).not.toHaveBeenCalled();
+    expect(buildSubmissionMock).not.toHaveBeenCalled();
   });
 
   it("surfaces a route engine failure without replacing the active action", async () => {

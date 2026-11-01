@@ -130,3 +130,11 @@ les boucles ensemble puis par groupe avec des couleurs distinctes. L’export
 terrain produit une vue générale et une fiche par groupe ; il sépare les
 passages planifiés des observations/prédictions et signale explicitement les
 géométries réseau ou estimées.
+
+Lors du rafraîchissement explicite d’une action guidée, le nombre de groupes,
+les secteurs, les passages ordonnés, les noms et le budget sont conservés. Les
+effectifs confirmés sont redistribués de façon déterministe en nombres entiers
+positifs aussi équilibrés que possible. Le panneau ne propose pas de changer
+le nombre de groupes tant qu’un éditeur explicite des nouveaux secteurs et
+passages n’est pas disponible ; aucune version active ne change avant
+l’acceptation de la proposition.

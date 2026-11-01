@@ -3,7 +3,7 @@ import { createOperationalRouteFromRecommendation } from "./route-operational";
 import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type { RoutePlannerSnapshot } from "./route-calibration-types";
 import type { RouteRecommendationResponse } from "./route-response-contract";
-import { MAX_ROUTE_GROUP_COUNT } from "./route-group-partition";
+import { MAX_ROUTE_GROUP_COUNT, MAX_ROUTE_VOLUNTEERS } from "./route-group-partition";
 import {
   buildActionRouteVersionCalculation,
   buildVersionedStopFromSnapshot,
@@ -13,6 +13,7 @@ import {
   createRouteRecommendationSubmission,
   type RouteRecommendationSubmission,
 } from "@/components/sections/rubriques/route/route-request";
+import type { RoutePlanningMode } from "./route-planning-mode";
 
 export type RouteRefreshProposal = {
   response: RouteRecommendationResponse;
@@ -44,6 +45,56 @@ export type RouteRefreshSubmissionOverrides = {
 export function compatibleRouteGroupCounts(volunteers: number): number[] {
   const maximum = Math.min(MAX_ROUTE_GROUP_COUNT, Math.max(0, Math.trunc(volunteers)));
   return Array.from({ length: Math.max(0, maximum - 1) }, (_, index) => index + 2);
+}
+
+function distributeGuidedVolunteers(volunteers: number, groupCount: number): number[] | null {
+  if (!Number.isInteger(volunteers) || volunteers < groupCount || volunteers > MAX_ROUTE_VOLUNTEERS ||
+    !Number.isInteger(groupCount) || groupCount < 1 || groupCount > MAX_ROUTE_GROUP_COUNT) {
+    return null;
+  }
+  const base = Math.floor(volunteers / groupCount);
+  const remainder = volunteers % groupCount;
+  return Array.from({ length: groupCount }, (_, index) => base + (index < remainder ? 1 : 0));
+}
+
+function guidedRefreshMode(
+  mode: RoutePlanningMode,
+  volunteers: number,
+  groupCount: number,
+): RoutePlanningMode | null {
+  if (mode.type !== "territorial-guided") return mode;
+  if (groupCount !== mode.groups.length) return null;
+  const volunteerCounts = distributeGuidedVolunteers(volunteers, groupCount);
+  if (!volunteerCounts) return null;
+  return {
+    ...mode,
+    groups: mode.groups.map((group, index) => ({
+      ...group,
+      volunteerCount: volunteerCounts[index],
+      sector: { ...group.sector, center: { ...group.sector.center } },
+      waypoints: group.waypoints.map((waypoint) => ({ ...waypoint })),
+    })),
+  };
+}
+
+export function guidedRouteRefreshUnavailableReason(
+  action: ActionEditorRecord,
+  overrides: RouteRefreshSubmissionOverrides = {},
+): string | null {
+  const preparation = action.preparationData;
+  const snapshot = preparation?.routeCalibrationContext?.plannerSnapshot;
+  const parameters = preparation?.routeVersioning?.active.calculation.parameters ?? snapshot?.parameters;
+  const mode = parameters?.planningMode;
+  if (!parameters || mode?.type !== "territorial-guided") return null;
+  const volunteers = overrides.volunteers ?? parameters.volunteers;
+  const groupCount = overrides.groupCount ?? parameters.groupCount;
+  if (groupCount !== mode.groups.length) {
+    return `Le recalcul territorial guidé conserve ${mode.groups.length} groupe(s) : aucun éditeur de nouveaux secteurs et passages n'est disponible ici.`;
+  }
+  if (!distributeGuidedVolunteers(volunteers, groupCount)) {
+    return `Le recalcul territorial guidé nécessite au moins ${groupCount} bénévoles et au plus ${MAX_ROUTE_VOLUNTEERS}, avec un effectif entier.`;
+  }
+  return null;
 }
 
 function scheduledDateTime(date: string, time: string | null | undefined): string | undefined {
@@ -95,12 +146,16 @@ export function buildRouteRefreshSubmission(
   if (!parameters) return null;
   const origin = refreshOrigin(action, parameters);
   if (!origin) return null;
+  const volunteers = overrides.volunteers ?? parameters.volunteers;
+  const groupCount = overrides.groupCount ?? parameters.groupCount;
+  const planningMode = guidedRefreshMode(parameters.planningMode, volunteers, groupCount);
+  if (!planningMode) return null;
 
   return createRouteRecommendationSubmission(
     1,
-    refreshOptions(action, parameters, overrides),
+    refreshOptions(action, parameters, { ...overrides, volunteers, groupCount }),
     origin,
-    parameters.planningMode,
+    planningMode,
   );
 }
 

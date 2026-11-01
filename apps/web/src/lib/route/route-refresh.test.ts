@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseRouteRecommendationRequest } from "@/app/api/route/recommend/route.schema";
 import { buildRoutePlannerSnapshot } from "./route-calibration";
 import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
 import { createOperationalRouteFromRecommendation } from "./route-operational";
@@ -8,6 +9,7 @@ import {
   buildRouteRefreshSubmission,
   compatibleRouteGroupCounts,
   compareRouteRefresh,
+  guidedRouteRefreshUnavailableReason,
   type RouteRefreshProposal,
 } from "./route-refresh";
 import {
@@ -17,6 +19,10 @@ import {
 } from "./route-refresh-signals";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { RouteRecommendationResponse } from "./route-response-contract";
+import {
+  ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
+  ROUTE_TERRITORIAL_GUIDED_VERSION,
+} from "./route-planning-mode";
 
 function action(): ActionEditorRecord {
   const snapshot = buildRoutePlannerSnapshot(createRoutePlannerSnapshotInput());
@@ -67,6 +73,60 @@ function action(): ActionEditorRecord {
     routeStyle: "souple",
     routeAdjustmentMessage: null,
   };
+}
+
+function guidedAction(
+  version: typeof ROUTE_TERRITORIAL_GUIDED_VERSION | typeof ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION = ROUTE_TERRITORIAL_GUIDED_VERSION,
+  volunteers = 10,
+  groupCount = 2,
+): ActionEditorRecord {
+  const current = action();
+  const snapshot = current.preparationData!.routeCalibrationContext!.plannerSnapshot!;
+  const groups = Array.from({ length: groupCount }, (_, index) => ({
+    label: `Secteur ${index + 1}`,
+    sector: {
+      center: { latitude: 48.84 + index / 1000, longitude: 2.35 },
+      radiusKm: 1,
+    },
+    waypoints: [{
+      id: `guided-waypoint-${index + 1}`,
+      label: `Passage ${index + 1}`,
+      latitude: 48.84 + index / 1000,
+      longitude: 2.35,
+    }],
+  }));
+  const planningMode = version === ROUTE_TERRITORIAL_GUIDED_VERSION
+    ? {
+        type: "territorial-guided" as const,
+        version,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
+        groups,
+      }
+    : { type: "territorial-guided" as const, version, groups };
+  const guidedSnapshot = {
+    ...snapshot,
+    parameters: {
+      ...snapshot.parameters,
+      volunteers,
+      groupCount,
+      planningMode,
+    },
+  };
+  current.preparationData!.routeCalibrationContext!.plannerSnapshot = guidedSnapshot;
+  return current;
+}
+
+function parseSubmission(submission: NonNullable<ReturnType<typeof buildRouteRefreshSubmission>>) {
+  return parseRouteRecommendationRequest({
+    ...submission.options,
+    planningMode: submission.planningMode,
+    ...(submission.origin ? { origin: submission.origin } : {}),
+  });
 }
 
 describe("route refresh proposal", () => {
@@ -231,6 +291,64 @@ describe("route refresh proposal", () => {
     expect(submission?.options).not.toHaveProperty("weather");
     expect(submission?.options).not.toHaveProperty("affluence");
     expect(submission?.options).not.toHaveProperty("additionality");
+  });
+
+  it.each([
+    [12, [6, 6]],
+    [11, [6, 5]],
+  ] as const)("rebalances a guided v2 refresh for %s volunteers while preserving its constraints", (volunteers, expectedCounts) => {
+    const current = guidedAction();
+    const before = structuredClone(current.preparationData);
+    const submission = buildRouteRefreshSubmission(current, { volunteers, groupCount: 2 });
+
+    expect(submission).not.toBeNull();
+    expect(parseSubmission(submission!).success).toBe(true);
+    expect(submission?.planningMode).toMatchObject({
+      type: "territorial-guided",
+      version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+      budget: { totalMinutes: 90, organizationMarginMinutes: 15, minimumCollectionMinutes: 45, travelMaxMinutes: 30 },
+    });
+    expect(submission?.planningMode.type === "territorial-guided"
+      ? submission.planningMode.groups.map((group) => group.volunteerCount)
+      : []).toEqual(expectedCounts);
+    const originalMode = current.preparationData!.routeCalibrationContext!.plannerSnapshot!.parameters.planningMode;
+    expect(submission?.planningMode.type === "territorial-guided" && originalMode.type === "territorial-guided"
+      ? submission.planningMode.groups
+      : []).toEqual(originalMode.type === "territorial-guided"
+        ? originalMode.groups.map((group) => expect.objectContaining(group))
+        : []);
+    expect(submission?.planningMode.type === "territorial-guided"
+      ? submission.planningMode.groups.map(({ label, sector, waypoints }) => ({ label, sector, waypoints }))
+      : []).toEqual(expect.arrayContaining([
+        expect.objectContaining({ label: "Secteur 1" }),
+        expect.objectContaining({ label: "Secteur 2" }),
+      ]));
+    expect(current.preparationData).toEqual(before);
+  });
+
+  it("refuses a guided refresh with a different group count or too few volunteers before the API", () => {
+    const current = guidedAction();
+
+    expect(buildRouteRefreshSubmission(current, { volunteers: 12, groupCount: 3 })).toBeNull();
+    expect(buildRouteRefreshSubmission(current, { volunteers: 1, groupCount: 2 })).toBeNull();
+    expect(guidedRouteRefreshUnavailableReason(current, { volunteers: 12, groupCount: 3 })).toContain("aucun éditeur");
+    expect(guidedRouteRefreshUnavailableReason(current, { volunteers: 1, groupCount: 2 })).toContain("au moins 2 bénévoles");
+  });
+
+  it("keeps v1 compatibility without fabricating a v2 budget", () => {
+    const current = guidedAction(ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION);
+    const submission = buildRouteRefreshSubmission(current, { volunteers: 11, groupCount: 2 });
+
+    expect(submission).not.toBeNull();
+    expect(parseSubmission(submission!).success).toBe(true);
+    expect(submission?.planningMode).toMatchObject({
+      type: "territorial-guided",
+      version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
+    });
+    expect(submission?.planningMode).not.toHaveProperty("budget");
+    expect(submission?.planningMode.type === "territorial-guided"
+      ? submission.planningMode.groups.map((group) => group.volunteerCount)
+      : []).toEqual([6, 5]);
   });
 
   it("preserves scheduled options and falls back to planner origin when action coordinates are absent", () => {

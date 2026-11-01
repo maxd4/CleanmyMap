@@ -14,6 +14,7 @@ import {
   buildRouteRefreshSubmission,
   compatibleRouteGroupCounts,
   compareRouteRefresh,
+  guidedRouteRefreshUnavailableReason,
   type RouteRefreshProposal,
 } from "@/lib/route/route-refresh";
 import {
@@ -151,7 +152,12 @@ function useActionRouteRefreshPanel(action: ActionEditorRecord) {
   const [activeAction, setActiveAction] = useState(action);
   const [signals, setSignals] = useState<RouteRefreshSignals | null>(null);
   const [signalsState, setSignalsState] = useState<"loading" | "ready" | "error">("loading");
-  const [selectedGroupCount, setSelectedGroupCount] = useState<number>(1);
+  const initialParameters = action.preparationData?.routeVersioning?.active.calculation.parameters ??
+    action.preparationData?.routeCalibrationContext?.plannerSnapshot?.parameters;
+  const initialGuidedGroupCount = initialParameters?.planningMode?.type === "territorial-guided"
+    ? initialParameters.groupCount
+    : 1;
+  const [selectedGroupCount, setSelectedGroupCount] = useState<number>(initialGuidedGroupCount);
   const [proposal, setProposal] = useState<RouteRefreshProposal | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "applying" | "error" | "kept" | "applied">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -175,6 +181,15 @@ function useActionRouteRefreshPanel(action: ActionEditorRecord) {
 
   async function refresh() {
     const activeParameters = activeAction.preparationData?.routeVersioning?.active.calculation.parameters;
+    const guidedError = guidedRouteRefreshUnavailableReason(activeAction, {
+      volunteers: signals?.participants.confirmed ?? activeParameters?.volunteers,
+      groupCount: selectedGroupCount,
+    });
+    if (guidedError) {
+      setState("error");
+      setMessage(guidedError);
+      return;
+    }
     const submission = buildRouteRefreshSubmission(activeAction, {
       volunteers: signals?.participants.confirmed ?? activeParameters?.volunteers,
       groupCount: selectedGroupCount,
@@ -230,7 +245,18 @@ function useActionRouteRefreshPanel(action: ActionEditorRecord) {
     }
   }
 
-  return { activeAction, signals, signalsState, selectedGroupCount, setSelectedGroupCount, proposal, setProposal, state, setState, message, setMessage, refresh, applyProposal };
+  const activeParameters = activeAction.preparationData?.routeVersioning?.active.calculation.parameters ??
+    activeAction.preparationData?.routeCalibrationContext?.plannerSnapshot?.parameters;
+  const guidedGroupCount = activeParameters?.planningMode?.type === "territorial-guided"
+    ? activeParameters.planningMode.groups.length
+    : null;
+  const guidedRefreshError = signalsState === "ready"
+    ? guidedRouteRefreshUnavailableReason(activeAction, {
+        volunteers: signals?.participants.confirmed ?? activeParameters?.volunteers,
+        groupCount: selectedGroupCount,
+      })
+    : null;
+  return { activeAction, signals, signalsState, selectedGroupCount, setSelectedGroupCount, proposal, setProposal, state, setState, message, setMessage, refresh, applyProposal, guidedGroupCount, guidedRefreshError };
 }
 
 function RouteRefreshProposalDetails({
@@ -293,7 +319,7 @@ export function ActionRouteRefreshPanel({
   action: ActionEditorRecord;
 }) {
   const panel = useActionRouteRefreshPanel(action);
-  const { activeAction, signals, signalsState, selectedGroupCount, setSelectedGroupCount, proposal, setProposal, state, setState, message, setMessage, refresh, applyProposal } = panel;
+  const { activeAction, signals, signalsState, selectedGroupCount, setSelectedGroupCount, proposal, setProposal, state, setState, message, setMessage, refresh, applyProposal, guidedGroupCount, guidedRefreshError } = panel;
 
   const details = proposal ? metricRows(proposal, activeAction) : null;
   const displaySignals = signals && selectedGroupCount !== signals.groupCount
@@ -311,7 +337,7 @@ export function ActionRouteRefreshPanel({
         {signalsState === "ready" && signals && displaySignals ? (
           <RouteRefreshSignalSummary signals={signals} displaySignals={displaySignals} />
         ) : null}
-        {displaySignals?.recommended ? (
+        {displaySignals?.recommended && guidedGroupCount === null ? (
           <RouteRefreshGroupChoice
             actionId={action.id}
             selectedGroupCount={selectedGroupCount}
@@ -319,12 +345,20 @@ export function ActionRouteRefreshPanel({
             signals={displaySignals}
           />
         ) : null}
+        {displaySignals?.recommended && guidedGroupCount !== null ? (
+          <p className="rounded-xl border border-amber-200/70 bg-amber-50/80 p-3 text-sm font-semibold text-amber-900" role="status">
+            Le recalcul territorial guidé conservera {guidedGroupCount} groupe(s), leurs secteurs et leurs passages. Modifier ce nombre est indisponible ici tant qu&apos;aucun éditeur explicite n&apos;est proposé.
+          </p>
+        ) : null}
+        {guidedRefreshError ? (
+          <p className="text-sm font-semibold text-rose-700" role="alert">{guidedRefreshError}</p>
+        ) : null}
         <CmmButton
           tone="secondary"
           variant="pill"
           size="md"
           onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh(); }}
-          disabled={state === "loading" || state === "applying"}
+          disabled={state === "loading" || state === "applying" || Boolean(guidedRefreshError)}
         >
           {state === "loading" ? "Actualisation…" : "Actualiser l'itinéraire"}
         </CmmButton>
