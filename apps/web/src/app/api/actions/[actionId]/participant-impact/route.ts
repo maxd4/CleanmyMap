@@ -131,8 +131,8 @@ function resolveWasteMeasurement(
   if (current?.wasteKg === null || current?.wasteKg === undefined) return null;
   return {
     kg: current.wasteKg,
-    condition: current.wasteCondition ?? "sec",
-    measurementMethod: current.wasteMeasurementMethod ?? "inconnue",
+    condition: current.wasteCondition,
+    measurementMethod: current.wasteMeasurementMethod,
   };
 }
 
@@ -150,7 +150,7 @@ function resolveButtsMeasurement(
   return {
     count: current?.cigaretteButtsCount ?? null,
     massKg: current?.cigaretteButtsMassKg ?? null,
-    condition: current?.cigaretteButtsCondition ?? "propre",
+    condition: current?.cigaretteButtsCondition,
   };
 }
 
@@ -178,6 +178,10 @@ function buildMeasurementUpdate(
 ): { measuredAt: string | null; updatePayload: IndividualImpactRow } {
   const nextWaste = resolveWasteMeasurement(payload, current);
   const nextButts = resolveButtsMeasurement(payload, current);
+  const preservesExistingButts = payload.butts === undefined;
+  const explicitLots = payload.butts !== undefined && payload.butts !== null && "lots" in payload.butts
+    ? payload.butts.lots
+    : null;
   const hasButtsMeasurement = nextButts !== null &&
     ("lots" in nextButts ? nextButts.lots.length > 0 : nextButts.count !== null || nextButts.massKg !== null);
   const hasMeasurement = nextWaste !== null || hasButtsMeasurement;
@@ -190,9 +194,13 @@ function buildMeasurementUpdate(
     cigaretteButtsCount: nextLegacyButts?.count ?? null,
     cigaretteButtsMassKg: nextLegacyButts?.massKg ?? null,
     cigaretteButtsCondition: nextLegacyButts?.condition ?? null,
-    cigaretteButtsLots: nextButts && "lots" in nextButts ? nextButts.lots : null,
+    cigaretteButtsLots: explicitLots,
+    cigaretteButtsProvenance: preservesExistingButts ? current?.cigaretteButtsProvenance : undefined,
+    cigaretteButtsConversionVersion: preservesExistingButts ? current?.cigaretteButtsConversionVersion : undefined,
     measuredBy: hasMeasurement ? actorUserId : null,
     measuredAt,
+  }, {
+    preservedCigaretteButtsLots: preservesExistingButts ? current?.cigaretteButtsLots : undefined,
   });
   return {
     measuredAt,

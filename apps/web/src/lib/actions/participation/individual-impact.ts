@@ -1,6 +1,5 @@
 import {
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
-  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   computeButtsCount,
   estimateButtsWeightKg,
   isCigaretteButtsMassConversionVersion,
@@ -11,6 +10,7 @@ import {
   type CigaretteButtsLotInput,
   type CigaretteButtsLotResult,
   type CigaretteButtsLotsSummary,
+  isCigaretteButtsVolumeConversionVersion,
 } from "@/lib/waste/cigarette-butts";
 
 export const WASTE_MOISTURE_NORMALIZATION_VERSION =
@@ -18,7 +18,7 @@ export const WASTE_MOISTURE_NORMALIZATION_VERSION =
 
 const WASTE_MOISTURE_CONDITIONS = ["sec", "humide", "mouille"] as const;
 type WasteMoistureCondition = (typeof WASTE_MOISTURE_CONDITIONS)[number];
-type IndividualButtsProvenance = "counted" | "measured" | "derived";
+type IndividualButtsProvenance = "counted" | "measured" | "derived" | "unknown";
 
 export type StoredIndividualCigaretteButtsLots = {
   lots: CigaretteButtsLotInput[];
@@ -55,9 +55,18 @@ export type IndividualImpactMeasurementInput = {
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsCondition?: ActionMegotsCondition | null;
   cigaretteButtsLots?: CigaretteButtsLotInput[] | null;
+  cigaretteButtsProvenance?: IndividualButtsProvenance | null;
   cigaretteButtsConversionVersion?: string | null;
   measuredBy?: string | null;
   measuredAt?: string | null;
+};
+
+export type StoredIndividualImpactBuildOptions = {
+  /**
+   * Snapshot already persisted by the server. It is never rebuilt from raw
+   * lot inputs during a PATCH that does not replace the lots explicitly.
+   */
+  preservedCigaretteButtsLots?: StoredIndividualCigaretteButtsLots | null;
 };
 
 export type StoredIndividualImpactMeasurement = IndividualImpactFields;
@@ -150,6 +159,7 @@ function isStoredCigaretteButtsLots(
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<StoredIndividualCigaretteButtsLots>;
   return Array.isArray(candidate.lots) &&
+    candidate.lots.length > 0 &&
     Array.isArray(candidate.results) &&
     Boolean(candidate.summary && typeof candidate.summary === "object") &&
     typeof candidate.summary?.totalCount === "number" &&
@@ -159,15 +169,18 @@ function isStoredCigaretteButtsLots(
 
 export function buildStoredIndividualImpactMeasurement(
   input: IndividualImpactMeasurementInput,
+  options: StoredIndividualImpactBuildOptions = {},
 ): StoredIndividualImpactMeasurement {
   const wasteKg = finiteNonNegative(input.wasteKg);
   const wasteCondition = normalizeWasteCondition(input.wasteCondition);
   const cigaretteButtsCount = normalizeNullableInteger(input.cigaretteButtsCount);
   const cigaretteButtsMassKg = finiteNonNegative(input.cigaretteButtsMassKg);
   const cigaretteButtsCondition = normalizeButtsCondition(input.cigaretteButtsCondition);
-  const cigaretteButtsLots = input.cigaretteButtsLots
-    ? buildStoredCigaretteButtsLots(input.cigaretteButtsLots)
-    : null;
+  const cigaretteButtsLots = options.preservedCigaretteButtsLots !== undefined
+    ? options.preservedCigaretteButtsLots
+    : input.cigaretteButtsLots
+      ? buildStoredCigaretteButtsLots(input.cigaretteButtsLots)
+      : null;
   const lotResults = cigaretteButtsLots?.results ?? [];
   const hasButts = cigaretteButtsLots !== null || cigaretteButtsCount !== null || cigaretteButtsMassKg !== null;
 
@@ -182,19 +195,23 @@ export function buildStoredIndividualImpactMeasurement(
       ? projectionCondition(lotResults)
       : hasButts ? cigaretteButtsCondition : null,
     cigaretteButtsLots,
-    cigaretteButtsProvenance: cigaretteButtsLots
-      ? (cigaretteButtsLots.summary.estimatedCount === 0 ? "counted" : "derived")
+    cigaretteButtsProvenance: input.cigaretteButtsProvenance !== undefined
+      ? input.cigaretteButtsProvenance
+      : cigaretteButtsLots
+        ? (cigaretteButtsLots.summary.estimatedCount === 0 ? "counted" : "derived")
       : cigaretteButtsCount !== null
         ? "counted"
         : cigaretteButtsMassKg !== null
           ? "measured"
           : null,
-    cigaretteButtsConversionVersion: cigaretteButtsLots
-      ? projectionVersion(lotResults)
+    cigaretteButtsConversionVersion: cigaretteButtsLots && input.cigaretteButtsConversionVersion !== undefined
+      ? input.cigaretteButtsConversionVersion
+      : cigaretteButtsLots
+        ? projectionVersion(lotResults)
       : input.cigaretteButtsConversionVersion ??
-        (cigaretteButtsCount === null && cigaretteButtsMassKg !== null
-          ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
-          : null),
+          (cigaretteButtsCount === null && cigaretteButtsMassKg !== null
+            ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
+            : null),
     measuredBy: input.measuredBy?.trim() || null,
     measuredAt: input.measuredAt ?? null,
   };
@@ -212,20 +229,15 @@ export function toIndividualImpactMeasurement(
     cigaretteButtsCount: normalizeNullableInteger(row.individual_cigarette_butts_count),
     cigaretteButtsMassKg: finiteNonNegative(row.individual_cigarette_butts_mass_kg),
     cigaretteButtsCondition: normalizeButtsCondition(row.individual_cigarette_butts_condition),
-    cigaretteButtsConversionVersion:
-      row.individual_cigarette_butts_conversion_version ??
-      (row.individual_cigarette_butts_count === null &&
-      row.individual_cigarette_butts_mass_kg !== null &&
-      row.individual_cigarette_butts_mass_kg !== undefined
-        ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1
-        : null),
+    cigaretteButtsProvenance: normalizeIndividualButtsProvenance(row.individual_cigarette_butts_provenance),
+    cigaretteButtsConversionVersion: row.individual_cigarette_butts_conversion_version ?? null,
     measuredBy: row.individual_impact_measured_by,
     measuredAt: row.individual_impact_measured_at,
   });
   const persistedLots = isStoredCigaretteButtsLots(row.individual_cigarette_butts_lots)
     ? row.individual_cigarette_butts_lots
     : null;
-  const recalculatedLots = options.recalculateDerived && persistedLots
+  const recalculatedLots = options.recalculateDerived && persistedLots && canRecalculatePersistedLots(persistedLots)
     ? aggregateCigaretteButtsLots(persistedLots.lots)
     : null;
   const canonicalStored = recalculatedLots
@@ -271,11 +283,42 @@ export function toIndividualImpactMeasurement(
           ? "counted"
           : comparableButtsCount !== null ? "derived" : null
         : canonicalStored.cigaretteButtsCount !== null
-          ? "counted"
+          ? canonicalStored.cigaretteButtsProvenance === "counted"
+            ? "counted"
+            : canonicalStored.cigaretteButtsProvenance === "derived"
+              ? "derived"
+              : null
           : comparableButtsCount !== null
             ? "derived"
             : null,
   };
+}
+
+function normalizeIndividualButtsProvenance(
+  value: unknown,
+): IndividualButtsProvenance | null | undefined {
+  if (value === undefined) return undefined;
+  return value === "counted" || value === "measured" || value === "derived" || value === "unknown"
+    ? value
+    : null;
+}
+
+function canRecalculatePersistedLots(
+  persistedLots: StoredIndividualCigaretteButtsLots,
+): boolean {
+  return persistedLots.results.length === persistedLots.lots.length && persistedLots.lots.every((lot) => {
+    const result = persistedLots.results.find((candidate) => candidate.id === lot.id);
+    if (!result || result.source !== lot.source || result.value !== lot.value || result.condition !== lot.condition) {
+      return false;
+    }
+    if (result.source === "volume_l") {
+      return result.rawVolumeLiters !== null &&
+        isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion) &&
+        isCigaretteButtsVolumeConversionVersion(result.volumeConversionFormulaVersion);
+    }
+    if (result.source === "mass_kg" && result.rawMassKg === null) return false;
+    return isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion);
+  });
 }
 
 function recalculateLegacyDerivedButts(
@@ -285,7 +328,7 @@ function recalculateLegacyDerivedButts(
     stored.cigaretteButtsMassKg !== null &&
     stored.cigaretteButtsCondition !== null &&
     stored.cigaretteButtsProvenance === "measured" &&
-    stored.cigaretteButtsConversionVersion !== null
+    isCigaretteButtsMassConversionVersion(stored.cigaretteButtsConversionVersion)
   ) {
     const count = computeButtsCount(
       stored.cigaretteButtsMassKg,
@@ -302,7 +345,7 @@ function recalculateLegacyDerivedButts(
     stored.cigaretteButtsCount !== null &&
     stored.cigaretteButtsCondition !== null &&
     stored.cigaretteButtsProvenance === "counted" &&
-    stored.cigaretteButtsConversionVersion !== null
+    isCigaretteButtsMassConversionVersion(stored.cigaretteButtsConversionVersion)
   ) {
     return {
       ...stored,

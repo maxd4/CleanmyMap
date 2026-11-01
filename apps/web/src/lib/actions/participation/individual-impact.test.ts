@@ -255,7 +255,7 @@ describe("individual action impact attribution", () => {
       individual_cigarette_butts_count: null,
       individual_cigarette_butts_mass_kg: 1,
       individual_cigarette_butts_condition: "humide",
-    })).toMatchObject({ comparableButtsCount: 1_750, comparableButtsProvenance: "derived", cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v1" });
+    })).toMatchObject({ comparableButtsCount: 2_000, comparableButtsProvenance: "derived", cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v2" });
     const counted = allocateActionParticipantImpact({
       totalWasteKg: null,
       totalCigaretteButts: 7,
@@ -400,6 +400,55 @@ describe("individual action impact attribution", () => {
 
     expect(derived?.comparableButtsCount).toBe(2_000);
     expect(ambiguous?.comparableButtsCount).toBe(7);
+  });
+
+  it("does not recalculate a lot whose historical formula version is unknown", () => {
+    const historical = aggregateCigaretteButtsLots([
+      { id: "unknown", source: "volume_l", value: 1, condition: "propre" },
+    ]);
+    const snapshot = {
+      ...historical,
+      results: historical.results.map((result) => ({
+        ...result,
+        count: 600,
+        volumeConversionFormulaVersion: "cleanmymap-butts-volume-legacy-unknown",
+      })),
+      summary: {
+        ...historical.summary,
+        totalCount: 600,
+        estimatedCount: 600,
+      },
+    };
+
+    const recalculated = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 600,
+      individual_cigarette_butts_mass_kg: snapshot.summary.totalMassKg,
+      individual_cigarette_butts_condition: "propre",
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_lots: snapshot,
+    }, { recalculateDerived: true });
+
+    expect(recalculated?.comparableButtsCount).toBe(600);
+    expect(recalculated?.cigaretteButtsLots?.results[0]?.count).toBe(600);
+    expect(recalculated?.cigaretteButtsLots?.results[0]?.volumeConversionFormulaVersion)
+      .toBe("cleanmymap-butts-volume-legacy-unknown");
+  });
+
+  it("preserves scalar derived provenance and refuses an unknown conversion version", () => {
+    const measurement = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 600,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_condition: "propre",
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_conversion_version: "historical-formula-unknown",
+    }, { recalculateDerived: true });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsProvenance: "derived",
+      cigaretteButtsConversionVersion: "historical-formula-unknown",
+      comparableButtsCount: 600,
+      comparableButtsProvenance: "derived",
+    });
   });
 
   it("fails closed when mixed individual lots exceed the collective total", () => {

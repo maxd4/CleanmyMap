@@ -9,6 +9,7 @@ import {
 import {
   aggregateCigaretteButtsLots,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+  CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
 } from "@/lib/waste/cigarette-butts";
 
 const {
@@ -298,8 +299,8 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(wasteFallbackResponse.status).toBe(200);
     expect(participantWithWaste).toMatchObject({
       individual_waste_kg: 8,
-      individual_waste_condition: "sec",
-      individual_waste_measurement_method: "inconnue",
+      individual_waste_condition: null,
+      individual_waste_measurement_method: null,
     });
 
     const participantWithButts = Object.assign(createParticipantWithStatus("confirmed"), {
@@ -316,7 +317,63 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     expect(participantWithButts).toMatchObject({
       individual_cigarette_butts_count: null,
       individual_cigarette_butts_mass_kg: 2,
+      individual_cigarette_butts_condition: null,
+    });
+  });
+
+  it("preserves a historical 600/L lot when PATCH changes only waste", async () => {
+    const historicalLots = aggregateCigaretteButtsLots([
+      { id: "historical-volume", source: "volume_l", value: 1, condition: "propre" },
+    ], { volumeConversionVersion: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1 });
+    const action = createGroupJoinAction({ status: "approved", actionPhase: "post_action_complete" });
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_cigarette_butts_count: historicalLots.summary.totalCount,
+      individual_cigarette_butts_mass_kg: historicalLots.summary.totalMassKg,
       individual_cigarette_butts_condition: "propre",
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_conversion_version: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+      individual_cigarette_butts_lots: historicalLots,
+    });
+    configureParticipantImpactSupabase([participant]);
+    const beforeActionTotal = (action as Record<string, unknown>).cigarette_butts;
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 2, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_count: 600,
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_conversion_version: CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+      individual_cigarette_butts_lots: historicalLots,
+    });
+    expect((action as Record<string, unknown>).cigarette_butts).toBe(beforeActionTotal);
+  });
+
+  it("does not invent missing waste or butt qualifiers during an independent PATCH", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_waste_kg: 8,
+      individual_waste_condition: null,
+      individual_waste_measurement_method: null,
+      individual_cigarette_butts_count: 4,
+      individual_cigarette_butts_mass_kg: null,
+      individual_cigarette_butts_condition: null,
+      individual_cigarette_butts_provenance: "counted",
+    });
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 9, condition: "humide", measurementMethod: "balance_au_sol" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_count: 4,
+      individual_cigarette_butts_condition: null,
+      individual_waste_kg: 9,
     });
   });
 

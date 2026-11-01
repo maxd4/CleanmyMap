@@ -579,6 +579,14 @@ ne ré-alimente jamais `actions.cigarette_butts`. Une paire historique nombre /
 masse reste une mesure legacy unique, avec priorité au nombre, sans création
 silencieuse de deux lots.
 
+Lorsqu'un organisateur modifie une seule composante d'une attribution
+individuelle, les composantes omises sont conservées avec leurs résultats,
+versions et provenances persistés. Le PATCH ne reconstruit donc pas un lot
+historique avec le facteur courant. Seul un remplacement explicite des lots ou
+une réconciliation scientifique autorisée peut recalculer une dérivation ; une
+version inconnue et des qualificatifs absents restent inchangés et signalés
+comme non recalculables ou `NULL`.
+
 Pour les bilans multi-lots de mégots, la source de vérité est la collection de
 lots persistée dans les métadonnées de l'action. Chaque lot porte un identifiant
 stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur

@@ -298,6 +298,13 @@ lot massique nouvellement dérivé conserve la version de masse utilisée ; une
 version historique connue ou inconnue est lue selon sa provenance sans être
 remplacée silencieusement.
 
+La même protection s'applique aux PATCH partiels de `action_participants` : une
+mesure individuelle omise est conservée depuis son snapshot serveur, sans
+reprojection avec la méthode courante. Le remplacement explicite des lots et
+la réconciliation scientifique autorisée sont les seuls déclencheurs d'un
+nouveau calcul ; les qualificatifs `NULL`, les provenances et les versions
+historiques restent inchangés.
+
 #### Temporalité déclarée et valeur technique de compatibilité
 
 `duration_minutes` décrit le temps d'action de dépollution ;

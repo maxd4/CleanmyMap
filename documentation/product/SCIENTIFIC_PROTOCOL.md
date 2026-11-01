@@ -424,6 +424,14 @@ estimées restent distinguées dans le récapitulatif ; les participations non
 mesurées continuent de recevoir le reliquat ou la quote-part selon le moteur
 existant.
 
+Un PATCH individuel partiel ne porte que sur les champs explicitement présents.
+Les lots, résultats dérivés, versions et provenances omis sont repris comme
+snapshots persistés, sans être repassés dans le proxy courant. Leur recalcul
+nécessite un remplacement explicite des lots ou une réconciliation scientifique
+autorisée. Les qualificatifs historiques absents restent `NULL` ; ils ne sont
+pas remplacés par `sec`, `propre` ou une méthode `inconnue`. Une version de
+conversion inconnue conserve sa valeur historique et reste non recalculable.
+
 Le moteur d'estimation photo du formulaire `/actions/new` est conservé pour
 les itérations futures mais désactivé tant que sa maturité et sa validation ne
 sont pas suffisantes. Une photo de bilan reste une pièce documentaire et ne
