@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { loadActionParticipantImpactSnapshot } from "./group-participation-read";
+import {
+  loadActionParticipantImpactSnapshot,
+  loadConfirmedParticipantImpactAttributions,
+} from "./group-participation-read";
+import { loadStrictParticipantImpactAttributions } from "./group-participation-impact-read";
+import type { ActionPreviewRow } from "./group-participation.helpers";
 
 const action = {
   id: "action-1",
@@ -19,6 +24,7 @@ function createQuery<T>(result: T) {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
     in: vi.fn(() => query),
+    limit: vi.fn(() => query),
     maybeSingle: vi.fn(async () => result),
     then: (
       resolve: (value: T) => unknown,
@@ -77,5 +83,42 @@ describe("action participant impact read status", () => {
       readStatus: "error",
       revision: null,
     });
+  });
+
+  it("fails the strict projection read when the server reports truncated rows", async () => {
+    const participantQuery = createQuery({
+      data: [{ user_id: "user-1", action_id: "action-1" }],
+      count: 2,
+      error: null,
+    });
+    const supabase = {
+      from: vi.fn(() => participantQuery),
+    } as unknown as SupabaseClient;
+
+    await expect(loadStrictParticipantImpactAttributions(
+      supabase,
+      new Map([[action.id, action as ActionPreviewRow]]),
+      [action.id],
+    )).rejects.toThrow("tronquée");
+  });
+
+  it("fails closed when confirmed participation rows exceed the requested boundary", async () => {
+    const participantQuery = createQuery({
+      data: Array.from({ length: 2 }, (_, index) => ({
+        user_id: "user-1",
+        action_id: `action-${index + 1}`,
+      })),
+      count: 2,
+      error: null,
+    });
+    const supabase = {
+      from: vi.fn(() => participantQuery),
+    } as unknown as SupabaseClient;
+
+    await expect(loadConfirmedParticipantImpactAttributions(
+      supabase,
+      "user-1",
+      1,
+    )).rejects.toThrow("tronquée");
   });
 });

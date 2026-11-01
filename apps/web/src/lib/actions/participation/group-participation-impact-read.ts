@@ -20,6 +20,19 @@ type ParticipantImpactRow = {
   measurement: ReturnType<typeof toIndividualImpactMeasurement>;
 };
 
+export class ParticipantImpactReadError extends Error {
+  readonly code = "PARTICIPANT_IMPACT_READ_FAILED";
+
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "ParticipantImpactReadError";
+  }
+}
+
+type ParticipantImpactProjectionOptions = IndividualImpactReadOptions & {
+  strict?: boolean;
+};
+
 function groupParticipantImpactRows(
   data: unknown,
   options: IndividualImpactReadOptions = {},
@@ -65,7 +78,7 @@ async function loadParticipantImpactProjection(
   supabase: SupabaseClient,
   actionById: Map<string, ActionPreviewRow>,
   finalActionIds: string[],
-  options: IndividualImpactReadOptions = {},
+  options: ParticipantImpactProjectionOptions = {},
 ): Promise<{
   readStatus: "success" | "error";
   attributionsByActionId: Map<
@@ -82,10 +95,33 @@ async function loadParticipantImpactProjection(
   if (finalActionIds.length === 0) return empty;
   const result = await supabase
     .from("action_participants")
-    .select(`user_id, action_id, updated_at, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .select(`user_id, action_id, updated_at, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`, { count: "exact" })
     .in("action_id", finalActionIds)
     .eq("participation_status", ACTIVE_PARTICIPATION_STATUS);
-  if (result.error) return { ...empty, readStatus: "error" };
+  if (result.error) {
+    if (options.strict) {
+      throw new ParticipantImpactReadError(result.error.message, { cause: result.error });
+    }
+    return { ...empty, readStatus: "error" };
+  }
+  if (!Array.isArray(result.data)) {
+    if (options.strict) {
+      throw new ParticipantImpactReadError("La projection des participations est incomplète.");
+    }
+    return { ...empty, readStatus: "error" };
+  }
+  if (typeof result.count === "number" && result.count !== result.data.length) {
+    if (options.strict) {
+      throw new ParticipantImpactReadError("La projection des participations est tronquée.");
+    }
+    return { ...empty, readStatus: "error" };
+  }
+  if (options.strict && result.data.some((candidate) => {
+    if (!isActionRecord(candidate)) return true;
+    return typeof candidate.action_id !== "string" || typeof candidate.user_id !== "string";
+  })) {
+    throw new ParticipantImpactReadError("La projection des participations contient une ligne invalide.");
+  }
   const rowsByActionId = groupParticipantImpactRows(result.data, options);
   return {
     readStatus: "success",
@@ -119,6 +155,18 @@ export async function loadParticipantImpactAttributions(
 ): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
   return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds, options))
     .attributionsByActionId;
+}
+
+export async function loadStrictParticipantImpactAttributions(
+  supabase: SupabaseClient,
+  actionById: Map<string, ActionPreviewRow>,
+  finalActionIds: string[],
+  options: IndividualImpactReadOptions = {},
+): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
+  return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds, {
+    ...options,
+    strict: true,
+  })).attributionsByActionId;
 }
 
 export type ActionParticipantImpactSnapshot = {

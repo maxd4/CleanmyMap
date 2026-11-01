@@ -37,7 +37,11 @@ import type {
   JoinableActionItem,
 } from "./group-participation-contract";
 import { usesRegistrationStore } from "./action-phase";
-import { loadParticipantImpactAttributions } from "./group-participation-impact-read";
+import {
+  loadParticipantImpactAttributions,
+  loadStrictParticipantImpactAttributions,
+  ParticipantImpactReadError,
+} from "./group-participation-impact-read";
 import { buildPublicActionPracticalInformation } from "./group-participation-public-projection";
 export {
   loadActionParticipantImpactSnapshot,
@@ -210,15 +214,26 @@ export async function loadConfirmedParticipantImpactAttributions(
 ): Promise<ConfirmedParticipantImpactAttribution[]> {
   const participantResult = await supabase
     .from("action_participants")
-    .select(`user_id, action_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .select(`user_id, action_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`, { count: "exact" })
     .eq("user_id", userId)
     .eq("participation_status", ACTIVE_PARTICIPATION_STATUS)
-    .limit(limit);
+    .limit(limit + 1);
   if (participantResult.error) {
-    throw new Error(participantResult.error.message);
+    throw new ParticipantImpactReadError(participantResult.error.message, { cause: participantResult.error });
+  }
+  if (!Array.isArray(participantResult.data)) {
+    throw new ParticipantImpactReadError("La liste des participations confirmées est incomplète.");
+  }
+  if (participantResult.data.length > limit ||
+    (typeof participantResult.count === "number" && participantResult.count !== participantResult.data.length)) {
+    throw new ParticipantImpactReadError("La liste des participations confirmées est tronquée.");
   }
 
-  const participantRows = (participantResult.data ?? []) as unknown as Array<Record<string, unknown>>;
+  const participantRows = participantResult.data as unknown as Array<Record<string, unknown>>;
+  if (participantRows.some((row) =>
+    typeof row.user_id !== "string" || typeof row.action_id !== "string")) {
+    throw new ParticipantImpactReadError("La liste des participations confirmées contient une ligne invalide.");
+  }
   const actionIds = [
     ...new Set(
       participantRows
@@ -228,14 +243,23 @@ export async function loadConfirmedParticipantImpactAttributions(
   ];
   if (actionIds.length === 0) return [];
 
-  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
-    query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds).limit(limit),
-  );
+  let actions: ActionPreviewRow[];
+  try {
+    actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
+      query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds).limit(actionIds.length + 1),
+    );
+  } catch (error) {
+    throw new ParticipantImpactReadError("La lecture des actions des participations confirmées a échoué.", { cause: error });
+  }
   const actionById = new Map(actions.map((action) => [action.id, action] as const));
+  if (actions.length > actionIds.length || actionById.size !== actions.length ||
+    actionIds.some((actionId) => !actionById.has(actionId))) {
+    throw new ParticipantImpactReadError("La lecture des actions des participations confirmées est incomplète.");
+  }
   const finalActionIds = actions
     .filter((action) => action.status === "approved" && !usesRegistrationStore(action.action_phase))
     .map((action) => action.id);
-  const participantImpactByActionId = await loadParticipantImpactAttributions(
+  const participantImpactByActionId = await loadStrictParticipantImpactAttributions(
     supabase,
     actionById,
     finalActionIds,

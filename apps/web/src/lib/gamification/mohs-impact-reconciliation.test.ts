@@ -144,4 +144,21 @@ describe("Mohs impact event reconciliation", () => {
     expect(result.inserted).toBe(0);
     expect(result.removed).toBe(0);
   });
+
+  it("does not remove current Mohs events when the scientific source read fails", async () => {
+    loadConfirmedParticipantImpactAttributionsMock.mockRejectedValue(
+      new Error("participant projection unavailable"),
+    );
+    const existing = [{
+      id: "30",
+      source_id: "mohs:waste:grade:2",
+      event_type: "infinite_waste_milestone",
+    }];
+    const failed = createSupabase(existing);
+
+    await expect(reconcileMohsImpactProgression(failed.supabase, "user-1"))
+      .rejects.toThrow("participant projection unavailable");
+    expect(failed.supabase.rpc).not.toHaveBeenCalled();
+    expect(failed.removedIds).toEqual([]);
+  });
 });

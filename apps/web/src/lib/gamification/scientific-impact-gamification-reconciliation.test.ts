@@ -144,4 +144,14 @@ describe("scientific impact gamification reconciliation", () => {
 
     expect(persistReceiptMock).not.toHaveBeenCalled();
   });
+
+  it("does not refresh gamification or persist a receipt after a failed scientific read", async () => {
+    reconcileMohsMock.mockRejectedValue(new Error("participant projection unavailable"));
+
+    await expect(reconcileScientificImpactGamification({} as SupabaseClient, "user-1"))
+      .rejects.toThrow("participant projection unavailable");
+    expect(reconcileUserMock).not.toHaveBeenCalled();
+    expect(buildReceiptMock).not.toHaveBeenCalled();
+    expect(persistReceiptMock).not.toHaveBeenCalled();
+  });
 });

@@ -99,15 +99,24 @@ export async function reconcileActionParticipantImpactProgression(
 ): Promise<void> {
   const result = await supabase
     .from("action_participants")
-    .select("user_id")
+    .select("user_id", { count: "exact" })
     .eq("action_id", actionId)
     .eq("participation_status", "confirmed");
   if (result.error) throw new Error(result.error.message);
+  if (!Array.isArray(result.data)) {
+    throw new Error("La liste des participants confirmés est incomplète.");
+  }
+  if (typeof result.count === "number" && result.count !== result.data.length) {
+    throw new Error("La liste des participants confirmés est tronquée.");
+  }
 
   const userIds = [...new Set(
-    (result.data ?? [])
-      .map((row) => (typeof row.user_id === "string" ? row.user_id.trim() : ""))
-      .filter(Boolean),
+    result.data.map((row) => {
+      if (!row || typeof row !== "object" || typeof row.user_id !== "string") {
+        throw new Error("La liste des participants confirmés contient une ligne invalide.");
+      }
+      return row.user_id.trim();
+    }).filter(Boolean),
   )];
   await Promise.all(userIds.map(async (userId) => {
     await reconcileMohsImpactProgression(supabase, userId);

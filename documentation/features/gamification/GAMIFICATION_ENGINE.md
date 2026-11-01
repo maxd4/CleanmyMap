@@ -297,6 +297,18 @@ ambiguë reste inchangée et n'est pas recalculée. Les actions non approuvées,
 les participations non confirmées, les dépassements du total collectif et les
 attributions indisponibles ne produisent pas de palier Mohs.
 
+La lecture utilisée par une réconciliation scientifique est fail-closed : une
+erreur Supabase, une réponse non structurée ou une liste tronquée des
+participations/actions confirmées fait échouer la réconciliation et ne peut
+jamais être convertie en liste vide. Les requêtes vérifient leur complétude
+(compte exact et couverture des identifiants attendus) avant de calculer un
+diff ; aucun événement CURRENT, profil ou reçu de succès n'est donc supprimé
+sur la seule base d'une indisponibilité transitoire. Les lectures ordinaires
+peuvent rester dégradées et signaler `unavailable`/`error`, mais ce statut ne
+constitue pas une preuve d'absence scientifique. Une liste vide issue d'une
+lecture complète reste, elle, une absence confirmée et peut entraîner la
+suppression normale des seuls événements CURRENT devenus injustifiés.
+
 La réconciliation Mohs appelle la RPC
 `apply_mohs_impact_reconciliation`. Celle-ci verrouille la projection par
 utilisateur, compare un instantané complet, puis applique suppressions,

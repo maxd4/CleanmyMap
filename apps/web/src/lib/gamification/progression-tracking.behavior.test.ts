@@ -39,6 +39,7 @@ vi.mock("./progression-profile-refresh", () => ({
 import {
   extractCommunityOpsFromDescription,
   refreshProgressionProfile,
+  reconcileActionParticipantImpactProgression,
   trackActionCreated,
   trackActionRejection,
   trackActionValidationBonus,
@@ -204,5 +205,26 @@ describe("progression tracking behavioral boundaries", () => {
     await trackNewPlaceVisited(milestone, { userId: "user-1", locationLabel: "Rouen" });
     expect(insertEventMock).toHaveBeenCalledWith(milestone, expect.objectContaining({ eventType: "new_place_milestone" }));
     expect(rebuildBadgesMock).toHaveBeenCalledWith(milestone, "user-1");
+  });
+
+  it("does not reconcile a partial confirmed-participant result", async () => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      then: (
+        resolve: (value: unknown) => unknown,
+        reject: (reason: unknown) => unknown,
+      ) => Promise.resolve({
+        data: [{ user_id: "user-1" }],
+        count: 2,
+        error: null,
+      }).then(resolve, reject),
+    };
+    const partial = { from: vi.fn(() => query) } as unknown as SupabaseClient;
+
+    await expect(reconcileActionParticipantImpactProgression(partial, "action-1"))
+      .rejects.toThrow("tronquée");
+    expect(reconcileImpactMock).not.toHaveBeenCalled();
+    expect(persistProfileMock).not.toHaveBeenCalled();
   });
 });
