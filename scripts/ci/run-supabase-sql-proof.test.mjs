@@ -35,6 +35,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/gps-point-lifecycle-boundary.pgtap.sql",
     "apps/web/supabase/tests/newsletter-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/notifications-decision-boundary.pgtap.sql",
+    "apps/web/supabase/tests/public-impact-waste-coverage.pgtap.sql",
     "apps/web/supabase/tests/quiz-progression-rpc-boundary.pgtap.sql",
     "apps/web/supabase/tests/user-data-boundaries.pgtap.sql",
   ]);

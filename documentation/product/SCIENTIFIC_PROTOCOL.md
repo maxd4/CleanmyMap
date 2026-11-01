@@ -516,3 +516,11 @@ n'est pas attribuée artificiellement à un état ni à un facteur de masse.
 Les compteurs incrémentaux et le RPC de reconstruction sont remplacés
 atomiquement sous le verrou existant ; les snapshots historiques restent
 inchangés et un snapshot CURRENT incompatible n'est pas servi.
+
+La couverture publique des déchets (`waste_source_count`) est calculée sur la
+même population que la projection incrémentale : contributions canoniques
+éligibles, dans la fenêtre active, jointes à la mesure brute
+`actions.waste_kg`. Une valeur non nulle et valide, y compris `0`, est comptée ;
+`NULL` ne l'est pas. Les marqueurs techniques des métadonnées ne sont pas
+réévalués par la RPC de synthèse et ne peuvent donc pas exclure une action déjà
+classée éligible par la contribution canonique.

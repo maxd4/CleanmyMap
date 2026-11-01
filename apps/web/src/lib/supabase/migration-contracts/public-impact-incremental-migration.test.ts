@@ -15,6 +15,20 @@ const futureActionMigration = readFileSync(
   ),
   "utf8",
 );
+const wasteCoverageMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261101000010_public_impact_waste_source_count_parity.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const wasteCoverageProof = readFileSync(
+  new URL(
+    "../../../../supabase/tests/public-impact-waste-coverage.pgtap.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("incremental public Impact state migration", () => {
   it("defines the per-action projection and decrementable aggregate counters", () => {
@@ -58,5 +72,33 @@ describe("incremental public Impact state migration", () => {
     expect(futureActionMigration).toContain("grant execute on function public.actions_map_feed(");
     expect(futureActionMigration).toContain("set search_path = public, pg_catalog");
     expect(futureActionMigration).toContain("set search_path = pg_catalog, public");
+  });
+
+  it("derives waste coverage from canonical contributions without metadata re-filtering", () => {
+    expect(wasteCoverageMigration).toContain(
+      "from public.public_impact_action_contributions c",
+    );
+    expect(wasteCoverageMigration).toContain(
+      "join public.actions a on a.id = c.action_id",
+    );
+    expect(wasteCoverageMigration).toContain("c.eligible_non_temporal");
+    expect(wasteCoverageMigration).toContain("a.waste_kg is not null");
+    expect(wasteCoverageMigration).toContain("a.waste_kg >= 0");
+    expect(wasteCoverageMigration).not.toContain("a.notes");
+    expect(wasteCoverageMigration).toContain(
+      "grant execute on function public.load_public_landing_action_summary_incremental() to service_role;",
+    );
+  });
+
+  it("registers executable zero/NULL/metadata and reconstruction coverage cases", () => {
+    expect(wasteCoverageProof).toContain("select plan(11);");
+    expect(wasteCoverageProof).toContain("eligible-meta-test");
+    expect(wasteCoverageProof).toContain("eligible-zero");
+    expect(wasteCoverageProof).toContain("eligible-null");
+    expect(wasteCoverageProof).toContain("excluded-business-test");
+    expect(wasteCoverageProof).toContain("public.rebuild_public_impact_action_state");
+    expect(wasteCoverageProof).toContain(
+      "the RPC coverage equals the canonical contribution population",
+    );
   });
 });
