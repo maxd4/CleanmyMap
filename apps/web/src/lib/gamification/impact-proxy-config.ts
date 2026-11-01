@@ -32,6 +32,14 @@ export type ImpactProxyConfig = {
 
 const DEFAULT_IMPACT_PROXY_VERSION = "impact-proxy-2026.04-v1";
 
+// These are the un-fingerprinted identities that were emitted by a previous
+// runtime and therefore remain readable even after the runtime configuration
+// moves to a newer version. Keep this list explicit: an arbitrary version must
+// never become trusted merely because it matches the current suffix format.
+const KNOWN_HISTORICAL_IMPACT_PROXY_VERSIONS = new Set([
+  DEFAULT_IMPACT_PROXY_VERSION,
+]);
+
 const DEFAULT_IMPACT_PROXY_FACTORS: ImpactProxyFactors = {
   waterLitersPerCigaretteButt: WATER_LITERS_PER_CIGARETTE_BUTT,
   co2KgPerWasteKg: 1.2,
@@ -102,18 +110,28 @@ const factors: ImpactProxyFactors = {
 const factorsFingerprint = fingerprintFactors(factors);
 const effectiveVersion = `${configuredVersion}+factors-${factorsFingerprint}`;
 
-const EFFECTIVE_VERSION_SUFFIX = /\+factors-[0-9a-f]{8}$/;
+const EFFECTIVE_VERSION_PATTERN = /^(.+)\+factors-[0-9a-f]{8}$/;
+
+function isRecognizedImpactProxyBaseVersion(value: string): boolean {
+  return value === configuredVersion || KNOWN_HISTORICAL_IMPACT_PROXY_VERSIONS.has(value);
+}
 
 /**
  * Accepts the pre-fingerprint configured identity and fingerprinted identities
  * already persisted by older runtimes. This is for historical reads only.
  */
 export function isKnownImpactProxyVersion(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    (value === configuredVersion || EFFECTIVE_VERSION_SUFFIX.test(value))
-  );
+  if (typeof value !== "string" || value.length === 0) {
+    return false;
+  }
+
+  if (isRecognizedImpactProxyBaseVersion(value)) {
+    return true;
+  }
+
+  const match = value.match(EFFECTIVE_VERSION_PATTERN);
+  const baseVersion = match?.[1];
+  return typeof baseVersion === "string" && isRecognizedImpactProxyBaseVersion(baseVersion);
 }
 
 export function isCurrentImpactProxyVersion(value: unknown): boolean {

@@ -31,7 +31,6 @@ import {
   isCurrentPublicImpactSnapshot,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "./public-impact-snapshot";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
 
 const NOW = new Date("2026-09-08T03:00:00.000Z");
@@ -175,7 +174,7 @@ describe("public monthly impact snapshot", () => {
     const snapshot = existingSnapshot({
       payload: {
         ...existingSnapshot().payload,
-        methodologyVersion: IMPACT_PROXY_CONFIG.configuredVersion,
+        methodologyVersion: "impact-proxy-2026.04-v1",
       },
     });
 
@@ -183,6 +182,25 @@ describe("public monthly impact snapshot", () => {
 
     await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
     expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+  });
+
+  it("lit une empreinte historique mais ne la réutilise pas comme résultat courant", async () => {
+    const snapshot = existingSnapshot({
+      payload: {
+        ...existingSnapshot().payload,
+        methodologyVersion: "impact-proxy-2026.04-v1+factors-deadbeef",
+      },
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+
+    const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
+
+    expect(result.reused).toBe(false);
+    expect(result.persisted).toBe(true);
+    expect(upsertSnapshotMock).toHaveBeenCalledOnce();
   });
 
   it("does not recalculate or persist a second snapshot in the same month", async () => {

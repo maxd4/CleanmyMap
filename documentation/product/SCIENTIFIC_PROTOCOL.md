@@ -174,7 +174,13 @@ tous les facteurs effectivement chargés (`IMPACT_PROXY_CONFIG.version`, aussi
 disponible sous `effectiveVersion`). Deux jeux de facteurs différents ne
 peuvent donc pas partager une identité de calcul, même si
 `IMPACT_PROXY_VERSION` reste inchangé. La version configurée reste disponible
-pour les lectures de compatibilité historiques.
+pour les lectures de compatibilité historiques. Les identités sans empreinte
+déjà émises sont conservées dans le registre explicite du module de configuration,
+indépendamment de la version actuellement configurée ; les identités fingerprintées
+ne sont reconnues que lorsqu'elles reposent sur une version de base connue. Une
+lecture historique ne modifie jamais les données scientifiques du snapshot. La
+réutilisation comme résultat courant exige en revanche l'égalité stricte avec
+`effectiveVersion` et la version courante de projection publique.
 Les valeurs par défaut sont :
 
 | Facteur | Valeur par défaut | Unité |

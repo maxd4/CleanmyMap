@@ -104,5 +104,26 @@ describe("impact proxy configuration", () => {
     expect(first.IMPACT_PROXY_CONFIG.version).not.toBe(
       second.IMPACT_PROXY_CONFIG.version,
     );
+    expect(second.isKnownImpactProxyVersion(first.IMPACT_PROXY_CONFIG.version)).toBe(true);
+    expect(second.isCurrentImpactProxyVersion(first.IMPACT_PROXY_CONFIG.version)).toBe(false);
+  });
+
+  it("keeps known historical identities readable after the configured version changes", async () => {
+    process.env.IMPACT_PROXY_VERSION = "impact-proxy-2026.05-v1";
+    vi.resetModules();
+
+    const {
+      IMPACT_PROXY_CONFIG,
+      isCurrentImpactProxyVersion,
+      isKnownImpactProxyVersion,
+    } = await import("./impact-proxy-config");
+
+    expect(IMPACT_PROXY_CONFIG.configuredVersion).toBe("impact-proxy-2026.05-v1");
+    expect(isKnownImpactProxyVersion("impact-proxy-2026.04-v1")).toBe(true);
+    expect(
+      isKnownImpactProxyVersion("impact-proxy-2026.04-v1+factors-deadbeef"),
+    ).toBe(true);
+    expect(isKnownImpactProxyVersion("impact-proxy-unknown+factors-deadbeef")).toBe(false);
+    expect(isCurrentImpactProxyVersion("impact-proxy-2026.04-v1")).toBe(false);
   });
 });
