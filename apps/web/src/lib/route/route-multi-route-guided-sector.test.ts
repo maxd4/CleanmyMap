@@ -3,6 +3,7 @@ import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import { routePartitionedGroups } from "./route-multi-route";
 import { partitionRouteCandidates } from "./route-group-partition";
 import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
+import { routeDistanceKm } from "./route-planner";
 
 const routeProviderMock = vi.hoisted(() => vi.fn());
 
@@ -99,7 +100,7 @@ describe("guided sector geometry certification", () => {
       { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
     ];
     const sector = { center: { latitude: 48.85705, longitude: 2.3509 }, radiusKm: 0.1 };
-    const finalDetour: [number, number] = [48.85705, 2.35244];
+    const finalDetour: [number, number] = [48.85705, 2.35233];
     routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
       const geometry = networkGeometryWithCoordinates(coordinates, [
         coordinates[0]!, coordinates[1]!, finalDetour, coordinates[2]!, coordinates.at(-1)!,
@@ -120,6 +121,7 @@ describe("guided sector geometry certification", () => {
       sectorWithinBounds: false,
     }));
     expect(result.groupRoutes[0]?.guidedRouting?.sectorDeviationKm).toBeGreaterThan(0);
+    expect(result.groupRoutes[0]?.guidedRouting?.sectorDeviationKm).toBeLessThan(0.01);
   });
 
   it("reports outside when steps leave the sector while the final polyline remains inside", async () => {
@@ -129,7 +131,7 @@ describe("guided sector geometry certification", () => {
       { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
     ];
     const sector = { center: { latitude: 48.85705, longitude: 2.3509 }, radiusKm: 0.1 };
-    const stepDetour: [number, number] = [48.85705, 2.35244];
+    const stepDetour: [number, number] = [48.85705, 2.35233];
     routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
       const geometry = networkGeometryWithCoordinates(coordinates, [
         coordinates[0]!, coordinates[1]!, coordinates[2]!, coordinates.at(-1)!,
@@ -150,6 +152,38 @@ describe("guided sector geometry certification", () => {
       sectorWithinBounds: false,
     }));
     expect(result.groupRoutes[0]?.guidedRouting?.sectorDeviationKm).toBeGreaterThan(0);
+    expect(result.groupRoutes[0]?.guidedRouting?.sectorDeviationKm).toBeLessThan(0.01);
+  });
+
+  it("keeps a geometry exactly on the sector boundary within", async () => {
+    const origin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypoints = [
+      { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 },
+      { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
+    ];
+    const boundaryPoint: [number, number] = [48.85705, 2.35233];
+    const center = { latitude: 48.85705, longitude: 2.3509 };
+    const sector = { center, radiusKm: routeDistanceKm(center, { latitude: boundaryPoint[0], longitude: boundaryPoint[1] }) };
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => {
+      const geometry = networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!, coordinates[1]!, boundaryPoint, coordinates[2]!, coordinates.at(-1)!,
+      ]);
+      return withStepGeometries(geometry, { 1: [[coordinates[1]!, coordinates[2]!]] });
+    });
+
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartitionFor(origin, sector, waypoints),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes[0]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "within",
+      sectorWithinBounds: true,
+      sectorDeviationKm: 0,
+    }));
   });
 
   it("keeps a coherent collection inside the sector as within", async () => {

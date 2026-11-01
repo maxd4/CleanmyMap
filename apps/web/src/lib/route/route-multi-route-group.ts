@@ -34,6 +34,8 @@ import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 type Coordinate = [number, number];
 type RoutePoint = { latitude: number; longitude: number };
 const GUIDED_WAYPOINT_MATCH_RADIUS_KM = 0.1;
+const GUIDED_SECTOR_BOUNDARY_EPSILON_KM = 1e-9;
+const GUIDED_SECTOR_DEVIATION_DECIMAL_PLACES = 6;
 
 export type RouteGroupRoutingResult = {
   group: RouteGroupAssignment;
@@ -177,9 +179,17 @@ function guidedSectorDeviationKm(
       { latitude: coordinate[0], longitude: coordinate[1] },
     ) - sector.radiusKm,
   ));
+  // The coherence tolerance above only decides whether both provider
+  // representations may be certified together. It must not forgive a
+  // demonstrated sector excursion. Keep only a sub-millimetre boundary
+  // epsilon for floating-point noise, then publish the same rounded value
+  // that drives the status so the three audit fields cannot diverge.
+  const normalizedDeviationKm = deviationKm <= GUIDED_SECTOR_BOUNDARY_EPSILON_KM
+    ? 0
+    : Math.max(round(deviationKm, GUIDED_SECTOR_DEVIATION_DECIMAL_PLACES), deviationKm);
   return {
-    deviationKm,
-    status: deviationKm <= 0.01 ? "within" : "outside",
+    deviationKm: normalizedDeviationKm,
+    status: normalizedDeviationKm === 0 ? "within" : "outside",
   };
 }
 
@@ -255,7 +265,7 @@ function buildGuidedRoutingAudit(params: {
       originVerified,
       waypointOrderVerified: routeVerified,
       waypointIds: params.waypoints.map(({ id }) => id),
-      sectorDeviationKm: sectorAudit.deviationKm === null ? null : round(sectorAudit.deviationKm),
+      sectorDeviationKm: sectorAudit.deviationKm,
       sectorWithinBounds: sectorAudit.status === "within",
       sectorStatus: sectorAudit.status,
       warning,
