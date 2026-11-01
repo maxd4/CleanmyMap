@@ -331,6 +331,16 @@ remplacer la version active. La sélection ultérieure d’une trace GPS, GPX ou
 manuelle reste une géométrie d’exécution distincte et n’efface pas le parcours
 guidé planifié.
 
+La fixture d’intégration CI de référence utilise une origine commune au
+Panthéon et au Jardin des Plantes, dix bénévoles répartis 5/5, aucun
+signalement admissible et un budget utilisateur de 90 minutes (15 minutes
+d’organisation, 30 minutes de déplacement maximal, 45 minutes de collecte
+réservée). Elle vérifie les deux boucles lors de la génération, de l’affichage,
+de l’export PDF, de la création et de la reprise d’action, puis lors d’un
+recalcul explicitement appliqué. Cette fixture est déterministe et n’appelle
+pas FOSSGIS/OSRM : toute validation du fournisseur réel reste une validation
+réseau séparée, sans écriture dans les données de production.
+
 L’export GPX de la surface itinéraire réutilise cette géométrie finale
 `operationalRoute`, issue du handoff de `RouteRecommendationResponse`, et non
 une proposition intermédiaire ou une ancienne prévisualisation. Le serializer
