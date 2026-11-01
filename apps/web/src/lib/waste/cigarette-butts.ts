@@ -5,8 +5,8 @@ import {
   estimateButtsWeightKg,
   isCigaretteButtsMassConversionVersion,
 } from "@/lib/impact/impact-terrain-2026";
-
 export const MAX_CIGARETTE_BUTTS_COUNT = 5_000_000;
+export const MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT = 500_000_000;
 export const MAX_CIGARETTE_BUTTS_LOTS = 100;
 /** Historical volume proxy retained for snapshots written before v2. */
 export const CIGARETTE_BUTTS_PER_VOLUME_LITER_V1 = 600;
@@ -93,6 +93,7 @@ export type CigaretteButtsLotInput = {
 export type CigaretteButtsConversionOptions = {
   volumeConversionVersion?: string;
   massConversionVersion?: string;
+  totalCountLimit?: number;
 };
 
 export type CigaretteButtsLotResult = CigaretteButtsLotInput & {
@@ -107,8 +108,8 @@ export type CigaretteButtsLotResult = CigaretteButtsLotInput & {
 };
 
 export class CigaretteButtsLotsTotalLimitError extends Error {
-  constructor(public readonly totalCount: number) {
-    super(getCigaretteButtsLotsTotalLimitMessage(totalCount) ?? "Le total des mégots dépasse la limite autorisée.");
+  constructor(public readonly totalCount: number, public readonly totalCountLimit: number = MAX_CIGARETTE_BUTTS_COUNT) {
+    super(getCigaretteButtsLotsTotalLimitMessage(totalCount, totalCountLimit) ?? "Le total des mégots dépasse la limite autorisée.");
     this.name = "CigaretteButtsLotsTotalLimitError";
   }
 }
@@ -266,7 +267,9 @@ export function aggregateCigaretteButtsLots(
   );
   const estimatedCount = totalCount - countedCount;
   const estimatedMassKg = totalMassKg - measuredMassKg;
-  if (getCigaretteButtsLotsTotalLimitMessage(totalCount)) throw new CigaretteButtsLotsTotalLimitError(totalCount);
+  if (getCigaretteButtsLotsTotalLimitMessage(totalCount, options.totalCountLimit)) {
+    throw new CigaretteButtsLotsTotalLimitError(totalCount, options.totalCountLimit);
+  }
   return {
     lots: validLots,
     results,
@@ -291,9 +294,9 @@ export function calculateCigaretteButtsLotsTotalCount(
   return lots.reduce((total, lot) => total + calculateCigaretteButtsLot(lot, options).count, 0);
 }
 
-export function getCigaretteButtsLotsTotalLimitMessage(totalCount: number): string | null {
-  return totalCount > MAX_CIGARETTE_BUTTS_COUNT
-    ? `Le total calculé des mégots doit rester inférieur ou égal à ${MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")}.`
+export function getCigaretteButtsLotsTotalLimitMessage(totalCount: number, totalCountLimit: number = MAX_CIGARETTE_BUTTS_COUNT): string | null {
+  return totalCount > totalCountLimit
+    ? `Le total calculé des mégots doit rester inférieur ou égal à ${totalCountLimit.toLocaleString("fr-FR")}.`
     : null;
 }
 

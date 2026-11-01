@@ -9,6 +9,10 @@ const lotsMigration = readFileSync(
   new URL("../../../../supabase/migrations/20261031000007_action_participant_individual_butts_lots.sql", import.meta.url),
   "utf8",
 );
+const atomicPatchMigration = readFileSync(
+  new URL("../../../../supabase/migrations/20261101000007_action_participant_individual_impact_atomic_patch.sql", import.meta.url),
+  "utf8",
+);
 
 describe("individual action impact migration", () => {
   it("is append-only and keeps action_participants as the canonical table", () => {
@@ -40,5 +44,16 @@ describe("individual action impact migration", () => {
     expect(lotsMigration).not.toMatch(/drop\s+(column|table)/i);
     expect(lotsMigration).not.toMatch(/actions\.cigarette_butts\s*=/i);
     expect(lotsMigration).not.toMatch(/create\s+table/i);
+  });
+
+  it("guards the individual impact write with service-role atomic eligibility predicates", () => {
+    expect(atomicPatchMigration).toContain("create or replace function public.persist_action_participant_individual_impact");
+    expect(atomicPatchMigration).toContain("auth.role()), '') <> 'service_role'");
+    expect(atomicPatchMigration).toContain("ap.participation_status = 'confirmed'");
+    expect(atomicPatchMigration).toContain("a.status = 'approved'");
+    expect(atomicPatchMigration).toContain("public.action_organizers");
+    expect(atomicPatchMigration).toContain("grant execute on function public.persist_action_participant_individual_impact");
+    expect(atomicPatchMigration).toContain("from public, anon, authenticated");
+    expect(atomicPatchMigration).not.toMatch(/create\s+table/i);
   });
 });

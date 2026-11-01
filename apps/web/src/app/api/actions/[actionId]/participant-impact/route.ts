@@ -6,9 +6,10 @@ import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
+import { canOverrideActionParticipants } from "@/lib/actions/permissions";
 import { ACTION_WASTE_MEASUREMENT_METHODS } from "@/lib/waste/measurement";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
-import { cigaretteButtsLotsSchema } from "@/lib/validation/action-measurements";
+import { individualCigaretteButtsLotsSchema } from "@/lib/validation/action-measurements";
 import {
   buildStoredIndividualImpactMeasurement,
   toIndividualImpactMeasurement,
@@ -43,7 +44,7 @@ const legacyButtsSchema = z
   });
 
 const buttsSchema = z.union([
-  z.object({ lots: cigaretteButtsLotsSchema }).strict(),
+  z.object({ lots: individualCigaretteButtsLotsSchema }).strict(),
   legacyButtsSchema,
 ]);
 
@@ -74,6 +75,7 @@ type ImpactContext = {
   participant: ImpactParticipant;
   current: ReturnType<typeof toIndividualImpactMeasurement>;
   reviewerUserId: string;
+  reviewerCanOverride: boolean;
 };
 
 async function loadImpactContext(
@@ -120,6 +122,7 @@ async function loadImpactContext(
     participant,
     current: toIndividualImpactMeasurement(participant as unknown as IndividualImpactRow),
     reviewerUserId: reviewer.identity?.userId ?? actorUserId,
+    reviewerCanOverride: canOverrideActionParticipants(reviewer.identity),
   };
 }
 
@@ -231,14 +234,38 @@ async function persistParticipantImpact(
   const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
     await captureActionParticipantImpactSnapshot(supabase, actionId);
   const measurementUpdate = buildMeasurementUpdate(payload, context.current, context.reviewerUserId);
-  const updateResult = await supabase
-    .from("action_participants")
-    .update(measurementUpdate.updatePayload)
-    .eq("action_id", actionId)
-    .eq("id", participantId)
-    .select("id, updated_at")
-    .single();
-  if (updateResult.error) throw new Error(updateResult.error.message);
+  const atomicResult = await supabase.rpc("persist_action_participant_individual_impact", {
+    p_action_id: actionId,
+    p_participant_id: participantId,
+    p_reviewer_user_id: context.reviewerUserId,
+    p_admin_override: context.reviewerCanOverride,
+    p_individual_waste_kg: measurementUpdate.updatePayload.individual_waste_kg,
+    p_individual_waste_condition: measurementUpdate.updatePayload.individual_waste_condition,
+    p_individual_waste_measurement_method: measurementUpdate.updatePayload.individual_waste_measurement_method,
+    p_individual_waste_normalization_version: measurementUpdate.updatePayload.individual_waste_normalization_version,
+    p_individual_cigarette_butts_count: measurementUpdate.updatePayload.individual_cigarette_butts_count,
+    p_individual_cigarette_butts_mass_kg: measurementUpdate.updatePayload.individual_cigarette_butts_mass_kg,
+    p_individual_cigarette_butts_condition: measurementUpdate.updatePayload.individual_cigarette_butts_condition,
+    p_individual_cigarette_butts_provenance: measurementUpdate.updatePayload.individual_cigarette_butts_provenance,
+    p_individual_cigarette_butts_conversion_version: measurementUpdate.updatePayload.individual_cigarette_butts_conversion_version,
+    p_individual_cigarette_butts_lots: measurementUpdate.updatePayload.individual_cigarette_butts_lots,
+    p_individual_impact_measured_by: measurementUpdate.updatePayload.individual_impact_measured_by,
+    p_individual_impact_measured_at: measurementUpdate.updatePayload.individual_impact_measured_at,
+  });
+  if (atomicResult.error) throw new Error(atomicResult.error.message);
+  const persisted = atomicResult.data as {
+    ok?: unknown;
+    code?: unknown;
+    id?: unknown;
+    updatedAt?: unknown;
+    userId?: unknown;
+  } | null;
+  if (!persisted || persisted.ok !== true) {
+    return NextResponse.json(
+      { error: "La participation ou l'autorisation n'est plus éligible à cette mesure." },
+      { status: 409 },
+    );
+  }
   const nextMeasurement = toIndividualImpactMeasurement(
     measurementUpdate.updatePayload,
   );
@@ -260,8 +287,8 @@ async function persistParticipantImpact(
       actionId,
       previousSnapshot: previousImpactSnapshot,
       persistedRevision:
-        typeof updateResult.data?.updated_at === "string"
-          ? `participant:${updateResult.data.id}:${updateResult.data.updated_at}`
+        typeof persisted.updatedAt === "string" && typeof persisted.id === "string"
+          ? `participant:${persisted.id}:${persisted.updatedAt}`
           : null,
     });
   }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createActionSchema } from "./action";
+import { individualCigaretteButtsLotsSchema } from "./action-measurements";
+import { MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 
 const basePayload = {
   actorName: "Bénévole test",
@@ -72,5 +74,20 @@ describe("createActionSchema cigarette-butt lots", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("uses the wider PostgreSQL bound only for individual attributions", () => {
+    const exact = individualCigaretteButtsLotsSchema.safeParse([
+      { id: "mass-a", source: "mass_kg", value: 100_000, condition: "propre" },
+      { id: "mass-b", source: "mass_kg", value: 10_000, condition: "propre" },
+    ]);
+    const above = individualCigaretteButtsLotsSchema.safeParse([
+      { id: "mass-a", source: "mass_kg", value: 100_000, condition: "propre" },
+      { id: "mass-b", source: "mass_kg", value: 10_000.0001, condition: "propre" },
+    ]);
+
+    expect(exact.success).toBe(true);
+    expect(above.success).toBe(false);
+    expect(MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT).toBe(500_000_000);
   });
 });

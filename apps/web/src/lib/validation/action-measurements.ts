@@ -12,6 +12,7 @@ import {
   CIGARETTE_BUTTS_LOT_SOURCES,
   getCigaretteButtsLotsTotalLimitMessage,
   MAX_CIGARETTE_BUTTS_COUNT,
+  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   MAX_CIGARETTE_BUTTS_LOTS,
 } from "@/lib/waste/cigarette-butts";
 
@@ -46,66 +47,76 @@ const wasteMeasurementMethodSchema = z
   .nullable()
   .optional();
 
-export const cigaretteButtsLotsSchema = z
-  .array(
-    z.object({
-      id: z.string().trim().min(1).max(120),
-      source: z.enum(CIGARETTE_BUTTS_LOT_SOURCES),
-      value: z.number().finite().min(0),
-      condition: z.enum(["propre", "humide", "mouille"]),
-    }).superRefine((lot, ctx) => {
-      if (lot.source === "count" && !Number.isInteger(lot.value)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["value"],
-          message: "Un lot saisi en nombre doit être un entier.",
-        });
-      }
-      if (lot.source === "count" && lot.value > MAX_CIGARETTE_BUTTS_COUNT) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.too_big,
-          origin: "number",
-          path: ["value"],
-          maximum: MAX_CIGARETTE_BUTTS_COUNT,
-          inclusive: true,
-          message: "Le nombre de mégots dépasse la limite autorisée.",
-        });
-      }
-      if (lot.source !== "count" && lot.value > ACTION_MEASUREMENT_MAX_KG) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.too_big,
-          origin: "number",
-          path: ["value"],
-          maximum: ACTION_MEASUREMENT_MAX_KG,
-          inclusive: true,
-          message: "La mesure du lot dépasse la limite autorisée.",
-        });
-      }
-    }),
-  )
-  .max(MAX_CIGARETTE_BUTTS_LOTS)
-  .superRefine((lots, ctx) => {
-    const ids = new Set<string>();
-    lots.forEach((lot, index) => {
-      if (ids.has(lot.id)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [index, "id"],
-          message: "Chaque lot doit avoir un identifiant distinct.",
-        });
-      }
-      ids.add(lot.id);
-    });
-    const totalCount = calculateCigaretteButtsLotsTotalCount(lots);
-    const totalMessage = getCigaretteButtsLotsTotalLimitMessage(totalCount);
-    if (totalMessage) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [],
-        message: totalMessage,
+export function createCigaretteButtsLotsSchema(
+  totalCountLimit: number = MAX_CIGARETTE_BUTTS_COUNT,
+) {
+  return z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(120),
+        source: z.enum(CIGARETTE_BUTTS_LOT_SOURCES),
+        value: z.number().finite().min(0),
+        condition: z.enum(["propre", "humide", "mouille"]),
+      }).superRefine((lot, ctx) => {
+        if (lot.source === "count" && !Number.isInteger(lot.value)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["value"],
+            message: "Un lot saisi en nombre doit être un entier.",
+          });
+        }
+        if (lot.source === "count" && lot.value > MAX_CIGARETTE_BUTTS_COUNT) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.too_big,
+            origin: "number",
+            path: ["value"],
+            maximum: MAX_CIGARETTE_BUTTS_COUNT,
+            inclusive: true,
+            message: "Le nombre de mégots dépasse la limite autorisée.",
+          });
+        }
+        if (lot.source !== "count" && lot.value > ACTION_MEASUREMENT_MAX_KG) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.too_big,
+            origin: "number",
+            path: ["value"],
+            maximum: ACTION_MEASUREMENT_MAX_KG,
+            inclusive: true,
+            message: "La mesure du lot dépasse la limite autorisée.",
+          });
+        }
+      }),
+    )
+    .max(MAX_CIGARETTE_BUTTS_LOTS)
+    .superRefine((lots, ctx) => {
+      const ids = new Set<string>();
+      lots.forEach((lot, index) => {
+        if (ids.has(lot.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [index, "id"],
+            message: "Chaque lot doit avoir un identifiant distinct.",
+          });
+        }
+        ids.add(lot.id);
       });
-    }
-  });
+      const totalCount = calculateCigaretteButtsLotsTotalCount(lots, { totalCountLimit });
+      const totalMessage = getCigaretteButtsLotsTotalLimitMessage(totalCount, totalCountLimit);
+      if (totalMessage) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [],
+          message: totalMessage,
+        });
+      }
+    });
+}
+
+export const cigaretteButtsLotsSchema = createCigaretteButtsLotsSchema();
+/** Individual attributions follow action_participants' wider PostgreSQL bound. */
+export const individualCigaretteButtsLotsSchema = createCigaretteButtsLotsSchema(
+  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+);
 
 const cigaretteButtsMeasurementsSchema = z
   .object({

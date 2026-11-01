@@ -10,6 +10,7 @@ import {
   type CigaretteButtsLotInput,
   type CigaretteButtsLotResult,
   type CigaretteButtsLotsSummary,
+  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   isCigaretteButtsVolumeConversionVersion,
 } from "@/lib/waste/cigarette-butts";
 
@@ -149,7 +150,9 @@ function buildStoredCigaretteButtsLots(
   lots: CigaretteButtsLotInput[],
 ): StoredIndividualCigaretteButtsLots | null {
   if (lots.length === 0) return null;
-  const aggregate = aggregateCigaretteButtsLots(lots);
+  const aggregate = aggregateCigaretteButtsLots(lots, {
+    totalCountLimit: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+  });
   return aggregate.lots.length > 0 ? aggregate : null;
 }
 
@@ -238,7 +241,9 @@ export function toIndividualImpactMeasurement(
     ? row.individual_cigarette_butts_lots
     : null;
   const recalculatedLots = options.recalculateDerived && persistedLots && canRecalculatePersistedLots(persistedLots)
-    ? aggregateCigaretteButtsLots(persistedLots.lots)
+    ? aggregateCigaretteButtsLots(persistedLots.lots, {
+        totalCountLimit: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+      })
     : null;
   const canonicalStored = recalculatedLots
     ? {

@@ -432,6 +432,16 @@ autorisée. Les qualificatifs historiques absents restent `NULL` ; ils ne sont
 pas remplacés par `sec`, `propre` ou une méthode `inconnue`. Une version de
 conversion inconnue conserve sa valeur historique et reste non recalculable.
 
+La limite de stockage des lots individuels est celle de la projection
+`action_participants` : `500 000 000` mégots après conversion et arrondi par
+lot. Elle est distincte de la limite collective de `5 000 000` mégots ; elle
+n'introduit aucun nouveau coefficient ni aucune addition au total de l'action.
+Le serveur refuse un dépassement avant SQL. La persistance revalide dans une
+RPC atomique que l'action est approuvée, que le participant est confirmé et
+que l'organisateur ou l'administrateur conserve son droit au moment de la
+mutation ; une perte d'éligibilité ne produit aucun effet secondaire de
+succès.
+
 Le moteur d'estimation photo du formulaire `/actions/new` est conservé pour
 les itérations futures mais désactivé tant que sa maturité et sa validation ne
 sont pas suffisantes. Une photo de bilan reste une pièce documentaire et ne

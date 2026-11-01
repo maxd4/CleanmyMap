@@ -8,6 +8,7 @@ import {
 } from "@/__tests__/support/group-join-action-id-route";
 import {
   aggregateCigaretteButtsLots,
+  MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
 } from "@/lib/waste/cigarette-butts";
@@ -375,6 +376,113 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
       individual_cigarette_butts_condition: null,
       individual_waste_kg: 9,
     });
+  });
+
+  it("accepts the PostgreSQL individual-lot limit exactly and leaves the action total untouched", async () => {
+    const action = createGroupJoinAction({ status: "approved", actionPhase: "post_action_complete" });
+    const participant = createParticipantWithStatus("confirmed");
+    configureParticipantImpactSupabase([participant]);
+    const beforeActionTotal = (action as Record<string, unknown>).cigarette_butts;
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: {
+        lots: [
+          { id: "mass-a", source: "mass_kg", value: 100_000, condition: "propre" },
+          { id: "mass-b", source: "mass_kg", value: 10_000, condition: "propre" },
+        ],
+      },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact.cigaretteButtsCount).toBe(MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT);
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_count: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
+      individual_cigarette_butts_lots: expect.any(Object),
+    });
+    expect((action as Record<string, unknown>).cigarette_butts).toBe(beforeActionTotal);
+  });
+
+  it("rejects an individual-lot total just above PostgreSQL without writing or auditing", async () => {
+    const participant = createParticipantWithStatus("confirmed");
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: {
+        lots: [
+          { id: "mass-a", source: "mass_kg", value: 100_000, condition: "propre" },
+          { id: "mass-b", source: "mass_kg", value: 10_000.0001, condition: "propre" },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(participant).not.toHaveProperty("individual_cigarette_butts_count");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a participant that loses confirmation before the atomic write", async () => {
+    const participant = createParticipantWithStatus("confirmed");
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({ status: "approved" }),
+      participants: [participant],
+    });
+    const rpc = supabase.rpc as { mockImplementationOnce: (implementation: () => Promise<unknown>) => unknown };
+    rpc.mockImplementationOnce(async () => {
+      participant.participation_status = "cancelled";
+      return { data: { ok: false, code: "impact_target_not_eligible" }, error: null };
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+
+    expect(response.status).toBe(409);
+    expect(participant).not.toHaveProperty("individual_waste_kg");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+    expect(groupJoinMocks.refreshProgressionProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an action that becomes ineligible before the atomic write", async () => {
+    const action = createGroupJoinAction({ status: "approved" });
+    const participant = createParticipantWithStatus("confirmed");
+    const supabase = createGroupJoinSupabaseMock({ action, participants: [participant] });
+    const rpc = supabase.rpc as { mockImplementationOnce: (implementation: () => Promise<unknown>) => unknown };
+    rpc.mockImplementationOnce(async () => {
+      action.status = "cancelled";
+      return { data: { ok: false, code: "impact_target_not_eligible" }, error: null };
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+
+    expect(response.status).toBe(409);
+    expect(participant).not.toHaveProperty("individual_waste_kg");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("rechecks organizer eligibility before writing", async () => {
+    const action = createGroupJoinAction({ createdByClerkId: "owner-1", status: "approved" });
+    const participant = createParticipantWithStatus("confirmed");
+    const supabase = createGroupJoinSupabaseMock({ action, participants: [participant] });
+    loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 1, condition: "sec", measurementMethod: "balance_au_sol" },
+    });
+
+    expect(response.status).toBe(409);
+    expect(participant).not.toHaveProperty("individual_waste_kg");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   });
 
   it("keeps a cleared measurement explicitly empty and does not stamp an actor", async () => {

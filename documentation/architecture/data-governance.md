@@ -305,6 +305,17 @@ la réconciliation scientifique autorisée sont les seuls déclencheurs d'un
 nouveau calcul ; les qualificatifs `NULL`, les provenances et les versions
 historiques restent inchangés.
 
+La projection de lots individuels suit une capacité PostgreSQL distincte de la
+capacité d'un bilan collectif : après arrondi de chaque lot, son total peut
+atteindre `500 000 000` mégots, conformément à la contrainte de
+`action_participants`. Cette borne plus large ne s'applique jamais aux lots
+collectifs, qui restent limités à `5 000 000`. La validation Zod, le moteur
+canonique et la persistance utilisent la même borne individuelle et refusent
+un dépassement avant toute écriture. L'écriture passe par la RPC atomique
+`persist_action_participant_individual_impact`, qui revalide au dernier instant
+l'action `approved`, la participation `confirmed` et le droit du relecteur ;
+un échec ne déclenche ni audit de succès, ni notification, ni réconciliation.
+
 #### Temporalité déclarée et valeur technique de compatibilité
 
 `duration_minutes` décrit le temps d'action de dépollution ;
