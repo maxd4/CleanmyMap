@@ -28,6 +28,10 @@ import { projectMeetingPointFromGeometry } from "./route-operational";
 type Coordinate = [number, number];
 
 const NETWORK_CORRIDOR_RADIUS_KM = 0.05;
+// 110 km/degree is below the haversine latitude scale used by routeDistanceKm;
+// the resulting latitude window is deliberately conservative.
+const NETWORK_LATITUDE_KM_PER_DEGREE_LOWER_BOUND = 110;
+const NETWORK_EXHAUSTIVE_COMPARISON_LIMIT = 4_096;
 
 function round(value: number, digits = 3): number {
   return Number(value.toFixed(digits));
@@ -51,7 +55,44 @@ function segmentMidpoint(left: Coordinate, right: Coordinate): Coordinate {
   return [(left[0] + right[0]) / 2, (left[1] + right[1]) / 2];
 }
 
-function sharedDistanceForPair(
+type NetworkSegment = {
+  originalIndex: number;
+  midpoint: Coordinate;
+  distanceKm: number;
+};
+
+function networkSegments(coordinates: readonly Coordinate[]): NetworkSegment[] {
+  return coordinates.slice(0, -1).map((start, originalIndex) => {
+    const end = coordinates[originalIndex + 1]!;
+    return {
+      originalIndex,
+      midpoint: segmentMidpoint(start, end),
+      distanceKm: routeDistanceKm(
+        { latitude: start[0], longitude: start[1] },
+        { latitude: end[0], longitude: end[1] },
+      ),
+    };
+  });
+}
+
+function firstSegmentAtOrAboveLatitude(
+  segments: readonly NetworkSegment[],
+  latitude: number,
+): number {
+  let lower = 0;
+  let upper = segments.length;
+  while (lower < upper) {
+    const middle = lower + Math.floor((upper - lower) / 2);
+    if (segments[middle]!.midpoint[0] < latitude) {
+      lower = middle + 1;
+    } else {
+      upper = middle;
+    }
+  }
+  return lower;
+}
+
+function sharedDistanceForPairExhaustive(
   leftCoordinates: readonly Coordinate[],
   rightCoordinates: readonly Coordinate[],
 ): number {
@@ -75,6 +116,49 @@ function sharedDistanceForPair(
         ));
         break;
       }
+    }
+  }
+  return sharedDistanceKm;
+}
+
+function sharedDistanceForPair(
+  leftCoordinates: readonly Coordinate[],
+  rightCoordinates: readonly Coordinate[],
+): number {
+  const possibleComparisons = Math.max(0, leftCoordinates.length - 1) *
+    Math.max(0, rightCoordinates.length - 1);
+  if (possibleComparisons <= NETWORK_EXHAUSTIVE_COMPARISON_LIMIT) {
+    return sharedDistanceForPairExhaustive(leftCoordinates, rightCoordinates);
+  }
+
+  const leftSegments = networkSegments(leftCoordinates).filter(({ distanceKm }) => distanceKm !== 0);
+  if (leftSegments.length === 0 || rightCoordinates.length < 2) return 0;
+
+  const rightSegments = networkSegments(rightCoordinates);
+  const orderedRightSegments = rightSegments.sort((left, right) =>
+    left.midpoint[0] - right.midpoint[0] || left.originalIndex - right.originalIndex,
+  );
+  const latitudeDelta = NETWORK_CORRIDOR_RADIUS_KM / NETWORK_LATITUDE_KM_PER_DEGREE_LOWER_BOUND;
+  let sharedDistanceKm = 0;
+
+  for (const leftSegment of leftSegments) {
+    const leftLatitude = leftSegment.midpoint[0];
+    const firstCandidate = firstSegmentAtOrAboveLatitude(orderedRightSegments, leftLatitude - latitudeDelta);
+    let firstMatchingIndex = Number.POSITIVE_INFINITY;
+    let firstMatchingDistanceKm = 0;
+    for (let rightSegmentIndex = firstCandidate; rightSegmentIndex < orderedRightSegments.length; rightSegmentIndex += 1) {
+      const rightSegment = orderedRightSegments[rightSegmentIndex]!;
+      if (rightSegment.midpoint[0] > leftLatitude + latitudeDelta) break;
+      if (routeDistanceKm(
+        { latitude: leftLatitude, longitude: leftSegment.midpoint[1] },
+        { latitude: rightSegment.midpoint[0], longitude: rightSegment.midpoint[1] },
+      ) <= NETWORK_CORRIDOR_RADIUS_KM && rightSegment.originalIndex < firstMatchingIndex) {
+        firstMatchingIndex = rightSegment.originalIndex;
+        firstMatchingDistanceKm = rightSegment.distanceKm;
+      }
+    }
+    if (firstMatchingIndex !== Number.POSITIVE_INFINITY) {
+      sharedDistanceKm += Math.min(leftSegment.distanceKm, firstMatchingDistanceKm);
     }
   }
   return sharedDistanceKm;

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
 import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { RoutePlannerCandidate, RoutePlannerOrigin } from "./route-planner";
+import { routeDistanceKm, type RoutePlannerCandidate, type RoutePlannerOrigin } from "./route-planner";
 import { partitionRouteCandidates } from "./route-group-partition";
 import { routePartitionedGroups } from "./route-multi-route";
 
@@ -57,6 +57,72 @@ function partition(candidates: RoutePlannerCandidate[]) {
     maxStops: 1,
     priorityVsTravel: 65,
   });
+}
+
+type Coordinate = readonly [number, number];
+
+function referenceSharedDistanceForPair(
+  leftCoordinates: readonly Coordinate[],
+  rightCoordinates: readonly Coordinate[],
+): number {
+  let sharedDistanceKm = 0;
+  for (let leftSegment = 0; leftSegment < leftCoordinates.length - 1; leftSegment += 1) {
+    const leftStart = leftCoordinates[leftSegment]!;
+    const leftEnd = leftCoordinates[leftSegment + 1]!;
+    const leftMidpoint: Coordinate = [(leftStart[0] + leftEnd[0]) / 2, (leftStart[1] + leftEnd[1]) / 2];
+    const leftDistanceKm = routeDistanceKm(
+      { latitude: leftStart[0], longitude: leftStart[1] },
+      { latitude: leftEnd[0], longitude: leftEnd[1] },
+    );
+    if (leftDistanceKm === 0) continue;
+    for (let rightSegment = 0; rightSegment < rightCoordinates.length - 1; rightSegment += 1) {
+      const rightStart = rightCoordinates[rightSegment]!;
+      const rightEnd = rightCoordinates[rightSegment + 1]!;
+      const rightMidpoint: Coordinate = [(rightStart[0] + rightEnd[0]) / 2, (rightStart[1] + rightEnd[1]) / 2];
+      if (routeDistanceKm(
+        { latitude: leftMidpoint[0], longitude: leftMidpoint[1] },
+        { latitude: rightMidpoint[0], longitude: rightMidpoint[1] },
+      ) <= 0.05) {
+        sharedDistanceKm += Math.min(leftDistanceKm, routeDistanceKm(
+          { latitude: rightStart[0], longitude: rightStart[1] },
+          { latitude: rightEnd[0], longitude: rightEnd[1] },
+        ));
+        break;
+      }
+    }
+  }
+  return sharedDistanceKm;
+}
+
+function roundedSharedDistance(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+async function measuredSharedDistance(
+  leftCoordinates: readonly Coordinate[],
+  rightCoordinates: readonly Coordinate[],
+): Promise<number | null> {
+  let providerIndex = 0;
+  routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => ({
+    ...createFallbackRouteGeometry(coordinates),
+    coordinates: (providerIndex++ === 0 ? leftCoordinates : rightCoordinates).map(
+      ([latitude, longitude]) => [latitude, longitude] as [number, number],
+    ),
+    mode: "network" as const,
+    provider: "fossgis-osrm" as const,
+    profile: "foot" as const,
+    estimated: false,
+  }));
+  const candidates = [
+    candidate("north", 48.87, 2.36, 90),
+    candidate("south", 48.84, 2.34, 85),
+  ];
+  return (await routePartitionedGroups({
+    origin,
+    candidates,
+    partition: partition(candidates),
+    travelBudgetMinutes: 60,
+  })).metrics.sharedDistanceKm;
 }
 
 describe("coordinated multi-route routing", () => {
@@ -147,5 +213,67 @@ describe("coordinated multi-route routing", () => {
       first.groupRoutes.map(({ candidateIds }) => candidateIds),
     );
     expect(second.metrics).toEqual(first.metrics);
+  });
+
+  it.each([
+    ["close", [[48, 2], [48, 2.001]], [[48.0001, 2], [48.0001, 2.001]]],
+    ["far", [[48, 2], [48, 2.001]], [[48.001, 2], [48.001, 2.001]]],
+    ["overlapping", [[48, 2], [48, 2.001], [48, 2.002]], [[48, 2], [48, 2.001], [48, 2.002]]],
+  ] as const)("matches the exhaustive reference for %s polylines", async (_label, left, right) => {
+    const measured = await measuredSharedDistance(left, right);
+    expect(measured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(left, right)));
+  });
+
+  it("keeps the exact threshold and first matching right segment order", async () => {
+    const latitudeDelta = (0.05 / 6371) * (180 / Math.PI);
+    const left: Coordinate[] = [[48, 2], [48, 2.001]];
+    const thresholdRight: Coordinate[] = [[48 + latitudeDelta, 2], [48 + latitudeDelta, 2.001]];
+    const thresholdMeasured = await measuredSharedDistance(left, thresholdRight);
+    expect(thresholdMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(left, thresholdRight)));
+    expect(thresholdMeasured).toBeGreaterThan(0);
+
+    const shortFirst: Coordinate[] = [[48, 2], [48, 2.0002], [48, 2.001]];
+    const longFirst: Coordinate[] = [[48, 2], [48, 2.0008], [48, 2.001]];
+    const shortFirstMeasured = await measuredSharedDistance(left, shortFirst);
+    const longFirstMeasured = await measuredSharedDistance(left, longFirst);
+    expect(shortFirstMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(left, shortFirst)));
+    expect(longFirstMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(left, longFirst)));
+    expect(shortFirstMeasured).toBeLessThan(longFirstMeasured!);
+  });
+
+  it("preserves degenerate segments and extreme coordinates", async () => {
+    const leftWithDegenerate: Coordinate[] = [[48, 2], [48, 2], [48, 2.001]];
+    const ordinaryRight: Coordinate[] = [[48, 2], [48, 2.001]];
+    const degenerateLeftMeasured = await measuredSharedDistance(leftWithDegenerate, ordinaryRight);
+    expect(degenerateLeftMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(leftWithDegenerate, ordinaryRight)));
+
+    const ordinaryLeft: Coordinate[] = [[48, 2], [48, 2.001]];
+    const degenerateRight: Coordinate[] = [[48, 2.0005], [48, 2.0005], [48, 2.0015]];
+    const degenerateRightMeasured = await measuredSharedDistance(ordinaryLeft, degenerateRight);
+    expect(degenerateRightMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(ordinaryLeft, degenerateRight)));
+    expect(degenerateRightMeasured).toBe(0);
+
+    const extreme: Coordinate[] = [[89.9, 179.8], [89.9, 179.9]];
+    const extremeMeasured = await measuredSharedDistance(extreme, extreme);
+    expect(extremeMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(extreme, extreme)));
+
+    const oppositeExtreme: Coordinate[] = [[-89.9, -179.9], [-89.9, -179.8]];
+    const oppositeExtremeMeasured = await measuredSharedDistance(extreme, oppositeExtreme);
+    expect(oppositeExtremeMeasured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(extreme, oppositeExtreme)));
+    expect(oppositeExtremeMeasured).toBe(0);
+  });
+
+  it("matches the exhaustive reference when the spatial index is active", async () => {
+    const left: Coordinate[] = Array.from({ length: 129 }, (_, index) => [
+      48 + Math.sin(index / 9) * 0.0001,
+      2 + index * 0.00001,
+    ]);
+    const right: Coordinate[] = Array.from({ length: 129 }, (_, index) => [
+      48.0001 + Math.sin((index + 3) / 11) * 0.0001,
+      2.0001 + index * 0.00001,
+    ]);
+
+    const measured = await measuredSharedDistance(left, right);
+    expect(measured).toBe(roundedSharedDistance(referenceSharedDistanceForPair(left, right)));
   });
 });
