@@ -184,6 +184,11 @@ jobs:
     env:
       CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
+      SCIENTIFIC_FORMULA_EVENT_NAME: ${{ github.event_name }}
+      SCIENTIFIC_FORMULA_EVENT_BEFORE: ${{ github.event.before }}
+      SCIENTIFIC_FORMULA_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      SCIENTIFIC_FORMULA_CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      SCIENTIFIC_FORMULA_BASE_REF: ${{ github.event_name == 'workflow_dispatch' && 'origin/main' || '' }}
 
     steps:
       - name: Checkout

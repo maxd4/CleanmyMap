@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -10,8 +10,10 @@ export const SCIENTIFIC_FORMULA_PATHS = Object.freeze({
   waste: "apps/web/src/lib/waste/cigarette-butts.ts",
   impact: "apps/web/src/lib/impact/impact-terrain-2026.ts",
   projection: "apps/web/src/lib/impact/scientific-projection-versions.ts",
-  sql: "apps/web/supabase/migrations/20261101000012_scientific_projection_volume_lot_reconciliation.sql",
+  sqlDirectory: "apps/web/supabase/migrations",
 });
+
+const SQL_FUNCTION_PATTERN = /create\s+(?:or\s+replace\s+)?function\s+(public\.[a-z0-9_]+)\s*\(([^)]*)\)([\s\S]*?)\bas\s+\$([a-z0-9_]*)\$([\s\S]*?)\$\4\$/gi;
 
 function normalizeExpression(value) {
   return String(value)
@@ -57,6 +59,50 @@ function readFunctionBody(source, name) {
   );
 }
 
+function normalizeSqlSignature(name, argumentsList) {
+  return `${name.toLowerCase()}(${argumentsList.replace(/\s+/g, " ").trim().toLowerCase()})`;
+}
+
+export function extractSqlFunctionDefinitions(source, sourceName = "<inline>") {
+  return [...String(source ?? "").matchAll(SQL_FUNCTION_PATTERN)].map((match) => ({
+    signature: normalizeSqlSignature(match[1], match[2]),
+    name: match[1].toLowerCase(),
+    body: match[5],
+    sourceName,
+  }));
+}
+
+export function resolveEffectiveSqlFunctions(sqlSources) {
+  const effective = new Map();
+  for (const source of sqlSources ?? []) {
+    for (const definition of extractSqlFunctionDefinitions(source.source, source.name)) {
+      effective.set(definition.signature, definition);
+    }
+  }
+  return [...effective.values()];
+}
+
+function stripSqlComments(source) {
+  return String(source)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/--[^\r\n]*/g, "");
+}
+
+function findActiveSqlVolumeCoefficientDuplicates(sqlFunctions) {
+  return sqlFunctions.filter((definition) => {
+    const body = stripSqlComments(definition.body);
+    return /\b(?:600|700)\b/.test(body) &&
+      /(?:\b[a-z0-9_]*volume_l\b|\bvolume\b|\bper[_ -]?liter\b|\blitre\b)/i.test(body);
+  });
+}
+
+function readEffectiveSqlProjectionVersion(sqlFunctions) {
+  const definition = sqlFunctions.find(
+    (candidate) => candidate.signature === "public.current_public_impact_projection_version()",
+  );
+  return stripSqlComments(definition?.body ?? "").match(/select\s+'([^']+)'::text/i)?.[1] ?? null;
+}
+
 export function extractScientificMethodIdentity({ wasteSource, impactSource, projectionSource }) {
   const assignments = readConstAssignments(wasteSource);
   const impactAssignments = readConstAssignments(impactSource ?? "");
@@ -99,6 +145,7 @@ export function validateScientificFormulaIdentity({
   currentImpactSource,
   projectionSource,
   sqlSource,
+  sqlSources,
 }) {
   const issues = [];
   const base = baseWasteSource && projectionSource.base
@@ -113,9 +160,21 @@ export function validateScientificFormulaIdentity({
     impactSource: currentImpactSource,
     projectionSource: projectionSource.current,
   });
+  const effectiveSqlFunctions = resolveEffectiveSqlFunctions(
+    sqlSources ?? (sqlSource === undefined ? [] : [{ name: "<inline>", source: sqlSource }]),
+  );
 
   if (base && base.volumeV2 !== current.volumeV2 && base.volumeVersion === current.volumeVersion) {
     issues.push("volume factor changed without changing the effective volume conversion identity");
+  }
+  const massMethodChanged = base && (
+    base.massV2Factors.join("|") !== current.massV2Factors.join("|") ||
+    base.computeMassFormula !== current.computeMassFormula
+  );
+  if (base &&
+    (base.volumeV2 !== current.volumeV2 || massMethodChanged) &&
+    base.projectionVersion === current.projectionVersion) {
+    issues.push("scientific factor changed without changing the public projection identity");
   }
   if (base &&
     (base.massV2Factors.join("|") !== current.massV2Factors.join("|") ||
@@ -130,18 +189,29 @@ export function validateScientificFormulaIdentity({
     issues.push("lot conversion formula changed without changing an effective conversion identity");
   }
 
-  const sqlProjectionVersion = sqlSource.match(
-    /current_public_impact_projection_version\(\)[\s\S]*?select\s+'([^']+)'::text/i,
-  )?.[1] ?? null;
+  const sqlProjectionVersion = readEffectiveSqlProjectionVersion(effectiveSqlFunctions);
+  if (!sqlProjectionVersion) {
+    issues.push("active SQL projection identity definition is missing");
+  }
   if (sqlProjectionVersion !== current.projectionVersion) {
     issues.push(
       `SQL projection identity ${sqlProjectionVersion ?? "missing"} differs from TypeScript ${current.projectionVersion ?? "missing"}`,
     );
   }
-  if (/\b(?:volume_l|volume)\b[\s\S]{0,160}\b(?:600|700)\b|\b(?:600|700)\b[\s\S]{0,160}\b(?:volume_l|volume)\b/i.test(sqlSource)) {
-    issues.push("active SQL must consume the projected action value, not duplicate the volume coefficient");
+  const duplicatedSqlDefinitions = findActiveSqlVolumeCoefficientDuplicates(effectiveSqlFunctions);
+  if (duplicatedSqlDefinitions.length > 0) {
+    issues.push(
+      `active SQL must consume the projected action value, not duplicate the volume coefficient (${duplicatedSqlDefinitions.map((definition) => definition.sourceName).join(", ")})`,
+    );
   }
-  return { issues, base, current, sqlProjectionVersion };
+  return {
+    issues,
+    base,
+    current,
+    sqlProjectionVersion,
+    effectiveSqlFunctions,
+    duplicatedSqlDefinitions,
+  };
 }
 
 function gitShow(repositoryRoot, ref, file) {
@@ -152,13 +222,79 @@ function gitShow(repositoryRoot, ref, file) {
   return result.status === 0 ? result.stdout : null;
 }
 
-function resolveBaseRef() {
-  const argumentIndex = process.argv.indexOf("--base-ref");
-  if (argumentIndex >= 0 && process.argv[argumentIndex + 1]) {
-    return process.argv[argumentIndex + 1];
+function readOption(argv, name) {
+  const argumentIndex = argv.indexOf(name);
+  if (argumentIndex < 0) return null;
+  const value = argv[argumentIndex + 1];
+  if (!value || value.startsWith("--")) {
+    throw new Error(`[scientific-formula-version] ${name} requires a base Git reference.`);
   }
-  if (process.env.GITHUB_BASE_REF) return `origin/${process.env.GITHUB_BASE_REF}`;
-  return "HEAD^";
+  return value;
+}
+
+function requireBaseValue(value, label) {
+  if (!value || /^0+$/.test(value)) {
+    throw new Error(`[scientific-formula-version] ${label} is required; refusing an unbased comparison.`);
+  }
+  return value;
+}
+
+export function resolveBaseRef({ argv = process.argv, env = process.env } = {}) {
+  const explicit = readOption(argv, "--base-ref") || env.SCIENTIFIC_FORMULA_BASE_REF;
+  if (explicit) return explicit;
+
+  const eventName = env.SCIENTIFIC_FORMULA_EVENT_NAME || env.GITHUB_EVENT_NAME || "";
+  if (eventName === "push") {
+    return requireBaseValue(
+      env.SCIENTIFIC_FORMULA_EVENT_BEFORE || env.EVENT_BEFORE || env.GITHUB_EVENT_BEFORE,
+      "push event before SHA",
+    );
+  }
+  if (eventName === "pull_request") {
+    return requireBaseValue(
+      env.SCIENTIFIC_FORMULA_PR_BASE_SHA || env.PR_BASE_SHA ||
+        (env.GITHUB_BASE_REF ? `origin/${env.GITHUB_BASE_REF}` : ""),
+      "pull request base SHA",
+    );
+  }
+  if (eventName === "workflow_dispatch") {
+    throw new Error("[scientific-formula-version] workflow_dispatch requires SCIENTIFIC_FORMULA_BASE_REF.");
+  }
+  if (eventName) {
+    throw new Error(`[scientific-formula-version] unsupported GitHub event '${eventName}'.`);
+  }
+
+  if (env.GITHUB_BASE_REF) return `origin/${env.GITHUB_BASE_REF}`;
+
+  // Local/manual fallback is deliberately the published branch, never HEAD^:
+  // it covers all unpublished commits in one comparison.
+  return "origin/main";
+}
+
+function resolveCandidateRef({ argv = process.argv, env = process.env } = {}) {
+  return readOption(argv, "--candidate-ref") ||
+    env.SCIENTIFIC_FORMULA_CANDIDATE_SHA ||
+    env.GITHUB_SHA ||
+    null;
+}
+
+function gitRevision(repositoryRoot, ref) {
+  const result = spawnSync("git", ["rev-parse", "--verify", `${ref}^{commit}`], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  });
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
+function readSqlSources(repositoryRoot) {
+  const directory = path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.sqlDirectory);
+  return readdirSync(directory)
+    .filter((file) => file.endsWith(".sql"))
+    .sort()
+    .map((file) => ({
+      name: file,
+      source: readFileSync(path.join(directory, file), "utf8"),
+    }));
 }
 
 function main() {
@@ -175,21 +311,38 @@ function main() {
     path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.projection),
     "utf8",
   );
-  const sqlSource = readFileSync(
-    path.join(repositoryRoot, SCIENTIFIC_FORMULA_PATHS.sql),
-    "utf8",
-  );
+  const sqlSources = readSqlSources(repositoryRoot);
   const baseRef = resolveBaseRef();
+  const candidateRef = resolveCandidateRef();
+  if (candidateRef) {
+    const currentRevision = gitRevision(repositoryRoot, "HEAD");
+    const candidateRevision = gitRevision(repositoryRoot, candidateRef);
+    if (!candidateRevision || currentRevision !== candidateRevision) {
+      throw new Error(
+        `[scientific-formula-version] candidate revision ${candidateRef} is unavailable or does not match the checked-out candidate.`,
+      );
+    }
+  }
+  const baseFiles = Object.entries(SCIENTIFIC_FORMULA_PATHS)
+    .filter(([key]) => key !== "sqlDirectory")
+    .map(([key, file]) => [key, gitShow(repositoryRoot, baseRef, file)]);
+  const missingBaseFiles = baseFiles.filter(([, source]) => source === null).map(([key]) => key);
+  if (missingBaseFiles.length > 0) {
+    throw new Error(
+      `[scientific-formula-version] base Git reference '${baseRef}' is unavailable for: ${missingBaseFiles.join(", ")}.`,
+    );
+  }
+  const baseSources = Object.fromEntries(baseFiles);
   const result = validateScientificFormulaIdentity({
-    baseWasteSource: gitShow(repositoryRoot, baseRef, SCIENTIFIC_FORMULA_PATHS.waste),
+    baseWasteSource: baseSources.waste,
     currentWasteSource,
-    baseImpactSource: gitShow(repositoryRoot, baseRef, SCIENTIFIC_FORMULA_PATHS.impact),
+    baseImpactSource: baseSources.impact,
     currentImpactSource,
     projectionSource: {
-      base: gitShow(repositoryRoot, baseRef, SCIENTIFIC_FORMULA_PATHS.projection),
+      base: baseSources.projection,
       current: currentProjectionSource,
     },
-    sqlSource,
+    sqlSources,
   });
   if (result.issues.length > 0) {
     console.error(`[scientific-formula-version] ${result.issues.length} issue(s):`);
