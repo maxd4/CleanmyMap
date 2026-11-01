@@ -103,6 +103,14 @@ sont le [mode opératoire World Cleanup Day France](https://www.worldcleanupday.
 et le [guide Mégothon](https://trash-spotter.green/wp-content/uploads/2025/01/Guide_Megothon_COLLECTIVITE.pdf).
 Un lot est calculé une seule fois ; le nombre dérivé est arrondi au niveau du
 lot avant toute agrégation, tandis que la masse mesurée conserve sa précision.
+Après cet arrondi par lot, le total canonique de la collection reste borné à
+`5 000 000` mégots. Cette limite est contrôlée par le même owner de domaine
+dans le formulaire, le schéma serveur, les créations et les PATCH ; un volume
+qui produit un total supérieur est refusé avant toute écriture et n'est jamais
+tronqué. Une collection `[]` ne constitue pas une mesure ; un lot explicite de
+valeur `0` reste une déclaration valide. Un lot `mass_kg` nouvellement saisi
+enregistre toujours la version de masse effectivement utilisée, tandis qu'un
+snapshot historique versionné conserve son résultat et sa version propres.
 Une évolution de proxy suit une procédure unique : conserver l'ancienne version,
 modifier l'identité effective de méthode, recalculer seulement les dérivés dont
 la source est conservée, puis converger les références SQL, moyennes

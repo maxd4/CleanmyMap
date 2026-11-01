@@ -43,4 +43,34 @@ describe("createActionSchema cigarette-butt lots", () => {
       cigaretteButtsMeasurements: { cigaretteButtsLots: [{ ...validLot, value: 1.5 }] },
     }).success).toBe(false);
   });
+
+  it("rejects individually valid lots whose rounded total exceeds the canonical limit", () => {
+    const result = createActionSchema.safeParse({
+      ...basePayload,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsLots: [
+          { id: "first", source: "count", value: 5_000_000, condition: "propre" },
+          { id: "second", source: "count", value: 5_000_000, condition: "propre" },
+        ],
+      },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.success ? [] : result.error.issues.map((issue) => issue.message)).toContain(
+      "Le total calculé des mégots doit rester inférieur ou égal à 5 000 000.",
+    );
+  });
+
+  it("rejects a volume lot whose derived count exceeds the canonical limit", () => {
+    const result = createActionSchema.safeParse({
+      ...basePayload,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsLots: [
+          { id: "volume", source: "volume_l", value: 8_000, condition: "propre" },
+        ],
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

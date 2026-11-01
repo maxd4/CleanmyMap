@@ -10,6 +10,7 @@ import {
   AmbiguousCigaretteButtsLotsUpdateError,
   buildActionUpdateMeasurements,
 } from "./action-update-measurements";
+import { CigaretteButtsLotsTotalLimitError } from "@/lib/waste/cigarette-butts";
 import {
   buildActionUpdateNotes,
   preserveManualDrawing,
@@ -252,6 +253,9 @@ export async function prepareActionUpdate(params: {
   } catch (error) {
     if (error instanceof AmbiguousCigaretteButtsLotsUpdateError) {
       throw new ActionUpdateValidationError("cigaretteButtsMeasurements", error.message);
+    }
+    if (error instanceof CigaretteButtsLotsTotalLimitError) {
+      throw new ActionUpdateValidationError("cigaretteButtsLots", error.message);
     }
     throw error;
   }

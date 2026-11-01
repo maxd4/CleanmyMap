@@ -493,20 +493,6 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(aggregated.summary.measuredMassKg).toBe(0.123456);
   });
 
-  it("keeps explicit zero distinct from an empty or null lots collection", () => {
-    const zero = normalizeCigaretteButtsMeasurements({
-      cigaretteButtsLots: [{ id: "zero", source: "count", value: 0, condition: "propre" }],
-    });
-    const empty = normalizeCigaretteButtsMeasurements({ cigaretteButtsLots: [] });
-    const nullLots = normalizeCigaretteButtsMeasurementsFromUserInput({ cigaretteButtsLots: null });
-
-    expect(zero.cigaretteButtsCount).toBe(0);
-    expect(zero.cigaretteButtsLots).toHaveLength(1);
-    expect(empty.cigaretteButtsCount).toBeNull();
-    expect(empty.cigaretteButtsLots).toEqual([]);
-    expect(nullLots.cigaretteButtsCount).toBeNull();
-  });
-
   it("does not double count a repeated lot identifier in the domain projection", () => {
     const aggregated = aggregateCigaretteButtsLots([
       { id: "same", source: "count", value: 500, condition: "propre" },

@@ -5,6 +5,7 @@ import {
   buildActionUpdateMeasurements,
   type ActionUpdateMeasurements,
 } from "./action-update-measurements";
+import { CigaretteButtsLotsTotalLimitError } from "@/lib/waste/cigarette-butts";
 import { extractActionMetadataFromNotes } from "./metadata";
 import { buildActionUpdateNotes } from "./action-update-notes";
 import { buildPersistedNotes } from "./store-notes";
@@ -118,6 +119,17 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
     expect(() => updateMeasurements(buildCurrent(notes), { cigaretteButtsCount: 999 })).toThrow(
       AmbiguousCigaretteButtsLotsUpdateError,
     );
+  });
+
+  it("refuses a PATCH before building SQL update data when the derived total is too large", () => {
+    expect(() => updateMeasurements(buildCurrent(null), {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsLots: [
+          { id: "first", source: "count", value: 5_000_000, condition: "propre" },
+          { id: "second", source: "count", value: 5_000_000, condition: "propre" },
+        ],
+      },
+    })).toThrow(CigaretteButtsLotsTotalLimitError);
   });
 
   it("recalculates only the derived count after a hydrated mass-source condition change", () => {

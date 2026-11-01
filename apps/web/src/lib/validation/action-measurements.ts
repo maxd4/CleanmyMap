@@ -8,7 +8,9 @@ import {
   ACTION_WASTE_MEASUREMENT_METHODS,
 } from "@/lib/waste/measurement";
 import {
+  calculateCigaretteButtsLotsTotalCount,
   CIGARETTE_BUTTS_LOT_SOURCES,
+  getCigaretteButtsLotsTotalLimitMessage,
   MAX_CIGARETTE_BUTTS_COUNT,
   MAX_CIGARETTE_BUTTS_LOTS,
 } from "@/lib/waste/cigarette-butts";
@@ -94,6 +96,15 @@ export const cigaretteButtsLotsSchema = z
       }
       ids.add(lot.id);
     });
+    const totalCount = calculateCigaretteButtsLotsTotalCount(lots);
+    const totalMessage = getCigaretteButtsLotsTotalLimitMessage(totalCount);
+    if (totalMessage) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [],
+        message: totalMessage,
+      });
+    }
   });
 
 const cigaretteButtsMeasurementsSchema = z

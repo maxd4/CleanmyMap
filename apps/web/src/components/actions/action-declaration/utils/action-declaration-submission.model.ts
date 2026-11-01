@@ -15,7 +15,12 @@ import {
 import type { FormState, ValidationIssue } from "../model";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getVolunteerActionCompositionValidationMessage } from "@/lib/actions/volunteer-participation";
-import { MAX_CIGARETTE_BUTTS_COUNT, MAX_CIGARETTE_BUTTS_LOTS } from "@/lib/waste/cigarette-butts";
+import {
+  calculateCigaretteButtsLotsTotalCount,
+  getCigaretteButtsLotsTotalLimitMessage,
+  MAX_CIGARETTE_BUTTS_COUNT,
+  MAX_CIGARETTE_BUTTS_LOTS,
+} from "@/lib/waste/cigarette-butts";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste/measurement";
 
 export function normalizeActionDeclarationFormBeforeSubmit(
@@ -151,6 +156,12 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
     issues.push({ field: "cigaretteButtsLots", message: `Limitez les collectes de mégots à ${MAX_CIGARETTE_BUTTS_LOTS} lots.` });
   }
   const seen = new Set<string>();
+  const calculableLots = [] as Array<{
+    id: string;
+    source: "count" | "mass_kg" | "volume_l";
+    value: number;
+    condition: "propre" | "humide" | "mouille";
+  }>;
   for (const lot of form.cigaretteButtsLots) {
     const value = lot.value.trim();
     const numericValue = Number(value);
@@ -164,9 +175,20 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
     }
     if (lot.source === "count" && (!Number.isInteger(numericValue) || numericValue > MAX_CIGARETTE_BUTTS_COUNT)) {
       issues.push({ field: "cigaretteButtsLots", message: `Un lot compté doit être un entier compris entre 0 et ${MAX_CIGARETTE_BUTTS_COUNT}.` });
+      continue;
     }
     if (lot.source !== "count" && numericValue > ACTION_MEASUREMENT_MAX_KG) {
       issues.push({ field: "cigaretteButtsLots", message: `La masse ou le volume d’un lot doit rester inférieur ou égal à ${ACTION_MEASUREMENT_MAX_KG}.` });
+      continue;
+    }
+    calculableLots.push({ id: lot.id.trim(), source: lot.source, value: numericValue, condition: lot.condition });
+  }
+  if (calculableLots.length === form.cigaretteButtsLots.length) {
+    const totalMessage = getCigaretteButtsLotsTotalLimitMessage(
+      calculateCigaretteButtsLotsTotalCount(calculableLots),
+    );
+    if (totalMessage) {
+      issues.push({ field: "cigaretteButtsLots", message: totalMessage });
     }
   }
   return issues;

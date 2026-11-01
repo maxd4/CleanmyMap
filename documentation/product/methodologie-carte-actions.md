@@ -323,6 +323,15 @@ un PDF publié ou un snapshot historique est hors recalcul. Le lock SQL, les
 clés d'événement et les upserts existants rendent la reprise idempotente ; un
 cache ou snapshot portant une autre identité est refusé comme CURRENT.
 
+Le contrôle de capacité des lots est également canonique : les conversions
+sont arrondies lot par lot, puis leur somme doit rester inférieure ou égale à
+`5 000 000` mégots. Le formulaire et le serveur utilisent ce même contrôle ;
+un lot volumétrique qui dépasse cette capacité est rejeté avant persistance,
+sans troncature. Une liste vide signifie l'absence de mesure, alors qu'un lot
+explicitement saisi à zéro reste valide. La version de masse réellement
+utilisée est enregistrée pour les nouveaux lots massiques ; les snapshots
+historiques et leurs versions ne sont pas remplacés.
+
 Le score doit être présenté comme :
 
 > Pollution constatée avant l'action

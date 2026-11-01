@@ -6,6 +6,7 @@ import { normalizeActionVolunteerParticipationFromTotal } from "@/lib/actions/vo
 import { validationErrorResponse } from "@/lib/http/api-errors";
 import { createActionSchema } from "@/lib/validation/action";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CigaretteButtsLotsTotalLimitError } from "@/lib/waste/cigarette-butts";
 
 type CreateActionRequest = import("zod").infer<typeof createActionSchema>;
 
@@ -94,6 +95,9 @@ export async function executeActionCreation({
   } catch (error) {
     if (error instanceof ActionCreationValidationError) {
       return validationErrorResponse(error.fieldErrors);
+    }
+    if (error instanceof CigaretteButtsLotsTotalLimitError) {
+      return validationErrorResponse({ cigaretteButtsLots: [error.message] });
     }
     throw error;
   }

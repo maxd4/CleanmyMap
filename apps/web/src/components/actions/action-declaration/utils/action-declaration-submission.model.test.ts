@@ -337,6 +337,19 @@ describe("action declaration submission model", () => {
     ]));
   });
 
+  it("rejects individually valid lots whose derived total exceeds the canonical limit", () => {
+    const form = buildValidCompleteDeclaration();
+    form.cigaretteButtsLots = [
+      { id: "first", source: "count", value: "5000000", condition: "propre" },
+      { id: "second", source: "count", value: "5000000", condition: "propre" },
+    ];
+
+    expect(getCompleteDeclarationIssues(form)).toContainEqual({
+      field: "cigaretteButtsLots",
+      message: "Le total calculé des mégots doit rester inférieur ou égal à 5 000 000.",
+    });
+  });
+
   it("keeps optional measurements absent and accepts valid detailed measurements", () => {
     const absent = buildValidCompleteDeclaration();
     absent.wasteKg = "0";

@@ -288,6 +288,16 @@ ni son historique. La comparaison de résolution ne modélise pas l'incertitude
 d'une balance ou d'une estimation visuelle. Les anciennes clés de ventilation
 restent donc des lectures de compatibilité, jamais une seconde source de vérité.
 
+Pour les collectes de mégots multi-lots, la capacité métier est contrôlée après
+conversion et arrondi de chaque lot : la somme doit rester inférieure ou égale
+à `5 000 000` mégots. Le domaine `cigarette-butts.ts` porte cette règle et le
+formulaire, les schémas serveur, les créations et les PATCH la réutilisent ;
+aucun total supérieur ne doit parvenir à SQL. Une liste de lots vide n'est pas
+une mesure, tandis qu'un lot de zéro est une déclaration explicite valide. Un
+lot massique nouvellement dérivé conserve la version de masse utilisée ; une
+version historique connue ou inconnue est lue selon sa provenance sans être
+remplacée silencieusement.
+
 #### Temporalité déclarée et valeur technique de compatibilité
 
 `duration_minutes` décrit le temps d'action de dépollution ;

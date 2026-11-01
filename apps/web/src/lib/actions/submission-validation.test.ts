@@ -125,6 +125,27 @@ describe("getVolunteerActionValidationIssues", () => {
     expect(issues).toEqual([]);
   });
 
+  it("does not treat an explicitly empty lot collection as a measurement", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "complete",
+      wasteKg: null,
+      cigaretteButts: null,
+      cigaretteButtsMeasurements: { cigaretteButtsLots: [] },
+      volunteersCount: 1,
+      volunteerParticipation: {
+        childrenCount: 0,
+        adultCount: 1,
+        retiredCount: 0,
+      },
+    });
+
+    expect(issues).toContainEqual({
+      field: "wasteKg",
+      message: "Renseignez au moins une mesure de déchets ou de mégots ; 0 reste une mesure valide.",
+    });
+  });
+
   it("rejects an action when both measurements are unknown", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",

@@ -4,10 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionUpdateInput } from "./action-update-audit";
 import type { ActionFormalitiesFacts } from "./formalities-qualification";
 import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
-import {
-  persistActionUpdate,
-  prepareActionUpdate,
-} from "./action-update-persistence";
+import { persistActionUpdate, prepareActionUpdate } from "./action-update-persistence";
 import { extractActionMetadataFromNotes } from "./metadata";
 
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
