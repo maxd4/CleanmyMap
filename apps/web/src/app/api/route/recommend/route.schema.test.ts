@@ -29,6 +29,7 @@ describe("route recommendation HTTP request schema", () => {
     if (parsed.success) {
       expect(parsed.data).toEqual({
         ...payload,
+        routeTopology: "loop",
         planningMode: { type: "free" },
         riskFocus: "all",
         pickupPreference: "balanced",
@@ -85,6 +86,19 @@ describe("route recommendation HTTP request schema", () => {
 
     expect(parsed.travelBudgetMinutes).toBe(42);
     expect(parsed.maxStops).toBe(3);
+  });
+
+  it("accepts an explicit open topology and precise arrival", () => {
+    const parsed = parseRouteRecommendationRequest({
+      routeTopology: "open",
+      origin: { latitude: 48.8566, longitude: 2.3522, source: "map" },
+      arrival: { latitude: 48.86, longitude: 2.36, source: "map" },
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.routeTopology).toBe("open");
+      expect(parsed.data.arrival).toEqual({ latitude: 48.86, longitude: 2.36, source: "map" });
+    }
   });
 
   it("accepts waste and cigarette-butts preferences", () => {

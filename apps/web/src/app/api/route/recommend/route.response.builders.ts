@@ -1,7 +1,7 @@
 import {
   resolveRouteDataLayers,
 } from "@/lib/route/route-data-status";
-import type { RouteStop } from "@/lib/route/route-contract";
+import type { RouteStop, RouteTopology } from "@/lib/route/route-contract";
 import { ROUTE_PLANNER_ENGINE_VERSION } from "@/lib/route/route-planner";
 import type { RoutePlannerOrigin } from "@/lib/route/route-planner";
 import type { RouteGroupRoute, RouteMultiRouteMetrics, RoutePickupPreference } from "@/lib/route/route-response-contract";
@@ -38,6 +38,8 @@ import {
 
 export type RouteRecommendationResponseInput = {
   origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
   locationPreference: { arrondissement?: number | null } | null;
   eventPressureContext: RouteEventPressureContext;
   candidateData: RouteCandidateData;
@@ -372,6 +374,8 @@ function buildRouteProofTrace(
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     planningMode: input.planningMode ?? { type: "free" },
     origin: input.origin,
+    arrival: input.arrival,
+    routeTopology: input.routeTopology,
     travelBudgetMinutes: input.travelBudgetMinutes,
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,

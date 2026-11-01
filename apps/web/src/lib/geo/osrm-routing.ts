@@ -4,6 +4,7 @@ import type {
   RouteGeometryLeg,
   RouteNetworkGeometryProvider,
   RouteGeometryProfile,
+  RouteTopology,
 } from "@/lib/route/route-contract";
 import { areCoordinatesClose } from "@/lib/geo/coordinate-comparison";
 
@@ -25,6 +26,7 @@ export type RoutePolylineOptions = {
   provider?: RouteNetworkGeometryProvider;
   profile?: Exclude<RouteGeometryProfile, null>;
   headers?: HeadersInit;
+  topology?: RouteTopology;
 };
 
 type OsrmLeg = {
@@ -236,12 +238,18 @@ export function buildOsrmRouteUrl(
 
 export function createFallbackRouteGeometry(
   coordinates: [number, number][],
+  options: Pick<RoutePolylineOptions, "topology"> = {},
 ): RouteGeometry {
   // A malformed point must not be dropped and silently bridged. That would
   // turn a corrupt/discontinuous input into an apparently usable route.
-  const normalizedCoordinates = coordinates.every(isCoordinate)
+  const inputCoordinates = coordinates.every(isCoordinate)
     ? coordinates
     : [];
+  const normalizedCoordinates = options.topology === "loop" &&
+    inputCoordinates.length > 0 &&
+    !isClosedCoordinates(inputCoordinates)
+    ? [...inputCoordinates, inputCoordinates[0]!] as [number, number][]
+    : inputCoordinates;
   const legs: RouteGeometryLeg[] = normalizedCoordinates.flatMap((point, index) => {
     const previous = normalizedCoordinates[index - 1];
     if (!previous) return [];
@@ -255,7 +263,11 @@ export function createFallbackRouteGeometry(
   });
   const distance = legs.reduce((total, leg) => total + leg.distanceKm, 0);
   const duration = legs.reduce((total, leg) => total + leg.estimatedMinutes, 0);
-  const isLoop = isClosedCoordinates(normalizedCoordinates);
+  const isLoop = options.topology === "loop"
+    ? true
+    : options.topology === "open"
+      ? false
+      : isClosedCoordinates(normalizedCoordinates);
 
   return {
     isLoop,
@@ -278,6 +290,7 @@ function parseNetworkRoute(
   expectedStopCount: number,
   provider: RouteNetworkGeometryProvider,
   profile: Exclude<RouteGeometryProfile, null>,
+  topology?: RouteTopology,
 ): RouteGeometry | null {
   if (payload.code !== "Ok" || !Array.isArray(payload.routes)) {
     return null;
@@ -292,7 +305,11 @@ function parseNetworkRoute(
   const parsedRoute = parseOsrmRouteCoordinates(route);
   if (!parsedRoute) return null;
 
-  const isLoop = isClosedCoordinates(requestedCoordinates);
+  const isLoop = topology === "loop"
+    ? true
+    : topology === "open"
+      ? false
+      : isClosedCoordinates(requestedCoordinates);
   // A closed route must expose every leg so the return cost remains explicit.
   // An incomplete provider payload is therefore degraded to the deterministic
   // closed fallback instead of being presented as a measured loop.
@@ -389,6 +406,7 @@ async function fetchOsrmRoute(
       coordinates.length,
       options.provider ?? OSRM_PROVIDER,
       options.profile ?? OSRM_PROFILE,
+      options.topology,
     );
   } catch (error) {
     logFailure("OSRM", "Routing failed", error, {
@@ -405,7 +423,7 @@ export async function routePolylineThroughStreetNetwork(
   options: RoutePolylineOptions = {},
 ): Promise<RouteGeometry> {
   if (coordinates.length < 2) {
-    return createFallbackRouteGeometry(coordinates);
+    return createFallbackRouteGeometry(coordinates, options);
   }
 
   if (
@@ -415,7 +433,7 @@ export async function routePolylineThroughStreetNetwork(
     logWarning("OSRM", "Routing input is outside the supported bounds", {
       pointCount: coordinates.length,
     });
-    return createFallbackRouteGeometry(coordinates);
+    return createFallbackRouteGeometry(coordinates, options);
   }
 
   const networkResult = await fetchOsrmRoute(
@@ -426,6 +444,6 @@ export async function routePolylineThroughStreetNetwork(
   );
   return (
     networkResult ??
-    createFallbackRouteGeometry(coordinates)
+    createFallbackRouteGeometry(coordinates, options)
   );
 }

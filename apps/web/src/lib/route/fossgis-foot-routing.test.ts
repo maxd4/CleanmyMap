@@ -109,6 +109,19 @@ describe("FOSSGIS pedestrian routing provider", () => {
     expect(quotaLimitMock).toHaveBeenCalledTimes(1);
   });
 
+  it("preserves an explicitly open topology through the provider adapter", async () => {
+    const transport = configuredTransport();
+
+    const result = await routePolylineThroughFossgisFoot(stops, {
+      transport,
+      topology: "open",
+    });
+
+    expect(result.isLoop).toBe(false);
+    expect(result.returnLeg).toBeNull();
+    expect(result.coordinates.at(-1)).toEqual(stops[1]);
+  });
+
   it.each([
     ["refused", { success: false }],
     ["timed out", { success: true, reason: "timeout" }],

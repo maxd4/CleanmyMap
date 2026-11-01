@@ -325,7 +325,7 @@ function RouteMapLayers({
 
 function RouteMapModeLabel({ groupRoutes, visibleGroupRoutes, routeGeometry, fr }: { groupRoutes: RouteGroupRoute[]; visibleGroupRoutes: RouteGroupRoute[]; routeGeometry: RouteGeometry; fr: boolean }) {
   return <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/15 bg-slate-950/80 px-3 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-    {groupRoutes.length > 1 ? `${fr ? "Boucles coordonnées" : "Coordinated loops"} · ${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau" : "network") : visibleGroupRoutes.some(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau + estimation" : "network + estimated") : (fr ? "estimées" : "estimated")}` : routeGeometry.mode === "network" ? `${fr ? "Réseau" : "Network"} · ${routeGeometry.provider.toUpperCase()} · ${fr ? "profil configuré" : "configured profile"}: ${routeGeometry.profile ?? "n/a"}` : fr ? "Itinéraire estimé · réseau indisponible" : "Estimated route · network unavailable"}
+    {groupRoutes.length > 1 ? `${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.isLoop) ? (fr ? "Boucles coordonnées" : "Coordinated loops") : (fr ? "Trajets ouverts coordonnés" : "Coordinated open routes")} · ${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau" : "network") : visibleGroupRoutes.some(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau + estimation" : "network + estimated") : (fr ? "estimées" : "estimated")}` : routeGeometry.mode === "network" ? `${fr ? "Réseau" : "Network"} · ${routeGeometry.provider.toUpperCase()} · ${fr ? "profil configuré" : "configured profile"}: ${routeGeometry.profile ?? "n/a"}` : fr ? "Itinéraire estimé · réseau indisponible" : "Estimated route · network unavailable"}
   </div>;
 }
 
@@ -446,7 +446,7 @@ export function RouteMap({
     ];
   }, [groupRoutes, origin, renderedGuidedGroups, routeGeometry, stops, visibleGroupRoutes]);
   const routeCoordinates =
-    routeGeometry.isLoop && routeGeometry.coordinates.length >= 2
+    routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
       : origin && stops.length > 0
         ? [
@@ -454,7 +454,7 @@ export function RouteMap({
             ...stops.map(
               (stop) => [stop.latitude, stop.longitude] as [number, number],
             ),
-            [origin.latitude, origin.longitude] as [number, number],
+            ...(routeGeometry.isLoop ? [[origin.latitude, origin.longitude] as [number, number]] : []),
           ]
         : [];
   const center = origin

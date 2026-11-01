@@ -95,6 +95,8 @@ export async function fetchRouteRecommendation(
     ...request.options,
     planningMode: request.planningMode,
     ...(request.origin ? { origin: request.origin } : {}),
+    ...(request.options.arrival ? { arrival: request.options.arrival } : {}),
+    routeTopology: request.options.routeTopology ?? "loop",
   } satisfies RouteRecommendationRequest;
 
   const response = await transport("/api/route/recommend", {

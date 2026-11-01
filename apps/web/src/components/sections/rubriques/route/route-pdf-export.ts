@@ -87,7 +87,7 @@ function displayCoordinates(
     ...route.stops
       .map((stop) => [stop.latitude, stop.longitude] as [number, number])
       .filter(isValidCoordinate),
-    origin,
+    ...(data.isLoop ? [origin] : []),
   ];
 }
 
@@ -237,7 +237,12 @@ function renderSvgMap(
     })
     .join("");
 
-  return `<svg class="route-pdf-map" viewBox="0 0 ${MAP_WIDTH} ${MAP_HEIGHT}" role="img" aria-label="${escapeHtml(title)}" xmlns="http://www.w3.org/2000/svg"><rect width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#f8fafc" /><path d="M40 140H960 M40 280H960 M40 420H960 M220 40V520 M460 40V520 M700 40V520" stroke="#dbe4ec" stroke-width="2" stroke-dasharray="3 9" />${guidedSectorMarkers}<circle cx="${originPoint.x.toFixed(1)}" cy="${originPoint.y.toFixed(1)}" r="18" fill="#0f172a" stroke="#ffffff" stroke-width="5" /><text x="${originPoint.x.toFixed(1)}" y="${(originPoint.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">D/A</text><text x="${(originPoint.x + 24).toFixed(1)}" y="${(originPoint.y - 16).toFixed(1)}" font-size="13" font-weight="800" fill="#0f172a">Départ / arrivée</text>${routeLines}${plannedMarkers}${stopMarkers}</svg>`;
+  const endpoint = routes[0]?.geometry.coordinates.at(-1);
+  const endpointPoint = endpoint ? projectedPoint(endpoint, coordinatesByKey) : null;
+  const endpointMarker = !data.isLoop && endpointPoint
+    ? `<circle cx="${endpointPoint.x.toFixed(1)}" cy="${endpointPoint.y.toFixed(1)}" r="18" fill="#0f172a" stroke="#ffffff" stroke-width="5" /><text x="${endpointPoint.x.toFixed(1)}" y="${(endpointPoint.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">A</text><text x="${(endpointPoint.x + 24).toFixed(1)}" y="${(endpointPoint.y - 16).toFixed(1)}" font-size="13" font-weight="800" fill="#0f172a">Arrivée</text>`
+    : "";
+  return `<svg class="route-pdf-map" viewBox="0 0 ${MAP_WIDTH} ${MAP_HEIGHT}" role="img" aria-label="${escapeHtml(title)}" xmlns="http://www.w3.org/2000/svg"><rect width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#f8fafc" /><path d="M40 140H960 M40 280H960 M40 420H960 M220 40V520 M460 40V520 M700 40V520" stroke="#dbe4ec" stroke-width="2" stroke-dasharray="3 9" />${guidedSectorMarkers}<circle cx="${originPoint.x.toFixed(1)}" cy="${originPoint.y.toFixed(1)}" r="18" fill="#0f172a" stroke="#ffffff" stroke-width="5" /><text x="${originPoint.x.toFixed(1)}" y="${(originPoint.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">${data.isLoop ? "D/A" : "D"}</text><text x="${(originPoint.x + 24).toFixed(1)}" y="${(originPoint.y - 16).toFixed(1)}" font-size="13" font-weight="800" fill="#0f172a">${data.isLoop ? "Départ / arrivée" : "Départ"}</text>${endpointMarker}${routeLines}${plannedMarkers}${stopMarkers}</svg>`;
 }
 
 function renderLegend(
@@ -310,7 +315,9 @@ function renderCorridors(
 
 function renderInstructions(data: RouteResponse, routes: ExportRoute[]): string {
   const notes = [
-    "Le départ et l’arrivée se font au même point ; vérifier le rendez-vous avant le départ.",
+    data.isLoop
+      ? "Le départ et l’arrivée se font au même point ; vérifier le rendez-vous avant le départ."
+      : "Le départ est fixé par la localisation et l’arrivée est distincte ; vérifier les deux extrémités avant le départ.",
     "Respecter le code de la route, les piétons, les accès privés et les consignes locales.",
     "Ne pas intervenir sur une zone dangereuse ou non autorisée ; signaler plutôt que prendre un risque.",
     routes.some((route) => route.geometry.mode === "fallback")
@@ -330,7 +337,7 @@ function renderGroupPage(
 ): string {
   const label = route.label || `Groupe ${route.groupIndex}`;
   const rendezVous = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)}`;
-  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} observations · ${route.plannedWaypoints?.length ?? 0} passages planifiés · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · départ et arrivée au même endroit</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderGuidedPlan([route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
+  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} observations · ${route.plannedWaypoints?.length ?? 0} passages planifiés · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · ${data.isLoop ? "départ et arrivée au même endroit" : "arrivée distincte du départ"}</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderGuidedPlan([route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
 }
 
 export function buildRoutePdfCss(routeCount: number): string {
@@ -384,7 +391,7 @@ export function buildRoutePdfHtml(
   const event = data.trace.eventCentered?.event;
   const title = event ? `Itinéraire CleanMyMap — ${event.title}` : "Itinéraire CleanMyMap";
   const originLabel = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)} · ${data.origin.source === "map" ? "carte" : data.origin.source === "browser" ? "navigateur" : "zone enregistrée approximative"}`;
-  const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : "Vue générale — 1 boucle";
+  const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : data.isLoop ? "Vue générale — 1 boucle" : "Vue générale — 1 trajet ouvert";
   const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderGuidedPlan(routes)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
   const groupPages = multi ? routes.map((route) => renderGroupPage(data, route, displayMode)).join("") : "";
 

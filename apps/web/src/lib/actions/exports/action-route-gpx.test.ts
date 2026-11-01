@@ -227,6 +227,34 @@ describe("action-route-gpx export adapter", () => {
     expect(importedXml).toContain('lat="48.87" lon="2.37"');
   });
 
+  it("exports an open operational route without inventing a return point", () => {
+    const openRoute: OperationalRoute = {
+      ...operationalRoute,
+      routes: [
+        {
+          ...operationalRoute.routes[0]!,
+          geometry: {
+            ...operationalRoute.routes[0]!.geometry,
+            isLoop: false,
+            returnLeg: null,
+            coordinates: [[48.85, 2.35], [48.86, 2.36]],
+          },
+        },
+      ],
+    };
+
+    const xml = buildActionRouteGpxDocument({
+      operationalRoute: openRoute,
+      arrivalLabel: "Arrivée distincte",
+    });
+
+    expect(xml).toContain('lat="48.85" lon="2.35"');
+    expect(xml).toContain('lat="48.86" lon="2.36"');
+    expect(xml).toContain("Arrivée distincte");
+    expect(parseGpxText(xml!).drawing.coordinates).toEqual([[48.85, 2.35], [48.86, 2.36]]);
+    expect(xml).not.toContain('lat="48.85" lon="2.35"\n        <trkpt lat="48.85"');
+  });
+
   it("is deterministic and does not call the network", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const input = { operationalRoute };

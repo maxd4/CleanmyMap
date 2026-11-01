@@ -3,6 +3,7 @@ import type {
   RouteGeometry,
   RouteGeometryLeg,
   RouteGeometryStep,
+  RouteTopology,
 } from "./route-contract";
 import {
   routeDistanceKm,
@@ -63,7 +64,7 @@ export type RouteTraceCandidateSummary = {
 export type RouteTraceSelectedStop = {
   step: number;
   id: string;
-  criteriaUsed: ["priority_score", "incremental_travel_cost", "return_travel_cost"];
+  criteriaUsed: ["priority_score", "incremental_travel_cost", "return_travel_cost" | "arrival_travel_cost"];
   normalizedScoreComponents: {
     priority: number;
     travel: number;
@@ -98,7 +99,7 @@ export type RouteTraceSelectedStop = {
 
 type RouteTraceSegment = {
   from: "origin" | string;
-  to: "origin" | string;
+  to: "origin" | "arrival" | string;
   distanceKm: number | null;
   durationMinutes: number | null;
   measured: boolean;
@@ -154,7 +155,8 @@ export type RouteMultiRouteTrace = {
 };
 
 export type RouteRecommendationTrace = {
-  isLoop: true;
+  isLoop: boolean;
+  routeTopology: RouteTopology;
   engineVersion: string;
   planningMode: RoutePlanningMode;
   parameters: {
@@ -184,7 +186,7 @@ export type RouteRecommendationTrace = {
     remainingMinutes: number;
   };
   loop: {
-    isLoop: true;
+    isLoop: boolean;
     origin: RoutePlannerOrigin;
     returnDistanceKm: number;
     returnMinutes: number;
@@ -247,6 +249,8 @@ export type BuildRouteRecommendationTraceInput = {
   engineVersion: string;
   planningMode?: RoutePlanningMode;
   origin: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
+  arrival?: RoutePlannerOrigin;
   travelBudgetMinutes: number;
   maxStops: number;
   priorityVsTravel: number;
@@ -335,7 +339,35 @@ function buildSegments(
     };
   });
 
-  if (selectedStops.length === 0) return outboundSegments;
+  if (selectedStops.length === 0) {
+    if (!geometry.isLoop && geometry.legs[0]) {
+      const terminalLeg = geometry.legs[0];
+      outboundSegments.push({
+        from: "origin",
+        to: "arrival",
+        distanceKm: terminalLeg.distanceKm,
+        durationMinutes: terminalLeg.estimatedMinutes,
+        measured: geometry.mode === "network",
+        streetSteps: geometry.mode === "network" ? terminalLeg.steps ?? [] : [],
+      });
+    }
+    return outboundSegments;
+  }
+
+  if (!geometry.isLoop) {
+    const terminalLeg = routeLegForIndex(geometry.legs, selectedStops.length);
+    if (terminalLeg) {
+      outboundSegments.push({
+        from: selectedStops.at(-1)!.candidate.id,
+        to: "arrival",
+        distanceKm: terminalLeg.distanceKm,
+        durationMinutes: terminalLeg.estimatedMinutes,
+        measured: geometry.mode === "network",
+        streetSteps: geometry.mode === "network" ? terminalLeg.steps ?? [] : [],
+      });
+    }
+    return outboundSegments;
+  }
 
   const lastStop = selectedStops.at(-1)!.candidate;
   const returnLeg =
@@ -383,6 +415,7 @@ function selectionForStop(
   step: number,
   plannerResult: RoutePlannerResult,
   eventSignalContext: RouteEventSignalContext,
+  routeTopology: RouteTopology,
 ): RouteTraceSelectedStop {
   const selection = plannerResult.audit?.selections.find(
     (item) => item.candidateId === stop.candidate.id && item.step === step,
@@ -395,7 +428,7 @@ function selectionForStop(
   return {
     step,
     id: stop.candidate.id,
-    criteriaUsed: ["priority_score", "incremental_travel_cost", "return_travel_cost"],
+    criteriaUsed: ["priority_score", "incremental_travel_cost", routeTopology === "loop" ? "return_travel_cost" : "arrival_travel_cost"],
     normalizedScoreComponents: {
       priority: selection.normalizedPriority,
       travel: selection.normalizedTravel,
@@ -456,6 +489,7 @@ export function buildRouteRecommendationTrace(
       index + 1,
       input.plannerResult,
       eventSignalContext,
+      input.routeTopology ?? (input.routeGeometry.isLoop ? "loop" : "open"),
     ),
   );
   const fallbacks: string[] = [];
@@ -524,7 +558,8 @@ export function buildRouteRecommendationTrace(
 
   return {
     engineVersion: input.engineVersion,
-    isLoop: true,
+    isLoop: input.routeGeometry.isLoop,
+    routeTopology: input.routeTopology ?? (input.routeGeometry.isLoop ? "loop" : "open"),
     planningMode: input.planningMode ?? { type: "free" },
     parameters: {
       travelBudgetMinutes: input.travelBudgetMinutes,
@@ -549,7 +584,7 @@ export function buildRouteRecommendationTrace(
       remainingMinutes: Math.max(0, input.travelBudgetMinutes - consumedMinutes),
     },
     loop: {
-      isLoop: true,
+      isLoop: input.routeGeometry.isLoop,
       origin: { ...input.origin },
       returnDistanceKm: input.routeGeometry.returnLeg?.distanceKm ?? 0,
       returnMinutes: input.routeGeometry.returnLeg?.estimatedMinutes ?? 0,

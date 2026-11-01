@@ -376,6 +376,79 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     );
   });
 
+  it("sends an open path without a synthetic return and preserves its endpoint", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+    const explicitOrigin = { latitude: 48.9, longitude: 2.4, source: "map" } as const;
+    const openGeometry: RouteGeometry = {
+      ...networkGeometry({
+        isLoop: false,
+        origin: [explicitOrigin.latitude, explicitOrigin.longitude],
+        returnLeg: null,
+        coordinates: [[explicitOrigin.latitude, explicitOrigin.longitude], [candidate.latitude, candidate.longitude]],
+        legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 8 }],
+        distanceKm: 1,
+        durationMinutes: 8,
+      }),
+      isLoop: false,
+      returnLeg: null,
+    };
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(openGeometry);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({ origin: explicitOrigin, routeTopology: "open" }));
+    const payload = await readRouteResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledWith(
+      [[explicitOrigin.latitude, explicitOrigin.longitude], [candidate.latitude, candidate.longitude]],
+      { topology: "open" },
+    );
+    expect(payload.routeTopology).toBe("open");
+    expect(payload.isLoop).toBe(false);
+    expect(payload.routeGeometry.returnLeg).toBeNull();
+    expect(payload.routeGeometry.coordinates.at(-1)).toEqual([candidate.latitude, candidate.longitude]);
+  });
+
+  it("keeps an explicitly supplied open arrival after the planned stops", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+    const explicitOrigin = { latitude: 48.9, longitude: 2.4, source: "map" } as const;
+    const explicitArrival = { latitude: 48.92, longitude: 2.42, source: "map" } as const;
+    const openGeometry = networkGeometry({
+      isLoop: false,
+      origin: [explicitOrigin.latitude, explicitOrigin.longitude],
+      returnLeg: null,
+      coordinates: [
+        [explicitOrigin.latitude, explicitOrigin.longitude],
+        [candidate.latitude, candidate.longitude],
+        [explicitArrival.latitude, explicitArrival.longitude],
+      ],
+      legs: [
+        { fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 8 },
+        { fromStopIndex: 1, toStopIndex: 2, distanceKm: 1, estimatedMinutes: 8 },
+      ],
+      distanceKm: 2,
+      durationMinutes: 16,
+    });
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(openGeometry);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: explicitOrigin,
+      arrival: explicitArrival,
+      routeTopology: "open",
+    }));
+    const payload = await readRouteResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledWith(
+      [[explicitOrigin.latitude, explicitOrigin.longitude], [candidate.latitude, candidate.longitude], [explicitArrival.latitude, explicitArrival.longitude]],
+      { topology: "open" },
+    );
+    expect(payload.arrival).toMatchObject(explicitArrival);
+    expect(payload.routeGeometry.returnLeg).toBeNull();
+    expect(payload.routeGeometry.coordinates.at(-1)).toEqual([explicitArrival.latitude, explicitArrival.longitude]);
+  });
+
   it("recalcule la géométrie réseau pour le préfixe final retenu", async () => {
     setupTwoStopPlan();
     const network = networkGeometry({

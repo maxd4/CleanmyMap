@@ -9,7 +9,7 @@ import type { ActionWasteMeasurementMethod } from "@/lib/waste/measurement";
 import type { CleanupWorkload } from "./route-cleanup-workload";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { RouteDataLayers, RouteDataStatus } from "./route-data-status";
-import type { RouteGeometry, RouteStop } from "./route-contract";
+import type { RouteGeometry, RouteStop, RouteTopology } from "./route-contract";
 import type {
   RouteGuidedBudget,
   RouteGuidedSector,
@@ -97,6 +97,7 @@ export type RoutePlannerSnapshot = {
   };
   parameters: {
     origin: RoutePlannerOrigin;
+    routeTopology?: RouteTopology;
     planningMode: RoutePlanningMode;
     travelBudgetMinutes: number;
     maxStops: number;

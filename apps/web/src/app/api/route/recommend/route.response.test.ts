@@ -368,6 +368,30 @@ function guidedGroupRoute(
 }
 
 describe("route recommendation response trace contract", () => {
+  it("publishes an open route even when no scientific stops are selected", async () => {
+    installDefaultMocks();
+    const openRouteGeometry = {
+      ...routeGeometry(),
+      isLoop: false as const,
+      returnLeg: null,
+      coordinates: [[48.85, 2.35], [48.86, 2.36]] as [number, number][],
+      legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 8 }],
+      distanceKm: 1,
+      durationMinutes: 8,
+    };
+    const response = await readRouteResponse(buildRouteRecommendationResponse(responseInput({
+      routeTopology: "open",
+      planning: { routeGeometry: openRouteGeometry },
+    })));
+
+    expect(response.stops).toEqual([]);
+    expect(response.routeTopology).toBe("open");
+    expect(response.isLoop).toBe(false);
+    expect(response.loop.isLoop).toBe(false);
+    expect(response.routeGeometry.returnLeg).toBeNull();
+    expect(response.travelDistanceKm).toBe(1);
+    expect(response.travelMinutes).toBe(8);
+  });
   it("keeps the operational, proof and payload stages independently aligned", async () => {
     installDefaultMocks();
     const input = responseInput();

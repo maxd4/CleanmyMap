@@ -93,6 +93,22 @@ const guidedRecommendation = {
 } as const;
 
 describe("operational route contract", () => {
+  it("transfers an open topology without manufacturing a return leg", () => {
+    const openGeometry = createFallbackRouteGeometry([
+      [48.85, 2.34],
+      [48.851, 2.341],
+    ], { topology: "open" });
+    const route = createOperationalRouteFromRecommendation({
+      ...recommendation,
+      routeTopology: "open",
+      routeGeometry: openGeometry,
+      groupRoutes: [{ groupIndex: 1, stops: [], routeGeometry: openGeometry }],
+    });
+    expect(route.routeTopology).toBe("open");
+    expect(route.routes[0]?.geometry.isLoop).toBe(false);
+    expect(route.routes[0]?.geometry.returnLeg).toBeNull();
+    expect(route.zones.arrival.coordinate).toEqual([48.851, 2.341]);
+  });
   it("projects an irregular loop at 50% of cumulative distance, not the central coordinate", () => {
     const irregularGeometry = {
       ...geometry,

@@ -160,11 +160,13 @@ function RouteResultSummary({
           ) : (
             <MeetingPointDetails meetingPoint={data.meetingPoint} meetingOpportunities={data.meetingOpportunities} fr={fr} />
           )}
-          {data.isLoop ? <p className="text-sm font-semibold text-emerald-100/80">
+          <p className="text-sm font-semibold text-emerald-100/80">
             {groupRoutes.length > 1
               ? `${data.volunteers} bénévoles · ${data.groupCount} groupes · ${data.multiRoute.totalDistanceKm.toFixed(2)} km cumulés`
-              : `Boucle de ${totalKm.toFixed(2)} km · départ et arrivée au même endroit`}
-          </p> : null}
+              : data.isLoop
+                ? `Boucle de ${totalKm.toFixed(2)} km · départ et arrivée au même endroit`
+                : `Trajet ouvert de ${totalKm.toFixed(2)} km · départ / arrivée`}
+          </p>
         </div>
         <div className="text-right space-y-2">
           <p className="cmm-text-caption font-black text-slate-500 uppercase tracking-widest">{fr ? "Priorité moyenne" : "Average priority"}</p>

@@ -16,6 +16,7 @@ import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteGeometry, RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
 import type { RoutePlannerOrigin } from "./route-planner";
+import type { RouteTopology } from "./route-contract";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
@@ -68,6 +69,7 @@ export function buildRoutePlannerSnapshot(input: {
   selectedCandidates: readonly RouteCalibrationContextCandidate[];
   selectedStops: readonly RouteStop[];
   origin: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
   planningMode: RoutePlanningMode;
   travelBudgetMinutes: number;
   maxStops: number;
@@ -115,6 +117,7 @@ export function buildRoutePlannerSnapshot(input: {
     },
     parameters: {
       origin: structuredClone(input.origin),
+      ...(input.routeTopology ? { routeTopology: input.routeTopology } : {}),
       planningMode: structuredClone(input.planningMode),
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxStops: input.maxStops,

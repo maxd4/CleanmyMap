@@ -38,6 +38,35 @@ export function RouteOptionsForm({
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <fieldset
+          className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
+          aria-label={fr ? "Type d'itinéraire" : "Route type"}
+        >
+          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+            {fr ? "Type d’itinéraire" : "Route type"}
+          </legend>
+          <div className="mt-2 grid gap-3 md:grid-cols-2" role="radiogroup">
+            {([
+              ["loop", fr ? "Boucle" : "Loop", fr ? "Départ et arrivée identiques." : "Start and finish at the same point."],
+              ["open", fr ? "Départ / arrivée" : "Start / finish", fr ? "Départ fixé par la localisation ; arrivée choisie par le planner." : "Location fixes the start; the planner chooses the finish."],
+            ] as const).map(([value, label, help]) => (
+              <label key={value} className="flex min-h-16 cursor-pointer flex-col gap-1 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10">
+                <span className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="route-topology"
+                    value={value}
+                    checked={(options.routeTopology ?? "loop") === value}
+                    onChange={() => setOptions((prev) => ({ ...prev, routeTopology: value }))}
+                    className="accent-emerald-300"
+                  />
+                  {label}
+                </span>
+                <span className="pl-7 text-xs font-medium text-emerald-100/64">{help}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
           {fr ? "Nombre de bénévoles" : "Volunteers"}
           <input

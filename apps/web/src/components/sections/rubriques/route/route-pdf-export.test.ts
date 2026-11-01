@@ -81,6 +81,7 @@ function buildFixture(groupCount = 1): RouteResponse {
 
   return {
     isLoop: true,
+    routeTopology: "loop",
     planningMode: { type: "free" },
     status: "ok",
     dataStatus: "complete",
@@ -93,6 +94,7 @@ function buildFixture(groupCount = 1): RouteResponse {
       warnings: [],
     },
     origin,
+    arrival: origin,
     travelDistanceKm: 2.4,
     travelMinutes: 18,
     travelBudgetMinutes: 60,
@@ -155,6 +157,28 @@ describe("route PDF export", () => {
     expect(html).toContain("score 82,5 %");
     expect(html).toContain("score 82,0 %");
     expect(html).not.toMatch(/score 82(?:\s|·)/);
+  });
+
+  it("exporte un trajet ouvert sans refermer la géométrie ni marquer D/A", () => {
+    const loop = buildFixture();
+    const openGeometry = {
+      ...loop.routeGeometry,
+      isLoop: false as const,
+      returnLeg: null,
+      coordinates: loop.routeGeometry.coordinates.slice(0, -1),
+    };
+    const openData: RouteResponse = {
+      ...loop,
+      isLoop: false,
+      routeTopology: "open",
+      arrival: { latitude: 48.858, longitude: 2.354, source: "planner" },
+      routeGeometry: openGeometry,
+      groupRoutes: loop.groupRoutes.map((route) => ({ ...route, routeGeometry: { ...route.routeGeometry, isLoop: false, returnLeg: null, coordinates: route.routeGeometry.coordinates.slice(0, -1) } })),
+    };
+    const html = buildRoutePdfHtml(openData, "colors", openData.generatedAt);
+    expect(html).toContain("trajet ouvert");
+    expect(html).toContain(">D<");
+    expect(html).not.toContain(">D/A<");
   });
 
   it("échappe les valeurs injectées dans les attributs et le texte HTML", () => {

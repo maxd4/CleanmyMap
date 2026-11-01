@@ -105,6 +105,7 @@ describe("route recommendation request gate", () => {
 
     const payload = JSON.parse(transport.mock.calls[0]?.[1]?.body as string);
     expect(payload).toEqual({
+      routeTopology: "loop",
       priorityVsTravel: 23,
       travelBudgetMinutes: 42,
       maxStops: 4,

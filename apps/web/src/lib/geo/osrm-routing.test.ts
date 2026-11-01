@@ -174,6 +174,27 @@ describe("OSRM routing capability", () => {
     expect(result.legs).toHaveLength(stops.length - 1);
   });
 
+  it("keeps the requested open topology and closes an explicitly requested loop fallback", async () => {
+    const transport = vi.fn(async () => {
+      throw new Error("offline test transport");
+    });
+    const open = await routePolylineThroughStreetNetwork(stops.slice(0, 2), {
+      transport,
+      topology: "open",
+    });
+    const loop = await routePolylineThroughStreetNetwork(stops.slice(0, 2), {
+      transport,
+      topology: "loop",
+    });
+
+    expect(open.isLoop).toBe(false);
+    expect(open.coordinates.at(-1)).toEqual(stops[1]);
+    expect(open.returnLeg).toBeNull();
+    expect(loop.isLoop).toBe(true);
+    expect(loop.coordinates.at(-1)).toEqual(stops[0]);
+    expect(loop.returnLeg).not.toBeNull();
+  });
+
   it("aborts a slow provider and falls back without leaking the request", async () => {
     const transport = vi.fn(
       (_input: RequestInfo | URL, init?: RequestInit) =>

@@ -67,10 +67,14 @@ Le budget et la sécurité sont des contraintes dures. À entrées identiques, l
 sélection est déterministe et aucun appel externe supplémentaire n’est réalisé
 pendant les calculs hors des providers déjà contractuels.
 
-Le contrat de recommandation expose `isLoop: true`, l’origine, la distance et
-la durée totales de la boucle, le coût du retour et le budget restant. La trace
-répète ces éléments et ajoute le retour comme dernier segment explicable. Un
-fallback conserve la même fermeture et estime les legs à 4,5 km/h.
+Le contrat de recommandation expose la topologie (`routeTopology: "loop"` par
+défaut ou `"open"`), l’origine, la distance et la durée totales, le coût du
+retour pour une boucle et le budget restant. Une boucle conserve
+strictement départ = arrivée et sa trace ajoute le retour comme dernier
+segment explicable. Un trajet ouvert conserve son arrivée distincte, sans
+`returnLeg` artificiel ; si elle n’est pas fournie, le planner la choisit dans
+les contraintes du parcours. Un fallback conserve la topologie demandée et
+estime les legs à 4,5 km/h.
 
 ## Répartition multi-groupe
 

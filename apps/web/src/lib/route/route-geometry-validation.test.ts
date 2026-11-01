@@ -45,9 +45,30 @@ function emptyPlaceholder(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function openGeometry() {
+  return {
+    isLoop: false,
+    origin,
+    returnLeg: null,
+    coordinates: [origin, stop],
+    distanceKm: 1,
+    durationMinutes: 4,
+    legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 4 }],
+    provider: "fossgis-osrm" as const,
+    profile: "foot" as const,
+    mode: "network" as const,
+    estimated: false,
+  };
+}
+
 describe("route geometry validation", () => {
   it("accepts a finite closed loop with an explicit return leg", () => {
     expect(isRouteGeometry(closedGeometry())).toBe(true);
+  });
+
+  it("accepts an open path with no return leg and preserves its terminal geometry", () => {
+    expect(isRouteGeometry(openGeometry())).toBe(true);
+    expect(isRouteGeometry({ ...openGeometry(), returnLeg: { fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 4 } })).toBe(false);
   });
 
   it.each([

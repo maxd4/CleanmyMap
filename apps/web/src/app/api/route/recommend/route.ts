@@ -118,6 +118,8 @@ export async function POST(request: Request) {
     });
     const planning = await planRouteRecommendation({
       origin,
+      arrival: options.arrival,
+      routeTopology: options.routeTopology,
       spatialCandidates: candidateData.spatialCandidates,
       parisPressureSnapshot: candidateData.parisPressureSnapshot,
       municipalCleaningSnapshot: candidateData.municipalCleaningSnapshot,
@@ -135,6 +137,8 @@ export async function POST(request: Request) {
     });
     const response = buildRouteRecommendationResponse({
       origin,
+      arrival: options.arrival,
+      routeTopology: options.routeTopology,
       locationPreference,
       eventPressureContext,
       candidateData,

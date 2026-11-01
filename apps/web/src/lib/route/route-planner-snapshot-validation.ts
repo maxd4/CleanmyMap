@@ -115,6 +115,7 @@ function isSnapshotParameters(
 ): boolean {
   return (
     Boolean(parameters) &&
+    (parameters?.routeTopology === undefined || parameters.routeTopology === "loop" || parameters.routeTopology === "open") &&
     isRoutePlannerOrigin(parameters?.origin) &&
     isRoutePlanningMode(parameters?.planningMode) &&
     finiteNonNegative(parameters?.travelBudgetMinutes) &&

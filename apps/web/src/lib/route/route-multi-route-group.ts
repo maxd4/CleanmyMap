@@ -3,6 +3,7 @@ import {
   applyOriginRouteGeometryLegs,
   type RouteGeometry,
   type RouteStop,
+  type RouteTopology,
 } from "./route-contract";
 import {
   routeDistanceKm,
@@ -52,16 +53,26 @@ function round(value: number, digits = 3): number {
   return Number(value.toFixed(digits));
 }
 
-function closedCoordinates(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): Coordinate[] {
+function routeCoordinates(
+  origin: RoutePlannerOrigin,
+  points: readonly RoutePoint[],
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
+): Coordinate[] {
   return [
     [origin.latitude, origin.longitude],
     ...points.map(({ latitude, longitude }) => [latitude, longitude] as Coordinate),
-    [origin.latitude, origin.longitude],
+    ...(topology === "loop"
+      ? [[origin.latitude, origin.longitude] as Coordinate]
+      : arrival
+        ? [[arrival.latitude, arrival.longitude] as Coordinate]
+        : []),
   ];
 }
 
-function fallbackGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): RouteGeometry {
-  const coordinates = closedCoordinates(origin, points);
+function fallbackGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[], topology: RouteTopology, arrival?: RoutePlannerOrigin): RouteGeometry {
+  const coordinates = routeCoordinates(origin, points, topology, arrival);
+  if (coordinates.length < 2) coordinates.push([origin.latitude, origin.longitude]);
   const legs = coordinates.slice(1).map((point, index) => {
     const from = coordinates[index]!;
     const distanceKm = routeDistanceKm(
@@ -76,9 +87,9 @@ function fallbackGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoin
     };
   });
   return {
-    isLoop: true,
+    isLoop: topology === "loop",
     origin: coordinates[0] ?? null,
-    returnLeg: legs.at(-1) ?? null,
+    returnLeg: topology === "loop" ? legs.at(-1) ?? null : null,
     coordinates,
     distanceKm: round(legs.reduce((total, leg) => total + leg.distanceKm, 0), 2),
     durationMinutes: legs.reduce((total, leg) => total + leg.estimatedMinutes, 0),
@@ -94,24 +105,28 @@ function geometryMatchesGuidedPlan(
   origin: RoutePlannerOrigin,
   waypoints: readonly RoutePlannedWaypoint[],
   geometry: RouteGeometry,
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): boolean {
   const first = geometry.coordinates[0];
   const last = geometry.coordinates.at(-1);
   const routeOrigin = geometry.origin;
   const originDistance = first && last
-    ? Math.max(
-        routeDistanceKm(origin, { latitude: first[0], longitude: first[1] }),
-        routeDistanceKm(origin, { latitude: last[0], longitude: last[1] }),
-      )
+    ? routeDistanceKm(origin, { latitude: first[0], longitude: first[1] })
     : Number.POSITIVE_INFINITY;
-  if (!geometry.isLoop || geometry.returnLeg === null || !routeOrigin ||
-    originDistance > 0.01 || routeDistanceKm(origin, {
+  if ((topology === "loop" && (!geometry.isLoop || geometry.returnLeg === null)) ||
+    (topology === "open" && geometry.isLoop) || !routeOrigin || originDistance > 0.01 || routeDistanceKm(origin, {
       latitude: routeOrigin[0],
       longitude: routeOrigin[1],
     }) > 0.01) {
     return false;
   }
-  if (geometry.legs.length !== waypoints.length + 1) return false;
+  if (arrival && topology === "open") {
+    const last = geometry.coordinates.at(-1);
+    if (!last || routeDistanceKm(arrival, { latitude: last[0], longitude: last[1] }) > 0.01) return false;
+  }
+  const expectedLegs = topology === "loop" || arrival ? waypoints.length + 1 : waypoints.length;
+  if (geometry.legs.length !== expectedLegs) return false;
   if (geometry.legs.some((leg, index) =>
     leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
   )) return false;
@@ -149,11 +164,13 @@ function coordinatesMatchWaypoint(
 function exactWaypointCoordinateIndexes(
   geometry: RouteGeometry,
   waypoints: readonly RoutePlannedWaypoint[],
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): number[] | null {
   if (
     waypoints.length === 0 ||
     geometry.coordinates.length < waypoints.length + 2 ||
-    geometry.legs.length !== waypoints.length + 1 ||
+    geometry.legs.length !== (topology === "loop" || arrival ? waypoints.length + 1 : waypoints.length) ||
     geometry.legs.some((leg, index) =>
       leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
     )
@@ -212,9 +229,11 @@ function validStepCoordinates(
 function collectionCoordinatesFromLegSteps(
   geometry: RouteGeometry,
   waypoints: readonly RoutePlannedWaypoint[],
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): Coordinate[] | null {
   if (waypoints.length < 2) return null;
-  const collectionLegs = geometry.legs.slice(1, -1);
+  const collectionLegs = geometry.legs.slice(1, topology === "loop" || arrival ? -1 : undefined);
   if (collectionLegs.length !== waypoints.length - 1) return null;
   const collectionCoordinates: Coordinate[] = [];
   for (const leg of collectionLegs) {
@@ -233,9 +252,11 @@ function collectionCoordinatesFromLegSteps(
 function collectionCoordinatesFromFinalGeometry(
   geometry: RouteGeometry,
   waypoints: readonly RoutePlannedWaypoint[],
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): Coordinate[] | null {
   if (waypoints.length < 2) return null;
-  const waypointIndexes = exactWaypointCoordinateIndexes(geometry, waypoints);
+  const waypointIndexes = exactWaypointCoordinateIndexes(geometry, waypoints, topology, arrival);
   if (!waypointIndexes) return null;
   const collectionCoordinates: Coordinate[] = [];
   for (let waypointIndex = 1; waypointIndex < waypointIndexes.length; waypointIndex += 1) {
@@ -254,11 +275,13 @@ function collectionCoordinatesFromFinalGeometry(
 function collectionCoordinatesForSectorAudit(
   geometry: RouteGeometry,
   waypoints: readonly RoutePlannedWaypoint[],
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): Coordinate[] | null {
   if (
     waypoints.length < 2 ||
     geometry.coordinates.length < waypoints.length + 2 ||
-    geometry.legs.length !== waypoints.length + 1 ||
+    geometry.legs.length !== (topology === "loop" || arrival ? waypoints.length + 1 : waypoints.length) ||
     geometry.legs.some((leg, index) =>
       leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
     )
@@ -269,18 +292,20 @@ function collectionCoordinatesForSectorAudit(
   // Provider step geometries are the strongest per-leg boundary evidence. When
   // they are absent, only exact waypoint coordinates in the final polyline are
   // accepted; proximity alone cannot certify a collection boundary.
-  return collectionCoordinatesFromLegSteps(geometry, waypoints) ??
-    collectionCoordinatesFromFinalGeometry(geometry, waypoints);
+  return collectionCoordinatesFromLegSteps(geometry, waypoints, topology, arrival) ??
+    collectionCoordinatesFromFinalGeometry(geometry, waypoints, topology, arrival);
 }
 
 function guidedSectorDeviationKm(
   geometry: RouteGeometry,
   sector: RouteGroupAssignment["plannedSector"],
   waypoints: readonly RoutePlannedWaypoint[],
-  loopVerified: boolean,
+  routeVerified: boolean,
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): GuidedSectorAudit {
-  if (!sector || !loopVerified) return unknownGuidedSectorAudit();
-  const collectionCoordinates = collectionCoordinatesForSectorAudit(geometry, waypoints);
+  if (!sector || !routeVerified) return unknownGuidedSectorAudit();
+  const collectionCoordinates = collectionCoordinatesForSectorAudit(geometry, waypoints, topology, arrival);
   if (!collectionCoordinates || collectionCoordinates.length === 0 || collectionCoordinates.some((coordinate) =>
     coordinate.length !== 2 || !Number.isFinite(coordinate[0]) || !Number.isFinite(coordinate[1]),
   )) {
@@ -302,8 +327,11 @@ function guidedSectorDeviationKm(
 function buildGuidedSegments(
   geometry: RouteGeometry,
   waypoints: readonly RoutePlannedWaypoint[],
+  topology: RouteTopology,
+  arrival?: RoutePlannerOrigin,
 ): RouteGuidedSegment[] {
-  return Array.from({ length: waypoints.length + 1 }, (_, index) => {
+  const segmentCount = topology === "loop" || arrival ? waypoints.length + 1 : waypoints.length;
+  return Array.from({ length: segmentCount }, (_, index) => {
     const leg = geometry.legs[index];
     const fromWaypoint = index === 0 ? null : waypoints[index - 1]!.id;
     const toWaypoint = index === waypoints.length ? null : waypoints[index]!.id;
@@ -322,21 +350,28 @@ function buildGuidedRoutingAudit(params: {
   geometry: RouteGeometry;
   origin: RoutePlannerOrigin;
   waypoints: readonly RoutePlannedWaypoint[];
+  topology: RouteTopology;
+  arrival?: RoutePlannerOrigin;
   sector?: RouteGroupAssignment["plannedSector"];
   budget: RouteGuidedBudget;
   warning: string | null;
 }): { segments: RouteGuidedSegment[]; audit: RouteGuidedRoutingAudit } {
-  const loopVerified = geometryMatchesGuidedPlan(params.origin, params.waypoints, params.geometry);
+  const routeVerified = geometryMatchesGuidedPlan(params.origin, params.waypoints, params.geometry, params.topology, params.arrival);
+  const loopVerified = params.topology === "loop" && routeVerified;
   const first = params.geometry.coordinates[0];
   const last = params.geometry.coordinates.at(-1);
   const originVerified = Boolean(first && last) &&
     routeDistanceKm(params.origin, { latitude: first![0], longitude: first![1] }) <= 0.01 &&
-    routeDistanceKm(params.origin, { latitude: last![0], longitude: last![1] }) <= 0.01;
+    (params.topology === "loop"
+      ? routeDistanceKm(params.origin, { latitude: last![0], longitude: last![1] }) <= 0.01
+      : !params.arrival || routeDistanceKm(params.arrival, { latitude: last![0], longitude: last![1] }) <= 0.01);
   const sectorAudit = guidedSectorDeviationKm(
     params.geometry,
     params.sector,
     params.waypoints,
-    loopVerified,
+    routeVerified,
+    params.topology,
+    params.arrival,
   );
   const collectionMinutesAvailable = Math.max(
     0,
@@ -351,15 +386,15 @@ function buildGuidedRoutingAudit(params: {
         : sectorAudit.status === "unknown"
           ? "Le respect du secteur guidé ne peut pas être vérifié à partir de la géométrie finale."
           : null
-      : "La boucle guidée ne respecte pas le budget utilisateur déclaré."
+        : params.topology === "loop" ? "La boucle guidée ne respecte pas le budget utilisateur déclaré." : "Le trajet guidé ne respecte pas le budget utilisateur déclaré."
   );
   return {
-    segments: buildGuidedSegments(params.geometry, params.waypoints),
+    segments: buildGuidedSegments(params.geometry, params.waypoints, params.topology, params.arrival),
     audit: {
       availability: params.geometry.mode === "network" ? "network" : "fallback-estimated",
       loopVerified,
       originVerified,
-      waypointOrderVerified: loopVerified,
+      waypointOrderVerified: routeVerified,
       waypointIds: params.waypoints.map(({ id }) => id),
       sectorDeviationKm: sectorAudit.deviationKm === null ? null : round(sectorAudit.deviationKm),
       sectorWithinBounds: sectorAudit.status === "within",
@@ -380,7 +415,11 @@ function plannedStopsFromGeometry(origin: RoutePlannerOrigin, candidates: readon
   let cumulativeTravelMinutes = 0;
   return candidates.map((candidate, index) => {
     const outboundLeg = geometry.legs[index];
-    const returnLeg = geometry.legs[index + 1] ?? geometry.returnLeg;
+    const returnLeg = geometry.isLoop
+      ? geometry.legs[index + 1] ?? geometry.returnLeg
+      : index === candidates.length - 1 && geometry.legs.length > candidates.length
+        ? geometry.legs[index + 1]
+        : undefined;
     const incrementalDistanceKm = outboundLeg?.distanceKm ?? routeDistanceKm(index === 0 ? origin : candidates[index - 1]!, candidate);
     const incrementalTravelMinutes = outboundLeg?.estimatedMinutes ?? Math.round(travelMinutesForDistance(incrementalDistanceKm));
     const returnDistanceKm = returnLeg?.distanceKm ?? routeDistanceKm(candidate, origin);
@@ -413,19 +452,13 @@ type NetworkReduction = {
   failed: boolean;
 };
 
-async function requestReducedNetworkGeometry(origin: RoutePlannerOrigin, candidates: readonly RoutePlannerCandidate[]): Promise<{ geometry: RouteGeometry | null; failed: boolean }> {
-  try {
-    return { geometry: await routePolylineThroughFossgisFoot(closedCoordinates(origin, candidates), {}), failed: false };
-  } catch {
-    return { geometry: null, failed: true };
-  }
-}
-
 async function reduceNetworkCandidates(params: {
   origin: RoutePlannerOrigin;
   candidates: RoutePlannerCandidate[];
   geometry: RouteGeometry;
   fitsBudget: (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean;
+  topology: RouteTopology;
+  arrival?: RoutePlannerOrigin;
 }): Promise<NetworkReduction> {
   let candidates = [...params.candidates];
   let geometry = params.geometry;
@@ -435,7 +468,13 @@ async function reduceNetworkCandidates(params: {
     candidates = candidates.slice(0, -1);
     if (candidates.length === 0) break;
     providerCalls += 1;
-    const attempt = await requestReducedNetworkGeometry(params.origin, candidates);
+    const attempt = await (async () => {
+      try {
+        return { geometry: await routePolylineThroughFossgisFoot(routeCoordinates(params.origin, candidates, params.topology, params.arrival), { topology: params.topology }), failed: false };
+      } catch {
+        return { geometry: null, failed: true };
+      }
+    })();
     if (attempt.failed) {
       failed = true;
       break;
@@ -452,13 +491,15 @@ function findFallbackBudgetPrefix(params: {
   origin: RoutePlannerOrigin;
   candidates: readonly RoutePlannerCandidate[];
   fitsBudget: (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean;
+  topology: RouteTopology;
+  arrival?: RoutePlannerOrigin;
 }): { candidates: RoutePlannerCandidate[]; geometry: RouteGeometry } {
   for (let count = params.candidates.length; count > 0; count -= 1) {
     const candidates = params.candidates.slice(0, count);
-    const geometry = fallbackGeometry(params.origin, candidates);
+    const geometry = fallbackGeometry(params.origin, candidates, params.topology, params.arrival);
     if (params.fitsBudget(candidates, geometry)) return { candidates, geometry };
   }
-  return { candidates: [], geometry: fallbackGeometry(params.origin, []) };
+  return { candidates: [], geometry: fallbackGeometry(params.origin, [], params.topology, params.arrival) };
 }
 
 function routeGroupFitsBudget(params: {
@@ -516,8 +557,8 @@ function buildRouteGroupRoutingResult(params: {
   };
 }
 
-function emptyRouteGroupResult(origin: RoutePlannerOrigin, group: RouteGroupAssignment): RouteGroupRoutingResult {
-  return buildRouteGroupRoutingResult({ group, candidates: [], geometry: fallbackGeometry(origin, []), providerCalls: 0, firstProviderMode: null, degraded: false, warning: null, budgetPrefixApplied: false });
+function emptyRouteGroupResult(origin: RoutePlannerOrigin, group: RouteGroupAssignment, topology: RouteTopology, arrival?: RoutePlannerOrigin): RouteGroupRoutingResult {
+  return buildRouteGroupRoutingResult({ group, candidates: [], geometry: fallbackGeometry(origin, [], topology, arrival), providerCalls: 0, firstProviderMode: null, degraded: false, warning: null, budgetPrefixApplied: false });
 }
 
 async function adjustRouteToBudget(params: {
@@ -529,6 +570,8 @@ async function adjustRouteToBudget(params: {
   degraded: boolean;
   warning: string | null;
   fitsBudget: (candidates: readonly RoutePlannerCandidate[], geometry: RouteGeometry) => boolean;
+  topology: RouteTopology;
+  arrival?: RoutePlannerOrigin;
 }): Promise<{ candidates: RoutePlannerCandidate[]; geometry: RouteGeometry; providerCalls: number; degraded: boolean; warning: string | null; budgetPrefixApplied: boolean }> {
   if (params.fitsBudget(params.candidates, params.geometry)) return { ...params, budgetPrefixApplied: false };
   let candidates = params.candidates;
@@ -537,7 +580,7 @@ async function adjustRouteToBudget(params: {
   let degraded = params.degraded;
   let warning = params.warning;
   if (geometry.mode === "network") {
-    const reduction = await reduceNetworkCandidates({ origin: params.origin, candidates, geometry, fitsBudget: params.fitsBudget });
+    const reduction = await reduceNetworkCandidates({ origin: params.origin, candidates, geometry, fitsBudget: params.fitsBudget, topology: params.topology, arrival: params.arrival });
     candidates = reduction.candidates;
     geometry = reduction.geometry;
     providerCalls += reduction.providerCalls;
@@ -549,25 +592,25 @@ async function adjustRouteToBudget(params: {
   if (!params.fitsBudget(candidates, geometry) || candidates.length === 0) {
     degraded = true;
     warning = warning ?? "Le réseau ne permet pas de respecter le budget de ce groupe ; un fallback local fermé est utilisé.";
-    ({ candidates, geometry } = findFallbackBudgetPrefix({ origin: params.origin, candidates: params.initialCandidates, fitsBudget: params.fitsBudget }));
+    ({ candidates, geometry } = findFallbackBudgetPrefix({ origin: params.origin, candidates: params.initialCandidates, fitsBudget: params.fitsBudget, topology: params.topology, arrival: params.arrival }));
   }
   return { candidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied: true };
 }
 
-async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
+async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[], topology: RouteTopology, arrival?: RoutePlannerOrigin): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
   try {
-    const geometry = await routePolylineThroughFossgisFoot(closedCoordinates(origin, points), {});
+    const geometry = await routePolylineThroughFossgisFoot(routeCoordinates(origin, points, topology, arrival), { topology });
     return {
       geometry,
       providerCalls: 1,
       firstProviderMode: geometry.mode,
       degraded: geometry.mode !== "network",
       warning: geometry.mode === "fallback"
-        ? "Le routage piéton réseau est indisponible ; la boucle est une estimation locale fermée."
+        ? topology === "loop" ? "Le routage piéton réseau est indisponible ; la boucle est une estimation locale fermée." : "Le routage piéton réseau est indisponible ; le trajet ouvert est une estimation locale."
         : null,
     };
   } catch {
-    return { geometry: fallbackGeometry(origin, points), providerCalls: 1, firstProviderMode: "fallback", degraded: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." };
+    return { geometry: fallbackGeometry(origin, points, topology, arrival), providerCalls: 1, firstProviderMode: "fallback", degraded: true, warning: topology === "loop" ? "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." : "Le routage réseau d'un groupe a échoué ; un fallback local ouvert estimé est utilisé." };
   }
 }
 
@@ -594,6 +637,8 @@ export async function routeGroupWithinBudget(
   weatherContext?: PlannerWeatherContext,
   volunteersExpected = 1,
   groupCount = 1,
+  topology: RouteTopology = "loop",
+  arrival?: RoutePlannerOrigin,
 ): Promise<RouteGroupRoutingResult> {
   const initialCandidates = resolveGroupCandidates(group, candidatesById);
   const plannedWaypoints = group.plannedWaypoints ?? [];
@@ -604,10 +649,10 @@ export async function routeGroupWithinBudget(
   let warning: string | null = null;
   let budgetPrefixApplied = false;
   const fitsBudget = buildRouteBudgetPredicate({ travelBudgetMinutes, operationalBudget, weatherContext, volunteersExpected, groupCount });
-  if (initialCandidates.length === 0 && plannedWaypoints.length === 0) return emptyRouteGroupResult(origin, group);
+  if (initialCandidates.length === 0 && plannedWaypoints.length === 0 && !arrival) return emptyRouteGroupResult(origin, group, topology, arrival);
   let retainedCandidates = [...initialCandidates];
   const routePoints = plannedWaypoints.length > 0 ? plannedWaypoints : retainedCandidates;
-  const initialRoute = await loadInitialRouteGeometry(origin, routePoints);
+  const initialRoute = await loadInitialRouteGeometry(origin, routePoints, topology, arrival);
   let geometry = initialRoute.geometry;
   providerCalls += initialRoute.providerCalls;
   firstProviderMode = initialRoute.firstProviderMode;
@@ -616,18 +661,22 @@ export async function routeGroupWithinBudget(
   let guidedSegments: RouteGuidedSegment[] | undefined;
   let guidedRouting: RouteGuidedRoutingAudit | undefined;
   if (plannedWaypoints.length === 0) {
-    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget }));
+    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget, topology, arrival }));
   }
   if (plannedWaypoints.length > 0 && guidedBudget) {
-    if (!geometryMatchesGuidedPlan(origin, plannedWaypoints, geometry)) {
-      geometry = fallbackGeometry(origin, plannedWaypoints);
+    if (!geometryMatchesGuidedPlan(origin, plannedWaypoints, geometry, topology, arrival)) {
+      geometry = fallbackGeometry(origin, plannedWaypoints, topology, arrival);
       degraded = true;
-      warning = "Le fournisseur n'a pas confirmé la boucle guidée, ses points ou leur ordre ; une estimation locale fermée est utilisée.";
+      warning = topology === "loop"
+        ? "Le fournisseur n'a pas confirmé la boucle guidée, ses points ou leur ordre ; une estimation locale fermée est utilisée."
+        : "Le fournisseur n'a pas confirmé le trajet guidé, ses points ou leur ordre ; une estimation locale est utilisée.";
     }
     const guidedResult = buildGuidedRoutingAudit({
       geometry,
       origin,
       waypoints: plannedWaypoints,
+      topology,
+      arrival,
       sector: group.plannedSector,
       budget: guidedBudget,
       warning,

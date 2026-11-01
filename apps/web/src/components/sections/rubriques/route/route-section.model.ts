@@ -42,9 +42,7 @@ function guidedRouteGeometryAvailability(
   }
 
   const geometriesAreUsable = data.groupRoutes.every(({ routeGeometry }) =>
-    routeGeometry.isLoop &&
     routeGeometry.origin !== null &&
-    routeGeometry.returnLeg !== null &&
     routeGeometry.coordinates.length >= 2,
   );
   if (!geometriesAreUsable) return null;

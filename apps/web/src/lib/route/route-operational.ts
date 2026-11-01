@@ -3,6 +3,7 @@ import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type {
   RouteGeometry,
   RouteStop,
+  RouteTopology,
 } from "./route-contract";
 import {
   isCoordinate,
@@ -76,6 +77,8 @@ export type OperationalRoute = {
   source: "planner";
   state: OperationalRouteState;
   plannerGroupCount: number;
+  /** Historical rows omit this and are interpreted as closed loops. */
+  routeTopology?: RouteTopology;
   routes: OperationalRouteLoop[];
   zones: Record<OperationalRouteZoneKey, OperationalRouteZone>;
   /** Optional guided context added to the existing operational-route-v1 shape. */
@@ -104,6 +107,7 @@ export type PlannerActionHandoff = {
 
 export function createOperationalRouteFromRecommendation(
   recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry"> & {
+    routeTopology?: RouteTopology;
     stops: readonly RouteStop[];
     guidedBudget?: RouteGuidedBudget;
     trace?: { warnings: readonly string[] };
@@ -144,6 +148,7 @@ export function createOperationalRouteFromRecommendation(
     source: "planner",
     state: "planner_copy",
     plannerGroupCount: recommendation.groupCount,
+    ...(recommendation.routeTopology ? { routeTopology: recommendation.routeTopology } : {}),
     routes,
     ...(recommendation.guidedBudget ? { guidedBudget: structuredClone(recommendation.guidedBudget) } : {}),
     ...(recommendation.trace?.warnings ? { plannerWarnings: [...recommendation.trace.warnings] } : {}),
@@ -486,6 +491,7 @@ export function isOperationalRoute(value: unknown): value is OperationalRoute {
     route.source === "planner" &&
     (route.state === "planner_copy" || route.state === "edited") &&
     isIntegerBetween(route.plannerGroupCount, 1, 12) &&
+    (route.routeTopology === undefined || route.routeTopology === "loop" || route.routeTopology === "open") &&
     Array.isArray(route.routes) &&
     route.routes.length <= MAX_OPERATIONAL_ROUTE_LOOPS &&
     hasUniqueRoutePropertyValues(route.routes, "routeId") &&
@@ -539,6 +545,7 @@ export function normalizeOperationalRoute(value: unknown): OperationalRoute | nu
     source: "planner",
     state: "planner_copy",
     plannerGroupCount: legacy.plannerGroupCount,
+    routeTopology: "loop",
     routes: legacy.routes.map((route) => ({
       routeId: route.routeId,
       groupIndex: route.groupIndex,

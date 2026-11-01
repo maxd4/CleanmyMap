@@ -417,6 +417,22 @@ describe("route planner V1", () => {
     expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(40);
   });
 
+  it("plans an open route without reserving a fictitious return", () => {
+    const stop = candidate("open-stop", 0.01, 0, 80);
+    const result = planRoute(plannerInput({
+      candidates: [stop],
+      maxStops: 1,
+      travelBudgetMinutes: 20,
+      routeTopology: "open",
+    }));
+    const planned = result.stops[0];
+    expect(planned).toBeDefined();
+    expect(planned?.returnDistanceKm).toBe(0);
+    expect(planned?.returnTravelMinutes).toBe(0);
+    expect(planned?.loopTravelMinutes).toBe(planned?.incrementalTravelMinutes);
+    expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(20);
+  });
+
   it("refuses a distant stop when the return would exceed the budget", () => {
     const result = planRoute(
       plannerInput({

@@ -192,7 +192,8 @@ export function useRouteData() {
   const hasData = !isLoading && !error && Boolean(data);
   const hasRoute = hasData && (
     picks.length > 0 ||
-    (data?.groupRoutes ?? []).some(({ plannedWaypoints }) => (plannedWaypoints?.length ?? 0) > 0)
+    (data?.groupRoutes ?? []).some(({ plannedWaypoints, routeGeometry }) =>
+      (plannedWaypoints?.length ?? 0) > 0 || routeGeometry.distanceKm > 0 || routeGeometry.durationMinutes > 0)
   );
   const planningModeValidationError = routeTerritorialGuidedModeValidationError(planningMode);
 

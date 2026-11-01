@@ -30,13 +30,15 @@ function hasValidRouteGeometryMetadata(geometry: Partial<RouteGeometry>): boolea
 export function isRouteGeometry(value: unknown): value is RouteGeometry {
   if (!value || typeof value !== "object") return false;
   const geometry = value as Partial<RouteGeometry>;
-  if (geometry.isLoop !== true || !hasValidRouteGeometryCollections(geometry) ||
+  if (typeof geometry.isLoop !== "boolean" || !hasValidRouteGeometryCollections(geometry) ||
     !hasValidRouteGeometryMeasures(geometry) || !hasValidRouteGeometryMetadata(geometry)) return false;
   if (geometry.coordinates!.length === 0) {
     return isEmptyRouteGeometryPlaceholder(geometry);
   }
 
-  return isClosedRouteGeometry(geometry);
+  return geometry.isLoop
+    ? isClosedRouteGeometry(geometry)
+    : isOpenRouteGeometry(geometry);
 }
 
 function isEmptyRouteGeometryPlaceholder(
@@ -74,6 +76,22 @@ function isClosedRouteGeometry(geometry: Partial<RouteGeometry>): boolean {
     returnLeg.toStopIndex === returnLeg.fromStopIndex + 1 &&
     geometry.distanceKm! + 1e-9 >= returnLeg.distanceKm &&
     geometry.durationMinutes! + 1e-9 >= returnLeg.estimatedMinutes
+  );
+}
+
+function isOpenRouteGeometry(geometry: Partial<RouteGeometry>): boolean {
+  const coordinates = geometry.coordinates!;
+  const legs = geometry.legs!;
+  return (
+    coordinates.length >= 2 &&
+    isCoordinate(geometry.origin) &&
+    areCoordinatesClose(coordinates[0], geometry.origin) &&
+    geometry.returnLeg === null &&
+    legs.every((leg, index) =>
+      leg.fromStopIndex === index && leg.toStopIndex === index + 1,
+    ) &&
+    geometry.distanceKm! + 1e-9 >= legs.reduce((total, leg) => total + leg.distanceKm, 0) &&
+    geometry.durationMinutes! + 1e-9 >= legs.reduce((total, leg) => total + leg.estimatedMinutes, 0)
   );
 }
 

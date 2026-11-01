@@ -1,5 +1,8 @@
 export type RouteGeometryMode = "network" | "fallback";
 
+/** Route topology is independent from the planning mode and target source. */
+export type RouteTopology = "loop" | "open";
+
 export type RouteGeometryProvider = "osrm" | "fossgis-osrm" | "none";
 
 export type RouteNetworkGeometryProvider = Exclude<
@@ -94,7 +97,9 @@ export function applyOriginRouteGeometryLegs(
 ): RouteStop[] {
   if (
     geometry.mode !== "network" ||
-    geometry.legs.length !== stops.length + 1
+    (geometry.isLoop
+      ? geometry.legs.length !== stops.length + 1
+      : geometry.legs.length !== stops.length && geometry.legs.length !== stops.length + 1)
   ) {
     return stops;
   }

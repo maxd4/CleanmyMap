@@ -18,6 +18,10 @@ const routeCoordinateSchema = z.object({
   longitude: z.number().finite().min(-180).max(180),
 });
 
+const routeEndpointSchema = routeCoordinateSchema.extend({
+  source: z.enum(["browser", "map"]),
+});
+
 const guidedGroupSchema = z.object({
   label: z.string().trim().min(1).max(80).optional(),
   volunteerCount: z.number().int().min(1).max(MAX_ROUTE_VOLUNTEERS).optional(),
@@ -42,13 +46,9 @@ const guidedBudgetSchema = z.object({
 
 export const routeRecommendationRequestSchema = z
   .object({
-    origin: z
-      .object({
-        latitude: z.number().finite().min(-90).max(90),
-        longitude: z.number().finite().min(-180).max(180),
-        source: z.enum(["browser", "map"]),
-      })
-      .optional(),
+    origin: routeEndpointSchema.optional(),
+    arrival: routeEndpointSchema.optional(),
+    routeTopology: z.enum(["loop", "open"]).default("loop"),
     travelBudgetMinutes: z.number().finite().min(0).default(60),
     maxStops: z.number().int().min(1).max(12).default(6),
     priorityVsTravel: z.number().finite().min(0).max(100).optional(),

@@ -2,7 +2,7 @@ import {
   isVolunteerRouteEligible,
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { RouteGeometry } from "./route-contract";
+import type { RouteGeometry, RouteTopology } from "./route-contract";
 import {
   buildRouteCalibrationContext,
   type RouteCalibrationContext,
@@ -104,6 +104,8 @@ type RoutePlannerSelection = RoutePlannerCandidateEvaluation & {
 
 export type RoutePlannerInput = {
   origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
   candidates: RoutePlannerCandidate[];
   travelBudgetMinutes: number;
   maxStops: number;
@@ -227,6 +229,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const evaluations: RoutePlannerCandidateEvaluation[] = [];
   const selections: RoutePlannerSelection[] = [];
   const calibrationGeneratedAt = input.operationalBudget?.generatedAt ?? new Date().toISOString();
+  const routeTopology = input.routeTopology ?? "loop";
 
   function buildOperationalBudget(
     candidates: readonly RoutePlannerCandidate[],
@@ -260,7 +263,11 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
         const incrementalTravelMinutes = travelMinutesForDistance(
           incrementalDistanceKm,
         );
-        const returnDistanceKm = routeDistanceKm(candidate, input.origin);
+        const returnDistanceKm = routeTopology === "loop"
+          ? routeDistanceKm(candidate, input.origin)
+          : input.arrival
+            ? routeDistanceKm(candidate, input.arrival)
+            : 0;
         const returnTravelMinutes = travelMinutesForDistance(returnDistanceKm);
         const loopDistanceKm =
           cumulativeDistanceKm + incrementalDistanceKm + returnDistanceKm;
@@ -403,6 +410,8 @@ export function fallbackRoutePrefixWithinBudget<T extends {
   stops: T[],
   budgetMinutes: number,
   createFallback: (coordinates: [number, number][]) => RouteGeometry,
+  topology: RouteTopology = "loop",
+  arrival?: RoutePlannerOrigin,
 ): T[] {
   let prefix = [...stops];
   while (
@@ -412,7 +421,11 @@ export function fallbackRoutePrefixWithinBudget<T extends {
       ...prefix.map(
         (stop) => [stop.latitude, stop.longitude] as [number, number],
       ),
-      [origin.latitude, origin.longitude],
+      ...(topology === "loop"
+        ? [[origin.latitude, origin.longitude] as [number, number]]
+        : arrival
+          ? [[arrival.latitude, arrival.longitude] as [number, number]]
+          : []),
     ]).durationMinutes > budgetMinutes
   ) {
     prefix = prefix.slice(0, -1);

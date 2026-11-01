@@ -1,5 +1,6 @@
 import {
   type RouteGeometry,
+  type RouteTopology,
 } from "./route-contract";
 import type {
   RouteGroupRoute,
@@ -225,6 +226,8 @@ function buildRouteMultiGroup(
 
 async function routeMultiGroups(input: {
   origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
   candidates: readonly RoutePlannerCandidate[];
   partition: RouteGroupPartitionResult;
   travelBudgetMinutes: number;
@@ -258,6 +261,8 @@ async function routeMultiGroups(input: {
       input.weatherContext,
       group.volunteerCount,
       input.partition.groupCount,
+      input.routeTopology ?? "loop",
+      input.arrival,
     ));
   }
   return routedGroups;
@@ -344,6 +349,8 @@ function buildRouteMultiPartition(
 
 export async function routePartitionedGroups(input: {
   origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
   candidates: readonly RoutePlannerCandidate[];
   partition: RouteGroupPartitionResult;
   travelBudgetMinutes: number;

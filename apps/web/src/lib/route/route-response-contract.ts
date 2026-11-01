@@ -5,7 +5,7 @@ import type {
   RouteRecommendationStatus,
 } from "./route-data-status";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
-import type { RouteGeometry, RouteStop } from "./route-contract";
+import type { RouteGeometry, RouteStop, RouteTopology } from "./route-contract";
 import type { RouteRecommendationTrace } from "./route-trace";
 import type {
   RouteGuidedBudget,
@@ -37,6 +37,8 @@ export type { RoutePickupPreference } from "./route-pickup-preference";
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {
   origin?: RouteRecommendationOrigin;
+  arrival?: RouteRecommendationOrigin;
+  routeTopology?: RouteTopology;
   travelBudgetMinutes?: number;
   maxStops?: number;
   priorityVsTravel?: number;
@@ -51,6 +53,8 @@ export type RouteRecommendationRequest = {
 };
 
 export type RouteOptions = {
+  /** Omitted legacy drafts are interpreted as the historical loop topology. */
+  routeTopology?: RouteTopology;
   priorityVsTravel: number;
   travelBudgetMinutes: number;
   maxStops: number;
@@ -60,12 +64,13 @@ export type RouteOptions = {
   pickupPreference: RoutePickupPreference;
   scheduledStartAt?: string;
   scheduledEndAt?: string;
+  arrival?: RouteRecommendationOrigin;
 };
 
 export type RouteResponseOrigin = {
   latitude: number;
   longitude: number;
-  source: "browser" | "map" | "approximate_saved_area";
+  source: "browser" | "map" | "approximate_saved_area" | "planner";
 };
 
 export type RouteRecommendationOrigin = {
@@ -115,7 +120,9 @@ export type RouteGuidedRoutingAudit = {
 };
 
 export type RouteRecommendationResponse = {
-  isLoop: true;
+  isLoop: boolean;
+  /** Omitted by historical responses; geometry.isLoop remains the fallback. */
+  routeTopology?: RouteTopology;
   planningMode: RoutePlanningMode;
   status: RouteRecommendationStatus;
   dataStatus: RouteDataStatus;
@@ -123,6 +130,7 @@ export type RouteRecommendationResponse = {
   isTruncated: boolean;
   sourceHealth: UnifiedSourceHealth;
   origin: RouteResponseOrigin;
+  arrival?: RouteResponseOrigin | null;
   travelDistanceKm: number;
   travelMinutes: number;
   travelBudgetMinutes: number;
@@ -133,7 +141,7 @@ export type RouteRecommendationResponse = {
     pickupPreference: RoutePickupPreference;
   };
   loop: {
-    isLoop: true;
+    isLoop: boolean;
     origin: RouteResponseOrigin;
     returnDistanceKm: number;
     returnMinutes: number;

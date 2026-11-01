@@ -212,6 +212,43 @@ describe("route recommendation trace", () => {
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("fallback") }).segments[0]?.streetSteps).toEqual([]);
   });
 
+  it("traces an open route without adding a synthetic return segment", () => {
+    const selectedStops = [stop("final-1")];
+    const trace = buildRouteRecommendationTrace({
+      engineVersion: "route-planner-v2",
+      planningMode: { type: "free" as const },
+      origin,
+      routeTopology: "open",
+      travelBudgetMinutes: 60,
+      maxStops: 1,
+      priorityVsTravel: 65,
+      candidateSummary: { loaded: 1, admissible: 1, excluded: 0, excludedByReason: {} },
+      plannerResult: plannerResult(["final-1"]),
+      selectedStops,
+      routeGeometry: {
+        ...geometry("network"),
+        isLoop: false,
+        returnLeg: null,
+        coordinates: [[48.85, 2.35], [48.86, 2.36]],
+        legs: [{
+          fromStopIndex: 0,
+          toStopIndex: 1,
+          distanceKm: 1,
+          estimatedMinutes: 5,
+        }],
+      },
+      consumedTravelMinutes: 5,
+      budgetPrefixApplied: false,
+      sourceHealth,
+    });
+
+    expect(trace.routeTopology).toBe("open");
+    expect(trace.isLoop).toBe(false);
+    expect(trace.segments).toHaveLength(1);
+    expect(trace.segments[0]).toMatchObject({ from: "origin", to: "final-1", measured: true });
+    expect(trace.segments.some((segment) => segment.to === "origin")).toBe(false);
+  });
+
   it("records the explicit pickup preference without changing route scoring", () => {
     const trace = buildRouteRecommendationTrace({
       engineVersion: "route-planner-v2",

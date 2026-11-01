@@ -9,6 +9,7 @@ export const ROUTE_DRAFT_SCHEMA_VERSION = 6;
 const LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS = [1, 2, 3, 4, 5] as const;
 
 export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
+  routeTopology: "loop",
   priorityVsTravel: 65,
   travelBudgetMinutes: 60,
   maxStops: 6,
@@ -51,6 +52,7 @@ function normalizeRouteOptions(value: unknown): RouteOptions {
     : undefined;
 
   return {
+    routeTopology: candidate.routeTopology === "open" ? "open" : "loop",
     priorityVsTravel: boundedInteger(
       candidate.priorityVsTravel ?? candidate.priorityVsDistance,
       DEFAULT_ROUTE_OPTIONS.priorityVsTravel,
@@ -69,7 +71,15 @@ function normalizeRouteOptions(value: unknown): RouteOptions {
     pickupPreference,
     ...(scheduledStartAt ? { scheduledStartAt } : {}),
     ...(scheduledEndAt ? { scheduledEndAt } : {}),
+    ...(isRouteRecommendationOrigin(candidate.arrival) ? { arrival: candidate.arrival } : {}),
   };
+}
+
+function isRouteRecommendationOrigin(value: unknown): value is NonNullable<RouteOptions["arrival"]> {
+  return isRecord(value) &&
+    typeof value.latitude === "number" && Number.isFinite(value.latitude) && value.latitude >= -90 && value.latitude <= 90 &&
+    typeof value.longitude === "number" && Number.isFinite(value.longitude) && value.longitude >= -180 && value.longitude <= 180 &&
+    (value.source === "browser" || value.source === "map");
 }
 
 export function readRouteDraftOptions(storage?: StorageReader): RouteOptions {

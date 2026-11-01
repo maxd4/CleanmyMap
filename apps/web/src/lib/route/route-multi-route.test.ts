@@ -222,6 +222,30 @@ describe("coordinated multi-route routing", () => {
     expect(result.partition.audit.overlapCosts.networkDistanceMeasured).toBe(true);
   });
 
+  it("routes multiple groups as open paths without appending an origin return", async () => {
+    const candidates = [
+      candidate("north-open", 48.87, 2.36, 90),
+      candidate("south-open", 48.84, 2.34, 85),
+    ];
+    const result = await routePartitionedGroups({
+      origin,
+      candidates,
+      partition: partition(candidates),
+      travelBudgetMinutes: 60,
+      routeTopology: "open",
+    });
+
+    expect(result.groupRoutes).toHaveLength(2);
+    expect(result.groupRoutes.every(({ routeGeometry }) => !routeGeometry.isLoop)).toBe(true);
+    expect(result.groupRoutes.every(({ routeGeometry }) => routeGeometry.returnLeg === null)).toBe(true);
+    expect(result.groupRoutes.every(({ routeGeometry }) => {
+      const first = routeGeometry.coordinates[0];
+      const last = routeGeometry.coordinates.at(-1);
+      return first?.[0] === origin.latitude && first?.[1] === origin.longitude &&
+        (last?.[0] !== first?.[0] || last?.[1] !== first?.[1]);
+    })).toBe(true);
+  });
+
   it("routes guided waypoints as separate loops without creating stops", async () => {
     const guidedPartition = partitionRouteCandidates({
       origin,

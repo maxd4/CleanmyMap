@@ -19,7 +19,7 @@ import {
   type RouteGeometryReconciliation,
 } from "@/lib/route/route-geometry-reconciliation";
 import type { RouteOperationalBudgetDependency } from "@/lib/route/route-operational-budget";
-import type { RouteGeometry } from "@/lib/route/route-contract";
+import type { RouteGeometry, RouteTopology } from "@/lib/route/route-contract";
 import type { TrashSpotterRouteCandidate } from "@/lib/route/trash-spotter-recommendation";
 import {
   buildEventCenteredCandidates,
@@ -77,6 +77,8 @@ export type RoutePlanningResult = {
 function planRecommendationCandidates(
   input: {
     origin: RoutePlannerOrigin;
+    arrival?: RoutePlannerOrigin;
+    routeTopology: RouteTopology;
     spatialCandidates?: TrashSpotterRouteCandidate[];
     travelBudgetMinutes: number;
     maxStops: number;
@@ -106,6 +108,8 @@ function planRecommendationCandidates(
 
 type RouteRecommendationInput = {
   origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology: RouteTopology;
   spatialCandidates: TrashSpotterRouteCandidate[];
   parisPressureSnapshot: ParisPressureSnapshot | null;
   municipalCleaningSnapshot?: MunicipalCleaningServiceabilitySnapshot | null;
@@ -138,6 +142,8 @@ function finalizeRouteRecommendationPreparation(
   );
   const partitionInput = {
     origin: input.origin,
+    arrival: input.arrival,
+    routeTopology: input.routeTopology,
     candidates: candidatePool.candidates,
     volunteers: input.volunteers,
     groupCount: input.groupCount,
@@ -185,6 +191,8 @@ function prepareRouteRecommendation(input: RouteRecommendationInput) {
   const effectiveRiskFocus = input.effectiveRiskFocus;
   const baselinePlannerResult = planRoute({
     origin: input.origin,
+    arrival: input.arrival,
+    routeTopology: input.routeTopology,
     candidates: input.spatialCandidates,
     travelBudgetMinutes: input.travelBudgetMinutes,
     maxStops: input.maxStops,
@@ -329,6 +337,8 @@ async function buildMultiGroupRoutingState(
   }
   const multiRouteResult: RouteMultiRouteResult = await routePartitionedGroups({
     origin: input.origin,
+    arrival: input.arrival,
+    routeTopology: input.routeTopology,
     candidates: preparation.candidatePool.candidates,
     partition: preparation.groupPartition,
     travelBudgetMinutes: input.travelBudgetMinutes,
@@ -339,7 +349,7 @@ async function buildMultiGroupRoutingState(
   });
   return {
     plannedStops: multiRouteResult.plannedStops,
-    routeGeometry: multiRouteResult.groupRoutes[0]?.routeGeometry ?? fallbackGeometryForPrefix(input.origin, []),
+    routeGeometry: multiRouteResult.groupRoutes[0]?.routeGeometry ?? fallbackGeometryForPrefix(input.origin, [], input.routeTopology, input.arrival),
     budgetPrefixApplied: multiRouteResult.budgetPrefixApplied,
     providerCalls: multiRouteResult.providerCalls,
     firstProviderMode: multiRouteResult.firstProviderMode,
@@ -369,6 +379,8 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
           input.origin,
           input.travelBudgetMinutes,
           plannerResult.stops,
+          input.routeTopology,
+          input.arrival,
         ),
       )
     : await buildMultiGroupRoutingState(input, preparation);

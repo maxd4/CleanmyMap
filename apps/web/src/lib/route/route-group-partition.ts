@@ -36,6 +36,7 @@ import {
   type RoutePlanningMode,
   type RoutePlannedWaypoint,
 } from "./route-planning-mode";
+import type { RouteTopology } from "./route-contract";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export const MAX_ROUTE_VOLUNTEERS = MAX_ROUTE_GUIDED_VOLUNTEERS;
@@ -46,6 +47,8 @@ const ROUTE_GROUP_CORRIDOR_OVERLAP_RADIUS_KM = 0.35;
 
 export type RouteGroupPartitionInput = {
   origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology?: RouteTopology;
   candidates: readonly RoutePlannerCandidate[];
   volunteers: number;
   groupCount: number;
@@ -247,8 +250,10 @@ function buildSingleGroupResult(
 function guidedLoopDistance(
   origin: RoutePlannerOrigin,
   waypoints: readonly RoutePlannedWaypoint[],
+  topology: RouteTopology = "loop",
+  arrival?: RoutePlannerOrigin,
 ): number {
-  const points = [origin, ...waypoints, origin];
+  const points = [origin, ...waypoints, ...(topology === "loop" ? [origin] : arrival ? [arrival] : [])];
   return points.slice(1).reduce((total, point, index) =>
     total + routeDistanceKm(points[index]!, point), 0);
 }
@@ -284,7 +289,7 @@ function buildTerritorialGuidedResult(
   if (!guidedBudget) throw new RangeError("territorial-guided budget is unavailable");
   const groups = planningMode.groups.map((guidedGroup, index) => {
     const plannedWaypoints = plannedWaypointsForGroup(guidedGroup);
-    const distanceKm = guidedLoopDistance(input.origin, plannedWaypoints);
+    const distanceKm = guidedLoopDistance(input.origin, plannedWaypoints, input.routeTopology, input.arrival);
     return {
       groupIndex: index + 1,
       label: guidedGroup.label,
@@ -377,7 +382,9 @@ function evaluateCandidateForGroup(
   const current = group.stops.at(-1)?.candidate ?? input.origin;
   const incrementalDistanceKm = routeDistanceKm(current, candidate);
   const incrementalTravelMinutes = travelMinutesForDistance(incrementalDistanceKm);
-  const returnDistanceKm = routeDistanceKm(candidate, input.origin);
+  const returnDistanceKm = input.routeTopology === "open"
+    ? input.arrival ? routeDistanceKm(candidate, input.arrival) : 0
+    : routeDistanceKm(candidate, input.origin);
   const returnTravelMinutes = travelMinutesForDistance(returnDistanceKm);
   const cumulativeDistanceKm = groupDistance(group) - (group.stops.at(-1)?.returnDistanceKm ?? 0);
   const cumulativeTravelMinutes = groupDuration(group) - (group.stops.at(-1)?.returnTravelMinutes ?? 0);
@@ -497,6 +504,8 @@ export function partitionRouteCandidates(
   if (input.groupCount === 1) {
     const compatiblePlannerResult = input.plannerResult ?? planRoute({
       origin: input.origin,
+      arrival: input.arrival,
+      routeTopology: input.routeTopology,
       candidates: [...input.candidates],
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxStops: input.maxStops,

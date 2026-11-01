@@ -71,18 +71,31 @@ function buildCommonPayload({
   proactiveAssistant,
 }: CommonPayloadInput): RouteRecommendationResponse {
   const { candidateData, planning } = input;
+  const routeTopology = input.routeTopology ?? (planning.routeGeometry.isLoop ? "loop" : "open");
+  const arrival = input.arrival
+    ? { ...input.arrival, source: input.arrival.source }
+    : planning.routeGeometry.isLoop
+      ? { ...input.origin, source: "planner" as const }
+      : planning.routeGeometry.coordinates.at(-1)
+        ? {
+            latitude: planning.routeGeometry.coordinates.at(-1)![0],
+            longitude: planning.routeGeometry.coordinates.at(-1)![1],
+            source: "planner" as const,
+          }
+        : null;
   const loop = {
-    isLoop: true as const,
+    isLoop: routeTopology === "loop",
     origin: input.origin,
-    returnDistanceKm: planning.routeGeometry.returnLeg?.distanceKm ?? 0,
-    returnMinutes: planning.routeGeometry.returnLeg?.estimatedMinutes ?? 0,
+    returnDistanceKm: routeTopology === "loop" ? planning.routeGeometry.returnLeg?.distanceKm ?? 0 : 0,
+    returnMinutes: routeTopology === "loop" ? planning.routeGeometry.returnLeg?.estimatedMinutes ?? 0 : 0,
     budgetRemainingMinutes: Math.max(
       0,
       input.travelBudgetMinutes - Math.max(0, planning.routeGeometry.durationMinutes),
     ),
   };
   return {
-    isLoop: true,
+    isLoop: routeTopology === "loop",
+    routeTopology,
     status: proofs.dataLayers.recommendation,
     planningMode: input.planningMode ?? { type: "free" },
     dataStatus: candidateData.dataStatus,
@@ -90,6 +103,7 @@ function buildCommonPayload({
     isTruncated: candidateData.isTruncated,
     sourceHealth: candidateData.sourceHealth,
     origin: input.origin,
+    arrival,
     travelDistanceKm,
     travelMinutes,
     travelBudgetMinutes: input.travelBudgetMinutes,

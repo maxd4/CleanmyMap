@@ -21,6 +21,7 @@ class MemoryStorage {
 }
 
 const nonDefaultOptions: RouteOptions = {
+  routeTopology: "loop",
   priorityVsTravel: 42,
   travelBudgetMinutes: 90,
   maxStops: 9,
@@ -69,6 +70,7 @@ describe("route draft storage contract", () => {
     );
 
     expect(readRouteDraftOptions(storage)).toEqual({
+      routeTopology: "loop",
       priorityVsTravel: 42,
       travelBudgetMinutes: 60,
       maxStops: 9,
@@ -89,6 +91,7 @@ describe("route draft storage contract", () => {
     );
 
     expect(readRouteDraftOptions(storage)).toEqual({
+      routeTopology: "loop",
       priorityVsTravel: 30,
       travelBudgetMinutes: 60,
       maxStops: 1,
