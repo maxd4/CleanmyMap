@@ -230,7 +230,7 @@ describe("before-action workflow behavior", () => {
     expect(trackFunnelMock).toHaveBeenCalledWith("submit_success", "quick", expect.objectContaining({ createdId: "action-created" }));
   });
 
-  it("requires explicit publication confirmation and handles success, mismatch and provider failures", async () => {
+  it("cancels the publication dialog without publishing", () => {
     const formState = stateSetter(validForm());
     const publishedState = stateSetter<ActionEditorRecord | null>(null);
     const createdState = stateSetter<string | null>("action-existing");
@@ -248,7 +248,29 @@ describe("before-action workflow behavior", () => {
     expect(confirmation.get()).toBe(true);
     workflow.cancelPublication();
     expect(confirmation.get()).toBe(false);
+    expect(publishActionMock).not.toHaveBeenCalled();
+    expect(publicationState.get()).toBe("idle");
+    expect(publishedAtState.get()).toBeNull();
+  });
+
+  it("requires a newly opened confirmation before publishing and handles mismatch and provider failures", async () => {
+    const formState = stateSetter(validForm());
+    const publishedState = stateSetter<ActionEditorRecord | null>(null);
+    const createdState = stateSetter<string | null>("action-existing");
+    const publishedAtState = stateSetter<string | null>(null);
+    const publicationState = stateSetter<"idle" | "pending" | "success" | "error">("idle");
+    const publicationError = stateSetter<string | null>(null);
+    const confirmation = stateSetter(false);
+    const workflow = useBeforeActionPublication({
+      createdId: createdState.get(), publishedAt: publishedAtState.get(), publicationState: publicationState.get(),
+      setForm: formState.setter, setPublishedAction: publishedState.setter, setCreatedId: createdState.setter,
+      setPublishedAt: publishedAtState.setter, setPublicationState: publicationState.setter, setPublicationError: publicationError.setter,
+      setPublicationConfirmationOpen: confirmation.setter,
+    });
+    workflow.requestPublish();
+    expect(confirmation.get()).toBe(true);
     await workflow.confirmPublish();
+    expect(confirmation.get()).toBe(false);
     expect(publishActionMock).toHaveBeenCalledWith("action-existing");
     expect(fetchActionByIdMock).toHaveBeenCalledWith("action-existing");
     expect(publicationState.get()).toBe("success");

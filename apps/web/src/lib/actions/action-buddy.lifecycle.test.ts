@@ -163,12 +163,21 @@ describe("Action Buddy lifecycle behavior", () => {
   });
 
   it("cancels a still-future matched request and refuses a request after the action started", async () => {
-    const cancelled = { ...request, status: "cancelled" };
+    const matchedRequest = {
+      ...request,
+      status: "matched",
+      matched_mentor_user_id: "mentor-1",
+      matched_at: "2998-12-04T10:00:00.000Z",
+    };
+    const cancelled = { ...matchedRequest, status: "cancelled" };
     const futureMatched = createSupabase({
-      action_buddy_requests: { maybeSingle: [ok({ ...request, status: "matched" }), ok(cancelled)] },
+      action_buddy_requests: { maybeSingle: [ok(matchedRequest), ok(cancelled)] },
     });
     await expect(cancelActionBuddyRequest(futureMatched.client, { actionId: "action-1", requesterUserId: "requester-1" }))
       .resolves.toMatchObject({ request: cancelled, alreadyCancelled: false });
+    expect(futureMatched.queries.action_buddy_requests.update).toHaveBeenCalledWith({ status: "cancelled" });
+    expect(futureMatched.queries.action_buddy_requests.eq).toHaveBeenCalledWith("id", "request-1");
+    expect(futureMatched.queries.action_buddy_requests.in).toHaveBeenCalledWith("status", ["open", "matched"]);
 
     fetchActionRowByIdMock.mockResolvedValue({ ...action, action_date: "2000-01-01", event_start_time: "10:00" });
     const started = createSupabase({ action_buddy_requests: { maybeSingle: [ok(request)] } });
