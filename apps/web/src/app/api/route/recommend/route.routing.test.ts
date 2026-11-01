@@ -23,6 +23,7 @@ import {
   request,
   trackRouteRecommendationUseMock,
 } from "./route.test.harness";
+import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "@/lib/route/route-planning-mode";
 
 async function readRouteResponse(response: Response): Promise<RouteRecommendationResponse> {
   const raw: unknown = await response.json();
@@ -148,6 +149,78 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     expect(payload.trace.multiRoute.groups).toHaveLength(2);
     expect(new Set(payload.groupRoutes.flatMap((group: { candidateIds: string[] }) => group.candidateIds)).size).toBe(2);
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("produit deux boucles guidées 5/5 sans signalement ni stop scientifique", async () => {
+    routePolylineThroughFossgisFootMock.mockImplementation(
+      async (coordinates: [number, number][]) => ({
+        ...fallbackGeometry(coordinates, 10),
+        mode: "network",
+        provider: "fossgis-osrm",
+        profile: "foot",
+        estimated: false,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [
+              { id: "north-1", label: "Nord 1", latitude: 48.857, longitude: 2.3522 },
+              { id: "north-2", label: "Nord 2", latitude: 48.8566, longitude: 2.36 },
+            ],
+          },
+          {
+            sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [{ id: "south-1", label: "Sud 1", latitude: 48.856, longitude: 2.3522 }],
+          },
+        ],
+      },
+    }));
+    const payload = await readRouteResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.planningMode.type).toBe("territorial-guided");
+    expect(payload.groupRoutes).toHaveLength(2);
+    expect(payload.groupRoutes.map(({ volunteerCount }) => volunteerCount)).toEqual([5, 5]);
+    expect(payload.groupRoutes.every(({ candidateIds, stops, targetCount }) =>
+      candidateIds.length === 0 && stops.length === 0 && targetCount === 0,
+    )).toBe(true);
+    expect(payload.groupRoutes.map(({ plannedWaypoints }) => plannedWaypoints?.map(({ id, order }) => ({ id, order })))).toEqual([
+      [{ id: "north-1", order: 0 }, { id: "north-2", order: 1 }],
+      [{ id: "south-1", order: 0 }],
+    ]);
+    expect(payload.groups.map(({ plannedSector }) => plannedSector?.radiusKm)).toEqual([1, 1]);
+    expect(payload.groupRoutes.every(({ routeGeometry }) => {
+      const first = routeGeometry.coordinates[0];
+      const last = routeGeometry.coordinates.at(-1);
+      return routeGeometry.isLoop && first?.[0] === last?.[0] && first?.[1] === last?.[1];
+    })).toBe(true);
+    expect(payload.stops).toEqual([]);
+    expect(payload.prediction.selected).toBe(0);
+    expect(payload.trace.multiRoute?.groups.map(({ volunteerCount, candidateIds, plannedWaypoints }) => ({
+      volunteerCount,
+      candidateIds,
+      plannedWaypoints,
+    }))).toEqual([
+      { volunteerCount: 5, candidateIds: [], plannedWaypoints: [
+        { id: "north-1", label: "Nord 1", latitude: 48.857, longitude: 2.3522, order: 0 },
+        { id: "north-2", label: "Nord 2", latitude: 48.8566, longitude: 2.36, order: 1 },
+      ] },
+      { volunteerCount: 5, candidateIds: [], plannedWaypoints: [
+        { id: "south-1", label: "Sud 1", latitude: 48.856, longitude: 2.3522, order: 0 },
+      ] },
+    ]);
+    const lastPlannerCall = planRouteMock.mock.calls.at(-1)?.[0];
+    expect(lastPlannerCall?.candidates).toEqual([]);
   });
 
   it("passes an explicit origin and all planner options to planRoute", async () => {

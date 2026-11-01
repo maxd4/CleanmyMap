@@ -21,6 +21,7 @@ import { buildCleanupWorkload } from "./route-cleanup-workload";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 type Coordinate = [number, number];
+type RoutePoint = { latitude: number; longitude: number };
 
 export type RouteGroupRoutingResult = {
   group: RouteGroupAssignment;
@@ -38,16 +39,16 @@ function round(value: number, digits = 3): number {
   return Number(value.toFixed(digits));
 }
 
-function closedCoordinates(origin: RoutePlannerOrigin, candidates: readonly RoutePlannerCandidate[]): Coordinate[] {
+function closedCoordinates(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): Coordinate[] {
   return [
     [origin.latitude, origin.longitude],
-    ...candidates.map(({ latitude, longitude }) => [latitude, longitude] as Coordinate),
+    ...points.map(({ latitude, longitude }) => [latitude, longitude] as Coordinate),
     [origin.latitude, origin.longitude],
   ];
 }
 
-function fallbackGeometry(origin: RoutePlannerOrigin, candidates: readonly RoutePlannerCandidate[]): RouteGeometry {
-  const coordinates = closedCoordinates(origin, candidates);
+function fallbackGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): RouteGeometry {
+  const coordinates = closedCoordinates(origin, points);
   const legs = coordinates.slice(1).map((point, index) => {
     const from = coordinates[index]!;
     const distanceKm = routeDistanceKm(
@@ -251,12 +252,12 @@ async function adjustRouteToBudget(params: {
   return { candidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied: true };
 }
 
-async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, candidates: readonly RoutePlannerCandidate[]): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
+async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
   try {
-    const geometry = await routePolylineThroughFossgisFoot(closedCoordinates(origin, candidates), {});
+    const geometry = await routePolylineThroughFossgisFoot(closedCoordinates(origin, points), {});
     return { geometry, providerCalls: 1, firstProviderMode: geometry.mode, degraded: false, warning: null };
   } catch {
-    return { geometry: fallbackGeometry(origin, candidates), providerCalls: 1, firstProviderMode: "fallback", degraded: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." };
+    return { geometry: fallbackGeometry(origin, points), providerCalls: 1, firstProviderMode: "fallback", degraded: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." };
   }
 }
 
@@ -285,20 +286,24 @@ export async function routeGroupWithinBudget(
   groupCount = 1,
 ): Promise<RouteGroupRoutingResult> {
   const initialCandidates = resolveGroupCandidates(group, candidatesById);
+  const plannedWaypoints = group.plannedWaypoints ?? [];
   let providerCalls = 0;
   let firstProviderMode: RouteGeometry["mode"] | null = null;
   let degraded = false;
   let warning: string | null = null;
   let budgetPrefixApplied = false;
   const fitsBudget = buildRouteBudgetPredicate({ travelBudgetMinutes, operationalBudget, weatherContext, volunteersExpected, groupCount });
-  if (initialCandidates.length === 0) return emptyRouteGroupResult(origin, group);
+  if (initialCandidates.length === 0 && plannedWaypoints.length === 0) return emptyRouteGroupResult(origin, group);
   let retainedCandidates = [...initialCandidates];
-  const initialRoute = await loadInitialRouteGeometry(origin, retainedCandidates);
+  const routePoints = plannedWaypoints.length > 0 ? plannedWaypoints : retainedCandidates;
+  const initialRoute = await loadInitialRouteGeometry(origin, routePoints);
   let geometry = initialRoute.geometry;
   providerCalls += initialRoute.providerCalls;
   firstProviderMode = initialRoute.firstProviderMode;
   degraded = initialRoute.degraded;
   warning = initialRoute.warning;
-  ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget }));
+  if (plannedWaypoints.length === 0) {
+    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget }));
+  }
   return buildRouteGroupRoutingResult({ group, candidates: retainedCandidates, geometry, providerCalls, firstProviderMode, degraded, warning, budgetPrefixApplied });
 }

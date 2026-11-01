@@ -2,7 +2,12 @@ import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { RouteDataLayers } from "./route-data-status";
 import type { RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
-import type { RoutePlannerOrigin } from "./route-planner";
+import {
+  MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
+  MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
+  ROUTE_TERRITORIAL_GUIDED_VERSION,
+} from "./route-planning-mode";
+import { routeDistanceKm, type RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type {
   RoutePlannerSnapshot,
@@ -269,8 +274,34 @@ function isRoutePlannerOrigin(value: unknown): value is RoutePlannerOrigin {
 function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
   if (!value || typeof value !== "object") return false;
   const mode = value as Partial<RoutePlanningMode>;
-  return mode.type === "free" ||
-    (mode.type === "event-centered" && isNonEmptyString(mode.eventId));
+  if (mode.type === "free") return true;
+  if (mode.type === "event-centered") return isNonEmptyString(mode.eventId);
+  if (mode.type !== "territorial-guided" || mode.version !== ROUTE_TERRITORIAL_GUIDED_VERSION) {
+    return false;
+  }
+  const groups = mode.groups;
+  return Array.isArray(groups) && groups.length > 0 && groups.length <= 12 && groups.every((group) => {
+    if (!group || typeof group !== "object") return false;
+    const sector = group.sector;
+    const waypoints = group.waypoints;
+    if (!sector || typeof sector !== "object" || !isCoordinate([
+      sector.center?.latitude,
+      sector.center?.longitude,
+    ]) ||
+      !finiteNumberBetween(sector.radiusKm, Number.MIN_VALUE, MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM) ||
+      !Array.isArray(waypoints) || waypoints.length < 1 || waypoints.length > MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP) {
+      return false;
+    }
+    return waypoints.every((waypoint) =>
+      Boolean(waypoint) &&
+      typeof waypoint === "object" &&
+      isNonEmptyString(waypoint.id) &&
+      typeof waypoint.label === "string" &&
+      isCoordinate([waypoint.latitude, waypoint.longitude]),
+    ) && waypoints.every((waypoint) =>
+      routeDistanceKm(sector.center, waypoint) <= sector.radiusKm,
+    );
+  });
 }
 
 function isStringArray(value: unknown): value is string[] {

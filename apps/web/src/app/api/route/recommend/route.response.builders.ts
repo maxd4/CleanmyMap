@@ -137,6 +137,15 @@ function buildMultiRouteTrace(
       routeMode: group.routeGeometry.mode,
       withinBudget: group.withinBudget,
       operationalBudget: group.operationalBudget,
+      ...(group.plannedWaypoints ? {
+        plannedWaypoints: group.plannedWaypoints.map((waypoint) => ({ ...waypoint })),
+      } : {}),
+      ...(group.plannedSector ? {
+        plannedSector: {
+          ...group.plannedSector,
+          center: { ...group.plannedSector.center },
+        },
+      } : {}),
     })),
     metrics: {
       coverageGain: metrics.coverageGain,

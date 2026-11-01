@@ -26,7 +26,12 @@ import {
   type RouteOperationalBudgetDependency,
 } from "./route-operational-budget";
 import { buildCleanupWorkload } from "./route-cleanup-workload";
-import type { RoutePlanningMode } from "./route-planning-mode";
+import {
+  plannedWaypointsForGroup,
+  type RouteGuidedSector,
+  type RoutePlanningMode,
+  type RoutePlannedWaypoint,
+} from "./route-planning-mode";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export const MAX_ROUTE_VOLUNTEERS = 100;
@@ -59,6 +64,8 @@ export type RouteGroupAssignment = {
   estimatedDurationMinutes: number;
   estimatedOperationalDurationMinutes?: number | null;
   targetCount: number;
+  plannedWaypoints?: RoutePlannedWaypoint[];
+  plannedSector?: RouteGuidedSector;
 };
 
 export type RoutePartitionMetrics = {
@@ -230,6 +237,72 @@ function buildSingleGroupResult(
   };
 }
 
+function guidedLoopDistance(
+  origin: RoutePlannerOrigin,
+  waypoints: readonly RoutePlannedWaypoint[],
+): number {
+  const points = [origin, ...waypoints, origin];
+  return points.slice(1).reduce((total, point, index) =>
+    total + routeDistanceKm(points[index]!, point), 0);
+}
+
+function buildTerritorialGuidedResult(
+  input: RouteGroupPartitionInput,
+  planningMode: Extract<RoutePlanningMode, { type: "territorial-guided" }>,
+): RouteGroupPartitionResult {
+  if (planningMode.groups.length !== input.groupCount) {
+    throw new RangeError("territorial-guided groups must match groupCount");
+  }
+  if (input.volunteers % input.groupCount !== 0) {
+    throw new RangeError("territorial-guided groups require an equal volunteer split");
+  }
+  const volunteerCount = input.volunteers / input.groupCount;
+  const groups = planningMode.groups.map((guidedGroup, index) => {
+    const plannedWaypoints = plannedWaypointsForGroup(guidedGroup);
+    const distanceKm = guidedLoopDistance(input.origin, plannedWaypoints);
+    return {
+      groupIndex: index + 1,
+      volunteerCount,
+      origin: { ...input.origin },
+      candidateIds: [],
+      estimatedDistanceKm: round(distanceKm),
+      estimatedDurationMinutes: round(travelMinutesForDistance(distanceKm)),
+      targetCount: 0,
+      plannedWaypoints,
+      plannedSector: { ...guidedGroup.sector, center: { ...guidedGroup.sector.center } },
+    } satisfies RouteGroupAssignment;
+  });
+  return {
+    volunteers: input.volunteers,
+    groupCount: input.groupCount,
+    groups,
+    metrics: {
+      sharedTargetRatio: 0,
+      coverageGain: 0,
+      balanceDistance: round(balanceRange(groups.map(({ estimatedDistanceKm }) => estimatedDistanceKm))),
+      balanceDuration: round(balanceRange(groups.map(({ estimatedDurationMinutes }) => estimatedDurationMinutes))),
+      balanceOperationalDuration: null,
+      balanceTargetCount: 0,
+    },
+    audit: {
+      mode: input.groupCount === 1 ? "single-group-compatible" : "coordinated-multi-group",
+      planningMode: "territorial-guided",
+      effectiveRiskFocus: input.effectiveRiskFocus ?? "all",
+      consideredCandidateIds: [],
+      excludedUnsafeCandidateIds: [],
+      excludedByPartitionBoundCandidateIds: [],
+      assignments: [],
+      overlapCosts: {
+        sameTarget: 0,
+        samePredictiveZone: 0,
+        nearbyCorridor: 0,
+        networkSharedDistanceKm: null,
+        networkDistanceMeasured: false,
+      },
+    },
+  };
+}
+
 function overlapEvaluation(
   candidate: RoutePlannerCandidate,
   group: InternalGroup,
@@ -388,6 +461,10 @@ export function partitionRouteCandidates(
   validateRouteGroupInput(input.volunteers, input.groupCount);
   if (!Number.isInteger(input.maxStops) || input.maxStops < 1) {
     throw new RangeError("maxStops must be a positive integer");
+  }
+
+  if (input.planningMode?.type === "territorial-guided") {
+    return buildTerritorialGuidedResult(input, input.planningMode);
   }
 
   if (input.groupCount === 1) {

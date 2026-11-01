@@ -5,6 +5,7 @@ import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spott
 import { routeDistanceKm, type RoutePlannerCandidate, type RoutePlannerOrigin } from "./route-planner";
 import { partitionRouteCandidates } from "./route-group-partition";
 import { routePartitionedGroups } from "./route-multi-route";
+import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
 
 const routeProviderMock = vi.hoisted(() => vi.fn());
 
@@ -166,6 +167,56 @@ describe("coordinated multi-route routing", () => {
     expect(result.metrics.networkDistanceMeasured).toBe(true);
     expect(result.metrics.sharedTargetRatio).toBe(0);
     expect(result.partition.audit.overlapCosts.networkDistanceMeasured).toBe(true);
+  });
+
+  it("routes guided waypoints as separate loops without creating stops", async () => {
+    const guidedPartition = partitionRouteCandidates({
+      origin,
+      candidates: [],
+      volunteers: 10,
+      groupCount: 2,
+      travelBudgetMinutes: 60,
+      maxStops: 6,
+      priorityVsTravel: 65,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: { center: { latitude: origin.latitude, longitude: origin.longitude }, radiusKm: 1 },
+            waypoints: [{ id: "north", label: "Nord", latitude: 48.857, longitude: 2.3522 }],
+          },
+          {
+            sector: { center: { latitude: origin.latitude, longitude: origin.longitude }, radiusKm: 1 },
+            waypoints: [{ id: "south", label: "Sud", latitude: 48.856, longitude: 2.3522 }],
+          },
+        ],
+      },
+    });
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartition,
+      travelBudgetMinutes: 60,
+    });
+
+    expect(routeProviderMock).toHaveBeenCalledTimes(2);
+    expect(result.groupRoutes).toHaveLength(2);
+    expect(result.groupRoutes.map(({ volunteerCount }) => volunteerCount)).toEqual([5, 5]);
+    expect(result.groupRoutes.every(({ candidateIds, stops, targetCount }) =>
+      candidateIds.length === 0 && stops.length === 0 && targetCount === 0,
+    )).toBe(true);
+    expect(result.groupRoutes.map(({ plannedWaypoints }) => plannedWaypoints?.map(({ id, order }) => ({ id, order })))).toEqual([
+      [{ id: "north", order: 0 }],
+      [{ id: "south", order: 0 }],
+    ]);
+    expect(result.groupRoutes.every(({ routeGeometry }) => {
+      const first = routeGeometry.coordinates[0];
+      const last = routeGeometry.coordinates.at(-1);
+      return routeGeometry.isLoop && first?.[0] === last?.[0] && first?.[1] === last?.[1];
+    })).toBe(true);
+    expect(result.plannedStops).toEqual([]);
+    expect(result.metrics.coverageGain).toBe(0);
   });
 
   it("keeps fallback overlap metrics explicitly unmeasured", async () => {

@@ -130,8 +130,9 @@ Le planner applique les contraintes suivantes :
 - `maxStops`, qui borne le nombre d’arrêts proposés ;
 - les règles d’éligibilité et de sécurité ;
 - l’origine et sa précision déclarée ;
-- le mode de planification, notamment le mode libre ou le mode centré sur un
-  événement (`planningMode: "free"` ou `"event-centered"`) ;
+- le mode de planification, notamment le mode libre, le mode centré sur un
+  événement ou le mode territorial guidé (`planningMode: "free"`,
+  `"event-centered"` ou `"territorial-guided"`) ;
 - les contraintes du réseau et les informations effectivement fournies par
   le routage ;
 - les états de disponibilité, de complétude et de dégradation des sources.
@@ -143,6 +144,17 @@ contraintes de sécurité.
 Ces contraintes peuvent empêcher la sélection d’une zone pourtant prioritaire.
 Le résultat doit alors conserver la décision et la raison de l’exclusion dans
 la trace lorsque le contrat le permet.
+
+En mode `territorial-guided`, le serveur reçoit la version
+`route-territorial-guided-v1`, un secteur géographique borné et des points de
+passage ordonnés pour chaque groupe. L’origine reste commune à toutes les
+boucles. Les points planifiés sont routés comme des waypoints et restent
+distincts des cibles `observed` ou `predicted` : ils ne reçoivent ni priorité
+scientifique, ni score, ni provenance de pollution. Une requête guidée peut
+donc produire une boucle sans signalement validé, tandis que les exclusions de
+sécurité continuent de s’appliquer aux candidats lorsqu’un mode qui en
+sélectionne est utilisé. La réponse conserve ces passages sous
+`plannedWaypoints`, séparément de ses `stops` scientifiques.
 
 Le planner reste fail-closed sur les éléments qu’il ne peut pas établir de
 manière fiable : une source indisponible est signalée comme indisponible, une
@@ -572,8 +584,10 @@ Le socle actuellement présent sur `main` comprend :
   explicabilité et état de confiance lorsqu’ils sont disponibles ;
 - l’intégration bornée de ces zones prédites au pool du planner, sans créer de
   signalement observé artificiel ;
-- la pression événementielle et le mode `planningMode` libre ou
-  event-centered, avec ancrage événementiel et trace ;
+- la pression événementielle et les modes `planningMode` libre,
+  event-centered et `territorial-guided`, avec ancrage ou waypoints guidés et
+  trace ; les passages guidés sont exposés comme `plannedWaypoints`, séparés
+  des `stops` scientifiques ;
 - le snapshot `municipal-cleaning-serviceability`, chargé hors requête et
   consommé par `volunteerAdditionality` ;
 - le calcul de `volunteerAdditionality`, sa pondération bornée dépendante de la
@@ -590,6 +604,9 @@ Les risques et pressions restent des estimations. Ils ne sont ni des
 observations de terrain ni des probabilités calibrées de trouver des déchets.
 Le mode event-centered ne transforme pas un événement en observation de
 pollution ; il ajoute un contexte d’ancrage traçable à la décision du planner.
+Le mode territorial guidé ne transforme pas un waypoint en observation ou en
+priorité scientifique : il trace uniquement un passage demandé, dans son
+secteur déclaré, avec l’origine commune du groupe.
 
 ## 10. Fondations et intégrations en cours
 

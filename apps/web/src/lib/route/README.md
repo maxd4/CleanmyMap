@@ -19,8 +19,8 @@ pour produire une décision de planner contrainte et explicable.
 - `route-recommendation-loader.ts`, `recommendation-assistant.ts` et
   `trash-spotter-recommendation.ts` : chargement et enrichissements de la
   recommandation ; la pression événementielle peut être chargée comme signal
-  d’entrée de l’orchestration API et du contexte d’assistance, mais le mode
-  `event-centered`/`planningMode` n’est pas un contrat courant.
+  d’entrée de l’orchestration API et du contexte d’assistance. Les modes
+  `free`, `event-centered` et `territorial-guided` sont des contrats courants.
 - `route-trace.ts` : contrat de trace et d’explicabilité lorsqu’il est fourni
   par le pipeline courant.
 - `street-cleaning-corridor.ts` : contrat séparé du corridor réellement
@@ -98,3 +98,11 @@ déjà pondéré par le contexte événementiel.
 
 Documentation canonique associée :
 `documentation/architecture/methodologie-creation-itineraire.md`.
+
+Le mode `territorial-guided` reçoit la version
+`route-territorial-guided-v1`, un secteur borné et des waypoints ordonnés par
+groupe. Chaque groupe reprend exactement l’origine commune et produit une
+boucle fermée, y compris lorsque le pool de signalements est vide. Les
+`plannedWaypoints` restent séparés des `stops` : ils ne portent ni score,
+`observed`/`predicted`, priorité scientifique, additionnalité ou provenance de
+pollution.

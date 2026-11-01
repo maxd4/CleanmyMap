@@ -148,7 +148,7 @@ function finalizeRouteRecommendationPreparation(
     weatherContext: input.weatherContext,
   };
   const groupPartition: RouteGroupPartitionResult | null =
-    input.groupCount === 1
+    input.groupCount === 1 && input.planningMode.type !== "territorial-guided"
       ? null
       : partitionRouteCandidates({
           ...partitionInput,
@@ -228,7 +228,9 @@ function prepareRouteRecommendation(input: RouteRecommendationInput) {
   const eventCenteredBuild = input.eventCenteredAnchor
     ? buildEventCenteredCandidates(comparableCandidates, input.eventCenteredAnchor)
     : null;
-  const candidatesForPool = eventCenteredBuild?.candidates ?? comparableCandidates;
+  const candidatesForPool = input.planningMode.type === "territorial-guided"
+    ? []
+    : eventCenteredBuild?.candidates ?? comparableCandidates;
   const candidatePool = buildRoutePlannerCandidatePool({
     observedCandidates: candidatesForPool.filter(
       (candidate) => candidate.family !== "predicted",
@@ -355,7 +357,7 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
     plannerResult,
   } = preparation;
   let predictionSummary = preparation.predictionSummary;
-  const routingState = input.groupCount === 1
+  const routingState = input.groupCount === 1 && input.planningMode.type !== "territorial-guided"
     ? buildSingleGroupRoutingState(
         input,
         preparation,

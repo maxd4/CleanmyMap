@@ -42,6 +42,8 @@ describe("route documentation status", () => {
     expect(current).toContain("risque prédit de mégots");
     expect(current).toContain("pression événementielle");
     expect(current).toContain("event-centered");
+    expect(current).toContain("territorial-guided");
+    expect(current).toContain("plannedWaypoints");
     expect(current).toContain("volunteerAdditionality");
     expect(current).toContain("finalPlannerContribution");
     expect(current).toContain("sécurité explicite");

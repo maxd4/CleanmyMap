@@ -9,6 +9,7 @@ import {
 } from "./route-planner-proof";
 import { isRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
+import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
 
 function snapshot(): RoutePlannerSnapshot {
   const input = createRoutePlannerSnapshotInput();
@@ -74,6 +75,43 @@ describe("route planner proof v1", () => {
     expect(isRoutePlannerSnapshot({
       ...original,
       modelVersions: { ...original.modelVersions, planner: "future-active-planner" },
+    })).toBe(false);
+  });
+
+  it("accepts the versioned guided mode in the existing proof contract", () => {
+    const original = snapshot();
+    const guided = {
+      ...original,
+      parameters: {
+        ...original.parameters,
+        planningMode: {
+          type: "territorial-guided" as const,
+          version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+          groups: [{
+            sector: {
+              center: { latitude: 48.8566, longitude: 2.3522 },
+              radiusKm: 1,
+            },
+            waypoints: [{
+              id: "waypoint-1",
+              label: "Waypoint",
+              latitude: 48.857,
+              longitude: 2.3522,
+            }],
+          }],
+        },
+      },
+    };
+    expect(isRoutePlannerSnapshot(guided, "route-planner-snapshot-v1")).toBe(true);
+    expect(isRoutePlannerSnapshot({
+      ...guided,
+      parameters: {
+        ...guided.parameters,
+        planningMode: {
+          ...guided.parameters.planningMode,
+          version: "route-territorial-guided-v0",
+        },
+      },
     })).toBe(false);
   });
 

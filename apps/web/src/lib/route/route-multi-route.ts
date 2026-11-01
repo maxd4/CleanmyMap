@@ -289,6 +289,13 @@ function buildRouteMultiPartition(
       estimatedDistanceKm: group.estimatedDistanceKm,
       estimatedDurationMinutes: group.estimatedDurationMinutes,
       targetCount: group.targetCount,
+      ...(group.plannedWaypoints ? { plannedWaypoints: group.plannedWaypoints.map((waypoint) => ({ ...waypoint })) } : {}),
+      ...(group.plannedSector ? {
+        plannedSector: {
+          ...group.plannedSector,
+          center: { ...group.plannedSector.center },
+        },
+      } : {}),
     })),
     metrics: {
       ...input.partition.metrics,

@@ -9,6 +9,7 @@ import {
   resolvePriorityVsTravel,
   routeRecommendationRequestSchema,
 } from "./route.schema";
+import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "@/lib/route/route-planning-mode";
 
 describe("route recommendation HTTP request schema", () => {
   it("accepts the shared HTTP request fields and keeps the legacy alias", () => {
@@ -100,6 +101,114 @@ describe("route recommendation HTTP request schema", () => {
       expect(parsed.data.volunteers).toBe(11);
       expect(parsed.data.groupCount).toBe(3);
     }
+  });
+
+  it("accepts an equal territorial-guided plan and preserves waypoint order", () => {
+    const parsed = parseRouteRecommendationRequest({
+      origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [
+              { id: "north-1", label: "Nord 1", latitude: 48.857, longitude: 2.3522 },
+              { id: "north-2", label: "Nord 2", latitude: 48.8566, longitude: 2.36 },
+            ],
+          },
+          {
+            sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [
+              { id: "south-1", label: "Sud 1", latitude: 48.856, longitude: 2.3522 },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.planningMode.type).toBe("territorial-guided");
+      if (parsed.data.planningMode.type === "territorial-guided") {
+        expect(parsed.data.planningMode.groups[0]?.waypoints.map(({ id }) => id)).toEqual([
+          "north-1",
+          "north-2",
+        ]);
+      }
+    }
+  });
+
+  it.each([
+    ["invalid coordinate", { latitude: 91, longitude: 2.35 }],
+    ["zero radius", { latitude: 48.85, longitude: 2.35, radiusKm: 0 }],
+  ])("rejects a guided plan with %s", (_label, value) => {
+    const payload = {
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: {
+              center: { latitude: 48.85, longitude: 2.35 },
+              radiusKm: "radiusKm" in value ? value.radiusKm : 1,
+            },
+            waypoints: [{ id: "point-1", label: "Point", latitude: value.latitude, longitude: value.longitude }],
+          },
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+            waypoints: [{ id: "point-2", label: "Point 2", latitude: 48.85, longitude: 2.351 }],
+          },
+        ],
+      },
+    };
+    expect(parseRouteRecommendationRequest(payload).success).toBe(false);
+  });
+
+  it("rejects guided waypoints outside their sector or an unequal split", () => {
+    const outside = parseRouteRecommendationRequest({
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 0.1 },
+            waypoints: [{ id: "outside", label: "Outside", latitude: 48.86, longitude: 2.35 }],
+          },
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 0.1 },
+            waypoints: [{ id: "inside", label: "Inside", latitude: 48.85, longitude: 2.35 }],
+          },
+        ],
+      },
+    });
+    expect(outside.success).toBe(false);
+
+    const unequal = parseRouteRecommendationRequest({
+      volunteers: 11,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+            waypoints: [{ id: "one", label: "One", latitude: 48.85, longitude: 2.35 }],
+          },
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+            waypoints: [{ id: "two", label: "Two", latitude: 48.85, longitude: 2.35 }],
+          },
+        ],
+      },
+    });
+    expect(unequal.success).toBe(false);
   });
 
   it("accepts an optional local weather window without making it a route constraint", () => {

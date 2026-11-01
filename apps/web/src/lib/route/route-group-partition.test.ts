@@ -9,6 +9,7 @@ import {
   partitionRouteCandidates,
   validateRouteGroupInput,
 } from "./route-group-partition";
+import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
 
 const origin: RoutePlannerOrigin = {
   latitude: 48.8566,
@@ -284,5 +285,44 @@ describe("route group partition contract", () => {
     expect(new Set(first.groups.flatMap((group) => group.candidateIds)).size).toBe(
       first.groups.flatMap((group) => group.candidateIds).length,
     );
+  });
+
+  it("creates traceable guided groups without selecting pollution candidates", () => {
+    const result = partitionRouteCandidates(input([], {
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        groups: [
+          {
+            sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [
+              { id: "north-1", label: "Nord 1", latitude: 48.857, longitude: 2.3522 },
+              { id: "north-2", label: "Nord 2", latitude: 48.8566, longitude: 2.36 },
+            ],
+          },
+          {
+            sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [{ id: "south-1", label: "Sud 1", latitude: 48.856, longitude: 2.3522 }],
+          },
+        ],
+      },
+    }));
+
+    expect(result.groups).toHaveLength(2);
+    expect(result.groups.map(({ volunteerCount }) => volunteerCount)).toEqual([5, 5]);
+    expect(result.groups.map(({ origin: groupOrigin }) => groupOrigin)).toEqual([origin, origin]);
+    expect(result.groups.map(({ candidateIds, targetCount }) => ({ candidateIds, targetCount }))).toEqual([
+      { candidateIds: [], targetCount: 0 },
+      { candidateIds: [], targetCount: 0 },
+    ]);
+    expect(result.groups[0]?.plannedWaypoints?.map(({ id, order }) => ({ id, order }))).toEqual([
+      { id: "north-1", order: 0 },
+      { id: "north-2", order: 1 },
+    ]);
+    expect(result.audit.consideredCandidateIds).toEqual([]);
+    expect(result.audit.assignments).toEqual([]);
+    expect(result.metrics.coverageGain).toBe(0);
   });
 });
