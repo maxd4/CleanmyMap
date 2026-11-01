@@ -21,6 +21,7 @@ import type {
   RouteGuidedSegment,
 } from "./route-response-contract";
 import type { RoutePlannerOrigin } from "./route-planner";
+import type { RouteStartSelection } from "./route-response-contract";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteOperationalBudget } from "./route-operational-budget";
@@ -106,6 +107,7 @@ export type RoutePlannerSnapshot = {
     effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
     volunteers: number;
     groupCount: number;
+    startLocation?: RouteStartSelection;
   };
   selectedCandidateIds: string[];
   observedCandidateIds: string[];

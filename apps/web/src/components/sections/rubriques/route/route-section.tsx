@@ -41,7 +41,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
     options, setOptions, data, isLoading, error, picks, totalKm, totalMinutes,
     serviceMinutes, operationalTotalMinutes, hasData, hasRoute, fr,
     recommendationRequested, planningMode, setPlanningMode, originMode,
-    setOriginMode, mapOrigin, setMapOrigin, clearMapOrigin, originSelectionError,
+    setOriginMode, mapOrigin, setMapOrigin, setZoneCenter, clearMapOrigin, originSelectionError,
     planningModeValidationError, isResolvingOrigin, isRequestInFlight, requestRecommendation,
   } = routeData;
   const derived = deriveRouteSectionState({ data, picks, selectedGroupIndex, fr, serviceMinutes, operationalTotalMinutes });
@@ -86,6 +86,8 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
             data={data} fr={fr} hasData={hasData} hasRoute={hasRoute}
             originMode={originMode} mapOrigin={mapOrigin} setMapOrigin={setMapOrigin}
             clearMapOrigin={clearMapOrigin} selectedStopId={selectedStopId}
+            startZone={options.startLocation?.mode === "zone" ? options.startLocation.zone : null}
+            onSelectZoneCenter={setZoneCenter}
             setSelectedStopId={setSelectedStopId} selectedGroupIndex={selectedGroupIndex}
             setSelectedGroupIndex={setSelectedGroupIndex}
             multiRouteDisplayMode={multiRouteDisplayMode}

@@ -86,6 +86,7 @@ function buildCommonPayload({
   const loop = {
     isLoop: routeTopology === "loop",
     origin: input.origin,
+    ...(input.startLocation ? { startLocation: structuredClone(input.startLocation) } : {}),
     returnDistanceKm: routeTopology === "loop" ? planning.routeGeometry.returnLeg?.distanceKm ?? 0 : 0,
     returnMinutes: routeTopology === "loop" ? planning.routeGeometry.returnLeg?.estimatedMinutes ?? 0 : 0,
     budgetRemainingMinutes: Math.max(

@@ -37,6 +37,7 @@ export type { RoutePickupPreference } from "./route-pickup-preference";
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {
   origin?: RouteRecommendationOrigin;
+  startLocation?: RouteStartSelection;
   arrival?: RouteRecommendationOrigin;
   routeTopology?: RouteTopology;
   travelBudgetMinutes?: number;
@@ -65,21 +66,52 @@ export type RouteOptions = {
   scheduledStartAt?: string;
   scheduledEndAt?: string;
   arrival?: RouteRecommendationOrigin;
+  /** Optional v2 departure selection; omitted legacy drafts keep their behavior. */
+  startLocation?: RouteStartSelection;
 };
+
+export type RouteStartBounds = {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+};
+
+export type RouteStartZone = {
+  label: string;
+  center: { latitude: number; longitude: number };
+  radiusKm: number;
+  bounds: RouteStartBounds;
+  provenance: "geocoded" | "bounded-search" | "user-adjusted";
+  source: "geoplateforme" | "local-territory" | "user";
+  confirmed: boolean;
+};
+
+export type RouteStartSelection =
+  | {
+      mode: "precise";
+      label: string;
+      origin: RouteRecommendationOrigin;
+    }
+  | {
+      mode: "zone";
+      label: string;
+      zone: RouteStartZone;
+    };
 
 export type RouteResponseOrigin = {
   latitude: number;
   longitude: number;
-  source: "browser" | "map" | "approximate_saved_area" | "planner";
+  source: "browser" | "map" | "address" | "gps" | "approximate_saved_area" | "planner";
 };
 
 export type RouteRecommendationOrigin = {
   latitude: number;
   longitude: number;
-  source: "browser" | "map";
+  source: "browser" | "map" | "address" | "gps";
 };
 
-export type RouteOriginMode = "browser" | "map";
+export type RouteOriginMode = "browser" | "map" | "address" | "gps" | "zone";
 
 export type MeetingPointProjection = {
   coordinates: [number, number];
@@ -130,6 +162,8 @@ export type RouteRecommendationResponse = {
   isTruncated: boolean;
   sourceHealth: UnifiedSourceHealth;
   origin: RouteResponseOrigin;
+  /** The requested departure mode and its server-resolved provenance. */
+  startLocation?: RouteStartSelection;
   arrival?: RouteResponseOrigin | null;
   travelDistanceKm: number;
   travelMinutes: number;

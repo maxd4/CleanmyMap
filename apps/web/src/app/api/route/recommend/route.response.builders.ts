@@ -30,6 +30,7 @@ import type {
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import type { RouteStartSelection } from "@/lib/route/route-response-contract";
 import {
   buildRoutePlannerSnapshotForProof,
   buildRouteSnapshotStops,
@@ -38,6 +39,7 @@ import {
 
 export type RouteRecommendationResponseInput = {
   origin: RoutePlannerOrigin;
+  startLocation?: RouteStartSelection;
   arrival?: RoutePlannerOrigin;
   routeTopology?: RouteTopology;
   locationPreference: { arrondissement?: number | null } | null;
@@ -374,6 +376,7 @@ function buildRouteProofTrace(
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     planningMode: input.planningMode ?? { type: "free" },
     origin: input.origin,
+    startLocation: input.startLocation,
     arrival: input.arrival,
     routeTopology: input.routeTopology,
     travelBudgetMinutes: input.travelBudgetMinutes,

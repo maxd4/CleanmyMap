@@ -18,6 +18,7 @@ import type {
   RouteRecommendationOrigin,
   RouteResponseOrigin,
   RouteMultiRouteDisplayMode,
+  RouteStartZone,
 } from "../route-types";
 import type { RouteGuidedCoordinate, RouteTerritorialGuidedGroup } from "@/lib/route/route-planning-mode";
 import { getRouteGroupVisualStyle } from "../route-types";
@@ -120,6 +121,17 @@ function RouteGuidedPointPicker({
   return null;
 }
 
+function RouteZoneCenterPicker({
+  onSelectZoneCenter,
+}: {
+  onSelectZoneCenter: (coordinate: { latitude: number; longitude: number }) => void;
+}) {
+  useMapEvents({
+    click: ({ latlng }) => onSelectZoneCenter({ latitude: latlng.lat, longitude: latlng.lng }),
+  });
+  return null;
+}
+
 type RouteMapProps = {
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
@@ -132,6 +144,8 @@ type RouteMapProps = {
   origin?: RouteResponseOrigin | null;
   onSelectOrigin?: (origin: RouteRecommendationOrigin) => void;
   onClearOrigin?: () => void;
+  startZone?: RouteStartZone | null;
+  onSelectZoneCenter?: (coordinate: { latitude: number; longitude: number }) => void;
   guidedGroups?: RouteTerritorialGuidedGroup[];
   guidedActiveGroupIndex?: number | null;
   onSelectGuidedPoint?: (coordinate: RouteGuidedCoordinate) => void;
@@ -176,6 +190,8 @@ function RouteMapLayers({
   origin,
   onSelectOrigin,
   onClearOrigin,
+  startZone,
+  onSelectZoneCenter,
   guidedGroups = [],
   guidedActiveGroupIndex,
   onSelectGuidedPoint,
@@ -192,8 +208,10 @@ function RouteMapLayers({
     <>
       <RouteMapViewport coordinates={mapCoordinates} />
       {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
+      {onSelectZoneCenter ? <RouteZoneCenterPicker onSelectZoneCenter={onSelectZoneCenter} /> : null}
       {onSelectGuidedPoint ? <RouteGuidedPointPicker onSelectGuidedPoint={onSelectGuidedPoint} /> : null}
       <RouteMapOrigin origin={origin} fr={fr} onClearOrigin={onClearOrigin} />
+      {startZone ? <Circle center={[startZone.center.latitude, startZone.center.longitude]} radius={startZone.radiusKm * 1000} pathOptions={{ color: "#38bdf8", fillColor: "#38bdf8", fillOpacity: 0.08, weight: 2, dashArray: "8 6" }} /> : null}
       {guidedGroups.map((group, index) => {
         const groupIndex = index + 1;
         const active = guidedActiveGroupIndex === null || guidedActiveGroupIndex === undefined || guidedActiveGroupIndex === groupIndex;
@@ -346,6 +364,8 @@ function RouteMapCanvas({
   origin,
   onSelectOrigin,
   onClearOrigin,
+  startZone,
+  onSelectZoneCenter,
   guidedGroups,
   guidedActiveGroupIndex,
   onSelectGuidedPoint,
@@ -385,6 +405,8 @@ function RouteMapCanvas({
           origin={origin}
           onSelectOrigin={onSelectOrigin}
           onClearOrigin={onClearOrigin}
+          startZone={startZone}
+          onSelectZoneCenter={onSelectZoneCenter}
           guidedGroups={guidedGroups}
           guidedActiveGroupIndex={guidedActiveGroupIndex}
           onSelectGuidedPoint={onSelectGuidedPoint}
@@ -410,6 +432,8 @@ export function RouteMap({
   origin = null,
   onSelectOrigin,
   onClearOrigin,
+  startZone,
+  onSelectZoneCenter,
   guidedGroups = [],
   guidedActiveGroupIndex,
   onSelectGuidedPoint,
@@ -431,10 +455,14 @@ export function RouteMap({
       }));
   const mapCoordinates = useMemo(() => {
     if (groupRoutes.length === 0) {
-      return buildRouteMapCoordinates(stops, routeGeometry, origin);
+      return [
+        ...buildRouteMapCoordinates(stops, routeGeometry, origin),
+        ...(startZone ? [[startZone.center.latitude, startZone.center.longitude] as [number, number]] : []),
+      ];
     }
     return [
       ...(origin ? [[origin.latitude, origin.longitude] as [number, number]] : []),
+      ...(startZone ? [[startZone.center.latitude, startZone.center.longitude] as [number, number]] : []),
       ...renderedGuidedGroups.flatMap((group) => [
         [group.sector.center.latitude, group.sector.center.longitude] as [number, number],
         ...group.waypoints.map(({ latitude, longitude }) => [latitude, longitude] as [number, number]),
@@ -444,7 +472,7 @@ export function RouteMap({
         ...groupStops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
       ]),
     ];
-  }, [groupRoutes, origin, renderedGuidedGroups, routeGeometry, stops, visibleGroupRoutes]);
+  }, [groupRoutes, origin, renderedGuidedGroups, routeGeometry, startZone, stops, visibleGroupRoutes]);
   const routeCoordinates =
     routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
@@ -473,6 +501,8 @@ export function RouteMap({
     origin={origin}
     onSelectOrigin={onSelectOrigin}
     onClearOrigin={onClearOrigin}
+    startZone={startZone}
+    onSelectZoneCenter={onSelectZoneCenter}
     guidedGroups={renderedGuidedGroups}
     guidedActiveGroupIndex={guidedActiveGroupIndex}
     onSelectGuidedPoint={onSelectGuidedPoint}

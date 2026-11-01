@@ -27,7 +27,7 @@ const WALKING_SPEED_KM_PER_HOUR = 4.5;
 export type RoutePlannerOrigin = {
   latitude: number;
   longitude: number;
-  source: "browser" | "map" | "approximate_saved_area";
+  source: "browser" | "map" | "address" | "gps" | "planner" | "approximate_saved_area";
 };
 
 export type RoutePlannerCandidate =

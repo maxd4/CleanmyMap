@@ -73,7 +73,7 @@ export function RouteOriginAndTriggerControls({
         }}
       />
     ) : null}
-    <RouteOriginControls fr={fr} originMode={originMode} setOriginMode={setOriginMode} mapOrigin={mapOrigin} clearMapOrigin={clearMapOrigin} originSelectionError={originSelectionError} />
+    <RouteOriginControls fr={fr} options={options} setOptions={setOptions} originMode={originMode} setOriginMode={setOriginMode} mapOrigin={mapOrigin} clearMapOrigin={clearMapOrigin} originSelectionError={originSelectionError} />
     <RouteOptionsForm
       options={options}
       setOptions={setOptions}

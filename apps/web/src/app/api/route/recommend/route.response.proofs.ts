@@ -99,6 +99,7 @@ export function buildRoutePlannerSnapshotForProof(
     effectiveRiskFocus: planning.effectiveRiskFocus,
     volunteers: input.volunteers,
     groupCount: input.groupCount,
+    startLocation: input.startLocation,
     routeGeometry: planning.routeGeometry,
     travelDistanceKm: input.groupCount === 1 ? planning.routeGeometry.distanceKm : context.multiRoute.totalDistanceKm,
     travelMinutes: input.groupCount === 1 ? planning.routeGeometry.durationMinutes : context.multiRoute.totalDurationMinutes,

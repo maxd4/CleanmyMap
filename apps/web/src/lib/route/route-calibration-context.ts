@@ -20,6 +20,7 @@ import type { RouteTopology } from "./route-contract";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
+import type { RouteStartSelection } from "./route-response-contract";
 
 export function buildRouteCalibrationContext(input: {
   generatedAt: string;
@@ -78,6 +79,7 @@ export function buildRoutePlannerSnapshot(input: {
   effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
   volunteers: number;
   groupCount: number;
+  startLocation?: RouteStartSelection;
   routeGeometry: RouteGeometry;
   travelDistanceKm: number;
   travelMinutes: number;
@@ -126,6 +128,7 @@ export function buildRoutePlannerSnapshot(input: {
       effectiveRiskFocus: input.effectiveRiskFocus,
       volunteers: input.volunteers,
       groupCount: input.groupCount,
+      ...(input.startLocation ? { startLocation: structuredClone(input.startLocation) } : {}),
     },
     selectedCandidateIds: selectedCandidates.map((candidate) => candidate.candidateId),
     observedCandidateIds,

@@ -93,6 +93,30 @@ const guidedRecommendation = {
 } as const;
 
 describe("operational route contract", () => {
+  it("carries the confirmed departure selection into the action handoff", () => {
+    const startLocation = {
+      mode: "zone" as const,
+      label: "Panthéon",
+      zone: {
+        ...{
+          label: "Panthéon",
+          center: { latitude: 48.8462, longitude: 2.3464 },
+          radiusKm: 1,
+          bounds: { south: 48.837, west: 2.332, north: 48.855, east: 2.361 },
+          provenance: "bounded-search" as const,
+          source: "user" as const,
+        },
+        confirmed: true,
+      },
+    };
+    const route = createOperationalRouteFromRecommendation({
+      ...recommendation,
+      startLocation,
+    });
+    expect(route.startLocation).toEqual(startLocation);
+    expect(isOperationalRoute(route)).toBe(true);
+  });
+
   it("transfers an open topology without manufacturing a return leg", () => {
     const openGeometry = createFallbackRouteGeometry([
       [48.85, 2.34],

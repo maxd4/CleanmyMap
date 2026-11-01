@@ -21,6 +21,7 @@ import { isCoordinate, isRouteGeometry } from "./route-geometry-validation";
 import { isRouteOperationalBudget } from "./route-operational-budget-contract";
 import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { sameStringSet } from "./route-calibration-helpers";
+import { isRouteStartSelection } from "./route-start-location";
 
 export function isRoutePlannerSnapshot(
   value: unknown,
@@ -129,6 +130,7 @@ function isSnapshotParameters(
     ) &&
     finiteIntegerBetween(parameters?.volunteers, 0, 500) &&
     finiteIntegerBetween(parameters?.groupCount, 1, 12)
+    && (parameters?.startLocation === undefined || isRouteStartSelection(parameters.startLocation))
   );
 }
 
@@ -323,7 +325,7 @@ function isRoutePlannerOrigin(value: unknown): value is RoutePlannerOrigin {
   return (
     finiteNumberBetween(origin.latitude, -90, 90) &&
     finiteNumberBetween(origin.longitude, -180, 180) &&
-    ["browser", "map", "approximate_saved_area"].includes(origin.source ?? "")
+    ["browser", "map", "address", "gps", "planner", "approximate_saved_area"].includes(origin.source ?? "")
   );
 }
 

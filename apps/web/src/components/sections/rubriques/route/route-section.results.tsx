@@ -6,7 +6,7 @@ import { RouteList } from "./components/route-list";
 import { RoutePdfExport } from "./components/route-pdf-export";
 import { RouteWeatherSummary } from "./components/route-weather-summary";
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
-import type { RouteResponse, RouteOriginMode, RouteRecommendationOrigin } from "./route-types";
+import type { RouteResponse, RouteOriginMode, RouteRecommendationOrigin, RouteStartZone } from "./route-types";
 import type {
   MeetingOpportunity,
   MeetingPointProjection,
@@ -264,6 +264,8 @@ export function RouteResults({
   mapOrigin,
   setMapOrigin,
   clearMapOrigin,
+  startZone,
+  onSelectZoneCenter,
   selectedStopId,
   setSelectedStopId,
   selectedGroupIndex,
@@ -291,6 +293,8 @@ export function RouteResults({
   mapOrigin: RouteRecommendationOrigin | null;
   setMapOrigin: (origin: RouteRecommendationOrigin) => void;
   clearMapOrigin: () => void;
+  startZone?: RouteStartZone | null;
+  onSelectZoneCenter?: (coordinate: { latitude: number; longitude: number }) => void;
   selectedStopId: string | null;
   setSelectedStopId: (id: string | null) => void;
   selectedGroupIndex: number | null;
@@ -301,14 +305,14 @@ export function RouteResults({
   visibleGeometry: RouteGeometry;
 }) {
   return <>
-    {originMode === "map" && !hasRoute ? <RouteMap stops={[]} routeGeometry={EMPTY_ROUTE_GEOMETRY} origin={mapOrigin} onSelectOrigin={setMapOrigin} onClearOrigin={clearMapOrigin} fr={fr} /> : null}
+    {!hasRoute && (originMode === "map" || startZone) ? <RouteMap stops={[]} routeGeometry={EMPTY_ROUTE_GEOMETRY} origin={mapOrigin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} startZone={startZone} onSelectZoneCenter={startZone ? onSelectZoneCenter : undefined} fr={fr} /> : null}
     {data?.weatherContext ? <RouteWeatherSummary context={data.weatherContext} fr={fr} /> : null}
     <AnimatePresence mode="wait">
       {hasRoute && data ? <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
         <RouteResultSummary data={data} fr={fr} groupRoutes={groupRoutes} totalKm={totalKm} totalMinutes={totalMinutes} serviceMinutes={serviceMinutes} operationalTotalMinutes={operationalTotalMinutes} actionDurationLabel={actionDurationLabel} operationalTotalLabel={operationalTotalLabel} eventBudgetMinutes={eventBudgetMinutes} actionBudgetMinutes={actionBudgetMinutes} organizationMarginMinutes={organizationMarginMinutes} onCreateAction={onCreateAction} />
         <RouteGroupSelection data={data} fr={fr} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} setSelectedGroupIndex={setSelectedGroupIndex} multiRouteDisplayMode={multiRouteDisplayMode} setMultiRouteDisplayMode={setMultiRouteDisplayMode} />
         {hasData ? <RouteMethodology data={data} fr={fr} /> : null}
-        <RouteMap stops={visibleStops} routeGeometry={visibleGeometry} meetingPoint={data.meetingPoint} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} representationMode={multiRouteDisplayMode} origin={data.origin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} fr={fr} />
+        <RouteMap stops={visibleStops} routeGeometry={visibleGeometry} meetingPoint={data.meetingPoint} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} representationMode={multiRouteDisplayMode} origin={data.origin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} startZone={startZone} onSelectZoneCenter={startZone ? onSelectZoneCenter : undefined} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} fr={fr} />
         <RoutePdfExport data={data} displayMode={multiRouteDisplayMode} onUsePatterns={() => setMultiRouteDisplayMode("patterns")} />
         <RouteList hasRoute={hasRoute} picks={visibleStops} fr={fr} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} />
       </motion.div> : null}

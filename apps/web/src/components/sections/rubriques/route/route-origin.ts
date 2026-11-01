@@ -3,6 +3,9 @@ import type { RouteResponseOrigin } from "./route-types";
 
 export function getRouteOriginLabel(source: RouteResponseOrigin["source"], fr: boolean): string {
   if (source === "browser") return fr ? "Position actuelle" : "Current position";
+  if (source === "address") return fr ? "Adresse géocodée imposée" : "Fixed geocoded address";
+  if (source === "gps") return fr ? "Coordonnées GPS imposées" : "Fixed GPS coordinates";
+  if (source === "planner") return fr ? "Départ choisi dans la zone" : "Planner-selected departure in area";
   if (source === "approximate_saved_area") {
     return fr
       ? "Centre approximatif de votre zone enregistrée"

@@ -18,6 +18,7 @@ import type {
   RouteGuidedSegment,
   RouteOptions,
   RouteRecommendationResponse,
+  RouteStartSelection,
 } from "./route-response-contract";
 import {
   isRouteGuidedBudget,
@@ -27,6 +28,7 @@ import {
   type RouteGuidedSector,
   type RoutePlannedWaypoint,
 } from "./route-planning-mode";
+import { isRouteStartSelection } from "./route-start-location";
 import type { ActionPreparationData } from "@/lib/actions/types";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationContract } from "@/lib/actions/preparation-contract";
@@ -79,6 +81,8 @@ export type OperationalRoute = {
   plannerGroupCount: number;
   /** Historical rows omit this and are interpreted as closed loops. */
   routeTopology?: RouteTopology;
+  /** Optional departure mode/provenance; omitted on historical routes. */
+  startLocation?: RouteStartSelection;
   routes: OperationalRouteLoop[];
   zones: Record<OperationalRouteZoneKey, OperationalRouteZone>;
   /** Optional guided context added to the existing operational-route-v1 shape. */
@@ -108,6 +112,7 @@ export type PlannerActionHandoff = {
 export function createOperationalRouteFromRecommendation(
   recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry"> & {
     routeTopology?: RouteTopology;
+    startLocation?: RouteStartSelection;
     stops: readonly RouteStop[];
     guidedBudget?: RouteGuidedBudget;
     trace?: { warnings: readonly string[] };
@@ -149,6 +154,7 @@ export function createOperationalRouteFromRecommendation(
     state: "planner_copy",
     plannerGroupCount: recommendation.groupCount,
     ...(recommendation.routeTopology ? { routeTopology: recommendation.routeTopology } : {}),
+    ...(recommendation.startLocation ? { startLocation: structuredClone(recommendation.startLocation) } : {}),
     routes,
     ...(recommendation.guidedBudget ? { guidedBudget: structuredClone(recommendation.guidedBudget) } : {}),
     ...(recommendation.trace?.warnings ? { plannerWarnings: [...recommendation.trace.warnings] } : {}),
@@ -492,6 +498,7 @@ export function isOperationalRoute(value: unknown): value is OperationalRoute {
     (route.state === "planner_copy" || route.state === "edited") &&
     isIntegerBetween(route.plannerGroupCount, 1, 12) &&
     (route.routeTopology === undefined || route.routeTopology === "loop" || route.routeTopology === "open") &&
+    (route.startLocation === undefined || isRouteStartSelection(route.startLocation)) &&
     Array.isArray(route.routes) &&
     route.routes.length <= MAX_OPERATIONAL_ROUTE_LOOPS &&
     hasUniqueRoutePropertyValues(route.routes, "routeId") &&

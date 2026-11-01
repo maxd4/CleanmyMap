@@ -19,8 +19,36 @@ const routeCoordinateSchema = z.object({
 });
 
 const routeEndpointSchema = routeCoordinateSchema.extend({
-  source: z.enum(["browser", "map"]),
+  source: z.enum(["browser", "map", "address", "gps"]),
 });
+
+const routeStartZoneSchema = z.object({
+  label: z.string().trim().min(1).max(160),
+  center: routeCoordinateSchema,
+  radiusKm: z.number().finite().gt(0).max(25),
+  bounds: z.object({
+    south: z.number().finite().min(-90).max(90),
+    west: z.number().finite().min(-180).max(180),
+    north: z.number().finite().min(-90).max(90),
+    east: z.number().finite().min(-180).max(180),
+  }),
+  provenance: z.enum(["geocoded", "bounded-search", "user-adjusted"]),
+  source: z.enum(["geoplateforme", "local-territory", "user"]),
+  confirmed: z.literal(true),
+});
+
+const routeStartSelectionSchema = z.union([
+  z.object({
+    mode: z.literal("precise"),
+    label: z.string().trim().min(1).max(160),
+    origin: routeEndpointSchema,
+  }),
+  z.object({
+    mode: z.literal("zone"),
+    label: z.string().trim().min(1).max(160),
+    zone: routeStartZoneSchema,
+  }),
+]);
 
 const guidedGroupSchema = z.object({
   label: z.string().trim().min(1).max(80).optional(),
@@ -47,6 +75,7 @@ const guidedBudgetSchema = z.object({
 export const routeRecommendationRequestSchema = z
   .object({
     origin: routeEndpointSchema.optional(),
+    startLocation: routeStartSelectionSchema.optional(),
     arrival: routeEndpointSchema.optional(),
     routeTopology: z.enum(["loop", "open"]).default("loop"),
     travelBudgetMinutes: z.number().finite().min(0).default(60),
@@ -89,6 +118,17 @@ export const routeRecommendationRequestSchema = z
   })
   .strip()
   .superRefine((value, context) => {
+    if (value.startLocation?.mode === "zone") {
+      const { center, bounds } = value.startLocation.zone;
+      if (center.latitude < bounds.south || center.latitude > bounds.north ||
+        center.longitude < bounds.west || center.longitude > bounds.east) {
+        context.addIssue({
+          code: "custom",
+          path: ["startLocation", "zone", "center"],
+          message: "The confirmed zone center must be inside its bounds",
+        });
+      }
+    }
     if (value.groupCount > value.volunteers) {
       context.addIssue({
         code: "custom",

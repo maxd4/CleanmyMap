@@ -3,6 +3,7 @@ import {
   isRoutePickupPreference,
   type RoutePickupPreference,
 } from "@/lib/route/route-response-contract";
+import { isRouteStartSelection } from "@/lib/route/route-start-location";
 
 export const ROUTE_DRAFT_STORAGE_KEY = "cleanmymap.route-draft";
 export const ROUTE_DRAFT_SCHEMA_VERSION = 6;
@@ -72,6 +73,7 @@ function normalizeRouteOptions(value: unknown): RouteOptions {
     ...(scheduledStartAt ? { scheduledStartAt } : {}),
     ...(scheduledEndAt ? { scheduledEndAt } : {}),
     ...(isRouteRecommendationOrigin(candidate.arrival) ? { arrival: candidate.arrival } : {}),
+    ...(isRouteStartSelection(candidate.startLocation) ? { startLocation: candidate.startLocation } : {}),
   };
 }
 

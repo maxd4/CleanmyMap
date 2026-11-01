@@ -68,13 +68,24 @@ sélection est déterministe et aucun appel externe supplémentaire n’est réa
 pendant les calculs hors des providers déjà contractuels.
 
 Le contrat de recommandation expose la topologie (`routeTopology: "loop"` par
-défaut ou `"open"`), l’origine, la distance et la durée totales, le coût du
+défaut ou `"open"`), la sélection de départ (`startLocation`) et l’origine
+résolue, la distance et la durée totales, le coût du
 retour pour une boucle et le budget restant. Une boucle conserve
 strictement départ = arrivée et sa trace ajoute le retour comme dernier
 segment explicable. Un trajet ouvert conserve son arrivée distincte, sans
 `returnLeg` artificiel ; si elle n’est pas fournie, le planner la choisit dans
 les contraintes du parcours. Un fallback conserve la topologie demandée et
 estime les legs à 4,5 km/h.
+
+`startLocation` distingue une adresse précise (`precise`, adresse ou GPS,
+origine obligatoire et inchangée) d’une zone (`zone`, emprise confirmée et
+bornée). Pour une zone, le serveur ne fabrique pas de centroïde de parcours :
+il choisit de façon déterministe un candidat admissible dans l’emprise, selon
+la contribution du planner puis la proximité et l’identifiant. Sans candidat
+admissible, la requête est refusée explicitement. La sélection et l’origine
+résolue sont conservées dans la réponse, le snapshot, la preuve et le
+`OperationalRoute`; les brouillons historiques sans `startLocation` gardent
+leur résolution d’origine.
 
 ## Répartition multi-groupe
 

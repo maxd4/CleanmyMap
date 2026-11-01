@@ -44,6 +44,7 @@ import {
 } from "./route-cleanup-workload";
 import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import type { RouteStartSelection } from "./route-response-contract";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -169,6 +170,7 @@ export type RouteRecommendationTrace = {
     groupCount?: number;
   };
   origin: RoutePlannerOrigin;
+  startLocation?: RouteStartSelection;
   candidates: RouteTraceCandidateSummary;
   selectedStops: RouteTraceSelectedStop[];
   ordering: {
@@ -249,6 +251,7 @@ export type BuildRouteRecommendationTraceInput = {
   engineVersion: string;
   planningMode?: RoutePlanningMode;
   origin: RoutePlannerOrigin;
+  startLocation?: RouteStartSelection;
   routeTopology?: RouteTopology;
   arrival?: RoutePlannerOrigin;
   travelBudgetMinutes: number;
@@ -572,6 +575,7 @@ export function buildRouteRecommendationTrace(
       ...(input.groupCount !== undefined ? { groupCount: input.groupCount } : {}),
     },
     origin: { ...input.origin },
+    ...(input.startLocation ? { startLocation: structuredClone(input.startLocation) } : {}),
     candidates: input.candidateSummary,
     selectedStops,
     ordering: {

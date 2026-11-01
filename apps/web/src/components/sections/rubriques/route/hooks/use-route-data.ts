@@ -25,6 +25,7 @@ import {
 } from "../route-request";
 import { resolveBrowserRouteOrigin } from "../route-geolocation";
 import { routeTerritorialGuidedModeValidationError } from "@/lib/route/route-planning-mode";
+import { buildBoundedRouteStartZone } from "@/lib/route/route-start-location";
 
 type RouteDraftSnapshot = {
   options: RouteOptions;
@@ -145,13 +146,37 @@ export function useRouteData() {
 
   const setMapOrigin = useCallback((origin: RouteRecommendationOrigin) => {
     setMapOriginState(origin);
+    setOptions((previous) => ({
+      ...previous,
+      startLocation: { mode: "precise", label: "Point choisi sur la carte", origin },
+    }));
     setOriginSelectionError(false);
-  }, []);
+  }, [setOptions]);
 
   const clearMapOrigin = useCallback(() => {
     setMapOriginState(null);
+    setOptions((previous) => ({
+      ...previous,
+      ...(previous.startLocation?.mode === "precise" && previous.startLocation.origin.source === "map"
+        ? { startLocation: undefined }
+        : {}),
+    }));
     setOriginSelectionError(false);
-  }, []);
+  }, [setOptions]);
+
+  const setZoneCenter = useCallback((center: { latitude: number; longitude: number }) => {
+    setOptions((previous) => {
+      if (previous.startLocation?.mode !== "zone") return previous;
+      const zone = buildBoundedRouteStartZone(
+        previous.startLocation.label,
+        center,
+        previous.startLocation.zone.radiusKm,
+        "user",
+      );
+      return { ...previous, startLocation: { mode: "zone", label: previous.startLocation.label, zone } };
+    });
+    setOriginSelectionError(false);
+  }, [setOptions]);
 
   useEffect(() => {
     if (!isDraftHydrated) return;
@@ -219,6 +244,7 @@ export function useRouteData() {
     setOriginMode,
     mapOrigin,
     setMapOrigin,
+    setZoneCenter,
     clearMapOrigin,
     originSelectionError,
     isResolvingOrigin,
@@ -229,19 +255,27 @@ export function useRouteData() {
         setOriginSelectionError(true);
         return;
       }
+      if (originMode === "zone" && !(options.startLocation?.mode === "zone" && options.startLocation.zone.confirmed)) {
+        setOriginSelectionError(true);
+        return;
+      }
+      if ((originMode === "address" || originMode === "gps") && options.startLocation?.mode !== "precise") {
+        setOriginSelectionError(true);
+        return;
+      }
 
       if (!requestGate.current.start()) return;
 
       setIsRequestInFlight(true);
       setIsResolvingOrigin(originMode === "browser");
 
-      let origin: RouteRecommendationOrigin | undefined;
+      let origin: RouteRecommendationOrigin | undefined = options.startLocation?.mode === "precise"
+        ? options.startLocation.origin
+        : undefined;
       try {
-        origin = await resolveRouteRequestOrigin(
-          originMode,
-          mapOrigin,
-          resolveBrowserRouteOrigin,
-        );
+        if (originMode === "browser") {
+          origin = await resolveRouteRequestOrigin(originMode, mapOrigin, resolveBrowserRouteOrigin);
+        }
       } catch {
         origin = undefined;
       } finally {

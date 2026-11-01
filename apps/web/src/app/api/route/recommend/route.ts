@@ -14,6 +14,7 @@ import {
   loadRouteEventPressure,
 } from "./route.candidates";
 import { resolveRouteOrigin } from "./route.origin";
+import { routeStartZoneContains, selectRouteOriginWithinZone } from "@/lib/route/route-start-location";
 import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
@@ -80,16 +81,16 @@ export async function POST(request: Request) {
       getCurrentUserLocationPreference(),
       eventPressurePromise,
     ]);
-    const origin = resolveRouteOrigin(
-      options.origin,
+    const preciseOrigin = options.startLocation?.mode === "precise"
+      ? options.startLocation.origin
+      : options.origin;
+    let origin = resolveRouteOrigin(
+      preciseOrigin,
       locationPreference?.arrondissement,
     );
 
-    if (!origin) {
-      return NextResponse.json(
-        { error: "A route origin is required." },
-        { status: 422 },
-      );
+    if (!origin && options.startLocation?.mode !== "zone") {
+      return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
     }
 
     const planningMode = options.planningMode;
@@ -110,6 +111,26 @@ export async function POST(request: Request) {
     }
 
     const candidateData = await loadRouteCandidateData(supabase);
+    if (options.startLocation?.mode === "zone") {
+      origin = selectRouteOriginWithinZone(
+        options.startLocation.zone,
+        candidateData.spatialCandidates,
+      );
+      if (!origin) {
+        return NextResponse.json(
+          { error: "Aucun départ piéton admissible n’a été trouvé dans la zone confirmée." },
+          { status: 422 },
+        );
+      }
+    }
+    if (!origin) {
+      return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
+    }
+    const spatialCandidates = options.startLocation?.mode === "zone"
+      ? candidateData.spatialCandidates.filter((candidate) =>
+          routeStartZoneContains(options.startLocation!.zone, candidate),
+        )
+      : candidateData.spatialCandidates;
     const weatherContext = await fetchPlannerWeatherContext({
       latitude: origin.latitude,
       longitude: origin.longitude,
@@ -120,7 +141,7 @@ export async function POST(request: Request) {
       origin,
       arrival: options.arrival,
       routeTopology: options.routeTopology,
-      spatialCandidates: candidateData.spatialCandidates,
+      spatialCandidates,
       parisPressureSnapshot: candidateData.parisPressureSnapshot,
       municipalCleaningSnapshot: candidateData.municipalCleaningSnapshot,
       travelBudgetMinutes: effectiveTravelBudgetMinutes,
@@ -152,6 +173,7 @@ export async function POST(request: Request) {
       groupCount: options.groupCount,
       pickupPreference: options.pickupPreference,
       weatherContext,
+      startLocation: options.startLocation,
     });
 
     try {
