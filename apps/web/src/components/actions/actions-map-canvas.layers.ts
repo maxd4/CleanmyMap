@@ -4,6 +4,7 @@ export type VisibleMapLayers = {
   infrastructure: boolean;
   trashSpotter: boolean;
   plasticOrigins: boolean;
+  predictiveHeatmap: boolean;
 };
 
 export const DEFAULT_VISIBLE_MAP_LAYERS: VisibleMapLayers = {
@@ -12,6 +13,7 @@ export const DEFAULT_VISIBLE_MAP_LAYERS: VisibleMapLayers = {
   infrastructure: true,
   trashSpotter: true,
   plasticOrigins: false,
+  predictiveHeatmap: false,
 };
 
 export type VisibleMapLayerKey = keyof VisibleMapLayers;
@@ -22,6 +24,7 @@ export const MAP_LAYER_LABELS = {
   infrastructure: "Infras",
   trashSpotter: "Trash Spotter",
   plasticOrigins: "Plastic Origins | Observations historiques",
+  predictiveHeatmap: "Heatmap prédictive Paris 5e/6e",
 } as const satisfies Record<VisibleMapLayerKey, string>;
 
 export function toggleVisibleMapLayer(

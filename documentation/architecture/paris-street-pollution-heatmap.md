@@ -1,9 +1,9 @@
 # Heatmap prédictive polarisée des voies piétonnes de Paris
 
-**Statut : PROPOSAL / RESEARCH. Modèle non implémenté, coefficients non calibrés.**<br>
+**Statut : CURRENT / PILOT. Calque public facultatif livré pour Paris 5e/6e ; coefficients non calibrés.**<br>
 **Périmètre : Paris intra-muros, commune INSEE 75056, domaine public accessible aux piétons.**<br>
-**Identifiant de politique proposé : `paris-street-risk-heuristics-v1-polarized-proposal`.**<br>
-**État GitHub vérifié : `maxd4/CleanmyMap`, branche `main`, SHA `b7f5b00ba8f72b445ba081854ceb1d93b72443cf`, 1er novembre 2026.**<br>
+**Identifiant de politique du pilote : `paris-street-risk-heuristics-v1-polarized-pilot`.**<br>
+**Implémentation : snapshot OSM local `paris-5e-6e-osm-pilot-2026-11-01`, module géospatial pur et couche Leaflet facultative ; aucune requête fournisseur à l'ouverture.**<br>
 **Chemin exact prévu : `documentation/architecture/paris-street-pollution-heatmap.md`.**<br>
 **Document remplacé : proposition `paris-street-risk-heuristics-v0` soumise par l'utilisateur.**
 
@@ -15,7 +15,7 @@
 4. **IRIS comme référence** : réutiliser le modèle zonal existant et sa provenance, sans réécrire ni doubler ses composantes. Les matrices polarisées sont une proposition de redistribution spatiale *au sein* des zones à partir de facteurs locaux crédibles.
 5. **Données maximales, preuves explicites** : collecter autant de proxys locaux pertinents que leurs sources et licences le permettent, mais ne donner un effet numérique qu'aux facteurs effectivement vérifiés à leur maille réelle. Un champ absent reste inconnu ; « zéro observation » ne veut pas dire « rue propre ».
 6. **Nettoyage et accessibilité séparés** : le risque de production de déchets, le stock résiduel disponible, l'additionnalité bénévole et l'autorisation de nettoyer sont quatre dimensions différentes. Pas de bonus automatique à une zone dangereuse ou inaccessible.
-7. **Aucune intégration silencieuse** : `v1-polarized-proposal` est une politique candidate, distincte de `paris-pressure-risk-v3-urban-morphology`, de `urban-morphology-prior-v1` et du comportement publié. L'activation demande un modèle versionné, ses preuves d'entrée et des tests de cohérence.
+7. **Aucune intégration silencieuse** : `v1-polarized-pilot` reste distinct de `paris-pressure-risk-v3-urban-morphology`, de `urban-morphology-prior-v1` et des observations. Il est activable uniquement comme calque prédictif facultatif de la carte ; il ne modifie ni le planner ni les scores d'action.
 
 ### Classification des affirmations
 
@@ -433,6 +433,7 @@ Pour la recommandation, la priorité relative n'efface jamais le statut de `obse
 - **Voies traversant des IRIS** : découpage à la frontière ou agrégation pondérée des sous-segments avec vérification de cohérence ; ne pas utiliser uniquement le centroïde.
 - **Conflit et poids** : compter séparément disponibilité du score IRIS, qualité du rattachement géospatial et qualité du signal local. Un score haut avec provenance faible ne doit pas apparaître comme une certitude.
 - **Sensibilité** : comparer systématiquement les classements et itinéraires en scénario `neutral` (tous coefficients 1), `mild` (coefficients rapprochés de 1) et `polarized` (tables de ce document). Mesurer l'instabilité des premiers tronçons, les zones saturées, les distances et la couverture. **Aucune performance n'est déclarée meilleure avant mesure**.
+- `neutral` et `mild` sont réservés aux tests de sensibilité ; aucun de ces modes n'est exposé dans l'UI publique, qui propose uniquement `Mixte`, `Mégots` et `Déchets`.
 - **Stock vs pression** : une rue avec nombreux usages peut être fréquemment nettoyée. Ne pas inventer une conversion automatique en quantité résiduelle disponible.
 - **Ethique** : ne pas stigmatiser des populations ou quartiers par des caractéristiques sociales ; vérifier seulement des usages observables de l'espace public et leurs effets testables.
 
@@ -470,12 +471,39 @@ IRIS + modèle de pression CURRENT      OSM/Geofabrik + contraintes piétonnes
                           GPX / PDF / vue carte
 ```
 
-Le modèle conserve un **seul propriétaire** pour chaque signal. La projection persistée n'est qu'un cache reproductible, jamais une seconde source canonique d'observations. Aucun nouveau modèle IRIS parallèle n'est créé.
+Le modèle conserve un **seul propriétaire** pour chaque signal. Le snapshot du pilote est une projection statique reproductible, jamais une seconde source canonique d'observations. Aucun nouveau modèle IRIS parallèle n'est créé.
+
+### 6.2.1. Pilote livré Paris 5e/6e (`CURRENT / PILOT`)
+
+Le pilote actuel est borné à deux emprises OSM versionnées dans
+`apps/web/data/geospatial/paris-heatmap-pilot.json`. Il contient 120 voies OSM et
+90 micro-lieux OSM, découpés en 753 sous-tronçons déterministes et rattachés
+hors requête à 33 références IRIS. Les voies retenues sont des types piétons
+OSM ou portent un tag explicite `foot/sidewalk` compatible ; la carte rend
+uniquement les lignes et les
+micro-points : les géométries IRIS servent au calcul invisible et ne sont
+jamais ajoutées à la carte.
+
+Le calcul réutilise `paris-pressure-risk-v3-urban-morphology` pour la référence
+zonale, applique les coefficients de voie et de micro-lieu de la matrice
+polarisée, choisit au plus une influence dominante par famille de micro-lieux
+et résout un facteur d'échelle par zone afin de conserver la moyenne pondérée
+par longueur après écrêtage. Les facteurs socio-démographiques documentés dans
+le plan associé restent des hypothèses non calibrées et ne sont pas activés ;
+la densité n'est donc pas comptée une seconde fois. Les documents liés sont
+indexés sans duplication dans l’index documentaire transverse.
+
+Le calque est optionnel, désactivé par défaut, et affiche les trois modes
+`Mixte`, `Mégots` et `Déchets`. Un segment ou un rattachement indisponible reste
+`unavailable`; les micro-points sont masqués si les voies ne sont pas
+exploitables. Le pilote n'alimente pas le planner, les annotations
+communautaires, les observations réelles ou les exports d'action.
 
 ### 6.2. Contrat de sortie proposé
 
 ```ts
-// Schéma conceptuel, NON IMPLEMENTE
+// Schéma conceptuel du contrat complet futur ; le pilote UI utilise le type
+// interne paris-heatmap-pilot.ts et son snapshot statique versionné.
 interface ParisStreetRiskSegment {
   segmentId: string;                 // stable pour graphVersion seulement
   graphVersion: string;
@@ -510,7 +538,7 @@ interface ParisStreetRiskSegment {
 
 - **Couverture territoriale** : géométrie réelle de Paris intra-muros, avec le périmètre intérieur au boulevard périphérique défini par un polygone administratif/géographique validé, puis restriction du réseau OSM à cette emprise. **La seule commune INSEE `75056` ne suffit pas au masque intra-muros** : Paris comprend aussi les bois de Boulogne et de Vincennes hors de ce périmètre. Ne pas utiliser un rectangle comme masque de publication, ni confondre les limites des IRIS et celles du pilote.
 - **Stockage** : préférer une projection géographique PostgreSQL indexée, si les capacités du projet et son budget le permettent ; vérifier PostGIS et les migrations canoniques avant toute création. Alternative technique : artefact/tuiles spatiales pré-calculées si le stockage et les coûts le justifient.
-- **État CURRENT du dépôt** : snapshot IRIS déjà localement chargé par `apps/web/src/lib/geo/paris-pressure-loader.ts`. Le nouveau stockage segmentaire décrit ici **n'est pas encore publié**.
+- **État CURRENT du dépôt** : le snapshot IRIS reste localement chargé par `apps/web/src/lib/geo/paris-pressure-loader.ts` ; le pilote 5e/6e ajoute un snapshot segmentaire statique borné, sans prétendre constituer encore le graphe complet de Paris.
 - **Index et accès** : requêter uniquement les segments d'une emprise bornée, avec quantité de géométries et volume de réponse plafonnés ; la carte publique n'expose pas de donnée personnelle ou de données administrateur.
 - **Licence** : conserver provenance et millésime des données OSM/Apur/Paris/IDFM ; ne pas effacer les obligations de redistribution et d'attribution en fusionnant des jeux sous licences différentes.
 - **Versioning** : `graphVersion`, `pressureSnapshotId`, `heuristicsVersion`, `publicationVersion` indispensables pour une lecture cohérente et un rerun déterministe.

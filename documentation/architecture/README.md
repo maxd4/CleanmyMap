@@ -15,6 +15,7 @@ Statut : `CURRENT` (index). Source globale : [`master-architecture.md`](./master
 | Matrice route → composant → API | [`traceability-matrix.md`](./traceability-matrix.md) | Inventaire contextuel, pas source runtime |
 | Itinéraires | [`methodologie-creation-itineraire.md`](./methodologie-creation-itineraire.md) | Méthodologie de domaine |
 | Risque / serviceabilité Paris | [`paris-pressure-risk-model.md`](./paris-pressure-risk-model.md), [`paris-municipal-cleaning-serviceability.md`](./paris-municipal-cleaning-serviceability.md), [`route-predicted-risk-integration.md`](./route-predicted-risk-integration.md) | Contrats spécialisés |
+| Heatmap prédictive Paris 5e/6e | [`paris-street-pollution-heatmap.md`](./paris-street-pollution-heatmap.md) | CURRENT/PILOT pour le calque statique ; les plans associés sont reliés par l’index documentaire transverse |
 | Taxonomie déchets | [`waste-taxonomy-governance.md`](./waste-taxonomy-governance.md) | Gouvernance spécialisée |
 | Audit de surface produit | [`product-surface-accessibility-audit.md`](./product-surface-accessibility-audit.md) | AUDIT, ne pas inférer CURRENT |
 | Décisions de modularisation | [`modularity-decisions.md`](./modularity-decisions.md) | Décisions humaines |

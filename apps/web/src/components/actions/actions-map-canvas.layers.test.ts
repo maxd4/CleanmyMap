@@ -19,6 +19,7 @@ describe("actions map canvas layers", () => {
       infrastructure: true,
       trashSpotter: true,
       plasticOrigins: false,
+      predictiveHeatmap: false,
     });
   });
 
@@ -31,6 +32,7 @@ describe("actions map canvas layers", () => {
       infrastructure: true,
       trashSpotter: true,
       plasticOrigins: false,
+      predictiveHeatmap: false,
     });
     expect(DEFAULT_VISIBLE_MAP_LAYERS).toEqual({
       points: true,
@@ -38,12 +40,18 @@ describe("actions map canvas layers", () => {
       infrastructure: true,
       trashSpotter: true,
       plasticOrigins: false,
+      predictiveHeatmap: false,
     });
   });
 
   it("keeps historical Plastic Origins disabled by default", () => {
     expect(MAP_LAYER_LABELS.plasticOrigins).toBe("Plastic Origins | Observations historiques");
     expect(DEFAULT_VISIBLE_MAP_LAYERS.plasticOrigins).toBe(false);
+  });
+
+  it("keeps the predictive Paris pilot optional and explicitly named", () => {
+    expect(MAP_LAYER_LABELS.predictiveHeatmap).toBe("Heatmap prédictive Paris 5e/6e");
+    expect(DEFAULT_VISIBLE_MAP_LAYERS.predictiveHeatmap).toBe(false);
   });
 
   it("keeps every registered layer documented on the canonical actions map page", () => {

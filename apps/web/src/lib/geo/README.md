@@ -21,6 +21,18 @@ Les valeurs `unknown`, les fallbacks et la provenance doivent rester explicites.
 Ne pas inventer une précision géographique à partir d'un nom de rue, d'un
 centre approximatif ou d'une distance estimée.
 
+## Pilote heatmap Paris 5e/6e
+
+`paris-heatmap-pilot.ts` est l'owner du calcul pur du premier pilote prédictif
+segmentaire. Il consomme uniquement le snapshot statique
+`apps/web/data/geospatial/paris-heatmap-pilot.json`, réutilise le modèle IRIS
+comme référence invisible et ne déclenche aucun fournisseur géospatial à
+l'ouverture d'une carte. La couche UI rend des tronçons OSM et des micro-points
+distincts ; elle ne rend jamais les polygones IRIS et masque les micro-points
+lorsque les tronçons sont indisponibles. Les scores sont prédictifs, séparés
+des observations, et les coefficients socio-démographiques restent inactifs
+dans ce pilote.
+
 ## Contrats et validation
 
 Les contrats municipaux, de pression, de territoire et de routage conservent

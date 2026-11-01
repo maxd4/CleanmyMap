@@ -11,5 +11,9 @@
 | Méthode du graphique CO2e | [rapport_impact/graphique_impact_CO2e.md](./rapport_impact/graphique_impact_CO2e.md) | Méthodologie sourcée |
 | Méthode carbone | [rapport_impact/impact_carbone_methodologie.md](./rapport_impact/impact_carbone_methodologie.md) | Hypothèses et incertitudes |
 | Quotas méthodologiques | [rapport_impact/quotas_plans_methodologie.md](./rapport_impact/quotas_plans_methodologie.md) | Plan/méthode, non métrique runtime |
+| Heatmap prédictive polarisée | [../architecture/paris-street-pollution-heatmap.md](../architecture/paris-street-pollution-heatmap.md) | CURRENT/PILOT : contrat visuel et limites |
+| Micro-lieux et risque de pollution | [enrichissement-micro-lieux-risque-pollution.md](./enrichissement-micro-lieux-risque-pollution.md) | PLAN/PARTIAL PILOT : catalogue et contrat complet encore ouverts |
+| Pondération socio-démographique heatmap | [ponderation-socio-demographique-heatmap.md](./ponderation-socio-demographique-heatmap.md) | PLAN : hypothèses non calibrées, non activées |
+| Annotations communautaires heatmap | [heatmap-annotations-communautaires.md](./heatmap-annotations-communautaires.md) | PLAN : hors périmètre du pilote |
 
 Ne pas supprimer, restructurer ni renommer le dossier `rapport_impact/impact_IA/` ou ses annexes dans une opération de classement. Ne pas confondre un message DU historique, une demande de subvention ou un chapitre académique avec un lot Codex autorisé. Toute nouvelle information chiffrée nécessite sa source, son unité, son périmètre, sa date et ses limites.

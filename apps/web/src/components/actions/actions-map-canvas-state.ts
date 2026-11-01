@@ -12,6 +12,7 @@ import { DEFAULT_VISIBLE_MAP_LAYERS, toggleVisibleMapLayer, type VisibleMapLayer
 import type { ShapeBasemapMode } from "./map/layers/map-layers.shared";
 import { usePlasticOriginsData } from "@/lib/plastic-origins/use-plastic-origins-data";
 import { deriveActionsMapCategoryCounts, resolveActionsMapCanvasViewport, resolveActionsMapItemGroups } from "./actions-map-canvas-model";
+import type { ParisHeatmapPilotMode } from "@/lib/geo/paris-heatmap-pilot";
 
 export type ActionsMapCanvasStateProps = {
   items: ActionMapItem[];
@@ -38,6 +39,7 @@ export function useActionsMapCanvasState({
   const center = useMemo(() => getActionsMapCenter(items), [items]);
   const { mapCenter, mapZoom, logicalRecenterViewport } = resolveActionsMapCanvasViewport({ center, initialViewport, compact, recenterViewport });
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
+  const [predictiveHeatmapMode, setPredictiveHeatmapMode] = useState<ParisHeatmapPilotMode>("mixed");
   const plasticOriginsData = usePlasticOriginsData(!isMinimalPreview && visibleLayers.plasticOrigins);
   const [basemapMode, setBasemapMode] = useState<ShapeBasemapMode>("light");
   const [internalDisplayMode, setInternalDisplayMode] = useState<CurrentPlaceStateMode>("projected_today");
@@ -64,5 +66,5 @@ export function useActionsMapCanvasState({
   function toggleLayer(key: VisibleMapLayerKey) {
     setVisibleLayers((current) => toggleVisibleMapLayer(current, key));
   }
-  return { isHomepagePreview, isMinimalPreview, mapCenter, mapZoom, logicalRecenterViewport, visibleLayers, plasticOriginsData, basemapMode, setBasemapMode, activePanel, setActivePanel, scoreScope, displayMode, handleDisplayModeChange, handleScoreScopeChange, categoryCounts, currentPlaceStateViews, toggleLayer, mainItems, trashSpotterItems, selectedItem };
+  return { isHomepagePreview, isMinimalPreview, mapCenter, mapZoom, logicalRecenterViewport, visibleLayers, predictiveHeatmapMode, setPredictiveHeatmapMode, plasticOriginsData, basemapMode, setBasemapMode, activePanel, setActivePanel, scoreScope, displayMode, handleDisplayModeChange, handleScoreScopeChange, categoryCounts, currentPlaceStateViews, toggleLayer, mainItems, trashSpotterItems, selectedItem };
 }

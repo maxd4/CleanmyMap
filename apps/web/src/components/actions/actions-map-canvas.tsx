@@ -74,7 +74,7 @@ export function ActionsMapCanvas({
   onResetFilters,
 }: ActionsMapCanvasProps) {
   const isEmerald = tone === "emerald";
-  const { isHomepagePreview, isMinimalPreview, mapCenter, mapZoom, logicalRecenterViewport, visibleLayers, plasticOriginsData, basemapMode, setBasemapMode, activePanel, setActivePanel, scoreScope, displayMode, handleDisplayModeChange, handleScoreScopeChange, categoryCounts, currentPlaceStateViews, toggleLayer, mainItems, trashSpotterItems, selectedItem } = useActionsMapCanvasState({ items, selectedActionId, compact, presentation, initialViewport, recenterViewport, sourceItems, sourceCompleteness, controlledScoreScope, onScoreScopeChange, controlledDisplayMode, onDisplayModeChange });
+  const { isHomepagePreview, isMinimalPreview, mapCenter, mapZoom, logicalRecenterViewport, visibleLayers, predictiveHeatmapMode, setPredictiveHeatmapMode, plasticOriginsData, basemapMode, setBasemapMode, activePanel, setActivePanel, scoreScope, displayMode, handleDisplayModeChange, handleScoreScopeChange, categoryCounts, currentPlaceStateViews, toggleLayer, mainItems, trashSpotterItems, selectedItem } = useActionsMapCanvasState({ items, selectedActionId, compact, presentation, initialViewport, recenterViewport, sourceItems, sourceCompleteness, controlledScoreScope, onScoreScopeChange, controlledDisplayMode, onDisplayModeChange });
   const { mapShellClasses, mapCanvasClass, layerButtonClasses } = resolveActionsMapCanvasTheme(isEmerald);
   return (
     <ActionsMapCanvasView
@@ -106,6 +106,8 @@ export function ActionsMapCanvas({
         basemapMode,
         setBasemapMode,
         plasticOriginsData,
+        predictiveHeatmapMode,
+        setPredictiveHeatmapMode,
       }}
       logicalRecenterViewport={logicalRecenterViewport}
       tone={tone}
@@ -127,6 +129,8 @@ export function ActionsMapCanvas({
       scoreScope={scoreScope}
       isEmerald={isEmerald}
       plasticOriginsData={plasticOriginsData}
+      predictiveHeatmapMode={predictiveHeatmapMode}
+      setPredictiveHeatmapMode={setPredictiveHeatmapMode}
     />
   );
 }

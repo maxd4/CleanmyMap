@@ -36,6 +36,9 @@ vi.mock("./map/layers/map-layers", () => ({
   TrashSpotterMarkers: () => <div data-testid="trash-spotter-markers" />,
   PlasticOriginsLayer: () => <div data-testid="plastic-origins-layer" />,
 }));
+vi.mock("./map/layers/paris-heatmap-pilot-layer", () => ({
+  ParisHeatmapPilotLayer: () => <div data-testid="predictive-heatmap-layer" />,
+}));
 vi.mock("./actions-map-canvas-styles", () => ({ ActionsMapCanvasStyles: () => null }));
 vi.mock("./actions-map-canvas-viewport", () => ({ ActionsMapCanvasViewport: () => null }));
 
@@ -63,12 +66,15 @@ const baseProps = {
       infrastructure: true,
       trashSpotter: true,
       plasticOrigins: true,
+      predictiveHeatmap: false,
     },
     toggleLayer: toggleLayerMock,
     layerButtonClasses: { active: "active", inactive: "inactive" },
     basemapMode: "light" as const,
     setBasemapMode: setBasemapModeMock,
     plasticOriginsData: { data: null, error: new Error("offline"), isLoading: false, reload: reloadMock },
+    predictiveHeatmapMode: "mixed" as const,
+    setPredictiveHeatmapMode: vi.fn(),
   },
   logicalRecenterViewport: {
     center: [48.85, 2.35] as [number, number],
@@ -87,6 +93,7 @@ const baseProps = {
     infrastructure: true,
     trashSpotter: true,
     plasticOrigins: true,
+    predictiveHeatmap: false,
   },
   selectedActionId: null,
   currentPlaceStateViews: [],
@@ -96,6 +103,8 @@ const baseProps = {
   scoreScope: "global" as const,
   isEmerald: false,
   plasticOriginsData: { data: null, error: new Error("offline"), isLoading: false, reload: reloadMock },
+  predictiveHeatmapMode: "mixed" as const,
+  setPredictiveHeatmapMode: vi.fn(),
 };
 
 let root: Root | null = null;

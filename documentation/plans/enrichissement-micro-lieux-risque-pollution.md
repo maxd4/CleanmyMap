@@ -1,12 +1,12 @@
 # PLAN | Enrichissement du risque de pollution par les infrastructures et micro-lieux urbains
 
-**Statut : `PLAN / DEFERRED` - non implémenté.**<br>
+**Statut : `PLAN / PARTIAL PILOT` - snapshot OSM et calque UI livrés ; contrat complet différé.**<br>
 **Objet :** conserver le catalogue des données urbaines et le contrat d'intégration future des micro-lieux dans les scores prédictifs de mégots et de déchets de CleanMyMap.<br>
 **Chemin cible :** `documentation/plans/enrichissement-micro-lieux-risque-pollution.md`<br>
 **Périmètre pilote :** voies et espaces publics accessibles aux piétons de Paris intra-muros ; réutilisation à terme dans les communes françaises, y compris les petites villes.<br>
 **Établi le :** 1er novembre 2026.<br>
 **Référence de travail :** `maxd4/CleanmyMap`, branche `main`, documents canoniques consultés le 1er novembre 2026. Relire `main` avant toute intégration.<br>
-**Déclencheur :** **ne pas implémenter immédiatement**. Engager le chantier uniquement après satisfaction des conditions d'entrée de la section 2.
+**Limite du pilote :** le snapshot statique 5e/6e et le calque facultatif sont intégrés sans activer le planner ni les annotations ; engager le contrat complet uniquement après satisfaction des conditions d'entrée de la section 2.
 
 > Ce document est un inventaire exploitable et un plan de reprise, pas un calcul livré, un schéma de base de données approuvé, une preuve que toutes les sources ont été importées, ni une étude démontrant les coefficients de pollution. Les chiffres de risque éventuels doivent rester des hypothèses tant qu'ils ne sont pas calibrés. Aucun traitement de données ni aucune modification GitHub n'est effectué par ce fichier.
 
@@ -46,7 +46,7 @@ Il est possible de préparer un **catalogue hors runtime** plus tôt (repérage 
 - `documentation/product/SCIENTIFIC_PROTOCOL.md` et `documentation/product/methodologie-carte-actions.md` : statuts de preuve, scores historiques/observés et hypothèses.
 - `documentation/architecture/data-governance.md`, `documentation/security/authz-authn-regles.md` et `documentation/development/TESTING.md` : persistance, AuthZ, validations et niveaux de preuve.
 - `apps/web/src/lib/geo/paris-pressure-risk.ts` et son contrat : owner métier à vérifier avant modification.
-- Les documents de travail locaux `paris-street-pollution-heatmap.md` (version polarisée) et `heatmap-annotations-communautaires.md`, s'ils ont été intégrés entre-temps : **propositions indépendantes**, non présumées publiées sur `main` au 1er novembre 2026. Leur rôle est respectivement la conception de la heatmap et celle des annotations futures. Ce plan couvre seulement les **sources de micro-lieux et leur raccordement**.
+- Le document canonique [`../architecture/paris-street-pollution-heatmap.md`](../architecture/paris-street-pollution-heatmap.md) décrit désormais le `CURRENT/PILOT` statique 5e/6e ; [`heatmap-annotations-communautaires.md`](./heatmap-annotations-communautaires.md) reste une proposition indépendante. Ce plan couvre seulement les **sources de micro-lieux et leur raccordement**, le graphe complet et le planner restant différés.
 
 ## 3. Invariants de conception
 

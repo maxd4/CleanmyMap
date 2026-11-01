@@ -101,6 +101,18 @@ CRS et ne reprojette pas les coordonnées. Le contrôle reproductible se lance
 avec `npm run audit:plastic-origins` après téléchargement des ressources dans
 `artifacts/plastic-origins-audit`.
 
+## Calque prédictif Paris 5e/6e
+
+La carte complète propose aussi le calque facultatif **Heatmap prédictive Paris
+5e/6e**, désactivé par défaut. Il lit le snapshot OSM local versionné du
+pilote, affiche des tronçons colorés et cliquables ainsi que des micro-points
+regroupés à faible zoom, puis distingue dans les popups les scores `Mixte`,
+`Mégots` et `Déchets`, les facteurs, la provenance et le statut prédictif.
+Le calcul IRIS reste invisible et aucune requête Overpass, Paris Data ou
+planner n'est déclenchée par l'ouverture de la carte. Les observations et le
+calque Plastic Origins restent indépendants ; `neutral` et `mild` ne sont pas
+des modes UI publics.
+
 ## Validation
 
 Conserver les tests auprès de la capacité qu'ils vérifient. Pour un changement

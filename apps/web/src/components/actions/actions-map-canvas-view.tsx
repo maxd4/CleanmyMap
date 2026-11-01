@@ -23,6 +23,8 @@ import type { ShapeBasemapMode } from "./map/layers/map-layers.shared";
 import { ActionsMapCanvasStyles } from "./actions-map-canvas-styles";
 import { ActionsMapCanvasViewport } from "./actions-map-canvas-viewport";
 import type { PlasticOriginsDataState } from "@/lib/plastic-origins/use-plastic-origins-data";
+import { ParisHeatmapPilotLayer } from "./map/layers/paris-heatmap-pilot-layer";
+import type { ParisHeatmapPilotMode } from "@/lib/geo/paris-heatmap-pilot";
 
 type ActionsMapCanvasControlsProps = {
   isMinimalPreview: boolean;
@@ -45,6 +47,8 @@ type ActionsMapCanvasControlsProps = {
   basemapMode: ShapeBasemapMode;
   setBasemapMode: Dispatch<SetStateAction<ShapeBasemapMode>>;
   plasticOriginsData: PlasticOriginsDataState;
+  predictiveHeatmapMode: ParisHeatmapPilotMode;
+  setPredictiveHeatmapMode: (mode: ParisHeatmapPilotMode) => void;
 };
 
 function ActionsMapCanvasDisplayPanel({
@@ -58,6 +62,8 @@ function ActionsMapCanvasDisplayPanel({
   basemapMode,
   setBasemapMode,
   plasticOriginsData,
+  predictiveHeatmapMode,
+  setPredictiveHeatmapMode,
 }: Omit<ActionsMapCanvasControlsProps, "isMinimalPreview" | "activePanel" | "setActivePanel" | "filters" | "onZoneQueryChange" | "onDateScopeChange" | "onCategoryToggle" | "onContextFilterChange" | "onResetFilters" | "categoryCounts">) {
   const layers = [
     { key: "points" as const, label: "Points" },
@@ -65,6 +71,7 @@ function ActionsMapCanvasDisplayPanel({
     { key: "infrastructure" as const, label: "Infras" },
     { key: "trashSpotter" as const, label: "Trash Spotter" },
     { key: "plasticOrigins" as const, label: "Plastic Origins | Observations historiques" },
+    { key: "predictiveHeatmap" as const, label: "Heatmap prédictive Paris 5e/6e" },
   ];
   return (
     <div id="actions-map-display-panel" className="absolute left-3 right-3 top-28 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 text-slate-900 shadow-xl backdrop-blur-xl sm:left-auto sm:right-3 sm:top-16 sm:max-w-md" role="region" aria-label="Options d’affichage">
@@ -100,6 +107,23 @@ function ActionsMapCanvasDisplayPanel({
                 </button>
               ))}
             </div>
+          </div>
+        ) : null}
+        {visibleLayers.predictiveHeatmap ? (
+          <div className="space-y-2" role="group" aria-label="Mode de la heatmap prédictive">
+            <p className="text-sm font-semibold text-slate-900">Type de pollution prédite</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ["mixed", "Mixte"],
+                ["cigaretteButts", "Mégots"],
+                ["waste", "Déchets"],
+              ] as const).map(([value, label]) => (
+                <button key={value} type="button" onClick={() => setPredictiveHeatmapMode(value)} aria-pressed={predictiveHeatmapMode === value} className={["min-h-11 rounded-xl border px-2 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", predictiveHeatmapMode === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-600">Pilote prédictif polarisé, sans polygones IRIS et sans mesure de terrain.</p>
           </div>
         ) : null}
         <div className="space-y-2" role="group" aria-label="Calques visibles">
@@ -196,6 +220,8 @@ export type ActionsMapCanvasViewProps = {
   scoreScope: PollutionScoreScope;
   isEmerald: boolean;
   plasticOriginsData: PlasticOriginsDataState;
+  predictiveHeatmapMode: ParisHeatmapPilotMode;
+  setPredictiveHeatmapMode: (mode: ParisHeatmapPilotMode) => void;
 };
 
 export function ActionsMapCanvasView({
@@ -230,10 +256,12 @@ export function ActionsMapCanvasView({
   scoreScope,
   isEmerald,
   plasticOriginsData,
+  predictiveHeatmapMode,
+  setPredictiveHeatmapMode,
 }: ActionsMapCanvasViewProps) {
   return (
     <div className={cn("relative overflow-hidden rounded-[2rem]", mapShellClasses, isMinimalPreview && "h-full rounded-none border-0 bg-transparent shadow-none ring-0", className)}>
-      <ActionsMapCanvasControls {...controls} isMinimalPreview={isMinimalPreview} activePanel={activePanel} setActivePanel={setActivePanel} />
+      <ActionsMapCanvasControls {...controls} isMinimalPreview={isMinimalPreview} activePanel={activePanel} setActivePanel={setActivePanel} predictiveHeatmapMode={predictiveHeatmapMode} setPredictiveHeatmapMode={setPredictiveHeatmapMode} />
       <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom zoomControl={!isHomepagePreview} className={isMinimalPreview ? cn("h-full min-h-[18rem] w-full", mapCanvasClass, fullViewport ? "min-h-full" : null) : fullViewport ? `h-[100dvh] min-h-[100dvh] w-full ${mapCanvasClass}` : `h-[68vh] min-h-[34rem] w-full md:h-[74vh] md:min-h-[42rem] ${mapCanvasClass}`}>
         <ActionsMapCanvasViewport viewportRequest={viewportRequest} viewportRequestKey={viewportRequestKey} onViewportChange={onViewportChange} onViewportInteraction={onViewportInteraction} />
         {!isMinimalPreview ? <MapControls center={logicalRecenterViewport.center} zoom={logicalRecenterViewport.zoom} variant="immersive" tone={tone} position="right" /> : null}
@@ -243,6 +271,7 @@ export function ActionsMapCanvasView({
           <ShapeLayers items={mainItems} visible={visibleLayers.shapes} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} />
           {!isMinimalPreview ? <><InfrastructureMarkers items={mainItems} visible={visibleLayers.infrastructure} selectedActionId={selectedActionId} onSelectAction={onSelectAction} /><TrashSpotterMarkers items={trashSpotterItems} visible={visibleLayers.trashSpotter} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} /></> : null}
           {!isMinimalPreview ? <PlasticOriginsLayer dataset={plasticOriginsData.data} visible={visibleLayers.plasticOrigins} /> : null}
+          {!isMinimalPreview ? <ParisHeatmapPilotLayer visible={visibleLayers.predictiveHeatmap} mode={predictiveHeatmapMode} /> : null}
         </LayerGroup>
         {!isMinimalPreview && selectedItem && onClearSelection ? <ActionSelectionPanel item={selectedItem} displayMode={displayMode} scoreScope={scoreScope} currentPlaceStateViews={currentPlaceStateViews} frameOnMount={frameSelectedActionId === selectedItem.id} onClose={onClearSelection} /> : null}
         <ActionsMapCanvasStyles isEmerald={isEmerald} />
