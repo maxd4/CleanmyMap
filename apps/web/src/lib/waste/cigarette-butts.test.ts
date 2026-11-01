@@ -6,8 +6,11 @@ import {
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
   CIGARETTE_BUTTS_PER_VOLUME_LITER_V1,
   aggregateCigaretteButtsLots,
+  calculateCigaretteButtsLot,
+  getCigaretteButtsVolumeFactor,
   normalizeCigaretteButtsMeasurements,
   normalizeCigaretteButtsMeasurementsFromUserInput,
+  projectCurrentCigaretteButts,
   type ActionCigaretteButtsMeasurements,
 } from "./cigarette-butts";
 import { CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 } from "@/lib/impact/impact-terrain-2026";
@@ -38,6 +41,19 @@ function measurementsFromLots(lots: Parameters<typeof aggregateCigaretteButtsLot
 }
 
 describe("cigarette-butt raw and derived measurements", () => {
+  it("refuses explicit unknown conversion versions instead of using the current factors", () => {
+    expect(() => getCigaretteButtsVolumeFactor("historical-volume-unknown"))
+      .toThrow("historical-volume-unknown");
+    expect(() => calculateCigaretteButtsLot(
+      { id: "volume", source: "volume_l", value: 1, condition: "propre" },
+      { volumeConversionVersion: "historical-volume-unknown" },
+    )).toThrow("historical-volume-unknown");
+    expect(() => calculateCigaretteButtsLot(
+      { id: "mass", source: "mass_kg", value: 1, condition: "propre" },
+      { massConversionVersion: "historical-mass-unknown" },
+    )).toThrow("historical-mass-unknown");
+  });
+
   it("keeps a counted value and a raw mass distinct", () => {
     const measurement = normalizeCigaretteButtsMeasurements({
       cigaretteButtsCount: 3_000,
@@ -669,5 +685,12 @@ describe("historical cigarette-butt lot snapshots", () => {
       "historical-unknown",
     );
     expect(measurement.cigaretteButtsRecalculationStatus).toBe("not_recalculable");
+    const currentProjection = projectCurrentCigaretteButts(measurement);
+    expect(currentProjection).toMatchObject({
+      count: 600,
+      status: "not_recalculable",
+      source: "historical",
+    });
+    expect(currentProjection.results?.[0]?.count).toBe(600);
   });
 });

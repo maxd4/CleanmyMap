@@ -67,6 +67,10 @@ export function extractScientificMethodIdentity({ wasteSource, impactSource, pro
     assignments,
     "CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION",
   );
+  const conversionResolutionPolicyVersion = resolveAssignment(
+    assignments,
+    "CIGARETTE_BUTTS_CONVERSION_RESOLUTION_POLICY_VERSION",
+  );
   const massVersion = resolveAssignment(
     impactAssignments,
     "CIGARETTE_BUTTS_MASS_CONVERSION_VERSION",
@@ -79,6 +83,7 @@ export function extractScientificMethodIdentity({ wasteSource, impactSource, pro
     volumeV1,
     volumeV2,
     volumeVersion,
+    conversionResolutionPolicyVersion,
     massVersion,
     massV2Factors: readMassV2Factors(impactSource ?? ""),
     lotFormula: readFunctionBody(wasteSource, "calculateCigaretteButtsLot"),
@@ -120,7 +125,8 @@ export function validateScientificFormulaIdentity({
   }
   if (base && base.lotFormula !== current.lotFormula &&
     base.volumeVersion === current.volumeVersion &&
-    base.massVersion === current.massVersion) {
+    base.massVersion === current.massVersion &&
+    base.conversionResolutionPolicyVersion === current.conversionResolutionPolicyVersion) {
     issues.push("lot conversion formula changed without changing an effective conversion identity");
   }
 

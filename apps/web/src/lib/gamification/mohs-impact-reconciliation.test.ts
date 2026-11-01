@@ -64,6 +64,31 @@ function createSupabase(existing: Array<{ id: string; source_id: string; event_t
 }
 
 describe("Mohs impact event reconciliation", () => {
+  it("does not create a butt threshold from a non-recalculable historical lot", async () => {
+    loadConfirmedParticipantImpactAttributionsMock.mockResolvedValue([
+      {
+        actionId: "action-unknown-lot",
+        actionDate: "2026-09-25",
+        userId: "user-1",
+        attribution: attribution({
+          cigaretteButts: 600,
+          cigaretteButtsKind: "individual",
+          cigaretteButtsProvenance: "derived",
+          cigaretteButtsMohsEligible: false,
+        }),
+      },
+    ]);
+    const supabase = createSupabase().supabase as unknown as { rpc: ReturnType<typeof vi.fn> };
+
+    const result = await reconcileMohsImpactProgression(supabase as unknown as SupabaseClient, "user-1");
+
+    expect(result.inserted).toBe(0);
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "apply_mohs_impact_reconciliation",
+      expect.objectContaining({ p_events_to_add: [] }),
+    );
+  });
+
   it("writes no points ledger rows, is replay-safe, and removes a corrected threshold", async () => {
     loadConfirmedParticipantImpactAttributionsMock.mockResolvedValue([
       {

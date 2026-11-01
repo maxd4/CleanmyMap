@@ -4,6 +4,7 @@ import {
   computeButtsCount,
   estimateButtsWeightKg,
   isCigaretteButtsMassConversionVersion,
+  type CigaretteButtsMassConversionVersion,
 } from "@/lib/impact/impact-terrain-2026";
 export const MAX_CIGARETTE_BUTTS_COUNT = 5_000_000;
 export const MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT = 500_000_000;
@@ -20,6 +21,9 @@ export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2 =
   "cleanmymap-butts-volume-v2" as const;
 export const CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION =
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
+/** Explicit historical versions are never replaced by the current version. */
+export const CIGARETTE_BUTTS_CONVERSION_RESOLUTION_POLICY_VERSION =
+  "cleanmymap-butts-conversion-resolution-v1" as const;
 export type CigaretteButtsVolumeConversionVersion =
   | typeof CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1
   | typeof CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
@@ -41,14 +45,42 @@ export function isCigaretteButtsVolumeConversionVersion(
     value === CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V2;
 }
 
+export class CigaretteButtsUnknownConversionVersionError extends Error {
+  constructor(
+    public readonly source: "mass" | "volume",
+    public readonly version: string,
+  ) {
+    super(`Version de conversion ${source} inconnue: ${version}`);
+    this.name = "CigaretteButtsUnknownConversionVersionError";
+  }
+}
+
+function resolveVolumeConversionVersion(
+  version: string | null | undefined,
+): CigaretteButtsVolumeConversionVersion {
+  if (version == null) return CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION;
+  if (!isCigaretteButtsVolumeConversionVersion(version)) {
+    throw new CigaretteButtsUnknownConversionVersionError("volume", version);
+  }
+  return version;
+}
+
+function resolveMassConversionVersion(
+  version: string | null | undefined,
+): CigaretteButtsMassConversionVersion {
+  if (version == null) return CIGARETTE_BUTTS_MASS_CONVERSION_VERSION;
+  if (!isCigaretteButtsMassConversionVersion(version)) {
+    throw new CigaretteButtsUnknownConversionVersionError("mass", version);
+  }
+  return version;
+}
+
 export function getCigaretteButtsVolumeFactor(
-  version: string = CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+  version: string | null | undefined = CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
 ): number {
-  return isCigaretteButtsVolumeConversionVersion(version)
-    ? CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER[version]
-    : CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER[
-      CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION
-    ];
+  return CIGARETTE_BUTTS_VOLUME_FACTORS_PER_LITER[
+    resolveVolumeConversionVersion(version)
+  ];
 }
 
 export const CIGARETTE_BUTTS_PROVENANCES = [
@@ -91,8 +123,8 @@ export type CigaretteButtsLotInput = {
 };
 
 export type CigaretteButtsConversionOptions = {
-  volumeConversionVersion?: string;
-  massConversionVersion?: string;
+  volumeConversionVersion?: string | null;
+  massConversionVersion?: string | null;
   totalCountLimit?: number;
 };
 
@@ -193,14 +225,12 @@ export function calculateCigaretteButtsLot(
   options: CigaretteButtsConversionOptions = {},
 ): CigaretteButtsLotResult {
   const value = Math.max(0, input.value);
-  const massConversionVersion = isCigaretteButtsMassConversionVersion(options.massConversionVersion)
-    ? options.massConversionVersion
-    : CIGARETTE_BUTTS_MASS_CONVERSION_VERSION;
-  const volumeConversionVersion = isCigaretteButtsVolumeConversionVersion(
+  const massConversionVersion = resolveMassConversionVersion(
+    options.massConversionVersion,
+  );
+  const volumeConversionVersion = resolveVolumeConversionVersion(
     options.volumeConversionVersion,
-  )
-    ? options.volumeConversionVersion
-    : CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION;
+  );
   const count = input.source === "count"
     ? Math.trunc(value)
     : input.source === "mass_kg"
@@ -335,15 +365,21 @@ export function projectCurrentCigaretteButts(
   }
 
   const persistedResults = measurements?.cigaretteButtsLotResults ?? [];
+  const hasCompletePersistedResults = persistedResults.length === lots.length;
+  const persistedStatus = hasCompletePersistedResults
+    ? resolveLotRecalculationStatus(persistedResults)
+    : "not_recalculable";
+  if (persistedResults.length > 0 && persistedStatus === "not_recalculable") {
+    return {
+      count: normalizedHistoricalCount,
+      results: hasCompletePersistedResults ? persistedResults : null,
+      status: "not_recalculable",
+      source: "historical",
+      volumeConversionVersion: null,
+    };
+  }
   const results = lots.map((lot, index) => {
     const persisted = persistedResults[index];
-    if (
-      lot.source === "mass_kg" &&
-      persisted?.source === lot.source &&
-      !isCigaretteButtsMassConversionVersion(persisted.massConversionFormulaVersion)
-    ) {
-      return persisted;
-    }
     return calculateCigaretteButtsLot(lot, {
       massConversionVersion:
         lot.source === "mass_kg" && persisted?.source === lot.source
@@ -547,7 +583,7 @@ function normalizeMeasurementsFromLots(
   };
 }
 
-function resolveLotRecalculationStatus(
+export function resolveLotRecalculationStatus(
   results: CigaretteButtsLotResult[],
 ): CigaretteButtsRecalculationStatus {
   if (results.length === 0) return "not_applicable";

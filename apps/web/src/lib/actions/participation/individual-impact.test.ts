@@ -434,6 +434,47 @@ describe("individual action impact attribution", () => {
       .toBe("cleanmymap-butts-volume-legacy-unknown");
   });
 
+  it("does not recalculate a mass lot whose historical formula version is unknown", () => {
+    const historical = aggregateCigaretteButtsLots([
+      { id: "unknown-mass", source: "mass_kg", value: 1, condition: "propre" },
+    ]);
+    const snapshot = {
+      ...historical,
+      results: historical.results.map((result) => ({
+        ...result,
+        count: 2_500,
+        massConversionFormulaVersion: "historical-mass-unknown",
+      })),
+      summary: {
+        ...historical.summary,
+        totalCount: 2_500,
+        estimatedCount: 2_500,
+      },
+    };
+
+    const measurement = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 2_500,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_condition: "propre",
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_lots: snapshot,
+    }, { recalculateDerived: true });
+
+    expect(measurement?.comparableButtsCount).toBe(2_500);
+    expect(measurement?.cigaretteButtsLots?.results[0]?.count).toBe(2_500);
+    expect(measurement?.cigaretteButtsLots?.results[0]?.massConversionFormulaVersion)
+      .toBe("historical-mass-unknown");
+    const attribution = allocateActionParticipantImpact({
+      totalWasteKg: null,
+      totalCigaretteButts: null,
+      participants: [participant("alice", measurement)],
+    }).get("alice");
+    expect(attribution).toMatchObject({
+      cigaretteButts: 2_500,
+      cigaretteButtsMohsEligible: false,
+    });
+  });
+
   it("preserves scalar derived provenance and refuses an unknown conversion version", () => {
     const measurement = toIndividualImpactMeasurement({
       individual_cigarette_butts_count: 600,
@@ -448,6 +489,14 @@ describe("individual action impact attribution", () => {
       cigaretteButtsConversionVersion: "historical-formula-unknown",
       comparableButtsCount: 600,
       comparableButtsProvenance: "derived",
+    });
+    expect(allocateActionParticipantImpact({
+      totalWasteKg: null,
+      totalCigaretteButts: null,
+      participants: [participant("alice", measurement)],
+    }).get("alice")).toMatchObject({
+      cigaretteButts: 600,
+      cigaretteButtsMohsEligible: false,
     });
   });
 

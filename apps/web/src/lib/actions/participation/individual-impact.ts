@@ -12,6 +12,7 @@ import {
   type CigaretteButtsLotsSummary,
   MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
   isCigaretteButtsVolumeConversionVersion,
+  resolveLotRecalculationStatus,
 } from "@/lib/waste/cigarette-butts";
 
 export const WASTE_MOISTURE_NORMALIZATION_VERSION =
@@ -240,7 +241,13 @@ export function toIndividualImpactMeasurement(
   const persistedLots = isStoredCigaretteButtsLots(row.individual_cigarette_butts_lots)
     ? row.individual_cigarette_butts_lots
     : null;
-  const recalculatedLots = options.recalculateDerived && persistedLots && canRecalculatePersistedLots(persistedLots)
+  const persistedLotsStatus = persistedLots
+    ? resolveLotRecalculationStatus(persistedLots.results)
+    : "not_applicable";
+  const recalculatedLots = options.recalculateDerived &&
+    persistedLots &&
+    persistedLotsStatus === "recalculable" &&
+    canRecalculatePersistedLots(persistedLots)
     ? aggregateCigaretteButtsLots(persistedLots.lots, {
         totalCountLimit: MAX_INDIVIDUAL_CIGARETTE_BUTTS_COUNT,
       })
@@ -450,13 +457,30 @@ function buildButtsAttribution(
   buttsValue: ReturnType<typeof allocateMetric> extends Map<string, infer TValue> ? TValue | undefined : never,
   measurement: IndividualImpactMeasurement | null,
 ) {
+  const historicalButtsNotRecalculable = isCigaretteButtsProjectionNotRecalculable(measurement);
   return {
     cigaretteButts: nullableValue(buttsValue?.value),
     cigaretteButtsKind: buttsValue?.kind ?? "unavailable" as const,
     cigaretteButtsProvenance: individualMeasurementValue(buttsValue?.kind, measurement?.comparableButtsProvenance),
     cigaretteButtsInconsistent: Boolean(buttsValue?.inconsistent),
-    cigaretteButtsMohsEligible: !Boolean(buttsValue?.inconsistent),
+    cigaretteButtsMohsEligible: !Boolean(buttsValue?.inconsistent) &&
+      !historicalButtsNotRecalculable,
   };
+}
+
+function isCigaretteButtsProjectionNotRecalculable(
+  measurement: IndividualImpactMeasurement | null,
+): boolean {
+  if (!measurement) return false;
+  if (measurement.cigaretteButtsLots) {
+    return resolveLotRecalculationStatus(measurement.cigaretteButtsLots.results) === "not_recalculable";
+  }
+  if (measurement.cigaretteButtsProvenance !== "derived") return false;
+  const version = measurement.cigaretteButtsConversionVersion;
+  return version === null || (
+    !isCigaretteButtsMassConversionVersion(version) &&
+    !isCigaretteButtsVolumeConversionVersion(version)
+  );
 }
 
 function resolveWasteMohsValue(
