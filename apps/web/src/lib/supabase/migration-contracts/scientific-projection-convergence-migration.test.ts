@@ -21,12 +21,19 @@ const contextualMigration = readFileSync(
   ),
   "utf8",
 );
+const volumeProxyMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261101000004_scientific_projection_volume_proxy_v2.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("scientific projection convergence migration STATIC_CONTRACT", () => {
   it("keeps SQL and TypeScript version identities in parity", () => {
     expect(convergenceMigration).toContain(`'${ACTION_COLLECTION_REFERENCE_FORMULA_VERSION}'`);
     expect(convergenceMigration).toContain(`'${POLLUTION_SCORE_REFERENCE_FORMULA_VERSION}'`);
-    expect(convergenceMigration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
+    expect(volumeProxyMigration).toContain(`'${PUBLIC_IMPACT_PROJECTION_VERSION}'`);
     expect(contextualMigration).toContain(`'${ACTION_COLLECTION_CONTEXT_FORMULA_VERSION}'`);
   });
 
@@ -52,5 +59,15 @@ describe("scientific projection convergence migration STATIC_CONTRACT", () => {
     expect(convergenceMigration).toMatch(/grant execute on function public\.advance_public_impact_action_state\(date, text\) to service_role/i);
     expect(convergenceMigration).toMatch(/drop function if exists public\.action_collection_reference_averages_v1/i);
     expect(convergenceMigration).toMatch(/drop function if exists public\.action_pollution_score_references_v2/i);
+  });
+
+  it("advances only the public derived-state identity for the volume proxy", () => {
+    expect(volumeProxyMigration).toContain("volume proxy");
+    expect(volumeProxyMigration).toContain("does not duplicate the volume coefficient");
+    expect(volumeProxyMigration).not.toMatch(/update\s+public\.actions/i);
+    expect(volumeProxyMigration).not.toMatch(/delete\s+from\s+public\.actions/i);
+    expect(volumeProxyMigration).toContain(
+      "alter column methodology_version set default public.current_public_impact_projection_version()",
+    );
   });
 });

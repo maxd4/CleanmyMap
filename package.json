@@ -60,6 +60,7 @@
     "check:stack-doc-drift": "node scripts/checks/check-stack-doc-drift.mjs",
     "check:agent-skills": "node scripts/checks/check-agent-skill-mirrors.mjs",
     "check:github-actions": "node scripts/checks/check-github-actions-security.mjs",
+    "check:scientific-formulas": "node scripts/checks/check-scientific-formula-version.mjs",
     "check:gitnexus-hygiene": "node scripts/checks/check-gitnexus-hygiene.mjs",
     "check:learning-import-boundary": "node scripts/checks/check-learning-import-boundary.mjs",
     "check:actions-data-contract-boundary": "node scripts/checks/check-actions-data-contract-boundary.mjs",

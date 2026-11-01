@@ -82,7 +82,7 @@ Le facteur par défaut est `500 L/mégot`. Les conversions en piscines
 équivalences pédagogiques et ne signifient pas qu'un volume équivalent d'eau a
 été dépollué ou économisé.
 
-### Collectes de mégots multi-lots — `cleanmymap-butts-volume-v1`
+### Collectes de mégots multi-lots — `cleanmymap-butts-volume-v2`
 
 Le bilan peut conserver plusieurs lots distincts. Chaque lot possède un
 identifiant stable, une seule source (`count`, `mass_kg` ou `volume_l`), une
@@ -90,8 +90,9 @@ valeur non négative et un état (`propre`, `humide` ou `mouille`). Les unités 
 sont donc additionnées qu'entre lots différents ; un même lot n'est jamais
 recompté à partir de ses équivalents.
 
-Le proxy de volume est versionné `cleanmymap-butts-volume-v1` et utilise
-`600 mégots/L`, indépendamment de l'état. La version courante du proxy
+Le proxy de volume historique `cleanmymap-butts-volume-v1` utilise
+`600 mégots/L`. La version courante `cleanmymap-butts-volume-v2` utilise
+`700 mégots/L`, indépendamment de l'état. La version courante du proxy
 masse/nombre est `impact-terrain-2026-butts-mass-v2` : `0,22 g/mégot` pour
 `propre`, `0,50 g/mégot` pour `humide` et le même proxy `0,50 g/mégot` pour
 `mouille`, faute de référence indépendante. La version historique
@@ -102,6 +103,12 @@ sont le [mode opératoire World Cleanup Day France](https://www.worldcleanupday.
 et le [guide Mégothon](https://trash-spotter.green/wp-content/uploads/2025/01/Guide_Megothon_COLLECTIVITE.pdf).
 Un lot est calculé une seule fois ; le nombre dérivé est arrondi au niveau du
 lot avant toute agrégation, tandis que la masse mesurée conserve sa précision.
+Une évolution de proxy suit une procédure unique : conserver l'ancienne version,
+modifier l'identité effective de méthode, recalculer seulement les dérivés dont
+la source est conservée, puis converger les références SQL, moyennes
+contextuelles, KPI, état public, snapshots et attributions individuelles dans
+cet ordre. Une reprise ou une seconde exécution est idempotente ; les valeurs
+legacy ambiguës et les PDF publiés restent inchangés.
 
 Le contrat conserve la mesure source brute et qualifie chaque équivalent : un
 compte est `counted`, une conversion de masse est `weight_converted` et une

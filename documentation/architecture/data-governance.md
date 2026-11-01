@@ -253,6 +253,19 @@ bon identifiant. L’Annuaire reste indépendant de ces tables.
 
 #### Mesures de masse et compatibilité historique
 
+Les changements de proxy scientifique sont forward-only. La mesure source
+(comptage, masse réellement pesée ou volume réellement saisi) ne change jamais
+lors d'une évolution de facteur. Seuls les résultats dérivés recalculables
+depuis une source conservée peuvent suivre la version courante ; une valeur
+historique sans provenance identifiable reste inchangée et est signalée comme
+non recalculable. Toute version de méthode doit inclure son identité effective
+(facteurs et formule), et la parité TypeScript/SQL est contrôlée avant la
+reconstruction. L'ordre de convergence est : dérivés par lot, références et
+moyennes, KPI/agrégats publics, snapshots CURRENT, puis attributions et
+gamification dépendantes. Les verrous, upserts idempotents et reprises
+transactionnelles existants servent au retry ; les snapshots historiques et
+PDF publiés ne sont jamais réécrits.
+
 `wasteKg` désigne la masse totale des déchets hors mégots. `null` signifie
 « non mesuré », `0` signifie « zéro explicitement observé » et une valeur
 positive est une mesure connue. Les quatre catégories canoniques

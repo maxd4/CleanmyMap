@@ -110,7 +110,7 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("Ajoutez un lot par collecte distincte");
     expect(markup).toContain("100 comptés");
     expect(markup).toContain("300 estimés");
-    expect(markup).toContain("600 mégots/L");
+    expect(markup).toContain("700 mégots/L");
     expect(markup).toContain('data-testid="megots-lot-counted"');
     expect(markup).toContain('data-testid="megots-lot-volume"');
   });

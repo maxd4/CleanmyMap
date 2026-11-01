@@ -289,7 +289,7 @@ produits. Les propriétaires actuels sont distincts :
   `citizen`, `company` et `school` du formulaire ;
 - `pollution-score-references-v2` pour les maxima globaux et départementaux du
   score cartographique ;
-- `impact-terrain-public-2026.09-v3` pour l'état incrémental et les agrégats
+- `impact-terrain-public-2026.09-v4` pour l'état incrémental et les agrégats
   mensuels de l'impact public.
 
 Ces identités ne sont pas interchangeables : une moyenne contextualisée n'est
@@ -308,6 +308,20 @@ inchangés. Les snapshots historiques et les PDF déjà publiés sont conservés
 ils peuvent être relus comme historiques, mais ne sont jamais réécrits avec la
 méthode courante. Les écritures de reconstruction sont transactionnelles,
 protégées par le verrou d'état public et rejouables après échec.
+
+#### Procédure CURRENT de changement de proxy scientifique
+
+Le changement d'un facteur suit le même ordre pour les lots collectifs et
+individuels : (1) conserver la mesure source, la version et le résultat
+historique ; (2) ajouter la nouvelle version et son identité effective dans le
+moteur canonique ; (3) vérifier la parité TypeScript/SQL et refuser un facteur
+modifié sans identité modifiée ; (4) reconstruire les dérivés éligibles, puis
+les références SQL, moyennes contextualisées, KPI, agrégats publics, snapshots
+CURRENT et attributions/gamification dépendantes ; (5) exécuter le même plan
+après échec jusqu'à convergence. Une observation brute, une provenance inconnue,
+un PDF publié ou un snapshot historique est hors recalcul. Le lock SQL, les
+clés d'événement et les upserts existants rendent la reprise idempotente ; un
+cache ou snapshot portant une autre identité est refusé comme CURRENT.
 
 Le score doit être présenté comme :
 
@@ -557,10 +571,11 @@ Pour les bilans multi-lots de mégots, la source de vérité est la collection d
 lots persistée dans les métadonnées de l'action. Chaque lot porte un identifiant
 stable, une seule unité source (`count`, `mass_kg` ou `volume_l`), une valeur
 non négative et l'état de la collecte. Le volume est une mesure source valide,
-pas un champ informatif : `cleanmymap-butts-volume-v1` applique `600 mégots/L`.
+pas un champ informatif : `cleanmymap-butts-volume-v2` applique `700 mégots/L`.
 Le calcul par lot réutilise `impact-terrain-2026-butts-mass-v2` pour une nouvelle
 saisie : `0,22 g/mégot` propre/sec, `0,50 g/mégot` humide et le même proxy pour
-mouille faute de référence indépendante. Le volume conserve `600 mégots/L`.
+mouille faute de référence indépendante. Le volume courant applique `700 mégots/L` ;
+les lots `cleanmymap-butts-volume-v1` conservent `600 mégots/L`.
 Ces coefficients sont des ordres de grandeur variables et estimatifs, non une
 densité ou une masse physique universelle ; les anciennes mesures gardent leur
 version `impact-terrain-2026-butts-mass-v1` et leurs valeurs. Le moteur arrondit

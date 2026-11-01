@@ -230,6 +230,9 @@ jobs:
       - name: Stack documentation drift
         run: npm run check:stack-doc-drift
 
+      - name: Scientific formula identity and SQL parity
+        run: npm run check:scientific-formulas
+
       - name: GitHub Actions security policy
         id: github_actions_security
         run: npm run check:github-actions

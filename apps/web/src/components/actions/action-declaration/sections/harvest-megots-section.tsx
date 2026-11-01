@@ -2,7 +2,10 @@
 
 import { Cigarette } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
-import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
+import {
+  CIGARETTE_BUTTS_PER_VOLUME_LITER,
+  MAX_CIGARETTE_BUTTS_COUNT,
+} from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
 import { ButtsComparisonVisual } from "../ui/harvest-gauges";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
@@ -135,7 +138,7 @@ function MegotsLotEditor({
           </select>
         </label>
       </div>
-      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {formatKg(result.massKg)} kg {result.massProvenance === "measured" ? "mesurés" : "estimés"}{result.source === "volume_l" ? " · proxy 600 mégots/L" : ""}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative pour calculer ce lot.</p>}
+      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {formatKg(result.massKg)} kg {result.massProvenance === "measured" ? "mesurés" : "estimés"}{result.source === "volume_l" ? ` · proxy ${CIGARETTE_BUTTS_PER_VOLUME_LITER} mégots/L` : ""}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative pour calculer ce lot.</p>}
     </div>
   );
 }
@@ -193,7 +196,7 @@ export function HarvestMegotsSection({
       </label>
 
       <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-        Ajoutez un lot par collecte distincte. Un lot possède une seule mesure source ; les équivalents sont calculés côté serveur et le total ne compte jamais deux fois le même lot. Le volume utilise le repère estimatif de 600 mégots/L.
+        Ajoutez un lot par collecte distincte. Un lot possède une seule mesure source ; les équivalents sont calculés côté serveur et le total ne compte jamais deux fois le même lot. Le volume utilise le repère estimatif courant de {CIGARETTE_BUTTS_PER_VOLUME_LITER} mégots/L ; les historiques conservent leur version.
       </p>
 
       {megotsLots !== null ? (
