@@ -626,8 +626,12 @@ function isRouteGuidedRoutingAudit(value: unknown): value is RouteGuidedRoutingA
     typeof audit.originVerified === "boolean" &&
     typeof audit.waypointOrderVerified === "boolean" &&
     Array.isArray(audit.waypointIds) && audit.waypointIds.every((id) => typeof id === "string") &&
-    typeof audit.sectorDeviationKm === "number" && Number.isFinite(audit.sectorDeviationKm) && audit.sectorDeviationKm >= 0 &&
+    (audit.sectorDeviationKm === null || (typeof audit.sectorDeviationKm === "number" && Number.isFinite(audit.sectorDeviationKm) && audit.sectorDeviationKm >= 0)) &&
     typeof audit.sectorWithinBounds === "boolean" &&
+    (audit.sectorStatus === undefined || audit.sectorStatus === "within" || audit.sectorStatus === "outside" || audit.sectorStatus === "unknown") &&
+    (audit.sectorStatus !== "unknown" || (audit.sectorDeviationKm === null && audit.sectorWithinBounds === false)) &&
+    (audit.sectorStatus !== "within" || (audit.sectorDeviationKm !== null && audit.sectorWithinBounds === true)) &&
+    (audit.sectorStatus !== "outside" || (audit.sectorDeviationKm !== null && audit.sectorWithinBounds === false)) &&
     (audit.warning === null || typeof audit.warning === "string") &&
     Boolean(budget) && isRouteGuidedBudget(budget) &&
     typeof budget?.travelMinutes === "number" && Number.isFinite(budget.travelMinutes) && budget.travelMinutes >= 0 &&

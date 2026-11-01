@@ -54,6 +54,7 @@ function buildGuidedActionFixture() {
       waypointIds: [waypoint.id],
       sectorDeviationKm: 0,
       sectorWithinBounds: true,
+      sectorStatus: "within" as const,
       warning: "Fournisseur réel non appelé dans la fixture CI.",
       budget: {
         ...planningMode.budget,

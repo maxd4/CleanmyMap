@@ -93,14 +93,19 @@ export type RouteGuidedSegment = {
   estimated: boolean;
 };
 
+export type RouteGuidedSectorStatus = "within" | "outside" | "unknown";
+
 export type RouteGuidedRoutingAudit = {
   availability: "network" | "fallback-estimated";
   loopVerified: boolean;
   originVerified: boolean;
   waypointOrderVerified: boolean;
   waypointIds: string[];
-  sectorDeviationKm: number;
+  /** Null means the final collection geometry could not be verified. */
+  sectorDeviationKm: number | null;
   sectorWithinBounds: boolean;
+  /** Optional for compatibility with older snapshots; new audits always set it. */
+  sectorStatus?: RouteGuidedSectorStatus;
   warning: string | null;
   budget: RouteGuidedBudget & {
     travelMinutes: number;

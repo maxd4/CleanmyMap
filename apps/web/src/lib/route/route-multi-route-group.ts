@@ -18,6 +18,7 @@ import type {
 } from "./route-planning-mode";
 import type {
   RouteGuidedRoutingAudit,
+  RouteGuidedSectorStatus,
   RouteGuidedSegment,
 } from "./route-response-contract";
 import { buildRouteCalibrationContext } from "./route-calibration";
@@ -127,23 +128,89 @@ function geometryMatchesGuidedPlan(
   return true;
 }
 
+type GuidedSectorAudit = {
+  deviationKm: number | null;
+  status: RouteGuidedSectorStatus;
+};
+
+function unknownGuidedSectorAudit(): GuidedSectorAudit {
+  return { deviationKm: null, status: "unknown" };
+}
+
+function collectionWaypointCoordinateIndexes(
+  geometry: RouteGeometry,
+  waypoints: readonly RoutePlannedWaypoint[],
+): number[] | null {
+  if (
+    waypoints.length === 0 ||
+    geometry.coordinates.length < waypoints.length + 2 ||
+    geometry.legs.length !== waypoints.length + 1 ||
+    geometry.legs.some((leg, index) =>
+      leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
+    )
+  ) {
+    return null;
+  }
+
+  const lastCoordinateIndex = geometry.coordinates.length - 1;
+  let coordinateIndex = 1;
+  const indexes: number[] = [];
+  for (const waypoint of waypoints) {
+    const matchIndex = geometry.coordinates.findIndex((coordinate, index) =>
+      index >= coordinateIndex &&
+      index < lastCoordinateIndex &&
+      routeDistanceKm(
+        waypoint,
+        { latitude: coordinate[0], longitude: coordinate[1] },
+      ) <= GUIDED_WAYPOINT_MATCH_RADIUS_KM,
+    );
+    if (matchIndex < 0) return null;
+    indexes.push(matchIndex);
+    coordinateIndex = matchIndex + 1;
+  }
+  return indexes;
+}
+
 function guidedSectorDeviationKm(
   geometry: RouteGeometry,
   sector: RouteGroupAssignment["plannedSector"],
   waypoints: readonly RoutePlannedWaypoint[],
-): number {
-  if (!sector) return 0;
+  loopVerified: boolean,
+): GuidedSectorAudit {
+  if (!sector || !loopVerified) return unknownGuidedSectorAudit();
+  const waypointIndexes = collectionWaypointCoordinateIndexes(geometry, waypoints);
+  if (!waypointIndexes) return unknownGuidedSectorAudit();
+
+  // Only the final polyline between consecutive waypoints is collection
+  // geometry. The first and last slices are the origin/return links and are
+  // deliberately excluded from the sector audit.
   const collectionCoordinates: Coordinate[] = waypoints.map(({ latitude, longitude }) => [latitude, longitude]);
-  for (let legIndex = 1; legIndex < geometry.legs.length - 1; legIndex += 1) {
-    const steps = geometry.legs[legIndex]?.steps ?? [];
-    collectionCoordinates.push(...steps.flatMap((step) => step.geometry ?? []));
+  for (let waypointIndex = 1; waypointIndex < waypointIndexes.length; waypointIndex += 1) {
+    const fromCoordinateIndex = waypointIndexes[waypointIndex - 1]!;
+    const toCoordinateIndex = waypointIndexes[waypointIndex]!;
+    const collectionLegCoordinates = geometry.coordinates.slice(
+      fromCoordinateIndex,
+      toCoordinateIndex + 1,
+    );
+    if (collectionLegCoordinates.length < 2) return unknownGuidedSectorAudit();
+    collectionCoordinates.push(...collectionLegCoordinates);
   }
-  return Math.max(0, ...collectionCoordinates.map((coordinate) =>
+  if (collectionCoordinates.length === 0 || collectionCoordinates.some((coordinate) =>
+    coordinate.length !== 2 || !Number.isFinite(coordinate[0]) || !Number.isFinite(coordinate[1]),
+  )) {
+    return unknownGuidedSectorAudit();
+  }
+
+  const deviationKm = Math.max(0, ...collectionCoordinates.map((coordinate) =>
     routeDistanceKm(
       sector.center,
       { latitude: coordinate[0], longitude: coordinate[1] },
     ) - sector.radiusKm,
   ));
+  return {
+    deviationKm,
+    status: deviationKm <= 0.01 ? "within" : "outside",
+  };
 }
 
 function buildGuidedSegments(
@@ -179,7 +246,12 @@ function buildGuidedRoutingAudit(params: {
   const originVerified = Boolean(first && last) &&
     routeDistanceKm(params.origin, { latitude: first![0], longitude: first![1] }) <= 0.01 &&
     routeDistanceKm(params.origin, { latitude: last![0], longitude: last![1] }) <= 0.01;
-  const sectorDeviationKm = guidedSectorDeviationKm(params.geometry, params.sector, params.waypoints);
+  const sectorAudit = guidedSectorDeviationKm(
+    params.geometry,
+    params.sector,
+    params.waypoints,
+    loopVerified,
+  );
   const collectionMinutesAvailable = Math.max(
     0,
     params.budget.totalMinutes - params.budget.organizationMarginMinutes - params.geometry.durationMinutes,
@@ -188,9 +260,11 @@ function buildGuidedRoutingAudit(params: {
     collectionMinutesAvailable >= params.budget.minimumCollectionMinutes;
   const warning = params.warning ?? (
     withinBudget
-      ? sectorDeviationKm > 0
+      ? sectorAudit.status === "outside"
         ? "Le tracé réseau guidé dépasse le secteur déclaré ; l'écart est exposé dans l'audit."
-        : null
+        : sectorAudit.status === "unknown"
+          ? "Le respect du secteur guidé ne peut pas être vérifié à partir de la géométrie finale."
+          : null
       : "La boucle guidée ne respecte pas le budget utilisateur déclaré."
   );
   return {
@@ -201,8 +275,9 @@ function buildGuidedRoutingAudit(params: {
       originVerified,
       waypointOrderVerified: loopVerified,
       waypointIds: params.waypoints.map(({ id }) => id),
-      sectorDeviationKm: round(sectorDeviationKm),
-      sectorWithinBounds: sectorDeviationKm <= 0.01,
+      sectorDeviationKm: sectorAudit.deviationKm === null ? null : round(sectorAudit.deviationKm),
+      sectorWithinBounds: sectorAudit.status === "within",
+      sectorStatus: sectorAudit.status,
       warning,
       budget: {
         ...params.budget,

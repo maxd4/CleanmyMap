@@ -115,8 +115,11 @@ quota distribué existant d’une requête par seconde est respecté avec une
 attente bornée. La réponse expose l’audit `guidedRouting` et les
 `guidedSegments` : les liaisons `origin-link` sont distinguées des portions
 `collection`, l’ordre des waypoints, la fermeture, l’écart au secteur et le
-budget sont vérifiables. Une géométrie de fallback est toujours marquée
-estimée et indisponible comme parcours piéton réseau validé.
+budget sont vérifiables. L’audit du secteur est calculé sur la polyline finale
+des seules portions `collection` ; `sectorStatus` vaut `unknown` et
+`sectorDeviationKm` vaut `null` si cette séparation ne peut pas être démontrée.
+Une géométrie de fallback est toujours marquée estimée et indisponible comme
+parcours piéton réseau validé.
 
 Dans `RouteSection`, le mode guidé permet de choisir le départ commun sur la
 carte, de configurer chaque secteur, de nommer les groupes, de régler leurs

@@ -34,8 +34,8 @@ function formatNumber(value: number, maximumFractionDigits = 2): string {
   return new Intl.NumberFormat("fr-FR", { maximumFractionDigits }).format(value);
 }
 
-function formatDistance(value: number): string {
-  return `${formatNumber(value)} km`;
+function formatDistance(value: number | null): string {
+  return value === null ? "Non vérifiable" : `${formatNumber(value)} km`;
 }
 
 function formatDuration(value: number | null): string {
@@ -288,7 +288,7 @@ function renderStops(routes: ExportRoute[]): string {
 function renderGuidedPlan(routes: ExportRoute[]): string {
   const sections = routes.filter((route) => route.plannedSector || route.guidedRouting);
   if (sections.length === 0) return "";
-  return `<section class="route-pdf-guided"><h3>Planification territoriale guidée</h3>${sections.map((route) => { const audit = route.guidedRouting; const sector = route.plannedSector; return `<article><p><strong>${escapeHtml(route.label || `Groupe ${route.groupIndex}`)}</strong> · ${route.volunteerCount} bénévoles</p>${sector ? `<p>Secteur : centre ${sector.center.latitude.toFixed(5)}, ${sector.center.longitude.toFixed(5)} · rayon ${formatDistance(sector.radiusKm)}</p>` : ""}${audit ? `<p>Routage : ${audit.availability === "network" ? "réseau piéton" : "fallback estimé"} · boucle ${audit.loopVerified ? "vérifiée" : "non vérifiée"} · ordre des passages ${audit.waypointOrderVerified ? "vérifié" : "non vérifié"} · écart secteur ${formatDistance(audit.sectorDeviationKm)}.</p><p>Budget : ${audit.budget.travelMinutes} min déplacement / ${audit.budget.travelMaxMinutes} min max · ${audit.budget.collectionMinutesAvailable} min collecte disponible / ${audit.budget.minimumCollectionMinutes} min réservées · ${audit.budget.withinBudget ? "respecté" : "non respecté"}.</p>` : "<p>Audit de routage indisponible.</p>"}</article>`; }).join("")}</section>`;
+  return `<section class="route-pdf-guided"><h3>Planification territoriale guidée</h3>${sections.map((route) => { const audit = route.guidedRouting; const sector = route.plannedSector; const sectorStatus = audit?.sectorStatus ?? "unknown"; const sectorLabel = sectorStatus === "unknown" ? "inconnu (géométrie finale non vérifiable)" : `${sectorStatus === "within" ? "dans le secteur" : "hors secteur"} · écart ${formatDistance(audit?.sectorDeviationKm ?? null)}`; return `<article><p><strong>${escapeHtml(route.label || `Groupe ${route.groupIndex}`)}</strong> · ${route.volunteerCount} bénévoles</p>${sector ? `<p>Secteur : centre ${sector.center.latitude.toFixed(5)}, ${sector.center.longitude.toFixed(5)} · rayon ${formatDistance(sector.radiusKm)}</p>` : ""}${audit ? `<p>Routage : ${audit.availability === "network" ? "réseau piéton" : "fallback estimé"} · boucle ${audit.loopVerified ? "vérifiée" : "non vérifiée"} · ordre des passages ${audit.waypointOrderVerified ? "vérifié" : "non vérifié"} · secteur ${sectorLabel}.</p><p>Budget : ${audit.budget.travelMinutes} min déplacement / ${audit.budget.travelMaxMinutes} min max · ${audit.budget.collectionMinutesAvailable} min collecte disponible / ${audit.budget.minimumCollectionMinutes} min réservées · ${audit.budget.withinBudget ? "respecté" : "non respecté"}.</p>` : "<p>Audit de routage indisponible.</p>"}</article>`; }).join("")}</section>`;
 }
 
 function renderCorridors(

@@ -230,6 +230,7 @@ describe("route PDF export", () => {
         waypointIds: [planningMode.groups[index]!.waypoints[0]!.id],
         sectorDeviationKm: 0,
         sectorWithinBounds: true,
+        sectorStatus: "within",
         warning: null,
         budget: {
           ...planningMode.budget,
@@ -254,6 +255,7 @@ describe("route PDF export", () => {
     expect(html).toContain("Prédiction");
     expect(html).toContain('data-route-planned-waypoint="group-1-waypoint-1"');
     expect(html).toContain("réseau piéton");
+    expect(html).toContain("secteur dans le secteur");
     expect(html).toContain("45 min réservées");
   });
 });

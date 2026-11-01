@@ -115,7 +115,7 @@ export function OperationalRouteEditor({
                 {route.plannedSector ? <p>Secteur : centre {route.plannedSector.center.latitude.toFixed(5)}, {route.plannedSector.center.longitude.toFixed(5)} · rayon {route.plannedSector.radiusKm} km</p> : null}
                 {route.plannedWaypoints?.length ? <p className="mt-1">Passages : {route.plannedWaypoints.map((waypoint) => `${waypoint.order + 1}. ${waypoint.label}`).join(" · ")}</p> : null}
                 {route.guidedBudget ? <p className="mt-1">Budget : {route.guidedBudget.totalMinutes} min total · {route.guidedBudget.travelMaxMinutes} min déplacement max · {route.guidedBudget.minimumCollectionMinutes} min collecte réservée</p> : null}
-                {route.guidedRouting ? <p className="mt-1">Routage : {route.guidedRouting.availability === "network" ? "réseau piéton" : "fallback estimé"} · boucle {route.guidedRouting.loopVerified ? "fermée" : "à vérifier"} · ordre {route.guidedRouting.waypointOrderVerified ? "conservé" : "à vérifier"}{route.guidedRouting.warning ? ` · ${route.guidedRouting.warning}` : ""}</p> : null}
+                {route.guidedRouting ? <p className="mt-1">Routage : {route.guidedRouting.availability === "network" ? "réseau piéton" : "fallback estimé"} · boucle {route.guidedRouting.loopVerified ? "fermée" : "à vérifier"} · ordre {route.guidedRouting.waypointOrderVerified ? "conservé" : "à vérifier"} · secteur {route.guidedRouting.sectorStatus === "within" ? "respecté" : route.guidedRouting.sectorStatus === "outside" ? "hors périmètre" : "inconnu"}{route.guidedRouting.warning ? ` · ${route.guidedRouting.warning}` : ""}</p> : null}
               </div>
             ) : null}
           </div>

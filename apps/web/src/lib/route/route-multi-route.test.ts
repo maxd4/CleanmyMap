@@ -61,6 +61,58 @@ function partition(candidates: RoutePlannerCandidate[]) {
   });
 }
 
+const guidedBudget = {
+  totalMinutes: 90,
+  organizationMarginMinutes: 15,
+  minimumCollectionMinutes: 45,
+  travelMaxMinutes: 30,
+} as const;
+
+function guidedPartitionFor(
+  guidedOrigin: RoutePlannerOrigin,
+  sector: { center: { latitude: number; longitude: number }; radiusKm: number },
+  waypoints: Array<{ id: string; label: string; latitude: number; longitude: number }>,
+) {
+  return partitionRouteCandidates({
+    origin: guidedOrigin,
+    candidates: [],
+    volunteers: 5,
+    groupCount: 1,
+    travelBudgetMinutes: 60,
+    maxStops: 6,
+    priorityVsTravel: 65,
+    planningMode: {
+      type: "territorial-guided",
+      version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+      budget: guidedBudget,
+      groups: [{ sector, waypoints }],
+    },
+  });
+}
+
+function networkGeometryWithCoordinates(
+  requestedCoordinates: [number, number][],
+  routedCoordinates: [number, number][],
+) {
+  const base = createFallbackRouteGeometry(requestedCoordinates);
+  const legs = requestedCoordinates.slice(1).map((_, index) => ({
+    fromStopIndex: index,
+    toStopIndex: index + 1,
+    distanceKm: 1,
+    estimatedMinutes: 5,
+  }));
+  return {
+    ...base,
+    coordinates: routedCoordinates,
+    legs,
+    returnLeg: legs.at(-1) ?? null,
+    mode: "network" as const,
+    provider: "fossgis-osrm" as const,
+    profile: "foot" as const,
+    estimated: false,
+  };
+}
+
 type Coordinate = readonly [number, number];
 
 function referenceSharedDistanceForPair(
@@ -248,6 +300,100 @@ describe("coordinated multi-route routing", () => {
     expect(result.metrics.coverageGain).toBe(0);
   });
 
+  it("audits the final collection polyline when network steps are absent", async () => {
+    const guidedOrigin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypointOne = { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 };
+    const waypointTwo = { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 };
+    const sector = { center: { latitude: 48.857, longitude: 2.3522 }, radiusKm: 0.1 };
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) =>
+      networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!,
+        coordinates[1]!,
+        [48.86, 2.3522],
+        coordinates[2]!,
+        coordinates.at(-1)!,
+      ]),
+    );
+
+    const result = await routePartitionedGroups({
+      origin: guidedOrigin,
+      candidates: [],
+      partition: guidedPartitionFor(guidedOrigin, sector, [waypointOne, waypointTwo]),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+    const audit = result.groupRoutes[0]?.guidedRouting;
+
+    expect(audit).toEqual(expect.objectContaining({
+      availability: "network",
+      sectorStatus: "outside",
+      sectorWithinBounds: false,
+    }));
+    expect(audit?.sectorDeviationKm).toBeGreaterThan(0.1);
+    expect(audit?.warning).toContain("dépasse le secteur");
+  });
+
+  it("does not affirm sector compliance when collection geometry cannot be anchored", async () => {
+    const guidedOrigin = { latitude: 48.8566, longitude: 2.3522, source: "browser" as const };
+    const waypoints = [
+      { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 },
+      { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 },
+    ];
+    const sector = { center: { latitude: 48.857, longitude: 2.3522 }, radiusKm: 0.1 };
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) =>
+      networkGeometryWithCoordinates(coordinates, [coordinates[0]!, coordinates.at(-1)!]),
+    );
+
+    const result = await routePartitionedGroups({
+      origin: guidedOrigin,
+      candidates: [],
+      partition: guidedPartitionFor(guidedOrigin, sector, waypoints),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+    const audit = result.groupRoutes[0]?.guidedRouting;
+
+    expect(audit).toEqual(expect.objectContaining({
+      sectorStatus: "unknown",
+      sectorWithinBounds: false,
+      sectorDeviationKm: null,
+    }));
+    expect(audit?.warning).toContain("ne peut pas être vérifié");
+  });
+
+  it("confirms collection compliance while allowing origin and return links outside the sector", async () => {
+    const guidedOrigin = { latitude: 48.84, longitude: 2.3, source: "browser" as const };
+    const waypointOne = { id: "one", label: "Un", latitude: 48.857, longitude: 2.3522 };
+    const waypointTwo = { id: "two", label: "Deux", latitude: 48.8571, longitude: 2.3522 };
+    const sector = { center: { latitude: 48.857, longitude: 2.3522 }, radiusKm: 0.1 };
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) =>
+      networkGeometryWithCoordinates(coordinates, [
+        coordinates[0]!,
+        coordinates[1]!,
+        [48.85705, 2.3522],
+        coordinates[2]!,
+        coordinates.at(-1)!,
+      ]),
+    );
+
+    const result = await routePartitionedGroups({
+      origin: guidedOrigin,
+      candidates: [],
+      partition: guidedPartitionFor(guidedOrigin, sector, [waypointOne, waypointTwo]),
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+    const audit = result.groupRoutes[0]?.guidedRouting;
+
+    expect(audit).toEqual(expect.objectContaining({
+      availability: "network",
+      sectorStatus: "within",
+      sectorWithinBounds: true,
+      sectorDeviationKm: 0,
+    }));
+    expect(audit?.originVerified).toBe(true);
+  });
+
   it("keeps fallback overlap metrics explicitly unmeasured", async () => {
     routeProviderMock.mockImplementation(async () => {
       throw new Error("network unavailable");
@@ -314,12 +460,13 @@ describe("coordinated multi-route routing", () => {
       mode: routeGeometry.mode,
       estimated: routeGeometry.estimated,
       availability: guidedRouting?.availability,
+      sectorStatus: guidedRouting?.sectorStatus,
       loopVerified: guidedRouting?.loopVerified,
       withinBudget: guidedRouting?.budget.withinBudget,
       warning: guidedRouting?.warning,
     }))).toEqual([
-      { mode: "fallback", estimated: true, availability: "fallback-estimated", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
-      { mode: "fallback", estimated: true, availability: "fallback-estimated", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
+      { mode: "fallback", estimated: true, availability: "fallback-estimated", sectorStatus: "within", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
+      { mode: "fallback", estimated: true, availability: "fallback-estimated", sectorStatus: "within", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
     ]);
   });
 

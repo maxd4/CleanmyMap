@@ -80,6 +80,7 @@ const guidedRecommendation = {
       waypointIds: [group.waypoints[0]!.id],
       sectorDeviationKm: 0,
       sectorWithinBounds: true,
+      sectorStatus: "within" as const,
       warning: null,
       budget: {
         ...guidedMode.budget,

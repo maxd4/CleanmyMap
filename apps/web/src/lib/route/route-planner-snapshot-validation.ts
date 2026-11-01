@@ -235,8 +235,12 @@ function isRouteGuidedRoutingAudit(value: unknown): boolean {
     typeof audit.originVerified === "boolean" &&
     typeof audit.waypointOrderVerified === "boolean" &&
     isStringArray(audit.waypointIds) &&
-    finiteNonNegative(audit.sectorDeviationKm) &&
+    (audit.sectorDeviationKm === null || finiteNonNegative(audit.sectorDeviationKm)) &&
     typeof audit.sectorWithinBounds === "boolean" &&
+    (audit.sectorStatus === undefined || audit.sectorStatus === "within" || audit.sectorStatus === "outside" || audit.sectorStatus === "unknown") &&
+    (audit.sectorStatus !== "unknown" || (audit.sectorDeviationKm === null && audit.sectorWithinBounds === false)) &&
+    (audit.sectorStatus !== "within" || (audit.sectorDeviationKm !== null && audit.sectorWithinBounds === true)) &&
+    (audit.sectorStatus !== "outside" || (audit.sectorDeviationKm !== null && audit.sectorWithinBounds === false)) &&
     (audit.warning === null || typeof audit.warning === "string") &&
     Boolean(budget) &&
     guidedBudget !== null &&

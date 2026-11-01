@@ -237,11 +237,12 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       availability: guidedRouting?.availability,
       loopVerified: guidedRouting?.loopVerified,
       waypointOrderVerified: guidedRouting?.waypointOrderVerified,
+      sectorStatus: guidedRouting?.sectorStatus,
       withinBudget: guidedRouting?.budget.withinBudget,
       waypointIds: guidedRouting?.waypointIds,
     }))).toEqual([
-      { availability: "network", loopVerified: true, waypointOrderVerified: true, withinBudget: true, waypointIds: ["north-1", "north-2"] },
-      { availability: "network", loopVerified: true, waypointOrderVerified: true, withinBudget: true, waypointIds: ["south-1"] },
+      { availability: "network", loopVerified: true, waypointOrderVerified: true, sectorStatus: "within", withinBudget: true, waypointIds: ["north-1", "north-2"] },
+      { availability: "network", loopVerified: true, waypointOrderVerified: true, sectorStatus: "within", withinBudget: true, waypointIds: ["south-1"] },
     ]);
     expect(payload.groupRoutes.every(({ routeGeometry }) => {
       const first = routeGeometry.coordinates[0];
