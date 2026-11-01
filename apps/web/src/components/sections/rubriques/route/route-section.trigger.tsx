@@ -12,6 +12,7 @@ export function RouteRecommendationTrigger({
   isRequestInFlight,
   isResolvingOrigin,
   recommendationRequested,
+  planningModeError,
   requestRecommendation,
 }: {
   fr: boolean;
@@ -23,9 +24,10 @@ export function RouteRecommendationTrigger({
   isRequestInFlight: boolean;
   isResolvingOrigin: boolean;
   recommendationRequested: boolean;
+  planningModeError: string | null;
   requestRecommendation: () => Promise<void>;
 }) {
-  const disabled = isLoading || isRequestInFlight || (originMode === "map" && !mapOrigin);
+  const disabled = isLoading || isRequestInFlight || Boolean(planningModeError) || (originMode === "map" && !mapOrigin);
   const label = originMode === "map" && !mapOrigin
     ? fr ? "Choisir un point sur la carte" : "Choose a point on the map"
     : isResolvingOrigin
@@ -36,6 +38,7 @@ export function RouteRecommendationTrigger({
           ? recommendationRequested ? "Recalculer la recommandation" : "Calculer la recommandation"
           : recommendationRequested ? "Recalculate recommendation" : "Calculate recommendation";
   return <div className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
+    {planningModeError ? <p role="alert" className="mb-3 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-xs font-bold text-amber-100">{planningModeError}</p> : null}
     {isLoaded && isSignedIn ? <button type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestRecommendation(); }} disabled={disabled} aria-busy={isResolvingOrigin || isLoading || isRequestInFlight} className="min-h-11 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60">{label}</button> : <Link href={buildSignInRedirectHref("/actions/new?panel=itineraire")} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400">{fr ? "Se connecter pour calculer" : "Sign in to calculate"}</Link>}
   </div>;
 }

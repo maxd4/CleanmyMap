@@ -29,6 +29,8 @@ import { buildCleanupWorkload } from "./route-cleanup-workload";
 import {
   plannedWaypointsForGroup,
   routeGuidedBudgetForMode,
+  MAX_ROUTE_GUIDED_GROUP_COUNT,
+  MAX_ROUTE_GUIDED_VOLUNTEERS,
   type RouteGuidedBudget,
   type RouteGuidedSector,
   type RoutePlanningMode,
@@ -36,8 +38,8 @@ import {
 } from "./route-planning-mode";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
-export const MAX_ROUTE_VOLUNTEERS = 100;
-export const MAX_ROUTE_GROUP_COUNT = 12;
+export const MAX_ROUTE_VOLUNTEERS = MAX_ROUTE_GUIDED_VOLUNTEERS;
+export const MAX_ROUTE_GROUP_COUNT = MAX_ROUTE_GUIDED_GROUP_COUNT;
 export const MAX_ROUTE_PARTITION_CANDIDATES = 72;
 const ROUTE_GROUP_SHARED_ORIGIN_RADIUS_KM = 0.35;
 const ROUTE_GROUP_CORRIDOR_OVERLAP_RADIUS_KM = 0.35;

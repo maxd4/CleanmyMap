@@ -71,8 +71,8 @@ describe("route recommendation request gate", () => {
       ...DEFAULT_ROUTE_OPTIONS,
       priorityVsTravel: 20,
     };
-    const transport = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    const transport = vi.fn().mockImplementation(
+      async () => new Response(JSON.stringify(responsePayload), { status: 200 }),
     );
 
     await fetchRouteRecommendation(submitted, transport);
@@ -154,6 +154,25 @@ describe("route recommendation request gate", () => {
       pickupPreference: "cigarette_butts",
       planningMode: { type: "free" },
     });
+  });
+
+  it("preserves free and event-centered planning modes in the submitted payload", async () => {
+    const transport = vi.fn().mockImplementation(
+      async () => new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+    const eventId = "00000000-0000-4000-8000-000000000001";
+
+    await fetchRouteRecommendation(
+      createRouteRecommendationSubmission(14, DEFAULT_ROUTE_OPTIONS, undefined, { type: "free" }),
+      transport,
+    );
+    await fetchRouteRecommendation(
+      createRouteRecommendationSubmission(15, DEFAULT_ROUTE_OPTIONS, undefined, { type: "event-centered", eventId }),
+      transport,
+    );
+
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string).planningMode).toEqual({ type: "free" });
+    expect(JSON.parse(transport.mock.calls[1]?.[1]?.body as string).planningMode).toEqual({ type: "event-centered", eventId });
   });
 
   it("transports an ephemeral browser origin alongside, not inside, the options", async () => {

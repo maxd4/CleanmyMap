@@ -42,7 +42,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
     serviceMinutes, operationalTotalMinutes, hasData, hasRoute, fr,
     recommendationRequested, planningMode, setPlanningMode, originMode,
     setOriginMode, mapOrigin, setMapOrigin, clearMapOrigin, originSelectionError,
-    isResolvingOrigin, isRequestInFlight, requestRecommendation,
+    planningModeValidationError, isResolvingOrigin, isRequestInFlight, requestRecommendation,
   } = routeData;
   const derived = deriveRouteSectionState({ data, picks, selectedGroupIndex, fr, serviceMinutes, operationalTotalMinutes });
   const createActionFromRecommendation = () => {
@@ -68,6 +68,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               originMode={originMode} setOriginMode={setOriginMode}
               mapOrigin={mapOrigin} setMapOrigin={setMapOrigin} clearMapOrigin={clearMapOrigin}
               originSelectionError={originSelectionError}
+              planningModeValidationError={planningModeValidationError}
               isLoaded={isLoaded} isSignedIn={isSignedIn} isLoading={isLoading}
               isRequestInFlight={isRequestInFlight} isResolvingOrigin={isResolvingOrigin}
               recommendationRequested={recommendationRequested}

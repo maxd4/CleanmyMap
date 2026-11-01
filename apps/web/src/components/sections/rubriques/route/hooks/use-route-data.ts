@@ -24,6 +24,7 @@ import {
   type RouteRecommendationSubmission,
 } from "../route-request";
 import { resolveBrowserRouteOrigin } from "../route-geolocation";
+import { routeTerritorialGuidedModeValidationError } from "@/lib/route/route-planning-mode";
 
 type RouteDraftSnapshot = {
   options: RouteOptions;
@@ -193,6 +194,7 @@ export function useRouteData() {
     picks.length > 0 ||
     (data?.groupRoutes ?? []).some(({ plannedWaypoints }) => (plannedWaypoints?.length ?? 0) > 0)
   );
+  const planningModeValidationError = routeTerritorialGuidedModeValidationError(planningMode);
 
   return {
     options,
@@ -210,6 +212,7 @@ export function useRouteData() {
     fr,
     recommendationRequested: recommendationRequest !== null,
     planningMode,
+    planningModeValidationError,
     setPlanningMode,
     originMode,
     setOriginMode,
@@ -220,6 +223,7 @@ export function useRouteData() {
     isResolvingOrigin,
     isRequestInFlight,
     requestRecommendation: async () => {
+      if (planningModeValidationError) return;
       if (originMode === "map" && !mapOrigin) {
         setOriginSelectionError(true);
         return;

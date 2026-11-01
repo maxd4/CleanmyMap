@@ -12,7 +12,7 @@ import { RouteGuidedEditor } from "./components/route-guided-editor";
 export function RouteOriginAndTriggerControls({
   options, setOptions, fr, planningMode, setPlanningMode, originMode, setOriginMode,
   mapOrigin, setMapOrigin, clearMapOrigin, originSelectionError, isLoaded, isSignedIn, isLoading,
-  isRequestInFlight, isResolvingOrigin, recommendationRequested, requestRecommendation,
+  planningModeValidationError, isRequestInFlight, isResolvingOrigin, recommendationRequested, requestRecommendation,
 }: {
   options: RouteOptions;
   setOptions: React.Dispatch<React.SetStateAction<RouteOptions>>;
@@ -25,6 +25,7 @@ export function RouteOriginAndTriggerControls({
   setMapOrigin: (origin: RouteRecommendationOrigin) => void;
   clearMapOrigin: () => void;
   originSelectionError: boolean;
+  planningModeValidationError: string | null;
   isLoaded: boolean;
   isSignedIn: boolean;
   isLoading: boolean;
@@ -79,6 +80,6 @@ export function RouteOriginAndTriggerControls({
       fr={fr}
       guided={planningMode.type === "territorial-guided" && planningMode.version === ROUTE_TERRITORIAL_GUIDED_VERSION}
     />
-    <RouteRecommendationTrigger fr={fr} originMode={originMode} mapOrigin={mapOrigin} isLoaded={isLoaded} isSignedIn={isSignedIn} isLoading={isLoading} isRequestInFlight={isRequestInFlight} isResolvingOrigin={isResolvingOrigin} recommendationRequested={recommendationRequested} requestRecommendation={requestRecommendation} />
+    <RouteRecommendationTrigger fr={fr} originMode={originMode} mapOrigin={mapOrigin} isLoaded={isLoaded} isSignedIn={isSignedIn} isLoading={isLoading} isRequestInFlight={isRequestInFlight} isResolvingOrigin={isResolvingOrigin} recommendationRequested={recommendationRequested} planningModeError={planningModeValidationError} requestRecommendation={requestRecommendation} />
   </>;
 }

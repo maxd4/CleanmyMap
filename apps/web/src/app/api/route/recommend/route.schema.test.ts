@@ -9,7 +9,10 @@ import {
   resolvePriorityVsTravel,
   routeRecommendationRequestSchema,
 } from "./route.schema";
-import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "@/lib/route/route-planning-mode";
+import {
+  createDefaultRouteTerritorialGuidedMode,
+  ROUTE_TERRITORIAL_GUIDED_VERSION,
+} from "@/lib/route/route-planning-mode";
 
 describe("route recommendation HTTP request schema", () => {
   it("accepts the shared HTTP request fields and keeps the legacy alias", () => {
@@ -144,6 +147,27 @@ describe("route recommendation HTTP request schema", () => {
           "north-2",
         ]);
       }
+    }
+  });
+
+  it.each([
+    [1, 1],
+    [3, 2],
+    [7, 3],
+    [10, 2],
+  ] as const)("accepts the default guided payload for %i volunteers and %i groups", (volunteers, groupCount) => {
+    const planningMode = createDefaultRouteTerritorialGuidedMode(volunteers, groupCount);
+    const parsed = parseRouteRecommendationRequest({
+      volunteers,
+      groupCount,
+      planningMode,
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success && parsed.data.planningMode.type === "territorial-guided") {
+      expect(parsed.data.planningMode.groups.map(({ volunteerCount }) => volunteerCount)).toEqual(
+        planningMode.groups.map(({ volunteerCount }) => volunteerCount),
+      );
     }
   });
 

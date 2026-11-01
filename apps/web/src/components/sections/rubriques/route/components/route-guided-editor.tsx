@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { ArrowDown, ArrowUp, MapPin, Plus, Trash2 } from "lucide-react";
 import {
   MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
+  MAX_ROUTE_GUIDED_GROUP_COUNT,
   MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES,
+  MAX_ROUTE_GUIDED_VOLUNTEERS,
   MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
+  routeTerritorialGuidedModeValidationError,
 } from "@/lib/route/route-planning-mode";
 import type {
   RouteGuidedCoordinate,
@@ -60,6 +63,8 @@ export function RouteGuidedEditor({
 }: RouteGuidedEditorProps) {
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [mapTarget, setMapTarget] = useState<GuidedMapTarget>("origin");
+  const editorId = useId().replace(/[^a-zA-Z0-9_-]/g, "") || "guided-editor";
+  const waypointSequence = useRef(0);
   const activeGroup = mode.groups[activeGroupIndex] ?? mode.groups[0];
   const totalVolunteers = mode.groups.reduce(
     (total, group) => total + (group.volunteerCount ?? 0),
@@ -68,6 +73,20 @@ export function RouteGuidedEditor({
   const allocatedMinutes = mode.budget.organizationMarginMinutes +
     mode.budget.travelMaxMinutes + mode.budget.minimumCollectionMinutes;
   const budgetIsValid = Math.abs(allocatedMinutes - mode.budget.totalMinutes) < 0.000001;
+  const validationError = routeTerritorialGuidedModeValidationError(mode);
+
+  function createWaypointId(): string {
+    waypointSequence.current += 1;
+    return `${editorId}-waypoint-${waypointSequence.current}`;
+  }
+
+  function maxVolunteerCountForGroup(groupIndex: number): number {
+    const otherVolunteers = mode.groups.reduce(
+      (total, group, index) => index === groupIndex ? total : total + (group.volunteerCount ?? 0),
+      0,
+    );
+    return Math.max(1, MAX_ROUTE_GUIDED_VOLUNTEERS - otherVolunteers);
+  }
 
   function updateMode(updater: (next: RouteTerritorialGuidedMode) => void) {
     const next = cloneMode(mode);
@@ -113,7 +132,7 @@ export function RouteGuidedEditor({
     updateGroup(activeGroupIndex, (group) => {
       const order = group.waypoints.length + 1;
       group.waypoints.push({
-        id: `${group.label ?? `group-${activeGroupIndex + 1}`}-waypoint-${order}`.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+        id: createWaypointId(),
         label: `${fr ? "Passage" : "Waypoint"} ${order}`,
         ...coordinate,
       });
@@ -121,7 +140,7 @@ export function RouteGuidedEditor({
   }
 
   function addGroup() {
-    if (mode.groups.length >= 12) return;
+    if (mode.groups.length >= MAX_ROUTE_GUIDED_GROUP_COUNT || totalVolunteers >= MAX_ROUTE_GUIDED_VOLUNTEERS) return;
     const source = activeGroup ?? mode.groups[0];
     if (!source) return;
     updateMode((next) => {
@@ -134,7 +153,7 @@ export function RouteGuidedEditor({
           center: { ...source.sector.center },
         },
         waypoints: [{
-          id: `group-${groupIndex}-waypoint-1`,
+          id: createWaypointId(),
           label: `${fr ? "Passage" : "Waypoint"} ${groupIndex}.1`,
           latitude: source.sector.center.latitude,
           longitude: source.sector.center.longitude,
@@ -188,13 +207,14 @@ export function RouteGuidedEditor({
           {totalVolunteers} {fr ? "bénévoles" : "volunteers"} · {mode.groups.length} {fr ? "groupes" : "groups"}
         </span>
       </div>
+      {validationError ? <p role="alert" className="mt-4 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs font-bold text-amber-100">{validationError}</p> : null}
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label={fr ? "Groupes guidés" : "Guided groups"}>
             {mode.groups.map((group, index) => (
               <button
-                key={`guided-group-tab-${index}`}
+              key={`guided-group-tab-${group.waypoints[0]?.id ?? index}`}
                 type="button"
                 role="tab"
                 aria-selected={activeGroupIndex === index}
@@ -208,7 +228,7 @@ export function RouteGuidedEditor({
             <button
               type="button"
               onClick={addGroup}
-              disabled={mode.groups.length >= 12}
+              disabled={mode.groups.length >= MAX_ROUTE_GUIDED_GROUP_COUNT || totalVolunteers >= MAX_ROUTE_GUIDED_VOLUNTEERS}
               className="min-h-11 rounded-xl border border-dashed border-sky-200/35 px-3 py-2 text-sm font-bold text-sky-50 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <Plus size={15} aria-hidden="true" className="mr-1 inline" />
@@ -218,7 +238,7 @@ export function RouteGuidedEditor({
 
           {mode.groups.map((group, groupIndex) => (
             <fieldset
-              key={`guided-group-${groupIndex}`}
+              key={`guided-group-${group.waypoints[0]?.id ?? groupIndex}`}
               hidden={activeGroupIndex !== groupIndex}
               className="space-y-4 rounded-2xl border border-white/10 bg-black/10 p-4"
               aria-label={`${fr ? "Configuration" : "Configuration"} ${group.label || `${fr ? "Groupe" : "Group"} ${groupIndex + 1}`}`}
@@ -242,10 +262,23 @@ export function RouteGuidedEditor({
                     className={inputClass}
                     type="number"
                     min={1}
-                    max={100}
+                    max={maxVolunteerCountForGroup(groupIndex)}
                     step={1}
                     value={group.volunteerCount ?? 1}
-                    onChange={(event) => updateGroup(groupIndex, (current) => { current.volunteerCount = Math.min(100, Math.max(1, Number(event.target.value || 1))); })}
+                    onChange={(event) => updateMode((next) => {
+                      const current = next.groups[groupIndex];
+                      if (!current) return;
+                      const otherVolunteers = next.groups.reduce(
+                        (total, group, index) => index === groupIndex ? total : total + (group.volunteerCount ?? 0),
+                        0,
+                      );
+                      const requested = Number(event.target.value);
+                      const normalized = Number.isFinite(requested) ? Math.trunc(requested) : 1;
+                      current.volunteerCount = Math.min(
+                        Math.max(1, MAX_ROUTE_GUIDED_VOLUNTEERS - otherVolunteers),
+                        Math.max(1, normalized),
+                      );
+                    })}
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-xs font-bold text-sky-50/90">

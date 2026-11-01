@@ -5,6 +5,8 @@ export const ROUTE_TERRITORIAL_GUIDED_VERSION =
 export const MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM = 5;
 export const MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP = 12;
 export const MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES = 24 * 60;
+export const MAX_ROUTE_GUIDED_VOLUNTEERS = 100;
+export const MAX_ROUTE_GUIDED_GROUP_COUNT = 12;
 
 export type RouteGuidedCoordinate = {
   latitude: number;
@@ -151,19 +153,73 @@ export function routeGuidedBudgetForMode(
   };
 }
 
+export function routeTerritorialGuidedModeValidationError(
+  mode: RoutePlanningMode,
+): string | null {
+  if (mode.type !== "territorial-guided" || mode.version === ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION) {
+    return null;
+  }
+  if (mode.groups.length < 1 || mode.groups.length > MAX_ROUTE_GUIDED_GROUP_COUNT) {
+    return "Le nombre de groupes guidés est hors limites.";
+  }
+  const counts = mode.groups.map(({ volunteerCount }) => volunteerCount);
+  if (counts.some((count) =>
+    !Number.isInteger(count) || count === undefined || count < 1 || count > MAX_ROUTE_GUIDED_VOLUNTEERS,
+  )) {
+    return "Chaque groupe guidé doit avoir un effectif entier compris entre 1 et 100.";
+  }
+  const numericCounts = counts.map((count) => count ?? 0);
+  const totalVolunteers = numericCounts.reduce((total, count) => total + count, 0);
+  if (totalVolunteers < 1 || totalVolunteers > MAX_ROUTE_GUIDED_VOLUNTEERS) {
+    return "L’effectif guidé total doit rester compris entre 1 et 100 bénévoles.";
+  }
+  if (mode.groups.length > totalVolunteers) {
+    return "Les groupes guidés doivent conserver un effectif non nul et cohérent.";
+  }
+  if (!isRouteGuidedBudget(mode.budget) || mode.budget.minimumCollectionMinutes <= 0) {
+    return "Le budget guidé doit répartir exactement le créneau total.";
+  }
+  const waypointIds = new Set<string>();
+  for (const group of mode.groups) {
+    if (!isRouteGuidedSector(group.sector)) {
+      return "Chaque secteur guidé doit respecter les bornes géographiques du contrat.";
+    }
+    if (group.waypoints.length < 1 || group.waypoints.length > MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP) {
+      return "Chaque groupe guidé doit conserver entre 1 et 12 passages.";
+    }
+    for (const waypoint of group.waypoints) {
+      if (!waypoint.id || waypointIds.has(waypoint.id)) {
+        return "Les identifiants des passages guidés doivent être uniques.";
+      }
+      waypointIds.add(waypoint.id);
+      if (!Number.isFinite(waypoint.latitude) || !Number.isFinite(waypoint.longitude) ||
+        waypoint.latitude < -90 || waypoint.latitude > 90 ||
+        waypoint.longitude < -180 || waypoint.longitude > 180 ||
+        !waypoint.label.trim()) {
+        return "Chaque passage guidé doit avoir un nom et des coordonnées valides.";
+      }
+    }
+  }
+  return null;
+}
+
 export function createDefaultRouteTerritorialGuidedMode(
   volunteers = 10,
   groupCount = 2,
 ): RouteTerritorialGuidedMode {
-  const normalizedVolunteers = Number.isInteger(volunteers) && volunteers >= 2
-    ? volunteers
+  const normalizedVolunteers = Number.isFinite(volunteers)
+    ? Math.min(MAX_ROUTE_GUIDED_VOLUNTEERS, Math.max(1, Math.trunc(volunteers)))
     : 10;
-  const normalizedGroupCount = Number.isInteger(groupCount) &&
-    groupCount >= 2 && groupCount <= normalizedVolunteers &&
-    normalizedVolunteers % groupCount === 0
-    ? groupCount
+  const requestedGroupCount = Number.isFinite(groupCount)
+    ? Math.trunc(groupCount)
     : 2;
-  const volunteerCount = normalizedVolunteers / normalizedGroupCount;
+  const normalizedGroupCount = Math.min(
+    MAX_ROUTE_GUIDED_GROUP_COUNT,
+    normalizedVolunteers,
+    Math.max(1, requestedGroupCount),
+  );
+  const volunteersPerGroup = Math.floor(normalizedVolunteers / normalizedGroupCount);
+  const groupsWithExtraVolunteer = normalizedVolunteers % normalizedGroupCount;
   const sector = { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 };
   return {
     type: "territorial-guided",
@@ -176,7 +232,7 @@ export function createDefaultRouteTerritorialGuidedMode(
     },
     groups: Array.from({ length: normalizedGroupCount }, (_, index) => ({
       label: `Groupe ${index + 1}`,
-      volunteerCount,
+      volunteerCount: volunteersPerGroup + (index < groupsWithExtraVolunteer ? 1 : 0),
       sector: { ...sector, center: { ...sector.center } },
       waypoints: [{
         id: `group-${index + 1}-waypoint-1`,
