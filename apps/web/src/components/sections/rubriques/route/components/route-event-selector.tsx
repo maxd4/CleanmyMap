@@ -3,7 +3,10 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { fetchCommunityEvents, type CommunityEventItem, type CommunityEventsResponse } from "@/lib/community/http";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+import {
+  createDefaultRouteTerritorialGuidedMode,
+  type RoutePlanningMode,
+} from "@/lib/route/route-planning-mode";
 import {
   filterRouteEventsByDate,
   getRouteEventStatus,
@@ -14,6 +17,8 @@ import {
 type RouteEventSelectorProps = {
   planningMode: RoutePlanningMode;
   setPlanningMode: (mode: RoutePlanningMode) => void;
+  volunteers: number;
+  groupCount: number;
   fr: boolean;
 };
 
@@ -27,6 +32,8 @@ function eventLabel(event: CommunityEventItem, fr: boolean): string {
 export function RouteEventSelector({
   planningMode,
   setPlanningMode,
+  volunteers,
+  groupCount,
   fr,
 }: RouteEventSelectorProps) {
   const [dateFilter, setDateFilter] = useState<RouteEventDateFilter>("all");
@@ -53,7 +60,7 @@ export function RouteEventSelector({
           : "Free mode is the default. An event can be used as an explicit route anchor."}
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button
+          <button
           type="button"
           className="min-h-11 rounded-xl border border-emerald-200/20 px-3 py-2 text-sm font-bold text-white"
           aria-pressed={planningMode.type === "free"}
@@ -71,6 +78,14 @@ export function RouteEventSelector({
           }}
         >
           {fr ? "Autour d’un événement" : "Event-centered route"}
+        </button>
+        <button
+          type="button"
+          className="min-h-11 rounded-xl border border-emerald-200/20 px-3 py-2 text-sm font-bold text-white sm:col-span-2"
+          aria-pressed={planningMode.type === "territorial-guided"}
+          onClick={() => setPlanningMode(createDefaultRouteTerritorialGuidedMode(volunteers, groupCount))}
+        >
+          {fr ? "Planification territoriale guidée" : "Guided territorial planning"}
         </button>
       </div>
       {planningMode.type === "event-centered" ? (

@@ -121,6 +121,7 @@ export type RouteMultiRouteTrace = {
   volunteers: number;
   groups: Array<{
     groupIndex: number;
+    label?: string;
     volunteerCount: number;
     candidateIds: string[];
     reservedCandidateIds: string[];

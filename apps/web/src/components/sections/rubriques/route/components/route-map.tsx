@@ -2,6 +2,7 @@
 import { useEffect, useMemo } from "react";
 import {
   CircleMarker,
+  Circle,
   MapContainer,
   Marker,
   Polyline,
@@ -18,6 +19,7 @@ import type {
   RouteResponseOrigin,
   RouteMultiRouteDisplayMode,
 } from "../route-types";
+import type { RouteGuidedCoordinate, RouteTerritorialGuidedGroup } from "@/lib/route/route-planning-mode";
 import { getRouteGroupVisualStyle } from "../route-types";
 import type { MeetingPointProjection, RouteGroupRoute } from "@/lib/route/route-response-contract";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
@@ -79,6 +81,16 @@ function buildOriginIcon() {
   });
 }
 
+function buildGuidedWaypointIcon(groupIndex: number, order: number) {
+  const visualStyle = getRouteGroupVisualStyle(groupIndex, "colors");
+  return divIcon({
+    className: "cmm-route-guided-waypoint-icon",
+    html: `<span class="cmm-route-guided-waypoint-icon__body" style="background:${visualStyle.color}">${order}</span>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+}
+
 function RouteOriginPicker({
   onSelectOrigin,
 }: {
@@ -97,6 +109,17 @@ function RouteOriginPicker({
   return null;
 }
 
+function RouteGuidedPointPicker({
+  onSelectGuidedPoint,
+}: {
+  onSelectGuidedPoint: (coordinate: RouteGuidedCoordinate) => void;
+}) {
+  useMapEvents({
+    click: ({ latlng }) => onSelectGuidedPoint({ latitude: latlng.lat, longitude: latlng.lng }),
+  });
+  return null;
+}
+
 type RouteMapProps = {
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
@@ -109,6 +132,9 @@ type RouteMapProps = {
   origin?: RouteResponseOrigin | null;
   onSelectOrigin?: (origin: RouteRecommendationOrigin) => void;
   onClearOrigin?: () => void;
+  guidedGroups?: RouteTerritorialGuidedGroup[];
+  guidedActiveGroupIndex?: number | null;
+  onSelectGuidedPoint?: (coordinate: RouteGuidedCoordinate) => void;
   fr: boolean;
 };
 
@@ -150,6 +176,9 @@ function RouteMapLayers({
   origin,
   onSelectOrigin,
   onClearOrigin,
+  guidedGroups = [],
+  guidedActiveGroupIndex,
+  onSelectGuidedPoint,
   fr,
   visibleGroupRoutes,
   mapCoordinates,
@@ -163,7 +192,38 @@ function RouteMapLayers({
     <>
       <RouteMapViewport coordinates={mapCoordinates} />
       {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
+      {onSelectGuidedPoint ? <RouteGuidedPointPicker onSelectGuidedPoint={onSelectGuidedPoint} /> : null}
       <RouteMapOrigin origin={origin} fr={fr} onClearOrigin={onClearOrigin} />
+      {guidedGroups.map((group, index) => {
+        const groupIndex = index + 1;
+        const active = guidedActiveGroupIndex === null || guidedActiveGroupIndex === undefined || guidedActiveGroupIndex === groupIndex;
+        return (
+          <Circle
+            key={`guided-sector-${groupIndex}`}
+            center={[group.sector.center.latitude, group.sector.center.longitude]}
+            radius={group.sector.radiusKm * 1000}
+            pathOptions={{ color: getRouteGroupVisualStyle(groupIndex, "colors").color, fillOpacity: active ? 0.1 : 0.04, opacity: active ? 0.85 : 0.25, weight: active ? 2 : 1, dashArray: "6 6" }}
+          />
+        );
+      })}
+      {guidedGroups.flatMap((group, index) => group.waypoints.map((waypoint, waypointIndex) => ({ group, groupIndex: index + 1, waypoint, waypointIndex }))).map(({ group, groupIndex, waypoint, waypointIndex }) => {
+        const active = guidedActiveGroupIndex === null || guidedActiveGroupIndex === undefined || guidedActiveGroupIndex === groupIndex;
+        return (
+          <Marker
+            key={`guided-waypoint-${waypoint.id}`}
+            position={[waypoint.latitude, waypoint.longitude]}
+            icon={buildGuidedWaypointIcon(groupIndex, waypointIndex + 1)}
+            opacity={active ? 1 : 0.35}
+          >
+            <Tooltip direction="top" offset={[0, -10]}>{`G${groupIndex} · ${waypointIndex + 1}. ${waypoint.label}`}</Tooltip>
+            <Popup>
+              <strong>{group.label ?? `${fr ? "Groupe" : "Group"} ${groupIndex}`} · {waypointIndex + 1}. {waypoint.label}</strong>
+              <br />
+              {fr ? "Passage planifié · aucune observation" : "Planned waypoint · not an observation"}
+            </Popup>
+          </Marker>
+        );
+      })}
       {(groupRoutes.length > 1
         ? visibleGroupRoutes.flatMap((group) => group.meetingPoint ? [{ groupIndex: group.groupIndex, meetingPoint: group.meetingPoint }] : [])
         : meetingPoint ? [{ groupIndex: null, meetingPoint }] : []
@@ -286,6 +346,9 @@ function RouteMapCanvas({
   origin,
   onSelectOrigin,
   onClearOrigin,
+  guidedGroups,
+  guidedActiveGroupIndex,
+  onSelectGuidedPoint,
   fr,
   visibleGroupRoutes,
   mapCoordinates,
@@ -322,6 +385,9 @@ function RouteMapCanvas({
           origin={origin}
           onSelectOrigin={onSelectOrigin}
           onClearOrigin={onClearOrigin}
+          guidedGroups={guidedGroups}
+          guidedActiveGroupIndex={guidedActiveGroupIndex}
+          onSelectGuidedPoint={onSelectGuidedPoint}
           fr={fr}
           visibleGroupRoutes={visibleGroupRoutes}
           mapCoordinates={mapCoordinates}
@@ -344,23 +410,41 @@ export function RouteMap({
   origin = null,
   onSelectOrigin,
   onClearOrigin,
+  guidedGroups = [],
+  guidedActiveGroupIndex,
+  onSelectGuidedPoint,
   fr,
 }: RouteMapProps) {
   const visibleGroupRoutes = selectedGroupIndex === null
     ? groupRoutes
     : groupRoutes.filter(({ groupIndex }) => groupIndex === selectedGroupIndex);
+  const renderedGuidedGroups = guidedGroups.length > 0
+    ? groupRoutes.length > 1 && selectedGroupIndex !== null
+      ? guidedGroups.filter((_, index) => index + 1 === selectedGroupIndex)
+      : guidedGroups
+    : visibleGroupRoutes
+      .filter(({ plannedSector, plannedWaypoints }) => plannedSector && plannedWaypoints && plannedWaypoints.length > 0)
+      .map((group) => ({
+        label: group.label,
+        sector: group.plannedSector!,
+        waypoints: group.plannedWaypoints!.map(({ id, label, latitude, longitude }) => ({ id, label, latitude, longitude })),
+      }));
   const mapCoordinates = useMemo(() => {
     if (groupRoutes.length === 0) {
       return buildRouteMapCoordinates(stops, routeGeometry, origin);
     }
     return [
       ...(origin ? [[origin.latitude, origin.longitude] as [number, number]] : []),
+      ...renderedGuidedGroups.flatMap((group) => [
+        [group.sector.center.latitude, group.sector.center.longitude] as [number, number],
+        ...group.waypoints.map(({ latitude, longitude }) => [latitude, longitude] as [number, number]),
+      ]),
       ...visibleGroupRoutes.flatMap(({ routeGeometry: geometry, stops: groupStops }) => [
         ...geometry.coordinates,
         ...groupStops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
       ]),
     ];
-  }, [groupRoutes, origin, routeGeometry, stops, visibleGroupRoutes]);
+  }, [groupRoutes, origin, renderedGuidedGroups, routeGeometry, stops, visibleGroupRoutes]);
   const routeCoordinates =
     routeGeometry.isLoop && routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
@@ -389,6 +473,9 @@ export function RouteMap({
     origin={origin}
     onSelectOrigin={onSelectOrigin}
     onClearOrigin={onClearOrigin}
+    guidedGroups={renderedGuidedGroups}
+    guidedActiveGroupIndex={guidedActiveGroupIndex}
+    onSelectGuidedPoint={onSelectGuidedPoint}
     fr={fr}
     visibleGroupRoutes={visibleGroupRoutes}
     mapCoordinates={mapCoordinates}

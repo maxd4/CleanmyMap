@@ -299,6 +299,9 @@ function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
       !Array.isArray(waypoints) || waypoints.length < 1 || waypoints.length > MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP) {
       return false;
     }
+    if (group.label !== undefined && !isNonEmptyString(group.label)) return false;
+    if (group.volunteerCount !== undefined &&
+      !finiteIntegerBetween(group.volunteerCount, 1, 500)) return false;
     return waypoints.every((waypoint) =>
       Boolean(waypoint) &&
       typeof waypoint === "object" &&

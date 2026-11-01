@@ -12,12 +12,14 @@ interface RouteOptionsFormProps {
   options: RouteOptions;
   setOptions: React.Dispatch<React.SetStateAction<RouteOptions>>;
   fr: boolean;
+  guided?: boolean;
 }
 
 export function RouteOptionsForm({
   options,
   setOptions,
   fr,
+  guided = false,
 }: RouteOptionsFormProps) {
   return (
     <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
@@ -44,6 +46,8 @@ export function RouteOptionsForm({
             max={100}
             step={1}
             value={options.volunteers}
+            readOnly={guided}
+            aria-readonly={guided}
             onChange={(event) =>
               setOptions((prev) => {
                 const volunteers = Math.min(100, Math.max(1, Number(event.target.value || 1)));
@@ -56,9 +60,10 @@ export function RouteOptionsForm({
             }
             className={buildInputClass()}
           />
+          {guided ? <span className="text-xs font-medium text-emerald-100/64">{fr ? "Effectif piloté par les groupes guidés ci-dessus." : "Staffing is controlled by the guided groups above."}</span> : null}
         </label>
 
-        <fieldset
+        {!guided ? <fieldset
           className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
           aria-label={fr ? "Organisation du groupe" : "Group organization"}
         >
@@ -131,7 +136,7 @@ export function RouteOptionsForm({
               </span>
             </label>
           ) : null}
-        </fieldset>
+        </fieldset> : null}
 
         <fieldset
           className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
@@ -234,6 +239,8 @@ export function RouteOptionsForm({
             max={600}
             step={1}
             value={options.travelBudgetMinutes}
+            readOnly={guided}
+            aria-readonly={guided}
             onChange={(event) =>
               setOptions((prev) => ({
                 ...prev,
@@ -243,7 +250,9 @@ export function RouteOptionsForm({
             className={buildInputClass()}
           />
           <span className="text-xs font-medium text-emerald-100/64">
-            {fr ? "Durée d’action + 15 min de marge organisationnelle" : "Action duration + 15 min organization margin"}
+            {guided
+              ? (fr ? "Créneau piloté par le budget guidé ci-dessus." : "Slot is controlled by the guided budget above.")
+              : (fr ? "Durée d’action + 15 min de marge organisationnelle" : "Action duration + 15 min organization margin")}
           </span>
         </label>
 

@@ -1,5 +1,6 @@
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
-import type { RouteResponse } from "@/lib/route/route-response-contract";
+import type { RouteGroupRoute, RouteGuidedRoutingAudit, RouteResponse } from "@/lib/route/route-response-contract";
+import type { RouteGuidedSector, RoutePlannedWaypoint } from "@/lib/route/route-planning-mode";
 import { formatScorePercent } from "@/lib/formatters/score";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import { escapeHtml } from "@/lib/security/html-escape";
@@ -14,9 +15,13 @@ const MAP_HEIGHT = 560;
 
 type ExportRoute = {
   groupIndex: number;
+  label?: string;
   volunteerCount: number;
   stops: RouteStop[];
   geometry: RouteGeometry;
+  plannedSector?: RouteGuidedSector;
+  plannedWaypoints?: RoutePlannedWaypoint[];
+  guidedRouting?: RouteGuidedRoutingAudit;
 };
 
 type ProjectedPoint = {
@@ -86,16 +91,24 @@ function displayCoordinates(
   ];
 }
 
+function exportRoute(route: RouteGroupRoute): ExportRoute {
+  return {
+    groupIndex: route.groupIndex,
+    label: route.label,
+    volunteerCount: route.volunteerCount,
+    stops: route.stops,
+    geometry: route.routeGeometry,
+    plannedSector: route.plannedSector,
+    plannedWaypoints: route.plannedWaypoints,
+    guidedRouting: route.guidedRouting,
+  };
+}
+
 function getExportRoutes(data: RouteResponse): ExportRoute[] {
   if (data.groupRoutes.length > 1) {
     return [...data.groupRoutes]
       .sort((left, right) => left.groupIndex - right.groupIndex)
-      .map((route) => ({
-        groupIndex: route.groupIndex,
-        volunteerCount: route.volunteerCount,
-        stops: route.stops,
-        geometry: route.routeGeometry,
-      }));
+      .map(exportRoute);
   }
 
   const singleGroup = data.groupRoutes[0];
@@ -103,9 +116,13 @@ function getExportRoutes(data: RouteResponse): ExportRoute[] {
     singleGroup
       ? {
           groupIndex: singleGroup.groupIndex,
+          label: singleGroup.label,
           volunteerCount: singleGroup.volunteerCount,
           stops: singleGroup.stops,
           geometry: singleGroup.routeGeometry,
+          plannedSector: singleGroup.plannedSector,
+          plannedWaypoints: singleGroup.plannedWaypoints,
+          guidedRouting: singleGroup.guidedRouting,
         }
       : {
           groupIndex: 1,
@@ -168,6 +185,11 @@ function renderSvgMap(
     originCoordinate(data, route),
     ...displayCoordinates(data, route),
     ...route.stops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
+    ...(route.plannedSector ? [
+      [route.plannedSector.center.latitude, route.plannedSector.center.longitude] as [number, number],
+      [route.plannedSector.center.latitude + route.plannedSector.radiusKm / 111, route.plannedSector.center.longitude] as [number, number],
+    ] : []),
+    ...(route.plannedWaypoints ?? []).map((waypoint) => [waypoint.latitude, waypoint.longitude] as [number, number]),
   ]);
   const coordinatesByKey = projectCoordinates(allCoordinates);
   const originPoint = projectedPoint(origin, coordinatesByKey) ?? { x: MAP_WIDTH / 2, y: MAP_HEIGHT / 2 };
@@ -193,8 +215,29 @@ function renderSvgMap(
       return `<g data-route-stop="${escapeHtml(stop.id)}"><circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="13" fill="#ffffff" stroke="${style.color}" stroke-width="4" /><text x="${point.x.toFixed(1)}" y="${(point.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">${escapeHtml(markerLabel)}</text><text x="${(point.x + 18).toFixed(1)}" y="${(point.y - 14).toFixed(1)}" font-size="12" font-weight="600" fill="#0f172a">${escapeHtml(stop.label)}</text></g>`;
     })
     .join("");
+  const guidedSectorMarkers = routes
+    .map((route) => {
+      if (!route.plannedSector) return "";
+      const center = projectedPoint([route.plannedSector.center.latitude, route.plannedSector.center.longitude], coordinatesByKey);
+      const edge = projectedPoint([route.plannedSector.center.latitude + route.plannedSector.radiusKm / 111, route.plannedSector.center.longitude], coordinatesByKey);
+      if (!center || !edge) return "";
+      const style = getRouteGroupVisualStyle(route.groupIndex, displayMode);
+      const radius = Math.max(10, Math.abs(center.y - edge.y));
+      return `<circle data-route-sector="${route.groupIndex}" cx="${center.x.toFixed(1)}" cy="${center.y.toFixed(1)}" r="${radius.toFixed(1)}" fill="${style.color}" fill-opacity="0.08" stroke="${style.color}" stroke-width="3" stroke-dasharray="8 8" />`;
+    })
+    .join("");
+  const plannedMarkers = routes
+    .flatMap((route) => (route.plannedWaypoints ?? []).map((waypoint) => ({ route, waypoint })))
+    .map(({ route, waypoint }) => {
+      const point = projectedPoint([waypoint.latitude, waypoint.longitude], coordinatesByKey);
+      if (!point) return "";
+      const style = getRouteGroupVisualStyle(route.groupIndex, displayMode);
+      const markerLabel = routes.length > 1 ? `G${route.groupIndex}-${waypoint.order + 1}` : `${waypoint.order + 1}`;
+      return `<g data-route-planned-waypoint="${escapeHtml(waypoint.id)}"><circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="11" fill="${style.color}" stroke="#ffffff" stroke-width="3" /><text x="${point.x.toFixed(1)}" y="${(point.y + 4).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="800" fill="#ffffff">${escapeHtml(markerLabel)}</text><text x="${(point.x + 16).toFixed(1)}" y="${(point.y + 18).toFixed(1)}" font-size="11" font-weight="700" fill="#0f172a">${escapeHtml(waypoint.label)} · planifié</text></g>`;
+    })
+    .join("");
 
-  return `<svg class="route-pdf-map" viewBox="0 0 ${MAP_WIDTH} ${MAP_HEIGHT}" role="img" aria-label="${escapeHtml(title)}" xmlns="http://www.w3.org/2000/svg"><rect width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#f8fafc" /><path d="M40 140H960 M40 280H960 M40 420H960 M220 40V520 M460 40V520 M700 40V520" stroke="#dbe4ec" stroke-width="2" stroke-dasharray="3 9" /><circle cx="${originPoint.x.toFixed(1)}" cy="${originPoint.y.toFixed(1)}" r="18" fill="#0f172a" stroke="#ffffff" stroke-width="5" /><text x="${originPoint.x.toFixed(1)}" y="${(originPoint.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">D/A</text><text x="${(originPoint.x + 24).toFixed(1)}" y="${(originPoint.y - 16).toFixed(1)}" font-size="13" font-weight="800" fill="#0f172a">Départ / arrivée</text>${routeLines}${stopMarkers}</svg>`;
+  return `<svg class="route-pdf-map" viewBox="0 0 ${MAP_WIDTH} ${MAP_HEIGHT}" role="img" aria-label="${escapeHtml(title)}" xmlns="http://www.w3.org/2000/svg"><rect width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#f8fafc" /><path d="M40 140H960 M40 280H960 M40 420H960 M220 40V520 M460 40V520 M700 40V520" stroke="#dbe4ec" stroke-width="2" stroke-dasharray="3 9" />${guidedSectorMarkers}<circle cx="${originPoint.x.toFixed(1)}" cy="${originPoint.y.toFixed(1)}" r="18" fill="#0f172a" stroke="#ffffff" stroke-width="5" /><text x="${originPoint.x.toFixed(1)}" y="${(originPoint.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">D/A</text><text x="${(originPoint.x + 24).toFixed(1)}" y="${(originPoint.y - 16).toFixed(1)}" font-size="13" font-weight="800" fill="#0f172a">Départ / arrivée</text>${routeLines}${plannedMarkers}${stopMarkers}</svg>`;
 }
 
 function renderLegend(
@@ -204,7 +247,7 @@ function renderLegend(
   return `<ul class="route-pdf-legend">${routes
     .map((route) => {
       const style = getRouteGroupVisualStyle(route.groupIndex, displayMode);
-      const label = `Groupe ${route.groupIndex} — ${route.volunteerCount} bénévoles`;
+      const label = `${route.label || `Groupe ${route.groupIndex}`} — ${route.volunteerCount} bénévoles`;
       const pattern = getRouteGroupPatternLabel(route.groupIndex, true);
       return `<li><svg width="54" height="12" viewBox="0 0 54 12" aria-hidden="true"><line x1="2" y1="6" x2="52" y2="6" stroke="${style.color}" stroke-width="4" stroke-linecap="round"${style.dashArray ? ` stroke-dasharray="${style.dashArray}"` : ""} /></svg><span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(displayMode === "patterns" ? `Trait ${pattern}` : "Ligne couleur dédiée")}</small></span></li>`;
     })
@@ -227,22 +270,25 @@ function renderMetrics(data: RouteResponse, routes: ExportRoute[], multi: boolea
   const estimatedLabel = routes.some((route) => route.geometry.mode === "fallback")
     ? "Estimation / fallback"
     : "Mesure réseau";
+  const guidedBudget = routes[0]?.guidedRouting?.budget ?? data.guidedBudget;
   const serviceLabel = data.serviceMinutesEstimate === null
     ? "Non disponible : calibration absente"
     : formatBusinessDurationRangeMinutes(data.serviceMinutesEstimate);
-  const totalLabel = data.totalMinutesEstimate === null
-    ? "Non disponible : aucun total fiable"
-    : formatBusinessDurationRangeMinutes(data.totalMinutesEstimate);
-
-  return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée déplacement réseau</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée d’action</dt><dd>${escapeHtml(serviceLabel)}</dd></div><div><dt>Créneau total</dt><dd>${escapeHtml(totalLabel)}</dd></div><div><dt>Marge organisation</dt><dd>15 min</dd></div><div><dt>Créneau utilisateur</dt><dd>${escapeHtml(formatDuration(data.travelBudgetMinutes))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
+  return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée déplacement réseau</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée d’action</dt><dd>${escapeHtml(serviceLabel)}</dd></div><div><dt>Créneau total</dt><dd>${escapeHtml(formatDuration(guidedBudget?.totalMinutes ?? data.travelBudgetMinutes))}</dd></div><div><dt>Marge organisation</dt><dd>${escapeHtml(formatDuration(guidedBudget?.organizationMarginMinutes ?? 15))}</dd></div><div><dt>Collecte minimale</dt><dd>${escapeHtml(formatDuration(guidedBudget?.minimumCollectionMinutes ?? null))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
 }
 
 function renderStops(routes: ExportRoute[]): string {
   return routes
     .map(
-      (route) => `<section class="route-pdf-stops"><h3>Groupe ${route.groupIndex} — stops / zones</h3>${route.stops.length > 0 ? `<ol>${route.stops.map((stop) => `<li><strong>${escapeHtml(stop.label)}</strong><span>${escapeHtml(stop.priorityReason)} · score ${formatScorePercent(stop.score, 1)} · ${escapeHtml(formatDistance(stop.segmentKm))} · ${escapeHtml(formatDuration(stop.estimatedMinutes))}</span></li>`).join("")}</ol>` : "<p>Aucun stop retenu.</p>"}</section>`,
+      (route) => `<section class="route-pdf-stops"><h3>${escapeHtml(route.label || `Groupe ${route.groupIndex}`)} — passages et observations</h3>${route.plannedWaypoints && route.plannedWaypoints.length > 0 ? `<p><strong>Passages planifiés (ordre)</strong></p><ol>${route.plannedWaypoints.map((waypoint) => `<li><strong>${escapeHtml(waypoint.label)}</strong><span>Point planifié · ${escapeHtml(`${waypoint.latitude.toFixed(5)}, ${waypoint.longitude.toFixed(5)}`)} · aucune observation associée</span></li>`).join("")}</ol>` : ""}${route.stops.length > 0 ? `<p><strong>Observations / cibles retenues</strong></p><ol>${route.stops.map((stop) => { const family = stop.evidence?.family === "observed" ? "Observation" : stop.evidence?.family === "predicted" ? "Prédiction" : "Source non précisée"; return `<li><strong>${escapeHtml(stop.label)}</strong><span>${escapeHtml(family)} · ${escapeHtml(stop.priorityReason)} · score ${formatScorePercent(stop.score, 1)} · ${escapeHtml(formatDistance(stop.segmentKm))} · ${escapeHtml(formatDuration(stop.estimatedMinutes))}</span></li>`; }).join("")}</ol>` : "<p>Aucune observation ou cible retenue.</p>"}</section>`,
     )
     .join("");
+}
+
+function renderGuidedPlan(routes: ExportRoute[]): string {
+  const sections = routes.filter((route) => route.plannedSector || route.guidedRouting);
+  if (sections.length === 0) return "";
+  return `<section class="route-pdf-guided"><h3>Planification territoriale guidée</h3>${sections.map((route) => { const audit = route.guidedRouting; const sector = route.plannedSector; return `<article><p><strong>${escapeHtml(route.label || `Groupe ${route.groupIndex}`)}</strong> · ${route.volunteerCount} bénévoles</p>${sector ? `<p>Secteur : centre ${sector.center.latitude.toFixed(5)}, ${sector.center.longitude.toFixed(5)} · rayon ${formatDistance(sector.radiusKm)}</p>` : ""}${audit ? `<p>Routage : ${audit.availability === "network" ? "réseau piéton" : "fallback estimé"} · boucle ${audit.loopVerified ? "vérifiée" : "non vérifiée"} · ordre des passages ${audit.waypointOrderVerified ? "vérifié" : "non vérifié"} · écart secteur ${formatDistance(audit.sectorDeviationKm)}.</p><p>Budget : ${audit.budget.travelMinutes} min déplacement / ${audit.budget.travelMaxMinutes} min max · ${audit.budget.collectionMinutesAvailable} min collecte disponible / ${audit.budget.minimumCollectionMinutes} min réservées · ${audit.budget.withinBudget ? "respecté" : "non respecté"}.</p>` : "<p>Audit de routage indisponible.</p>"}</article>`; }).join("")}</section>`;
 }
 
 function renderCorridors(
@@ -282,9 +328,9 @@ function renderGroupPage(
   route: ExportRoute,
   displayMode: RouteMultiRouteDisplayMode,
 ): string {
-  const label = `Groupe ${route.groupIndex}`;
+  const label = route.label || `Groupe ${route.groupIndex}`;
   const rendezVous = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)}`;
-  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} stops/zones · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · départ et arrivée au même endroit</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
+  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} observations · ${route.plannedWaypoints?.length ?? 0} passages planifiés · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · départ et arrivée au même endroit</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderGuidedPlan([route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
 }
 
 export function buildRoutePdfCss(routeCount: number): string {
@@ -313,6 +359,9 @@ p { margin: 1.5mm 0; }
 .route-pdf-metrics dt { color: #475569; font-size: 8.5pt; }
 .route-pdf-metrics dd { margin: 1mm 0 0; font-weight: 700; }
 .route-pdf-stops, .route-pdf-corridors, .route-pdf-instructions { break-inside: avoid; margin-top: 4mm; }
+.route-pdf-guided { break-inside: avoid; margin-top: 4mm; border: 1px solid #bae6fd; background: #f0f9ff; padding: 3mm; }
+.route-pdf-guided article { border-top: 1px solid #bae6fd; margin-top: 2mm; padding-top: 2mm; }
+.route-pdf-guided article:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
 .route-pdf-map-shell, .route-pdf-legend, .route-pdf-metrics { break-inside: avoid; page-break-inside: avoid; }
 .route-pdf-stops ol, .route-pdf-corridors ul, .route-pdf-instructions ul { margin: 0; padding-left: 6mm; }
 .route-pdf-stops li, .route-pdf-corridors li, .route-pdf-instructions li { margin: 1mm 0; }
@@ -336,7 +385,7 @@ export function buildRoutePdfHtml(
   const title = event ? `Itinéraire CleanMyMap — ${event.title}` : "Itinéraire CleanMyMap";
   const originLabel = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)} · ${data.origin.source === "map" ? "carte" : data.origin.source === "browser" ? "navigateur" : "zone enregistrée approximative"}`;
   const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : "Vue générale — 1 boucle";
-  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
+  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderGuidedPlan(routes)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
   const groupPages = multi ? routes.map((route) => renderGroupPage(data, route, displayMode)).join("") : "";
 
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escapeHtml(title)}</title><style>${buildRoutePdfCss(routes.length)}</style></head><body>${overview}${groupPages}<script>window.addEventListener("afterprint", () => window.close()); window.addEventListener("load", () => setTimeout(() => window.print(), 250));</script></body></html>`;

@@ -45,8 +45,18 @@ export function createRouteRecommendationSubmission(
   return {
     id,
     options: { ...options },
-    planningMode:
-      planningMode.type === "event-centered" ? { ...planningMode } : { type: "free" },
+    planningMode: planningMode.type === "event-centered"
+      ? { ...planningMode }
+      : planningMode.type === "territorial-guided"
+        ? {
+            ...planningMode,
+            groups: planningMode.groups.map((group) => ({
+              ...group,
+              sector: { ...group.sector, center: { ...group.sector.center } },
+              waypoints: group.waypoints.map((waypoint) => ({ ...waypoint })),
+            })),
+          }
+        : { type: "free" },
     ...(origin ? { origin: { ...origin } } : {}),
   };
 }

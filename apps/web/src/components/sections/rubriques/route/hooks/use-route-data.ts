@@ -126,7 +126,20 @@ export function useRouteData() {
   }, []);
 
   const setPlanningMode = useCallback((mode: RoutePlanningMode) => {
-    setPlanningModeState(mode.type === "event-centered" ? { ...mode } : { type: "free" });
+    setPlanningModeState(
+      mode.type === "event-centered"
+        ? { ...mode }
+        : mode.type === "territorial-guided"
+          ? {
+              ...mode,
+              groups: mode.groups.map((group) => ({
+                ...group,
+                sector: { ...group.sector, center: { ...group.sector.center } },
+                waypoints: group.waypoints.map((waypoint) => ({ ...waypoint })),
+              })),
+            }
+          : { type: "free" },
+    );
   }, []);
 
   const setMapOrigin = useCallback((origin: RouteRecommendationOrigin) => {
@@ -176,7 +189,10 @@ export function useRouteData() {
   const operationalTotalMinutes = data?.totalMinutesEstimate ?? null;
 
   const hasData = !isLoading && !error && Boolean(data);
-  const hasRoute = hasData && picks.length > 0;
+  const hasRoute = hasData && (
+    picks.length > 0 ||
+    (data?.groupRoutes ?? []).some(({ plannedWaypoints }) => (plannedWaypoints?.length ?? 0) > 0)
+  );
 
   return {
     options,

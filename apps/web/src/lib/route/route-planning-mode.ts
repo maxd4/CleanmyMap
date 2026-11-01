@@ -36,6 +36,8 @@ export type RoutePlannedWaypoint = RouteGuidedWaypoint & {
 export type RouteTerritorialGuidedGroup = {
   sector: RouteGuidedSector;
   waypoints: RouteGuidedWaypoint[];
+  label?: string;
+  volunteerCount?: number;
 };
 
 export type RouteTerritorialGuidedMode = {
@@ -68,6 +70,43 @@ export function routeGuidedBudgetForMode(
     organizationMarginMinutes: 15,
     minimumCollectionMinutes: 0,
     travelMaxMinutes: fallbackTotalMinutes,
+  };
+}
+
+export function createDefaultRouteTerritorialGuidedMode(
+  volunteers = 10,
+  groupCount = 2,
+): RouteTerritorialGuidedMode {
+  const normalizedVolunteers = Number.isInteger(volunteers) && volunteers >= 2
+    ? volunteers
+    : 10;
+  const normalizedGroupCount = Number.isInteger(groupCount) &&
+    groupCount >= 2 && groupCount <= normalizedVolunteers &&
+    normalizedVolunteers % groupCount === 0
+    ? groupCount
+    : 2;
+  const volunteerCount = normalizedVolunteers / normalizedGroupCount;
+  const sector = { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 };
+  return {
+    type: "territorial-guided",
+    version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+    budget: {
+      totalMinutes: 90,
+      organizationMarginMinutes: 15,
+      minimumCollectionMinutes: 45,
+      travelMaxMinutes: 30,
+    },
+    groups: Array.from({ length: normalizedGroupCount }, (_, index) => ({
+      label: `Groupe ${index + 1}`,
+      volunteerCount,
+      sector: { ...sector, center: { ...sector.center } },
+      waypoints: [{
+        id: `group-${index + 1}-waypoint-1`,
+        label: `Passage ${index + 1}.1`,
+        latitude: sector.center.latitude + (index === 0 ? 0.0004 : -0.0004),
+        longitude: sector.center.longitude,
+      }],
+    })),
   };
 }
 

@@ -19,6 +19,8 @@ const routeCoordinateSchema = z.object({
 });
 
 const guidedGroupSchema = z.object({
+  label: z.string().trim().min(1).max(80).optional(),
+  volunteerCount: z.number().int().min(1).max(MAX_ROUTE_VOLUNTEERS).optional(),
   sector: z.object({
     center: routeCoordinateSchema,
     radiusKm: z.number().finite().gt(0).max(MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM),
@@ -102,11 +104,31 @@ export const routeRecommendationRequestSchema = z
         message: "territorial-guided groups must match groupCount",
       });
     }
-    if (value.volunteers % value.groupCount !== 0) {
+    const guidedGroups = value.planningMode.groups;
+    const hasExplicitVolunteerCounts = guidedGroups.some(
+      ({ volunteerCount }) => volunteerCount !== undefined,
+    );
+    if (hasExplicitVolunteerCounts && guidedGroups.some(
+      ({ volunteerCount }) => volunteerCount === undefined,
+    )) {
+      context.addIssue({
+        code: "custom",
+        path: ["planningMode", "groups"],
+        message: "guided groups must either all declare volunteerCount or none",
+      });
+    }
+    const guidedVolunteerCount = guidedGroups.reduce(
+      (total, group) => total + (group.volunteerCount ?? 0),
+      0,
+    );
+    if ((hasExplicitVolunteerCounts && guidedVolunteerCount !== value.volunteers) ||
+      (!hasExplicitVolunteerCounts && value.volunteers % value.groupCount !== 0)) {
       context.addIssue({
         code: "custom",
         path: ["volunteers"],
-        message: "territorial-guided groups require an equal volunteer split",
+        message: hasExplicitVolunteerCounts
+          ? "guided group volunteer counts must match volunteers"
+          : "territorial-guided groups require an equal volunteer split",
       });
     }
     if (value.planningMode.version === ROUTE_TERRITORIAL_GUIDED_VERSION) {

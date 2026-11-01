@@ -9,6 +9,7 @@ vi.mock("react-leaflet", () => {
     React.createElement("div", null, children);
   return {
     CircleMarker: passthrough,
+    Circle: passthrough,
     MapContainer: passthrough,
     Marker: ({
       children,
@@ -290,5 +291,26 @@ describe("RouteMap", () => {
     expect(markup).toContain('data-color="#60a5fa"');
     expect(markup).not.toContain('data-color="#34d399"');
     expect(markup).not.toContain('data-color="#fbbf24"');
+  });
+
+  it("renders guided sectors and ordered waypoints separately from observations", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        groupRoutes: [{
+          ...groupRoute(1),
+          label: "Rive gauche",
+          plannedSector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+          plannedWaypoints: [{ id: "planned-1", label: "Passage école", latitude: 48.857, longitude: 2.353, order: 0 }],
+        }],
+        selectedGroupIndex: 1,
+        fr: true,
+      }),
+    );
+
+    expect(markup).toContain("Passage planifié · aucune observation");
+    expect(markup).toContain("Passage école");
+    expect(markup).toContain('data-testid="route-line"');
   });
 });

@@ -60,6 +60,7 @@ export type RouteGroupPartitionInput = {
 
 export type RouteGroupAssignment = {
   groupIndex: number;
+  label?: string;
   volunteerCount: number;
   origin: RoutePlannerOrigin;
   candidateIds: string[];
@@ -257,10 +258,23 @@ function buildTerritorialGuidedResult(
   if (planningMode.groups.length !== input.groupCount) {
     throw new RangeError("territorial-guided groups must match groupCount");
   }
-  if (input.volunteers % input.groupCount !== 0) {
-    throw new RangeError("territorial-guided groups require an equal volunteer split");
+  const hasExplicitVolunteerCounts = planningMode.groups.some(
+    ({ volunteerCount }) => volunteerCount !== undefined,
+  );
+  if (hasExplicitVolunteerCounts && planningMode.groups.some(
+    ({ volunteerCount }) => volunteerCount === undefined,
+  )) {
+    throw new RangeError("territorial-guided groups require volunteerCount for every group");
   }
-  const volunteerCount = input.volunteers / input.groupCount;
+  const volunteerCounts = hasExplicitVolunteerCounts
+    ? planningMode.groups.map(({ volunteerCount }) => volunteerCount ?? 0)
+    : input.volunteers % input.groupCount === 0
+      ? planningMode.groups.map(() => input.volunteers / input.groupCount)
+      : [];
+  if (volunteerCounts.length === 0 || volunteerCounts.some((count) => count < 1) ||
+    volunteerCounts.reduce((total, count) => total + count, 0) !== input.volunteers) {
+    throw new RangeError("territorial-guided group volunteer counts must match volunteers");
+  }
   const guidedBudget = input.guidedBudget ?? routeGuidedBudgetForMode(
     planningMode,
     input.travelBudgetMinutes,
@@ -271,7 +285,8 @@ function buildTerritorialGuidedResult(
     const distanceKm = guidedLoopDistance(input.origin, plannedWaypoints);
     return {
       groupIndex: index + 1,
-      volunteerCount,
+      label: guidedGroup.label,
+      volunteerCount: volunteerCounts[index]!,
       origin: { ...input.origin },
       candidateIds: [],
       estimatedDistanceKm: round(distanceKm),

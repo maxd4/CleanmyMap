@@ -102,6 +102,47 @@ describe("RouteSection explainability wiring", () => {
     );
   });
 
+  it("keeps a guided route visible when its groups contain only planned passages", () => {
+    Object.assign(mocks.routeData, {
+      isLoop: true,
+      volunteers: 10,
+      groupCount: 2,
+      scoreBreakdown: { priority: 0 },
+      multiRoute: {
+        totalDistanceKm: 3,
+        totalDurationMinutes: 30,
+        coverageGain: 0,
+        sharedTargetRatio: 0,
+        sharedDistanceRatio: null,
+        networkDistanceMeasured: true,
+      },
+      groupRoutes: [1, 2].map((groupIndex) => ({
+        groupIndex,
+        label: `Secteur ${groupIndex}`,
+        volunteerCount: 5,
+        travelDistanceKm: 1.5,
+        travelMinutes: 15,
+        targetCount: 0,
+        stops: [],
+        plannedSector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+        plannedWaypoints: [{ id: `passage-${groupIndex}`, label: `Passage ${groupIndex}`, latitude: 48.8566, longitude: 2.3522, order: 0 }],
+      })),
+      tradeoffs: [],
+    });
+
+    const markup = renderToStaticMarkup(
+      <EffectiveAuthStateProvider localDevAuth={{ active: true, role: "benevole" }}>
+        <RouteSection />
+      </EffectiveAuthStateProvider>,
+    );
+
+    expect(markup).toContain("Créer une action avec cet itinéraire");
+    expect(markup).toContain("Secteur 1");
+    expect(markup).toContain("Passages planifiés (ordre)");
+    expect(markup).toContain("1.50 km");
+    expect(markup).not.toContain("Aucune boucle exploitable");
+  });
+
   it("exposes the multi-loop legend and the all-or-one group selection", () => {
     Object.assign(mocks.routeData, {
       isLoop: true,

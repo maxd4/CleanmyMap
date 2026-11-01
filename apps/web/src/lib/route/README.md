@@ -117,3 +117,11 @@ attente bornée. La réponse expose l’audit `guidedRouting` et les
 `collection`, l’ordre des waypoints, la fermeture, l’écart au secteur et le
 budget sont vérifiables. Une géométrie de fallback est toujours marquée
 estimée et indisponible comme parcours piéton réseau validé.
+
+Dans `RouteSection`, le mode guidé permet de choisir le départ commun sur la
+carte, de configurer chaque secteur, de nommer les groupes, de régler leurs
+effectifs, d’ordonner leurs passages et d’ajuster le budget. La carte affiche
+les boucles ensemble puis par groupe avec des couleurs distinctes. L’export
+terrain produit une vue générale et une fiche par groupe ; il sépare les
+passages planifiés des observations/prédictions et signale explicitement les
+géométries réseau ou estimées.

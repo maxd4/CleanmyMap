@@ -212,17 +212,27 @@ function RouteGroupSelection({
         </fieldset>
         <div className="flex flex-wrap gap-2" role="tablist">
           <button type="button" role="tab" aria-selected={selectedGroupIndex === null} onClick={() => setSelectedGroupIndex(null)} className="rounded-full border border-white/15 px-3 py-2 text-xs font-bold text-white transition hover:border-emerald-300/50">{fr ? "Tous les groupes" : "All groups"}</button>
-          {groupRoutes.map((group) => <button key={group.groupIndex} type="button" role="tab" aria-selected={selectedGroupIndex === group.groupIndex} onClick={() => setSelectedGroupIndex(group.groupIndex)} className="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-50 transition hover:border-emerald-300/60">{fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`}</button>)}
+          {groupRoutes.map((group) => <button key={group.groupIndex} type="button" role="tab" aria-selected={selectedGroupIndex === group.groupIndex} onClick={() => setSelectedGroupIndex(group.groupIndex)} className="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-50 transition hover:border-emerald-300/60">{group.label || (fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`)}</button>)}
         </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-3" role="list" aria-label={fr ? "Légende des boucles" : "Loop legend"}>
         {groupRoutes.map((group) => {
           const visualStyle = getRouteGroupVisualStyle(group.groupIndex, multiRouteDisplayMode);
-          const groupLabel = fr ? `Groupe ${group.groupIndex} — ${group.volunteerCount} bénévoles` : `Group ${group.groupIndex} — ${group.volunteerCount} volunteers`;
+          const groupName = group.label || (fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`);
+          const groupLabel = `${groupName} — ${group.volunteerCount} ${fr ? "bénévoles" : "volunteers"}`;
+          const guidedState = group.guidedRouting?.availability === "network"
+            ? (fr ? "réseau piéton" : "pedestrian network")
+            : group.guidedRouting
+              ? (fr ? "fallback estimé" : "estimated fallback")
+              : null;
           return <div key={`summary-${group.groupIndex}`} role="listitem">
             <button type="button" onClick={() => setSelectedGroupIndex(group.groupIndex)} aria-label={groupLabel} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-300/40">
               <span className="flex items-center gap-3"><span aria-hidden="true" className="h-1.5 w-10 rounded-full" style={{ backgroundColor: visualStyle.color, backgroundImage: multiRouteDisplayMode === "patterns" ? `repeating-linear-gradient(90deg, ${visualStyle.color} 0 8px, transparent 8px 14px)` : undefined }} /><span className="font-black text-white">{groupLabel}</span></span>
-              <p className="mt-2 text-xs text-slate-300">{group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} stops</p>
+              <p className="mt-2 text-xs text-slate-300">{group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} observations</p>
+              {group.plannedSector ? <p className="mt-2 text-xs font-semibold text-sky-100/80">{fr ? "Secteur" : "Sector"} : {fr ? "centre" : "center"} {group.plannedSector.center.latitude.toFixed(4)}, {group.plannedSector.center.longitude.toFixed(4)} · {fr ? "rayon" : "radius"} {group.plannedSector.radiusKm.toFixed(1)} km</p> : null}
+              {group.plannedWaypoints && group.plannedWaypoints.length > 0 ? <div className="mt-2 text-xs text-sky-100/80"><p className="font-black">{fr ? "Passages planifiés (ordre)" : "Planned waypoints (order)"}</p><ol className="mt-1 list-decimal space-y-0.5 pl-5">{group.plannedWaypoints.map((waypoint) => <li key={waypoint.id}>{waypoint.label}</li>)}</ol></div> : null}
+              {guidedState ? <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-amber-100/80">{fr ? "État : " : "Status: "}{guidedState}</p> : null}
+              {group.guidedRouting ? <p className="mt-1 text-xs font-semibold text-slate-300">{fr ? `Boucle ${group.guidedRouting.loopVerified ? "fermée" : "à vérifier"} · ordre ${group.guidedRouting.waypointOrderVerified ? "respecté" : "non confirmé"} · budget déplacement ${group.guidedRouting.budget.travelMinutes} min / ${group.guidedRouting.budget.travelMaxMinutes} min` : `Loop ${group.guidedRouting.loopVerified ? "closed" : "to verify"} · order ${group.guidedRouting.waypointOrderVerified ? "preserved" : "unconfirmed"} · travel budget ${group.guidedRouting.budget.travelMinutes} / ${group.guidedRouting.budget.travelMaxMinutes} min`}</p> : null}
               <div className="mt-3"><MeetingPointDetails meetingPoint={group.meetingPoint} meetingOpportunities={group.meetingOpportunities} fr={fr} /></div>
               <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{group.operationalBudget?.withinBudget === true ? "Budget d’action respecté" : group.operationalBudget?.withinBudget === false ? "Budget d’action dépassé" : "Budget d’action non vérifiable"}</p>
               {multiRouteDisplayMode === "patterns" ? <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{fr ? "Trait : " : "Line: "}{getRouteGroupPatternLabel(group.groupIndex, fr)}</p> : null}

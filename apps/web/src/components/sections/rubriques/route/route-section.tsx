@@ -66,7 +66,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               options={options} setOptions={setOptions} fr={fr}
               planningMode={planningMode} setPlanningMode={setPlanningMode}
               originMode={originMode} setOriginMode={setOriginMode}
-              mapOrigin={mapOrigin} clearMapOrigin={clearMapOrigin}
+              mapOrigin={mapOrigin} setMapOrigin={setMapOrigin} clearMapOrigin={clearMapOrigin}
               originSelectionError={originSelectionError}
               isLoaded={isLoaded} isSignedIn={isSignedIn} isLoading={isLoading}
               isRequestInFlight={isRequestInFlight} isResolvingOrigin={isResolvingOrigin}

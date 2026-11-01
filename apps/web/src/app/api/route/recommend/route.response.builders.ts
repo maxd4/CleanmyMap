@@ -132,6 +132,7 @@ function buildMultiRouteTrace(
     volunteers: metrics.volunteers,
     groups: groupRoutes.map((group) => ({
       groupIndex: group.groupIndex,
+      ...(group.label ? { label: group.label } : {}),
       volunteerCount: group.volunteerCount,
       candidateIds: [...group.candidateIds],
       reservedCandidateIds: [...group.reservedCandidateIds],

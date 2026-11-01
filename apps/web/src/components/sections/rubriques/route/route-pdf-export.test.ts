@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
+import { createDefaultRouteTerritorialGuidedMode } from "@/lib/route/route-planning-mode";
 import { buildRoutePdfHtml } from "./route-pdf-export";
 
 const stop = (
@@ -171,7 +172,7 @@ describe("route PDF export", () => {
 
     expect(html).toContain(`data-route-stop="${escaped}"`);
     expect(html).toContain(`<strong>${escaped}</strong>`);
-    expect(html).toContain(`<span>${escaped} · score`);
+    expect(html).toContain(`<span>Source non précisée · ${escaped} · score`);
     expect(html).not.toContain(unsafe);
   });
 
@@ -207,5 +208,52 @@ describe("route PDF export", () => {
     expect(html).toContain('stroke-dasharray="3 7"');
     expect(html).toContain("Trait pointillés");
     expect(html).toContain("Aucune couche prédictive");
+  });
+
+  it("sépare les passages guidés des observations dans la vue et les fiches de groupe", () => {
+    const data = buildFixture(2);
+    const planningMode = createDefaultRouteTerritorialGuidedMode(10, 2);
+    data.planningMode = planningMode;
+    data.guidedBudget = planningMode.budget;
+    data.volunteers = 10;
+    data.groupCount = 2;
+    data.groupRoutes = data.groupRoutes.slice(0, 2).map((route, index) => ({
+      ...route,
+      label: `Secteur ${index + 1}`,
+      plannedSector: planningMode.groups[index]!.sector,
+      plannedWaypoints: [{ ...planningMode.groups[index]!.waypoints[0]!, order: 0 }],
+      guidedRouting: {
+        availability: "network",
+        loopVerified: true,
+        originVerified: true,
+        waypointOrderVerified: true,
+        waypointIds: [planningMode.groups[index]!.waypoints[0]!.id],
+        sectorDeviationKm: 0,
+        sectorWithinBounds: true,
+        warning: null,
+        budget: {
+          ...planningMode.budget,
+          travelMinutes: 18,
+          collectionMinutesAvailable: 57,
+          withinBudget: true,
+        },
+      },
+    }));
+    data.groupRoutes[0]!.stops[0] = { ...data.groupRoutes[0]!.stops[0]!, evidence: { family: "observed" } as never };
+    data.groupRoutes[1]!.stops[0] = { ...data.groupRoutes[1]!.stops[0]!, evidence: { family: "predicted" } as never };
+
+    const html = buildRoutePdfHtml(data, "colors", data.generatedAt);
+
+    expect(html).toContain("Vue générale — 2 groupes");
+    expect(html.match(/Fiche terrain/g)).toHaveLength(2);
+    expect(html).toContain("Secteur 1");
+    expect(html).toContain("Secteur 2");
+    expect(html).toContain("Passages planifiés (ordre)");
+    expect(html).toContain("aucune observation associée");
+    expect(html).toContain("Observation");
+    expect(html).toContain("Prédiction");
+    expect(html).toContain('data-route-planned-waypoint="group-1-waypoint-1"');
+    expect(html).toContain("réseau piéton");
+    expect(html).toContain("45 min réservées");
   });
 });
