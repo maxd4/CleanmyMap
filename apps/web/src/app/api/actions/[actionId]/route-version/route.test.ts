@@ -146,6 +146,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function reorderObjectKeys<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(reorderObjectKeys) as T;
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .reverse()
+      .map(([key, nested]) => [key, reorderObjectKeys(nested)]),
+  ) as T;
+}
+
+function reorderActiveSnapshotParameters(current: ReturnType<typeof actionWithSnapshot>) {
+  const calibration = current.preparation_data.routeCalibrationContext;
+  if (!calibration?.plannerSnapshot) throw new Error("Expected an active planner snapshot");
+  calibration.plannerSnapshot = {
+    ...calibration.plannerSnapshot,
+    parameters: reorderObjectKeys(calibration.plannerSnapshot.parameters),
+  };
+}
+
 function firstMockArgument(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
   return mock.mock.calls[0]?.[0];
 }
@@ -368,7 +387,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
       ...nextSnapshot.parameters,
       planningMode: { type: "event-centered", eventId: "event-1" },
     };
-    preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    const { current } = preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    reorderActiveSnapshotParameters(current);
 
     const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
@@ -392,6 +412,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const { current, supabase } = preparePostScenario(currentSnapshot, {
       confirmedParticipants: 12,
     });
+    reorderActiveSnapshotParameters(current);
 
     const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
     const body = await parseJsonSafely(response);
@@ -434,7 +455,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("applies the deterministic 6/5 guided refresh from 10 to 11 volunteers", async () => {
     const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
     const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 11, 2);
-    preparePostScenario(currentSnapshot, { confirmedParticipants: 11 });
+    const { current } = preparePostScenario(currentSnapshot, { confirmedParticipants: 11 });
+    reorderActiveSnapshotParameters(current);
 
     const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
     const body = await parseJsonSafely(response);
@@ -474,6 +496,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
 
   it.each([
     "group count",
+    "group order",
     "sector",
     "waypoint",
     "waypoint order",
@@ -485,7 +508,9 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const mode = changedSnapshot.parameters.planningMode;
     if (mode.type !== "territorial-guided") throw new Error("Expected guided mode");
 
-    if (mutation === "sector") {
+    if (mutation === "group order") {
+      mode.groups = [...mode.groups].reverse();
+    } else if (mutation === "sector") {
       mode.groups[0] = {
         ...mode.groups[0]!,
         sector: { ...mode.groups[0]!.sector, radiusKm: 0.5 },
