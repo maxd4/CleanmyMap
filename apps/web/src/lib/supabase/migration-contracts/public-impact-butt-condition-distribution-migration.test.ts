@@ -22,6 +22,13 @@ const massProvenanceMigration = readFileSync(
   ),
   "utf8",
 );
+const massAggregationFixMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261101000013_public_impact_butt_mass_aggregation_fix.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("public Impact butt condition distribution migration STATIC_CONTRACT", () => {
   it("uses the persisted canonical lot results and keeps legacy fallback bounded", () => {
@@ -63,5 +70,14 @@ describe("public Impact butt condition distribution migration STATIC_CONTRACT", 
     expect(massProvenanceMigration).toContain("massContributions");
     expect(massProvenanceMigration).not.toMatch(/\/\s*2500/);
     expect(massProvenanceMigration).not.toMatch(/update\s+public\.actions/i);
+  });
+
+  it("separates canonical counts from expanded mass provenance", () => {
+    expect(massAggregationFixMigration).toContain("butt_counts as (");
+    expect(massAggregationFixMigration).toContain("butt_mass_contributions as (");
+    expect(massAggregationFixMigration).toContain("from butt_counts counts");
+    expect(massAggregationFixMigration).toContain("left join butt_mass_contributions mass");
+    expect(massAggregationFixMigration).toContain("jsonb_array_elements(b.mass_contributions)");
+    expect(massAggregationFixMigration).toContain("grant execute on function public.load_public_landing_action_summary(date) to service_role");
   });
 });
