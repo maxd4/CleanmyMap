@@ -18,6 +18,7 @@ import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
 import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
+import { routeGuidedBudgetForMode } from "@/lib/route/route-planning-mode";
 import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import {
   parseRouteRecommendationRequest,
@@ -92,6 +93,11 @@ export async function POST(request: Request) {
     }
 
     const planningMode = options.planningMode;
+    const guidedBudget = routeGuidedBudgetForMode(
+      planningMode,
+      options.travelBudgetMinutes,
+    );
+    const effectiveTravelBudgetMinutes = guidedBudget?.totalMinutes ?? options.travelBudgetMinutes;
     const eventCenteredAnchor =
       planningMode.type === "event-centered"
         ? await loadRouteEventCenteredAnchor(supabase, planningMode.eventId)
@@ -115,13 +121,14 @@ export async function POST(request: Request) {
       spatialCandidates: candidateData.spatialCandidates,
       parisPressureSnapshot: candidateData.parisPressureSnapshot,
       municipalCleaningSnapshot: candidateData.municipalCleaningSnapshot,
-      travelBudgetMinutes: options.travelBudgetMinutes,
+      travelBudgetMinutes: effectiveTravelBudgetMinutes,
       maxStops: options.maxStops,
       priorityVsTravel,
       volunteers: options.volunteers,
       groupCount: options.groupCount,
       effectiveRiskFocus,
       planningMode,
+      guidedBudget: guidedBudget ?? undefined,
       eventCenteredAnchor,
       eventSignalContext: candidateData.routeEventSignalContext,
       weatherContext,
@@ -133,8 +140,9 @@ export async function POST(request: Request) {
       candidateData,
       planning,
       planningMode,
+      guidedBudget: guidedBudget ?? undefined,
       maxStops: options.maxStops,
-      travelBudgetMinutes: options.travelBudgetMinutes,
+      travelBudgetMinutes: effectiveTravelBudgetMinutes,
       priorityVsTravel,
       volunteers: options.volunteers,
       groupCount: options.groupCount,

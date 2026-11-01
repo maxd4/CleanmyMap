@@ -5,8 +5,10 @@ import {
   MAX_ROUTE_VOLUNTEERS,
 } from "@/lib/route/route-group-partition";
 import {
+  MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES,
   MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
   MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
+  ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
   ROUTE_TERRITORIAL_GUIDED_VERSION,
 } from "@/lib/route/route-planning-mode";
 import { routeDistanceKm } from "@/lib/route/route-planner";
@@ -29,6 +31,13 @@ const guidedGroupSchema = z.object({
   ).min(1).max(MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP),
 });
 
+const guidedBudgetSchema = z.object({
+  totalMinutes: z.number().finite().gt(0).max(MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES),
+  organizationMarginMinutes: z.number().finite().nonnegative(),
+  minimumCollectionMinutes: z.number().finite().gt(0),
+  travelMaxMinutes: z.number().finite().gt(0),
+});
+
 export const routeRecommendationRequestSchema = z
   .object({
     origin: z
@@ -43,13 +52,19 @@ export const routeRecommendationRequestSchema = z
     priorityVsTravel: z.number().finite().min(0).max(100).optional(),
     priorityVsDistance: z.number().finite().min(0).max(100).optional(),
     planningMode: z
-      .discriminatedUnion("type", [
+      .union([
         z.object({ type: z.literal("free") }),
         z.object({ type: z.literal("event-centered"), eventId: z.string().uuid() }),
         z.object({
           type: z.literal("territorial-guided"),
+          version: z.literal(ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION),
+          groups: z.array(guidedGroupSchema).min(1).max(MAX_ROUTE_GROUP_COUNT),
+        }),
+        z.object({
+          type: z.literal("territorial-guided"),
           version: z.literal(ROUTE_TERRITORIAL_GUIDED_VERSION),
           groups: z.array(guidedGroupSchema).min(1).max(MAX_ROUTE_GROUP_COUNT),
+          budget: guidedBudgetSchema,
         }),
       ])
       .default({ type: "free" }),
@@ -93,6 +108,19 @@ export const routeRecommendationRequestSchema = z
         path: ["volunteers"],
         message: "territorial-guided groups require an equal volunteer split",
       });
+    }
+    if (value.planningMode.version === ROUTE_TERRITORIAL_GUIDED_VERSION) {
+      const { budget } = value.planningMode;
+      const allocatedMinutes = budget.organizationMarginMinutes +
+        budget.travelMaxMinutes + budget.minimumCollectionMinutes;
+      if (Math.abs(allocatedMinutes - budget.totalMinutes) >
+        Number.EPSILON * Math.max(1, Math.abs(budget.totalMinutes))) {
+        context.addIssue({
+          code: "custom",
+          path: ["planningMode", "budget"],
+          message: "guided budget must equal organization + travel + collection",
+        });
+      }
     }
     const waypointIds = new Set<string>();
     value.planningMode.groups.forEach((group, groupIndex) => {

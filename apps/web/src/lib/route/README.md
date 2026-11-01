@@ -99,10 +99,21 @@ déjà pondéré par le contexte événementiel.
 Documentation canonique associée :
 `documentation/architecture/methodologie-creation-itineraire.md`.
 
-Le mode `territorial-guided` reçoit la version
-`route-territorial-guided-v1`, un secteur borné et des waypoints ordonnés par
-groupe. Chaque groupe reprend exactement l’origine commune et produit une
-boucle fermée, y compris lorsque le pool de signalements est vide. Les
+Le mode `territorial-guided` courant reçoit la version
+`route-territorial-guided-v2`, un secteur borné, des waypoints ordonnés par
+groupe et un budget utilisateur décomposé en créneau total, marge
+d’organisation, collecte minimale et plafond de déplacement. La version v1
+reste lisible pour compatibilité et reçoit un budget de compatibilité interne.
+Chaque groupe reprend exactement l’origine commune et produit une boucle
+fermée, y compris lorsque le pool de signalements est vide. Les
 `plannedWaypoints` restent séparés des `stops` : ils ne portent ni score,
 `observed`/`predicted`, priorité scientifique, additionnalité ou provenance de
 pollution.
+
+Le routage guidé appelle FOSSGIS/OSRM groupe par groupe ; l’intervalle de
+quota distribué existant d’une requête par seconde est respecté avec une
+attente bornée. La réponse expose l’audit `guidedRouting` et les
+`guidedSegments` : les liaisons `origin-link` sont distinguées des portions
+`collection`, l’ordre des waypoints, la fermeture, l’écart au secteur et le
+budget sont vérifiables. Une géométrie de fallback est toujours marquée
+estimée et indisponible comme parcours piéton réseau validé.

@@ -28,6 +28,8 @@ import {
 import { buildCleanupWorkload } from "./route-cleanup-workload";
 import {
   plannedWaypointsForGroup,
+  routeGuidedBudgetForMode,
+  type RouteGuidedBudget,
   type RouteGuidedSector,
   type RoutePlanningMode,
   type RoutePlannedWaypoint,
@@ -49,6 +51,7 @@ export type RouteGroupPartitionInput = {
   maxStops: number;
   priorityVsTravel: number;
   planningMode?: RoutePlanningMode;
+  guidedBudget?: RouteGuidedBudget;
   plannerResult?: RoutePlannerResult;
   effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
@@ -66,6 +69,7 @@ export type RouteGroupAssignment = {
   targetCount: number;
   plannedWaypoints?: RoutePlannedWaypoint[];
   plannedSector?: RouteGuidedSector;
+  guidedBudget?: RouteGuidedBudget;
 };
 
 export type RoutePartitionMetrics = {
@@ -257,6 +261,11 @@ function buildTerritorialGuidedResult(
     throw new RangeError("territorial-guided groups require an equal volunteer split");
   }
   const volunteerCount = input.volunteers / input.groupCount;
+  const guidedBudget = input.guidedBudget ?? routeGuidedBudgetForMode(
+    planningMode,
+    input.travelBudgetMinutes,
+  );
+  if (!guidedBudget) throw new RangeError("territorial-guided budget is unavailable");
   const groups = planningMode.groups.map((guidedGroup, index) => {
     const plannedWaypoints = plannedWaypointsForGroup(guidedGroup);
     const distanceKm = guidedLoopDistance(input.origin, plannedWaypoints);
@@ -270,6 +279,7 @@ function buildTerritorialGuidedResult(
       targetCount: 0,
       plannedWaypoints,
       plannedSector: { ...guidedGroup.sector, center: { ...guidedGroup.sector.center } },
+      guidedBudget: { ...guidedBudget },
     } satisfies RouteGroupAssignment;
   });
   return {

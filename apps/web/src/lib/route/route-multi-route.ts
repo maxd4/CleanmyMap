@@ -24,6 +24,8 @@ import {
   type RouteGroupRoutingResult,
 } from "./route-multi-route-group";
 import { projectMeetingPointFromGeometry } from "./route-operational";
+import { FOSSGIS_QUOTA_INTERVAL_MS } from "./fossgis-foot-routing";
+import type { RouteGuidedBudget } from "./route-planning-mode";
 
 type Coordinate = [number, number];
 
@@ -195,6 +197,7 @@ function buildRouteMultiGroup(
   routedGroups: readonly RouteGroupRoutingResult[],
   travelBudgetMinutes: number,
 ): RouteGroupRoute {
+  const effectiveTravelBudgetMinutes = route.group.guidedBudget?.travelMaxMinutes ?? travelBudgetMinutes;
   const finalGroup = {
     ...route.group,
     candidateIds: route.finalCandidateIds,
@@ -211,8 +214,11 @@ function buildRouteMultiGroup(
     routeGeometry: route.routeGeometry,
     travelDistanceKm: round(route.routeGeometry.distanceKm, 2),
     travelMinutes: route.routeGeometry.durationMinutes,
-    travelBudgetMinutes,
-    withinBudget: route.routeGeometry.durationMinutes <= travelBudgetMinutes,
+    travelBudgetMinutes: effectiveTravelBudgetMinutes,
+    withinBudget: route.guidedRouting?.budget.withinBudget ??
+      route.routeGeometry.durationMinutes <= effectiveTravelBudgetMinutes,
+    ...(route.guidedSegments ? { guidedSegments: route.guidedSegments } : {}),
+    ...(route.guidedRouting ? { guidedRouting: route.guidedRouting } : {}),
     meetingPoint: projectMeetingPointFromGeometry(route.routeGeometry),
   };
 }
@@ -224,15 +230,30 @@ async function routeMultiGroups(input: {
   travelBudgetMinutes: number;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
+  guidedBudget?: RouteGuidedBudget;
+  waitForQuotaInterval?: (milliseconds: number) => Promise<void>;
 }): Promise<RouteGroupRoutingResult[]> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
+  const guided = input.partition.audit.planningMode === "territorial-guided";
+  const waitForQuotaInterval = input.waitForQuotaInterval ?? ((milliseconds) =>
+    new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
+  let previousRequestStartedAt: number | null = null;
   for (const group of [...input.partition.groups].sort((left, right) => left.groupIndex - right.groupIndex)) {
+    if (guided && previousRequestStartedAt !== null) {
+      const elapsed = Date.now() - previousRequestStartedAt;
+      const waitMilliseconds = Math.min(
+        FOSSGIS_QUOTA_INTERVAL_MS,
+        Math.max(0, FOSSGIS_QUOTA_INTERVAL_MS - elapsed),
+      );
+      if (waitMilliseconds > 0) await waitForQuotaInterval(waitMilliseconds);
+    }
+    previousRequestStartedAt = Date.now();
     routedGroups.push(await routeGroupWithinBudget(
       input.origin,
       group,
       candidatesById,
-      input.travelBudgetMinutes,
+      group.guidedBudget?.travelMaxMinutes ?? input.travelBudgetMinutes,
       input.operationalBudget,
       input.weatherContext,
       group.volunteerCount,
@@ -289,6 +310,7 @@ function buildRouteMultiPartition(
       estimatedDistanceKm: group.estimatedDistanceKm,
       estimatedDurationMinutes: group.estimatedDurationMinutes,
       targetCount: group.targetCount,
+      ...(group.guidedBudget ? { guidedBudget: { ...group.guidedBudget } } : {}),
       ...(group.plannedWaypoints ? { plannedWaypoints: group.plannedWaypoints.map((waypoint) => ({ ...waypoint })) } : {}),
       ...(group.plannedSector ? {
         plannedSector: {
@@ -328,6 +350,8 @@ export async function routePartitionedGroups(input: {
   effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
+  guidedBudget?: RouteGuidedBudget;
+  waitForQuotaInterval?: (milliseconds: number) => Promise<void>;
 }): Promise<RouteMultiRouteResult> {
   const routedGroups = await routeMultiGroups(input);
 

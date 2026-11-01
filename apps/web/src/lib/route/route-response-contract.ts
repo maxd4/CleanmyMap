@@ -7,7 +7,10 @@ import type {
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RouteGeometry, RouteStop } from "./route-contract";
 import type { RouteRecommendationTrace } from "./route-trace";
-import type { RoutePlanningMode } from "./route-planning-mode";
+import type {
+  RouteGuidedBudget,
+  RoutePlanningMode,
+} from "./route-planning-mode";
 import type {
   RouteGroupAssignment,
   RoutePartitionAudit,
@@ -81,6 +84,31 @@ export type MeetingPointProjection = {
   provenance: "final_geometry_midpoint" | "manual_midpoint" | "legacy_midpoint";
 };
 
+export type RouteGuidedSegment = {
+  kind: "origin-link" | "collection";
+  fromWaypointId: string | null;
+  toWaypointId: string | null;
+  distanceKm: number;
+  estimatedMinutes: number;
+  estimated: boolean;
+};
+
+export type RouteGuidedRoutingAudit = {
+  availability: "network" | "fallback-estimated";
+  loopVerified: boolean;
+  originVerified: boolean;
+  waypointOrderVerified: boolean;
+  waypointIds: string[];
+  sectorDeviationKm: number;
+  sectorWithinBounds: boolean;
+  warning: string | null;
+  budget: RouteGuidedBudget & {
+    travelMinutes: number;
+    collectionMinutesAvailable: number;
+    withinBudget: boolean;
+  };
+};
+
 export type RouteRecommendationResponse = {
   isLoop: true;
   planningMode: RoutePlanningMode;
@@ -93,6 +121,7 @@ export type RouteRecommendationResponse = {
   travelDistanceKm: number;
   travelMinutes: number;
   travelBudgetMinutes: number;
+  guidedBudget?: RouteGuidedBudget;
   volunteers: number;
   groupCount: number;
   constraintsApplied: {
@@ -183,6 +212,8 @@ export type RouteGroupRoute = RouteGroupAssignment & {
   travelBudgetMinutes: number;
   withinBudget: boolean;
   operationalBudget?: RouteOperationalBudget;
+  guidedSegments?: RouteGuidedSegment[];
+  guidedRouting?: RouteGuidedRoutingAudit;
   /** Derived independently for this group's final geometry. */
   meetingPoint?: MeetingPointProjection | null;
   meetingOpportunities?: MeetingOpportunity[];

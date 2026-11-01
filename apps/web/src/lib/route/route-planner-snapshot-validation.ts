@@ -4,7 +4,9 @@ import type { RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
 import {
   MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
+  MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES,
   MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
+  ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
   ROUTE_TERRITORIAL_GUIDED_VERSION,
 } from "./route-planning-mode";
 import { routeDistanceKm, type RoutePlannerOrigin } from "./route-planner";
@@ -276,7 +278,12 @@ function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
   const mode = value as Partial<RoutePlanningMode>;
   if (mode.type === "free") return true;
   if (mode.type === "event-centered") return isNonEmptyString(mode.eventId);
-  if (mode.type !== "territorial-guided" || mode.version !== ROUTE_TERRITORIAL_GUIDED_VERSION) {
+  if (mode.type !== "territorial-guided" ||
+    (mode.version !== ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION &&
+      mode.version !== ROUTE_TERRITORIAL_GUIDED_VERSION)) {
+    return false;
+  }
+  if (mode.version === ROUTE_TERRITORIAL_GUIDED_VERSION && !isRouteGuidedBudget(mode.budget)) {
     return false;
   }
   const groups = mode.groups;
@@ -302,6 +309,24 @@ function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
       routeDistanceKm(sector.center, waypoint) <= sector.radiusKm,
     );
   });
+}
+
+function isRouteGuidedBudget(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const budget = value as Record<string, unknown>;
+  const totalMinutes = budget.totalMinutes;
+  const organizationMarginMinutes = budget.organizationMarginMinutes;
+  const minimumCollectionMinutes = budget.minimumCollectionMinutes;
+  const travelMaxMinutes = budget.travelMaxMinutes;
+  if (!finiteNumberBetween(totalMinutes, Number.MIN_VALUE, MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES) ||
+    !finiteNonNegative(organizationMarginMinutes) ||
+    !finiteNumberBetween(minimumCollectionMinutes, Number.MIN_VALUE, MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES) ||
+    !finiteNumberBetween(travelMaxMinutes, Number.MIN_VALUE, MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES)) {
+    return false;
+  }
+  return Math.abs(
+    totalMinutes - organizationMarginMinutes - minimumCollectionMinutes - travelMaxMinutes,
+  ) <= Number.EPSILON * Math.max(1, Math.abs(totalMinutes));
 }
 
 function isStringArray(value: unknown): value is string[] {

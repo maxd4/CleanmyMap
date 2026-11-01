@@ -11,6 +11,7 @@ const routeProviderMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./fossgis-foot-routing", () => ({
   routePolylineThroughFossgisFoot: routeProviderMock,
+  FOSSGIS_QUOTA_INTERVAL_MS: 1000,
 }));
 
 const origin: RoutePlannerOrigin = {
@@ -181,6 +182,12 @@ describe("coordinated multi-route routing", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: { center: { latitude: origin.latitude, longitude: origin.longitude }, radiusKm: 1 },
@@ -193,14 +200,21 @@ describe("coordinated multi-route routing", () => {
         ],
       },
     });
+    const waitForQuotaInterval = vi.fn<(milliseconds: number) => Promise<void>>(
+      async () => undefined,
+    );
     const result = await routePartitionedGroups({
       origin,
       candidates: [],
       partition: guidedPartition,
       travelBudgetMinutes: 60,
+      waitForQuotaInterval,
     });
 
     expect(routeProviderMock).toHaveBeenCalledTimes(2);
+    expect(waitForQuotaInterval).toHaveBeenCalledTimes(1);
+    expect(waitForQuotaInterval.mock.calls[0]?.[0]).toBeGreaterThanOrEqual(1);
+    expect(waitForQuotaInterval.mock.calls[0]?.[0]).toBeLessThanOrEqual(1000);
     expect(result.groupRoutes).toHaveLength(2);
     expect(result.groupRoutes.map(({ volunteerCount }) => volunteerCount)).toEqual([5, 5]);
     expect(result.groupRoutes.every(({ candidateIds, stops, targetCount }) =>
@@ -215,6 +229,21 @@ describe("coordinated multi-route routing", () => {
       const last = routeGeometry.coordinates.at(-1);
       return routeGeometry.isLoop && first?.[0] === last?.[0] && first?.[1] === last?.[1];
     })).toBe(true);
+    expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting &&
+      guidedRouting.availability === "network" &&
+      guidedRouting.loopVerified &&
+      guidedRouting.originVerified &&
+      guidedRouting.waypointOrderVerified &&
+      guidedRouting.budget.totalMinutes === 90 &&
+      guidedRouting.budget.organizationMarginMinutes === 15 &&
+      guidedRouting.budget.minimumCollectionMinutes === 45 &&
+      guidedRouting.budget.travelMaxMinutes === 30 &&
+      guidedRouting.budget.withinBudget,
+    )).toBe(true);
+    expect(result.groupRoutes.map(({ guidedSegments }) => guidedSegments?.map(({ kind }) => kind))).toEqual([
+      ["origin-link", "origin-link"],
+      ["origin-link", "origin-link"],
+    ]);
     expect(result.plannedStops).toEqual([]);
     expect(result.metrics.coverageGain).toBe(0);
   });
@@ -240,6 +269,112 @@ describe("coordinated multi-route routing", () => {
     expect(result.metrics.sharedDistanceRatio).toBeNull();
     expect(result.metrics.networkDistanceMeasured).toBe(false);
     expect(result.degraded).toBe(true);
+  });
+
+  it("exposes guided fallback availability and keeps the declared budget auditable", async () => {
+    routeProviderMock.mockRejectedValue(new Error("network unavailable"));
+    const guidedPartition = partitionRouteCandidates({
+      origin,
+      candidates: [],
+      volunteers: 10,
+      groupCount: 2,
+      travelBudgetMinutes: 60,
+      maxStops: 6,
+      priorityVsTravel: 65,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
+        groups: [
+          {
+            sector: { center: { latitude: origin.latitude, longitude: origin.longitude }, radiusKm: 1 },
+            waypoints: [{ id: "north", label: "Nord", latitude: 48.857, longitude: 2.3522 }],
+          },
+          {
+            sector: { center: { latitude: origin.latitude, longitude: origin.longitude }, radiusKm: 1 },
+            waypoints: [{ id: "south", label: "Sud", latitude: 48.856, longitude: 2.3522 }],
+          },
+        ],
+      },
+    });
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartition,
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes.map(({ routeGeometry, guidedRouting }) => ({
+      mode: routeGeometry.mode,
+      estimated: routeGeometry.estimated,
+      availability: guidedRouting?.availability,
+      loopVerified: guidedRouting?.loopVerified,
+      withinBudget: guidedRouting?.budget.withinBudget,
+      warning: guidedRouting?.warning,
+    }))).toEqual([
+      { mode: "fallback", estimated: true, availability: "fallback-estimated", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
+      { mode: "fallback", estimated: true, availability: "fallback-estimated", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
+    ]);
+  });
+
+  it("does not count the common origin link as sector drift and exposes an over-budget loop", async () => {
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => ({
+      ...createFallbackRouteGeometry(coordinates),
+      durationMinutes: 40,
+      mode: "network",
+      provider: "fossgis-osrm",
+      profile: "foot",
+      estimated: false,
+    }));
+    const guidedPartition = partitionRouteCandidates({
+      origin,
+      candidates: [],
+      volunteers: 10,
+      groupCount: 2,
+      travelBudgetMinutes: 60,
+      maxStops: 6,
+      priorityVsTravel: 65,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
+        groups: [
+          {
+            sector: { center: { latitude: 48.86, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [
+              { id: "north-1", label: "Nord 1", latitude: 48.86, longitude: 2.3522 },
+              { id: "north-2", label: "Nord 2", latitude: 48.8602, longitude: 2.3522 },
+            ],
+          },
+          {
+            sector: { center: { latitude: 48.86, longitude: 2.3522 }, radiusKm: 1 },
+            waypoints: [{ id: "south", label: "Sud", latitude: 48.86, longitude: 2.353 }],
+          },
+        ],
+      },
+    });
+    const result = await routePartitionedGroups({
+      origin,
+      candidates: [],
+      partition: guidedPartition,
+      travelBudgetMinutes: 60,
+      waitForQuotaInterval: vi.fn(async () => undefined),
+    });
+
+    expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting?.sectorWithinBounds)).toBe(true);
+    expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting?.budget.withinBudget === false)).toBe(true);
+    expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting?.warning === "La boucle guidée ne respecte pas le budget utilisateur déclaré.")).toBe(true);
   });
 
   it("is deterministic for the same partition and provider responses", async () => {

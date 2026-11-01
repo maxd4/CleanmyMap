@@ -87,6 +87,12 @@ describe("route planner proof v1", () => {
         planningMode: {
           type: "territorial-guided" as const,
           version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+          budget: {
+            totalMinutes: 90,
+            organizationMarginMinutes: 15,
+            minimumCollectionMinutes: 45,
+            travelMaxMinutes: 30,
+          },
           groups: [{
             sector: {
               center: { latitude: 48.8566, longitude: 2.3522 },

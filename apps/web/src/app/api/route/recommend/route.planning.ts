@@ -29,6 +29,7 @@ import {
 } from "@/lib/route/route-event-centered";
 import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+import type { RouteGuidedBudget } from "@/lib/route/route-planning-mode";
 import type { RouteFinalRoutingReconciliation } from "@/lib/route/route-trace";
 import {
   buildSingleGroupRoute,
@@ -115,6 +116,7 @@ type RouteRecommendationInput = {
   groupCount: number;
   effectiveRiskFocus: RouteRiskFocus;
   planningMode: RoutePlanningMode;
+  guidedBudget?: RouteGuidedBudget;
   eventCenteredAnchor: RouteEventCenteredAnchor | null;
   eventSignalContext: RouteEventSignalContext;
   operationalBudget?: RouteOperationalBudgetDependency;
@@ -143,6 +145,7 @@ function finalizeRouteRecommendationPreparation(
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     planningMode: input.planningMode,
+    guidedBudget: input.guidedBudget,
     effectiveRiskFocus,
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
@@ -330,6 +333,7 @@ async function buildMultiGroupRoutingState(
     partition: preparation.groupPartition,
     travelBudgetMinutes: input.travelBudgetMinutes,
     effectiveRiskFocus: preparation.effectiveRiskFocus,
+    guidedBudget: input.guidedBudget,
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
   });

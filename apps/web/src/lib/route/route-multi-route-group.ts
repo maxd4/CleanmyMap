@@ -12,6 +12,14 @@ import {
   type RoutePlannerOrigin,
 } from "./route-planner";
 import type { RouteGroupAssignment } from "./route-group-partition";
+import type {
+  RouteGuidedBudget,
+  RoutePlannedWaypoint,
+} from "./route-planning-mode";
+import type {
+  RouteGuidedRoutingAudit,
+  RouteGuidedSegment,
+} from "./route-response-contract";
 import { buildRouteCalibrationContext } from "./route-calibration";
 import {
   buildRouteOperationalBudget,
@@ -22,6 +30,7 @@ import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 type Coordinate = [number, number];
 type RoutePoint = { latitude: number; longitude: number };
+const GUIDED_WAYPOINT_MATCH_RADIUS_KM = 0.1;
 
 export type RouteGroupRoutingResult = {
   group: RouteGroupAssignment;
@@ -33,6 +42,8 @@ export type RouteGroupRoutingResult = {
   degraded: boolean;
   warning: string | null;
   budgetPrefixApplied: boolean;
+  guidedSegments?: RouteGuidedSegment[];
+  guidedRouting?: RouteGuidedRoutingAudit;
 };
 
 function round(value: number, digits = 3): number {
@@ -74,6 +85,132 @@ function fallbackGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoin
     profile: null,
     mode: "fallback",
     estimated: true,
+  };
+}
+
+function geometryMatchesGuidedPlan(
+  origin: RoutePlannerOrigin,
+  waypoints: readonly RoutePlannedWaypoint[],
+  geometry: RouteGeometry,
+): boolean {
+  const first = geometry.coordinates[0];
+  const last = geometry.coordinates.at(-1);
+  const routeOrigin = geometry.origin;
+  const originDistance = first && last
+    ? Math.max(
+        routeDistanceKm(origin, { latitude: first[0], longitude: first[1] }),
+        routeDistanceKm(origin, { latitude: last[0], longitude: last[1] }),
+      )
+    : Number.POSITIVE_INFINITY;
+  if (!geometry.isLoop || geometry.returnLeg === null || !routeOrigin ||
+    originDistance > 0.01 || routeDistanceKm(origin, {
+      latitude: routeOrigin[0],
+      longitude: routeOrigin[1],
+    }) > 0.01) {
+    return false;
+  }
+  if (geometry.legs.length !== waypoints.length + 1) return false;
+  if (geometry.legs.some((leg, index) =>
+    leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
+  )) return false;
+  let coordinateIndex = 0;
+  for (const waypoint of waypoints) {
+    const matchIndex = geometry.coordinates.findIndex((coordinate, index) =>
+      index >= coordinateIndex && routeDistanceKm(
+        waypoint,
+        { latitude: coordinate[0], longitude: coordinate[1] },
+      ) <= GUIDED_WAYPOINT_MATCH_RADIUS_KM,
+    );
+    if (matchIndex < 0) return false;
+    coordinateIndex = matchIndex + 1;
+  }
+  return true;
+}
+
+function guidedSectorDeviationKm(
+  geometry: RouteGeometry,
+  sector: RouteGroupAssignment["plannedSector"],
+  waypoints: readonly RoutePlannedWaypoint[],
+): number {
+  if (!sector) return 0;
+  const collectionCoordinates: Coordinate[] = waypoints.map(({ latitude, longitude }) => [latitude, longitude]);
+  for (let legIndex = 1; legIndex < geometry.legs.length - 1; legIndex += 1) {
+    const steps = geometry.legs[legIndex]?.steps ?? [];
+    collectionCoordinates.push(...steps.flatMap((step) => step.geometry ?? []));
+  }
+  return Math.max(0, ...collectionCoordinates.map((coordinate) =>
+    routeDistanceKm(
+      sector.center,
+      { latitude: coordinate[0], longitude: coordinate[1] },
+    ) - sector.radiusKm,
+  ));
+}
+
+function buildGuidedSegments(
+  geometry: RouteGeometry,
+  waypoints: readonly RoutePlannedWaypoint[],
+): RouteGuidedSegment[] {
+  return Array.from({ length: waypoints.length + 1 }, (_, index) => {
+    const leg = geometry.legs[index];
+    const fromWaypoint = index === 0 ? null : waypoints[index - 1]!.id;
+    const toWaypoint = index === waypoints.length ? null : waypoints[index]!.id;
+    return {
+      kind: index === 0 || index === waypoints.length ? "origin-link" : "collection",
+      fromWaypointId: fromWaypoint,
+      toWaypointId: toWaypoint,
+      distanceKm: leg?.distanceKm ?? 0,
+      estimatedMinutes: leg?.estimatedMinutes ?? 0,
+      estimated: geometry.estimated,
+    };
+  });
+}
+
+function buildGuidedRoutingAudit(params: {
+  geometry: RouteGeometry;
+  origin: RoutePlannerOrigin;
+  waypoints: readonly RoutePlannedWaypoint[];
+  sector?: RouteGroupAssignment["plannedSector"];
+  budget: RouteGuidedBudget;
+  warning: string | null;
+}): { segments: RouteGuidedSegment[]; audit: RouteGuidedRoutingAudit } {
+  const loopVerified = geometryMatchesGuidedPlan(params.origin, params.waypoints, params.geometry);
+  const first = params.geometry.coordinates[0];
+  const last = params.geometry.coordinates.at(-1);
+  const originVerified = Boolean(first && last) &&
+    routeDistanceKm(params.origin, { latitude: first![0], longitude: first![1] }) <= 0.01 &&
+    routeDistanceKm(params.origin, { latitude: last![0], longitude: last![1] }) <= 0.01;
+  const sectorDeviationKm = guidedSectorDeviationKm(params.geometry, params.sector, params.waypoints);
+  const collectionMinutesAvailable = Math.max(
+    0,
+    params.budget.totalMinutes - params.budget.organizationMarginMinutes - params.geometry.durationMinutes,
+  );
+  const withinBudget = params.geometry.durationMinutes <= params.budget.travelMaxMinutes &&
+    collectionMinutesAvailable >= params.budget.minimumCollectionMinutes;
+  const warning = params.warning ?? (
+    withinBudget
+      ? sectorDeviationKm > 0
+        ? "Le tracé réseau guidé dépasse le secteur déclaré ; l'écart est exposé dans l'audit."
+        : null
+      : "La boucle guidée ne respecte pas le budget utilisateur déclaré."
+  );
+  return {
+    segments: buildGuidedSegments(params.geometry, params.waypoints),
+    audit: {
+      availability: params.geometry.mode === "network" ? "network" : "fallback-estimated",
+      loopVerified,
+      originVerified,
+      waypointOrderVerified: loopVerified,
+      waypointIds: params.waypoints.map(({ id }) => id),
+      sectorDeviationKm: round(sectorDeviationKm),
+      sectorWithinBounds: sectorDeviationKm <= 0.01,
+      warning,
+      budget: {
+        ...params.budget,
+        travelMinutes: params.geometry.durationMinutes,
+        collectionMinutesAvailable: round(collectionMinutesAvailable),
+        withinBudget,
+      },
+    },
   };
 }
 
@@ -200,6 +337,8 @@ function buildRouteGroupRoutingResult(params: {
   degraded: boolean;
   warning: string | null;
   budgetPrefixApplied: boolean;
+  guidedSegments?: RouteGuidedSegment[];
+  guidedRouting?: RouteGuidedRoutingAudit;
 }): RouteGroupRoutingResult {
   return {
     group: params.group,
@@ -211,6 +350,8 @@ function buildRouteGroupRoutingResult(params: {
     degraded: params.degraded,
     warning: params.warning,
     budgetPrefixApplied: params.budgetPrefixApplied,
+    ...(params.guidedSegments ? { guidedSegments: params.guidedSegments } : {}),
+    ...(params.guidedRouting ? { guidedRouting: params.guidedRouting } : {}),
   };
 }
 
@@ -255,7 +396,15 @@ async function adjustRouteToBudget(params: {
 async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[]): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
   try {
     const geometry = await routePolylineThroughFossgisFoot(closedCoordinates(origin, points), {});
-    return { geometry, providerCalls: 1, firstProviderMode: geometry.mode, degraded: false, warning: null };
+    return {
+      geometry,
+      providerCalls: 1,
+      firstProviderMode: geometry.mode,
+      degraded: geometry.mode !== "network",
+      warning: geometry.mode === "fallback"
+        ? "Le routage piéton réseau est indisponible ; la boucle est une estimation locale fermée."
+        : null,
+    };
   } catch {
     return { geometry: fallbackGeometry(origin, points), providerCalls: 1, firstProviderMode: "fallback", degraded: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." };
   }
@@ -287,6 +436,7 @@ export async function routeGroupWithinBudget(
 ): Promise<RouteGroupRoutingResult> {
   const initialCandidates = resolveGroupCandidates(group, candidatesById);
   const plannedWaypoints = group.plannedWaypoints ?? [];
+  const guidedBudget = group.guidedBudget;
   let providerCalls = 0;
   let firstProviderMode: RouteGeometry["mode"] | null = null;
   let degraded = false;
@@ -302,8 +452,31 @@ export async function routeGroupWithinBudget(
   firstProviderMode = initialRoute.firstProviderMode;
   degraded = initialRoute.degraded;
   warning = initialRoute.warning;
+  let guidedSegments: RouteGuidedSegment[] | undefined;
+  let guidedRouting: RouteGuidedRoutingAudit | undefined;
   if (plannedWaypoints.length === 0) {
     ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget }));
   }
-  return buildRouteGroupRoutingResult({ group, candidates: retainedCandidates, geometry, providerCalls, firstProviderMode, degraded, warning, budgetPrefixApplied });
+  if (plannedWaypoints.length > 0 && guidedBudget) {
+    if (!geometryMatchesGuidedPlan(origin, plannedWaypoints, geometry)) {
+      geometry = fallbackGeometry(origin, plannedWaypoints);
+      degraded = true;
+      warning = "Le fournisseur n'a pas confirmé la boucle guidée, ses points ou leur ordre ; une estimation locale fermée est utilisée.";
+    }
+    const guidedResult = buildGuidedRoutingAudit({
+      geometry,
+      origin,
+      waypoints: plannedWaypoints,
+      sector: group.plannedSector,
+      budget: guidedBudget,
+      warning,
+    });
+    guidedSegments = guidedResult.segments;
+    guidedRouting = guidedResult.audit;
+    if (!guidedRouting.budget.withinBudget) {
+      degraded = true;
+      warning = guidedRouting.warning;
+    }
+  }
+  return buildRouteGroupRoutingResult({ group, candidates: retainedCandidates, geometry, providerCalls, firstProviderMode, degraded, warning, budgetPrefixApplied, guidedSegments, guidedRouting });
 }

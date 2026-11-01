@@ -145,16 +145,33 @@ Ces contraintes peuvent empêcher la sélection d’une zone pourtant prioritair
 Le résultat doit alors conserver la décision et la raison de l’exclusion dans
 la trace lorsque le contrat le permet.
 
-En mode `territorial-guided`, le serveur reçoit la version
-`route-territorial-guided-v1`, un secteur géographique borné et des points de
-passage ordonnés pour chaque groupe. L’origine reste commune à toutes les
-boucles. Les points planifiés sont routés comme des waypoints et restent
-distincts des cibles `observed` ou `predicted` : ils ne reçoivent ni priorité
-scientifique, ni score, ni provenance de pollution. Une requête guidée peut
-donc produire une boucle sans signalement validé, tandis que les exclusions de
-sécurité continuent de s’appliquer aux candidats lorsqu’un mode qui en
-sélectionne est utilisé. La réponse conserve ces passages sous
-`plannedWaypoints`, séparément de ses `stops` scientifiques.
+En mode `territorial-guided`, le serveur reçoit la version courante
+`route-territorial-guided-v2`, un secteur géographique borné et des points de
+passage ordonnés pour chaque groupe. Le contrat porte aussi un budget choisi
+par l’utilisateur : créneau total, marge d’organisation, durée minimale de
+collecte réservée et plafond de déplacement. Ces durées sont des contraintes
+de planification, pas une calibration scientifique ; par exemple le scénario
+de référence est `90 = 15 + 30 + 45` minutes. La version v1 reste acceptée en
+lecture avec un budget de compatibilité.
+
+L’origine reste commune à toutes les boucles. Les points planifiés sont routés
+comme des waypoints et restent distincts des cibles `observed` ou `predicted` :
+ils ne reçoivent ni priorité scientifique, ni score, ni provenance de
+pollution. Une requête guidée peut donc produire une boucle sans signalement
+validé, tandis que les exclusions de sécurité continuent de s’appliquer aux
+candidats lorsqu’un mode qui en sélectionne est utilisé. La réponse conserve
+ces passages sous `plannedWaypoints`, séparément de ses `stops` scientifiques,
+et expose l’audit `guidedRouting` ainsi que les `guidedSegments` pour vérifier
+la fermeture, l’ordre, les écarts éventuels au secteur, le plafond de
+déplacement et la collecte minimale. Les segments `origin-link` ne sont pas
+confondus avec les portions `collection`.
+
+Les demandes réseau de plusieurs groupes sont coordonnées séquentiellement
+avec l’intervalle du quota distribué FOSSGIS/OSRM d’une requête par seconde et
+une attente bornée ; aucun appel fournisseur supplémentaire n’est tenté en
+cas de refus ou d’échec. Si le réseau est indisponible, la géométrie locale
+reste une estimation fermée explicitement marquée comme fallback et ne devient
+pas un parcours piéton réseau validé.
 
 Le planner reste fail-closed sur les éléments qu’il ne peut pas établir de
 manière fiable : une source indisponible est signalée comme indisponible, une

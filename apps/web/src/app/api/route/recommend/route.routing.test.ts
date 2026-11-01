@@ -20,6 +20,7 @@ import {
   predictedCandidate,
   resetRouteRecommendMocks,
   routePolylineThroughFossgisFootMock,
+  routeDistanceKmMock,
   request,
   trackRouteRecommendationUseMock,
 } from "./route.test.harness";
@@ -152,14 +153,35 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
   });
 
   it("produit deux boucles guidées 5/5 sans signalement ni stop scientifique", async () => {
+    routeDistanceKmMock.mockImplementation((from, to) => {
+      const latitudeRadians = (from.latitude * Math.PI) / 180;
+      const deltaLatitude = ((to.latitude - from.latitude) * Math.PI) / 180;
+      const deltaLongitude = ((to.longitude - from.longitude) * Math.PI) / 180;
+      const haversine = Math.sin(deltaLatitude / 2) ** 2 +
+        Math.cos(latitudeRadians) * Math.cos((to.latitude * Math.PI) / 180) *
+        Math.sin(deltaLongitude / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    });
     routePolylineThroughFossgisFootMock.mockImplementation(
-      async (coordinates: [number, number][]) => ({
-        ...fallbackGeometry(coordinates, 10),
-        mode: "network",
-        provider: "fossgis-osrm",
-        profile: "foot",
-        estimated: false,
-      }),
+      async (coordinates: [number, number][]) => {
+        const base = fallbackGeometry(coordinates, 10);
+        const legs = coordinates.slice(1).map((_, index) => ({
+          fromStopIndex: index,
+          toStopIndex: index + 1,
+          distanceKm: 1,
+          estimatedMinutes: 5,
+        }));
+        return {
+          ...base,
+          legs,
+          returnLeg: legs.at(-1) ?? null,
+          distanceKm: legs.length,
+          mode: "network",
+          provider: "fossgis-osrm",
+          profile: "foot",
+          estimated: false,
+        };
+      },
     );
 
     const { POST } = await import("./route");
@@ -170,6 +192,12 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
@@ -189,6 +217,12 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
 
     expect(response.status).toBe(200);
     expect(payload.planningMode.type).toBe("territorial-guided");
+    expect(payload.guidedBudget).toEqual({
+      totalMinutes: 90,
+      organizationMarginMinutes: 15,
+      minimumCollectionMinutes: 45,
+      travelMaxMinutes: 30,
+    });
     expect(payload.groupRoutes).toHaveLength(2);
     expect(payload.groupRoutes.map(({ volunteerCount }) => volunteerCount)).toEqual([5, 5]);
     expect(payload.groupRoutes.every(({ candidateIds, stops, targetCount }) =>
@@ -199,6 +233,16 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       [{ id: "south-1", order: 0 }],
     ]);
     expect(payload.groups.map(({ plannedSector }) => plannedSector?.radiusKm)).toEqual([1, 1]);
+    expect(payload.groupRoutes.map(({ guidedRouting }) => ({
+      availability: guidedRouting?.availability,
+      loopVerified: guidedRouting?.loopVerified,
+      waypointOrderVerified: guidedRouting?.waypointOrderVerified,
+      withinBudget: guidedRouting?.budget.withinBudget,
+      waypointIds: guidedRouting?.waypointIds,
+    }))).toEqual([
+      { availability: "network", loopVerified: true, waypointOrderVerified: true, withinBudget: true, waypointIds: ["north-1", "north-2"] },
+      { availability: "network", loopVerified: true, waypointOrderVerified: true, withinBudget: true, waypointIds: ["south-1"] },
+    ]);
     expect(payload.groupRoutes.every(({ routeGeometry }) => {
       const first = routeGeometry.coordinates[0];
       const last = routeGeometry.coordinates.at(-1);

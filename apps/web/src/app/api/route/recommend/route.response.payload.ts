@@ -64,6 +64,7 @@ function buildCommonPayload({
     travelDistanceKm,
     travelMinutes,
     travelBudgetMinutes: input.travelBudgetMinutes,
+    ...(input.guidedBudget ? { guidedBudget: input.guidedBudget } : {}),
     volunteers: input.volunteers,
     groupCount: input.groupCount,
     constraintsApplied: { pickupPreference: input.pickupPreference },

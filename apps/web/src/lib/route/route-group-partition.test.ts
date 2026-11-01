@@ -294,6 +294,12 @@ describe("route group partition contract", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },

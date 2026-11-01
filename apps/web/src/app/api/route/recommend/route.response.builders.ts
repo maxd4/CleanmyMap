@@ -23,7 +23,10 @@ import {
 } from "@/lib/route/route-operational-budget";
 import { buildCleanupWorkload } from "@/lib/route/route-cleanup-workload";
 import { buildMeetingOpportunities } from "@/lib/route/route-meeting-opportunities";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+import type {
+  RouteGuidedBudget,
+  RoutePlanningMode,
+} from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
@@ -40,6 +43,7 @@ export type RouteRecommendationResponseInput = {
   candidateData: RouteCandidateData;
   planning: RoutePlanningResult;
   planningMode?: RoutePlanningMode;
+  guidedBudget?: RouteGuidedBudget;
   maxStops: number;
   travelBudgetMinutes: number;
   priorityVsTravel: number;
@@ -137,6 +141,15 @@ function buildMultiRouteTrace(
       routeMode: group.routeGeometry.mode,
       withinBudget: group.withinBudget,
       operationalBudget: group.operationalBudget,
+      ...(group.guidedBudget ? { guidedBudget: { ...group.guidedBudget } } : {}),
+      ...(group.guidedSegments ? { guidedSegments: group.guidedSegments.map((segment) => ({ ...segment })) } : {}),
+      ...(group.guidedRouting ? {
+        guidedRouting: {
+          ...group.guidedRouting,
+          waypointIds: [...group.guidedRouting.waypointIds],
+          budget: { ...group.guidedRouting.budget },
+        },
+      } : {}),
       ...(group.plannedWaypoints ? {
         plannedWaypoints: group.plannedWaypoints.map((waypoint) => ({ ...waypoint })),
       } : {}),
@@ -203,14 +216,16 @@ function buildGroupRoutesWithBudgets(
     });
     const operationalBudget = buildRouteOperationalBudget({
       travelMinutes: group.travelMinutes,
-      budgetMinutes: group.travelBudgetMinutes,
+      budgetMinutes: input.guidedBudget?.totalMinutes ?? group.travelBudgetMinutes,
       calibrationContext: groupContext,
       durationDependency,
       weatherContext: input.weatherContext,
     });
     return {
       ...group,
-      withinBudget: operationalBudget.withinBudget ?? group.withinBudget,
+      withinBudget: group.guidedRouting
+        ? group.withinBudget
+        : operationalBudget.withinBudget ?? group.withinBudget,
       operationalBudget,
     };
   });
@@ -306,7 +321,7 @@ export function buildRouteOperationalContext(
     travelMinutes: input.groupCount === 1
       ? input.planning.routeGeometry.durationMinutes
       : input.planning.multiRouteMetrics?.totalDurationMinutes ?? input.planning.routeGeometry.durationMinutes,
-    budgetMinutes: input.travelBudgetMinutes,
+    budgetMinutes: input.guidedBudget?.totalMinutes ?? input.travelBudgetMinutes,
     calibrationContext: calibrationContextForBudget,
     durationDependency,
     weatherContext: input.weatherContext,

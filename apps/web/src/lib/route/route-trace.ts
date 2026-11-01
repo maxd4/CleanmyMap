@@ -19,10 +19,15 @@ import type {
   RouteEventCenteredContext,
 } from "./route-event-centered";
 import type {
+  RouteGuidedBudget,
   RouteGuidedSector,
   RoutePlanningMode,
   RoutePlannedWaypoint,
 } from "./route-planning-mode";
+import type {
+  RouteGuidedRoutingAudit,
+  RouteGuidedSegment,
+} from "./route-response-contract";
 import type { ParisPressureAtPoint } from "@/lib/geo/paris-pressure-lookup";
 import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
 import type {
@@ -125,6 +130,9 @@ export type RouteMultiRouteTrace = {
     routeMode: RouteGeometry["mode"];
     withinBudget: boolean;
     operationalBudget?: RouteOperationalBudget;
+    guidedBudget?: RouteGuidedBudget;
+    guidedSegments?: RouteGuidedSegment[];
+    guidedRouting?: RouteGuidedRoutingAudit;
     plannedWaypoints?: RoutePlannedWaypoint[];
     plannedSector?: RouteGuidedSector;
   }>;

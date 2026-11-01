@@ -90,6 +90,7 @@ vi.mock("@/lib/geo/osrm-routing", () => ({
 }));
 vi.mock("@/lib/route/fossgis-foot-routing", () => ({
   routePolylineThroughFossgisFoot: routePolylineThroughFossgisFootMock,
+  FOSSGIS_QUOTA_INTERVAL_MS: 1000,
 }));
 vi.mock("@/lib/geo/paris-arrondissements", () => ({
   getTerritoryArrondissementCenter: getTerritoryArrondissementCenterMock,

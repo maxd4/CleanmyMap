@@ -22,6 +22,7 @@ export const FOSSGIS_FOOT_REFERER = "https://cleanmymap.fr/sections/route";
 const FOSSGIS_QUOTA_KEY = "global";
 const FOSSGIS_QUOTA_PREFIX = "cleanmymap:external-route:fossgis-foot";
 const FOSSGIS_QUOTA_TIMEOUT_MS = 1000;
+export const FOSSGIS_QUOTA_INTERVAL_MS = 1000;
 
 type FossgisRateLimiter = {
   limit: (identifier: string) => Promise<{

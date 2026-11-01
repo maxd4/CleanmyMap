@@ -111,6 +111,12 @@ describe("route recommendation HTTP request schema", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
@@ -151,6 +157,12 @@ describe("route recommendation HTTP request schema", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: {
@@ -169,6 +181,34 @@ describe("route recommendation HTTP request schema", () => {
     expect(parseRouteRecommendationRequest(payload).success).toBe(false);
   });
 
+  it("rejects a guided budget whose declared parts do not fill the slot", () => {
+    const parsed = parseRouteRecommendationRequest({
+      volunteers: 10,
+      groupCount: 2,
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 44,
+          travelMaxMinutes: 30,
+        },
+        groups: [
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+            waypoints: [{ id: "one", label: "One", latitude: 48.85, longitude: 2.35 }],
+          },
+          {
+            sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },
+            waypoints: [{ id: "two", label: "Two", latitude: 48.85, longitude: 2.35 }],
+          },
+        ],
+      },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it("rejects guided waypoints outside their sector or an unequal split", () => {
     const outside = parseRouteRecommendationRequest({
       volunteers: 10,
@@ -176,6 +216,12 @@ describe("route recommendation HTTP request schema", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 0.1 },
@@ -196,6 +242,12 @@ describe("route recommendation HTTP request schema", () => {
       planningMode: {
         type: "territorial-guided",
         version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
         groups: [
           {
             sector: { center: { latitude: 48.85, longitude: 2.35 }, radiusKm: 1 },

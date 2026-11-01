@@ -21,6 +21,7 @@ const buildTrashSpotterRouteCandidatesMock = vi.hoisted(() => vi.fn<typeof impor
 const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-contract").applyOriginRouteGeometryLegs>());
 const createFallbackRouteGeometryMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/osrm-routing").createFallbackRouteGeometry>());
 const routePolylineThroughFossgisFootMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/fossgis-foot-routing").routePolylineThroughFossgisFoot>());
+const routeDistanceKmMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-planner").routeDistanceKm>(() => 1));
 const buildHotspotsMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").buildHotspots>());
 const buildProactiveAssistantMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").buildProactiveAssistant>());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/recommendation-assistant").defaultRouteAssistantPayload>());
@@ -55,6 +56,7 @@ export {
   applyOriginRouteGeometryLegsMock,
   createFallbackRouteGeometryMock,
   routePolylineThroughFossgisFootMock,
+  routeDistanceKmMock,
   loadCachedEventPressureByArrondissementMock,
   getTerritoryArrondissementCenterMock,
   planRouteMock,
@@ -93,6 +95,7 @@ vi.mock("@/lib/geo/osrm-routing", () => ({
 }));
 vi.mock("@/lib/route/fossgis-foot-routing", () => ({
   routePolylineThroughFossgisFoot: routePolylineThroughFossgisFootMock,
+  FOSSGIS_QUOTA_INTERVAL_MS: 1000,
 }));
 vi.mock("@/lib/geo/paris-arrondissements", () => ({
   getTerritoryArrondissementCenter: getTerritoryArrondissementCenterMock,
@@ -102,7 +105,7 @@ vi.mock("@/lib/route/route-planner", () => ({
   isRoutePlannerCandidateEligible: vi.fn<typeof import("@/lib/route/route-planner").isRoutePlannerCandidateEligible>(() => true),
   planRoute: planRouteMock,
   ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v2",
-  routeDistanceKm: vi.fn<typeof import("@/lib/route/route-planner").routeDistanceKm>(() => 1),
+  routeDistanceKm: routeDistanceKmMock,
   travelMinutesForDistance: vi.fn<typeof import("@/lib/route/route-planner").travelMinutesForDistance>(() => 5),
 }));
 vi.mock("@/lib/route/route-event-pressure-loader", () => ({
@@ -210,6 +213,7 @@ export function resetRouteRecommendMocks() {
   vi.unstubAllGlobals();
   vi.resetModules();
   vi.clearAllMocks();
+  routeDistanceKmMock.mockImplementation(() => 1);
 
   getSafeAuthSessionMock.mockResolvedValue({
     userId: "user-1",
