@@ -20,6 +20,7 @@ import type {
   RouteRiskFocus,
 } from "./route-target-contract";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
 const WALKING_SPEED_KM_PER_HOUR = 4.5;
@@ -144,24 +145,14 @@ export function isRoutePlannerCandidateEligible(
     (candidate.family === "predicted" || isVolunteerRouteEligible(candidate));
 }
 
-function toRadians(value: number): number {
-  return (value * Math.PI) / 180;
-}
-
 export function routeDistanceKm(
   from: { latitude: number; longitude: number },
   to: { latitude: number; longitude: number },
 ): number {
-  const latitudeA = toRadians(from.latitude);
-  const latitudeB = toRadians(to.latitude);
-  const deltaLatitude = toRadians(to.latitude - from.latitude);
-  const deltaLongitude = toRadians(to.longitude - from.longitude);
-  const haversine =
-    Math.sin(deltaLatitude / 2) ** 2 +
-    Math.cos(latitudeA) *
-      Math.cos(latitudeB) *
-      Math.sin(deltaLongitude / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  return haversineDistanceKm(
+    [from.latitude, from.longitude],
+    [to.latitude, to.longitude],
+  );
 }
 
 export function travelMinutesForDistance(distanceKm: number): number {

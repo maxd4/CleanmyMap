@@ -1,3 +1,5 @@
+import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
+
 export const ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION =
   "route-territorial-guided-v1" as const;
 export const ROUTE_TERRITORIAL_GUIDED_VERSION =
@@ -7,6 +9,9 @@ export const MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP = 12;
 export const MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES = 24 * 60;
 export const MAX_ROUTE_GUIDED_VOLUNTEERS = 100;
 export const MAX_ROUTE_GUIDED_GROUP_COUNT = 12;
+export const MAX_ROUTE_GUIDED_GROUP_LABEL_LENGTH = 80;
+export const MAX_ROUTE_GUIDED_WAYPOINT_ID_LENGTH = 80;
+export const MAX_ROUTE_GUIDED_WAYPOINT_LABEL_LENGTH = 120;
 
 export type RouteGuidedCoordinate = {
   latitude: number;
@@ -156,47 +161,79 @@ export function routeGuidedBudgetForMode(
 export function routeTerritorialGuidedModeValidationError(
   mode: RoutePlanningMode,
 ): string | null {
-  if (mode.type !== "territorial-guided" || mode.version === ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION) {
+  if (mode.type !== "territorial-guided") {
     return null;
   }
   if (mode.groups.length < 1 || mode.groups.length > MAX_ROUTE_GUIDED_GROUP_COUNT) {
     return "Le nombre de groupes guidés est hors limites.";
   }
   const counts = mode.groups.map(({ volunteerCount }) => volunteerCount);
-  if (counts.some((count) =>
+  const hasExplicitVolunteerCounts = counts.some((count) => count !== undefined);
+  if (hasExplicitVolunteerCounts && counts.some((count) => count === undefined)) {
+    return "Les groupes guidés doivent tous déclarer un effectif, ou aucun.";
+  }
+  if (hasExplicitVolunteerCounts && counts.some((count) =>
     !Number.isInteger(count) || count === undefined || count < 1 || count > MAX_ROUTE_GUIDED_VOLUNTEERS,
   )) {
     return "Chaque groupe guidé doit avoir un effectif entier compris entre 1 et 100.";
   }
-  const numericCounts = counts.map((count) => count ?? 0);
-  const totalVolunteers = numericCounts.reduce((total, count) => total + count, 0);
-  if (totalVolunteers < 1 || totalVolunteers > MAX_ROUTE_GUIDED_VOLUNTEERS) {
-    return "L’effectif guidé total doit rester compris entre 1 et 100 bénévoles.";
+  if (hasExplicitVolunteerCounts) {
+    const totalVolunteers = counts.reduce<number>(
+      (total, count) => total + (count ?? 0),
+      0,
+    );
+    if (totalVolunteers < 1 || totalVolunteers > MAX_ROUTE_GUIDED_VOLUNTEERS) {
+      return "L’effectif guidé total doit rester compris entre 1 et 100 bénévoles.";
+    }
+    if (mode.groups.length > totalVolunteers) {
+      return "Les groupes guidés doivent conserver un effectif non nul et cohérent.";
+    }
   }
-  if (mode.groups.length > totalVolunteers) {
-    return "Les groupes guidés doivent conserver un effectif non nul et cohérent.";
-  }
-  if (!isRouteGuidedBudget(mode.budget) || mode.budget.minimumCollectionMinutes <= 0) {
+  if (mode.version === ROUTE_TERRITORIAL_GUIDED_VERSION &&
+    (!isRouteGuidedBudget(mode.budget) || mode.budget.minimumCollectionMinutes <= 0)) {
     return "Le budget guidé doit répartir exactement le créneau total.";
   }
   const waypointIds = new Set<string>();
-  for (const group of mode.groups) {
+  for (const [groupIndex, group] of mode.groups.entries()) {
+    if (group.label !== undefined &&
+      (!group.label.trim() || group.label.trim().length > MAX_ROUTE_GUIDED_GROUP_LABEL_LENGTH)) {
+      return `Le nom du groupe ${groupIndex + 1} doit contenir entre 1 et ${MAX_ROUTE_GUIDED_GROUP_LABEL_LENGTH} caractères.`;
+    }
     if (!isRouteGuidedSector(group.sector)) {
       return "Chaque secteur guidé doit respecter les bornes géographiques du contrat.";
     }
     if (group.waypoints.length < 1 || group.waypoints.length > MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP) {
       return "Chaque groupe guidé doit conserver entre 1 et 12 passages.";
     }
-    for (const waypoint of group.waypoints) {
-      if (!waypoint.id || waypointIds.has(waypoint.id)) {
+    for (const [waypointIndex, waypoint] of group.waypoints.entries()) {
+      const waypointId = typeof waypoint.id === "string" ? waypoint.id.trim() : "";
+      const waypointLabel = typeof waypoint.label === "string" ? waypoint.label.trim() : "";
+      if (!waypointId) {
+        return "Chaque passage guidé doit avoir un identifiant non vide.";
+      }
+      if (waypointId.length > MAX_ROUTE_GUIDED_WAYPOINT_ID_LENGTH) {
+        return `L’identifiant d’un passage guidé ne peut pas dépasser ${MAX_ROUTE_GUIDED_WAYPOINT_ID_LENGTH} caractères.`;
+      }
+      if (waypointIds.has(waypointId)) {
         return "Les identifiants des passages guidés doivent être uniques.";
       }
-      waypointIds.add(waypoint.id);
+      waypointIds.add(waypointId);
       if (!Number.isFinite(waypoint.latitude) || !Number.isFinite(waypoint.longitude) ||
         waypoint.latitude < -90 || waypoint.latitude > 90 ||
         waypoint.longitude < -180 || waypoint.longitude > 180 ||
-        !waypoint.label.trim()) {
+        !waypointLabel) {
         return "Chaque passage guidé doit avoir un nom et des coordonnées valides.";
+      }
+      if (waypointLabel.length > MAX_ROUTE_GUIDED_WAYPOINT_LABEL_LENGTH) {
+        return `Le nom d’un passage guidé ne peut pas dépasser ${MAX_ROUTE_GUIDED_WAYPOINT_LABEL_LENGTH} caractères.`;
+      }
+      const distanceFromSectorCenter = haversineDistanceKm(
+        [group.sector.center.latitude, group.sector.center.longitude],
+        [waypoint.latitude, waypoint.longitude],
+      );
+      if (distanceFromSectorCenter > group.sector.radiusKm) {
+        const groupLabel = group.label?.trim() || `n°${groupIndex + 1}`;
+        return `Le passage « ${waypointLabel} » (n°${waypointIndex + 1}) du groupe « ${groupLabel} » est hors de son secteur.`;
       }
     }
   }

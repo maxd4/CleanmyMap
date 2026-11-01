@@ -6,7 +6,10 @@ import {
 } from "@/lib/route/route-group-partition";
 import {
   MAX_ROUTE_GUIDED_TOTAL_BUDGET_MINUTES,
+  MAX_ROUTE_GUIDED_GROUP_LABEL_LENGTH,
   MAX_ROUTE_GUIDED_SECTOR_RADIUS_KM,
+  MAX_ROUTE_GUIDED_WAYPOINT_ID_LENGTH,
+  MAX_ROUTE_GUIDED_WAYPOINT_LABEL_LENGTH,
   MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP,
   ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION,
   ROUTE_TERRITORIAL_GUIDED_VERSION,
@@ -51,7 +54,7 @@ const routeStartSelectionSchema = z.union([
 ]);
 
 const guidedGroupSchema = z.object({
-  label: z.string().trim().min(1).max(80).optional(),
+  label: z.string().trim().min(1).max(MAX_ROUTE_GUIDED_GROUP_LABEL_LENGTH).optional(),
   volunteerCount: z.number().int().min(1).max(MAX_ROUTE_VOLUNTEERS).optional(),
   sector: z.object({
     center: routeCoordinateSchema,
@@ -59,8 +62,8 @@ const guidedGroupSchema = z.object({
   }),
   waypoints: z.array(
     routeCoordinateSchema.extend({
-      id: z.string().trim().min(1).max(80),
-      label: z.string().trim().min(1).max(120),
+      id: z.string().trim().min(1).max(MAX_ROUTE_GUIDED_WAYPOINT_ID_LENGTH),
+      label: z.string().trim().min(1).max(MAX_ROUTE_GUIDED_WAYPOINT_LABEL_LENGTH),
     }),
   ).min(1).max(MAX_ROUTE_GUIDED_WAYPOINTS_PER_GROUP),
 });
