@@ -245,7 +245,9 @@ with explicit_counts as (
     coalesce(p_contribution.butts_humide_count, 0)::bigint as humide,
     coalesce(p_contribution.butts_mouille_count, 0)::bigint as mouille
 ), states as (
-  select * from (values
+  select state.condition, state.cigarette_butts
+  from explicit_counts
+  cross join lateral (values
     ('propre'::text, case when explicit_counts.propre + explicit_counts.humide + explicit_counts.mouille > 0
       then explicit_counts.propre else case when p_contribution.butts_condition = 'propre'
         then p_contribution.butts_condition_count else 0 end end::bigint),
@@ -255,7 +257,7 @@ with explicit_counts as (
     ('mouille'::text, case when explicit_counts.propre + explicit_counts.humide + explicit_counts.mouille > 0
       then explicit_counts.mouille else case when p_contribution.butts_condition = 'mouille'
         then p_contribution.butts_condition_count else 0 end end::bigint)
-  ) as values(condition, cigarette_butts)
+  ) as state(condition, cigarette_butts)
 )
 select
   states.condition,

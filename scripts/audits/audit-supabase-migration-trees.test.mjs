@@ -163,6 +163,13 @@ it("withdraws the failed 00024/00026 repair hashes from the approved guard", () 
   assert.match(source, /5dcec92626543ce7aff34277db4d90220404bfabdfbb6ff99452fdf90a1fa09f/);
 });
 
+it("approves only the bounded 0008 syntax-repair hash", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.match(source, /20261101000008_public_impact_butt_mass_provenance\.sql/);
+  assert.match(source, /f1c80202cb180538c1b02f2cfd6307e188e1d66af77a324e7933f5fd102425ae/);
+  assert.doesNotMatch(source, /0e2abd25c59534d9c2ba9ea727c5921d4a140fa638e1699ec2530a93eef9cfff/);
+});
+
 it("normalizes Buffer and UTF-8 string contents before comparing migrations", () => {
   const name = "20260101000000_published.sql";
   assert.deepEqual(

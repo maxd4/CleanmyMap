@@ -310,6 +310,46 @@ La série a été appliquée avec `npx supabase db push --linked --yes`, sans
 réconciliation finale de l'historique local/distant et la vérification des
 contraintes, fonctions et privilèges restent obligatoires.
 
+## Exception syntaxique bornée — `20261101000008`
+
+Une exception syntaxique strictement limitée est acceptée pour la migration
+`20261101000008_public_impact_butt_mass_provenance.sql`. Le projet Supabase
+canonique `trktzkgujgpgsgkoyndn`, vérifié avant publication de cette correction,
+est enregistré jusqu'à `20261101000007` ; `20261101000008` et les versions
+suivantes de cette série sont absentes de son historique distant. La migration
+défectueuse n'a donc jamais été appliquée sur cette cible et peut être rendue
+rejouable avant sa première application, sous réserve des contrôles et de la
+réconciliation prévus par le présent ADR.
+
+La cause est une erreur de portée SQL dans
+`public.public_impact_butt_condition_projections`: les trois expressions de la
+clause `VALUES` lisaient `explicit_counts` sans que ce CTE soit introduit dans
+le `FROM` de cette expression. PostgreSQL rejetait la migration avec
+`SQLSTATE 42P01`. La correction ajoute uniquement `FROM explicit_counts` et un
+`CROSS JOIN LATERAL` sur les trois lignes d'état, puis expose les mêmes deux
+colonnes. Les expressions, l'ordre des états, les conditions, les signatures
+RPC, les grants, les verrous et les effets métier restent inchangés. La
+correction ne traite pas le correctif forward-only du double comptage de
+`load_public_landing_action_summary(date)`, qui reste porté par sa migration
+additive dédiée.
+
+Les empreintes SHA-256 UTF-8 du fichier complet sont :
+
+```text
+20261101000008_BEFORE_HASH: 0e2abd25c59534d9c2ba9ea727c5921d4a140fa638e1699ec2530a93eef9cfff
+20261101000008_AFTER_HASH:  f1c80202cb180538c1b02f2cfd6307e188e1d66af77a324e7933f5fd102425ae
+```
+
+Le garde `npm run audit:supabase-migration-trees` n'autorise que cette
+empreinte corrigée pour ce chemin, en plus des exceptions déjà documentées ;
+toute autre réécriture reste refusée. Cette exception n'autorise ni
+`migration repair`, ni DDL manuelle, ni reset, ni mutation hors des migrations
+canoniques. Après publication du candidat, l'application doit exclusivement
+suivre `migration list --linked`, `db push --dry-run`, puis
+`db push --linked --yes` sur ce projet identifié. La preuve d'application et
+les validations PostgreSQL de 0008, 0009 et des versions suivantes doivent
+être rapportées séparément des contrôles statiques.
+
 ## Opérations temporaires de benchmark
 
 Une activation ou désactivation temporaire d'extension réalisée pour un

@@ -42,6 +42,7 @@ const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
   ["20261013000007_spogomi_post_lock_mutation_guards.sql", new Set(["f4ca930cce616753addfd047badb2b96448ad8aed665b92d68f44079fbe11f1d"])],
   ["20261030000024_action_need_offers.sql", new Set(["e04593971d7c4bea0a89645d96d1c3c8ec409e1b5e4d9b75906d6bc98d1f310c"])],
   ["20261030000026_action_need_offers_need_identity.sql", new Set(["5dcec92626543ce7aff34277db4d90220404bfabdfbb6ff99452fdf90a1fa09f"])],
+  ["20261101000008_public_impact_butt_mass_provenance.sql", new Set(["f1c80202cb180538c1b02f2cfd6307e188e1d66af77a324e7933f5fd102425ae"])],
 ]);
 
 function normalizeMigrationContent(content) {

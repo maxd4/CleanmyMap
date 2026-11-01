@@ -72,6 +72,18 @@ describe("public Impact butt condition distribution migration STATIC_CONTRACT", 
     expect(massProvenanceMigration).not.toMatch(/update\s+public\.actions/i);
   });
 
+  it("introduces explicit_counts into the states VALUES scope", () => {
+    expect(massProvenanceMigration).toContain(
+      "from explicit_counts\n  cross join lateral (values",
+    );
+    expect(massProvenanceMigration).toContain("'propre'::text");
+    expect(massProvenanceMigration).toContain("'humide'::text");
+    expect(massProvenanceMigration).toContain("'mouille'::text");
+    expect(massProvenanceMigration).toContain(
+      ") as state(condition, cigarette_butts)",
+    );
+  });
+
   it("separates canonical counts from expanded mass provenance", () => {
     expect(massAggregationFixMigration).toContain("butt_counts as (");
     expect(massAggregationFixMigration).toContain("butt_mass_contributions as (");
