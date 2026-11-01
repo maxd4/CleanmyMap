@@ -15,6 +15,7 @@ const applicationContractDirectory = "apps/web/supabase/tests";
 const e2eContractDirectory = "e2e";
 
 const CONTRACT_MARKERS = new Map([
+  ["apps/web/supabase/tests/action-participant-individual-impact-optimistic-concurrency.sql", "EXECUTED_DB_CONTRACT: optimistic individual-impact revision, partial PATCH, authorization withdrawal and idempotent retry contract passed"],
   ["apps/web/supabase/tests/action-role-attestation-correction.sql", "EXECUTED_DB_CONTRACT: Action role attestation correction contract passed"],
   ["apps/web/supabase/tests/reports-persistent-contract.sql", "EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed"],
   ["apps/web/supabase/tests/spogomi-mixed-division-smoke.sql", "EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed"],
