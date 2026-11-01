@@ -11,6 +11,11 @@ const reconcileUserMock = vi.hoisted(() => vi.fn());
 const previewMohsMock = vi.hoisted(() => vi.fn());
 const reconcileMohsMock = vi.hoisted(() => vi.fn());
 const buildReceiptMock = vi.hoisted(() => vi.fn());
+const buildMohsScientificReconciliationIdMock = vi.hoisted(() => vi.fn(
+  (userId: string, methodVersion: string, sourceFingerprint: string) =>
+    `scientific-impact-reconciliation|${userId}|${methodVersion}|${sourceFingerprint || "empty"}`,
+));
+const loadPendingImpactMock = vi.hoisted(() => vi.fn());
 const persistReceiptMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./gamification-reconciliation-plan", () => ({
@@ -21,11 +26,13 @@ vi.mock("./gamification-reconciliation", () => ({
 }));
 vi.mock("./mohs-impact-reconciliation", () => ({
   MOHS_IMPACT_CALCULATION_VERSION: "mohs-impact-v1|mass-v2",
+  buildMohsScientificReconciliationId: buildMohsScientificReconciliationIdMock,
   previewMohsImpactProgression: previewMohsMock,
   reconcileMohsImpactProgression: reconcileMohsMock,
 }));
 vi.mock("./gamification-reconciliation-receipt", () => ({
   buildGamificationReconciliationReceipt: buildReceiptMock,
+  loadPendingScientificImpactReceipt: loadPendingImpactMock,
   persistGamificationReconciliationReceipt: persistReceiptMock,
 }));
 
@@ -77,6 +84,22 @@ function impact(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function pendingIntent() {
+  return {
+    kind: "scientific_impact_reconciliation_pending",
+    schemaVersion: 1,
+    reconciliationId: "scientific-impact-reconciliation|user-1|mohs-impact-v1|mass-v2|fingerprint-1",
+    userId: "user-1",
+    scientificImpact: {
+      methodVersion: "mohs-impact-v1|mass-v2",
+      sourceFingerprint: "fingerprint-1",
+      eventsAdded: 1,
+      eventsUpdated: 1,
+      eventsRemoved: 1,
+    },
+  } as const;
+}
+
 describe("scientific impact gamification reconciliation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -123,6 +146,7 @@ describe("scientific impact gamification reconciliation", () => {
     expect(calls).toEqual(["mohs", "gamification"]);
     expect(reconcileUserMock).toHaveBeenCalledWith(expect.anything(), "user-1", expect.objectContaining({
       reasonCategory: "scientific_impact_update",
+      persistReceipt: false,
     }));
     expect(persistReceiptMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
       scientificImpact: expect.objectContaining({ eventsAdded: 1, eventsUpdated: 1, eventsRemoved: 1 }),
@@ -143,6 +167,79 @@ describe("scientific impact gamification reconciliation", () => {
     await reconcileScientificImpactGamification({} as SupabaseClient, "user-1");
 
     expect(persistReceiptMock).not.toHaveBeenCalled();
+  });
+
+  it("reconstructs the receipt from the durable pending intent after its first write fails", async () => {
+    reconcileMohsMock
+      .mockResolvedValueOnce(impact({ inserted: 1, updated: 1, removed: 1 }))
+      .mockResolvedValueOnce(impact());
+    reconcileUserMock.mockResolvedValue({ plan: plan(), receipt: null, inserted: 0, updated: 0, removed: 0 });
+    loadPendingImpactMock.mockResolvedValueOnce(pendingIntent());
+    buildReceiptMock.mockReturnValue({
+      reconciliationId: pendingIntent().reconciliationId,
+      hasUserVisibleChanges: true,
+    });
+    persistReceiptMock
+      .mockRejectedValueOnce(new Error("receipt store unavailable"))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(reconcileScientificImpactGamification({} as SupabaseClient, "user-1"))
+      .rejects.toThrow("receipt store unavailable");
+    const result = await reconcileScientificImpactGamification({} as SupabaseClient, "user-1");
+
+    expect(loadPendingImpactMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-1",
+      pendingIntent().reconciliationId,
+    );
+    expect(persistReceiptMock).toHaveBeenCalledTimes(2);
+    expect(result.receipt).toMatchObject({
+      reconciliationId: pendingIntent().reconciliationId,
+      scientificImpact: pendingIntent().scientificImpact,
+      hasUserVisibleChanges: true,
+    });
+  });
+
+  it("keeps the pending intent for a retry when profile reconciliation fails", async () => {
+    reconcileMohsMock
+      .mockResolvedValueOnce(impact({ inserted: 1 }))
+      .mockResolvedValueOnce(impact());
+    reconcileUserMock
+      .mockRejectedValueOnce(new Error("profile store unavailable"))
+      .mockResolvedValueOnce({ plan: plan(), receipt: null, inserted: 0, updated: 0, removed: 0 });
+    loadPendingImpactMock.mockResolvedValueOnce(pendingIntent());
+    buildReceiptMock.mockReturnValue({
+      reconciliationId: pendingIntent().reconciliationId,
+      hasUserVisibleChanges: true,
+    });
+    persistReceiptMock.mockResolvedValue(undefined);
+
+    await expect(reconcileScientificImpactGamification({} as SupabaseClient, "user-1"))
+      .rejects.toThrow("profile store unavailable");
+    await expect(reconcileScientificImpactGamification({} as SupabaseClient, "user-1"))
+      .resolves.toMatchObject({ receipt: { hasUserVisibleChanges: true } });
+    expect(persistReceiptMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses one stable receipt identity when concurrent retries both reach finalization", async () => {
+    reconcileMohsMock.mockResolvedValue(impact());
+    reconcileUserMock.mockResolvedValue({ plan: plan(), receipt: null, inserted: 0, updated: 0, removed: 0 });
+    loadPendingImpactMock.mockResolvedValue(pendingIntent());
+    buildReceiptMock.mockReturnValue({
+      reconciliationId: pendingIntent().reconciliationId,
+      hasUserVisibleChanges: true,
+    });
+    persistReceiptMock.mockResolvedValue(undefined);
+
+    await Promise.all([
+      reconcileScientificImpactGamification({} as SupabaseClient, "user-1"),
+      reconcileScientificImpactGamification({} as SupabaseClient, "user-1"),
+    ]);
+
+    expect(persistReceiptMock).toHaveBeenCalledTimes(2);
+    expect(new Set(persistReceiptMock.mock.calls.map(([, receipt]) => receipt.reconciliationId))).toEqual(
+      new Set([pendingIntent().reconciliationId]),
+    );
   });
 
   it("does not refresh gamification or persist a receipt after a failed scientific read", async () => {

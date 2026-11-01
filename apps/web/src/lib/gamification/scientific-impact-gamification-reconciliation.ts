@@ -9,10 +9,12 @@ import {
 } from "./gamification-reconciliation";
 import {
   buildGamificationReconciliationReceipt,
+  loadPendingScientificImpactReceipt,
   persistGamificationReconciliationReceipt,
 } from "./gamification-reconciliation-receipt";
 import {
   MOHS_IMPACT_CALCULATION_VERSION,
+  buildMohsScientificReconciliationId,
   previewMohsImpactProgression,
   reconcileMohsImpactProgression,
   type MohsImpactReconciliationPreview,
@@ -73,34 +75,41 @@ export async function reconcileScientificImpactGamification(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ScientificImpactGamificationResult> {
-  const impact = await reconcileMohsImpactProgression(supabase, userId);
+  const impact = await reconcileMohsImpactProgression(supabase, userId, {
+    persistScientificReceiptIntent: true,
+  });
   const impactChanged = impact.inserted > 0 || impact.updated > 0 || impact.removed > 0;
+  const reconciliationId = buildMohsScientificReconciliationId(
+    userId,
+    impact.methodVersion,
+    impact.sourceFingerprint,
+  );
+  const pendingIntent = impactChanged
+    ? null
+    : await loadPendingScientificImpactReceipt(supabase, userId, reconciliationId);
+  const scientificImpact = impactChanged
+    ? {
+        methodVersion: impact.methodVersion,
+        sourceFingerprint: impact.sourceFingerprint,
+        eventsAdded: impact.inserted,
+        eventsUpdated: impact.updated,
+        eventsRemoved: impact.removed,
+      }
+    : pendingIntent?.scientificImpact ?? null;
   const gamification = await reconcileUserGamification(supabase, userId, {
     rules: GAMIFICATION_RULES_V1,
     reasonCategory: "scientific_impact_update",
-    persistReceipt: !impactChanged,
+    persistReceipt: scientificImpact === null,
   });
   let receipt = gamification.receipt;
-  if (impactChanged) {
-    const reconciliationId = [
-      "scientific-impact-reconciliation",
-      userId,
-      impact.methodVersion,
-      impact.sourceFingerprint || "empty",
-    ].join("|");
+  if (scientificImpact) {
     receipt = {
       ...buildGamificationReconciliationReceipt(gamification.plan, {
         reasonCategory: "scientific_impact_update",
         reconciliationId,
         rules: GAMIFICATION_RULES_V1,
       }),
-      scientificImpact: {
-        methodVersion: impact.methodVersion,
-        sourceFingerprint: impact.sourceFingerprint,
-        eventsAdded: impact.inserted,
-        eventsUpdated: impact.updated,
-        eventsRemoved: impact.removed,
-      },
+      scientificImpact,
       hasUserVisibleChanges: true,
     };
     await persistGamificationReconciliationReceipt(supabase, receipt);

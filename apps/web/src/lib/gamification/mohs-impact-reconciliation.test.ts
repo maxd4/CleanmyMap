@@ -45,7 +45,9 @@ function createSupabase(existing: Array<{ id: string; source_id: string; event_t
   const supabase = {
     from: vi.fn(() => ({ ...selected, ...deleted })),
     rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
-      if (name !== "apply_mohs_impact_reconciliation") throw new Error(`Unexpected RPC ${name}`);
+      if (name !== "apply_mohs_impact_reconciliation" && name !== "apply_mohs_impact_reconciliation_with_receipt") {
+        throw new Error(`Unexpected RPC ${name}`);
+      }
       removedIds.push(...((args.p_events_to_remove as number[]) ?? []).map(String));
       return {
         data: {
@@ -160,5 +162,32 @@ describe("Mohs impact event reconciliation", () => {
       .rejects.toThrow("participant projection unavailable");
     expect(failed.supabase.rpc).not.toHaveBeenCalled();
     expect(failed.removedIds).toEqual([]);
+  });
+
+  it("writes the pending scientific receipt intent in the same RPC call when requested", async () => {
+    loadConfirmedParticipantImpactAttributionsMock.mockResolvedValue([
+      {
+        actionId: "action-3",
+        actionDate: "2026-09-28",
+        userId: "user-1",
+        attribution: attribution({ wasteMohsValue: 20, wasteMohsSource: "equivalent_sec", wasteMohsEligible: true }),
+      },
+    ]);
+    const { supabase } = createSupabase();
+
+    await reconcileMohsImpactProgression(supabase, "user-1", {
+      persistScientificReceiptIntent: true,
+    });
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "apply_mohs_impact_reconciliation_with_receipt",
+      expect.objectContaining({
+        p_scientific_receipt_intent: expect.objectContaining({
+          kind: "scientific_impact_reconciliation_pending",
+          reconciliationId: expect.stringContaining("scientific-impact-reconciliation|user-1|"),
+          scientificImpact: expect.objectContaining({ eventsAdded: 1 }),
+        }),
+      }),
+    );
   });
 });

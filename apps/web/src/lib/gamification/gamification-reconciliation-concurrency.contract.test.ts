@@ -9,6 +9,10 @@ const mohsMigration = readFileSync(
   new URL("../../../supabase/migrations/20261101000003_gamification_mohs_reconciliation_atomicity.sql", import.meta.url),
   "utf8",
 );
+const scientificReceiptMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261101000011_scientific_impact_receipt_recovery.sql", import.meta.url),
+  "utf8",
+);
 const reconciliation = readFileSync(new URL("./gamification-reconciliation.ts", import.meta.url), "utf8");
 const mohsReconciliation = readFileSync(new URL("./mohs-impact-reconciliation.ts", import.meta.url), "utf8");
 
@@ -40,7 +44,13 @@ describe("gamification reconciliation concurrency contract", () => {
     expect(mohsMigration).toContain("pg_advisory_xact_lock(hashtextextended(p_user_id, 0))");
     expect(mohsMigration).toContain("mohs_ledger_revision_changed");
     expect(mohsMigration).toContain("grant execute on function public.apply_mohs_impact_reconciliation");
-    expect(mohsReconciliation).toContain('supabase.rpc("apply_mohs_impact_reconciliation"');
+    expect(mohsReconciliation).toContain('"apply_mohs_impact_reconciliation"');
+    expect(mohsReconciliation).toContain('"apply_mohs_impact_reconciliation_with_receipt"');
+    expect(mohsReconciliation).toContain("p_scientific_receipt_intent");
+    expect(scientificReceiptMigration).toContain("apply_mohs_impact_reconciliation_with_receipt");
+    expect(scientificReceiptMigration).toContain("on conflict do nothing");
+    expect(scientificReceiptMigration).toContain("service_role required");
+    expect(scientificReceiptMigration).toContain("scientific receipt counters do not match");
     expect(mohsReconciliation).toContain("attempt < 3");
   });
 });

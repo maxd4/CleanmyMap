@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ExpectedGamificationState } from "./gamification-reconstruction";
 import type { GamificationReconciliationPlan } from "./gamification-reconciliation-plan";
 import type { GamificationRulesV1 } from "./gamification-rules";
@@ -237,5 +237,62 @@ describe("GamificationReconciliationReceipt", () => {
 
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.user_id)).toEqual(["user-1", "user-2"]);
+  });
+
+  it("finalizes a pending scientific intent instead of leaving a second receipt", async () => {
+    const receipt = buildGamificationReconciliationReceipt(plan(), {
+      reconciliationId: "scientific-impact-reconciliation|user-1|method-v2|fingerprint-1",
+    });
+    const scientificImpact = {
+      methodVersion: "method-v2",
+      sourceFingerprint: "fingerprint-1",
+      eventsAdded: 1,
+      eventsUpdated: 0,
+      eventsRemoved: 0,
+    };
+    const finalReceipt = {
+      ...receipt,
+      scientificImpact,
+      hasUserVisibleChanges: true,
+    };
+    const pendingPayload = {
+      kind: "scientific_impact_reconciliation_pending",
+      schemaVersion: 1,
+      reconciliationId: receipt.reconciliationId,
+      userId: "user-1",
+      scientificImpact,
+    };
+    const updatedRows: Array<Record<string, unknown>> = [];
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      order: vi.fn(() => query),
+      limit: vi.fn(async () => ({
+        data: [{ id: "notification-1", payload: pendingPayload }],
+        error: null,
+      })),
+    };
+    const updateQuery = {
+      eq: vi.fn(() => updateQuery),
+    };
+    const supabase = {
+      from: vi.fn(() => ({
+        insert: vi.fn(async () => ({ error: { code: "23505", message: "duplicate" } })),
+        select: vi.fn(() => query),
+        update: vi.fn((row: Record<string, unknown>) => {
+          updatedRows.push(row);
+          return updateQuery;
+        }),
+      })),
+    } as never;
+
+    await persistGamificationReconciliationReceipt(supabase, finalReceipt);
+
+    expect(updatedRows).toHaveLength(1);
+    expect(updatedRows[0]?.payload).toMatchObject({
+      kind: "gamification_reconciliation_receipt",
+      reconciliationId: receipt.reconciliationId,
+      receipt: { scientificImpact },
+    });
   });
 });

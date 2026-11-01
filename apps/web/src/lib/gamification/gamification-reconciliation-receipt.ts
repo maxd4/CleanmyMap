@@ -96,6 +96,26 @@ export type GamificationReconciliationReceipt = {
   hasUserVisibleChanges: boolean;
 };
 
+export type ScientificImpactReceiptIntent = {
+  kind: "scientific_impact_reconciliation_pending";
+  schemaVersion: 1;
+  reconciliationId: string;
+  userId: string;
+  scientificImpact: {
+    methodVersion: string;
+    sourceFingerprint: string;
+    eventsAdded: number;
+    eventsUpdated: number;
+    eventsRemoved: number;
+  };
+};
+
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function compareCanonicalStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -434,12 +454,92 @@ export function buildGamificationReconciliationReceipt(
   );
 }
 
+function isScientificImpactReceiptIntent(value: unknown): value is ScientificImpactReceiptIntent {
+  if (!isRecord(value) || value.kind !== "scientific_impact_reconciliation_pending" || value.schemaVersion !== 1) {
+    return false;
+  }
+  const impact = value.scientificImpact;
+  return typeof value.reconciliationId === "string"
+    && typeof value.userId === "string"
+    && isRecord(impact)
+    && typeof impact.methodVersion === "string"
+    && typeof impact.sourceFingerprint === "string"
+    && [impact.eventsAdded, impact.eventsUpdated, impact.eventsRemoved]
+      .every((count) => typeof count === "number" && Number.isSafeInteger(count) && count >= 0);
+}
+
+function finalReceiptFromPayload(
+  payload: unknown,
+  userId: string,
+): GamificationReconciliationReceipt | null {
+  if (!isRecord(payload) || payload.kind !== "gamification_reconciliation_receipt") return null;
+  const receipt = payload.receipt;
+  if (!isRecord(receipt) || receipt.userId !== userId || receipt.hasUserVisibleChanges !== true) return null;
+  return receipt as unknown as GamificationReconciliationReceipt;
+}
+
+type ReconciliationNotificationRecord = {
+  id?: unknown;
+  payload?: unknown;
+};
+
+async function findReconciliationNotification(
+  supabase: SupabaseClient,
+  userId: string,
+  reconciliationId: string,
+): Promise<{
+  id: string;
+  payload: unknown;
+  pendingIntent: ScientificImpactReceiptIntent | null;
+  receipt: GamificationReconciliationReceipt | null;
+} | null> {
+  const result = await supabase
+    .from("app_notifications")
+    .select("id, payload")
+    .eq("user_id", userId)
+    .eq("type", "gamification_reconciliation")
+    .eq("payload->>reconciliationId", reconciliationId)
+    .limit(2);
+  if (result.error) throw new Error(result.error.message);
+
+  for (const row of (result.data ?? []) as ReconciliationNotificationRecord[]) {
+    if (typeof row.id !== "string" || !isRecord(row.payload)) continue;
+    const payload = row.payload;
+    if (payload.reconciliationId !== reconciliationId) continue;
+    const pendingIntent = isScientificImpactReceiptIntent(payload) ? payload : null;
+    const receipt = finalReceiptFromPayload(payload, userId);
+    if (pendingIntent || receipt) {
+      return { id: row.id, payload, pendingIntent, receipt };
+    }
+  }
+  return null;
+}
+
+export async function loadPendingScientificImpactReceipt(
+  supabase: SupabaseClient,
+  userId: string,
+  reconciliationId: string,
+): Promise<ScientificImpactReceiptIntent | null> {
+  const existing = await findReconciliationNotification(supabase, userId, reconciliationId);
+  return existing?.pendingIntent ?? null;
+}
+
+function finalReceiptPayload(receipt: GamificationReconciliationReceipt) {
+  return {
+    kind: "gamification_reconciliation_receipt",
+    schemaVersion: 2,
+    reconciliationId: receipt.reconciliationId,
+    receipt,
+  };
+}
+
 export async function persistGamificationReconciliationReceipt(
   supabase: SupabaseClient,
   receipt: GamificationReconciliationReceipt,
 ): Promise<void> {
   if (!receipt.hasUserVisibleChanges) return;
-  const { error } = await supabase.from("app_notifications").insert({
+  const payload = finalReceiptPayload(receipt);
+  const insertResult = await supabase.from("app_notifications").insert({
     user_id: receipt.userId,
     type: "gamification_reconciliation",
     title: "Votre progression CleanMyMap a été mise à jour.",
@@ -447,12 +547,32 @@ export async function persistGamificationReconciliationReceipt(
     created_at: receipt.occurredAt,
     seen_at: null,
     acknowledged_at: null,
-    payload: {
-      kind: "gamification_reconciliation_receipt",
-      schemaVersion: 2,
-      reconciliationId: receipt.reconciliationId,
-      receipt,
-    },
+    payload,
   });
-  if (error && error.code !== "23505") throw new Error(error.message);
+  if (!insertResult.error) return;
+  if (insertResult.error.code !== "23505") throw new Error(insertResult.error.message);
+
+  const existing = await findReconciliationNotification(
+    supabase,
+    receipt.userId,
+    receipt.reconciliationId,
+  );
+  if (!existing) {
+    throw new Error("Le reçu scientifique existant est introuvable après un conflit d'identité.");
+  }
+  if (existing.receipt) return;
+  const updateResult = await supabase
+    .from("app_notifications")
+    .update({
+      title: "Votre progression CleanMyMap a été mise à jour.",
+      content: "Voir les changements sur la page Gamification.",
+      created_at: receipt.occurredAt,
+      seen_at: null,
+      acknowledged_at: null,
+      payload,
+    })
+    .eq("id", existing.id)
+    .eq("user_id", receipt.userId)
+    .eq("type", "gamification_reconciliation");
+  if (updateResult.error) throw new Error(updateResult.error.message);
 }

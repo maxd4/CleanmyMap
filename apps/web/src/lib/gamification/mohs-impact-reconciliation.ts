@@ -18,6 +18,7 @@ import {
 } from "@/lib/impact/impact-terrain-2026";
 import { CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION } from "@/lib/waste/cigarette-butts";
 import { WASTE_MOISTURE_NORMALIZATION_VERSION } from "@/lib/actions/participation/individual-impact";
+import type { ScientificImpactReceiptIntent } from "./gamification-reconciliation-receipt";
 
 export const MOHS_IMPACT_CALCULATION_VERSION = [
   MOHS_PROGRESSION_VERSION,
@@ -25,6 +26,19 @@ export const MOHS_IMPACT_CALCULATION_VERSION = [
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   WASTE_MOISTURE_NORMALIZATION_VERSION,
 ].join("|");
+
+export function buildMohsScientificReconciliationId(
+  userId: string,
+  methodVersion: string,
+  sourceFingerprint: string,
+): string {
+  return [
+    "scientific-impact-reconciliation",
+    userId,
+    methodVersion,
+    sourceFingerprint || "empty",
+  ].join("|");
+}
 
 export type PersonalMohsImpactTotals = {
   wasteRawKg: number;
@@ -243,6 +257,7 @@ async function loadParticipantMohsRows(
 export async function reconcileMohsImpactProgression(
   supabase: SupabaseClient,
   userId: string,
+  options: { persistScientificReceiptIntent?: boolean } = {},
 ): Promise<MohsReconciliationResult> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const rows = await loadParticipantMohsRows(supabase, userId);
@@ -272,12 +287,34 @@ export async function reconcileMohsImpactProgression(
       }
       return [{ id: Number(existing.id), ...buildMohsEventPayload(userId, award) }];
     });
+    const sourceFingerprint = buildMohsSourceFingerprint(rows);
+    const receiptIntent = options.persistScientificReceiptIntent &&
+      (eventsToAdd.length > 0 || eventsToUpdate.length > 0 || eventsToRemove.length > 0)
+      ? {
+          kind: "scientific_impact_reconciliation_pending" as const,
+          schemaVersion: 1 as const,
+          reconciliationId: buildMohsScientificReconciliationId(
+            userId,
+            MOHS_IMPACT_CALCULATION_VERSION,
+            sourceFingerprint,
+          ),
+          userId,
+          scientificImpact: {
+            methodVersion: MOHS_IMPACT_CALCULATION_VERSION,
+            sourceFingerprint,
+            eventsAdded: eventsToAdd.length,
+            eventsUpdated: eventsToUpdate.length,
+            eventsRemoved: eventsToRemove.length,
+          },
+        } satisfies ScientificImpactReceiptIntent
+      : undefined;
     const applied = await applyMohsReconciliationTransaction(supabase, {
       userId,
       expectedEvents: existingRows,
       eventsToAdd,
       eventsToUpdate,
       eventsToRemove,
+      receiptIntent,
     });
     if (applied.status === "conflict") {
       if (attempt === 2) throw new MohsReconciliationConflictError();
@@ -290,7 +327,7 @@ export async function reconcileMohsImpactProgression(
       removed: applied.removed,
       eligibleSourceRows: rows.length,
       methodVersion: MOHS_IMPACT_CALCULATION_VERSION,
-      sourceFingerprint: buildMohsSourceFingerprint(rows),
+      sourceFingerprint,
     };
   }
   throw new MohsReconciliationConflictError();
@@ -349,15 +386,22 @@ async function applyMohsReconciliationTransaction(
     eventsToAdd: readonly Record<string, unknown>[];
     eventsToUpdate: readonly Record<string, unknown>[];
     eventsToRemove: readonly number[];
+    receiptIntent?: ScientificImpactReceiptIntent;
   },
 ): Promise<{ status: "applied" | "conflict"; inserted: number; updated: number; removed: number }> {
-  const response = await supabase.rpc("apply_mohs_impact_reconciliation", {
-    p_user_id: params.userId,
-    p_expected_events: eventSnapshot(params.expectedEvents),
-    p_events_to_add: params.eventsToAdd,
-    p_events_to_update: params.eventsToUpdate,
-    p_events_to_remove: params.eventsToRemove,
-  });
+  const response = await supabase.rpc(
+    params.receiptIntent
+      ? "apply_mohs_impact_reconciliation_with_receipt"
+      : "apply_mohs_impact_reconciliation",
+    {
+      p_user_id: params.userId,
+      p_expected_events: eventSnapshot(params.expectedEvents),
+      p_events_to_add: params.eventsToAdd,
+      p_events_to_update: params.eventsToUpdate,
+      p_events_to_remove: params.eventsToRemove,
+      ...(params.receiptIntent ? { p_scientific_receipt_intent: params.receiptIntent } : {}),
+    },
+  );
   if (response.error) throw new Error(response.error.message);
   const result = response.data as { status?: string; inserted?: number; updated?: number; removed?: number } | null;
   if (result?.status === "conflict") {

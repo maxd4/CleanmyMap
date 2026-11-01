@@ -340,10 +340,19 @@ Les changements ordinaires d'une mesure individuelle ou du total d'une action
 passent par le même rafraîchissement avant la projection du profil ; une
 réconciliation ne modifie jamais l'XP indépendante de l'impact ni les XP de
 validation d'action.
+Lorsque des événements Mohs CURRENT sont ajoutés, modifiés ou retirés, l'appel
+RPC écrit une intention scientifique `pending` dans le canal de reçus, dans la
+même transaction. Elle porte la version de méthode, l'empreinte source et les
+compteurs réellement demandés, mais n'est pas présentée comme un reçu final.
+Après convergence du profil et des badges CURRENT, la reprise remplace cette
+intention par un seul reçu final avec la même `reconciliationId`. Un échec
+après la mutation Mohs laisse ainsi un travail rejouable sans recréditer
+d'événement ; un échec de l'écriture de l'intention annule la mutation.
+
 Le pending est chargé par une requête distincte, bornée par
 `app_notifications.user_id = userId`, `type = 'gamification_reconciliation'`
-et `acknowledged_at IS NULL`; ses compteurs ne sont donc pas calculés sur les
-50 lignes de l'historique. Le filtre SQL et les protections RLS restent
+et son `reconciliationId`; ses compteurs ne sont donc pas calculés sur les 50
+lignes de l'historique. Le filtre SQL et les protections RLS restent
 obligatoires.
 
 Un rebuild dont `hasUserVisibleChanges` vaut `false` ne crée aucune
