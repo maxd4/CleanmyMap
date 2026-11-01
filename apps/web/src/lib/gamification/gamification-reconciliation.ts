@@ -124,6 +124,7 @@ function buildReconciliationRpcInput(
   receipt: GamificationReconciliationReceipt,
   profileBefore: GamificationReconciliationProfile | null,
   refreshProfile: boolean,
+  persistReceipt: boolean,
 ) {
   const expectedByLogicalId = new Map(plan.expected.events.map((event) => [event.logicalId, event]));
   const updates = plan.eventsToUpdate.flatMap((change) => {
@@ -153,7 +154,7 @@ function buildReconciliationRpcInput(
       .filter((id) => Number.isSafeInteger(id)),
     p_expected_profile_updated_at: refreshProfile ? profileBefore?.updated_at ?? null : null,
     p_profile_update: refreshProfile ? profileUpdate(plan, persisted) : null,
-    p_receipt: receipt.hasUserVisibleChanges ? receipt : null,
+    p_receipt: persistReceipt && receipt.hasUserVisibleChanges ? receipt : null,
     p_level_up: refreshProfile && (plan.levelAfter ?? 1) > (plan.levelBefore ?? 1)
       ? {
           oldLevel: plan.levelBefore ?? 1,
@@ -172,6 +173,7 @@ async function applyReconciliationTransaction(
   receipt: GamificationReconciliationReceipt,
   profileBefore: GamificationReconciliationProfile | null,
   refreshProfile: boolean,
+  persistReceipt: boolean,
 ): Promise<{ inserted: number; updated: number; removed: number }> {
   const response = await supabase.rpc("apply_gamification_reconciliation", {
     ...buildReconciliationRpcInput(
@@ -181,6 +183,7 @@ async function applyReconciliationTransaction(
       receipt,
       profileBefore,
       refreshProfile,
+      persistReceipt,
     ),
   });
   if (response.error) throw new Error(response.error.message);
@@ -284,6 +287,7 @@ export async function reconcileUserGamification(
         receipt,
         profileBefore,
         refreshProfile,
+        options.persistReceipt !== false,
       );
 
       await announceLevelUpIfNeeded(supabase, userId, plan, refreshProfile);

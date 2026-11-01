@@ -27,7 +27,9 @@ export async function GET(
   try {
     // The API enforces ownership; this endpoint must remain read-only.
     const supabase = getSupabaseServerClient(true);
-    const totals = await loadPersonalMohsImpactTotals(supabase, userId);
+  const totals = await loadPersonalMohsImpactTotals(supabase, userId, {
+    recalculateDerived: true,
+  });
 
     const payload: BadgeTotals = {
       wasteKg: totals.wasteMohsKg,

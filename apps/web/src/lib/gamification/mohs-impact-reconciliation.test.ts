@@ -3,13 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
 
 const loadConfirmedParticipantImpactAttributionsMock = vi.hoisted(() => vi.fn());
-const insertProgressionEventMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/participation/group-participation-read", () => ({
   loadConfirmedParticipantImpactAttributions: loadConfirmedParticipantImpactAttributionsMock,
-}));
-vi.mock("./progression-data", () => ({
-  insertProgressionEvent: insertProgressionEventMock,
 }));
 
 function attribution(overrides: Record<string, unknown> = {}) {
@@ -48,6 +44,19 @@ function createSupabase(existing: Array<{ id: string; source_id: string; event_t
   };
   const supabase = {
     from: vi.fn(() => ({ ...selected, ...deleted })),
+    rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
+      if (name !== "apply_mohs_impact_reconciliation") throw new Error(`Unexpected RPC ${name}`);
+      removedIds.push(...((args.p_events_to_remove as number[]) ?? []).map(String));
+      return {
+        data: {
+          status: "applied",
+          inserted: ((args.p_events_to_add as unknown[]) ?? []).length,
+          updated: ((args.p_events_to_update as unknown[]) ?? []).length,
+          removed: ((args.p_events_to_remove as unknown[]) ?? []).length,
+        },
+        error: null,
+      };
+    }),
   } as unknown as SupabaseClient;
   return { supabase, removedIds };
 }
@@ -62,35 +71,41 @@ describe("Mohs impact event reconciliation", () => {
         attribution: attribution({ wasteKg: 180, wasteMohsValue: 180, wasteMohsSource: "equivalent_sec", wasteMohsEligible: true }),
       },
     ]);
-    insertProgressionEventMock.mockResolvedValue(true);
-
     const first = createSupabase();
     const result = await reconcileMohsImpactProgression(first.supabase, "user-1");
     expect(result.inserted).toBe(9);
-    expect(insertProgressionEventMock).toHaveBeenCalledTimes(9);
-    expect(insertProgressionEventMock).toHaveBeenCalledWith(
+    expect(loadConfirmedParticipantImpactAttributionsMock).toHaveBeenLastCalledWith(
       first.supabase,
+      "user-1",
+      6000,
+      { recalculateDerived: true },
+    );
+    expect(first.supabase.rpc).toHaveBeenCalledWith(
+      "apply_mohs_impact_reconciliation",
       expect.objectContaining({
-        eventType: "infinite_waste_milestone",
-        sourceTable: "personal_impact_mohs",
-        sourceId: "mohs:waste:grade:10",
-        xpAwarded: 0.25,
-        metadata: expect.objectContaining({ classification: "impact_badge" }),
+        p_events_to_add: expect.arrayContaining([
+          expect.objectContaining({
+            event_type: "infinite_waste_milestone",
+            source_table: "personal_impact_mohs",
+            source_id: "mohs:waste:grade:10",
+            xp_awarded: 0.25,
+            metadata: expect.objectContaining({ classification: "impact_badge" }),
+          }),
+        ]),
       }),
     );
     expect(first.supabase.from).not.toHaveBeenCalledWith("points_ledger");
 
-    insertProgressionEventMock.mockClear();
     const existing = Array.from({ length: 9 }, (_, index) => ({
-      id: `event-${index + 1}`,
+      id: String(index + 1),
       source_id: `mohs:waste:grade:${index + 2}`,
       event_type: "infinite_waste_milestone",
+      metadata: { mohsVersion: "mohs-impact-v1" },
     }));
     const replay = createSupabase(existing);
     const replayResult = await reconcileMohsImpactProgression(replay.supabase, "user-1");
     expect(replayResult.inserted).toBe(0);
     expect(replayResult.removed).toBe(0);
-    expect(insertProgressionEventMock).not.toHaveBeenCalled();
 
     loadConfirmedParticipantImpactAttributionsMock.mockResolvedValue([]);
     const correction = createSupabase(existing);
@@ -98,5 +113,35 @@ describe("Mohs impact event reconciliation", () => {
     expect(correctionResult.inserted).toBe(0);
     expect(correctionResult.removed).toBe(9);
     expect(correction.removedIds).toEqual(existing.map((row) => row.id));
+  });
+
+  it("keeps a legacy event and retries a stale concurrent snapshot", async () => {
+    loadConfirmedParticipantImpactAttributionsMock.mockResolvedValue([
+      {
+        actionId: "action-2",
+        actionDate: "2026-09-27",
+        userId: "user-1",
+        attribution: attribution({ wasteMohsValue: 20, wasteMohsSource: "equivalent_sec", wasteMohsEligible: true }),
+      },
+    ]);
+    const existing = [{
+      id: "20",
+      source_id: "mohs:waste:grade:2",
+      event_type: "infinite_waste_milestone",
+      metadata: { legacy: true },
+    }];
+    const supabase = createSupabase(existing).supabase as unknown as { rpc: ReturnType<typeof vi.fn> };
+    let calls = 0;
+    supabase.rpc.mockImplementation(async () => {
+      calls += 1;
+      return calls === 1
+        ? { data: { status: "conflict" }, error: null }
+        : { data: { status: "applied", inserted: 0, updated: 0, removed: 0 }, error: null };
+    });
+
+    const result = await reconcileMohsImpactProgression(supabase as unknown as SupabaseClient, "user-1");
+    expect(calls).toBe(2);
+    expect(result.inserted).toBe(0);
+    expect(result.removed).toBe(0);
   });
 });

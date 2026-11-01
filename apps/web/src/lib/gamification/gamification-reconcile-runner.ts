@@ -7,6 +7,7 @@ type GamificationReconcileTarget = "user" | "all";
 export type GamificationReconcileArgs = {
   mode: GamificationReconcileMode;
   target: GamificationReconcileTarget;
+  scientificImpact: boolean;
   userId?: string;
   batchSize: number;
   resumePath?: string;
@@ -33,6 +34,7 @@ type GamificationReconcileCheckpoint = {
   runId: string;
   mode: "apply-all";
   rulesVersion: string;
+  scientificImpact?: boolean;
   batchSize: number;
   lastUserId: string | null;
   aggregate: GamificationReconcileAggregate;
@@ -88,7 +90,10 @@ function hasChanges(plan: GamificationReconciliationPlan): boolean {
     plan.badgesAdded.length > 0 ||
     plan.badgesRemoved.length > 0 ||
     plan.milestonesAdded.length > 0 ||
-    plan.milestonesRemoved.length > 0;
+    plan.milestonesRemoved.length > 0 ||
+    (plan.scientificImpact?.eventsToAdd ?? 0) > 0 ||
+    (plan.scientificImpact?.eventsToUpdate ?? 0) > 0 ||
+    (plan.scientificImpact?.eventsToRemove ?? 0) > 0;
 }
 
 function addPlanToAggregate(
@@ -102,6 +107,9 @@ function addPlanToAggregate(
   aggregate.eventsAdded += plan.eventsToAdd.length;
   aggregate.eventsUpdated += plan.eventsToUpdate.length;
   aggregate.eventsRemoved += plan.eventsToRemove.length;
+  aggregate.eventsAdded += plan.scientificImpact?.eventsToAdd ?? 0;
+  aggregate.eventsUpdated += plan.scientificImpact?.eventsToUpdate ?? 0;
+  aggregate.eventsRemoved += plan.scientificImpact?.eventsToRemove ?? 0;
   aggregate.badgesAdded += plan.badgesAdded.length;
   aggregate.badgesRemoved += plan.badgesRemoved.length;
   aggregate.milestonesAdded += plan.milestonesAdded.length;
@@ -120,7 +128,7 @@ function parseArgumentTokens(argv: readonly string[]): {
   flags: Set<string>;
 } {
   const valueOptions = new Set(["--user", "--batch-size", "--resume", "--run-id", "--actor"]);
-  const flagOptions = new Set(["--all", "--dry-run", "--apply"]);
+  const flagOptions = new Set(["--all", "--dry-run", "--apply", "--scientific-impact"]);
   const values = new Map<string, string>();
   const flags = new Set<string>();
   for (let index = 0; index < argv.length; index += 1) {
@@ -163,6 +171,7 @@ export function parseGamificationReconcileArgs(argv: readonly string[]): Gamific
   return {
     mode: isApply ? "apply" : "dry-run",
     target: isUser ? "user" : "all",
+    scientificImpact: flags.has("--scientific-impact"),
     userId,
     batchSize,
     resumePath: values.get("--resume"),
@@ -185,6 +194,7 @@ async function writeRunnerCheckpoint(
     runId,
     mode: "apply-all",
     rulesVersion: dependencies.rulesVersion,
+    scientificImpact: args.scientificImpact,
     batchSize: args.batchSize,
     lastUserId,
     aggregate: cloneAggregate(aggregate),

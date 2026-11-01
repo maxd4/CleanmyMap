@@ -5,7 +5,12 @@ const migration = readFileSync(
   new URL("../../../supabase/migrations/20261013000013_gamification_reconciliation_atomicity.sql", import.meta.url),
   "utf8",
 );
+const mohsMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261101000003_gamification_mohs_reconciliation_atomicity.sql", import.meta.url),
+  "utf8",
+);
 const reconciliation = readFileSync(new URL("./gamification-reconciliation.ts", import.meta.url), "utf8");
+const mohsReconciliation = readFileSync(new URL("./mohs-impact-reconciliation.ts", import.meta.url), "utf8");
 
 describe("gamification reconciliation concurrency contract", () => {
   it("coordinates same-user commits in PostgreSQL and rejects stale snapshots", () => {
@@ -29,5 +34,13 @@ describe("gamification reconciliation concurrency contract", () => {
 
   it("does not introduce an in-memory same-user lock", () => {
     expect(reconciliation).not.toMatch(/Map<.*userId|lock.*Map|mutex/i);
+  });
+
+  it("uses the same database lock and stale-snapshot contract for Mohs", () => {
+    expect(mohsMigration).toContain("pg_advisory_xact_lock(hashtextextended(p_user_id, 0))");
+    expect(mohsMigration).toContain("mohs_ledger_revision_changed");
+    expect(mohsMigration).toContain("grant execute on function public.apply_mohs_impact_reconciliation");
+    expect(mohsReconciliation).toContain('supabase.rpc("apply_mohs_impact_reconciliation"');
+    expect(mohsReconciliation).toContain("attempt < 3");
   });
 });

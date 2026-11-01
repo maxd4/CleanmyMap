@@ -9,6 +9,7 @@ import {
   INDIVIDUAL_IMPACT_SELECT,
   allocateActionParticipantImpact,
   toIndividualImpactMeasurement,
+  type IndividualImpactReadOptions,
   type ActionParticipantImpactAttribution,
 } from "./individual-impact";
 
@@ -21,6 +22,7 @@ type ParticipantImpactRow = {
 
 function groupParticipantImpactRows(
   data: unknown,
+  options: IndividualImpactReadOptions = {},
 ): Map<string, ParticipantImpactRow[]> {
   const rowsByActionId = new Map<string, ParticipantImpactRow[]>();
   const candidates = Array.isArray(data) ? data : [];
@@ -35,7 +37,7 @@ function groupParticipantImpactRows(
       id,
       updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
       participationStatus: String(row.participation_status ?? "confirmed"),
-      measurement: toIndividualImpactMeasurement(row),
+      measurement: toIndividualImpactMeasurement(row, options),
     });
     rowsByActionId.set(actionId, rows);
   }
@@ -63,6 +65,7 @@ async function loadParticipantImpactProjection(
   supabase: SupabaseClient,
   actionById: Map<string, ActionPreviewRow>,
   finalActionIds: string[],
+  options: IndividualImpactReadOptions = {},
 ): Promise<{
   readStatus: "success" | "error";
   attributionsByActionId: Map<
@@ -83,7 +86,7 @@ async function loadParticipantImpactProjection(
     .in("action_id", finalActionIds)
     .eq("participation_status", ACTIVE_PARTICIPATION_STATUS);
   if (result.error) return { ...empty, readStatus: "error" };
-  const rowsByActionId = groupParticipantImpactRows(result.data);
+  const rowsByActionId = groupParticipantImpactRows(result.data, options);
   return {
     readStatus: "success",
     attributionsByActionId: allocateParticipantImpactRows(actionById, finalActionIds, rowsByActionId),
@@ -112,8 +115,9 @@ export async function loadParticipantImpactAttributions(
   supabase: SupabaseClient,
   actionById: Map<string, ActionPreviewRow>,
   finalActionIds: string[],
+  options: IndividualImpactReadOptions = {},
 ): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
-  return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds))
+  return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds, options))
     .attributionsByActionId;
 }
 

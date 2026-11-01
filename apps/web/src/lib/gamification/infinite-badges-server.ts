@@ -124,7 +124,9 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     events: (eventsResult.data ?? []) as MilestoneEvent[],
   });
 
-  const personalMohs = await loadPersonalMohsImpactTotals(supabase, userId);
+  const personalMohs = await loadPersonalMohsImpactTotals(supabase, userId, {
+    recalculateDerived: true,
+  });
 
   return {
     wasteKg: personalMohs.wasteMohsKg,

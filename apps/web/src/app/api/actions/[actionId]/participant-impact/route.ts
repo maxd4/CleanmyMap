@@ -257,7 +257,9 @@ async function persistParticipantImpact(
           : null,
     });
   }
-  await refreshProgressionProfile(supabase, context.participant.user_id).catch(() => null);
+  await refreshProgressionProfile(supabase, context.participant.user_id, {
+    reconcileLegacyImpact: true,
+  }).catch(() => null);
   return NextResponse.json({
     status: "ok",
     actionId,

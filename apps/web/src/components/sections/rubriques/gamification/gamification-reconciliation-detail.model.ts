@@ -117,6 +117,7 @@ function reasonCopy(receipt: GamificationReconciliationReceipt, fr: boolean): { 
     data_correction: fr ? "Certaines données de votre compte ont été corrigées." : "Some account data was corrected.",
     account_rebuild: fr ? "La progression de votre compte a été reconstruite." : "Your account progression was rebuilt.",
     migration: fr ? "La gamification a été migrée vers les règles CURRENT." : "Gamification was migrated to the CURRENT rules.",
+    scientific_impact_update: fr ? "Les contributions d’impact ont été recalculées avec la méthode scientifique courante." : "Impact contributions were recalculated with the current scientific method.",
     other: fr ? "La progression de votre compte a été recalculée." : "Your account progression was recalculated.",
   };
   return {

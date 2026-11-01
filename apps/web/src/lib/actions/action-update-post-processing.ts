@@ -11,6 +11,7 @@ import type { ActionParticipantImpactSnapshot } from "./participation/group-part
 import type { appendActionModerationAudit } from "./moderation-audit";
 import type { UserIdentity } from "@/lib/authz";
 import { reconcileSchoolActionRecognitions } from "@/lib/gamification/school-action-recognition-persistence";
+import { reconcileActionParticipantImpactProgression } from "@/lib/gamification/progression-tracking";
 import type {
   ActionAuditSnapshots,
   ActionUpdateInput,
@@ -75,6 +76,9 @@ export async function runActionUpdatePostProcessing(
   }
 
   await syncActionUpdateParticipants({ supabase, actionId, body, userId, identity, organizersAlreadySynced, setErrorStage });
+  if (shouldReconcileParticipantImpact(updateData, body)) {
+    await reconcileActionParticipantImpactProgression(supabase, actionId);
+  }
   await reconcileSchoolActionRecognitions({ supabase, actionId, actorUserId: adminAuditActorUserId });
   await notifyActionUpdateImpact({ supabase, actionId, previousImpactSnapshot, persistedActionRevision });
   await appendPostProcessingAudit({
@@ -88,6 +92,21 @@ export async function runActionUpdatePostProcessing(
     appendAdminAuditOnce,
     setErrorStage,
   });
+}
+
+function shouldReconcileParticipantImpact(
+  updateData: Record<string, unknown>,
+  body: ActionUpdateInput,
+): boolean {
+  if (body.participantAccounts !== undefined) return true;
+  return [
+    "waste_kg",
+    "cigarette_butts",
+    "status",
+    "action_phase",
+    "published_at",
+    "moderation_visibility",
+  ].some((field) => Object.prototype.hasOwnProperty.call(updateData, field));
 }
 
 async function syncActionUpdateParticipants({

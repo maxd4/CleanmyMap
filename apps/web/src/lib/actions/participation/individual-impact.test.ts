@@ -7,6 +7,7 @@ import {
 } from "./individual-impact";
 import { normalizeVolunteerParticipation } from "../volunteer-participation";
 import { aggregateCigaretteButtsLots } from "@/lib/waste/cigarette-butts";
+import { CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 } from "@/lib/impact/impact-terrain-2026";
 
 function participant(id: string, measurement: ReturnType<typeof toIndividualImpactMeasurement> = null) {
   return { id, participationStatus: "confirmed", measurement };
@@ -345,6 +346,59 @@ describe("individual action impact attribution", () => {
       individual_cigarette_butts_mass_kg: 1,
       individual_cigarette_butts_condition: "humide",
     })).toMatchObject({ comparableButtsCount: 7, cigaretteButtsLots: null });
+  });
+
+  it("recalculates only retained derived sources when explicitly requested", () => {
+    const current = aggregateCigaretteButtsLots([
+      { id: "mass", source: "mass_kg", value: 1, condition: "humide" },
+    ]);
+    const historical = {
+      ...current,
+      results: current.results.map((result) => ({
+        ...result,
+        count: 1_750,
+        massConversionFormulaVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+      })),
+      summary: {
+        ...current.summary,
+        totalCount: 1_750,
+        estimatedCount: 1_750,
+      },
+    };
+    const historicalRead = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 1_750,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_lots: historical,
+    });
+    const recalculatedRead = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 1_750,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_provenance: "derived",
+      individual_cigarette_butts_lots: historical,
+    }, { recalculateDerived: true });
+
+    expect(historicalRead?.comparableButtsCount).toBe(1_750);
+    expect(recalculatedRead?.comparableButtsCount).toBe(2_000);
+    expect(recalculatedRead?.cigaretteButtsLots?.results[0]?.rawMassKg).toBe(1);
+    expect(recalculatedRead?.cigaretteButtsLots?.results[0]?.massConversionFormulaVersion)
+      .not.toBe(CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1);
+  });
+
+  it("recalculates a legacy mass-derived count but keeps an ambiguous scalar pair unchanged", () => {
+    const derived = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_condition: "humide",
+    }, { recalculateDerived: true });
+    const ambiguous = toIndividualImpactMeasurement({
+      individual_cigarette_butts_count: 7,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_condition: "humide",
+    }, { recalculateDerived: true });
+
+    expect(derived?.comparableButtsCount).toBe(2_000);
+    expect(ambiguous?.comparableButtsCount).toBe(7);
   });
 
   it("fails closed when mixed individual lots exceed the collective total", () => {

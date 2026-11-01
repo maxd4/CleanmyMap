@@ -12,6 +12,7 @@ export type GamificationReconciliationReasonCategory =
   | "data_correction"
   | "account_rebuild"
   | "migration"
+  | "scientific_impact_update"
   | "other";
 
 type GamificationReceiptId = { id: string };
@@ -83,6 +84,13 @@ export type GamificationReconciliationReceipt = {
     newProgressionIds: string[];
     newMilestoneIds: string[];
     retiredMechanicIds: string[];
+  };
+  scientificImpact?: {
+    methodVersion: string;
+    sourceFingerprint: string;
+    eventsAdded: number;
+    eventsUpdated: number;
+    eventsRemoved: number;
   };
   reasonCategory: GamificationReconciliationReasonCategory;
   hasUserVisibleChanges: boolean;

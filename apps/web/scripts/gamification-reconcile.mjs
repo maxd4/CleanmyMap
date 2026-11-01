@@ -48,7 +48,7 @@ function help() {
   console.log("");
   console.log("Cibles: --user <id> | --all");
   console.log("Modes:  --dry-run | --apply");
-  console.log("Options: --batch-size <1..500> --resume <checkpoint.json> --run-id <id> --actor <id>");
+  console.log("Options: --scientific-impact --batch-size <1..500> --resume <checkpoint.json> --run-id <id> --actor <id>");
   console.log("");
   console.log("--dry-run est sans mutation, sans audit et sans checkpoint.");
 }
@@ -71,6 +71,7 @@ function publicPlan(plan, receipt) {
     milestonesAdded: plan.milestonesAdded,
     milestonesRemoved: plan.milestonesRemoved,
     legacyEventCountPreserved: plan.legacyEventCountPreserved,
+    scientificImpact: plan.scientificImpact ?? null,
     receipt: receipt ?? null,
   };
 }
@@ -109,6 +110,10 @@ async function main() {
   const { GAMIFICATION_RULES_V1 } = await import("../src/lib/gamification/gamification-rules.ts");
   const { loadGamificationReconciliationSnapshot } = await import("../src/lib/gamification/gamification-reconciliation-plan.ts");
   const { reconcileUserGamification } = await import("../src/lib/gamification/gamification-reconciliation.ts");
+  const {
+    previewScientificImpactGamification,
+    reconcileScientificImpactGamification,
+  } = await import("../src/lib/gamification/scientific-impact-gamification-reconciliation.ts");
   const { buildGamificationReconciliationReceipt } = await import("../src/lib/gamification/gamification-reconciliation-receipt.ts");
   const { parseGamificationReconcileArgs, runGamificationReconcile } = await import("../src/lib/gamification/gamification-reconcile-runner.ts");
   const args = parseGamificationReconcileArgs(argv);
@@ -123,19 +128,26 @@ async function main() {
   if (initialCheckpoint && initialCheckpoint.rulesVersion !== GAMIFICATION_RULES_V1.version) {
     throw new Error(`Le checkpoint cible ${initialCheckpoint.rulesVersion}, mais les règles courantes sont ${GAMIFICATION_RULES_V1.version}.`);
   }
+  if (initialCheckpoint && Boolean(initialCheckpoint.scientificImpact) !== args.scientificImpact) {
+    throw new Error("Le checkpoint et le mode scientifique demandé ne correspondent pas.");
+  }
 
   const result = await runGamificationReconcile(args, {
     rulesVersion: GAMIFICATION_RULES_V1.version,
-    previewUser: async (userId) => (await loadGamificationReconciliationSnapshot(
-      supabase,
-      userId,
-      GAMIFICATION_RULES_V1,
-    )).plan,
+    previewUser: async (userId) => args.scientificImpact
+      ? (await previewScientificImpactGamification(supabase, userId)).plan
+      : (await loadGamificationReconciliationSnapshot(
+        supabase,
+        userId,
+        GAMIFICATION_RULES_V1,
+      )).plan,
     applyUser: async (userId) => {
-      const reconciled = await reconcileUserGamification(supabase, userId, {
-        rules: GAMIFICATION_RULES_V1,
-        reasonCategory: "rules_update",
-      });
+      const reconciled = args.scientificImpact
+        ? await reconcileScientificImpactGamification(supabase, userId)
+        : await reconcileUserGamification(supabase, userId, {
+          rules: GAMIFICATION_RULES_V1,
+          reasonCategory: "rules_update",
+        });
       return { plan: reconciled.plan, receipt: reconciled.receipt, inserted: reconciled.inserted, updated: reconciled.updated, removed: reconciled.removed };
     },
     listUsers: async ({ afterUserId, limit }) => {
@@ -165,6 +177,7 @@ async function main() {
         eventsAdded: plan.eventsToAdd.length,
         eventsUpdated: plan.eventsToUpdate.length,
         eventsRemoved: plan.eventsToRemove.length,
+        scientificImpact: plan.scientificImpact ?? null,
         badgesAdded: plan.badgesAdded,
         badgesRemoved: plan.badgesRemoved,
         milestonesAdded: plan.milestonesAdded,

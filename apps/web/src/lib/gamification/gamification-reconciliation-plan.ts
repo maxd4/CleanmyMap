@@ -68,6 +68,15 @@ export type GamificationReconciliationPlan = {
   legacyEventCountPreserved: number;
   expected: ExpectedGamificationState;
   currentPersisted: PersistedGamificationEvent[];
+  /** Optional impact projection diff attached by the scientific reconciler. */
+  scientificImpact?: {
+    methodVersion: string;
+    eventsToAdd: number;
+    eventsToUpdate: number;
+    eventsToRemove: number;
+    eligibleSourceRows: number;
+    sourceFingerprint: string;
+  };
 };
 
 export type GamificationReconciliationSnapshot = {

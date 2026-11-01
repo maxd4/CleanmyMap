@@ -278,6 +278,50 @@ Lors de la lecture de l'historique, le payload est validé comme reçu de
 réconciliation et cohérent avec l'utilisateur demandé (`receipt.userId ===
 userId`), qu'il soit acquitté ou non. Un payload malformé, d'un autre type ou
 portant un propriétaire incohérent est ignoré et n'est jamais transmis à l'UI.
+
+## Reconciliation des contributions d'impact
+
+Les récompenses Mohs dépendent des contributions personnelles attribuées depuis
+les actions confirmées, mais ne constituent pas une progression XP CURRENT et
+ne convertissent jamais les kilogrammes ou les mégots en XP proportionnelle.
+Le propriétaire de cette projection est
+`mohs-impact-reconciliation.ts` ; l'orchestrateur
+`scientific-impact-gamification-reconciliation.ts` l'exécute avant la
+réconciliation du profil et des événements CURRENT.
+
+Une lecture ordinaire conserve l'instantané historique persisté. Une
+réconciliation scientifique relit uniquement les sources dérivées conservées
+(lots, masse source et état) et applique la méthode courante. Les comptages ou
+mesures réellement déclarés restent inchangés ; une paire scalaire historique
+ambiguë reste inchangée et n'est pas recalculée. Les actions non approuvées,
+les participations non confirmées, les dépassements du total collectif et les
+attributions indisponibles ne produisent pas de palier Mohs.
+
+La réconciliation Mohs appelle la RPC
+`apply_mohs_impact_reconciliation`. Celle-ci verrouille la projection par
+utilisateur, compare un instantané complet, puis applique suppressions,
+modifications et insertions atomiquement. Une révision concurrente retourne un
+conflit et le runner rejoue l'utilisateur ; l'identité logique
+`personal_impact_mohs` + famille + grade reste stable, donc un changement de
+facteur met à jour un événement au lieu de recréditer un palier. Les événements
+LEGACY sans empreinte de méthode et les reçus historiques ne sont pas réécrits.
+
+Le mode administratif scientifique expose un diff sans écriture puis une
+application idempotente et reprenable :
+
+```text
+npm run gamification:reconcile -w apps/web -- --user <id> --scientific-impact --dry-run
+npm run gamification:reconcile -w apps/web -- --all --scientific-impact --apply --batch-size 50
+```
+
+Le plan signale la méthode d'impact, l'empreinte des sources, les paliers
+ajoutés/modifiés/retirés et le nombre de lignes sources éligibles. Les
+conséquences visibles sont persistées dans le reçu utilisateur existant, avec
+une clé d'idempotence dérivée de l'utilisateur, de la méthode et des sources.
+Les changements ordinaires d'une mesure individuelle ou du total d'une action
+passent par le même rafraîchissement avant la projection du profil ; une
+réconciliation ne modifie jamais l'XP indépendante de l'impact ni les XP de
+validation d'action.
 Le pending est chargé par une requête distincte, bornée par
 `app_notifications.user_id = userId`, `type = 'gamification_reconciliation'`
 et `acknowledged_at IS NULL`; ses compteurs ne sont donc pas calculés sur les

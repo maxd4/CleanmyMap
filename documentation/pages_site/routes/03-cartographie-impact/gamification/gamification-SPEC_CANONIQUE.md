@@ -255,6 +255,33 @@ rebuild idempotent sans conséquence visible ne crée aucun reçu. Le front-end
 consomme ce contrat et ne déduit jamais un delta depuis le seul total XP ni
 depuis des logs texte.
 
+### Recalcul scientifique des contributions personnelles
+
+Les mesures individuelles sont des attributions du total de l'action : elles
+ne sont jamais additionnées à `actions.cigarette_butts` une seconde fois et
+elles ne créent aucune XP proportionnelle aux kg ou aux mégots. Une évolution
+de conversion peut toutefois modifier les paliers Mohs qui dépendent d'une
+valeur dérivée, si sa source originale est encore identifiable. Le moteur
+relit alors les lots, la masse source et leur état avec la méthode courante,
+sans modifier la mesure observée, la valeur historique ambiguë, sa provenance
+ou son ancienne version.
+
+La chaîne d'application est ordonnée :
+
+1. relecture des participations confirmées et des actions admissibles ;
+2. recalcul des valeurs dérivées éligibles et des attributions individuelles ;
+3. convergence atomique des paliers Mohs par identité logique stable ;
+4. rafraîchissement idempotent du profil, des badges et des niveaux concernés.
+
+Les suppressions, les actions rejetées, les dépassements du total collectif,
+les valeurs `NULL`, les zéros explicites et les historiques sans provenance
+recalculable restent explicitement distingués. Les événements LEGACY et les
+reçus historiques sont conservés. Une exécution concurrente ou interrompue
+retourne un conflit rejouable ; un dry-run expose les différences, la méthode,
+l'empreinte des sources et la trace du reçu sans écrire dans les sources
+métier. Le recalcul scientifique ne change pas les événements de validation
+d'action lorsque seul un facteur environnemental évolue.
+
 L'historique secondaire affiche au plus les 50 reçus les plus récents ; cette
 fenêtre de présentation ne détermine ni le pending ni ses compteurs. Les
 reçus acquittés restent dans l'historique, tandis que le pending sélectionne

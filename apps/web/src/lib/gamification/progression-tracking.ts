@@ -44,8 +44,11 @@ async function refreshProgressionProfileOnce(
   // Reconcile impact badge threshold facts before projecting the profile. The
   // reconciler only writes progression_events; the legacy point ledger remains
   // intentionally untouched by CURRENT gamification.
-  if (options.reconcileLegacyImpact !== false) {
-    await reconcileMohsImpactProgression(supabase, userId).catch(() => null);
+  if (options.reconcileLegacyImpact === true) {
+    // Do not refresh the profile from a partially refreshed impact ledger. The
+    // caller may keep the source mutation and retry this idempotent step, but
+    // a successful profile write must always observe the converged Mohs set.
+    await reconcileMohsImpactProgression(supabase, userId);
   }
   const [eventsResult, stats] = await Promise.all([
     supabase
@@ -82,6 +85,34 @@ export async function refreshProgressionProfile(
       if (!(error instanceof ProgressionProfileConflictError) || attempt === 2) throw error;
     }
   }
+}
+
+/**
+ * Reprojects the impact-dependent progression for every confirmed participant
+ * of an action after its collective measurement, visibility or roster has
+ * changed. The action source is read after the mutation; rejected actions
+ * therefore remove their derived Mohs awards while LEGACY rows remain intact.
+ */
+export async function reconcileActionParticipantImpactProgression(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<void> {
+  const result = await supabase
+    .from("action_participants")
+    .select("user_id")
+    .eq("action_id", actionId)
+    .eq("participation_status", "confirmed");
+  if (result.error) throw new Error(result.error.message);
+
+  const userIds = [...new Set(
+    (result.data ?? [])
+      .map((row) => (typeof row.user_id === "string" ? row.user_id.trim() : ""))
+      .filter(Boolean),
+  )];
+  await Promise.all(userIds.map(async (userId) => {
+    await reconcileMohsImpactProgression(supabase, userId);
+    await refreshProgressionProfile(supabase, userId, { reconcileLegacyImpact: false });
+  }));
 }
 
 export async function trackActionCreated(

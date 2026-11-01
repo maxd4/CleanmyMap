@@ -2,6 +2,7 @@ import {
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   computeButtsCount,
+  estimateButtsWeightKg,
   isCigaretteButtsMassConversionVersion,
 } from "@/lib/impact/impact-terrain-2026";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
@@ -74,6 +75,15 @@ export type IndividualImpactRow = {
   individual_cigarette_butts_lots?: unknown | null;
   individual_impact_measured_by?: string | null;
   individual_impact_measured_at?: string | null;
+};
+
+export type IndividualImpactReadOptions = {
+  /**
+   * Rebuilds derived cigarette-butt values from retained raw lot/scalar
+   * sources. Ordinary reads keep the persisted snapshot so historical views
+   * do not silently change when the current scientific method changes.
+   */
+  recalculateDerived?: boolean;
 };
 
 function finiteNonNegative(value: unknown): number | null {
@@ -192,6 +202,7 @@ export function buildStoredIndividualImpactMeasurement(
 
 export function toIndividualImpactMeasurement(
   row: IndividualImpactRow | null | undefined,
+  options: IndividualImpactReadOptions = {},
 ): IndividualImpactMeasurement | null {
   if (!row) return null;
   const stored = buildStoredIndividualImpactMeasurement({
@@ -214,7 +225,23 @@ export function toIndividualImpactMeasurement(
   const persistedLots = isStoredCigaretteButtsLots(row.individual_cigarette_butts_lots)
     ? row.individual_cigarette_butts_lots
     : null;
-  const canonicalStored = persistedLots ? { ...stored, cigaretteButtsLots: persistedLots } : stored;
+  const recalculatedLots = options.recalculateDerived && persistedLots
+    ? aggregateCigaretteButtsLots(persistedLots.lots)
+    : null;
+  const canonicalStored = recalculatedLots
+    ? {
+        ...stored,
+        cigaretteButtsCount: recalculatedLots.summary.totalCount,
+        cigaretteButtsMassKg: recalculatedLots.summary.totalMassKg,
+        cigaretteButtsCondition: projectionCondition(recalculatedLots.results),
+        cigaretteButtsLots: recalculatedLots,
+        cigaretteButtsConversionVersion: projectionVersion(recalculatedLots.results),
+      }
+    : persistedLots
+      ? { ...stored, cigaretteButtsLots: persistedLots }
+      : options.recalculateDerived
+        ? recalculateLegacyDerivedButts(stored)
+        : stored;
   const hasMeasurement = canonicalStored.wasteKg !== null || canonicalStored.cigaretteButtsLots !== null || canonicalStored.cigaretteButtsCount !== null || canonicalStored.cigaretteButtsMassKg !== null;
   if (!hasMeasurement) return null;
 
@@ -249,6 +276,45 @@ export function toIndividualImpactMeasurement(
             ? "derived"
             : null,
   };
+}
+
+function recalculateLegacyDerivedButts(
+  stored: StoredIndividualImpactMeasurement,
+): StoredIndividualImpactMeasurement {
+  if (
+    stored.cigaretteButtsMassKg !== null &&
+    stored.cigaretteButtsCondition !== null &&
+    stored.cigaretteButtsProvenance === "measured" &&
+    stored.cigaretteButtsConversionVersion !== null
+  ) {
+    const count = computeButtsCount(
+      stored.cigaretteButtsMassKg,
+      stored.cigaretteButtsCondition,
+    );
+    return {
+      ...stored,
+      cigaretteButtsCount: count,
+      cigaretteButtsConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    };
+  }
+
+  if (
+    stored.cigaretteButtsCount !== null &&
+    stored.cigaretteButtsCondition !== null &&
+    stored.cigaretteButtsProvenance === "counted" &&
+    stored.cigaretteButtsConversionVersion !== null
+  ) {
+    return {
+      ...stored,
+      cigaretteButtsMassKg: estimateButtsWeightKg(
+        stored.cigaretteButtsCount,
+        stored.cigaretteButtsCondition,
+      ),
+      cigaretteButtsConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    };
+  }
+
+  return stored;
 }
 
 type AllocationKind = "individual" | "quote_part" | "unavailable";

@@ -206,6 +206,7 @@ export async function loadConfirmedParticipantImpactAttributions(
   supabase: SupabaseClient,
   userId: string,
   limit = 6000,
+  options: { recalculateDerived?: boolean } = {},
 ): Promise<ConfirmedParticipantImpactAttribution[]> {
   const participantResult = await supabase
     .from("action_participants")
@@ -238,6 +239,7 @@ export async function loadConfirmedParticipantImpactAttributions(
     supabase,
     actionById,
     finalActionIds,
+    options,
   );
 
   return participantRows.flatMap((row) => {

@@ -32,6 +32,20 @@ function plan(userId: string, xpDelta = 0): GamificationReconciliationPlan {
   };
 }
 
+function scientificPlan(userId: string): GamificationReconciliationPlan {
+  return {
+    ...plan(userId),
+    scientificImpact: {
+      methodVersion: "mohs-impact-v1|mass-v2",
+      eventsToAdd: 1,
+      eventsToUpdate: 1,
+      eventsToRemove: 1,
+      eligibleSourceRows: 2,
+      sourceFingerprint: "source-fingerprint",
+    },
+  };
+}
+
 function dependencies(overrides: Partial<Parameters<typeof runGamificationReconcile>[1]> = {}) {
   return {
     rulesVersion: "v2",
@@ -61,6 +75,9 @@ describe("gamification reconcile runner", () => {
     }
     expect(parseGamificationReconcileArgs(["--all", "--apply", "--run-id", "stable"])).toMatchObject({
       mode: "apply", target: "all", batchSize: 50, runId: "stable",
+    });
+    expect(parseGamificationReconcileArgs(["--user", "u", "--apply", "--scientific-impact"])).toMatchObject({
+      scientificImpact: true,
     });
   });
 
@@ -168,5 +185,31 @@ describe("gamification reconcile runner", () => {
     expect(result.aggregate.accountsInspected).toBe(1);
     expect(result.aggregate.errors).toEqual([{ userId: "user-1", message: "preview unavailable" }]);
     expect(checkpoints).toEqual([]);
+  });
+
+  it("counts scientific impact projection changes as modified and replayable", async () => {
+    let calls = 0;
+    const result = await runGamificationReconcile(
+      parseGamificationReconcileArgs(["--user", "user-1", "--apply", "--scientific-impact"]),
+      dependencies({
+        applyUser: async () => {
+          calls += 1;
+          return { plan: calls === 1 ? scientificPlan("user-1") : plan("user-1") };
+        },
+      }),
+    );
+
+    expect(result.aggregate).toMatchObject({
+      accountsModified: 1,
+      eventsAdded: 1,
+      eventsUpdated: 1,
+      eventsRemoved: 1,
+    });
+    const replay = await runGamificationReconcile(
+      parseGamificationReconcileArgs(["--user", "user-1", "--apply", "--scientific-impact"]),
+      dependencies({ applyUser: async () => ({ plan: plan("user-1") }) }),
+    );
+    expect(replay.aggregate.accountsModified).toBe(0);
+    expect(replay.aggregate.eventsAdded).toBe(0);
   });
 });

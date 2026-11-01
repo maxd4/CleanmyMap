@@ -82,6 +82,7 @@ describe("gamification reconciliation profile refresh boundary", () => {
       p_expected_profile_updated_at: null,
       p_profile_update: null,
       p_level_up: null,
+      p_receipt: null,
     }));
   });
 
