@@ -353,9 +353,9 @@ function guidedGroupRoute(
       originVerified: true,
       waypointOrderVerified: true,
       waypointIds: [waypoint.id],
-      sectorDeviationKm: 0,
-      sectorWithinBounds: true,
-      sectorStatus: "within" as const,
+      sectorDeviationKm: null,
+      sectorWithinBounds: false,
+      sectorStatus: "unknown" as const,
       warning: withinBudget ? null : "La boucle guidée ne respecte pas le budget utilisateur déclaré.",
       budget: {
         ...guidedBudget,
@@ -590,6 +590,22 @@ describe("route recommendation response trace contract", () => {
     expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
     expect(payload.groupRoutes.map(({ travelDistanceKm, travelMinutes }) => ({ travelDistanceKm, travelMinutes })))
       .toEqual([{ travelDistanceKm: 4, travelMinutes: 20 }, { travelDistanceKm: 5, travelMinutes: 25 }]);
+    expect(payload.groupRoutes.map(({ guidedRouting }) => ({
+      sectorStatus: guidedRouting?.sectorStatus,
+      sectorDeviationKm: guidedRouting?.sectorDeviationKm,
+      sectorWithinBounds: guidedRouting?.sectorWithinBounds,
+    }))).toEqual([
+      { sectorStatus: "unknown", sectorDeviationKm: null, sectorWithinBounds: false },
+      { sectorStatus: "unknown", sectorDeviationKm: null, sectorWithinBounds: false },
+    ]);
+    expect(payload.plannerSnapshot?.groups.map(({ guidedRouting }) => ({
+      sectorStatus: guidedRouting?.sectorStatus,
+      sectorDeviationKm: guidedRouting?.sectorDeviationKm,
+      sectorWithinBounds: guidedRouting?.sectorWithinBounds,
+    }))).toEqual([
+      { sectorStatus: "unknown", sectorDeviationKm: null, sectorWithinBounds: false },
+      { sectorStatus: "unknown", sectorDeviationKm: null, sectorWithinBounds: false },
+    ]);
     expect(payload.trace.multiRoute?.groups.map(({ targetCount, guidedRouting }) => ({
       targetCount,
       warning: guidedRouting?.warning,

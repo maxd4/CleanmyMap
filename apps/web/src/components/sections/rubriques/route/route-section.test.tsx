@@ -126,6 +126,26 @@ describe("RouteSection explainability wiring", () => {
         stops: [],
         plannedSector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
         plannedWaypoints: [{ id: `passage-${groupIndex}`, label: `Passage ${groupIndex}`, latitude: 48.8566, longitude: 2.3522, order: 0 }],
+        guidedRouting: {
+          availability: "network",
+          loopVerified: true,
+          originVerified: true,
+          waypointOrderVerified: true,
+          waypointIds: [String(groupIndex)],
+          sectorDeviationKm: null,
+          sectorWithinBounds: false,
+          sectorStatus: "unknown",
+          warning: "Le respect du secteur guidé ne peut pas être vérifié à partir de la géométrie finale.",
+          budget: {
+            totalMinutes: 90,
+            organizationMarginMinutes: 15,
+            minimumCollectionMinutes: 45,
+            travelMaxMinutes: 30,
+            travelMinutes: 18,
+            collectionMinutesAvailable: 57,
+            withinBudget: true,
+          },
+        },
       })),
       tradeoffs: [],
     });
@@ -139,6 +159,7 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("Créer une action avec cet itinéraire");
     expect(markup).toContain("Secteur 1");
     expect(markup).toContain("Passages planifiés (ordre)");
+    expect(markup).toContain("inconnu (géométrie non vérifiable)");
     expect(markup).toContain("1.50 km");
     expect(markup).not.toContain("Aucune boucle exploitable");
   });

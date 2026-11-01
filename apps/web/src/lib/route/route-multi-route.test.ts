@@ -309,6 +309,7 @@ describe("coordinated multi-route routing", () => {
       networkGeometryWithCoordinates(coordinates, [
         coordinates[0]!,
         coordinates[1]!,
+        [48.85705, 2.3522],
         [48.86, 2.3522],
         coordinates[2]!,
         coordinates.at(-1)!,
@@ -465,8 +466,8 @@ describe("coordinated multi-route routing", () => {
       withinBudget: guidedRouting?.budget.withinBudget,
       warning: guidedRouting?.warning,
     }))).toEqual([
-      { mode: "fallback", estimated: true, availability: "fallback-estimated", sectorStatus: "within", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
-      { mode: "fallback", estimated: true, availability: "fallback-estimated", sectorStatus: "within", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
+      { mode: "fallback", estimated: true, availability: "fallback-estimated", sectorStatus: "unknown", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
+      { mode: "fallback", estimated: true, availability: "fallback-estimated", sectorStatus: "unknown", loopVerified: true, withinBudget: true, warning: "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé." },
     ]);
   });
 
@@ -519,7 +520,15 @@ describe("coordinated multi-route routing", () => {
       waitForQuotaInterval: vi.fn(async () => undefined),
     });
 
-    expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting?.sectorWithinBounds)).toBe(true);
+    expect(result.groupRoutes[0]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "within",
+      sectorWithinBounds: true,
+    }));
+    expect(result.groupRoutes[1]?.guidedRouting).toEqual(expect.objectContaining({
+      sectorStatus: "unknown",
+      sectorWithinBounds: false,
+      sectorDeviationKm: null,
+    }));
     expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting?.budget.withinBudget === false)).toBe(true);
     expect(result.groupRoutes.every(({ guidedRouting }) => guidedRouting?.warning === "La boucle guidée ne respecte pas le budget utilisateur déclaré.")).toBe(true);
   });

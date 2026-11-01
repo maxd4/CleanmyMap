@@ -78,9 +78,9 @@ const guidedRecommendation = {
       originVerified: true,
       waypointOrderVerified: true,
       waypointIds: [group.waypoints[0]!.id],
-      sectorDeviationKm: 0,
-      sectorWithinBounds: true,
-      sectorStatus: "within" as const,
+      sectorDeviationKm: null,
+      sectorWithinBounds: false,
+      sectorStatus: "unknown" as const,
       warning: null,
       budget: {
         ...guidedMode.budget,
@@ -289,6 +289,11 @@ describe("operational route contract", () => {
     ]);
     expect(operationalRoute.guidedBudget).toEqual(guidedMode.budget);
     expect(operationalRoute.plannerWarnings).toEqual(guidedRecommendation.trace.warnings);
+    expect(operationalRoute.routes.every((route) =>
+      route.guidedRouting?.sectorStatus === "unknown" &&
+      route.guidedRouting.sectorDeviationKm === null &&
+      route.guidedRouting.sectorWithinBounds === false,
+    )).toBe(true);
     expect(isOperationalRoute(operationalRoute)).toBe(true);
 
     const normalized = normalizeOperationalRoute(operationalRoute);

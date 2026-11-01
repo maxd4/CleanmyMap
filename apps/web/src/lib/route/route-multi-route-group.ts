@@ -32,6 +32,7 @@ import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 type Coordinate = [number, number];
 type RoutePoint = { latitude: number; longitude: number };
 const GUIDED_WAYPOINT_MATCH_RADIUS_KM = 0.1;
+const GUIDED_WAYPOINT_COORDINATE_EPSILON = 1e-6;
 
 export type RouteGroupRoutingResult = {
   group: RouteGroupAssignment;
@@ -137,7 +138,15 @@ function unknownGuidedSectorAudit(): GuidedSectorAudit {
   return { deviationKm: null, status: "unknown" };
 }
 
-function collectionWaypointCoordinateIndexes(
+function coordinatesMatchWaypoint(
+  coordinate: Coordinate,
+  waypoint: RoutePlannedWaypoint,
+): boolean {
+  return Math.abs(coordinate[0] - waypoint.latitude) <= GUIDED_WAYPOINT_COORDINATE_EPSILON &&
+    Math.abs(coordinate[1] - waypoint.longitude) <= GUIDED_WAYPOINT_COORDINATE_EPSILON;
+}
+
+function exactWaypointCoordinateIndexes(
   geometry: RouteGeometry,
   waypoints: readonly RoutePlannedWaypoint[],
 ): number[] | null {
@@ -156,19 +165,112 @@ function collectionWaypointCoordinateIndexes(
   let coordinateIndex = 1;
   const indexes: number[] = [];
   for (const waypoint of waypoints) {
-    const matchIndex = geometry.coordinates.findIndex((coordinate, index) =>
+    const matchingIndexes = geometry.coordinates.flatMap((coordinate, index) =>
       index >= coordinateIndex &&
       index < lastCoordinateIndex &&
-      routeDistanceKm(
-        waypoint,
-        { latitude: coordinate[0], longitude: coordinate[1] },
-      ) <= GUIDED_WAYPOINT_MATCH_RADIUS_KM,
+      coordinatesMatchWaypoint(coordinate, waypoint)
+        ? [index]
+        : [],
     );
-    if (matchIndex < 0) return null;
+    if (matchingIndexes.length !== 1) return null;
+    const matchIndex = matchingIndexes[0];
+    if (matchIndex === undefined) return null;
     indexes.push(matchIndex);
     coordinateIndex = matchIndex + 1;
   }
   return indexes;
+}
+
+function validStepCoordinates(
+  steps: RouteGeometry["legs"][number]["steps"],
+): Coordinate[] | null {
+  if (!steps || steps.length === 0) return null;
+  const coordinates: Coordinate[] = [];
+  for (const step of steps) {
+    if (!step.geometry || step.geometry.length < 2 || step.geometry.some(([latitude, longitude]) =>
+      !Number.isFinite(latitude) || !Number.isFinite(longitude),
+    )) {
+      return null;
+    }
+    const first = step.geometry[0];
+    const previous = coordinates.at(-1);
+    if (previous && first &&
+      (Math.abs(previous[0] - first[0]) > GUIDED_WAYPOINT_COORDINATE_EPSILON ||
+        Math.abs(previous[1] - first[1]) > GUIDED_WAYPOINT_COORDINATE_EPSILON)) {
+      return null;
+    }
+    for (const coordinate of step.geometry) {
+      const last = coordinates.at(-1);
+      if (!last || last[0] !== coordinate[0] || last[1] !== coordinate[1]) {
+        coordinates.push(coordinate);
+      }
+    }
+  }
+  return coordinates.length >= 2 ? coordinates : null;
+}
+
+function collectionCoordinatesFromLegSteps(
+  geometry: RouteGeometry,
+  waypoints: readonly RoutePlannedWaypoint[],
+): Coordinate[] | null {
+  if (waypoints.length < 2) return null;
+  const collectionLegs = geometry.legs.slice(1, -1);
+  if (collectionLegs.length !== waypoints.length - 1) return null;
+  const collectionCoordinates: Coordinate[] = [];
+  for (const leg of collectionLegs) {
+    const legCoordinates = validStepCoordinates(leg.steps);
+    if (!legCoordinates) return null;
+    for (const coordinate of legCoordinates) {
+      const last = collectionCoordinates.at(-1);
+      if (!last || last[0] !== coordinate[0] || last[1] !== coordinate[1]) {
+        collectionCoordinates.push(coordinate);
+      }
+    }
+  }
+  return collectionCoordinates.length >= 2 ? collectionCoordinates : null;
+}
+
+function collectionCoordinatesFromFinalGeometry(
+  geometry: RouteGeometry,
+  waypoints: readonly RoutePlannedWaypoint[],
+): Coordinate[] | null {
+  if (waypoints.length < 2) return null;
+  const waypointIndexes = exactWaypointCoordinateIndexes(geometry, waypoints);
+  if (!waypointIndexes) return null;
+  const collectionCoordinates: Coordinate[] = [];
+  for (let waypointIndex = 1; waypointIndex < waypointIndexes.length; waypointIndex += 1) {
+    const fromCoordinateIndex = waypointIndexes[waypointIndex - 1]!;
+    const toCoordinateIndex = waypointIndexes[waypointIndex]!;
+    const collectionLegCoordinates = geometry.coordinates.slice(
+      fromCoordinateIndex,
+      toCoordinateIndex + 1,
+    );
+    if (collectionLegCoordinates.length < 2) return null;
+    collectionCoordinates.push(...collectionLegCoordinates);
+  }
+  return collectionCoordinates.length >= 2 ? collectionCoordinates : null;
+}
+
+function collectionCoordinatesForSectorAudit(
+  geometry: RouteGeometry,
+  waypoints: readonly RoutePlannedWaypoint[],
+): Coordinate[] | null {
+  if (
+    waypoints.length < 2 ||
+    geometry.coordinates.length < waypoints.length + 2 ||
+    geometry.legs.length !== waypoints.length + 1 ||
+    geometry.legs.some((leg, index) =>
+      leg.fromStopIndex !== index || leg.toStopIndex !== index + 1,
+    )
+  ) {
+    return null;
+  }
+
+  // Provider step geometries are the strongest per-leg boundary evidence. When
+  // they are absent, only exact waypoint coordinates in the final polyline are
+  // accepted; proximity alone cannot certify a collection boundary.
+  return collectionCoordinatesFromLegSteps(geometry, waypoints) ??
+    collectionCoordinatesFromFinalGeometry(geometry, waypoints);
 }
 
 function guidedSectorDeviationKm(
@@ -178,24 +280,8 @@ function guidedSectorDeviationKm(
   loopVerified: boolean,
 ): GuidedSectorAudit {
   if (!sector || !loopVerified) return unknownGuidedSectorAudit();
-  const waypointIndexes = collectionWaypointCoordinateIndexes(geometry, waypoints);
-  if (!waypointIndexes) return unknownGuidedSectorAudit();
-
-  // Only the final polyline between consecutive waypoints is collection
-  // geometry. The first and last slices are the origin/return links and are
-  // deliberately excluded from the sector audit.
-  const collectionCoordinates: Coordinate[] = waypoints.map(({ latitude, longitude }) => [latitude, longitude]);
-  for (let waypointIndex = 1; waypointIndex < waypointIndexes.length; waypointIndex += 1) {
-    const fromCoordinateIndex = waypointIndexes[waypointIndex - 1]!;
-    const toCoordinateIndex = waypointIndexes[waypointIndex]!;
-    const collectionLegCoordinates = geometry.coordinates.slice(
-      fromCoordinateIndex,
-      toCoordinateIndex + 1,
-    );
-    if (collectionLegCoordinates.length < 2) return unknownGuidedSectorAudit();
-    collectionCoordinates.push(...collectionLegCoordinates);
-  }
-  if (collectionCoordinates.length === 0 || collectionCoordinates.some((coordinate) =>
+  const collectionCoordinates = collectionCoordinatesForSectorAudit(geometry, waypoints);
+  if (!collectionCoordinates || collectionCoordinates.length === 0 || collectionCoordinates.some((coordinate) =>
     coordinate.length !== 2 || !Number.isFinite(coordinate[0]) || !Number.isFinite(coordinate[1]),
   )) {
     return unknownGuidedSectorAudit();
