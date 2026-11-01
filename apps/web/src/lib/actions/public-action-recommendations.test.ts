@@ -55,6 +55,30 @@ describe("public action recommendations", () => {
     });
   });
 
+  it("keeps precomposed and decomposed accents in the bounded SQL scope", () => {
+    const source = row({
+      location_label: "Le Pré-Saint-Gervais",
+      department_code: "93",
+      department_name: "Seine-Saint-Denis",
+    });
+    const scope = getPublicActionRecommendationReadScope(source);
+
+    expect(scope).toMatchObject({ locationLabelPattern: expect.any(String) });
+    const pattern = (scope as { locationLabelPattern: string }).locationLabelPattern;
+    expect(pattern).toContain("[pｐ][rｒ]é");
+    expect(pattern).toContain("[pｐ][rｒ][eｅ]́");
+    expect(pattern).not.toContain("secteur libre");
+    expect(resolveCanonicalPublicActionTerritory(row({
+      location_label: "Le Pre\u0301-Saint-Gervais",
+      department_code: "93",
+      department_name: "Seine-Saint-Denis",
+    }))).toEqual({
+      key: "zone:93:le pré-saint-gervais",
+      label: "Le Pré-Saint-Gervais",
+      kind: "zone",
+    });
+  });
+
   it("ranks the same zone before known neighbors, then date, time and id", () => {
     const source = row({
       id: "source",
@@ -89,6 +113,24 @@ describe("public action recommendations", () => {
     );
     expect(ALL_NEIGHBORHOODS.some((zone) => zone.name === "Neuilly-sur-Seine")).toBe(true);
     expect(crossDepartment.map((item) => item.id)).toEqual(["neighbor-cross"]);
+
+    const decomposedAccent = derivePublicActionRecommendations(
+      row({
+        id: "source-pre-gervais",
+        action_date: "2026-10-01",
+        location_label: "Le Pré-Saint-Gervais",
+        department_code: "93",
+        department_name: "Seine-Saint-Denis",
+        action_phase: "post_action_complete",
+      }),
+      [futureCandidate("decomposed-pre-gervais", {
+        location_label: "Le Pre\u0301-Saint-Gervais",
+        department_code: "93",
+        department_name: "Seine-Saint-Denis",
+      })],
+      now,
+    );
+    expect(decomposedAccent.map((item) => item.id)).toEqual(["decomposed-pre-gervais"]);
   });
 
   it("excludes source, unknown territories, and every non-public or non-future state", () => {

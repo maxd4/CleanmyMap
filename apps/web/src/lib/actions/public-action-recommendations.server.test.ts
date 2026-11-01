@@ -105,6 +105,34 @@ describe("loadPublicActionRecommendations", () => {
     expect(recommendations.map((item) => item.id)).toEqual(["pending"]);
   });
 
+  it("passes both accent forms to the bounded read and keeps the decomposed territory", async () => {
+    fetchActionsMock.mockResolvedValue([
+      futureCandidate("decomposed-pre-gervais", {
+        location_label: "Le Pre\u0301-Saint-Gervais",
+        department_code: "93",
+        department_name: "Seine-Saint-Denis",
+      }),
+    ]);
+
+    const recommendations = await loadPublicActionRecommendations(
+      {} as never,
+      row({
+        id: "source-pre-gervais",
+        action_date: "2026-10-01",
+        action_phase: "post_action_complete",
+        location_label: "Le Pré-Saint-Gervais",
+        department_code: "93",
+        department_name: "Seine-Saint-Denis",
+      }),
+      now,
+    );
+
+    expect(recommendations.map((item) => item.id)).toEqual(["decomposed-pre-gervais"]);
+    const readOptions = fetchActionsMock.mock.calls[0]?.[1] as { locationLabelPattern?: string };
+    expect(readOptions.locationLabelPattern).toContain("[pｐ][rｒ]é");
+    expect(readOptions.locationLabelPattern).toContain("[pｐ][rｒ][eｅ]́");
+  });
+
   it("applies time and id tie-breakers without duplicate recommendations", async () => {
     const tied = futureCandidate("same-b", { action_date: "2026-11-01", event_start_time: "11:00" });
     fetchActionsMock.mockResolvedValue([

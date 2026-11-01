@@ -47,9 +47,13 @@ function territoryRegexToken(value: string): string {
 }
 
 function buildTerritoryReadPattern(labels: readonly string[]): string {
-  const alternatives = labels.map((label) =>
-    [...normalizeTerritoryLabel(label)].map(territoryRegexToken).join(""),
-  );
+  const alternatives = labels.flatMap((label) => {
+    const normalized = normalizeTerritoryLabel(label);
+    const unicodeVariants = new Set([normalized, normalized.normalize("NFD")]);
+    return [...unicodeVariants].map((variant) =>
+      [...variant].map(territoryRegexToken).join(""),
+    );
+  });
   return `^[[:space:]]*(?:${alternatives.join("|")})[[:space:]]*$`;
 }
 
