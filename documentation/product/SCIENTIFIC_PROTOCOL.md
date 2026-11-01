@@ -488,12 +488,14 @@ contribution d'un enfant est comprise dans celle du compte accompagnateur.
 
 ### Répartition publique des mégots par état
 
-La projection publique `impact-terrain-public-2026.09-v5` additionne les
+La projection publique `impact-terrain-public-2026.09-v6` additionne les
 résultats canoniques des lots persistés séparément pour `propre`, `humide` et
-`mouille`. Elle ne reconvertit pas les unités en SQL et ne remplace pas le
-total d'action source. Les actions historiques sans résultats de lots utilisent
-encore leur qualification `megotsCondition` lorsqu'elle est fiable ; une
-provenance absente ou ambiguë n'est pas attribuée artificiellement à un état.
+`mouille`. Elle transporte aussi, par état, les masses mesurées ou estimées,
+leur provenance et leur version de conversion : elle ne reconvertit jamais les
+unités en SQL et ne remplace pas le total d'action source. Les actions
+historiques sans résultats de lots utilisent encore leur qualification
+`megotsCondition` lorsqu'elle est fiable ; une provenance absente ou ambiguë
+n'est pas attribuée artificiellement à un état ni à un facteur de masse.
 Les compteurs incrémentaux et le RPC de reconstruction sont remplacés
 atomiquement sous le verrou existant ; les snapshots historiques restent
 inchangés et un snapshot CURRENT incompatible n'est pas servi.

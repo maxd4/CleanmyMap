@@ -4,7 +4,14 @@ import {
   buildImpactTerrain2026PublicResultsFromActions,
   buildImpactTerrain2026PublicResultsFromAggregate,
 } from "./impact-terrain-2026-results";
-import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2,
+} from "./impact-terrain-2026";
+import {
+  aggregateCigaretteButtsLots,
+  normalizeCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 
 describe("Impact terrain 2026 public results", () => {
   it("converts waste into 50 L bags and mechanical Vélib' equivalents", () => {
@@ -133,6 +140,79 @@ describe("Impact terrain 2026 public results", () => {
         buttsByCondition: [{ condition: "unknown", count: 400 }],
       }).estimatedButtsWeightKg,
     ).toBeNull();
+  });
+
+  it("keeps v1, v2 and measured masses when the aggregate carries canonical contributions", () => {
+    const v2 = aggregateCigaretteButtsLots(
+      [{ id: "v2", source: "count", value: 1_000, condition: "propre" }],
+      { massConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 },
+    );
+    const v1 = aggregateCigaretteButtsLots(
+      [{ id: "v1", source: "count", value: 1_000, condition: "propre" }],
+      { massConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 },
+    );
+    const measured = aggregateCigaretteButtsLots(
+      [{ id: "measured", source: "mass_kg", value: 0.22, condition: "propre" }],
+      { massConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2 },
+    );
+    const detailed = buildImpactTerrain2026PublicResultsFromActions([
+      { wasteKg: 0, cigaretteButts: v2.summary.totalCount, cigaretteButtsMeasurements: {
+        cigaretteButtsLotResults: v2.results,
+      } as never },
+      { wasteKg: 0, cigaretteButts: v1.summary.totalCount, cigaretteButtsMeasurements: {
+        cigaretteButtsLotResults: v1.results,
+      } as never },
+      { wasteKg: 0, cigaretteButts: measured.summary.totalCount, cigaretteButtsMeasurements: {
+        cigaretteButtsLotResults: measured.results,
+      } as never },
+    ]);
+    const aggregate = buildImpactTerrain2026PublicResultsFromAggregate({
+      cigaretteButts: detailed.buttsTotal,
+      buttsByCondition: [{
+        condition: "propre",
+        count: detailed.buttsByCondition[0]?.count,
+        massContributions: [
+          ...v2.results,
+          ...v1.results,
+          ...measured.results,
+        ].map((result) => ({
+          count: result.count,
+          massKg: result.massKg,
+          massProvenance: result.massProvenance === "measured" ? "measured" : "estimated",
+          conversionVersion: result.massConversionFormulaVersion,
+        })),
+      }],
+    });
+
+    expect(aggregate.estimatedButtsWeightKg).toBeCloseTo(
+      detailed.estimatedButtsWeightKg!,
+      10,
+    );
+    expect(aggregate.buttsMassProvenance).toBe("mixed");
+    expect(aggregate.buttsMassConversionVersions).toEqual([
+      CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V2,
+      CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+    ]);
+  });
+
+  it("keeps an unknown historical mass unknown instead of applying v1", () => {
+    const result = buildImpactTerrain2026PublicResultsFromAggregate({
+      cigaretteButts: 1_000,
+      buttsByCondition: [{
+        condition: "propre",
+        count: 1_000,
+        massContributions: [{
+          count: 1_000,
+          massKg: null,
+          massProvenance: "unknown",
+          conversionVersion: "historical-unknown",
+        }],
+      }],
+    });
+
+    expect(result.estimatedButtsWeightKg).toBeNull();
+    expect(result.buttsMassProvenance).toBe("unknown");
+    expect(result.buttsMassConversionVersions).toEqual(["historical-unknown"]);
   });
 
   it("keeps an observed zero distinct from absent aggregate data", () => {

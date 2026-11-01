@@ -10,7 +10,7 @@ export const SCIENTIFIC_FORMULA_PATHS = Object.freeze({
   waste: "apps/web/src/lib/waste/cigarette-butts.ts",
   impact: "apps/web/src/lib/impact/impact-terrain-2026.ts",
   projection: "apps/web/src/lib/impact/scientific-projection-versions.ts",
-  sql: "apps/web/supabase/migrations/20261101000005_public_impact_butt_condition_distribution.sql",
+  sql: "apps/web/supabase/migrations/20261101000008_public_impact_butt_mass_provenance.sql",
 });
 
 function normalizeExpression(value) {

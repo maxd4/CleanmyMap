@@ -168,7 +168,7 @@ describe("scientific formula change transverse integration", () => {
       floorDate: "2026-01-01",
     });
     expect(snapshot.projectionVersion).toBe(PUBLIC_IMPACT_PROJECTION_VERSION);
-    expect(PUBLIC_IMPACT_SNAPSHOT_VERSION).toContain("v5");
+    expect(PUBLIC_IMPACT_SNAPSHOT_VERSION).toContain("v6");
     expect(JSON.stringify(snapshot)).not.toMatch(/user|email|participant_id/i);
   });
 

@@ -15,6 +15,13 @@ const rebuildMigration = readFileSync(
   ),
   "utf8",
 );
+const massProvenanceMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261101000008_public_impact_butt_mass_provenance.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("public Impact butt condition distribution migration STATIC_CONTRACT", () => {
   it("uses the persisted canonical lot results and keeps legacy fallback bounded", () => {
@@ -44,5 +51,17 @@ describe("public Impact butt condition distribution migration STATIC_CONTRACT", 
     expect(rebuildMigration).toContain("coalesce(floor_date, current_date - 365)");
     expect(rebuildMigration).not.toMatch(/update\s+public\.actions/i);
     expect(rebuildMigration).not.toMatch(/delete\s+from\s+public\.actions/i);
+  });
+
+  it("carries canonical masses and versions through the existing projection", () => {
+    expect(massProvenanceMigration).toContain("butts_mass_by_condition jsonb");
+    expect(massProvenanceMigration).toContain("mass_contributions jsonb");
+    expect(massProvenanceMigration).toContain("impact-terrain-public-2026.09-v6");
+    expect(massProvenanceMigration).toContain("massKg");
+    expect(massProvenanceMigration).toContain("conversionVersion");
+    expect(massProvenanceMigration).toContain("public.public_impact_butt_condition_projections");
+    expect(massProvenanceMigration).toContain("massContributions");
+    expect(massProvenanceMigration).not.toMatch(/\/\s*2500/);
+    expect(massProvenanceMigration).not.toMatch(/update\s+public\.actions/i);
   });
 });

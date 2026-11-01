@@ -15,6 +15,7 @@ import {
   WASTE_KG_PER_50L_BAG,
   WASTE_KG_PER_MECHANICAL_BICYCLE,
   estimateButtsWeightKg,
+  isCigaretteButtsMassConversionVersion,
 } from "./impact-terrain-2026";
 import type { ImpactTerrain2026LocalizedText } from "./impact-terrain-2026";
 
@@ -105,8 +106,13 @@ function buildConditionEntries(
       : []);
     const resolvedMasses = resolvedContributions.map((contribution) => ({
       ...contribution,
+      massConversionVersion: isCigaretteButtsMassConversionVersion(
+        contribution.conversionVersion,
+      )
+        ? contribution.conversionVersion
+        : null,
       massKg: contribution.massKg ?? (
-        contribution.conversionVersion
+        isCigaretteButtsMassConversionVersion(contribution.conversionVersion)
           ? estimateButtsWeightKg(
               contribution.count,
               condition,
@@ -116,7 +122,7 @@ function buildConditionEntries(
       ),
       massProvenance: contribution.massKg !== null
         ? contribution.massProvenance
-        : contribution.conversionVersion
+        : isCigaretteButtsMassConversionVersion(contribution.conversionVersion)
           ? "estimated" as const
           : "unknown" as const,
     }));
@@ -340,6 +346,9 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
   buttsMassConversionVersion?: string;
 }): ImpactTerrain2026PublicResults {
   const qualifiedButtsByCondition: ImpactTerrain2026ConditionCounts = {};
+  const qualifiedButtsMassByCondition: Partial<
+    Record<ActionMegotsCondition, ImpactTerrain2026ButtsMassContribution[]>
+  > = {};
   if (Array.isArray(params.buttsByCondition)) {
     for (const entry of params.buttsByCondition) {
       if (typeof entry !== "object" || entry === null) continue;
@@ -349,8 +358,39 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
         typeof condition === "string" &&
         MEGOTS_CONDITIONS.includes(condition as ActionMegotsCondition)
       ) {
-        qualifiedButtsByCondition[condition as ActionMegotsCondition] =
+        const typedCondition = condition as ActionMegotsCondition;
+        qualifiedButtsByCondition[typedCondition] =
           toFiniteNonNegativeNumber(record.count);
+        if (Array.isArray(record.massContributions)) {
+          const massContributions = record.massContributions.flatMap((value) => {
+            if (typeof value !== "object" || value === null) return [];
+            const contribution = value as Record<string, unknown>;
+            const count = toFiniteNonNegativeNumber(contribution.count);
+            if (count <= 0) return [];
+            const rawMassKg = contribution.massKg;
+            const massKg = rawMassKg === null || rawMassKg === undefined
+              ? null
+              : toFiniteNonNegativeNumber(rawMassKg);
+            const massProvenance: ImpactTerrain2026ButtsMassContribution["massProvenance"] = contribution.massProvenance === "measured"
+              ? "measured"
+              : contribution.massProvenance === "estimated"
+                ? "estimated"
+                : "unknown";
+            const conversionVersion = typeof contribution.conversionVersion === "string" &&
+                contribution.conversionVersion.trim().length > 0
+              ? contribution.conversionVersion
+              : null;
+            return [{
+              count,
+              massKg,
+              massProvenance,
+              conversionVersion,
+            }];
+          });
+          if (massContributions.length > 0) {
+            qualifiedButtsMassByCondition[typedCondition] = massContributions;
+          }
+        }
       }
     }
   }
@@ -361,6 +401,7 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
     wasteActionCount: Number(params.wasteActionCount ?? 0),
     buttsTotal: Number(params.cigaretteButts ?? 0),
     qualifiedButtsByCondition,
+    qualifiedButtsMassByCondition,
     buttsMassConversionVersion:
       params.buttsMassConversionVersion ?? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
   });

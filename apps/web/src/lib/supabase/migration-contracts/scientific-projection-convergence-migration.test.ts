@@ -30,7 +30,7 @@ const volumeProxyMigration = readFileSync(
 );
 const currentProjectionMigration = readFileSync(
   new URL(
-    "../../../../supabase/migrations/20261101000005_public_impact_butt_condition_distribution.sql",
+    "../../../../supabase/migrations/20261101000008_public_impact_butt_mass_provenance.sql",
     import.meta.url,
   ),
   "utf8",

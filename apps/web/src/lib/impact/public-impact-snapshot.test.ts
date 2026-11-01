@@ -51,8 +51,17 @@ const aggregate = {
     { key: "association", category: "Association", count: 2 },
   ],
   classification_warnings: [],
-  butts_by_condition: [{ condition: "propre", count: 200 }],
-  methodology_version: "impact-terrain-public-2026.09-v5",
+  butts_by_condition: [{
+    condition: "propre",
+    count: 200,
+    massContributions: [{
+      count: 200,
+      massKg: 0.044,
+      massProvenance: "estimated",
+      conversionVersion: "impact-terrain-2026-butts-mass-v2",
+    }],
+  }],
+  methodology_version: "impact-terrain-public-2026.09-v6",
 };
 
 function existingSnapshot(overrides: Record<string, unknown> = {}) {
@@ -124,7 +133,7 @@ describe("public monthly impact snapshot", () => {
       toDate: "2026-09-08",
       timezone: "UTC",
     });
-    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v5");
+    expect(payload.projectionVersion).toBe("impact-terrain-public-2026.09-v6");
     expect(payload.kpis).toMatchObject({
       participantsTotal: 6,
       totalDurationMinutes: 120,
@@ -132,6 +141,7 @@ describe("public monthly impact snapshot", () => {
       impactTerrain: {
         wasteKg: 10,
         buttsTotal: 200,
+        estimatedButtsWeightKg: 0.044,
         co2eKg: 12,
         waterLiters: 100_000,
       },
