@@ -57,6 +57,8 @@ export type IndividualImpactMeasurementInput = {
   wasteKg?: number | null;
   wasteCondition?: WasteMoistureCondition | null;
   wasteMeasurementMethod?: string | null;
+  /** Omit for a new measurement; pass null to preserve a persisted absence. */
+  wasteNormalizationVersion?: string | null;
   cigaretteButtsCount?: number | null;
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsCondition?: ActionMegotsCondition | null;
@@ -196,7 +198,11 @@ export function buildStoredIndividualImpactMeasurement(
     wasteKg,
     wasteCondition: wasteKg === null ? null : wasteCondition,
     wasteMeasurementMethod: wasteKg === null ? null : input.wasteMeasurementMethod?.trim() || null,
-    wasteNormalizationVersion: wasteKg === null ? null : WASTE_MOISTURE_NORMALIZATION_VERSION,
+    wasteNormalizationVersion: wasteKg === null
+      ? null
+      : input.wasteNormalizationVersion !== undefined
+        ? input.wasteNormalizationVersion
+        : WASTE_MOISTURE_NORMALIZATION_VERSION,
     cigaretteButtsCount: cigaretteButtsLots?.summary.totalCount ?? cigaretteButtsCount,
     cigaretteButtsMassKg: cigaretteButtsLots?.summary.totalMassKg ?? cigaretteButtsMassKg,
     cigaretteButtsCondition: cigaretteButtsLots
@@ -216,10 +222,11 @@ export function buildStoredIndividualImpactMeasurement(
       ? input.cigaretteButtsConversionVersion
       : cigaretteButtsLots
         ? projectionVersion(lotResults)
-      : input.cigaretteButtsConversionVersion ??
-          (cigaretteButtsCount === null && cigaretteButtsMassKg !== null
-            ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
-            : null),
+      : input.cigaretteButtsConversionVersion !== undefined
+        ? input.cigaretteButtsConversionVersion
+        : cigaretteButtsCount === null && cigaretteButtsMassKg !== null
+          ? CIGARETTE_BUTTS_MASS_CONVERSION_VERSION
+          : null,
     measuredBy: input.measuredBy?.trim() || null,
     measuredAt: input.measuredAt ?? null,
   };
@@ -234,6 +241,7 @@ export function toIndividualImpactMeasurement(
     wasteKg: finiteNonNegative(row.individual_waste_kg),
     wasteCondition: normalizeWasteCondition(row.individual_waste_condition),
     wasteMeasurementMethod: row.individual_waste_measurement_method,
+    wasteNormalizationVersion: row.individual_waste_normalization_version ?? null,
     cigaretteButtsCount: normalizeNullableInteger(row.individual_cigarette_butts_count),
     cigaretteButtsMassKg: finiteNonNegative(row.individual_cigarette_butts_mass_kg),
     cigaretteButtsCondition: normalizeButtsCondition(row.individual_cigarette_butts_condition),
@@ -462,7 +470,9 @@ function buildButtsAttribution(
     cigaretteButtsKind: buttsValue?.kind ?? "unavailable" as const,
     cigaretteButtsProvenance: individualMeasurementValue(buttsValue?.kind, measurement?.comparableButtsProvenance),
     cigaretteButtsInconsistent: Boolean(buttsValue?.inconsistent),
-    cigaretteButtsMohsEligible: !Boolean(buttsValue?.inconsistent) &&
+    cigaretteButtsMohsEligible: buttsValue?.value !== null &&
+      buttsValue?.value !== undefined &&
+      !Boolean(buttsValue.inconsistent) &&
       !historicalButtsNotRecalculable,
   };
 }

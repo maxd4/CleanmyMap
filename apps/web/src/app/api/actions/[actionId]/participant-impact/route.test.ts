@@ -12,6 +12,7 @@ import {
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
 } from "@/lib/waste/cigarette-butts";
+import { WASTE_MOISTURE_NORMALIZATION_VERSION } from "@/lib/actions/participation/individual-impact";
 
 const {
   authMock,
@@ -351,6 +352,87 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
       individual_cigarette_butts_lots: historicalLots,
     });
     expect((action as Record<string, unknown>).cigarette_butts).toBe(beforeActionTotal);
+  });
+
+  it("preserves null historical versions when PATCH changes only waste", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_waste_kg: 8,
+      individual_waste_condition: "sec",
+      individual_waste_measurement_method: "balance_au_sol",
+      individual_waste_normalization_version: null,
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_condition: "humide",
+      individual_cigarette_butts_provenance: "measured",
+      individual_cigarette_butts_conversion_version: null,
+    });
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      waste: { kg: 9, condition: "humide", measurementMethod: "balance_au_sol" },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact).toMatchObject({
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsConversionVersion: null,
+      comparableButtsCount: null,
+      wasteNormalizationVersion: WASTE_MOISTURE_NORMALIZATION_VERSION,
+    });
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_conversion_version: null,
+      individual_waste_normalization_version: WASTE_MOISTURE_NORMALIZATION_VERSION,
+    });
+  });
+
+  it("preserves a different historical waste version when PATCH changes only butts", async () => {
+    const participant = Object.assign(createParticipantWithStatus("confirmed"), {
+      individual_waste_kg: 8,
+      individual_waste_condition: "humide",
+      individual_waste_measurement_method: "balance_au_sol",
+      individual_waste_normalization_version: "historical-waste-normalization-v0",
+      individual_cigarette_butts_count: null,
+      individual_cigarette_butts_mass_kg: null,
+      individual_cigarette_butts_condition: null,
+    });
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { count: 12, massKg: null, condition: "propre" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(participant).toMatchObject({
+      individual_waste_kg: 8,
+      individual_waste_normalization_version: "historical-waste-normalization-v0",
+      individual_cigarette_butts_count: 12,
+    });
+  });
+
+  it("assigns the current mass version for a new mass measurement", async () => {
+    const participant = createParticipantWithStatus("confirmed");
+    configureParticipantImpactSupabase([participant]);
+
+    const response = await patchParticipantImpact({
+      participantId: "participant-1",
+      butts: { massKg: 1, condition: "humide" },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.individualImpact).toMatchObject({
+      cigaretteButtsCount: null,
+      comparableButtsCount: 2_000,
+      cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v2",
+    });
+    expect(participant).toMatchObject({
+      individual_cigarette_butts_mass_kg: 1,
+      individual_cigarette_butts_conversion_version: "impact-terrain-2026-butts-mass-v2",
+    });
   });
 
   it("does not invent missing waste or butt qualifiers during an independent PATCH", async () => {

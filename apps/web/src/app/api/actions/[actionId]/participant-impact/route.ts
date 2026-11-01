@@ -195,6 +195,9 @@ function buildMeasurementUpdate(
     wasteKg: nextWaste?.kg ?? null,
     wasteCondition: nextWaste?.condition ?? null,
     wasteMeasurementMethod: nextWaste?.measurementMethod ?? null,
+    wasteNormalizationVersion: payload.waste === undefined
+      ? current?.wasteNormalizationVersion
+      : undefined,
     cigaretteButtsCount: nextLegacyButts?.count ?? null,
     cigaretteButtsMassKg: nextLegacyButts?.massKg ?? null,
     cigaretteButtsCondition: nextLegacyButts?.condition ?? null,

@@ -7,7 +7,10 @@ import {
 } from "./individual-impact";
 import { normalizeVolunteerParticipation } from "../volunteer-participation";
 import { aggregateCigaretteButtsLots } from "@/lib/waste/cigarette-butts";
-import { CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1 } from "@/lib/impact/impact-terrain-2026";
+import {
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,
+} from "@/lib/impact/impact-terrain-2026";
 import { CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION } from "@/lib/waste/cigarette-butts";
 
 function participant(id: string, measurement: ReturnType<typeof toIndividualImpactMeasurement> = null) {
@@ -229,6 +232,7 @@ describe("individual action impact attribution", () => {
     expect(toIndividualImpactMeasurement({
       individual_waste_kg: 10,
       individual_waste_condition: "sec",
+      individual_waste_normalization_version: WASTE_MOISTURE_NORMALIZATION_VERSION,
     })).toMatchObject({ wasteKg: 10, equivalentSecKg: 10, wasteNormalizationVersion: WASTE_MOISTURE_NORMALIZATION_VERSION });
     expect(toIndividualImpactMeasurement({ individual_waste_kg: 10, individual_waste_condition: "humide" })).toMatchObject({ equivalentSecKg: 7 });
     expect(toIndividualImpactMeasurement({ individual_waste_kg: 10, individual_waste_condition: "mouille" })).toMatchObject({ equivalentSecKg: 4 });
@@ -255,7 +259,8 @@ describe("individual action impact attribution", () => {
       individual_cigarette_butts_count: null,
       individual_cigarette_butts_mass_kg: 1,
       individual_cigarette_butts_condition: "humide",
-    })).toMatchObject({ comparableButtsCount: 2_000, comparableButtsProvenance: "derived", cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v2" });
+      individual_cigarette_butts_conversion_version: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
+    })).toMatchObject({ comparableButtsCount: 2_000, comparableButtsProvenance: "derived", cigaretteButtsConversionVersion: CIGARETTE_BUTTS_MASS_CONVERSION_VERSION });
     const counted = allocateActionParticipantImpact({
       totalWasteKg: null,
       totalCigaretteButts: 7,
@@ -384,22 +389,6 @@ describe("individual action impact attribution", () => {
     expect(recalculatedRead?.cigaretteButtsLots?.results[0]?.rawMassKg).toBe(1);
     expect(recalculatedRead?.cigaretteButtsLots?.results[0]?.massConversionFormulaVersion)
       .not.toBe(CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1);
-  });
-
-  it("recalculates a legacy mass-derived count but keeps an ambiguous scalar pair unchanged", () => {
-    const derived = toIndividualImpactMeasurement({
-      individual_cigarette_butts_count: null,
-      individual_cigarette_butts_mass_kg: 1,
-      individual_cigarette_butts_condition: "humide",
-    }, { recalculateDerived: true });
-    const ambiguous = toIndividualImpactMeasurement({
-      individual_cigarette_butts_count: 7,
-      individual_cigarette_butts_mass_kg: 1,
-      individual_cigarette_butts_condition: "humide",
-    }, { recalculateDerived: true });
-
-    expect(derived?.comparableButtsCount).toBe(2_000);
-    expect(ambiguous?.comparableButtsCount).toBe(7);
   });
 
   it("does not recalculate a lot whose historical formula version is unknown", () => {
