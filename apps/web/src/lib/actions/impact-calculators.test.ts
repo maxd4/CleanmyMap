@@ -9,7 +9,11 @@ import {
   resolveActionWasteKgSource,
   sumActionImpactKpis,
 } from "./impact-calculators";
-import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  aggregateCigaretteButtsLots,
+  normalizeCigaretteButtsMeasurements,
+  type ActionCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 
 function makeContract(
   overrides: Partial<Parameters<typeof buildActionDataContract>[0]> = {},
@@ -261,6 +265,80 @@ describe("canonical action impact calculation", () => {
       buttsCountedShare: 0.25,
       buttsEstimatedShare: 0.75,
       buttsCompositionKnownActions: 1,
+    });
+  });
+
+  it("keeps a measured zero mass as measured", () => {
+    const lots = aggregateCigaretteButtsLots([{
+      id: "measured-zero",
+      source: "mass_kg",
+      value: 0,
+      condition: "propre",
+    }]);
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: lots.lots,
+      cigaretteButtsLotResults: lots.results,
+      cigaretteButtsLotsSummary: lots.summary,
+    });
+
+    expect(computeActionImpactKpis(makeContract({
+      cigaretteButts: 0,
+      cigaretteButtsMeasurements: measurements,
+    }))).toMatchObject({
+      buttsMassKg: 0,
+      buttsMassProvenance: "measured",
+    });
+  });
+
+  it("keeps a counted zero mass as an estimated conversion", () => {
+    const lots = aggregateCigaretteButtsLots([{
+      id: "counted-zero",
+      source: "count",
+      value: 0,
+      condition: "propre",
+    }]);
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: lots.lots,
+      cigaretteButtsLotResults: lots.results,
+      cigaretteButtsLotsSummary: lots.summary,
+    });
+
+    expect(computeActionImpactKpis(makeContract({
+      cigaretteButts: 0,
+      cigaretteButtsMeasurements: measurements,
+    }))).toMatchObject({
+      buttsMassKg: 0,
+      buttsMassProvenance: "estimated",
+    });
+  });
+
+  it("uses lot sources for mixed measured and estimated mass provenance", () => {
+    const lots = aggregateCigaretteButtsLots([
+      {
+        id: "measured-zero",
+        source: "mass_kg",
+        value: 0,
+        condition: "propre",
+      },
+      {
+        id: "counted",
+        source: "count",
+        value: 1_000,
+        condition: "propre",
+      },
+    ]);
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsLots: lots.lots,
+      cigaretteButtsLotResults: lots.results,
+      cigaretteButtsLotsSummary: lots.summary,
+    });
+
+    expect(computeActionImpactKpis(makeContract({
+      cigaretteButts: lots.summary.totalCount,
+      cigaretteButtsMeasurements: measurements,
+    }))).toMatchObject({
+      buttsMassKg: 0.22,
+      buttsMassProvenance: "mixed",
     });
   });
 

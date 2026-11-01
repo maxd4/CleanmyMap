@@ -412,7 +412,11 @@ Une mesure individuelle saisie par l'organisateur autorisé de l'action ou par
 un administrateur reste une observation brute attachée à la participation :
 masse de déchets hors mégots, condition et méthode ; nombre de mégots et/ou
 masse, condition et provenance. Une mesure `NULL` n'est pas un zéro, et une
-valeur dérivée ne remplace jamais la valeur brute.
+valeur dérivée ne remplace jamais la valeur brute. Une version de conversion
+inconnue ne produit jamais une masse estimée à `0` : le nombre de mégots peut
+rester connu, mais la masse reste indisponible et sa provenance `unknown` est
+conservée. Un `mass_kg` source égal à `0` garde au contraire la provenance
+`measured`.
 
 Pour les mégots individuels, une participation confirmée peut porter plusieurs
 lots indépendants. Chaque lot conserve sa source, son état, sa provenance et

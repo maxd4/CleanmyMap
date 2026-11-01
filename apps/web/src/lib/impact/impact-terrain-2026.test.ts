@@ -126,13 +126,19 @@ describe("Impact terrain 2026 methodology domain", () => {
     ).toBe(0);
   });
 
-  it("keeps malformed butt weights unavailable as a safe zero and preserves condition factors", () => {
+  it("keeps invalid counts safe while exposing unavailable mass conversions", () => {
     expect(computeButtsCount(Number.NaN, "propre")).toBe(0);
     expect(computeButtsCount(Number.POSITIVE_INFINITY, "propre")).toBe(0);
     expect(computeButtsCount(1, "unknown" as never)).toBe(0);
     expect(computeButtsCount(1, "humide")).toBe(2_000);
     expect(estimateButtsWeightKg(2_000, "humide")).toBeCloseTo(1, 10);
     expect(estimateButtsWeightKg(1_000, "unknown" as never)).toBeCloseTo(0.22, 10);
+    expect(
+      estimateButtsWeightKg(1_000, "propre", "historical-unknown"),
+    ).toBeNull();
+    expect(
+      estimateButtsWeightKg(0, "propre", "historical-unknown"),
+    ).toBe(0);
     expect(computeButtsCount(1, "humide", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1)).toBe(1_750);
     expect(estimateButtsWeightKg(1_750, "humide", CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1)).toBeCloseTo(1, 10);
   });

@@ -122,14 +122,24 @@ export function computeButtsCount(
 export function estimateButtsWeightKg(
   count: number,
   condition?: ActionMegotsCondition | null,
+  version?: CigaretteButtsMassConversionVersion,
+): number;
+export function estimateButtsWeightKg(
+  count: number,
+  condition: ActionMegotsCondition | null | undefined,
+  version: string,
+): number | null;
+export function estimateButtsWeightKg(
+  count: number,
+  condition?: ActionMegotsCondition | null,
   version: string = CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
-): number {
+): number | null {
   if (!Number.isFinite(count) || count <= 0) {
     return 0;
   }
 
   const factors = resolveMassFactors(version);
-  if (!factors) return 0;
+  if (!factors) return null;
   const gramsPerButt = condition && MEGOTS_CONDITIONS.includes(condition)
     ? factors[condition]
     : factors.propre;

@@ -419,13 +419,13 @@ function normalizeMeasurementsFromLots(
           ? "volume_converted"
           : "weight_converted"
         : "estimated";
-  const massProvenance = !hasLots
-    ? "unknown"
-    : summary.estimatedMassKg === 0
-      ? "measured"
-      : summary.measuredMassKg === 0
-        ? "weight_converted"
-        : "estimated";
+  const hasMeasuredMassSource = aggregated.results.some((result) => result.source === "mass_kg");
+  const hasUnknownMassSource = aggregated.results.some((result) => result.massProvenance === "unknown" ||
+    (result.source !== "mass_kg" && !isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion)));
+  const hasEstimatedMassSource = aggregated.results.some((result) => result.source !== "mass_kg" &&
+    isCigaretteButtsMassConversionVersion(result.massConversionFormulaVersion));
+  const massProvenance = !hasLots || hasUnknownMassSource ? "unknown" : hasMeasuredMassSource && hasEstimatedMassSource
+    ? "estimated" : hasMeasuredMassSource ? "measured" : "weight_converted";
   const formulaVersions = new Set(
     aggregated.results.flatMap((result) => [
       result.massConversionFormulaVersion,

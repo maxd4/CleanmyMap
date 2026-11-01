@@ -137,6 +137,8 @@ function buildConditionEntries(
         ? "unknown"
         : knownMasses.length !== resolvedMasses.length
           ? "unknown"
+          : massProvenanceValues.has("unknown")
+            ? "unknown"
           : massProvenanceValues.size === 1
             ? [...massProvenanceValues][0] as "measured" | "estimated"
             : "mixed";
@@ -311,7 +313,9 @@ function toMassContribution(
     massKg: result.massKg,
     massProvenance: result.massProvenance === "measured"
       ? "measured"
-      : "estimated",
+      : result.massProvenance === "unknown"
+        ? "unknown"
+        : "estimated",
     conversionVersion:
       result.massConversionFormulaVersion ?? result.volumeConversionFormulaVersion,
   };
@@ -373,7 +377,9 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
               : toFiniteNonNegativeNumber(rawMassKg);
             const massProvenance: ImpactTerrain2026ButtsMassContribution["massProvenance"] = contribution.massProvenance === "measured"
               ? "measured"
-              : contribution.massProvenance === "estimated"
+              : contribution.massProvenance === "estimated" ||
+                  contribution.massProvenance === "weight_converted" ||
+                  contribution.massProvenance === "volume_converted"
                 ? "estimated"
                 : "unknown";
             const conversionVersion = typeof contribution.conversionVersion === "string" &&

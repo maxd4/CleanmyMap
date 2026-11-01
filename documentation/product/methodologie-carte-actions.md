@@ -570,7 +570,10 @@ de `1,2 kg` peut donc conserver un nombre dérivé de `3000` avec la provenance
 `weight_converted` et sa version de formule sans remplacer une éventuelle valeur
 de comptage brute. Un volume historique sans relation de conversion fiable reste
 stocké seul, avec les dérivés à `NULL`; les nouveaux lots `volume_l` suivent le
-proxy versionné documenté ci-dessous.
+proxy versionné documenté ci-dessous. Une conversion de masse dont la version
+est inconnue reste indisponible pour la masse : elle ne devient pas une masse
+estimée nulle. Le nombre connu est conservé, et la provenance `unknown` reste
+distincte d'un `mass_kg = 0` explicitement mesuré.
 
 La même règle s'applique aux attributions individuelles post-action : seuls
 les comptes `action_participants` confirmés sont concernés. Un participant peut

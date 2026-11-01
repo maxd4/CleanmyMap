@@ -215,6 +215,33 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.buttsMassConversionVersions).toEqual(["historical-unknown"]);
   });
 
+  it("preserves unknown lot provenance in detailed results", () => {
+    const result = buildImpactTerrain2026PublicResultsFromActions([{
+      wasteKg: 0,
+      cigaretteButts: 1_000,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsLotResults: [{
+          id: "unknown",
+          source: "count",
+          value: 1_000,
+          condition: "propre",
+          count: 1_000,
+          massKg: null,
+          rawMassKg: null,
+          rawVolumeLiters: null,
+          countProvenance: "counted",
+          massProvenance: "unknown",
+          massConversionFormulaVersion: "historical-unknown",
+          volumeConversionFormulaVersion: null,
+        } as never],
+      } as never,
+    }]);
+
+    expect(result.estimatedButtsWeightKg).toBeNull();
+    expect(result.buttsMassProvenance).toBe("unknown");
+    expect(result.buttsMassConversionVersions).toEqual(["historical-unknown"]);
+  });
+
   it("keeps an observed zero distinct from absent aggregate data", () => {
     const observedZero = buildImpactTerrain2026PublicResultsFromAggregate({
       wasteKg: 0,

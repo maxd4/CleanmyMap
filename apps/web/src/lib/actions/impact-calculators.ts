@@ -130,6 +130,31 @@ export function resolveActionWasteKgSource(
   return "none";
 }
 
+function resolveButtsMassProvenance(
+  measurements: ActionCigaretteButtsMeasurements | null | undefined,
+  massKg: number | null,
+): ActionImpactKpis["buttsMassProvenance"] {
+  const lotResults = measurements?.cigaretteButtsLotResults;
+  if (lotResults) {
+    const hasMeasuredSource = lotResults.some((result) => result.source === "mass_kg");
+    const hasDerivedSource = lotResults.some((result) => result.source !== "mass_kg");
+    if (hasMeasuredSource && hasDerivedSource) return "mixed";
+    if (hasMeasuredSource) return "measured";
+    if (hasDerivedSource) return "estimated";
+    return "unknown";
+  }
+
+  const declaredProvenance = measurements?.cigaretteButtsMassProvenance;
+  if (declaredProvenance === "measured") return "measured";
+  if (
+    declaredProvenance === "estimated" ||
+    declaredProvenance === "weight_converted" ||
+    declaredProvenance === "volume_converted"
+  ) return "estimated";
+  if (declaredProvenance === "unknown") return "unknown";
+  return massKg === null ? null : "measured";
+}
+
 export function computeActionImpactKpis(
   contract: ActionImpactInput,
 ): ActionImpactKpis {
@@ -146,19 +171,10 @@ export function computeActionImpactKpis(
   const cigaretteButtsMeasurements = contract.metadata.cigaretteButtsMeasurements;
   const lotSummary = cigaretteButtsMeasurements?.cigaretteButtsLotsSummary;
   const buttsMassKg = cigaretteButtsMeasurements?.cigaretteButtsMassKg ?? null;
-  const buttsMassProvenance = lotSummary
-    ? lotSummary.measuredMassKg > 0 && lotSummary.estimatedMassKg > 0
-      ? "mixed"
-      : lotSummary.measuredMassKg > 0
-        ? "measured"
-        : lotSummary.totalMassKg > 0
-          ? "estimated"
-          : "unknown"
-    : cigaretteButtsMeasurements?.cigaretteButtsMassProvenance === "measured"
-      ? "measured"
-      : buttsMassKg === null
-        ? null
-        : "estimated";
+  const buttsMassProvenance = resolveButtsMassProvenance(
+    cigaretteButtsMeasurements,
+    buttsMassKg,
+  );
   const buttsMassConversionVersions = [
     ...new Set(
       cigaretteButtsMeasurements?.cigaretteButtsLotResults

@@ -28,6 +28,15 @@ function buildExistingMeasurements(
   };
 }
 
+function measurementsFromLots(lots: Parameters<typeof aggregateCigaretteButtsLots>[0]) {
+  const aggregate = aggregateCigaretteButtsLots(lots);
+  return normalizeCigaretteButtsMeasurements({
+    cigaretteButtsLots: aggregate.lots,
+    cigaretteButtsLotResults: aggregate.results,
+    cigaretteButtsLotsSummary: aggregate.summary,
+  });
+}
+
 describe("cigarette-butt raw and derived measurements", () => {
   it("keeps a counted value and a raw mass distinct", () => {
     const measurement = normalizeCigaretteButtsMeasurements({
@@ -60,6 +69,18 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(zero.cigaretteButtsCount).toBe(0);
     expect(zero.cigaretteButtsMassKg).toBe(0);
     expect(zero.cigaretteButtsVolumeLiters).toBe(0);
+  });
+
+  it("derives lot mass provenance from the source even when the value is zero", () => {
+    const measuredZero = measurementsFromLots([{
+      id: "measured-zero", source: "mass_kg", value: 0, condition: "propre",
+    }]);
+    const countedZero = measurementsFromLots([{
+      id: "counted-zero", source: "count", value: 0, condition: "propre",
+    }]);
+
+    expect(measuredZero.cigaretteButtsMassProvenance).toBe("measured");
+    expect(countedZero.cigaretteButtsMassProvenance).toBe("weight_converted");
   });
 
   it("derives count from mass with the versioned canonical formula", () => {
