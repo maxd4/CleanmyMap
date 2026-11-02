@@ -14,6 +14,7 @@ import {
   isCurrentImpactProxyVersion,
   isKnownImpactProxyVersion,
 } from "@/lib/gamification/impact-proxy-config";
+import { MEGOTS_CONDITIONS } from "./impact-terrain-2026";
 import {
   isKnownPublicImpactProjectionVersion,
   PUBLIC_IMPACT_PROJECTION_VERSION,
@@ -32,6 +33,8 @@ export const PUBLIC_IMPACT_SNAPSHOT_VERSION =
   "impact-terrain-public-2026.09-v7-volume-lot-reconciliation";
 export const HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION =
   "impact-terrain-public-2026.09-v1";
+const HISTORICAL_PUBLIC_IMPACT_PROXY_V1_VERSION =
+  "impact-proxy-2026.04-v1";
 const PUBLIC_IMPACT_SNAPSHOT_TITLE =
   "Snapshot public mensuel Impact terrain 2026";
 
@@ -190,8 +193,206 @@ function isPublicImpactSnapshotPayload(
       Array.isArray(payload.provenance.calculationDomain) &&
       payload.provenance.calculationDomain.every(
         (entry) => typeof entry === "string",
-      ),
+      ) &&
+      isValidPublicImpactKpiStructure(payload.kpis) &&
+      isValidPublicImpactAggregateStructure(payload.aggregates),
   );
+}
+
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNonNegativeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function isNullableFiniteNonNegativeNumber(value: unknown): value is number | null {
+  return value === null || isFiniteNonNegativeNumber(value);
+}
+
+function hasFiniteNonNegativeFields(
+  value: UnknownRecord,
+  fields: readonly string[],
+): boolean {
+  return fields.every((field) => isFiniteNonNegativeNumber(value[field]));
+}
+
+function isValidActionDistribution(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        isRecord(entry) &&
+        typeof entry.key === "string" &&
+        entry.key.length > 0 &&
+        typeof entry.category === "string" &&
+        entry.category.length > 0 &&
+        isFiniteNonNegativeNumber(entry.count),
+    )
+  );
+}
+
+function isValidClassificationWarnings(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        isRecord(entry) &&
+        typeof entry.code === "string" &&
+        entry.code.length > 0 &&
+        isFiniteNonNegativeNumber(entry.count),
+    )
+  );
+}
+
+function isValidStreetCleaningSavings(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasFiniteNonNegativeFields(value, [
+      "wasteKg",
+      "durationMinutes",
+      "actionHours",
+      "massEstimateEuros",
+      "timeEstimateEuros",
+      "lowerBoundEuros",
+      "upperBoundEuros",
+    ])
+  );
+}
+
+function isValidImpactTerrainConditionEntry(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.condition === "string" &&
+    MEGOTS_CONDITIONS.includes(
+      value.condition as (typeof MEGOTS_CONDITIONS)[number],
+    ) &&
+    isRecord(value.label) &&
+    typeof value.label.fr === "string" &&
+    typeof value.label.en === "string" &&
+    isFiniteNonNegativeNumber(value.count) &&
+    isNullableFiniteNonNegativeNumber(value.estimatedWeightKg) &&
+    (value.massProvenance === "measured" ||
+      value.massProvenance === "estimated" ||
+      value.massProvenance === "mixed" ||
+      value.massProvenance === "unknown") &&
+    Array.isArray(value.conversionVersions) &&
+    value.conversionVersions.every((version) => typeof version === "string")
+  );
+}
+
+function isValidImpactTerrainResults(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasFiniteNonNegativeFields(value, [
+      "wasteKg",
+      "wasteKnownActions",
+      "wasteCoverageRate",
+      "wasteBagsEquivalent",
+      "wasteMechanicalBicyclesEquivalent",
+      "buttsTotal",
+      "qualifiedButtsTotal",
+      "unqualifiedButtsTotal",
+      "buttsDistanceMeters",
+      "co2eKg",
+      "co2eGrams",
+      "co2CarKilometers",
+      "co2ParisMoscowCarTrips",
+      "co2ParisNewYorkFlightShares",
+      "waterLiters",
+      "waterOlympicPools",
+      "waterFrenchPersonYears",
+    ]) &&
+    Array.isArray(value.buttsByCondition) &&
+    value.buttsByCondition.every(isValidImpactTerrainConditionEntry) &&
+    isNullableFiniteNonNegativeNumber(value.estimatedButtsWeightKg) &&
+    (value.buttsMassProvenance === null ||
+      value.buttsMassProvenance === "measured" ||
+      value.buttsMassProvenance === "estimated" ||
+      value.buttsMassProvenance === "mixed" ||
+      value.buttsMassProvenance === "unknown") &&
+    Array.isArray(value.buttsMassConversionVersions) &&
+    value.buttsMassConversionVersions.every(
+      (version) => typeof version === "string",
+    )
+  );
+}
+
+function isValidPublicImpactKpiStructure(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const optionalNumericFields = [
+    "actionsCount",
+    "wasteKnownActions",
+    "wasteCoverageRate",
+    "participantsKnownActions",
+    "participantsUnknownActions",
+  ];
+
+  return (
+    isFiniteNonNegativeNumber(value.participantsTotal) &&
+    isFiniteNonNegativeNumber(value.totalDurationMinutes) &&
+    isFiniteNonNegativeNumber(value.totalDurationHours) &&
+    isValidActionDistribution(value.actionDistribution) &&
+    isValidClassificationWarnings(value.classificationWarnings) &&
+    isValidStreetCleaningSavings(value.streetCleaningSavings) &&
+    isValidImpactTerrainResults(value.impactTerrain) &&
+    optionalNumericFields.every(
+      (field) =>
+        value[field] === undefined || isFiniteNonNegativeNumber(value[field]),
+    )
+  );
+}
+
+function isValidPublicImpactAggregateStructure(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNonNegativeNumber(value.visibleActions) &&
+    isFiniteNonNegativeNumber(value.distinctLocations)
+  );
+}
+
+function parseSnapshotInstant(value: unknown): Date | null {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+      value,
+    )
+  ) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+function getEquivalentSnapshotGenerationInstant(
+  snapshot: PublicImpactSnapshotRecord,
+  payload: PublicImpactSnapshotPayload,
+): Date | null {
+  const snapshotGeneratedAt = parseSnapshotInstant(snapshot.generatedAt);
+  const payloadGeneratedAt = parseSnapshotInstant(payload.generatedAt);
+
+  if (
+    !snapshotGeneratedAt ||
+    !payloadGeneratedAt ||
+    snapshotGeneratedAt.getTime() !== payloadGeneratedAt.getTime()
+  ) {
+    return null;
+  }
+
+  return snapshotGeneratedAt;
 }
 
 function isValidUtcDate(value: unknown): value is string {
@@ -239,11 +440,14 @@ function isValidPublicImpactSnapshot(
     return false;
   }
 
-  if (!Number.isFinite(new Date(snapshot.generatedAt).getTime())) {
+  const generatedAt = getEquivalentSnapshotGenerationInstant(
+    snapshot,
+    snapshot.payload,
+  );
+  if (!generatedAt) {
     return false;
   }
 
-  const generatedAt = new Date(snapshot.generatedAt);
   const generatedDate = getPublicSurfaceSnapshotDate(snapshot.generatedAt);
   const generatedFloorDate = buildLandingFloorDate(generatedAt);
   const payload = snapshot.payload;
@@ -251,7 +455,6 @@ function isValidPublicImpactSnapshot(
   return (
     snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
     snapshot.version === PUBLIC_IMPACT_SNAPSHOT_VERSION &&
-    snapshot.generatedAt === payload.generatedAt &&
     hasCoherentImpactSnapshotPeriod(
       snapshot,
       payload,
@@ -277,11 +480,14 @@ function isValidHistoricalPublicImpactSnapshot(
     return false;
   }
 
-  if (!Number.isFinite(new Date(snapshot.generatedAt).getTime())) {
+  const generatedAt = getEquivalentSnapshotGenerationInstant(
+    snapshot,
+    snapshot.payload,
+  );
+  if (!generatedAt) {
     return false;
   }
 
-  const generatedAt = new Date(snapshot.generatedAt);
   const generatedDate = getPublicSurfaceSnapshotDate(snapshot.generatedAt);
   const generatedFloorDate = buildLandingFloorDate(generatedAt);
   const payload = snapshot.payload;
@@ -289,7 +495,6 @@ function isValidHistoricalPublicImpactSnapshot(
   return (
     snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
     snapshot.version === HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION &&
-    snapshot.generatedAt === payload.generatedAt &&
     payload.projectionVersion === undefined &&
     payload.provenance.sourceRpc ===
       "public.load_public_landing_action_summary" &&
@@ -300,7 +505,7 @@ function isValidHistoricalPublicImpactSnapshot(
       generatedDate,
       generatedFloorDate,
     ) &&
-    isKnownImpactProxyVersion(payload.methodologyVersion) &&
+    payload.methodologyVersion === HISTORICAL_PUBLIC_IMPACT_PROXY_V1_VERSION &&
     payload.resultsContractVersion ===
       IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION
   );

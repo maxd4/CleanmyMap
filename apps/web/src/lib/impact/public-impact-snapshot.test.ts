@@ -9,7 +9,12 @@ const upsertSnapshotMock = vi.hoisted(() => vi.fn());
 const requirePersistedSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/accueil/public-landing-action-summary", () => ({
-  buildLandingFloorDate: (now: Date) => now.toISOString().slice(0, 10),
+  buildLandingFloorDate: (now: Date) => {
+    const floor = new Date(now);
+    floor.setUTCHours(0, 0, 0, 0);
+    floor.setUTCDate(floor.getUTCDate() - 365);
+    return floor.toISOString().slice(0, 10);
+  },
   loadIncrementalPublicLandingActionSummary: loadIncrementalAggregateMock,
   loadPublicLandingActionSummary: loadFullAggregateMock,
   advancePublicImpactActionState: advanceStateMock,
@@ -31,6 +36,8 @@ import {
   isCurrentPublicImpactSnapshot,
   HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
+  type PublicImpactSnapshotPayload,
+  type PublicImpactSnapshotRecord,
 } from "./public-impact-snapshot";
 import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
 
@@ -75,7 +82,7 @@ function existingSnapshot(overrides: Record<string, unknown> = {}) {
     payload: buildPublicImpactSnapshotPayload({
       aggregate,
       generatedAt: "2026-08-01T03:00:00.000Z",
-      floorDate: "2026-08-01",
+      floorDate: "2025-08-01",
     }),
     meta: {},
     ...overrides,
@@ -89,44 +96,119 @@ function currentSnapshot(overrides: Record<string, unknown> = {}) {
     payload: buildPublicImpactSnapshotPayload({
       aggregate,
       generatedAt: NOW.toISOString(),
-      floorDate: "2026-09-08",
+      floorDate: "2025-09-08",
     }),
     ...overrides,
   });
 }
 
-function historicalV1Snapshot(overrides: Record<string, unknown> = {}) {
-  const current = existingSnapshot();
-  const generatedAt = "2026-09-01T03:00:00.000Z";
-  const payload = current.payload;
-
-  return {
-    ...current,
-    snapshotDate: "2026-09-01",
-    generatedAt,
-    version: HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION,
-    payload: {
-      period: {
-        fromDate: "2026-09-01",
-        toDate: "2026-09-01",
-        timezone: "UTC" as const,
-      },
-      generatedAt,
-      methodologyVersion: "impact-proxy-2026.04-v1",
-      resultsContractVersion: payload.resultsContractVersion,
-      kpis: payload.kpis,
-      aggregates: payload.aggregates,
-      provenance: {
-        sourceRpc: "public.load_public_landing_action_summary" as const,
-        scope: {
-          ...payload.provenance.scope,
-          floorDate: "2026-09-01",
-        },
-        calculationDomain: payload.provenance.calculationDomain,
-      },
+const OBSERVED_HISTORICAL_V1_PAYLOAD = {
+  period: {
+    fromDate: "2025-09-08",
+    toDate: "2026-09-08",
+    timezone: "UTC" as const,
+  },
+  generatedAt: "2026-09-08T07:16:23.009Z",
+  methodologyVersion: "impact-proxy-2026.04-v1",
+  resultsContractVersion: "impact-terrain-results-2026.09-v1",
+  kpis: {
+    actionsCount: 12,
+    wasteKnownActions: 10,
+    wasteCoverageRate: 83.33333333333333,
+    participantsTotal: 31,
+    participantsKnownActions: 11,
+    participantsUnknownActions: 1,
+    totalDurationMinutes: 90,
+    totalDurationHours: 1.5,
+    actionDistribution: [
+      { key: "company", category: "Entreprise", count: 2 },
+    ],
+    classificationWarnings: [],
+    streetCleaningSavings: {
+      wasteKg: 25.5,
+      durationMinutes: 90,
+      actionHours: 1.5,
+      massEstimateEuros: 38.25,
+      timeEstimateEuros: 18.465,
+      lowerBoundEuros: 18.465,
+      upperBoundEuros: 38.25,
     },
+    impactTerrain: {
+      wasteKg: 25.5,
+      wasteKnownActions: 10,
+      wasteCoverageRate: 83.33333333333333,
+      wasteBagsEquivalent: 5.1,
+      wasteMechanicalBicyclesEquivalent: 1.275,
+      buttsTotal: 1250,
+      qualifiedButtsTotal: 1250,
+      unqualifiedButtsTotal: 0,
+      buttsByCondition: [
+        {
+          condition: "propre",
+          label: { fr: "Propre", en: "Clean" },
+          count: 1250,
+          estimatedWeightKg: 0.5,
+          massProvenance: "estimated",
+          conversionVersions: ["impact-terrain-2026-butts-mass-v1"],
+        },
+      ],
+      estimatedButtsWeightKg: 0.5,
+      buttsMassProvenance: "estimated",
+      buttsMassConversionVersions: ["impact-terrain-2026-butts-mass-v1"],
+      buttsDistanceMeters: 31.25,
+      co2eKg: 10.625,
+      co2eGrams: 10625,
+      co2CarKilometers: 66.40625,
+      co2ParisMoscowCarTrips: 0.001,
+      co2ParisNewYorkFlightShares: 0.0001,
+      waterLiters: 625000,
+      waterOlympicPools: 0.25,
+      waterFrenchPersonYears: 0.034,
+    },
+  },
+  aggregates: {
+    visibleActions: 12,
+    distinctLocations: 4,
+  },
+  provenance: {
+    sourceRpc: "public.load_public_landing_action_summary" as const,
+    scope: {
+      actionType: "action" as const,
+      status: "approved" as const,
+      visibility: "visible" as const,
+      excludesTestDemoData: true as const,
+      floorDate: "2025-09-08",
+    },
+    calculationDomain: [
+      "apps/web/src/lib/impact/impact-terrain-2026.ts",
+      "apps/web/src/lib/accueil/action-participant-aggregation.ts",
+    ],
+  },
+} satisfies PublicImpactSnapshotPayload;
+
+type HistoricalSnapshotOverrides = Omit<
+  Partial<PublicImpactSnapshotRecord>,
+  "payload"
+> & {
+  payload?: unknown;
+};
+
+function historicalV1Snapshot(
+  overrides: HistoricalSnapshotOverrides = {},
+): PublicImpactSnapshotRecord {
+  return {
+    id: "historical-v1-snapshot-id",
+    snapshotKey: "cleanmymap-impact-terrain-2026",
+    snapshotDate: "2026-09-01",
+    generatedAt: "2026-09-08T07:16:23.009+00:00",
+    version: HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION,
+    title: "Snapshot public mensuel Impact terrain 2026",
+    payload: {
+      ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+    },
+    meta: {},
     ...overrides,
-  };
+  } as PublicImpactSnapshotRecord;
 }
 
 async function expectSnapshotRegenerated(snapshot: ReturnType<typeof currentSnapshot>) {
@@ -217,7 +299,106 @@ describe("public monthly impact snapshot", () => {
     expect("sourceMode" in snapshot.payload.provenance).toBe(false);
     expect("projectionVersion" in snapshot.payload).toBe(false);
     expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
+    expect(advanceStateMock).not.toHaveBeenCalled();
+    expect(rebuildStateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts equivalent SQL and UTC timestamps for a current v7 snapshot", async () => {
+    const snapshot = currentSnapshot({
+      generatedAt: "2026-09-08T07:16:23.009+00:00",
+      payload: {
+        ...currentSnapshot().payload,
+        generatedAt: "2026-09-08T07:16:23.009Z",
+      },
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(true);
+  });
+
+  it.each([
+    [
+      "different instants",
+      {
+        generatedAt: "2026-09-08T07:16:24.009+00:00",
+      },
+    ],
+    ["invalid row timestamp", { generatedAt: "not-a-timestamp" }],
+    [
+      "invalid payload timestamp",
+      {
+        payload: {
+          ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+          generatedAt: "not-a-timestamp",
+        },
+      },
+    ],
+  ])("rejects snapshots with %s", async (_reason, overrides) => {
+    const snapshot = historicalV1Snapshot(overrides);
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a suffixed methodology", {
+      methodologyVersion: "impact-proxy-2026.04-v1+factors-deadbeef",
+    }],
+    ["a projection version", { projectionVersion: "impact-terrain-public-2026.09-v7" }],
+    ["a source mode", { sourceMode: "rebuild" }],
+  ])("rejects v1 snapshots with %s", async (_reason, provenanceOrPayload) => {
+    const sourceMode = "sourceMode" in provenanceOrPayload
+      ? { provenance: { ...OBSERVED_HISTORICAL_V1_PAYLOAD.provenance, sourceMode: provenanceOrPayload.sourceMode } }
+      : {};
+    const snapshot = historicalV1Snapshot({
+      payload: {
+        ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+        ...provenanceOrPayload,
+        ...sourceMode,
+      },
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
+  });
+
+  it("rejects an invalid historical RPC", async () => {
+    const snapshot = historicalV1Snapshot({
+      payload: {
+        ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+        provenance: {
+          ...OBSERVED_HISTORICAL_V1_PAYLOAD.provenance,
+          sourceRpc: "public.unknown_snapshot_source",
+        },
+      },
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
+  });
+
+  it.each([
+    ["empty kpis", { kpis: {} }],
+    ["empty aggregates", { aggregates: {} }],
+    [
+      "invalid impact terrain",
+      { kpis: { ...OBSERVED_HISTORICAL_V1_PAYLOAD.kpis, impactTerrain: {} } },
+    ],
+  ])("rejects a snapshot with %s", async (_reason, payloadOverride) => {
+    const snapshot = historicalV1Snapshot({
+      payload: {
+        ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+        ...payloadOverride,
+      },
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
   });
 
   it("rejects an unknown historical envelope or provenance", async () => {
@@ -387,7 +568,7 @@ describe("public monthly impact snapshot", () => {
         }),
       }),
     );
-    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(advanceStateMock).toHaveBeenCalledWith("2025-09-08");
     expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
   });
@@ -406,7 +587,7 @@ describe("public monthly impact snapshot", () => {
     expect(result.persisted).toBe(true);
     expect(upsertSnapshotMock).toHaveBeenCalledOnce();
     expect(upsertSnapshotMock.mock.calls[0]?.[0].snapshotDate).toBe("2026-09-01");
-    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(advanceStateMock).toHaveBeenCalledWith("2025-09-08");
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
   });
 
@@ -428,7 +609,7 @@ describe("public monthly impact snapshot", () => {
     });
 
     expect(result.persisted).toBe(true);
-    expect(rebuildStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(rebuildStateMock).toHaveBeenCalledWith("2025-09-08");
     expect(advanceStateMock).not.toHaveBeenCalled();
     expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
