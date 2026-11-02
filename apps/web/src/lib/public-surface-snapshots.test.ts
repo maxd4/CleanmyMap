@@ -37,6 +37,7 @@ type FakeRow = {
 let fakeRow: FakeRow | null = null;
 let nextFakeId = 1;
 const queryEvents: string[] = [];
+let lastReadLimit: number | undefined;
 
 function createFakeQuery(kind: "read" | "update" | "upsert", value?: Record<string, unknown>, options?: Record<string, unknown>) {
   const equals = new Map<string, unknown>();
@@ -120,7 +121,10 @@ function createFakeQuery(kind: "read" | "update" | "upsert", value?: Record<stri
     order() {
       return query;
     },
-    limit() {
+    limit(value?: number) {
+      if (kind === "read") {
+        lastReadLimit = value;
+      }
       return query;
     },
     select() {
@@ -157,6 +161,7 @@ import {
   invalidatePublicSurfaceSnapshotsByRoute,
   isPublicSurfaceSnapshotFresh,
   readLatestPublicSurfaceSnapshot,
+  readPublicSurfaceSnapshotHistory,
   requirePersistedPublicSurfaceSnapshot,
   toPersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
@@ -166,6 +171,7 @@ beforeEach(() => {
   fakeRow = null;
   nextFakeId = 1;
   queryEvents.length = 0;
+  lastReadLimit = undefined;
   beforeUpsertMock.mockReset();
   vi.clearAllMocks();
   canUseSupabaseServerPersistenceMock.mockReturnValue(true);
@@ -203,6 +209,24 @@ describe("public surface snapshots", () => {
     await upsertPublicSurfaceSnapshot(snapshot);
     fakeRow = { ...fakeRow!, meta: [] as never };
     await expect(readLatestPublicSurfaceSnapshot("meta-shape")).resolves.toMatchObject({ meta: {} });
+  });
+
+  it("bounds historical reads to the requested number of newest rows", async () => {
+    fakeRow = {
+      id: 1,
+      snapshot_key: "bounded-history",
+      snapshot_date: "2026-09-01",
+      generated_at: "2026-09-08T07:16:23.009Z",
+      version: "v1",
+      title: "Historical",
+      payload: { value: 1 },
+      meta: {},
+    };
+
+    await expect(
+      readPublicSurfaceSnapshotHistory("bounded-history", 7),
+    ).resolves.toHaveLength(1);
+    expect(lastReadLimit).toBe(7);
   });
 
   it("detects freshness within the configured ttl", () => {

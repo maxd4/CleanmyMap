@@ -5,6 +5,7 @@ const loadFullAggregateMock = vi.hoisted(() => vi.fn());
 const advanceStateMock = vi.hoisted(() => vi.fn());
 const rebuildStateMock = vi.hoisted(() => vi.fn());
 const readLatestSnapshotMock = vi.hoisted(() => vi.fn());
+const readSnapshotHistoryMock = vi.hoisted(() => vi.fn());
 const upsertSnapshotMock = vi.hoisted(() => vi.fn());
 const requirePersistedSnapshotMock = vi.hoisted(() => vi.fn());
 
@@ -24,6 +25,7 @@ vi.mock("@/lib/accueil/public-landing-action-summary", () => ({
 vi.mock("@/lib/public-surface-snapshots", () => ({
   getPublicSurfaceSnapshotDate: (value: string) => value.slice(0, 10),
   readLatestPublicSurfaceSnapshot: readLatestSnapshotMock,
+  readPublicSurfaceSnapshotHistory: readSnapshotHistoryMock,
   requirePersistedPublicSurfaceSnapshot: requirePersistedSnapshotMock,
   upsertPublicSurfaceSnapshot: upsertSnapshotMock,
 }));
@@ -36,7 +38,6 @@ import {
   isCurrentPublicImpactSnapshot,
   HISTORICAL_PUBLIC_IMPACT_SNAPSHOT_V1_VERSION,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
-  type PublicImpactSnapshotPayload,
   type PublicImpactSnapshotRecord,
 } from "./public-impact-snapshot";
 import { PUBLIC_IMPACT_PROJECTION_VERSION } from "@/lib/impact/scientific-projection-versions";
@@ -112,63 +113,45 @@ const OBSERVED_HISTORICAL_V1_PAYLOAD = {
   methodologyVersion: "impact-proxy-2026.04-v1",
   resultsContractVersion: "impact-terrain-results-2026.09-v1",
   kpis: {
-    actionsCount: 12,
-    wasteKnownActions: 10,
-    wasteCoverageRate: 83.33333333333333,
-    participantsTotal: 31,
-    participantsKnownActions: 11,
-    participantsUnknownActions: 1,
-    totalDurationMinutes: 90,
-    totalDurationHours: 1.5,
+    participantsTotal: 65,
+    totalDurationMinutes: 390,
+    totalDurationHours: 6.5,
     actionDistribution: [
-      { key: "company", category: "Entreprise", count: 2 },
+      { key: "other", category: "Autres", count: 5 },
     ],
-    classificationWarnings: [],
+    classificationWarnings: [{ code: "missing_organizer_type", count: 5 }],
     streetCleaningSavings: {
-      wasteKg: 25.5,
-      durationMinutes: 90,
-      actionHours: 1.5,
-      massEstimateEuros: 38.25,
-      timeEstimateEuros: 18.465,
-      lowerBoundEuros: 18.465,
-      upperBoundEuros: 38.25,
+      wasteKg: 5.55,
+      durationMinutes: 390,
+      actionHours: 6.5,
+      massEstimateEuros: 8.325,
+      timeEstimateEuros: 80.015,
+      lowerBoundEuros: 8.325,
+      upperBoundEuros: 80.015,
     },
     impactTerrain: {
-      wasteKg: 25.5,
-      wasteKnownActions: 10,
-      wasteCoverageRate: 83.33333333333333,
-      wasteBagsEquivalent: 5.1,
-      wasteMechanicalBicyclesEquivalent: 1.275,
-      buttsTotal: 1250,
-      qualifiedButtsTotal: 1250,
-      unqualifiedButtsTotal: 0,
-      buttsByCondition: [
-        {
-          condition: "propre",
-          label: { fr: "Propre", en: "Clean" },
-          count: 1250,
-          estimatedWeightKg: 0.5,
-          massProvenance: "estimated",
-          conversionVersions: ["impact-terrain-2026-butts-mass-v1"],
-        },
-      ],
-      estimatedButtsWeightKg: 0.5,
-      buttsMassProvenance: "estimated",
-      buttsMassConversionVersions: ["impact-terrain-2026-butts-mass-v1"],
-      buttsDistanceMeters: 31.25,
-      co2eKg: 10.625,
-      co2eGrams: 10625,
-      co2CarKilometers: 66.40625,
-      co2ParisMoscowCarTrips: 0.001,
-      co2ParisNewYorkFlightShares: 0.0001,
-      waterLiters: 625000,
-      waterOlympicPools: 0.25,
-      waterFrenchPersonYears: 0.034,
+      wasteKg: 5.55,
+      wasteBagsEquivalent: 1.1099999999999999,
+      wasteMechanicalBicyclesEquivalent: 0.27749999999999997,
+      buttsTotal: 13875,
+      qualifiedButtsTotal: 0,
+      unqualifiedButtsTotal: 13875,
+      buttsByCondition: [],
+      estimatedButtsWeightKg: null,
+      buttsDistanceMeters: 346.875,
+      co2eKg: 6.659999999999999,
+      co2eGrams: 6659.999999999999,
+      co2CarKilometers: 46.90140845070422,
+      co2ParisMoscowCarTrips: 0.01651458038888881,
+      co2ParisNewYorkFlightShares: 0.006659999999999999,
+      waterLiters: 6937500,
+      waterOlympicPools: 2.775,
+      waterFrenchPersonYears: 126.13636363636364,
     },
   },
   aggregates: {
-    visibleActions: 12,
-    distinctLocations: 4,
+    visibleActions: 5,
+    distinctLocations: 5,
   },
   provenance: {
     sourceRpc: "public.load_public_landing_action_summary" as const,
@@ -181,10 +164,11 @@ const OBSERVED_HISTORICAL_V1_PAYLOAD = {
     },
     calculationDomain: [
       "apps/web/src/lib/impact/impact-terrain-2026.ts",
+      "apps/web/src/lib/impact/impact-terrain-2026-results.ts",
       "apps/web/src/lib/accueil/action-participant-aggregation.ts",
     ],
   },
-} satisfies PublicImpactSnapshotPayload;
+};
 
 type HistoricalSnapshotOverrides = Omit<
   Partial<PublicImpactSnapshotRecord>,
@@ -231,6 +215,7 @@ describe("public monthly impact snapshot", () => {
     advanceStateMock.mockResolvedValue(undefined);
     rebuildStateMock.mockResolvedValue(undefined);
     readLatestSnapshotMock.mockResolvedValue(existingSnapshot());
+    readSnapshotHistoryMock.mockResolvedValue([]);
     upsertSnapshotMock.mockResolvedValue(undefined);
     requirePersistedSnapshotMock.mockResolvedValue(existingSnapshot());
   });
@@ -292,6 +277,22 @@ describe("public monthly impact snapshot", () => {
     readLatestSnapshotMock.mockResolvedValue(snapshot);
 
     await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(snapshot.payload.kpis).toMatchObject({
+      participantsTotal: 65,
+      totalDurationMinutes: 390,
+      impactTerrain: {
+        wasteKg: 5.55,
+        buttsTotal: 13875,
+      },
+    });
+    expect(snapshot.payload.aggregates).toEqual({
+      visibleActions: 5,
+      distinctLocations: 5,
+    });
+    expect("wasteKnownActions" in snapshot.payload.kpis.impactTerrain).toBe(false);
+    expect("wasteCoverageRate" in snapshot.payload.kpis.impactTerrain).toBe(false);
+    expect("buttsMassProvenance" in snapshot.payload.kpis.impactTerrain).toBe(false);
+    expect("buttsMassConversionVersions" in snapshot.payload.kpis.impactTerrain).toBe(false);
     expect(snapshot.version).toBe("impact-terrain-public-2026.09-v1");
     expect(snapshot.payload.provenance.sourceRpc).toBe(
       "public.load_public_landing_action_summary",
@@ -303,6 +304,43 @@ describe("public monthly impact snapshot", () => {
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
     expect(advanceStateMock).not.toHaveBeenCalled();
     expect(rebuildStateMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the newest compatible historical snapshot after an unknown newer version", async () => {
+    const unknownNewerSnapshot = historicalV1Snapshot({
+      snapshotDate: "2026-11-01",
+      generatedAt: "2026-11-02T04:01:03.985Z",
+      version: "impact-terrain-public-2026.09-v3-null-coverage",
+      payload: {
+        ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+        generatedAt: "2026-11-02T04:01:03.985Z",
+        period: {
+          ...OBSERVED_HISTORICAL_V1_PAYLOAD.period,
+          fromDate: "2025-11-02",
+          toDate: "2026-11-02",
+        },
+        provenance: {
+          ...OBSERVED_HISTORICAL_V1_PAYLOAD.provenance,
+          scope: {
+            ...OBSERVED_HISTORICAL_V1_PAYLOAD.provenance.scope,
+            floorDate: "2025-11-02",
+          },
+          sourceRpc: "public.load_public_landing_action_summary_incremental",
+          sourceMode: "incremental",
+        },
+      },
+    });
+    const historical = historicalV1Snapshot();
+    readLatestSnapshotMock.mockResolvedValue(unknownNewerSnapshot);
+    readSnapshotHistoryMock.mockResolvedValue([unknownNewerSnapshot, historical]);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(historical);
+    expect(readSnapshotHistoryMock).toHaveBeenCalledWith(
+      "cleanmymap-impact-terrain-2026",
+    );
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 

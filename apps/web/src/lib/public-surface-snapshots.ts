@@ -36,6 +36,7 @@ class PublicSurfaceSnapshotWriteConflictError extends Error {
 
 const INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION =
   "__public_surface_snapshot_invalidated__";
+export const PUBLIC_SURFACE_SNAPSHOT_HISTORY_LIMIT = 12;
 
 export function toPersistedPublicSurfaceSnapshot<TPayload>(
   snapshot: PublicSurfaceSnapshotRecord<TPayload>,
@@ -238,9 +239,26 @@ export async function requirePersistedPublicSurfaceSnapshot<TPayload>(
 export async function readLatestPublicSurfaceSnapshot<TPayload>(
   snapshotKey: string,
 ): Promise<PublicSurfaceSnapshotRecord<TPayload> | null> {
+  const [snapshot] = await readPublicSurfaceSnapshotHistory<TPayload>(
+    snapshotKey,
+    1,
+  );
+  return snapshot ?? null;
+}
+
+export async function readPublicSurfaceSnapshotHistory<TPayload>(
+  snapshotKey: string,
+  limit = PUBLIC_SURFACE_SNAPSHOT_HISTORY_LIMIT,
+): Promise<PublicSurfaceSnapshotRecord<TPayload>[]> {
   if (!canUseSupabaseServerPersistence() && !allowLocalFileStoreFallback()) {
-    return null;
+    return [];
   }
+
+  const requestedLimit = Number.isFinite(limit) ? Math.trunc(limit) : 1;
+  const boundedLimit = Math.min(
+    PUBLIC_SURFACE_SNAPSHOT_HISTORY_LIMIT,
+    Math.max(1, requestedLimit),
+  );
 
   if (canUseSupabaseServerPersistence()) {
     try {
@@ -252,25 +270,26 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
         .neq("version", INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION)
         .order("snapshot_date", { ascending: false })
         .order("generated_at", { ascending: false })
-        .limit(1);
+        .limit(boundedLimit);
 
       if (!result.error) {
-        const row = result.data?.[0] ?? null;
-        return row ? normalizeSnapshotRow<TPayload>(row as PublicSurfaceSnapshotRow) : null;
+        return (result.data ?? []).map((row) =>
+          normalizeSnapshotRow<TPayload>(row as PublicSurfaceSnapshotRow),
+        );
       }
 
       if (!allowLocalFileStoreFallback()) {
-        return null;
+        return [];
       }
     } catch {
       if (!allowLocalFileStoreFallback()) {
-        return null;
+        return [];
       }
     }
   }
 
   const store = await readStore();
-  const snapshot = store.records
+  return store.records
     .filter(
       (entry) =>
         entry.snapshotKey === snapshotKey &&
@@ -282,9 +301,8 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
         return dateComparison;
       }
       return right.generatedAt.localeCompare(left.generatedAt);
-    })[0];
-
-  return (snapshot as PublicSurfaceSnapshotRecord<TPayload> | undefined) ?? null;
+    })
+    .slice(0, boundedLimit) as PublicSurfaceSnapshotRecord<TPayload>[];
 }
 
 

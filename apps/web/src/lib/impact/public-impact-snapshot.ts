@@ -23,6 +23,7 @@ import { IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION } from "./impact-terrain-2
 import {
   getPublicSurfaceSnapshotDate,
   readLatestPublicSurfaceSnapshot,
+  readPublicSurfaceSnapshotHistory,
   requirePersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
   type PublicSurfaceSnapshotRecord,
@@ -154,8 +155,18 @@ export function buildPublicImpactSnapshotPayload(params: {
   };
 }
 
-function isPublicImpactSnapshotPayload(
+function isValidPublicImpactSnapshotPayload(
   value: unknown,
+): value is PublicImpactSnapshotPayload {
+  return isValidPublicImpactSnapshotEnvelope(
+    value,
+    isValidPublicImpactKpiStructure,
+  );
+}
+
+function isValidPublicImpactSnapshotEnvelope(
+  value: unknown,
+  validateKpis: (value: unknown) => boolean,
 ): value is PublicImpactSnapshotPayload {
   if (!value || typeof value !== "object") {
     return false;
@@ -194,7 +205,7 @@ function isPublicImpactSnapshotPayload(
       payload.provenance.calculationDomain.every(
         (entry) => typeof entry === "string",
       ) &&
-      isValidPublicImpactKpiStructure(payload.kpis) &&
+      validateKpis(payload.kpis) &&
       isValidPublicImpactAggregateStructure(payload.aggregates),
   );
 }
@@ -327,7 +338,77 @@ function isValidImpactTerrainResults(value: unknown): boolean {
   );
 }
 
+function isValidHistoricalImpactTerrainConditionEntry(
+  value: unknown,
+): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.condition === "string" &&
+    MEGOTS_CONDITIONS.includes(
+      value.condition as (typeof MEGOTS_CONDITIONS)[number],
+    ) &&
+    isFiniteNonNegativeNumber(value.count)
+  );
+}
+
+function isValidHistoricalImpactTerrainResults(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const historicalOptionalFieldsAreValid =
+    (value.wasteKnownActions === undefined ||
+      isFiniteNonNegativeNumber(value.wasteKnownActions)) &&
+    (value.wasteCoverageRate === undefined ||
+      isFiniteNonNegativeNumber(value.wasteCoverageRate)) &&
+    (value.buttsMassProvenance === undefined ||
+      value.buttsMassProvenance === null ||
+      value.buttsMassProvenance === "measured" ||
+      value.buttsMassProvenance === "estimated" ||
+      value.buttsMassProvenance === "mixed" ||
+      value.buttsMassProvenance === "unknown") &&
+    (value.buttsMassConversionVersions === undefined ||
+      (Array.isArray(value.buttsMassConversionVersions) &&
+        value.buttsMassConversionVersions.every(
+          (version) => typeof version === "string",
+        )));
+
+  return (
+    historicalOptionalFieldsAreValid &&
+    hasFiniteNonNegativeFields(value, [
+      "wasteKg",
+      "wasteBagsEquivalent",
+      "wasteMechanicalBicyclesEquivalent",
+      "buttsTotal",
+      "qualifiedButtsTotal",
+      "unqualifiedButtsTotal",
+      "buttsDistanceMeters",
+      "co2eKg",
+      "co2eGrams",
+      "co2CarKilometers",
+      "co2ParisMoscowCarTrips",
+      "co2ParisNewYorkFlightShares",
+      "waterLiters",
+      "waterOlympicPools",
+      "waterFrenchPersonYears",
+    ]) &&
+    Array.isArray(value.buttsByCondition) &&
+    value.buttsByCondition.every(isValidHistoricalImpactTerrainConditionEntry) &&
+    isNullableFiniteNonNegativeNumber(value.estimatedButtsWeightKg)
+  );
+}
+
 function isValidPublicImpactKpiStructure(value: unknown): boolean {
+  return isValidPublicImpactKpiStructureWithImpactTerrain(
+    value,
+    isValidImpactTerrainResults,
+  );
+}
+
+function isValidPublicImpactKpiStructureWithImpactTerrain(
+  value: unknown,
+  validateImpactTerrain: (value: unknown) => boolean,
+): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -347,11 +428,27 @@ function isValidPublicImpactKpiStructure(value: unknown): boolean {
     isValidActionDistribution(value.actionDistribution) &&
     isValidClassificationWarnings(value.classificationWarnings) &&
     isValidStreetCleaningSavings(value.streetCleaningSavings) &&
-    isValidImpactTerrainResults(value.impactTerrain) &&
+    validateImpactTerrain(value.impactTerrain) &&
     optionalNumericFields.every(
       (field) =>
         value[field] === undefined || isFiniteNonNegativeNumber(value[field]),
     )
+  );
+}
+
+function isValidHistoricalPublicImpactKpiStructure(value: unknown): boolean {
+  return isValidPublicImpactKpiStructureWithImpactTerrain(
+    value,
+    isValidHistoricalImpactTerrainResults,
+  );
+}
+
+function isValidHistoricalPublicImpactSnapshotPayload(
+  value: unknown,
+): value is PublicImpactSnapshotPayload {
+  return isValidPublicImpactSnapshotEnvelope(
+    value,
+    isValidHistoricalPublicImpactKpiStructure,
   );
 }
 
@@ -436,7 +533,7 @@ function hasCoherentImpactSnapshotPeriod(
 function isValidPublicImpactSnapshot(
   snapshot: PublicImpactSnapshotRecord | null | undefined,
 ): snapshot is PublicImpactSnapshotRecord {
-  if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {
+  if (!snapshot || !isValidPublicImpactSnapshotPayload(snapshot.payload)) {
     return false;
   }
 
@@ -476,7 +573,10 @@ function isValidPublicImpactSnapshot(
 function isValidHistoricalPublicImpactSnapshot(
   snapshot: PublicImpactSnapshotRecord | null | undefined,
 ): snapshot is PublicImpactSnapshotRecord {
-  if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {
+  if (
+    !snapshot ||
+    !isValidHistoricalPublicImpactSnapshotPayload(snapshot.payload)
+  ) {
     return false;
   }
 
@@ -531,15 +631,19 @@ export function isCurrentPublicImpactSnapshot(
 }
 
 export async function loadLatestPublicImpactSnapshot(): Promise<PublicImpactSnapshotRecord | null> {
-  const snapshot = await readLatestPublicSurfaceSnapshot<PublicImpactSnapshotPayload>(
+  const latestSnapshot = await readLatestPublicSurfaceSnapshot<PublicImpactSnapshotPayload>(
     PUBLIC_IMPACT_SNAPSHOT_KEY,
   );
 
-  if (!isReadablePublicImpactSnapshot(snapshot)) {
-    return null;
+  if (isReadablePublicImpactSnapshot(latestSnapshot)) {
+    return latestSnapshot;
   }
 
-  return snapshot;
+  const historicalCandidates =
+    await readPublicSurfaceSnapshotHistory<PublicImpactSnapshotPayload>(
+      PUBLIC_IMPACT_SNAPSHOT_KEY,
+    );
+  return historicalCandidates.find(isReadablePublicImpactSnapshot) ?? null;
 }
 
 export async function generateAndPersistPublicImpactSnapshot(params: {
