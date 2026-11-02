@@ -361,6 +361,11 @@ select is(
   (select cigarette_butts from public_impact_waste_coverage_rebuild_once),
   'a second reconstruction is idempotent for the canonical butt total'
 );
+select is(
+  (select waste_source_count from public.load_public_landing_action_summary_incremental()),
+  (select waste_source_count from public_impact_waste_coverage_rebuild_once),
+  'a second reconstruction is idempotent for the canonical waste source count'
+);
 
 select * from finish();
 rollback;

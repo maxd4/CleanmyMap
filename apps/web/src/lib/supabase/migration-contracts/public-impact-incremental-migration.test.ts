@@ -133,4 +133,12 @@ describe("incremental public Impact state migration", () => {
       "the incremental RPC counts eligible non-NULL sources, including technical metadata and zero",
     );
   });
+
+  it("keeps the pgTAP plan equal to the executable assertion count", () => {
+    const declaredPlan = Number(wasteCoverageProof.match(/^\s*select\s+plan\((\d+)\);/m)?.[1]);
+    const executableAssertions = wasteCoverageProof.match(/^\s*select\s+(?:is|lives_ok)\s*\(/gm) ?? [];
+
+    expect(Number.isInteger(declaredPlan)).toBe(true);
+    expect(executableAssertions).toHaveLength(declaredPlan);
+  });
 });
