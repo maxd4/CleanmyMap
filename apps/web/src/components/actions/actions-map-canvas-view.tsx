@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import dynamic from "next/dynamic";
 import { LayerGroup, MapContainer, TileLayer } from "react-leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { CurrentPlaceStateMode, CurrentPlaceStateViews } from "@/lib/actions/pollution/current-place-state";
@@ -23,8 +24,12 @@ import type { ShapeBasemapMode } from "./map/layers/map-layers.shared";
 import { ActionsMapCanvasStyles } from "./actions-map-canvas-styles";
 import { ActionsMapCanvasViewport } from "./actions-map-canvas-viewport";
 import type { PlasticOriginsDataState } from "@/lib/plastic-origins/use-plastic-origins-data";
-import { ParisHeatmapPilotLayer } from "./map/layers/paris-heatmap-pilot-layer";
 import type { ParisHeatmapPilotMode } from "@/lib/geo/paris-heatmap-pilot";
+
+const DeferredParisHeatmapPilotLayer = dynamic(
+  () => import("./map/layers/paris-heatmap-pilot-layer").then((module) => module.ParisHeatmapPilotLayer),
+  { ssr: false },
+);
 
 type ActionsMapCanvasControlsProps = {
   isMinimalPreview: boolean;
@@ -271,7 +276,7 @@ export function ActionsMapCanvasView({
           <ShapeLayers items={mainItems} visible={visibleLayers.shapes} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} />
           {!isMinimalPreview ? <><InfrastructureMarkers items={mainItems} visible={visibleLayers.infrastructure} selectedActionId={selectedActionId} onSelectAction={onSelectAction} /><TrashSpotterMarkers items={trashSpotterItems} visible={visibleLayers.trashSpotter} selectedActionId={selectedActionId} onSelectAction={onSelectAction} displayMode={displayMode} currentPlaceStateViews={currentPlaceStateViews} scoreScope={scoreScope} /></> : null}
           {!isMinimalPreview ? <PlasticOriginsLayer dataset={plasticOriginsData.data} visible={visibleLayers.plasticOrigins} /> : null}
-          {!isMinimalPreview ? <ParisHeatmapPilotLayer visible={visibleLayers.predictiveHeatmap} mode={predictiveHeatmapMode} /> : null}
+          {!isMinimalPreview && visibleLayers.predictiveHeatmap ? <DeferredParisHeatmapPilotLayer visible mode={predictiveHeatmapMode} /> : null}
         </LayerGroup>
         {!isMinimalPreview && selectedItem && onClearSelection ? <ActionSelectionPanel item={selectedItem} displayMode={displayMode} scoreScope={scoreScope} currentPlaceStateViews={currentPlaceStateViews} frameOnMount={frameSelectedActionId === selectedItem.id} onClose={onClearSelection} /> : null}
         <ActionsMapCanvasStyles isEmerald={isEmerald} />

@@ -8,6 +8,7 @@ import { ActionsMapCanvasView } from "./actions-map-canvas-view";
 const reloadMock = vi.hoisted(() => vi.fn());
 const toggleLayerMock = vi.hoisted(() => vi.fn());
 const setBasemapModeMock = vi.hoisted(() => vi.fn());
+const heatmapModuleLoadMock = vi.hoisted(() => vi.fn());
 
 vi.mock("react-leaflet", () => ({
   MapContainer: ({ children, ...props }: { children: React.ReactNode; center: unknown }) => <div data-testid="map-container" data-center={JSON.stringify(props.center)}>{children}</div>,
@@ -36,9 +37,10 @@ vi.mock("./map/layers/map-layers", () => ({
   TrashSpotterMarkers: () => <div data-testid="trash-spotter-markers" />,
   PlasticOriginsLayer: () => <div data-testid="plastic-origins-layer" />,
 }));
-vi.mock("./map/layers/paris-heatmap-pilot-layer", () => ({
-  ParisHeatmapPilotLayer: () => <div data-testid="predictive-heatmap-layer" />,
-}));
+vi.mock("./map/layers/paris-heatmap-pilot-layer", () => {
+  heatmapModuleLoadMock();
+  return { ParisHeatmapPilotLayer: () => <div data-testid="predictive-heatmap-layer" /> };
+});
 vi.mock("./actions-map-canvas-styles", () => ({ ActionsMapCanvasStyles: () => null }));
 vi.mock("./actions-map-canvas-viewport", () => ({ ActionsMapCanvasViewport: () => null }));
 
@@ -144,5 +146,21 @@ describe("ActionsMapCanvasView behavior", () => {
     expect(mounted.querySelector('[role="toolbar"]')).toBeNull();
     expect(mounted.querySelector('[data-testid="plastic-origins-layer"]')).toBeNull();
     expect(mounted.querySelector('[data-testid="map-container"]')).not.toBeNull();
+  });
+
+  it("loads the predictive layer only when it becomes visible", async () => {
+    mount();
+    expect(heatmapModuleLoadMock).not.toHaveBeenCalled();
+
+    const visibleLayers = { ...baseProps.visibleLayers, predictiveHeatmap: true };
+    const controls = { ...baseProps.controls, visibleLayers };
+    await act(async () => {
+      root?.render(<ActionsMapCanvasView {...baseProps} controls={controls} visibleLayers={visibleLayers} />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(heatmapModuleLoadMock).toHaveBeenCalledTimes(1);
+    expect(host?.querySelector('[data-testid="predictive-heatmap-layer"]')).not.toBeNull();
   });
 });

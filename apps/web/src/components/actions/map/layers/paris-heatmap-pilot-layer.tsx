@@ -7,6 +7,7 @@ import {
   buildParisHeatmapPilot,
   groupParisHeatmapPilotMicroPlaces,
   type ParisHeatmapPilotLayer,
+  type ParisHeatmapPilotMicroPlace,
   type ParisHeatmapPilotMode,
   type ParisHeatmapPilotSegment,
 } from "@/lib/geo/paris-heatmap-pilot";
@@ -23,11 +24,12 @@ function scoreForMode(segment: ParisHeatmapPilotSegment, mode: ParisHeatmapPilot
   return segment.scores[mode];
 }
 
-function colorForScore(score: number | null): string {
+export function colorForScore(score: number | null): string {
   if (score === null) return "#64748b";
-  if (score >= 75) return "#b91c1c";
-  if (score >= 50) return "#ea580c";
-  if (score >= 25) return "#ca8a04";
+  if (score >= 80) return "#b91c1c";
+  if (score >= 60) return "#ea580c";
+  if (score >= 40) return "#ca8a04";
+  if (score >= 20) return "#65a30d";
   return "#15803d";
 }
 
@@ -66,10 +68,12 @@ function MicroPlacePopup({
   count,
   names,
   families,
+  members,
 }: {
   count: number;
   names: string[];
   families: string[];
+  members: ParisHeatmapPilotMicroPlace[];
 }) {
   return (
     <div className="min-w-44 space-y-1 text-sm">
@@ -77,7 +81,15 @@ function MicroPlacePopup({
       <p>{count} point{count > 1 ? "s" : ""} regroupé{count > 1 ? "s" : ""}</p>
       <p className="text-xs text-slate-600">Familles : {families.join(", ")}</p>
       <p className="text-xs text-slate-600">{names.join(", ")}</p>
-      <p className="text-xs text-slate-500">Source : snapshot OSM versionné. Présence géographique, pas mesure de pollution.</p>
+      <p className="text-xs text-slate-600">Coefficients appliqués par famille :</p>
+      <ul className="list-disc space-y-0.5 pl-4 text-xs text-slate-600">
+        {members.map((member) => (
+          <li key={member.id}>
+            {member.name} · mégots ×{member.cigaretteButtCoefficient.toFixed(2)} · déchets ×{member.wasteCoefficient.toFixed(2)} · source {member.provenance} · statut {member.status === "hypothesis" ? "hypothèse" : "indisponible"}
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-slate-500">Score local : non calculé dans ce pilote. Présence géographique OSM, pas mesure de pollution.</p>
     </div>
   );
 }
@@ -85,7 +97,7 @@ function MicroPlacePopup({
 export function ParisHeatmapPilotLayer({
   visible,
   mode = "mixed",
-  layer = buildParisHeatmapPilot({ mode }),
+  layer,
 }: {
   visible: boolean;
   mode?: ParisHeatmapPilotMode;
@@ -93,17 +105,21 @@ export function ParisHeatmapPilotLayer({
 }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
+  const computedLayer = useMemo(
+    () => layer ?? (visible ? buildParisHeatmapPilot() : null),
+    [layer, visible],
+  );
   const groupedMicroPlaces = useMemo(
-    () => groupParisHeatmapPilotMicroPlaces(layer.microPlaces, zoom),
-    [layer.microPlaces, zoom],
+    () => computedLayer ? groupParisHeatmapPilotMicroPlaces(computedLayer.microPlaces, zoom) : [],
+    [computedLayer, zoom],
   );
 
-  if (!visible || layer.status === "unavailable") return null;
+  if (!visible || !computedLayer || computedLayer.status === "unavailable") return null;
 
   return (
     <>
       <HeatmapZoomListener onZoom={setZoom} />
-      {layer.segments.map((segment) => {
+      {computedLayer.segments.map((segment) => {
         const score = scoreForMode(segment, mode);
         return (
           <Polyline
@@ -124,7 +140,7 @@ export function ParisHeatmapPilotLayer({
             radius={group.count > 1 ? Math.min(13, 7 + group.count) : 6}
             pathOptions={{ color, fillColor: color, fillOpacity: 0.78, weight: 2 }}
           >
-            <Popup><MicroPlacePopup count={group.count} names={group.names} families={group.families} /></Popup>
+            <Popup><MicroPlacePopup count={group.count} names={group.names} families={group.families} members={group.members} /></Popup>
           </CircleMarker>
         );
       })}
