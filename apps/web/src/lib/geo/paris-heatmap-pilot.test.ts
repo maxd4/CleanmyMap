@@ -46,6 +46,7 @@ describe("paris predictive polarized heatmap pilot", () => {
 
     expect(layer.source.network.snapshotId).toBe(pilotData.snapshotId);
     expect(layer.source.network.provider).toBe(pilotData.source.provider);
+    expect(layer.source.network.retrievedAt).toBe(pilotData.retrievedAt);
     expect(layer.source.scores.snapshotId).toBe(pressureSnapshot.snapshotId);
     expect(layer.source.scores.generatedAt).toBe(pressureSnapshot.generatedAt);
     expect(layer.source.scores.refreshedAt).toBe(pressureSnapshot.refreshedAt);
@@ -64,8 +65,7 @@ describe("paris predictive polarized heatmap pilot", () => {
 
   it("applique indépendamment le bar aux mégots et le fast-food aux déchets", () => {
     const baseZone = pressureSnapshot.zones.find((zone) => zone.arrondissementCode === "75105")!;
-    const layer = buildParisHeatmapPilot({
-      snapshot: {
+    const snapshot = {
         schemaVersion: 2,
         snapshotId: "micro-place-test",
         retrievedAt: "2026-11-02T00:00:00.000Z",
@@ -92,7 +92,10 @@ describe("paris predictive polarized heatmap pilot", () => {
           { id: "fast-food-test", lat: 48.85005, lon: 2.35005, name: "Fast-food test", kind: "fast_food" },
         ],
         zoneReferences: [{ ...baseZone, geometry: null, urbanMorphology: null }] as unknown as ParisHeatmapPilotSnapshot["zoneReferences"],
-      } as ParisHeatmapPilotSnapshot,
+      } as ParisHeatmapPilotSnapshot;
+    const layer = buildParisHeatmapPilot({ snapshot });
+    const alternateLayer = buildParisHeatmapPilot({
+      snapshot: { ...snapshot, identifierVersion: "alternate" },
     });
     const segment = layer.segments[0]!;
 
@@ -102,6 +105,9 @@ describe("paris predictive polarized heatmap pilot", () => {
     expect(segment.appliedMicroPlaceInfluences.waste?.status).toBe("hypothesis");
     expect(segment.appliedMicroPlaceInfluences.cigaretteButts?.attenuatedCoefficient).toBeCloseTo(3.35, 5);
     expect(segment.appliedMicroPlaceInfluences.waste?.attenuatedCoefficient).toBeCloseTo(3.65, 5);
+    expect(segment.id.startsWith("test:")).toBe(true);
+    expect(alternateLayer.segments[0]?.id.startsWith("alternate:")).toBe(true);
+    expect(alternateLayer.segments[0]?.id).not.toBe(segment.id);
   });
 
   it.each([

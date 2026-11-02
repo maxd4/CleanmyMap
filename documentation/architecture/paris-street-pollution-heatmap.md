@@ -3,7 +3,7 @@
 **Statut : CURRENT / PILOT. Calque public facultatif livré pour Paris 5e/6e ; coefficients non calibrés.**<br>
 **Périmètre : Paris intra-muros, commune INSEE 75056, domaine public accessible aux piétons.**<br>
 **Identifiant de politique du pilote : `paris-street-risk-heuristics-v1-polarized-pilot`.**<br>
-**Implémentation : snapshot OSM local `paris-5e-6e-osm-pilot-2026-11-02-iris-clipped-v1`, module géospatial pur et couche Leaflet facultative ; aucune requête fournisseur à l'ouverture.**<br>
+**Implémentation : snapshot OSM local `paris-5e-6e-osm-pilot-2026-11-01-iris-clipped-v1`, module géospatial pur et couche Leaflet facultative ; aucune requête fournisseur à l'ouverture.**<br>
 **Chemin exact prévu : `documentation/architecture/paris-street-pollution-heatmap.md`.**<br>
 **Document remplacé : proposition `paris-street-risk-heuristics-v0` soumise par l'utilisateur.**
 
@@ -484,6 +484,13 @@ est `apps/web/data/geospatial/paris-heatmap-pilot.json` (`schemaVersion: 2`,
 contient 58 voies dérivées, 62 micro-lieux, 562 sous-tronçons et 19 références
 IRIS utilisées. Ces chiffres décrivent le jeu publié, pas une couverture
 intégrale des 5e et 6e arrondissements.
+
+La propriété `retrievedAt` est la date de récupération OSM réellement portée
+par la source d'acquisition et ne doit pas être remplacée par une date de
+génération ou de publication. Le générateur standard la recopie sans
+paramètre de substitution ; `--retrieved-at` est refusé afin de ne pas
+fabriquer une provenance temporelle. Une éventuelle date de publication relève
+du versionnement externe et ne change pas `retrievedAt`.
 
 Le périmètre publié est l'union des polygones IRIS des codes arrondissement
 `75105` et `75106`, et non les rectangles des requêtes OSM historiques. Chaque

@@ -210,7 +210,7 @@ function stripGeometry(zone) {
   return reference;
 }
 
-export function buildPilotSnapshot({ pilot, pressure, retrievedAt = pilot.retrievedAt }) {
+export function buildPilotSnapshot({ pilot, pressure }) {
   if (!pressure.snapshotId || !pressure.generatedAt || !pressure.refreshedAt || !Array.isArray(pressure.sources)) {
     throw new Error("Le snapshot IRIS canonique doit fournir son identité, ses dates et ses sources");
   }
@@ -218,6 +218,7 @@ export function buildPilotSnapshot({ pilot, pressure, retrievedAt = pilot.retrie
     PILOT_ARRONDISSEMENT_CODES.includes(zone.arrondissementCode) && isValidParisPressureGeometry(zone.geometry),
   );
   if (zones.length === 0) throw new Error("Aucun polygone IRIS exploitable pour le périmètre 5e/6e");
+  const retrievedAt = pilot.retrievedAt;
   const ways = buildPilotWays(pilot.ways, zones);
   const usedZoneIds = new Set(ways.flatMap((way) => way.referenceZoneIds));
   const zoneReferences = zones
@@ -256,14 +257,13 @@ export function buildPilotSnapshot({ pilot, pressure, retrievedAt = pilot.retrie
 }
 
 function main() {
+  if (process.argv.includes("--retrieved-at")) {
+    throw new Error("--retrieved-at est interdit : retrievedAt doit provenir de l'acquisition OSM canonique");
+  }
   const pilot = readJson(argument("--pilot", DEFAULT_PILOT));
   const pressure = readJson(argument("--pressure", DEFAULT_PRESSURE));
   const output = argument("--output", DEFAULT_OUTPUT);
-  const snapshot = buildPilotSnapshot({
-    pilot,
-    pressure,
-    retrievedAt: argument("--retrieved-at", pilot.retrievedAt),
-  });
+  const snapshot = buildPilotSnapshot({ pilot, pressure });
   writeJson(output, snapshot);
   console.log(JSON.stringify({
     output,

@@ -307,6 +307,7 @@ function buildMicroPlaces(data: PilotSnapshot): ParisHeatmapPilotMicroPlace[] {
 
 export function splitParisHeatmapPilotWays(
   ways: readonly PilotRawWay[] = rawPilotData.ways,
+  identifierVersion = ways === rawPilotData.ways ? rawPilotData.identifierVersion : undefined,
 ): Array<{
   id: string;
   osmWayId: string;
@@ -335,7 +336,7 @@ export function splitParisHeatmapPilotWays(
         const first = lerp(start, end, partIndex / parts);
         const last = lerp(start, end, (partIndex + 1) / parts);
         output.push({
-          id: `${rawPilotData.identifierVersion ?? "legacy"}:${way.id}:${edgeIndex}:${partIndex}`,
+          id: `${identifierVersion ?? "legacy"}:${way.id}:${edgeIndex}:${partIndex}`,
           osmWayId: way.sourceWayId ?? way.id,
           name: way.name ?? "Voie sans nom",
           geometry: [first, last],
@@ -451,7 +452,7 @@ export function buildParisHeatmapPilot(options: {
     estimateParisPressureRisk(zone, riskSnapshot),
   ]));
   const microPlaces = buildMicroPlaces(data);
-  const baseSegments = splitParisHeatmapPilotWays(data.ways);
+  const baseSegments = splitParisHeatmapPilotWays(data.ways, data.identifierVersion);
   const balancedSegments = baseSegments
     .filter((segment): segment is typeof segment & { irisReferenceId: string } => Boolean(segment.irisReferenceId))
     .map((segment) => {

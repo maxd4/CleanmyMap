@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { buildPilotSnapshot, splitLineByPilotIris } from "./refresh-paris-heatmap-pilot.mjs";
+
+const SCRIPT_PATH = fileURLToPath(new URL("./refresh-paris-heatmap-pilot.mjs", import.meta.url));
+const PUBLISHED_SNAPSHOT_PATH = fileURLToPath(new URL("../data/geospatial/paris-heatmap-pilot.json", import.meta.url));
 
 const square = (left, bottom, right, top) => ({
   type: "Polygon",
@@ -10,6 +19,28 @@ const square = (left, bottom, right, top) => ({
 function zone(id, geometry, arrondissementCode = "75105") {
   return { id, arrondissementCode, geometry };
 }
+
+function sha256(file) {
+  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
+test("la génération standard est reproductible et conserve la date de récupération OSM", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "paris-heatmap-pilot-repro-"));
+  const first = path.join(directory, "first.json");
+  const second = path.join(directory, "second.json");
+  try {
+    for (const output of [first, second]) {
+      execFileSync(process.execPath, [SCRIPT_PATH, "--output", output], { stdio: "ignore" });
+    }
+    assert.equal(sha256(first), sha256(second));
+    assert.equal(sha256(first), sha256(PUBLISHED_SNAPSHOT_PATH));
+    const snapshot = JSON.parse(fs.readFileSync(first, "utf8"));
+    assert.equal(snapshot.retrievedAt, "2026-11-01T00:00:00.000Z");
+    assert.equal(snapshot.snapshotId, "paris-5e-6e-osm-pilot-2026-11-01-iris-clipped-v1");
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("découpe une ligne à la frontière IRIS et conserve toute la longueur zonale", () => {
   const zones = [
@@ -76,4 +107,12 @@ test("prépare uniquement les 5e/6e, conserve la provenance OSM et versionne les
   assert.equal(snapshot.pressureGeneratedAt, "2026-09-05T00:00:00.000Z");
   assert.equal(snapshot.pressureSources[0].publisher, "RATP");
   assert.equal(snapshot.pressureSources[0].status, "partial");
+  assert.equal(snapshot.retrievedAt, "2026-11-02T00:00:00.000Z");
+});
+
+test("refuse de fabriquer une date de récupération via --retrieved-at", () => {
+  assert.throws(
+    () => execFileSync(process.execPath, [SCRIPT_PATH, "--retrieved-at", "2099-01-01T00:00:00.000Z"], { encoding: "utf8" }),
+    /--retrieved-at est interdit/,
+  );
 });
