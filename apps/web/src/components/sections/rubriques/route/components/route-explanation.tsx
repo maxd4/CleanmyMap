@@ -25,6 +25,12 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
     ? "aucun fournisseur externe"
     : trace.routing.provider;
   const profileLabel = trace.routing.profile ?? "non disponible";
+  const isLoop = (data.routeTopology ?? (data.isLoop ? "loop" : "open")) === "loop";
+  const arrivalLabel = data.arrival?.source === "planner"
+    ? (fr ? "Déterminée par le planner" : "Determined by the planner")
+    : data.arrival
+      ? (fr ? "Fournie explicitement" : "Provided explicitly")
+      : (fr ? "Non disponible" : "Unavailable");
   const exclusions = Object.entries(trace.candidates.excludedByReason) as Array<
     [RouteTraceExclusionReason, number]
   >;
@@ -70,11 +76,11 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">{data.isLoop ? "Retour à l’origine" : "Arrivée"}</dt>
+              <dt className="text-slate-500">{isLoop ? "Retour à l’origine" : "Arrivée"}</dt>
               <dd className="font-semibold text-white">
-                {data.isLoop
+                {isLoop
                   ? <><MetricValue value={data.loop.returnDistanceKm} kind="distance" measured={trace.routing.mode === "network"} /> · {formatDuration(data.loop.returnMinutes)}</>
-                  : "Choisie par le planner"}
+                  : arrivalLabel}
               </dd>
             </div>
             <div>
@@ -119,7 +125,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
             </p>
           ) : null}
           <p className="mt-2 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-50">
-            {data.isLoop
+            {isLoop
               ? `Boucle de ${formatNumber(data.travelDistanceKm)} km · départ et arrivée au même endroit. Le retour réserve ${formatDuration(data.loop.returnMinutes)} du budget ; il reste ${formatDuration(data.loop.budgetRemainingMinutes)} après la boucle.`
               : `Trajet ouvert de ${formatNumber(data.travelDistanceKm)} km · départ fixé par la localisation, arrivée choisie selon le parcours et le budget.`}
           </p>
@@ -188,12 +194,12 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
           {trace.multiRoute ? (
             <section className="mt-4 rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-4" aria-label={fr ? "Explicabilité multi-groupes" : "Multi-group explainability"}>
               <h3 className="font-black text-white">
-                {fr ? `${trace.multiRoute.groupCount} boucles coordonnées` : `${trace.multiRoute.groupCount} coordinated loops`}
+                {fr ? `${trace.multiRoute.groupCount} ${isLoop ? "boucles coordonnées" : "trajets ouverts coordonnés"}` : `${trace.multiRoute.groupCount} ${isLoop ? "coordinated loops" : "coordinated open routes"}`}
               </h3>
               <p className="mt-2 text-sm text-slate-200">
                 {fr
-                  ? "Chaque groupe reçoit une boucle différente afin de couvrir davantage de rues."
-                  : "Each group receives a different loop to cover more streets."}
+                  ? (isLoop ? "Chaque groupe reçoit une boucle différente afin de couvrir davantage de rues." : "Chaque groupe reçoit un trajet ouvert différent afin de couvrir davantage de rues.")
+                  : (isLoop ? "Each group receives a different loop to cover more streets." : "Each group receives a different open route to cover more streets.")}
               </p>
               <dl className="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
                 <div><dt className="text-slate-500">Distance cumulée</dt><dd className="font-semibold text-white">{formatDistance(data.multiRoute.totalDistanceKm)}</dd></div>
@@ -273,7 +279,9 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
                     <span>{formatDuration(selection.budgetBeforeMinutes)} → {formatDuration(selection.budgetAfterMinutes)}</span>
                   </div>
                   <p className="mt-2 text-xs text-slate-400">
-                    Déplacement ajouté : {formatDistance(selection.incrementalDistanceKm)} · {formatDuration(selection.incrementalTravelMinutes)} · retour réservé {formatDistance(selection.returnDistanceKm)} · {formatDuration(selection.returnTravelMinutes)} · boucle candidate {formatDuration(selection.loopTravelMinutes)}.
+                    {isLoop
+                      ? `Déplacement ajouté : ${formatDistance(selection.incrementalDistanceKm)} · ${formatDuration(selection.incrementalTravelMinutes)} · retour réservé ${formatDistance(selection.returnDistanceKm)} · ${formatDuration(selection.returnTravelMinutes)} · boucle candidate ${formatDuration(selection.loopTravelMinutes)}.`
+                      : `Déplacement ajouté : ${formatDistance(selection.incrementalDistanceKm)} · ${formatDuration(selection.incrementalTravelMinutes)} · sélection évaluée pour un trajet ouvert.`}
                   </p>
                 </li>
               ))}

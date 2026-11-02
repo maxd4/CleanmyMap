@@ -387,10 +387,64 @@ describe("route recommendation response trace contract", () => {
     expect(response.stops).toEqual([]);
     expect(response.routeTopology).toBe("open");
     expect(response.isLoop).toBe(false);
+    expect(response.trace.routeTopology).toBe("open");
+    expect(response.trace.isLoop).toBe(false);
     expect(response.loop.isLoop).toBe(false);
     expect(response.routeGeometry.returnLeg).toBeNull();
     expect(response.travelDistanceKm).toBe(1);
     expect(response.travelMinutes).toBe(8);
+  });
+
+  it("describes open guided groups as open routes in the trace", async () => {
+    installDefaultMocks();
+    const openGroupRoutes = [guidedGroupRoute(1, 4, 20, true), guidedGroupRoute(2, 5, 25, true)].map((group) => ({
+      ...group,
+      routeGeometry: {
+        ...group.routeGeometry,
+        isLoop: false as const,
+        returnLeg: null,
+        coordinates: group.routeGeometry.coordinates.slice(0, -1),
+      },
+      guidedRouting: { ...group.guidedRouting, loopVerified: false },
+    }));
+    const response = await readRouteResponse(buildRouteRecommendationResponse(responseInput({
+      routeTopology: "open",
+      planningMode: {
+        type: "territorial-guided",
+        version: ROUTE_TERRITORIAL_GUIDED_VERSION,
+        budget: guidedBudget,
+        groups: [],
+      },
+      guidedBudget,
+      volunteers: 10,
+      groupCount: 2,
+      planning: {
+        groupRoutes: openGroupRoutes,
+        multiRouteMetrics: {
+          groupCount: 2,
+          volunteers: 10,
+          totalDistanceKm: 9,
+          totalDurationMinutes: 45,
+          coverageGain: 0,
+          sharedTargetRatio: 0,
+          sharedDistanceKm: null,
+          sharedDistanceRatio: null,
+          balanceDistance: 1,
+          balanceDuration: 5,
+          balanceTargetCount: 0,
+          balanceVolunteerCount: 0,
+          fallbackGroupCount: 0,
+          networkDistanceMeasured: true,
+        },
+      },
+    })));
+
+    expect(response.trace.multiRoute?.constraints).toContain(
+      "Chaque groupe conserve une origine commune et un trajet ouvert jusqu’à son arrivée.",
+    );
+    expect(response.trace.multiRoute?.constraints).not.toContain(
+      "Chaque groupe conserve une origine commune et une boucle fermée.",
+    );
   });
   it("keeps the operational, proof and payload stages independently aligned", async () => {
     installDefaultMocks();

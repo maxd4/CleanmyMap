@@ -208,4 +208,47 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain('aria-label="Légende des boucles"');
     expect(markup).toContain("La durée d’action complète n’est pas encore fiable");
   });
+
+  it("labels multi-group open guided routes without treating loop verification as a failure", () => {
+    Object.assign(mocks.routeData, {
+      isLoop: false,
+      routeTopology: "open",
+      volunteers: 10,
+      groupCount: 2,
+      scoreBreakdown: { priority: 0 },
+      multiRoute: { totalDistanceKm: 5, totalDurationMinutes: 40, coverageGain: 0, sharedTargetRatio: 0, sharedDistanceRatio: null },
+      groupRoutes: [1, 2].map((groupIndex) => ({
+        groupIndex,
+        volunteerCount: 5,
+        travelDistanceKm: 2.5,
+        travelMinutes: 20,
+        targetCount: 0,
+        stops: [],
+        guidedRouting: {
+          availability: "network",
+          loopVerified: false,
+          originVerified: true,
+          waypointOrderVerified: true,
+          waypointIds: [],
+          sectorDeviationKm: null,
+          sectorWithinBounds: false,
+          sectorStatus: "unknown",
+          warning: null,
+          budget: { totalMinutes: 90, organizationMarginMinutes: 15, minimumCollectionMinutes: 45, travelMaxMinutes: 30, travelMinutes: 20, collectionMinutesAvailable: 55, withinBudget: true },
+        },
+      })),
+      tradeoffs: [],
+    });
+
+    const markup = renderToStaticMarkup(
+      <EffectiveAuthStateProvider localDevAuth={{ active: true, role: "benevole" }}>
+        <RouteSection />
+      </EffectiveAuthStateProvider>,
+    );
+
+    expect(markup).toContain("Trajets ouverts coordonnés");
+    expect(markup).toContain("Trajet ouvert · ordre respecté");
+    expect(markup).not.toContain("Boucle à vérifier");
+    expect(markup).not.toContain("Légende des boucles");
+  });
 });

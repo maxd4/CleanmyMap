@@ -48,7 +48,7 @@ export function RouteOptionsForm({
           <div className="mt-2 grid gap-3 md:grid-cols-2" role="radiogroup">
             {([
               ["loop", fr ? "Boucle" : "Loop", fr ? "Départ et arrivée identiques." : "Start and finish at the same point."],
-              ["open", fr ? "Départ / arrivée" : "Start / finish", fr ? "Départ fixé par la localisation ; arrivée choisie par le planner." : "Location fixes the start; the planner chooses the finish."],
+              ["open", fr ? "Départ / arrivée" : "Start / finish", fr ? "Départ fixé par la localisation ; arrivée fournie ou déterminée par le planner." : "Location fixes the start; finish is provided or determined by the planner."],
             ] as const).map(([value, label, help]) => (
               <label key={value} className="flex min-h-16 cursor-pointer flex-col gap-1 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10">
                 <span className="flex items-center gap-3">

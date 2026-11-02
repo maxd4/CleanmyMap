@@ -130,6 +130,7 @@ function buildTraceCandidateSummary(
 function buildMultiRouteTrace(
   groupRoutes: RouteGroupRoute[],
   metrics: RouteMultiRouteMetrics,
+  routeTopology: RouteTopology,
 ): RouteMultiRouteTrace {
   return {
     groupCount: metrics.groupCount,
@@ -179,7 +180,9 @@ function buildMultiRouteTrace(
       networkDistanceMeasured: metrics.networkDistanceMeasured,
     },
     constraints: [
-      "Chaque groupe conserve une origine commune et une boucle fermée.",
+      routeTopology === "loop"
+        ? "Chaque groupe conserve une origine commune et une boucle fermée."
+        : "Chaque groupe conserve une origine commune et un trajet ouvert jusqu’à son arrivée.",
       "Un stop ne peut être attribué qu'à un seul groupe par défaut.",
       "La sécurité et le budget individuel priment sur la diversité des groupes.",
     ],
@@ -342,6 +345,7 @@ export function buildRouteOperationalContext(
   );
   const groupRoutes = attachMeetingOpportunities(input, groupRoutesWithBudgets);
   const multiRoute = buildMultiRouteMetrics(input, operationalBudget, groupRoutes);
+  const routeTopology = input.routeTopology ?? (input.planning.routeGeometry.isLoop ? "loop" : "open");
   return {
     generatedAt,
     calibrationCandidates,
@@ -349,7 +353,7 @@ export function buildRouteOperationalContext(
     groupRoutes,
     multiRoute,
     multiRouteTrace: groupRoutes.length > 1
-      ? buildMultiRouteTrace(groupRoutes, multiRoute)
+      ? buildMultiRouteTrace(groupRoutes, multiRoute, routeTopology)
       : null,
   };
 }

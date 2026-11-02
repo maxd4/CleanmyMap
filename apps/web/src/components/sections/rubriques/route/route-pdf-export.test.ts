@@ -181,6 +181,38 @@ describe("route PDF export", () => {
     expect(html).not.toContain(">D/A<");
   });
 
+  it("exporte l’audit guidé ouvert sans interpréter loopVerified comme une fermeture manquée", () => {
+    const loop = buildFixture(2);
+    const openData: RouteResponse = {
+      ...loop,
+      isLoop: false,
+      routeTopology: "open",
+      arrival: { latitude: 48.858, longitude: 2.354, source: "address" },
+      groupRoutes: loop.groupRoutes.map((route) => ({
+        ...route,
+        plannedSector: { center: { latitude: 48.8566, longitude: 2.3522 }, radiusKm: 1 },
+        guidedRouting: {
+          availability: "network",
+          loopVerified: false,
+          originVerified: true,
+          waypointOrderVerified: true,
+          waypointIds: [],
+          sectorDeviationKm: null,
+          sectorWithinBounds: false,
+          sectorStatus: "unknown",
+          warning: null,
+          budget: { totalMinutes: 90, organizationMarginMinutes: 15, minimumCollectionMinutes: 45, travelMaxMinutes: 30, travelMinutes: 20, collectionMinutesAvailable: 55, withinBudget: true },
+        },
+      })),
+    };
+
+    const html = buildRoutePdfHtml(openData, "colors", openData.generatedAt);
+
+    expect(html).toContain("trajet ouvert");
+    expect(html).toContain("arrivée fournie explicitement");
+    expect(html).not.toContain("boucle non vérifiée");
+  });
+
   it("échappe les valeurs injectées dans les attributs et le texte HTML", () => {
     const unsafe = "\"&<>'";
     const data = buildFixture();

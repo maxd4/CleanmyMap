@@ -256,4 +256,21 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Fête de quartier");
     expect(markup).toContain("Rôle : ancrage post-événement");
   });
+
+  it.each([
+    ["explicit", "Fournie explicitement", "address"],
+    ["planner", "Déterminée par le planner", "planner"],
+  ] as const)("distinguishes %s arrival provenance on an open route", (_name, label, source) => {
+    const data = dataFor("network");
+    data.isLoop = false;
+    data.routeTopology = "open";
+    data.arrival = { latitude: 48.858, longitude: 2.354, source };
+    data.loop.isLoop = false;
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Trajet ouvert de 2,4 km");
+    expect(markup).toContain(label);
+    expect(markup).not.toContain("Choisie par le planner");
+    expect(markup).not.toContain("boucles coordonnées");
+  });
 });

@@ -7,11 +7,13 @@ pour produire une décision de planner contrainte et explicable.
 - `route-response-contract.ts` : contrats HTTP request/response partagés par
   l’API et l’UI ; les types d’état ou de rendu restent dans le domaine UI.
 - `route-planner.ts` : sélection déterministe sous contraintes de budget,
-  sécurité, origine et nombre maximal d’arrêts. Chaque candidat réserve aussi
-  le retour à l’origine ; le planner ne produit donc qu’une boucle fermée.
+  sécurité, origine et nombre maximal d’arrêts. Pour une boucle, chaque
+  candidat réserve le retour à l’origine ; pour un trajet ouvert, la dernière
+  liaison vise l’arrivée fournie ou déterminée par le planner.
 - `fossgis-foot-routing.ts` : résultat de routage
-  réseau et fallback explicitement estimé. L’API reçoit la séquence
-  `origine → stops → origine` et les legs incluent le dernier retour.
+  réseau et fallback explicitement estimé. L’API reçoit une séquence adaptée à
+  la topologie : `origine → stops → origine` pour une boucle, ou
+  `origine → stops → arrivée` pour un trajet ouvert.
 - `route-predicted-targets.ts` : candidats prédits, distincts des spots
   observés, avec provenance, modèle et état de disponibilité.
 - `route-data-status.ts` : états de disponibilité et de dégradation exposés
@@ -98,7 +100,8 @@ recalcule ni la sélection ni la répartition.
 
 Les effectifs sont équilibrés au plus près (par exemple `11 → 4 / 4 / 3`).
 Chaque candidat est attribué au plus à un groupe par défaut. La sélection
-réserve le retour à l'origine dans chaque boucle estimée et applique d'abord
+réserve le retour à l'origine dans chaque boucle estimée ; pour un trajet ouvert,
+elle évalue la liaison vers l'arrivée lorsqu'elle est fournie. Elle applique d'abord
 les exclusions de sécurité, puis la valeur, l'équilibre et les coûts de
 recouvrement (cible, zone prédictive et corridor). Un secteur court partagé
 près de l'origine n'est pas pénalisé comme un corridor commun inutile.
@@ -121,8 +124,10 @@ d’organisation, collecte minimale et plafond de déplacement. La version v1
 reste lisible pour compatibilité et reçoit un budget interne conservant sa
 sémantique historique : tout le créneau de v1 reste disponible pour le
 déplacement, sans marge d’organisation ni collecte minimale artificielles.
-Chaque groupe reprend exactement l’origine commune et produit une boucle
-fermée, y compris lorsque le pool de signalements est vide. Les
+Chaque groupe reprend exactement l’origine commune et respecte la topologie
+effective : boucle fermée pour `routeTopology: "loop"`, trajet ouvert jusqu’à
+l’arrivée pour `routeTopology: "open"`, y compris lorsque le pool de
+signalements est vide. Les
 `plannedWaypoints` restent séparés des `stops` : ils ne portent ni score,
 `observed`/`predicted`, priorité scientifique, additionnalité ou provenance de
 pollution.
@@ -131,8 +136,9 @@ Le routage guidé appelle FOSSGIS/OSRM groupe par groupe ; l’intervalle de
 quota distribué existant d’une requête par seconde est respecté avec une
 attente bornée. La réponse expose l’audit `guidedRouting` et les
 `guidedSegments` : les liaisons `origin-link` sont distinguées des portions
-`collection`, l’ordre des waypoints, la fermeture, l’écart au secteur et le
-budget sont vérifiables. L’audit du secteur est calculé sur la polyline finale
+`collection`, l’ordre des waypoints, la fermeture lorsqu’il s’agit d’une
+boucle, l’arrivée d’un trajet ouvert, l’écart au secteur et le budget sont
+vérifiables. L’audit du secteur est calculé sur la polyline finale
 des seules portions `collection` ; `sectorStatus` vaut `unknown` et
 `sectorDeviationKm` vaut `null` si cette séparation ne peut pas être démontrée.
 Une géométrie de fallback est toujours marquée estimée et indisponible comme
@@ -141,7 +147,8 @@ parcours piéton réseau validé.
 Dans `RouteSection`, le mode guidé permet de choisir le départ commun sur la
 carte, de configurer chaque secteur, de nommer les groupes, de régler leurs
 effectifs, d’ordonner leurs passages et d’ajuster le budget. La carte affiche
-les boucles ensemble puis par groupe avec des couleurs distinctes. L’export
+les groupes ensemble puis par groupe avec des couleurs distinctes, en
+respectant la topologie effective. L’export
 terrain produit une vue générale et une fiche par groupe ; il sépare les
 passages planifiés des observations/prédictions et signale explicitement les
 géométries réseau ou estimées.

@@ -121,6 +121,7 @@ function RouteResultSummary({
 }: RouteResultDisplayProps & {
   data: RouteResponse;
 }) {
+  const isLoop = (data.routeTopology ?? (data.isLoop ? "loop" : "open")) === "loop";
   return (
     <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group overflow-hidden relative">
       <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
@@ -163,7 +164,7 @@ function RouteResultSummary({
           <p className="text-sm font-semibold text-emerald-100/80">
             {groupRoutes.length > 1
               ? `${data.volunteers} bénévoles · ${data.groupCount} groupes · ${data.multiRoute.totalDistanceKm.toFixed(2)} km cumulés`
-              : data.isLoop
+              : isLoop
                 ? `Boucle de ${totalKm.toFixed(2)} km · départ et arrivée au même endroit`
                 : `Trajet ouvert de ${totalKm.toFixed(2)} km · départ / arrivée`}
           </p>
@@ -198,12 +199,13 @@ function RouteGroupSelection({
   setMultiRouteDisplayMode: (mode: RouteMultiRouteDisplayMode) => void;
 }) {
   if (groupRoutes.length <= 1) return null;
+  const isLoop = (data.routeTopology ?? (data.isLoop ? "loop" : "open")) === "loop";
   return (
     <section aria-label={fr ? "Sélection des groupes" : "Group selection"} className="rounded-[2rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">{fr ? "Boucles coordonnées" : "Coordinated loops"}</p>
-          <p className="mt-2 text-sm font-semibold text-white/80">{fr ? "Chaque groupe reçoit une boucle différente afin de couvrir davantage de rues." : "Each group receives a different loop to cover more streets."}</p>
+            <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">{fr ? (isLoop ? "Boucles coordonnées" : "Trajets ouverts coordonnés") : (isLoop ? "Coordinated loops" : "Coordinated open routes")}</p>
+          <p className="mt-2 text-sm font-semibold text-white/80">{fr ? (isLoop ? "Chaque groupe reçoit une boucle différente afin de couvrir davantage de rues." : "Chaque groupe reçoit un trajet ouvert différent afin de couvrir davantage de rues.") : (isLoop ? "Each group receives a different loop to cover more streets." : "Each group receives a different open route to cover more streets.")}</p>
         </div>
         <fieldset className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2" aria-label={fr ? "Différencier les itinéraires par" : "Differentiate routes by"}>
           <legend className="px-1 cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-100/70">{fr ? "Différencier les itinéraires par" : "Differentiate routes by"}</legend>
@@ -217,7 +219,7 @@ function RouteGroupSelection({
           {groupRoutes.map((group) => <button key={group.groupIndex} type="button" role="tab" aria-selected={selectedGroupIndex === group.groupIndex} onClick={() => setSelectedGroupIndex(group.groupIndex)} className="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-50 transition hover:border-emerald-300/60">{group.label || (fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`)}</button>)}
         </div>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-3" role="list" aria-label={fr ? "Légende des boucles" : "Loop legend"}>
+      <div className="mt-4 grid gap-3 md:grid-cols-3" role="list" aria-label={fr ? (isLoop ? "Légende des boucles" : "Légende des trajets ouverts") : (isLoop ? "Loop legend" : "Open route legend")}>
         {groupRoutes.map((group) => {
           const visualStyle = getRouteGroupVisualStyle(group.groupIndex, multiRouteDisplayMode);
           const groupName = group.label || (fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`);
@@ -234,7 +236,7 @@ function RouteGroupSelection({
               {group.plannedSector ? <p className="mt-2 text-xs font-semibold text-sky-100/80">{fr ? "Secteur" : "Sector"} : {fr ? "centre" : "center"} {group.plannedSector.center.latitude.toFixed(4)}, {group.plannedSector.center.longitude.toFixed(4)} · {fr ? "rayon" : "radius"} {group.plannedSector.radiusKm.toFixed(1)} km</p> : null}
               {group.plannedWaypoints && group.plannedWaypoints.length > 0 ? <div className="mt-2 text-xs text-sky-100/80"><p className="font-black">{fr ? "Passages planifiés (ordre)" : "Planned waypoints (order)"}</p><ol className="mt-1 list-decimal space-y-0.5 pl-5">{group.plannedWaypoints.map((waypoint) => <li key={waypoint.id}>{waypoint.label}</li>)}</ol></div> : null}
               {guidedState ? <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-amber-100/80">{fr ? "État : " : "Status: "}{guidedState}</p> : null}
-              {group.guidedRouting ? <p className="mt-1 text-xs font-semibold text-slate-300">{fr ? `Boucle ${group.guidedRouting.loopVerified ? "fermée" : "à vérifier"} · ordre ${group.guidedRouting.waypointOrderVerified ? "respecté" : "non confirmé"} · budget déplacement ${group.guidedRouting.budget.travelMinutes} min / ${group.guidedRouting.budget.travelMaxMinutes} min` : `Loop ${group.guidedRouting.loopVerified ? "closed" : "to verify"} · order ${group.guidedRouting.waypointOrderVerified ? "preserved" : "unconfirmed"} · travel budget ${group.guidedRouting.budget.travelMinutes} / ${group.guidedRouting.budget.travelMaxMinutes} min`}</p> : null}
+              {group.guidedRouting ? <p className="mt-1 text-xs font-semibold text-slate-300">{fr ? (isLoop ? `Boucle ${group.guidedRouting.loopVerified ? "fermée" : "à vérifier"}` : "Trajet ouvert") + ` · ordre ${group.guidedRouting.waypointOrderVerified ? "respecté" : "non confirmé"} · budget déplacement ${group.guidedRouting.budget.travelMinutes} min / ${group.guidedRouting.budget.travelMaxMinutes} min` : (isLoop ? `Loop ${group.guidedRouting.loopVerified ? "closed" : "to verify"}` : "Open route") + ` · order ${group.guidedRouting.waypointOrderVerified ? "preserved" : "unconfirmed"} · travel budget ${group.guidedRouting.budget.travelMinutes} / ${group.guidedRouting.budget.travelMaxMinutes} min`}</p> : null}
               {group.guidedRouting ? <p className="mt-1 text-xs font-semibold text-slate-300">{fr ? "Secteur : " : "Sector: "}{group.guidedRouting.sectorStatus === "outside" ? (fr ? "hors périmètre" : "outside") : group.guidedRouting.sectorStatus === "within" ? (fr ? "respecté" : "within") : (fr ? "inconnu (géométrie non vérifiable)" : "unknown (geometry not verifiable)")}</p> : null}
               <div className="mt-3"><MeetingPointDetails meetingPoint={group.meetingPoint} meetingOpportunities={group.meetingOpportunities} fr={fr} /></div>
               <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">{group.operationalBudget?.withinBudget === true ? "Budget d’action respecté" : group.operationalBudget?.withinBudget === false ? "Budget d’action dépassé" : "Budget d’action non vérifiable"}</p>

@@ -480,6 +480,7 @@ export function buildRouteRecommendationTrace(
 ): RouteRecommendationTrace {
   const eventSignalContext =
     input.eventSignalContext ?? EMPTY_EVENT_SIGNAL_CONTEXT;
+  const routeTopology = input.routeTopology ?? (input.routeGeometry.isLoop ? "loop" : "open");
   const orderingCriteria = input.plannerResult.audit?.orderingCriteria ?? [
     "combined_score_desc",
     "priority_desc",
@@ -492,7 +493,7 @@ export function buildRouteRecommendationTrace(
       index + 1,
       input.plannerResult,
       eventSignalContext,
-      input.routeTopology ?? (input.routeGeometry.isLoop ? "loop" : "open"),
+      routeTopology,
     ),
   );
   const fallbacks: string[] = [];
@@ -561,8 +562,8 @@ export function buildRouteRecommendationTrace(
 
   return {
     engineVersion: input.engineVersion,
-    isLoop: input.routeGeometry.isLoop,
-    routeTopology: input.routeTopology ?? (input.routeGeometry.isLoop ? "loop" : "open"),
+    isLoop: routeTopology === "loop",
+    routeTopology,
     planningMode: input.planningMode ?? { type: "free" },
     parameters: {
       travelBudgetMinutes: input.travelBudgetMinutes,
@@ -588,7 +589,7 @@ export function buildRouteRecommendationTrace(
       remainingMinutes: Math.max(0, input.travelBudgetMinutes - consumedMinutes),
     },
     loop: {
-      isLoop: input.routeGeometry.isLoop,
+      isLoop: routeTopology === "loop",
       origin: { ...input.origin },
       returnDistanceKm: input.routeGeometry.returnLeg?.distanceKm ?? 0,
       returnMinutes: input.routeGeometry.returnLeg?.estimatedMinutes ?? 0,
