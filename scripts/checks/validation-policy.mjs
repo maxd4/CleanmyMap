@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 import { resolveValidationCommand } from "../ci/validation-process.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const WEB_ROOT = path.join(REPO_ROOT, "apps", "web");
 
 export const FULL_SUITE_INCLUDE_GLOBS = Object.freeze([
   "src/**/*.test.ts",

@@ -213,6 +213,14 @@
   },
   "overrides": {
     "node-forge": "file:apps/mobile/vendor/node-forge",
+    "glob": {
+      ".": "14.0.2",
+      "minimatch": "11.0.1"
+    },
+    "@expo/fingerprint": {
+      "minimatch": "11.0.1"
+    },
+    "deepmerge": "file:apps/mobile/vendor/deepmerge",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",

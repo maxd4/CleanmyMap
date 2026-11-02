@@ -24,6 +24,7 @@ const lockfile = {
 
 const BRACES_ADVISORY = "GHSA-VFJ7-8CJW-P6XM";
 const STREAM_JSON_JSONC_ADVISORY = "GHSA-hqr4-qq8f-hg3x";
+const DEEPMERGE_ADVISORY = "GHSA-GCQX-W48M-W2H4";
 
 function bracesAuditReport() {
   return {
@@ -350,6 +351,40 @@ test("does not cover a different braces version or resolved path", () => {
     assert.equal(result.unmitigated[0].version, candidate.version);
     assert.equal(result.unmitigated[0].path, candidate.path);
   }
+});
+
+test("accepts only the exact deepmerge backport and its dedicated security harness", () => {
+  const mitigation = EXPLICIT_MITIGATIONS.find((entry) => entry.advisory === DEEPMERGE_ADVISORY);
+  assert.deepEqual(mitigation, {
+    advisory: DEEPMERGE_ADVISORY,
+    packageName: "deepmerge",
+    version: "4.3.2",
+    path: "apps/mobile/vendor/deepmerge",
+    documentation: "documentation/security/dependency-advisory-governance.md",
+    verification: "apps/mobile/security/deepmerge-security.test.mjs",
+  });
+
+  const report = {
+    vulnerabilities: {
+      deepmerge: {
+        name: "deepmerge",
+        severity: "high",
+        via: [{ url: `https://github.com/advisories/${DEEPMERGE_ADVISORY}`, severity: "high" }],
+        nodes: ["node_modules/deepmerge"],
+      },
+    },
+  };
+  const accepted = evaluateAuditPolicy({
+    auditReport: report,
+    lockfile: {
+      packages: {
+        "node_modules/deepmerge": { link: true, resolved: "apps/mobile/vendor/deepmerge" },
+        "apps/mobile/vendor/deepmerge": { version: "4.3.2" },
+      },
+    },
+  });
+  assert.equal(accepted.passed, true);
+  assert.equal(accepted.mitigated[0].path, "apps/mobile/vendor/deepmerge");
 });
 
 test("a High finding without an exact mitigation fails, including string-only via entries", () => {

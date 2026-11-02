@@ -1,0 +1,11 @@
+{
+  "name": "deepmerge",
+  "version": "4.3.2",
+  "description": "CleanMyMap security backport of deepmerge@4.3.1; not an upstream release.",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "is-mergeable-object": "1.1.0"
+  }
+}

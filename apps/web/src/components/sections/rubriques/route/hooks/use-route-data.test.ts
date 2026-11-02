@@ -159,7 +159,9 @@ describe("useRouteData explicit request gate", () => {
       },
     };
     writeRouteDraftOptions(sessionStorage, mapOptions);
-    window.dispatchEvent(new StorageEvent("storage", { key: ROUTE_DRAFT_STORAGE_KEY }));
+    const storageEvent = new Event("storage");
+    Object.defineProperty(storageEvent, "key", { value: ROUTE_DRAFT_STORAGE_KEY });
+    window.dispatchEvent(storageEvent);
     await act(async () => undefined);
 
     expect(latestRoute?.originMode).toBe("map");

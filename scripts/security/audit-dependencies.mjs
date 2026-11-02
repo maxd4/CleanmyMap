@@ -64,6 +64,14 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
     documentation: GOVERNANCE_DOCUMENT,
     verification: "apps/mobile/security/braces-security.test.mjs",
   }),
+  Object.freeze({
+    advisory: "GHSA-GCQX-W48M-W2H4",
+    packageName: "deepmerge",
+    version: "4.3.2",
+    path: "apps/mobile/vendor/deepmerge",
+    documentation: GOVERNANCE_DOCUMENT,
+    verification: "apps/mobile/security/deepmerge-security.test.mjs",
+  }),
 ]);
 
 // These are exact, repository-owned non-applicability decisions. They are

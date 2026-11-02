@@ -618,6 +618,17 @@ test("rejects an option-like coverage Git ref before invoking Git", () => {
   assert.match(`${result.stdout}\n${result.stderr}`, /Unsafe coverage Git ref/);
 });
 
+test("rejects a symbolic coverage Git ref before invoking Git", () => {
+  const result = spawnSync(
+    process.execPath,
+    [path.resolve(repositoryRoot, "scripts/ci/coverage-publication.mjs"), "--candidate-ref=refs/heads/main"],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /only HEAD or a full commit SHA is accepted/);
+});
+
 test("Web evidence rejects summary, configuration, or environment fingerprint mismatch", () => {
   const sha = candidateSha();
   for (const mismatch of ["summarySha256", "configurationFingerprint", "environmentFingerprint"]) {

@@ -159,6 +159,9 @@ export function getCoveragePublicationRequirements({
 
 function gitSha(repositoryRoot, ref) {
   const normalizedRef = assertSafeGitRef(ref, "coverage Git ref");
+  if (normalizedRef !== "HEAD" && !SHA_PATTERN.test(normalizedRef)) {
+    throw new Error("Unsafe coverage Git ref: only HEAD or a full commit SHA is accepted");
+  }
   return execFileSync(gitExecutable(), ["rev-parse", "--verify", "--end-of-options", `${normalizedRef}^{commit}`], {
     cwd: repositoryRoot,
     encoding: "utf8",

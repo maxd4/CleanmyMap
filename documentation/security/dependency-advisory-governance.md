@@ -13,6 +13,22 @@ package, de niveau de sévérité ou de scanner.
 | [GHSA-528h-pc64-c93x](https://github.com/advisories/GHSA-528h-pc64-c93x) | CVE-2026-71429 | `apps/mobile/vendor/stream-json` `1.9.1` | `@clerk/expo` → `@clerk/clerk-js` → `@solana/wallet-adapter-base` → `@solana/web3.js@1.99.0` → `jayson@4.3.0` → `stream-json` | Backport CommonJS borné à `StreamValues` et `Verifier`, sans surface de filtres JSON |
 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | CVE-2026-85393 | `apps/mobile/vendor/node-forge` `1.4.0` | `expo@57.0.27` → `@expo/cli@57.0.28` → `node-forge`, et `@expo/code-signing-certificates@0.0.6` → `node-forge` | Backport du contrôle du nombre d'enfants de `DigestAlgorithm` depuis `forge#1152` (`ceba344...`) |
 | [GHSA-VFJ7-8CJW-P6XM](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | CVE-2026-93687 | `apps/mobile/vendor/braces` `3.0.4` | `micromatch@4.0.8` → `braces` dans Metro et l'outillage ESLint | Backport borné de profondeur de parsing ; voir `apps/mobile/vendor/braces/SECURITY-PATCH.md` |
+| [GHSA-GCQX-W48M-W2H4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) | CVE-2026-93753 | `apps/mobile/vendor/deepmerge` `4.3.2` | `expo@57.0.27` → `@expo/config@57.0.10` → `deepmerge` | Backport du rejet explicite des clés prototype ; voir `apps/mobile/vendor/deepmerge/SECURITY-PATCH.md` |
+
+## Correctifs de graphe Expo sans migration SDK
+
+Les alertes `GHSA-3g3m-2fjr-6pw4` (`glob`) et
+`GHSA-g3hv-75wg-m249` (`minimatch`) atteignent le graphe runtime mobile par
+Expo et `@expo/fingerprint`. Le contrat mobile reste Expo SDK 57 ; une
+migration SDK majeure n'est donc pas une correction proportionnée de ces
+advisories. Les overrides racine résolvent `glob` vers `14.0.2` et la
+résolution `minimatch` d'`@expo/fingerprint` vers `11.0.1`, versions corrigées,
+sans changer les manifests Expo ni les permissions natives. Le backport
+`deepmerge` est limité au consommateur Expo et garde l'API CommonJS requise.
+
+Les chemins et versions sont vérifiés par
+`apps/mobile/security/deepmerge-security.test.mjs` et par le lockfile ; aucun
+ignore global Dependabot n'est ajouté.
 
 ## Mitigation effectivement versionnée
 
@@ -346,13 +362,10 @@ les seuils de l'audit :
   npm racine `qs: 6.16.1`. La résolution du lockfile doit rester exactement
   `6.16.1` pour ce chemin contrôlé.
 
-`GHSA-gcqx-w48m-w2h4` / `CVE-2026-93753` (`deepmerge`) reste ouvert. La seule
-  utilisation résolue est transitive via `@expo/config@57.0.10`, qui déclare
-  `deepmerge: ^4.3.1`; aucun import applicatif CleanMyMap de `deepmerge` n'a été
-  trouvé. Le registre npm upstream ne publie pas de version supérieure à
-  `4.3.1`, et l'issue mainteneur décrit encore le correctif comme à appliquer,
-  sans release upstream corrigée. Un alias communautaire ou un override global
-  changerait le contrat du tooling Expo sans preuve de compatibilité ; il n'est
-  donc pas adopté. L'alerte reste visible et bloquante jusqu'à une release
-  upstream compatible, ou jusqu'à une mitigation locale séparée avec
-  provenance, tests de surface et validation Expo dédiés.
+`GHSA-GCQX-W48M-W2H4` / `CVE-2026-93753` (`deepmerge`) est traité par le
+  backport local exact `apps/mobile/vendor/deepmerge` `4.3.2`, consommé via
+  l'override npm racine. Le correctif rejette explicitement `__proto__`,
+  `constructor` et `prototype`, y compris avec une cible sans prototype ; la
+  compatibilité de fusion de configuration Expo est couverte par
+  `apps/mobile/security/deepmerge-security.test.mjs`. La publication upstream
+  reste inchangée et l'override ne modifie pas le SDK Expo.
