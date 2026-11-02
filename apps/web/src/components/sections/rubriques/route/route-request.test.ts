@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_ROUTE_OPTIONS } from "./route-draft-storage";
+import { buildBoundedRouteStartZone } from "@/lib/route/route-start-location";
 import {
   createRouteRequestGate,
   createRouteRecommendationSubmission,
@@ -192,6 +193,37 @@ describe("route recommendation request gate", () => {
       planningMode: { type: "free" },
       origin,
     });
+  });
+
+  it("preserves the active precise or confirmed zone selection in the HTTP payload", async () => {
+    const transport = vi.fn().mockImplementation(
+      async () => new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+    const preciseOptions = {
+      ...DEFAULT_ROUTE_OPTIONS,
+      startLocation: {
+        mode: "precise" as const,
+        label: "Adresse choisie",
+        origin: { latitude: 48.8566, longitude: 2.3522, source: "address" as const },
+      },
+    };
+    const zoneOptions = {
+      ...DEFAULT_ROUTE_OPTIONS,
+      startLocation: {
+        mode: "zone" as const,
+        label: "Quartier test",
+        zone: {
+          ...buildBoundedRouteStartZone("Quartier test", { latitude: 48.857, longitude: 2.351 }, 2),
+          confirmed: true,
+        },
+      },
+    };
+
+    await fetchRouteRecommendation(createRouteRecommendationSubmission(16, preciseOptions), transport);
+    await fetchRouteRecommendation(createRouteRecommendationSubmission(17, zoneOptions), transport);
+
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string).startLocation).toEqual(preciseOptions.startLocation);
+    expect(JSON.parse(transport.mock.calls[1]?.[1]?.body as string).startLocation).toEqual(zoneOptions.startLocation);
   });
 
   it("omits origin from the HTTP payload when the submission has no origin", async () => {

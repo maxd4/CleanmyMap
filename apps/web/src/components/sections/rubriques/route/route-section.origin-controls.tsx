@@ -24,7 +24,7 @@ export function RouteOriginControls({
   const [gpsInput, setGpsInput] = useState("");
   const [addressInput, setAddressInput] = useState("");
   const [zoneInput, setZoneInput] = useState("");
-  const startMode = options.startLocation?.mode ?? "precise";
+  const startMode = originMode === "zone" ? "zone" : options.startLocation?.mode ?? "precise";
   const preciseLabel = options.startLocation?.mode === "precise" ? options.startLocation.label : "";
   const zone = options.startLocation?.mode === "zone" ? options.startLocation.zone : null;
   const originMessage = mapOrigin
@@ -37,15 +37,9 @@ export function RouteOriginControls({
   const selectStartMode = (mode: "precise" | "zone") => {
     if (mode === "zone") {
       setOriginMode("zone");
-      clearMapOrigin();
-      setOptions((previous) => ({ ...previous, startLocation: undefined }));
       return;
     }
     setOriginMode(options.startLocation?.mode === "precise" ? options.startLocation.origin.source : "browser");
-    setOptions((previous) => ({
-      ...previous,
-      startLocation: previous.startLocation?.mode === "precise" ? previous.startLocation : undefined,
-    }));
   };
   const setPreciseAddress = (label: string, coordinates?: { latitude: number; longitude: number } | null) => {
     setAddressInput(label);

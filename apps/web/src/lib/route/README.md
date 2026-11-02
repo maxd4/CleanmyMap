@@ -87,7 +87,11 @@ la contribution du planner puis la proximité et l’identifiant. Sans candidat
 admissible, la requête est refusée explicitement. La sélection et l’origine
 résolue sont conservées dans la réponse, le snapshot, la preuve et le
 `OperationalRoute`; les brouillons historiques sans `startLocation` gardent
-leur résolution d’origine.
+leur résolution d’origine. Dans l’interface, le mode de départ reste la
+sélection effective même avant géocodage d’une zone ; changer de source précise
+invalide l’ancienne origine devenue inapplicable, tandis qu’un brouillon valide
+réhydrate son mode et sa sélection sans les supprimer lors d’un simple
+rerender.
 
 ## Répartition multi-groupe
 

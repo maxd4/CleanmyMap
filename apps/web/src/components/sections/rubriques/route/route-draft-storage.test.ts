@@ -7,6 +7,7 @@ import {
   writeRouteDraftOptions,
 } from "./route-draft-storage";
 import type { RouteOptions } from "./route-types";
+import { buildBoundedRouteStartZone } from "@/lib/route/route-start-location";
 
 class MemoryStorage {
   private readonly values = new Map<string, string>();
@@ -41,6 +42,35 @@ describe("route draft storage contract", () => {
       options: nonDefaultOptions,
     });
     expect(readRouteDraftOptions(storage)).toEqual(nonDefaultOptions);
+  });
+
+  it("restores confirmed zones and map-selected precise origins", () => {
+    const storage = new MemoryStorage();
+    const zoneOptions: RouteOptions = {
+      ...nonDefaultOptions,
+      startLocation: {
+        mode: "zone",
+        label: "Quartier test",
+        zone: {
+          ...buildBoundedRouteStartZone("Quartier test", { latitude: 48.857, longitude: 2.351 }, 2),
+          confirmed: true,
+        },
+      },
+    };
+
+    writeRouteDraftOptions(storage, zoneOptions);
+    expect(readRouteDraftOptions(storage)).toEqual(zoneOptions);
+
+    const mapOptions: RouteOptions = {
+      ...nonDefaultOptions,
+      startLocation: {
+        mode: "precise",
+        label: "Point choisi sur la carte",
+        origin: { latitude: 48.857, longitude: 2.351, source: "map" },
+      },
+    };
+    writeRouteDraftOptions(storage, mapOptions);
+    expect(readRouteDraftOptions(storage)).toEqual(mapOptions);
   });
 
   it("uses canonical defaults for corrupt or incompatible drafts", () => {

@@ -73,6 +73,9 @@ export async function POST(request: Request) {
       pickupPreference: options.pickupPreference,
       riskFocus: options.riskFocus,
     });
+    const startZone = options.startLocation?.mode === "zone"
+      ? options.startLocation.zone
+      : null;
 
   try {
     const supabase = getSupabaseServerClient(true);
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
       locationPreference?.arrondissement,
     );
 
-    if (!origin && options.startLocation?.mode !== "zone") {
+    if (!origin && !startZone) {
       return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
     }
 
@@ -111,9 +114,9 @@ export async function POST(request: Request) {
     }
 
     const candidateData = await loadRouteCandidateData(supabase);
-    if (options.startLocation?.mode === "zone") {
+    if (startZone) {
       origin = selectRouteOriginWithinZone(
-        options.startLocation.zone,
+        startZone,
         candidateData.spatialCandidates,
       );
       if (!origin) {
@@ -126,9 +129,9 @@ export async function POST(request: Request) {
     if (!origin) {
       return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
     }
-    const spatialCandidates = options.startLocation?.mode === "zone"
+    const spatialCandidates = startZone
       ? candidateData.spatialCandidates.filter((candidate) =>
-          routeStartZoneContains(options.startLocation!.zone, candidate),
+          routeStartZoneContains(startZone, candidate),
         )
       : candidateData.spatialCandidates;
     const weatherContext = await fetchPlannerWeatherContext({

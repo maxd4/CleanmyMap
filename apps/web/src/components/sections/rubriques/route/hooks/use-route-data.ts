@@ -39,6 +39,13 @@ const serverRouteDraftSnapshot: RouteDraftSnapshot = {
 let cachedRouteDraftRaw: string | null | undefined;
 let cachedRouteDraftSnapshot = serverRouteDraftSnapshot;
 
+function routeOriginModeForStartLocation(
+  startLocation: RouteOptions["startLocation"],
+): RouteOriginMode {
+  if (!startLocation) return "browser";
+  return startLocation.mode === "zone" ? "zone" : startLocation.origin.source;
+}
+
 function readRouteDraftStorage(): Storage | undefined {
   try {
     return window.sessionStorage;
@@ -111,6 +118,15 @@ export function useRouteData() {
     ? routeDraftSnapshot.options
     : optionsState;
   const isDraftHydrated = routeDraftSnapshot.hydrated;
+  const draftIsAuthoritative = isDraftHydrated && !draftEditedBeforeHydration;
+  const effectiveOriginMode = draftIsAuthoritative
+    ? routeOriginModeForStartLocation(routeDraftSnapshot.options.startLocation)
+    : originMode;
+  const effectiveMapOrigin = draftIsAuthoritative &&
+      routeDraftSnapshot.options.startLocation?.mode === "precise" &&
+      routeDraftSnapshot.options.startLocation.origin.source === "map"
+    ? routeDraftSnapshot.options.startLocation.origin
+    : mapOrigin;
 
   const setOptions = useCallback<React.Dispatch<React.SetStateAction<RouteOptions>>>((update) => {
     const shouldApplyHydratedDraft =
@@ -125,7 +141,19 @@ export function useRouteData() {
   const setOriginMode = useCallback((mode: RouteOriginMode) => {
     setOriginModeState(mode);
     setOriginSelectionError(false);
-  }, []);
+    if (mode !== "map") setMapOriginState(null);
+    setOptions((previous) => {
+      const startLocation = previous.startLocation;
+      const keepsActiveSelection = mode === "zone"
+        ? startLocation?.mode === "zone"
+        : mode === "map"
+          ? startLocation?.mode === "precise" && startLocation.origin.source === "map"
+          : startLocation?.mode === "precise" && startLocation.origin.source === mode;
+      return keepsActiveSelection
+        ? previous
+        : { ...previous, startLocation: undefined };
+    });
+  }, [setOptions]);
 
   const setPlanningMode = useCallback((mode: RoutePlanningMode) => {
     setPlanningModeState(
@@ -145,6 +173,7 @@ export function useRouteData() {
   }, []);
 
   const setMapOrigin = useCallback((origin: RouteRecommendationOrigin) => {
+    setOriginModeState("map");
     setMapOriginState(origin);
     setOptions((previous) => ({
       ...previous,
@@ -154,6 +183,7 @@ export function useRouteData() {
   }, [setOptions]);
 
   const clearMapOrigin = useCallback(() => {
+    setOriginModeState("map");
     setMapOriginState(null);
     setOptions((previous) => ({
       ...previous,
@@ -240,9 +270,9 @@ export function useRouteData() {
     planningMode,
     planningModeValidationError,
     setPlanningMode,
-    originMode,
+    originMode: effectiveOriginMode,
     setOriginMode,
-    mapOrigin,
+    mapOrigin: effectiveMapOrigin,
     setMapOrigin,
     setZoneCenter,
     clearMapOrigin,
@@ -251,15 +281,15 @@ export function useRouteData() {
     isRequestInFlight,
     requestRecommendation: async () => {
       if (planningModeValidationError) return;
-      if (originMode === "map" && !mapOrigin) {
+      if (effectiveOriginMode === "map" && !effectiveMapOrigin) {
         setOriginSelectionError(true);
         return;
       }
-      if (originMode === "zone" && !(options.startLocation?.mode === "zone" && options.startLocation.zone.confirmed)) {
+      if (effectiveOriginMode === "zone" && !(options.startLocation?.mode === "zone" && options.startLocation.zone.confirmed)) {
         setOriginSelectionError(true);
         return;
       }
-      if ((originMode === "address" || originMode === "gps") && options.startLocation?.mode !== "precise") {
+      if ((effectiveOriginMode === "address" || effectiveOriginMode === "gps") && options.startLocation?.mode !== "precise") {
         setOriginSelectionError(true);
         return;
       }
@@ -267,14 +297,14 @@ export function useRouteData() {
       if (!requestGate.current.start()) return;
 
       setIsRequestInFlight(true);
-      setIsResolvingOrigin(originMode === "browser");
+      setIsResolvingOrigin(effectiveOriginMode === "browser");
 
       let origin: RouteRecommendationOrigin | undefined = options.startLocation?.mode === "precise"
         ? options.startLocation.origin
         : undefined;
       try {
-        if (originMode === "browser") {
-          origin = await resolveRouteRequestOrigin(originMode, mapOrigin, resolveBrowserRouteOrigin);
+        if (effectiveOriginMode === "browser") {
+          origin = await resolveRouteRequestOrigin(effectiveOriginMode, effectiveMapOrigin, resolveBrowserRouteOrigin);
         }
       } catch {
         origin = undefined;
