@@ -341,13 +341,34 @@ function isValidImpactTerrainResults(value: unknown): boolean {
 function isValidHistoricalImpactTerrainConditionEntry(
   value: unknown,
 ): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const optionalFieldsAreValid =
+    (value.estimatedWeightKg === undefined ||
+      isNullableFiniteNonNegativeNumber(value.estimatedWeightKg)) &&
+    (value.massProvenance === undefined ||
+      value.massProvenance === "measured" ||
+      value.massProvenance === "estimated" ||
+      value.massProvenance === "mixed" ||
+      value.massProvenance === "unknown") &&
+    (value.conversionVersions === undefined ||
+      (Array.isArray(value.conversionVersions) &&
+        value.conversionVersions.every(
+          (version) => typeof version === "string",
+        )));
+
   return (
-    isRecord(value) &&
     typeof value.condition === "string" &&
     MEGOTS_CONDITIONS.includes(
       value.condition as (typeof MEGOTS_CONDITIONS)[number],
     ) &&
-    isFiniteNonNegativeNumber(value.count)
+    isRecord(value.label) &&
+    typeof value.label.fr === "string" &&
+    typeof value.label.en === "string" &&
+    isFiniteNonNegativeNumber(value.count) &&
+    optionalFieldsAreValid
   );
 }
 

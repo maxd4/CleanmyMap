@@ -195,6 +195,21 @@ function historicalV1Snapshot(
   } as PublicImpactSnapshotRecord;
 }
 
+function historicalV1SnapshotWithButtsByCondition(entry: unknown) {
+  return historicalV1Snapshot({
+    payload: {
+      ...OBSERVED_HISTORICAL_V1_PAYLOAD,
+      kpis: {
+        ...OBSERVED_HISTORICAL_V1_PAYLOAD.kpis,
+        impactTerrain: {
+          ...OBSERVED_HISTORICAL_V1_PAYLOAD.kpis.impactTerrain,
+          buttsByCondition: [entry],
+        },
+      },
+    },
+  });
+}
+
 async function expectSnapshotRegenerated(snapshot: ReturnType<typeof currentSnapshot>) {
   expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
   readLatestSnapshotMock.mockResolvedValue(snapshot);
@@ -289,6 +304,7 @@ describe("public monthly impact snapshot", () => {
       visibleActions: 5,
       distinctLocations: 5,
     });
+    expect(snapshot.payload.kpis.impactTerrain.buttsByCondition).toEqual([]);
     expect("wasteKnownActions" in snapshot.payload.kpis.impactTerrain).toBe(false);
     expect("wasteCoverageRate" in snapshot.payload.kpis.impactTerrain).toBe(false);
     expect("buttsMassProvenance" in snapshot.payload.kpis.impactTerrain).toBe(false);
@@ -718,5 +734,74 @@ describe("public monthly impact snapshot", () => {
     expect(advanceStateMock).toHaveBeenCalledOnce();
     expect(upsertSnapshotMock).toHaveBeenCalledOnce();
     expect(readLatestSnapshotMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe("historical v1 butts distribution validation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readLatestSnapshotMock.mockResolvedValue(null);
+    readSnapshotHistoryMock.mockResolvedValue([]);
+  });
+
+  it.each([
+    ["an entry without a label", { condition: "propre", count: 1 }],
+    [
+      "an entry with a malformed label",
+      { condition: "propre", count: 1, label: { fr: "Propre" } },
+    ],
+    [
+      "an entry with an invalid optional estimated weight",
+      {
+        condition: "propre",
+        count: 1,
+        label: { fr: "Propre", en: "Clean" },
+        estimatedWeightKg: "0.01",
+      },
+    ],
+    [
+      "an entry with an invalid optional mass provenance",
+      {
+        condition: "propre",
+        count: 1,
+        label: { fr: "Propre", en: "Clean" },
+        massProvenance: "calculated",
+      },
+    ],
+    [
+      "an entry with invalid optional conversion versions",
+      {
+        condition: "propre",
+        count: 1,
+        label: { fr: "Propre", en: "Clean" },
+        conversionVersions: ["v1", 2],
+      },
+    ],
+  ])("rejects a historical v1 snapshot with %s", async (_reason, entry) => {
+    const snapshot = historicalV1SnapshotWithButtsByCondition(entry);
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBeNull();
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts a historical v1 entry with the fields required by the pie chart", async () => {
+    const snapshot = historicalV1SnapshotWithButtsByCondition({
+      condition: "propre",
+      label: { fr: "Propre", en: "Clean" },
+      count: 1,
+      estimatedWeightKg: null,
+      massProvenance: "estimated",
+      conversionVersions: ["cleanmymap-butts-mass-v1"],
+    });
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    await expect(loadLatestPublicImpactSnapshot()).resolves.toBe(snapshot);
+    expect(snapshot.payload.kpis.impactTerrain.buttsByCondition).toHaveLength(1);
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 });
