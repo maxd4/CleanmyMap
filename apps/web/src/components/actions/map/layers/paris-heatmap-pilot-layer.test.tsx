@@ -25,6 +25,19 @@ const layer: PilotLayer = {
     provider: "OpenStreetMap contributors",
     license: "ODbL-1.0",
     modelVersion: "pilot",
+    network: {
+      snapshotId: "pilot",
+      retrievedAt: "2026-11-01T00:00:00.000Z",
+      provider: "OpenStreetMap contributors",
+      license: "ODbL-1.0",
+    },
+    scores: {
+      snapshotId: "pressure",
+      generatedAt: "2026-09-05T00:00:00.000Z",
+      refreshedAt: "2026-09-05T00:00:00.000Z",
+      modelVersion: "risk",
+      provenance: [],
+    },
   },
   warnings: [],
   segments: [{
@@ -38,6 +51,10 @@ const layer: PilotLayer = {
     scores: { mixed: 60, cigaretteButts: 70, waste: 50 },
     dominantFactors: ["Bar ou café OSM"],
     dominantMicroPlace: null,
+    appliedMicroPlaceInfluences: {
+      cigaretteButts: null,
+      waste: null,
+    },
     provenance: "osm-snapshot+iris-reference+polarized-policy",
     status: "predicted",
   }],
@@ -51,6 +68,7 @@ const layer: PilotLayer = {
     cigaretteButtCoefficient: 2.8,
     wasteCoefficient: 1.45,
     provenance: "osm-snapshot",
+    status: "hypothesis",
   }],
 };
 

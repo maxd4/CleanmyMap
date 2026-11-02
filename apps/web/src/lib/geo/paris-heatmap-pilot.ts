@@ -2,7 +2,10 @@ import pilotData from "@/../data/geospatial/paris-heatmap-pilot.json";
 import {
   estimateParisPressureRisk,
 } from "./paris-pressure-risk";
-import type { ParisPressureRiskEstimate } from "./paris-pressure-risk-contract";
+import {
+  PARIS_PRESSURE_RISK_MODEL_CONFIG,
+  type ParisPressureRiskEstimate,
+} from "./paris-pressure-risk-contract";
 import type {
   ParisPressureProvenance,
   ParisPressureSnapshot,
@@ -39,6 +42,10 @@ type PilotSnapshot = {
   geometryVersion?: string;
   identifierVersion?: string;
   referenceGeometrySnapshotId?: string;
+  pressureSnapshotId?: string;
+  pressureGeneratedAt?: string;
+  pressureRefreshedAt?: string;
+  pressureSources?: ParisPressureProvenance[];
   pilotBoundary?: {
     type: string;
     arrondissementCodes: string[];
@@ -70,6 +77,13 @@ export type ParisHeatmapPilotMicroPlace = {
   cigaretteButtCoefficient: number;
   wasteCoefficient: number;
   provenance: "osm-snapshot";
+  status: "hypothesis";
+};
+
+export type ParisHeatmapPilotAppliedMicroPlaceInfluence = {
+  microPlace: ParisHeatmapPilotMicroPlace;
+  attenuatedCoefficient: number;
+  status: "hypothesis";
 };
 
 export type ParisHeatmapPilotSegment = {
@@ -87,6 +101,10 @@ export type ParisHeatmapPilotSegment = {
   };
   dominantFactors: string[];
   dominantMicroPlace: ParisHeatmapPilotMicroPlace | null;
+  appliedMicroPlaceInfluences: {
+    cigaretteButts: ParisHeatmapPilotAppliedMicroPlaceInfluence | null;
+    waste: ParisHeatmapPilotAppliedMicroPlaceInfluence | null;
+  };
   provenance: "osm-snapshot+iris-reference+polarized-policy";
   status: ParisHeatmapPilotStatus;
 };
@@ -102,6 +120,19 @@ export type ParisHeatmapPilotLayer = {
     provider: string;
     license: string;
     modelVersion: string;
+    network: {
+      snapshotId: string;
+      retrievedAt: string;
+      provider: string;
+      license: string;
+    };
+    scores: {
+      snapshotId: string;
+      generatedAt: string;
+      refreshedAt: string;
+      modelVersion: string;
+      provenance: ParisPressureProvenance[];
+    };
   };
   warnings: string[];
 };
@@ -157,13 +188,31 @@ const microPlaceDefinitions: Record<
   cinema: { family: "tourism_and_culture", label: "Cinéma OSM", cigaretteButts: 1.95, waste: 2.05 },
 };
 
-const source = {
-  snapshotId: rawPilotData.snapshotId,
-  retrievedAt: rawPilotData.retrievedAt,
-  provider: rawPilotData.source.provider,
-  license: rawPilotData.license,
-  modelVersion: `paris-street-pollution-polarized-pilot-v1+${rawPilotData.geometryVersion ?? "legacy-bbox"}`,
-} as const;
+function buildLayerSource(data: PilotSnapshot): ParisHeatmapPilotLayer["source"] {
+  const scoreSnapshotId = data.pressureSnapshotId ?? data.referenceGeometrySnapshotId ?? "unknown";
+  const scoreGeneratedAt = data.pressureGeneratedAt ?? data.retrievedAt;
+  const scoreRefreshedAt = data.pressureRefreshedAt ?? data.retrievedAt;
+  return {
+    snapshotId: data.snapshotId,
+    retrievedAt: data.retrievedAt,
+    provider: data.source.provider,
+    license: data.license,
+    modelVersion: `paris-street-pollution-polarized-pilot-v1+${data.geometryVersion ?? "legacy-bbox"}`,
+    network: {
+      snapshotId: data.snapshotId,
+      retrievedAt: data.retrievedAt,
+      provider: data.source.provider,
+      license: data.license,
+    },
+    scores: {
+      snapshotId: scoreSnapshotId,
+      generatedAt: scoreGeneratedAt,
+      refreshedAt: scoreRefreshedAt,
+      modelVersion: PARIS_PRESSURE_RISK_MODEL_CONFIG.predictionModelVersion,
+      provenance: data.pressureSources ?? [],
+    },
+  };
+}
 
 function distanceKm(left: [number, number], right: [number, number]): number {
   const latitudeFactor = Math.PI / 180;
@@ -196,43 +245,23 @@ function blendCoefficient(coefficient: number, distance: number): number {
   return 1 + influence(distance) * (coefficient - 1);
 }
 
-function asRiskSnapshot(zones: ParisPressureZone[]): ParisPressureSnapshot {
-  const provenance = (family: ParisPressureProvenance["family"]): ParisPressureProvenance => ({
-    family,
-    publisher: family === "geography" ? "INSEE / IRIS" : "CleanMyMap",
-    dataset: family === "geography" ? "paris-iris-reference" : `paris-pressure-${family}`,
-    url: "https://github.com/maxd4/CleanMyMap",
-    license: "Voir la provenance du snapshot IRIS courant",
-    datasetVersion: "paris-iris-2024-pop-2021-r2-polygon",
-    observedAt: null,
-    refreshedAt: rawPilotData.retrievedAt,
-    geographicLevel: family === "geography" ? "iris" : "iris",
-    status: "available",
-    notes: ["Référence de calcul invisible du pilote ; aucune géométrie IRIS n'est rendue."],
-  });
+function asRiskSnapshot(data: PilotSnapshot, zones: ParisPressureZone[]): ParisPressureSnapshot {
   return {
     schemaVersion: "paris-pressure-v1",
-    snapshotId: "paris-iris-2024-pop-2021-r2-polygon",
-    generatedAt: rawPilotData.retrievedAt,
-    refreshedAt: rawPilotData.retrievedAt,
+    snapshotId: data.pressureSnapshotId ?? data.referenceGeometrySnapshotId ?? "unknown",
+    generatedAt: data.pressureGeneratedAt ?? data.retrievedAt,
+    refreshedAt: data.pressureRefreshedAt ?? data.retrievedAt,
     geographicLevel: "iris",
     coverage: {
       country: "FR",
       department: "75",
       commune: "75056",
       zoneCount: zones.length,
-      complete: true,
+      complete: false,
       geometryComplete: false,
-      notes: ["Sous-ensemble compact des références IRIS utilisé par le snapshot OSM du pilote."],
+      notes: ["Sous-ensemble compact des références IRIS ; les métadonnées de sources proviennent du snapshot canonique sans charger son référentiel complet."],
     },
-    sources: [
-      provenance("geography"),
-      provenance("resident_population"),
-      provenance("transport"),
-      provenance("tourism"),
-      provenance("public_activity"),
-      provenance("cleanliness"),
-    ],
+    sources: data.pressureSources ?? [],
     zones,
   };
 }
@@ -261,6 +290,7 @@ function buildMicroPlaces(data: PilotSnapshot): ParisHeatmapPilotMicroPlace[] {
       cigaretteButtCoefficient: definition.cigaretteButts,
       wasteCoefficient: definition.waste,
       provenance: "osm-snapshot" as const,
+      status: "hypothesis" as const,
     }];
   });
   const kept: ParisHeatmapPilotMicroPlace[] = [];
@@ -320,21 +350,33 @@ export function splitParisHeatmapPilotWays(
   return output;
 }
 
+type MicroPlaceInfluenceKind = "cigaretteButts" | "waste";
+
 function dominantMicroPlace(
   midpoint: [number, number],
   places: readonly ParisHeatmapPilotMicroPlace[],
-): ParisHeatmapPilotMicroPlace | null {
+  kind: MicroPlaceInfluenceKind,
+): { place: ParisHeatmapPilotMicroPlace; attenuatedCoefficient: number } | null {
+  const coefficient = kind === "cigaretteButts" ? "cigaretteButtCoefficient" : "wasteCoefficient";
   const bestByFamily = new Map<string, { place: ParisHeatmapPilotMicroPlace; effect: number }>();
   for (const place of places) {
     const distance = distanceKm(midpoint, place.coordinate);
     if (distance > MICRO_PLACE_RADIUS_KM) continue;
-    const cigaretteEffect = blendCoefficient(place.cigaretteButtCoefficient, distance);
-    const wasteEffect = blendCoefficient(place.wasteCoefficient, distance);
-    const effect = Math.max(cigaretteEffect, wasteEffect);
+    const effect = blendCoefficient(place[coefficient], distance);
     const previous = bestByFamily.get(place.family);
     if (!previous || effect > previous.effect) bestByFamily.set(place.family, { place, effect });
   }
-  return [...bestByFamily.values()].sort((left, right) => right.effect - left.effect)[0]?.place ?? null;
+  const best = [...bestByFamily.values()]
+    .sort((left, right) => right.effect - left.effect || left.place.id.localeCompare(right.place.id))[0];
+  return best ? { place: best.place, attenuatedCoefficient: best.effect } : null;
+}
+
+function appliedMicroPlaceInfluence(
+  influenceValue: { place: ParisHeatmapPilotMicroPlace; attenuatedCoefficient: number } | null,
+): ParisHeatmapPilotAppliedMicroPlaceInfluence | null {
+  return influenceValue
+    ? { microPlace: influenceValue.place, attenuatedCoefficient: influenceValue.attenuatedCoefficient, status: "hypothesis" }
+    : null;
 }
 
 function roadCoefficient(highway: string): { cigaretteButts: number; waste: number } {
@@ -403,7 +445,7 @@ export function buildParisHeatmapPilot(options: {
 } = {}): ParisHeatmapPilotLayer {
   const data = options.snapshot ?? rawPilotData;
   const referenceZones = buildReferenceZones(data);
-  const riskSnapshot = asRiskSnapshot(referenceZones);
+  const riskSnapshot = asRiskSnapshot(data, referenceZones);
   const estimates = new Map(referenceZones.map((zone) => [
     zone.id,
     estimateParisPressureRisk(zone, riskSnapshot),
@@ -413,15 +455,19 @@ export function buildParisHeatmapPilot(options: {
   const balancedSegments = baseSegments
     .filter((segment): segment is typeof segment & { irisReferenceId: string } => Boolean(segment.irisReferenceId))
     .map((segment) => {
-      const place = dominantMicroPlace(segment.midpoint, microPlaces);
+      const cigaretteInfluence = dominantMicroPlace(segment.midpoint, microPlaces, "cigaretteButts");
+      const wasteInfluence = dominantMicroPlace(segment.midpoint, microPlaces, "waste");
       const road = roadCoefficient(data.ways.find((way) => (way.sourceWayId ?? way.id) === segment.osmWayId)?.highway ?? "");
-      const dominantDistance = place ? distanceKm(segment.midpoint, place.coordinate) : MICRO_PLACE_RADIUS_KM;
       return {
         ...segment,
         zoneId: segment.irisReferenceId,
-        dominantMicroPlace: place,
-        rawCigarette: clamp(road.cigaretteButts * (place ? blendCoefficient(place.cigaretteButtCoefficient, dominantDistance) : NO_EFFECT), 0.15, 5),
-        rawWaste: clamp(road.waste * (place ? blendCoefficient(place.wasteCoefficient, dominantDistance) : NO_EFFECT), 0.15, 5),
+        dominantMicroPlace: cigaretteInfluence?.place ?? wasteInfluence?.place ?? null,
+        appliedMicroPlaceInfluences: {
+          cigaretteButts: appliedMicroPlaceInfluence(cigaretteInfluence),
+          waste: appliedMicroPlaceInfluence(wasteInfluence),
+        },
+        rawCigarette: clamp(road.cigaretteButts * (cigaretteInfluence?.attenuatedCoefficient ?? NO_EFFECT), 0.15, 5),
+        rawWaste: clamp(road.waste * (wasteInfluence?.attenuatedCoefficient ?? NO_EFFECT), 0.15, 5),
         cigaretteButts: null as number | null,
         waste: null as number | null,
       };
@@ -434,7 +480,10 @@ export function buildParisHeatmapPilot(options: {
       ? "predicted"
       : "unavailable";
     const dominantFactors = riskFactors(estimate);
-    if (balanced?.dominantMicroPlace) dominantFactors.unshift(balanced.dominantMicroPlace.label);
+    const cigaretteInfluence = balanced?.appliedMicroPlaceInfluences.cigaretteButts;
+    const wasteInfluence = balanced?.appliedMicroPlaceInfluences.waste;
+    if (wasteInfluence) dominantFactors.unshift(`Déchets : ${wasteInfluence.microPlace.label}`);
+    if (cigaretteInfluence) dominantFactors.unshift(`Mégots : ${cigaretteInfluence.microPlace.label}`);
     return {
       ...segment,
       scores: {
@@ -446,6 +495,7 @@ export function buildParisHeatmapPilot(options: {
       },
       dominantFactors,
       dominantMicroPlace: balanced?.dominantMicroPlace ?? null,
+      appliedMicroPlaceInfluences: balanced?.appliedMicroPlaceInfluences ?? { cigaretteButts: null, waste: null },
       provenance: "osm-snapshot+iris-reference+polarized-policy",
       status,
     };
@@ -456,7 +506,7 @@ export function buildParisHeatmapPilot(options: {
     status: available ? "predicted" : "unavailable",
     segments,
     microPlaces: available ? microPlaces : [],
-    source,
+    source: buildLayerSource(data),
     warnings: available
       ? ["Pilote prédictif : les scores sont des hypothèses polarisées, pas des mesures de terrain.", "Les coefficients socio-démographiques ne sont pas activés dans ce pilote."]
       : ["Les tronçons OSM ou leurs références IRIS ne sont pas disponibles dans le snapshot du pilote ; les micro-points restent masqués."],
@@ -468,7 +518,7 @@ export function getParisHeatmapPilotReferenceScores(): ReadonlyMap<
   { cigaretteButts: number; waste: number }
 > {
   const zones = buildReferenceZones(rawPilotData);
-  const snapshot = asRiskSnapshot(zones);
+  const snapshot = asRiskSnapshot(rawPilotData, zones);
   return new Map(zones.map((zone) => {
     const estimate = estimateParisPressureRisk(zone, snapshot);
     return [zone.id, { cigaretteButts: estimate.cigaretteButtRisk, waste: estimate.wasteRisk }];

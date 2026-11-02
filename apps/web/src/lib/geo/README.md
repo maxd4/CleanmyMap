@@ -32,7 +32,12 @@ l'ouverture d'une carte. La couche UI rend des tronçons OSM et des micro-points
 distincts ; elle ne rend jamais les polygones IRIS et masque les micro-points
 lorsque les tronçons sont indisponibles. Les scores sont prédictifs, séparés
 des observations, et les coefficients socio-démographiques restent inactifs
-dans ce pilote.
+dans ce pilote. La projection embarque uniquement les métadonnées de sources
+du snapshot IRIS canonique (statuts, producteurs, millésimes et dates), jamais
+le référentiel géométrique complet. Les influences micro-lieux sont calculées
+indépendamment pour les branches mégots et déchets et exposées comme
+hypothèses appliquées ; la provenance OSM du réseau reste distincte de celle
+des scores IRIS.
 
 ## Contrats et validation
 

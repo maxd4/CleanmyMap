@@ -50,6 +50,10 @@ test("prépare uniquement les 5e/6e, conserve la provenance OSM et versionne les
       pois: [{ id: "in", lat: 48.85, lon: 2.345, name: "Inside", kind: "bar" }, { id: "out", lat: 48.85, lon: 2.365, name: "Outside", kind: "bar" }],
     },
     pressure: {
+      snapshotId: "pressure-test",
+      generatedAt: "2026-09-05T00:00:00.000Z",
+      refreshedAt: "2026-09-05T00:00:00.000Z",
+      sources: [{ family: "transport", status: "partial", publisher: "RATP", dataset: "test", url: "offline", license: "test", datasetVersion: "2021", observedAt: "2021", refreshedAt: "2026-09-05T00:00:00.000Z", geographicLevel: "iris", notes: [] }],
       zones: [
         { ...zone("751050001", square(2.34, 48.84, 2.35, 48.86)), label: "5e" },
         { ...zone("751060001", square(2.35, 48.84, 2.36, 48.86), "75106"), label: "6e" },
@@ -68,4 +72,8 @@ test("prépare uniquement les 5e/6e, conserve la provenance OSM et versionne les
   assert.deepEqual(snapshot.zoneReferences.map((reference) => reference.id), ["751050001", "751060001"]);
   assert.deepEqual(snapshot.pois.map((poi) => poi.id), ["in"]);
   assert.equal(snapshot.pilotBoundary.coverage.includes("partielle"), true);
+  assert.equal(snapshot.pressureSnapshotId, "pressure-test");
+  assert.equal(snapshot.pressureGeneratedAt, "2026-09-05T00:00:00.000Z");
+  assert.equal(snapshot.pressureSources[0].publisher, "RATP");
+  assert.equal(snapshot.pressureSources[0].status, "partial");
 });

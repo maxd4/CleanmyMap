@@ -498,11 +498,17 @@ calcul invisible et ne sont jamais ajoutées à la carte.
 
 Le calcul réutilise `paris-pressure-risk-v3-urban-morphology` pour la référence
 zonale, applique les coefficients de voie et de micro-lieu de la matrice
-polarisée, choisit au plus une influence dominante par famille de micro-lieux
-et résout un facteur d'échelle par zone afin de conserver la moyenne pondérée
-par longueur après écrêtage. Les facteurs socio-démographiques documentés dans
-le plan associé restent des hypothèses non calibrées et ne sont pas activés ;
-la densité n'est donc pas comptée une seconde fois. Les documents liés sont
+polarisée, choisit séparément l'influence dominante pour les mégots et les
+déchets après déduplication et atténuation spatiale, puis résout un facteur
+d'échelle par zone afin de conserver la moyenne pondérée par longueur après
+écrêtage. Les coefficients de micro-lieux et les scores du pilote restent des
+hypothèses ; le statut `partial`, le producteur, le millésime, la version et
+les dates des sources IRIS sont copiés depuis le snapshot canonique, sans
+reconstruire une provenance `available`. La couche sépare la provenance OSM du
+réseau de celle du snapshot IRIS et expose l'influence effectivement appliquée
+pour chaque branche. Les facteurs socio-démographiques documentés dans le plan
+associé restent des hypothèses non calibrées et ne sont pas activés ; la
+densité n'est donc pas comptée une seconde fois. Les documents liés sont
 indexés sans duplication dans l’index documentaire transverse.
 
 Le calque est optionnel, désactivé par défaut, et affiche les trois modes

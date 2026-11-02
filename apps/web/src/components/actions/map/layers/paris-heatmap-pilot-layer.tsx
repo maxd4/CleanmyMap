@@ -44,12 +44,22 @@ function SegmentPopup({ segment }: { segment: ParisHeatmapPilotSegment }) {
       <p>Mégots : {segment.scores.cigaretteButts === null ? "indisponible" : formatScorePercent(segment.scores.cigaretteButts, 1)}</p>
       <p>Déchets : {segment.scores.waste === null ? "indisponible" : formatScorePercent(segment.scores.waste, 1)}</p>
       <p>Mixte : {segment.scores.mixed === null ? "indisponible" : formatScorePercent(segment.scores.mixed, 1)}</p>
+      <p className="text-xs text-slate-600">Influence mégots : {formatAppliedInfluence(segment.appliedMicroPlaceInfluences.cigaretteButts)}</p>
+      <p className="text-xs text-slate-600">Influence déchets : {formatAppliedInfluence(segment.appliedMicroPlaceInfluences.waste)}</p>
       <p className="text-xs text-slate-600">Facteurs dominants : {segment.dominantFactors.join(", ") || "non disponibles"}</p>
       <p className="text-xs text-slate-600">IRIS de référence : {segment.irisReferenceId ?? "inconnu"}</p>
       <p className="text-xs font-semibold text-slate-700">Statut : {segment.status === "predicted" ? "prédictif" : "indisponible"}</p>
       <p className="text-xs text-slate-500">OSM snapshot · référence IRIS invisible · coefficients polarisés non calibrés.</p>
     </div>
   );
+}
+
+function formatAppliedInfluence(
+  influence: ParisHeatmapPilotSegment["appliedMicroPlaceInfluences"]["cigaretteButts"],
+): string {
+  return influence
+    ? `${influence.microPlace.label} · coefficient ${influence.attenuatedCoefficient.toFixed(2)} · ${influence.status === "hypothesis" ? "hypothèse" : "indisponible"}`
+    : "aucune influence démontrée";
 }
 
 function MicroPlacePopup({

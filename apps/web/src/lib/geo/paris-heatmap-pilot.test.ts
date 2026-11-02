@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import pilotData from "@/../data/geospatial/paris-heatmap-pilot.json";
 import pressureSnapshot from "@/../data/geospatial/paris-pressure-snapshot.json";
 import {
   buildParisHeatmapPilot,
@@ -36,6 +37,71 @@ describe("paris predictive polarized heatmap pilot", () => {
       ));
       return matches.length === 1 && matches[0]?.id === segment.irisReferenceId;
     })).toBe(true);
+  });
+
+  it("preserves canonical IRIS provenance while keeping network provenance separate", () => {
+    const layer = buildParisHeatmapPilot();
+    const transport = layer.source.scores.provenance.find((source) => source.family === "transport");
+    const cleanliness = layer.source.scores.provenance.find((source) => source.family === "cleanliness");
+
+    expect(layer.source.network.snapshotId).toBe(pilotData.snapshotId);
+    expect(layer.source.network.provider).toBe(pilotData.source.provider);
+    expect(layer.source.scores.snapshotId).toBe(pressureSnapshot.snapshotId);
+    expect(layer.source.scores.generatedAt).toBe(pressureSnapshot.generatedAt);
+    expect(layer.source.scores.refreshedAt).toBe(pressureSnapshot.refreshedAt);
+    expect(layer.source.scores.provenance).toEqual(pressureSnapshot.sources);
+    expect(transport).toMatchObject({
+      publisher: "RATP / Île-de-France Mobilités",
+      datasetVersion: "2021",
+      status: "partial",
+    });
+    expect(cleanliness).toMatchObject({
+      publisher: "Ville de Paris / partenaires publics",
+      status: "partial",
+      geographicLevel: "arrondissement",
+    });
+  });
+
+  it("applique indépendamment le bar aux mégots et le fast-food aux déchets", () => {
+    const baseZone = pressureSnapshot.zones.find((zone) => zone.arrondissementCode === "75105")!;
+    const layer = buildParisHeatmapPilot({
+      snapshot: {
+        schemaVersion: 2,
+        snapshotId: "micro-place-test",
+        retrievedAt: "2026-11-02T00:00:00.000Z",
+        license: "ODbL-1.0",
+        geometryVersion: "test",
+        identifierVersion: "test",
+        pressureSnapshotId: pressureSnapshot.snapshotId,
+        pressureGeneratedAt: pressureSnapshot.generatedAt,
+        pressureRefreshedAt: pressureSnapshot.refreshedAt,
+        pressureSources: pressureSnapshot.sources,
+        source: { provider: "OSM", endpoint: "offline", selection: "test" },
+        tiles: [],
+        ways: [{
+          id: "way-micro-place-test",
+          highway: "footway",
+          name: "Test",
+          footAccess: "type",
+          sourceUrl: "offline",
+          geometry: [[48.85, 2.35], [48.8501, 2.3501]],
+          referenceZoneIds: [baseZone.id],
+        }],
+        pois: [
+          { id: "bar-test", lat: 48.85005, lon: 2.35005, name: "Bar test", kind: "bar" },
+          { id: "fast-food-test", lat: 48.85005, lon: 2.35005, name: "Fast-food test", kind: "fast_food" },
+        ],
+        zoneReferences: [{ ...baseZone, geometry: null, urbanMorphology: null }] as unknown as ParisHeatmapPilotSnapshot["zoneReferences"],
+      } as ParisHeatmapPilotSnapshot,
+    });
+    const segment = layer.segments[0]!;
+
+    expect(segment.appliedMicroPlaceInfluences.cigaretteButts?.microPlace.kind).toBe("bar");
+    expect(segment.appliedMicroPlaceInfluences.waste?.microPlace.kind).toBe("fast_food");
+    expect(segment.appliedMicroPlaceInfluences.cigaretteButts?.status).toBe("hypothesis");
+    expect(segment.appliedMicroPlaceInfluences.waste?.status).toBe("hypothesis");
+    expect(segment.appliedMicroPlaceInfluences.cigaretteButts?.attenuatedCoefficient).toBeCloseTo(3.35, 5);
+    expect(segment.appliedMicroPlaceInfluences.waste?.attenuatedCoefficient).toBeCloseTo(3.65, 5);
   });
 
   it.each([

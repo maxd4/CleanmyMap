@@ -6,6 +6,101 @@
   "geometryVersion": "iris-clipped-v1",
   "identifierVersion": "iris-clipped-v1",
   "referenceGeometrySnapshotId": "paris-iris-2024-pop-2021-r2-polygon",
+  "pressureSnapshotId": "paris-iris-2024-pop-2021-r2-polygon",
+  "pressureGeneratedAt": "2026-09-05T00:00:00.000Z",
+  "pressureRefreshedAt": "2026-09-05T00:00:00.000Z",
+  "pressureSources": [
+    {
+      "family": "geography",
+      "publisher": "IGN / OpenData Île-de-France",
+      "dataset": "Contours IRIS Paris",
+      "url": "https://data.iledefrance.fr/explore/dataset/iris/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "géographie 2024",
+      "observedAt": "2024",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "iris",
+      "status": "available",
+      "notes": [
+        "Référentiel géographique IGN/OpenData Île-de-France ; 992 IRIS du département 75.",
+        "La géométrie Polygon/MultiPolygon est conservée dans chaque zone pour les jointures point-in-polygon."
+      ]
+    },
+    {
+      "family": "resident_population",
+      "publisher": "Insee",
+      "dataset": "Population en 2021 - Base infracommunale IRIS",
+      "url": "https://www.insee.fr/fr/statistiques/8268806",
+      "license": "Licence ouverte Etalab",
+      "datasetVersion": "2021 / géographie 2023",
+      "observedAt": "2021",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "iris",
+      "status": "available",
+      "notes": []
+    },
+    {
+      "family": "transport",
+      "publisher": "RATP / Île-de-France Mobilités",
+      "dataset": "Trafic annuel entrant par station du réseau ferré 2021",
+      "url": "https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-2021/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "2021",
+      "observedAt": "2021",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "iris",
+      "status": "partial",
+      "notes": [
+        "Rattachement station→IRIS par point-in-polygon ; fallback centroïde borné ; indicateur annuel, non temps réel."
+      ]
+    },
+    {
+      "family": "tourism",
+      "publisher": "OpenStreetMap contributors",
+      "dataset": "OpenStreetMap tourism points",
+      "url": "https://www.openstreetmap.org/",
+      "license": "ODbL",
+      "datasetVersion": "snapshot OSM 2026-09-04",
+      "observedAt": "2026-09-04",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "iris",
+      "status": "partial",
+      "notes": [
+        "Proxy de présence touristique géolocalisé ; aucune fréquentation mesurée n'est inventée.",
+        "Attribution OpenStreetMap sous ODbL."
+      ]
+    },
+    {
+      "family": "public_activity",
+      "publisher": "Ville de Paris / partenaires publics",
+      "dataset": "Terrasses et étalages : Autorisations / Marchés découverts",
+      "url": "https://opendata.paris.fr/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "rafraîchissement source",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "iris",
+      "status": "partial",
+      "notes": [
+        "Les objets géolocalisés sont agrégés à l'IRIS le plus proche."
+      ]
+    },
+    {
+      "family": "cleanliness",
+      "publisher": "Ville de Paris / partenaires publics",
+      "dataset": "Dans Ma Rue - Anomalies signalées",
+      "url": "https://opendata.paris.fr/explore/dataset/dans-ma-rue/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "fenêtre publiée source",
+      "observedAt": "2025+",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "arrondissement",
+      "status": "partial",
+      "notes": [
+        "Signal de malpropreté indépendant du revenu ; lorsqu'il est agrégé à l'arrondissement, la résolution reste explicitement faible."
+      ]
+    }
+  ],
   "pilotBoundary": {
     "type": "iris-arrondissement-union",
     "arrondissementCodes": [

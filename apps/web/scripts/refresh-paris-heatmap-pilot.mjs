@@ -211,6 +211,9 @@ function stripGeometry(zone) {
 }
 
 export function buildPilotSnapshot({ pilot, pressure, retrievedAt = pilot.retrievedAt }) {
+  if (!pressure.snapshotId || !pressure.generatedAt || !pressure.refreshedAt || !Array.isArray(pressure.sources)) {
+    throw new Error("Le snapshot IRIS canonique doit fournir son identité, ses dates et ses sources");
+  }
   const zones = pressure.zones.filter((zone) =>
     PILOT_ARRONDISSEMENT_CODES.includes(zone.arrondissementCode) && isValidParisPressureGeometry(zone.geometry),
   );
@@ -229,6 +232,10 @@ export function buildPilotSnapshot({ pilot, pressure, retrievedAt = pilot.retrie
     geometryVersion: GEOMETRY_VERSION,
     identifierVersion: IDENTIFIER_VERSION,
     referenceGeometrySnapshotId: REFERENCE_GEOMETRY_SNAPSHOT_ID,
+    pressureSnapshotId: pressure.snapshotId,
+    pressureGeneratedAt: pressure.generatedAt,
+    pressureRefreshedAt: pressure.refreshedAt,
+    pressureSources: pressure.sources,
     pilotBoundary: {
       type: "iris-arrondissement-union",
       arrondissementCodes: PILOT_ARRONDISSEMENT_CODES,
