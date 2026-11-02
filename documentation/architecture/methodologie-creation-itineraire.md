@@ -406,11 +406,17 @@ refresh. Pour un parcours `territorial-guided`, l’application serveur autorise
 uniquement la redistribution déterministe des `volunteerCount` des groupes
 existants : type et version du mode, nombre et ordre des groupes, labels,
 secteurs, passages ordonnés, budget et paramètres du planner restent strictement
-identiques. Les effectifs proposés doivent être des entiers positifs, équilibrés
-selon le répartiteur canonique, totaliser le nouvel effectif et correspondre au
-comptage `confirmed` lorsqu’il est disponible ; sans preuve serveur, une hausse
-ou baisse d’effectif est refusée. Le mode guidé v1 conserve son absence de
-budget v2. L’application utilise une concurrence optimiste sur `actions.updated_at`
+identiques. Lorsqu’une redistribution est effective, les effectifs proposés
+doivent être des entiers positifs, équilibrés selon le répartiteur canonique,
+totaliser le nouvel effectif et correspondre au comptage `confirmed` lorsqu’il
+est disponible. Toute modification effective de
+l’effectif d’un groupe, y compris lors d’un total inchangé, exige ce comptage ;
+une proposition guidée inchangée reste rejouable sans écriture artificielle.
+Pour le mode guidé v1, qui peut omettre `volunteerCount` dans le mode, le serveur
+utilise les effectifs fiables du snapshot ou de l’itinéraire actif ; sans preuve
+exploitable d’une redistribution, il refuse conservativement la proposition.
+Le mode guidé v1 conserve son absence de budget v2. L’application utilise une
+concurrence optimiste sur `actions.updated_at`
 et refuse par `409` une proposition construite depuis un état devenu obsolète,
 afin de ne pas écraser une modification concurrente de `preparation_data`.
 

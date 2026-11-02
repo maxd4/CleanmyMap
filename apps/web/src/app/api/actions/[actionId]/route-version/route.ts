@@ -89,24 +89,40 @@ function guidedModeStructure(mode: Extract<RoutePlanningMode, { type: "territori
 }
 
 function hasDeterministicGuidedVolunteerCounts(
-  mode: Extract<RoutePlanningMode, { type: "territorial-guided" }>,
+  counts: readonly (number | undefined)[],
   volunteers: number,
+  groupCount: number,
 ): boolean {
   let expectedCounts: number[];
   try {
-    expectedCounts = balancedVolunteerCounts(volunteers, mode.groups.length);
+    expectedCounts = balancedVolunteerCounts(volunteers, groupCount);
   } catch {
     return false;
   }
-  const actualCounts = mode.groups.map(({ volunteerCount }) => volunteerCount);
-  return actualCounts.every((count, index) =>
+  return counts.length === groupCount && counts.every((count, index) =>
     Number.isInteger(count) && count === expectedCounts[index],
-  ) && actualCounts.reduce<number>((total, count) => total + (count ?? 0), 0) === volunteers;
+  ) && counts.reduce<number>((total, count) => total + (count ?? 0), 0) === volunteers;
+}
+
+function guidedVolunteerCountsChanged(
+  currentCounts: readonly (number | undefined)[],
+  nextCounts: readonly (number | undefined)[],
+): boolean | null {
+  const currentComplete = currentCounts.length > 0 && currentCounts.every((count) => count !== undefined);
+  const nextComplete = nextCounts.length > 0 && nextCounts.every((count) => count !== undefined);
+  if (currentComplete && nextComplete) {
+    return currentCounts.some((count, index) => count !== nextCounts[index]);
+  }
+  if (currentCounts.every((count) => count === undefined) && nextCounts.every((count) => count === undefined)) {
+    return false;
+  }
+  return null;
 }
 
 function guidedRouteParametersMatchActiveVersion(
   current: ActionRouteVersioning["active"]["calculation"]["parameters"],
   next: RoutePlannerSnapshot["parameters"],
+  nextGuidedGroupCounts: readonly (number | undefined)[],
 ): boolean {
   const currentMode = current.planningMode;
   const nextMode = next.planningMode;
@@ -138,25 +154,27 @@ function guidedRouteParametersMatchActiveVersion(
     return false;
   }
 
-  const nextCounts = nextMode.groups.map(({ volunteerCount }) => volunteerCount);
-  const currentCounts = currentMode.groups.map(({ volunteerCount }) => volunteerCount);
-  const hasAnyNextCount = nextCounts.some((count) => count !== undefined);
-  const hasCompleteNextCounts = nextCounts.every((count) => count !== undefined);
-  const hasCompleteCurrentCounts = currentCounts.every((count) => count !== undefined);
+  const nextModeCounts = nextMode.groups.map(({ volunteerCount }) => volunteerCount);
+  const currentModeCounts = currentMode.groups.map(({ volunteerCount }) => volunteerCount);
+  const hasAnyNextCount = nextGuidedGroupCounts.some((count) => count !== undefined);
+  const hasCompleteNextCounts = nextGuidedGroupCounts.length > 0 && nextGuidedGroupCounts.every((count) => count !== undefined);
+  const hasCompleteCurrentModeCounts = currentModeCounts.every((count) => count !== undefined);
+  const hasCompleteNextModeCounts = nextModeCounts.every((count) => count !== undefined);
   if (currentMode.version === "route-territorial-guided-v2" &&
-    (!hasCompleteCurrentCounts || !hasCompleteNextCounts)) {
+    (!hasCompleteCurrentModeCounts || !hasCompleteNextModeCounts)) {
     return false;
   }
   if (hasAnyNextCount && !hasCompleteNextCounts) return false;
   if (current.volunteers !== next.volunteers && !hasCompleteNextCounts) return false;
-  return !hasCompleteNextCounts ||
-    hasDeterministicGuidedVolunteerCounts(nextMode, next.volunteers);
+  return true;
 }
 
 function routeParametersMatchActiveVersion(
   current: ActionRouteVersioning["active"]["calculation"]["parameters"],
   next: RoutePlannerSnapshot["parameters"],
   confirmedParticipants: number | null,
+  currentGuidedGroupCounts: readonly (number | undefined)[],
+  nextGuidedGroupCounts: readonly (number | undefined)[],
 ): boolean {
   if (confirmedParticipants !== null && next.volunteers !== confirmedParticipants) {
     return false;
@@ -168,7 +186,30 @@ function routeParametersMatchActiveVersion(
   }
   if (current.planningMode.type === "territorial-guided" ||
     next.planningMode.type === "territorial-guided") {
-    if (!guidedRouteParametersMatchActiveVersion(current, next)) return false;
+    if (!guidedRouteParametersMatchActiveVersion(
+      current,
+      next,
+      nextGuidedGroupCounts,
+    )) return false;
+    const guidedCountsChanged = guidedVolunteerCountsChanged(
+      currentGuidedGroupCounts,
+      nextGuidedGroupCounts,
+    );
+    if (guidedCountsChanged === null || (guidedCountsChanged && confirmedParticipants === null)) {
+      return false;
+    }
+    const hasGuidedCountEvidence = currentGuidedGroupCounts.some((count) => count !== undefined) ||
+      nextGuidedGroupCounts.some((count) => count !== undefined);
+    if (!guidedCountsChanged && !hasGuidedCountEvidence && current.volunteers !== next.volunteers) {
+      return false;
+    }
+    if (guidedCountsChanged && !hasDeterministicGuidedVolunteerCounts(
+      nextGuidedGroupCounts,
+      next.volunteers,
+      next.groupCount,
+    )) {
+      return false;
+    }
     return confirmedParticipants !== null || (
       current.volunteers === next.volunteers &&
       current.groupCount === next.groupCount
@@ -312,12 +353,30 @@ function validateRouteVersionProposal(params: {
   if (!currentVersioning || !preparationData.operationalRoute) {
     return conflict("Cette action ne possède pas d'itinéraire actif exploitable.");
   }
+  const currentMode = currentVersioning.active.calculation.parameters.planningMode;
+  const nextMode = params.proposal.plannerSnapshot.parameters.planningMode;
+  const currentGuidedGroupCounts = currentMode.type === "territorial-guided"
+    ? currentMode.groups.map((group, index) =>
+      group.volunteerCount ??
+      currentVersioning.active.operationalRoute.routes.find((route) => route.groupIndex === index + 1)?.volunteerCount ??
+      preparationData.routeCalibrationContext?.plannerSnapshot?.groups.find((group) => group.groupIndex === index + 1)?.volunteerCount,
+    )
+    : [];
+  const nextGuidedGroupCounts = nextMode.type === "territorial-guided"
+    ? nextMode.groups.map((group, index) =>
+      group.volunteerCount ??
+      params.proposal.plannerSnapshot.groups.find((snapshotGroup) => snapshotGroup.groupIndex === index + 1)?.volunteerCount ??
+      params.proposal.operationalRoute.routes.find((route) => route.groupIndex === index + 1)?.volunteerCount,
+    )
+    : [];
   if (
     params.proposal.operationalRoute.routes.length === 0 ||
     !routeParametersMatchActiveVersion(
       currentVersioning.active.calculation.parameters,
       params.proposal.plannerSnapshot.parameters,
       params.confirmedParticipants,
+      currentGuidedGroupCounts,
+      nextGuidedGroupCounts,
     ) ||
     !operationalRouteMatchesSnapshot(params.proposal.operationalRoute, params.proposal.plannerSnapshot)
   ) {

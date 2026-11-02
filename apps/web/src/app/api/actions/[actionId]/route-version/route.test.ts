@@ -128,6 +128,28 @@ function guidedSnapshot(
   });
 }
 
+function setGuidedVolunteerCounts(
+  plannerSnapshot: ReturnType<typeof guidedSnapshot>,
+  counts: readonly number[],
+  options: { explicitModeCounts?: boolean } = {},
+) {
+  const mode = plannerSnapshot.parameters.planningMode;
+  if (mode.type !== "territorial-guided") throw new Error("Expected guided mode");
+  mode.groups = mode.groups.map((group, index) => {
+    const nextGroup = { ...group };
+    if (options.explicitModeCounts === false) {
+      delete nextGroup.volunteerCount;
+    } else {
+      nextGroup.volunteerCount = counts[index];
+    }
+    return nextGroup;
+  });
+  plannerSnapshot.groups = plannerSnapshot.groups.map((group, index) => ({
+    ...group,
+    volunteerCount: counts[index]!,
+  }));
+}
+
 function operationalRouteForSnapshot(currentSnapshot: ReturnType<typeof snapshot>) {
   return createOperationalRouteFromRecommendation({
     generatedAt: currentSnapshot.generatedAt,
@@ -618,6 +640,45 @@ describe("POST /api/actions/:actionId/route-version", () => {
     expect(supabase.from).not.toHaveBeenCalled();
   });
 
+  it("rejects a same-total guided redistribution without confirmed participants", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 10, 2);
+    setGuidedVolunteerCounts(currentSnapshot, [6, 4]);
+    setGuidedVolunteerCounts(nextSnapshot, [5, 5]);
+    const { supabase } = preparePostScenario(currentSnapshot);
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("accepts a same-total guided redistribution with confirmed participants", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 10, 2);
+    setGuidedVolunteerCounts(currentSnapshot, [6, 4]);
+    setGuidedVolunteerCounts(nextSnapshot, [5, 5]);
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 10 });
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(200);
+    expect(supabase.chain.update).toHaveBeenCalled();
+  });
+
+  it("keeps an unchanged guided distribution compatible without confirmed participants", async () => {
+    const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
+    const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 10, 2);
+    setGuidedVolunteerCounts(currentSnapshot, [6, 4]);
+    setGuidedVolunteerCounts(nextSnapshot, [6, 4]);
+    const { supabase } = preparePostScenario(currentSnapshot);
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(200);
+    expect(supabase.chain.update).toHaveBeenCalled();
+  });
+
   it("rejects a guided proposal when confirmed participants do not match", async () => {
     const currentSnapshot = guidedSnapshot("2026-09-01T09:00:00.000Z", 10, 2);
     const nextSnapshot = guidedSnapshot("2026-09-27T09:00:00.000Z", 12, 2);
@@ -705,6 +766,29 @@ describe("POST /api/actions/:actionId/route-version", () => {
       },
     });
     expect(body).not.toHaveProperty("activeRouteVersion.calculation.parameters.planningMode.budget");
+  });
+
+  it("rejects a guided v1 redistribution when mode counts are absent and confirmed participants are unavailable", async () => {
+    const currentSnapshot = guidedSnapshot(
+      "2026-09-01T09:00:00.000Z",
+      10,
+      2,
+      { version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION },
+    );
+    const nextSnapshot = guidedSnapshot(
+      "2026-09-27T09:00:00.000Z",
+      10,
+      2,
+      { version: ROUTE_TERRITORIAL_GUIDED_LEGACY_VERSION },
+    );
+    setGuidedVolunteerCounts(currentSnapshot, [6, 4], { explicitModeCounts: false });
+    setGuidedVolunteerCounts(nextSnapshot, [5, 5], { explicitModeCounts: false });
+    const { supabase } = preparePostScenario(currentSnapshot);
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 
   it("rejects a forged volunteer count that differs from the current server count", async () => {
