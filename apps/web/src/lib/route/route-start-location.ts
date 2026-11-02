@@ -1,5 +1,6 @@
 import { routeDistanceKm, type RoutePlannerCandidate, type RoutePlannerOrigin } from "./route-planner";
 import { isRoutePlannerCandidateEligible } from "./route-planner";
+import { isCoordinate } from "./route-geometry-validation";
 import type { RouteStartSelection, RouteStartZone } from "./route-response-contract";
 
 export function routeStartZoneContains(
@@ -61,11 +62,49 @@ export function isRouteStartSelection(value: unknown): value is RouteStartSelect
   if (!value || typeof value !== "object") return false;
   const selection = value as Partial<RouteStartSelection>;
   if (selection.mode === "precise") {
-    return typeof selection.label === "string" && selection.label.trim().length > 0 &&
-      Boolean(selection.origin) && typeof selection.origin?.latitude === "number";
+    return isRouteStartLabel(selection.label) && isRouteRecommendationOrigin(selection.origin);
   }
-  if (selection.mode !== "zone" || !selection.zone) return false;
-  const zone = selection.zone;
-  return typeof selection.label === "string" && selection.label.trim().length > 0 &&
-    zone.confirmed === true && Number.isFinite(zone.radiusKm) && zone.radiusKm > 0;
+  return selection.mode === "zone" && isRouteStartLabel(selection.label) && isRouteStartZone(selection.zone);
+}
+
+function isRouteStartLabel(value: unknown): value is string {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  return trimmed.length > 0 && trimmed.length <= 160;
+}
+
+function isRouteRecommendationOrigin(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const origin = value as { latitude?: unknown; longitude?: unknown; source?: unknown };
+  return isCoordinate([origin.latitude, origin.longitude]) &&
+    ["browser", "map", "address", "gps"].includes(origin.source as string);
+}
+
+function isRouteStartZone(value: unknown): value is RouteStartZone {
+  if (!value || typeof value !== "object") return false;
+  const zone = value as Partial<RouteStartZone>;
+  const bounds = zone.bounds;
+  const center = zone.center;
+  if (!isRouteStartLabel(zone.label) || !center || !bounds || typeof bounds !== "object") return false;
+  const typedBounds = bounds as Partial<RouteStartZone["bounds"]>;
+  if (!isCoordinate([center.latitude, center.longitude])) return false;
+  if (!finiteNumberBetween(zone.radiusKm, Number.MIN_VALUE, 25)) return false;
+  if (!finiteNumberBetween(typedBounds.south, -90, 90) ||
+      !finiteNumberBetween(typedBounds.west, -180, 180) ||
+      !finiteNumberBetween(typedBounds.north, -90, 90) ||
+      !finiteNumberBetween(typedBounds.east, -180, 180)) return false;
+  return (
+    typedBounds.south <= typedBounds.north &&
+    typedBounds.west <= typedBounds.east &&
+    center.latitude >= typedBounds.south &&
+    center.latitude <= typedBounds.north &&
+    center.longitude >= typedBounds.west &&
+    center.longitude <= typedBounds.east &&
+    ["geocoded", "bounded-search", "user-adjusted"].includes(zone.provenance as string) &&
+    ["geoplateforme", "local-territory", "user"].includes(zone.source as string) &&
+    zone.confirmed === true
+  );
+}
+
+function finiteNumberBetween(value: unknown, minimum: number, maximum: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= minimum && value <= maximum;
 }

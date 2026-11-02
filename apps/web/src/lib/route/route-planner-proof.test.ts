@@ -10,6 +10,7 @@ import {
 import { isRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
 import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
+import { buildBoundedRouteStartZone } from "./route-start-location";
 
 function snapshot(): RoutePlannerSnapshot {
   const input = createRoutePlannerSnapshotInput();
@@ -75,6 +76,39 @@ describe("route planner proof v1", () => {
     expect(isRoutePlannerSnapshot({
       ...original,
       modelVersions: { ...original.modelVersions, planner: "future-active-planner" },
+    })).toBe(false);
+  });
+
+  it("rejects malformed persisted start selections while keeping absent historical fields valid", () => {
+    const original = snapshot();
+    expect(isRoutePlannerSnapshot(original, "route-planner-snapshot-v1")).toBe(true);
+
+    expect(isRoutePlannerSnapshot({
+      ...original,
+      parameters: {
+        ...original.parameters,
+        startLocation: {
+          mode: "precise",
+          label: "Adresse",
+          origin: { latitude: 48.85, longitude: Number.NaN, source: "address" },
+        },
+      },
+    })).toBe(false);
+
+    const zone = {
+      ...buildBoundedRouteStartZone("Zone", { latitude: 48.85, longitude: 2.35 }, 2),
+      confirmed: true,
+    };
+    expect(isRoutePlannerSnapshot({
+      ...original,
+      parameters: {
+        ...original.parameters,
+        startLocation: {
+          mode: "zone",
+          label: "Zone",
+          zone: { ...zone, bounds: { ...zone.bounds, east: undefined } },
+        },
+      },
     })).toBe(false);
   });
 

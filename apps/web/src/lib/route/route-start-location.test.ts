@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseRouteRecommendationRequest } from "@/app/api/route/recommend/route.schema";
 import {
   buildBoundedRouteStartZone,
+  isRouteStartSelection,
   routeStartZoneContains,
   selectRouteOriginWithinZone,
 } from "./route-start-location";
@@ -21,6 +22,57 @@ function candidate(id: string, latitude: number, longitude: number, score: numbe
 }
 
 describe("route start location", () => {
+  it("accepts complete precise and confirmed zone selections", () => {
+    const precise = {
+      mode: "precise" as const,
+      label: "Panthéon",
+      origin: { latitude: 48.8462, longitude: 2.3464, source: "address" as const },
+    };
+    const zone = {
+      mode: "zone" as const,
+      label: "Paris 5e",
+      zone: {
+        ...buildBoundedRouteStartZone("Paris 5e", { latitude: 48.844, longitude: 2.35 }, 2),
+        confirmed: true,
+      },
+    };
+
+    expect(isRouteStartSelection(precise)).toBe(true);
+    expect(isRouteStartSelection(zone)).toBe(true);
+  });
+
+  it("rejects incomplete or out-of-contract precise origins", () => {
+    const precise = {
+      mode: "precise" as const,
+      label: "Panthéon",
+      origin: { latitude: 48.8462, longitude: 2.3464, source: "address" as const },
+    };
+
+    expect(isRouteStartSelection({ ...precise, origin: { latitude: 48.8462, source: "address" } })).toBe(false);
+    expect(isRouteStartSelection({ ...precise, origin: { ...precise.origin, longitude: Number.NaN } })).toBe(false);
+    expect(isRouteStartSelection({ ...precise, origin: { ...precise.origin, latitude: 91 } })).toBe(false);
+    expect(isRouteStartSelection({ ...precise, origin: { ...precise.origin, longitude: -181 } })).toBe(false);
+    expect(isRouteStartSelection({ ...precise, origin: { ...precise.origin, source: "planner" } })).toBe(false);
+  });
+
+  it("rejects incomplete, incoherent or out-of-contract zones", () => {
+    const zone = {
+      mode: "zone" as const,
+      label: "Paris 5e",
+      zone: {
+        ...buildBoundedRouteStartZone("Paris 5e", { latitude: 48.844, longitude: 2.35 }, 2),
+        confirmed: true,
+      },
+    };
+
+    expect(isRouteStartSelection({ ...zone, zone: { ...zone.zone, center: undefined } })).toBe(false);
+    expect(isRouteStartSelection({ ...zone, zone: { ...zone.zone, bounds: { ...zone.zone.bounds, north: undefined } } })).toBe(false);
+    expect(isRouteStartSelection({ ...zone, zone: { ...zone.zone, bounds: { ...zone.zone.bounds, south: 49 } } })).toBe(false);
+    expect(isRouteStartSelection({ ...zone, zone: { ...zone.zone, provenance: "imported" } })).toBe(false);
+    expect(isRouteStartSelection({ ...zone, zone: { ...zone.zone, source: "planner" } })).toBe(false);
+    expect(isRouteStartSelection({ ...zone, zone: { ...zone.zone, confirmed: false } })).toBe(false);
+  });
+
   it("selects a deterministic admissible departure inside the confirmed zone", () => {
     const zone = { ...buildBoundedRouteStartZone("Paris 5e", { latitude: 48.844, longitude: 2.35 }, 2), confirmed: true };
     expect(routeStartZoneContains(zone, { latitude: 48.844, longitude: 2.35 })).toBe(true);

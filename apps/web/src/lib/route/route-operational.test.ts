@@ -115,6 +115,13 @@ describe("operational route contract", () => {
     });
     expect(route.startLocation).toEqual(startLocation);
     expect(isOperationalRoute(route)).toBe(true);
+    expect(isOperationalRoute({
+      ...route,
+      startLocation: {
+        ...startLocation,
+        zone: { ...startLocation.zone, source: "planner" },
+      },
+    })).toBe(false);
   });
 
   it("transfers an open topology without manufacturing a return leg", () => {

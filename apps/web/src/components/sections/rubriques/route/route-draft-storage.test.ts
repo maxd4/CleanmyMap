@@ -86,6 +86,28 @@ describe("route draft storage contract", () => {
     expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
   });
 
+  it("drops an invalid persisted start selection while preserving historical options", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      ROUTE_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        version: ROUTE_DRAFT_SCHEMA_VERSION,
+        options: {
+          ...nonDefaultOptions,
+          startLocation: {
+            mode: "precise",
+            label: "GPS historique",
+            origin: { latitude: 48.8566, longitude: Number.NaN, source: "gps" },
+          },
+        },
+      }),
+    );
+
+    const restored = readRouteDraftOptions(storage);
+    expect(restored).toEqual(nonDefaultOptions);
+    expect(restored).not.toHaveProperty("startLocation");
+  });
+
   it("migrates priorityVsDistance from an old draft and preserves valid fields", () => {
     const storage = new MemoryStorage();
     storage.setItem(

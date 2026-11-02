@@ -94,7 +94,10 @@ réhydrate son mode et sa sélection sans les supprimer lors d’un simple
 rerender. La zone de départ ne constitue pas une zone de collecte : après la
 résolution déterministe de l’origine, le pool canonique de candidats reste
 disponible et les contraintes du planner (sécurité, distance, budget et mode)
-déterminent les cibles.
+déterminent les cibles. Les sélections persistées réutilisent le même prédicat
+structurel partagé que les brouillons, snapshots et `OperationalRoute` ; un
+historique sans `startLocation` reste valide, mais une sélection présente doit
+respecter intégralement le contrat de coordonnées, bornes et énumérations.
 
 ## Répartition multi-groupe
 
