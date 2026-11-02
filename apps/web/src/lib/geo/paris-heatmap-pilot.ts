@@ -14,6 +14,7 @@ export type ParisHeatmapPilotStatus = "predicted" | "unavailable";
 
 type PilotRawWay = {
   id: string;
+  sourceWayId?: string;
   highway: string;
   name: string | null;
   footAccess: "type" | "tag";
@@ -35,10 +36,21 @@ type PilotSnapshot = {
   snapshotId: string;
   retrievedAt: string;
   license: string;
+  geometryVersion?: string;
+  identifierVersion?: string;
+  referenceGeometrySnapshotId?: string;
+  pilotBoundary?: {
+    type: string;
+    arrondissementCodes: string[];
+    sourceSnapshotId: string;
+    coverage: string;
+  };
   source: {
     provider: string;
     endpoint: string;
     selection: string;
+    geometry?: string;
+    sourceTiles?: number[][];
   };
   tiles: number[][];
   ways: PilotRawWay[];
@@ -150,7 +162,7 @@ const source = {
   retrievedAt: rawPilotData.retrievedAt,
   provider: rawPilotData.source.provider,
   license: rawPilotData.license,
-  modelVersion: "paris-street-pollution-polarized-pilot-v1",
+  modelVersion: `paris-street-pollution-polarized-pilot-v1+${rawPilotData.geometryVersion ?? "legacy-bbox"}`,
 } as const;
 
 function distanceKm(left: [number, number], right: [number, number]): number {
@@ -293,8 +305,8 @@ export function splitParisHeatmapPilotWays(
         const first = lerp(start, end, partIndex / parts);
         const last = lerp(start, end, (partIndex + 1) / parts);
         output.push({
-          id: `${way.id}:${edgeIndex}:${partIndex}`,
-          osmWayId: way.id,
+          id: `${rawPilotData.identifierVersion ?? "legacy"}:${way.id}:${edgeIndex}:${partIndex}`,
+          osmWayId: way.sourceWayId ?? way.id,
           name: way.name ?? "Voie sans nom",
           geometry: [first, last],
           midpoint: lerp(first, last, 0.5),
@@ -402,7 +414,7 @@ export function buildParisHeatmapPilot(options: {
     .filter((segment): segment is typeof segment & { irisReferenceId: string } => Boolean(segment.irisReferenceId))
     .map((segment) => {
       const place = dominantMicroPlace(segment.midpoint, microPlaces);
-      const road = roadCoefficient(data.ways.find((way) => way.id === segment.osmWayId)?.highway ?? "");
+      const road = roadCoefficient(data.ways.find((way) => (way.sourceWayId ?? way.id) === segment.osmWayId)?.highway ?? "");
       const dominantDistance = place ? distanceKm(segment.midpoint, place.coordinate) : MICRO_PLACE_RADIUS_KM;
       return {
         ...segment,

@@ -3,7 +3,7 @@
 **Statut : CURRENT / PILOT. Calque public facultatif livré pour Paris 5e/6e ; coefficients non calibrés.**<br>
 **Périmètre : Paris intra-muros, commune INSEE 75056, domaine public accessible aux piétons.**<br>
 **Identifiant de politique du pilote : `paris-street-risk-heuristics-v1-polarized-pilot`.**<br>
-**Implémentation : snapshot OSM local `paris-5e-6e-osm-pilot-2026-11-01`, module géospatial pur et couche Leaflet facultative ; aucune requête fournisseur à l'ouverture.**<br>
+**Implémentation : snapshot OSM local `paris-5e-6e-osm-pilot-2026-11-02-iris-clipped-v1`, module géospatial pur et couche Leaflet facultative ; aucune requête fournisseur à l'ouverture.**<br>
 **Chemin exact prévu : `documentation/architecture/paris-street-pollution-heatmap.md`.**<br>
 **Document remplacé : proposition `paris-street-risk-heuristics-v0` soumise par l'utilisateur.**
 
@@ -475,14 +475,26 @@ Le modèle conserve un **seul propriétaire** pour chaque signal. Le snapshot du
 
 ### 6.2.1. Pilote livré Paris 5e/6e (`CURRENT / PILOT`)
 
-Le pilote actuel est borné à deux emprises OSM versionnées dans
-`apps/web/data/geospatial/paris-heatmap-pilot.json`. Il contient 120 voies OSM et
-90 micro-lieux OSM, découpés en 753 sous-tronçons déterministes et rattachés
-hors requête à 33 références IRIS. Les voies retenues sont des types piétons
-OSM ou portent un tag explicite `foot/sidewalk` compatible ; la carte rend
-uniquement les lignes et les
-micro-points : les géométries IRIS servent au calcul invisible et ne sont
-jamais ajoutées à la carte.
+Le pilote actuel est une projection partielle du réseau OSM, préparée par
+`apps/web/scripts/refresh-paris-heatmap-pilot.mjs` depuis
+`apps/web/data/geospatial/paris-heatmap-pilot-osm-source.json` et les polygones
+IRIS du snapshot `paris-iris-2024-pop-2021-r2-polygon`. Le résultat versionné
+est `apps/web/data/geospatial/paris-heatmap-pilot.json` (`schemaVersion: 2`,
+`geometryVersion: iris-clipped-v1`). Au snapshot publié du 2 novembre 2026, il
+contient 58 voies dérivées, 62 micro-lieux, 562 sous-tronçons et 19 références
+IRIS utilisées. Ces chiffres décrivent le jeu publié, pas une couverture
+intégrale des 5e et 6e arrondissements.
+
+Le périmètre publié est l'union des polygones IRIS des codes arrondissement
+`75105` et `75106`, et non les rectangles des requêtes OSM historiques. Chaque
+arête OSM est découpée aux frontières IRIS ; elle n'est conservée que si son
+intervalle possède un rattachement unique démontrable. Les portions hors
+périmètre, les points ambigus et les rattachements non prouvés sont exclus et
+ne reçoivent ni interpolation ni score inventé. `sourceWayId`, les URLs OSM,
+`referenceGeometrySnapshotId` et `identifierVersion` permettent de relier la
+projection aux provenances et aux géométries de référence. La carte rend
+uniquement les lignes et les micro-points : les géométries IRIS servent au
+calcul invisible et ne sont jamais ajoutées à la carte.
 
 Le calcul réutilise `paris-pressure-risk-v3-urban-morphology` pour la référence
 zonale, applique les coefficients de voie et de micro-lieu de la matrice
@@ -538,7 +550,7 @@ interface ParisStreetRiskSegment {
 
 - **Couverture territoriale** : géométrie réelle de Paris intra-muros, avec le périmètre intérieur au boulevard périphérique défini par un polygone administratif/géographique validé, puis restriction du réseau OSM à cette emprise. **La seule commune INSEE `75056` ne suffit pas au masque intra-muros** : Paris comprend aussi les bois de Boulogne et de Vincennes hors de ce périmètre. Ne pas utiliser un rectangle comme masque de publication, ni confondre les limites des IRIS et celles du pilote.
 - **Stockage** : préférer une projection géographique PostgreSQL indexée, si les capacités du projet et son budget le permettent ; vérifier PostGIS et les migrations canoniques avant toute création. Alternative technique : artefact/tuiles spatiales pré-calculées si le stockage et les coûts le justifient.
-- **État CURRENT du dépôt** : le snapshot IRIS reste localement chargé par `apps/web/src/lib/geo/paris-pressure-loader.ts` ; le pilote 5e/6e ajoute un snapshot segmentaire statique borné, sans prétendre constituer encore le graphe complet de Paris.
+- **État CURRENT du dépôt** : le snapshot IRIS reste localement chargé par `apps/web/src/lib/geo/paris-pressure-loader.ts` ; le pilote 5e/6e ajoute un snapshot segmentaire statique borné, sans prétendre constituer encore le graphe complet des deux arrondissements ni de Paris. La préparation conserve séparément l'entrée OSM brute et sa projection IRIS écrêtée afin que le rerun soit déterministe.
 - **Index et accès** : requêter uniquement les segments d'une emprise bornée, avec quantité de géométries et volume de réponse plafonnés ; la carte publique n'expose pas de donnée personnelle ou de données administrateur.
 - **Licence** : conserver provenance et millésime des données OSM/Apur/Paris/IDFM ; ne pas effacer les obligations de redistribution et d'attribution en fusionnant des jeux sous licences différentes.
 - **Versioning** : `graphVersion`, `pressureSnapshotId`, `heuristicsVersion`, `publicationVersion` indispensables pour une lecture cohérente et un rerun déterministe.

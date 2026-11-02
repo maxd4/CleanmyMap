@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import pressureSnapshot from "@/../data/geospatial/paris-pressure-snapshot.json";
 import {
   buildParisHeatmapPilot,
   getParisHeatmapPilotReferenceScores,
@@ -6,6 +7,7 @@ import {
   splitParisHeatmapPilotWays,
   type ParisHeatmapPilotSnapshot,
 } from "./paris-heatmap-pilot";
+import { pointInParisPressureGeometry } from "./paris-pressure-geometry-core.mjs";
 
 describe("paris predictive polarized heatmap pilot", () => {
   it("splits the versioned OSM ways into deterministic short segments", () => {
@@ -17,6 +19,23 @@ describe("paris predictive polarized heatmap pilot", () => {
     expect(new Set(first.map((segment) => segment.id)).size).toBe(first.length);
     expect(Math.max(...first.map((segment) => segment.lengthKm))).toBeLessThanOrEqual(0.042001);
     expect(first.every((segment) => segment.irisReferenceId)).toBe(true);
+    expect(first.every((segment) => segment.id.startsWith("iris-clipped-v1:"))).toBe(true);
+  });
+
+  it("keeps every published segment inside exactly one real 5e/6e IRIS polygon", () => {
+    const zones = pressureSnapshot.zones.filter((zone) =>
+      ["75105", "75106"].includes(zone.arrondissementCode) && zone.geometry,
+    );
+    const segments = splitParisHeatmapPilotWays();
+
+    expect(zones.length).toBeGreaterThan(0);
+    expect(segments.every((segment) => {
+      const matches = zones.filter((zone) => pointInParisPressureGeometry(
+        { latitude: segment.midpoint[0], longitude: segment.midpoint[1] },
+        zone.geometry,
+      ));
+      return matches.length === 1 && matches[0]?.id === segment.irisReferenceId;
+    })).toBe(true);
   });
 
   it.each([

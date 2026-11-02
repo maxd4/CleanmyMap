@@ -25,7 +25,8 @@ centre approximatif ou d'une distance estimée.
 
 `paris-heatmap-pilot.ts` est l'owner du calcul pur du premier pilote prédictif
 segmentaire. Il consomme uniquement le snapshot statique
-`apps/web/data/geospatial/paris-heatmap-pilot.json`, réutilise le modèle IRIS
+`apps/web/data/geospatial/paris-heatmap-pilot.json`, préparé depuis son entrée
+OSM versionnée et écrêté par les polygones IRIS réels des 5e et 6e, réutilise le modèle IRIS
 comme référence invisible et ne déclenche aucun fournisseur géospatial à
 l'ouverture d'une carte. La couche UI rend des tronçons OSM et des micro-points
 distincts ; elle ne rend jamais les polygones IRIS et masque les micro-points
