@@ -31,7 +31,19 @@ export class ParticipantImpactReadError extends Error {
 
 type ParticipantImpactProjectionOptions = IndividualImpactReadOptions & {
   strict?: boolean;
+  expectedParticipantKeys?: ReadonlySet<string>;
 };
+
+export function buildParticipantImpactKey(actionId: string, userId: string): string {
+  return `${actionId}\u0000${userId}`;
+}
+
+function hasExactParticipantCount(
+  count: unknown,
+  dataLength: number,
+): count is number {
+  return typeof count === "number" && Number.isInteger(count) && count >= 0 && count === dataLength;
+}
 
 function groupParticipantImpactRows(
   data: unknown,
@@ -92,7 +104,12 @@ async function loadParticipantImpactProjection(
     attributionsByActionId: new Map<string, ReturnType<typeof allocateActionParticipantImpact>>(),
     revisionByActionId: new Map<string, string | null>(),
   };
-  if (finalActionIds.length === 0) return empty;
+  if (finalActionIds.length === 0) {
+    if (options.strict && options.expectedParticipantKeys?.size) {
+      throw new ParticipantImpactReadError("La projection des participations ne correspond pas à la lecture attendue.");
+    }
+    return empty;
+  }
   const result = await supabase
     .from("action_participants")
     .select(`user_id, action_id, updated_at, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`, { count: "exact" })
@@ -110,17 +127,43 @@ async function loadParticipantImpactProjection(
     }
     return { ...empty, readStatus: "error" };
   }
-  if (typeof result.count === "number" && result.count !== result.data.length) {
+  const exactCount = hasExactParticipantCount(result.count, result.data.length);
+  const knownCountMismatch = typeof result.count === "number" &&
+    result.count !== result.data.length;
+  if ((options.strict && !exactCount) || (!options.strict && knownCountMismatch)) {
     if (options.strict) {
       throw new ParticipantImpactReadError("La projection des participations est tronquée.");
     }
     return { ...empty, readStatus: "error" };
   }
-  if (options.strict && result.data.some((candidate) => {
-    if (!isActionRecord(candidate)) return true;
-    return typeof candidate.action_id !== "string" || typeof candidate.user_id !== "string";
-  })) {
-    throw new ParticipantImpactReadError("La projection des participations contient une ligne invalide.");
+  if (options.strict) {
+    const requestedActionIds = new Set(finalActionIds);
+    const observedParticipantKeys = new Set<string>();
+    for (const candidate of result.data) {
+      if (!isActionRecord(candidate)) {
+        throw new ParticipantImpactReadError("La projection des participations contient une ligne invalide.");
+      }
+      const rawActionId = typeof candidate.action_id === "string" ? candidate.action_id : "";
+      const rawUserId = typeof candidate.user_id === "string" ? candidate.user_id : "";
+      const actionId = rawActionId.trim();
+      const userId = rawUserId.trim();
+      if (!actionId || !userId || rawActionId !== actionId || rawUserId !== userId ||
+        candidate.participation_status !== ACTIVE_PARTICIPATION_STATUS ||
+        !requestedActionIds.has(actionId)) {
+        throw new ParticipantImpactReadError("La projection des participations contient une ligne incohérente.");
+      }
+      const key = buildParticipantImpactKey(actionId, userId);
+      if (observedParticipantKeys.has(key)) {
+        throw new ParticipantImpactReadError("La projection des participations contient un doublon.");
+      }
+      observedParticipantKeys.add(key);
+    }
+    const expectedParticipantKeys = options.expectedParticipantKeys;
+    if (expectedParticipantKeys &&
+      (observedParticipantKeys.size !== expectedParticipantKeys.size ||
+        [...expectedParticipantKeys].some((key) => !observedParticipantKeys.has(key)))) {
+      throw new ParticipantImpactReadError("La projection des participations ne correspond pas à la lecture attendue.");
+    }
   }
   const rowsByActionId = groupParticipantImpactRows(result.data, options);
   return {
@@ -162,10 +205,12 @@ export async function loadStrictParticipantImpactAttributions(
   actionById: Map<string, ActionPreviewRow>,
   finalActionIds: string[],
   options: IndividualImpactReadOptions = {},
+  expectedParticipantKeys?: ReadonlySet<string>,
 ): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
   return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds, {
     ...options,
     strict: true,
+    expectedParticipantKeys,
   })).attributionsByActionId;
 }
 

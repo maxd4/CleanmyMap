@@ -38,6 +38,7 @@ import type {
 } from "./group-participation-contract";
 import { usesRegistrationStore } from "./action-phase";
 import {
+  buildParticipantImpactKey,
   loadParticipantImpactAttributions,
   loadStrictParticipantImpactAttributions,
   ParticipantImpactReadError,
@@ -224,14 +225,18 @@ export async function loadConfirmedParticipantImpactAttributions(
   if (!Array.isArray(participantResult.data)) {
     throw new ParticipantImpactReadError("La liste des participations confirmées est incomplète.");
   }
-  if (participantResult.data.length > limit ||
-    (typeof participantResult.count === "number" && participantResult.count !== participantResult.data.length)) {
+  const participantCount = participantResult.count;
+  if (typeof participantCount !== "number" || !Number.isInteger(participantCount) || participantCount < 0 ||
+    participantResult.data.length > limit ||
+    participantCount !== participantResult.data.length) {
     throw new ParticipantImpactReadError("La liste des participations confirmées est tronquée.");
   }
 
   const participantRows = participantResult.data as unknown as Array<Record<string, unknown>>;
   if (participantRows.some((row) =>
-    typeof row.user_id !== "string" || typeof row.action_id !== "string")) {
+    typeof row.user_id !== "string" || row.user_id.trim() === "" || row.user_id !== userId ||
+    typeof row.action_id !== "string" || row.action_id.trim() === "" ||
+    row.participation_status !== ACTIVE_PARTICIPATION_STATUS)) {
     throw new ParticipantImpactReadError("La liste des participations confirmées contient une ligne invalide.");
   }
   const actionIds = [
@@ -259,11 +264,18 @@ export async function loadConfirmedParticipantImpactAttributions(
   const finalActionIds = actions
     .filter((action) => action.status === "approved" && !usesRegistrationStore(action.action_phase))
     .map((action) => action.id);
+  const finalActionIdSet = new Set(finalActionIds);
+  const expectedParticipantKeys = new Set(
+    participantRows
+      .filter((row) => finalActionIdSet.has(row.action_id as string))
+      .map((row) => buildParticipantImpactKey(row.action_id as string, row.user_id as string)),
+  );
   const participantImpactByActionId = await loadStrictParticipantImpactAttributions(
     supabase,
     actionById,
     finalActionIds,
     options,
+    expectedParticipantKeys,
   );
 
   return participantRows.flatMap((row) => {
@@ -273,6 +285,9 @@ export async function loadConfirmedParticipantImpactAttributions(
     const attribution = actionId && participantUserId
       ? participantImpactByActionId.get(actionId)?.get(participantUserId)
       : null;
+    if (actionId && finalActionIdSet.has(actionId) && !attribution) {
+      throw new ParticipantImpactReadError("La projection des participations ne contient pas une attribution attendue.");
+    }
     if (!actionId || !participantUserId || !action || !attribution) return [];
     return [{ actionId, actionDate: action.action_date, userId: participantUserId, attribution }];
   });
