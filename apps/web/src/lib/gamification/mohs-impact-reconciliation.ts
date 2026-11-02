@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import {
   loadConfirmedParticipantImpactAttributions,
   type ConfirmedParticipantImpactAttribution,
@@ -28,6 +29,21 @@ export const MOHS_IMPACT_CALCULATION_VERSION = [
 ].join("|");
 
 export function buildMohsScientificReconciliationId(
+  userId: string,
+  methodVersion: string,
+  sourceFingerprint: string,
+): string {
+  const canonicalIdentity = JSON.stringify({
+    userId,
+    methodVersion,
+    sourceFingerprint: sourceFingerprint || "empty",
+  });
+  const digest = createHash("sha256").update(canonicalIdentity, "utf8").digest("hex");
+  return `scientific-impact-reconciliation-v2|${digest}`;
+}
+
+/** Compatibility identity for pending receipts emitted before the bounded ID. */
+export function buildLegacyMohsScientificReconciliationId(
   userId: string,
   methodVersion: string,
   sourceFingerprint: string,
@@ -209,7 +225,7 @@ function buildMohsPreview(
   };
 }
 
-function buildMohsSourceFingerprint(
+export function buildMohsSourceFingerprint(
   rows: readonly ConfirmedParticipantImpactAttribution[],
 ): string {
   return rows

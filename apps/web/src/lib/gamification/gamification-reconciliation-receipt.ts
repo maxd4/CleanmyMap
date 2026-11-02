@@ -515,13 +515,30 @@ async function findReconciliationNotification(
   return null;
 }
 
+function scientificImpactMatches(
+  left: GamificationReconciliationReceipt["scientificImpact"] | ScientificImpactReceiptIntent["scientificImpact"] | undefined,
+  right: GamificationReconciliationReceipt["scientificImpact"] | ScientificImpactReceiptIntent["scientificImpact"] | undefined,
+): boolean {
+  if (!left || !right) return false;
+  return left.methodVersion === right.methodVersion &&
+    left.sourceFingerprint === right.sourceFingerprint &&
+    left.eventsAdded === right.eventsAdded &&
+    left.eventsUpdated === right.eventsUpdated &&
+    left.eventsRemoved === right.eventsRemoved;
+}
+
 export async function loadPendingScientificImpactReceipt(
   supabase: SupabaseClient,
   userId: string,
   reconciliationId: string,
+  legacyReconciliationIds: readonly string[] = [],
 ): Promise<ScientificImpactReceiptIntent | null> {
-  const existing = await findReconciliationNotification(supabase, userId, reconciliationId);
-  return existing?.pendingIntent ?? null;
+  const identities = [...new Set([reconciliationId, ...legacyReconciliationIds])];
+  for (const identity of identities) {
+    const existing = await findReconciliationNotification(supabase, userId, identity);
+    if (existing?.pendingIntent) return existing.pendingIntent;
+  }
+  return null;
 }
 
 function finalReceiptPayload(receipt: GamificationReconciliationReceipt) {
@@ -560,19 +577,58 @@ export async function persistGamificationReconciliationReceipt(
   if (!existing) {
     throw new Error("Le reçu scientifique existant est introuvable après un conflit d'identité.");
   }
-  if (existing.receipt) return;
+  if (existing.receipt) {
+    if (
+      existing.receipt.reconciliationId !== receipt.reconciliationId ||
+      existing.receipt.userId !== receipt.userId ||
+      receipt.scientificImpact && !scientificImpactMatches(existing.receipt.scientificImpact, receipt.scientificImpact)
+    ) {
+      throw new Error("Le reçu scientifique final concurrent ne correspond pas à l'intention demandée.");
+    }
+    return;
+  }
+  if (
+    !existing.pendingIntent ||
+    existing.pendingIntent.reconciliationId !== receipt.reconciliationId ||
+    existing.pendingIntent.userId !== receipt.userId ||
+    !scientificImpactMatches(existing.pendingIntent.scientificImpact, receipt.scientificImpact)
+  ) {
+    throw new Error("L'intention scientifique existante ne correspond pas au reçu à finaliser.");
+  }
   const updateResult = await supabase
     .from("app_notifications")
     .update({
       title: "Votre progression CleanMyMap a été mise à jour.",
       content: "Voir les changements sur la page Gamification.",
-      created_at: receipt.occurredAt,
-      seen_at: null,
-      acknowledged_at: null,
       payload,
     })
     .eq("id", existing.id)
     .eq("user_id", receipt.userId)
-    .eq("type", "gamification_reconciliation");
+    .eq("type", "gamification_reconciliation")
+    .eq("payload->>kind", "scientific_impact_reconciliation_pending")
+    .eq("payload->>userId", receipt.userId)
+    .eq("payload->>reconciliationId", receipt.reconciliationId)
+    .select("id");
   if (updateResult.error) throw new Error(updateResult.error.message);
+  const updatedCount = updateResult.data?.length ?? 0;
+  if (updatedCount === 1) return;
+  if (updatedCount !== 0) {
+    throw new Error("La finalisation du reçu scientifique a modifié un nombre de lignes inattendu.");
+  }
+
+  const winner = await findReconciliationNotification(
+    supabase,
+    receipt.userId,
+    receipt.reconciliationId,
+  );
+  if (
+    winner?.receipt &&
+    winner.receipt.reconciliationId === receipt.reconciliationId &&
+    winner.receipt.userId === receipt.userId &&
+    receipt.scientificImpact &&
+    scientificImpactMatches(winner.receipt.scientificImpact, receipt.scientificImpact)
+  ) {
+    return;
+  }
+  throw new Error("La finalisation du reçu scientifique a perdu sa transition conditionnelle.");
 }

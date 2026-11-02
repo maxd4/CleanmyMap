@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
+import {
+  buildMohsScientificReconciliationId,
+  buildMohsSourceFingerprint,
+  reconcileMohsImpactProgression,
+} from "./mohs-impact-reconciliation";
 
 const loadConfirmedParticipantImpactAttributionsMock = vi.hoisted(() => vi.fn());
 
@@ -64,6 +68,52 @@ function createSupabase(existing: Array<{ id: string; source_id: string; event_t
 }
 
 describe("Mohs impact event reconciliation", () => {
+  it("keeps the scientific reconciliation identity fixed-size for large source sets", () => {
+    const fingerprints = [1, 40, 50, 6000].map((count) =>
+      buildMohsSourceFingerprint(
+        Array.from({ length: count }, (_, index) => ({
+          actionId: `action-${index}`,
+          actionDate: "2026-09-25",
+          attribution: attribution({
+            wasteMohsValue: index,
+            wasteMohsSource: "equivalent_sec",
+          }),
+        })) as never,
+      ),
+    );
+    const identities = fingerprints.map((fingerprint) =>
+      buildMohsScientificReconciliationId(
+        "user-1",
+        "mohs-impact-v1|mass-v2",
+        fingerprint,
+      ),
+    );
+
+    expect(new Set(identities.map((identity) => identity.length)).size).toBe(1);
+    expect(identities.every((identity) =>
+      /^scientific-impact-reconciliation-v2\|[0-9a-f]{64}$/.test(identity),
+    )).toBe(true);
+    expect(identities.every((identity) => identity.length < 2704)).toBe(true);
+    expect(new Set(identities).size).toBe(4);
+  });
+
+  it("changes the bounded identity when the canonical source or method changes", () => {
+    const source = buildMohsSourceFingerprint([
+      {
+        actionId: "action-identity",
+        actionDate: "2026-09-25",
+        attribution: attribution({ wasteMohsValue: 10, wasteMohsSource: "equivalent_sec" }),
+      },
+    ] as never);
+
+    const current = buildMohsScientificReconciliationId("user-1", "method-v1", source);
+    const changedSource = buildMohsScientificReconciliationId("user-1", "method-v1", `${source}:changed`);
+    const changedMethod = buildMohsScientificReconciliationId("user-1", "method-v2", source);
+
+    expect(changedSource).not.toBe(current);
+    expect(changedMethod).not.toBe(current);
+  });
+
   it("does not create a butt threshold from a non-recalculable historical lot", async () => {
     loadConfirmedParticipantImpactAttributionsMock.mockResolvedValue([
       {
@@ -209,7 +259,7 @@ describe("Mohs impact event reconciliation", () => {
       expect.objectContaining({
         p_scientific_receipt_intent: expect.objectContaining({
           kind: "scientific_impact_reconciliation_pending",
-          reconciliationId: expect.stringContaining("scientific-impact-reconciliation|user-1|"),
+          reconciliationId: expect.stringMatching(/^scientific-impact-reconciliation-v2\|[0-9a-f]{64}$/),
           scientificImpact: expect.objectContaining({ eventsAdded: 1 }),
         }),
       }),

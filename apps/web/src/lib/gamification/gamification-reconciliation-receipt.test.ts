@@ -4,6 +4,7 @@ import type { GamificationReconciliationPlan } from "./gamification-reconciliati
 import type { GamificationRulesV1 } from "./gamification-rules";
 import {
   buildGamificationReconciliationReceipt,
+  loadPendingScientificImpactReceipt,
   persistGamificationReconciliationReceipt,
 } from "./gamification-reconciliation-receipt";
 
@@ -274,6 +275,11 @@ describe("GamificationReconciliationReceipt", () => {
     };
     const updateQuery = {
       eq: vi.fn(() => updateQuery),
+      select: vi.fn(async () => ({
+        data: [{ id: "notification-1" }],
+        count: 1,
+        error: null,
+      })),
     };
     const supabase = {
       from: vi.fn(() => ({
@@ -294,5 +300,161 @@ describe("GamificationReconciliationReceipt", () => {
       reconciliationId: receipt.reconciliationId,
       receipt: { scientificImpact },
     });
+    expect(updatedRows[0]).not.toHaveProperty("created_at");
+    expect(updatedRows[0]).not.toHaveProperty("seen_at");
+    expect(updatedRows[0]).not.toHaveProperty("acknowledged_at");
+    expect(updateQuery.eq).toHaveBeenCalledWith(
+      "payload->>kind",
+      "scientific_impact_reconciliation_pending",
+    );
+  });
+
+  it("reads a pending receipt under the legacy identity without rewriting its identity", async () => {
+    const legacyId = "scientific-impact-reconciliation|user-1|method-v1|legacy-fingerprint";
+    const requestedIds: string[] = [];
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn((field: string, value: string) => {
+        if (field === "payload->>reconciliationId") requestedIds.push(value);
+        return query;
+      }),
+      limit: vi.fn(async () => ({
+        data: requestedIds.at(-1) === legacyId
+          ? [{
+              id: "notification-legacy",
+              payload: {
+                kind: "scientific_impact_reconciliation_pending",
+                schemaVersion: 1,
+                reconciliationId: legacyId,
+                userId: "user-1",
+                scientificImpact: {
+                  methodVersion: "method-v1",
+                  sourceFingerprint: "legacy-fingerprint",
+                  eventsAdded: 1,
+                  eventsUpdated: 0,
+                  eventsRemoved: 0,
+                },
+              },
+            }]
+          : [],
+        error: null,
+      })),
+    };
+    const supabase = {
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    } as never;
+
+    const result = await loadPendingScientificImpactReceipt(
+      supabase,
+      "user-1",
+      "scientific-impact-reconciliation-v2|new-identity",
+      [legacyId],
+    );
+
+    expect(result?.reconciliationId).toBe(legacyId);
+    expect(requestedIds).toEqual([
+      "scientific-impact-reconciliation-v2|new-identity",
+      legacyId,
+    ]);
+  });
+
+  it("re-reads a concurrent final winner when the conditional update affects zero rows", async () => {
+    const receipt = buildGamificationReconciliationReceipt(plan(), {
+      reconciliationId: "scientific-impact-reconciliation-v2|winner-race",
+    });
+    const scientificImpact = {
+      methodVersion: "method-v2",
+      sourceFingerprint: "fingerprint-race",
+      eventsAdded: 1,
+      eventsUpdated: 0,
+      eventsRemoved: 0,
+    };
+    const finalReceipt = { ...receipt, scientificImpact, hasUserVisibleChanges: true };
+    const pendingPayload = {
+      kind: "scientific_impact_reconciliation_pending",
+      schemaVersion: 1,
+      reconciliationId: receipt.reconciliationId,
+      userId: "user-1",
+      scientificImpact,
+    };
+    const finalPayload = {
+      kind: "gamification_reconciliation_receipt",
+      schemaVersion: 2,
+      reconciliationId: receipt.reconciliationId,
+      receipt: finalReceipt,
+    };
+    let reads = 0;
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      limit: vi.fn(async () => ({
+        data: [{ id: "notification-race", payload: reads++ === 0 ? pendingPayload : finalPayload }],
+        error: null,
+      })),
+    };
+    const updateQuery = {
+      eq: vi.fn(() => updateQuery),
+      select: vi.fn(async () => ({ data: [], count: 0, error: null })),
+    };
+    const supabase = {
+      from: vi.fn(() => ({
+        insert: vi.fn(async () => ({ error: { code: "23505", message: "duplicate" } })),
+        select: vi.fn(() => query),
+        update: vi.fn(() => updateQuery),
+      })),
+    } as never;
+
+    await expect(persistGamificationReconciliationReceipt(supabase, finalReceipt)).resolves.toBeUndefined();
+    expect(updateQuery.select).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to finalize an incompatible pending scientific intent", async () => {
+    const receipt = buildGamificationReconciliationReceipt(plan(), {
+      reconciliationId: "scientific-impact-reconciliation-v2|incompatible",
+    });
+    const finalReceipt = {
+      ...receipt,
+      scientificImpact: {
+        methodVersion: "method-v2",
+        sourceFingerprint: "fingerprint-current",
+        eventsAdded: 2,
+        eventsUpdated: 0,
+        eventsRemoved: 0,
+      },
+      hasUserVisibleChanges: true,
+    };
+    const pendingPayload = {
+      kind: "scientific_impact_reconciliation_pending",
+      schemaVersion: 1,
+      reconciliationId: receipt.reconciliationId,
+      userId: "user-1",
+      scientificImpact: {
+        methodVersion: "method-v2",
+        sourceFingerprint: "fingerprint-old",
+        eventsAdded: 1,
+        eventsUpdated: 0,
+        eventsRemoved: 0,
+      },
+    };
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      limit: vi.fn(async () => ({
+        data: [{ id: "notification-incompatible", payload: pendingPayload }],
+        error: null,
+      })),
+    };
+    const update = vi.fn();
+    const supabase = {
+      from: vi.fn(() => ({
+        insert: vi.fn(async () => ({ error: { code: "23505", message: "duplicate" } })),
+        select: vi.fn(() => query),
+        update,
+      })),
+    } as never;
+
+    await expect(persistGamificationReconciliationReceipt(supabase, finalReceipt))
+      .rejects.toThrow("ne correspond pas");
+    expect(update).not.toHaveBeenCalled();
   });
 });

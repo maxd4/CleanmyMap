@@ -13,6 +13,10 @@ const reconcileMohsMock = vi.hoisted(() => vi.fn());
 const buildReceiptMock = vi.hoisted(() => vi.fn());
 const buildMohsScientificReconciliationIdMock = vi.hoisted(() => vi.fn(
   (userId: string, methodVersion: string, sourceFingerprint: string) =>
+    `scientific-impact-reconciliation-v2|bounded-${userId}-${methodVersion}-${sourceFingerprint || "empty"}`,
+));
+const buildLegacyMohsScientificReconciliationIdMock = vi.hoisted(() => vi.fn(
+  (userId: string, methodVersion: string, sourceFingerprint: string) =>
     `scientific-impact-reconciliation|${userId}|${methodVersion}|${sourceFingerprint || "empty"}`,
 ));
 const loadPendingImpactMock = vi.hoisted(() => vi.fn());
@@ -27,6 +31,7 @@ vi.mock("./gamification-reconciliation", () => ({
 vi.mock("./mohs-impact-reconciliation", () => ({
   MOHS_IMPACT_CALCULATION_VERSION: "mohs-impact-v1|mass-v2",
   buildMohsScientificReconciliationId: buildMohsScientificReconciliationIdMock,
+  buildLegacyMohsScientificReconciliationId: buildLegacyMohsScientificReconciliationIdMock,
   previewMohsImpactProgression: previewMohsMock,
   reconcileMohsImpactProgression: reconcileMohsMock,
 }));
@@ -190,7 +195,8 @@ describe("scientific impact gamification reconciliation", () => {
     expect(loadPendingImpactMock).toHaveBeenCalledWith(
       expect.anything(),
       "user-1",
-      pendingIntent().reconciliationId,
+      expect.stringMatching(/^scientific-impact-reconciliation-v2\|/),
+      [pendingIntent().reconciliationId],
     );
     expect(persistReceiptMock).toHaveBeenCalledTimes(2);
     expect(result.receipt).toMatchObject({

@@ -14,6 +14,7 @@ import {
 } from "./gamification-reconciliation-receipt";
 import {
   MOHS_IMPACT_CALCULATION_VERSION,
+  buildLegacyMohsScientificReconciliationId,
   buildMohsScientificReconciliationId,
   previewMohsImpactProgression,
   reconcileMohsImpactProgression,
@@ -84,9 +85,20 @@ export async function reconcileScientificImpactGamification(
     impact.methodVersion,
     impact.sourceFingerprint,
   );
+  const legacyReconciliationId = buildLegacyMohsScientificReconciliationId(
+    userId,
+    impact.methodVersion,
+    impact.sourceFingerprint,
+  );
   const pendingIntent = impactChanged
     ? null
-    : await loadPendingScientificImpactReceipt(supabase, userId, reconciliationId);
+    : await loadPendingScientificImpactReceipt(
+        supabase,
+        userId,
+        reconciliationId,
+        legacyReconciliationId === reconciliationId ? [] : [legacyReconciliationId],
+      );
+  const receiptReconciliationId = pendingIntent?.reconciliationId ?? reconciliationId;
   const scientificImpact = impactChanged
     ? {
         methodVersion: impact.methodVersion,
@@ -106,7 +118,7 @@ export async function reconcileScientificImpactGamification(
     receipt = {
       ...buildGamificationReconciliationReceipt(gamification.plan, {
         reasonCategory: "scientific_impact_update",
-        reconciliationId,
+        reconciliationId: receiptReconciliationId,
         rules: GAMIFICATION_RULES_V1,
       }),
       scientificImpact,
