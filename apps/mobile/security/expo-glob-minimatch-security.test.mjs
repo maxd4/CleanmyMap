@@ -16,7 +16,13 @@ test("pins the Expo runtime glob chain to patched versions", () => {
     minimatch: "11.0.1",
   });
   assert.equal(rootPackage.overrides["@expo/fingerprint"].minimatch, "11.0.1");
+  assert.equal(rootPackage.overrides.minimatch, "11.0.1");
   assert.equal(lockfile.packages["node_modules/glob"].version, "14.0.2");
   assert.equal(lockfile.packages["node_modules/glob/node_modules/minimatch"].version, "11.0.1");
   assert.equal(lockfile.packages["node_modules/@expo/fingerprint/node_modules/minimatch"].version, "11.0.1");
+  for (const [packagePath, packageInfo] of Object.entries(lockfile.packages)) {
+    if (packagePath === "node_modules/minimatch" || packagePath.endsWith("/node_modules/minimatch")) {
+      assert.equal(packageInfo.version, "11.0.1", packagePath);
+    }
+  }
 });
