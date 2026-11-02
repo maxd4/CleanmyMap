@@ -14,7 +14,7 @@ import {
   loadRouteEventPressure,
 } from "./route.candidates";
 import { resolveRouteOrigin } from "./route.origin";
-import { routeStartZoneContains, selectRouteOriginWithinZone } from "@/lib/route/route-start-location";
+import { selectRouteOriginWithinZone } from "@/lib/route/route-start-location";
 import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
@@ -129,11 +129,7 @@ export async function POST(request: Request) {
     if (!origin) {
       return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
     }
-    const spatialCandidates = startZone
-      ? candidateData.spatialCandidates.filter((candidate) =>
-          routeStartZoneContains(startZone, candidate),
-        )
-      : candidateData.spatialCandidates;
+    const spatialCandidates = candidateData.spatialCandidates;
     const weatherContext = await fetchPlannerWeatherContext({
       latitude: origin.latitude,
       longitude: origin.longitude,

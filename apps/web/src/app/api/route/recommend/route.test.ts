@@ -14,6 +14,7 @@ import {
   plannedStop,
   request,
 } from "./route.test.fixtures";
+import { buildBoundedRouteStartZone } from "@/lib/route/route-start-location";
 
 type RouteTestCandidate = typeof candidate;
 type RouteTestObservedLayer = { candidateCount: number; isTruncated: boolean; sourceHealth: { failedSources: string[]; availableSources: string[]; partial: boolean } };
@@ -329,6 +330,91 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(getSafeAuthSessionMock).toHaveBeenCalledOnce();
     expect(loadRouteRecommendationSourceMock).toHaveBeenCalledOnce();
+  });
+
+  it("uses a confirmed start zone only to resolve the origin, not to filter collection candidates", async () => {
+    const inside = {
+      ...candidate,
+      id: "observed-inside-zone",
+      label: "Signalement intérieur",
+      latitude: 48.85,
+      longitude: 2.35,
+    };
+    const outside = {
+      ...candidate,
+      id: "observed-outside-zone",
+      label: "Signalement extérieur",
+      latitude: 48.9,
+      longitude: 2.35,
+    };
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([inside, outside]);
+    const zone = {
+      ...buildBoundedRouteStartZone("Zone de départ", { latitude: 48.85, longitude: 2.35 }, 2),
+      confirmed: true,
+    };
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      startLocation: { mode: "zone", label: zone.label, zone },
+      maxStops: 2,
+    }));
+
+    expect(response.status).toBe(200);
+    const plannerCall = planRouteMock.mock.calls.find(([input]) =>
+      input.candidates.some(({ id }: RouteTestCandidate) => id === "observed-outside-zone"),
+    );
+    expect(plannerCall?.[0].origin).toEqual({
+      latitude: 48.85,
+      longitude: 2.35,
+      source: "planner",
+    });
+    expect(plannerCall?.[0].candidates.map(({ id }: RouteTestCandidate) => id)).toEqual([
+      "observed-inside-zone",
+      "observed-outside-zone",
+    ]);
+  });
+
+  it("refuses a confirmed start zone when no admissible origin exists in it", async () => {
+    const outside = {
+      ...candidate,
+      id: "observed-outside-zone",
+      latitude: 48.9,
+      longitude: 2.35,
+    };
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([outside]);
+    const zone = {
+      ...buildBoundedRouteStartZone("Zone vide", { latitude: 48.85, longitude: 2.35 }, 2),
+      confirmed: true,
+    };
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      startLocation: { mode: "zone", label: zone.label, zone },
+    }));
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: "Aucun départ piéton admissible n’a été trouvé dans la zone confirmée.",
+    });
+    expect(planRouteMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves the historical precise start-location path", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      startLocation: {
+        mode: "precise",
+        label: "Adresse historique",
+        origin: { latitude: 48.8462, longitude: 2.3464, source: "address" },
+      },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(planRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        origin: { latitude: 48.8462, longitude: 2.3464, source: "address" },
+      }),
+    );
   });
 
   it("propagates the effective predictive focus to the response and trace", async () => {

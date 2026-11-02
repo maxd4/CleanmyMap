@@ -91,7 +91,10 @@ leur résolution d’origine. Dans l’interface, le mode de départ reste la
 sélection effective même avant géocodage d’une zone ; changer de source précise
 invalide l’ancienne origine devenue inapplicable, tandis qu’un brouillon valide
 réhydrate son mode et sa sélection sans les supprimer lors d’un simple
-rerender.
+rerender. La zone de départ ne constitue pas une zone de collecte : après la
+résolution déterministe de l’origine, le pool canonique de candidats reste
+disponible et les contraintes du planner (sécurité, distance, budget et mode)
+déterminent les cibles.
 
 ## Répartition multi-groupe
 
