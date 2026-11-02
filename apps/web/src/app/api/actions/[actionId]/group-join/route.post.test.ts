@@ -8,7 +8,7 @@ vi.mock("@/lib/actions/action-participant-impact-notifications", () => ({
   captureActionParticipantImpactSnapshot: captureActionParticipantImpactSnapshotMock,
   emitActionParticipantImpactNotifications: vi.fn(),
 }));
-const { authMock, getCurrentUserIdentityMock, getSupabaseServerClientMock, appendActionModerationAuditMock, rebuildUserGamificationBadgesMock, refreshProgressionProfileMock } = groupJoinMocks;
+const { authMock, getCurrentUserIdentityMock, getSupabaseServerClientMock, appendActionModerationAuditMock, hasPersistedAdministrativeParticipantRejectionMock, rebuildUserGamificationBadgesMock, refreshProgressionProfileMock } = groupJoinMocks;
 
 function createPendingParticipant(
   id = "participant-1",
@@ -94,6 +94,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
+    hasPersistedAdministrativeParticipantRejectionMock.mockResolvedValue(false);
   });
 
   it("adds a participant directly from search", async () => {
@@ -285,6 +286,85 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
 
     expect(response.status).toBe(200);
     expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("retries the persisted administrative rejection without rewriting it", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-retry",
+        created_at: "2026-06-01T10:00:00Z",
+        action_id: "action-1",
+        user_id: "user-2",
+        participation_status: "confirmed",
+        participation_source: "group_form",
+      }),
+    ];
+    seedApprovedActionParticipants(participants, {
+      createdByClerkId: "user-1",
+      profiles: [createAliceProfile()],
+    });
+    refreshProgressionProfileMock.mockRejectedValueOnce(new Error("scientific read unavailable"));
+
+    const first = await postActionGroupJoin({
+      participantId: "participant-retry",
+      decision: "reject",
+      reason: "Participant indisponible confirmé.",
+    });
+
+    expect(first.status).toBe(200);
+    expect(participants[0]?.participation_status).toBe("cancelled");
+    const persistedUpdatedAt = participants[0]?.updated_at;
+    appendActionModerationAuditMock.mockClear();
+    refreshProgressionProfileMock.mockResolvedValue(undefined);
+    hasPersistedAdministrativeParticipantRejectionMock.mockResolvedValue(true);
+
+    const retry = await postActionGroupJoin({
+      participantId: "participant-retry",
+      decision: "reject",
+      reason: "Reprise de réconciliation scientifique.",
+    });
+
+    expect(retry.status).toBe(200);
+    expect(participants[0]?.participation_status).toBe("cancelled");
+    expect(participants[0]?.updated_at).toBe(persistedUpdatedAt);
+    expect(refreshProgressionProfileMock).toHaveBeenLastCalledWith(expect.anything(), "user-2", {
+      reconcileLegacyImpact: true,
+    });
+    expect(rebuildUserGamificationBadgesMock).toHaveBeenLastCalledWith(expect.anything(), "user-2");
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("does not reinterpret a voluntary cancellation as an administrative rejection retry", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-voluntary-cancel",
+        created_at: "2026-06-01T10:00:00Z",
+        action_id: "action-1",
+        user_id: "user-2",
+        participation_status: "cancelled",
+        participation_source: "group_form",
+      }),
+    ];
+    seedApprovedActionParticipants(participants, {
+      createdByClerkId: "user-1",
+      profiles: [createAliceProfile()],
+    });
+
+    const response = await postActionGroupJoin({
+      participantId: "participant-voluntary-cancel",
+      decision: "reject",
+      reason: "Rejet administratif demandé.",
+    });
+
+    expect(response.status).toBe(422);
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
   }, 15000);
 
   it("rejects admin direct participant add without a valid reason", async () => {

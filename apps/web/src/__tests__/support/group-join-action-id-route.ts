@@ -23,6 +23,9 @@ export type GroupJoinAuditEntry = {
 const appendActionModerationAuditMock = vi.hoisted(() =>
   vi.fn<(entry: GroupJoinAuditEntry) => Promise<void>>(),
 );
+const hasPersistedAdministrativeParticipantRejectionMock = vi.hoisted(() =>
+  vi.fn(async () => false),
+);
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
 }));
@@ -46,6 +49,7 @@ vi.mock("@/lib/rate-limit/server", () => ({
 }));
 vi.mock("@/lib/actions/moderation-audit", () => ({
   appendActionModerationAudit: appendActionModerationAuditMock,
+  hasPersistedAdministrativeParticipantRejection: hasPersistedAdministrativeParticipantRejectionMock,
   normalizeModerationReason: (value: unknown, options?: { required?: boolean }) => {
     if (typeof value !== "string") {
       return null;
@@ -63,7 +67,7 @@ export type GroupJoinProfileRow = { id: string; display_name: string | null; han
 export type GroupJoinSupabaseErrors = { actionLookup?: string; actionUpdate?: string; participantLookup?: string; participantUpdate?: string; participantInsert?: string; participantCount?: string };
 type GroupJoinRegistrationSource = "group_form" | "admin" | "admin_override" | "import";
 function toRegistrationSource(source: GroupJoinParticipantRow["participation_source"] | GroupJoinRegistrationSource | undefined): GroupJoinRegistrationSource { return source === "post_action_claim" || !source ? "group_form" : source; }
-export const groupJoinMocks = { authMock,requireAuthenticatedAccessMock,getCurrentUserIdentityMock,getSupabaseServerClientMock,loadActionOrganizerIdsForActionMock,rebuildUserGamificationBadgesMock,refreshProgressionProfileMock,appendActionModerationAuditMock,verifyRateLimitMock,createServerRateLimitResponseMock };
+export const groupJoinMocks = { authMock,requireAuthenticatedAccessMock,getCurrentUserIdentityMock,getSupabaseServerClientMock,loadActionOrganizerIdsForActionMock,rebuildUserGamificationBadgesMock,refreshProgressionProfileMock,appendActionModerationAuditMock,hasPersistedAdministrativeParticipantRejectionMock,verifyRateLimitMock,createServerRateLimitResponseMock };
 type GroupJoinRouteMethod = "DELETE" | "GET" | "PATCH" | "POST";
 type GroupJoinRouteCallOptions = {
   requestActionId?: string;

@@ -1,4 +1,7 @@
-import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
+import {
+  appendAdminOperationAudit,
+  listAdminOperationAudit,
+} from "@/lib/admin/audit/operation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { reconcileModerationProgressionForUser } from "@/lib/gamification/moderation-progression";
 
@@ -103,4 +106,38 @@ export async function appendActionModerationAudit(
       params.actorUserId,
     ).catch(() => null);
   }
+}
+
+function hasParticipationStatus(value: unknown, status: string): boolean {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as { participationStatus?: unknown }).participationStatus === status,
+  );
+}
+
+/**
+ * A cancelled participant is retryable only when the persisted audit proves
+ * the exact administrative confirmed -> cancelled transition. The row itself
+ * intentionally keeps its original participation source, so it cannot prove
+ * whether cancellation was voluntary.
+ */
+export async function hasPersistedAdministrativeParticipantRejection(params: {
+  actionId: string;
+  participantUserId: string;
+}): Promise<boolean> {
+  const audits = await listAdminOperationAudit(500, {
+    targetId: params.actionId,
+    operation: "admin_remove_participant",
+    outcome: "success",
+  });
+
+  return audits.some((audit) =>
+    audit.targetUserId === params.participantUserId &&
+    audit.details.participantUserId === params.participantUserId &&
+    audit.details.decision === "reject" &&
+    hasParticipationStatus(audit.details.previousValue, "confirmed") &&
+    hasParticipationStatus(audit.details.newValue, "cancelled"),
+  );
 }

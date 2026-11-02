@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { normalizeModerationReason } from "@/lib/actions/moderation-audit";
+import {
+  hasPersistedAdministrativeParticipantRejection,
+  normalizeModerationReason,
+} from "@/lib/actions/moderation-audit";
 import {
   addActionParticipationByAdmin,
   ActionParticipationOperationError,
@@ -191,10 +194,21 @@ async function finalizeReviewResult(params: {
   reason: string | null;
   result: ReviewMutationResult;
   previousImpactSnapshot: ActionParticipantImpactSnapshot | null;
+  administrativeRejectionRetry?: boolean;
   appendAudit: ModerationAuditAppender;
   canOverrideActionParticipants: GroupJoinModerationParams["canOverrideActionParticipants"];
 }) {
-  const { actionId, userId, data, access, reason, result, appendAudit, canOverrideActionParticipants } = params;
+  const {
+    actionId,
+    userId,
+    data,
+    access,
+    reason,
+    result,
+    appendAudit,
+    canOverrideActionParticipants,
+  } = params;
+  const administrativeRejectionRetry = params.administrativeRejectionRetry === true;
   const alreadyReviewed = "alreadyReviewed" in result && result.alreadyReviewed === true;
   const staleRegistrationRequest =
     "requestKind" in data && data.requestKind === "registration_request" && alreadyReviewed;
@@ -222,7 +236,11 @@ async function finalizeReviewResult(params: {
     }
   }
 
-  if (!staleRegistrationRequest && (isPostActionClaim || canOverrideActionParticipants(access.identity))) {
+  if (
+    !administrativeRejectionRetry &&
+    !staleRegistrationRequest &&
+    (isPostActionClaim || canOverrideActionParticipants(access.identity))
+  ) {
     await appendAudit({
       operationId: `action-group-join-${actionId}-${Date.now()}`,
       actorUserId: access.identity?.userId ?? userId,
@@ -242,7 +260,7 @@ async function finalizeReviewResult(params: {
     });
   }
 
-  if (params.previousImpactSnapshot) {
+  if (params.previousImpactSnapshot && !administrativeRejectionRetry) {
     await emitActionParticipantImpactNotifications({
       supabase: params.supabase,
       actionId,
@@ -355,6 +373,16 @@ export async function handleGroupJoinReview(
     if (!moderation.ok) return moderation.response;
     const { access, reason } = moderation;
     adminParticipationAuditContext = moderation.auditContext;
+    const administrativeRejectionRetry =
+      "decision" in parsed.data &&
+      parsed.data.decision === "reject" &&
+      !("requestKind" in parsed.data && parsed.data.requestKind) &&
+      canOverrideActionParticipants(access.identity)
+        ? await hasPersistedAdministrativeParticipantRejection({
+            actionId: trimmedActionId,
+            participantUserId: parsed.data.participantId,
+          }).catch(() => false)
+        : false;
     const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
       await captureActionParticipantImpactSnapshot(supabase, trimmedActionId);
 
@@ -370,6 +398,7 @@ export async function handleGroupJoinReview(
             participantId: parsed.data.participantId,
             decision: parsed.data.decision,
             actionPhase: actionResult.action_phase,
+            allowAdministrativeRejectionRetry: administrativeRejectionRetry,
             requirePending:
               parsed.data.requestKind === "registration_request" ||
               parsed.data.requestKind === "post_action_claim",
@@ -383,6 +412,7 @@ export async function handleGroupJoinReview(
       reason,
       result,
       previousImpactSnapshot,
+      administrativeRejectionRetry,
       appendAudit: appendAdminParticipationAuditOnce,
       canOverrideActionParticipants,
     });

@@ -2,19 +2,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   appendActionModerationAudit,
   buildActionModerationAuditDetails,
+  hasPersistedAdministrativeParticipantRejection,
   normalizeModerationReason,
 } from "@/lib/actions/moderation-audit";
-import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
+import {
+  appendAdminOperationAudit,
+  listAdminOperationAudit,
+} from "@/lib/admin/audit/operation-audit";
 
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: vi.fn(),
+  listAdminOperationAudit: vi.fn(),
 }));
 
 const appendAdminOperationAuditMock = vi.mocked(appendAdminOperationAudit);
+const listAdminOperationAuditMock = vi.mocked(listAdminOperationAudit);
 
 describe("action moderation audit", () => {
   beforeEach(() => {
     appendAdminOperationAuditMock.mockReset();
+    listAdminOperationAuditMock.mockReset();
   });
 
   it("normalizes required moderation reasons", () => {
@@ -112,5 +119,60 @@ describe("action moderation audit", () => {
         },
       }),
     );
+  });
+
+  it("accepts only the exact persisted confirmed-to-cancelled administrative transition", async () => {
+    listAdminOperationAuditMock.mockResolvedValue([
+      {
+        operationId: "op-voluntary",
+        at: "2026-10-09T14:00:00.000Z",
+        actorUserId: "admin-1",
+        operationType: "moderation",
+        outcome: "success",
+        targetId: "action-1",
+        targetUserId: "user-1",
+        details: {
+          operation: "admin_remove_participant",
+          participantUserId: "user-1",
+          decision: "reject",
+          previousValue: { participationStatus: "pending" },
+          newValue: { participationStatus: "cancelled" },
+        },
+      },
+      {
+        operationId: "op-exact",
+        at: "2026-10-09T15:00:00.000Z",
+        actorUserId: "admin-1",
+        operationType: "moderation",
+        outcome: "success",
+        targetId: "action-1",
+        targetUserId: "user-2",
+        details: {
+          operation: "admin_remove_participant",
+          participantUserId: "user-2",
+          decision: "reject",
+          previousValue: { participationStatus: "confirmed" },
+          newValue: { participationStatus: "cancelled" },
+        },
+      },
+    ]);
+
+    await expect(
+      hasPersistedAdministrativeParticipantRejection({
+        actionId: "action-1",
+        participantUserId: "user-2",
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      hasPersistedAdministrativeParticipantRejection({
+        actionId: "action-1",
+        participantUserId: "user-3",
+      }),
+    ).resolves.toBe(false);
+    expect(listAdminOperationAuditMock).toHaveBeenCalledWith(500, {
+      targetId: "action-1",
+      operation: "admin_remove_participant",
+      outcome: "success",
+    });
   });
 });

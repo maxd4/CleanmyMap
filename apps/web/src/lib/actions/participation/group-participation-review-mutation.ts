@@ -25,6 +25,7 @@ type ReviewActionParticipationParams = {
   decision: "accept" | "reject";
   actionPhase?: ActionPhase;
   requirePending?: boolean;
+  allowAdministrativeRejectionRetry?: boolean;
 };
 
 type ReviewActionParticipationResult = ParticipationMutationResult & {
@@ -89,7 +90,14 @@ async function loadReviewParticipation(
     validationError.name = "ValidationError";
     throw validationError;
   }
-  if (existing.status === "cancelled" && !params.requirePending) {
+  if (
+    existing.status === "cancelled" &&
+    !(
+      params.decision === "reject" &&
+      params.allowAdministrativeRejectionRetry === true
+    ) &&
+    !params.requirePending
+  ) {
     const validationError = new Error(
       "Cette participation a déjà été traitée.",
     );
@@ -183,6 +191,17 @@ export async function reviewActionParticipation(
   if (
     params.decision === "accept" &&
     existing.status === ACTIVE_PARTICIPATION_STATUS
+  ) {
+    return buildAlreadyReviewedResult(
+      supabase,
+      params.actionId,
+      useRegistrations,
+      existing,
+    );
+  }
+  if (
+    params.decision === "reject" &&
+    existing.status === "cancelled"
   ) {
     return buildAlreadyReviewedResult(
       supabase,

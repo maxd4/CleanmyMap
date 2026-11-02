@@ -127,6 +127,44 @@ describe("reviewActionParticipation registration requests", () => {
     expect(state.getUpdateCount()).toBe(0);
   });
 
+  it("returns an idempotent result for an authorized administrative rejection retry", async () => {
+    const state = createRegistrationSupabase({
+      ...pendingRegistration,
+      registration_status: "cancelled",
+    });
+
+    const result = await reviewActionParticipation(state.supabase, {
+      actionId: "action-1",
+      participantId: "registration-1",
+      decision: "reject",
+      actionPhase: "pre_action",
+      allowAdministrativeRejectionRetry: true,
+    });
+
+    expect(result).toMatchObject({
+      alreadyReviewed: true,
+      participationStatus: "cancelled",
+    });
+    expect(state.getUpdateCount()).toBe(0);
+  });
+
+  it("does not permit a cancelled record to enter the retry path without the explicit guard", async () => {
+    const state = createRegistrationSupabase({
+      ...pendingRegistration,
+      registration_status: "cancelled",
+    });
+
+    await expect(
+      reviewActionParticipation(state.supabase, {
+        actionId: "action-1",
+        participantId: "registration-1",
+        decision: "reject",
+        actionPhase: "pre_action",
+      }),
+    ).rejects.toMatchObject({ name: "ValidationError" });
+    expect(state.getUpdateCount()).toBe(0);
+  });
+
   it("rejects a pending manual invitation from the organizer review mutation", async () => {
     const state = createRegistrationSupabase({
       ...pendingRegistration,
