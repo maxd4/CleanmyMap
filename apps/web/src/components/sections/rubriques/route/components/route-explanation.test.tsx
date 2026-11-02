@@ -158,6 +158,7 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Rue de Test");
     expect(markup).toContain("Mesure réseau");
     expect(markup).toContain("Boucle de 2,4 km · départ et arrivée au même endroit");
+    expect(markup).not.toContain("Trajet ouvert");
     expect(markup).toContain("La durée d’action complète n’est pas encore fiable");
     expect(markup).toContain("retour réserve 16 min");
     expect(markup).toContain("Rue du Retour");
@@ -257,10 +258,7 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Rôle : ancrage post-événement");
   });
 
-  it.each([
-    ["explicit", "Fournie explicitement", "address"],
-    ["planner", "Déterminée par le planner", "planner"],
-  ] as const)("distinguishes %s arrival provenance on an open route", (_name, label, source) => {
+  it.each(["address", "map", "gps", "browser"] as const)("explains an explicit %s arrival without attributing it to the planner", (source) => {
     const data = dataFor("network");
     data.isLoop = false;
     data.routeTopology = "open";
@@ -269,8 +267,36 @@ describe("RouteExplanation", () => {
     const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
 
     expect(markup).toContain("Trajet ouvert de 2,4 km");
-    expect(markup).toContain(label);
-    expect(markup).not.toContain("Choisie par le planner");
+    expect(markup).toContain("Fournie explicitement");
+    expect(markup).toContain("Trajet ouvert de 2,4 km · départ fixé par la localisation, arrivée fournie explicitement.");
+    expect(markup).not.toContain("arrivée choisie selon le parcours et le budget.");
     expect(markup).not.toContain("boucles coordonnées");
+  });
+
+  it("keeps the calculated-arrival explanation for a planner arrival", () => {
+    const data = dataFor("network");
+    data.isLoop = false;
+    data.routeTopology = "open";
+    data.arrival = { latitude: 48.858, longitude: 2.354, source: "planner" };
+    data.loop.isLoop = false;
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Déterminée par le planner");
+    expect(markup).toContain("Trajet ouvert de 2,4 km · départ fixé par la localisation, arrivée choisie selon le parcours et le budget.");
+    expect(markup).not.toContain("arrivée fournie explicitement.");
+  });
+
+  it("does not invent arrival provenance when an open route has no arrival", () => {
+    const data = dataFor("network");
+    data.isLoop = false;
+    data.routeTopology = "open";
+    data.arrival = undefined;
+    data.loop.isLoop = false;
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Non disponible");
+    expect(markup).toContain("Trajet ouvert de 2,4 km · départ fixé par la localisation, arrivée non disponible.");
+    expect(markup).not.toContain("arrivée choisie selon le parcours et le budget.");
+    expect(markup).not.toContain("arrivée fournie explicitement.");
   });
 });

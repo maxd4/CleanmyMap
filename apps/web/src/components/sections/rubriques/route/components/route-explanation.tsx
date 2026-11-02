@@ -31,6 +31,11 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
     : data.arrival
       ? (fr ? "Fournie explicitement" : "Provided explicitly")
       : (fr ? "Non disponible" : "Unavailable");
+  const openArrivalSummary = data.arrival?.source === "planner"
+    ? "arrivée choisie selon le parcours et le budget."
+    : data.arrival
+      ? "arrivée fournie explicitement."
+      : "arrivée non disponible.";
   const exclusions = Object.entries(trace.candidates.excludedByReason) as Array<
     [RouteTraceExclusionReason, number]
   >;
@@ -127,7 +132,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
           <p className="mt-2 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-50">
             {isLoop
               ? `Boucle de ${formatNumber(data.travelDistanceKm)} km · départ et arrivée au même endroit. Le retour réserve ${formatDuration(data.loop.returnMinutes)} du budget ; il reste ${formatDuration(data.loop.budgetRemainingMinutes)} après la boucle.`
-              : `Trajet ouvert de ${formatNumber(data.travelDistanceKm)} km · départ fixé par la localisation, arrivée choisie selon le parcours et le budget.`}
+              : `Trajet ouvert de ${formatNumber(data.travelDistanceKm)} km · départ fixé par la localisation, ${openArrivalSummary}`}
           </p>
           <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm text-slate-200">
             <strong className="text-white">Mode : </strong>
