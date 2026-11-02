@@ -22,6 +22,13 @@ const wasteCoverageMigration = readFileSync(
   ),
   "utf8",
 );
+const wasteCoverageMassMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261101000014_public_impact_incremental_butt_mass_provenance.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const wasteCoverageProof = readFileSync(
   new URL(
     "../../../../supabase/tests/public-impact-waste-coverage.pgtap.sql",
@@ -90,15 +97,40 @@ describe("incremental public Impact state migration", () => {
     );
   });
 
+  it("restores the v6 mass contribution contract in the forward-only correction", () => {
+    expect(wasteCoverageMassMigration).toContain("waste_source_count bigint");
+    expect(wasteCoverageMassMigration).toContain(
+      "'massContributions', b.mass_contributions",
+    );
+    expect(wasteCoverageMassMigration).toContain(
+      "from public.public_impact_action_butt_condition_counts b",
+    );
+    expect(wasteCoverageMassMigration).toContain("a.waste_kg is not null");
+    expect(wasteCoverageMassMigration).not.toContain("a.notes");
+    expect(wasteCoverageMassMigration).toContain(
+      "grant execute on function public.load_public_landing_action_summary_incremental() to service_role;",
+    );
+  });
+
   it("registers executable zero/NULL/metadata and reconstruction coverage cases", () => {
-    expect(wasteCoverageProof).toContain("select plan(11);");
-    expect(wasteCoverageProof).toContain("eligible-meta-test");
-    expect(wasteCoverageProof).toContain("eligible-zero");
-    expect(wasteCoverageProof).toContain("eligible-null");
-    expect(wasteCoverageProof).toContain("excluded-business-test");
-    expect(wasteCoverageProof).toContain("public.rebuild_public_impact_action_state");
+    expect(wasteCoverageProof).toContain("select plan(22);");
+    expect(wasteCoverageProof).toContain("insert into public.actions");
     expect(wasteCoverageProof).toContain(
-      "the RPC coverage equals the canonical contribution population",
+      "public.public_impact_action_contributions",
+    );
+    expect(wasteCoverageProof).toContain(
+      "00000000-0000-0000-0000-000000000105",
+    );
+    expect(wasteCoverageProof).toContain(
+      "public.public_impact_action_cigarette_butt_projections",
+    );
+    expect(wasteCoverageProof).toContain("public.rebuild_public_impact_action_state");
+    expect(wasteCoverageProof).toContain("rollback;");
+    expect(wasteCoverageProof).not.toContain(
+      "public_impact_waste_coverage_fixture",
+    );
+    expect(wasteCoverageProof).toContain(
+      "the incremental RPC counts eligible non-NULL sources, including technical metadata and zero",
     );
   });
 });
