@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { HomeFooter } from "./accueil-footer";
@@ -15,27 +16,47 @@ describe("HomeFooter", () => {
     expect(html).toContain("logo-grand-sombre.png");
     expect(html).toContain("cmm-ribbon-frame");
     expect(html).toContain("cmm-ribbon-text");
+    expect(html).toContain('role="region"');
+    expect(html).toContain('aria-label="Pied de page"');
   });
 
-  it("uses the centralized ribbon frame and equal contact button contract", () => {
+  it("uses one desktop row while keeping the mobile composition available", () => {
     const html = renderToStaticMarkup(<HomeFooter />);
     const getFooterClass = (html: string) =>
       html.match(/<footer class="([^"]+)"/)?.[1];
+    const layoutCss = readFileSync(
+      new URL("../../styles/layout.css", import.meta.url),
+      "utf8",
+    );
 
     expect(getFooterClass(html)).toContain("cmm-ribbon-frame");
     expect(getFooterClass(html)).toContain("w-full");
     expect(getFooterClass(html)).toContain("min-w-0");
+    expect(html).toContain("cmm-footer-scroll");
+    expect(html).toContain("cmm-footer-row");
     expect(html).toContain("cmm-footer-contact-actions");
-    expect(html).toContain(
-      "lg:grid-cols-[minmax(0,1fr)_max-content]",
-    );
-    expect(html).toContain(
-      "xl:grid-cols-[minmax(0,7fr)_minmax(29rem,max-content)_minmax(0,15fr)]",
-    );
     expect(html).toContain("cmm-footer-legal-links");
+    expect(html).toContain("cmm-footer-signature");
     expect(html.match(/cmm-footer-contact-link/g)).toHaveLength(3);
     expect(html).toContain('href="https://github.com/maxd4/CleanMyMap"');
-    expect(html).not.toContain("compact");
+    expect(layoutCss).toContain(".cmm-footer-row");
+    expect(layoutCss).toContain("min-width: max-content");
+    expect(layoutCss).toContain("overflow-x: auto");
+    expect(layoutCss).not.toContain("minmax(14rem, 1fr)");
+  });
+
+  it("preserves the complete legal and contact navigation", () => {
+    const html = renderToStaticMarkup(<HomeFooter />);
+
+    expect(html).toContain('href="/contact"');
+    expect(html).toMatch(/href="mailto:[^"]+"/);
+    expect(html).toContain('href="https://instagram.com/cleanmymap.fr"');
+    expect(html).toContain('href="https://github.com/maxd4/CleanMyMap"');
+    expect(html).toContain('href="/mentions-legales"');
+    expect(html).toContain('href="/conditions-generales-utilisation"');
+    expect(html).toContain('href="/politique-confidentialite"');
+    expect(html).toContain('href="/politique-cookies"');
+    expect(html).toContain("Gérer mes cookies");
   });
 
   it("keeps contact as a text link without the contact bubble", () => {
