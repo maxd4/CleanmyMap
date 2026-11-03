@@ -594,6 +594,37 @@ réutilisent les projections web existantes pour la gamification, l'impact, les
 statistiques et les autres dérivés. Le mobile ne calcule ni ne persiste une
 projection parallèle.
 
+### Légendes territoriales : contrat Web/Mobile
+
+Les Légendes territoriales sont une projection serveur commune, actuellement
+détenue par `apps/web/src/lib/gamification/territorial-legends/`. Si une surface
+mobile les affiche, elle consomme les routes Web canoniques avec le Bearer Clerk
+courant ; elle ne recalcule ni le score, ni le rang, ni les égalités, ni les
+campagnes, ni les récompenses.
+
+Le contrat utilise `campaignYear`, l'année civile `Europe/Paris` du 1er janvier
+inclus au 1er janvier suivant exclu. Chaque nouvelle campagne repart avec des
+scores, titres courants, séries et objectifs nuls ; la fenêtre concurrentielle
+reste de 90 jours calendaires mais ne franchit jamais le 1er janvier. Les
+conquêtes sont uniques par grade et campagne ; la détention continue produit
+les seuils 7, 30, 90 et 180 jours, puis une clôture de saison le 31 décembre
+pour les détenteurs effectivement vérifiés. Aucune trace GPS ne constitue une
+contribution.
+
+La lecture publique reste minimisée via
+`/api/gamification/territorial-leaderboard/public`. La lecture personnelle et
+l'historique annuel restent owner-scoped via `me` et
+`/api/gamification/territorial-leaderboard/history?campaignYear=...` ; cet
+historique expose aussi les preuves invalidées conservées pour audit sans les
+réactiver comme badges CURRENT. Le consentement territorial reste distinct du
+leaderboard XP et persiste entre campagnes sans rendre rétroactives les
+contributions antérieures à son activation. Aucun XP, niveau, badge ou
+progression hors Légendes n'est réinitialisé.
+
+La source détaillée et les champs de réponse sont la
+[spécification canonique de gamification](../../documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
+et le [moteur de gamification](../../documentation/features/gamification/GAMIFICATION_ENGINE.md).
+
 ## Identité Clerk
 
 Le web et l'application mobile utilisent Clerk comme fournisseur d'identité

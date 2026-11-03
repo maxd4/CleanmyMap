@@ -21,6 +21,30 @@ Ordre de confiance :
 
 Le code et les tests priment si une divergence apparaît.
 
+## Légendes territoriales — contrat annuel intersurface
+
+Le moteur serveur des Légendes territoriales est détenu par
+`apps/web/src/lib/gamification/territorial-legends/` et ses routes
+`/api/gamification/territorial-leaderboard/*`. Il applique le contrat annuel
+décrit dans la [spécification canonique](../../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md) :
+`campaignYear` est l'année civile `Europe/Paris`, la fenêtre de 90 jours est
+bornée par le 1er janvier, et les périodes ne traversent jamais une frontière
+de campagne.
+
+Les cinq familles `BADGE_ONLY` restent des familles de grade, pas des badges
+annuels ajoutés au catalogue. Chaque attribution possède cependant une
+identité millésimée incluant le grade et `campaignYear`; sa preuve conserve le
+territoire, les dates de détention, la provenance et le statut d'audit. Les
+preuves historiques invalidées restent lisibles par le propriétaire avec
+`GET /api/gamification/territorial-leaderboard/history?campaignYear=...`, mais
+ne sont pas rechargées comme faits CURRENT.
+
+Web et Mobile consomment cette projection serveur identique. Mobile ne doit
+pas implémenter un calcul local de score, de rang, de série, de conquête ou de
+badge ; une future surface native doit utiliser le Bearer Clerk et les mêmes
+routes, en respectant la lecture publique minimisée et la lecture personnelle
+owner-scoped.
+
 ## Frontières techniques
 
 - `progression_events` est l'unique journal CURRENT de progression XP et

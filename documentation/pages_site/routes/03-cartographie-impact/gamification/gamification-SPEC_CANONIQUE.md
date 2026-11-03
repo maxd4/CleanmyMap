@@ -94,6 +94,24 @@ requiert au moins deux compétiteurs éligibles et un score maximal d'au moins
 deux actions distinctes. Les égalités utilisent un rang de compétition
 explicite (`1, 1, 3`) et leur taille est exposée.
 
+Le contrat intersurface Web/Mobile est serveur-only : les deux applications
+consomment ces mêmes routes et le même JSON ; aucune date, fenêtre, égalité,
+campagne ou récompense n'est recalculée dans le client mobile. La surface
+publique ne renvoie que la projection minimisée ci-dessus. Une surface mobile
+authentifiée utilise le Bearer Clerk courant sur la route `me` et conserve la
+même séparation entre lecture personnelle et classement public. Un pont ou une
+lecture native ne constitue pas une seconde gamification.
+
+Les récompenses et leur historique personnel se consultent par année civile
+avec la route owner-scoped
+`GET /api/gamification/territorial-leaderboard/history?campaignYear=...`.
+Les filtres optionnels `level` et `territoryCode` utilisent les mêmes niveaux
+et codes COG que le classement. La réponse expose `campaignYear` et les
+preuves millésimées — identité `proofId`, grade, territoire, période,
+provenance et `validityStatus` — y compris les preuves invalidées conservées
+pour l'audit. Elle est privée, sans cache partagé, et ne transforme jamais une
+preuve invalidée en badge CURRENT.
+
 Cette exception ne modifie pas les routes XP, les leaderboards `level|xp|badges`
 ni les dix progressions infinies CURRENT.
 

@@ -11,6 +11,14 @@ reste la surface complète et indépendante ; le mobile réutilise le backend,
 les données, l'identité et les projections métier existantes, sans gamification
 parallèle ni second modèle métier.
 
+Cette frontière vaut aussi pour les Légendes territoriales : leur contrat
+annuel, leurs campagnes `campaignYear`, leurs scores, titres, séries et
+preuves sont calculés par le serveur Web commun. Une future lecture native
+réutilise les routes publiques ou owner-scoped correspondantes avec l'identité
+Clerk courante ; elle n'embarque ni moteur de classement, ni calendrier de
+campagne, ni attribution locale. L'historique annuel, y compris les preuves
+invalidées conservées pour audit, reste celui retourné par la source serveur.
+
 La V1 couvre le mode activité GPS live avec carte et tracé temps réel, la
 reprise/offline, la finalisation serveur, les contacts d'urgence, l'espace
 Compte natif et les trois

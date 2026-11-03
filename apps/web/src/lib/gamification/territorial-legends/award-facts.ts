@@ -1,6 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { territorialLegendProofToFact } from "./rewards";
-import type { TerritorialLegendAwardProof, TerritorialLegendLevel } from "./types";
+import { TERRITORIAL_LEGEND_LEVELS, type TerritorialLegendAwardProof, type TerritorialLegendLevel } from "./types";
+
+export type TerritorialLegendAwardProofQuery = {
+  campaignYear?: number;
+  level?: TerritorialLegendLevel;
+  territoryCode?: string;
+  includeInvalidated?: boolean;
+};
 
 function parseProof(value: unknown): TerritorialLegendAwardProof | null {
   if (!value || typeof value !== "object") return null;
@@ -21,11 +28,12 @@ function parseProof(value: unknown): TerritorialLegendAwardProof | null {
   };
   const level = row.level;
   const campaignYear = Number(row.campaign_year);
+  const validLevel = typeof level === "string" && TERRITORIAL_LEGEND_LEVELS.includes(level as TerritorialLegendLevel);
   return typeof row.proof_id === "string" &&
     typeof row.user_id === "string" &&
     row.campaign_year !== null && row.campaign_year !== undefined &&
     Number.isInteger(campaignYear) && campaignYear > 0 &&
-    typeof level === "string" &&
+    validLevel &&
     typeof row.territory_code === "string" &&
     (row.award_kind === "conquest" || row.award_kind === "longevity" || row.award_kind === "season_end") &&
     Number.isInteger(Number(row.threshold_days)) &&
@@ -58,17 +66,34 @@ function parseProof(value: unknown): TerritorialLegendAwardProof | null {
 export async function loadTerritorialLegendAwardProofs(
   supabase: SupabaseClient,
   userId: string,
+  query: TerritorialLegendAwardProofQuery = {},
 ): Promise<TerritorialLegendAwardProof[]> {
-  const result = await supabase
+  let request = supabase
     .from("territorial_legend_award_proofs")
     .select("proof_id, user_id, campaign_year, level, territory_code, award_kind, threshold_days, hold_started_on, held_through_on, awarded_on, valid_from, valid_until, validity_status, source_fingerprint")
-    .eq("user_id", userId)
-    .eq("validity_status", "active")
-    .limit(10000);
+    .eq("user_id", userId);
+  if (query.campaignYear !== undefined) request = request.eq("campaign_year", query.campaignYear);
+  if (query.level !== undefined) request = request.eq("level", query.level);
+  if (query.territoryCode !== undefined) request = request.eq("territory_code", query.territoryCode);
+  if (!query.includeInvalidated) request = request.eq("validity_status", "active");
+  const result = await request.limit(10000);
   if (result.error) throw new Error(result.error.message);
   return (Array.isArray(result.data) ? result.data : [])
     .map(parseProof)
-    .filter((proof): proof is TerritorialLegendAwardProof => proof !== null);
+    .filter((proof): proof is TerritorialLegendAwardProof => proof !== null)
+    .sort((left, right) =>
+      right.campaignYear - left.campaignYear ||
+      left.awardedOn.localeCompare(right.awardedOn) ||
+      left.proofId.localeCompare(right.proofId),
+    );
+}
+
+export async function loadTerritorialLegendAwardHistory(
+  supabase: SupabaseClient,
+  userId: string,
+  query: Omit<TerritorialLegendAwardProofQuery, "includeInvalidated"> & { campaignYear: number },
+): Promise<TerritorialLegendAwardProof[]> {
+  return loadTerritorialLegendAwardProofs(supabase, userId, { ...query, includeInvalidated: true });
 }
 
 export async function loadTerritorialLegendAwardFacts(

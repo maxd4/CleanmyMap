@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-18T20:20:27.882Z",
-  "apiRouteCount": 193,
+  "apiRouteCount": 194,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -402,6 +402,13 @@
       "reviewedAt": "2026-11-03"
     },
     {
+      "route": "apps/web/src/app/api/gamification/territorial-leaderboard/history/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Lecture owner-scoped de l'historique annuel des preuves territoriales, y compris les invalidations conservées pour audit et séparée du classement public.",
+      "costContract": "GET borné à une année, aux niveaux/codes COG optionnels et à l'identité Clerk courante ; les preuves actives ou invalidées sont privées, limitées à 10000 lignes et renvoyées private/no-store sans recalcul ni mutation.",
+      "reviewedAt": "2026-11-04"
+    },
+    {
       "route": "apps/web/src/app/api/gamification/territorial-leaderboard/public/route.ts",
       "introducedBy": "WORKTREE-CANDIDATE",
       "reason": "Projection publique séparée des Légendes territoriales, fondée sur les actions publiées et participations confirmées après consentement explicite.",
@@ -536,6 +543,7 @@
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",
     "apps/web/src/app/api/gamification/spogomi/collection/route.ts",
+    "apps/web/src/app/api/gamification/territorial-leaderboard/history/route.ts",
     "apps/web/src/app/api/gamification/territorial-leaderboard/me/route.ts",
     "apps/web/src/app/api/gamification/territorial-leaderboard/public/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/admin/route.ts",
