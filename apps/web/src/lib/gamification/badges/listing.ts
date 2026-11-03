@@ -25,6 +25,14 @@ import {
 } from "../progression/terrain-specializations";
 import { loadTerrainSpecializationEvidence } from "../progression/terrain-specialization-evidence";
 import { loadGamificationLedgerEvents, type GamificationLedgerEvent } from "../progression/gamification-summary-loader";
+import {
+  loadTerritorialLegendAwardProofs,
+} from "../territorial-legends/award-facts";
+import {
+  TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS,
+  territorialLegendFamilyId,
+} from "../territorial-legends/rewards";
+import { TERRITORIAL_LEGEND_LEVELS } from "../territorial-legends/types";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
@@ -154,16 +162,42 @@ function buildTerrainSpecializationBadges(
   }));
 }
 
+function buildTerritorialLegendBadges(
+  proofs: Awaited<ReturnType<typeof loadTerritorialLegendAwardProofs>>,
+): GamificationBadgeEntry[] {
+  return TERRITORIAL_LEGEND_LEVELS.map((level) => {
+    const familyProofs = proofs.filter((proof) => proof.level === level);
+    const current = familyProofs.reduce((max, proof) => Math.max(max, proof.thresholdDays), 0);
+    const next = TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS.find((threshold) => threshold > current) ?? null;
+    const definitionId = territorialLegendFamilyId(level);
+    return {
+      id: `${definitionId}:current`,
+      definitionId,
+      family: definitionId,
+      status: "CURRENT",
+      scale: "territorial",
+      name: `Légende territoriale — ${level}`,
+      description: "Conquête one-shot puis détention continue à 7, 30, 90, 180, 365 et 730 jours.",
+      icon: "🗺️",
+      unlocked: familyProofs.length > 0,
+      progress: { current, target: next },
+      visualVariant: "territorial",
+      tooltip: next ? `Palier actuel ${current} jour(s) · prochain palier ${next} jour(s)` : `Palier maximal acquis: ${current} jour(s)`,
+    } satisfies GamificationBadgeEntry;
+  });
+}
+
 export async function loadGamificationBadgesList(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationBadgesListPayload> {
-  const [counters, cleanZoneSources, learningProgression, terrainEvidence, ledgerEvents] = await Promise.all([
+  const [counters, cleanZoneSources, learningProgression, terrainEvidence, ledgerEvents, territorialProofs] = await Promise.all([
     loadGamificationUserCounters(supabase, userId),
     loadCleanZoneSourcesForUser(supabase, userId),
     loadQuizLearningProgression(supabase, userId),
     loadTerrainSpecializationEvidence(supabase, userId),
     loadGamificationLedgerEvents(supabase, userId),
+    loadTerritorialLegendAwardProofs(supabase, userId),
   ]);
 
   const {
@@ -184,6 +218,7 @@ export async function loadGamificationBadgesList(
 
   appendBadges(badges, buildOrganisationBadges(completeActionsCount));
   appendBadges(badges, buildTerrainSpecializationBadges(terrainEvidence, ledgerEvents));
+  appendBadges(badges, buildTerritorialLegendBadges(territorialProofs));
 
   const legacyBadges = buildActionBadges(actionsCount, completeActionsCount);
   appendBadges(badges, legacyBadges);

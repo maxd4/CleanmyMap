@@ -12,12 +12,13 @@ import {
   type TerritorialParticipationFact,
   type TerritorialPart,
   type TerritorialPublicProfile,
+  type TerritorialLegendWinnerSnapshot,
 } from "./types";
 
 export const TERRITORIAL_LEGEND_WINDOW_DAYS = 90;
 export const TERRITORIAL_LEGEND_COG_YEAR = 2026;
 
-type RankedInternalEntry = TerritorialLegendEntry & { userId: string };
+type RankedInternalEntry = TerritorialLegendEntry & { userId: string; actionIds: string[] };
 
 export type BuildLeaderboardParams = {
   level: TerritorialLegendLevel;
@@ -107,6 +108,37 @@ function rankEntries(entries: readonly RankedInternalEntry[]): RankedInternalEnt
   }, []);
 }
 
+function buildRankedEntries(
+  params: Pick<BuildLeaderboardParams, "level" | "territoryCode" | "now" | "actions" | "participations" | "consents" | "profiles">,
+): RankedInternalEntry[] {
+  const now = params.now ?? new Date();
+  const targetCode = params.territoryCode.trim();
+  const consentByUser = new Map(params.consents.map((consent) => [consent.userId, consent]));
+  const profileByUser = new Map(params.profiles.map((profile) => [profile.userId, profile]));
+  const actionById = new Map(params.actions.map((action) => [action.actionId, action]));
+  const actionsByUser = new Map<string, Set<string>>();
+
+  for (const participation of params.participations) {
+    const action = actionById.get(participation.actionId);
+    const consent = consentByUser.get(participation.userId);
+    if (!action || !consent || !contributionIsEligible(action, consent, now)) continue;
+    const territory = territoryPartForLevel(action, params.level);
+    if (!territory || territory.code !== targetCode) continue;
+    if (!profileByUser.has(participation.userId)) continue;
+    const userActions = actionsByUser.get(participation.userId) ?? new Set<string>();
+    userActions.add(participation.actionId);
+    actionsByUser.set(participation.userId, userActions);
+  }
+
+  return rankEntries([...actionsByUser.entries()].flatMap(([userId, actionIds]) => {
+    const profile = profileByUser.get(userId);
+    const score = actionIds.size;
+    return profile && score > 0
+      ? [{ userId, actionIds: [...actionIds].sort(), publicLabel: profile.publicLabel, score, distinctActions: score, rank: 0, tied: false, tieSize: 1 }]
+      : [];
+  }));
+}
+
 function contributionIsEligible(
   action: TerritorialActionFact,
   consent: TerritorialLegendConsent,
@@ -128,30 +160,7 @@ function contributionIsEligible(
 export function buildTerritorialLegendPage(params: BuildLeaderboardParams): TerritorialLegendPage {
   const now = params.now ?? new Date();
   const targetCode = params.territoryCode.trim();
-  const consentByUser = new Map(params.consents.map((consent) => [consent.userId, consent]));
-  const profileByUser = new Map(params.profiles.map((profile) => [profile.userId, profile]));
-  const actionById = new Map(params.actions.map((action) => [action.actionId, action]));
-  const actionsByUser = new Map<string, Set<string>>();
-
-  for (const participation of params.participations) {
-    const action = actionById.get(participation.actionId);
-    const consent = consentByUser.get(participation.userId);
-    if (!action || !consent || !contributionIsEligible(action, consent, now)) continue;
-    const territory = territoryPartForLevel(action, params.level);
-    if (!territory || territory.code !== targetCode) continue;
-    if (!profileByUser.has(participation.userId)) continue;
-    const userActions = actionsByUser.get(participation.userId) ?? new Set<string>();
-    userActions.add(participation.actionId);
-    actionsByUser.set(participation.userId, userActions);
-  }
-
-  const internal = rankEntries([...actionsByUser.entries()].flatMap(([userId, actionIds]) => {
-    const profile = profileByUser.get(userId);
-    const score = actionIds.size;
-    return profile && score > 0
-      ? [{ userId, publicLabel: profile.publicLabel, score, distinctActions: score, rank: 0, tied: false, tieSize: 1 }]
-      : [];
-  }));
+  const internal = buildRankedEntries(params);
   const offset = Math.min(decodeCursor(params.cursor), internal.length);
   const limit = Math.max(1, Math.min(100, Math.trunc(params.limit ?? 25)));
   const items = internal.slice(offset, offset + limit).map((item) => ({
@@ -186,6 +195,47 @@ export function buildTerritorialLegendPage(params: BuildLeaderboardParams): Terr
       ? { owner: owner ? { rank: owner.rank, score: owner.score, distinctActions: owner.distinctActions, tied: owner.tied, tieSize: owner.tieSize } : null }
       : {}),
   };
+}
+
+export function buildTerritorialLegendWinnerSnapshots(params: {
+  now?: Date;
+  actions: readonly TerritorialActionFact[];
+  participations: readonly TerritorialParticipationFact[];
+  consents: readonly TerritorialLegendConsent[];
+  profiles: readonly TerritorialPublicProfile[];
+}): TerritorialLegendWinnerSnapshot[] {
+  const now = params.now ?? new Date();
+  const snapshots: TerritorialLegendWinnerSnapshot[] = [];
+  for (const level of TERRITORIAL_LEGEND_LEVELS) {
+    const territoryParts = new Map<string, TerritorialPart>();
+    for (const action of params.actions) {
+      const part = territoryPartForLevel(action, level);
+      if (part) territoryParts.set(part.code, part);
+    }
+    for (const [territoryCode, territoryPart] of territoryParts) {
+      const ranked = buildRankedEntries({ ...params, now, level, territoryCode });
+      const maxScore = ranked[0]?.score ?? 0;
+      if (ranked.length < 2 || maxScore < 2) continue;
+      for (const winner of ranked.filter((entry) => entry.rank === 1)) {
+        snapshots.push({
+          userId: winner.userId,
+          level,
+          territoryCode,
+          territoryLabel: territoryPart.name,
+          effectiveOn: parisDate(now),
+          score: winner.score,
+          rank: 1,
+          tieSize: winner.tieSize,
+          sourceFingerprint: [level, territoryCode, winner.userId, winner.actionIds.join(","), winner.score, winner.tieSize].join("|"),
+        });
+      }
+    }
+  }
+  return snapshots.sort((left, right) =>
+    left.level.localeCompare(right.level) ||
+    left.territoryCode.localeCompare(right.territoryCode) ||
+    left.userId.localeCompare(right.userId),
+  );
 }
 
 type RawActionRow = {
@@ -259,10 +309,17 @@ async function loadInChunks<T>(load: (ids: string[]) => Promise<T[]>, ids: reado
   return result;
 }
 
-export async function loadTerritorialLegendPage(
+export type TerritorialLegendLoadedFacts = {
+  actions: TerritorialActionFact[];
+  participations: TerritorialParticipationFact[];
+  consents: TerritorialLegendConsent[];
+  profiles: TerritorialPublicProfile[];
+};
+
+export async function loadTerritorialLegendFacts(
   supabase: SupabaseClient,
-  params: Omit<BuildLeaderboardParams, "actions" | "participations" | "consents" | "profiles"> & { now?: Date },
-): Promise<TerritorialLegendPage> {
+  params: { now?: Date; ownerUserId?: string | null } = {},
+): Promise<TerritorialLegendLoadedFacts> {
   const now = params.now ?? new Date();
   const start = parisDate(windowStart(now));
   const actionResult = await supabase
@@ -278,7 +335,7 @@ export async function loadTerritorialLegendPage(
     .lte("action_date", parisDate(now));
   if (actionResult.error) throw actionResult.error;
   const actions = (Array.isArray(actionResult.data) ? actionResult.data : []).map(asActionRow).filter((row): row is RawActionRow => row !== null);
-  if (actions.length === 0) return buildTerritorialLegendPage({ ...params, now, actions: [], participations: [], consents: [], profiles: [] });
+  if (actions.length === 0) return { actions: [], participations: [], consents: [], profiles: [] };
 
   const actionIds = actions.map((action) => action.id);
   const participationResult = await loadInChunks(async (ids) => {
@@ -314,17 +371,31 @@ export async function loadTerritorialLegendPage(
     return params.ownerUserId === row.id ? [{ userId: row.id, publicLabel: "Vous" }] : [];
   });
   const actionsWithTerritory = await resolveActions(actions);
-  const resolvedTerritoryLabel = params.territoryLabel ?? actionsWithTerritory
+  return {
+    actions: actionsWithTerritory,
+    participations,
+    consents: consentResult,
+    profiles,
+  };
+}
+
+export async function loadTerritorialLegendPage(
+  supabase: SupabaseClient,
+  params: Omit<BuildLeaderboardParams, "actions" | "participations" | "consents" | "profiles"> & { now?: Date },
+): Promise<TerritorialLegendPage> {
+  const now = params.now ?? new Date();
+  const facts = await loadTerritorialLegendFacts(supabase, {
+    now,
+    ownerUserId: params.ownerUserId,
+  });
+  const resolvedTerritoryLabel = params.territoryLabel ?? facts.actions
     .map((action) => territoryPartForLevel(action, params.level))
     .find((part) => part?.code === params.territoryCode)?.name ?? null;
   return buildTerritorialLegendPage({
     ...params,
     territoryLabel: resolvedTerritoryLabel,
     now,
-    actions: actionsWithTerritory,
-    participations,
-    consents: consentResult,
-    profiles,
+    ...facts,
   });
 }
 

@@ -23,6 +23,8 @@ import {
   TERRAIN_SPECIALIZATION_RULES_VERSION,
   TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
 } from "./terrain-specializations";
+import { TERRITORIAL_LEGEND_LEVELS } from "../territorial-legends/types";
+import { territorialLegendFamilyId, TERRITORIAL_LEGEND_REWARD_EVENT_TYPE } from "../territorial-legends/rewards";
 export { CURRENT_MILESTONES } from "./current-milestones";
 export { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
 
@@ -114,10 +116,30 @@ const CURRENT_TERRAIN_SPECIALIZATION_MECHANICS = TERRAIN_SPECIALIZATIONS.map((sp
   description: specialization.description,
 })) satisfies readonly GamificationMechanicDefinition[];
 
+/** Five evolving territorial families; conquest and longevity are tiers of the same family. */
+export const CURRENT_TERRITORIAL_LEGEND_MECHANICS = TERRITORIAL_LEGEND_LEVELS.map((level) => ({
+  id: territorialLegendFamilyId(level),
+  category: "BADGE_ONLY" as const,
+  progressionId: null,
+  xpPolicy: {
+    kind: "none" as const,
+    reason: "Les Légendes territoriales sont des récompenses BADGE_ONLY sans XP.",
+  },
+  sourceDomain: "territorial_legend_hold_periods + territorial_legend_award_proofs",
+  badgeId: territorialLegendFamilyId(level),
+  milestoneId: null,
+  visibility: "current_user" as const,
+  rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+  description: `Famille évolutive de conquête et longévité au niveau ${level}.`,
+  eventType: TERRITORIAL_LEGEND_REWARD_EVENT_TYPE,
+})) satisfies readonly (GamificationMechanicDefinition & { eventType: ProgressionEventType })[];
+
 export const GAMIFICATION_REGISTRY = [
   ...CURRENT_INFINITE_PROGRESSIONS,
   ...CURRENT_MILESTONES,
   ...CURRENT_TERRAIN_SPECIALIZATION_MECHANICS,
+  ...CURRENT_TERRITORIAL_LEGEND_MECHANICS,
   ...CURRENT_SPOGOMI_COLLECTION_MECHANICS,
   ...NON_GAMIFIED_SIGNALS,
 ] as const satisfies readonly GamificationMechanicDefinition[];
@@ -298,6 +320,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   [TERRAIN_SPECIALIZATION_EVENT_TYPE]: {
     classification: "non_progression",
     reason: "Les événements de spécialisation sont construits par la policy terrain et rattachés à Organisation ou Participation.",
+  },
+  [TERRITORIAL_LEGEND_REWARD_EVENT_TYPE]: {
+    classification: "non_progression",
+    reason: "Les récompenses territoriales sont BADGE_ONLY et sont reconstruites depuis leurs preuves.",
   },
 };
 export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {

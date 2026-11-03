@@ -10,6 +10,8 @@ import type {
   SchoolCollectiveRecognitionDefinition,
 } from "./progression-types";
 import { TERRAIN_SPECIALIZATIONS } from "./terrain-specializations";
+import { TERRITORIAL_LEGEND_LEVELS } from "../territorial-legends/types";
+import { territorialLegendFamilyId } from "../territorial-legends/rewards";
 
 function progressionBadgeDefinition(
   progression: GamificationProgressionDefinition,
@@ -115,6 +117,28 @@ export const CURRENT_SPOGOMI_BADGE_DEFINITIONS = [
   aliases: [],
 }));
 
+/** Five evolving families; conquest and longevity are represented as tiers. */
+export const CURRENT_TERRITORIAL_LEGEND_BADGE_DEFINITIONS = TERRITORIAL_LEGEND_LEVELS.map((level) => ({
+  id: territorialLegendFamilyId(level),
+  family: territorialLegendFamilyId(level),
+  status: "CURRENT" as const,
+  label: `Légende territoriale — ${level}`,
+  scale: "territorial" as const,
+  metric: "conquest_and_longevity_days",
+  sourceDomain: "territorial_legend_hold_periods + territorial_legend_award_proofs",
+  visibility: "current_user" as const,
+  progressionId: null,
+  rule: {
+    kind: "infinite_thresholds" as const,
+    description: "Conquête one-shot puis longévité à 7, 30, 90, 180, 365 et 730 jours.",
+  },
+  xpPolicy: {
+    kind: "none" as const,
+    reason: "Les Légendes territoriales sont BADGE_ONLY sans XP.",
+  },
+  aliases: [],
+})) satisfies readonly GamificationBadgeDefinition[];
+
 /** Canonical badge identity catalog for every gamification surface. */
 export const CURRENT_BADGE_DEFINITIONS = [
   ...CURRENT_INFINITE_PROGRESSIONS.map(progressionBadgeDefinition),
@@ -122,6 +146,7 @@ export const CURRENT_BADGE_DEFINITIONS = [
   ...CURRENT_MILESTONES.map(milestoneBadgeDefinition),
   ...CURRENT_SCHOOL_COLLECTIVE_RECOGNITIONS.map(schoolCollectiveBadgeDefinition),
   ...CURRENT_SPOGOMI_BADGE_DEFINITIONS,
+  ...CURRENT_TERRITORIAL_LEGEND_BADGE_DEFINITIONS,
 ] as const satisfies readonly GamificationBadgeDefinition[];
 
 const LEGACY_BADGE_DEFINITIONS = [

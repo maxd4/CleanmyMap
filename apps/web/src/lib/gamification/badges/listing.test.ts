@@ -96,6 +96,7 @@ describe("gamification badges listing", () => {
           table === "progression_events" ||
           table === "quiz_type_progress" ||
           table === "action_role_attestations" ||
+          table === "territorial_legend_award_proofs" ||
           table === "xp_audit"
         ) {
           return createEmptyQueryChain();
@@ -113,6 +114,8 @@ describe("gamification badges listing", () => {
     expect(payload.badges.some((badge) => badge.family === "organisation")).toBe(true);
     expect(payload.badges.find((badge) => badge.id === "organisation-observateur"))
       .toMatchObject({ definitionId: "organisation", scale: "gem", status: "CURRENT" });
+    expect(payload.badges.filter((badge) => badge.family.startsWith("territorial_legend:"))).toHaveLength(5);
+    expect(payload.badges.filter((badge) => badge.family.startsWith("territorial_legend:")).every((badge) => badge.unlocked === false)).toBe(true);
     expect(payload.badges.some((badge) => badge.id.startsWith("forms-"))).toBe(false);
     expect(payload.totalBadges).toBeGreaterThanOrEqual(0);
     expect(payload.quizProgressions).toHaveLength(1);
@@ -185,6 +188,9 @@ describe("gamification badges listing", () => {
           return createDataQueryChain([], []);
         }
         if (table === "action_role_attestations") {
+          return createDataQueryChain([], []);
+        }
+        if (table === "territorial_legend_award_proofs") {
           return createDataQueryChain([], []);
         }
         if (table === "xp_audit") {

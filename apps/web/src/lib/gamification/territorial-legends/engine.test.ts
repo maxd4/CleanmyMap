@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTerritorialLegendPage } from "./engine";
+import { buildTerritorialLegendPage, buildTerritorialLegendWinnerSnapshots } from "./engine";
 import type {
   TerritorialActionFact,
   TerritorialLegendConsent,
@@ -165,5 +165,20 @@ describe("territorial legend engine", () => {
     expect(page.items).toEqual([
       { rank: 1, publicLabel: "Alice", score: 1, distinctActions: 1, tied: false, tieSize: 1 },
     ]);
+  });
+
+  it("returns all tied title holders and no revoked competitor for reward reconciliation", () => {
+    const winners = buildTerritorialLegendWinnerSnapshots({
+      now,
+      actions,
+      participations,
+      consents: consents.map((consent) => consent.userId === "u-b"
+        ? { ...consent, enabled: false, activatedAt: null }
+        : consent),
+      profiles,
+    });
+    const arrondissementWinners = winners.filter((winner) => winner.level === "arrondissement" && winner.territoryCode === "75105");
+    expect(arrondissementWinners).toHaveLength(1);
+    expect(arrondissementWinners[0]).toMatchObject({ userId: "u-a", rank: 1, score: 2, tieSize: 1 });
   });
 });

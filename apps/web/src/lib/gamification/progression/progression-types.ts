@@ -13,7 +13,7 @@ import type {
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.10-v1" as const;
-export const CURRENT_GAMIFICATION_RULES_REVISION = 16 as const;
+export const CURRENT_GAMIFICATION_RULES_REVISION = 17 as const;
 
 export type GamificationCategory =
   | "XP_PROGRESSION"
@@ -59,6 +59,7 @@ export type GamificationBadgeScale =
   | "cartography"
   | "one_shot"
   | "collection"
+  | "territorial"
   | "mohs"
   | "legacy";
 
@@ -111,7 +112,8 @@ export type ProgressionEventType =
   | "moderation_multi_family"
   | "product_feedback_accepted"
   | "spogomi_first_referee_certified"
-  | "terrain_specialization_tier_unlock";
+  | "terrain_specialization_tier_unlock"
+  | "territorial_legend_reward";
 
 export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "participation",

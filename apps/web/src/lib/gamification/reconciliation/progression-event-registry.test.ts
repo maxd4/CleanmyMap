@@ -181,6 +181,7 @@ describe("progression event registry", () => {
       "spot_create_pending",
       "spot_validation_bonus",
       "terrain_specialization_tier_unlock",
+      "territorial_legend_reward",
     ].sort());
 
     expect(registry.community_referral_invite).toEqual({

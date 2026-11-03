@@ -7,11 +7,13 @@ const persistedMock = vi.hoisted(() => vi.fn());
 const profileMock = vi.hoisted(() => vi.fn());
 const statsMock = vi.hoisted(() => vi.fn());
 const broadcastMock = vi.hoisted(() => vi.fn());
+const territorialSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../progression/gamification-facts-loader", () => ({ loadCurrentGamificationFacts: factsMock }));
 vi.mock("../progression-data", () => ({ loadUserProgressionStats: statsMock }));
 vi.mock("./gamification-reconciliation-profile", () => ({ loadReconciliationProfile: profileMock }));
 vi.mock("./announcements", () => ({ broadcastGamificationAnnouncement: broadcastMock }));
+vi.mock("../territorial-legends/reconciliation", () => ({ reconcileTerritorialLegendSnapshot: territorialSnapshotMock }));
 vi.mock("./gamification-reconciliation-plan", async () => {
   const actual = await vi.importActual<typeof import("./gamification-reconciliation-plan")>("./gamification-reconciliation-plan");
   return { ...actual, loadPersistedGamificationEvents: persistedMock };
@@ -32,6 +34,14 @@ beforeEach(() => {
     updated_at: "2026-10-01T00:00:00.000Z",
   });
   statsMock.mockResolvedValue({});
+  territorialSnapshotMock.mockResolvedValue({
+    effectiveOn: "2026-11-03",
+    winners: [],
+    affectedUserIds: [],
+    insertedProofs: 0,
+    extendedPeriods: 0,
+    closedPeriods: 0,
+  });
 });
 
 function createRpcSupabase() {
@@ -51,6 +61,7 @@ describe("gamification reconciliation profile refresh boundary", () => {
     });
 
     expect(factsMock).toHaveBeenCalledWith(supabase, "user-1");
+    expect(territorialSnapshotMock).toHaveBeenCalledWith(supabase);
     expect(profileMock).toHaveBeenCalledWith(supabase, "user-1");
     expect(statsMock).toHaveBeenCalledWith(supabase, "user-1");
     expect(supabase.rpc).toHaveBeenCalledWith("apply_gamification_reconciliation", expect.objectContaining({
@@ -76,6 +87,7 @@ describe("gamification reconciliation profile refresh boundary", () => {
     });
 
     expect(factsMock).not.toHaveBeenCalled();
+    expect(territorialSnapshotMock).not.toHaveBeenCalled();
     expect(profileMock).not.toHaveBeenCalled();
     expect(result.receipt).toBeNull();
     expect(supabase.rpc).toHaveBeenCalledWith("apply_gamification_reconciliation", expect.objectContaining({

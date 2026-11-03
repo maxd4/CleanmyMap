@@ -95,6 +95,47 @@ explicite (`1, 1, 3`) et leur taille est exposée.
 Cette exception ne modifie pas les routes XP, les leaderboards `level|xp|badges`
 ni les dix progressions infinies CURRENT.
 
+### Récompenses territoriales `TERRITORIAL_LEGEND_REWARDS`
+
+Les récompenses sont une extension de cette même exception et restent
+`BADGE_ONLY` (`0 XP`). Le registre CURRENT contient exactement cinq familles
+évolutives, une par niveau territorial : arrondissement, commune, département,
+région et France. Une famille porte deux axes internes : la conquête, attribuée
+une seule fois lors de la première attribution effective d’une Légende à
+l’utilisateur et au niveau, puis la longévité avec les paliers 7, 30, 90, 180,
+365 et 730 jours. Ces paliers ne deviennent pas trente badges indépendants.
+
+Une détention n’avance que lorsqu’une réconciliation quotidienne confirme le
+même détenteur, le même niveau et le même code territorial sur la date civile
+suivante. Une interruption ferme la période à son dernier jour vérifié ; une
+reprise ouvre une nouvelle période et ne complète jamais le trou. Les égalités
+au rang 1 sont des détentions valides pour chaque utilisateur concerné, sans
+créer de détenteur artificiel. Les changements de détenteur ferment les
+périodes sortantes et ouvrent celles du ou des nouveaux gagnants.
+
+`territorial_legend_hold_periods` conserve les périodes vérifiées et leur
+empreinte de source. `territorial_legend_award_proofs` conserve les preuves
+d’attribution, leur période, leur seuil et leur validité. Les identités de
+preuve sont uniques par utilisateur, niveau, territoire, axe et seuil ; les
+reprises, recalculs et écritures concurrentes sont donc idempotents. Une preuve
+invalidée reste dans l’audit mais n’est plus rechargée comme fait CURRENT. Une
+révocation du consentement exclut immédiatement la compétition et arrête la
+période courante ; elle ne transforme pas une attribution historique déjà
+prouvée en nouvelle attribution.
+
+Une correction historique passe par `invalidate_territorial_legend_history` :
+elle invalide une période et/ou ses preuves sous verrou service-only, conserve
+les lignes et leurs empreintes pour l’audit, et ne reconstruit aucune journée
+non prouvée. Les faits CURRENT ne rechargent ensuite que les preuves encore
+actives.
+
+Le RPC `reconcile_territorial_legend_snapshot` sérialise la journée par verrou
+PostgreSQL et est appelé par la réconciliation événementielle ainsi que par le
+job quotidien `territorial-legends`. Après le snapshot, les utilisateurs
+concernés repassent dans la réconciliation CURRENT existante, qui écrit leurs
+preuves dans `progression_events` avec `BADGE_ONLY`, sans XP, sans second ledger
+et sans modification des dix progressions historiques.
+
 Il centralise:
 
 - les règles métier réellement appliquées par le code;

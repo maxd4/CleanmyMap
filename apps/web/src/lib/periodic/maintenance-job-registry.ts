@@ -27,8 +27,10 @@ import {
 import { runActionRemindersJob } from "./action-reminders-job";
 import { readLatestPublicSurfaceSnapshot } from "@/lib/public-surface-snapshots";
 import { getUtcDayStart, getUtcMonthStart, getUtcWeekStart } from "./periodic-job-calendar";
+import { runTerritorialLegendDailyReconciliation } from "@/lib/gamification/territorial-legends/daily-reconciliation-job";
 
 export const MAINTENANCE_JOB_IDS = [
+  "territorial-legends",
   "action-reminders",
   "impact-terrain",
   "platform-usage",
@@ -129,6 +131,20 @@ async function hasGovernanceReport(period: string): Promise<boolean> {
 }
 
 export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
+  {
+    id: "territorial-legends",
+    cadence: "daily",
+    getPeriod: (now) => new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Paris",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(now),
+    // A failed or interrupted run must be retried. The RPC is the idempotent
+    // daily gate; a period marker would hide an incomplete holder projection.
+    isProduced: async () => false,
+    run: async (now) => runTerritorialLegendDailyReconciliation({ now }),
+  },
   {
     id: "action-reminders",
     cadence: "daily",

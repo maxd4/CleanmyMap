@@ -24,6 +24,7 @@ import {
   buildTerrainSpecializationFacts,
 } from "./terrain-specializations";
 import { loadTerrainSpecializationEvidence } from "./terrain-specialization-evidence";
+import { loadTerritorialLegendAwardFacts } from "../territorial-legends/award-facts";
 
 export { buildGeometryContributionFacts } from "./gamification-geometry-facts";
 
@@ -31,7 +32,7 @@ async function loadCurrentGamificationInputs(
   supabase: SupabaseClient,
   userId: string,
 ) {
-  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback, terrainSpecializationEvidence] = await Promise.all([
+  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback, terrainSpecializationEvidence, territorialLegendAwardFacts] = await Promise.all([
     loadActionRowsForUser(supabase, userId),
     loadGamificationUserCounters(supabase, userId),
     supabase.from("user_visited_places").select("place_label, created_at").eq("user_id", userId).limit(10000),
@@ -40,6 +41,7 @@ async function loadCurrentGamificationInputs(
     loadGeometryContributionFacts(supabase, userId),
     loadProductFeedbackFacts(supabase, userId),
     loadTerrainSpecializationEvidence(supabase, userId),
+    loadTerritorialLegendAwardFacts(supabase, userId),
   ]);
   if (visitedResult.error) throw new Error(visitedResult.error.message);
   if (quizResult.error) throw new Error(quizResult.error.message);
@@ -53,6 +55,7 @@ async function loadCurrentGamificationInputs(
     geometryContributionFacts,
     productFeedback,
     terrainSpecializationEvidence,
+    territorialLegendAwardFacts,
   };
 }
 
@@ -69,6 +72,7 @@ async function loadCurrentGamificationFacts(
     geometryContributionFacts,
     productFeedback,
     terrainSpecializationEvidence,
+    territorialLegendAwardFacts,
   } = await loadCurrentGamificationInputs(supabase, userId);
 
   const { facts, actionState, quizState } =
@@ -81,6 +85,7 @@ async function loadCurrentGamificationFacts(
       geometryContributionFacts,
       productFeedback,
       terrainSpecializationEvidence,
+      territorialLegendAwardFacts,
     });
 
   const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
@@ -124,6 +129,7 @@ async function buildCurrentGamificationFactState(
     geometryContributionFacts,
     productFeedback,
     terrainSpecializationEvidence,
+    territorialLegendAwardFacts,
   } = inputs;
   const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
     actionRows: actions,
@@ -134,6 +140,7 @@ async function buildCurrentGamificationFactState(
     ...geometryContributionFacts,
     ...productFeedback.facts,
     ...buildTerrainSpecializationFacts(userId, terrainSpecializationEvidence),
+    ...territorialLegendAwardFacts,
   ];
   const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
   if (spogomiFirstReferee) facts.push(spogomiFirstReferee);

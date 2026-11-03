@@ -71,3 +71,51 @@ export type TerritorialLegendPage = {
     tieSize: number;
   } | null;
 };
+
+export type TerritorialLegendWinnerSnapshot = {
+  userId: string;
+  level: TerritorialLegendLevel;
+  territoryCode: string;
+  territoryLabel: string;
+  effectiveOn: string;
+  score: number;
+  rank: 1;
+  tieSize: number;
+  sourceFingerprint: string;
+};
+
+export type TerritorialLegendHoldPeriod = {
+  id?: number | string;
+  userId: string;
+  level: TerritorialLegendLevel;
+  territoryCode: string;
+  territoryLabel: string;
+  startedOn: string;
+  lastVerifiedOn: string;
+  endedOn: string | null;
+  validityStatus: "active" | "closed" | "invalidated";
+  sourceFingerprint: string;
+};
+
+export type TerritorialLegendAwardProof = {
+  proofId: string;
+  userId: string;
+  level: TerritorialLegendLevel;
+  territoryCode: string;
+  awardKind: "conquest" | "longevity";
+  thresholdDays: number;
+  holdStartedOn: string;
+  heldThroughOn: string;
+  awardedOn: string;
+  validFrom: string;
+  validUntil: string | null;
+  validityStatus: "active" | "invalidated";
+  sourceFingerprint: string;
+};
+
+export type TerritorialLegendHistoryInvalidationResult = {
+  invalidatedOn: string;
+  invalidatedHoldPeriods: number;
+  invalidatedAwardProofs: number;
+  affectedUserIds: string[];
+};

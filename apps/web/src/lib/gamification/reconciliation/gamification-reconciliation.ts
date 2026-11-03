@@ -23,6 +23,7 @@ import {
 import {
   loadReconciliationProfile,
 } from "./gamification-reconciliation-profile";
+import { reconcileTerritorialLegendSnapshot } from "../territorial-legends/reconciliation";
 
 export type GamificationReconciliationResult = {
   inserted: number;
@@ -259,9 +260,13 @@ export async function reconcileUserGamification(
     refreshProfile?: boolean;
     persistReceipt?: boolean;
     reasonCategory?: GamificationReconciliationReasonCategory;
+    reconcileTerritorialLegends?: boolean;
   } = {},
 ): Promise<GamificationReconciliationResult> {
   const rules = options.rules ?? GAMIFICATION_RULES_V1;
+  const territorialSnapshot = !options.facts && options.reconcileTerritorialLegends !== false
+    ? await reconcileTerritorialLegendSnapshot(supabase)
+    : null;
   const refreshProfile = options.refreshProfile !== false;
   let stableReconciliationId: string | undefined;
 
@@ -289,6 +294,17 @@ export async function reconcileUserGamification(
         refreshProfile,
         options.persistReceipt !== false,
       );
+
+      if (territorialSnapshot) {
+        for (const affectedUserId of territorialSnapshot.affectedUserIds) {
+          if (affectedUserId === userId) continue;
+          await reconcileUserGamification(supabase, affectedUserId, {
+            rules,
+            reasonCategory: "other",
+            reconcileTerritorialLegends: false,
+          });
+        }
+      }
 
       await announceLevelUpIfNeeded(supabase, userId, plan, refreshProfile);
 

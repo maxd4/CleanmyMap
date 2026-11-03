@@ -26,6 +26,7 @@ import {
   TERRAIN_SPECIALIZATION_RULES_VERSION,
   TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
 } from "./terrain-specializations";
+import { CURRENT_TERRITORIAL_LEGEND_MECHANICS } from "./progression-utils";
 
 type GamificationAwardPolicy =
   | { kind: "fixed"; amount: number }
@@ -171,10 +172,25 @@ function buildCurrentRules(): GamificationRulesV1 {
     introducedInRulesRevision: TERRAIN_SPECIALIZATION_INTRODUCED_REVISION,
   }));
 
+  const territorialLegendRules: GamificationRule[] = CURRENT_TERRITORIAL_LEGEND_MECHANICS.map((mechanic) => ({
+    mechanicId: mechanic.id,
+    category: "BADGE_ONLY",
+    eventType: mechanic.eventType,
+    progressionId: null,
+    milestoneId: null,
+    badgeId: mechanic.badgeId,
+    sourceDomain: mechanic.sourceDomain,
+    xpPolicy: mechanic.xpPolicy,
+    awardPolicy: { kind: "none" },
+    eligibility: { kind: "canonical_fact", factKey: mechanic.id },
+    thresholds: [],
+    introducedInRulesRevision: mechanic.introducedInRulesRevision,
+  }));
+
   return {
     version: CURRENT_GAMIFICATION_RULES_VERSION,
     rulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
-    mechanics: [...eventRules, ...terrainSpecializationRules, ...nonGamifiedRules],
+    mechanics: [...eventRules, ...terrainSpecializationRules, ...territorialLegendRules, ...nonGamifiedRules],
   };
 }
 

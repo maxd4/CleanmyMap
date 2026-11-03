@@ -9,6 +9,8 @@ import {
   CURRENT_BADGE_DEFINITIONS,
   BADGE_DEFINITIONS,
 } from "./badge-catalog";
+import { computeExpectedGamificationState } from "./gamification-reconstruction";
+import { GAMIFICATION_RULES_V1 } from "./gamification-rules";
 
 const REQUIRED_NON_GAMIFIED_SIGNAL_IDS = [
   "signal:waste-total-direct-xp",
@@ -75,6 +77,10 @@ describe("CURRENT gamification registry", () => {
     expect(GAMIFICATION_REGISTRY.every((entry) => entry.description)).toBe(true);
     expect(GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("spogomi_") && entry.id !== "spogomi_first_referee")).toHaveLength(10);
     expect(GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("spogomi_") && entry.id !== "spogomi_first_referee").every((entry) => entry.category === "BADGE_ONLY" && entry.xpPolicy.kind === "none")).toBe(true);
+    const territorial = GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("territorial_legend:"));
+    expect(territorial).toHaveLength(5);
+    expect(territorial.every((entry) => entry.category === "BADGE_ONLY" && entry.xpPolicy.kind === "none")).toBe(true);
+    expect(CURRENT_BADGE_DEFINITIONS.filter((definition) => definition.id.startsWith("territorial_legend:")).map((definition) => definition.family)).toHaveLength(5);
 
     expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(10);
     expect(CURRENT_INFINITE_PROGRESSIONS.every((entry) =>
@@ -136,5 +142,40 @@ describe("CURRENT gamification registry", () => {
     expect(NON_GAMIFIED_SIGNALS.every((entry) =>
       !/\bTODO\b|plus tard|à traiter/i.test(entry.description),
     )).toBe(true);
+  });
+
+  it("reconstructs territorial conquest and longevity as BADGE_ONLY without XP", () => {
+    const expected = computeExpectedGamificationState("user-1", {
+      userId: "user-1",
+      sourceFacts: [
+        {
+          mechanicId: "territorial_legend:commune",
+          eventType: "territorial_legend_reward",
+          sourceTable: "territorial_legend_award_proofs",
+          sourceId: "user-1:commune:75056:conquest:0",
+          occurredOn: "2026-11-01",
+          threshold: 0,
+          xpAwarded: 0,
+          badgeId: "territorial_legend:commune",
+          metadata: { awardKind: "conquest" },
+        },
+        {
+          mechanicId: "territorial_legend:commune",
+          eventType: "territorial_legend_reward",
+          sourceTable: "territorial_legend_award_proofs",
+          sourceId: "user-1:commune:75056:longevity:7",
+          occurredOn: "2026-11-07",
+          threshold: 7,
+          xpAwarded: 0,
+          badgeId: "territorial_legend:commune",
+          metadata: { awardKind: "longevity" },
+        },
+      ],
+      applicableMechanicIds: ["territorial_legend:commune"],
+    }, GAMIFICATION_RULES_V1);
+
+    expect(expected.events).toHaveLength(2);
+    expect(expected.events.every((event) => event.category === "BADGE_ONLY" && event.xpAwarded === 0)).toBe(true);
+    expect(expected.expectedBadges).toEqual(["territorial_legend:commune"]);
   });
 });
