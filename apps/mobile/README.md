@@ -773,12 +773,16 @@ déjà lancée et ne requiert pas de bibliothèque `agent-device` dans le projet
 ### Pré-requis et préflight
 
 Le préflight ne démarre ni serveur, ni émulateur, ni installation. Il vérifie
-Node.js, `agent-device`, `adb`, `emulator`, un AVD ou un appareil Android
-connecté :
+Node.js, `agent-device`, `adb`, puis recherche soit un appareil Android
+connecté via ADB, soit `emulator` et au moins un AVD :
 
 ```bash
 npm run mobile:ui:preflight
+npm run mobile:ui:preflight:test
 ```
+
+Le second contrôle exécute les scénarios automatisés de classification du
+préflight, dont le cas d'un appareil physique connecté sans `emulator` ni AVD.
 
 L'installation globale d'`agent-device` est une étape d'environnement
 appartenant à l'utilisateur, à exécuter une seule fois hors du dépôt :
@@ -787,10 +791,28 @@ appartenant à l'utilisateur, à exécuter une seule fois hors du dépôt :
 npm install -g agent-device@latest
 ```
 
-Le SDK Android doit fournir `adb` et `emulator` dans `PATH`, avec un AVD
-Android configuré. Si le préflight retourne `UI_PREFLIGHT: BLOCKED`, aucune
-preuve UI native ne doit être annoncée. S'il retourne `READY_TO_BOOT`, le
-workflow peut démarrer l'AVD indiqué.
+Le résultat distingue les trois états suivants :
+
+| État | Conditions | Suite opératoire |
+|---|---|---|
+| `READY` | `agent-device`, `adb` et au moins un appareil Android connecté | Piloter directement l'appareil physique ; `emulator` et AVD ne sont pas requis. |
+| `READY_TO_BOOT` | `agent-device`, `adb`, `emulator` et au moins un AVD, sans appareil déjà connecté | Démarrer l'AVD indiqué par la ligne `NEXT`. |
+| `BLOCKED` | Dépendance indispensable absente ou aucun appareil et aucun AVD utilisable | Corriger le blocage ; aucune preuve UI native ne doit être annoncée. |
+
+Un appareil physique connecté via ADB suffit donc pour `READY`, même si le SDK
+ne contient pas `emulator` ou aucun AVD. Dans ce cas, vérifier la cible puis
+ouvrir l'application sans lancer `boot` ni `shutdown` :
+
+```bash
+adb devices -l
+agent-device devices --platform android
+agent-device open fr.cleanmymap.app --platform android --foreground
+```
+
+Si le préflight retourne `UI_PREFLIGHT: BLOCKED`, aucune preuve UI native ne
+doit être annoncée. `READY_TO_BOOT` autorise le démarrage de l'AVD indiqué ;
+`READY` autorise seulement le contrôle de la cible Android effectivement
+connectée.
 
 ### Parcours minimal contrôlable
 

@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "ui:preflight": "node scripts/agent-device-preflight.mjs",
+    "test:ui:preflight": "node --test tests/agent-device-preflight.test.mjs",
     "lint": "eslint --config eslint.config.mjs . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "security": "node --test security/*.test.mjs",
