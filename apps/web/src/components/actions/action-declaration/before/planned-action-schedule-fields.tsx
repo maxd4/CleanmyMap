@@ -136,7 +136,9 @@ export function ActionDurationSlider({
             Ne pas renseigner cette durée
           </CmmButton>
         ) : (
-          <p className="text-xs text-emerald-900/60">Choisissez 0 min pour déclarer explicitement une durée nulle.</p>
+          <CmmButton type="button" tone="tertiary" variant="ghost" size="sm" onClick={() => onChange("0")}>
+            Déclarer 0 min
+          </CmmButton>
         )}
       </div>
       <p className="cmm-field-hint" id={hintId}>{displayValue} · pas de {ACTION_DURATION_STEP_MINUTES} min</p>

@@ -181,6 +181,31 @@ describe("before-action resume hydration", () => {
     expect(form.durationMinutes).toBe("0");
   });
 
+  it("keeps the SQL default absent when zero was not explicitly declared", () => {
+    const action = {
+      actionPhase: "pre_action",
+      preparationData: {},
+      actionDate: "2026-10-09",
+      locationLabel: "Paris",
+      departureLocationLabel: "Quai nord",
+      arrivalLocationLabel: null,
+      eventStartTime: null,
+      eventEndTime: null,
+      volunteersCount: 1,
+      durationMinutes: 0,
+      groupJoinEnabled: false,
+      participantAccounts: [],
+    } as unknown as ActionEditorRecord;
+
+    const form = buildBeforeActionFormFromAction({
+      action,
+      resolvedDefaultActorName: "fallback",
+      initialRecordType: "action",
+    });
+
+    expect(form.durationMinutes).toBe("");
+  });
+
   it("rehydrates an explicitly persisted forecast and its non-overlapping split", () => {
     const action = {
       actionPhase: "pre_action",

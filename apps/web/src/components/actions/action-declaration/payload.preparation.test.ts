@@ -48,6 +48,36 @@ describe("action declaration payload données de préparation", () => {
     expect(buildPreparationDataFromForm(explicitForm).durationMinutesDeclared).toBe(true);
   });
 
+  it("keeps an absent duration distinct from an explicitly declared zero", () => {
+    const form = createInitialFormState("Alice", "action");
+    const absentPayload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(absentPayload.durationMinutes).toBe(0);
+    expect(absentPayload.preparationData?.durationMinutesDeclared).toBe(false);
+
+    form.durationMinutes = "0";
+    const explicitZeroPayload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(explicitZeroPayload.durationMinutes).toBe(0);
+    expect(explicitZeroPayload.preparationData?.durationMinutesDeclared).toBe(true);
+  });
+
   it("stores canonical waste expectations without persisting derived guidance", () => {
     const form = buildBaseForm();
     form.wasteCategories = ["broken_glass", "sharps"];

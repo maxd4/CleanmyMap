@@ -8,6 +8,7 @@ import type { FormState } from "../model";
 import { Field, inputCls, compactInputCls } from "./action-step-identity.ui";
 import { Clock } from "lucide-react";
 import { ActionDurationSlider } from "../before/planned-action-schedule-fields";
+import { toOptionalNumber } from "../payload-numbers";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -25,7 +26,7 @@ export function ActionTimeSection({
 }) {
   const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
   const organization = deriveOrganizationMinutes({
-    actionDurationMinutes: Number(form.durationMinutes),
+    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
     eventDurationMinutes: event.eventDurationMinutes,
   });
 

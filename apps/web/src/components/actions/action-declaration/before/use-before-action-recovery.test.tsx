@@ -187,6 +187,26 @@ describe("before-action draft recovery", () => {
     expect(store.has(ACTION_DECLARATION_DRAFT_KEY)).toBe(false);
   });
 
+  it("preserves an absent duration when a local draft is resumed", () => {
+    const { store } = installLocalStorage({
+      getItem: (key) => store.get(key) ?? null,
+    });
+    store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({
+      ...buildValidForm(),
+      durationMinutes: "",
+    }));
+
+    let latest!: ReturnType<typeof useBeforeActionForm>;
+    const renderer = mountForm((value) => { latest = value; });
+
+    expect(latest.form.durationMinutes).toBe("");
+    renderer.unmount();
+
+    let remounted!: ReturnType<typeof useBeforeActionForm>;
+    mountForm((value) => { remounted = value; });
+    expect(remounted.form.durationMinutes).toBe("");
+  });
+
   it("allows an existing action to update when its local draft read fails", async () => {
     let submissionState: "idle" | "pending" | "success" | "error" = "idle";
     let errorMessage: string | null = null;

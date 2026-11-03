@@ -15,6 +15,7 @@ import {
 import type { FormState, ValidationIssue } from "../model";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getVolunteerActionCompositionValidationMessage } from "@/lib/actions/volunteer-participation";
+import { toOptionalNumber } from "../payload-numbers";
 import {
   calculateCigaretteButtsLotsTotalCount,
   getCigaretteButtsLotsTotalLimitMessage,
@@ -118,7 +119,7 @@ export function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
   }
 
   const timeMessage = getTimeContractValidationMessage({
-    actionDurationMinutes: Number(form.durationMinutes),
+    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
     startTime: form.eventStartTime,
     endTime: form.eventEndTime,
   });
