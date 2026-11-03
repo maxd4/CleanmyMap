@@ -124,6 +124,7 @@ const draftWritesInFlight = new Map<string, Promise<void>>()
 type SessionIdentity = { ownerId: string | null; generation: number }
 type SessionToken = { ownerId: string; generation: number }
 type SessionRef = React.MutableRefObject<SessionIdentity>
+type BriefingFeedback = { ownerId: string; actionId: string; generation: number; message: string | null; error: string | null }
 
 function invalidateSession(sessionRef: SessionRef, ownerId: string): SessionToken {
   const generation = sessionRef.current.generation + 1
@@ -363,14 +364,19 @@ function useActionCreateMutations({
   const [briefingBusy, setBriefingBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [briefingFeedback, setBriefingFeedback] = useState<BriefingFeedback | null>(null)
   const [dayBriefing, setDayBriefing] = useState<MobileActionDay | null>(null)
   const briefingContextRef = useRef({ ownerId, actionId })
   const briefingGenerationRef = useRef(0)
+  const [briefingGeneration, setBriefingGeneration] = useState(0)
   useLayoutEffect(() => {
     briefingContextRef.current = { ownerId, actionId }
-    briefingGenerationRef.current += 1
+    const nextGeneration = briefingGenerationRef.current + 1
+    briefingGenerationRef.current = nextGeneration
+    setBriefingGeneration(nextGeneration)
     setDayBriefing(null)
     setBriefingBusy(false)
+    setBriefingFeedback(null)
   }, [actionId, ownerId])
   const mutationsBlocked = !ownerId || !draftHydrated || draftReadError || busy || briefingBusy
 
@@ -379,6 +385,7 @@ function useActionCreateMutations({
     setBriefingBusy(false)
     setMessage(null)
     setError(null)
+    setBriefingFeedback(null)
   }, [ownerId])
 
   function canMutate(sessionAtStart: SessionToken | null): boolean {
@@ -396,6 +403,15 @@ function useActionCreateMutations({
     if (isUnauthorized(value)) onSessionExpired()
     else if (isForbidden(value)) setError('Accès refusé pour cette action.')
     else setError(value instanceof Error ? value.message : 'La sauvegarde n’a pas abouti.')
+  }
+
+  function getBriefingError(value: unknown): string | null {
+    if (isUnauthorized(value)) {
+      onSessionExpired()
+      return null
+    }
+    if (isForbidden(value)) return 'Accès refusé pour cette action.'
+    return value instanceof Error ? value.message : 'Les informations Préparer / Jour J n’ont pas pu être chargées.'
   }
 
   async function saveDraft() {
@@ -461,25 +477,55 @@ function useActionCreateMutations({
     const sessionAtStart = captureSession(sessionRef)
     if (!sessionAtStart) return
     const actionAtStart = actionId
-    const generationAtStart = ++briefingGenerationRef.current
-    setBriefingBusy(true); setError(null); setMessage(null)
+    const generationAtStart = briefingGenerationRef.current + 1
+    briefingGenerationRef.current = generationAtStart
+    setBriefingGeneration(generationAtStart)
+    setBriefingFeedback(null)
+    setBriefingBusy(true)
     try {
       const result = await loadMobileActionDay(actionAtStart)
       if (canApplyBriefing(sessionAtStart, actionAtStart, generationAtStart)) {
         setDayBriefing(result)
-        setMessage('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+        setBriefingFeedback({
+          ownerId: sessionAtStart.ownerId,
+          actionId: actionAtStart,
+          generation: generationAtStart,
+          message: 'Les informations Préparer / Jour J ont été chargées depuis le serveur.',
+          error: null,
+        })
       }
     } catch (value) {
       if (canApplyBriefing(sessionAtStart, actionAtStart, generationAtStart)) {
         setDayBriefing(null)
-        handleError(value)
+        const briefingError = getBriefingError(value)
+        if (briefingError) {
+          setBriefingFeedback({ ownerId: sessionAtStart.ownerId, actionId: actionAtStart, generation: generationAtStart, message: null, error: briefingError })
+        }
       }
     } finally {
       if (canMutate(sessionAtStart) && briefingGenerationRef.current === generationAtStart) setBriefingBusy(false)
     }
   }
 
-  return { busy: busy || briefingBusy, message, error, dayBriefing, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
+  const currentBriefingFeedback = briefingFeedback
+    && briefingFeedback.ownerId === ownerId
+    && briefingFeedback.actionId === actionId
+    && briefingFeedback.generation === briefingGeneration
+    ? briefingFeedback
+    : null
+  return {
+    busy: busy || briefingBusy,
+    message: currentBriefingFeedback?.message ?? message,
+    error: currentBriefingFeedback?.error ?? error,
+    dayBriefing,
+    setError,
+    setMessage,
+    mutationsBlocked,
+    saveDraft,
+    publish,
+    linkGps,
+    loadDayBriefing,
+  }
 }
 
 type ActionCreateControllerProps = { onSessionExpired: () => void; onStartAction: (actionId: string, label: string) => void | Promise<void> }

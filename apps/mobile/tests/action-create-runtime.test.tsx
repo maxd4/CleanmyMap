@@ -599,6 +599,71 @@ describe('mobile action creation runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Briefing ancien'))).toHaveLength(0)
   })
 
+  it('clears the briefing success notification when the selected action changes', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-success', section: 'verification' }))
+    state.loadMobileActionDay.mockResolvedValueOnce({ status: 'ok', actionId: 'action-success', access: 'owner', action: { title: 'Briefing chargé' } })
+    let controller!: ReturnType<typeof useActionCreateController>
+    await act(async () => {
+      TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => { await controller.loadDayBriefing() })
+    expect(controller.message).toBe('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+    await act(async () => { controller.setActionId('action-next') })
+
+    expect(controller.dayBriefing).toBeNull()
+    expect(controller.message).toBeNull()
+    expect(controller.error).toBeNull()
+  })
+
+  it('clears the briefing refusal when the selected action changes', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-refused-context', section: 'verification' }))
+    state.loadMobileActionDay.mockRejectedValueOnce({ status: 403 })
+    let controller!: ReturnType<typeof useActionCreateController>
+    await act(async () => {
+      TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => { await controller.loadDayBriefing() })
+    expect(controller.error).toBe('Accès refusé pour cette action.')
+    await act(async () => { controller.setActionId('action-next') })
+
+    expect(controller.dayBriefing).toBeNull()
+    expect(controller.error).toBeNull()
+    expect(controller.message).toBeNull()
+  })
+
+  it('preserves an independent message while ignoring a deferred briefing after an action change', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-deferred', section: 'verification' }))
+    const response = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string } }>()
+    state.loadMobileActionDay.mockReturnValueOnce(response.promise)
+    let controller!: ReturnType<typeof useActionCreateController>
+    let request!: Promise<unknown>
+    await act(async () => {
+      TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      controller.setMessage('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
+      request = controller.loadDayBriefing()
+    })
+    await act(async () => { controller.setActionId('action-next') })
+    expect(controller.message).toBe('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
+
+    response.resolve({ status: 'ok', actionId: 'action-deferred', access: 'owner', action: { title: 'Briefing obsolète' } })
+    await act(async () => { await request })
+
+    expect(controller.dayBriefing).toBeNull()
+    expect(controller.message).toBe('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
+    expect(controller.error).toBeNull()
+  })
+
   it('ignores a briefing response after a Clerk account change', async () => {
     state.getItem.mockImplementation(async (key: string) => key.endsWith(':user-a')
       ? JSON.stringify({ ownerId: 'user-a', actionId: 'action-a', section: 'verification', draft: { title: 'Action A' } })
