@@ -25,11 +25,11 @@ function resolveCigaretteButtsLots(form: FormState) {
 }
 
 function resolveWasteCharacterization(form: FormState): ActionWasteCharacterization | undefined {
-  const selected = new Set(form.wasteCategories ?? []);
   const characterization = Object.fromEntries(
-    ACTION_WASTE_CHARACTERIZATION_SLUGS.flatMap((slug) => {
+    ACTION_WASTE_CHARACTERIZATION_SLUGS.flatMap((slug): Array<[typeof slug, number | null]> => {
+      if (!Object.prototype.hasOwnProperty.call(form.wasteCharacterizationKg, slug)) return [];
       const raw = form.wasteCharacterizationKg[slug]?.trim() ?? "";
-      if (!selected.has(slug) || !raw) return [];
+      if (!raw) return [[slug, null]];
       const value = toOptionalNumber(raw);
       return value === undefined ? [] : [[slug, value]];
     }),

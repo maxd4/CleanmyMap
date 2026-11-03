@@ -211,10 +211,11 @@ describe("action declaration payload mesures", () => {
   it("serializes optional characterization by canonical slug without changing the total", () => {
     const form = buildBaseForm();
     form.wasteKg = "12";
-    form.wasteCategories = ["plastic", "glass", "cigarette_butt"];
+    form.wasteCategories = ["plastic"];
     form.wasteCharacterizationKg = {
       plastic: "2.5",
       glass: "0",
+      metal: "",
       cigarette_butt: "9",
     } as typeof form.wasteCharacterizationKg;
 
@@ -232,6 +233,7 @@ describe("action declaration payload mesures", () => {
     expect(payload.wasteBreakdown?.characterizationKg).toEqual({
       plastic: 2.5,
       glass: 0,
+      metal: null,
     });
     expect(payload.wasteBreakdown?.characterizationKg).not.toHaveProperty("cigarette_butt");
   });

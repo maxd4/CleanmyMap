@@ -379,4 +379,29 @@ describe("action declaration submission model", () => {
       }),
     ]));
   });
+
+  it.each([
+    "-0.1",
+    "0.05",
+    "100000.1",
+  ])("rejects an invalid characterization mass before submission: %s kg", (value) => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteCharacterizationKg = { plastic: value };
+
+    expect(getCompleteDeclarationIssues(form)).toContainEqual({
+      field: "wasteCharacterizationKg",
+      message: "Chaque masse caractérisée doit être comprise entre 0 et 100 000 kg et respecter une résolution de 0,1 kg.",
+    });
+  });
+
+  it("rejects characterization that exceeds the declared waste total", () => {
+    const form = buildValidCompleteDeclaration();
+    form.wasteKg = "1";
+    form.wasteCharacterizationKg = { plastic: "1.2" };
+
+    expect(getCompleteDeclarationIssues(form)).toContainEqual({
+      field: "wasteCharacterizationKg",
+      message: "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.",
+    });
+  });
 });

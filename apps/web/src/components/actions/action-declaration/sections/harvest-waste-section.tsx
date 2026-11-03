@@ -14,7 +14,6 @@ import {
   ACTION_MEASUREMENT_MAX_KG,
   compareWasteBreakdownToTotal,
   type ActionWasteMeasurementMethod,
-  type WasteCategorySlug,
 } from "@/lib/waste";
 import { TrashBinGauge, WasteComparisonVisual } from "../ui/harvest-gauges";
 import { HarvestMeasurementSlider } from "../ui/harvest-measurement-slider";
@@ -38,8 +37,7 @@ type HarvestWasteSectionProps = {
   wasteSpecialHandlingWaste: string;
   onMeasurementMethodChange: (value: ActionWasteMeasurementMethod | "") => void;
   notes: string;
-  wasteCategories: WasteCategorySlug[];
-  onTriChange: <K extends "wasteRecyclablesKg" | "wasteGlassKg" | "wasteHouseholdKg" | "wasteOtherKg" | "wasteCharacterizationKg" | "wasteUnusualObjects" | "wasteSpecialHandlingWaste" | "notes" | "wasteCategories">(
+  onTriChange: <K extends "wasteRecyclablesKg" | "wasteGlassKg" | "wasteHouseholdKg" | "wasteOtherKg" | "wasteCharacterizationKg" | "wasteUnusualObjects" | "wasteSpecialHandlingWaste" | "notes">(
     key: K, value: FormState[K]
   ) => void;
   hidePrimaryMeasurement?: boolean;
@@ -128,7 +126,6 @@ export function HarvestWasteSection({
   wasteSpecialHandlingWaste,
   onMeasurementMethodChange,
   notes,
-  wasteCategories,
   onTriChange,
   hidePrimaryMeasurement = false,
   wasteCurrentPerVolunteer,
@@ -177,10 +174,8 @@ export function HarvestWasteSection({
       <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
 
       <WasteCharacterizationSelector
-        categories={wasteCategories}
         characterizationKg={wasteCharacterizationKg as WasteCharacterizationFormValues}
         totalWasteKg={parseKg(wasteKg)}
-        onCategoriesChange={(value) => onTriChange("wasteCategories", value)}
         onCharacterizationChange={(value) => onTriChange("wasteCharacterizationKg", value as FormState["wasteCharacterizationKg"])}
         error={validationIssues.find((issue) => issue.field === "wasteCharacterizationKg")?.message}
       />

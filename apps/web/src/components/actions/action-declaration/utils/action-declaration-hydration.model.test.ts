@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
-import { createInitialFormState } from "../payload";
+import { buildCreateActionPayload, createInitialFormState } from "../payload";
 import {
   buildActionDeclarationHydration,
   buildActionEditorFormState,
@@ -88,6 +88,7 @@ describe("action declaration hydration model", () => {
         characterizationKg: {
           plastic: 2.5,
           glass: 0,
+          metal: null,
         },
       },
       cigaretteButtsMeasurements: {
@@ -117,6 +118,21 @@ describe("action declaration hydration model", () => {
     expect(result.form.wasteCharacterizationKg).toEqual({
       plastic: "2.5",
       glass: "0",
+      metal: "",
+    });
+    const resubmitted = buildCreateActionPayload({
+      form: result.form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    expect(resubmitted.wasteBreakdown?.characterizationKg).toEqual({
+      plastic: 2.5,
+      glass: 0,
+      metal: null,
     });
     expect(result.form.wasteMegotsKg).toBe("0.3");
     expect(result.form.cigaretteButtsInputSource).toBe("mass");

@@ -13,17 +13,14 @@ import {
   sumActionWasteCharacterizationKg,
   type ActionWasteCharacterizationSlug,
 } from "@/lib/waste";
-import type { WasteCategorySlug } from "@/lib/waste";
 
 export type WasteCharacterizationFormValues = Partial<
   Record<ActionWasteCharacterizationSlug, string>
 >;
 
 type WasteCharacterizationSelectorProps = {
-  categories: readonly WasteCategorySlug[];
   characterizationKg: WasteCharacterizationFormValues;
   totalWasteKg: number | null;
-  onCategoriesChange: (value: WasteCategorySlug[]) => void;
   onCharacterizationChange: (value: WasteCharacterizationFormValues) => void;
   error?: string;
   idPrefix?: string;
@@ -37,20 +34,20 @@ function parseFormKg(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
-function isKnownCharacterizationSlug(value: WasteCategorySlug): value is ActionWasteCharacterizationSlug {
+function isKnownCharacterizationSlug(value: string): value is ActionWasteCharacterizationSlug {
   return isActionWasteCharacterizationSlug(value);
 }
 
 export function WasteCharacterizationSelector({
-  categories,
   characterizationKg,
   totalWasteKg,
-  onCategoriesChange,
   onCharacterizationChange,
   error,
   idPrefix = "harvest-waste-characterization",
 }: WasteCharacterizationSelectorProps) {
-  const selected = new Set(categories.filter(isKnownCharacterizationSlug));
+  const selected = new Set(
+    Object.keys(characterizationKg).filter(isKnownCharacterizationSlug),
+  );
   const [open, setOpen] = useState(() => selected.size > 0 || Object.keys(characterizationKg).length > 0);
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase("fr-FR");
@@ -81,14 +78,13 @@ export function WasteCharacterizationSelector({
       if (currentValue && typeof window !== "undefined" && !window.confirm(`Supprimer la masse caractérisée pour « ${getActionWasteCharacterizationCategory(slug).labels.fr} » ?`)) {
         return;
       }
-      onCategoriesChange(categories.filter((category) => category !== slug));
       const next = { ...characterizationKg };
       delete next[slug];
       onCharacterizationChange(next);
       return;
     }
 
-    onCategoriesChange([...categories, slug]);
+    onCharacterizationChange({ ...characterizationKg, [slug]: "" });
   }
 
   function updateMass(slug: ActionWasteCharacterizationSlug, value: string) {

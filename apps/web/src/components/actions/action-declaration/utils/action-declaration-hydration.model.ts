@@ -204,9 +204,8 @@ function buildWasteFields(
     wasteCharacterizationKg: Object.fromEntries(
       ACTION_WASTE_CHARACTERIZATION_SLUGS.flatMap((slug) => {
         const value = storedCharacterization[slug];
-        return typeof value === "number" && Number.isFinite(value)
-          ? [[slug, String(value)]]
-          : [];
+        if (typeof value === "number" && Number.isFinite(value)) return [[slug, String(value)]];
+        return value === null ? [[slug, ""]] : [];
       }),
     ),
     wasteUnusualObjects:

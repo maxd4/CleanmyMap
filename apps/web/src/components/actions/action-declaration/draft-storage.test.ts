@@ -133,6 +133,7 @@ describe("action declaration draft storage", () => {
     draft.accessibilityStatus = "obstacles_identified";
     draft.accessibility = "Accès par la rampe nord.";
     draft.materialsProvided = "Pinces disponibles.";
+    draft.wasteCharacterizationKg = { plastic: "", glass: "0" };
     draft.suggestedMaterials = ["gloves", "bags"];
     draft.equipmentInventory = { glovesPairs: 0, garbageBags: 4, firstAidKitAvailable: true };
     draft.refreshmentsProvided = { waterDuringAction: true, drinksAfterAction: false };
@@ -143,6 +144,7 @@ describe("action declaration draft storage", () => {
     const restored = loadDraftSnapshot(createInitialFormState("Fallback"))?.form;
     expect(restored?.accessibilityStatus).toBe("obstacles_identified");
     expect(restored?.materialsProvided).toBe("Pinces disponibles.");
+    expect(restored?.wasteCharacterizationKg).toEqual({ plastic: "", glass: "0" });
     expect(restored?.suggestedMaterials).toEqual(["gloves", "bags"]);
     expect(restored?.equipmentInventory).toEqual({ glovesPairs: 0, garbageBags: 4, firstAidKitAvailable: true });
     expect(restored?.refreshmentsProvided).toEqual({ waterDuringAction: true, drinksAfterAction: false });

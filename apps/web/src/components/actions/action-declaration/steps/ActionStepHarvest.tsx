@@ -208,7 +208,6 @@ function HarvestStepContent({
             wasteSpecialHandlingWaste={form.wasteSpecialHandlingWaste}
             onMeasurementMethodChange={(value) => updateField("wasteMeasurementMethod", value)}
             notes={form.notes}
-            wasteCategories={form.wasteCategories ?? []}
             onTriChange={(key, value) => updateField(key, value)}
             hidePrimaryMeasurement={mode === "collection" || mode === "details"}
             wasteCurrentPerVolunteer={wasteCurrentPerVolunteer}

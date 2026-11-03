@@ -1,5 +1,49 @@
 import { describe, expect, it } from "vitest";
-import { getVolunteerActionValidationIssues } from "./submission-validation";
+import type { CreateActionPayload } from "./types";
+import {
+  getActionMeasurementValidationIssues,
+  getVolunteerActionValidationIssues,
+} from "./submission-validation";
+
+function measurementPayload(
+  overrides: Partial<CreateActionPayload>,
+): CreateActionPayload {
+  return {
+    wasteKg: 10,
+    wasteBreakdown: { characterizationKg: { plastic: 1 } },
+    ...overrides,
+  } as CreateActionPayload;
+}
+
+describe("getActionMeasurementValidationIssues", () => {
+  it.each([-0.1, 0.05, 100_000.1])("maps invalid characterization mass %s to the accessible field", (value) => {
+    expect(getActionMeasurementValidationIssues(measurementPayload({
+      wasteBreakdown: { characterizationKg: { plastic: value } },
+    }))).toContainEqual({
+      field: "wasteCharacterizationKg",
+      message: "Chaque masse caractérisée doit être comprise entre 0 et 100 000 kg et respecter une résolution de 0,1 kg.",
+    });
+  });
+
+  it("maps an unknown characterization slug without hiding the server contract error", () => {
+    expect(getActionMeasurementValidationIssues(measurementPayload({
+      wasteBreakdown: { characterizationKg: { unknown_slug: 1 } as Record<string, number> },
+    }))).toContainEqual({
+      field: "wasteCharacterizationKg",
+      message: "La catégorie de caractérisation sélectionnée n’est pas autorisée.",
+    });
+  });
+
+  it("reports characterization that exceeds wasteKg using the canonical interval comparison", () => {
+    expect(getActionMeasurementValidationIssues(measurementPayload({
+      wasteKg: 1,
+      wasteBreakdown: { characterizationKg: { plastic: 1.2 } },
+    }))).toContainEqual({
+      field: "wasteCharacterizationKg",
+      message: "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.",
+    });
+  });
+});
 
 describe("getVolunteerActionValidationIssues", () => {
   it("rejects an explicitly declared zero participant total for a realized action", () => {

@@ -7,15 +7,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WasteCharacterizationSelector, type WasteCharacterizationFormValues } from "./waste-characterization-selector";
 import { ACTION_WASTE_CHARACTERIZATION_SLUGS } from "@/lib/waste";
-import type { WasteCategorySlug } from "@/lib/waste";
 
 function renderSelector(overrides: Partial<React.ComponentProps<typeof WasteCharacterizationSelector>> = {}) {
   return renderToStaticMarkup(
     <WasteCharacterizationSelector
-      categories={[]}
       characterizationKg={{}}
       totalWasteKg={12}
-      onCategoriesChange={() => undefined}
       onCharacterizationChange={() => undefined}
       {...overrides}
     />,
@@ -23,14 +20,11 @@ function renderSelector(overrides: Partial<React.ComponentProps<typeof WasteChar
 }
 
 function InteractiveSelector() {
-  const [categories, setCategories] = React.useState<WasteCategorySlug[]>([]);
   const [characterizationKg, setCharacterizationKg] = React.useState<WasteCharacterizationFormValues>({});
   return (
     <WasteCharacterizationSelector
-      categories={categories}
       characterizationKg={characterizationKg}
       totalWasteKg={12}
-      onCategoriesChange={setCategories}
       onCharacterizationChange={setCharacterizationKg}
     />
   );
@@ -48,7 +42,6 @@ describe("WasteCharacterizationSelector", () => {
 
   it("exposes exactly the nine characterization rows without cigarette or nicotine categories", () => {
     const markup = renderSelector({
-      categories: ["plastic", "glass", "sanitary_medical"],
       characterizationKg: { plastic: "2.5", glass: "0", sanitary_medical: "0.1" },
     });
 

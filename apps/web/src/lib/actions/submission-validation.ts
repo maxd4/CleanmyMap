@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { CreateActionPayload } from "./types";
 import { actionMeasurementSchemaFields } from "@/lib/validation/action-measurements";
 import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
+import { compareWasteCharacterizationToTotal } from "@/lib/waste/measurement";
 import {
   deriveAdultCountFromTotal,
   getVolunteerActionCompositionValidationMessage,
@@ -37,6 +38,9 @@ function mapMeasurementPathToField(
   path: PropertyKey[],
 ): ActionMeasurementValidationField | null {
   const pathKey = path.join(".");
+  if (pathKey.startsWith("wasteBreakdown.characterizationKg.")) {
+    return "wasteCharacterizationKg";
+  }
   switch (pathKey) {
     case "wasteKg":
       return "wasteKg";
@@ -68,6 +72,7 @@ function mapMeasurementPathToField(
 
 function messageForMeasurementField(
   field: ActionMeasurementValidationField,
+  issueMessage?: string,
 ): string {
   switch (field) {
     case "wasteKg":
@@ -77,7 +82,13 @@ function messageForMeasurementField(
     case "wasteOtherKg":
       return "La masse de déchets doit être comprise entre 0 et 100 000 kg et respecter une résolution de 0,1 kg.";
     case "wasteCharacterizationKg":
-      return "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.";
+      if (issueMessage?.includes("Catégorie")) {
+        return "La catégorie de caractérisation sélectionnée n’est pas autorisée.";
+      }
+      if (issueMessage?.includes("somme des masses")) {
+        return "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.";
+      }
+      return "Chaque masse caractérisée doit être comprise entre 0 et 100 000 kg et respecter une résolution de 0,1 kg.";
     case "wasteMegotsKg":
       return "La masse de mégots doit être comprise entre 0 et 100 000 kg.";
     case "cigaretteButtsCount":
@@ -91,14 +102,26 @@ export function getActionMeasurementValidationIssues(
   payload: CreateActionPayload,
 ): ActionMeasurementValidationIssue[] {
   const result = actionMeasurementSchema.safeParse(payload);
-  if (result.success) return [];
-
   const issues = new Map<string, ActionMeasurementValidationIssue>();
-  for (const issue of result.error.issues) {
-    const field = mapMeasurementPathToField(issue.path);
-    if (!field) continue;
-    const mappedIssue = { field, message: messageForMeasurementField(field) };
-    issues.set(`${field}:${mappedIssue.message}`, mappedIssue);
+  if (!result.success) {
+    for (const issue of result.error.issues) {
+      const field = mapMeasurementPathToField(issue.path);
+      if (!field) continue;
+      const mappedIssue = { field, message: messageForMeasurementField(field, issue.message) };
+      issues.set(`${field}:${mappedIssue.message}`, mappedIssue);
+    }
+  }
+
+  const coherence = compareWasteCharacterizationToTotal(
+    payload.wasteKg,
+    payload.wasteBreakdown?.characterizationKg,
+  );
+  if (coherence.status === "warning") {
+    const mappedIssue = {
+      field: "wasteCharacterizationKg" as const,
+      message: messageForMeasurementField("wasteCharacterizationKg", "La somme des masses caractérisées"),
+    };
+    issues.set(`${mappedIssue.field}:${mappedIssue.message}`, mappedIssue);
   }
   return [...issues.values()];
 }

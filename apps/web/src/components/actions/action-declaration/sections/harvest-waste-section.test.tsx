@@ -27,7 +27,6 @@ function renderWasteSection(overrides: Partial<React.ComponentProps<typeof Harve
       wasteSpecialHandlingWaste: "",
       onMeasurementMethodChange: () => undefined,
       notes: "",
-      wasteCategories: [],
       onTriChange: () => undefined,
       validationIssues: [],
       wasteCurrentPerVolunteer: 8,
@@ -71,7 +70,6 @@ function InteractiveWasteSection({
     wasteSpecialHandlingWaste: "",
     onMeasurementMethodChange: () => undefined,
     notes: "",
-    wasteCategories: [],
     onTriChange: (field, value) => {
       if (field in breakdown) {
         setBreakdown((current) => ({ ...current, [field]: value as string }));
@@ -182,7 +180,6 @@ function HarvestValidationHarness({
         wasteSpecialHandlingWaste={form.wasteSpecialHandlingWaste}
         onMeasurementMethodChange={(value) => updateTriField("wasteMeasurementMethod", value)}
         notes={form.notes}
-        wasteCategories={form.wasteCategories ?? []}
         onTriChange={(field, value) => updateTriField(field, String(value))}
         wasteCurrentPerVolunteer={8}
         wasteBenchmarkPerVolunteer={8}
