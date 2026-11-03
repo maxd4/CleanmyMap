@@ -10,7 +10,8 @@ const mapSource = readFileSync(resolve(__dirname, '../features/tracking/mission-
 describe('mobile GPS relaunch contract', () => {
   it('restores the persisted mission again when the app returns active', () => {
     expect(controllerSource).toContain('AppState.addEventListener')
-    expect(controllerSource).toContain('if (nextState === \'active\') void restoreMission()')
+    expect(controllerSource).toContain("if (nextState === 'active') launchRestore()")
+    expect(controllerSource).toContain('const restoreGeneration = ++restoreGenerationRef.current')
     expect(controllerSource).toContain('restoreActiveTracking(userId)')
     expect(controllerSource).toContain('getMission(id)')
     expect(controllerSource).toContain('const flushPromise = flushBuffer(userId)')

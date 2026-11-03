@@ -39,6 +39,9 @@ const state = vi.hoisted(() => ({
   taskError: null as unknown,
   taskGate: null as Promise<void> | null,
   taskGateUsesRemaining: 0,
+  taskResultPublished: false,
+  clerkAfterTaskGate: null as Promise<void> | null,
+  clerkAfterTaskGateUsesRemaining: 0,
   setStoredError: null as unknown,
   setStoredGate: null as Promise<void> | null,
   setStoredGateUsesRemaining: 0,
@@ -81,13 +84,20 @@ vi.mock('expo-task-manager', () => ({
       await state.taskGate
     }
     if (state.taskError) throw state.taskError
+    state.taskResultPublished = true
     return state.taskRegistered
   }),
 }))
 
 vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.clientPromise ?? state.client),
-  getClerkUserId: vi.fn(async () => state.currentUserId),
+  getClerkUserId: vi.fn(async () => {
+    if (state.taskResultPublished && state.clerkAfterTaskGate && state.clerkAfterTaskGateUsesRemaining > 0) {
+      state.clerkAfterTaskGateUsesRemaining -= 1
+      await state.clerkAfterTaskGate
+    }
+    return state.currentUserId
+  }),
   subscribeToClerkIdentityChanges: vi.fn((listener: (ownerId: string | null) => void) => {
     state.clerkIdentityListeners.push(({ user }) => listener(user?.id ?? null))
     return () => undefined
@@ -276,6 +286,9 @@ function resetState() {
   state.taskError = null
   state.taskGate = null
   state.taskGateUsesRemaining = 0
+  state.taskResultPublished = false
+  state.clerkAfterTaskGate = null
+  state.clerkAfterTaskGateUsesRemaining = 0
   state.setStoredError = null
   state.setStoredGate = null
   state.setStoredGateUsesRemaining = 0
@@ -522,13 +535,65 @@ describe('tracking-service coverage edges', () => {
     state.taskGateUsesRemaining = 1
 
     const pendingRestore = ensureNativeTracking('mission-1', 'user_123', mission)
-    await Promise.resolve()
+    await vi.waitFor(() => expect(state.taskGateUsesRemaining).toBe(0))
     state.currentUserId = 'user_other'
     for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_other' } })
     taskGate.resolve()
 
     await expect(pendingRestore).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
     expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+  })
+
+  it('does not start native GPS after TaskManager reports an absent task to an obsolete operation', async () => {
+    state.client = createClient()
+    const clerkGate = deferred()
+    state.clerkAfterTaskGate = clerkGate.promise
+    state.clerkAfterTaskGateUsesRemaining = 1
+
+    const pendingStart = startTracking('mission-1', 'user_123', mission)
+    await vi.waitFor(() => expect(state.taskResultPublished).toBe(true))
+
+    state.currentUserId = 'user_other'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_other' } })
+    clerkGate.resolve()
+
+    await expect(pendingStart).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+  })
+
+  it('does not reactivate a tracking operation invalidated by Clerk A to B to A', async () => {
+    state.client = createClient()
+    const taskGate = deferred()
+    state.taskGate = taskGate.promise
+    state.taskGateUsesRemaining = 1
+
+    const pendingRestore = ensureNativeTracking('mission-1', 'user_123', mission)
+    await vi.waitFor(() => expect(state.taskGateUsesRemaining).toBe(0))
+    state.currentUserId = 'user_other'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_other' } })
+    state.currentUserId = 'user_123'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_123' } })
+    taskGate.resolve()
+
+    await expect(pendingRestore).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+  })
+
+  it('serializes concurrent missing-task restores without double start or stopping the confirmed one', async () => {
+    state.client = createClient()
+    const taskGate = deferred()
+    state.taskGate = taskGate.promise
+    state.taskGateUsesRemaining = 2
+
+    const firstRestore = ensureNativeTracking('mission-1', 'user_123', mission)
+    const secondRestore = ensureNativeTracking('mission-1', 'user_123', mission)
+    await Promise.resolve()
+    taskGate.resolve()
+
+    const results = await Promise.all([firstRestore, secondRestore])
+    expect(results.filter((result) => result.ok)).toHaveLength(1)
+    expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce()
+    expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled()
   })
 
   it('restarts a missing native task and refuses a task owned by another stored session', async () => {

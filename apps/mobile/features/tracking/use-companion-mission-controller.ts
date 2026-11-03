@@ -50,7 +50,7 @@ function useRestoreActiveMission({
   const restoreGenerationRef = useRef(0)
 
   useEffect(() => {
-    const restoreGeneration = ++restoreGenerationRef.current
+    restoreGenerationRef.current += 1
     stopDurationTimer()
     setMission(null)
     setPhase('idle')
@@ -58,33 +58,40 @@ function useRestoreActiveMission({
     if (!isLoaded || !isSignedIn) return
 
     let cancelled = false
-    const isCurrentRestore = () => !cancelled && restoreGenerationRef.current === restoreGeneration
-    const handleRestoreError = (error: unknown) => {
-      if (!isCurrentRestore()) return
-      setErrorMsg(`Impossible de restaurer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`)
+    const isCurrentRestore = (restoreGeneration: number) =>
+      !cancelled && restoreGenerationRef.current === restoreGeneration
+    const setRestoreFailure = (restoreGeneration: number, message: string) => {
+      if (!isCurrentRestore(restoreGeneration)) return
+      stopDurationTimer()
+      setMission(null)
+      setErrorMsg(message)
       setPhase('error')
     }
-    async function restoreMission() {
+    const handleRestoreError = (restoreGeneration: number, error: unknown) => {
+      setRestoreFailure(
+        restoreGeneration,
+        `Impossible de restaurer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+      )
+    }
+    async function restoreMission(restoreGeneration: number) {
       if (!userId) return
       void reconcilePendingLinkedMissions(userId).catch(() => undefined)
       const flushPromise = flushBuffer(userId).catch(() => null)
       const id = await restoreActiveTracking(userId)
-      if (!id || !isCurrentRestore()) return
+      if (!id || !isCurrentRestore(restoreGeneration)) return
 
       const result = await getMission(id)
-      if (!isCurrentRestore()) return
+      if (!isCurrentRestore(restoreGeneration)) return
       if (!result.ok) {
-        setErrorMsg(result.error)
-        setPhase('error')
+        setRestoreFailure(restoreGeneration, result.error)
         return
       }
       if (result.data.status !== 'tracking') return
 
       const nativeResult = await ensureNativeTracking(id, userId, result.data)
-      if (!isCurrentRestore()) return
+      if (!isCurrentRestore(restoreGeneration)) return
       if (!nativeResult.ok) {
-        setErrorMsg(nativeResult.error)
-        setPhase('error')
+        setRestoreFailure(restoreGeneration, nativeResult.error)
         return
       }
 
@@ -92,12 +99,17 @@ function useRestoreActiveMission({
       setPhase('tracking')
       startDurationTimer(nativeResult.data.started_at ?? new Date().toISOString())
       await flushPromise
-      if (isCurrentRestore()) await refreshPendingGpsPointCount()
+      if (isCurrentRestore(restoreGeneration)) await refreshPendingGpsPointCount()
     }
 
-    void restoreMission().catch(handleRestoreError)
+    const launchRestore = () => {
+      const restoreGeneration = ++restoreGenerationRef.current
+      void restoreMission(restoreGeneration).catch((error) => handleRestoreError(restoreGeneration, error))
+    }
+
+    launchRestore()
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') void restoreMission().catch(handleRestoreError)
+      if (nextState === 'active') launchRestore()
     })
 
     return () => {

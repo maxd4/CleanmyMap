@@ -185,6 +185,56 @@ describe('mobile companion mission controller runtime', () => {
     expect(latest.mission?.id).toBe('mission-1')
   })
 
+  it('keeps the recent AppState success when an older restoration fails later', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: mission })
+    const olderRestore = deferred<{ ok: true; data: Mission } | { ok: false; error: string }>()
+    const recentRestore = deferred<{ ok: true; data: Mission } | { ok: false; error: string }>()
+    state.ensureNativeTracking.mockReturnValueOnce(olderRestore.promise).mockReturnValueOnce(recentRestore.promise)
+    const { getController } = await renderController()
+    await act(async () => { await settle() })
+
+    await act(async () => {
+      state.appStateListener?.('active')
+      await settle()
+    })
+    recentRestore.resolve({ ok: true, data: mission })
+    await act(async () => { await recentRestore.promise; await settle() })
+    expect(getController().phase).toBe('tracking')
+
+    olderRestore.resolve({ ok: false, error: 'ancienne reprise refusée' })
+    await act(async () => { await olderRestore.promise; await settle() })
+    expect(getController().phase).toBe('tracking')
+    expect(getController().mission?.id).toBe('mission-1')
+    expect(getController().errorMsg).toBeNull()
+  })
+
+  it('lets the recent AppState error replace an older success without a stale recovery', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: mission })
+    const olderRestore = deferred<{ ok: true; data: Mission } | { ok: false; error: string }>()
+    const recentRestore = deferred<{ ok: true; data: Mission } | { ok: false; error: string }>()
+    state.ensureNativeTracking.mockReturnValueOnce(olderRestore.promise).mockReturnValueOnce(recentRestore.promise)
+    const { getController } = await renderController()
+    await act(async () => { await settle() })
+
+    olderRestore.resolve({ ok: true, data: mission })
+    await act(async () => { await olderRestore.promise; await settle() })
+    expect(getController().phase).toBe('tracking')
+
+    await act(async () => {
+      state.appStateListener?.('active')
+      await settle()
+    })
+    recentRestore.resolve({ ok: false, error: 'GPS indisponible' })
+    await act(async () => { await recentRestore.promise; await settle() })
+    expect(getController().phase).toBe('error')
+    expect(getController().mission).toBeNull()
+    expect(getController().errorMsg).toBe('GPS indisponible')
+  })
+
   it('starts tracking, handles session expiry and clears the duration timer at unmount', async () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     const { renderer, getController } = await renderController()

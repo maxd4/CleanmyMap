@@ -197,7 +197,7 @@ async function beginTrackingOperation(ownerId: string): Promise<TrackingOperatio
 }
 
 async function isCurrentTrackingOperation(operation: TrackingOperationToken): Promise<boolean> {
-  if (operation.identityChanged) return false;
+  if (operation.identityChanged || latestTrackingOperation?.operationId !== operation.operationId) return false;
   const currentOwnerId = await observeTrackingOwner();
   if (currentOwnerId !== operation.ownerId) {
     operation.identityChanged = true;
@@ -258,10 +258,20 @@ async function startOrReuseNativeTracking(
       };
     }
 
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+
     if (taskRegistered) {
       const activeContext = await getStoredActiveMissionContext();
+      if (!await isCurrentTrackingOperation(operation)) {
+        return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+      }
       if (activeContext?.ownerId !== ownerId || activeContext.missionId !== missionId) {
         return { ok: false, error: GPS_TRACKING_INTERRUPTED_ERROR };
+      }
+      if (!await isCurrentTrackingOperation(operation)) {
+        return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
       }
       nativeTrackingOperation = operation;
       return { ok: true, data: false };
@@ -269,10 +279,17 @@ async function startOrReuseNativeTracking(
 
     const trackingWarning = getBackgroundTrackingWarning();
     if (trackingWarning) return { ok: false, error: trackingWarning };
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
 
     try {
       nativeTrackingOperation = operation;
       await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
+      if (!await isCurrentTrackingOperation(operation)) {
+        await stopStartedTracking(operation);
+        return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+      }
       return { ok: true, data: true };
     } catch (error) {
       if (nativeTrackingOperation?.operationId === operation.operationId) nativeTrackingOperation = null;
@@ -308,17 +325,12 @@ async function executeMissionQuery(
   return { ok: true, data };
 }
 
-export async function startTracking(
+async function startTrackingWithOperation(
+  operation: TrackingOperationToken,
   missionId: string,
-  ownerId: string,
+  expectedOwnerId: string,
   knownMission?: Mission,
 ): Promise<ServiceResult<Mission>> {
-  const expectedOwnerId = ownerId.trim();
-  const operation = await beginTrackingOperation(expectedOwnerId);
-  if (!operation) {
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
-  }
-  try {
     const client = await getAuthenticatedSupabaseClient();
     if (!client) {
       return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
@@ -403,6 +415,20 @@ export async function startTracking(
   }
 
     return { ok: true, data: activeMission };
+}
+
+export async function startTracking(
+  missionId: string,
+  ownerId: string,
+  knownMission?: Mission,
+): Promise<ServiceResult<Mission>> {
+  const expectedOwnerId = ownerId.trim();
+  const operation = await beginTrackingOperation(expectedOwnerId);
+  if (!operation) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  try {
+    return await startTrackingWithOperation(operation, missionId, expectedOwnerId, knownMission);
   } finally {
     finishTrackingOperation(operation);
   }
@@ -453,8 +479,15 @@ export async function ensureNativeTracking(
     };
   }
 
+  if (!await isCurrentTrackingOperation(operation)) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
   if (taskRegistered) {
     const activeContext = await getStoredActiveMissionContext();
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
     if (activeContext?.ownerId !== expectedOwnerId || activeContext.missionId !== missionId) {
       return { ok: false, error: GPS_TRACKING_INTERRUPTED_ERROR };
     }
@@ -465,7 +498,10 @@ export async function ensureNativeTracking(
     return { ok: true, data: mission };
   }
 
-    return await startTracking(missionId, expectedOwnerId, mission);
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+    return await startTrackingWithOperation(operation, missionId, expectedOwnerId, mission);
   } finally {
     finishTrackingOperation(operation);
   }
