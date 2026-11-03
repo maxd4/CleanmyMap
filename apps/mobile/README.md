@@ -230,7 +230,10 @@ sous-vues existantes.
   comme nom d'organisateur sans attribuer de type ; le type doit être choisi
   explicitement avant l'envoi au serveur. Après une demande autorisée,
   `Préparer / Jour J` charge et affiche les informations renvoyées par l'API ;
-  le libellé devient `Charger` ou `Actualiser` selon l'état réel.
+  le libellé devient `Charger` ou `Actualiser` selon l'état réel. Une réponse
+  n'est appliquée que si elle appartient encore au même propriétaire Clerk,
+  à la même action et au dernier chargement ; un rafraîchissement obsolète est
+  ignoré et un refus d'accès efface le briefing précédemment affiché.
 - `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
   photos via les intents média canoniques et n'affiche jamais un statut avant
   confirmation serveur.

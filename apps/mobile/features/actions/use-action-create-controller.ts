@@ -297,6 +297,10 @@ function isUnauthorized(value: unknown): boolean {
   return (value as { status?: number }).status === 401
 }
 
+function isForbidden(value: unknown): boolean {
+  return (value as { status?: number }).status === 403
+}
+
 function useActionCreateMutations({
   draft,
   actionId,
@@ -323,31 +327,45 @@ function useActionCreateMutations({
   setPublished: React.Dispatch<React.SetStateAction<boolean>>
 }) {
   const [busy, setBusy] = useState(false)
+  const [briefingBusy, setBriefingBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dayBriefing, setDayBriefing] = useState<MobileActionDay | null>(null)
   const currentOwnerRef = useRef<string | null>(ownerId)
+  const briefingContextRef = useRef({ ownerId, actionId })
+  const briefingGenerationRef = useRef(0)
   useLayoutEffect(() => {
     currentOwnerRef.current = ownerId
   }, [ownerId])
-  const mutationsBlocked = !ownerId || !draftHydrated || draftReadError || busy
+  useLayoutEffect(() => {
+    briefingContextRef.current = { ownerId, actionId }
+    briefingGenerationRef.current += 1
+    setDayBriefing(null)
+    setBriefingBusy(false)
+  }, [actionId, ownerId])
+  const mutationsBlocked = !ownerId || !draftHydrated || draftReadError || busy || briefingBusy
 
   useEffect(() => {
     setBusy(false)
+    setBriefingBusy(false)
     setMessage(null)
     setError(null)
   }, [ownerId])
-
-  useEffect(() => {
-    setDayBriefing(null)
-  }, [actionId, ownerId])
 
   function canMutate(ownerAtStart: string | null): boolean {
     return Boolean(ownerAtStart && currentOwnerRef.current === ownerAtStart)
   }
 
+  function canApplyBriefing(ownerAtStart: string, actionAtStart: string, generationAtStart: number): boolean {
+    return canMutate(ownerAtStart)
+      && briefingContextRef.current.ownerId === ownerAtStart
+      && briefingContextRef.current.actionId === actionAtStart
+      && briefingGenerationRef.current === generationAtStart
+  }
+
   function handleError(value: unknown) {
     if (isUnauthorized(value)) onSessionExpired()
+    else if (isForbidden(value)) setError('Accès refusé pour cette action.')
     else setError(value instanceof Error ? value.message : 'La sauvegarde n’a pas abouti.')
   }
 
@@ -409,21 +427,26 @@ function useActionCreateMutations({
   async function loadDayBriefing() {
     if (!ownerId || !actionId) return
     const ownerAtStart = ownerId
-    setBusy(true); setError(null)
+    const actionAtStart = actionId
+    const generationAtStart = ++briefingGenerationRef.current
+    setBriefingBusy(true); setError(null); setMessage(null)
     try {
-      const result = await loadMobileActionDay(actionId)
-      if (canMutate(ownerAtStart)) {
+      const result = await loadMobileActionDay(actionAtStart)
+      if (canApplyBriefing(ownerAtStart, actionAtStart, generationAtStart)) {
         setDayBriefing(result)
         setMessage('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
       }
     } catch (value) {
-      if (canMutate(ownerAtStart)) handleError(value)
+      if (canApplyBriefing(ownerAtStart, actionAtStart, generationAtStart)) {
+        setDayBriefing(null)
+        handleError(value)
+      }
     } finally {
-      if (canMutate(ownerAtStart)) setBusy(false)
+      if (briefingGenerationRef.current === generationAtStart) setBriefingBusy(false)
     }
   }
 
-  return { busy, message, error, dayBriefing, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
+  return { busy: busy || briefingBusy, message, error, dayBriefing, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
 }
 
 type ActionCreateControllerProps = { onSessionExpired: () => void; onStartAction: (actionId: string, label: string) => void | Promise<void> }

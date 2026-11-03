@@ -54,6 +54,7 @@ vi.mock('../features/actions/mobile-actions-service', () => ({
 }))
 
 import { ActionCreateScreen } from '../features/actions/action-create'
+import { useActionCreateController } from '../features/actions/use-action-create-controller'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')
@@ -75,6 +76,11 @@ async function renderScreen(onSessionExpired = vi.fn(), onStartAction = vi.fn())
     renderer = TestRenderer.create(<ActionCreateScreen onSessionExpired={onSessionExpired} onStartAction={onStartAction} />)
   })
   return renderer
+}
+
+function ControllerProbe({ onController }: { onController: (controller: ReturnType<typeof useActionCreateController>) => void }) {
+  onController(useActionCreateController({ onSessionExpired: vi.fn(), onStartAction: vi.fn() }))
+  return null
 }
 
 describe('mobile action creation runtime', () => {
@@ -535,6 +541,96 @@ describe('mobile action creation runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Entrée nord'))).not.toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Gants et chaussures fermées'))).not.toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Les informations Préparer / Jour J ont été chargées depuis le serveur.'))).not.toHaveLength(0)
+  })
+
+  it('keeps the latest briefing when refresh responses finish in reverse order', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-refresh', section: 'verification', draft: { title: 'Action à rafraîchir' } }))
+    const first = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string; meetingPoint: string } }>()
+    const second = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string; meetingPoint: string } }>()
+    state.loadMobileActionDay.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+    const renderer = await renderScreen()
+    const loadButton = findButton(renderer, 'Charger Préparer / Jour J')
+
+    let firstRequest!: Promise<unknown>
+    let secondRequest!: Promise<unknown>
+    await act(async () => {
+      firstRequest = callTestHandler(loadButton, 'onPress') as Promise<unknown>
+      secondRequest = callTestHandler(loadButton, 'onPress') as Promise<unknown>
+    })
+    expect(testProp<boolean>(findButton(renderer, 'Charger Préparer / Jour J'), 'disabled')).toBe(true)
+
+    await act(async () => {
+      second.resolve({ status: 'ok', actionId: 'action-refresh', access: 'owner', action: { title: 'Version récente', meetingPoint: 'Rendez-vous récent' } })
+      await secondRequest
+    })
+    await act(async () => {
+      first.resolve({ status: 'ok', actionId: 'action-refresh', access: 'owner', action: { title: 'Version obsolète', meetingPoint: 'Rendez-vous ancien' } })
+      await firstRequest
+    })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Rendez-vous récent'))).not.toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Rendez-vous ancien'))).toHaveLength(0)
+  })
+
+  it('ignores a briefing response after the selected action changes', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-old', section: 'verification', draft: { title: 'Ancienne action' } }))
+    const oldResponse = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string } }>()
+    state.loadMobileActionDay.mockReturnValue(oldResponse.promise)
+    let controller!: ReturnType<typeof useActionCreateController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    let request!: Promise<unknown>
+    await act(async () => { request = controller.loadDayBriefing() })
+    await act(async () => { controller.setActionId('action-new') })
+    oldResponse.resolve({ status: 'ok', actionId: 'action-old', access: 'owner', action: { title: 'Briefing ancien' } })
+    await act(async () => { await request })
+
+    expect(controller.actionId).toBe('action-new')
+    expect(controller.dayBriefing).toBeNull()
+    expect(renderer.root.findAll((node) => textContent(node).includes('Briefing ancien'))).toHaveLength(0)
+  })
+
+  it('ignores a briefing response after a Clerk account change', async () => {
+    state.getItem.mockImplementation(async (key: string) => key.endsWith(':user-a')
+      ? JSON.stringify({ ownerId: 'user-a', actionId: 'action-a', section: 'verification', draft: { title: 'Action A' } })
+      : JSON.stringify({ ownerId: 'user-b', actionId: 'action-b', section: 'verification', draft: { title: 'Action B' } }))
+    const oldResponse = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string } }>()
+    state.loadMobileActionDay.mockReturnValue(oldResponse.promise)
+    const renderer = await renderScreen()
+    let request!: Promise<unknown>
+    await act(async () => { request = callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') as Promise<unknown> })
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    oldResponse.resolve({ status: 'ok', actionId: 'action-a', access: 'owner', action: { title: 'Briefing du compte A' } })
+    await act(async () => { await request })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Briefing du compte A'))).toHaveLength(0)
+    expect(state.getItem).toHaveBeenCalledWith('cleanmymap.mobile.action-create.v1:user-b')
+    expect(state.loadMobileActionDay).toHaveBeenCalledWith('action-a')
+  })
+
+  it('clears a prior briefing when refresh is refused by the server', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-refused', section: 'verification', draft: { title: 'Action protégée' } }))
+    state.loadMobileActionDay.mockResolvedValueOnce({ status: 'ok', actionId: 'action-refused', access: 'owner', action: { title: 'Briefing autorisé', meetingPoint: 'Point autorisé' } })
+    state.loadMobileActionDay.mockRejectedValueOnce({ status: 403 })
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Point autorisé'))).not.toHaveLength(0)
+    await act(async () => { await callTestHandler(findButton(renderer, 'Actualiser Préparer / Jour J'), 'onPress') })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Point autorisé'))).toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Accès refusé pour cette action.'))).not.toHaveLength(0)
   })
 
   it('offers every canonical organizer choice without selecting association by default', async () => {
