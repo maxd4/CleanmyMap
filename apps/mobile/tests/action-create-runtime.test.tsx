@@ -7,8 +7,9 @@ import { commonNativeComponents, nativeComponent } from './support/native-compon
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const state = vi.hoisted(() => ({
-  getItem: vi.fn<() => Promise<string | null>>(),
-  setItem: vi.fn(async () => undefined),
+  getItem: vi.fn<(key: string) => Promise<string | null>>(),
+  setItem: vi.fn<(key: string, value: string) => Promise<void>>(async () => undefined),
+  auth: { isLoaded: true, isSignedIn: true, userId: 'user-a' as string | null },
   foregroundPermission: 'granted' as 'granted' | 'denied',
   position: { latitude: 48.8566, longitude: 2.3522 },
   createMobileAction: vi.fn(),
@@ -19,6 +20,7 @@ const state = vi.hoisted(() => ({
   createLinkedMission: vi.fn(),
 }))
 
+vi.mock('@clerk/expo', () => ({ useAuth: () => state.auth }))
 vi.mock('react-native', () => ({
   ...commonNativeComponents(),
 }))
@@ -62,6 +64,9 @@ describe('mobile action creation runtime', () => {
   beforeEach(() => {
     state.getItem.mockReset()
     state.setItem.mockClear()
+    state.auth.isLoaded = true
+    state.auth.isSignedIn = true
+    state.auth.userId = 'user-a'
     state.createMobileAction.mockReset()
     state.updateMobileAction.mockReset()
     state.loadMobileActionEditor.mockClear()
@@ -97,6 +102,119 @@ describe('mobile action creation runtime', () => {
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Lieu' }), 'value')).toBe('Parc sauvegardé')
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'placeholderTextColor')).toBe('#94a3b8')
     expect(state.setItem).toHaveBeenCalled()
+  })
+
+  it('reads and writes only the current Clerk owner namespace', async () => {
+    state.getItem.mockImplementation(async (key: string) => key.endsWith(':user-a')
+      ? JSON.stringify({ ownerId: 'user-a', draft: { title: 'Brouillon A' } })
+      : null)
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Brouillon A')
+    expect(state.setItem.mock.calls.every(([key]) => key.endsWith(':user-a'))).toBe(true)
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
+    expect(state.getItem).toHaveBeenCalledWith('cleanmymap.mobile.action-create.v1:user-b')
+    expect(state.setItem.mock.calls.filter(([key]) => key.endsWith(':user-b')).length).toBeGreaterThan(0)
+  })
+
+  it('clears the exposed draft and blocks mutations after Clerk sign-out', async () => {
+    state.getItem.mockImplementation(async (key: string) => key.endsWith(':user-a')
+      ? JSON.stringify({ ownerId: 'user-a', actionId: 'action-a', draft: { title: 'Brouillon privé A' } })
+      : null)
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Brouillon privé A')
+
+    await act(async () => {
+      state.auth.isSignedIn = false
+      state.auth.userId = null
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
+    expect(testProp<boolean>(findButton(renderer, 'Enregistrer le brouillon'), 'disabled')).toBe(true)
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+    expect(state.updateMobileAction).not.toHaveBeenCalled()
+  })
+
+  it('ignores a delayed read from the previous Clerk owner after an identity change', async () => {
+    let resolveA!: (value: string | null) => void
+    state.getItem.mockImplementation((key: string) => key.endsWith(':user-a')
+      ? new Promise((resolve) => { resolveA = resolve })
+      : Promise.resolve(null))
+    const renderer = await renderScreen()
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+      await Promise.resolve()
+      resolveA(JSON.stringify({ ownerId: 'user-a', draft: { title: 'Ne pas réutiliser' } }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
+    expect(state.setItem.mock.calls.some(([key, value]) => key.endsWith(':user-a') && String(value).includes('Ne pas réutiliser'))).toBe(false)
+  })
+
+  it('does not migrate an owner-less legacy global draft', async () => {
+    state.getItem.mockImplementation(async (key: string) => key === 'cleanmymap.mobile.action-create.v1'
+      ? JSON.stringify({ draft: { title: 'Ancien brouillon ambigu' } })
+      : null)
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
+    expect(state.setItem.mock.calls.some(([key, value]) => key === 'cleanmymap.mobile.action-create.v1:user-a' && String(value).includes('Ancien brouillon ambigu'))).toBe(false)
+  })
+
+  it('migrates a legacy global draft only when its Clerk owner is exact', async () => {
+    state.getItem.mockImplementation(async (key: string) => key === 'cleanmymap.mobile.action-create.v1'
+      ? JSON.stringify({ ownerId: 'user-a', draft: { title: 'Ancien brouillon A' }, clientRequestId: 'legacy-request-a' })
+      : null)
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve() })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Ancien brouillon A')
+    expect(state.setItem.mock.calls.some(([key, value]) => key === 'cleanmymap.mobile.action-create.v1:user-a' && String(value).includes('legacy-request-a'))).toBe(true)
+  })
+
+  it('serializes concurrent writes and keeps the newest owner-scoped draft', async () => {
+    let releaseFirst!: () => void
+    let firstWrite = true
+    state.getItem.mockResolvedValue(null)
+    state.setItem.mockImplementation(async (key: string, value: string) => {
+      if (firstWrite) {
+        firstWrite = false
+        await new Promise<void>((resolve) => { releaseFirst = resolve })
+      }
+      expect(key).toBe('cleanmymap.mobile.action-create.v1:user-a')
+      void value
+    })
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve() })
+    const title = renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' })
+    await act(async () => { callTestHandler(title, 'onChangeText', 'Version la plus récente') })
+    expect(state.setItem).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      releaseFirst()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(state.setItem).toHaveBeenCalledTimes(2)
+    expect(String(state.setItem.mock.calls[1]?.[1])).toContain('Version la plus récente')
   })
 
   it('does not write an empty draft after a rejected local read', async () => {

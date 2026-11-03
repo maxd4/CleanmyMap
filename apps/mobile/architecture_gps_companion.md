@@ -88,14 +88,19 @@ authentifié. Il réutilise l'identité, l'historique de participation, la
 progression et les préférences canoniques. Les mutations de profil synchronisent
 Clerk et Supabase ; le rôle attribué et le parcours actif restent distincts.
 
-Les clés locales de mission active, de buffer GPS, de tracé foreground et de
-réconciliation sont toutes namespacées par le `userId` Clerk. Le réveil
-headless compare l'identité Clerk restaurée à l'owner stocké avant tout insert
-ou replay ; une session expirée conserve les données du propriétaire sans les
-exposer à la session suivante. Les clés historiques sans owner vérifiable ne
-sont pas lues. Avant les permissions système, un dialogue natif décrit la
-collecte, le suivi en arrière-plan, la transmission avec Clerk et la reprise
-locale ; le refus bloque le démarrage sans effacer les données récupérables.
+Les clés locales de mission active, de buffer GPS, de tracé foreground, de
+réconciliation et de brouillon de création d'action sont namespacées par le
+`userId` Clerk. Le contrôleur de création conserve le `clientRequestId` et
+l'identifiant d'action dans ce même namespace, afin de préserver la reprise et
+l'idempotence sans réutiliser un brouillon après déconnexion ou changement de
+compte. Une lecture différée d'une ancienne identité est ignorée ; une clé
+historique globale n'est migrée que si son `ownerId` Clerk exact est présent,
+sinon elle n'est pas réutilisée. Le réveil headless compare l'identité Clerk
+restaurée à l'owner stocké avant tout insert ou replay ; une session expirée
+conserve les données du propriétaire sans les exposer à la session suivante.
+Avant les permissions système, un dialogue natif décrit la collecte, le suivi
+en arrière-plan, la transmission avec Clerk et la reprise locale ; le refus
+bloque le démarrage sans effacer les données récupérables.
 
 La suppression de compte reste une demande RGPD, pas une suppression
 automatique. `Compte` appelle `/api/mobile/account/deletion-request`, qui

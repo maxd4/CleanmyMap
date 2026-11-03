@@ -44,6 +44,7 @@ vi.mock('react-native-safe-area-context', () => ({
 }))
 vi.mock('@clerk/expo', () => ({
   ClerkProvider: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => React.createElement('ClerkProvider', props, children),
+  useAuth: () => ({ isLoaded: true, isSignedIn: true, userId: 'user-a' }),
 }))
 vi.mock('@clerk/expo/hosted-auth', () => ({
   useHostedAuth: () => ({ startHostedAuth: appState.startHostedAuth }),

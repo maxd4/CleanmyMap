@@ -71,9 +71,12 @@ lien vers une surface web est explicitement présenté comme tel et ne devient
 pas un faux réglage natif.
 Avant les dialogues système, le suivi GPS présente une rationale native
 décrivant la collecte, l'arrière-plan, l'usage serveur, la transmission Clerk
-et la reprise hors ligne. Les clés locales de mission, buffer, tracé et
-réconciliation sont owner-scoped par `userId` Clerk ; une identité différente
-ne peut ni lire ni synchroniser les données persistées d'une autre identité.
+et la reprise hors ligne. Les clés locales de mission, buffer, tracé,
+réconciliation et brouillon de création d'action sont owner-scoped par
+`userId` Clerk ; une identité différente ne peut ni lire, réutiliser, muter ni
+synchroniser les données persistées d'une autre identité. Un ancien brouillon
+global n'est migré que si son `ownerId` Clerk exact est établi ; sans
+propriétaire vérifiable, il reste ignoré.
 Compte expose aussi la demande de suppression via
 `/api/mobile/account/deletion-request`, qui réutilise `contact_requests` et
 retourne séparément l'identifiant, l'état de notification et le traitement

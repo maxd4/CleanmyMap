@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@clerk/expo'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Location from 'expo-location'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createLinkedMission } from '../lib/linked-mission-service'
@@ -47,25 +48,39 @@ export const SECTIONS: Array<{ id: Section; label: string }> = [
   { id: 'verification', label: 'Vérifier et publier' },
 ]
 
-const STORAGE_KEY = 'cleanmymap.mobile.action-create.v1'
+const STORAGE_KEY_PREFIX = 'cleanmymap.mobile.action-create.v1'
+const LEGACY_STORAGE_KEY = STORAGE_KEY_PREFIX
 const EMPTY: Draft = {
   title: '', description: '', association: 'Mon organisation', date: '', start: '', end: '', location: '',
   latitude: '', longitude: '', meetingPoint: '', materials: '', recommendedMaterials: '', logistics: '', checklist: '', safety: '', accessibility: '', coorganizers: '', invitees: '', departure: '', arrival: '', routeTopology: 'loop', participants: '1',
   duration: '60', notes: '',
 }
 
-type StoredDraft = { draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string }
+type StoredDraft = { ownerId?: string; draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string }
+
+function normalizeOwnerId(ownerId: string | null | undefined): string | null {
+  const normalized = ownerId?.trim() ?? ''
+  return /^[A-Za-z0-9_-]+$/.test(normalized) ? normalized : null
+}
+
+function ownerScopedStorageKey(ownerId: string | null): string | null {
+  const normalizedOwnerId = normalizeOwnerId(ownerId)
+  return normalizedOwnerId ? `${STORAGE_KEY_PREFIX}:${normalizedOwnerId}` : null
+}
 
 function isSection(value: unknown): value is Section {
   return typeof value === 'string' && SECTIONS.some((item) => item.id === value)
 }
 
-function parseStoredDraft(value: string | null): StoredDraft {
+function parseStoredDraft(value: string | null, expectedOwnerId?: string | null): StoredDraft {
   if (!value) return {}
   try {
     const parsed = JSON.parse(value) as StoredDraft
+    const storedOwnerId = normalizeOwnerId(parsed.ownerId ?? undefined) ?? undefined
+    if (expectedOwnerId && storedOwnerId && storedOwnerId !== expectedOwnerId) return {}
     return {
       draft: parsed.draft ? { ...EMPTY, ...parsed.draft } : undefined,
+      ownerId: storedOwnerId,
       actionId: parsed.actionId || undefined,
       section: isSection(parsed.section) ? parsed.section : undefined,
       published: Boolean(parsed.published),
@@ -74,6 +89,29 @@ function parseStoredDraft(value: string | null): StoredDraft {
   } catch {
     return {}
   }
+}
+
+function serializeStoredDraft(ownerId: string, value: Omit<StoredDraft, 'ownerId'>): string {
+  return JSON.stringify({ ownerId, ...value })
+}
+
+const draftWritesInFlight = new Map<string, Promise<void>>()
+
+function queueDraftWrite(key: string, value: string, canWrite: () => boolean): Promise<void> {
+  const previous = draftWritesInFlight.get(key) ?? Promise.resolve()
+  const mutation = previous.then(async () => {
+    if (!canWrite()) return
+    await AsyncStorage.setItem(key, value)
+  }, async () => {
+    if (!canWrite()) return
+    await AsyncStorage.setItem(key, value)
+  })
+  const settled = mutation.then(() => undefined, () => undefined)
+  draftWritesInFlight.set(key, settled)
+  void settled.then(() => {
+    if (draftWritesInFlight.get(key) === settled) draftWritesInFlight.delete(key)
+  }).catch(() => undefined)
+  return mutation
 }
 
 function useActionCreatePersistence({
@@ -87,6 +125,7 @@ function useActionCreatePersistence({
   setSection,
   setPublished,
   setClientRequestId,
+  ownerId,
 }: {
   draft: Draft
   actionId: string | null
@@ -98,27 +137,51 @@ function useActionCreatePersistence({
   setSection: React.Dispatch<React.SetStateAction<Section>>
   setPublished: React.Dispatch<React.SetStateAction<boolean>>
   setClientRequestId: React.Dispatch<React.SetStateAction<string>>
+  ownerId: string | null
 }) {
   const [draftHydrated, setDraftHydrated] = useState(false)
+  const [hydratedOwnerId, setHydratedOwnerId] = useState<string | null>(null)
   const [draftReadAttempt, setDraftReadAttempt] = useState(0)
   const [draftReadError, setDraftReadError] = useState(false)
   const [draftWriteError, setDraftWriteError] = useState(false)
+  const currentOwnerRef = useRef<string | null>(ownerId)
 
   useEffect(() => {
     let active = true
     let readSucceeded = false
+    currentOwnerRef.current = ownerId
+    const scopedKey = ownerScopedStorageKey(ownerId)
     setDraftHydrated(false)
+    setHydratedOwnerId(null)
     setDraftReadError(false)
+    setDraftWriteError(false)
+    setDraft(EMPTY)
+    setActionId(null)
+    setSection('essentiel')
+    setPublished(false)
+    setClientRequestId(createLocalIdentifier('action-create'))
+
+    if (!scopedKey) return () => { active = false }
+
     const restoreDraft = async () => {
       try {
-        const stored = parseStoredDraft(await AsyncStorage.getItem(STORAGE_KEY))
+        const scopedValue = await AsyncStorage.getItem(scopedKey)
+        let stored = parseStoredDraft(scopedValue, ownerId)
+        if (!scopedValue) {
+          // A legacy global draft is migratable only when it carries an exact
+          // Clerk owner. An owner-less value is deliberately ignored.
+          const legacy = parseStoredDraft(await AsyncStorage.getItem(LEGACY_STORAGE_KEY))
+          if (legacy.ownerId === ownerId) stored = legacy
+        }
         if (!active) return
+        if (currentOwnerRef.current !== ownerId) return
         if (stored.draft) setDraft(stored.draft)
         if (stored.actionId) setActionId(stored.actionId)
         if (stored.section) setSection(stored.section)
         if (stored.published) setPublished(true)
         if (stored.clientRequestId) setClientRequestId(stored.clientRequestId)
         readSucceeded = true
+        setHydratedOwnerId(ownerId)
       } catch {
         if (active) setDraftReadError(true)
       } finally {
@@ -127,19 +190,21 @@ function useActionCreatePersistence({
     }
     void restoreDraft().catch(() => undefined)
     return () => { active = false }
-  }, [draftReadAttempt, setActionId, setClientRequestId, setDraft, setPublished, setSection])
+  }, [draftReadAttempt, ownerId, setActionId, setClientRequestId, setDraft, setPublished, setSection])
 
   useEffect(() => {
-    if (!draftHydrated) return
+    const scopedKey = ownerScopedStorageKey(ownerId)
+    if (!draftHydrated || !scopedKey || !ownerId) return
     let active = true
     setDraftWriteError(false)
-    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, actionId, section, published, clientRequestId })).catch(() => {
+    const storedValue = serializeStoredDraft(ownerId, { draft, actionId, section, published, clientRequestId })
+    void queueDraftWrite(scopedKey, storedValue, () => active && currentOwnerRef.current === ownerId).catch(() => {
       if (active) setDraftWriteError(true)
     })
     return () => { active = false }
-  }, [actionId, clientRequestId, draft, draftHydrated, published, section])
+  }, [actionId, clientRequestId, draft, draftHydrated, ownerId, published, section])
 
-  return { draftHydrated, draftReadError, draftWriteError, retryDraftRead: () => setDraftReadAttempt((attempt) => attempt + 1) }
+  return { draftHydrated, hydratedOwnerId, draftReadError, draftWriteError, retryDraftRead: () => setDraftReadAttempt((attempt) => attempt + 1) }
 }
 
 function splitTokens(value: string): string[] {
@@ -205,6 +270,7 @@ function useActionCreateMutations({
   payload,
   draftHydrated,
   draftReadError,
+  ownerId,
   onSessionExpired,
   setActionId,
   setPublished,
@@ -215,6 +281,7 @@ function useActionCreateMutations({
   payload: MobileActionDraftPayload
   draftHydrated: boolean
   draftReadError: boolean
+  ownerId: string | null
   onSessionExpired: () => void
   setActionId: React.Dispatch<React.SetStateAction<string | null>>
   setPublished: React.Dispatch<React.SetStateAction<boolean>>
@@ -222,7 +289,19 @@ function useActionCreateMutations({
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const mutationsBlocked = !draftHydrated || draftReadError || busy
+  const currentOwnerRef = useRef<string | null>(ownerId)
+  const mutationsBlocked = !ownerId || !draftHydrated || draftReadError || busy
+
+  useEffect(() => {
+    currentOwnerRef.current = ownerId
+    setBusy(false)
+    setMessage(null)
+    setError(null)
+  }, [ownerId])
+
+  function canMutate(ownerAtStart: string | null): boolean {
+    return Boolean(ownerAtStart && currentOwnerRef.current === ownerAtStart)
+  }
 
   function handleError(value: unknown) {
     if (isUnauthorized(value)) onSessionExpired()
@@ -231,41 +310,58 @@ function useActionCreateMutations({
 
   async function saveDraft() {
     if (mutationsBlocked) return
+    const ownerAtStart = ownerId
     setBusy(true); setError(null); setMessage(null)
     try {
       const result = actionId ? await updateMobileAction(actionId, payload) : await createMobileAction(payload)
+      if (!canMutate(ownerAtStart)) return
       if (!actionId && 'id' in result) setActionId(result.id)
       setMessage('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
-    } catch (value) { handleError(value) } finally { setBusy(false) }
+    } catch (value) {
+      if (canMutate(ownerAtStart)) handleError(value)
+    } finally { setBusy(false) }
   }
 
   async function publish() {
     if (mutationsBlocked || published) return
+    const ownerAtStart = ownerId
     setBusy(true); setError(null); setMessage(null)
     try {
       const currentActionId = actionId ?? (await createMobileAction(payload)).id
+      if (!canMutate(ownerAtStart)) return
       if (!actionId) setActionId(currentActionId)
       if (actionId) await updateMobileAction(actionId, payload)
+      if (!canMutate(ownerAtStart)) return
       await publishMobileAction(currentActionId)
+      if (!canMutate(ownerAtStart)) return
       setPublished(true)
       setMessage('Publication confirmée par le serveur.')
-    } catch (value) { handleError(value) } finally { setBusy(false) }
+    } catch (value) {
+      if (canMutate(ownerAtStart)) handleError(value)
+    } finally { setBusy(false) }
   }
 
   async function linkGps() {
-    if (!actionId) { setError('Enregistrez le brouillon avant de relier une activité GPS.'); return }
+    if (!ownerId || !actionId) { setError('Enregistrez le brouillon avant de relier une activité GPS.'); return }
+    const ownerAtStart = ownerId
     setBusy(true); setError(null)
     const result = await createLinkedMission(draft.title || draft.location || 'Action mobile', actionId)
     setBusy(false)
+    if (!canMutate(ownerAtStart)) return
     if (result.ok) setMessage('Suivi GPS lié. Il sera réconcilié par le serveur après finalisation.')
     else setError(result.error)
   }
 
   async function loadDayBriefing() {
-    if (!actionId) return
+    if (!ownerId || !actionId) return
+    const ownerAtStart = ownerId
     setBusy(true); setError(null)
-    try { await loadMobileActionDay(actionId); setMessage('Les espaces Préparer et Jour J sont disponibles pour cette action.') }
-    catch (value) { handleError(value) } finally { setBusy(false) }
+    try {
+      await loadMobileActionDay(actionId)
+      if (canMutate(ownerAtStart)) setMessage('Les espaces Préparer et Jour J sont disponibles pour cette action.')
+    } catch (value) {
+      if (canMutate(ownerAtStart)) handleError(value)
+    } finally { setBusy(false) }
   }
 
   return { busy, message, error, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
@@ -274,30 +370,43 @@ function useActionCreateMutations({
 type ActionCreateControllerProps = { onSessionExpired: () => void }
 
 export function useActionCreateController({ onSessionExpired }: ActionCreateControllerProps) {
+  const { isLoaded, isSignedIn, userId } = useAuth()
+  const ownerId = isLoaded && isSignedIn ? normalizeOwnerId(userId) : null
   const [section, setSection] = useState<Section>('essentiel')
   const [draft, setDraft] = useState<Draft>(EMPTY)
   const [clientRequestId, setClientRequestId] = useState(() => createLocalIdentifier('action-create'))
   const [actionId, setActionId] = useState<string | null>(null)
   const [published, setPublished] = useState(false)
-  const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId })
-  const payload = useMemo(() => buildPayload(draft, clientRequestId), [clientRequestId, draft])
-  const mutations = useActionCreateMutations({ draft, actionId, published, payload, draftHydrated: persistence.draftHydrated, draftReadError: persistence.draftReadError, onSessionExpired, setActionId, setPublished })
+  const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId })
+  const ownerHydrated = Boolean(ownerId && persistence.draftHydrated && persistence.hydratedOwnerId === ownerId)
+  const visibleDraft = ownerHydrated ? draft : EMPTY
+  const visibleActionId = ownerHydrated ? actionId : null
+  const visiblePublished = ownerHydrated ? published : false
+  const visibleSection = ownerHydrated ? section : 'essentiel'
+  const visibleClientRequestId = ownerHydrated ? clientRequestId : ''
+  const payload = useMemo(() => buildPayload(visibleDraft, visibleClientRequestId), [visibleClientRequestId, visibleDraft])
+  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, setActionId, setPublished })
 
   useEffect(() => {
-    if (!actionId) return
-    loadMobileActionEditor(actionId).catch((value) => {
-      if (isUnauthorized(value)) onSessionExpired()
+    if (!visibleActionId || !ownerId) return
+    let active = true
+    loadMobileActionEditor(visibleActionId).catch((value) => {
+      if (active && isUnauthorized(value)) onSessionExpired()
     })
-  }, [actionId, onSessionExpired])
+    return () => { active = false }
+  }, [onSessionExpired, ownerId, visibleActionId])
 
   async function getCurrentPosition() {
     const permission = await Location.requestForegroundPermissionsAsync()
     if (permission.status !== 'granted') { mutations.setError('La permission de localisation est nécessaire pour utiliser la position actuelle.'); return }
     const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+    if (!ownerHydrated) return
     setDraft((current) => ({ ...current, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }))
     mutations.setMessage('Position actuelle ajoutée. Vérifiez-la avant de sauvegarder.')
   }
 
-  const update = (key: keyof Draft, value: string) => setDraft((current) => ({ ...current, [key]: value }))
-  return { section, setSection, draft, update, actionId, published, sectionIndex: SECTIONS.findIndex((item) => item.id === section), getCurrentPosition, ...persistence, ...mutations, setActionId, setPublished }
+  const update = (key: keyof Draft, value: string) => {
+    if (ownerHydrated) setDraft((current) => ({ ...current, [key]: value }))
+  }
+  return { section: visibleSection, setSection, draft: visibleDraft, update, actionId: visibleActionId, published: visiblePublished, sectionIndex: SECTIONS.findIndex((item) => item.id === visibleSection), getCurrentPosition, ...persistence, ...mutations, setActionId, setPublished }
 }

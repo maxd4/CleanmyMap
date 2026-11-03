@@ -205,7 +205,15 @@ sous-vues existantes.
   une unicité PostgreSQL et une RPC transactionnelle qui persiste aussi les
   organisateurs et inscriptions initiales. Une réponse perdue est donc
   rejouable sans succès prématuré ni doublon ; une migration absente bloque la
-  création au lieu de réactiver un chemin non idempotent.
+  création au lieu de réactiver un chemin non idempotent. Le brouillon et cet
+  identifiant sont persistés dans AsyncStorage sous la clé
+  `cleanmymap.mobile.action-create.v1:<userId-Clerk>` ; la lecture, la reprise
+  et l'écriture sont donc limitées à l'identité courante. Une déconnexion ou un
+  changement de compte vide immédiatement l'état exposé et bloque les
+  mutations jusqu'à la nouvelle hydratation. Une lecture différée de l'ancien
+  compte est ignorée, et une ancienne clé globale n'est migrée que si elle
+  contient un `ownerId` Clerk exact ; un brouillon global sans propriétaire
+  vérifiable reste ignoré.
 - `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
   photos via les intents média canoniques et n'affiche jamais un statut avant
   confirmation serveur.
@@ -239,11 +247,12 @@ native de la collecte des points, du suivi écran éteint, de leur transmission
 avec la session Clerk et de la reprise locale hors ligne. Un refus interrompt
 le démarrage et permet une nouvelle tentative ultérieure.
 Les identifiants de mission active, index de buffer, points GPS en attente,
-tracés foreground et réconciliations liées sont namespacés par identifiant
-Clerk. Une session expirée ou un changement de compte ne peut donc pas lire ni
-rejouer les données d'un autre compte ; les données du propriétaire restent
-récupérables à sa reconnexion. Les anciennes clés locales sans owner connu sont
-ignorées par conception. Chaque point reçoit aussi un `client_point_id` avant
+tracés foreground, réconciliations liées et brouillons de création d'action
+sont namespacés par identifiant Clerk. Une session expirée ou un changement de
+compte ne peut donc pas lire, réutiliser, rejouer ni muter les données d'un
+autre compte ; les données du propriétaire restent récupérables à sa
+reconnexion. Les anciennes clés locales sans owner connu sont ignorées par
+conception. Chaque point reçoit aussi un `client_point_id` avant
 l'envoi direct ; le même identifiant est conservé dans le buffer et lors du
 rejeu, avec une unicité par mission côté PostgreSQL pour absorber une perte
 d'acquittement sans doublon.
