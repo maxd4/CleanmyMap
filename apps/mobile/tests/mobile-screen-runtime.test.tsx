@@ -71,7 +71,7 @@ vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
 vi.mock('lucide-react-native', () => ({
   ArrowLeft: nativeComponent('ArrowLeft'), Bell: nativeComponent('Bell'), CircleHelp: nativeComponent('CircleHelp'), CircleUserRound: nativeComponent('CircleUserRound'),
   ExternalLink: nativeComponent('ExternalLink'), GraduationCap: nativeComponent('GraduationCap'), HandHelping: nativeComponent('HandHelping'), House: nativeComponent('House'),
-  Info: nativeComponent('Info'), Map: nativeComponent('Map'), Search: nativeComponent('Search'), Settings2: nativeComponent('Settings2'), UsersRound: nativeComponent('UsersRound'), UserRound: nativeComponent('UserRound'),
+  Info: nativeComponent('Info'), Map: nativeComponent('Map'), Search: nativeComponent('Search'), Settings2: nativeComponent('Settings2'), UsersRound: nativeComponent('UsersRound'), UserRound: nativeComponent('UserRound'), Clock3: nativeComponent('Clock3'),
 }))
 vi.mock('expo-location', () => ({
   Accuracy: { Balanced: 'balanced' },
@@ -269,6 +269,21 @@ describe('mobile native shell runtime', () => {
     expect(renderer.root.findAll((node) => textContent(node).includes('Retour à Agir'))).not.toHaveLength(0)
     await act(async () => { expect(state.backPress?.()).toBe(true); await Promise.resolve() })
     expect(renderer.root.findAll((node) => textContent(node).includes('Agir sur le terrain.'))).not.toHaveLength(0)
+  })
+
+  it('opens a static planned page from Carte and returns without replacing the web bridge', async () => {
+    const renderer = await renderShell()
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Carte' }), 'onPress'); await Promise.resolve() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Ouvrir la carte CleanMyMap'))).not.toHaveLength(0)
+
+    await act(async () => { await callTestHandler(findTouchable(renderer, 'Carte native'), 'onPress') })
+    expect(textContent(renderer.root)).toContain('Carte native')
+    expect(textContent(renderer.root)).toContain('En préparation')
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'Retour à la surface précédente' })).not.toHaveLength(0)
+
+    await act(async () => { expect(state.backPress?.()).toBe(true); await Promise.resolve() })
+    expect(textContent(renderer.root)).toContain('Ouvrir la carte CleanMyMap')
+    expect(textContent(renderer.root)).not.toContain('En préparation')
   })
 
   it('keeps account deletion explicit, confirmation-gated and server-owned', async () => {

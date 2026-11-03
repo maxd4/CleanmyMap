@@ -34,6 +34,7 @@ vi.mock('lucide-react-native', () => ({
   Info: nativeComponent('Icon'),
   Search: nativeComponent('Icon'),
   Settings2: nativeComponent('Icon'),
+  Clock3: nativeComponent('Icon'),
   UserRound: nativeComponent('Icon'),
 }))
 vi.mock('../screens/emergency-contact', () => ({ EmergencyContactPanel: () => React.createElement('EmergencyContactPanel') }))

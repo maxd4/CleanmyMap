@@ -3,8 +3,9 @@ import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity
 import { Bell, CircleHelp, ExternalLink, Info, Search, Settings2, UserRound, type LucideIcon } from 'lucide-react-native'
 import { useAccountController, type AccountData, type AccountSection } from '../hooks/use-account-controller'
 import { EmergencyContactPanel } from './emergency-contact'
+import { PlannedCapabilityMenu, type PlannedCapabilityId } from './planned-capabilities'
 
-type AccountProps = { onSignOut: () => void; onSessionExpired: () => void; onOpenWeb: (path: string) => void }
+type AccountProps = { onSignOut: () => void; onSessionExpired: () => void; onOpenWeb: (path: string) => void; onOpenPlanned?: (id: PlannedCapabilityId) => void }
 const ACCOUNT_SECTIONS: Array<{ id: AccountSection; label: string; description: string; icon: LucideIcon }> = [
   { id: 'profile', label: 'Mon profil', description: 'Identité, onboarding et parcours actif', icon: UserRound },
   { id: 'activity', label: 'Activité et notifications', description: 'Historique, invitations et alertes', icon: Bell },
@@ -27,7 +28,7 @@ function roleLabel(role: string) {
   return ROLE_LABELS[role] ?? role
 }
 
-export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: AccountProps) {
+export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb, onOpenPlanned }: AccountProps) {
   const {
     account, firstName, lastName, residence, work, loading, saving, error, message,
     section, deletionConfirmation, deletionRequestId, deletionNotificationStatus,
@@ -46,6 +47,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
     void changeNotificationAsync(field, value).catch(() => undefined)
   }
   const sendDeletionRequest = () => { void sendDeletionRequestAsync().catch(() => undefined) }
+  const openPlanned = onOpenPlanned ?? (() => undefined)
 
   function submitDeletionRequest() {
     if (deletionConfirmation !== 'SUPPRIMER MON COMPTE' || saving) return
@@ -114,6 +116,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
     <MissionCard account={account} />
     <CreatedActionCard account={account} />
     <InvitationCard account={account} />
+    <PlannedCapabilityMenu ids={['notifications', 'detailed-history', 'impacts-reports']} onOpen={openPlanned} />
     </SectionContent>
 
     <SectionContent visible={section === 'preferences'}><Card title="Préférences d’affichage">
@@ -143,6 +146,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
       <LinkButton label="Mentions légales" onPress={() => onOpenWeb('/mentions-legales')} />
       <LinkButton label="Réseau CleanMyMap" onPress={() => onOpenWeb('/sections/annuaire')} />
       <LinkButton label="Groupes de discussion" onPress={() => onOpenWeb('/sections/messagerie')} />
+      <PlannedCapabilityMenu ids={['discussions']} onOpen={openPlanned} />
       <Text style={styles.helper}>La demande d’effacement passe par le workflow RGPD du site ; cette action ne supprime pas immédiatement le compte.</Text>
       <View style={styles.deletionPanel}>
         <Text style={styles.label}>Demander la suppression complète</Text>

@@ -10,6 +10,7 @@ import { AccountScreen } from './account'
 import { ActionJoinScreen } from './action-join'
 import { ActionCreateScreen } from './action-create'
 import { SignalementScreen } from './signalement'
+import { PlannedCapabilityMenu, PlannedCapabilityScreen, type PlannedCapabilityId } from './planned-capabilities'
 import { getMobileWebBaseUrl } from '../lib/mobile-environment'
 
 type MobileShellProps = { onSignOut: () => void; onSessionExpired: () => void; onStartActivity: () => void | Promise<void> }
@@ -34,6 +35,7 @@ function openWebPath(path: string): void {
 export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: MobileShellProps) {
   const [surface, setSurface] = useState<MobileDestinationId>('act')
   const [actSubview, setActSubview] = useState<ActSubview>('home')
+  const [plannedCapability, setPlannedCapability] = useState<PlannedCapabilityId | null>(null)
   useEffect(() => {
     void AsyncStorage.getItem(MOBILE_SHELL_SURFACE_STORAGE_KEY)
       .then((stored) => {
@@ -42,8 +44,12 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
       .catch(() => undefined)
   }, [])
   function navigate(nextSurface: MobileDestinationId) {
+    setPlannedCapability(null)
     setSurface(nextSurface)
     void AsyncStorage.setItem(MOBILE_SHELL_SURFACE_STORAGE_KEY, nextSurface).catch(() => undefined)
+  }
+  function openPlannedCapability(id: PlannedCapabilityId) {
+    setPlannedCapability(id)
   }
   function startActivity(): void {
     void Promise.resolve(onStartActivity()).catch(() => undefined)
@@ -51,6 +57,10 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (plannedCapability) {
+        setPlannedCapability(null)
+        return true
+      }
       if (surface === 'act' && actSubview !== 'home') {
         setActSubview('home')
         return true
@@ -62,25 +72,26 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
       return false
     })
     return () => subscription.remove()
-  }, [actSubview, surface])
+  }, [actSubview, plannedCapability, surface])
 
   return <SafeAreaView edges={['top', 'bottom']} style={styles.root}>
     <StatusBar style="light" />
     <KeyboardAvoidingView style={styles.keyboardAvoider} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={surface === 'act' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'act' ? 'auto' : 'none'}><ActScreen actSubview={actSubview} onActSubview={setActSubview} onStart={startActivity} onSessionExpired={onSessionExpired} /></View>
-        <View style={surface === 'map' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'map' ? 'auto' : 'none'}><MapScreen /></View>
-        <View style={surface === 'account' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={surface === 'account' ? 'auto' : 'none'}><AccountScreen onSignOut={onSignOut} onSessionExpired={onSessionExpired} onOpenWeb={(path) => void openWebPath(path)} /></View>
+        <View style={plannedCapability ? styles.hiddenSubview : surface === 'act' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={plannedCapability ? 'none' : surface === 'act' ? 'auto' : 'none'}><ActScreen actSubview={actSubview} onActSubview={setActSubview} onStart={startActivity} onSessionExpired={onSessionExpired} onOpenPlanned={openPlannedCapability} /></View>
+        <View style={plannedCapability ? styles.hiddenSubview : surface === 'map' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={plannedCapability ? 'none' : surface === 'map' ? 'auto' : 'none'}><MapScreen onOpenPlanned={openPlannedCapability} /></View>
+        <View style={plannedCapability ? styles.hiddenSubview : surface === 'account' ? styles.visibleSurface : styles.hiddenSubview} pointerEvents={plannedCapability ? 'none' : surface === 'account' ? 'auto' : 'none'}><AccountScreen onSignOut={onSignOut} onSessionExpired={onSessionExpired} onOpenWeb={(path) => void openWebPath(path)} onOpenPlanned={openPlannedCapability} /></View>
+        {plannedCapability ? <PlannedCapabilityScreen id={plannedCapability} onBack={() => setPlannedCapability(null)} /> : null}
       </ScrollView>
       <View style={styles.tabBar} accessibilityRole="tablist">{MOBILE_DESTINATIONS.map((item) => { const selected = surface === item.id; const Icon = NAV_ICONS[item.icon]; return <TouchableOpacity key={item.id} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected }} style={[styles.tab, selected && styles.tabSelected]} onPress={() => navigate(item.id)}><Icon size={22} color={selected ? '#34d399' : '#cbd5e1'} strokeWidth={selected ? 2.5 : 2} /><Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{item.label}</Text></TouchableOpacity> })}</View>
     </KeyboardAvoidingView>
   </SafeAreaView>
 }
 
-function ActScreen({ actSubview, onActSubview, onStart, onSessionExpired }: { actSubview: ActSubview; onActSubview: (next: ActSubview) => void; onStart: () => void; onSessionExpired: () => void }) {
+function ActScreen({ actSubview, onActSubview, onStart, onSessionExpired, onOpenPlanned }: { actSubview: ActSubview; onActSubview: (next: ActSubview) => void; onStart: () => void; onSessionExpired: () => void; onOpenPlanned: (id: PlannedCapabilityId) => void }) {
   return <>
     <View style={actSubview === 'home' ? styles.visibleSubview : styles.hiddenSubview} pointerEvents={actSubview === 'home' ? 'auto' : 'none'}>
-      <ScreenFrame eyebrow="AGIR" title="Agir sur le terrain."><Text style={styles.bodyText}>Une seule entrée à la fois : démarrez une mission GPS, rejoignez une action, organisez-la ou signalez une observation.</Text><PrimaryButton label="Démarrer une action" onPress={onStart} /><SubviewButton label="Rejoindre une action" description="Trouver, suivre ou annuler une inscription" onPress={() => onActSubview('join')} /><SubviewButton label="Créer une action" description="Préparer, vérifier et publier" onPress={() => onActSubview('create')} /><SubviewButton label="Signaler un déchet" description="Transmettre une observation et ses preuves" onPress={() => onActSubview('report')} /></ScreenFrame>
+      <ScreenFrame eyebrow="AGIR" title="Agir sur le terrain."><Text style={styles.bodyText}>Une seule entrée à la fois : démarrez une mission GPS, rejoignez une action, organisez-la ou signalez une observation.</Text><PrimaryButton label="Démarrer une action" onPress={onStart} /><SubviewButton label="Rejoindre une action" description="Trouver, suivre ou annuler une inscription" onPress={() => onActSubview('join')} /><SubviewButton label="Créer une action" description="Préparer, vérifier et publier" onPress={() => onActSubview('create')} /><SubviewButton label="Signaler un déchet" description="Transmettre une observation et ses preuves" onPress={() => onActSubview('report')} /><PlannedCapabilityMenu ids={['post-action-summary', 'action-management']} onOpen={onOpenPlanned} /></ScreenFrame>
     </View>
     <FlowSubview visible={actSubview === 'join'} title="Rejoindre une action" onBack={() => onActSubview('home')}><ActionJoinScreen onSessionExpired={onSessionExpired} /></FlowSubview>
     <FlowSubview visible={actSubview === 'create'} title="Créer une action" onBack={() => onActSubview('home')}><ActionCreateScreen onSessionExpired={onSessionExpired} /></FlowSubview>
@@ -89,7 +100,7 @@ function ActScreen({ actSubview, onActSubview, onStart, onSessionExpired }: { ac
 }
 
 function FlowSubview({ visible, title, onBack, children }: { visible: boolean; title: string; onBack: () => void; children: React.ReactNode }) { return <View style={visible ? styles.visibleSubview : styles.hiddenSubview} pointerEvents={visible ? 'auto' : 'none'}><TouchableOpacity style={styles.backButton} onPress={onBack} accessibilityRole="button" accessibilityLabel={`Retour à Agir depuis ${title}`}><ArrowLeft size={18} color="#a7f3d0" /><Text style={styles.backLabel}>Retour à Agir</Text></TouchableOpacity>{children}</View> }
-function MapScreen() { return <ScreenFrame eyebrow="CARTE" title="Carte live"><Text style={styles.bodyText}>Retrouvez la carte CleanMyMap et le suivi GPS de votre action en cours.</Text><WebButton path={MOBILE_WEB_BRIDGE_PATHS.map} label="Ouvrir la carte CleanMyMap" /><InfoCard title="Suivi GPS conservé" description="Le suivi, la reprise hors ligne, la finalisation serveur et le contact d'urgence restent disponibles." /></ScreenFrame> }
+function MapScreen({ onOpenPlanned }: { onOpenPlanned: (id: PlannedCapabilityId) => void }) { return <ScreenFrame eyebrow="CARTE" title="Carte live"><Text style={styles.bodyText}>Retrouvez la carte CleanMyMap et le suivi GPS de votre action en cours.</Text><WebButton path={MOBILE_WEB_BRIDGE_PATHS.map} label="Ouvrir la carte CleanMyMap" /><InfoCard title="Suivi GPS conservé" description="Le suivi, la reprise hors ligne, la finalisation serveur et le contact d'urgence restent disponibles." /><PlannedCapabilityMenu ids={['native-map', 'route-planning']} onOpen={onOpenPlanned} /></ScreenFrame> }
 function ScreenFrame({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) { return <View><Text style={styles.eyebrow}>{eyebrow}</Text><Text style={styles.title}>{title}</Text><View style={styles.separator} />{children}</View> }
 function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) { return <TouchableOpacity style={styles.primaryButton} onPress={onPress} accessibilityRole="button"><HandHelping size={20} color="#022c22" /><Text style={styles.primaryButtonLabel}>{label}</Text></TouchableOpacity> }
 function SubviewButton({ label, description, onPress }: { label: string; description: string; onPress: () => void }) { return <TouchableOpacity style={styles.subviewButton} onPress={onPress} accessibilityRole="button"><View style={styles.subviewCopy}><Text style={styles.subviewLabel}>{label}</Text><Text style={styles.subviewDescription}>{description}</Text></View><Text style={styles.subviewChevron}>›</Text></TouchableOpacity> }

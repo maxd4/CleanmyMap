@@ -100,6 +100,42 @@ de build sont isolées dans la section `HISTORY` plus bas. Aucun package partag�
 mobile/web n'est requis tant qu'un consommateur réel et un owner commun ne sont
 pas démontrés.
 
+## PLAN — Évolutions mobiles différées
+
+Les capacités ci-dessous sont des orientations produit, pas des fonctionnalités
+livrées. Elles disposent actuellement d'une page native statique marquée
+`En préparation` afin de rendre la roadmap visible sans inventer de parcours,
+données ou contrat. Toute implémentation future devra d'abord identifier le
+contrat web stabilisé, l'owner serveur, les droits, les états d'erreur et les
+preuves propres à la capacité. Les contrats d'identité, de GPS et de
+finalisation restent ceux de
+[architecture_gps_companion.md](./architecture_gps_companion.md) et
+[ADR-004](../../documentation/architecture/adr/ADR-004-companion-identity.md) ;
+cette liste ne les recopie pas.
+
+| Statut | Capacité différée | Point d'accès mobile préparé | Limite actuelle |
+|---|---|---|---|
+| `PLAN` | Carte native | Onglet `Carte` → `Carte native` | Le parcours opérationnel reste le pont web `/actions/map`. |
+| `PLAN` | Bilan après action | Onglet `Agir` → `Bilan après action` | Aucun bilan ni indicateur n'est calculé localement. |
+| `PLAN` | Gestion avancée des actions | Onglet `Agir` → `Gestion avancée des actions` | Les parcours actuels de participation/création restent inchangés. |
+| `PLAN` | Notifications | `Compte` → `Activité et notifications` → `Notifications` | Les préférences actuellement synchronisées restent `CURRENT`; aucune notification native n'est ajoutée ici. |
+| `PLAN` | Discussions | `Compte` → `À propos` → `Discussions` | Le lien web `/sections/messagerie` reste la surface actuelle. |
+| `PLAN` | Préparation d'itinéraires | Onglet `Carte` → `Préparation d'itinéraires` | Aucun itinéraire, calcul ou stockage de route n'est implémenté. |
+| `PLAN` | Historique détaillé | `Compte` → `Activité et notifications` → `Historique détaillé` | L'historique résumé actuel reste `CURRENT`. |
+| `PLAN` | Impacts et rapports | `Compte` → `Activité et notifications` → `Impacts et rapports` | Les indicateurs actuels restent ceux fournis par le serveur et ne sont pas recalculés. |
+
+**Horizon indicatif : septembre 2027.** Cette date désigne un horizon de
+stabilisation attendu du Web susceptible de conditionner la reprise de ces
+plans ; elle ne constitue ni une date de livraison mobile, ni un engagement de
+roadmap. Android et iOS resteront à adapter et à valider séparément ; macOS
+reste une cible distincte non engagée.
+
+Les pages d'attente utilisent une présentation commune et des définitions
+simples dans [`screens/planned-capabilities.tsx`](./screens/planned-capabilities.tsx).
+Elles ne créent ni appel API, ni service, ni modèle, ni stockage, ni calcul,
+ni dépendance nouvelle. Aucun package partagé ne doit être créé avant
+l'existence d'un consommateur réel et d'un owner établi.
+
 ## Périmètre V1
 
 La V1 mobile s'adresse aux bénévoles terrain et reste volontairement réduite
@@ -135,6 +171,12 @@ appareils à encoche ou à barre système. Le registre
 `Apprendre` comme destinations planifiées, sans les afficher tant que leurs
 parcours natifs ne sont pas réellement implémentés. Il n'y a jamais plus de
 cinq destinations primaires sans accès secondaire explicite.
+
+Les huit entrées `PLAN` de la roadmap sont accessibles comme sous-pages
+discrètes depuis les surfaces concernées ; elles ne deviennent pas des onglets
+primaires et ne masquent aucun parcours `CURRENT`. Leur retour revient à la
+surface précédente et le retour système conserve le même comportement que les
+sous-vues existantes.
 
 `Agir` présente quatre choix dans des sous-vues navigables :
 
