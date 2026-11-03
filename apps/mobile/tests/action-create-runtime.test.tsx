@@ -36,6 +36,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 }))
 vi.mock('../features/tracking/linked-mission-service', () => ({ createLinkedMission: state.createLinkedMission }))
 vi.mock('../features/actions/mobile-actions-service', () => ({
+  SPONTANEOUS_PENDING_ORGANIZER_LABEL: 'Organisateur en attente de compte',
   MOBILE_ORGANIZER_TYPE_OPTIONS: [
     { value: 'spontaneous', label: 'Action spontanée' },
     { value: 'company', label: 'Entreprise' },
@@ -560,7 +561,9 @@ describe('mobile action creation runtime', () => {
     const renderer = await renderScreen()
 
     await act(async () => { await callTestHandler(findButton(renderer, label), 'onPress') })
-    if (name) {
+    if (value === 'spontaneous') {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Organisateur en attente de compte'), 'onPress') })
+    } else if (name) {
       await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'onChangeText', name) })
     }
     for (let index = 0; index < 3; index += 1) {
@@ -571,8 +574,57 @@ describe('mobile action creation runtime', () => {
     const payload = state.createMobileAction.mock.calls[0]?.[0] as Record<string, unknown> | undefined
     expect(payload).toMatchObject({
       organizerType: value,
-      ...(name ? { associationName: name, organizerName: name } : { associationName: 'Action spontanée' }),
+      ...(value === 'spontaneous'
+        ? { associationName: 'Action spontanée', organizerName: 'Organisateur en attente de compte', organizerAccounts: [] }
+        : { associationName: name, organizerName: name }),
     })
+  })
+
+  it('refuses a spontaneous action without an account or the explicit pending option before POST', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+    expect(renderer.root.findAll((node) => textContent(node).includes('sélectionnez un compte organisateur'))).not.toHaveLength(0)
+  })
+
+  it('accepts a spontaneous action with an identified organizer account without sending a free name as identity', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Comptes organisateurs (identifiants séparés par des virgules)' }), 'onChangeText', 'orga-1') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(state.createMobileAction).toHaveBeenCalledWith(expect.objectContaining({
+      organizerType: 'spontaneous',
+      organizerAccounts: ['orga-1'],
+      organizerName: undefined,
+    }))
+  })
+
+  it('rejects a free spontaneous organizer name when it is not attached to an account', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom affiché (optionnel, ne crée pas de compte)' }), 'onChangeText', 'Collectif non rattaché') })
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+    expect(renderer.root.findAll((node) => textContent(node).includes('Organisateur en attente de compte'))).not.toHaveLength(0)
   })
 
   it('builds manual point-to-point coordinates with deduplicated participants and a truncated checklist', async () => {

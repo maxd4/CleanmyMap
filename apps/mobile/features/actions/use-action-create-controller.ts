@@ -12,6 +12,7 @@ import {
   type MobileActionDraftPayload,
   type MobileActionDay,
   type MobileOrganizerType,
+  SPONTANEOUS_PENDING_ORGANIZER_LABEL,
   isMobileOrganizerType,
 } from './mobile-actions-service'
 
@@ -227,6 +228,8 @@ function splitTokens(value: string): string[] {
 
 function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftPayload {
   const volunteersExpected = Math.max(1, Number(draft.participants) || 1)
+  const organizerAccounts = splitTokens(draft.coorganizers)
+  const enteredOrganizerName = draft.organizerName.trim()
   return {
     clientRequestId,
     actionDate: draft.date,
@@ -234,9 +237,9 @@ function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftP
     latitude: draft.latitude ? Number(draft.latitude) : undefined,
     longitude: draft.longitude ? Number(draft.longitude) : undefined,
     associationName: draft.organizerType === 'spontaneous' ? 'Action spontanée' : draft.organizerName.trim(),
-    organizerName: draft.organizerName.trim() || undefined,
+    organizerName: enteredOrganizerName || undefined,
     organizerType: draft.organizerType,
-    organizerAccounts: splitTokens(draft.coorganizers),
+    organizerAccounts,
     participantAccounts: splitTokens(draft.invitees),
     groupJoinEnabled: true,
     actionPhase: 'pre_action',
@@ -272,6 +275,22 @@ function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftP
       routeTopology: draft.routeTopology,
     },
   }
+}
+
+function getOrganizerSelectionError(payload: MobileActionDraftPayload): string | null {
+  if (payload.organizerType !== 'spontaneous') return null
+  const hasOrganizerAccount = (payload.organizerAccounts?.length ?? 0) > 0
+  const hasPendingOrganizer = payload.organizerName?.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL
+  if (hasOrganizerAccount && payload.organizerName?.trim() && !hasPendingOrganizer) {
+    return 'Un nom libre ne rattache pas un compte organisateur. Sélectionnez le compte identifié sans nom libre.'
+  }
+  if (!hasOrganizerAccount && !hasPendingOrganizer) {
+    return 'Pour une action spontanée, sélectionnez un compte organisateur ou « Organisateur en attente de compte ».'
+  }
+  if (hasOrganizerAccount && hasPendingOrganizer) {
+    return 'Choisissez un compte organisateur ou « Organisateur en attente de compte », pas les deux.'
+  }
+  return null
 }
 
 function isUnauthorized(value: unknown): boolean {
@@ -334,6 +353,8 @@ function useActionCreateMutations({
 
   async function saveDraft() {
     if (mutationsBlocked) return
+    const organizerSelectionError = getOrganizerSelectionError(payload)
+    if (organizerSelectionError) { setError(organizerSelectionError); return }
     const ownerAtStart = ownerId
     setBusy(true); setError(null); setMessage(null)
     try {
@@ -350,6 +371,8 @@ function useActionCreateMutations({
 
   async function publish() {
     if (mutationsBlocked || published) return
+    const organizerSelectionError = getOrganizerSelectionError(payload)
+    if (organizerSelectionError) { setError(organizerSelectionError); return }
     const ownerAtStart = ownerId
     setBusy(true); setError(null); setMessage(null)
     try {

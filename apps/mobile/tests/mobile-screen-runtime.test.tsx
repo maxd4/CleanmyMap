@@ -93,6 +93,7 @@ vi.mock('../features/account/mobile-account-service', () => ({
 }))
 
 vi.mock('../features/actions/mobile-actions-service', () => ({
+  SPONTANEOUS_PENDING_ORGANIZER_LABEL: 'Organisateur en attente de compte',
   MOBILE_ORGANIZER_TYPE_OPTIONS: [
     { value: 'spontaneous', label: 'Action spontanée' },
     { value: 'company', label: 'Entreprise' },

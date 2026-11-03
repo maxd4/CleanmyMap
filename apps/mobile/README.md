@@ -207,7 +207,10 @@ sous-vues existantes.
   premier écran demande le type d'organisateur du contrat canonique (`Action
   spontanée`, `Entreprise`, `Association`, `Association étudiante`, `Collectif`
   ou `Autre`) et, lorsque nécessaire, son nom ; aucune valeur `association`
-  n'est injectée par défaut. Le brouillon local est une aide de reprise ; une lecture AsyncStorage échouée
+  n'est injectée par défaut. Pour une action spontanée, l'interface propose
+  explicitement `Organisateur en attente de compte` lorsqu'aucun compte n'est
+  sélectionné ; un nom libre ne devient jamais une identité de compte et une
+  configuration ambiguë est refusée avant l'appel serveur. Le brouillon local est une aide de reprise ; une lecture AsyncStorage échouée
   bloque toute écriture locale jusqu'à une récupération explicite, et la
   publication n'est confirmée qu'après réponse serveur. Chaque brouillon
   conserve une clé de création stable, envoyée dans `Idempotency-Key` lors du

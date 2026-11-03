@@ -18,6 +18,7 @@ import {
   trackServerEventMock,
   resetSubmitRouteMocks,
 } from "./route.submit.test.harness";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 
 const completeParticipationInput = {
   childrenCount: 0,
@@ -103,6 +104,38 @@ describe("POST /api/actions — création standard et pré-action", () => {
       actionId: "action-test-1",
     });
     expect(trackServerEventMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it.each([
+    {
+      label: "sans compte ni option d'attente",
+      overrides: { organizerAccounts: [] as string[], organizerName: undefined },
+      status: 422,
+    },
+    {
+      label: "avec organisateur en attente",
+      overrides: { organizerAccounts: [] as string[], organizerName: SPONTANEOUS_PENDING_ORGANIZER_LABEL },
+      status: 201,
+    },
+    {
+      label: "avec compte identifié",
+      overrides: { organizerAccounts: ["user-test-1"] as string[], organizerName: undefined },
+      status: 201,
+    },
+    {
+      label: "avec nom libre non rattaché",
+      overrides: { organizerAccounts: [] as string[], organizerName: "Collectif non rattaché" },
+      status: 422,
+    },
+  ])("applique le contrat serveur aux payloads mobiles: $label", async ({ overrides, status }) => {
+    const response = await postSubmitPayload(buildSubmitPayload(overrides));
+
+    expect(response.status).toBe(status);
+    if (status === 201) {
+      expect(createActionMock).toHaveBeenCalledTimes(1);
+    } else {
+      expect(createActionMock).not.toHaveBeenCalled();
+    }
   }, 15000);
 
   it("refuses creation without an authenticated identity before parsing or writing", async () => {

@@ -91,6 +91,10 @@ export const MOBILE_ORGANIZER_TYPE_OPTIONS = [
   { value: 'other', label: 'Autre' },
 ] as const
 
+// Wire value required by the canonical server Actions contract for a
+// preparatory spontaneous action without a resolved organizer account.
+export const SPONTANEOUS_PENDING_ORGANIZER_LABEL = 'Organisateur en attente de compte'
+
 export type MobileOrganizerType = typeof MOBILE_ORGANIZER_TYPE_OPTIONS[number]['value']
 
 export function isMobileOrganizerType(value: unknown): value is MobileOrganizerType {
