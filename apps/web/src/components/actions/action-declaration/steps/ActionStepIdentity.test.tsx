@@ -96,6 +96,25 @@ describe("ActionStepIdentity", () => {
     expect(html).toContain("Fin de l’événement");
   });
 
+  it.each([
+    ["explicit school context", { actionContext: "school" as const }],
+    [
+      "suggested school context",
+      { volunteersCount: "3", childrenCount: "3", retiredCount: "0" },
+    ],
+  ])("shows school safety guidance for %s", (_label, overrides) => {
+    const form = createInitialFormState("Aperçu local", "action");
+    Object.assign(form, overrides);
+
+    const html = renderIdentity(form, undefined, "participants");
+
+    expect(html).toContain('href="/learn/ecole"');
+    expect(html).toContain("Élèves encadrés par des adultes");
+    expect(html).toContain("déchets ordinaires");
+    expect(html).toContain("mégots et objets dangereux");
+    expect(html).toContain("gants, pinces et sacs adaptés");
+  });
+
   it("renders one accessible organizer combobox per organizer type", () => {
     for (const organizerType of ORGANIZER_TYPE_VALUES) {
       const form = createInitialFormState("Aperçu local", "action");

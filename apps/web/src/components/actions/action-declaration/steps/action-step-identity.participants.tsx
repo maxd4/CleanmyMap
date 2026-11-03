@@ -82,7 +82,7 @@ function ParticipantContextControl({
       {schoolJourneySuggested ? (
         <div className="space-y-2 rounded-lg border border-sky-900/10 bg-sky-50/70 p-3 text-xs text-sky-950">
           <p className="font-semibold">Parcours école : <a className="underline" href="/learn/ecole">ouvrir</a></p>
-          <p>Élèves : déchets ordinaires · adultes : mégots et objets à risque.</p>
+          <p>Élèves encadrés par des adultes pour les déchets ordinaires · adultes : mégots et objets dangereux, avec gants, pinces et sacs adaptés.</p>
           {form.actionContext === "" ? (
             <p className="font-semibold text-sky-900">
               Proposition uniquement.
