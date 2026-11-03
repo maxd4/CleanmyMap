@@ -2,10 +2,7 @@
 
 import { Cigarette } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
-import {
-  CIGARETTE_BUTTS_PER_VOLUME_LITER,
-  MAX_CIGARETTE_BUTTS_COUNT,
-} from "@/lib/waste/cigarette-butts";
+import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
 import { ButtsComparisonVisual, DropletGauge } from "../ui/harvest-gauges";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
@@ -14,19 +11,16 @@ import {
   calculateCigaretteButtsLot,
   type CigaretteButtsLotInput,
 } from "@/lib/waste/cigarette-butts";
-import {
-  CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
-} from "@/lib/impact/impact-terrain-2026";
 import type { CigaretteButtsLotDraft } from "../model";
 
 function formatProvenance(provenance: string): string {
   switch (provenance) {
     case "counted": return "compté";
     case "measured": return "mesuré";
-    case "weight_converted": return "dérivé par conversion de masse";
-    case "volume_converted": return "dérivé par conversion de volume";
+    case "weight_converted": return "estimé";
+    case "volume_converted": return "estimé";
     case "estimated": return "estimé";
-    case "unknown": return "historique conservé, origine non qualifiée";
+    case "unknown": return "non qualifié";
     default: return "non renseigné";
   }
 }
@@ -39,7 +33,7 @@ function MegotsHeader({
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
         <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center"><Cigarette size={15} className="text-amber-600" /></div>
-        <div><p className="text-sm font-semibold text-slate-900">Mégots collectés</p><p className="text-xs text-slate-500">Nombre et masse restent tracés séparément</p></div>
+        <div><p className="text-sm font-semibold text-slate-900">Mégots collectés</p><p className="text-xs text-slate-500">Nombre et masse séparés.</p></div>
       </div>
       {megotsCount !== null ? <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{provenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots</span> : null}
     </div>
@@ -138,7 +132,7 @@ function MegotsLotEditor({
           </select>
         </label>
       </div>
-      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {result.massKg === null ? "masse indisponible" : `${formatKg(result.massKg)} kg ${result.massProvenance === "measured" ? "mesurés" : "estimés"}`}{result.source === "volume_l" ? ` · proxy ${CIGARETTE_BUTTS_PER_VOLUME_LITER} mégots/L` : ""}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative pour calculer ce lot.</p>}
+      {result ? <p className="text-xs leading-5 text-amber-800">Équivalents : {formatCount(result.count)} mégots · {result.massKg === null ? "masse indisponible" : `${formatKg(result.massKg)} kg ${result.massProvenance === "measured" ? "mesurés" : "estimés"}`}.</p> : <p className="text-xs text-slate-500">Saisissez une valeur non négative.</p>}
     </div>
   );
 }
@@ -158,7 +152,6 @@ export function HarvestMegotsSection({
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
   cigaretteButtsVolumeProvenance,
-  cigaretteButtsConversionFormulaVersion,
   megotsLots = null,
   megotsCounted = 0,
   megotsEstimated = 0,
@@ -191,12 +184,12 @@ export function HarvestMegotsSection({
           <option value="mouille">Très mouillé</option>
         </select>
         <span className="block text-xs leading-snug text-slate-400">
-          Conversion estimative versionnée : 0,22 g/mégot sec, 0,50 g/mégot humide ou mouillé ; le mouillé réutilise le proxy humide faute de référence indépendante.
+          État appliqué au calcul.
         </span>
       </label>
 
       <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-        Ajoutez un lot par collecte distincte. Un lot possède une seule mesure source ; les équivalents sont calculés côté serveur et le total ne compte jamais deux fois le même lot. Le volume utilise le repère estimatif courant de {CIGARETTE_BUTTS_PER_VOLUME_LITER} mégots/L ; les historiques conservent leur version.
+        Une mesure source par lot.
       </p>
 
       {megotsLots !== null ? (
@@ -207,7 +200,6 @@ export function HarvestMegotsSection({
             <p className="font-semibold text-slate-800">Total des lots</p>
             <p>{formatCount(megotsCounted)} comptés · {formatCount(megotsEstimated)} estimés</p>
             <p>{formatKg(megotsMeasuredMassKg)} kg mesurés · {formatKg(megotsEstimatedMassKg)} kg estimés</p>
-            <p className="mt-1 text-slate-500">Conversion masse/nombre : {CIGARETTE_BUTTS_MASS_CONVERSION_VERSION}. Les valeurs sont des ordres de grandeur variables, pas une masse physique universelle.</p>
           </div>
         </div>
       ) : null}
@@ -263,23 +255,17 @@ export function HarvestMegotsSection({
               <div>
                 <p className="text-xs font-semibold text-amber-800">Nombre retenu</p>
                 <p className="text-sm font-bold text-amber-900">{formatCount(megotsCount)} mégots</p>
-                <p className="mt-1 text-xs text-amber-700">Provenance : {formatProvenance(cigaretteButtsCountProvenance)}.</p>
+                <p className="mt-1 text-xs text-amber-700">Statut : {formatProvenance(cigaretteButtsCountProvenance)}.</p>
               </div>
             ) : null}
             {megotsKg !== null ? (
               <div>
                 <p className="text-xs font-semibold text-amber-800">Masse retenue</p>
                 <p className="text-sm font-bold text-amber-900">{formatKg(megotsKg)} kg</p>
-                <p className="mt-1 text-xs text-amber-700">Provenance : {formatProvenance(cigaretteButtsMassProvenance)}.</p>
+                <p className="mt-1 text-xs text-amber-700">Statut : {formatProvenance(cigaretteButtsMassProvenance)}.</p>
               </div>
             ) : null}
           </div>
-          <p className="mt-1 text-xs leading-snug text-amber-700">
-            État : “{wasteMegotsCondition}”.
-            {cigaretteButtsConversionFormulaVersion
-              ? ` Formule : ${cigaretteButtsConversionFormulaVersion}.`
-              : ""}
-          </p>
         </div>
       ) : null}
 
@@ -307,11 +293,11 @@ export function HarvestMegotsSection({
           placeholder="Ex : 1,5"
         />
         <span className="block text-xs leading-snug text-slate-400">
-          Mesure complémentaire conservée séparément ; elle ne remplace ni le nombre ni la masse.
+          Mesure complémentaire, séparée.
         </span>
         {cigaretteButtsVolumeLiters.trim() ? (
           <span className="block text-xs leading-snug text-slate-500">
-            Provenance : {formatProvenance(cigaretteButtsVolumeProvenance)}.
+            Statut : {formatProvenance(cigaretteButtsVolumeProvenance)}.
           </span>
         ) : null}
       </label> : null}

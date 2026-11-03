@@ -134,7 +134,7 @@ export function ActionDeclarationFormConfirmation({
           {isCleanPlaceMode ? "Confirmer le lieu propre" : "Confirmer l’action réalisée"}
         </h2>
         <p id="action-declaration-confirmation-description" className="mt-2 text-sm leading-6 text-emerald-950">
-          Vérifiez ces éléments essentiels. Modifier revient au formulaire sans perdre vos valeurs.
+          Vérifiez les valeurs avant envoi.
         </p>
       </div>
 

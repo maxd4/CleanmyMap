@@ -19,7 +19,7 @@ export function PlannedActionSection({
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
       <div className="space-y-7">
-        <SectionLabel icon={Sparkles} title="Action prévue" subtitle="Le contenu nécessaire avant le terrain, sans les champs de récolte réelle." />
+        <SectionLabel icon={Sparkles} title="Action prévue" />
         <PlannedActionPresentationSection form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
         <ScheduleFields form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
         <PlannedActionLocationSection

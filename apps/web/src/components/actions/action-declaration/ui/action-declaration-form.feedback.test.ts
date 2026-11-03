@@ -59,7 +59,7 @@ describe("ActionDeclarationFormFeedback", () => {
     const markup = renderFeedback();
 
     expect(markup).toContain("Créer un formulaire");
-    expect(markup).toContain("Cette action pourra être rejointe après validation.");
+    expect(markup).toContain("Partage possible après validation.");
     expect(markup).toContain("/sections/rejoindre-une-action?actionId=action-123");
     expect(markup).toContain("Copier le lien");
     expect(markup).toContain("Aucun impact ou bonus n&#x27;est affiché sans preuve enregistrée.");
@@ -97,8 +97,8 @@ describe("ActionDeclarationFormFeedback", () => {
     expect(markup).toContain("Données enregistrées");
     expect(markup).toContain("4 kg");
     expect(markup).toContain("CO₂e évité");
-    expect(markup).toContain("Proxy");
-    expect(markup).toContain("Confiance des données");
+    expect(markup).not.toContain("Proxy");
+    expect(markup).not.toContain("Confiance des données");
     expect(markup).toContain("Aucun XP attribué à ce stade");
     expect(markup).not.toContain("Badge attribué:");
     expect(markup).toContain("/actions/map");

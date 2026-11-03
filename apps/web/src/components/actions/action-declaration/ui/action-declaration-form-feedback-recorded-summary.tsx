@@ -1,6 +1,5 @@
 import type { PostActionSummary } from "@/lib/actions/post-action-summary";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
-import { formatScorePercent } from "@/lib/formatters/score";
 
 type ActionDeclarationFormFeedbackRecordedSummaryProps = {
   summary: PostActionSummary;
@@ -21,7 +20,7 @@ export function ActionDeclarationFormFeedbackRecordedSummary({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">
-            Données enregistrées · confirmation exploitable
+            Données enregistrées
           </p>
           <p className="mt-1 text-sm font-bold text-emerald-950">
             {summary.action.locationLabel} · {summary.action.actionDate}
@@ -60,9 +59,6 @@ export function ActionDeclarationFormFeedbackRecordedSummary({
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-800">Résumé de l&apos;impact</p>
-          <span className="cmm-text-small font-semibold text-emerald-900/70">
-            Confiance des données: {formatScorePercent(summary.quality.score)} ({summary.quality.grade})
-          </span>
         </div>
         <div className="mt-2 grid gap-2 md:grid-cols-3">
           {summary.impact.map((metric) => (
@@ -71,13 +67,9 @@ export function ActionDeclarationFormFeedbackRecordedSummary({
               <p className="mt-1 text-xl font-black text-emerald-950">
                 {formatMeasuredValue(metric.value, metric.value === null ? "" : ` ${metric.unit}`)}
               </p>
-              <p className="mt-1 cmm-text-small leading-4 text-emerald-900/65">{metric.method}</p>
             </div>
           ))}
         </div>
-        <p className="mt-2 cmm-text-small leading-4 text-emerald-900/65">
-          {summary.methodology.label} · {summary.methodology.version} · confiance calculée avec les règles {summary.quality.rulesVersion}.
-        </p>
       </div>
     </div>
   );

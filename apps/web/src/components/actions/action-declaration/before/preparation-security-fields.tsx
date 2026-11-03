@@ -32,17 +32,17 @@ export function PreparationSecurityFields({ form, updateField }: BaseSectionProp
             {dangerousGuidance.length > 0 ? <p>Vigilances et interdictions : {dangerousGuidance.join(" · ")}</p> : null}
           </div>
         ) : (
-          <p className="mt-2 leading-6">Aucune recommandation automatique pour les déchets attendus renseignés.</p>
+          <p className="mt-2 leading-6">Aucune recommandation.</p>
         )}
         <p className="mt-2 text-xs leading-5 text-amber-900/75">
-          Ces indications sont en lecture seule, restent séparées de vos consignes et ne sont pas enregistrées dans le texte organisateur.
+          Lecture seule · séparées des consignes.
         </p>
       </aside>
 
       <CmmField
         id="before-safety-instructions"
         label="Consignes particulières de l'organisateur"
-        hint={`Consignes courtes et concrètes pour le groupe. ${characterLimitHint(form.safetyInstructions, PREPARATION_FIELD_LIMITS.safetyInstructions)}`}
+        hint={`Consignes pour le groupe. ${characterLimitHint(form.safetyInstructions, PREPARATION_FIELD_LIMITS.safetyInstructions)}`}
         error={safetyError}
       >
         <CmmTextarea

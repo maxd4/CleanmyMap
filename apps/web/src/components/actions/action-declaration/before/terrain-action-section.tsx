@@ -55,7 +55,6 @@ export function TerrainActionSection({
         <SectionLabel
           icon={MapPinned}
           title="Carte et mode d’intervention"
-          subtitle="Choisissez une zone fixe, un parcours ou plusieurs zones. Le rendez-vous reste distinct du secteur et de l’itinéraire."
         />
         <fieldset className="space-y-3" data-testid="intervention-mode-selector">
           <legend className="text-sm font-black text-emerald-950">Comment souhaitez-vous intervenir ?</legend>
@@ -80,7 +79,7 @@ export function TerrainActionSection({
         {pendingFixedAreaConfirmation ? (
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" role="alert" data-testid="fixed-area-route-replacement-confirmation">
             <p className="font-black">Remplacer le parcours conservé par une zone fixe ?</p>
-            <p className="mt-1 leading-6">Cette décision retire le parcours et ses distances de cette préparation, sans modifier le rendez-vous, la date ni les horaires.</p>
+            <p className="mt-1 leading-6">Le parcours et ses distances seront retirés.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" onClick={confirmFixedArea} className="rounded-full bg-amber-700 px-4 py-2 text-xs font-black text-white">Confirmer la zone fixe</button>
               <button type="button" onClick={() => setPendingFixedAreaConfirmation(false)} className="rounded-full border border-amber-300 px-4 py-2 text-xs font-black text-amber-950">Conserver le parcours</button>
@@ -110,7 +109,7 @@ export function TerrainActionSection({
               hasAttemptedSubmit={hasAttemptedSubmit}
               validationIssueFields={validationIssueFields}
             />
-          </> : <p className="rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-sm leading-6 text-sky-950">Zone fixe : renseignez le secteur et le point de rendez-vous. Aucun tracé, distance ou géométrie d’itinéraire n’est requis.</p>}
+          </> : <p className="rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-sm leading-6 text-sky-950">Zone fixe : secteur et rendez-vous.</p>}
         </div>
         {isRouteInterventionMode(mode) && form.operationalRoute ? (
           <CmmDisclosure
@@ -118,7 +117,7 @@ export function TerrainActionSection({
             tone="emerald"
             size="sm"
           >
-            <p className="mb-3 text-sm text-emerald-900/70">Le parcours calculé par le planificateur est repris ici sans nouvelle géométrie.</p>
+            <p className="mb-3 text-sm text-emerald-900/70">Parcours calculé conservé.</p>
             <OperationalRouteEditor
               operationalRoute={form.operationalRoute}
               onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)}

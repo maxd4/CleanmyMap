@@ -36,9 +36,9 @@ describe("HarvestMegotsSection", () => {
 
     expect(markup).toContain('id="harvest-megots-count"');
     expect(markup).toContain('value=""');
-    expect(markup).toContain("dérivé par conversion de masse");
-    expect(markup).toContain("Provenance : mesuré");
-    expect(markup).toContain("Formule : impact-terrain-2026-butts-mass-v1");
+    expect(markup).toContain("Statut : estimé");
+    expect(markup).toContain("Statut : mesuré");
+    expect(markup).not.toContain("Formule :");
     expect(markup).toContain('id="harvest-megots-condition"');
     expect(markup).toContain('data-testid="butts-measurement-visual"');
     expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
@@ -57,8 +57,8 @@ describe("HarvestMegotsSection", () => {
       cigaretteButtsVolumeProvenance: "unknown",
     });
 
-    expect(markup).toContain("Provenance : historique conservé, origine non qualifiée");
-    expect(markup).not.toContain("Provenance : mesuré");
+    expect(markup).toContain("Statut : non qualifié");
+    expect(markup).not.toContain("Statut : mesuré");
   });
 
   it("shows an explicit zero but does not manufacture one for an absent value", () => {
@@ -114,10 +114,10 @@ describe("HarvestMegotsSection", () => {
       onMoveMegotsLot: () => undefined,
     });
 
-    expect(markup).toContain("Ajoutez un lot par collecte distincte");
+    expect(markup).toContain("Une mesure source par lot");
     expect(markup).toContain("100 comptés");
     expect(markup).toContain("300 estimés");
-    expect(markup).toContain("700 mégots/L");
+    expect(markup).not.toContain("mégots/L");
     expect(markup).toContain('data-testid="megots-lot-counted"');
     expect(markup).toContain('data-testid="megots-lot-volume"');
   });

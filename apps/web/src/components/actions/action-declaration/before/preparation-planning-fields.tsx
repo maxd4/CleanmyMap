@@ -24,7 +24,6 @@ export function PreparationPlanningFields({
         <SectionLabel
           icon={ClipboardList}
           title="Prévisions et informations pratiques"
-          subtitle="Les informations utiles à préparer avant le terrain, sans les mesures réellement collectées."
         />
         <VolunteerForecast
           form={form}
@@ -35,7 +34,7 @@ export function PreparationPlanningFields({
         <CmmField
           id="before-participant-message"
           label="Message complémentaire aux participants"
-          hint="Accueil et consignes utiles avant l’action."
+          hint="Consigne d’accueil."
         >
           <CmmTextarea
             value={form.participantMessage}

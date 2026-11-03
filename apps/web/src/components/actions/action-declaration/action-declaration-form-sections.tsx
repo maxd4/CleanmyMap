@@ -34,7 +34,7 @@ function GroupHeading({
   id: string;
   number: string;
   title: string;
-  description: string;
+  description?: string;
 }) {
   return (
     <div className="flex flex-col gap-2 border-b border-emerald-200/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
@@ -42,7 +42,7 @@ function GroupHeading({
         <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">{number}</p>
         <h3 id={id} className="mt-1 text-xl font-black tracking-tight text-emerald-950">{title}</h3>
       </div>
-      <p className="max-w-xl text-sm leading-6 text-emerald-900">{description}</p>
+      {description ? <p className="max-w-xl text-sm leading-6 text-emerald-900">{description}</p> : null}
     </div>
   );
 }
@@ -60,7 +60,6 @@ function ActionTitleField({ form, updateField }: Pick<IdentityProps, "form" | "u
         onChange={(event) => updateField("actionTitle", event.target.value)}
         placeholder="Ex. Nettoyage des quais"
       />
-      <span className="block text-xs text-emerald-900/55">Un titre aide à retrouver l’action sans remplacer ses données de terrain.</span>
     </label>
   );
 }
@@ -101,12 +100,11 @@ function ActionDeclarationReviewSummary({
         <div className="rounded-xl border border-emerald-200/70 bg-white px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700/75">Participants</p>
           <p className="mt-1 text-sm font-bold text-emerald-950">{form.recordType === "action" ? form.volunteersCount || "Effectif à renseigner" : "Non applicable"}</p>
-          <p className="mt-1 text-xs text-emerald-900/60">Présence réelle déclarée séparément des comptes.</p>
+          <p className="mt-1 text-xs text-emerald-900/60">Présence terrain distincte.</p>
         </div>
         <div className="rounded-xl border border-emerald-200/70 bg-white px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700/75">Résultat</p>
           <p className="mt-1 text-sm font-bold text-emerald-950">{form.recordType === "clean_place" ? "Lieu propre" : form.wasteKg || "Mesure à renseigner"}</p>
-          <p className="mt-1 text-xs text-emerald-900/60">Mesures brutes, sans proxy d’impact.</p>
         </div>
       </div>
     </div>
@@ -128,7 +126,7 @@ function getReviewValidationPresentation({
 }) {
   if (!hasAttemptedSubmit || validationStatus === "not_attempted") {
     return {
-      label: "La validation complète sera lancée par le bouton principal.",
+      label: "Validation en attente.",
       tone: "border-sky-200 bg-sky-50 text-sky-950",
       success: false,
     };
@@ -260,7 +258,7 @@ export function ActionDeclarationFormSections({
       ) : null}
 
       <section id="action-declaration-identify" aria-labelledby="action-declaration-identify-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
-        <GroupHeading id="action-declaration-identify-title" number="01" title="Identifier l’action" description="Rattachez le bilan à l’action réalisée, à son organisateur et à son lieu de référence." />
+        <GroupHeading id="action-declaration-identify-title" number="01" title="Identifier l’action" />
         <ActionTitleField form={identity.form} updateField={identity.updateField} />
         <ActionOrganizerSection
           form={identity.form}
@@ -288,7 +286,7 @@ export function ActionDeclarationFormSections({
 
       {isActionMode ? (
         <section id="action-declaration-participants" aria-labelledby="action-declaration-participants-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
-          <GroupHeading id="action-declaration-participants-title" number="02" title="Déclarer les participants" description="Commencez par l’effectif réellement présent ; la répartition et les comptes connus restent facultatifs." />
+          <GroupHeading id="action-declaration-participants-title" number="02" title="Déclarer les participants" />
           <ActionParticipantSection
             form={identity.form}
             updateField={identity.updateField}
@@ -297,7 +295,7 @@ export function ActionDeclarationFormSections({
             isActionMode
           />
           <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 px-4 py-3 text-xs leading-5 text-sky-950">
-            Les participants déclarés correspondent aux personnes présentes sur le terrain. Les comptes identifiés sont une information complémentaire et ne prouvent pas une présence.
+            Présence terrain distincte des comptes identifiés.
           </p>
           <ActionParticipantSection
             form={identity.form}
@@ -312,16 +310,16 @@ export function ActionDeclarationFormSections({
       ) : null}
 
       <section id="action-declaration-results" aria-labelledby="action-declaration-results-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
-        <GroupHeading id="action-declaration-results-title" number="03" title="Déclarer les résultats collectés" description="Saisissez les mesures observées, leur contexte de tri, les photos et vos observations, au même endroit." />
+        <GroupHeading id="action-declaration-results-title" number="03" title="Déclarer les résultats collectés" />
         <ActionStepHarvest {...harvest} mode="all" />
       </section>
 
       <section id="action-declaration-terrain" aria-labelledby="action-declaration-terrain-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
-        <GroupHeading id="action-declaration-terrain-title" number="04" title="Documenter le terrain" description="Décrivez l’environnement et le parcours réellement réalisé ; les informations préparées restent identifiées comme telles." />
+        <GroupHeading id="action-declaration-terrain-title" number="04" title="Documenter le terrain" />
         {showPreparationSummary ? (
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3">
             <p className="text-sm font-bold text-amber-950">Préparation existante reprise</p>
-            <p className="mt-1 text-xs leading-5 text-amber-950/75">Ces informations servent de contexte de préparation. Elles ne remplacent pas les observations et mesures de cette action.</p>
+            <p className="mt-1 text-xs leading-5 text-amber-950/75">Contexte préparé · non observé.</p>
           </div>
         ) : null}
         <ActionCollectionSection form={identity.form} updateField={identity.updateField} variant="full" />
@@ -331,7 +329,7 @@ export function ActionDeclarationFormSections({
 
       <section id="action-declaration-review" aria-labelledby="action-declaration-review-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
         <div className="flex flex-col gap-3 border-b border-emerald-200/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
-          <GroupHeading id="action-declaration-review-title" number="05" title="Vérifier et transmettre" description="Relisez les informations essentielles puis lancez la validation complète avant d’ouvrir la confirmation." />
+          <GroupHeading id="action-declaration-review-title" number="05" title="Vérifier et transmettre" />
           <button type="button" onClick={onOpenExport} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30">
             <Download size={14} aria-hidden="true" />
             Exporter le récapitulatif
@@ -349,8 +347,8 @@ export function ActionDeclarationFormSections({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-emerald-900/65">
               {hasAttemptedSubmit && validationIssues.length > 0
-                ? "Corrigez les points signalés avant d’ouvrir la confirmation."
-                : "La confirmation ne s’ouvrira que si les données sont valides."}
+                ? "Corrigez les points signalés."
+                : "Données valides requises."}
             </p>
             <CmmButton
               type="submit"

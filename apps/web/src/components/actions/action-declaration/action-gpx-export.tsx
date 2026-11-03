@@ -58,7 +58,7 @@ export function ActionGpxExportButton({
             Exporter en GPX
           </p>
           <p className="mt-1 text-xs text-sky-800/70">
-            La géométrie finale actuelle est exportée telle quelle, sans reconstruction.
+            Géométrie exportée telle quelle.
           </p>
           {estimated ? (
             <p className="mt-1 text-xs font-semibold text-amber-700">

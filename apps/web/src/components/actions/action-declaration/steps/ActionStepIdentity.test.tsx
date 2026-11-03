@@ -91,7 +91,7 @@ describe("ActionStepIdentity", () => {
     const html = renderIdentity(form);
 
     expect(html).toContain("Participants & temps d’action");
-    expect(html).toContain("marche, le ramassage, le tri et la pesée");
+    expect(html).toContain("Durée estimée");
     expect(html).toContain("Début de l’événement");
     expect(html).toContain("Fin de l’événement");
   });
@@ -228,7 +228,7 @@ describe("ActionStepIdentity", () => {
 
     const organizationHtml = renderIdentity(form, undefined, "organization");
     expect(organizationHtml).toContain("Organisateurs associés");
-    expect(organizationHtml).toContain("Comptes identifiés uniquement");
+    expect(organizationHtml).toContain("Comptes identifiés ; présence non confirmée.");
     expect(organizationHtml).not.toContain("Environnement de collecte");
 
     const collectionHtml = renderIdentity(form, undefined, "collection");

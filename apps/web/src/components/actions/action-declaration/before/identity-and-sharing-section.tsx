@@ -63,7 +63,6 @@ export function IdentityAndSharingSection({
         <SectionLabel
           icon={ClipboardList}
           title="Identité et organisation"
-          subtitle="Qui porte le formulaire, dans quel cadre, et si le groupe peut rejoindre l'action."
         />
 
         <IdentityFieldGrid
@@ -163,7 +162,7 @@ function IdentityFieldGrid({
         {creatorHandle ? <span className="mt-1 block text-xs text-emerald-900/60">@{creatorHandle}</span> : null}
       </FieldShell>
 
-      <FieldShell label={<span>Type de structure<RequiredMark /></span>} hint="Indiquez le cadre de l’action, indépendamment du nom de l’organisateur.">
+      <FieldShell label={<span>Type de structure<RequiredMark /></span>}>
         <select
           id="before-organizer-type"
           value={form.organizerType}
@@ -224,7 +223,7 @@ function AssociatedAccountsFields({
           onChange={(next) => updateField("organizerAccounts", next.join(", "))}
           endpoint="/api/actions/account-options"
           title="Organisateurs associés"
-          description="Recherchez jusqu’à 20 comptes CleanMyMap. Leur sélection crée une relation d’organisateur, pas une présence terrain."
+          description="20 comptes max · relation organisateur."
           maxSelected={20}
           roleOptions={ACTION_FIELD_ROLE_OPTIONS.filter(({ code }) => code !== "organizer_primary")}
           roleSelections={form.fieldRoleSelections}
@@ -246,7 +245,7 @@ export function VolunteerRegistrationPanel({
 }: Pick<IdentityAndSharingSectionProps, "form" | "updateField" | "userMetadata" | "showGroupJoinHelp" | "onToggleGroupJoinHelp" | "invitationStatuses" | "embedded">) {
   const content = (
     <div className="space-y-5">
-        <SectionLabel icon={Users} title="Inscriptions des bénévoles" subtitle="Demandes d’inscription et membres à inviter avant la publication." />
+        <SectionLabel icon={Users} title="Inscriptions des bénévoles" />
         <VolunteerRegistrationSection
           groupJoinEnabled={form.groupJoinEnabled}
           accessMode={form.accessMode}
@@ -291,7 +290,7 @@ function VolunteerRegistrationSection({
           Inscriptions des bénévoles
         </h3>
         <p className="cmm-text-body cmm-text-primary max-w-3xl">
-          {accessMode === "invite_link" ? "Les demandes passent par le lien privé ; ajoutez, si besoin, des membres déjà connus." : "Choisissez si les demandes publiques sont ouvertes et ajoutez, si besoin, des membres déjà connus."}
+          {accessMode === "invite_link" ? "Demandes via lien privé." : "Demandes publiques ou membres invités."}
         </p>
       </div>
 
@@ -309,7 +308,7 @@ function VolunteerRegistrationSection({
           size="sm"
         >
           <p className="mb-3 text-xs leading-5 text-emerald-900/68">
-            Les membres ajoutés recevront une invitation après la publication de l&apos;action. Leur réponse ne vaut pas présence sur le terrain.
+            Invitation après publication · présence non confirmée.
           </p>
           <ActionParticipantPicker
             currentUserId={currentUserId}

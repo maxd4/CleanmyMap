@@ -39,8 +39,7 @@ export function OperationalRouteEditor({
           Ajuster le parcours prévu
         </h3>
         <p className="mt-1 text-xs leading-5 text-emerald-900/60">
-          Cette copie mutable issue du planner peut changer sans modifier le snapshot historique.
-          Elle décrit le parcours prévu, pas un parcours réellement observé ou une preuve GPS.
+          Parcours prévu · non observé.
         </p>
       </div>
 
@@ -87,7 +86,7 @@ export function OperationalRouteEditor({
         </p>
         {operationalRoute.guidedBudget ? (
           <p className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-950">
-            Planification guidée · {operationalRoute.guidedBudget.totalMinutes} min au total · {operationalRoute.guidedBudget.organizationMarginMinutes} min organisation · {operationalRoute.guidedBudget.travelMaxMinutes} min déplacement max · {operationalRoute.guidedBudget.minimumCollectionMinutes} min collecte réservée
+            Budget : {operationalRoute.guidedBudget.totalMinutes} min · collecte {operationalRoute.guidedBudget.minimumCollectionMinutes} min
           </p>
         ) : null}
         {operationalRoute.plannerWarnings?.map((warning) => (
@@ -121,7 +120,7 @@ export function OperationalRouteEditor({
           </div>
         )) : (
           <p className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Aucune boucle opérationnelle active. Le snapshot planner reste conservé pour la traçabilité.
+            Aucune boucle active.
           </p>
         )}
       </div>

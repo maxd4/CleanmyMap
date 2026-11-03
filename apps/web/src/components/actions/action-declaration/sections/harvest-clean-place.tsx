@@ -14,7 +14,7 @@ export function HarvestCleanPlaceSection() {
             </p>
           </div>
           <p className="mt-1 text-xs font-medium text-sky-900/70">
-            Ce mode enregistre un point déjà propre. Les champs déchets et mégots sont masqués, la photo et le contexte restent disponibles.
+            Point déjà propre · déchets et mégots masqués.
           </p>
         </div>
         <div className="rounded-full border border-sky-200 bg-white px-3 py-2 text-[10px] font-black text-sky-700 shadow-sm">
@@ -26,7 +26,7 @@ export function HarvestCleanPlaceSection() {
           Point d&apos;entrée
         </p>
         <p className="mt-1 text-sm font-semibold text-sky-900">
-          Renseigne le lieu puis ajoute des photos ou une note pour documenter le point propre.
+          Lieu, photos ou note.
         </p>
       </div>
     </section>

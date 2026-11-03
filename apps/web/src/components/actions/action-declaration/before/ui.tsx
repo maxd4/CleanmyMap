@@ -12,7 +12,7 @@ export function SectionLabel({
 }: {
   icon: LucideIcon;
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }) {
   return (
     <div className="flex items-start gap-3 border-b border-emerald-100/80 pb-4">
@@ -21,7 +21,7 @@ export function SectionLabel({
       </div>
       <div>
         <h3 className="text-xl font-black tracking-tight text-emerald-950">{title}</h3>
-        <p className="cmm-text-body cmm-text-primary mt-1 max-w-3xl">{subtitle}</p>
+        {subtitle ? <p className="cmm-text-body cmm-text-primary mt-1 max-w-3xl">{subtitle}</p> : null}
       </div>
     </div>
   );
@@ -75,7 +75,7 @@ export function GroupJoinPublishCard({
             Autoriser les demandes d&apos;inscription
           </label>
           <p id={helpId} className="text-xs leading-5 text-emerald-900/66">
-            Ouvrir les inscriptions ne publie pas l&apos;action. Les demandes ne deviennent possibles qu&apos;après sa publication.
+            Ouverture après publication.
           </p>
         </div>
         <button
@@ -91,7 +91,7 @@ export function GroupJoinPublishCard({
       </div>
       {showHelp ? (
         <p id="before-group-join-help-details" className="mt-3 rounded-lg border border-emerald-100/80 bg-emerald-50/70 px-3 py-2 text-xs leading-5 text-emerald-900/72">
-          Cette option rend uniquement la préparation visible dans la page Rejoindre une action ; elle ne publie pas les champs de récolte finale.
+          Préparation visible ; récolte finale non publiée.
         </p>
       ) : null}
     </div>

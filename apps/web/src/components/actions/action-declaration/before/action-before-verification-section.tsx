@@ -146,7 +146,7 @@ function ActionBeforeVerificationView({
         <div>
           <p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">Vérifier et publier</p>
           <h3 className="mt-2 text-2xl font-black tracking-tight text-emerald-950">Un dernier regard sur votre action</h3>
-          <p className="cmm-text-body cmm-text-primary mt-2 max-w-2xl">Les formalités et les contrôles restent distincts de l’enregistrement. Vous pouvez enregistrer maintenant et reprendre cette même action plus tard.</p>
+          <p className="cmm-text-body cmm-text-primary mt-2 max-w-2xl">Relecture avant publication.</p>
         </div>
         <CmmPill tone={readinessTone} size="sm">{readinessLabel}</CmmPill>
       </div>
@@ -165,7 +165,7 @@ function ActionBeforeVerificationView({
 function ActionBeforeReviewGroups({ corrections, checks, suggestions }: Pick<ActionBeforeVerificationViewProps, "corrections" | "checks" | "suggestions">) {
   return <div className="grid gap-3 lg:grid-cols-3" data-testid="action-publication-review-groups">
     <ReviewGroup title="À corriger avant publication" tone="rose" items={corrections.length > 0 ? corrections : ["Aucun blocage démontré."]} />
-    <ReviewGroup title="À vérifier" tone="amber" items={checks.length > 0 ? checks : ["Les informations affichées sont issues des données actuellement saisies."]} />
+    <ReviewGroup title="À vérifier" tone="amber" items={checks.length > 0 ? checks : ["Données saisies."]} />
     <ReviewGroup title="Suggestions" tone="sky" items={suggestions.length > 0 ? suggestions : ["Aucune suggestion supplémentaire."]} />
   </div>;
 }
@@ -233,7 +233,7 @@ function PreviewWeatherValue({
     <dd className="mt-1 whitespace-pre-line leading-5 text-sky-950">
       {checklist.weatherState === "success"
         ? checklist.weatherRecommendations.map((item) => item.label).join(" · ") || "Aucune recommandation météo particulière."
-        : <div className="space-y-2"><p>{checklist.weatherState === "idle" ? "Les recommandations météo sont calculées uniquement sur demande." : checklist.weatherMessage}</p><CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onRequest} disabled={checklist.weatherState === "loading"} aria-busy={checklist.weatherState === "loading"}>Voir les recommandations selon la météo</CmmButton></div>}
+        : <div className="space-y-2"><p>{checklist.weatherState === "idle" ? "Météo sur demande." : checklist.weatherMessage}</p><CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onRequest} disabled={checklist.weatherState === "loading"} aria-busy={checklist.weatherState === "loading"}>Voir la météo</CmmButton></div>}
     </dd>
   </div>;
 }

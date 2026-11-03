@@ -31,7 +31,7 @@ export function PreparationMaterialFields({ form, updateField }: BaseSectionProp
       <CmmField
         id="before-materials-provided"
         label="Matériel fourni par l'organisateur"
-        hint={`Ce qui est effectivement disponible sur place, séparé de ce qui est à apporter. ${characterLimitHint(form.materialsProvided, PREPARATION_FIELD_LIMITS.materialsProvided)}`}
+        hint={`Disponible sur place. ${characterLimitHint(form.materialsProvided, PREPARATION_FIELD_LIMITS.materialsProvided)}`}
         error={providedError}
       >
         <CmmTextarea
@@ -45,7 +45,6 @@ export function PreparationMaterialFields({ form, updateField }: BaseSectionProp
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-semibold text-emerald-950">Matériel à apporter par les bénévoles</legend>
-        <p className="text-xs leading-5 text-emerald-900/70">Choix rapides à adapter au contexte ; ils ne constituent pas une liste universelle obligatoire.</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {ACTION_MATERIAL_SUGGESTIONS.map((option) => (
             <label key={option.value} className="flex min-h-11 items-center gap-2 rounded-xl border border-emerald-100 bg-white/70 px-3 py-2 text-sm font-medium text-emerald-950">
@@ -64,7 +63,7 @@ export function PreparationMaterialFields({ form, updateField }: BaseSectionProp
       <CmmField
         id="before-materials-complement"
         label="Complément libre à apporter (facultatif)"
-        hint={`Précisions comme l'eau, des chaussures adaptées ou une protection complémentaire. ${characterLimitHint(form.recommendedMaterials, PREPARATION_FIELD_LIMITS.recommendedMaterials)}`}
+        hint={`À apporter. ${characterLimitHint(form.recommendedMaterials, PREPARATION_FIELD_LIMITS.recommendedMaterials)}`}
         error={recommendedError}
       >
         <CmmTextarea

@@ -82,7 +82,7 @@ export function PrivateActionAccessSection({
 
   return (
     <section aria-labelledby="before-access-mode-title" className="border-t border-emerald-100/80 pt-5">
-      <SectionLabel icon={Shield} title="Visibilité et accès" subtitle="La visibilité métier est indépendante de la modération et de la publication." />
+      <SectionLabel icon={Shield} title="Visibilité et accès" />
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <FieldShell label="Mode d’accès">
           <label className="flex cursor-pointer gap-3 rounded-2xl border border-emerald-200/70 bg-white/80 p-3 text-sm text-emerald-950">
@@ -96,8 +96,8 @@ export function PrivateActionAccessSection({
         </FieldShell>
         {accessMode === "invite_link" ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
-            <div className="flex items-start gap-2"><Link2 size={17} className="mt-0.5 shrink-0" /><p>Le lien donne seulement accès à une projection minimale. Avant l’action, il permet une inscription confirmée ; après finalisation, il ouvre une demande d’ajout soumise à décision. Il ne confirme jamais une présence terrain.</p></div>
-            {!actionId ? <p className="mt-3 text-xs text-amber-900/75">Enregistrez d’abord la préparation pour générer le lien.</p> : (
+            <div className="flex items-start gap-2"><Link2 size={17} className="mt-0.5 shrink-0" /><p>Inscription ou demande d’ajout ; présence non confirmée.</p></div>
+            {!actionId ? <p className="mt-3 text-xs text-amber-900/75">Enregistrez pour générer le lien.</p> : (
               <div className="mt-3 space-y-2">
                 <div className="flex flex-wrap gap-2">
                   <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ generateLink(); }} disabled={busy}>

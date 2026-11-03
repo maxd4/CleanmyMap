@@ -207,7 +207,7 @@ describe("ActionDeclarationReviewSummary submission state", () => {
     const rendered = renderReviewSubmissionHarness();
     const markup = reviewMarkup(rendered);
 
-    expect(markup).toContain("La validation complète sera lancée");
+    expect(markup).toContain("Validation en attente.");
     expect(markup).not.toContain("Validation locale réussie");
   });
 

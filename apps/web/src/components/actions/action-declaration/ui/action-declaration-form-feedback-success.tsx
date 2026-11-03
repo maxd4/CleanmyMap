@@ -81,9 +81,7 @@ function GroupInviteFeedback({
         <div className="space-y-1">
           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-sky-700">Créer un formulaire</p>
           <p className="text-sm font-semibold text-sky-950">Cette action pourra être rejointe après validation.</p>
-          <p className="text-xs leading-relaxed text-sky-950/80">
-            L&apos;organisateur / référant principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation.
-          </p>
+          <p className="text-xs leading-relaxed text-sky-950/80">Partage possible après validation.</p>
         </div>
         <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] text-sky-800">
           Prêt à partager
@@ -119,14 +117,7 @@ function GroupCycleFeedback() {
         <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">Après publication</p>
         <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 cmm-text-caption font-bold uppercase tracking-[0.16em] text-emerald-800">Cycle groupe</span>
       </div>
-      <ul className="space-y-2 text-xs leading-relaxed text-emerald-950/80">
-        <li>Le bénévole rejoint un formulaire déjà validé, sans créer une nouvelle action.</li>
-        <li>Sa demande passe en file d&apos;attente et doit être acceptée par le créateur ou un admin.</li>
-        <li>La participation alimente la progression collective et les badges après jonction.</li>
-        <li>L&apos;organisateur / référant voit le compteur, l&apos;historique et le statut ouvert ou fermé.</li>
-        <li>La participation n&apos;est pas éditable côté bénévole depuis cette page.</li>
-        <li>Vous pouvez fermer ou rouvrir les inscriptions plus tard depuis l&apos;historique des actions.</li>
-      </ul>
+      <p className="text-xs leading-relaxed text-emerald-950/80">Inscriptions ouvertes après validation.</p>
     </div>
   );
 }

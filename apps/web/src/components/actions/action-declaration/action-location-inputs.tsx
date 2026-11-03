@@ -122,11 +122,11 @@ function GeometryMethodFieldset({
 }: Pick<ActionLocationInputProps, "form" | "updateField" | "manualDrawingSource" | "routePreviewSource" | "gpxImport">) {
   const selected = resolveGeometryMethod({ form, manualDrawingSource, routePreviewSource, gpxImport });
   const options: Array<{ value: ActionGeometryMethod; title: string; description: string }> = [
-    { value: "automatic", title: "Proposition automatique", description: "Reconstruction serveur sur le réseau piéton quand elle est disponible." },
-    { value: "generator", title: "Parcours du générateur", description: "Conserve le parcours opérationnel préparé par le générateur." },
-    { value: "manual", title: "Dessin manuel", description: "Déclarez une ligne ou une zone ; aucun routage automatique n’est ajouté." },
-    { value: "gpx_import", title: "Import GPX", description: "Conserve les traces importées et leur provenance, sans les recoller." },
-    { value: "location_only", title: "Localisation seule", description: "Conserve le point sans fabriquer de parcours." },
+    { value: "automatic", title: "Proposition automatique", description: "Réseau piéton si disponible." },
+    { value: "generator", title: "Parcours du générateur", description: "Parcours préparé conservé." },
+    { value: "manual", title: "Dessin manuel", description: "Ligne ou zone saisie." },
+    { value: "gpx_import", title: "Import GPX", description: "Trace importée conservée." },
+    { value: "location_only", title: "Localisation seule", description: "Point sans parcours." },
   ];
   const hasGeneratorRoute = Boolean(form.operationalRoute?.routes.length);
   const hasGpx = Boolean(gpxImport);
@@ -134,7 +134,7 @@ function GeometryMethodFieldset({
   return (
     <fieldset className="mt-4 rounded-xl border border-emerald-200/80 bg-white p-4">
       <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900/65">Source du repère cartographique</legend>
-      <p className="mt-1 text-xs leading-5 text-emerald-900/60">Ce choix organise l’aperçu. Une trace GPS ou GPX déjà observée reste prioritaire et ne peut pas être remplacée par une reconstruction.</p>
+      <p className="mt-1 text-xs leading-5 text-emerald-900/60">Trace GPS/GPX observée prioritaire.</p>
       <div className="mt-3 grid gap-2 md:grid-cols-2">
         {options.map((option) => {
           const isSelected = selected === option.value;
@@ -149,8 +149,8 @@ function GeometryMethodFieldset({
           );
         })}
       </div>
-      {selected === "location_only" ? <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">Aucune ligne ne sera construite automatiquement ; la position saisie reste le repère.</p> : null}
-      {selected === "gpx_import" && hasGpx ? <p className="mt-3 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900">Les candidats GPX restent locaux jusqu’à la création et conservent leurs fichiers, segments et erreurs.</p> : null}
+      {selected === "location_only" ? <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">Repère : position saisie.</p> : null}
+      {selected === "gpx_import" && hasGpx ? <p className="mt-3 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900">GPX conservé jusqu’à la création.</p> : null}
     </fieldset>
   );
 }
@@ -197,11 +197,7 @@ export function ActionLocationInputs({
         {isCleanPlaceMode ? "Géolocalisation du lieu" : "Localisation de collecte"}
       </SectionTitle>
 
-      <p className="-mt-2 text-xs leading-5 text-emerald-900/50">
-        {isCleanPlaceMode
-          ? "Indiquez l'adresse du lieu ou utilisez la position actuelle de l'appareil."
-          : "Indiquez l'adresse du lieu ou utilisez la position actuelle de l'appareil. Pour une action passée, cette position peut différer du lieu de l'action."}
-      </p>
+      <p className="-mt-2 text-xs leading-5 text-emerald-900/50">Adresse ou position GPS.</p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {mode !== "details" ? departureInput : null}
@@ -275,7 +271,7 @@ export function ActionLocationInputs({
             onChange={(event) => updateField("routeTargetDistanceKm", event.target.value)}
             className="mt-2 w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-sky-950 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 sm:max-w-xs"
           />
-          <p className="mt-1 text-xs leading-5 text-sky-800/70">Repère de planification, par défaut 1 km par heure d’action. Modifiable ; il ne mesure pas une distance parcourue.</p>
+          <p className="mt-1 text-xs leading-5 text-sky-800/70">Cible de planification, pas distance parcourue.</p>
         </div>
       ) : null}
     </div>

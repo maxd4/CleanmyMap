@@ -36,7 +36,6 @@ export function PreparationChecklistFields({ form, updateField }: BaseSectionPro
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-semibold text-emerald-950">Checklist avant départ</legend>
-      <p className="text-xs leading-5 text-emerald-900/70">Les cases sont un aide-mémoire organisateur. Elles ne certifient pas la sécurité, ne constituent pas une preuve terrain et ne génèrent pas d&apos;XP.</p>
       <div className="space-y-2">
         {form.preparationChecklist.map((item, index) => (
           <div key={item.key} className="flex min-h-11 items-center gap-2 rounded-xl border border-emerald-100 bg-white/70 px-3 py-2">

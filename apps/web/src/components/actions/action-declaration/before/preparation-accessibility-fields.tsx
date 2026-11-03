@@ -26,7 +26,7 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
       <CmmField
         id="before-accessibility-status"
         label="État de l'accessibilité"
-        hint="Cette observation ne constitue pas une certification PMR. Décrivez les conditions réellement observées."
+        hint="Observation, pas certification PMR."
       >
         <CmmSelect
           value={form.accessibilityStatus}
@@ -55,7 +55,7 @@ export function PreparationAccessibilityFields({ form, updateField }: BaseSectio
         </CmmField>
       ) : (
         <p className="rounded-xl border border-emerald-100 bg-emerald-50/40 px-3 py-2 text-xs leading-5 text-emerald-900/70">
-          Aucune précision n&apos;est demandée tant que l&apos;accessibilité n&apos;est pas évaluée. Une description existante restera affichée si elle est reprise.
+          Évaluation non demandée. Une description reprise reste affichée.
         </p>
       )}
     </div>

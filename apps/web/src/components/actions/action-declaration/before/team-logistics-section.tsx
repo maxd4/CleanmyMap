@@ -47,12 +47,11 @@ export function TeamLogisticsSection({
         <SectionLabel
           icon={UsersRound}
           title="Équipe et logistique"
-          subtitle="Organisateurs, inscriptions et préparation opérationnelle réunis au même endroit."
         />
 
         <section aria-labelledby="before-organizers-group" className="space-y-3 border-b border-emerald-100 pb-5">
           <h3 id="before-organizers-group" className="text-base font-black text-emerald-950">Organisateurs</h3>
-          <p className="cmm-text-body cmm-text-primary">Le créateur reste en lecture seule ; la structure et les coorganisateurs utilisent les catalogues et permissions existants.</p>
+          <p className="cmm-text-body cmm-text-primary">Créateur en lecture seule · catalogues et permissions.</p>
           <IdentityAndSharingSection
             form={form}
             updateField={updateField}

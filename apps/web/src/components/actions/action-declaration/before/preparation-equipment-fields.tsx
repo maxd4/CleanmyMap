@@ -116,12 +116,12 @@ function PreparationEquipmentPreview({
       </div>
       <div className="border-t border-sky-100 pt-4" data-testid="preparation-volunteer-checklist">
         <div className="flex flex-wrap items-baseline justify-between gap-2"><h6 className="text-sm font-bold text-sky-950">Checklist bénévole calculée</h6><span className="text-xs font-semibold text-sky-800">{volunteerChecklist.weatherMessage}</span></div>
-        <p className="mt-1 text-xs leading-5 text-sky-900/75">{volunteerChecklist.staffing.label}. Les données se recalculent sans modifier la checklist interne.</p>
+          <p className="mt-1 text-xs leading-5 text-sky-900/75">{volunteerChecklist.staffing.label}.</p>
         <div className="mt-3 space-y-3">
           <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">À apporter</p><ChecklistLines values={volunteerChecklist.toBring} /></div>
           <div>
             <p className="text-xs font-black uppercase tracking-wide text-sky-700">Recommandé selon la météo</p>
-            {volunteerChecklist.weatherState === "success" ? <ChecklistLines values={volunteerChecklist.weatherRecommendations} /> : <div className="mt-2 space-y-2"><p className="text-sm text-sky-900/70">Les recommandations météo sont calculées uniquement sur demande.</p><button type="button" className="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={requestWeather} disabled={weatherState === "loading"} aria-busy={weatherState === "loading"}>Voir les recommandations selon la météo</button>{weatherState === "loading" ? <p role="status" className="text-xs font-semibold text-sky-800">Analyse des prévisions météo…</p> : null}</div>}
+            {volunteerChecklist.weatherState === "success" ? <ChecklistLines values={volunteerChecklist.weatherRecommendations} /> : <div className="mt-2 space-y-2"><p className="text-sm text-sky-900/70">Météo sur demande.</p><button type="button" className="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" onClick={requestWeather} disabled={weatherState === "loading"} aria-busy={weatherState === "loading"}>Voir la météo</button>{weatherState === "loading" ? <p role="status" className="text-xs font-semibold text-sky-800">Analyse en cours…</p> : null}</div>}
           </div>
           <div><p className="text-xs font-black uppercase tracking-wide text-sky-700">Fourni par l’organisateur</p><ChecklistLines values={volunteerChecklist.provided} /></div>
         </div>
@@ -181,7 +181,7 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
       <div className="space-y-4">
         <fieldset className="space-y-3">
           <legend className="text-sm font-semibold text-emerald-950">Équipements quantifiables</legend>
-          <p className="text-xs leading-5 text-emerald-900/70">Laissez vide si la quantité n’est pas renseignée. La valeur 0 signifie explicitement absent.</p>
+          <p className="text-xs leading-5 text-emerald-900/70">Vide = inconnu · 0 = absent.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {quantityOptions.map((option) => {
               const value = form.equipmentInventory[option.key];
@@ -226,7 +226,7 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
 
         <fieldset className="space-y-2">
           <legend className="text-sm font-semibold text-emerald-950">Convivialité</legend>
-          <p className="text-xs leading-5 text-emerald-900/70">Ces annonces sont indépendantes : l’eau pendant l’action ne vaut pas annonce de boissons ou de collation après.</p>
+          <p className="text-xs leading-5 text-emerald-900/70">Annonces séparées.</p>
           <div className="grid gap-2">
             {ACTION_REFRESHMENT_OPTIONS.map((option) => (
               <label key={option.key} className="flex min-h-11 items-center gap-2 rounded-xl border border-emerald-100 bg-white/70 px-3 py-2 text-sm font-medium text-emerald-950">

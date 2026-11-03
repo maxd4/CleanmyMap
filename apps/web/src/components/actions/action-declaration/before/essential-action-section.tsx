@@ -31,7 +31,6 @@ export function EssentialActionSection({
         <SectionLabel
           icon={ClipboardList}
           title="Les informations essentielles"
-          subtitle="Décrivez l’action et son rendez-vous. Les détails de terrain et de logistique restent dans les sections dédiées."
         />
 
         <section aria-labelledby="before-essential-identity" className="space-y-3">
@@ -40,7 +39,6 @@ export function EssentialActionSection({
             <CmmField
               id="before-action-title"
               label={<span>Titre de l’action<RequiredMark /></span>}
-              hint="Nom visible par les participants."
               error={missingTitle ? "Indiquez un titre avant d’enregistrer." : undefined}
             >
               <CmmInput
@@ -50,7 +48,7 @@ export function EssentialActionSection({
                 placeholder="Ex. Nettoyage des berges"
               />
             </CmmField>
-            <CmmField id="before-action-short-description" label="Description courte" hint="Objectif ou contexte en quelques mots.">
+            <CmmField id="before-action-short-description" label="Description courte" hint="Quelques mots.">
               <CmmTextarea
                 value={form.shortDescription}
                 onChange={(event) => updateField("shortDescription", event.target.value)}
@@ -68,7 +66,7 @@ export function EssentialActionSection({
                   {PLANNED_OBJECTIVE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </CmmSelect>
               </CmmField>
-              <CmmField id="before-commune-zone" label="Commune ou secteur" hint="Zone principale de l’action.">
+              <CmmField id="before-commune-zone" label="Commune ou secteur" hint="Zone principale.">
                 <CmmInput
                   type="text"
                   value={form.communeZoneLabel}
@@ -89,7 +87,7 @@ export function EssentialActionSection({
 
         <section aria-labelledby="before-essential-location" className="space-y-3">
           <h4 id="before-essential-location" className="text-base font-black text-emerald-950">Lieu et parcours</h4>
-          <p className="text-xs leading-5 text-emerald-900/65">Le point de rendez-vous reste ici ; la correction de l’arrivée est proposée lorsqu’un parcours départ → arrivée est déjà sélectionné.</p>
+          <p className="text-xs leading-5 text-emerald-900/65">Rendez-vous conservé séparément.</p>
           <MeetingLocationFields
             form={form}
             updateField={updateField}

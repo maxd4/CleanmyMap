@@ -50,7 +50,7 @@ export function PlannedActionLocationSection({
       />
       {form.operationalRoute ? (
         <CmmDisclosure summary={<ActionFormDisclosureSummary label="Parcours existant" detail="parcours calculé conservé" />} tone="emerald" size="sm">
-          <p className="mb-3 text-sm text-emerald-900/70">Le parcours calculé par le planificateur est repris ici sans nouvelle géométrie.</p>
+          <p className="mb-3 text-sm text-emerald-900/70">Parcours calculé conservé.</p>
           <OperationalRouteEditor operationalRoute={form.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} />
         </CmmDisclosure>
       ) : null}
@@ -101,7 +101,7 @@ export function MeetingLocationFields({
       {missingDeparture ? <span id="before-departure-location-error" className="block text-xs font-medium text-rose-700">Indiquez le point de rendez-vous avant d’enregistrer.</span> : null}
       <p id="before-location-status" role="status" className={cn("flex items-center gap-1.5 px-1 text-xs", hasConfirmedCoordinates ? "text-emerald-700" : hasFreeAddress ? "text-amber-700" : "text-emerald-900/50")}>
         {hasConfirmedCoordinates ? <CheckCircle2 size={13} aria-hidden="true" /> : <Info size={13} aria-hidden="true" />}
-        <span>{hasConfirmedCoordinates ? "Localisation confirmée · coordonnées conservées" : hasFreeAddress ? "Adresse libre non géolocalisée · l’entrée ou le repère est conservé sans coordonnées" : "Localisation à préciser"}</span>
+        <span>{hasConfirmedCoordinates ? "Coordonnées confirmées" : hasFreeAddress ? "Adresse libre · sans coordonnées" : "Localisation à préciser"}</span>
       </p>
     </div>
   );

@@ -20,7 +20,7 @@ export function PlannedActionVolunteerSection({
     <section aria-labelledby="before-action-practical" className="space-y-3">
       <SectionHeading id="before-action-practical" title="Bénévoles et informations pratiques" />
       <VolunteerForecast form={form} updateField={updateField} splitDetail={splitDetail} validationIssueFields={validationIssueFields} />
-      <CmmField id="before-participant-message" label="Message complémentaire aux participants" hint="Accueil et consignes utiles ; le matériel et la sécurité sont détaillés ci-dessous.">
+      <CmmField id="before-participant-message" label="Message complémentaire aux participants" hint="Accueil et consignes.">
         <CmmTextarea
           value={form.participantMessage}
           onChange={(event) => updateField("participantMessage", event.target.value)}
@@ -74,7 +74,7 @@ export function VolunteerForecast({
       <CmmField
         id="before-volunteers-count"
         label="Nombre de bénévoles attendus"
-        hint="Prévision avant le terrain ; laissez vide si elle est inconnue."
+        hint="Prévision facultative."
         error={hasValidationIssue(validationIssueFields, "volunteersCount") ? "Indiquez un entier d’au moins 1." : undefined}
       >
         <CmmInput
@@ -94,7 +94,7 @@ export function VolunteerForecast({
         className={hasValidationIssue(validationIssueFields, "volunteerParticipation") ? "ring-2 ring-rose-400/20" : undefined}
       >
         <div className="space-y-3">
-          <p className="text-sm text-emerald-900/70">Catégories non chevauchantes ; leur somme doit correspondre au total attendu.</p>
+          <p className="text-sm text-emerald-900/70">La somme doit égaler le total.</p>
           <div className="grid gap-3 sm:grid-cols-3">
             {([["Enfants", "childrenCount"], ["Adultes", "adultCount"], ["Retraités", "retiredCount"]] as const).map(([label, field]) => (
               <CmmField key={field} id={`before-${field}`} label={label}>

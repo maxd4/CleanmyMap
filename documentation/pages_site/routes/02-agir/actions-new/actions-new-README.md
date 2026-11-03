@@ -52,7 +52,7 @@
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
-- **Niveau de surcharge textuelle** : moyen
+- **Niveau de surcharge textuelle** : faible
 - **Textes à conserver** :
 - Titre de tâche
 - champs utiles
@@ -64,6 +64,7 @@
 - cartes descriptives redondantes
 - contextes décoratifs
 - promesses de validation avant terrain
+- Les explications méthodologiques détaillées sont hors de l’interface ; leur transfert préparatoire est suivi dans `documentation/specs/methodologie-formulaire-actions-transfert.md`.
 - **Bulles / cartes / contextes trop nombreux** : Les formulaires et cartes de guidance peuvent multiplier les micro-blocs.
 - **Composants UI concernés** :
 - Formulaires

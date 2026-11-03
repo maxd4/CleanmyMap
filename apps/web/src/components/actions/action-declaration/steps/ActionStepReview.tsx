@@ -101,7 +101,7 @@ function ReviewWarnings({ warnings }: { warnings: string[] }) {
     <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm space-y-3">
       <div className="flex items-center gap-2"><AlertTriangle size={15} className="text-amber-600 shrink-0" /><h4 className="text-xs font-bold text-amber-800 uppercase tracking-wide">Points d&apos;attention ({warnings.length})</h4></div>
       <ul className="space-y-2">{warnings.map((warning, i) => <li key={i} className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3 py-2.5"><span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /><p className="cmm-text-small text-slate-700 leading-5">{warning}</p></li>)}</ul>
-      <p className="cmm-text-caption text-amber-700">Ces points n&apos;empêchent pas l&apos;envoi. Ils facilitent la relecture et la vérification de votre déclaration.</p>
+      <p className="cmm-text-caption text-amber-700">Avertissements non bloquants.</p>
     </section>
   );
 }
@@ -110,7 +110,7 @@ function ReviewSubmit({ showSubmitButton, isSubmitting, onSubmit }: Pick<ActionS
   if (!showSubmitButton) return null;
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-      <div className="flex items-start gap-3"><div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-100 flex items-center justify-center"><ShieldCheck size={15} className="text-emerald-600" /></div><div><p className="text-sm font-semibold text-slate-900">Dernière vérification</p><p className="text-xs text-slate-400 mt-0.5">Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.</p></div></div>
+      <div className="flex items-start gap-3"><div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-100 flex items-center justify-center"><ShieldCheck size={15} className="text-emerald-600" /></div><div><p className="text-sm font-semibold text-slate-900">Dernière vérification</p><p className="text-xs text-slate-400 mt-0.5">Confirmation avant envoi.</p></div></div>
       <CmmButton tone="primary" variant="default" size="md" className="w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" onClick={onSubmit} disabled={isSubmitting}>{isSubmitting ? <><Loader2 size={16} className="animate-spin" />Envoi en cours…</> : <><ClipboardCheck size={16} />Vérifier avant envoi</>}</CmmButton>
     </section>
   );
@@ -143,10 +143,6 @@ export function ActionStepReview({
       {/* ── 1. Aide à la relecture ───────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <SectionTitle color="bg-emerald-500">Aide à la relecture</SectionTitle>
-        <p className="text-sm leading-6 text-slate-700">
-          Vérifiez les valeurs brutes déclarées. Les photos sont conservées et
-          transmises séparément ; aucune estimation n&apos;est utilisée comme mesure.
-        </p>
         <p className="mt-4 text-sm font-medium leading-snug text-slate-700">{readyMessage}</p>
       </section>
 
@@ -204,7 +200,7 @@ export function ActionStepReview({
             <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 space-y-1">
               <p className="text-xs font-semibold text-amber-800">Aucune localisation détaillée</p>
               <p className="text-xs text-amber-700">
-                L&apos;envoi reste possible. Vous pouvez revenir à l&apos;étape Localisation pour ajouter des précisions.
+                Ajoutez des précisions dans Localisation.
               </p>
             </div>
           )}

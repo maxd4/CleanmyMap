@@ -63,8 +63,8 @@ describe("action location input modes", () => {
     expect(markup).toContain('id="midpoint"');
     expect(markup).toContain("Type de parcours");
     expect(markup).toContain("Distance cible du parcours");
-    expect(markup).toContain("ne mesure pas une distance parcourue");
-    expect(markup).toContain("position actuelle de l&#x27;appareil");
+    expect(markup).toContain("pas distance parcourue");
+    expect(markup).toContain("position actuelle de mon appareil");
     expect(markup).toContain("Proposition automatique");
     expect(markup).toContain("Parcours du générateur");
     expect(markup).toContain("Dessin manuel");

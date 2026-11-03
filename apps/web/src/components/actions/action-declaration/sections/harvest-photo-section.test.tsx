@@ -67,7 +67,7 @@ describe("HarvestPhotoSection", () => {
     expect(markup).toContain('class="sr-only"');
     expect(markup).toContain('data-testid="vision-estimation-disabled"');
     expect(markup).toContain("Estimation photo désactivée");
-    expect(markup).toContain("pas encore suffisamment mature ni validé");
+    expect(markup).toContain("Photos documentaires uniquement.");
     expect(markup).not.toContain("Proxy expérimental non validé");
     expect(markup).not.toContain("Poids proposé");
     expect(markup).not.toContain("Intervalle heuristique");

@@ -151,7 +151,7 @@ export function HarvestPhotoSection({
         >
           <p className="text-xs font-semibold text-slate-700">Estimation photo désactivée</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Le moteur d’estimation est conservé pour de futures itérations, mais il reste désactivé ici car il n’est pas encore suffisamment mature ni validé. Les photos servent uniquement à documenter la collecte.
+            Photos documentaires uniquement.
           </p>
         </div>
 

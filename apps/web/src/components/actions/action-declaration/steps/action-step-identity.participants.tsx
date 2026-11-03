@@ -69,46 +69,23 @@ function ParticipantContextControl({
         <option value="company">Entreprise</option>
         <option value="school">Scolaire</option>
       </select>
-      <p className="text-xs text-emerald-900/65">
-        Le contexte est indépendant du type d’organisateur. La famille reste un
-        cas citoyen.
-      </p>
       {form.actionContext === "" && contextSuggestion.context === "school" ? (
         <p className="text-xs font-semibold text-emerald-800" role="status">
-          Proposition automatique : scolaire, car les enfants représentent
-          strictement plus des deux tiers du groupe déclaré. Cette proposition
-          n’est pas une preuve d’organisation scolaire et sera recalculée à la
-          finalisation.
+          Suggestion automatique : scolaire.
         </p>
       ) : null}
       {form.actionContext !== "" ? (
         <p className="text-xs font-semibold text-emerald-800" role="status">
-          Choix explicite conservé jusqu’à une remise en mode automatique.
+          Choix conservé.
         </p>
       ) : null}
       {schoolJourneySuggested ? (
         <div className="space-y-2 rounded-lg border border-sky-900/10 bg-sky-50/70 p-3 text-xs text-sky-950">
-          <p className="font-semibold">Parcours école : préparer, agir, faire le bilan</p>
-          <p>
-            Retrouvez le quiz et l&apos;atelier existants dans l&apos;espace
-            pédagogique{" "}
-            <a className="font-semibold underline" href="/learn/ecole">
-              /learn/ecole
-            </a>
-            . Aucun compte élève ni résultat de quiz n&apos;est nécessaire pour
-            l&apos;action.
-          </p>
-          <p>
-            Les élèves restent sur les déchets ordinaires avec encadrement
-            adulte ; les adultes prennent en charge les mégots, objets
-            dangereux et toute situation à risque. Gants, pinces et sacs
-            adaptés restent nécessaires.
-          </p>
+          <p className="font-semibold">Parcours école : <a className="underline" href="/learn/ecole">ouvrir</a></p>
+          <p>Élèves : déchets ordinaires · adultes : mégots et objets à risque.</p>
           {form.actionContext === "" ? (
             <p className="font-semibold text-sky-900">
-              La proposition automatique aide à préparer l&apos;action, mais ne
-              déclenche aucune reconnaissance scolaire sans confirmation
-              explicite.
+              Proposition uniquement.
             </p>
           ) : null}
         </div>
@@ -161,10 +138,7 @@ function ParticipantCountInputs({
         value={form.volunteersCount}
         onChange={(event) => updateField("volunteersCount", event.target.value)}
       />
-      <span className="block text-xs font-normal text-emerald-900/60">
-        Comptez les personnes réellement présentes, sans compter
-        automatiquement les comptes organisateurs.
-      </span>
+      <span className="block text-xs font-normal text-emerald-900/60">Personnes présentes sur le terrain.</span>
     </label>
   );
   const categoryInputs = ([
@@ -192,8 +166,7 @@ function ParticipantCountInputs({
   const feedback = (
     <>
       <p className="text-xs text-emerald-900/55">
-        Les adultes sont calculés automatiquement : total moins enfants et
-        retraités.
+        Adultes = total − enfants − retraités.
       </p>
       <p className="text-xs font-semibold text-emerald-900/70">
         {adultCount !== null && adultCount >= 0
@@ -303,7 +276,7 @@ function SupportingParticipation({
             onChange={(next) => updateField("organizerAccounts", next.join(", "))}
             endpoint="/api/actions/account-options"
             title={full ? "Comptes coorganisateurs" : "Organisateurs associés"}
-            description="Sélectionnez jusqu’à 20 comptes CleanMyMap. Ils restent distincts des participants présents."
+            description="20 comptes max · présence terrain distincte."
             compact={!full}
             maxSelected={20}
             roleOptions={ACTION_FIELD_ROLE_OPTIONS.filter(({ code }) => code !== "organizer_primary")}
@@ -321,8 +294,8 @@ function SupportingParticipation({
             endpoint="/api/actions/account-options"
             description={
               full
-                ? "Ajoutez les comptes participants identifiés. Une sélection ne confirme pas leur présence terrain."
-                : "Comptes identifiés uniquement ; leur sélection ne confirme pas une présence terrain."
+                ? "Comptes identifiés ; présence non confirmée."
+                : "Comptes identifiés ; présence non confirmée."
             }
             title="Comptes participants identifiés"
           />

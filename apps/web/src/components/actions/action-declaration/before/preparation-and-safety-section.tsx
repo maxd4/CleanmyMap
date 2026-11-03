@@ -26,7 +26,7 @@ export function PreparationAndSafetySection({ form, updateField, embedded = fals
 
   const content = (
     <div className="space-y-5">
-        <SectionLabel icon={PencilLine} title="Préparation et sécurité" subtitle="Consignes, matériel et accessibilité avant publication." />
+        <SectionLabel icon={PencilLine} title="Préparation et sécurité" />
 
         <section aria-labelledby="before-security-group" className="space-y-3 border-b border-emerald-100 pb-5">
           <h4 id="before-security-group" className="text-base font-black text-emerald-950">Sécurité et risques</h4>

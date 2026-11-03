@@ -29,7 +29,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Collecte sur une zone précise");
     expect(html).toContain("Cleanwalk itinérante");
     expect(html).toContain("Plusieurs zones ou groupes");
-    expect(html).toContain("Aucun tracé, distance ou géométrie d’itinéraire n’est requis");
+    expect(html).toContain("Zone fixe : secteur et rendez-vous.");
     expect(html).not.toContain("Type de parcours");
   });
 
@@ -56,15 +56,14 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Déclarer avant l&#x27;action");
     expect(html).not.toContain("Préparer le formulaire de groupe");
     expect(html).toContain("Enregistrer la préparation");
-    expect(html).toContain("publication sera déclenchée explicitement");
+    expect(html).toContain("Enregistrement privé.");
     expect(html).toContain("Identité et organisation");
     expect(html).toContain("Type de structure");
     expect(html).toContain("Sélectionnez un type de structure");
     expect(html).toContain("Action prévue");
     expect(html).toContain("Préparation et sécurité");
     expect(html).toContain("Déchets attendus");
-    expect(html).toContain("catégories susceptibles d’être rencontrées");
-    expect(html).toContain("distincte des déchets réellement collectés");
+    expect(html).toContain("Prévision de déchets (facultatif).");
     expect(html).toContain("Point de rendez-vous précis");
     expect(html).toContain("Commune ou secteur d’intervention");
     expect(html).toContain("Boucle");
@@ -286,7 +285,7 @@ describe("ActionBeforeDeclarationForm", () => {
 
     expect(html).toContain("Description historique à conserver.");
     expect(html).toContain("Précisions d&#x27;accessibilité");
-    expect(html).toContain("Aucune recommandation automatique pour les déchets attendus renseignés.");
+    expect(html).toContain("Aucune recommandation.");
   });
 
   it("keeps a length error beside an overlong legacy value", () => {
@@ -320,8 +319,7 @@ describe("ActionBeforeDeclarationForm", () => {
       }),
     );
 
-    expect(html).toContain("Adresse libre non géolocalisée");
-    expect(html).toContain("l’entrée ou le repère est conservé sans coordonnées");
+    expect(html).toContain("Adresse libre · sans coordonnées");
   });
 
   it("keeps the authenticated creator read-only and separates co-organizers from participants", () => {
@@ -354,7 +352,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Inscriptions des bénévoles");
     expect(html).toContain("Inviter des membres");
     expect(html).toContain("Autoriser les demandes d&#x27;inscription");
-    expect(html).toContain("Les membres ajoutés recevront une invitation après la publication");
+    expect(html).toContain("Invitation après publication · présence non confirmée.");
     expect(html).toContain("Rechercher");
     expect(html).toContain('type="search"');
     expect(html).not.toContain('value="legacy-alias"');
@@ -391,9 +389,9 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Acceptée");
     expect(html).toContain("Refusée");
     expect(html).toContain("Retirée");
-    expect(html).toContain("Les membres ajoutés recevront une invitation après la publication");
+    expect(html).toContain("Invitation après publication · présence non confirmée.");
     expect(html).toContain("Non évaluée");
-    expect(html).toContain("Ces indications sont en lecture seule");
+    expect(html).toContain("Lecture seule · séparées des consignes.");
     expect(html).toContain("Notes logistiques internes");
     expect(html).toContain("Checklist avant départ");
   });
@@ -424,7 +422,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain('id="before-group-join-enabled"');
     expect(html).toContain('for="before-group-join-enabled"');
     expect(html).toContain(countLabel);
-    expect(html).toContain("Les demandes ne deviennent possibles qu&#x27;après sa publication.");
-    expect(html).toContain("Les membres ajoutés recevront une invitation après la publication");
+    expect(html).toContain("Ouverture après publication.");
+    expect(html).toContain("Invitation après publication · présence non confirmée.");
   });
 });

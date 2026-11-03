@@ -28,7 +28,7 @@ export function ActionDeclarationFormStatus({ error }: { error: string | null })
               {error ? "Le formulaire existant n'a pas pu être chargé" : "Chargement du formulaire existant"}
             </h2>
             <p className={cn("text-sm leading-6", error ? "text-rose-950" : "text-emerald-950")}>
-              {error ?? "Nous récupérons les informations préparées avant l'action pour reprendre le même enregistrement."}
+              {error ?? "Reprise des données…"}
             </p>
           </div>
         </CmmCard>
@@ -111,7 +111,7 @@ export function ActionDeclarationFormOverlays({
             </button>
           </div>
           <div className="space-y-4 px-6 py-6">
-            <p className="text-sm leading-7 text-amber-950/82">Connectez-vous pour compléter et envoyer ce formulaire.</p>
+            <p className="text-sm leading-7 text-amber-950/82">Connectez-vous pour envoyer.</p>
             <div className="flex flex-wrap gap-2">
               {signInHref ? <CmmButton href={signInHref} tone="primary" variant="pill" size="sm">Se connecter et reprendre</CmmButton> : null}
               {signUpHref ? <CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">Créer un compte</CmmButton> : null}
@@ -168,7 +168,7 @@ export function ActionDeclarationFormSurface({
           <div role="alert" className="flex flex-col gap-3 rounded-[2rem] border border-rose-200/80 bg-rose-50 px-4 py-3 text-rose-950 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold">Le brouillon local n&apos;a pas pu être lu.</p>
-              <p className="mt-0.5 text-xs font-medium">Aucune nouvelle sauvegarde locale ne sera faite tant que la lecture n&apos;est pas rétablie.</p>
+              <p className="mt-0.5 text-xs font-medium">Aucune sauvegarde pendant la panne.</p>
             </div>
             <button type="button" onClick={onRetryDraftLoad} className="self-start rounded-full border border-rose-300 bg-white px-4 py-2 text-xs font-black text-rose-900 transition hover:bg-rose-100 sm:self-auto">Réessayer la lecture</button>
           </div>
@@ -179,7 +179,7 @@ export function ActionDeclarationFormSurface({
               <History size={15} className="shrink-0 text-amber-300" />
               <div>
                 <p className="text-sm font-bold text-emerald-950">Reprendre votre déclaration{formattedPendingDraftSavedAt ? ` du ${formattedPendingDraftSavedAt}` : ""}</p>
-                <p className="mt-0.5 text-xs font-medium text-emerald-900/62">Un brouillon local existe sur cet appareil. Il ne sera restauré que si vous le confirmez.</p>
+                <p className="mt-0.5 text-xs font-medium text-emerald-900/62">Brouillon local disponible.</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -194,7 +194,6 @@ export function ActionDeclarationFormSurface({
               <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-2xl">
                   <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-black tracking-tighter text-emerald-950">Déclarer les résultats terrain</h2>
-                  <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-emerald-950 md:text-[0.98rem]">Commencez par les informations essentielles. Les détails complémentaires restent disponibles à la demande.</p>
                 </div>
               </header>
               <ActionDeclarationFormSections {...sections} />

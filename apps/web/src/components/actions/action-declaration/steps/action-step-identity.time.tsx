@@ -1,7 +1,6 @@
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
-  formatBusinessDurationHoursMinutes,
   formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
 import type { FormState } from "../model";
@@ -73,9 +72,6 @@ export function ActionTimeSection({
       <div className="mt-3 max-w-xl">
         <ActionDurationSlider id="action-duration-minutes" value={form.durationMinutes} onChange={(value) => updateField("durationMinutes", value)} />
       </div>
-      <p className="mt-2 max-w-xl text-xs leading-5 text-emerald-900/55">
-        Le temps d’action couvre la marche, le ramassage, le tri et la pesée, sans séparer ces étapes. La durée enregistrée reste précise ; affichage métier : {formatBusinessDurationHoursMinutes(form.durationMinutes.trim() ? Number(form.durationMinutes) : undefined)}.
-      </p>
       <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
         <Field icon={Clock}>
           <input
@@ -96,9 +92,6 @@ export function ActionTimeSection({
           />
         </Field>
       </div>
-      <p className="mt-1 max-w-xl text-xs leading-5 text-emerald-900/55">
-        Créneau total de l’événement — début / fin, incluant briefing, matériel, regroupement et rangement.
-      </p>
       <TimeStatus event={event} organization={organization} />
     </div>
   );
