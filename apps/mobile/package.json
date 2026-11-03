@@ -12,9 +12,9 @@
     "lint": "eslint --config eslint.config.mjs . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "security": "node --test security/*.test.mjs",
-    "test": "vitest run --config vitest.config.ts",
+    "test": "vitest run --config vitest.config.ts --configLoader runner",
     "test:metro-env": "node tests/mobile-environment-metro.test.mjs",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "test:coverage": "vitest run --config vitest.config.ts --configLoader runner --coverage",
     "check": "npm run typecheck && npm run test"
   },
   "dependencies": {

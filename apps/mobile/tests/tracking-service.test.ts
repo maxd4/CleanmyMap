@@ -71,17 +71,22 @@ const flushBufferMock = vi.hoisted(createMockFunction)
 
 function recordFlush() { state.sequence.push('flush') }
 
-function createStorageMock() { return {
+function createStorageMissionMock() { return {
   getStoredMissionId: readStoredMissionId,
   getStoredMissionOwnerId: readStoredMissionOwnerId,
   setStoredMissionId,
   clearStoredMissionId,
   getOrCreateMissionStartRequestId,
   clearMissionStartRequestId,
+} }
+
+function createStorageBufferMock() { return {
   bufferPoint: bufferPointMock,
   bufferAction: bufferActionMock,
   flushBuffer: flushBufferMock,
 } }
+
+function createStorageMock() { return Object.assign({}, createStorageMissionMock(), createStorageBufferMock()) }
 
 vi.mock('../lib/storage', createStorageMock)
 

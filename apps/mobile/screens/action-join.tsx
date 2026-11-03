@@ -163,15 +163,19 @@ function ActionCard({ item, busy, onDetails, onJoin, onCancel, onClaim, onReview
       </TouchableOpacity>
       {item.awaitingApproval ? <Text style={styles.status}>Demande en attente</Text> : null}
       {item.joined ? <Text style={styles.status}>Inscription confirmée</Text> : null}
-      <View style={styles.cardActions}>
-        {!isPast && item.joined ? <SmallButton label="Démarrer le suivi GPS" disabled={busy} onPress={onStart} /> : null}
-        {!isPast && !item.joined && !item.awaitingApproval ? <SmallButton label="Demander" disabled={busy} onPress={onJoin} /> : null}
-        {!isPast && (item.joined || item.awaitingApproval) ? <SmallButton label="Annuler" disabled={busy} onPress={onCancel} secondary /> : null}
-        {isPast && !item.joined && !item.awaitingApproval ? <SmallButton label="Demander le rattachement" disabled={busy} onPress={onClaim} /> : null}
-        {!isPast ? <SmallButton label="Demandes organisateur" disabled={busy} onPress={onReview} secondary /> : null}
-      </View>
+      <ActionCardActions item={item} isPast={isPast} busy={busy} onJoin={onJoin} onCancel={onCancel} onClaim={onClaim} onReview={onReview} onStart={onStart} />
     </View>
   )
+}
+
+function ActionCardActions({ item, isPast, busy, onJoin, onCancel, onClaim, onReview, onStart }: { item: MobileActionItem; isPast: boolean; busy: boolean; onJoin: () => void; onCancel: () => void; onClaim: () => void; onReview: () => void; onStart: () => void }) {
+  return <View style={styles.cardActions}>
+    {!isPast && item.joined ? <SmallButton label="Démarrer le suivi GPS" disabled={busy} onPress={onStart} /> : null}
+    {!isPast && !item.joined && !item.awaitingApproval ? <SmallButton label="Demander" disabled={busy} onPress={onJoin} /> : null}
+    {!isPast && (item.joined || item.awaitingApproval) ? <SmallButton label="Annuler" disabled={busy} onPress={onCancel} secondary /> : null}
+    {isPast && !item.joined && !item.awaitingApproval ? <SmallButton label="Demander le rattachement" disabled={busy} onPress={onClaim} /> : null}
+    {!isPast ? <SmallButton label="Demandes organisateur" disabled={busy} onPress={onReview} secondary /> : null}
+  </View>
 }
 
 function SmallButton({ label, disabled, onPress, secondary = false }: { label: string; disabled: boolean; onPress: () => void; secondary?: boolean }) {

@@ -62,9 +62,11 @@
       ],
       "ignoreIssues": {
         "app.json": ["unlisted"],
+        "security/deepmerge-security.test.mjs": ["unlisted"],
         "security/image-size-security.test.mjs": ["unlisted"],
         "security/stream-json-jayson-security.test.mjs": ["unlisted"],
-        "security/node-forge-security.test.mjs": ["unlisted"]
+        "security/node-forge-security.test.mjs": ["unlisted"],
+        "vendor/deepmerge/index.js": ["unlisted"]
       },
       "ignoreDependencies": ["stream-json"]
     }

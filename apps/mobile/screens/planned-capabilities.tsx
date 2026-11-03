@@ -3,7 +3,7 @@ import { ArrowLeft, Clock3 } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { getPlannedCapability, type PlannedCapabilityId } from './planned-capabilities-contract'
 
-export { PLANNED_CAPABILITIES, type PlannedCapabilityId } from './planned-capabilities-contract'
+export type { PlannedCapabilityId } from './planned-capabilities-contract'
 
 export function PlannedCapabilityMenu({ ids, onOpen }: { ids: PlannedCapabilityId[]; onOpen: (id: PlannedCapabilityId) => void }) {
   return <View style={styles.menu}>

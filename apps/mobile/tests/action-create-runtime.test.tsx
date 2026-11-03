@@ -481,7 +481,7 @@ describe('mobile action creation runtime', () => {
       'Collectif',
       'Autre',
     ])
-    expect(radios.every((radio) => radio.props.accessibilityState?.checked === false)).toBe(true)
+    expect(radios.every((radio) => testProp<{ checked?: boolean }>(radio, 'accessibilityState')?.checked === false)).toBe(true)
   })
 
   it.each([
