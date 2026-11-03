@@ -51,7 +51,7 @@ const cmmButtonScalePattern = /\b(?:hover|active|group-hover):scale-[^\s"'`}]+/g
 const primitiveShellOverridePattern = /(?:^|\s)(?:(?:rounded|shadow|bg|border|ring|backdrop-blur|p|px|py|h|min-h|max-h)-\[[^\]]+\]|(?:hover|active|focus|group-hover):(?:scale|shadow)-[^\s"'`}]+)/;
 // These are bounded visual owners, not a repository-wide exemption. Their
 // specialized surface contracts are reviewed by role; new files remain gated.
-const documentedSpecializedSurfaceOverrides = new Map([
+export const documentedSpecializedSurfaceOverrides = new Map([
   ["apps/web/src/components/dashboard/dashboard-priority-action.tsx", "dashboard priority CTA"],
   ["apps/web/src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx", "annuaire actor surface and CTAs"],
   ["apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx", "annuaire map controls"],

@@ -91,6 +91,16 @@ const HISTORICAL_DECISION_REFERENCE = Object.freeze([
   ["apps/web/src/lib/reports/report-generation-history-store.ts", "COHESIVE_SINGLE_FILE", "NONE"],
 ].map(([file, ARCHITECTURE_DECISION, PRIORITY]) => ({ file, ARCHITECTURE_DECISION, PRIORITY })));
 
+// The decision remains historical, while its CURRENT owner follows the
+// published Rubriques move. Keep this alias here so the regression protects
+// the decision values without resurrecting the old physical path.
+const HISTORICAL_PATH_RENAMES = new Map([
+  [
+    "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
+    "apps/web/src/components/sections/rubriques/weather/weather-section.conditions.tsx",
+  ],
+]);
+
 function canonicalRegistry({ file = "src/current.ts", decision = "COHESIVE_SINGLE_FILE", priority = "NONE", detailDecision = decision, detailPriority = priority, dependency = "aucun", nextTrigger = "nouveau contrat" } = {}) {
   const values = {
     RESPONSIBILITIES: "responsabilité",
@@ -127,7 +137,7 @@ function canonicalRegistry({ file = "src/current.ts", decision = "COHESIVE_SINGL
 function assertHistoricalDecisionsPreserved(decisions) {
   const decisionsByFile = new Map(decisions.map((entry) => [entry.file, entry]));
   const actual = HISTORICAL_DECISION_REFERENCE.map(({ file, ARCHITECTURE_DECISION, PRIORITY }) => {
-    const decision = decisionsByFile.get(file);
+    const decision = decisionsByFile.get(file) ?? decisionsByFile.get(HISTORICAL_PATH_RENAMES.get(file));
     assert.ok(decision, `décision historique absente pour ${file}`);
     return { file, ARCHITECTURE_DECISION: decision.ARCHITECTURE_DECISION, PRIORITY: decision.PRIORITY };
   });

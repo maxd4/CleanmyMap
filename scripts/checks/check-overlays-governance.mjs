@@ -7,7 +7,7 @@ export const LEGACY_MODAL_ALLOWLIST = new Set([
   "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx",
 ]);
 
-const MIGRATED_CONSUMERS = new Map([
+export const MIGRATED_CONSUMERS = new Map([
   [
     "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section-dialog.tsx",
     ["@/components/ui/cmm-dialog", "<CmmDialog", "initialFocusRef={confirmButtonRef}"],
