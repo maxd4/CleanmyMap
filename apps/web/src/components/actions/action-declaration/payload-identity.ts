@@ -3,6 +3,9 @@ import type { CreateActionPayload } from "../../../lib/actions/types";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { buildOrganizerPayloadFields, resolveOrganizerPayload } from "./organizer-payload";
 import type { CreateActionPayloadParams, CreateActionPayloadParts } from "./payload-contract";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
+
+export const MAX_ORGANIZER_ACCOUNTS = 20;
 
 export function parseOrganizerAccounts(input: string): string[] {
   return [...new Set(
@@ -12,6 +15,35 @@ export function parseOrganizerAccounts(input: string): string[] {
       .map((token) => token.replace(/^@+/, ""))
       .filter((token) => token.length > 0),
   )];
+}
+
+export function mergeOrganizerAccountSelection(
+  currentInput: string,
+  selectedAccountIds?: readonly string[],
+): string[] {
+  const currentIds = parseOrganizerAccounts(currentInput);
+  const selectedId = parseOrganizerAccounts((selectedAccountIds ?? []).join(", "))[0];
+  if (!selectedId) return currentIds;
+  if (currentIds.length >= MAX_ORGANIZER_ACCOUNTS && !currentIds.includes(selectedId)) {
+    return currentIds;
+  }
+  return [selectedId, ...currentIds.filter((accountId) => accountId !== selectedId)]
+    .slice(0, MAX_ORGANIZER_ACCOUNTS);
+}
+
+export function preserveSpontaneousOrganizerName(
+  currentName: string,
+  nextName: string,
+  organizerAccountIds: readonly string[],
+): string {
+  const normalizedNextName = nextName.trim();
+  if (normalizedNextName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL || organizerAccountIds.length === 0) {
+    return normalizedNextName;
+  }
+  const normalizedCurrentName = currentName.trim();
+  return normalizedCurrentName && normalizedCurrentName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL
+    ? normalizedCurrentName
+    : organizerAccountIds[0];
 }
 
 export function normalizeParticipantAccounts(

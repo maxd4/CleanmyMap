@@ -1,7 +1,10 @@
 "use client";
 
 import { ClipboardList, Users } from "lucide-react";
-import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
+import {
+  ORGANIZER_TYPE_OPTIONS,
+  SPONTANEOUS_PENDING_ORGANIZER_LABEL,
+} from "@/lib/actions/organizer-type";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
@@ -10,7 +13,12 @@ import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import type { InvitationStatus } from "../../action-participant-picker-model";
-import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
+import {
+  mergeOrganizerAccountSelection,
+  normalizeParticipantAccounts,
+  parseOrganizerAccounts,
+  preserveSpontaneousOrganizerName,
+} from "../payload";
 import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
@@ -115,6 +123,33 @@ function IdentityFieldGrid({
     || userMetadata.userId;
   const creatorHandle = userMetadata.handle?.trim() || userMetadata.username?.trim();
 
+  function handleOrganizerChange(selection: {
+    id: string | null;
+    name: string;
+    accountIds?: string[];
+  }) {
+    const spontaneousAccountIds =
+      form.organizerType === "spontaneous"
+        ? mergeOrganizerAccountSelection(form.organizerAccounts, selection.accountIds)
+        : null;
+    const selectedAccountId = parseOrganizerAccounts((selection.accountIds ?? []).join(", "))[0];
+    const selectedAccountWasAccepted =
+      !selectedAccountId || spontaneousAccountIds?.includes(selectedAccountId);
+    let organizerName = selection.name;
+    if (form.organizerType === "spontaneous" && spontaneousAccountIds) {
+      organizerName = preserveSpontaneousOrganizerName(
+        form.organizerName,
+        selectedAccountWasAccepted ? selection.name : SPONTANEOUS_PENDING_ORGANIZER_LABEL,
+        spontaneousAccountIds,
+      );
+    }
+    updateFields?.({
+      organizerId: selection.id,
+      organizerName,
+      ...(spontaneousAccountIds ? { organizerAccounts: spontaneousAccountIds.join(", ") } : {}),
+    });
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <FieldShell label="Référent ou créateur">
@@ -153,13 +188,7 @@ function IdentityFieldGrid({
           organizerAccountIds={parseOrganizerAccounts(form.organizerAccounts)}
           currentUserId={userMetadata.userId}
           activeRole={userMetadata.activeRole}
-          onChange={({ id, name, accountIds }) => updateFields?.({
-            organizerId: id,
-            organizerName: name,
-            ...(form.organizerType === "spontaneous" && accountIds
-              ? { organizerAccounts: accountIds.join(", ") }
-              : {}),
-          })}
+          onChange={handleOrganizerChange}
           required
           invalid={missingAssociation}
           describedBy={missingAssociation ? "before-organizer-structure-error" : undefined}

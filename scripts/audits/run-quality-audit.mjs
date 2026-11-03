@@ -123,6 +123,49 @@ export function serialize(value, active = new WeakSet()) {
   }
 }
 
+const DUPLICATION_COMPARISON_STATUSES = new Set(["PASS", "PASS_WITH_GRACE", "FAIL"]);
+
+function validateScopedDuplicationApplication(result) {
+  const diagnostics = [];
+  if (!Array.isArray(result?.results) || result.results.length === 0) {
+    diagnostics.push("scoped duplication results are absent or empty");
+  }
+  for (const [index, entry] of (result?.results ?? []).entries()) {
+    const comparison = entry?.applicationComparison;
+    if (!comparison || typeof comparison !== "object") {
+      diagnostics.push(`application comparison is missing for result ${index}`);
+      continue;
+    }
+    if (!DUPLICATION_COMPARISON_STATUSES.has(comparison.status)) {
+      diagnostics.push(`application comparison status is invalid for result ${index}`);
+    }
+    if (!Array.isArray(comparison.failures)) {
+      diagnostics.push(`application comparison failures are invalid for result ${index}`);
+    }
+    if (!Array.isArray(comparison.newFingerprints)) {
+      diagnostics.push(`application comparison fingerprints are invalid for result ${index}`);
+    }
+    if (comparison.measurementStatus !== "PASS" || comparison.measurementValid !== true) {
+      diagnostics.push(...(Array.isArray(comparison.diagnostics) && comparison.diagnostics.length > 0
+        ? comparison.diagnostics
+        : [`application measurement is not validated for result ${index}`]));
+    }
+    if (Array.isArray(comparison.failures)
+      && ((comparison.status === "PASS" && comparison.failures.length > 0)
+        || (comparison.status !== "PASS" && comparison.failures.length === 0))) {
+      diagnostics.push(`application comparison status and failures disagree for result ${index}`);
+    }
+  }
+  return { valid: diagnostics.length === 0, diagnostics: [...new Set(diagnostics)] };
+}
+
+function scopedDuplicationApplicationStatus(result) {
+  const statuses = (result.results ?? []).map((entry) => entry.applicationComparison?.status);
+  return statuses.includes("FAIL")
+    ? "FAIL"
+    : statuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
+}
+
 function statusForAudit(audit, result) {
   if (result?.status === "SKIPPED_BY_POLICY") return "SKIPPED_BY_POLICY";
   if (audit !== "duplication" && result?.status === "FAIL") return "FAIL";
@@ -130,10 +173,7 @@ function statusForAudit(audit, result) {
   if (audit === "duplication") {
     const scoped = result.scope && result.scope !== "all";
     if (scoped) {
-      const statuses = (result.results ?? []).map((entry) => entry.applicationComparison?.status);
-      return statuses.includes("FAIL")
-        ? "FAIL"
-        : statuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
+      return validateScopedDuplicationApplication(result).valid ? scopedDuplicationApplicationStatus(result) : "FAIL";
     }
     if (result?.status === "FAIL") return "FAIL";
     const statuses = (result.results ?? []).map((entry) => entry.comparison?.status);
@@ -242,6 +282,8 @@ export function attentionRequired(audit, result) {
   }
   if (audit === "duplication") {
     if (result.scope && result.scope !== "all") {
+      const validation = validateScopedDuplicationApplication(result);
+      if (!validation.valid) return true;
       return (result.results ?? []).some((entry) => {
         const comparison = entry.applicationComparison;
         return comparison?.status === "FAIL"
@@ -364,7 +406,7 @@ function makeSummary({ audit, manifest, result, paths }) {
     );
   }
   if (audit === "duplication" && result?.results) {
-    for (const entry of result.results) lines.splice(6, 0, `- ${entry.scopeName}: ${entry.metrics.clones} clones, ${entry.metrics.duplicatedLines} duplicated lines, ${entry.metrics.duplicatedTokens} duplicated tokens, ${entry.occurrences?.length ?? 0} occurrence pairs projected`);
+    for (const entry of result.results) lines.splice(6, 0, `- ${entry.scopeName}: ${entry.metrics?.clones ?? "n/a"} clones, ${entry.metrics?.duplicatedLines ?? "n/a"} duplicated lines, ${entry.metrics?.duplicatedTokens ?? "n/a"} duplicated tokens, ${entry.occurrences?.length ?? 0} occurrence pairs projected`);
     lines.splice(6, 0,
       `- KEEP_INTENTIONAL: ${result.justificationReport?.keepIntentional ?? 0}`,
       `- NO_ACTION_NOISE: ${result.justificationReport?.noActionNoise ?? 0}`,
@@ -557,8 +599,13 @@ function auditErrorResult(error) {
 
 function duplicationProjectionMetadata(result) {
   if (!result?.scope || result.scope === "all") return null;
-  const applicationStatus = statusForAudit("duplication", result);
-  const applicationAttentionRequired = attentionRequired("duplication", result);
+  const validation = validateScopedDuplicationApplication(result);
+  const applicationStatus = validation.valid ? scopedDuplicationApplicationStatus(result) : "FAIL";
+  const applicationAttentionRequired = !validation.valid || attentionRequired("duplication", result);
+  const applicationDiagnostics = [...new Set([
+    ...validation.diagnostics,
+    ...(result.results ?? []).flatMap((entry) => entry.applicationComparison?.diagnostics ?? []),
+  ])];
   const transverseStatuses = (result.results ?? []).map((entry) => entry.comparison?.status);
   const transverseStatus = transverseStatuses.includes("FAIL") || (result.justificationReport?.stale?.length ?? 0) > 0
     ? "FAIL"
@@ -569,11 +616,18 @@ function duplicationProjectionMetadata(result) {
     || entry.comparison?.status === "PASS_WITH_GRACE"
   ) || (result.justificationReport?.staleKeepIntentional?.length ?? 0) > 0
     || (result.justificationReport?.staleNoActionNoise?.length ?? 0) > 0;
+  const transverseDiagnostics = [
+    ...(result.results ?? []).flatMap((entry) => entry.comparison?.failures ?? []),
+    ...(result.justificationReport?.stale ?? []).map((identity) => `stale durable justification (${identity})`),
+  ];
   return {
     applicationStatus,
     applicationAttentionRequired,
+    applicationMeasurementStatus: validation.valid ? "PASS" : "FAIL",
+    applicationDiagnostics,
     transverseStatus,
     transverseAttentionRequired,
+    transverseDiagnostics,
   };
 }
 
@@ -640,8 +694,11 @@ function writeAuditManifests({ root, auditedHead, runId, generatedAt, results, f
       ...(entry.applicationStatus ? {
         applicationStatus: entry.applicationStatus,
         applicationAttentionRequired: entry.applicationAttentionRequired,
+        applicationMeasurementStatus: entry.applicationMeasurementStatus,
+        applicationDiagnostics: entry.applicationDiagnostics,
         transverseStatus: entry.transverseStatus,
         transverseAttentionRequired: entry.transverseAttentionRequired,
+        transverseDiagnostics: entry.transverseDiagnostics,
       } : {}),
       generatedAt,
     };
@@ -700,13 +757,13 @@ function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manife
       status: overallStatus,
       scope,
       attentionRequired: overallAttention,
-      audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass, applicationStatus, applicationAttentionRequired, transverseStatus, transverseAttentionRequired }) => ({
+      audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass, applicationStatus, applicationAttentionRequired, applicationMeasurementStatus, applicationDiagnostics, transverseStatus, transverseAttentionRequired, transverseDiagnostics }) => ({
         audit,
         status,
         attentionRequired: attention,
         readProvenance,
         resultClass,
-        ...(applicationStatus ? { applicationStatus, applicationAttentionRequired, transverseStatus, transverseAttentionRequired } : {}),
+        ...(applicationStatus ? { applicationStatus, applicationAttentionRequired, applicationMeasurementStatus, applicationDiagnostics, transverseStatus, transverseAttentionRequired, transverseDiagnostics } : {}),
       })),
       documentation,
     }),
@@ -833,8 +890,10 @@ export function formatQualityAuditCliResult(result) {
   for (const entry of result.results) {
     lines.push(`${entry.audit}: ${entry.status}; attention=${entry.attentionRequired}`);
     if (entry.applicationStatus) {
-      lines.push(`${entry.audit}.application: ${entry.applicationStatus}; attention=${entry.applicationAttentionRequired}`);
+      lines.push(`${entry.audit}.application: ${entry.applicationStatus}; attention=${entry.applicationAttentionRequired}; measurement=${entry.applicationMeasurementStatus}`);
+      for (const diagnostic of entry.applicationDiagnostics ?? []) lines.push(`${entry.audit}.application-diagnostic: ${diagnostic}`);
       lines.push(`${entry.audit}.transverse: ${entry.transverseStatus}; attention=${entry.transverseAttentionRequired}`);
+      for (const diagnostic of entry.transverseDiagnostics ?? []) lines.push(`${entry.audit}.transverse-diagnostic: ${diagnostic}`);
     }
   }
   if (result.projectionStatus) lines.push(`QUALITY_AUDIT_PROJECTION_STATUS: ${result.projectionStatus}`);

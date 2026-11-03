@@ -8,7 +8,6 @@ export function applyOrganizerFormUpdates(
   if (updates.organizerType !== undefined && updates.organizerType !== previousForm.organizerType) {
     nextForm.organizerId = null;
     nextForm.organizerName = "";
-    nextForm.organizerAccounts = "";
     nextForm.associationName = updates.organizerType === "spontaneous" ? "Action spontanée" : "";
   }
   if (updates.organizerName !== undefined && !("organizerId" in updates)) {

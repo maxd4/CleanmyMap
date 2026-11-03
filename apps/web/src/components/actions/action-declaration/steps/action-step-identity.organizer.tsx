@@ -1,7 +1,14 @@
 import { Building, Calendar } from "lucide-react";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
-import { parseOrganizerAccounts } from "../payload";
-import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
+import {
+  mergeOrganizerAccountSelection,
+  parseOrganizerAccounts,
+  preserveSpontaneousOrganizerName,
+} from "../payload";
+import {
+  ORGANIZER_TYPE_OPTIONS,
+  SPONTANEOUS_PENDING_ORGANIZER_LABEL,
+} from "@/lib/actions/organizer-type";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { FormState } from "../model";
 import {
@@ -327,12 +334,25 @@ export function ActionOrganizerSection({
     name: string;
     accountIds?: string[];
   }) {
+    const spontaneousAccountIds =
+      form.organizerType === "spontaneous"
+        ? mergeOrganizerAccountSelection(form.organizerAccounts, selection.accountIds)
+        : null;
+    const selectedAccountId = parseOrganizerAccounts((selection.accountIds ?? []).join(", "))[0];
+    const selectedAccountWasAccepted =
+      !selectedAccountId || spontaneousAccountIds?.includes(selectedAccountId);
+    let organizerName = selection.name;
+    if (form.organizerType === "spontaneous" && spontaneousAccountIds) {
+      organizerName = preserveSpontaneousOrganizerName(
+        form.organizerName,
+        selectedAccountWasAccepted ? selection.name : SPONTANEOUS_PENDING_ORGANIZER_LABEL,
+        spontaneousAccountIds,
+      );
+    }
     updateFields({
       organizerId: selection.id,
-      organizerName: selection.name,
-      ...(form.organizerType === "spontaneous" && selection.accountIds
-        ? { organizerAccounts: selection.accountIds.join(", ") }
-        : {}),
+      organizerName,
+      ...(spontaneousAccountIds ? { organizerAccounts: spontaneousAccountIds.join(", ") } : {}),
       associationName:
         form.organizerType === "spontaneous"
           ? "Action spontanée"

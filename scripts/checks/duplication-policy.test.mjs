@@ -248,6 +248,54 @@ test("jscpd execution failures survive qualification when reports remain usable"
   );
 });
 
+test("a scoped jscpd execution failure cannot produce an application PASS", () => {
+  const report = runDuplicationPolicy({
+    scope: "mobile",
+    runScopeFn: (scopeName, baseline) => ({
+      scopeName,
+      metrics: { ...baseline.scopes[scopeName], newClones: 0 },
+      fingerprints: new Set(),
+      occurrences: [],
+      execution: { status: "FAIL", exitCode: 1, signal: null },
+      executionFailures: ["jscpd execution failed (exit 1)"],
+      comparison: { status: "PASS", failures: [] },
+    }),
+  });
+  const runtime = report.results.find((result) => result.scopeName === "runtime");
+  assert.equal(runtime.comparison.status, "FAIL");
+  assert.equal(runtime.applicationComparison.status, "FAIL");
+  assert.equal(runtime.applicationComparison.measurementStatus, "FAIL");
+  assert.equal(runtime.applicationComparison.measurementValid, false);
+  assert.match(runtime.applicationComparison.diagnostics.join("\n"), /jscpd execution failed/);
+});
+
+test("a valid scoped measurement keeps a transverse ratchet failure non-blocking for the application", () => {
+  const report = runDuplicationPolicy({
+    scope: "web",
+    runScopeFn: (scopeName, baseline) => {
+      const metrics = { ...baseline.scopes[scopeName], newClones: 0 };
+      if (scopeName === "runtime") {
+        metrics.duplicatedLines += 81;
+        metrics.duplicatedTokens += 801;
+      }
+      return {
+        scopeName,
+        metrics,
+        fingerprints: new Set(),
+        occurrences: [],
+        execution: { status: "PASS", exitCode: 0, signal: null },
+        executionFailures: [],
+        comparison: { status: "PASS", failures: [] },
+      };
+    },
+  });
+  const runtime = report.results.find((result) => result.scopeName === "runtime");
+  assert.equal(runtime.comparison.status, "FAIL");
+  assert.equal(runtime.applicationComparison.status, "PASS");
+  assert.equal(runtime.applicationComparison.measurementStatus, "PASS");
+  assert.equal(runtime.applicationComparison.measurementValid, true);
+});
+
 test("duplication reporting exposes status, fingerprints, and deltas by scope", () => {
   const output = formatDuplicationReport({
     results: [{

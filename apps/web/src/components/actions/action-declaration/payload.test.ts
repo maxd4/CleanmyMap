@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildCreateActionPayload, parseOrganizerAccounts } from "./payload";
+import {
+  buildCreateActionPayload,
+  mergeOrganizerAccountSelection,
+  parseOrganizerAccounts,
+  preserveSpontaneousOrganizerName,
+} from "./payload";
 import { buildBaseForm } from "./payload.test-fixtures";
 
 type PayloadUserMetadata = Parameters<typeof buildCreateActionPayload>[0]["userMetadata"];
@@ -157,5 +162,32 @@ describe("action declaration payload identity and organisation", () => {
 
     expect(payload.associationName).toBe("Action spontanée");
     expect(payload.organizerAccounts).toEqual(["alice", "bob"]);
+  });
+
+  it("puts a selected spontaneous organizer first without duplicating or exceeding the server limit", () => {
+    expect(mergeOrganizerAccountSelection("alice, bob, alice", ["bob"])).toEqual(["bob", "alice"]);
+    const fullSelection = Array.from({ length: 20 }, (_, index) => `user-${index}`);
+    expect(mergeOrganizerAccountSelection(fullSelection.join(", "), ["user-0"])).toEqual([
+      "user-0",
+      ...fullSelection.slice(1),
+    ]);
+    expect(mergeOrganizerAccountSelection(fullSelection.join(", "), ["user-new"])).toEqual(fullSelection);
+
+    const form = buildBaseForm();
+    form.associationName = "Action spontanée";
+    form.organizerAccounts = mergeOrganizerAccountSelection("alice, bob", ["referent"]).join(", ");
+    const payload = buildPayload(form);
+
+    expect(payload.organizerAccounts).toEqual(["referent", "alice", "bob"]);
+  });
+
+  it("keeps existing spontaneous accounts when Autre is chosen and avoids a false pending label", () => {
+    const accounts = ["user-primary", "user-helper"];
+
+    expect(mergeOrganizerAccountSelection(accounts.join(", "), [])).toEqual(accounts);
+    expect(preserveSpontaneousOrganizerName("Organisateur en attente de compte", "Organisateur en attente de compte", accounts))
+      .toBe("user-primary");
+    expect(preserveSpontaneousOrganizerName("Alice", "Organisateur en attente de compte", accounts)).toBe("Alice");
+    expect(preserveSpontaneousOrganizerName("", "Organisateur en attente de compte", [])).toBe("Organisateur en attente de compte");
   });
 });

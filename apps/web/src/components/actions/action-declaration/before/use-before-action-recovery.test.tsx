@@ -148,6 +148,7 @@ describe("before-action draft recovery", () => {
     const draft = {
       ...buildValidForm(),
       actionTitle: "Titre du brouillon",
+      organizerAccounts: "user-primary, user-helper",
       creationRequestId: "action-create-recovered-42",
     };
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(draft));
@@ -167,12 +168,14 @@ describe("before-action draft recovery", () => {
     expect(latest.persistenceStatus).toBe("local");
     expect(latest.form.actionTitle).toBe("Saisie plus récente");
     expect(latest.form.departureLocationLabel).toBe("Parc central");
+    expect(latest.form.organizerAccounts).toBe("user-primary, user-helper");
 
     renderer.unmount();
 
     let remounted!: ReturnType<typeof useBeforeActionForm>;
     mountForm((value) => { remounted = value; });
     expect(remounted.form.actionTitle).toBe("Saisie plus récente");
+    expect(remounted.form.organizerAccounts).toBe("user-primary, user-helper");
 
     await act(async () => {
       await remounted.handleSubmit();

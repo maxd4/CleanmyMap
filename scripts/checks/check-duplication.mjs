@@ -234,9 +234,22 @@ export function runDuplicationPolicy({
     const scopedFingerprints = new Set(scopedOccurrences.map((occurrence) => occurrence.fingerprint).filter(Boolean));
     const nativeBaseline = nativeBaselines[result.scopeName];
     const newFingerprints = [...scopedFingerprints].filter((fingerprint) => !Object.hasOwn(nativeBaseline.fingerprints, fingerprint));
+    const measurementDiagnostics = [
+      ...(Array.isArray(result.executionFailures) ? result.executionFailures : ["jscpd execution diagnostics are unavailable"]),
+      ...(result.execution?.status === "PASS" ? [] : ["jscpd execution was not validated as successful"]),
+      ...(Array.isArray(result.occurrences) ? [] : ["jscpd occurrence measurement is unavailable"]),
+    ];
+    const measurementValid = measurementDiagnostics.length === 0;
+    const applicationFailures = [
+      ...measurementDiagnostics,
+      ...(newFingerprints.length > 0 ? [`new ${activeScope} clone fingerprints detected (${newFingerprints.length})`] : []),
+    ];
     result.applicationComparison = {
-      status: newFingerprints.length > 0 ? "FAIL" : "PASS",
-      failures: newFingerprints.length > 0 ? [`new ${activeScope} clone fingerprints detected (${newFingerprints.length})`] : [],
+      status: applicationFailures.length > 0 ? "FAIL" : "PASS",
+      failures: applicationFailures,
+      diagnostics: measurementDiagnostics,
+      measurementStatus: measurementValid ? "PASS" : "FAIL",
+      measurementValid,
       newFingerprints,
       transverse: result.comparison,
     };
@@ -254,6 +267,8 @@ export function formatDuplicationReport({ results, justificationReport = null, t
     const attribution = attributedResults.find((entry) => entry.scopeName === scopeName);
     if (scope !== "all") {
       lines.push(`${scopeName} (${scope} projection): ${attribution?.occurrencePairs ?? 0} occurrence pairs; application status=${comparison?.status ?? "NOT_MEASURED"}; transverse status=${result.comparison.status}.`);
+      lines.push(`  APPLICATION_MEASUREMENT_STATUS: ${comparison?.measurementStatus ?? "NOT_VALIDATED"}`);
+      for (const diagnostic of comparison?.diagnostics ?? []) lines.push(`  APPLICATION_DIAGNOSTIC: ${diagnostic}`);
     }
     lines.push(`${scopeName}: ${metrics.clones} clones, ${metrics.duplicatedLines}/${metrics.lines} lines (${metrics.percentage.toFixed(2)}%), ${metrics.duplicatedTokens}/${metrics.tokens} tokens.`);
     lines.push(`  DUPLICATION_STATUS: ${comparison.status}`);

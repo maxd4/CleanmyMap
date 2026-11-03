@@ -62,7 +62,7 @@ function duplicationScopedFixture({ scope = "web", applicationStatus = "PASS", t
       scopeName: "runtime",
       metrics: { clones: transverseStatus === "FAIL" ? 1 : 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: transverseStatus === "FAIL" ? 1 : 0 },
       comparison: { status: transverseStatus, failures: transverseFailures },
-      applicationComparison: { status: applicationStatus, failures: applicationFailures, newFingerprints: applicationFailures.length ? ["app-fingerprint"] : [], transverse: { status: transverseStatus, failures: transverseFailures } },
+      applicationComparison: { status: applicationStatus, failures: applicationFailures, diagnostics: [], measurementStatus: "PASS", measurementValid: true, newFingerprints: applicationFailures.length ? ["app-fingerprint"] : [], transverse: { status: transverseStatus, failures: transverseFailures } },
     }],
     justificationReport: { stale, staleKeepIntentional: stale, staleNoActionNoise: [] },
   };
@@ -606,6 +606,52 @@ test("duplication scoped conserve le PASS applicatif et expose un échec transve
   }
 });
 
+test("duplication scoped refuse les résultats absents ou les comparaisons applicatives malformées", async () => {
+  const scenarios = [
+    {
+      runId: "run-duplication-missing-results",
+      result: { scope: "web", justificationReport: { stale: [] } },
+      diagnostic: /results are absent or empty/,
+    },
+    {
+      runId: "run-duplication-invalid-comparison",
+      result: {
+        scope: "mobile",
+        results: [{ scopeName: "runtime", comparison: { status: "PASS", failures: [] }, applicationComparison: { status: "PASS", failures: [], newFingerprints: [], measurementStatus: "FAIL", measurementValid: false, diagnostics: ["jscpd report is not exploitable"] } }],
+        justificationReport: { stale: [] },
+      },
+      diagnostic: /jscpd report is not exploitable/,
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const root = tempRoot();
+    try {
+      const result = await runQualityAudit("duplication", {
+        root,
+        scope: scenario.result.scope,
+        runId: scenario.runId,
+        snapshot: () => stableSnapshot,
+        engine: async () => scenario.result,
+      });
+      const entry = result.results[0];
+      const manifest = JSON.parse(fs.readFileSync(entry.paths.manifest, "utf8"));
+      const report = JSON.parse(fs.readFileSync(entry.paths.report, "utf8"));
+      const cli = formatQualityAuditCliResult(result);
+      assert.equal(result.status, "FAIL", scenario.runId);
+      assert.equal(entry.attentionRequired, true, scenario.runId);
+      assert.equal(manifest.applicationStatus, "FAIL", scenario.runId);
+      assert.equal(manifest.applicationMeasurementStatus, "FAIL", scenario.runId);
+      assert.match(manifest.applicationDiagnostics.join("\n"), scenario.diagnostic, scenario.runId);
+      assert.equal(report.status, "FAIL", scenario.runId);
+      assert.ok(cli.includes("duplication: FAIL; attention=true"), scenario.runId);
+      assert.ok(cli.some((line) => line.includes("duplication.application-diagnostic:") && scenario.diagnostic.test(line)), scenario.runId);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
 test("duplication scope=all conserve le verdict historique et n'ajoute pas de projection applicative", async () => {
   const root = tempRoot();
   try {
@@ -654,8 +700,9 @@ test("duplication scoped aligne CLI, manifest et agrégat sur les deux verdicts"
     assert.equal(aggregateDuplication.status, "PASS");
     assert.equal(aggregateDuplication.applicationStatus, "PASS");
     assert.equal(aggregateDuplication.transverseStatus, "FAIL");
+    assert.deepEqual(aggregateDuplication.transverseDiagnostics, ["monorepo duplication ratchet exceeded"]);
     assert.ok(cli.includes("duplication: PASS; attention=false"));
-    assert.ok(cli.includes("duplication.application: PASS; attention=false"));
+    assert.ok(cli.includes("duplication.application: PASS; attention=false; measurement=PASS"));
     assert.ok(cli.includes("duplication.transverse: FAIL; attention=true"));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
