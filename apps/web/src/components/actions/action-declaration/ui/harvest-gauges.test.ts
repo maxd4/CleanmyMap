@@ -15,10 +15,22 @@ describe("TrashBinGauge", () => {
     expect(markup).toContain('data-testid="waste-measurement-visual"');
     expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(3);
     expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup).toContain("Non renseigné");
+    expect(markup).toContain('aria-label="Quantité de déchets hors mégots : Non renseigné.');
+    expect(markup).not.toContain("0,00 kg");
     expect(markup).toContain("Repère visuel uniquement");
   });
 
-  it("fills progressively from the declared mass and resets to empty", () => {
+  it("keeps an explicit zero distinct from an absent mass", () => {
+    const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, { value: 0 }));
+
+    expect(markup).toContain("0,00 kg");
+    expect(markup).toContain('aria-label="Quantité de déchets hors mégots : 0,00 kg.');
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup).not.toContain("Non renseigné");
+  });
+
+  it("fills progressively from the declared mass and resets to explicit zero", () => {
     const markup = renderToStaticMarkup(
       React.createElement(TrashBinGauge, {
         value: 5,
@@ -32,10 +44,37 @@ describe("TrashBinGauge", () => {
 
     const resetMarkup = renderToStaticMarkup(React.createElement(TrashBinGauge, { value: 0 }));
     expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(resetMarkup).toContain("0,00 kg");
   });
 });
 
 describe("DropletGauge", () => {
+  it("keeps three outlined drops and labels an absent quantity as unknown", () => {
+    const markup = renderToStaticMarkup(React.createElement(DropletGauge, { value: null }));
+
+    expect(markup).toContain('data-testid="butts-measurement-visual"');
+    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup).toContain("Non renseigné");
+    expect(markup).toContain('aria-label="Quantité de mégots retenue : Non renseigné.');
+    expect(markup).not.toContain("0 mégots");
+  });
+
+  it("keeps an explicit zero distinct from an absent quantity and resets to empty", () => {
+    const zeroMarkup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 0 }));
+
+    expect(zeroMarkup).toContain("0 mégots");
+    expect(zeroMarkup).toContain('aria-label="Quantité de mégots retenue : 0 mégots.');
+    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(zeroMarkup).not.toContain("Non renseigné");
+
+    const positiveMarkup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 2_500 }));
+    expect(positiveMarkup).toContain("2 500 mégots");
+    const resetMarkup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 0 }));
+    expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(resetMarkup).toContain("0 mégots");
+  });
+
   it("uses the retained butt quantity independently of comparisons", () => {
     const markup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 2_500 }));
 

@@ -85,7 +85,7 @@ export function TrashBinGauge({ value }: { value: number | null }) {
       icon={Trash2}
       colorClass="text-emerald-400"
       label="Quantité de déchets hors mégots"
-      valueLabel={`${formatKg(value ?? 0)} kg`}
+      valueLabel={value === null ? "Non renseigné" : `${formatKg(value)} kg`}
       testId="waste-measurement-visual"
     />
   );
@@ -99,7 +99,7 @@ export function DropletGauge({ value }: { value: number | null }) {
       icon={Droplet}
       colorClass="text-amber-400"
       label="Quantité de mégots retenue"
-      valueLabel={`${formatCount(value ?? 0)} mégots`}
+      valueLabel={value === null ? "Non renseigné" : `${formatCount(value)} mégots`}
       testId="butts-measurement-visual"
     />
   );
