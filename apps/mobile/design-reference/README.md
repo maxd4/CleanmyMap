@@ -2,7 +2,7 @@
 
 **Statut :** `BENCHMARK / PLAN` (aucune de ces fiches ne remplace un contrat métier `CURRENT`). Recherche et photos publiques : 3 novembre 2026.
 
-Ces documents proposent **page par page** une composition de mobile natif, accessible et sombre par défaut. Chaque guide comporte **au moins une image Strava réellement publiée** et, pour six pages, un mockup CleanMyMap déjà généré. Les huit images Strava sont des visuels de la fiche Google Play et **ne constituent pas toutes une capture directe de la page correspondante** : voir [provenance](./REFERENCES_STRAVA.md).
+Ces documents proposent **page par page** une composition de mobile natif, accessible et sombre par défaut. Chaque guide référence une source Strava consultable ou signale explicitement la référence manquante ; six pages disposent aussi d’un mockup CleanMyMap déjà généré. Les visuels promotionnels Google Play et les images tierces ne sont ni versionnés ni distribués par le dépôt ; une copie locale facultative et ignorée par Git est décrite dans l’[inventaire de provenance](./REFERENCES_STRAVA.md).
 
 ## Couverture des pages
 

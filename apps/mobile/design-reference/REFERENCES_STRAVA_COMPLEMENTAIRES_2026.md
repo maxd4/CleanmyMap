@@ -2,7 +2,7 @@
 
 **Statut : BENCHMARK / SOURCE EXTERNE.** Recherche complémentaire du 3 novembre 2026. Le dépôt `main` reste la source de vérité sur l'implémentation CleanMyMap.
 
-Ce document complète les huit images Google Play déjà intégrées aux guides. Il **ne prétend pas disposer d'une capture exacte de chacune des 22 pages**. Il distingue les captures observées et leur date, les banques UI historiques, les sources officielles décrivant un comportement sans capture et les illustrations de concept non représentatives du runtime.
+Ce document complète l’inventaire de provenance des huit visuels Google Play retirés de Git : ils peuvent rester disponibles localement à l’emplacement ignoré documenté, mais ne sont ni intégrés ni distribués par les guides versionnés. Il **ne prétend pas disposer d'une capture exacte de chacune des 22 pages**. Il distingue les captures observées et leur date, les banques UI historiques, les sources officielles décrivant un comportement sans capture et les illustrations de concept non représentatives du runtime.
 
 ## Priorité de collecte
 
