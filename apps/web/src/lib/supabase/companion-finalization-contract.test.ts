@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
 const trackingServicePath = new URL(
-  "../../../../../apps/mobile/lib/tracking-service.ts",
+  "../../../../../apps/mobile/features/tracking/tracking-service.ts",
   import.meta.url,
 );
 

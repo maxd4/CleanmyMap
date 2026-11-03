@@ -7,7 +7,7 @@ import {
   GPS_PERMISSION_RATIONALE_MESSAGE,
   GPS_PERMISSION_RATIONALE_TITLE,
   showGpsPermissionRationale,
-} from '../lib/gps-permission-rationale'
+} from '../features/tracking/gps-permission-rationale'
 
 describe('native GPS permission rationale', () => {
   beforeEach(() => vi.clearAllMocks())

@@ -51,13 +51,13 @@ function createSupabaseMock() { return {
   getClerkUserId: getUserId,
 } }
 
-vi.mock('../lib/supabase', createSupabaseMock)
+vi.mock('../shared/lib/supabase', createSupabaseMock)
 
 function createPermissionRationaleMock() { return {
   showGpsPermissionRationale: vi.fn(async () => true),
 } }
 
-vi.mock('../lib/gps-permission-rationale', createPermissionRationaleMock)
+vi.mock('../features/tracking/gps-permission-rationale', createPermissionRationaleMock)
 
 async function readStoredMissionId() { return state.storedMissionId }
 async function readStoredMissionOwnerId() { return 'user_123' }
@@ -88,7 +88,7 @@ function createStorageBufferMock() { return {
 
 function createStorageMock() { return Object.assign({}, createStorageMissionMock(), createStorageBufferMock()) }
 
-vi.mock('../lib/storage', createStorageMock)
+vi.mock('../shared/lib/storage', createStorageMock)
 
 import {
   CLERK_SESSION_REQUIRED_ERROR,
@@ -98,8 +98,8 @@ import {
   requestTrackingPermissions,
   saveLocationPoint,
   stopTracking,
-} from '../lib/tracking-service'
-import { bufferPoint, flushBuffer } from '../lib/storage'
+} from '../features/tracking/tracking-service'
+import { bufferPoint, flushBuffer } from '../shared/lib/storage'
 
 async function expectPermissionDenied(error: string) {
     const result = await requestTrackingPermissions()

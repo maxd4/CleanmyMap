@@ -24,8 +24,8 @@ function fixture() {
   writeFile(root, "apps/web/src/lib/widget.test.ts", "import { widget } from \"./widget\";\nexport const result = widget;\n");
   writeFile(root, "apps/web/src/tests/fixture.ts", "export const fixture = true;\n");
   writeFile(root, "apps/web/src/components/__tests__/component.ts", "export const componentFixture = true;\n");
-  writeFile(root, "apps/mobile/screens/map.tsx", "export const map = true;\n");
-  writeFile(root, "apps/mobile/screens/map.test.tsx", "import { map } from \"./map\";\nexport const result = map;\n");
+  writeFile(root, "apps/mobile/features/tracking/map.tsx", "export const map = true;\n");
+  writeFile(root, "apps/mobile/features/tracking/map.test.tsx", "import { map } from \"./map\";\nexport const result = map;\n");
   git(root, ["init", "-q"]);
   git(root, ["add", "."]);
   git(root, ["-c", "user.name=fixture", "-c", "user.email=fixture", "commit", "-qm", "fixture v1"]);

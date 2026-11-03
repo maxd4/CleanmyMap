@@ -5,9 +5,9 @@ import {
   clearStoredEmergencyContact,
   getStoredEmergencyContact,
   saveStoredEmergencyContact,
-} from '../lib/storage'
-import { validateEmergencyContact } from '../lib/emergency-contact'
-import type { EmergencyContact } from '../types/emergency-contact'
+} from '../../shared/lib/storage'
+import { validateEmergencyContact } from './emergency-contact-service'
+import type { EmergencyContact } from './emergency-contact.types'
 
 const emptyContact: EmergencyContact = { name: '', relation: '', phone: '' }
 

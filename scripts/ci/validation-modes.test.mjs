@@ -41,7 +41,7 @@ test("DEVELOPMENT Web changes stay targeted without automatic quality ratchets",
 });
 
 test("DEVELOPMENT Mobile changes include the shared architecture import boundary", () => {
-  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["apps/mobile/screens/account.tsx"] });
+  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["apps/mobile/features/account/account.tsx"] });
   assert.ok(ids(plan).includes("architecture-import-boundary"));
 });
 

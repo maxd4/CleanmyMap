@@ -56,12 +56,12 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
     removeItem: vi.fn(async () => undefined),
   },
 }))
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => null),
   getClerkUserId: vi.fn(async () => null),
 }))
-import { EmergencyCallActions } from '../screens/emergency-call-actions'
-import { EmergencyContactPanel } from '../screens/emergency-contact'
+import { EmergencyCallActions } from '../features/account/emergency-call-actions'
+import { EmergencyContactPanel } from '../features/account/emergency-contact'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')

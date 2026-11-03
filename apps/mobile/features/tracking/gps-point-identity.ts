@@ -1,4 +1,4 @@
-import { createLocalIdentifier } from './local-identifier';
+import { createLocalIdentifier } from '../../shared/lib/local-identifier';
 
 export function createGpsPointId(): string {
   return createLocalIdentifier();

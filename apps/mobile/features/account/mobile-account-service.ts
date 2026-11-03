@@ -1,4 +1,4 @@
-import { mobileRequest } from './mobile-api-client'
+import { mobileRequest } from '../../shared/lib/mobile-api-client'
 
 type MobileAccountLocation = {
   country: 'France'

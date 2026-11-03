@@ -17,12 +17,12 @@ vi.mock('expo-location', () => ({
 
 vi.mock('expo-task-manager', () => ({}))
 
-vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
-vi.mock('../lib/gps-permission-rationale', () => ({ showGpsPermissionRationale: vi.fn(async () => true) }))
+vi.mock('../shared/lib/supabase', () => createSupabaseMock(() => state.client))
+vi.mock('../features/tracking/gps-permission-rationale', () => ({ showGpsPermissionRationale: vi.fn(async () => true) }))
 
-vi.mock('../lib/storage', () => createTrackingStorageMock())
+vi.mock('../shared/lib/storage', () => createTrackingStorageMock())
 
-import { getMissionTrack } from '../lib/tracking-service'
+import { getMissionTrack } from '../features/tracking/tracking-service'
 
 const restoredPoints = [
   {

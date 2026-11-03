@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { getDialablePhone, hasEmergencyContact } from '../lib/emergency-contact'
-import { getStoredEmergencyContact } from '../lib/storage'
-import type { EmergencyContact } from '../types/emergency-contact'
+import { getDialablePhone, hasEmergencyContact } from './emergency-contact-service'
+import { getStoredEmergencyContact } from '../../shared/lib/storage'
+import type { EmergencyContact } from './emergency-contact.types'
 
 export function EmergencyCallActions({ compact = false }: { compact?: boolean }) {
   const [contact, setContact] = useState<EmergencyContact | null>(null)

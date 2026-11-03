@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateTrackDistanceMeters, mergeTrackPoints } from '../lib/track-geometry'
+import { calculateTrackDistanceMeters, mergeTrackPoints } from '../features/tracking/track-geometry'
 
 const point = (latitude: number, longitude: number, recordedAt: string) => ({
   latitude,

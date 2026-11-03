@@ -6,12 +6,12 @@ import * as Linking from 'expo-linking'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { CircleUserRound, ExternalLink, HandHelping, House, Map, UsersRound, GraduationCap, ArrowLeft, type LucideIcon } from 'lucide-react-native'
 import { MOBILE_DESTINATIONS, MOBILE_SHELL_SURFACE_STORAGE_KEY, MOBILE_WEB_BRIDGE_PATHS, type MobileDestinationId } from './mobile-shell-contract'
-import { AccountScreen } from './account'
-import { ActionJoinScreen } from './action-join'
-import { ActionCreateScreen } from './action-create'
-import { SignalementScreen } from './signalement'
+import { AccountScreen } from '../features/account/account'
+import { ActionJoinScreen } from '../features/actions/action-join'
+import { ActionCreateScreen } from '../features/actions/action-create'
+import { SignalementScreen } from '../features/signalements/signalement'
 import { PlannedCapabilityMenu, PlannedCapabilityScreen, type PlannedCapabilityId } from './planned-capabilities'
-import { getMobileWebBaseUrl } from '../lib/mobile-environment'
+import { getMobileWebBaseUrl } from '../shared/lib/mobile-environment'
 
 type StartMobileActivity = (actionId?: string, label?: string) => void | Promise<void>
 type MobileShellProps = { onSignOut: () => void; onSessionExpired: () => void; onStartActivity: StartMobileActivity }

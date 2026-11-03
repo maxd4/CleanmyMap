@@ -15,7 +15,7 @@ test('le rapport informatif reprend exactement les roots top-heavy', () => {
 
 test('generated reste exclusivement dans sa section, quel que soit le seuil ou la preuve de régénérabilité', () => {
   const rows = [
-    { file: 'apps/mobile/screens/large.tsx', kind: 'runtime', lines: 501, bytes: 1_000, generated: false },
+    { file: 'apps/mobile/features/actions/large.tsx', kind: 'runtime', lines: 501, bytes: 1_000, generated: false },
     { file: 'apps/mobile/tests/large.test.ts', kind: 'test', lines: 1_001, bytes: 1_000, generated: false },
     { file: 'apps/mobile/data/catalog.ts', kind: 'data/config', lines: 801, bytes: 1_000, generated: false },
     { file: 'apps/mobile/generated/manual-small.ts', kind: 'generated', lines: 400, bytes: 1_000, generated: false },
@@ -25,7 +25,7 @@ test('generated reste exclusivement dans sa section, quel que soit le seuil ou l
   ];
   const groups = getRadarGroups(rows);
   const generatedFiles = rows.filter((row) => row.kind === 'generated').map((row) => row.file);
-  assert.deepEqual(groups.architectural.map((row) => row.file), ['apps/mobile/data/catalog.ts', 'apps/mobile/screens/large.tsx']);
+  assert.deepEqual(groups.architectural.map((row) => row.file), ['apps/mobile/data/catalog.ts', 'apps/mobile/features/actions/large.tsx']);
   assert.deepEqual(groups.tests.map((row) => row.file), ['apps/mobile/tests/large.test.ts']);
   assert.deepEqual(groups.generated.map((row) => row.file), [
     'apps/mobile/generated/manual-large.ts',

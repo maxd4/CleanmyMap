@@ -1,9 +1,9 @@
 import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { MobileFormField } from '../lib/mobile-form-field'
-import { SECTIONS, useActionCreateController, type Draft } from '../hooks/use-action-create-controller'
-import { MOBILE_ORGANIZER_TYPE_OPTIONS, type MobileActionDay } from '../lib/mobile-actions-service'
+import { MobileFormField } from '../../shared/ui/mobile-form-field'
+import { SECTIONS, useActionCreateController, type Draft } from './use-action-create-controller'
+import { MOBILE_ORGANIZER_TYPE_OPTIONS, type MobileActionDay } from './mobile-actions-service'
 
 type ActionCreateProps = { onSessionExpired: () => void; onStartAction: (actionId: string, label: string) => void | Promise<void> }
 

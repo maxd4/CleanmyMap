@@ -62,7 +62,7 @@ Les statuts de la table ont été vérifiés sur le `main` observé le 3 novembr
 
 ## Sources
 
-- `apps/mobile/README.md`, `apps/mobile/AGENTS.md`, `apps/mobile/screens/mobile-shell-contract.ts`
+- `apps/mobile/README.md`, `apps/mobile/AGENTS.md`, `apps/mobile/navigation/mobile-shell-contract.ts`
 - `documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md`
 - [Inventaire et provenance des images](./REFERENCES_STRAVA.md)
 

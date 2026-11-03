@@ -1,4 +1,4 @@
-import type { AccountData } from '../../hooks/use-account-controller'
+import type { AccountData } from '../../features/account/use-account-controller'
 
 export const mobileAccount: AccountData = {
   identity: { userId: 'user-a', displayName: 'Ada Lovelace', displayNameMode: 'full_name', handle: 'ada', firstName: 'Ada', lastName: 'Lovelace', username: 'ada', email: null, grantedRole: 'benevole', activeRole: 'benevole', availableActiveRoles: ['benevole', 'scientifique'], currentLevel: 2 },

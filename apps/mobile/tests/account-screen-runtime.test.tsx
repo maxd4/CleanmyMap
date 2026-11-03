@@ -3,7 +3,7 @@ import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callTestHandler, testProp } from './test-renderer-helpers'
 import { nativeComponent } from './support/native-component'
-import type { AccountData } from '../hooks/use-account-controller'
+import type { AccountData } from '../features/account/use-account-controller'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -37,8 +37,8 @@ vi.mock('lucide-react-native', () => ({
   Clock3: nativeComponent('Icon'),
   UserRound: nativeComponent('Icon'),
 }))
-vi.mock('../screens/emergency-contact', () => ({ EmergencyContactPanel: () => React.createElement('EmergencyContactPanel') }))
-vi.mock('../lib/mobile-account-service', () => ({
+vi.mock('../features/account/emergency-contact', () => ({ EmergencyContactPanel: () => React.createElement('EmergencyContactPanel') }))
+vi.mock('../features/account/mobile-account-service', () => ({
   loadMobileAccount: state.loadMobileAccount,
   updateMobileAccountProfile: state.updateMobileAccountProfile,
   updateMobileActiveRole: state.updateMobileActiveRole,
@@ -48,7 +48,7 @@ vi.mock('../lib/mobile-account-service', () => ({
   requestMobileAccountDeletion: state.requestMobileAccountDeletion,
 }))
 
-import { AccountScreen } from '../screens/account'
+import { AccountScreen } from '../features/account/account'
 
 const account: AccountData = {
   identity: { userId: 'user-a', displayName: 'Ada Lovelace', displayNameMode: 'full_name', handle: 'ada', firstName: 'Ada', lastName: 'Lovelace', username: 'ada', email: null, grantedRole: 'benevole', activeRole: 'benevole', availableActiveRoles: ['benevole', 'scientifique'], currentLevel: 2 },

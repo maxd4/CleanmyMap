@@ -19,13 +19,13 @@ test("quality scopes are closed and expose distinct application roots", () => {
 test("application scope filtering never absorbs shared or another application", () => {
   const files = [
     "apps/web/src/page.tsx",
-    "apps/mobile/screens/map.tsx",
+    "apps/mobile/features/tracking/map.tsx",
     "scripts/checks/quality-scope.mjs",
     "e2e/map.spec.ts",
     "documentation/development/testing-quality.md",
   ];
   assert.deepEqual(filterPathsByQualityScope(files, "web"), ["apps/web/src/page.tsx"]);
-  assert.deepEqual(filterPathsByQualityScope(files, "mobile"), ["apps/mobile/screens/map.tsx"]);
+  assert.deepEqual(filterPathsByQualityScope(files, "mobile"), ["apps/mobile/features/tracking/map.tsx"]);
   assert.deepEqual(filterPathsByQualityScope(files, "all"), files);
   assert.equal(productScopeForPath("scripts/checks/quality-scope.mjs"), "shared");
   assert.deepEqual(scopeMetadata("mobile").transverse, []);

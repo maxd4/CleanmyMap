@@ -8,7 +8,7 @@ import {
   updateMobileNotificationPreferences,
   requestMobileAccountDeletion,
   type MobileAccountPayload,
-} from '../lib/mobile-account-service'
+} from './mobile-account-service'
 
 export type AccountData = MobileAccountPayload
 export type AccountSection = 'profile' | 'activity' | 'preferences' | 'search' | 'help' | 'about'

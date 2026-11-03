@@ -1,7 +1,7 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { describe, expect, it, vi } from 'vitest'
-import type { Mission } from '../types/mission'
+import type { Mission } from '../features/tracking/mission'
 import { commonNativeComponents } from './support/native-component'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -12,7 +12,7 @@ vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => React.createElement('SafeAreaView', props, children),
 }))
 
-import { MissionCompletionScreen, MissionFinalizationScreen } from '../screens/mission-finalization'
+import { MissionCompletionScreen, MissionFinalizationScreen } from '../features/tracking/mission-finalization'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')

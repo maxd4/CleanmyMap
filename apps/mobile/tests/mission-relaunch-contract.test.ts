@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const controllerSource = readFileSync(resolve(__dirname, '../hooks/use-companion-mission-controller.ts'), 'utf8')
-const sessionSource = readFileSync(resolve(__dirname, '../lib/supabase.ts'), 'utf8')
+const controllerSource = readFileSync(resolve(__dirname, '../features/tracking/use-companion-mission-controller.ts'), 'utf8')
+const sessionSource = readFileSync(resolve(__dirname, '../shared/lib/supabase.ts'), 'utf8')
 const taskSource = readFileSync(resolve(__dirname, '../tasks/gps-task.ts'), 'utf8')
-const mapSource = readFileSync(resolve(__dirname, '../screens/mission-active-map.tsx'), 'utf8')
+const mapSource = readFileSync(resolve(__dirname, '../features/tracking/mission-active-map.tsx'), 'utf8')
 
 describe('mobile GPS relaunch contract', () => {
   it('restores the persisted mission again when the app returns active', () => {

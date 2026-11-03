@@ -2,7 +2,7 @@ import { useAuth } from '@clerk/expo'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as Location from 'expo-location'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createLocalIdentifier } from '../lib/local-identifier'
+import { createLocalIdentifier } from '../../shared/lib/local-identifier'
 import {
   createMobileAction,
   loadMobileActionDay,
@@ -13,7 +13,7 @@ import {
   type MobileActionDay,
   type MobileOrganizerType,
   isMobileOrganizerType,
-} from '../lib/mobile-actions-service'
+} from './mobile-actions-service'
 
 export type Section = 'essentiel' | 'terrain' | 'equipe' | 'verification'
 export type Draft = {

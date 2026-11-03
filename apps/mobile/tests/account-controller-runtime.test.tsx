@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AccountData } from '../hooks/use-account-controller'
+import type { AccountData } from '../features/account/use-account-controller'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -15,7 +15,7 @@ const state = vi.hoisted(() => ({
   requestMobileAccountDeletion: vi.fn(),
 }))
 
-vi.mock('../lib/mobile-account-service', () => ({
+vi.mock('../features/account/mobile-account-service', () => ({
   loadMobileAccount: state.loadMobileAccount,
   updateMobileAccountProfile: state.updateMobileAccountProfile,
   updateMobileActiveRole: state.updateMobileActiveRole,
@@ -25,7 +25,7 @@ vi.mock('../lib/mobile-account-service', () => ({
   requestMobileAccountDeletion: state.requestMobileAccountDeletion,
 }))
 
-import { useAccountController } from '../hooks/use-account-controller'
+import { useAccountController } from '../features/account/use-account-controller'
 
 const account: AccountData = {
   identity: { userId: 'user-a', displayName: 'Ada Lovelace', displayNameMode: 'full_name', handle: 'ada', firstName: 'Ada', lastName: 'Lovelace', username: 'ada', email: null, grantedRole: 'benevole', activeRole: 'benevole', availableActiveRoles: ['benevole', 'scientifique'], currentLevel: 2 },

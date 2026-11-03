@@ -61,7 +61,7 @@ La navigation Strava observée repose sur cinq destinations persistantes : **Hom
 └─────────────────────────────────────┘
 ```
 
-Le shell actuel reste la référence exécutable : `apps/mobile/screens/mobile-shell.tsx` et `mobile-shell-contract.ts`. La cible à cinq entrées ne constitue pas un ordre de modification immédiate. `Apprendre` peut rester un parcours secondaire ; sa place définitive dépendra du produit web stabilisé.
+Le shell actuel reste la référence exécutable : `apps/mobile/navigation/mobile-shell.tsx` et `mobile-shell-contract.ts`. La cible à cinq entrées ne constitue pas un ordre de modification immédiate. `Apprendre` peut rester un parcours secondaire ; sa place définitive dépendra du produit web stabilisé.
 
 ### 2.2 Langage visuel à reprendre
 
@@ -325,9 +325,9 @@ Cet ordre reste dépendant de la maturité fonctionnelle et technique du site we
 
 - `apps/mobile/AGENTS.md` : frontière web/mobile, périmètre V1, états de production, navigation et identité.
 - `apps/mobile/README.md` : état vérifié des écrans, GPS, services, appels HTTP et validations.
-- `apps/mobile/screens/mobile-shell.tsx` et `mobile-shell-contract.ts` : 3 onglets, sous-vues `Agir`, pont carte web.
-- `apps/mobile/screens/account.tsx` : profil, activité, indicateurs et notifications préférentielles.
-- `apps/mobile/screens/action-join.tsx`, `action-create.tsx`, `signalement.tsx` : parcours natifs existants.
+- `apps/mobile/navigation/mobile-shell.tsx` et `mobile-shell-contract.ts` : 3 onglets, sous-vues `Agir`, pont carte web.
+- `apps/mobile/features/account/account.tsx` : profil, activité, indicateurs et notifications préférentielles.
+- `apps/mobile/features/actions/action-join.tsx`, `action-create.tsx`, `apps/mobile/features/signalements/signalement.tsx` : parcours natifs existants.
 - `documentation/pages_site/INDEX.md` : inventaire canonique des surfaces web et statuts d'accès.
 - `documentation/architecture/adr/ADR-003-monorepo-structure.md` : séparation UI et dépendances partagées.
 

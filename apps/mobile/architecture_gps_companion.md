@@ -381,15 +381,15 @@ signalement ne modifient pas ce périmètre et n'introduisent aucune table mobil
 
 ```
 apps/mobile/
-├── app/
-│   ├── _layout.tsx          # Root layout + auth check
-│   ├── login.tsx            # Auth Clerk hébergée
-│   ├── scan.tsx             # Scanner QR / réception deep link
-│   └── tracking.tsx         # Écran mission (Début/Fin + status)
-├── lib/
-│   ├── supabase.ts          # Client Supabase
-│   ├── location.ts          # Wrapper expo-location
-│   └── storage.ts           # Buffer local (points non envoyés)
+├── features/
+│   ├── actions/             # Création et participation
+│   ├── account/             # Profil, préférences et identité
+│   ├── signalements/        # Signalements et médias
+│   └── tracking/            # GPS, carte active et finalisation
+├── navigation/              # Shell et contrats de navigation
+├── shared/
+│   ├── lib/                 # Client HTTP, stockage et environnement
+│   └── ui/                  # Primitive visuelle partagée
 ├── tasks/
 │   └── gps-task.ts          # TaskManager background task
 └── app.json                 # Config Expo
@@ -400,8 +400,8 @@ apps/mobile/
 ```typescript
 // tasks/gps-task.ts
 import * as TaskManager from 'expo-task-manager';
-import { getAuthenticatedSupabaseClient, getClerkUserId } from '../lib/supabase';
-import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../lib/storage';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from '../shared/lib/supabase';
+import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../shared/lib/storage';
 
 const TASK_NAME = 'GPS_TRACKING';
 

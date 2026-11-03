@@ -41,21 +41,21 @@ vi.mock('expo-task-manager', () => ({
   isTaskRegisteredAsync: vi.fn(async () => false),
 }))
 
-vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
+vi.mock('../shared/lib/supabase', () => createSupabaseMock(() => state.client))
 
-vi.mock('../lib/gps-permission-rationale', () => ({
+vi.mock('../features/tracking/gps-permission-rationale', () => ({
   showGpsPermissionRationale: vi.fn(async () => {
     state.sequence.push('permission-rationale')
     return true
   }),
 }))
 
-vi.mock('../lib/storage', () => createTrackingStorageMock({
+vi.mock('../shared/lib/storage', () => createTrackingStorageMock({
   ...createMissionIdStorageOptions(state),
 }))
 
 import * as Location from 'expo-location'
-import { startMobileMission } from '../lib/tracking-service'
+import { startMobileMission } from '../features/tracking/tracking-service'
 
 const pendingMission = {
   id: 'mission-1',

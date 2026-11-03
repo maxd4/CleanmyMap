@@ -1,9 +1,9 @@
 import React from 'react'
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Bell, CircleHelp, ExternalLink, Info, Search, Settings2, UserRound, type LucideIcon } from 'lucide-react-native'
-import { useAccountController, type AccountData, type AccountSection } from '../hooks/use-account-controller'
+import { useAccountController, type AccountData, type AccountSection } from './use-account-controller'
 import { EmergencyContactPanel } from './emergency-contact'
-import { PlannedCapabilityMenu, type PlannedCapabilityId } from './planned-capabilities'
+import { PlannedCapabilityMenu, type PlannedCapabilityId } from '../../navigation/planned-capabilities'
 
 type AccountProps = { onSignOut: () => void; onSessionExpired: () => void; onOpenWeb: (path: string) => void; onOpenPlanned?: (id: PlannedCapabilityId) => void }
 const ACCOUNT_SECTIONS: Array<{ id: AccountSection; label: string; description: string; icon: LucideIcon }> = [

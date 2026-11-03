@@ -1,10 +1,10 @@
-import { getClerkSupabaseAccessToken, getClerkUserId } from './supabase';
+import { getClerkSupabaseAccessToken, getClerkUserId } from '../../shared/lib/supabase';
 import {
   getPendingLinkedMissionReconciliationIds,
   removePendingLinkedMissionReconciliation,
-} from './storage';
-import type { Mission, ServiceResult } from '../types/mission';
-import { getMobileApiBaseUrl } from './mobile-environment';
+} from '../../shared/lib/storage';
+import type { Mission, ServiceResult } from './mission';
+import { getMobileApiBaseUrl } from '../../shared/lib/mobile-environment';
 
 const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";

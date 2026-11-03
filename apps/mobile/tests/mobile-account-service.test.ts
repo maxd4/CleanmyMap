@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const requestMock = vi.hoisted(() => vi.fn())
 
-vi.mock('../lib/mobile-api-client', () => ({ mobileRequest: requestMock }))
+vi.mock('../shared/lib/mobile-api-client', () => ({ mobileRequest: requestMock }))
 
 import {
   loadMobileAccount,
@@ -12,7 +12,7 @@ import {
   updateMobileActivityStatus,
   updateMobileDisplayNameMode,
   updateMobileNotificationPreferences,
-} from '../lib/mobile-account-service'
+} from '../features/account/mobile-account-service'
 
 describe('mobile account service', () => {
   beforeEach(() => {

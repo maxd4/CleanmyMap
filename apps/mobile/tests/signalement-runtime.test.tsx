@@ -36,17 +36,17 @@ vi.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: vi.fn(async () => ({ status: state.permission })),
   getCurrentPositionAsync: vi.fn(async () => ({ coords: state.position })),
 }))
-vi.mock('../lib/mobile-actions-service', () => ({
+vi.mock('../features/actions/mobile-actions-service', () => ({
   createMobileSignalement: state.createMobileSignalement,
   loadMyMobileSignalements: state.loadMyMobileSignalements,
 }))
-vi.mock('../lib/signalement-media-service', () => ({
+vi.mock('../features/signalements/signalement-media-service', () => ({
   loadSignalementMedia: state.loadSignalementMedia,
   pickSignalementPhotos: state.pickSignalementPhotos,
   uploadSignalementPhotos: state.uploadSignalementPhotos,
 }))
 
-import { SignalementScreen } from '../screens/signalement'
+import { SignalementScreen } from '../features/signalements/signalement'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')

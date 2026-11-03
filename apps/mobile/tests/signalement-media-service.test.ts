@@ -29,12 +29,12 @@ vi.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: vi.fn(async () => ({ granted: state.permissionGranted })),
   launchImageLibraryAsync: vi.fn(async () => state.pickerResult),
 }))
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getClerkSupabaseAccessToken: vi.fn(async () => state.token),
   getAuthenticatedSupabaseClient: vi.fn(async (): Promise<StorageClient | null> => state.storage),
 }))
 
-import { pickSignalementPhotos, loadSignalementMedia, uploadSignalementPhotos, type MobilePickedPhoto } from '../lib/signalement-media-service'
+import { pickSignalementPhotos, loadSignalementMedia, uploadSignalementPhotos, type MobilePickedPhoto } from '../features/signalements/signalement-media-service'
 
 const photo = { uri: 'file:///tmp/photo.jpg', fileName: 'photo.jpg', mimeType: 'image/jpeg', fileSize: 12, width: 100, height: 80 } as MobilePickedPhoto
 

@@ -2,8 +2,8 @@ import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { formatServerDistance, formatServerDuration } from '../lib/mission-summary'
-import type { Mission, MissionFinalizationStage } from '../types/mission'
+import { formatServerDistance, formatServerDuration } from './mission-summary'
+import type { Mission, MissionFinalizationStage } from './mission'
 
 export function MissionFinalizationScreen({ stage }: { stage: MissionFinalizationStage }) {
   const isSynchronizing = stage === 'synchronizing'

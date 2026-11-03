@@ -1,8 +1,8 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { useCompanionMissionController } from '../hooks/use-companion-mission-controller'
-import type { Mission } from '../types/mission'
+import type { useCompanionMissionController } from '../features/tracking/use-companion-mission-controller'
+import type { Mission } from '../features/tracking/mission'
 import { callTestHandler, testProp } from './test-renderer-helpers'
 import { commonNativeComponents, nativeComponent } from './support/native-component'
 import { mobileAccount } from './support/mobile-account-fixture'
@@ -50,13 +50,13 @@ vi.mock('@clerk/expo/hosted-auth', () => ({
   useHostedAuth: () => ({ startHostedAuth: appState.startHostedAuth }),
 }))
 vi.mock('@clerk/expo/token-cache', () => ({ tokenCache: { getToken: vi.fn(), saveToken: vi.fn(), clearToken: vi.fn() } }))
-vi.mock('../hooks/use-companion-mission-controller', () => ({
+vi.mock('../features/tracking/use-companion-mission-controller', () => ({
   useCompanionMissionController: () => appState.controller,
 }))
-vi.mock('../screens/mission-active-map', () => ({
+vi.mock('../features/tracking/mission-active-map', () => ({
   MissionActiveMap: (props: Record<string, unknown>) => React.createElement('MissionActiveMap', props),
 }))
-vi.mock('../screens/mission-finalization', () => ({
+vi.mock('../features/tracking/mission-finalization', () => ({
   MissionFinalizationScreen: (props: Record<string, unknown>) => React.createElement('MissionFinalizationScreen', props),
   MissionCompletionScreen: (props: Record<string, unknown>) => React.createElement('MissionCompletionScreen', props),
 }))
@@ -82,7 +82,7 @@ vi.mock('expo-location', () => ({
 
 const account = mobileAccount
 
-vi.mock('../lib/mobile-account-service', () => ({
+vi.mock('../features/account/mobile-account-service', () => ({
   loadMobileAccount: vi.fn(async () => account),
   updateMobileAccountProfile: vi.fn(async () => ({ status: 'ok', account })),
   updateMobileActiveRole: vi.fn(async (activeRole: string) => ({ role: 'benevole', activeRole, activeProfile: activeRole })),
@@ -92,7 +92,7 @@ vi.mock('../lib/mobile-account-service', () => ({
   requestMobileAccountDeletion: state.accountDeletion,
 }))
 
-vi.mock('../lib/mobile-actions-service', () => ({
+vi.mock('../features/actions/mobile-actions-service', () => ({
   MOBILE_ORGANIZER_TYPE_OPTIONS: [
     { value: 'spontaneous', label: 'Action spontanée' },
     { value: 'company', label: 'Entreprise' },
@@ -111,17 +111,17 @@ vi.mock('../lib/mobile-actions-service', () => ({
   createMobileSignalement: vi.fn(async () => ({ status: 'created', source: 'trash_spotter_spots', item: { id: 'spot-1' } })),
   loadMyMobileSignalements: vi.fn(async () => ({ status: 'ok', items: [] })),
 }))
-vi.mock('../lib/signalement-media-service', () => ({
+vi.mock('../features/signalements/signalement-media-service', () => ({
   pickSignalementPhotos: vi.fn(async () => []), uploadSignalementPhotos: vi.fn(async () => ({ uploadedCount: 0, failed: [] })), loadSignalementMedia: vi.fn(async () => []),
 }))
-vi.mock('../lib/linked-mission-service', () => ({ createLinkedMission: vi.fn(), reconcileLinkedMission: vi.fn() }))
-vi.mock('../lib/storage', () => ({
+vi.mock('../features/tracking/linked-mission-service', () => ({ createLinkedMission: vi.fn(), reconcileLinkedMission: vi.fn() }))
+vi.mock('../shared/lib/storage', () => ({
   getStoredEmergencyContact: vi.fn(async () => null), saveStoredEmergencyContact: vi.fn(), clearStoredEmergencyContact: vi.fn(),
   getStoredForegroundTrack: vi.fn(async () => []), saveStoredForegroundTrack: vi.fn(async () => undefined),
 }))
-vi.mock('../lib/emergency-contact', () => ({ validateEmergencyContact: vi.fn(() => null), getDialablePhone: vi.fn(() => null), hasEmergencyContact: vi.fn(() => false) }))
+vi.mock('../features/account/emergency-contact-service', () => ({ validateEmergencyContact: vi.fn(() => null), getDialablePhone: vi.fn(() => null), hasEmergencyContact: vi.fn(() => false) }))
 
-import { MobileShell } from '../screens/mobile-shell'
+import { MobileShell } from '../navigation/mobile-shell'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')

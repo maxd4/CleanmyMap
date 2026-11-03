@@ -3,14 +3,14 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAuthenticatedSupabaseClient, getClerkUserId } from './supabase';
-import { ensureGpsPointIdentity } from './gps-point-identity';
+import { ensureGpsPointIdentity } from '../../features/tracking/gps-point-identity';
 import { createLocalIdentifier } from './local-identifier';
 import type {
   ForegroundTrackPoint,
   MissionLocationInsert,
   ServiceResult,
-} from '../types/mission';
-import type { EmergencyContact } from '../types/emergency-contact';
+} from '../../features/tracking/mission';
+import type { EmergencyContact } from '../../features/account/emergency-contact.types';
 
 const MISSION_KEY_PREFIX = 'cmm_current_mission_id';
 const ACTIVE_MISSION_OWNER_KEY = 'cmm_active_mission_owner';

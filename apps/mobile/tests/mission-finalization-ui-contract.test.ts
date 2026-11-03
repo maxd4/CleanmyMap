@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const appSource = readFileSync(resolve(__dirname, '../App.tsx'), 'utf8')
-const controllerSource = readFileSync(resolve(__dirname, '../hooks/use-companion-mission-controller.ts'), 'utf8')
-const screenSource = readFileSync(resolve(__dirname, '../screens/mission-finalization.tsx'), 'utf8')
-const serviceSource = readFileSync(resolve(__dirname, '../lib/tracking-service.ts'), 'utf8')
+const controllerSource = readFileSync(resolve(__dirname, '../features/tracking/use-companion-mission-controller.ts'), 'utf8')
+const screenSource = readFileSync(resolve(__dirname, '../features/tracking/mission-finalization.tsx'), 'utf8')
+const serviceSource = readFileSync(resolve(__dirname, '../features/tracking/tracking-service.ts'), 'utf8')
 
 describe('mobile mission finalization UI contract', () => {
   it('confirms before stopping and exposes the ordered finalization states', () => {

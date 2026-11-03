@@ -5,7 +5,7 @@ import {
   createPendingGpsPointPoller,
   PENDING_GPS_POINT_POLL_INTERVAL_MS,
   usePendingGpsPointCountPolling,
-} from '../lib/pending-gps-point-polling'
+} from '../features/tracking/pending-gps-point-polling'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 

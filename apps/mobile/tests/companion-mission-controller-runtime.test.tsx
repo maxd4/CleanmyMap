@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Mission } from '../types/mission'
+import type { Mission } from '../features/tracking/mission'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -30,21 +30,21 @@ vi.mock('react-native', () => ({
   Alert: { alert: state.alert },
   AppState: { addEventListener: vi.fn((_event: string, listener: (nextState: string) => void) => { state.appStateListener = listener; return { remove: state.appStateRemove } }) },
 }))
-vi.mock('../lib/tracking-service', () => ({
+vi.mock('../features/tracking/tracking-service', () => ({
   getMission: state.getMission,
   restoreActiveTracking: state.restoreActiveTracking,
   startMobileMission: state.startMobileMission,
   stopTracking: state.stopTracking,
 }))
-vi.mock('../lib/storage', () => ({
+vi.mock('../shared/lib/storage', () => ({
   clearStoredForegroundTrack: state.clearStoredForegroundTrack,
   flushBuffer: state.flushBuffer,
   getPendingGpsPointCount: state.getPendingGpsPointCount,
 }))
-vi.mock('../lib/linked-mission-service', () => ({ reconcilePendingLinkedMissions: state.reconcilePendingLinkedMissions }))
-vi.mock('../lib/pending-gps-point-polling', () => ({ usePendingGpsPointCountPolling: () => state.refreshPendingGpsPointCount }))
+vi.mock('../features/tracking/linked-mission-service', () => ({ reconcilePendingLinkedMissions: state.reconcilePendingLinkedMissions }))
+vi.mock('../features/tracking/pending-gps-point-polling', () => ({ usePendingGpsPointCountPolling: () => state.refreshPendingGpsPointCount }))
 
-import { useCompanionMissionController } from '../hooks/use-companion-mission-controller'
+import { useCompanionMissionController } from '../features/tracking/use-companion-mission-controller'
 
 const mission: Mission = { id: 'mission-1', volunteer_id: 'user-a', action_id: null, label: 'Action terrain', status: 'tracking', started_at: '2026-10-20T10:00:00.000Z', ended_at: null, distance_m: null, duration_s: null, created_at: '2026-10-20T09:59:00.000Z' }
 

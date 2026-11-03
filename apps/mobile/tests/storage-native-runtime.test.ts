@@ -15,12 +15,12 @@ vi.mock('expo-secure-store', () => ({
   setItemAsync: vi.fn(async (key: string, value: string) => { state.secureCalls += 1; state.values.set(key, value) }),
   deleteItemAsync: vi.fn(async (key: string) => { state.secureCalls += 1; state.values.delete(key) }),
 }))
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => null),
   getClerkUserId: vi.fn(async () => null),
 }))
 
-import { clearStoredMissionId, getStoredMissionId, setStoredMissionId } from '../lib/storage'
+import { clearStoredMissionId, getStoredMissionId, setStoredMissionId } from '../shared/lib/storage'
 
 describe('mobile native storage path', () => {
   beforeEach(() => {

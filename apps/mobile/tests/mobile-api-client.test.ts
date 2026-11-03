@@ -4,11 +4,11 @@ const state = vi.hoisted(() => ({
   token: 'clerk-session-token' as string | null,
 }))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getClerkSupabaseAccessToken: vi.fn(async () => state.token),
 }))
 
-import { mobileRequest } from '../lib/mobile-api-client'
+import { mobileRequest } from '../shared/lib/mobile-api-client'
 
 describe('mobile HTTP boundary client', () => {
   beforeEach(() => {

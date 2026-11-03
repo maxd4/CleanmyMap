@@ -37,7 +37,7 @@ vi.mock('react-native', () => ({
   View: nativeComponent('View'),
 }))
 vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
-vi.mock('../lib/mobile-actions-service', () => ({
+vi.mock('../features/actions/mobile-actions-service', () => ({
   cancelFutureAction: state.cancelFutureAction,
   claimPastAction: state.claimPastAction,
   loadActionReview: state.loadActionReview,
@@ -52,7 +52,7 @@ vi.mock('../lib/mobile-actions-service', () => ({
   updateMobileActionFieldRoles: state.updateMobileActionFieldRoles,
 }))
 
-import { ActionJoinScreen } from '../screens/action-join'
+import { ActionJoinScreen } from '../features/actions/action-join'
 
 const futureAction = {
   id: 'future-1', created_at: '2026-10-01T10:00:00.000Z', action_date: '2026-10-25', location_label: 'Parc Nord', actionTitle: 'Nettoyage du parc', volunteers_count: 3, duration_minutes: 90, status: 'published', actionPhase: 'pre_action', joined: false, awaitingApproval: false,

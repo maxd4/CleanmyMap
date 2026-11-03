@@ -382,7 +382,7 @@ test("complexity baseline metrics never own file length", () => {
 
 test("mobile files use the shared complexity categories and canonical paths", () => {
   assert.equal(classifyComplexityCategory("apps/mobile/App.tsx"), "React/JSX");
-  assert.equal(classifyComplexityCategory("apps/mobile/lib/tracking-service.ts"), "runtime/services/orchestration");
+  assert.equal(classifyComplexityCategory("apps/mobile/features/tracking/tracking-service.ts"), "runtime/services/orchestration");
   assert.equal(classifyComplexityCategory("apps/mobile/tasks/gps-task.ts"), "runtime/services/orchestration");
   assert.equal(classifyComplexityCategory("apps/mobile/tests/tracking-service.test.ts"), "tests");
 });

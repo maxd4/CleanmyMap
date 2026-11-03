@@ -11,7 +11,7 @@ import {
   startMobileMission,
   startTracking,
   stopTracking,
-} from '../lib/tracking-service'
+} from '../features/tracking/tracking-service'
 import * as Location from 'expo-location'
 
 type LinkedResult = { ok: true; data: unknown } | { ok: false; error: string; terminal?: boolean }
@@ -72,21 +72,21 @@ vi.mock('expo-task-manager', () => ({
   }),
 }))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.clientPromise ?? state.client),
   getClerkUserId: vi.fn(async () => state.currentUserId),
 }))
 
-vi.mock('../lib/gps-permission-rationale', () => ({
+vi.mock('../features/tracking/gps-permission-rationale', () => ({
   showGpsPermissionRationale: rationale,
 }))
 
-vi.mock('../lib/linked-mission-service', () => ({
+vi.mock('../features/tracking/linked-mission-service', () => ({
   createLinkedMission: createLinked,
   reconcileLinkedMission: reconcileLinked,
 }))
 
-vi.mock('../lib/storage', () => ({
+vi.mock('../shared/lib/storage', () => ({
   getStoredMissionId: vi.fn(async () => state.storedMissionId),
   getStoredMissionOwnerId: vi.fn(async () => state.storedOwnerId),
   setStoredMissionId: vi.fn(async () => {

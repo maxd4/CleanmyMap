@@ -3,15 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const getToken = vi.hoisted(() => vi.fn())
 const getUserId = vi.hoisted(() => vi.fn())
 const storage = vi.hoisted(() => ({ pending: [] as string[] }))
-vi.mock('../lib/supabase', () => ({ getClerkSupabaseAccessToken: getToken, getClerkUserId: getUserId }))
-vi.mock('../lib/storage', () => ({
+vi.mock('../shared/lib/supabase', () => ({ getClerkSupabaseAccessToken: getToken, getClerkUserId: getUserId }))
+vi.mock('../shared/lib/storage', () => ({
   getPendingLinkedMissionReconciliationIds: vi.fn(async () => storage.pending),
   removePendingLinkedMissionReconciliation: vi.fn(async (_ownerId: string, id: string) => {
     storage.pending = storage.pending.filter((pendingId) => pendingId !== id)
   }),
 }))
 
-import { createLinkedMission, reconcileLinkedMission } from '../lib/linked-mission-service'
+import { createLinkedMission, reconcileLinkedMission } from '../features/tracking/linked-mission-service'
 
 describe('linked mission gamification handoff', () => {
   afterEach(() => {
@@ -157,7 +157,7 @@ describe('linked mission gamification handoff', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'introuvable' }), { status: 404 }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    const { reconcilePendingLinkedMissions } = await import('../features/tracking/linked-mission-service')
     await reconcilePendingLinkedMissions('user_123')
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
@@ -171,7 +171,7 @@ describe('linked mission gamification handoff', () => {
     storage.pending = ['mission-1']
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 503 })))
 
-    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    const { reconcilePendingLinkedMissions } = await import('../features/tracking/linked-mission-service')
     await reconcilePendingLinkedMissions('user_123')
 
     expect(storage.pending).toEqual(['mission-1'])
@@ -188,7 +188,7 @@ describe('linked mission gamification handoff', () => {
     }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    const { reconcilePendingLinkedMissions } = await import('../features/tracking/linked-mission-service')
     const first = reconcilePendingLinkedMissions('user_123')
     const second = reconcilePendingLinkedMissions('user_123')
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
@@ -209,7 +209,7 @@ describe('linked mission gamification handoff', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    const { reconcilePendingLinkedMissions } = await import('../features/tracking/linked-mission-service')
     await reconcilePendingLinkedMissions('user_123')
 
     expect(fetchMock).toHaveBeenCalledTimes(5)
@@ -224,7 +224,7 @@ describe('linked mission gamification handoff', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    const { reconcilePendingLinkedMissions } = await import('../features/tracking/linked-mission-service')
     await reconcilePendingLinkedMissions('user_123')
 
     expect(fetchMock).not.toHaveBeenCalled()
@@ -238,7 +238,7 @@ describe('linked mission gamification handoff', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    const { reconcileLinkedMission } = await import('../lib/linked-mission-service')
+    const { reconcileLinkedMission } = await import('../features/tracking/linked-mission-service')
     await expect(reconcileLinkedMission('mission-1', 'user_a')).resolves.toEqual({
       ok: false,
       error: 'Identité Clerk obsolète : réconciliation interrompue.',

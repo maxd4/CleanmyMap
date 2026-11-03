@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const requestMock = vi.hoisted(() => vi.fn())
-vi.mock('../lib/mobile-api-client', () => ({ mobileRequest: requestMock }))
+vi.mock('../shared/lib/mobile-api-client', () => ({ mobileRequest: requestMock }))
 
 import {
   cancelFutureAction,
@@ -23,7 +23,7 @@ import {
   reviewActionRequest,
   updateMobileAction,
   updateMobileActionFieldRoles,
-} from '../lib/mobile-actions-service'
+} from '../features/actions/mobile-actions-service'
 
 describe('mobile actions transport', () => {
   beforeEach(() => {

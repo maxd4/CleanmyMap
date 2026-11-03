@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
-import { createMobileSignalement, loadMyMobileSignalements } from '../lib/mobile-actions-service'
-import { loadSignalementMedia, pickSignalementPhotos, uploadSignalementPhotos, type MobileMediaItem, type MobilePickedPhoto } from '../lib/signalement-media-service'
-import { MobileFormField } from '../lib/mobile-form-field'
+import { createMobileSignalement, loadMyMobileSignalements } from '../actions/mobile-actions-service'
+import { loadSignalementMedia, pickSignalementPhotos, uploadSignalementPhotos, type MobileMediaItem, type MobilePickedPhoto } from './signalement-media-service'
+import { MobileFormField } from '../../shared/ui/mobile-form-field'
 
 type SignalementProps = { onSessionExpired: () => void }
 type ReportType = 'spot' | 'clean_place'

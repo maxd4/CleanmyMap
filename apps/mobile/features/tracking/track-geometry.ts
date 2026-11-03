@@ -1,4 +1,4 @@
-import type { ForegroundTrackPoint } from '../types/mission'
+import type { ForegroundTrackPoint } from './mission'
 
 const DUPLICATE_DISTANCE_METERS = 5
 const DUPLICATE_TIME_WINDOW_MS = 15_000

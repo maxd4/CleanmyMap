@@ -5,7 +5,7 @@
 import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { getAuthenticatedSupabaseClient, getClerkUserId } from './supabase';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from '../../shared/lib/supabase';
 import { createLinkedMission, reconcileLinkedMission } from './linked-mission-service';
 import {
   getStoredMissionId,
@@ -18,7 +18,7 @@ import {
   removePendingLinkedMissionReconciliation,
   bufferPoint,
   flushBuffer,
-} from './storage';
+} from '../../shared/lib/storage';
 import { showGpsPermissionRationale } from './gps-permission-rationale';
 import { createGpsPointId } from './gps-point-identity';
 import type {
@@ -27,7 +27,7 @@ import type {
   MissionLocationInsert,
   MissionFinalizationStage,
   ServiceResult,
-} from '../types/mission';
+} from './mission';
 
 export const GPS_TASK_NAME = 'GPS_TRACKING';
 export const EXPO_GO_TRACKING_WARNING =

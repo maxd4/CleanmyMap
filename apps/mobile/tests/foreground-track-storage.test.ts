@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { storageTestState as state } from './support/storage-test-setup'
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => null),
 }))
 
@@ -10,7 +10,7 @@ import {
   getPendingGpsPointCount,
   getStoredForegroundTrack,
   saveStoredForegroundTrack,
-} from '../lib/storage'
+} from '../shared/lib/storage'
 
 describe('mobile foreground display track storage', () => {
   beforeEach(() => {

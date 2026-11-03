@@ -22,14 +22,14 @@ vi.mock('expo-task-manager', () => ({
 
 vi.mock('expo-location', () => ({}))
 
-vi.mock('../lib/tracking-service', () => ({ GPS_TASK_NAME: 'GPS_TRACKING' }))
+vi.mock('../features/tracking/tracking-service', () => ({ GPS_TASK_NAME: 'GPS_TRACKING' }))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   ...createSupabaseMock(() => state.client),
   getClerkUserId: vi.fn(async () => state.currentUserId),
 }))
 
-vi.mock('../lib/storage', () => ({
+vi.mock('../shared/lib/storage', () => ({
   getStoredActiveMissionContext: vi.fn(async () => state.missionId && state.contextOwnerId ? { missionId: state.missionId, ownerId: state.contextOwnerId } : null),
   bufferPoint: vi.fn(async (...args: [string, unknown]) => {
     const point = args[1]

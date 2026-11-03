@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const shellSource = readFileSync(resolve(__dirname, '../screens/mobile-shell.tsx'), 'utf8')
-const accountSource = readFileSync(resolve(__dirname, '../screens/account.tsx'), 'utf8')
+const shellSource = readFileSync(resolve(__dirname, '../navigation/mobile-shell.tsx'), 'utf8')
+const accountSource = readFileSync(resolve(__dirname, '../features/account/account.tsx'), 'utf8')
 const appSource = readFileSync(resolve(__dirname, '../App.tsx'), 'utf8')
 
 describe('mobile native navigation UI contract', () => {
@@ -25,7 +25,7 @@ describe('mobile native navigation UI contract', () => {
   })
 
   it('keeps the GPS overlays inside the native safe areas and allows large labels to wrap', () => {
-    const mapSource = readFileSync(resolve(__dirname, '../screens/mission-active-map.tsx'), 'utf8')
+    const mapSource = readFileSync(resolve(__dirname, '../features/tracking/mission-active-map.tsx'), 'utf8')
     expect(mapSource).toContain('useSafeAreaInsets')
     expect(mapSource).toContain('insets.top + 12')
     expect(mapSource).toContain('insets.bottom + 12')

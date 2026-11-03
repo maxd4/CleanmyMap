@@ -3,11 +3,11 @@ import { AccessibilityInfo, ActivityIndicator, AppState, StyleSheet, Text, Touch
 import * as Location from 'expo-location'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MapView, { Marker, Polyline, type Region } from 'react-native-maps'
-import { getMissionTrack } from '../lib/tracking-service'
-import { getStoredForegroundTrack, saveStoredForegroundTrack } from '../lib/storage'
-import { calculateTrackDistanceMeters, mergeTrackPoints } from '../lib/track-geometry'
-import { EmergencyCallActions } from './emergency-call-actions'
-import type { ForegroundTrackPoint, MissionLocation } from '../types/mission'
+import { getMissionTrack } from './tracking-service'
+import { getStoredForegroundTrack, saveStoredForegroundTrack } from '../../shared/lib/storage'
+import { calculateTrackDistanceMeters, mergeTrackPoints } from './track-geometry'
+import { EmergencyCallActions } from '../account/emergency-call-actions'
+import type { ForegroundTrackPoint, MissionLocation } from './mission'
 
 type Coordinate = {
   latitude: number

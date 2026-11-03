@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createLocalIdentifier } from '../lib/local-identifier';
+import { createLocalIdentifier } from '../shared/lib/local-identifier';
 
 describe('createLocalIdentifier', () => {
   it('keeps the prefix and produces distinct local identifiers', () => {

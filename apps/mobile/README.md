@@ -52,14 +52,14 @@ décision d'identité dans
 | Surface | Owner actuel | Rôle vérifié |
 |---|---|---|
 | Entrée Expo | [`index.ts`](./index.ts), [`App.tsx`](./App.tsx), [`app.json`](./app.json) | Enregistre la tâche GPS avant `registerRootComponent`, initialise les polyfills, Clerk, le cache sécurisé et le shell. |
-| Navigation | [`screens/mobile-shell.tsx`](./screens/mobile-shell.tsx), [`mobile-shell-contract.ts`](./screens/mobile-shell-contract.ts) | Barre native persistante `Agir` / `Carte` / `Compte`; sous-vues `Rejoindre`, `Créer`, `Signaler`; `Accueil`, `Réseau`, `Apprendre` restent planifiées. |
-| Écrans | [`screens/mobile-shell.tsx`](./screens/mobile-shell.tsx) | Compte, création et participation d'action, signalement, mission active/carte, finalisation, contact et appel d'urgence. |
-| Hooks/controllers | [`hooks/use-companion-mission-controller.ts`](./hooks/use-companion-mission-controller.ts) | `useCompanionMissionController`, `useAccountController`, `useActionCreateController` portent respectivement mission/GPS, projection Compte et brouillon/création d'action. |
-| Services | [`lib/mobile-api-client.ts`](./lib/mobile-api-client.ts) | Client HTTP mobile, Actions, Compte, média de signalement, mission liée, tracking GPS, géométrie, permissions, environnement et contact d'urgence. |
-| Stockage | [`lib/storage.ts`](./lib/storage.ts), cache Clerk | `AsyncStorage` conserve surface, brouillons, mission, buffer, tracé, réconciliations et la clé de reprise de création de mission namespacés par owner; `SecureStore` porte le cache de token Clerk et le contact d'urgence natif. |
-| GPS | [`lib/tracking-service.ts`](./lib/tracking-service.ts), [`tasks/gps-task.ts`](./tasks/gps-task.ts), [`screens/mission-active-map.tsx`](./screens/mission-active-map.tsx) | `expo-location`, `expo-task-manager` et `react-native-maps` couvrent permissions, suivi foreground, tâche background câblée, restauration/replay et affichage du tracé; les métriques finales restent serveur. |
-| Authentification | [`App.tsx`](./App.tsx), [`lib/supabase.ts`](./lib/supabase.ts) | Clerk est l'identité canonique; `ClerkProvider` + `tokenCache` et Bearer `session_token` alimentent Supabase Third-Party Auth et les frontières HTTP mobiles. |
-| API et données consommées | [`lib/mobile-actions-service.ts`](./lib/mobile-actions-service.ts), [`mobile-account-service.ts`](./lib/mobile-account-service.ts), [`tracking-service.ts`](./lib/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions` et `/api/missions/:id/reconcile`; les routes mission acceptent le Bearer Clerk mobile via la frontière canonique et la création liée porte une `Idempotency-Key` owner-scoped. Tables Supabase `missions` et `gps_points`. |
+| Navigation | [`navigation/mobile-shell.tsx`](./navigation/mobile-shell.tsx), [`navigation/mobile-shell-contract.ts`](./navigation/mobile-shell-contract.ts) | Barre native persistante `Agir` / `Carte` / `Compte`; sous-vues `Rejoindre`, `Créer`, `Signaler`; `Accueil`, `Réseau`, `Apprendre` restent planifiées. |
+| Écrans | [`navigation/mobile-shell.tsx`](./navigation/mobile-shell.tsx) | Compte, création et participation d'action, signalement, mission active/carte, finalisation, contact et appel d'urgence. |
+| Hooks/controllers | [`features/tracking/use-companion-mission-controller.ts`](./features/tracking/use-companion-mission-controller.ts) | `useCompanionMissionController`, `useAccountController`, `useActionCreateController` portent respectivement mission/GPS, projection Compte et brouillon/création d'action dans leurs domaines. |
+| Services | [`shared/lib/mobile-api-client.ts`](./shared/lib/mobile-api-client.ts) | Client HTTP partagé ; les services Actions, Compte, signalement et tracking restent dans leurs domaines fonctionnels. |
+| Stockage | [`shared/lib/storage.ts`](./shared/lib/storage.ts), cache Clerk | `AsyncStorage` conserve surface, brouillons, mission, buffer, tracé, réconciliations et la clé de reprise de création de mission namespacés par owner; `SecureStore` porte le cache de token Clerk et le contact d'urgence natif. |
+| GPS | [`features/tracking/tracking-service.ts`](./features/tracking/tracking-service.ts), [`tasks/gps-task.ts`](./tasks/gps-task.ts), [`features/tracking/mission-active-map.tsx`](./features/tracking/mission-active-map.tsx) | `expo-location`, `expo-task-manager` et `react-native-maps` couvrent permissions, suivi foreground, tâche background câblée, restauration/replay et affichage du tracé; les métriques finales restent serveur. |
+| Authentification | [`App.tsx`](./App.tsx), [`shared/lib/supabase.ts`](./shared/lib/supabase.ts) | Clerk est l'identité canonique; `ClerkProvider` + `tokenCache` et Bearer `session_token` alimentent Supabase Third-Party Auth et les frontières HTTP mobiles. |
+| API et données consommées | [`features/actions/mobile-actions-service.ts`](./features/actions/mobile-actions-service.ts), [`features/account/mobile-account-service.ts`](./features/account/mobile-account-service.ts), [`features/tracking/tracking-service.ts`](./features/tracking/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions` et `/api/missions/:id/reconcile`; les routes mission acceptent le Bearer Clerk mobile via la frontière canonique et la création liée porte une `Idempotency-Key` owner-scoped. Tables Supabase `missions` et `gps_points`. |
 | Tests et contrôles | [`tests/mobile-shell-contract.test.ts`](./tests/mobile-shell-contract.test.ts), [`security/braces-security.test.mjs`](./security/braces-security.test.mjs) | Vitest couvre runtime, contrats, reprise, identité, stockage, GPS et écrans; les tests Node dédiés couvrent les dépendances vendorisées. Commandes: `mobile:typecheck`, `mobile:test`, `mobile:security`, `mobile:lint`, `quality:mobile-coverage`. |
 
 ### Dépendances directes du workspace
@@ -133,7 +133,7 @@ roadmap. Android et iOS resteront à adapter et à valider séparément ; macOS
 reste une cible distincte non engagée.
 
 Les pages d'attente utilisent une présentation commune et des définitions
-simples dans [`screens/planned-capabilities.tsx`](./screens/planned-capabilities.tsx).
+simples dans [`navigation/planned-capabilities.tsx`](./navigation/planned-capabilities.tsx).
 Elles ne créent ni appel API, ni service, ni modèle, ni stockage, ni calcul,
 ni dépendance nouvelle. Aucun package partagé ne doit être créé avant
 l'existence d'un consommateur réel et d'un owner établi.
@@ -710,17 +710,18 @@ apps/mobile/
 ├── App.tsx
 ├── index.ts
 ├── app.json
-├── screens/
-│   ├── mobile-shell.tsx
-│   └── mobile-shell-contract.ts
-├── lib/
-│   ├── supabase.ts
-│   ├── storage.ts
-│   └── tracking-service.ts
+├── features/
+│   ├── actions/       # création et participation
+│   ├── account/       # profil, préférences et identité
+│   ├── signalements/  # signalements et médias
+│   └── tracking/      # GPS, carte active et finalisation
+├── navigation/        # shell, destinations et contrats de navigation
+├── shared/
+│   ├── lib/           # client HTTP, stockage et environnement transversaux
+│   └── ui/            # primitives visuelles réellement partagées
 ├── tasks/
 │   └── gps-task.ts
-└── types/
-    └── mission.ts
+└── design-reference/ # guides et références documentaires mobiles
 ```
 
 ## Supabase

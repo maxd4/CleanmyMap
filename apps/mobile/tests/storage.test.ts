@@ -6,7 +6,7 @@ function createStorageSupabaseMock() { return {
   getClerkUserId: vi.fn(async () => state.currentUserId),
 } }
 
-vi.mock('../lib/supabase', createStorageSupabaseMock)
+vi.mock('../shared/lib/supabase', createStorageSupabaseMock)
 
 import {
   bufferPoint,
@@ -22,7 +22,7 @@ import {
   getStoredMissionOwnerId,
   removePendingLinkedMissionReconciliation,
   setStoredMissionId,
-} from '../lib/storage'
+} from '../shared/lib/storage'
 
 const point = {
   client_point_id: 'point-1',

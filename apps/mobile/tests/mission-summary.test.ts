@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatServerDistance, formatServerDuration } from '../lib/mission-summary'
+import { formatServerDistance, formatServerDuration } from '../features/tracking/mission-summary'
 
 describe('server mission summary formatting', () => {
   it('does not invent values when the server metric is absent or invalid', () => {

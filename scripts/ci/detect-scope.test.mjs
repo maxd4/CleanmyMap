@@ -259,7 +259,7 @@ test("application-only changes select only their validation lane", () => {
     eventName: "push",
     eventBefore: baseSha,
     eventSha: candidateSha,
-    changedFiles: ["apps/mobile/screens/map-screen.tsx"],
+    changedFiles: ["apps/mobile/features/tracking/map-screen.tsx"],
   });
   assert.equal(mobile.scope.mobileCodeRelevant, true);
   assert.equal(mobile.scope.mobileOnly, true);

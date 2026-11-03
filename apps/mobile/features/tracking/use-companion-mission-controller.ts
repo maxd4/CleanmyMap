@@ -6,11 +6,11 @@ import {
   restoreActiveTracking,
   startMobileMission,
   stopTracking,
-} from '../lib/tracking-service'
-import { clearStoredForegroundTrack, flushBuffer, getPendingGpsPointCount } from '../lib/storage'
-import { reconcilePendingLinkedMissions } from '../lib/linked-mission-service'
-import { usePendingGpsPointCountPolling } from '../lib/pending-gps-point-polling'
-import type { Mission, MissionFinalizationStage, TrackingPhase } from '../types/mission'
+} from './tracking-service'
+import { clearStoredForegroundTrack, flushBuffer, getPendingGpsPointCount } from '../../shared/lib/storage'
+import { reconcilePendingLinkedMissions } from './linked-mission-service'
+import { usePendingGpsPointCountPolling } from './pending-gps-point-polling'
+import type { Mission, MissionFinalizationStage, TrackingPhase } from './mission'
 
 function formatDuration(startedAt: string): string {
   const seconds = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)

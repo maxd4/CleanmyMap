@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
-import { MOBILE_DESTINATION_REGISTRY, MOBILE_DESTINATIONS, MOBILE_SHELL_SURFACE_STORAGE_KEY, MOBILE_WEB_BRIDGE_PATHS } from '../screens/mobile-shell-contract'
-import { PLANNED_CAPABILITIES } from '../screens/planned-capabilities-contract'
+import { MOBILE_DESTINATION_REGISTRY, MOBILE_DESTINATIONS, MOBILE_SHELL_SURFACE_STORAGE_KEY, MOBILE_WEB_BRIDGE_PATHS } from '../navigation/mobile-shell-contract'
+import { PLANNED_CAPABILITIES } from '../navigation/planned-capabilities-contract'
 
 function assertWebBridgeContract() {
   expect(MOBILE_WEB_BRIDGE_PATHS).toEqual({

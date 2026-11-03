@@ -33,7 +33,7 @@ vi.mock('@supabase/supabase-js', () => ({
 
 vi.mock('react-native-url-polyfill/auto', () => ({}))
 
-import { getAuthenticatedSupabaseClient, getClerkSupabaseAccessToken, getClerkUserId } from '../lib/supabase'
+import { getAuthenticatedSupabaseClient, getClerkSupabaseAccessToken, getClerkUserId } from '../shared/lib/supabase'
 
 describe('mobile headless Clerk session', () => {
   beforeEach(() => {

@@ -26,7 +26,7 @@ test("la politique expose les seuils REVIEW/HARD propres à chaque KIND", () => 
 
 test("la classification couvre Web et mobile sans déduire un monolithe de la taille", () => {
   assert.equal(classifyFileKind("apps/web/src/lib/feature.ts"), "runtime");
-  assert.equal(classifyFileKind("apps/mobile/screens/feature.tsx"), "runtime");
+  assert.equal(classifyFileKind("apps/mobile/features/actions/feature.tsx"), "runtime");
   assert.equal(classifyFileKind("apps/mobile/tests/feature.test.ts"), "test");
   assert.equal(classifyFileKind("apps/mobile/data/catalog.ts"), "data/config");
   assert.equal(classifyFileKind("apps/mobile/generated/schema.ts"), "generated");

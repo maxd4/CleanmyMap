@@ -3,12 +3,12 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const appSource = readFileSync(fileURLToPath(new URL('../App.tsx', import.meta.url)), 'utf8')
-const controllerSource = readFileSync(fileURLToPath(new URL('../hooks/use-companion-mission-controller.ts', import.meta.url)), 'utf8')
+const controllerSource = readFileSync(fileURLToPath(new URL('../features/tracking/use-companion-mission-controller.ts', import.meta.url)), 'utf8')
 const pendingPollingSource = readFileSync(
-  fileURLToPath(new URL('../lib/pending-gps-point-polling.ts', import.meta.url)),
+  fileURLToPath(new URL('../features/tracking/pending-gps-point-polling.ts', import.meta.url)),
   'utf8',
 )
-const mapSource = readFileSync(fileURLToPath(new URL('../screens/mission-active-map.tsx', import.meta.url)), 'utf8')
+const mapSource = readFileSync(fileURLToPath(new URL('../features/tracking/mission-active-map.tsx', import.meta.url)), 'utf8')
 
 describe('active mobile mission live map contract', () => {
   it('renders a native map with the current marker and a live foreground polyline', () => {

@@ -20,11 +20,11 @@
 
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
-import { getAuthenticatedSupabaseClient, getClerkUserId } from '../lib/supabase';
-import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../lib/storage';
-import { createGpsPointId } from '../lib/gps-point-identity';
-import { GPS_TASK_NAME } from '../lib/tracking-service';
-import type { MissionLocationInsert } from '../types/mission';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from '../shared/lib/supabase';
+import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../shared/lib/storage';
+import { createGpsPointId } from '../features/tracking/gps-point-identity';
+import { GPS_TASK_NAME } from '../features/tracking/tracking-service';
+import type { MissionLocationInsert } from '../features/tracking/mission';
 
 function toMissionLocationInsert(
   missionId: string,

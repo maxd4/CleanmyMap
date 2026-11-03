@@ -34,8 +34,8 @@ vi.mock('expo-location', () => ({
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: state.getItem, setItem: state.setItem },
 }))
-vi.mock('../lib/linked-mission-service', () => ({ createLinkedMission: state.createLinkedMission }))
-vi.mock('../lib/mobile-actions-service', () => ({
+vi.mock('../features/tracking/linked-mission-service', () => ({ createLinkedMission: state.createLinkedMission }))
+vi.mock('../features/actions/mobile-actions-service', () => ({
   MOBILE_ORGANIZER_TYPE_OPTIONS: [
     { value: 'spontaneous', label: 'Action spontanée' },
     { value: 'company', label: 'Entreprise' },
@@ -52,7 +52,7 @@ vi.mock('../lib/mobile-actions-service', () => ({
   publishMobileAction: state.publishMobileAction,
 }))
 
-import { ActionCreateScreen } from '../screens/action-create'
+import { ActionCreateScreen } from '../features/actions/action-create'
 
 function textContent(node: TestRenderer.ReactTestInstance): string {
   return node.children.map((child) => typeof child === 'string' ? child : textContent(child)).join('')

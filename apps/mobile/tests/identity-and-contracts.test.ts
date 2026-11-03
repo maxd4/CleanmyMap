@@ -40,7 +40,7 @@ beforeEach(() => {
 })
 
 it('passes the current Clerk token to Supabase Third-Party Auth without a Supabase session', async () => {
-    const module = await import('../lib/supabase')
+    const module = await import('../shared/lib/supabase')
     const [, , options] = state.createClient.mock.calls[0] as unknown as [
       string,
       string,

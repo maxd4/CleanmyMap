@@ -11,7 +11,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 
 vi.mock('expo-secure-store', () => createSecureStoreMock(state))
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => null),
 }))
 
@@ -20,8 +20,8 @@ import {
   clearStoredEmergencyContact,
   getStoredEmergencyContact,
   saveStoredEmergencyContact,
-} from '../lib/storage'
-import { getDialablePhone, validateEmergencyContact } from '../lib/emergency-contact'
+} from '../shared/lib/storage'
+import { getDialablePhone, validateEmergencyContact } from '../features/account/emergency-contact-service'
 
 describe('mobile emergency contact', () => {
   beforeEach(() => {

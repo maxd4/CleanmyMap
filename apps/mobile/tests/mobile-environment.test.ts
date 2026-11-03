@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getMobileApiBaseUrl, getMobilePublicEnv, getMobileWebBaseUrl } from '../lib/mobile-environment'
+import { getMobileApiBaseUrl, getMobilePublicEnv, getMobileWebBaseUrl } from '../shared/lib/mobile-environment'
 
 const mobileEnvironmentSource = readFileSync(
-  fileURLToPath(new URL('../lib/mobile-environment.ts', import.meta.url)),
+  fileURLToPath(new URL('../shared/lib/mobile-environment.ts', import.meta.url)),
   'utf8',
 )
 

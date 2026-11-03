@@ -1,4 +1,4 @@
-import type { EmergencyContact } from '../types/emergency-contact'
+import type { EmergencyContact } from './emergency-contact.types'
 
 export type EmergencyContactField = keyof EmergencyContact
 

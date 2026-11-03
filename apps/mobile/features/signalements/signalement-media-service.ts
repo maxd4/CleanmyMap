@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
-import { getAuthenticatedSupabaseClient, getClerkSupabaseAccessToken } from './supabase'
-import { getMobileApiBaseUrl } from './mobile-environment'
+import { getAuthenticatedSupabaseClient, getClerkSupabaseAccessToken } from '../../shared/lib/supabase'
+import { getMobileApiBaseUrl } from '../../shared/lib/mobile-environment'
 
 export type MobilePickedPhoto = ImagePicker.ImagePickerAsset
 export type MobileMediaItem = { id: string; originalName: string; signedUrl: string; uploadState: string }

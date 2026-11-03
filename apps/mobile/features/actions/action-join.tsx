@@ -18,7 +18,7 @@ import {
   type MobileActionReviewItem,
   type MobileInvitation,
   type MobileFieldRoleState,
-} from '../lib/mobile-actions-service'
+} from './mobile-actions-service'
 
 type ActionJoinScreenProps = {
   onSessionExpired: () => void

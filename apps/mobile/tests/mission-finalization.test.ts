@@ -38,15 +38,15 @@ vi.mock('expo-task-manager', () => ({
   isTaskRegisteredAsync: vi.fn(async () => state.taskRegistered),
 }))
 
-vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
-vi.mock('../lib/gps-permission-rationale', () => ({ showGpsPermissionRationale: vi.fn(async () => true) }))
+vi.mock('../shared/lib/supabase', () => createSupabaseMock(() => state.client))
+vi.mock('../features/tracking/gps-permission-rationale', () => ({ showGpsPermissionRationale: vi.fn(async () => true) }))
 
-vi.mock('../lib/linked-mission-service', () => ({
+vi.mock('../features/tracking/linked-mission-service', () => ({
   createLinkedMission: vi.fn(),
   reconcileLinkedMission,
 }))
 
-vi.mock('../lib/storage', () => createTrackingStorageMock({
+vi.mock('../shared/lib/storage', () => createTrackingStorageMock({
   ...createMissionIdStorageOptions(state),
   enqueuePendingLinkedMissionReconciliation: (_ownerId, id) => {
     if (!state.pendingMissionIds.includes(id)) state.pendingMissionIds.push(id)
@@ -58,7 +58,7 @@ vi.mock('../lib/storage', () => createTrackingStorageMock({
 }))
 
 import * as Location from 'expo-location'
-import { stopTracking } from '../lib/tracking-service'
+import { stopTracking } from '../features/tracking/tracking-service'
 
 const completedMission = {
   id: 'mission-1',

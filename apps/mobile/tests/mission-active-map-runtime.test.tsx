@@ -1,7 +1,7 @@
 import React from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MissionLocation } from '../types/mission'
+import type { MissionLocation } from '../features/tracking/mission'
 import { testProp } from './test-renderer-helpers'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -63,20 +63,20 @@ vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 20, left: 0 }),
 }))
 
-vi.mock('../lib/storage', () => ({
+vi.mock('../shared/lib/storage', () => ({
   getStoredForegroundTrack: state.getStoredTrack,
   saveStoredForegroundTrack: state.saveStoredTrack,
 }))
 
-vi.mock('../lib/tracking-service', () => ({
+vi.mock('../features/tracking/tracking-service', () => ({
   getMissionTrack: state.getMissionTrack,
 }))
 
-vi.mock('../screens/emergency-call-actions', () => ({
+vi.mock('../features/account/emergency-call-actions', () => ({
   EmergencyCallActions: 'EmergencyCallActions',
 }))
 
-import { MissionActiveMap } from '../screens/mission-active-map'
+import { MissionActiveMap } from '../features/tracking/mission-active-map'
 
 const serverPoints: MissionLocation[] = [
   {

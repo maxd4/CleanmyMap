@@ -541,7 +541,7 @@ test("malformed or stale baseline fails explicitly", () => {
 test("la couverture mobile reste un scope indépendant sans domaines web", () => {
   const mobileSummary = {
     total: Object.fromEntries(COVERAGE_METRICS.map((name) => [name, metric(30, 100)])),
-    "C:\\repo\\apps\\mobile\\lib\\tracking-service.ts": {
+    "C:\\repo\\apps\\mobile\\features\\tracking\\tracking-service.ts": {
       statements: metric(30, 100),
       branches: metric(30, 100),
       functions: metric(30, 100),
