@@ -680,6 +680,92 @@ describe('mobile action creation runtime', () => {
     })
   })
 
+  it.each([
+    { label: 'Association', value: 'association' },
+    { label: 'Entreprise', value: 'company' },
+  ] as const)('clears the pending identity when switching spontaneous to $label', async ({ label, value }) => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Organisateur en attente de compte'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, label), 'onPress') })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'value')).toBe('')
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'onChangeText', 'Structure locale') })
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(state.createMobileAction).toHaveBeenCalledWith(expect.objectContaining({
+      organizerType: value,
+      associationName: 'Structure locale',
+      organizerName: 'Structure locale',
+      organizerAccounts: [],
+    }))
+    expect(state.createMobileAction.mock.calls[0]?.[0]?.organizerName).not.toBe('Organisateur en attente de compte')
+  })
+
+  it('does not implicitly select a spontaneous organizer when switching from an association without accounts', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Association'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'onChangeText', 'Association locale') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+
+    const pendingButton = findButton(renderer, 'Organisateur en attente de compte')
+    expect(testProp<{ checked?: boolean }>(pendingButton, 'accessibilityState')?.checked).toBe(false)
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('')
+  })
+
+  it('preserves organizer accounts when switching from an association to spontaneous', async () => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Association'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'onChangeText', 'Association locale') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Équipe et logistique'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Coorganisateurs (identifiants séparés par des virgules)' }), 'onChangeText', 'orga-1') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Essentiel'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('Organisateur en attente de compte')
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(state.createMobileAction).toHaveBeenCalledWith(expect.objectContaining({
+      organizerType: 'spontaneous',
+      organizerName: 'Organisateur en attente de compte',
+      organizerAccounts: ['orga-1'],
+    }))
+  })
+
+  it('normalizes an incompatible organizer identity from an older owner-scoped draft', async () => {
+    state.getItem.mockResolvedValue(JSON.stringify({
+      ownerId: 'user-a',
+      draft: { title: 'Brouillon repris', organizerType: 'association', organizerName: 'Organisateur en attente de compte', location: 'Parc repris' },
+    }))
+    const renderer = await renderScreen()
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'value')).toBe('')
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'onChangeText', 'Association reprise') })
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(state.createMobileAction).toHaveBeenCalledWith(expect.objectContaining({
+      organizerType: 'association',
+      associationName: 'Association reprise',
+      organizerName: 'Association reprise',
+    }))
+    expect(state.createMobileAction.mock.calls[0]?.[0]?.organizerName).not.toBe('Organisateur en attente de compte')
+  })
+
   it('refuses a spontaneous action without an account or the explicit pending option before POST', async () => {
     state.getItem.mockResolvedValue(null)
     const renderer = await renderScreen()
@@ -717,7 +803,7 @@ describe('mobile action creation runtime', () => {
     const renderer = await renderScreen()
 
     await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
-    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom affiché (optionnel, ne crée pas de compte)' }), 'onChangeText', 'Collectif non rattaché') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'onChangeText', 'Collectif non rattaché') })
     for (let index = 0; index < 3; index += 1) {
       await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
     }

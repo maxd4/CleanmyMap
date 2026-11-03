@@ -77,6 +77,16 @@ function isSection(value: unknown): value is Section {
   return typeof value === 'string' && SECTIONS.some((item) => item.id === value)
 }
 
+function normalizeOrganizerName(organizerType: MobileOrganizerType | null, organizerName: string, organizerAccounts: string): string {
+  const trimmedName = organizerName.trim()
+  if (organizerType === 'spontaneous') {
+    return trimmedName === SPONTANEOUS_PENDING_ORGANIZER_LABEL || organizerAccounts.trim()
+      ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
+      : ''
+  }
+  return trimmedName === SPONTANEOUS_PENDING_ORGANIZER_LABEL ? '' : organizerName
+}
+
 function parseStoredDraft(value: string | null, expectedOwnerId?: string | null): StoredDraft {
   if (!value) return {}
   try {
@@ -90,8 +100,10 @@ function parseStoredDraft(value: string | null, expectedOwnerId?: string | null)
         ? storedDraft.association
         : EMPTY.organizerName
     const organizerType = isMobileOrganizerType(storedDraft?.organizerType) ? storedDraft.organizerType : null
+    const organizerAccounts = typeof storedDraft?.coorganizers === 'string' ? storedDraft.coorganizers : EMPTY.coorganizers
+    const normalizedOrganizerName = normalizeOrganizerName(organizerType, organizerName, organizerAccounts)
     return {
-      draft: storedDraft ? { ...EMPTY, ...storedDraft, organizerName, organizerType } : undefined,
+      draft: storedDraft ? { ...EMPTY, ...storedDraft, organizerName: normalizedOrganizerName, organizerType } : undefined,
       ownerId: storedOwnerId,
       actionId: parsed.actionId || undefined,
       section: isSection(parsed.section) ? parsed.section : undefined,
@@ -308,9 +320,6 @@ function getOrganizerSelectionError(payload: MobileActionDraftPayload): string |
   }
   if (!hasOrganizerAccount && !hasPendingOrganizer) {
     return 'Pour une action spontanée, sélectionnez un compte organisateur ou « Organisateur en attente de compte ».'
-  }
-  if (hasOrganizerAccount && hasPendingOrganizer) {
-    return 'Choisissez un compte organisateur ou « Organisateur en attente de compte », pas les deux.'
   }
   return null
 }
@@ -534,5 +543,17 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   const update = (key: keyof Draft, value: string) => {
     if (ownerHydrated) setDraft((current) => ({ ...current, [key]: value }))
   }
-  return { section: visibleSection, setSection, draft: visibleDraft, update, actionId: visibleActionId, published: visiblePublished, sectionIndex: SECTIONS.findIndex((item) => item.id === visibleSection), getCurrentPosition, ...persistence, ...mutations, setActionId, setPublished }
+  const updateOrganizerType = (organizerType: MobileOrganizerType) => {
+    if (ownerHydrated) {
+      setDraft((current) => {
+        if (current.organizerType === organizerType) return current
+        return {
+          ...current,
+          organizerType,
+          organizerName: normalizeOrganizerName(organizerType, '', current.coorganizers),
+        }
+      })
+    }
+  }
+  return { section: visibleSection, setSection, draft: visibleDraft, update, updateOrganizerType, actionId: visibleActionId, published: visiblePublished, sectionIndex: SECTIONS.findIndex((item) => item.id === visibleSection), getCurrentPosition, ...persistence, ...mutations, setActionId, setPublished }
 }
