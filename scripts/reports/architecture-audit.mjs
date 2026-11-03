@@ -13,7 +13,7 @@ import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { aggregateCoverage } from "../checks/coverage-policy.mjs";
 import { readHumanDecisionsFromView } from "./generate-modularity-radar.mjs";
 
-export const ARCHITECTURE_AUDIT_SCHEMA_VERSION = 2;
+export const ARCHITECTURE_AUDIT_SCHEMA_VERSION = 3;
 export const ARCHITECTURE_AUDIT_ROOT = "artifacts/architecture";
 export const ARCHITECTURE_SCAN_ROOTS = Object.freeze(["apps/web/src", "apps/mobile", "scripts"]);
 export const ARCHITECTURE_BASELINES = Object.freeze([
@@ -101,6 +101,133 @@ function buildDomainMeasures(rows) {
   const domains = {};
   for (const row of rows) addDomainMeasure(domains, row);
   return Object.fromEntries(Object.entries(domains).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+const FOLDER_KIND_KEYS = Object.freeze(["runtime", "tests", "other"]);
+
+function folderKind(row) {
+  return row.kind === "runtime" ? "runtime" : row.kind === "test" ? "tests" : "other";
+}
+
+function ratio(numerator, denominator) {
+  return denominator === 0 ? 0 : Number((numerator / denominator).toFixed(6));
+}
+
+function scanRootForFile(file, scanRoots) {
+  return scanRoots
+    .filter((root) => file === root || file.startsWith(`${root}/`))
+    .sort((left, right) => right.length - left.length)[0] ?? null;
+}
+
+function folderDepth(folder, root) {
+  return folder === root ? 0 : folder.slice(root.length + 1).split("/").length;
+}
+
+function createFolderMeasure(pathName, root) {
+  const kinds = () => Object.fromEntries(FOLDER_KIND_KEYS.map((key) => [key, 0]));
+  return {
+    path: pathName,
+    root,
+    directFiles: 0,
+    recursiveFiles: 0,
+    directKinds: kinds(),
+    recursiveKinds: kinds(),
+    maxFileDepth: folderDepth(pathName, root),
+    reviewFiles: new Set(),
+    deferredSplitFiles: new Set(),
+  };
+}
+
+function ensureFolderMeasure(folders, pathName, root) {
+  const key = pathName;
+  if (!folders.has(key)) folders.set(key, createFolderMeasure(pathName, root));
+  return folders.get(key);
+}
+
+function materializeFolderMeasure(folder) {
+  const depth = folderDepth(folder.path, folder.root);
+  const dominantKind = FOLDER_KIND_KEYS
+    .slice()
+    .sort((left, right) => folder.recursiveKinds[right] - folder.recursiveKinds[left] || FOLDER_KIND_KEYS.indexOf(left) - FOLDER_KIND_KEYS.indexOf(right))[0];
+  const reasons = [
+    folder.reviewFiles.size > 0 ? "REVIEW_FILE" : null,
+    folder.deferredSplitFiles.size > 0 ? "DEFERRED_SPLIT" : null,
+  ].filter(Boolean);
+  return {
+    path: folder.path,
+    root: folder.root,
+    depth: {
+      relative: depth,
+      maxFile: folder.maxFileDepth,
+      span: Math.max(0, folder.maxFileDepth - depth),
+    },
+    files: {
+      direct: folder.directFiles,
+      recursive: folder.recursiveFiles,
+    },
+    kinds: {
+      direct: folder.directKinds,
+      recursive: folder.recursiveKinds,
+    },
+    concentration: {
+      directFileShare: ratio(folder.directFiles, folder.recursiveFiles),
+      dominantKind,
+      dominantKindShare: ratio(folder.recursiveKinds[dominantKind], folder.recursiveFiles),
+    },
+    review: {
+      required: reasons.length > 0,
+      reasons,
+      reviewFiles: [...folder.reviewFiles].sort((left, right) => left.localeCompare(right, "en")),
+      deferredSplitFiles: [...folder.deferredSplitFiles].sort((left, right) => left.localeCompare(right, "en")),
+    },
+  };
+}
+
+export function buildFolderMeasures(rows, { scanRoots = ARCHITECTURE_SCAN_ROOTS, deferredSplit = [] } = {}) {
+  const folders = new Map();
+  const deferredSplitSet = new Set(deferredSplit);
+
+  for (const row of rows) {
+    const root = scanRootForFile(row.file, scanRoots);
+    if (!root) continue;
+    const directory = path.posix.dirname(row.file);
+    const directoryParts = directory.split("/");
+    const rootParts = root.split("/");
+    const kind = folderKind(row);
+    for (let index = rootParts.length; index <= directoryParts.length; index += 1) {
+      const folderPath = directoryParts.slice(0, index).join("/");
+      const folder = ensureFolderMeasure(folders, folderPath, root);
+      folder.recursiveFiles += 1;
+      folder.recursiveKinds[kind] += 1;
+      folder.maxFileDepth = Math.max(folder.maxFileDepth, folderDepth(row.file, root));
+      if (folderPath === directory) {
+        folder.directFiles += 1;
+        folder.directKinds[kind] += 1;
+      }
+      if (isAboveReview(row)) folder.reviewFiles.add(row.file);
+      if (deferredSplitSet.has(row.file)) folder.deferredSplitFiles.add(row.file);
+    }
+  }
+
+  const items = [...folders.values()]
+    .map(materializeFolderMeasure)
+    .sort((left, right) => left.path.localeCompare(right.path, "en"));
+  return {
+    method: "architecture-source-inventory-and-existing-structural-signals",
+    roots: [...scanRoots],
+    filesConsidered: rows.length,
+    folders: items,
+    foldersRequiringReview: items
+      .filter((folder) => folder.review.required)
+      .map((folder) => ({
+        path: folder.path,
+        root: folder.root,
+        depth: folder.depth,
+        reasons: folder.review.reasons,
+        reviewFiles: folder.review.reviewFiles,
+        deferredSplitFiles: folder.review.deferredSplitFiles,
+      })),
+  };
 }
 
 function importSpecifiers(content) {
@@ -330,6 +457,7 @@ export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now
     .map((row) => ({ file: row.file, kind: row.kind, lines: row.lines, bytes: row.bytes, severity: isAboveHard(row) ? "HARD" : "REVIEW" }));
   const actionShell = rows.find((row) => row.file === ACTION_CREATION_SHELL) ?? null;
   const radarSource = readModularitySnapshot(view, sourceSha);
+  const folderMeasures = buildFolderMeasures(rows, { deferredSplit: radarSource.deferredSplit });
   const quality = Object.fromEntries(Object.entries(QUALITY_EVIDENCE).map(([name, key]) => [name, qualityEvidence(root, sourceSha, key, worktreeClean)]));
   quality.duplication = {
     scopes: Object.fromEntries(["runtime", "tests", "fixtures-data"].map((scope) => [scope, qualityEvidence(root, sourceSha, `duplication-${scope}`, worktreeClean)])),
@@ -349,6 +477,7 @@ export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now
       modularityPlan: radarSource,
     },
     domains: buildDomainMeasures(rows),
+    folderMeasures,
     largeModules,
     complexity: quality.complexity,
     imports: collectImportGraph(view, rows),
@@ -360,6 +489,7 @@ export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now
     },
     modularityReview: {
       historicalDeferredSplit: radarSource.deferredSplit,
+      foldersRequiringReview: folderMeasures.foldersRequiringReview,
       actionCreationShell: actionShell
         ? { file: actionShell.file, lines: actionShell.lines, bytes: actionShell.bytes, kind: actionShell.kind, reviewRequired: isAboveReview(actionShell) }
         : { file: ACTION_CREATION_SHELL, present: false },

@@ -6,6 +6,7 @@ import path from "node:path";
 
 import {
   assertArchitectureAuditFresh,
+  buildFolderMeasures,
   classifySourceRevision,
   collectImportGraph,
   coverageAvailability,
@@ -238,6 +239,9 @@ test("architecture inventory includes first-party MJS and JS, classifies tests, 
     "scripts/helper.js": "export const helperJs = true;\n",
     "scripts/tool.test.mjs": "export const test = true;\n",
     "scripts/vendor/third-party.mjs": "export const vendor = true;\n",
+    "scripts/assets/large-icon.mjs": "export const asset = true;\n" + "x\n".repeat(700),
+    "scripts/migrations/20261103000000-large.mjs": "export const migration = true;\n" + "x\n".repeat(700),
+    "scripts/generated/large.mjs": "// @generated\nexport const generated = true;\n" + "x\n".repeat(700),
     "scripts/radar.ts": "export const radar = true;\n" + "x\n".repeat(500),
   };
   const view = {
@@ -248,6 +252,11 @@ test("architecture inventory includes first-party MJS and JS, classifies tests, 
   assert.ok(architectureRows.some((row) => row.file === "scripts/tool.mjs" && row.kind === "runtime"));
   assert.ok(architectureRows.some((row) => row.file === "scripts/tool.test.mjs" && row.kind === "test"));
   assert.equal(architectureRows.some((row) => row.file.includes("vendor")), false);
+  assert.equal(architectureRows.some((row) => row.file.includes("assets")), false);
+  assert.equal(architectureRows.some((row) => row.file.includes("migrations")), false);
+  const generated = architectureRows.find((row) => row.file === "scripts/generated/large.mjs");
+  assert.equal(generated?.generated, true);
+  assert.equal(isAboveReview(generated), false);
 
   const radarRows = collectMeasuredRows(view, ["scripts"]);
   assert.deepEqual(radarRows.map((row) => row.file), ["scripts/radar.ts"]);
@@ -260,4 +269,37 @@ test("architecture inventory includes first-party MJS and JS, classifies tests, 
   assert.equal(graph.unresolvedLocalImports, 0);
   assert.equal(graph.excludedLocalImports, 1);
   assert.equal(graph.modules.find((entry) => entry.file === "scripts/tool.mjs").importsOut, 2);
+});
+
+test("folder inventory reports direct and recursive composition without inventing a concentration threshold", () => {
+  const rows = [
+    { file: "apps/web/src/domain/root.ts", kind: "runtime", lines: 10, bytes: 10, generated: false },
+    { file: "apps/web/src/domain/config.ts", kind: "data/config", lines: 10, bytes: 10, generated: false },
+    { file: "apps/web/src/domain/nested/large.ts", kind: "runtime", lines: 501, bytes: 10, generated: false },
+    { file: "apps/web/src/domain/nested/large.test.ts", kind: "test", lines: 20, bytes: 10, generated: false },
+  ];
+
+  const inventory = buildFolderMeasures(rows, {
+    scanRoots: ["apps/web/src"],
+    deferredSplit: ["apps/web/src/domain/root.ts"],
+  });
+
+  const domain = inventory.folders.find((folder) => folder.path === "apps/web/src/domain");
+  assert.deepEqual(domain?.files, { direct: 2, recursive: 4 });
+  assert.deepEqual(domain?.kinds.recursive, { runtime: 2, tests: 1, other: 1 });
+  assert.equal(domain?.depth.relative, 1);
+  assert.equal(domain?.concentration.directFileShare, 0.5);
+  assert.equal(domain?.concentration.dominantKind, "runtime");
+  assert.equal(domain?.review.required, true);
+  assert.deepEqual(domain?.review.reasons, ["REVIEW_FILE", "DEFERRED_SPLIT"]);
+
+  const nested = inventory.folders.find((folder) => folder.path === "apps/web/src/domain/nested");
+  assert.deepEqual(nested?.files, { direct: 2, recursive: 2 });
+  assert.deepEqual(nested?.kinds.direct, { runtime: 1, tests: 1, other: 0 });
+  assert.equal(nested?.depth.span, 1);
+  assert.deepEqual(inventory.foldersRequiringReview.map((folder) => folder.path), [
+    "apps/web/src",
+    "apps/web/src/domain",
+    "apps/web/src/domain/nested",
+  ]);
 });

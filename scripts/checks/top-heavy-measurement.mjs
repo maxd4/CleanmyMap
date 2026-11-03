@@ -14,7 +14,7 @@ function isMeasuredFile(file) {
 
 function isArchitectureSourceFile(file) {
   if (!ARCHITECTURE_SOURCE_EXTENSIONS.has(path.posix.extname(file)) || isIgnoredPath(file)) return false;
-  return !/(?:^|\/)(?:vendor|third[-_]?party)(?:\/|$)/i.test(file);
+  return !/(?:^|\/)(?:assets?|migrations?|vendor|third[-_]?party)(?:\/|$)/i.test(file);
 }
 
 export function measureContent(content) {

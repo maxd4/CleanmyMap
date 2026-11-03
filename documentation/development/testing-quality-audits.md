@@ -350,6 +350,20 @@ une analyse statique des imports relatifs et alias : il ne prouve ni les
 imports dynamiques, ni les consommateurs externes, ni les dépendances
 indirectes.
 
+L’artefact contient aussi `folderMeasures`, une vue déterministe par dossier de
+l’inventaire first-party : `files.direct` et `files.recursive`, les répartitions
+`kinds.direct`/`kinds.recursive` (`runtime`, `tests`, `other`), la profondeur
+relative au root scanné (`depth`) et des ratios descriptifs de concentration
+(`concentration`). Aucun ratio ne constitue un seuil ou une gate. La liste
+`folderMeasures.foldersRequiringReview` réutilise uniquement les signaux déjà
+normatifs du contrôle : un fichier au-dessus de la politique REVIEW existante
+ou une décision humaine `DEFERRED_SPLIT`. Les ancêtres concernés sont conservés
+pour rendre la zone de revue navigable. Les chemins `assets`, `migrations`,
+`vendor` et `third-party` sont écartés de cet inventaire structurel ; les
+fichiers générés restent classifiés mais la politique existante exclut les
+fichiers régénérables des alertes de modularisation. Le test exécutable du
+contrat est `node --test scripts/reports/architecture-audit.test.mjs`.
+
 La couverture Web n’est déclarée disponible par cet audit que si
 `apps/web/coverage/coverage-evidence.json` passe le validateur canonique, si
 son `gitHead`, sa configuration, son empreinte de candidat et son résumé
