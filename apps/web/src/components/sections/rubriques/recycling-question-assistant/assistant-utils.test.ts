@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getWastePedagogicalProjection, findWasteCategorySlug } from "@/lib/waste";
 import { buildAnswer } from "./assistant-utils";
 
-function answerText(question: string): string {
-  const answer = buildAnswer(question, "fr");
+function answerText(question: string, locale: "fr" | "en" = "fr"): string {
+  const answer = buildAnswer(question, locale);
   return [answer.badge, answer.title, answer.summary, ...answer.bullets, answer.nextStep]
     .join(" ")
     .toLowerCase();
@@ -48,5 +48,36 @@ describe("recycling assistant waste convergence", () => {
     expect(answerText("ampoule usagée")).toContain("ampoules");
     expect(answerText("cartouche d'encre vide")).toContain("cartouches");
     expect(answerText("chaussures usées")).toContain("chaussures");
+  });
+
+  it.each([
+    ["carton gras de pizza", "fr"],
+    ["boîte à pizza très sale", "fr"],
+    ["carton souillé de sauce", "fr"],
+    ["greasy pizza box", "en"],
+    ["dirty cardboard", "en"],
+  ] as const)("keeps the contaminated-cardboard guidance for %s", (question, locale) => {
+    const response = answerText(question, locale);
+
+    expect(response).toContain(locale === "fr" ? "ne va pas au tri papier-carton" : "does not belong in paper recycling");
+    expect(response).toContain(locale === "fr" ? "résiduel" : "residual waste");
+  });
+
+  it("keeps clean cardboard on the canonical paper-cardboard route", () => {
+    expect(findWasteCategorySlug("carton propre")).toBe("paper_cardboard");
+
+    const response = answerText("carton propre");
+
+    expect(response).toContain("papier et carton");
+    expect(response).not.toContain("carton gras");
+  });
+
+  it.each([
+    ["un médicament périmé", "pharmacie"],
+    ["une seringue trouvée", "ne pas ramasser"],
+    ["du verre cassé", "ne pas ramasser à mains nues"],
+    ["une pile usagée", "piles/batteries"],
+  ] as const)("keeps the canonical safety priority for %s", (question, expectedGuidance) => {
+    expect(answerText(question)).toContain(expectedGuidance);
   });
 });

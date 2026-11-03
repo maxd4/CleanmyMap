@@ -66,6 +66,11 @@ describe("global waste category contract", () => {
     });
   });
 
+  it("keeps ordinary and contaminated cardboard queries on the paper-cardboard slug", () => {
+    expect(findWasteCategorySlug("carton propre")).toBe("paper_cardboard");
+    expect(findWasteCategorySlug("carton gras de pizza")).toBe("paper_cardboard");
+  });
+
   it("reserves medicine for unused medicine or packaging that still contains medicine", () => {
     const medicine = getWasteCategory("medicine");
     const examples = medicine.examples.map((example) => `${example.fr} ${example.en}`).join(" ");

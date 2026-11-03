@@ -23,6 +23,63 @@ function localizedAnswer(locale: Locale, frAnswer: Answer, enAnswer: Answer): An
   return locale === "fr" ? frAnswer : enAnswer;
 }
 
+const GREASY_CARDBOARD_KEYWORDS = [
+  "carton gras",
+  "carton graisse",
+  "carton graisseux",
+  "carton souille",
+  "carton sale",
+  "dirty cardboard",
+  "greasy cardboard",
+  "soiled cardboard",
+  "carton de pizza",
+  "boite a pizza",
+  "boîte à pizza",
+  "pizza box",
+  "greasy pizza box",
+  "dirty pizza box",
+  "boite a tacos",
+  "boîte à tacos",
+];
+
+function buildGreasyCardboardAnswer(
+  locale: Locale,
+  fallbackBin: string,
+  publicSpaceReportNote?: string,
+): Answer {
+  return localizedAnswer(
+    locale,
+    {
+      kind: "packaging",
+      tone: "amber",
+      badge: "Carton sale",
+      title: "Un carton gras ou très sale ne va pas au tri papier-carton",
+      summary: `S'il est fortement souillé par la graisse ou des restes, il faut le mettre en résiduel. Si une partie est encore propre, tu peux parfois la séparer (${fallbackBin}).`,
+      bullets: [
+        "Le gras et les restes alimentaires dégradent le recyclage du carton.",
+        "Découpe si besoin les zones propres pour les garder au tri.",
+        "Une boîte à pizza propre peut parfois être triée; si elle est trop grasse, garde-la en résiduel.",
+      ],
+      nextStep: "Sépare la partie propre si possible, sinon mets le carton sale avec les déchets non recyclables.",
+      note: publicSpaceReportNote,
+    },
+    {
+      kind: "packaging",
+      tone: "amber",
+      badge: "Dirty cardboard",
+      title: "Greasy or heavily soiled cardboard does not belong in paper recycling",
+      summary: `If it is heavily contaminated with grease or leftovers, put it in residual waste. If a clean part remains, separate it when possible (${fallbackBin}).`,
+      bullets: [
+        "Grease and food residue reduce cardboard recyclability.",
+        "Cut off clean sections if you can keep them in the recycling stream.",
+        "A clean pizza box may be accepted; if it is too greasy, keep it in residual waste.",
+      ],
+      nextStep: "Separate the clean part if possible, otherwise put the dirty cardboard with non-recyclable waste.",
+      note: publicSpaceReportNote,
+    },
+  );
+}
+
 function createDefaultAnswer(locale: Locale): Answer {
   return locale === "fr"
     ? {
@@ -153,6 +210,13 @@ export function buildAnswer(question: string, locale: Locale): Answer {
       : "if impossible: residual waste bin";
 
   const canonicalSlug = findWasteCategorySlug(text);
+  if (
+    includesAny(text, GREASY_CARDBOARD_KEYWORDS) &&
+    (!canonicalSlug || canonicalSlug === "paper_cardboard")
+  ) {
+    return buildGreasyCardboardAnswer(locale, fallbackBin, publicSpaceReportNote);
+  }
+
   if (canonicalSlug) {
     return buildCanonicalWasteAnswer(
       getWastePedagogicalProjection(canonicalSlug, locale),
@@ -201,17 +265,6 @@ export function buildAnswer(question: string, locale: Locale): Answer {
     "bottes",
     "sandale",
     "sandales",
-  ];
-  const greasyCardboardKeywords = [
-    "carton gras",
-    "carton graisse",
-    "carton graisseux",
-    "carton de pizza",
-    "boite a pizza",
-    "boîte à pizza",
-    "pizza box",
-    "boite a tacos",
-    "boîte à tacos",
   ];
   const foodWasteKeywords = [
     "dechets alimentaires",
@@ -292,40 +345,6 @@ export function buildAnswer(question: string, locale: Locale): Answer {
           "If the waste is mixed with dirty packaging, separate what can still be composted.",
         ],
         nextStep: "Check the local rule: bio-waste collection, community composter or home compost.",
-        note: publicSpaceReportNote,
-      },
-    );
-  }
-
-  if (includesAny(text, greasyCardboardKeywords)) {
-    return localizedAnswer(
-      locale,
-      {
-        kind: "packaging",
-        tone: "amber",
-        badge: "Carton sale",
-        title: "Un carton gras ou très sale ne va pas au tri papier-carton",
-        summary: `S'il est fortement souillé par la graisse ou des restes, il faut le mettre en résiduel. Si une partie est encore propre, tu peux parfois la séparer (${fallbackBin}).`,
-        bullets: [
-          "Le gras et les restes alimentaires dégradent le recyclage du carton.",
-          "Découpe si besoin les zones propres pour les garder au tri.",
-          "Une boîte à pizza propre peut parfois être triée; si elle est trop grasse, garde-la en résiduel.",
-        ],
-        nextStep: "Sépare la partie propre si possible, sinon mets le carton sale avec les déchets non recyclables.",
-        note: publicSpaceReportNote,
-      },
-      {
-        kind: "packaging",
-        tone: "amber",
-        badge: "Dirty cardboard",
-        title: "Greasy or heavily soiled cardboard does not belong in paper recycling",
-        summary: `If it is heavily contaminated with grease or leftovers, put it in residual waste. If a clean part remains, separate it when possible (${fallbackBin}).`,
-        bullets: [
-          "Grease and food residue reduce cardboard recyclability.",
-          "Cut off clean sections if you can keep them in the recycling stream.",
-          "A clean pizza box may be accepted; if it is too greasy, keep it in residual waste.",
-        ],
-        nextStep: "Separate the clean part if possible, otherwise put the dirty cardboard with non-recyclable waste.",
         note: publicSpaceReportNote,
       },
     );
