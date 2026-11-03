@@ -25,7 +25,7 @@ const foundation = readFileSync(
   new URL("../../../supabase/migrations/20261012000001_spogomi_foundation.sql", import.meta.url),
   "utf8",
 );
-const creationService = readFileSync(new URL("./preparation-creation-service.ts", import.meta.url), "utf8");
+const creationService = readFileSync(new URL("./preparation/preparation-creation-service.ts", import.meta.url), "utf8");
 const publicCreationRoute = readFileSync(new URL("../../app/api/spogomi/events/route.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI parent division contract", () => {

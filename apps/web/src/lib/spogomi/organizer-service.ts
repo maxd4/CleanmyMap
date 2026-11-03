@@ -5,7 +5,7 @@ import {
   canManageEvent,
   SPOGOMI_ORGANIZER_EVENT_SELECT,
   type EventRow,
-} from "./preparation-service";
+} from "./preparation/preparation-service";
 import { readAllSpogomiPages } from "./pagination";
 
 const ACTION_ID_BATCH_SIZE = 100;

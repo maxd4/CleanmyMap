@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const moveRoute = readFileSync(new URL("../../app/api/spogomi/events/[eventId]/teams/move/route.ts", import.meta.url), "utf8");
-const lockRoute = readFileSync(new URL("../../app/api/spogomi/events/[eventId]/teams/lock/route.ts", import.meta.url), "utf8");
-const workspace = readFileSync(new URL("../../components/spogomi/spogomi-preparation-workspace.tsx", import.meta.url), "utf8");
-const workspaceView = readFileSync(new URL("../../components/spogomi/spogomi-preparation-workspace-view.tsx", import.meta.url), "utf8");
-const workspaceContract = readFileSync(new URL("../../components/spogomi/spogomi-preparation-workspace-contract.ts", import.meta.url), "utf8");
+const moveRoute = readFileSync(new URL("../../../app/api/spogomi/events/[eventId]/teams/move/route.ts", import.meta.url), "utf8");
+const lockRoute = readFileSync(new URL("../../../app/api/spogomi/events/[eventId]/teams/lock/route.ts", import.meta.url), "utf8");
+const workspace = readFileSync(new URL("../../../components/spogomi/spogomi-preparation-workspace.tsx", import.meta.url), "utf8");
+const workspaceView = readFileSync(new URL("../../../components/spogomi/spogomi-preparation-workspace-view.tsx", import.meta.url), "utf8");
+const workspaceContract = readFileSync(new URL("../../../components/spogomi/spogomi-preparation-workspace-contract.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI composition mutation STATIC_CONTRACT", () => {
   it("passes the current revision and organizer actor to both mutation services", () => {

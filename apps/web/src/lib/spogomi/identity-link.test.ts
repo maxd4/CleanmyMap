@@ -6,7 +6,7 @@ const claimFinishedActionParticipationMock = vi.hoisted(() => vi.fn());
 const loadSpogomiResultsProjectionMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/actions/participation/group-participation", () => ({ joinActionParticipation: joinActionParticipationMock }));
 vi.mock("@/lib/actions/participation/post-action-claims", () => ({ claimFinishedActionParticipation: claimFinishedActionParticipationMock }));
-vi.mock("./results-projection-service", () => ({ loadSpogomiResultsProjection: loadSpogomiResultsProjectionMock }));
+vi.mock("./results/results-projection-service", () => ({ loadSpogomiResultsProjection: loadSpogomiResultsProjectionMock }));
 import {
   generateSpogomiIdentityCode,
   hashSpogomiIdentityCode,

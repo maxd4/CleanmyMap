@@ -363,7 +363,7 @@
       "maxBytes": 17614
     },
     {
-      "path": "apps/web/src/lib/spogomi/preparation-service.ts",
+      "path": "apps/web/src/lib/spogomi/preparation/preparation-service.ts",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "b984d68bf91e864d2242acf07488bdccb8f93431",

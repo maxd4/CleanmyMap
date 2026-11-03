@@ -1,4 +1,4 @@
-import type { SpogomiRosterColumnMapping, SpogomiRosterPreview } from "./types";
+import type { SpogomiRosterColumnMapping, SpogomiRosterPreview } from "../types";
 
 export type SelectedImportRows = {
   eligibleRows: SpogomiRosterPreview["rows"];

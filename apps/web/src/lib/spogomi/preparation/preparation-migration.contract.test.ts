@@ -1,21 +1,21 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync(new URL("../../../supabase/migrations/20261012000002_spogomi_preparation.sql", import.meta.url), "utf8");
-const correctiveMigration = readFileSync(new URL("../../../supabase/migrations/20261012000004_spogomi_idempotence_import_reliability.sql", import.meta.url), "utf8");
-const conflictTargetMigration = readFileSync(new URL("../../../supabase/migrations/20261012000005_spogomi_import_conflict_target.sql", import.meta.url), "utf8");
-const lot11Migration = readFileSync(new URL("../../../supabase/migrations/20261012000022_spogomi_ticket_roster_and_team_composition.sql", import.meta.url), "utf8");
-const lot11aMigration = readFileSync(new URL("../../../supabase/migrations/20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql", import.meta.url), "utf8");
-const lot11CorrectiveMigration = readFileSync(new URL("../../../supabase/migrations/20261013000002_spogomi_import_history_and_safe_reconciliation.sql", import.meta.url), "utf8");
-const compositionLockMigration = readFileSync(new URL("../../../supabase/migrations/20261013000003_spogomi_composition_lock_integrity.sql", import.meta.url), "utf8");
-const ticketReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000004_spogomi_ticket_reconciliation_atomicity.sql", import.meta.url), "utf8");
-const strictTicketStatusMigration = readFileSync(new URL("../../../supabase/migrations/20261013000005_spogomi_strict_ticket_status.sql", import.meta.url), "utf8");
-const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000006_spogomi_ticket_decision_consistency.sql", import.meta.url), "utf8");
-const postLockMutationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000007_spogomi_post_lock_mutation_guards.sql", import.meta.url), "utf8");
-const teamPublicNameMigration = readFileSync(new URL("../../../supabase/migrations/20261013000008_spogomi_team_public_name_rename.sql", import.meta.url), "utf8");
-const preparationConcurrencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000009_spogomi_preparation_concurrency.sql", import.meta.url), "utf8");
-const postLockReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000011_spogomi_ticket_reconciliation_post_lock_history.sql", import.meta.url), "utf8");
-const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../supabase/migrations/20261013000012_spogomi_team_public_name_uniqueness.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../../../supabase/migrations/20261012000002_spogomi_preparation.sql", import.meta.url), "utf8");
+const correctiveMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000004_spogomi_idempotence_import_reliability.sql", import.meta.url), "utf8");
+const conflictTargetMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000005_spogomi_import_conflict_target.sql", import.meta.url), "utf8");
+const lot11Migration = readFileSync(new URL("../../../../supabase/migrations/20261012000022_spogomi_ticket_roster_and_team_composition.sql", import.meta.url), "utf8");
+const lot11aMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql", import.meta.url), "utf8");
+const lot11CorrectiveMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000002_spogomi_import_history_and_safe_reconciliation.sql", import.meta.url), "utf8");
+const compositionLockMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000003_spogomi_composition_lock_integrity.sql", import.meta.url), "utf8");
+const ticketReconciliationMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000004_spogomi_ticket_reconciliation_atomicity.sql", import.meta.url), "utf8");
+const strictTicketStatusMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000005_spogomi_strict_ticket_status.sql", import.meta.url), "utf8");
+const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000006_spogomi_ticket_decision_consistency.sql", import.meta.url), "utf8");
+const postLockMutationMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000007_spogomi_post_lock_mutation_guards.sql", import.meta.url), "utf8");
+const teamPublicNameMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000008_spogomi_team_public_name_rename.sql", import.meta.url), "utf8");
+const preparationConcurrencyMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000009_spogomi_preparation_concurrency.sql", import.meta.url), "utf8");
+const postLockReconciliationMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000011_spogomi_ticket_reconciliation_post_lock_history.sql", import.meta.url), "utf8");
+const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000012_spogomi_team_public_name_uniqueness.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {

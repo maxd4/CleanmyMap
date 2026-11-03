@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EventRow } from "./preparation-service";
-import type { SpogomiEventMode } from "./types";
+import type { SpogomiEventMode } from "../types";
 
 export type SpogomiEventUpdateInput = {
   name?: string;

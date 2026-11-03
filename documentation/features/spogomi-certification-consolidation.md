@@ -171,8 +171,8 @@ restent applicables.
 
 Fichiers principaux :
 
-- `apps/web/src/lib/spogomi/consolidation.ts` — moteur pur d’agrégation ;
-- `apps/web/src/lib/spogomi/consolidation-service.ts` — lecture, hash et RPC ;
+- `apps/web/src/lib/spogomi/results/consolidation.ts` — moteur pur d’agrégation ;
+- `apps/web/src/lib/spogomi/results/consolidation-service.ts` — lecture, hash et RPC ;
 - `apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts` — aperçu/publication protégés ;
 - `apps/web/supabase/migrations/20261012000007_spogomi_action_consolidation.sql` — mapping, projection et protection initiale des champs contrôlés ;
 - `apps/web/supabase/migrations/20261012000011_harden_spogomi_consolidation_revisions.sql` — replay des hashes historiques, snapshot transactionnel et remplacement atomique.

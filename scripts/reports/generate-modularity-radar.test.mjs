@@ -87,7 +87,7 @@ const HISTORICAL_DECISION_REFERENCE = Object.freeze([
   ["apps/web/src/lib/auth/sync.ts", "ALREADY_MODULARIZED", "NONE"],
   ["apps/web/src/components/actions/action-creation-shell.tsx", "DEFERRED_SPLIT", "AFTER_ACTIVE_CHANGES"],
   ["apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts", "EXTRACTED_PURE_CONTRACT", "CURRENT"],
-  ["apps/web/src/lib/spogomi/preparation-service.ts", "COHESIVE_SINGLE_FILE", "NONE"],
+  ["apps/web/src/lib/spogomi/preparation/preparation-service.ts", "COHESIVE_SINGLE_FILE", "NONE"],
   ["apps/web/src/lib/reports/report-generation-history-store.ts", "COHESIVE_SINGLE_FILE", "NONE"],
 ].map(([file, ARCHITECTURE_DECISION, PRIORITY]) => ({ file, ARCHITECTURE_DECISION, PRIORITY })));
 

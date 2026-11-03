@@ -8,11 +8,11 @@ import type {
   SpogomiRosterRow,
   SpogomiRosterRowError,
   SpogomiRosterSheetCandidate,
-} from "./types";
+} from "../types";
 import { normalizeValue, sha256Hex, workbookRows } from "./preparation-import-workbook";
 import { decodeDelimitedText, detectDelimiter, parseDelimited } from "./preparation-import-delimited";
 import { buildPreviewContent } from "./preparation-import-preview";
-import { classifyCachanTicketDeletion, classifyCachanTicketStatus } from "./ticket-status";
+import { classifyCachanTicketDeletion, classifyCachanTicketStatus } from "../ticket-status";
 
 export { assertArchiveSafe } from "./preparation-import-workbook";
 

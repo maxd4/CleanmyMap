@@ -5,9 +5,9 @@ const organizerEventMock = vi.hoisted(() => vi.fn());
 const teamSessionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("server-only", () => ({}));
-vi.mock("./authorization", () => ({ resolveSpogomiEventAccess: eventAccessMock }));
-vi.mock("./preparation-service", () => ({ loadSpogomiEventForOrganizer: organizerEventMock }));
-vi.mock("./team-access", () => ({ loadSpogomiTeamSession: teamSessionMock }));
+vi.mock("../authorization", () => ({ resolveSpogomiEventAccess: eventAccessMock }));
+vi.mock("../preparation/preparation-service", () => ({ loadSpogomiEventForOrganizer: organizerEventMock }));
+vi.mock("../team-access", () => ({ loadSpogomiTeamSession: teamSessionMock }));
 
 import {
   assignSpogomiCheckin,

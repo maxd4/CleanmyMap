@@ -4,7 +4,7 @@ const workbookRowsMock = vi.hoisted(() => vi.fn());
 const callFieldOperationMock = vi.hoisted(() => vi.fn());
 
 vi.mock("server-only", () => ({}));
-vi.mock("./preparation-import-workbook", () => ({
+vi.mock("./preparation/preparation-import-workbook", () => ({
   normalizeValue: (value: unknown) => String(value ?? "").trim(),
   sha256Hex: vi.fn(async () => "measurement-content-hash"),
   workbookRows: workbookRowsMock,

@@ -1,4 +1,4 @@
-import type { SpogomiResultItemInput } from "./types";
+import type { SpogomiResultItemInput } from "../types";
 
 export function toSpogomiResultItemInput(item: Record<string, unknown>, categoryCode: string): SpogomiResultItemInput & { categoryCode: string } {
   return {

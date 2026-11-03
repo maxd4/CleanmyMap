@@ -1,4 +1,4 @@
-import { classifyCachanTicketStatus } from "./ticket-status";
+import { classifyCachanTicketStatus } from "../ticket-status";
 import type {
   SpogomiImportFormat,
   SpogomiRosterColumn,
@@ -8,7 +8,7 @@ import type {
   SpogomiRosterRow,
   SpogomiRosterRowError,
   SpogomiRosterSheetCandidate,
-} from "./types";
+} from "../types";
 
 export function buildPreviewContent(params: {
   format: SpogomiImportFormat;

@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { canManageEvent, loadSpogomiEventForOrganizer } from "./preparation-event-access";
+import { canManageEvent, loadSpogomiEventForOrganizer } from "./preparation/preparation-event-access";
 
 export type SpogomiFieldOperationsCapability =
   | "timing"

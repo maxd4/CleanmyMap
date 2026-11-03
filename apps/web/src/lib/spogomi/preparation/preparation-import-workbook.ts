@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { strFromU8, unzipSync } from "fflate";
-import type { SpogomiImportFormat } from "./types";
+import type { SpogomiImportFormat } from "../types";
 
 const MAX_ROWS = 10_000;
 const MAX_HEADER_SCAN_ROWS = 60;

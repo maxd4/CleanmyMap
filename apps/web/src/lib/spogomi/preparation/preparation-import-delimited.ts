@@ -1,4 +1,4 @@
-import type { SpogomiImportFormat } from "./types";
+import type { SpogomiImportFormat } from "../types";
 
 export function decodeDelimitedText(bytes: Uint8Array): { text: string; encoding: "utf-8" | "windows-1252" } {
   const hasUtf8Bom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;

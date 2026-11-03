@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const service = readFileSync(new URL("./result-service.ts", import.meta.url), "utf8");
-const access = readFileSync(new URL("./team-access.ts", import.meta.url), "utf8");
+const access = readFileSync(new URL("../team-access.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI result services STATIC_CONTRACT", () => {
   it("scopes form reads and writes from the server-held session rather than a client team id", () => {

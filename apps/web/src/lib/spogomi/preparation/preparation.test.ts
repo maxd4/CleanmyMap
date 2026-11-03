@@ -99,7 +99,7 @@ describe("SPOGOMI preparation", () => {
   });
 
   it("keeps one anonymous place per synthetic ticket even when the buyer name is absent", async () => {
-    const fixture = readFileSync(new URL("../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
+    const fixture = readFileSync(new URL("../../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
     const preview = await previewRosterFile(new File([fixture], "cachan.csv", { type: "text/csv" }));
     expect(preview.sourceSystem).toBe("cachan_ticketing");
     expect(preview.rows).toHaveLength(37);
@@ -110,7 +110,7 @@ describe("SPOGOMI preparation", () => {
   });
 
   it("proposes the versioned 37-place World Cup and Casual compositions without losing a place", async () => {
-    const fixture = readFileSync(new URL("../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
+    const fixture = readFileSync(new URL("../../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
     const preview = await previewRosterFile(new File([fixture], "cachan.csv", { type: "text/csv" }));
     const participants = preview.rows.map((row) => ({ id: row.externalReference as string, sourceOrder: row.rowNumber, groupPreference: row.groupPreference }));
     const worldCup = buildDeterministicTeamFormation({ mode: "world_cup", casualTeamSize: null, participants });

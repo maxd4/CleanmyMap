@@ -1,8 +1,19 @@
 # SPOGOMI — domaine runtime
 
-Ce dossier contient les contrats et services runtime SPOGOMI : préparation des
-places, import et réconciliation, composition, accès, résultats, certification,
-consolidation et projections.
+Ce dossier contient les contrats et services runtime SPOGOMI. Les deux familles
+internes sont séparées par responsabilité :
+
+```text
+spogomi/
+├── preparation/  événements, imports, previews et composition initiale
+├── results/      résultats, projections, consolidation et publication
+└── fichiers racine : accès, équipes, présence, certification et façades publiques
+```
+
+Les façades publiques racine conservent les points d'entrée historiques
+consommés par les handlers API, services et composants. Elles délèguent aux
+implémentations canoniques des sous-domaines et ne contiennent aucune logique
+dupliquée.
 
 ## Sources canoniques
 
@@ -18,9 +29,10 @@ ni règle de compétition, ni donnée partenaire.
 
 | Besoin | Owner local |
 | --- | --- |
-| Billetterie, imports et réimports | `preparation-import.ts`, `ticket-reconciliation.ts`, `import-completeness.ts` |
-| Proposition et mutations de composition | `preparation.ts`, `preparation-service.ts`, `composition-mutation-service.ts` |
-| Résultats et certification | `result-service.ts`, `results-projection-service.ts`, `certification-*` |
+| Billetterie, imports et réimports | `preparation/preparation-import.ts`, `preparation/preparation-import-*`, `preparation/import-completeness.ts` |
+| Proposition et mutations de composition | `preparation/preparation.ts`, `preparation/preparation-service.ts`, `preparation/composition-mutation-service.ts` |
+| Résultats, projections et publication | `results/result-service.ts`, `results/results-projection*.ts`, `results/consolidation-service.ts` |
+| Certification et règles partagées | `validation.ts`, `regulation.ts`, `scoring.ts`, `certification-invariants-migration.contract.test.ts` |
 | Contrats de non-régression | fichiers `*.test.ts` et `*.contract.test.ts` correspondants |
 
 Les fixtures de validation doivent rester synthétiques et versionnées. Aucun

@@ -13,7 +13,7 @@ const eventAccessMocks = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 vi.mock("./authorization", () => authorizationMocks);
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMocks.getCurrentUserIdentity }));
-vi.mock("./preparation-event-access", () => eventAccessMocks);
+vi.mock("./preparation/preparation-event-access", () => eventAccessMocks);
 
 import {
   loadSpogomiAttendanceProjection,
@@ -23,7 +23,7 @@ import {
   lockSpogomiTeams,
   moveParticipantToTeam,
   SpogomiCompositionProtectionError,
-} from "./composition-mutation-service";
+} from "./preparation/composition-mutation-service";
 import {
   assertSpogomiFieldCapability,
   callSpogomiFieldOperation,

@@ -12,7 +12,7 @@ import {
 import type {
   SpogomiRosterPreview,
   SpogomiRosterRow,
-} from "./types";
+} from "../types";
 import { spogomiPreparationEvent } from "./preparation-test-fixtures";
 
 type ReadResult = { data: unknown; error: Error | null };

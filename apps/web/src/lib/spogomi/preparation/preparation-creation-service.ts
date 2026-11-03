@@ -5,8 +5,8 @@ import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
 import { formatCivilDateInTimeZone, isDateTimeLocalValue, parseDateTimeLocalInTimeZone } from "@/lib/time/civil-date";
-import type { SpogomiEventMode } from "./types";
-import { isReservedSpogomiEventSlug, normalizeSpogomiEventSlug } from "./public-service";
+import type { SpogomiEventMode } from "../types";
+import { isReservedSpogomiEventSlug, normalizeSpogomiEventSlug } from "../public-service";
 
 const CREATION_LEASE_MS = 2 * 60 * 1000;
 const SPOGOMI_DEFAULT_TIME_ZONE = "Europe/Paris";

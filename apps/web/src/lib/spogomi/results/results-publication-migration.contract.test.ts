@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const visibilityMigration = readFileSync(new URL("../../../supabase/migrations/20261012000014_spogomi_public_results_visibility.sql", import.meta.url), "utf8");
-const rankingMigration = readFileSync(new URL("../../../supabase/migrations/20261012000015_spogomi_official_rankings_publication.sql", import.meta.url), "utf8");
-const idempotenceMigration = readFileSync(new URL("../../../supabase/migrations/20261012000016_spogomi_official_rankings_idempotence.sql", import.meta.url), "utf8");
-const recognitionMigration = readFileSync(new URL("../../../supabase/migrations/20261012000017_spogomi_recognition_notifications.sql", import.meta.url), "utf8");
+const visibilityMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000014_spogomi_public_results_visibility.sql", import.meta.url), "utf8");
+const rankingMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000015_spogomi_official_rankings_publication.sql", import.meta.url), "utf8");
+const idempotenceMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000016_spogomi_official_rankings_idempotence.sql", import.meta.url), "utf8");
+const recognitionMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000017_spogomi_recognition_notifications.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI result publication migrations STATIC_CONTRACT", () => {
   it("keeps result visibility explicit and hidden by default", () => {

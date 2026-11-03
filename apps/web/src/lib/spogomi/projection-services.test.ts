@@ -12,7 +12,7 @@ const partnerMocks = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 vi.mock("./authorization", () => authorizationMocks);
 vi.mock("@/lib/partners/published-annuaire-entries-store", () => partnerMocks);
-vi.mock("./results-projection-service", () => ({ loadSpogomiResultsProjection: partnerMocks.loadSpogomiResultsProjection }));
+vi.mock("./results/results-projection-service", () => ({ loadSpogomiResultsProjection: partnerMocks.loadSpogomiResultsProjection }));
 
 import { loadSpogomiManagementProjection } from "./management-projection";
 import { loadSpogomiObserverProjection } from "./observer-projection";

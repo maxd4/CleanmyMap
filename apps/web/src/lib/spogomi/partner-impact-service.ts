@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiResultsProjection } from "./results-projection-service";
+import { loadSpogomiResultsProjection } from "./results/results-projection-service";
 import { readAllSpogomiPages } from "./pagination";
 import type { SpogomiRecognitionKind } from "./recognition";
 import {

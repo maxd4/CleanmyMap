@@ -372,7 +372,7 @@ test("les propriétaires sensibles connus sont qualifiés par le moteur canoniqu
     assert.equal(result.classificationStatus, "QUALIFIED", file);
   }
 
-  for (const file of ["src/lib/spogomi/preparation-service.ts", "src/lib/admin/moderation/transition.ts"]) {
+  for (const file of ["src/lib/spogomi/preparation/preparation-service.ts", "src/lib/admin/moderation/transition.ts"]) {
     assert.equal(classifyCoverageFile(file).domain, "business", file);
   }
 });

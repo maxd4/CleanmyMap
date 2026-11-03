@@ -70,7 +70,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/lib/auth/sync.ts` | ALREADY_MODULARIZED | NONE | préserver scope utilisateur, service-role server-only, idempotence et ordre d'upsert | nouvelle responsabilité autonome réintroduite dans la façade ou opacification AuthN/AuthZ |
 | `apps/web/src/components/actions/action-creation-shell.tsx` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | préserver l'isolation par `actionId`, les transitions d'état et l'URL reprenable | frontière indépendante et testée entre navigation/sections, état workflow et orchestration de persistance |
 | `apps/web/src/components/actions/action-declaration/before/use-before-action-workflow.ts` | EXTRACTED_PURE_CONTRACT | CURRENT | préserver les modifications utilisateur, le premier identifiant persistant et la publication toujours explicite | nouvelle responsabilité autonome réintroduite dans le workflow ou couplage qui compromet la reprise et la publication explicite |
-| `apps/web/src/lib/spogomi/preparation-service.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les contrats d'import de roster et de composition, les verrous de reprise et les RPC transactionnelles | nouveau consommateur indépendant d'import ou de composition, ou persistance d'un des deux workflows déplacée vers un owner dédié |
+| `apps/web/src/lib/spogomi/preparation/preparation-service.ts` | COHESIVE_SINGLE_FILE | NONE | préserver les contrats d'import de roster et de composition, les verrous de reprise et les RPC transactionnelles | nouveau consommateur indépendant d'import ou de composition, ou persistance d'un des deux workflows déplacée vers un owner dédié |
 | `apps/web/src/lib/reports/report-generation-history-store.ts` | COHESIVE_SINGLE_FILE | NONE | préserver la cohérence snapshot/métadonnées, l'ownership Clerk et les résolutions direct/derived | nouveau contrat de lecture ou de persistance indépendant, ou divergence entre historique et snapshot |
 | `apps/web/src/app/api/api-boundary.test.ts` | ALREADY_MODULARIZED | NONE | conserver les assertions d'inventaire, d'assemblage et de contrat d'autorisation sans importer une suite de tests | nouvelle famille de contrat d'inventaire ou nouvelle dépendance de parcours HTTP indépendante |
 | `apps/web/src/app/api/api-boundary-analysis.ts` | ALREADY_MODULARIZED | NONE | conserver les primitives d'inventaire et d'extraction des méthodes comme owner partagé, sans absorber l'analyse d'évidence | nouvelle analyse de parcours ou de méthodes qui ne relève plus de l'inventaire partagé |
@@ -92,7 +92,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 
 ### Décisions établies — grille détaillée
 
-#### `apps/web/src/lib/spogomi/preparation-service.ts`
+#### `apps/web/src/lib/spogomi/preparation/preparation-service.ts`
 
 | Champ | Valeur |
 | --- | --- |

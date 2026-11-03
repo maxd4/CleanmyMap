@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const baseMigration = readFileSync(new URL("../../../supabase/migrations/20261012000007_spogomi_action_consolidation.sql", import.meta.url), "utf8");
-const migration = readFileSync(new URL("../../../supabase/migrations/20261012000011_harden_spogomi_consolidation_revisions.sql", import.meta.url), "utf8");
-const geometryMigration = readFileSync(new URL("../../../supabase/migrations/20261012000012_preserve_independent_spogomi_geometry.sql", import.meta.url), "utf8");
+const baseMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000007_spogomi_action_consolidation.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../../../../supabase/migrations/20261012000011_harden_spogomi_consolidation_revisions.sql", import.meta.url), "utf8");
+const geometryMigration = readFileSync(new URL("../../../../supabase/migrations/20261012000012_preserve_independent_spogomi_geometry.sql", import.meta.url), "utf8");
 const contractSource = `${baseMigration}\n${migration}\n${geometryMigration}`;
 
 describe("SPOGOMI action consolidation migration STATIC_CONTRACT", () => {

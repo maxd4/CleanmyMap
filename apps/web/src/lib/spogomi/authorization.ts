@@ -2,8 +2,8 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { canManageEvent } from "./preparation-event-access";
-import type { EventRow } from "./preparation-service";
+import { canManageEvent } from "./preparation/preparation-event-access";
+import type { EventRow } from "./preparation/preparation-service";
 
 export type SpogomiCapability =
   | "private_read"

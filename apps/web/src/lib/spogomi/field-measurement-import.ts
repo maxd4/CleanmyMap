@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeValue, sha256Hex, workbookRows } from "./preparation-import-workbook";
+import { normalizeValue, sha256Hex, workbookRows } from "./preparation/preparation-import-workbook";
 import type { SpogomiImportFormat } from "./types";
 import { callSpogomiFieldOperation } from "./field-operations-service";
 

@@ -93,8 +93,8 @@ ni règlement complet, ni score, ni consolidation finale.
 
 Fichiers principaux :
 
-- `apps/web/src/lib/spogomi/preparation.ts` et
-  `apps/web/src/lib/spogomi/preparation-service.ts` ;
+- `apps/web/src/lib/spogomi/preparation/preparation.ts` et
+  `apps/web/src/lib/spogomi/preparation/preparation-service.ts` ;
 - `apps/web/src/components/spogomi/` et `apps/web/src/app/(app)/spogomi/` ;
 - `apps/web/src/app/api/spogomi/` ;
 - `apps/web/supabase/migrations/20261012000002_spogomi_preparation.sql`.

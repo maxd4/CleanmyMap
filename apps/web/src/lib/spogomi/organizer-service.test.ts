@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { EventRow } from "./preparation-service";
+import type { EventRow } from "./preparation/preparation-service";
 
 const identityMock = vi.hoisted(() => vi.fn());
 vi.mock("server-only", () => ({}));

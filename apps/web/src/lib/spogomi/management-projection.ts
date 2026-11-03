@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isCachanTicketCompositionEligible } from "./ticket-reconciliation";
-import type { EventRow } from "./preparation-service";
+import type { EventRow } from "./preparation/preparation-service";
 
 function mapManagementParticipants(participants: Array<Record<string, unknown>>) {
   return participants.map((participant) => ({ ...participant, composition_eligible: isCachanTicketCompositionEligible({ sourceSystem: participant.source_system as string | null, ticketStatus: participant.ticket_status as string | null, ticketDeleted: Boolean(participant.ticket_deleted), registrationStatus: String(participant.registration_status) }) }));

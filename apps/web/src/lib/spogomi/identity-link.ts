@@ -6,7 +6,7 @@ import { claimFinishedActionParticipation } from "@/lib/actions/participation/po
 import { joinActionParticipation } from "@/lib/actions/participation/group-participation";
 import { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
 import { readParticipantRecord } from "@/lib/actions/participation/group-participation.helpers";
-import { loadSpogomiResultsProjection } from "./results-projection-service";
+import { loadSpogomiResultsProjection } from "./results/results-projection-service";
 import type {
   SpogomiIdentityLinkResult,
   SpogomiIdentityParticipation,

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import type { SpogomiTeamFormation } from "./types";
+import type { SpogomiTeamFormation } from "../types";
 
 export function teamCompositionFingerprint(input: {
   event: { id: string; mode: string; team_size_config: unknown; composition_revision?: number };

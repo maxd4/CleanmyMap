@@ -4,7 +4,7 @@ import type {
   SpogomiResultsSource,
   TeamComputed,
 } from "./results-projection";
-import type { SpogomiRegulation } from "./types";
+import type { SpogomiRegulation } from "../types";
 import type { SpogomiPublicationSourceSnapshot } from "./results-projection-snapshot";
 
 function compareDescending(left: number | null | undefined, right: number | null | undefined): number {

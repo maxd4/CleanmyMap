@@ -9,7 +9,7 @@ const serviceMocks = vi.hoisted(() => ({
 
 vi.mock("./partner-impact-service", () => ({ loadSpogomiOrganizerForAction: serviceMocks.organizer }));
 vi.mock("./photo-gallery-service", () => ({ loadPublishedSpogomiGalleryForAction: serviceMocks.gallery }));
-vi.mock("./results-projection-service", () => ({ loadSpogomiResultsProjection: serviceMocks.projection }));
+vi.mock("./results/results-projection-service", () => ({ loadSpogomiResultsProjection: serviceMocks.projection }));
 
 import {
   classifySpogomiPublicLifecycle,
