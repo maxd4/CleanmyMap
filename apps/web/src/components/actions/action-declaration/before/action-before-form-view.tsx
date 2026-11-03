@@ -35,6 +35,7 @@ export function ActionBeforeFormView({
   signUpHref,
   persistenceStatus,
   actionId,
+  isExistingAction = false,
   onFormalitiesReadiness,
   onRetryDraftLoad,
 }: {
@@ -63,6 +64,7 @@ export function ActionBeforeFormView({
   signUpHref?: string;
   persistenceStatus: BeforeActionPersistenceStatus;
   actionId: string | null;
+  isExistingAction?: boolean;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
   onRetryDraftLoad?: () => void;
 }) {
@@ -95,12 +97,13 @@ export function ActionBeforeFormView({
               signInHref={signInHref}
               signUpHref={signUpHref}
               actionId={actionId}
+              isExistingAction={isExistingAction}
               onFormalitiesReadiness={onFormalitiesReadiness}
             />
           ) : (
             <>
               <div className="space-y-6">
-                <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} actionId={actionId} />
+                <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} actionId={actionId} isExistingAction={isExistingAction} />
                 <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
                 <PreparationAndSafetySection form={form} updateField={updateField} />
               </div>

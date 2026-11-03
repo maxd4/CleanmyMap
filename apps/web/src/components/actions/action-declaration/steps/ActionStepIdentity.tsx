@@ -14,6 +14,7 @@ export function ActionStepIdentity({
   userMetadata,
   recordType,
   hasAttemptedSubmit,
+  isExistingAction = false,
   mode = "all",
 }: ActionStepIdentityProps) {
   const isActionMode = recordType === "action";
@@ -31,6 +32,7 @@ export function ActionStepIdentity({
                 userMetadata={userMetadata}
                 isActionMode={isActionMode}
                 hasAttemptedSubmit={hasAttemptedSubmit}
+                isExistingAction={isExistingAction}
                 variant="full"
               />
 
@@ -90,6 +92,7 @@ export function ActionStepIdentity({
         userMetadata={userMetadata}
         isActionMode={isActionMode}
         hasAttemptedSubmit={hasAttemptedSubmit}
+        isExistingAction={isExistingAction}
         variant="compact"
       />
     );

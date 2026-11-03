@@ -5,6 +5,7 @@ export {
   mergeOrganizerAccountSelection,
   normalizeParticipantAccounts,
   parseOrganizerAccounts,
+  preservePersistedOrganizerPrimary,
   preserveSpontaneousOrganizerName,
 } from "./payload-identity";
 export { buildPreparationDataFromForm, applyPreparationDataToForm } from "./payload-preparation";

@@ -32,6 +32,7 @@ type SectionedContentProps = {
   signInHref?: string;
   signUpHref?: string;
   actionId?: string | null;
+  isExistingAction?: boolean;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
 };
 
@@ -53,6 +54,7 @@ export function ActionBeforeSectionedContent({
   signInHref,
   signUpHref,
   actionId,
+  isExistingAction = false,
   onFormalitiesReadiness,
 }: SectionedContentProps) {
   if (activeSection === "terrain") {
@@ -82,7 +84,7 @@ export function ActionBeforeSectionedContent({
   }
 
   if (activeSection === "equipe") {
-    return <TeamLogisticsSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} invitationStatuses={invitationStatuses} validationIssueFields={validationIssueFields} actionId={actionId} />;
+    return <TeamLogisticsSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} invitationStatuses={invitationStatuses} validationIssueFields={validationIssueFields} actionId={actionId} isExistingAction={isExistingAction} />;
   }
 
   return (

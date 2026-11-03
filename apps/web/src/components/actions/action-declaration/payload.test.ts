@@ -3,6 +3,7 @@ import {
   buildCreateActionPayload,
   mergeOrganizerAccountSelection,
   parseOrganizerAccounts,
+  preservePersistedOrganizerPrimary,
   preserveSpontaneousOrganizerName,
 } from "./payload";
 import { buildBaseForm } from "./payload.test-fixtures";
@@ -200,5 +201,18 @@ describe("action declaration payload identity and organisation", () => {
       .toBe("user-primary");
     expect(preserveSpontaneousOrganizerName("Alice", "Organisateur en attente de compte", accounts)).toBe("Alice");
     expect(preserveSpontaneousOrganizerName("", "Organisateur en attente de compte", [])).toBe("Organisateur en attente de compte");
+  });
+
+  it("keeps the persisted primary first without restoring an explicitly removed co-organizer", () => {
+    expect(
+      mergeOrganizerAccountSelection("user-primary, user-helper", ["user-new"], {
+        persistedPrimaryId: "user-primary",
+      }),
+    ).toEqual(["user-primary", "user-new", "user-helper"]);
+    expect(preservePersistedOrganizerPrimary("user-helper, user-new", "user-primary")).toEqual([
+      "user-primary",
+      "user-helper",
+      "user-new",
+    ]);
   });
 });

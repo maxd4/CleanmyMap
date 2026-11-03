@@ -28,6 +28,7 @@ type TeamLogisticsSectionProps = {
   invitationStatuses: ActionManualInvitationStatusRecord[];
   validationIssueFields: readonly string[];
   actionId?: string | null;
+  isExistingAction?: boolean;
 };
 
 export function TeamLogisticsSection({
@@ -40,6 +41,7 @@ export function TeamLogisticsSection({
   invitationStatuses,
   validationIssueFields,
   actionId,
+  isExistingAction = false,
 }: TeamLogisticsSectionProps) {
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
@@ -64,6 +66,7 @@ export function TeamLogisticsSection({
             hasAttemptedSubmit={validationIssueFields.length > 0}
             validationIssueFields={validationIssueFields}
             actionId={actionId}
+            isExistingAction={isExistingAction}
           />
         </section>
 

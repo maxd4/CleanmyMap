@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadCanonicalActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, requireAuthenticatedAccessMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadActionOrganizerRowsForActionMock, loadCanonicalActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, requireAuthenticatedAccessMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
@@ -39,6 +39,45 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     );
   }, 15000);
 
+  it("returns the persisted primary name and canonical account order after a divergent legacy row", async () => {
+    const { GET } = await import("./route");
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_name: "Compte B",
+    }));
+    loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValueOnce([
+      "user-primary",
+      "user-secondary",
+    ]);
+    loadActionOrganizerRowsForActionMock.mockResolvedValueOnce([
+      {
+        action_id: "action-test-1",
+        organizer_clerk_id: "user-primary",
+        organizer_label: "Compte A",
+        organizer_handle: "compte-a",
+        is_primary: true,
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        action_id: "action-test-1",
+        organizer_clerk_id: "user-secondary",
+        organizer_label: "Compte B",
+        organizer_handle: "compte-b",
+        is_primary: false,
+        created_at: "2026-01-02T00:00:00.000Z",
+      },
+    ]);
+
+    const response = await GET(new Request("http://localhost/api/actions/action-test-1"), {
+      params: Promise.resolve({ actionId: "action-test-1" }),
+    });
+    const body = (await response.json()) as { action?: { organizerName?: string; organizerAccounts?: string[] } };
+
+    expect(response.status).toBe(200);
+    expect(body.action?.organizerName).toBe("Compte A");
+    expect(body.action?.organizerAccounts).toEqual(["user-primary", "user-secondary"]);
+  });
+
   it("keeps an admin user's own final declaration in normal moderation", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
@@ -70,6 +109,58 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     );
     expect(syncActionManualParticipantsMock).not.toHaveBeenCalled();
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
+  });
+
+  it("does not persist scalar edits when organizer synchronization rejects an ordinary save", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_name: "Compte A",
+    }));
+    loadActionOrganizerRowsForActionMock.mockResolvedValueOnce([{
+      action_id: "action-test-1",
+      organizer_clerk_id: "user-primary",
+      organizer_label: "Compte A",
+      organizer_handle: "compte-a",
+      is_primary: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    }]);
+    syncActionOrganizersMock.mockRejectedValueOnce(new Error("primary transfer required"));
+
+    const response = await patchAction({
+      actionDate: "2026-09-14",
+      organizerType: "spontaneous",
+      organizerName: "Compte A",
+      organizerAccounts: ["user-primary"],
+    });
+
+    expect(response.status).toBe(500);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an organizer name that would disagree with the persisted primary", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_name: "Compte A",
+    }));
+    loadActionOrganizerRowsForActionMock.mockResolvedValueOnce([{
+      action_id: "action-test-1",
+      organizer_clerk_id: "user-primary",
+      organizer_label: "Compte A",
+      organizer_handle: "compte-a",
+      is_primary: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    }]);
+
+    const response = await patchAction({
+      organizerType: "spontaneous",
+      organizerName: "Compte B",
+      organizerAccounts: ["user-primary", "user-secondary"],
+    });
+    const body = (await response.json()) as { error?: Record<string, string[]> };
+
+    expect(response.status).toBe(400);
+    expect(body.error?.organizerName?.[0]).toContain("workflow de transfert explicite");
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("allows the owner to finalize an approved pre-action in normal moderation", async () => {

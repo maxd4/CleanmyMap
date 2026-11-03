@@ -43,10 +43,16 @@ export async function syncActionOrganizers(
   const primaryId = currentPrimaryId ?? (
     currentRows.length === 0 ? resolution.organizers[0]?.userId : undefined
   );
-  const nextOrganizers = resolution.organizers.map((organizer) => ({
+  const resolvedOrganizers = resolution.organizers.map((organizer) => ({
     ...organizer,
     isPrimary: organizer.userId === primaryId,
   }));
+  const nextOrganizers = primaryId
+    ? [
+        ...resolvedOrganizers.filter((organizer) => organizer.userId === primaryId),
+        ...resolvedOrganizers.filter((organizer) => organizer.userId !== primaryId),
+      ]
+    : resolvedOrganizers;
 
   const replacement = await params.supabase.rpc("replace_action_organizers", {
     p_action_id: params.actionId,

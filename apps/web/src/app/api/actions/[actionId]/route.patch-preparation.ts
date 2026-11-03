@@ -20,6 +20,8 @@ import {
   validateSpontaneousOrganizerPatch,
 } from "./route.patch-organizers";
 import { validationErrorResponse } from "@/lib/http/api-errors";
+import { loadActionOrganizerRowsForAction } from "@/lib/actions/participation/organizers";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 
 export type PreparedPatchMutation = {
   preparedUpdate: PreparedActionUpdate;
@@ -36,14 +38,46 @@ export function shouldSyncOrganizersBeforeFinalization(params: {
   updateData: Record<string, unknown>;
 }): boolean {
   return (
-    (params.body.organizerType ?? params.current.organizer_type) === "spontaneous" &&
-    params.updateData.action_phase === "post_action_complete" &&
     params.body.organizerAccounts !== undefined
   );
 }
 
+async function canonicalizePersistedPrimaryOrganizerName({
+  supabase,
+  actionId,
+  current,
+  parsed,
+  organizerName,
+}: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
+  current: ActionRow;
+  parsed: ActionUpdateInput;
+  organizerName?: string;
+}): Promise<Response | ActionUpdateInput> {
+  const nextOrganizerType = parsed.organizerType ?? current.organizer_type;
+  if (nextOrganizerType !== "spontaneous" || parsed.organizerAccounts === undefined) return parsed;
+  const primary = (await loadActionOrganizerRowsForAction(supabase, actionId)).find((row) => row.is_primary);
+  const normalizedName = organizerName?.trim() ?? "";
+  const normalizedPrimaryName = primary?.organizer_label?.trim();
+  if (!normalizedPrimaryName) return parsed;
+  if (
+    normalizedName &&
+    normalizedName !== normalizedPrimaryName &&
+    normalizedName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL
+  ) {
+    return validationErrorResponse({
+      organizerName: [
+        `Le référent principal actuel est « ${normalizedPrimaryName} ». Pour changer de référent principal, utilisez le workflow de transfert explicite.`,
+      ],
+    });
+  }
+  return { ...parsed, organizerName: normalizedPrimaryName };
+}
+
 async function preparePatchOrganizerFields({
   supabase,
+  actionId,
   userId,
   current,
   identity,
@@ -51,6 +85,7 @@ async function preparePatchOrganizerFields({
   parsed,
 }: {
   supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
   userId: string;
   current: ActionRow;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
@@ -71,8 +106,16 @@ async function preparePatchOrganizerFields({
     organizerIds,
   );
   if (spontaneousOrganizerError) return spontaneousOrganizerError;
+  const canonicalizedBody = await canonicalizePersistedPrimaryOrganizerName({
+    supabase,
+    actionId,
+    current,
+    parsed,
+    organizerName: parsed.organizerName,
+  });
+  if (canonicalizedBody instanceof Response) return canonicalizedBody;
 
-  const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: parsed, current });
+  const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: canonicalizedBody, current });
   return await validatePatchOrganizerAccounts({
     supabase,
     userId,
@@ -82,6 +125,7 @@ async function preparePatchOrganizerFields({
 }
 export async function preparePatchMutation({
   supabase,
+  actionId,
   userId,
   current,
   identity,
@@ -89,6 +133,7 @@ export async function preparePatchMutation({
   parsed,
 }: {
   supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
   userId: string;
   current: ActionRow;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
@@ -97,6 +142,7 @@ export async function preparePatchMutation({
 }): Promise<Response | PreparedPatchMutation> {
   const parsedBodyResult = await preparePatchOrganizerFields({
     supabase,
+    actionId,
     userId,
     current,
     identity,

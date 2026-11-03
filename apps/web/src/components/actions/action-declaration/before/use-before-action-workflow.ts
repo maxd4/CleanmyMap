@@ -1,5 +1,5 @@
 import { type FormEvent, type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
-import { applyPreparationDataToForm } from "../payload";
+import { applyPreparationDataToForm, parseOrganizerAccounts, preservePersistedOrganizerPrimary } from "../payload";
 import { clearDraft, saveDraft, loadDraftSnapshot } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
@@ -135,6 +135,14 @@ function applyFetchedBeforeAction({
     ? mergeBeforeActionHydrationWithLocalChanges(initialForm, localDraft, hydratedForm)
     : hydratedForm;
   const preservedForm = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, hydratedWithLocalDraft);
+  const persistedPrimaryId = parseOrganizerAccounts(hydratedForm.organizerAccounts)[0];
+  if (persistedPrimaryId) {
+    preservedForm.organizerAccounts = preservePersistedOrganizerPrimary(
+      preservedForm.organizerAccounts,
+      persistedPrimaryId,
+    ).join(", ");
+    preservedForm.organizerName = hydratedForm.organizerName;
+  }
   setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setInvitationStatuses(action.manualInvitationStatuses ?? []); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState("idle"); setPersistenceStatus(localDraft || matchingHandoff ? "unsaved" : "account"); setIsHydratingAction(false);
 }
 

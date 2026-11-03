@@ -37,6 +37,7 @@ type OrganizerSectionProps = {
   };
   isActionMode: boolean;
   hasAttemptedSubmit?: boolean;
+  isExistingAction?: boolean;
   variant: "compact" | "full";
 };
 
@@ -54,6 +55,7 @@ type OrganizerRenderProps = {
   onOrganizerTypeChange: (nextType: FormState["organizerType"]) => void;
   activeRole?: ActiveRole;
   currentUserId: string;
+  isExistingAction: boolean;
 };
 
 function OrganizerSelection({
@@ -64,6 +66,7 @@ function OrganizerSelection({
   onChange,
   activeRole,
   currentUserId,
+  isExistingAction,
   className,
   errorClassName,
 }: {
@@ -74,6 +77,7 @@ function OrganizerSelection({
   onChange: (selection: { id: string | null; name: string; accountIds?: string[] }) => void;
   activeRole?: ActiveRole;
   currentUserId: string;
+  isExistingAction: boolean;
   className: string;
   errorClassName?: string;
 }) {
@@ -91,6 +95,7 @@ function OrganizerSelection({
         required={isActionMode}
         invalid={missingAssociation}
         describedBy={missingAssociation ? associationErrorId : undefined}
+        isExistingAction={isExistingAction}
       />
       {missingAssociation ? (
         <p
@@ -155,6 +160,7 @@ function CompactOrganizerSection({
   onOrganizerTypeChange,
   activeRole,
   currentUserId,
+  isExistingAction,
 }: OrganizerRenderProps) {
   return (
     <div className="grid gap-3 md:grid-cols-3">
@@ -221,6 +227,7 @@ function CompactOrganizerSection({
         onChange={onAssociationChange}
         activeRole={activeRole}
         currentUserId={currentUserId}
+        isExistingAction={isExistingAction}
         className="space-y-1.5"
       />
     </div>
@@ -241,6 +248,7 @@ function FullOrganizerSection({
   onOrganizerTypeChange,
   activeRole,
   currentUserId,
+  isExistingAction,
 }: OrganizerRenderProps) {
   return (
     <div>
@@ -304,6 +312,7 @@ function FullOrganizerSection({
           onChange={onAssociationChange}
           activeRole={activeRole}
           currentUserId={currentUserId}
+          isExistingAction={isExistingAction}
           className="space-y-1"
           errorClassName="pl-1"
         />
@@ -319,6 +328,7 @@ export function ActionOrganizerSection({
   userMetadata,
   isActionMode,
   hasAttemptedSubmit,
+  isExistingAction = false,
   variant,
 }: OrganizerSectionProps) {
   const missingDate = hasAttemptedSubmit && !form.actionDate;
@@ -336,18 +346,21 @@ export function ActionOrganizerSection({
   }) {
     const spontaneousAccountIds =
       form.organizerType === "spontaneous"
-        ? mergeOrganizerAccountSelection(form.organizerAccounts, selection.accountIds)
+        ? mergeOrganizerAccountSelection(form.organizerAccounts, selection.accountIds, {
+            persistedPrimaryId: isExistingAction ? parseOrganizerAccounts(form.organizerAccounts)[0] : undefined,
+          })
         : null;
     const selectedAccountId = parseOrganizerAccounts((selection.accountIds ?? []).join(", "))[0];
     const selectedAccountWasAccepted =
       !selectedAccountId || spontaneousAccountIds?.includes(selectedAccountId);
+    const persistedPrimaryId = isExistingAction ? parseOrganizerAccounts(form.organizerAccounts)[0] : undefined;
     let organizerName = selection.name;
     if (form.organizerType === "spontaneous" && spontaneousAccountIds) {
-      organizerName = preserveSpontaneousOrganizerName(
-        form.organizerName,
-        selectedAccountWasAccepted ? selection.name : SPONTANEOUS_PENDING_ORGANIZER_LABEL,
-        spontaneousAccountIds,
-      );
+      organizerName = persistedPrimaryId && selectedAccountId !== persistedPrimaryId
+        ? form.organizerName.trim() && form.organizerName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL
+          ? form.organizerName.trim()
+          : SPONTANEOUS_PENDING_ORGANIZER_LABEL
+        : preserveSpontaneousOrganizerName(form.organizerName, selectedAccountWasAccepted ? selection.name : SPONTANEOUS_PENDING_ORGANIZER_LABEL, spontaneousAccountIds);
     }
     updateFields({
       organizerId: selection.id,
@@ -364,7 +377,10 @@ export function ActionOrganizerSection({
     updateFields({
       organizerType: nextType,
       organizerId: null,
-      organizerName: "",
+      organizerName:
+        nextType === "spontaneous" && parseOrganizerAccounts(form.organizerAccounts).length > 0
+          ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
+          : "",
       associationName:
         nextType === "spontaneous" ? "Action spontanée" : "",
     });
@@ -384,6 +400,7 @@ export function ActionOrganizerSection({
     onOrganizerTypeChange: handleOrganizerTypeChange,
     activeRole: userMetadata.activeRole,
     currentUserId: userMetadata.userId,
+    isExistingAction,
   } satisfies OrganizerRenderProps;
 
   return variant === "compact" ? (

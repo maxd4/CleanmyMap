@@ -82,4 +82,35 @@ describe("spontaneous organizer selection behavior", () => {
     }));
     renderer.unmount();
   });
+
+  it("keeps the persisted primary and presents a selected account as a co-organizer in an existing action", () => {
+    const form = createInitialFormState("Créateur", "action");
+    form.organizerType = "spontaneous";
+    form.organizerName = "Principal actuel";
+    form.organizerAccounts = "user-existing, user-helper";
+    const updateFields = vi.fn();
+    let renderer!: ReactTestRenderer;
+
+    act(() => {
+      renderer = create(
+        React.createElement(ActionOrganizerSection, {
+          form,
+          updateField: vi.fn(),
+          updateFields,
+          userMetadata: { userId: "user-creator" },
+          isActionMode: true,
+          isExistingAction: true,
+          variant: "compact",
+        }),
+      );
+    });
+
+    act(() => { findAccountSelector(renderer).props.onSelectAccount(selectedAccount); });
+
+    expect(updateFields).toHaveBeenCalledWith(expect.objectContaining({
+      organizerName: "Principal actuel",
+      organizerAccounts: "user-existing, user-referent, user-helper",
+    }));
+    renderer.unmount();
+  });
 });

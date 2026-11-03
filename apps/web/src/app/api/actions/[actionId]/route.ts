@@ -13,7 +13,10 @@ import {
 } from "@/lib/authz";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadManualInvitationStatusesForAction, loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
-import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import {
+  loadActionOrganizerRowsForAction,
+  loadCanonicalActionOrganizerIdsForAction,
+} from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
 import type { ActionUpdateInput } from "@/lib/actions/action-update-audit";
@@ -142,6 +145,7 @@ async function executePatchRequest({
     const { current, identity, organizerIds } = actionContext;
     const mutation = await preparePatchMutation({
       supabase,
+      actionId: trimmedActionId,
       userId,
       current,
       identity,
@@ -235,8 +239,14 @@ export async function GET(
       supabase,
       trimmedActionId,
     ).catch(() => []);
+    const organizerRows = await loadActionOrganizerRowsForAction(supabase, trimmedActionId);
+    const primaryOrganizerName = organizerRows.find((organizer) => organizer.is_primary)?.organizer_label?.trim();
+    const editorPayload = buildActionEditorPayload(row);
     const action = {
-      ...buildActionEditorPayload(row),
+      ...editorPayload,
+      ...(row.organizer_type === "spontaneous" && primaryOrganizerName
+        ? { organizerName: primaryOrganizerName }
+        : {}),
       organizerAccounts:
         row.organizer_type === "spontaneous"
           ? organizerIds

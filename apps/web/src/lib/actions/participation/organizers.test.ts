@@ -330,12 +330,12 @@ describe("syncActionOrganizers", () => {
       organizerAccounts: ["user-new", "user-keep"],
     });
 
-    expect(result.organizers.map((organizer) => organizer.isPrimary)).toEqual([false, true]);
+    expect(result.organizers.map((organizer) => organizer.isPrimary)).toEqual([true, false]);
     expect(rpc).toHaveBeenCalledWith("replace_action_organizers", {
       p_action_id: "action-1",
       p_organizers: [
-        expect.objectContaining({ organizer_clerk_id: "user-new", is_primary: false }),
         expect.objectContaining({ organizer_clerk_id: "user-keep", is_primary: true }),
+        expect.objectContaining({ organizer_clerk_id: "user-new", is_primary: false }),
       ],
     });
     expect(result.organizers.filter((organizer) => organizer.isPrimary)).toHaveLength(1);

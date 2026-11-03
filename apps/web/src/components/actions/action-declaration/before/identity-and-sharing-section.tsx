@@ -39,6 +39,7 @@ type IdentityAndSharingSectionProps = BaseSectionProps & {
   invitationStatuses?: readonly InvitationStatus[];
   embedded?: boolean;
   actionId?: string | null;
+  isExistingAction?: boolean;
 };
 
 export function IdentityAndSharingSection({
@@ -52,6 +53,7 @@ export function IdentityAndSharingSection({
   invitationStatuses,
   embedded = false,
   actionId,
+  isExistingAction = false,
   hasAttemptedSubmit,
   validationIssueFields,
 }: IdentityAndSharingSectionProps) {
@@ -72,6 +74,7 @@ export function IdentityAndSharingSection({
           userMetadata={userMetadata}
           missingOrganizerType={missingOrganizerType}
           missingAssociation={missingAssociation}
+          isExistingAction={isExistingAction}
         />
 
         <AssociatedAccountsFields
@@ -111,9 +114,11 @@ function IdentityFieldGrid({
   userMetadata,
   missingOrganizerType,
   missingAssociation,
+  isExistingAction,
 }: Pick<IdentityAndSharingSectionProps, "form" | "updateField" | "updateFields" | "userMetadata"> & {
   missingOrganizerType: boolean;
   missingAssociation: boolean;
+  isExistingAction: boolean;
 }) {
   const organizerName = form.organizerName;
   const creatorDisplayName = userMetadata.displayName?.trim()
@@ -129,18 +134,21 @@ function IdentityFieldGrid({
   }) {
     const spontaneousAccountIds =
       form.organizerType === "spontaneous"
-        ? mergeOrganizerAccountSelection(form.organizerAccounts, selection.accountIds)
+        ? mergeOrganizerAccountSelection(form.organizerAccounts, selection.accountIds, {
+            persistedPrimaryId: isExistingAction ? parseOrganizerAccounts(form.organizerAccounts)[0] : undefined,
+          })
         : null;
     const selectedAccountId = parseOrganizerAccounts((selection.accountIds ?? []).join(", "))[0];
     const selectedAccountWasAccepted =
       !selectedAccountId || spontaneousAccountIds?.includes(selectedAccountId);
+    const persistedPrimaryId = isExistingAction ? parseOrganizerAccounts(form.organizerAccounts)[0] : undefined;
     let organizerName = selection.name;
     if (form.organizerType === "spontaneous" && spontaneousAccountIds) {
-      organizerName = preserveSpontaneousOrganizerName(
-        form.organizerName,
-        selectedAccountWasAccepted ? selection.name : SPONTANEOUS_PENDING_ORGANIZER_LABEL,
-        spontaneousAccountIds,
-      );
+      organizerName = persistedPrimaryId && selectedAccountId !== persistedPrimaryId
+        ? form.organizerName.trim() && form.organizerName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL
+          ? form.organizerName.trim()
+          : SPONTANEOUS_PENDING_ORGANIZER_LABEL
+        : preserveSpontaneousOrganizerName(form.organizerName, selectedAccountWasAccepted ? selection.name : SPONTANEOUS_PENDING_ORGANIZER_LABEL, spontaneousAccountIds);
     }
     updateFields?.({
       organizerId: selection.id,
@@ -188,6 +196,7 @@ function IdentityFieldGrid({
           currentUserId={userMetadata.userId}
           activeRole={userMetadata.activeRole}
           onChange={handleOrganizerChange}
+          isExistingAction={isExistingAction}
           required
           invalid={missingAssociation}
           describedBy={missingAssociation ? "before-organizer-structure-error" : undefined}

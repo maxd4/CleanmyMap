@@ -23,6 +23,7 @@ type OrganizerComboboxProps = {
   required?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  isExistingAction?: boolean;
 };
 
 export type OrganizerComboboxKeyAction =
@@ -61,25 +62,33 @@ function SpontaneousOrganizerSelector({
   value,
   organizerAccountIds,
   onChange,
-}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange">) {
+  isExistingAction,
+}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction">) {
   return (
-    <ActionAccountSelector
-      currentUserId={currentUserId ?? ""}
-      value={organizerAccountIds ?? []}
-      selectedLabel={value}
-      pendingLabel={SPONTANEOUS_PENDING_ORGANIZER_LABEL}
-      onChange={() => undefined}
-      onSelectAccount={(user) => onChange({
-        id: null,
-        name: user.display_name?.trim() || user.handle?.trim() || user.id,
-        accountIds: [user.id],
-      })}
-      onOther={() => onChange({
-        id: null,
-        name: SPONTANEOUS_PENDING_ORGANIZER_LABEL,
-        accountIds: [],
-      })}
-    />
+    <div className="space-y-2">
+      <ActionAccountSelector
+        currentUserId={currentUserId ?? ""}
+        value={organizerAccountIds ?? []}
+        selectedLabel={value}
+        pendingLabel={SPONTANEOUS_PENDING_ORGANIZER_LABEL}
+        onChange={() => undefined}
+        onSelectAccount={(user) => onChange({
+          id: null,
+          name: user.display_name?.trim() || user.handle?.trim() || user.id,
+          accountIds: [user.id],
+        })}
+        onOther={() => onChange({
+          id: null,
+          name: SPONTANEOUS_PENDING_ORGANIZER_LABEL,
+          accountIds: [],
+        })}
+      />
+      {isExistingAction && organizerAccountIds?.length ? (
+        <p className="text-xs leading-5 text-emerald-900/70">
+          Le référent principal actuel est conservé. Une sélection ordinaire ajoute ou conserve un coorganisateur ; son changement nécessite le workflow de transfert explicite.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -111,6 +120,7 @@ export function OrganizerCombobox({
   required = false,
   invalid = false,
   describedBy,
+  isExistingAction = false,
 }: OrganizerComboboxProps) {
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -200,7 +210,7 @@ export function OrganizerCombobox({
 
   const spontaneous = organizerType === "spontaneous";
   if (spontaneous) {
-    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} />;
+    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} />;
   }
   const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
   return (

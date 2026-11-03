@@ -20,15 +20,33 @@ export function parseOrganizerAccounts(input: string): string[] {
 export function mergeOrganizerAccountSelection(
   currentInput: string,
   selectedAccountIds?: readonly string[],
+  options?: { persistedPrimaryId?: string | null },
 ): string[] {
   const currentIds = parseOrganizerAccounts(currentInput);
   const selectedId = parseOrganizerAccounts((selectedAccountIds ?? []).join(", "))[0];
-  if (!selectedId) return currentIds;
-  if (currentIds.length >= MAX_ORGANIZER_ACCOUNTS && !currentIds.includes(selectedId)) {
-    return currentIds;
+  const persistedPrimaryId = parseOrganizerAccounts(options?.persistedPrimaryId ?? "")[0];
+  let nextIds = currentIds;
+  if (selectedId) {
+    if (currentIds.length >= MAX_ORGANIZER_ACCOUNTS && !currentIds.includes(selectedId)) {
+      nextIds = currentIds;
+    } else {
+      nextIds = [selectedId, ...currentIds.filter((accountId) => accountId !== selectedId)];
+    }
   }
-  return [selectedId, ...currentIds.filter((accountId) => accountId !== selectedId)]
-    .slice(0, MAX_ORGANIZER_ACCOUNTS);
+  if (persistedPrimaryId && nextIds.includes(persistedPrimaryId)) {
+    nextIds = [persistedPrimaryId, ...nextIds.filter((accountId) => accountId !== persistedPrimaryId)];
+  }
+  return nextIds.slice(0, MAX_ORGANIZER_ACCOUNTS);
+}
+
+export function preservePersistedOrganizerPrimary(
+  currentInput: string,
+  persistedPrimaryId: string | null | undefined,
+): string[] {
+  const primaryId = parseOrganizerAccounts(persistedPrimaryId ?? "")[0];
+  if (!primaryId) return parseOrganizerAccounts(currentInput);
+  const currentIds = parseOrganizerAccounts(currentInput).filter((accountId) => accountId !== primaryId);
+  return [primaryId, ...currentIds].slice(0, MAX_ORGANIZER_ACCOUNTS);
 }
 
 export function preserveSpontaneousOrganizerName(

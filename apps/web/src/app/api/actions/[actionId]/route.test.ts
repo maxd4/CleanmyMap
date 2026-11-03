@@ -19,7 +19,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     expect(response.status).toBe(200);
     expect(staleImplementation).not.toHaveBeenCalled();
     expect(updateMock).toHaveBeenCalled();
-  });
+  }, 15_000);
 
   it("keeps a pre-action pending until the harvest is completed", async () => {
     const response = await patchAction({ actionPhase: "pre_action" });

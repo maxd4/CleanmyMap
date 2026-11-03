@@ -14,6 +14,7 @@ export interface ActionStepIdentityProps {
   };
   recordType: FormState["recordType"];
   hasAttemptedSubmit?: boolean;
+  isExistingAction?: boolean;
   mode?:
     | "all"
     | "action"

@@ -8,6 +8,7 @@ const loadManualRegistrationIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadManualInvitationStatusesForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadActionOrganizerRowsForActionMock = vi.hoisted(() => vi.fn());
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const syncActionManualParticipantsMock = vi.hoisted(() => vi.fn());
 const syncActionOrganizersMock = vi.hoisted(() => vi.fn());
@@ -55,6 +56,7 @@ vi.mock("@/lib/actions/participation/registration-records", () => ({
 }));
 
 vi.mock("@/lib/actions/participation/organizers", () => ({
+  loadActionOrganizerRowsForAction: loadActionOrganizerRowsForActionMock,
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
   resolveActionOrganizers: resolveActionOrganizersMock,
@@ -141,6 +143,7 @@ export {
   getCurrentUserIdentityMock,
   loadActionByIdMock,
   loadCanonicalActionOrganizerIdsForActionMock,
+  loadActionOrganizerRowsForActionMock,
   loadActionOrganizerIdsForActionMock,
   loadManualRegistrationIdsForActionMock,
   loadManualInvitationStatusesForActionMock,
@@ -217,8 +220,15 @@ export function resetPatchRouteMocks() {
       }),
     }),
   });
-  fromMock.mockReset().mockReturnValue({
-    update: updateMock,
+  fromMock.mockReset().mockImplementation((table: string) => {
+    if (table === "action_participants") {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], count: 0, error: null }),
+        }),
+      };
+    }
+    return { update: updateMock };
   });
   getSupabaseServerClientMock.mockReturnValue({
     from: fromMock,
@@ -237,6 +247,7 @@ export function resetPatchRouteMocks() {
   loadManualInvitationStatusesForActionMock.mockResolvedValue([]);
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
+  loadActionOrganizerRowsForActionMock.mockResolvedValue([]);
   resolveActionOrganizersMock.mockResolvedValue({
     organizers: [],
     unresolvedTokens: [],

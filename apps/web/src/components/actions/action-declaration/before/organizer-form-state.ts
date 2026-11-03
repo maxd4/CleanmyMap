@@ -1,4 +1,5 @@
 import type { FormState } from "../model";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 
 export function applyOrganizerFormUpdates(
   nextForm: FormState,
@@ -7,7 +8,11 @@ export function applyOrganizerFormUpdates(
 ): void {
   if ("organizerType" in updates && updates.organizerType !== previousForm.organizerType) {
     nextForm.organizerId = null;
-    nextForm.organizerName = updates.organizerType === "spontaneous" ? nextForm.actorName : "";
+    nextForm.organizerName = updates.organizerType === "spontaneous"
+      ? nextForm.organizerAccounts.trim()
+        ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
+        : nextForm.actorName
+      : "";
     nextForm.associationName = updates.organizerType === "spontaneous" ? "Action spontanée" : "";
   }
   if ("organizerName" in updates && !("organizerId" in updates)) {
