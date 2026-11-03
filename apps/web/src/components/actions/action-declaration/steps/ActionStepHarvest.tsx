@@ -194,7 +194,7 @@ function HarvestStepContent({
       {isCleanPlaceMode ? (
         <HarvestCleanPlaceSection />
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <HarvestWasteSection
             wasteKg={form.wasteKg}
             onWasteKgChange={(value) => updateField("wasteKg", value)}

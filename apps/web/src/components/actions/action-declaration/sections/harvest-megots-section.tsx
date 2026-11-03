@@ -36,10 +36,10 @@ function MegotsHeader({
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center"><Cigarette size={15} className="text-amber-600" /></div>
-        <div><p className="text-sm font-semibold text-slate-900">Mégots collectés</p><p className="text-xs text-slate-500">Nombre et masse séparés.</p></div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100"><Cigarette size={18} className="text-blue-700" /></div>
+        <div><h3 className="text-base font-black tracking-tight text-slate-950">Mégots collectés</h3><p className="text-xs text-slate-500">Nombre et masse</p></div>
       </div>
-      {megotsCount !== null ? <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{provenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots</span> : null}
+      {megotsCount !== null ? <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800">{provenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots</span> : null}
     </div>
   );
 }
@@ -93,6 +93,87 @@ const MEGOTS_CONDITIONS: Array<{ value: ActionMegotsCondition; label: string; Ic
   { value: "mouille", label: "Mouillé", Icon: Droplets },
 ];
 
+function MegotsConditionSelector({
+  value,
+  onChange,
+}: {
+  value: ActionMegotsCondition;
+  onChange: (value: ActionMegotsCondition) => void;
+}) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-bold text-slate-900">État des mégots</legend>
+      <div id="harvest-megots-condition" role="radiogroup" aria-label="État des mégots" className="grid grid-cols-3 overflow-hidden rounded-xl border border-blue-200 bg-white">
+        {MEGOTS_CONDITIONS.map(({ value: condition, label, Icon }) => {
+          const selected = condition === value;
+          return (
+            <button
+              key={condition}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(condition)}
+              className={selected
+                ? "flex min-h-14 items-center justify-center gap-1 border-2 border-blue-500 bg-blue-50 px-1 text-xs font-bold text-blue-950 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset sm:gap-2 sm:px-2 sm:text-sm"
+                : "flex min-h-14 items-center justify-center gap-1 border border-transparent px-1 text-xs font-semibold text-slate-700 outline-none hover:bg-blue-50/60 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset sm:gap-2 sm:px-2 sm:text-sm"}
+            >
+              <Icon size={20} className={selected ? "text-blue-600" : "text-slate-500"} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function MegotsExactCountInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-xs font-semibold text-blue-900/70">Saisie exacte (mégots)</span>
+      <input
+        id="harvest-megots-count"
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={MAX_CIGARETTE_BUTTS_COUNT}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label="Saisie exacte (mégots)"
+        className="h-11 w-full rounded-xl border border-blue-100 bg-white px-3 text-base font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15"
+      />
+    </label>
+  );
+}
+
+function MegotsMeasurementSummary({
+  count,
+  mass,
+  countProvenance,
+  massProvenance,
+}: {
+  count: number | null;
+  mass: number | null;
+  countProvenance: string;
+  massProvenance: string;
+}) {
+  if (count === null && mass === null) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+      <span className="font-bold text-slate-800">Mesures retenues</span>
+      {count !== null ? <span>Statut : {formatProvenance(countProvenance)}</span> : null}
+      {mass !== null ? <span>Masse : {formatProvenance(massProvenance)}</span> : null}
+    </div>
+  );
+}
+
 function MegotsLotEditor({
   draft,
   index,
@@ -138,7 +219,7 @@ function MegotsLotEditor({
           <select value={draft.condition} onChange={(event) => onUpdate?.(draft.id, { condition: event.target.value as ActionMegotsCondition })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900">
             <option value="propre">Sec / Propre</option>
             <option value="humide">Humide</option>
-            <option value="mouille">Très mouillé</option>
+            <option value="mouille">Mouillé</option>
           </select>
         </label>
       </div>
@@ -177,124 +258,51 @@ export function HarvestMegotsSection({
   onMegotsConditionChange,
   hidePrimaryMeasurements = false,
 }: HarvestMegotsSectionProps) {
+  const massKpiLabel = cigaretteButtsMassProvenance === "measured"
+    ? "Masse mesurée"
+    : cigaretteButtsMassProvenance === "unknown"
+      ? "Masse retenue"
+      : "Masse estimée";
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
+    <section className="min-w-0 space-y-4 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(37,99,235,0.55)] sm:p-5">
       <MegotsHeader megotsCount={megotsCount} provenance={cigaretteButtsCountProvenance} />
-
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-bold text-slate-900">État des mégots</legend>
-        <div id="harvest-megots-condition" role="radiogroup" aria-label="État des mégots" className="grid grid-cols-3 overflow-hidden rounded-xl border border-blue-200 bg-white">
-          {MEGOTS_CONDITIONS.map(({ value, label, Icon }) => {
-            const selected = value === wasteMegotsCondition;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => onMegotsConditionChange(value)}
-                className={selected
-                  ? "flex min-h-14 items-center justify-center gap-2 border-2 border-blue-500 bg-blue-50 px-2 text-sm font-bold text-blue-950 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
-                  : "flex min-h-14 items-center justify-center gap-2 border border-transparent px-2 text-sm font-semibold text-slate-700 outline-none hover:bg-blue-50/60 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"}
-              >
-                <Icon size={20} className={selected ? "text-blue-600" : "text-slate-500"} aria-hidden="true" />
-                <span>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-        Une mesure source par lot.
-      </p>
-
+      <DropletGauge
+        value={megotsCount}
+        secondaryLabel={massKpiLabel}
+        secondaryValue={megotsKg === null ? "Non renseigné" : `${formatKg(megotsKg)} kg`}
+      />
       {megotsLots !== null ? (
-        <div className="space-y-3" data-testid="megots-lots-editor">
-          {megotsLots.map((lot, index) => <MegotsLotEditor key={lot.id} draft={lot} index={index} total={megotsLots.length} onUpdate={onUpdateMegotsLot} onRemove={onRemoveMegotsLot} onMove={onMoveMegotsLot} />)}
-          <button type="button" onClick={onAddMegotsLot} className="w-full rounded-xl border border-dashed border-amber-300 bg-white px-4 py-3 text-sm font-semibold text-amber-800">Ajouter un lot</button>
-          <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Total des lots</p>
-            <p>{formatCount(megotsCounted)} comptés · {formatCount(megotsEstimated)} estimés</p>
-            <p>{formatKg(megotsMeasuredMassKg)} kg mesurés · {formatKg(megotsEstimatedMassKg)} kg estimés</p>
-          </div>
-          <HarvestMeasurementSlider
-            id="harvest-megots-count-slider"
-            label="Nombre de mégots"
-            value={megotsCount === null ? "" : String(megotsCount)}
-            initialMax={HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT}
-            extension={HARVEST_BUTTS_SLIDER_EXTENSION_COUNT}
-            absoluteMax={MAX_CIGARETTE_BUTTS_COUNT}
-            step={1}
-            unit="mégots"
-            accent="blue"
-            formatValue={formatCount}
-            readOnly
-            readOnlyLabel="Total des lots : modifiez les valeurs dans chaque lot."
-          />
-        </div>
+        <HarvestMeasurementSlider
+          id="harvest-megots-count-slider"
+          label="Total des mégots"
+          value={megotsCount === null ? "" : String(megotsCount)}
+          initialMax={HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT}
+          extension={HARVEST_BUTTS_SLIDER_EXTENSION_COUNT}
+          absoluteMax={MAX_CIGARETTE_BUTTS_COUNT}
+          step={1}
+          unit="mégots"
+          accent="blue"
+          formatValue={formatCount}
+          readOnly
+          readOnlyLabel="Total des lots : modifiez les valeurs dans chaque lot."
+        />
       ) : null}
-
       {megotsLots === null && !hidePrimaryMeasurements ? (
-        <>
-          <HarvestMeasurementSlider
-            id="harvest-megots-count-slider"
-            exactInputId="harvest-megots-count"
-            exactInputLabel="Saisie exacte (mégots)"
-            label="Nombre de mégots"
-            value={cigaretteButtsCount}
-            initialMax={HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT}
-            extension={HARVEST_BUTTS_SLIDER_EXTENSION_COUNT}
-            absoluteMax={MAX_CIGARETTE_BUTTS_COUNT}
-            step={1}
-            unit="mégots"
-            accent="blue"
-            formatValue={formatCount}
-            onChange={onMegotsCountChange}
-          />
-
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">Masse de mégots (kg)</span>
-            <input
-              id="harvest-megots-kg"
-              inputMode="decimal"
-              type="number"
-              step="0.01"
-              min="0"
-              max={ACTION_MEASUREMENT_MAX_KG}
-              className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
-              value={wasteMegotsKg}
-              onChange={(e) => onMegotsWeightChange(e.target.value)}
-              placeholder="Ex : 0,25"
-            />
-          </label>
-        </>
+        <HarvestMeasurementSlider
+          id="harvest-megots-count-slider"
+          label="Nombre de mégots"
+          value={cigaretteButtsCount}
+          initialMax={HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT}
+          extension={HARVEST_BUTTS_SLIDER_EXTENSION_COUNT}
+          absoluteMax={MAX_CIGARETTE_BUTTS_COUNT}
+          step={1}
+          unit="mégots"
+          accent="blue"
+          formatValue={formatCount}
+          onChange={onMegotsCountChange}
+        />
       ) : null}
-
-      {megotsLots === null ? <button type="button" onClick={onAddMegotsLot} className="w-full rounded-xl border border-dashed border-amber-300 bg-amber-50/40 px-4 py-3 text-sm font-semibold text-amber-800">Ajouter des collectes distinctes par lots</button> : null}
-
-      {megotsCount !== null || megotsKg !== null ? (
-        <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {megotsCount !== null ? (
-              <div>
-                <p className="text-xs font-semibold text-amber-800">Nombre retenu</p>
-                <p className="text-sm font-bold text-amber-900">{formatCount(megotsCount)} mégots</p>
-                <p className="mt-1 text-xs text-amber-700">Statut : {formatProvenance(cigaretteButtsCountProvenance)}.</p>
-              </div>
-            ) : null}
-            {megotsKg !== null ? (
-              <div>
-                <p className="text-xs font-semibold text-amber-800">Masse retenue</p>
-                <p className="text-sm font-bold text-amber-900">{formatKg(megotsKg)} kg</p>
-                <p className="mt-1 text-xs text-amber-700">Statut : {formatProvenance(cigaretteButtsMassProvenance)}.</p>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      <DropletGauge value={megotsCount} />
       <ButtsComparisonVisual
         currentPerVolunteer={megotsCurrentPerVolunteer}
         benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
@@ -302,30 +310,57 @@ export function HarvestMegotsSection({
         deltaPercent={megotsDeltaPercent}
         comparisonTone={megotsComparisonTone}
       />
-
-      {megotsLots === null ? <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-slate-500">Volume (L), facultatif pour le mode historique</span>
-        <input
-          id="harvest-megots-volume"
-          inputMode="decimal"
-          type="number"
-          step="0.01"
-          min="0"
-          max={ACTION_MEASUREMENT_MAX_KG}
-          className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
-          value={cigaretteButtsVolumeLiters}
-          onChange={(e) => onMegotsVolumeChange(e.target.value)}
-          placeholder="Ex : 1,5"
-        />
-        <span className="block text-xs leading-snug text-slate-400">
-          Mesure complémentaire, séparée.
-        </span>
-        {cigaretteButtsVolumeLiters.trim() ? (
-          <span className="block text-xs leading-snug text-slate-500">
-            Statut : {formatProvenance(cigaretteButtsVolumeProvenance)}.
-          </span>
-        ) : null}
-      </label> : null}
+      {megotsLots === null ? (
+        <>
+          <MegotsConditionSelector value={wasteMegotsCondition} onChange={onMegotsConditionChange} />
+          {!hidePrimaryMeasurements ? <MegotsExactCountInput value={cigaretteButtsCount} onChange={onMegotsCountChange} /> : null}
+          {!hidePrimaryMeasurements ? (
+            <label className="block space-y-1.5">
+              <span className="text-xs font-semibold text-slate-500">Masse de mégots (kg)</span>
+              <input
+                id="harvest-megots-kg"
+                inputMode="decimal"
+                type="number"
+                step="0.01"
+                min="0"
+                max={ACTION_MEASUREMENT_MAX_KG}
+                className="h-11 w-full rounded-xl border border-orange-200 bg-orange-50/30 px-3 text-base font-bold text-slate-900 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 placeholder:text-slate-800"
+                value={wasteMegotsKg}
+                onChange={(e) => onMegotsWeightChange(e.target.value)}
+                placeholder="Ex : 0,25"
+              />
+            </label>
+          ) : null}
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold text-slate-500">Volume (L)</span>
+            <input
+              id="harvest-megots-volume"
+              inputMode="decimal"
+              type="number"
+              step="0.01"
+              min="0"
+              max={ACTION_MEASUREMENT_MAX_KG}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 placeholder:text-slate-800"
+              value={cigaretteButtsVolumeLiters}
+              onChange={(e) => onMegotsVolumeChange(e.target.value)}
+              placeholder="Ex : 1,5"
+            />
+            {cigaretteButtsVolumeLiters.trim() ? <span className="block text-xs text-slate-500">Statut : {formatProvenance(cigaretteButtsVolumeProvenance)}.</span> : null}
+          </label>
+          <button type="button" onClick={onAddMegotsLot} className="w-full rounded-xl border border-dashed border-orange-300 bg-orange-50/50 px-4 py-3 text-sm font-bold text-orange-800 transition hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Ajouter un lot</button>
+          <MegotsMeasurementSummary count={megotsCount} mass={megotsKg} countProvenance={cigaretteButtsCountProvenance} massProvenance={cigaretteButtsMassProvenance} />
+        </>
+      ) : (
+        <div className="space-y-3" data-testid="megots-lots-editor">
+          <p className="text-xs font-semibold text-slate-600">Une mesure source par lot</p>
+          {megotsLots.map((lot, index) => <MegotsLotEditor key={lot.id} draft={lot} index={index} total={megotsLots.length} onUpdate={onUpdateMegotsLot} onRemove={onRemoveMegotsLot} onMove={onMoveMegotsLot} />)}
+          <button type="button" onClick={onAddMegotsLot} className="w-full rounded-xl border border-dashed border-orange-300 bg-orange-50/50 px-4 py-3 text-sm font-bold text-orange-800 transition hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Ajouter un lot</button>
+          <div className="rounded-xl border border-orange-100 bg-orange-50/50 px-3 py-2 text-xs text-orange-900">
+            <span className="font-bold">Total des lots</span>
+            <span className="ml-3">{formatCount(megotsCounted)} comptés · {formatCount(megotsEstimated)} estimés · {formatKg(megotsMeasuredMassKg)} kg mesurés · {formatKg(megotsEstimatedMassKg)} kg estimés</span>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

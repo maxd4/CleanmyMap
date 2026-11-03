@@ -85,6 +85,21 @@ describe("DropletGauge", () => {
     expect(markup).toContain('data-fill-percent="50"');
     expect(markup).toContain('data-fill-percent="0"');
   });
+
+  it("keeps the retained mass as a secondary KPI without changing the quantity gauge", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(DropletGauge, {
+        value: 1_000,
+        secondaryLabel: "Masse estimée",
+        secondaryValue: "0,22 kg",
+      }),
+    );
+
+    expect(markup).toContain("1 000 mégots");
+    expect(markup).toContain("Masse estimée");
+    expect(markup).toContain("0,22 kg");
+    expect(markup).toContain("Masse estimée : 0,22 kg");
+  });
 });
 
 describe("WasteComparisonVisual", () => {
@@ -116,7 +131,7 @@ describe("WasteComparisonVisual", () => {
     expect(markup).toContain("-50%");
     expect(markup).not.toContain('data-testid="waste-comparison-visual-icon"');
     expect(markup).toContain("text-rose-600");
-    expect(markup).toContain("La couleur indique uniquement");
+    expect(markup).toContain("Couleur : quantité relative collectée uniquement");
   });
 
   it("keeps a near-reference result neutral and shows the signed delta", () => {

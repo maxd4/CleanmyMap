@@ -58,15 +58,15 @@ function HarvestWasteHeader() {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-          <Trash2 size={15} className="text-emerald-600" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100">
+          <Trash2 size={18} className="text-emerald-700" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-900">Déchets collectés</p>
-          <p className="text-xs text-slate-400">Masse totale (kg)</p>
+          <h3 className="text-base font-black tracking-tight text-slate-950">Déchets collectés</h3>
+          <p className="text-xs text-slate-500">Masse totale hors mégots</p>
         </div>
       </div>
-      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
+      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
         Mesure déclarée
       </span>
     </div>
@@ -163,12 +163,10 @@ export function HarvestWasteSection({
     otherWasteKg: parseKg(wasteOtherKg),
   });
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
+    <section className="min-w-0 space-y-4 rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(5,150,105,0.55)] sm:p-5">
       <HarvestWasteHeader />
-      <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
-      <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
-
       <TrashBinGauge value={parseKg(wasteKg)} />
+      <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
       <WasteComparisonVisual
         currentPerVolunteer={wasteCurrentPerVolunteer}
         benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
@@ -176,6 +174,7 @@ export function HarvestWasteSection({
         deltaPercent={wasteDeltaPercent}
         comparisonTone={comparisonTone}
       />
+      <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
 
       <WasteCharacterizationSelector
         categories={wasteCategories}

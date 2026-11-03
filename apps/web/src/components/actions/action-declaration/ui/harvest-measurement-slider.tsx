@@ -74,7 +74,7 @@ export function HarvestMeasurementSlider({
   }
 
   return (
-    <div className={cn("space-y-3 rounded-2xl border px-4 py-4", borderClass)} data-testid={`${id}-slider-panel`}>
+    <div className={cn("min-w-0 space-y-3 rounded-2xl border px-4 py-4", borderClass)} data-testid={`${id}-slider-panel`}>
       <div className="flex items-center justify-between gap-3">
         <label htmlFor={id} className={cn("text-sm font-bold", labelClass)}>{label}</label>
         <output htmlFor={id} className={cn("shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black shadow-sm", labelClass)}>

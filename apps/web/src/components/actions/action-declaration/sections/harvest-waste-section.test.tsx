@@ -40,6 +40,16 @@ function renderWasteSection(overrides: Partial<React.ComponentProps<typeof Harve
   );
 }
 
+describe("HarvestWasteSection visual order", () => {
+  it("places the gauge, slider, comparison and method in the shared card order", () => {
+    const markup = renderWasteSection();
+
+    expect(markup.indexOf('data-testid="waste-measurement-visual"')).toBeLessThan(markup.indexOf('data-testid="harvest-waste-kg-slider-panel"'));
+    expect(markup.indexOf('data-testid="harvest-waste-kg-slider-panel"')).toBeLessThan(markup.indexOf('data-testid="waste-comparison-visual"'));
+    expect(markup.indexOf('data-testid="waste-comparison-visual"')).toBeLessThan(markup.indexOf("Méthode de mesure"));
+  });
+});
+
 function InteractiveWasteSection({
   onTriChange,
 }: {

@@ -37,7 +37,7 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain('id="harvest-megots-count"');
     expect(markup).toContain('value=""');
     expect(markup).toContain("Statut : estimé");
-    expect(markup).toContain("Statut : mesuré");
+    expect(markup).toContain("Masse : mesuré");
     expect(markup).not.toContain("Formule :");
     expect(markup).toContain('id="harvest-megots-condition"');
     expect(markup).toContain('role="radiogroup"');
@@ -50,9 +50,10 @@ describe("HarvestMegotsSection", () => {
     expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
     expect(markup).toContain('data-testid="butts-comparison-visual"');
     expect(markup).not.toContain('data-testid="butts-comparison-visual-icon"');
-    expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Nombre de mégots"));
-    expect(markup.indexOf("Nombre de mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
-    expect(markup.indexOf("Masse de mégots")).toBeLessThan(markup.indexOf("Comparaison visuelle des mégots"));
+    expect(markup.indexOf('data-testid="butts-measurement-visual"')).toBeLessThan(markup.indexOf("Nombre de mégots"));
+    expect(markup.indexOf("Nombre de mégots")).toBeLessThan(markup.indexOf("Comparaison visuelle des mégots"));
+    expect(markup.indexOf("Comparaison visuelle des mégots")).toBeLessThan(markup.indexOf("État des mégots"));
+    expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
     expect(markup).not.toContain("Référence moyenne");
   });
 
