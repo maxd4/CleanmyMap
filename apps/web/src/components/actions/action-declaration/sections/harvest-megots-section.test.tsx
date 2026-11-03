@@ -1,36 +1,124 @@
+// @vitest-environment jsdom
+
 import React from "react";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { HarvestMegotsSection } from "./harvest-megots-section";
 
+const DEFAULT_MEGOTS_PROPS: React.ComponentProps<typeof HarvestMegotsSection> = {
+  wasteMegotsKg: "1.2",
+  cigaretteButtsVolumeLiters: "",
+  wasteMegotsCondition: "propre",
+  cigaretteButtsCount: "",
+  megotsKg: 1.2,
+  megotsCount: 3000,
+  megotsCurrentPerVolunteer: 3000,
+  megotsBenchmarkPerVolunteer: 4000,
+  megotsBenchmarkSourceCount: 12,
+  megotsDeltaPercent: -25,
+  megotsComparisonTone: "emerald",
+  cigaretteButtsCountProvenance: "weight_converted",
+  cigaretteButtsMassProvenance: "measured",
+  cigaretteButtsVolumeProvenance: "unknown",
+  cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
+  onMegotsWeightChange: () => undefined,
+  onMegotsVolumeChange: () => undefined,
+  onMegotsCountChange: () => undefined,
+  onMegotsConditionChange: () => undefined,
+};
+
+function createMegotsElement(overrides: Partial<React.ComponentProps<typeof HarvestMegotsSection>> = {}) {
+  return React.createElement(HarvestMegotsSection, {
+    ...DEFAULT_MEGOTS_PROPS,
+    ...overrides,
+  });
+}
+
 function renderMegots(overrides: Partial<React.ComponentProps<typeof HarvestMegotsSection>> = {}) {
-  return renderToStaticMarkup(
-    React.createElement(HarvestMegotsSection, {
-      wasteMegotsKg: "1.2",
-      cigaretteButtsVolumeLiters: "",
-      wasteMegotsCondition: "propre",
-      cigaretteButtsCount: "",
-      megotsKg: 1.2,
-      megotsCount: 3000,
-      megotsCurrentPerVolunteer: 3000,
-      megotsBenchmarkPerVolunteer: 4000,
-      megotsBenchmarkSourceCount: 12,
-      megotsDeltaPercent: -25,
-      megotsComparisonTone: "emerald",
-      cigaretteButtsCountProvenance: "weight_converted",
-      cigaretteButtsMassProvenance: "measured",
-      cigaretteButtsVolumeProvenance: "unknown",
-      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
-      onMegotsWeightChange: () => undefined,
-      onMegotsVolumeChange: () => undefined,
-      onMegotsCountChange: () => undefined,
-      onMegotsConditionChange: () => undefined,
-      ...overrides,
-    }),
-  );
+  return renderToStaticMarkup(createMegotsElement(overrides));
+}
+
+function InteractiveMegots() {
+  const [condition, setCondition] = React.useState<ActionMegotsCondition>("propre");
+  return createMegotsElement({
+    wasteMegotsCondition: condition,
+    onMegotsConditionChange: setCondition,
+  });
 }
 
 describe("HarvestMegotsSection", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.replaceChildren();
+  });
+
+  it("keeps the canonical values in a native radio group", () => {
+    const markup = renderMegots();
+
+    expect(markup).toContain('id="harvest-megots-condition"');
+    expect(markup).not.toContain('role="radiogroup"');
+    expect(markup).not.toContain('role="radio"');
+    expect(markup.match(/type="radio"/g)).toHaveLength(3);
+    expect(markup.match(/name="harvest-megots-condition"/g)).toHaveLength(3);
+    expect(markup).toContain('value="propre"');
+    expect(markup).toContain('value="humide"');
+    expect(markup).toContain('value="mouille"');
+    expect(markup).toContain("Sec / Propre");
+    expect(markup).toContain("Humide");
+    expect(markup).toContain("Mouillé");
+  });
+
+  it("selects with a click, exposes focus and preserves the measured mass", () => {
+    act(() => {
+      root = createRoot(container);
+      root.render(<InteractiveMegots />);
+    });
+
+    const radios = () => [...container.querySelectorAll<HTMLInputElement>("input[type=radio]")];
+    const mass = () => container.querySelector<HTMLInputElement>("#harvest-megots-kg");
+
+    expect(radios()).toHaveLength(3);
+    expect(radios().find((radio) => radio.checked)?.value).toBe("propre");
+    expect(mass()?.value).toBe("1.2");
+
+    act(() => radios()[1]?.click());
+    expect(radios().find((radio) => radio.checked)?.value).toBe("humide");
+    expect(mass()?.value).toBe("1.2");
+
+    act(() => radios()[1]?.focus());
+    expect(document.activeElement).toBe(radios()[1]);
+    expect(radios()[1]?.checked).toBe(true);
+  });
+
+  it("routes focused keyboard-style radio activation through the existing condition callback", () => {
+    const onConditionChange = vi.fn();
+    act(() => {
+      root = createRoot(container);
+      root.render(<HarvestMegotsSection {...DEFAULT_MEGOTS_PROPS} onMegotsConditionChange={onConditionChange} />);
+    });
+
+    const radios = [...container.querySelectorAll<HTMLInputElement>("input[type=radio]")];
+    act(() => {
+      radios[2]?.focus();
+      radios[2]?.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
+    });
+
+    expect(document.activeElement).toBe(radios[2]);
+    expect(onConditionChange).toHaveBeenCalledWith("mouille");
+  });
+
   it("keeps a derived quantity distinct from the raw input and preserves provenance", () => {
     const markup = renderMegots();
 
@@ -40,11 +128,7 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("Masse : mesuré");
     expect(markup).not.toContain("Formule :");
     expect(markup).toContain('id="harvest-megots-condition"');
-    expect(markup).toContain('role="radiogroup"');
-    expect(markup.match(/role="radio"/g)).toHaveLength(3);
-    expect(markup).toContain("Sec / Propre");
-    expect(markup).toContain("Humide");
-    expect(markup).toContain("Mouillé");
+    expect(markup).toContain('type="radio"');
     expect(markup).toContain('id="harvest-megots-count-slider"');
     expect(markup).toContain('data-testid="butts-measurement-visual"');
     expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
@@ -56,7 +140,6 @@ describe("HarvestMegotsSection", () => {
     expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
     expect(markup).not.toContain("Référence moyenne");
   });
-
   it("does not present an unqualified historical value as measured", () => {
     const markup = renderMegots({
       cigaretteButtsCountProvenance: "unknown",

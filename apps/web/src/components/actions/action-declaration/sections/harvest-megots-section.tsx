@@ -103,23 +103,27 @@ function MegotsConditionSelector({
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-bold text-slate-900">État des mégots</legend>
-      <div id="harvest-megots-condition" role="radiogroup" aria-label="État des mégots" className="grid grid-cols-3 overflow-hidden rounded-xl border border-blue-200 bg-white">
+      <div id="harvest-megots-condition" className="grid grid-cols-3 overflow-hidden rounded-xl border border-blue-200 bg-white">
         {MEGOTS_CONDITIONS.map(({ value: condition, label, Icon }) => {
           const selected = condition === value;
           return (
-            <button
+            <label
               key={condition}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => onChange(condition)}
               className={selected
-                ? "flex min-h-14 items-center justify-center gap-1 border-2 border-blue-500 bg-blue-50 px-1 text-xs font-bold text-blue-950 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset sm:gap-2 sm:px-2 sm:text-sm"
-                : "flex min-h-14 items-center justify-center gap-1 border border-transparent px-1 text-xs font-semibold text-slate-700 outline-none hover:bg-blue-50/60 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset sm:gap-2 sm:px-2 sm:text-sm"}
+                ? "flex min-h-14 cursor-pointer items-center justify-center gap-1 border-2 border-blue-500 bg-blue-50 px-1 text-xs font-bold text-blue-950 outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-inset sm:gap-2 sm:px-2 sm:text-sm"
+                : "flex min-h-14 cursor-pointer items-center justify-center gap-1 border border-transparent px-1 text-xs font-semibold text-slate-700 outline-none hover:bg-blue-50/60 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-inset sm:gap-2 sm:px-2 sm:text-sm"}
             >
+              <input
+                type="radio"
+                name="harvest-megots-condition"
+                value={condition}
+                checked={selected}
+                onChange={() => onChange(condition)}
+                className="sr-only"
+              />
               <Icon size={20} className={selected ? "text-blue-600" : "text-slate-500"} aria-hidden="true" />
               <span>{label}</span>
-            </button>
+            </label>
           );
         })}
       </div>
