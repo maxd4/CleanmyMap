@@ -793,7 +793,7 @@ agent-device doctor --platform android --app fr.cleanmymap.app
 agent-device boot --platform android --device <AVD> --headless
 
 # 2. Development build Expo (Expo Go ne prouve pas le GPS background)
-npx expo run:android --project-directory apps/mobile
+npx expo run:android apps/mobile
 
 # 3. Contrôle par l'agent
 agent-device open fr.cleanmymap.app --platform android --foreground
@@ -837,6 +837,157 @@ de réussite revendiquée.
 
 Références d'outillage : [guide Expo agent-device](https://docs.expo.dev/agents/agent-device/)
 et [commandes agent-device](https://oss.callstack.com/agent-device/docs/commands/).
+
+## Référence opérationnelle des cibles et outils mobiles
+
+Cette matrice distingue les cibles du workspace `apps/mobile` du site Web
+CleanMyMap. Les commandes sont à lancer depuis la racine du monorepo ; les
+variables publiques viennent de `apps/mobile/.env` et ne doivent jamais
+contenir de secret serveur.
+
+| Cible | Commande | Ce que la commande prouve | Limite |
+|---|---|---|---|
+| Metro / Expo Go | `npm run start -w apps/mobile` | Le bundle JavaScript mobile est servi par Metro et peut être ouvert par Expo Go ou un development build. | Expo Go ne prouve pas le runtime natif, le GPS background, le kill/relaunch ou les modules natifs. |
+| Metro development client | `npx expo start apps/mobile --dev-client` | Le development build installé peut recharger le bundle Metro. | Nécessite un development build compatible et une cible connectée. |
+| Web target Expo | `npm run web -w apps/mobile` | La variante React Native Web du workspace mobile se rend dans un navigateur. | Ce n'est pas `apps/web` et cela ne prouve aucune permission native, aucun GPS background et aucune distribution mobile. |
+| Android development build | `npm run android -w apps/mobile` ou `npx expo run:android apps/mobile` | Gradle construit, installe et lance le build Android local. | Requiert Android SDK, Java, un AVD ou un appareil ; les erreurs de configuration native restent à diagnostiquer dans les logs. |
+| iOS development build | `npm run ios -w apps/mobile` ou `npx expo run:ios apps/mobile` | Xcode construit, installe et lance le build iOS local. | macOS, Xcode, un simulateur ou un appareil iOS sont requis ; macOS reste une cible distincte non engagée dans la V1. |
+| Santé Expo | `npx expo-doctor apps/mobile` | La cohérence déclarée des dépendances et de la configuration Expo est inspectée. | Ce contrôle statique ne remplace pas un build, un appareil ou une validation de store. |
+
+Le site Web produit reste une autre surface : son serveur se lance avec les
+commandes documentées par `apps/web`, alors que `npm run web -w apps/mobile`
+lance seulement l'adaptation navigateur de l'application mobile. Un lien
+mobile vers le site est un pont Web explicite et ne transforme pas cette cible
+Web en preuve native.
+
+### Préparer un émulateur Android local
+
+Le SDK Android doit exposer `adb`, `emulator`, `sdkmanager` et `avdmanager` dans
+`PATH`. Les chemins d'installation varient selon l'hôte ; ne pas inscrire un
+chemin local dans le dépôt. Une préparation typique, à adapter à une image
+Android disponible sur la machine, est :
+
+```bash
+sdkmanager --list
+sdkmanager "platform-tools" "emulator" "<system-image>"
+avdmanager create avd -n cleanmymap-api-36 -k "<system-image>" -d "<device-profile>"
+emulator -list-avds
+emulator -avd cleanmymap-api-36
+adb wait-for-device
+adb devices -l
+```
+
+Le `compileSdk`/niveau Android retenu par Expo et `app.json` reste l'autorité
+pour choisir l'image. Ne pas inventer une image, une API ou une clé Google Maps
+si l'environnement ne les fournit pas. Le préflight du dépôt vérifie la
+présence des outils et d'un AVD/appareil, mais ne télécharge ni SDK ni image.
+
+### Capacités contrôlables avec `agent-device`
+
+La commande `agent-device capabilities --platform android` est la source
+d'autorité pour la version installée. Les capacités ci-dessous sont le socle
+attendu ; une commande indisponible doit être signalée comme telle au lieu
+d'être remplacée silencieusement par une autre preuve.
+
+| Famille | Commandes usuelles | Usage mobile CleanMyMap |
+|---|---|---|
+| Découverte | `agent-device devices --platform android` ; `agent-device capabilities --platform android` | Trouver l'AVD/appareil réellement sélectionnable et connaître les commandes disponibles. |
+| Diagnostic | `agent-device doctor --platform android --app fr.cleanmymap.app` | Vérifier la chaîne agent-device/ADB, le package et les prérequis de session. |
+| Cycle émulateur | `boot`, `shutdown`, `device status` | Démarrer, arrêter et diagnostiquer un AVD ; conserver son nom et son API dans la preuve. |
+| Cycle application | `open`, `close`, `install`, `reinstall`, `uninstall` | Ouvrir le package `fr.cleanmymap.app`, repartir d'un état propre ou installer un APK local. |
+| Arbre UI | `snapshot -i`, `get text`, `get attrs`, `is visible`, `find text` | Inspecter rôles, labels, valeurs, test IDs et références `@eN` accessibles à l'agent. |
+| Interaction | `press`, `fill`, `type`, `scroll`, `back`, `home` | Parcourir le shell, les trois onglets, les sous-pages et les retours sans coordonnées fragiles. |
+| État appareil | `orientation`, `settings location`, `settings wifi`, `settings mobile-data`, `settings animations`, `hardware-button power` | Reproduire les états utiles au GPS, à la connectivité, à la rotation, au verrouillage et au mouvement. |
+| Preuve visuelle | `screenshot`, `record start`, `record stop` | Produire une capture ou une séquence datée ; la capture ne prouve ni AuthZ ni persistance. |
+| Journaux | `logs start`, `logs stop`, `logs path`, `logs doctor`, `events` | Consulter les erreurs runtime, événements de session et avertissements sans recopier de secret. |
+| Réseau observé | `network dump 25` | Observer les requêtes effectivement journalisées ; une absence de requête n'est pas une preuve universelle. |
+| React Native | `react-devtools tree`, `find`, `inspect`, `errors` | Inspecter composants, props, hooks et erreurs de rendu sur un development build. |
+| Performance/traces | `react-devtools profile start/stop/report`, `trace start/stop` | Diagnostiquer les commits lents ou les traces lorsque le problème le justifie. |
+
+Exemple de session complète, avec références découvertes dynamiquement :
+
+```bash
+agent-device devices --platform android
+agent-device capabilities --platform android
+agent-device doctor --platform android --app fr.cleanmymap.app
+agent-device open fr.cleanmymap.app --platform android --foreground --relaunch
+agent-device snapshot -i --platform android
+agent-device press @e2 --settle --platform android
+agent-device screenshot artifacts/mobile-ui/agir.png --platform android
+agent-device logs start
+agent-device react-devtools errors --limit 20
+agent-device network dump 25
+agent-device logs stop
+agent-device logs path
+agent-device close fr.cleanmymap.app --platform android
+```
+
+Pour repartir d'un état d'installation propre avec un APK déjà construit :
+
+```bash
+agent-device reinstall fr.cleanmymap.app <chemin-vers-app-debug.apk> --platform android
+```
+
+Les références `@eN` sont valables pour la session et l'écran courant. Après
+chaque navigation, relancer `snapshot -i` ; ne pas mémoriser une référence
+comme contrat de test. Les `testID` durables du shell sont listés dans la
+section précédente et restent limités aux points d'entrée nécessaires.
+
+### Capacités iOS et frontière de plateforme
+
+Sur macOS uniquement, la même famille de commandes peut viser un simulateur
+iOS :
+
+```bash
+agent-device devices --platform ios
+agent-device boot --platform ios --device <simulator>
+agent-device open fr.cleanmymap.app --platform ios --foreground
+agent-device snapshot -i --platform ios
+agent-device screenshot artifacts/mobile-ui/ios-agir.png --platform ios
+agent-device logs start --platform ios
+agent-device close fr.cleanmymap.app --platform ios
+agent-device shutdown --platform ios --device <simulator>
+```
+
+La disponibilité effective doit être vérifiée par `capabilities` et par le
+préflight de l'hôte. Le présent workspace ne transforme pas cette procédure en
+engagement iOS, et macOS n'est pas une cible de compatibilité du produit.
+
+### Diagnostics natifs de repli
+
+`agent-device` est l'outil préféré pour les sessions pilotées par Codex. ADB
+reste utile pour diagnostiquer l'installation ou récupérer un log brut quand
+la session agent-device ne démarre pas :
+
+```powershell
+adb devices -l
+adb shell pm list packages | Select-String "fr.cleanmymap.app"
+adb logcat -c
+adb shell am force-stop fr.cleanmymap.app
+adb shell monkey -p fr.cleanmymap.app -c android.intent.category.LAUNCHER 1
+adb logcat -d -v threadtime | Select-String "AndroidRuntime|FATAL EXCEPTION|ReactNativeJS|ClerkLog"
+adb exec-out screencap -p > artifacts/mobile-ui/adb-fallback.png
+```
+
+Cette voie de repli n'est pas une nouvelle harness de test : elle sert aux
+diagnostics ponctuels et ne remplace pas l'inspection d'accessibilité,
+l'isolation de session ou les preuves `agent-device`. Les sorties peuvent
+contenir des URLs, identifiants ou messages d'authentification ; les filtrer
+avant conservation.
+
+### Outils de build et de distribution
+
+| Outil | Commandes | Portée |
+|---|---|---|
+| Expo CLI | `npx expo start`, `npx expo run:android`, `npx expo run:ios`, `npx expo-doctor` | Développement Metro, builds natifs locaux et diagnostic Expo. |
+| Android SDK / Gradle | `adb`, `emulator`, `sdkmanager`, `avdmanager`, `./gradlew` dans `apps/mobile/android` | Émulateur, installation, logs et build Android local ; les commandes Gradle brutes restent un dernier recours derrière Expo. |
+| Xcode / simctl | `xcrun simctl list`, `xcrun simctl boot <UDID>`, `xcrun simctl io booted screenshot <file>` | Simulateur iOS sur macOS uniquement ; `agent-device` reste préférable pour la session agent. |
+| EAS | `eas project:info`, `eas build --platform android`, `eas build --platform ios` | Build cloud et distribution ; nécessite un compte, un projet et des credentials réels. Ce n'est pas une preuve UI locale. |
+| Agent-device MCP | `agent-device mcp` | Option d'intégration structurée pour un client MCP ; le terminal CLI reste le chemin par défaut et ne requiert aucune dépendance Expo. |
+
+Ne jamais lancer un build EAS, une soumission store ou une synchronisation de
+credentials comme simple contrôle UI. Ces actions nécessitent une demande et
+une preuve distinctes, conformément aux limites de production du mobile.
 
 ## Snapshot de couverture Mobile et trajectoire vers 80 %
 
