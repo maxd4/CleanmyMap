@@ -38,7 +38,7 @@ describe("ActionStepHarvest compact modes", () => {
   it("keeps the three essential measurements visible and preserves an explicit zero", () => {
     const html = renderHarvest("essentials");
 
-    expect(html).toContain("Déchets hors mégots (kg)");
+    expect(html).toContain("Masse collectée");
     expect(html).toContain("Nombre de mégots");
     expect(html).toContain("Masse de mégots (kg)");
     expect(html).toContain('value="0"');

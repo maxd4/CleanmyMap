@@ -34,6 +34,41 @@ export function deriveGaugeMax(
   return Math.max(minimum, Number((reference * 1.35).toFixed(2)));
 }
 
+export const HARVEST_WASTE_SLIDER_INITIAL_MAX_KG = 20;
+export const HARVEST_WASTE_SLIDER_EXTENSION_KG = 20;
+export const HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT = 5_000;
+export const HARVEST_BUTTS_SLIDER_EXTENSION_COUNT = 5_000;
+
+/**
+ * Keeps the range compact for ordinary actions while making a persisted value
+ * immediately reachable without changing the value itself.
+ */
+export function resolveHarvestSliderMax(
+  value: number | null | undefined,
+  initialMax: number,
+  extension: number,
+  absoluteMax: number,
+): number {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= initialMax) {
+    return initialMax;
+  }
+
+  return Math.min(
+    absoluteMax,
+    Math.max(initialMax, Math.ceil(value / extension) * extension),
+  );
+}
+
+export function extendHarvestSliderMax(
+  currentMax: number,
+  selectedValue: number,
+  extension: number,
+  absoluteMax: number,
+): number {
+  if (selectedValue < currentMax || currentMax >= absoluteMax) return currentMax;
+  return Math.min(absoluteMax, currentMax + extension);
+}
+
 export type WasteComparisonTone = "emerald" | "orange" | "slate";
 
 export type WasteComparison = {

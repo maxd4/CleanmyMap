@@ -1,6 +1,39 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveWasteComparison } from "./harvest-utils";
+import {
+  deriveWasteComparison,
+  extendHarvestSliderMax,
+  resolveHarvestSliderMax,
+} from "./harvest-utils";
+
+describe("harvest measurement slider ranges", () => {
+  it.each([
+    [null, 20],
+    [0, 20],
+    [20, 20],
+    [20.1, 40],
+    [40, 40],
+    [41, 60],
+  ])("keeps a waste value reachable without clipping (%s kg -> %s kg)", (value, expected) => {
+    expect(resolveHarvestSliderMax(value, 20, 20, 100_000)).toBe(expected);
+  });
+
+  it.each([
+    [null, 5_000],
+    [5_000, 5_000],
+    [5_001, 10_000],
+    [10_001, 15_000],
+    [5_000_000, 5_000_000],
+  ])("keeps a butt count reachable without clipping (%s -> %s)", (value, expected) => {
+    expect(resolveHarvestSliderMax(value, 5_000, 5_000, 5_000_000)).toBe(expected);
+  });
+
+  it("extends only when the current upper bound is reached", () => {
+    expect(extendHarvestSliderMax(20, 19.9, 20, 100_000)).toBe(20);
+    expect(extendHarvestSliderMax(20, 20, 20, 100_000)).toBe(40);
+    expect(extendHarvestSliderMax(5_000_000, 5_000_000, 5_000, 5_000_000)).toBe(5_000_000);
+  });
+});
 
 describe("deriveWasteComparison", () => {
   const reference = {

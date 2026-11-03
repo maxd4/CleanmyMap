@@ -97,7 +97,7 @@ export function DropletGauge({ value }: { value: number | null }) {
       value={value}
       scale={HARVEST_BUTTS_VISUAL_SCALE_COUNT}
       icon={Droplet}
-      colorClass="text-amber-400"
+      colorClass="text-blue-400"
       label="Quantité de mégots retenue"
       valueLabel={value === null ? "Non renseigné" : `${formatCount(value)} mégots`}
       testId="butts-measurement-visual"

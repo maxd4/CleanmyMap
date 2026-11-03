@@ -17,6 +17,12 @@ import {
   type WasteCategorySlug,
 } from "@/lib/waste";
 import { TrashBinGauge, WasteComparisonVisual } from "../ui/harvest-gauges";
+import { HarvestMeasurementSlider } from "../ui/harvest-measurement-slider";
+import {
+  HARVEST_WASTE_SLIDER_EXTENSION_KG,
+  HARVEST_WASTE_SLIDER_INITIAL_MAX_KG,
+  formatKg,
+} from "../utils/harvest-utils";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -74,10 +80,19 @@ function WastePrimaryMeasurement({
 }: { value: string; hidden: boolean; onChange: (value: string) => void }) {
   if (hidden) return null;
   return (
-    <label className="block space-y-1.5">
-      <span className="text-xs font-medium text-slate-500">Masse totale hors mégots (kg)</span>
-      <input id="harvest-waste-kg" inputMode="decimal" type="number" step={ACTION_WASTE_MASS_RESOLUTION_KG} min="0" max={ACTION_MEASUREMENT_MAX_KG} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Ex : 12,5" />
-    </label>
+    <HarvestMeasurementSlider
+      id="harvest-waste-kg"
+      label="Masse collectée"
+      value={value}
+      initialMax={HARVEST_WASTE_SLIDER_INITIAL_MAX_KG}
+      extension={HARVEST_WASTE_SLIDER_EXTENSION_KG}
+      absoluteMax={ACTION_MEASUREMENT_MAX_KG}
+      step={ACTION_WASTE_MASS_RESOLUTION_KG}
+      unit="kg"
+      accent="emerald"
+      formatValue={formatKg}
+      onChange={onChange}
+    />
   );
 }
 

@@ -454,7 +454,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(absentMarkup).not.toContain('data-testid="waste-comparison-visual"');
   });
 
-  it("does not reapply the former 100 kg UI ceiling to a valid declared mass", () => {
+  it("extends the presentation range so a historical mass remains reachable", () => {
     const markup = renderWasteSection({
       wasteKg: "150",
       wasteCurrentPerVolunteer: 150,
@@ -463,7 +463,7 @@ describe("HarvestWasteSection comparison", () => {
     });
 
     expect(markup).toContain('value="150"');
-    expect(markup).toContain('max="100000"');
+    expect(markup).toContain('max="160"');
     expect(markup).toContain('data-testid="waste-comparison-visual"');
   });
 });

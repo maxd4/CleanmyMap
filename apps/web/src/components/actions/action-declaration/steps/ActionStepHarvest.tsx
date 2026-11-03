@@ -15,10 +15,18 @@ import { HarvestCleanPlaceSection } from "../sections/harvest-clean-place";
 import { HarvestMegotsSection } from "../sections/harvest-megots-section";
 import { HarvestPhotoSection } from "../sections/harvest-photo-section";
 import { HarvestWasteSection } from "../sections/harvest-waste-section";
-import { Cigarette, Trash2 } from "lucide-react";
-import { CmmField, CmmInput } from "@/components/ui/cmm-field";
+import { Cigarette } from "lucide-react";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { ACTION_MEASUREMENT_MAX_KG, ACTION_WASTE_MASS_RESOLUTION_KG } from "@/lib/waste";
+import { HarvestMeasurementSlider } from "../ui/harvest-measurement-slider";
+import {
+  HARVEST_BUTTS_SLIDER_EXTENSION_COUNT,
+  HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT,
+  HARVEST_WASTE_SLIDER_EXTENSION_KG,
+  HARVEST_WASTE_SLIDER_INITIAL_MAX_KG,
+  formatCount,
+  formatKg,
+} from "../utils/harvest-utils";
 
 interface ActionStepHarvestProps {
   form: FormState;
@@ -52,45 +60,34 @@ function HarvestEssentials({
   if (isCleanPlaceMode) return <HarvestCleanPlaceSection />;
   return (
     <div className="grid gap-3 lg:grid-cols-3">
-      <label className="space-y-1.5 rounded-2xl border border-emerald-200/70 bg-white p-4">
-        <span className="flex items-center gap-2 text-xs font-semibold text-emerald-900/75">
-          <Trash2 size={14} className="text-emerald-600" />
-          Déchets hors mégots (kg)
-        </span>
-        <input
-          id="harvest-waste-kg"
-          inputMode="decimal"
-          type="number"
-          min="0"
-          max={ACTION_MEASUREMENT_MAX_KG}
-          step={ACTION_WASTE_MASS_RESOLUTION_KG}
-          className="min-h-12 w-full rounded-xl border border-emerald-200 bg-white px-3.5 text-base font-bold text-emerald-950 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
-          value={form.wasteKg}
-          onChange={(event) => updateField("wasteKg", event.target.value)}
-          placeholder="0"
-        />
-      </label>
-      <CmmField
-        label={
-          <span className="flex items-center gap-2">
-            <Cigarette size={14} className="text-amber-600" />
-            Nombre de mégots
-          </span>
-        }
-        hint={`Maximum ${MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")} mégots.`}
-      >
-        <CmmInput
-          id="harvest-megots-count"
-          inputMode="numeric"
-          type="number"
-          min={0}
-          max={MAX_CIGARETTE_BUTTS_COUNT}
-          step={1}
-          value={form.cigaretteButtsCount}
-          onChange={(event) => syncMegotsWeightFromCount(event.target.value)}
-          className="!min-h-12 !w-full !rounded-xl !border-emerald-200 !bg-white !px-3.5 !text-base !font-bold !text-emerald-950 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-500/15"
-        />
-      </CmmField>
+      <HarvestMeasurementSlider
+        id="harvest-waste-kg"
+        label="Masse collectée"
+        value={form.wasteKg}
+        initialMax={HARVEST_WASTE_SLIDER_INITIAL_MAX_KG}
+        extension={HARVEST_WASTE_SLIDER_EXTENSION_KG}
+        absoluteMax={ACTION_MEASUREMENT_MAX_KG}
+        step={ACTION_WASTE_MASS_RESOLUTION_KG}
+        unit="kg"
+        accent="emerald"
+        formatValue={formatKg}
+        onChange={(value) => updateField("wasteKg", value)}
+      />
+      <HarvestMeasurementSlider
+        id="harvest-megots-count-slider"
+        exactInputId="harvest-megots-count"
+        exactInputLabel="Saisie exacte (mégots)"
+        label="Nombre de mégots"
+        value={form.cigaretteButtsCount}
+        initialMax={HARVEST_BUTTS_SLIDER_INITIAL_MAX_COUNT}
+        extension={HARVEST_BUTTS_SLIDER_EXTENSION_COUNT}
+        absoluteMax={MAX_CIGARETTE_BUTTS_COUNT}
+        step={1}
+        unit="mégots"
+        accent="blue"
+        formatValue={formatCount}
+        onChange={syncMegotsWeightFromCount}
+      />
       <label className="space-y-1.5 rounded-2xl border border-emerald-200/70 bg-white p-4">
         <span className="flex items-center gap-2 text-xs font-semibold text-emerald-900/75">
           <Cigarette size={14} className="text-amber-600" />

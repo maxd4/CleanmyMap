@@ -40,6 +40,12 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("Statut : mesuré");
     expect(markup).not.toContain("Formule :");
     expect(markup).toContain('id="harvest-megots-condition"');
+    expect(markup).toContain('role="radiogroup"');
+    expect(markup.match(/role="radio"/g)).toHaveLength(3);
+    expect(markup).toContain("Sec / Propre");
+    expect(markup).toContain("Humide");
+    expect(markup).toContain("Mouillé");
+    expect(markup).toContain('id="harvest-megots-count-slider"');
     expect(markup).toContain('data-testid="butts-measurement-visual"');
     expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
     expect(markup).toContain('data-testid="butts-comparison-visual"');
@@ -120,5 +126,8 @@ describe("HarvestMegotsSection", () => {
     expect(markup).not.toContain("mégots/L");
     expect(markup).toContain('data-testid="megots-lot-counted"');
     expect(markup).toContain('data-testid="megots-lot-volume"');
+    expect(markup).toContain('id="harvest-megots-count-slider"');
+    expect(markup).toContain('disabled=""');
+    expect(markup).toContain("modifiez les valeurs dans chaque lot");
   });
 });
