@@ -474,17 +474,21 @@ function Invoke-GuardStep {
             [string[]]$ChangedFiles
         )
 
-        $coverageArguments = @(
-            "scripts/ci/coverage-publication.mjs",
-            "--candidate-ref=$CandidateRef"
-        )
-        if (-not [string]::IsNullOrWhiteSpace($BaseRef)) {
-            $coverageArguments += "--base-ref=$BaseRef"
+        $changedFilesFile = [System.IO.Path]::GetTempFileName()
+        try {
+            @($ChangedFiles | Sort-Object -Unique) | ConvertTo-Json -Compress | Set-Content -LiteralPath $changedFilesFile -Encoding utf8
+            $coverageArguments = @(
+                "scripts/ci/coverage-publication.mjs",
+                "--candidate-ref=$CandidateRef",
+                "--changed-files-file=$changedFilesFile"
+            )
+            if (-not [string]::IsNullOrWhiteSpace($BaseRef)) {
+                $coverageArguments += "--base-ref=$BaseRef"
+            }
+            Invoke-GuardStep "coverage publication proof ($CandidateRef)" { & node @coverageArguments }
+        } finally {
+            Remove-Item -LiteralPath $changedFilesFile -Force -ErrorAction SilentlyContinue
         }
-        foreach ($file in @($ChangedFiles | Sort-Object -Unique)) {
-            $coverageArguments += "--changed-file=$file"
-        }
-        Invoke-GuardStep "coverage publication proof ($CandidateRef)" { & node @coverageArguments }
     }
 
     function Invoke-DuplicationPublicationGuard {

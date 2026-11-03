@@ -489,8 +489,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
   const baseRef = process.argv.find((argument) => argument.startsWith("--base-ref="))?.slice("--base-ref=".length) ?? null;
   const candidateSha = gitSha(process.cwd(), candidateRef);
   const changedFiles = process.argv.filter((argument) => argument.startsWith("--changed-file=")).map((argument) => argument.slice("--changed-file=".length));
+  const changedFilesFile = process.argv.find((argument) => argument.startsWith("--changed-files-file="))?.slice("--changed-files-file=".length) ?? null;
+  const changedFilesFromFile = changedFilesFile
+    ? JSON.parse(fs.readFileSync(path.resolve(changedFilesFile), "utf8"))
+    : [];
+  if (!Array.isArray(changedFilesFromFile) || changedFilesFromFile.some((file) => typeof file !== "string")) {
+    throw new Error("--changed-files-file must contain a JSON array of file paths.");
+  }
   const resolvedChangedFiles = changedFiles.length > 0
-    ? changedFiles
+    ? [...changedFiles, ...changedFilesFromFile]
+    : changedFilesFromFile.length > 0
+      ? changedFilesFromFile
     : baseRef
       ? execFileSync(gitExecutable(), ["diff", "--name-only", baseRef, candidateSha], { cwd: process.cwd(), encoding: "utf8" }).split(/\r?\n/).filter(Boolean)
       : [];
