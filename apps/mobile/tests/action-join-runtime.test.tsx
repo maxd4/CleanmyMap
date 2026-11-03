@@ -73,10 +73,10 @@ async function settle() {
   await Promise.resolve()
 }
 
-async function renderScreen(onSessionExpired = vi.fn()) {
+async function renderScreen(onSessionExpired = vi.fn(), onStartAction = vi.fn()) {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
-    renderer = TestRenderer.create(<ActionJoinScreen onSessionExpired={onSessionExpired} />)
+    renderer = TestRenderer.create(<ActionJoinScreen onSessionExpired={onSessionExpired} onStartAction={onStartAction} />)
     await settle()
   })
   return { renderer, onSessionExpired }
@@ -138,6 +138,16 @@ describe('mobile action join runtime', () => {
     await act(async () => { await callTestHandler(cancel, 'onPress'); await settle() })
     expect(state.cancelFutureAction).toHaveBeenCalledWith('future-1')
     expect(state.alert).toHaveBeenCalledWith('Action mise à jour', 'Votre inscription a été annulée.')
+  })
+
+  it('starts the GPS controller only for a confirmed selected action', async () => {
+    state.loadMobileActions.mockResolvedValue({ future: [joinedFutureAction], past: [], history: [], invitations: [] })
+    const onStartAction = vi.fn()
+    const { renderer } = await renderScreen(vi.fn(), onStartAction)
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Démarrer le suivi GPS'), 'onPress'); await settle() })
+
+    expect(onStartAction).toHaveBeenCalledWith('future-1', 'Nettoyage du parc')
   })
 
   it('supports past-action claim, invitations and organizer review callbacks', async () => {

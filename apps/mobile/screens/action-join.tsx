@@ -22,11 +22,12 @@ import {
 
 type ActionJoinScreenProps = {
   onSessionExpired: () => void
+  onStartAction: (actionId: string, label: string) => void | Promise<void>
 }
 
 type Tab = 'future' | 'past'
 
-export function ActionJoinScreen({ onSessionExpired }: ActionJoinScreenProps) {
+export function ActionJoinScreen({ onSessionExpired, onStartAction }: ActionJoinScreenProps) {
   const [tab, setTab] = useState<Tab>('future')
   const [query, setQuery] = useState('')
   const [future, setFuture] = useState<MobileActionItem[]>([])
@@ -136,6 +137,12 @@ export function ActionJoinScreen({ onSessionExpired }: ActionJoinScreenProps) {
           onCancel={() => void runMutation(item.id, () => cancelFutureAction(item.id), 'Votre inscription a été annulée.')}
           onClaim={() => void runMutation(item.id, () => claimPastAction(item.id), 'Votre demande de rattachement a été envoyée pour validation.')}
           onReview={() => void openReview(item.id)}
+          onStart={() => {
+            setBusyId(item.id)
+            void Promise.resolve(onStartAction(item.id, item.actionTitle ?? item.location_label))
+              .catch(() => undefined)
+              .finally(() => setBusyId(null))
+          }}
         />
       ))}
 
@@ -145,7 +152,7 @@ export function ActionJoinScreen({ onSessionExpired }: ActionJoinScreenProps) {
   )
 }
 
-function ActionCard({ item, busy, onDetails, onJoin, onCancel, onClaim, onReview }: { item: MobileActionItem; busy: boolean; onDetails: () => void; onJoin: () => void; onCancel: () => void; onClaim: () => void; onReview: () => void }) {
+function ActionCard({ item, busy, onDetails, onJoin, onCancel, onClaim, onReview, onStart }: { item: MobileActionItem; busy: boolean; onDetails: () => void; onJoin: () => void; onCancel: () => void; onClaim: () => void; onReview: () => void; onStart: () => void }) {
   const isPast = item.actionPhase === 'post_action_complete' || item.contract?.metadata?.actionPhase === 'post_action_complete'
   return (
     <View style={styles.card}>
@@ -157,6 +164,7 @@ function ActionCard({ item, busy, onDetails, onJoin, onCancel, onClaim, onReview
       {item.awaitingApproval ? <Text style={styles.status}>Demande en attente</Text> : null}
       {item.joined ? <Text style={styles.status}>Inscription confirmée</Text> : null}
       <View style={styles.cardActions}>
+        {!isPast && item.joined ? <SmallButton label="Démarrer le suivi GPS" disabled={busy} onPress={onStart} /> : null}
         {!isPast && !item.joined && !item.awaitingApproval ? <SmallButton label="Demander" disabled={busy} onPress={onJoin} /> : null}
         {!isPast && (item.joined || item.awaitingApproval) ? <SmallButton label="Annuler" disabled={busy} onPress={onCancel} secondary /> : null}
         {isPast && !item.joined && !item.awaitingApproval ? <SmallButton label="Demander le rattachement" disabled={busy} onPress={onClaim} /> : null}

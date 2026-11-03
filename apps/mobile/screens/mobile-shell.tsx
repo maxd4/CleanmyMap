@@ -13,7 +13,8 @@ import { SignalementScreen } from './signalement'
 import { PlannedCapabilityMenu, PlannedCapabilityScreen, type PlannedCapabilityId } from './planned-capabilities'
 import { getMobileWebBaseUrl } from '../lib/mobile-environment'
 
-type MobileShellProps = { onSignOut: () => void; onSessionExpired: () => void; onStartActivity: () => void | Promise<void> }
+type StartMobileActivity = (actionId?: string, label?: string) => void | Promise<void>
+type MobileShellProps = { onSignOut: () => void; onSessionExpired: () => void; onStartActivity: StartMobileActivity }
 type ActSubview = 'home' | 'join' | 'create' | 'report'
 const webBaseUrl = getMobileWebBaseUrl()
 
@@ -51,8 +52,8 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
   function openPlannedCapability(id: PlannedCapabilityId) {
     setPlannedCapability(id)
   }
-  function startActivity(): void {
-    void Promise.resolve(onStartActivity()).catch(() => undefined)
+  function startActivity(actionId?: string, label?: string): void {
+    void Promise.resolve(onStartActivity(actionId, label)).catch(() => undefined)
   }
 
   useEffect(() => {
@@ -88,13 +89,13 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
   </SafeAreaView>
 }
 
-function ActScreen({ actSubview, onActSubview, onStart, onSessionExpired, onOpenPlanned }: { actSubview: ActSubview; onActSubview: (next: ActSubview) => void; onStart: () => void; onSessionExpired: () => void; onOpenPlanned: (id: PlannedCapabilityId) => void }) {
+function ActScreen({ actSubview, onActSubview, onStart, onSessionExpired, onOpenPlanned }: { actSubview: ActSubview; onActSubview: (next: ActSubview) => void; onStart: StartMobileActivity; onSessionExpired: () => void; onOpenPlanned: (id: PlannedCapabilityId) => void }) {
   return <>
     <View style={actSubview === 'home' ? styles.visibleSubview : styles.hiddenSubview} pointerEvents={actSubview === 'home' ? 'auto' : 'none'}>
       <ScreenFrame eyebrow="AGIR" title="Agir sur le terrain."><Text style={styles.bodyText}>Une seule entrée à la fois : démarrez une mission GPS, rejoignez une action, organisez-la ou signalez une observation.</Text><PrimaryButton testID="mobile-action-start" label="Démarrer une action" onPress={onStart} /><SubviewButton label="Rejoindre une action" description="Trouver, suivre ou annuler une inscription" onPress={() => onActSubview('join')} /><SubviewButton label="Créer une action" description="Préparer, vérifier et publier" onPress={() => onActSubview('create')} /><SubviewButton label="Signaler un déchet" description="Transmettre une observation et ses preuves" onPress={() => onActSubview('report')} /><PlannedCapabilityMenu ids={['post-action-summary', 'action-management']} onOpen={onOpenPlanned} /></ScreenFrame>
     </View>
-    <FlowSubview visible={actSubview === 'join'} title="Rejoindre une action" onBack={() => onActSubview('home')}><ActionJoinScreen onSessionExpired={onSessionExpired} /></FlowSubview>
-    <FlowSubview visible={actSubview === 'create'} title="Créer une action" onBack={() => onActSubview('home')}><ActionCreateScreen onSessionExpired={onSessionExpired} /></FlowSubview>
+    <FlowSubview visible={actSubview === 'join'} title="Rejoindre une action" onBack={() => onActSubview('home')}><ActionJoinScreen onSessionExpired={onSessionExpired} onStartAction={onStart} /></FlowSubview>
+    <FlowSubview visible={actSubview === 'create'} title="Créer une action" onBack={() => onActSubview('home')}><ActionCreateScreen onSessionExpired={onSessionExpired} onStartAction={(actionId, label) => onStart(actionId, label)} /></FlowSubview>
     <FlowSubview visible={actSubview === 'report'} title="Signaler un déchet" onBack={() => onActSubview('home')}><SignalementScreen onSessionExpired={onSessionExpired} /></FlowSubview>
   </>
 }

@@ -122,7 +122,7 @@ describe('mobile companion mission controller runtime', () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     const { renderer, getController } = await renderController()
     await act(async () => { await getController().handleStartMobileMission(); await settle() })
-    expect(state.startMobileMission).toHaveBeenCalledWith('user-a')
+    expect(state.startMobileMission).toHaveBeenCalledWith('user-a', 'Action bénévole mobile', undefined)
     expect(getController().phase).toBe('tracking')
     expect(getController().mission?.id).toBe('mission-1')
 

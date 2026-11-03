@@ -124,7 +124,7 @@ export function useCompanionMissionController() {
     setPhase('idle')
   }, [isLoaded, isSignedIn])
 
-  const handleStartMobileMission = useCallback(async () => {
+  const handleStartMobileMission = useCallback(async (actionId?: string, label = 'Action bénévole mobile') => {
     setErrorMsg(null)
     setCompletionSummary(null)
 
@@ -136,7 +136,7 @@ export function useCompanionMissionController() {
     }
 
     setPhase('requesting')
-    const trackingResult = await startMobileMission(userId)
+    const trackingResult = await startMobileMission(userId, label, actionId)
     if (!trackingResult.ok) {
       setErrorMsg(trackingResult.error)
       setPhase('idle')

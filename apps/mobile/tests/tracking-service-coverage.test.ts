@@ -96,6 +96,8 @@ vi.mock('../lib/storage', () => ({
     if (state.clearStoredError) throw state.clearStoredError
     state.storedMissionId = null
   }),
+  getOrCreateMissionStartRequestId: vi.fn(async (_ownerId: string, scope: string) => `mission-start-${scope}`),
+  clearMissionStartRequestId: vi.fn(async () => undefined),
   enqueuePendingLinkedMissionReconciliation: vi.fn(async () => undefined),
   removePendingLinkedMissionReconciliation: vi.fn(async () => undefined),
   bufferPoint: vi.fn(async () => undefined),
@@ -362,7 +364,7 @@ describe('tracking-service coverage edges', () => {
       ok: true,
       data: mission,
     })
-    expect(createLinked).toHaveBeenCalledWith('Terrain', 'action-1')
+    expect(createLinked).toHaveBeenCalledWith('Terrain', 'action-1', undefined)
 
     await expect(createMission('   ', 'Mission')).resolves.toEqual({
       ok: false,

@@ -5,6 +5,9 @@ import { describe, expect, it } from 'vitest'
 const migration = fileURLToPath(
   new URL('../../web/supabase/migrations/20261003000001_link_missions_to_actions.sql', import.meta.url),
 )
+const idempotencyMigration = fileURLToPath(
+  new URL('../../web/supabase/migrations/20261103000001_mission_creation_idempotency.sql', import.meta.url),
+)
 
 describe('mission to action server contract', () => {
   it('keeps linking server-owned and promotes only a completed valid track', () => {
@@ -44,6 +47,17 @@ describe('mission to action server contract', () => {
     expect(replacementMigration).toMatch(/A second observation is not a silent replacement/i)
     expect(replacementMigration).toMatch(/routeObservedDistanceKm/i)
     expect(replacementMigration).toMatch(/routeNetworkDistanceKm/i)
+  })
+
+  it('keeps mobile mission creation retries unique and server-owned', () => {
+    const sql = readFileSync(idempotencyMigration, 'utf8')
+
+    expect(sql).toMatch(/add column if not exists idempotency_key text/i)
+    expect(sql).toMatch(/create unique index if not exists missions_volunteer_idempotency_key_idx/i)
+    expect(sql).toMatch(/on public\.missions\(volunteer_id, idempotency_key\)/i)
+    expect(sql).toMatch(/where idempotency_key is not null/i)
+    expect(sql).toMatch(/revoke insert \(idempotency_key\) on public\.missions from authenticated/i)
+    expect(sql).toMatch(/revoke update \(idempotency_key\) on public\.missions from authenticated/i)
   })
 
   it('records each eligible completed mission as an attributable contribution', () => {

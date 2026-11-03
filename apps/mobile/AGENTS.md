@@ -52,8 +52,15 @@ actuelle ou manuelle, `Mes observations` et les intents média canoniques. Une
 réponse partielle reste reprenable et ne devient jamais un succès métier local.
 
 `Démarrer une action` vérifie les permissions GPS, crée une mission `pending`
-owner-scoped avec le `sub` Clerk via Supabase, puis réutilise `startTracking`
-pour passer la mission à `tracking` et afficher l'écran mission active. Le
+owner-scoped avec le `sub` Clerk via le Bearer Clerk et la route canonique
+`POST /api/missions`, puis réutilise `startTracking` pour passer la mission à
+`tracking` et afficher l'écran mission active. Une action sélectionnée et
+confirmée transmet son `actionId` à ce même contrôleur ; le même identifiant de
+mission est suivi jusqu'à la finalisation puis la réconciliation
+`/api/missions/:id/reconcile`. La clé `Idempotency-Key` de création est
+owner-scoped et conservée pour les reprises réseau ambiguës, ce qui empêche une
+seconde mission pour la même tentative ; elle est supprimée après démarrage ou
+annulation serveur. Le
 grant INSERT et la policy RLS limitent l'écriture mobile à `volunteer_id` et
 `label` ; le client ne contrôle donc ni l'identité effective ni les métriques
   dérivées. La carte live restaure les points `gps_points` owner-scoped, fusionne

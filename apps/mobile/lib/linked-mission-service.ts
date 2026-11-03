@@ -16,6 +16,7 @@ export type LinkedMissionReconciliationResult =
 export async function createLinkedMission(
   label: string,
   actionId: string,
+  idempotencyKey?: string,
 ): Promise<ServiceResult<Mission>> {
   const baseUrl = getMobileApiBaseUrl();
   if (!baseUrl) {
@@ -33,6 +34,7 @@ export async function createLinkedMission(
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
       body: JSON.stringify({ actionId, label }),
     });

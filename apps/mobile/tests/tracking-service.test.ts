@@ -63,6 +63,8 @@ async function readStoredMissionId() { return state.storedMissionId }
 async function readStoredMissionOwnerId() { return 'user_123' }
 async function setStoredMissionId(...args: [string, string]) { state.storedMissionId = args[1] }
 async function clearStoredMissionId() { state.storedMissionId = null }
+async function getOrCreateMissionStartRequestId(_ownerId: string, scope: string) { return `mission-start-${scope}` }
+async function clearMissionStartRequestId() { return undefined }
 const bufferPointMock = vi.hoisted(createMockFunction)
 const bufferActionMock = vi.hoisted(createMockFunction)
 const flushBufferMock = vi.hoisted(createMockFunction)
@@ -74,6 +76,8 @@ function createStorageMock() { return {
   getStoredMissionOwnerId: readStoredMissionOwnerId,
   setStoredMissionId,
   clearStoredMissionId,
+  getOrCreateMissionStartRequestId,
+  clearMissionStartRequestId,
   bufferPoint: bufferPointMock,
   bufferAction: bufferActionMock,
   flushBuffer: flushBufferMock,

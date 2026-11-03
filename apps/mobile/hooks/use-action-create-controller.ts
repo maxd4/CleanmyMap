@@ -2,7 +2,6 @@ import { useAuth } from '@clerk/expo'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Location from 'expo-location'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createLinkedMission } from '../lib/linked-mission-service'
 import { createLocalIdentifier } from '../lib/local-identifier'
 import {
   createMobileAction,
@@ -272,6 +271,7 @@ function useActionCreateMutations({
   draftReadError,
   ownerId,
   onSessionExpired,
+  onStartAction,
   setActionId,
   setPublished,
 }: {
@@ -283,6 +283,7 @@ function useActionCreateMutations({
   draftReadError: boolean
   ownerId: string | null
   onSessionExpired: () => void
+  onStartAction: (actionId: string, label: string) => void | Promise<void>
   setActionId: React.Dispatch<React.SetStateAction<string | null>>
   setPublished: React.Dispatch<React.SetStateAction<boolean>>
 }) {
@@ -345,11 +346,12 @@ function useActionCreateMutations({
     if (!ownerId || !actionId) { setError('Enregistrez le brouillon avant de relier une activité GPS.'); return }
     const ownerAtStart = ownerId
     setBusy(true); setError(null)
-    const result = await createLinkedMission(draft.title || draft.location || 'Action mobile', actionId)
-    setBusy(false)
-    if (!canMutate(ownerAtStart)) return
-    if (result.ok) setMessage('Suivi GPS lié. Il sera réconcilié par le serveur après finalisation.')
-    else setError(result.error)
+    try {
+      await onStartAction(actionId, draft.title || draft.location || 'Action mobile')
+      if (canMutate(ownerAtStart)) setMessage('Suivi GPS démarré pour cette action. La même mission sera finalisée puis réconciliée.')
+    } catch (value) {
+      if (canMutate(ownerAtStart)) handleError(value)
+    } finally { setBusy(false) }
   }
 
   async function loadDayBriefing() {
@@ -367,9 +369,9 @@ function useActionCreateMutations({
   return { busy, message, error, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
 }
 
-type ActionCreateControllerProps = { onSessionExpired: () => void }
+type ActionCreateControllerProps = { onSessionExpired: () => void; onStartAction: (actionId: string, label: string) => void | Promise<void> }
 
-export function useActionCreateController({ onSessionExpired }: ActionCreateControllerProps) {
+export function useActionCreateController({ onSessionExpired, onStartAction }: ActionCreateControllerProps) {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const ownerId = isLoaded && isSignedIn ? normalizeOwnerId(userId) : null
   const [section, setSection] = useState<Section>('essentiel')
@@ -385,7 +387,7 @@ export function useActionCreateController({ onSessionExpired }: ActionCreateCont
   const visibleSection = ownerHydrated ? section : 'essentiel'
   const visibleClientRequestId = ownerHydrated ? clientRequestId : ''
   const payload = useMemo(() => buildPayload(visibleDraft, visibleClientRequestId), [visibleClientRequestId, visibleDraft])
-  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, setActionId, setPublished })
+  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, onStartAction, setActionId, setPublished })
 
   useEffect(() => {
     if (!visibleActionId || !ownerId) return

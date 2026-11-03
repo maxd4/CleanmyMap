@@ -4,10 +4,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { MobileFormField } from '../lib/mobile-form-field'
 import { SECTIONS, useActionCreateController, type Draft } from '../hooks/use-action-create-controller'
 
-type ActionCreateProps = { onSessionExpired: () => void }
+type ActionCreateProps = { onSessionExpired: () => void; onStartAction: (actionId: string, label: string) => void | Promise<void> }
 
-export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
-  const controller = useActionCreateController({ onSessionExpired })
+export function ActionCreateScreen({ onSessionExpired, onStartAction }: ActionCreateProps) {
+  const controller = useActionCreateController({ onSessionExpired, onStartAction })
   const { section, setSection, draft, update, actionId, published, sectionIndex, getCurrentPosition: getCurrentPositionAsync, draftReadError, draftWriteError, error, message, mutationsBlocked, busy, retryDraftRead, saveDraft: saveDraftAsync, publish: publishAsync, linkGps: linkGpsAsync, loadDayBriefing: loadDayBriefingAsync } = controller
   const getCurrentPosition = () => { void getCurrentPositionAsync().catch(() => undefined) }
   const saveDraft = () => { void saveDraftAsync().catch(() => undefined) }

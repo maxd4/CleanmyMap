@@ -51,12 +51,12 @@ describe('linked mission gamification handoff', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ mission }), { status: 201 }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(createLinkedMission(' Terrain ', 'action-1')).resolves.toEqual({ ok: true, data: mission })
+    await expect(createLinkedMission(' Terrain ', 'action-1', 'mission-start-key-1234')).resolves.toEqual({ ok: true, data: mission })
     expect(fetchMock).toHaveBeenCalledWith(
       'https://cleanmymap.test/api/missions',
       expect.objectContaining({
         method: 'POST',
-        headers: { Authorization: 'Bearer clerk-bearer', 'Content-Type': 'application/json' },
+        headers: { Authorization: 'Bearer clerk-bearer', 'Content-Type': 'application/json', 'Idempotency-Key': 'mission-start-key-1234' },
         body: JSON.stringify({ actionId: 'action-1', label: ' Terrain ' }),
       }),
     )

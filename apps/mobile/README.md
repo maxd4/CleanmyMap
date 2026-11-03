@@ -54,10 +54,10 @@ décision d'identité dans
 | Écrans | [`screens/mobile-shell.tsx`](./screens/mobile-shell.tsx) | Compte, création et participation d'action, signalement, mission active/carte, finalisation, contact et appel d'urgence. |
 | Hooks/controllers | [`hooks/use-companion-mission-controller.ts`](./hooks/use-companion-mission-controller.ts) | `useCompanionMissionController`, `useAccountController`, `useActionCreateController` portent respectivement mission/GPS, projection Compte et brouillon/création d'action. |
 | Services | [`lib/mobile-api-client.ts`](./lib/mobile-api-client.ts) | Client HTTP mobile, Actions, Compte, média de signalement, mission liée, tracking GPS, géométrie, permissions, environnement et contact d'urgence. |
-| Stockage | [`lib/storage.ts`](./lib/storage.ts), cache Clerk | `AsyncStorage` conserve surface, brouillons, mission, buffer, tracé et réconciliations namespacés par owner; `SecureStore` porte le cache de token Clerk et le contact d'urgence natif. |
+| Stockage | [`lib/storage.ts`](./lib/storage.ts), cache Clerk | `AsyncStorage` conserve surface, brouillons, mission, buffer, tracé, réconciliations et la clé de reprise de création de mission namespacés par owner; `SecureStore` porte le cache de token Clerk et le contact d'urgence natif. |
 | GPS | [`lib/tracking-service.ts`](./lib/tracking-service.ts), [`tasks/gps-task.ts`](./tasks/gps-task.ts), [`screens/mission-active-map.tsx`](./screens/mission-active-map.tsx) | `expo-location`, `expo-task-manager` et `react-native-maps` couvrent permissions, suivi foreground, tâche background câblée, restauration/replay et affichage du tracé; les métriques finales restent serveur. |
 | Authentification | [`App.tsx`](./App.tsx), [`lib/supabase.ts`](./lib/supabase.ts) | Clerk est l'identité canonique; `ClerkProvider` + `tokenCache` et Bearer `session_token` alimentent Supabase Third-Party Auth et les frontières HTTP mobiles. |
-| API et données consommées | [`lib/mobile-actions-service.ts`](./lib/mobile-actions-service.ts), [`mobile-account-service.ts`](./lib/mobile-account-service.ts), [`tracking-service.ts`](./lib/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions`; tables Supabase `missions` et `gps_points`. |
+| API et données consommées | [`lib/mobile-actions-service.ts`](./lib/mobile-actions-service.ts), [`mobile-account-service.ts`](./lib/mobile-account-service.ts), [`tracking-service.ts`](./lib/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions` et `/api/missions/:id/reconcile`; les routes mission acceptent le Bearer Clerk mobile via la frontière canonique et la création liée porte une `Idempotency-Key` owner-scoped. Tables Supabase `missions` et `gps_points`. |
 | Tests et contrôles | [`tests/mobile-shell-contract.test.ts`](./tests/mobile-shell-contract.test.ts), [`security/braces-security.test.mjs`](./security/braces-security.test.mjs) | Vitest couvre runtime, contrats, reprise, identité, stockage, GPS et écrans; les tests Node dédiés couvrent les dépendances vendorisées. Commandes: `mobile:typecheck`, `mobile:test`, `mobile:security`, `mobile:lint`, `quality:mobile-coverage`. |
 
 ### Dépendances directes du workspace
@@ -182,8 +182,13 @@ sous-vues existantes.
 
 - `Démarrer une action` vérifie une seule fois les permissions GPS avant de créer
   une mission `pending` owner-scoped avec le `sub` Clerk, puis réutilise
-  `startTracking` pour afficher la mission active. Si le démarrage GPS échoue,
-  la mission créée est annulée et l'écran actif n'est pas affiché. La mission
+  `startTracking` pour afficher la mission active. Depuis une action sélectionnée
+  et confirmée, le même contrôleur transmet son `actionId` : la création passe
+  par `POST /api/missions` avec le Bearer Clerk, puis le GPS et la finalisation
+  conservent ce même identifiant jusqu'à `/api/missions/:id/reconcile`. La clé
+  `Idempotency-Key` est conservée localement par owner pendant une reprise réseau
+  ambiguë, puis supprimée lorsque le suivi démarre ou que l'annulation serveur
+  aboutit. Si le démarrage GPS échoue, la mission créée est annulée et l'écran actif n'est pas affiché. La mission
   active restaure les `gps_points` owner-scoped, fusionne son tracé UX local et
   reprend le suivi foreground au retour au premier plan et relance le replay du
   buffer local dès que la session Clerk est disponible. Ce suivi ne réécrit pas
@@ -191,9 +196,9 @@ sous-vues existantes.
   pendant une finalisation, la mission reste active, le suivi est repris et
   l'interface distingue l'indisponibilité de la synchronisation d'un état à
   jour ; aucune mission terminée n'est annoncée avant l'accusé serveur.
-  `mission_actions` reste hors
-  runtime ; une activité GPS peut seulement être reliée à une action éligible
-  via `createLinkedMission` et sa réconciliation serveur ;
+  `mission_actions` reste hors runtime ; une activité GPS peut seulement être
+  reliée à une action éligible via `createLinkedMission` et sa réconciliation
+  serveur. Le mobile ne calcule ni la distance ni la durée ;
 - `Rejoindre une action` est natif et passe par la frontière HTTP mobile
   `/api/mobile/actions` ;
 - `Organiser une action` réutilise les validations Actions côté serveur. Le

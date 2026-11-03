@@ -52,10 +52,10 @@ function findButton(renderer: TestRenderer.ReactTestRenderer, label: string) {
   return renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((node) => textContent(node).includes(label))
 }
 
-async function renderScreen(onSessionExpired = vi.fn()) {
+async function renderScreen(onSessionExpired = vi.fn(), onStartAction = vi.fn()) {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
-    renderer = TestRenderer.create(<ActionCreateScreen onSessionExpired={onSessionExpired} />)
+    renderer = TestRenderer.create(<ActionCreateScreen onSessionExpired={onSessionExpired} onStartAction={onStartAction} />)
   })
   return renderer
 }
@@ -115,7 +115,7 @@ describe('mobile action creation runtime', () => {
 
     await act(async () => {
       state.auth.userId = 'user-b'
-      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+    renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
       await Promise.resolve()
       await Promise.resolve()
     })
@@ -136,7 +136,7 @@ describe('mobile action creation runtime', () => {
     await act(async () => {
       state.auth.isSignedIn = false
       state.auth.userId = null
-      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+    renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
       await Promise.resolve()
       await Promise.resolve()
     })
@@ -156,7 +156,7 @@ describe('mobile action creation runtime', () => {
 
     await act(async () => {
       state.auth.userId = 'user-b'
-      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} />)
+    renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
       await Promise.resolve()
       resolveA(JSON.stringify({ ownerId: 'user-a', draft: { title: 'Ne pas réutiliser' } }))
       await Promise.resolve()
@@ -421,9 +421,9 @@ describe('mobile action creation runtime', () => {
 
   it('forwards a failed GPS link and a failed briefing lookup without local success', async () => {
     state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-tools', section: 'verification', draft: { title: 'Action outils' } }))
-    state.createLinkedMission.mockResolvedValueOnce({ ok: false, error: 'liaison refusée' })
+    const onStartAction = vi.fn().mockRejectedValueOnce(new Error('liaison refusée'))
     state.loadMobileActionDay.mockRejectedValueOnce(new Error('briefing indisponible'))
-    const renderer = await renderScreen()
+    const renderer = await renderScreen(vi.fn(), onStartAction)
 
     await act(async () => { await callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('liaison refusée'))).not.toHaveLength(0)
@@ -476,7 +476,8 @@ describe('mobile action creation runtime', () => {
 
   it('links GPS only after a server draft exists and keeps the server result explicit', async () => {
     state.getItem.mockResolvedValue(null)
-    const renderer = await renderScreen()
+    const onStartAction = vi.fn()
+    const renderer = await renderScreen(vi.fn(), onStartAction)
     const linkBeforeSave = findButton(renderer, 'Relier une activité GPS')
     expect(linkBeforeSave).toBeUndefined()
 
@@ -489,7 +490,7 @@ describe('mobile action creation runtime', () => {
 
     const link = findButton(renderer, 'Relier une activité GPS')
     await act(async () => { await callTestHandler(link, 'onPress') })
-    expect(state.createLinkedMission).toHaveBeenCalledWith('Action mobile', 'action-1')
-    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS lié'))).not.toHaveLength(0)
+    expect(onStartAction).toHaveBeenCalledWith('action-1', 'Action mobile')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré'))).not.toHaveLength(0)
   })
 })

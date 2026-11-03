@@ -75,7 +75,8 @@ L'application mobile utilise Clerk comme identité canonique, au même titre que
 Les parcours natifs ne donnent pas au client mobile un accès direct aux
 services serveur ni à `service_role`. Il appelle les routes bornées
 `/api/mobile/actions`, `/api/mobile/account` et
-`/api/mobile/account/deletion-request`, qui vérifient le header `Authorization: Bearer` avec
+`/api/mobile/account/deletion-request`, ainsi que les routes de mission
+`/api/missions` et `/api/missions/:missionId/reconcile`, qui vérifient le header `Authorization: Bearer` avec
 `clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
 avant de réutiliser les services métier existants. Cette vérification est
 distincte de `auth()` utilisé par les routes web : l'acceptation d'un JWT Clerk
@@ -123,6 +124,7 @@ la seule inscription.
 | `missions` | `volunteer_id` | `text` | Identifiant propriétaire correspondant au `sub` Clerk |
 | `missions` | `created_by` | `text` | Identifiant Clerk du créateur côté site |
 | `missions` | `action_id` | `uuid` nullable, FK | Relation serveur optionnelle vers l'action ; une mission autonome reste à `NULL` et plusieurs observations peuvent être arbitrées par le serveur |
+| `missions` | `idempotency_key` | `text` nullable, unique par `volunteer_id` | Clé serveur d'une tentative de création liée mobile ; le client ne peut pas l'écrire directement, et un rejeu compatible retourne la mission existante |
 | `missions` | `status`, `started_at`, `ended_at` | états et timestamps | Seules ces colonnes sont directement modifiables par le mobile |
 | `missions` | `distance_m`, `duration_s` | `integer` | Métriques dérivées finalisées par le trigger serveur |
 | `gps_points` | `mission_id`, `client_point_id`, coordonnées et timestamps | schéma GPS | Accès autorisé seulement pour une mission appartenant au `sub` Clerk ; `client_point_id` est stable côté mobile et unique par mission lorsqu'il est présent |
@@ -135,8 +137,13 @@ Les missions `completed` et `cancelled` sont terminales pour la surface mobile :
 elles ne peuvent pas être rouvertes pour ajouter des points. Le mobile
 ne reçoit pas de droit d'écriture sur `distance_m` ou `duration_s`, ni sur
 `action_id`. Lorsqu'une mission doit être liée à une action, l'app appelle la
-route web authentifiée dédiée ; le site vérifie le créateur, l'organisateur ou
-la participation confirmée avant que le serveur n'écrive cette relation.
+route web authentifiée dédiée avec le Bearer Clerk ; la frontière commune
+accepte aussi le parcours web cookie autorisé, puis le site vérifie le créateur,
+l'organisateur ou la participation confirmée avant que le serveur n'écrive cette
+relation. Une clé d'idempotence est bornée par le propriétaire et réutilisée
+après une perte de réponse ; une clé réutilisée pour un autre payload est
+refusée. La mission reste ensuite la même jusqu'à la finalisation et au handoff
+de réconciliation, qui reste idempotent.
 
 ### Finalisation des métriques
 

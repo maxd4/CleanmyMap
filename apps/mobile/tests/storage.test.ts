@@ -11,10 +11,12 @@ vi.mock('../lib/supabase', createStorageSupabaseMock)
 import {
   bufferPoint,
   clearStoredMissionId,
+  clearMissionStartRequestId,
   enqueuePendingLinkedMissionReconciliation,
   flushBuffer,
   getPendingGpsPointCount,
   getPendingLinkedMissionReconciliationIds,
+  getOrCreateMissionStartRequestId,
   getStoredActiveMissionContext,
   getStoredMissionId,
   getStoredMissionOwnerId,
@@ -121,6 +123,22 @@ it('keeps mission and reconciliation state scoped to the Clerk owner', async () 
 
     await clearStoredMissionId('user_a')
     await expect(getStoredActiveMissionContext()).resolves.toBeNull()
+})
+
+it('keeps one pending mission-start request per owner and scope across retries', async () => {
+    const first = await getOrCreateMissionStartRequestId('user_a', 'action:action-a')
+    const retry = await getOrCreateMissionStartRequestId('user_a', 'action:action-a')
+    const otherOwner = await getOrCreateMissionStartRequestId('user_b', 'action:action-a')
+    const otherScope = await getOrCreateMissionStartRequestId('user_a', 'action:action-b')
+
+    expect(first).toBeTruthy()
+    expect(retry).toBe(first)
+    expect(otherOwner).toBeTruthy()
+    expect(otherScope).toBeNull()
+
+    await clearMissionStartRequestId('user_a', first ?? undefined)
+    await expect(getOrCreateMissionStartRequestId('user_a', 'action:action-b')).resolves.toBeTruthy()
+    await expect(getOrCreateMissionStartRequestId('user_a', 'action:action-a')).resolves.toBeNull()
 })
 
 it('assigns distinct local record keys to buffered points across appends', async () => {

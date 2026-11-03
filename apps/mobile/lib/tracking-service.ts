@@ -12,6 +12,8 @@ import {
   getStoredMissionOwnerId,
   setStoredMissionId,
   clearStoredMissionId,
+  getOrCreateMissionStartRequestId,
+  clearMissionStartRequestId,
   enqueuePendingLinkedMissionReconciliation,
   removePendingLinkedMissionReconciliation,
   bufferPoint,
@@ -113,9 +115,11 @@ export async function requestTrackingPermissions(): Promise<ServiceResult> {
   return requestPermissions();
 }
 
-async function cancelMissionAfterStartFailure(missionId: string): Promise<void> {
+async function cancelMissionAfterStartFailure(missionId: string, ownerId: string): Promise<ServiceResult<Mission> | null> {
+  if (await getClerkUserId() !== ownerId.trim()) return null;
   const client = await getAuthenticatedSupabaseClient();
-  if (!client) return;
+  if (!client) return null;
+  if (await getClerkUserId() !== ownerId.trim()) return null;
 
   const result = await executeMissionQuery(
     async () => client
@@ -133,6 +137,7 @@ async function cancelMissionAfterStartFailure(missionId: string): Promise<void> 
   if (!result.ok) {
     console.warn('[TrackingService] Nettoyage de mission échoué :', result.error);
   }
+  return result;
 }
 
 async function stopStartedTracking(): Promise<void> {
@@ -226,7 +231,9 @@ export async function startTracking(missionId: string, ownerId: string): Promise
   return missionResult;
 }
 
-export async function startMobileMission(
+const mobileMissionStartInFlight = new Map<string, Promise<ServiceResult<Mission>>>();
+
+async function startMobileMissionOnce(
   volunteerId: string,
   label = 'Action bénévole mobile',
   actionId?: string | null,
@@ -234,20 +241,49 @@ export async function startMobileMission(
   const permissionResult = await requestTrackingPermissions();
   if (!permissionResult.ok) return permissionResult;
 
-  const missionResult = await createMission(volunteerId, label, actionId);
+  const normalizedActionId = actionId?.trim() || null;
+  const requestScope = normalizedActionId ? `action:${normalizedActionId}` : null;
+  const requestId = requestScope
+    ? await getOrCreateMissionStartRequestId(volunteerId, requestScope)
+    : null;
+  if (requestScope && !requestId) {
+    return { ok: false, error: 'Une création de mission est déjà en attente pour ce compte.' };
+  }
+
+  const missionResult = await createMission(volunteerId, label, normalizedActionId, requestId ?? undefined);
   if (!missionResult.ok) return missionResult;
 
   const trackingResult = await startTracking(missionResult.data.id, volunteerId);
-  if (trackingResult.ok) return trackingResult;
+  if (trackingResult.ok) {
+    if (requestId) await clearMissionStartRequestId(volunteerId, requestId);
+    return trackingResult;
+  }
 
-  await cancelMissionAfterStartFailure(missionResult.data.id);
+  const cancellation = await cancelMissionAfterStartFailure(missionResult.data.id, volunteerId);
+  if (requestId && cancellation?.ok) await clearMissionStartRequestId(volunteerId, requestId);
   return trackingResult;
+}
+
+export function startMobileMission(
+  volunteerId: string,
+  label = 'Action bénévole mobile',
+  actionId?: string | null,
+): Promise<ServiceResult<Mission>> {
+  const scope = `${volunteerId.trim()}:${actionId?.trim() || 'unlinked'}`;
+  const existing = mobileMissionStartInFlight.get(scope);
+  if (existing) return existing;
+  const promise = startMobileMissionOnce(volunteerId, label, actionId).finally(() => {
+    if (mobileMissionStartInFlight.get(scope) === promise) mobileMissionStartInFlight.delete(scope);
+  });
+  mobileMissionStartInFlight.set(scope, promise);
+  return promise;
 }
 
 export async function createMission(
   volunteerId: string,
   label = 'Action bénévole mobile',
   actionId?: string | null,
+  idempotencyKey?: string,
 ): Promise<ServiceResult<Mission>> {
   const normalizedVolunteerId = volunteerId.trim();
   const normalizedLabel = label.trim();
@@ -264,7 +300,7 @@ export async function createMission(
   }
 
   if (actionId?.trim()) {
-    return createLinkedMission(normalizedLabel, actionId.trim());
+    return createLinkedMission(normalizedLabel, actionId.trim(), idempotencyKey);
   }
 
   const client = await getAuthenticatedSupabaseClient();

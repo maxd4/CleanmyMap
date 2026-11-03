@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedAccess } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { reconcileUserGamification } from "@/lib/gamification/reconciliation/gamification-reconciliation";
 
@@ -19,10 +19,10 @@ export const dynamic = "force-dynamic";
  * GRANTS: no mission or GPS data is exposed; only the authenticated handoff result is returned.
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ missionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { missionId } = await context.params;

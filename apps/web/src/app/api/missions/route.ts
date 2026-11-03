@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuthenticatedAccess } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { loadActionById } from "@/lib/actions/store";
 import { isActionGeometryContributorEligible } from "@/lib/actions/geometry/action-geometry-contributor-eligibility";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -17,13 +17,27 @@ const createMissionSchema = z
   })
   .strict();
 
+const idempotencyKeyPattern = /^[A-Za-z0-9:_-]{16,160}$/;
+
+function readIdempotencyKey(request: Request): string | null | Response {
+  const value = request.headers.get("Idempotency-Key")?.trim() ?? "";
+  if (!value) return null;
+  if (!idempotencyKeyPattern.test(value)) {
+    return NextResponse.json(
+      { error: "La clé d'idempotence doit contenir entre 16 et 160 caractères alphanumériques." },
+      { status: 422 },
+    );
+  }
+  return value;
+}
+
 /**
  * Creates a mission already linked to an Action. The client supplies only the
  * requested Action id; the server checks the canonical observed-geometry
  * eligibility owner and writes action_id through the privileged boundary.
  */
 export async function POST(request: Request) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
@@ -56,16 +70,49 @@ export async function POST(request: Request) {
     );
   }
 
+  const idempotencyKey = readIdempotencyKey(request);
+  if (idempotencyKey instanceof Response) return idempotencyKey;
+
+  if (idempotencyKey) {
+    const existingResult = await supabase
+      .from("missions")
+      .select("id, volunteer_id, label, status, started_at, ended_at, distance_m, duration_s, created_at, action_id")
+      .eq("volunteer_id", access.userId)
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+    if (existingResult.error) {
+      return NextResponse.json({ error: "Impossible de vérifier la mission existante." }, { status: 500 });
+    }
+    if (existingResult.data) {
+      if (existingResult.data.action_id !== action.id || existingResult.data.label !== parsed.data.label) {
+        return NextResponse.json({ error: "Cette clé d'idempotence est déjà liée à une autre mission." }, { status: 409 });
+      }
+      return NextResponse.json({ mission: existingResult.data }, { status: 200 });
+    }
+  }
+
   const result = await supabase
     .from("missions")
     .insert({
       volunteer_id: access.userId,
       label: parsed.data.label,
       action_id: action.id,
+      ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
     })
     .select("id, volunteer_id, label, status, started_at, ended_at, distance_m, duration_s, created_at, action_id")
     .single();
 
+  if (result.error && idempotencyKey && result.error.code === "23505") {
+    const retryResult = await supabase
+      .from("missions")
+      .select("id, volunteer_id, label, status, started_at, ended_at, distance_m, duration_s, created_at, action_id")
+      .eq("volunteer_id", access.userId)
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+    if (!retryResult.error && retryResult.data?.action_id === action.id && retryResult.data.label === parsed.data.label) {
+      return NextResponse.json({ mission: retryResult.data }, { status: 200 });
+    }
+  }
   if (result.error) {
     console.error("Linked mission creation failed", result.error);
     return NextResponse.json(

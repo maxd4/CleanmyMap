@@ -14,6 +14,7 @@ import type { EmergencyContact } from '../types/emergency-contact';
 
 const MISSION_KEY_PREFIX = 'cmm_current_mission_id';
 const ACTIVE_MISSION_OWNER_KEY = 'cmm_active_mission_owner';
+const MISSION_START_REQUEST_KEY_PREFIX = 'cmm_pending_mission_start_request';
 const PENDING_LINKED_MISSION_RECONCILIATIONS_KEY_PREFIX = 'cmm_pending_linked_mission_reconciliations';
 const MAX_PENDING_LINKED_MISSION_RECONCILIATIONS = 50;
 const GPS_BUFFER_INDEX_KEY_PREFIX = '@cmm_gps_buffer_index';
@@ -170,6 +171,55 @@ export async function clearStoredMissionId(ownerId: string): Promise<void> {
   await removeStoredValue(missionKey);
   const activeOwner = await readStoredValue(ACTIVE_MISSION_OWNER_KEY);
   if (activeOwner === normalizedOwnerId) await removeStoredValue(ACTIVE_MISSION_OWNER_KEY);
+}
+
+type StoredMissionStartRequest = { scope: string; requestId: string };
+
+/**
+ * Keeps an ambiguous mobile mission POST retry on the same server idempotency
+ * key. The record is owner-scoped and is removed only after tracking starts or
+ * the server-side cancellation path has completed.
+ */
+export async function getOrCreateMissionStartRequestId(ownerId: string, scope: string): Promise<string | null> {
+  const key = ownerScopedKey(MISSION_START_REQUEST_KEY_PREFIX, ownerId);
+  const normalizedScope = scope.trim();
+  if (!key || !normalizedScope) return null;
+  return withOwnerMutation(ownerId, async () => {
+    const raw = await readStoredValue(key);
+    if (raw) {
+      try {
+        const existing = JSON.parse(raw) as Partial<StoredMissionStartRequest>;
+        if (existing.scope === normalizedScope && typeof existing.requestId === 'string' && existing.requestId) {
+          return existing.requestId;
+        }
+        if (existing.requestId) return null;
+      } catch {
+        await removeStoredValue(key);
+      }
+    }
+    const requestId = createLocalIdentifier('mission-start');
+    await writeStoredValue(key, JSON.stringify({ scope: normalizedScope, requestId } satisfies StoredMissionStartRequest));
+    return requestId;
+  });
+}
+
+export async function clearMissionStartRequestId(ownerId: string, requestId?: string): Promise<void> {
+  const key = ownerScopedKey(MISSION_START_REQUEST_KEY_PREFIX, ownerId);
+  if (!key) return;
+  await withOwnerMutation(ownerId, async () => {
+    if (!requestId) {
+      await removeStoredValue(key);
+      return;
+    }
+    const raw = await readStoredValue(key);
+    if (!raw) return;
+    try {
+      const existing = JSON.parse(raw) as Partial<StoredMissionStartRequest>;
+      if (existing.requestId === requestId) await removeStoredValue(key);
+    } catch {
+      await removeStoredValue(key);
+    }
+  });
 }
 
 export async function getPendingLinkedMissionReconciliationIds(ownerId: string): Promise<string[]> {
