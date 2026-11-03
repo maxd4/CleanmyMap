@@ -139,11 +139,17 @@ async function clearSecureBufferRecords(keys: string[]): Promise<void> {
 
 // Mission ID persistant
 
-export async function setStoredMissionId(ownerId: string, id: string): Promise<void> {
+export async function setStoredMissionId(
+  ownerId: string,
+  id: string,
+  isCurrent?: () => Promise<boolean>,
+): Promise<void> {
   const missionKey = ownerScopedKey(MISSION_KEY_PREFIX, ownerId);
   const normalizedOwnerId = normalizeOwnerId(ownerId);
   if (!missionKey || !normalizedOwnerId) throw new Error('Owner Clerk invalide pour la mission locale.');
+  if (isCurrent && !(await isCurrent())) throw new Error('Identité Clerk obsolète pour la mission locale.');
   await writeStoredValue(missionKey, id);
+  if (isCurrent && !(await isCurrent())) throw new Error('Identité Clerk obsolète pour la mission locale.');
   await writeStoredValue(ACTIVE_MISSION_OWNER_KEY, normalizedOwnerId);
 }
 

@@ -24,7 +24,7 @@ function CompanionApp() {
   const {
     isLoaded, isSignedIn, userId, phase, mission, errorMsg, duration,
     pendingGpsPointCount, finalizationStage, completionSummary,
-    handleStartMobileMission, handleSessionExpired, handleStop, handleReturnHome, signOut,
+    handleStartMobileMission, handleSessionExpired, handleStop, handleReturnHome, handleRetryMission, signOut,
   } = useCompanionMissionController()
 
   if (!isLoaded) {
@@ -59,6 +59,10 @@ function CompanionApp() {
     )
   }
 
+  if (phase === 'error' && errorMsg) {
+    return <MissionInterruptedScreen error={errorMsg} onRetry={handleRetryMission} />
+  }
+
   if (phase === 'tracking' && mission) {
     return <MissionActiveScreen
       mission={mission}
@@ -76,6 +80,22 @@ function CompanionApp() {
       onSessionExpired={() => void handleSessionExpired().catch(() => undefined)}
       onStartActivity={handleStartMobileMission}
     />
+  )
+}
+
+function MissionInterruptedScreen({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <SafeAreaView edges={['top', 'bottom']} style={styles.darkCenter}>
+      <StatusBar style="light" />
+      <Text style={styles.hudTitle}>SUIVI GPS INTERROMPU</Text>
+      <Text style={styles.authDescription}>La mission est conservée, mais la collecte GPS native n’est pas confirmée.</Text>
+      <View style={styles.errorBanner}>
+        <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text>
+      </View>
+      <TouchableOpacity accessibilityLabel="Reprendre le suivi GPS" accessibilityRole="button" style={styles.hudBtnPrimary} onPress={onRetry}>
+        <Text style={styles.hudBtnText}>REPRENDRE LE SUIVI</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   )
 }
 

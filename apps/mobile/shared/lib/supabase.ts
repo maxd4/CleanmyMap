@@ -70,6 +70,17 @@ export async function getClerkUserId(): Promise<string | null> {
   }
 }
 
+/** Observe les changements d'identité sans exposer Clerk aux services métier. */
+export function subscribeToClerkIdentityChanges(listener: (ownerId: string | null) => void): () => void {
+  try {
+    const clerk = getConfiguredClerkInstance();
+    if (!clerk) return () => undefined;
+    return clerk.addListener(({ user }) => listener(user?.id ?? null), { skipInitialEmit: true });
+  } catch {
+    return () => undefined;
+  }
+}
+
 async function requireClerkSupabaseAccessToken(): Promise<string> {
   const token = await getClerkSupabaseAccessToken();
   if (!token) {

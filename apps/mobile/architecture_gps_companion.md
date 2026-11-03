@@ -103,6 +103,17 @@ Avant les permissions système, un dialogue natif décrit la collecte, le suivi
 en arrière-plan, la transmission avec Clerk et la reprise locale ; le refus
 bloque le démarrage sans effacer les données récupérables.
 
+Lors de la restauration d'une mission `tracking`, l'identifiant local et les
+points récupérables sont conservés, mais le statut serveur ne suffit pas à
+afficher la mission comme active : le mobile vérifie l'enregistrement réel de
+`GPS_TRACKING` auprès de `TaskManager`. Une tâche absente est réactivée après
+vérification de l'owner Clerk, sans recréer la mission ni modifier
+`started_at`. Une tâche déjà active est réutilisée sans double enregistrement
+seulement si son contexte local correspond à la mission et à l'owner courant.
+Une vérification indisponible, un refus de reprise ou un changement d'identité
+pendant l'opération expose l'état interrompu avec une reprise explicite ; une
+opération obsolète ne peut pas arrêter la tâche d'une opération plus récente.
+
 La suppression de compte reste une demande RGPD, pas une suppression
 automatique. `Compte` appelle `/api/mobile/account/deletion-request`, qui
 authentifie le Bearer Clerk, applique un quota, réutilise `contact_requests`,

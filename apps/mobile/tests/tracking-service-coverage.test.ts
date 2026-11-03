@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   CLERK_SESSION_REQUIRED_ERROR,
   EXPO_GO_TRACKING_WARNING,
+  GPS_TRACKING_INTERRUPTED_ERROR,
   createMission,
+  ensureNativeTracking,
   getBackgroundTrackingWarning,
   getMission,
   getMissionTrack,
@@ -24,6 +26,7 @@ const state = vi.hoisted(() => ({
   currentUserId: 'user_123' as string | null,
   storedOwnerId: 'user_123' as string | null,
   storedMissionId: 'mission-1' as string | null,
+  activeMissionOwnerId: 'user_123' as string | null,
   rationaleAccepted: true,
   rationaleError: null as unknown,
   foregroundPermission: 'granted',
@@ -34,11 +37,17 @@ const state = vi.hoisted(() => ({
   stopError: null as unknown,
   taskRegistered: false,
   taskError: null as unknown,
+  taskGate: null as Promise<void> | null,
+  taskGateUsesRemaining: 0,
   setStoredError: null as unknown,
+  setStoredGate: null as Promise<void> | null,
+  setStoredGateUsesRemaining: 0,
+  setStoredWritesBeforeGate: false,
   clearStoredError: null as unknown,
   flushResult: { ok: true, data: undefined } as { ok: true; data: undefined } | { ok: false; error: string },
   linkedResult: { ok: true, data: undefined } as LinkedResult,
   reconcileResult: { ok: true, data: undefined } as LinkedResult,
+  clerkIdentityListeners: [] as Array<(payload: { user?: { id: string } | null }) => void>,
 }))
 
 const rationale = vi.hoisted(() => vi.fn())
@@ -67,6 +76,10 @@ vi.mock('expo-location', () => ({
 
 vi.mock('expo-task-manager', () => ({
   isTaskRegisteredAsync: vi.fn(async () => {
+    if (state.taskGate && state.taskGateUsesRemaining > 0) {
+      state.taskGateUsesRemaining -= 1
+      await state.taskGate
+    }
     if (state.taskError) throw state.taskError
     return state.taskRegistered
   }),
@@ -75,6 +88,10 @@ vi.mock('expo-task-manager', () => ({
 vi.mock('../shared/lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.clientPromise ?? state.client),
   getClerkUserId: vi.fn(async () => state.currentUserId),
+  subscribeToClerkIdentityChanges: vi.fn((listener: (ownerId: string | null) => void) => {
+    state.clerkIdentityListeners.push(({ user }) => listener(user?.id ?? null))
+    return () => undefined
+  }),
 }))
 
 vi.mock('../features/tracking/gps-permission-rationale', () => ({
@@ -88,9 +105,19 @@ vi.mock('../features/tracking/linked-mission-service', () => ({
 
 vi.mock('../shared/lib/storage', () => ({
   getStoredMissionId: vi.fn(async () => state.storedMissionId),
+  getStoredActiveMissionContext: vi.fn(async () => state.activeMissionOwnerId && state.storedMissionId
+    ? { ownerId: state.activeMissionOwnerId, missionId: state.storedMissionId }
+    : null),
   getStoredMissionOwnerId: vi.fn(async () => state.storedOwnerId),
-  setStoredMissionId: vi.fn(async () => {
+  setStoredMissionId: vi.fn(async (_ownerId: string, missionId: string, isCurrent?: () => Promise<boolean>) => {
+    if (state.setStoredWritesBeforeGate) state.storedMissionId = missionId
+    if (state.setStoredGate && state.setStoredGateUsesRemaining > 0) {
+      state.setStoredGateUsesRemaining -= 1
+      await state.setStoredGate
+    }
     if (state.setStoredError) throw state.setStoredError
+    if (isCurrent && !(await isCurrent())) throw new Error('Identité Clerk obsolète pour la mission locale.')
+    state.storedMissionId = missionId
   }),
   clearStoredMissionId: vi.fn(async () => {
     if (state.clearStoredError) throw state.clearStoredError
@@ -222,6 +249,12 @@ function createClient(options: ClientOptions = {}) {
   }
 }
 
+function deferred() {
+  let resolve!: () => void
+  const promise = new Promise<void>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
+}
+
 function resetState() {
   state.constants.appOwnership = 'standalone'
   state.constants.executionEnvironment = 'standalone'
@@ -230,6 +263,7 @@ function resetState() {
   state.currentUserId = 'user_123'
   state.storedOwnerId = 'user_123'
   state.storedMissionId = 'mission-1'
+  state.activeMissionOwnerId = 'user_123'
   state.rationaleAccepted = true
   state.rationaleError = null
   state.foregroundPermission = 'granted'
@@ -240,11 +274,17 @@ function resetState() {
   state.stopError = null
   state.taskRegistered = false
   state.taskError = null
+  state.taskGate = null
+  state.taskGateUsesRemaining = 0
   state.setStoredError = null
+  state.setStoredGate = null
+  state.setStoredGateUsesRemaining = 0
+  state.setStoredWritesBeforeGate = false
   state.clearStoredError = null
   state.flushResult = { ok: true, data: undefined }
   state.linkedResult = { ok: true, data: mission }
   state.reconcileResult = { ok: true, data: undefined }
+  state.clerkIdentityListeners = []
   rationale.mockReset().mockImplementation(async () => {
     if (state.rationaleError) throw state.rationaleError
     return state.rationaleAccepted
@@ -427,8 +467,122 @@ describe('tracking-service coverage edges', () => {
     })
   })
 
+  it('keeps the owner-scoped mission after identity changes during native startup cleanup', async () => {
+    state.client = createClient()
+    let releaseStorage!: () => void
+    state.setStoredGate = new Promise((resolve) => { releaseStorage = resolve })
+    state.setStoredGateUsesRemaining = 1
+    const pendingStart = startTracking('mission-1', 'user_123')
+    await vi.waitFor(() => expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce())
+
+    state.currentUserId = 'other'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'other' } })
+    state.currentUserId = 'user_123'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_123' } })
+    releaseStorage()
+
+    await expect(pendingStart).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(state.storedMissionId).toBe('mission-1')
+    expect(Location.stopLocationUpdatesAsync).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the persisted mission when Clerk changes after storage has written it', async () => {
+    state.client = createClient()
+    const storageGate = deferred()
+    state.setStoredGate = storageGate.promise
+    state.setStoredGateUsesRemaining = 1
+    state.setStoredWritesBeforeGate = true
+
+    const pendingStart = startTracking('mission-2', 'user_123', { ...mission, id: 'mission-2' })
+    await vi.waitFor(() => expect(state.storedMissionId).toBe('mission-2'))
+
+    state.currentUserId = 'user_other'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_other' } })
+    storageGate.resolve()
+
+    await expect(pendingStart).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(state.storedMissionId).toBe('mission-2')
+    expect(Location.stopLocationUpdatesAsync).toHaveBeenCalledOnce()
+  })
+
+  it('restores native tracking without double-registering an already active task', async () => {
+    state.client = createClient()
+    state.taskRegistered = true
+    state.activeMissionOwnerId = 'user_123'
+
+    await expect(ensureNativeTracking('mission-1', 'user_123', mission)).resolves.toEqual({ ok: true, data: mission })
+    expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+    expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled()
+  })
+
+  it('invalidates a native restoration when Clerk changes while the task state is pending', async () => {
+    state.client = createClient()
+    const taskGate = deferred()
+    state.taskGate = taskGate.promise
+    state.taskGateUsesRemaining = 1
+
+    const pendingRestore = ensureNativeTracking('mission-1', 'user_123', mission)
+    await Promise.resolve()
+    state.currentUserId = 'user_other'
+    for (const listener of state.clerkIdentityListeners) listener({ user: { id: 'user_other' } })
+    taskGate.resolve()
+
+    await expect(pendingRestore).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+  })
+
+  it('restarts a missing native task and refuses a task owned by another stored session', async () => {
+    state.client = createClient()
+    state.taskRegistered = false
+    state.activeMissionOwnerId = 'user_123'
+
+    await expect(ensureNativeTracking('mission-1', 'user_123', mission)).resolves.toEqual({ ok: true, data: mission })
+    expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce()
+
+    state.taskRegistered = true
+    state.activeMissionOwnerId = 'other'
+    await expect(ensureNativeTracking('mission-1', 'user_123', mission)).resolves.toEqual({
+      ok: false,
+      error: GPS_TRACKING_INTERRUPTED_ERROR,
+    })
+  })
+
+  it('reports an unavailable native task check without presenting the mission as active', async () => {
+    state.client = createClient()
+    state.taskError = new Error('TaskManager unavailable')
+
+    await expect(ensureNativeTracking('mission-1', 'user_123', mission)).resolves.toEqual({
+      ok: false,
+      error: 'Impossible de vérifier le suivi GPS natif : TaskManager unavailable',
+    })
+  })
+
+  it('does not stop a newer session task when an older startup finishes late', async () => {
+    state.client = createClient()
+    let releaseOldStorage!: () => void
+    state.setStoredGate = new Promise((resolve) => { releaseOldStorage = resolve })
+    state.setStoredGateUsesRemaining = 1
+
+    const oldStart = startTracking('mission-1', 'user_123')
+    await vi.waitFor(() => expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce())
+
+    state.currentUserId = 'user_456'
+    const newStart = startTracking('mission-2', 'user_456', { ...mission, id: 'mission-2', volunteer_id: 'user_456' })
+    await vi.waitFor(() => expect(Location.startLocationUpdatesAsync).toHaveBeenCalledTimes(2))
+    await expect(newStart).resolves.toEqual({ ok: true, data: { ...mission, id: 'mission-2', volunteer_id: 'user_456' } })
+
+    state.currentUserId = 'user_123'
+    releaseOldStorage()
+    await expect(oldStart).resolves.toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled()
+    expect(state.storedMissionId).toBe('mission-2')
+  })
+
   it('stops safely, keeps the mission on flush or finalization errors, and completes owner-scoped missions', async () => {
     state.storedOwnerId = null
+    state.activeMissionOwnerId = 'user_123'
+    state.setStoredGate = null
+    state.setStoredGateUsesRemaining = 0
     await expect(stopTracking('mission-1')).resolves.toEqual({
       ok: false,
       error: `${CLERK_SESSION_REQUIRED_ERROR} Aucun propriétaire local vérifiable.`,

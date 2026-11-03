@@ -5,10 +5,15 @@
 import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { getAuthenticatedSupabaseClient, getClerkUserId } from '../../shared/lib/supabase';
+import {
+  getAuthenticatedSupabaseClient,
+  getClerkUserId,
+  subscribeToClerkIdentityChanges,
+} from '../../shared/lib/supabase';
 import { createLinkedMission, reconcileLinkedMission } from './linked-mission-service';
 import {
   getStoredMissionId,
+  getStoredActiveMissionContext,
   getStoredMissionOwnerId,
   setStoredMissionId,
   clearStoredMissionId,
@@ -36,6 +41,20 @@ export const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";
 const TERMINAL_MISSION_RETRY_ERROR =
   'La mission précédente est déjà terminée. Une nouvelle tentative explicite est nécessaire.';
+export const GPS_TRACKING_INTERRUPTED_ERROR =
+  'Le suivi GPS est interrompu. Reprenez explicitement cette mission lorsque le suivi natif est disponible.';
+
+type TrackingOperationToken = {
+  ownerId: string;
+  operationId: number;
+  identityChanged: boolean;
+  removeIdentityListener: (() => void) | null;
+};
+
+let nextTrackingOperationId = 0;
+let nativeTrackingOperation: TrackingOperationToken | null = null;
+let latestTrackingOperation: TrackingOperationToken | null = null;
+let nativeStartQueue: Promise<void> = Promise.resolve();
 
 export { createLinkedMission } from './linked-mission-service';
 
@@ -142,7 +161,59 @@ async function cancelMissionAfterStartFailure(missionId: string, ownerId: string
   return result;
 }
 
-async function stopStartedTracking(): Promise<void> {
+async function observeTrackingOwner(): Promise<string | null> {
+  return getClerkUserId();
+}
+
+async function beginTrackingOperation(ownerId: string): Promise<TrackingOperationToken | null> {
+  if ((await observeTrackingOwner()) !== ownerId) return null;
+  if (latestTrackingOperation) latestTrackingOperation.identityChanged = true;
+  nextTrackingOperationId += 1;
+  const operation: TrackingOperationToken = {
+    ownerId,
+    operationId: nextTrackingOperationId,
+    identityChanged: false,
+    removeIdentityListener: null,
+  };
+  latestTrackingOperation = operation;
+
+  try {
+    if (typeof subscribeToClerkIdentityChanges === 'function') {
+      operation.removeIdentityListener = subscribeToClerkIdentityChanges((nextOwnerId) => {
+        if (nextOwnerId !== operation.ownerId) operation.identityChanged = true;
+      });
+    }
+  } catch {
+    // Headless/background runtimes may not expose a configured Clerk instance.
+  }
+
+  if ((await observeTrackingOwner()) !== ownerId) {
+    operation.identityChanged = true;
+    operation.removeIdentityListener?.();
+    return null;
+  }
+
+  return operation;
+}
+
+async function isCurrentTrackingOperation(operation: TrackingOperationToken): Promise<boolean> {
+  if (operation.identityChanged) return false;
+  const currentOwnerId = await observeTrackingOwner();
+  if (currentOwnerId !== operation.ownerId) {
+    operation.identityChanged = true;
+    return false;
+  }
+  return true;
+}
+
+function finishTrackingOperation(operation: TrackingOperationToken): void {
+  operation.removeIdentityListener?.();
+  operation.removeIdentityListener = null;
+  if (latestTrackingOperation?.operationId === operation.operationId) latestTrackingOperation = null;
+}
+
+async function stopStartedTracking(operation: TrackingOperationToken): Promise<void> {
+  if (nativeTrackingOperation?.operationId !== operation.operationId) return;
   try {
     await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
   } catch (error) {
@@ -150,7 +221,67 @@ async function stopStartedTracking(): Promise<void> {
       '[TrackingService] Arrêt du GPS après échec impossible :',
       error instanceof Error ? error.message : error,
     );
+  } finally {
+    if (nativeTrackingOperation?.operationId === operation.operationId) nativeTrackingOperation = null;
   }
+}
+
+async function withNativeStartLock<T>(work: () => Promise<T>): Promise<T> {
+  const previous = nativeStartQueue;
+  let release!: () => void;
+  nativeStartQueue = new Promise<void>((resolve) => { release = resolve; });
+  await previous;
+  try {
+    return await work();
+  } finally {
+    release();
+  }
+}
+
+async function startOrReuseNativeTracking(
+  operation: TrackingOperationToken,
+  missionId: string,
+  ownerId: string,
+): Promise<ServiceResult<boolean>> {
+  return withNativeStartLock(async () => {
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+
+    let taskRegistered = false;
+    try {
+      taskRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
+    } catch (error) {
+      return {
+        ok: false,
+        error: `Impossible de vérifier le suivi GPS natif : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+      };
+    }
+
+    if (taskRegistered) {
+      const activeContext = await getStoredActiveMissionContext();
+      if (activeContext?.ownerId !== ownerId || activeContext.missionId !== missionId) {
+        return { ok: false, error: GPS_TRACKING_INTERRUPTED_ERROR };
+      }
+      nativeTrackingOperation = operation;
+      return { ok: true, data: false };
+    }
+
+    const trackingWarning = getBackgroundTrackingWarning();
+    if (trackingWarning) return { ok: false, error: trackingWarning };
+
+    try {
+      nativeTrackingOperation = operation;
+      await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
+      return { ok: true, data: true };
+    } catch (error) {
+      if (nativeTrackingOperation?.operationId === operation.operationId) nativeTrackingOperation = null;
+      return {
+        ok: false,
+        error: `Impossible de démarrer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+      };
+    }
+  });
 }
 
 async function executeMissionQuery(
@@ -183,16 +314,18 @@ export async function startTracking(
   knownMission?: Mission,
 ): Promise<ServiceResult<Mission>> {
   const expectedOwnerId = ownerId.trim();
-  if (await getClerkUserId() !== expectedOwnerId) {
+  const operation = await beginTrackingOperation(expectedOwnerId);
+  if (!operation) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
-  const client = await getAuthenticatedSupabaseClient();
-  if (!client) {
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
-  }
-  if (await getClerkUserId() !== expectedOwnerId) {
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
-  }
+  try {
+    const client = await getAuthenticatedSupabaseClient();
+    if (!client) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
 
   const missionResult = knownMission
     ? { ok: true as const, data: knownMission }
@@ -210,7 +343,7 @@ export async function startTracking(
   if (mission.volunteer_id && mission.volunteer_id !== expectedOwnerId) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
-  if (await getClerkUserId() !== expectedOwnerId) {
+  if (!await isCurrentTrackingOperation(operation)) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
   if (mission.status === 'completed' || mission.status === 'cancelled') {
@@ -220,21 +353,10 @@ export async function startTracking(
     return { ok: false, error: 'Statut de mission incompatible avec le démarrage GPS.' };
   }
 
-  const trackingWarning = getBackgroundTrackingWarning();
-  if (trackingWarning) {
-    return { ok: false, error: trackingWarning };
-  }
-
-  try {
-    await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
-  } catch (error) {
-    return {
-      ok: false,
-      error: `Impossible de démarrer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
-    };
-  }
-  if (await getClerkUserId() !== expectedOwnerId) {
-    await stopStartedTracking();
+  const nativeStartResult = await startOrReuseNativeTracking(operation, missionId, expectedOwnerId);
+  if (!nativeStartResult.ok) return nativeStartResult;
+  if (!await isCurrentTrackingOperation(operation)) {
+    await stopStartedTracking(operation);
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
@@ -253,31 +375,100 @@ export async function startTracking(
       'Impossible de démarrer la mission',
     );
     if (!activationResult.ok) {
-      await stopStartedTracking();
+      await stopStartedTracking(operation);
       return activationResult;
     }
     activeMission = activationResult.data;
   }
-  if (await getClerkUserId() !== expectedOwnerId) {
-    await stopStartedTracking();
+  if (!await isCurrentTrackingOperation(operation)) {
+    await stopStartedTracking(operation);
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
   try {
-    await setStoredMissionId(expectedOwnerId, missionId);
+    await setStoredMissionId(expectedOwnerId, missionId, () => isCurrentTrackingOperation(operation));
   } catch (error) {
-    await stopStartedTracking();
+    await stopStartedTracking(operation);
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
     return {
       ok: false,
       error: `Impossible de mémoriser la mission active : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
     };
   }
-  if (await getClerkUserId() !== expectedOwnerId) {
-    await stopStartedTracking();
+  if (!await isCurrentTrackingOperation(operation)) {
+    await stopStartedTracking(operation);
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
-  return { ok: true, data: activeMission };
+    return { ok: true, data: activeMission };
+  } finally {
+    finishTrackingOperation(operation);
+  }
+}
+
+export async function ensureNativeTracking(
+  missionId: string,
+  ownerId: string,
+  knownMission?: Mission,
+): Promise<ServiceResult<Mission>> {
+  const expectedOwnerId = ownerId.trim();
+  const operation = expectedOwnerId ? await beginTrackingOperation(expectedOwnerId) : null;
+  if (!operation) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  try {
+    const missionResult = knownMission
+      ? { ok: true as const, data: knownMission }
+      : await executeMissionQuery(
+        async () => (await getAuthenticatedSupabaseClient())
+          ?.from('missions')
+          .select('*')
+          .eq('id', missionId)
+          .single<Mission>() ?? { data: null, error: new Error(CLERK_SESSION_REQUIRED_ERROR) },
+        'Impossible de retrouver la mission',
+      );
+    if (!missionResult.ok) return missionResult;
+
+  const mission = missionResult.data;
+  if (mission.id !== missionId || mission.volunteer_id !== expectedOwnerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (mission.status !== 'tracking') {
+    return { ok: false, error: 'Statut de mission incompatible avec la reprise GPS.' };
+  }
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+
+  let taskRegistered = false;
+  try {
+    taskRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Impossible de vérifier le suivi GPS natif : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+    };
+  }
+
+  if (taskRegistered) {
+    const activeContext = await getStoredActiveMissionContext();
+    if (activeContext?.ownerId !== expectedOwnerId || activeContext.missionId !== missionId) {
+      return { ok: false, error: GPS_TRACKING_INTERRUPTED_ERROR };
+    }
+    if (!await isCurrentTrackingOperation(operation)) {
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+    nativeTrackingOperation = operation;
+    return { ok: true, data: mission };
+  }
+
+    return await startTracking(missionId, expectedOwnerId, mission);
+  } finally {
+    finishTrackingOperation(operation);
+  }
 }
 
 const mobileMissionStartInFlight = new Map<string, Promise<ServiceResult<Mission>>>();

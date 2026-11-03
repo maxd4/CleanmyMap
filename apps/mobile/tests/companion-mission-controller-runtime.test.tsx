@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   signOut: vi.fn(async () => undefined),
   restoreActiveTracking: vi.fn(),
   getMission: vi.fn(),
+  ensureNativeTracking: vi.fn(),
   startMobileMission: vi.fn(),
   stopTracking: vi.fn(),
   clearStoredForegroundTrack: vi.fn(),
@@ -32,6 +33,7 @@ vi.mock('react-native', () => ({
 }))
 vi.mock('../features/tracking/tracking-service', () => ({
   getMission: state.getMission,
+  ensureNativeTracking: state.ensureNativeTracking,
   restoreActiveTracking: state.restoreActiveTracking,
   startMobileMission: state.startMobileMission,
   stopTracking: state.stopTracking,
@@ -59,6 +61,12 @@ async function settle() {
   await Promise.resolve()
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
+}
+
 async function renderController() {
   let latest!: ReturnType<typeof useCompanionMissionController>
   const onChange = (value: ReturnType<typeof useCompanionMissionController>) => { latest = value }
@@ -76,6 +84,7 @@ describe('mobile companion mission controller runtime', () => {
     state.signOut.mockClear()
     state.restoreActiveTracking.mockReset().mockResolvedValue(null)
     state.getMission.mockReset().mockResolvedValue({ ok: false, error: 'absent' })
+    state.ensureNativeTracking.mockReset().mockImplementation(async (_missionId: string, _ownerId: string, knownMission: Mission) => ({ ok: true, data: knownMission }))
     state.startMobileMission.mockReset().mockResolvedValue({ ok: true, data: mission })
     state.stopTracking.mockReset().mockResolvedValue({ ok: true, data: { ...mission, status: 'completed', ended_at: '2026-10-20T10:30:00.000Z', distance_m: 120, duration_s: 1800 } })
     state.clearStoredForegroundTrack.mockReset().mockResolvedValue(undefined)
@@ -109,6 +118,7 @@ describe('mobile companion mission controller runtime', () => {
     expect(state.reconcilePendingLinkedMissions).toHaveBeenCalledWith('user-a')
     expect(state.flushBuffer).toHaveBeenCalledWith('user-a')
     expect(state.getMission).toHaveBeenCalledWith('mission-1')
+    expect(state.ensureNativeTracking).toHaveBeenCalledWith('mission-1', 'user-a', mission)
     expect(getController().phase).toBe('tracking')
     expect(getController().mission?.id).toBe('mission-1')
     expect(state.refreshPendingGpsPointCount).toHaveBeenCalled()
@@ -116,6 +126,63 @@ describe('mobile companion mission controller runtime', () => {
 
     await act(async () => { renderer.unmount() })
     expect(state.appStateRemove).toHaveBeenCalledOnce()
+  })
+
+  it('does not present a restored mission as tracking when native GPS is unavailable and offers explicit retry', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: mission })
+    state.ensureNativeTracking
+      .mockResolvedValueOnce({ ok: false, error: 'Le suivi GPS est interrompu.' })
+      .mockResolvedValue({ ok: true, data: mission })
+    const { getController } = await renderController()
+    await act(async () => { await settle() })
+
+    expect(getController().phase).toBe('error')
+    expect(getController().mission).toBeNull()
+    expect(getController().errorMsg).toBe('Le suivi GPS est interrompu.')
+
+    await act(async () => { getController().handleRetryMission(); await settle() })
+    expect(getController().phase).toBe('tracking')
+    expect(getController().mission?.id).toBe('mission-1')
+  })
+
+  it('ignores an obsolete native restoration after Clerk A to B to A', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: mission })
+    const oldRestore = deferred<{ ok: true; data: Mission }>()
+    const currentRestore = deferred<{ ok: true; data: Mission }>()
+    state.ensureNativeTracking.mockReturnValueOnce(oldRestore.promise).mockReturnValue(currentRestore.promise)
+    let latest!: ReturnType<typeof useCompanionMissionController>
+    const onChange = (value: ReturnType<typeof useCompanionMissionController>) => { latest = value }
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe onChange={onChange} />)
+      await settle()
+    })
+    expect(state.ensureNativeTracking).toHaveBeenCalledWith('mission-1', 'user-a', mission)
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<Probe onChange={onChange} />)
+      await settle()
+    })
+    await act(async () => {
+      state.auth.userId = 'user-a'
+      renderer.update(<Probe onChange={onChange} />)
+      await settle()
+    })
+
+    oldRestore.resolve({ ok: true, data: mission })
+    await act(async () => { await oldRestore.promise; await settle() })
+    expect(latest.phase).not.toBe('tracking')
+    expect(latest.mission).toBeNull()
+
+    currentRestore.resolve({ ok: true, data: mission })
+    await act(async () => { await currentRestore.promise; await settle() })
+    expect(latest.phase).toBe('tracking')
+    expect(latest.mission?.id).toBe('mission-1')
   })
 
   it('starts tracking, handles session expiry and clears the duration timer at unmount', async () => {

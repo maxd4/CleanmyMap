@@ -169,6 +169,7 @@ function controller(overrides: Partial<ReturnType<typeof useCompanionMissionCont
     handleSessionExpired: vi.fn(async () => undefined),
     handleStop: vi.fn(),
     handleReturnHome: vi.fn(),
+    handleRetryMission: vi.fn(),
     signOut: vi.fn(async () => undefined),
     ...overrides,
   }
