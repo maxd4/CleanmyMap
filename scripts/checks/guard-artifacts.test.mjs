@@ -112,8 +112,48 @@ process.exit(failOn && args.includes(failOn) ? 1 : 0);
   return { binRoot, logPath: join(binRoot, "npm-args.json") };
 }
 
+function createBatchLoggingNpmStub() {
+  const binRoot = mkdtempSync(join(tmpdir(), "cleanmymap-guard-npm-batches-"));
+  const logPath = join(binRoot, "npm-batches.json");
+  writeFileSync(
+    join(binRoot, "npm-stub.cjs"),
+    `const fs = require("node:fs");
+const args = process.argv.slice(2);
+const logPath = process.env.CMM_GUARD_NPM_LOG;
+const entries = fs.existsSync(logPath) ? JSON.parse(fs.readFileSync(logPath, "utf8")) : [];
+entries.push(args);
+fs.writeFileSync(logPath, JSON.stringify(entries), "utf8");
+const failOn = process.env.CMM_GUARD_NPM_FAIL_ARG;
+process.exit(failOn && args.includes(failOn) ? 1 : 0);
+`,
+    "utf8",
+  );
+  if (process.platform === "win32") {
+    writeFileSync(
+      join(binRoot, "npm.cmd"),
+      "@echo off\r\nnode \"%~dp0npm-stub.cjs\" %*\r\nexit /b %errorlevel%\r\n",
+      "utf8",
+    );
+  } else {
+    const npmPath = join(binRoot, "npm");
+    writeFileSync(npmPath, "#!/bin/sh\nexec node \"$(dirname \"$0\")/npm-stub.cjs\" \"$@\"\n", "utf8");
+    chmodSync(npmPath, 0o755);
+  }
+  return { binRoot, logPath };
+}
+
 function readLoggedNpmArgs(logPath) {
   return JSON.parse(readFileSync(logPath, "utf8"));
+}
+
+function readLoggedNpmBatchArgs(logPath) {
+  return JSON.parse(readFileSync(logPath, "utf8"));
+}
+
+function extractEslintFiles(args) {
+  const configIndex = args.indexOf("--config");
+  assert.notEqual(configIndex, -1, args.join(" "));
+  return args.slice(configIndex + 2);
 }
 
 function createStressFixture() {
@@ -480,7 +520,7 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
         fixtureRoot,
       );
       assert.notEqual(candidateResult.status, 0);
-      assert.match(`${candidateResult.stdout}\n${candidateResult.stderr}`, /eslint \(changed web files\) failed/);
+      assert.match(`${candidateResult.stdout}\n${candidateResult.stderr}`, /eslint \(changed web files \d+-\d+\/\d+\) failed/);
 
       const foreignEnv = {
         ...withoutCandidateGitEnvironment({
@@ -503,6 +543,82 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
     } finally {
       rmSync(binRoot, { recursive: true, force: true });
       rmSync(indexRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("covers every staged web source exactly once across ESLint batches", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const { binRoot, logPath } = createBatchLoggingNpmStub();
+    const sourceFiles = Array.from({ length: 65 }, (_, index) => `apps/web/src/components/batch-${String(index + 1).padStart(2, "0")}.ts`);
+    const foreignFile = "apps/web/src/components/foreign.ts";
+    try {
+      for (const relativePath of [...sourceFiles, foreignFile]) {
+        writeFileSync(join(fixtureRoot, relativePath), `export const ${relativePath.split("/").at(-1).replace(".ts", "")} = true;\n`);
+      }
+      runGitAt(fixtureRoot, ["add", "--", ...sourceFiles]);
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        {
+          ...withoutCandidateGitEnvironment({
+            PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+            CMM_GUARD_NPM_LOG: logPath,
+          }),
+        },
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.equal(result.status, 0, output);
+      const eslintCalls = readLoggedNpmBatchArgs(logPath).filter((args) => args.includes("eslint"));
+      assert.equal(eslintCalls.length, 3);
+      assert.deepEqual(eslintCalls.map(extractEslintFiles).map((files) => files.length), [32, 32, 1]);
+      const lintedFiles = eslintCalls.flatMap(extractEslintFiles);
+      assert.equal(new Set(lintedFiles).size, sourceFiles.length);
+      assert.deepEqual([...lintedFiles].sort(), [...sourceFiles].sort());
+      assert.equal(lintedFiles.includes(foreignFile), false);
+      assert.match(output, /eslint \(changed web files 1-32\/65\)/);
+      assert.match(output, /eslint \(changed web files 33-64\/65\)/);
+      assert.match(output, /eslint \(changed web files 65-65\/65\)/);
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a failure in a later ESLint batch blocking the guard", () => {
+    const fixtureRoot = createQuickCheckFixture();
+    const { binRoot, logPath } = createBatchLoggingNpmStub();
+    const sourceFiles = Array.from({ length: 65 }, (_, index) => `apps/web/src/components/batch-failure-${String(index + 1).padStart(2, "0")}.ts`);
+    const failingFile = sourceFiles[40];
+    try {
+      for (const relativePath of sourceFiles) {
+        writeFileSync(join(fixtureRoot, relativePath), `export const ${relativePath.split("/").at(-1).replace(".ts", "")} = true;\n`);
+      }
+      runGitAt(fixtureRoot, ["add", "--", ...sourceFiles]);
+
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        ["-StagedOnly"],
+        {
+          ...withoutCandidateGitEnvironment({
+            PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+            CMM_GUARD_NPM_LOG: logPath,
+            CMM_GUARD_NPM_FAIL_ARG: failingFile,
+          }),
+        },
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.notEqual(result.status, 0, output);
+      const eslintCalls = readLoggedNpmBatchArgs(logPath).filter((args) => args.includes("eslint"));
+      assert.equal(eslintCalls.length, 2);
+      assert.deepEqual(eslintCalls.map(extractEslintFiles).map((files) => files.length), [32, 32]);
+      assert.match(output, /eslint \(changed web files 33-64\/65\) failed/);
+      assert.doesNotMatch(output, /eslint \(changed web files 65-65\/65\)/);
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
   });
