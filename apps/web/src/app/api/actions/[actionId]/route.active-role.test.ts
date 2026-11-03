@@ -20,7 +20,7 @@ vi.mock("@/lib/actions/store", () => ({
   buildPersistedNotes: vi.fn(),
   recordRepollutionPredictionEvaluationForAction: vi.fn(),
 }));
-vi.mock("@/lib/actions/store-post-processing", () => ({
+vi.mock("@/lib/actions/persistence/post-processing", () => ({
   recordRepollutionPredictionEvaluationForAction: vi.fn(),
 }));
 vi.mock("@/lib/actions/participation/registration-records", () => ({
@@ -31,7 +31,7 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   syncActionManualParticipants: vi.fn(),
 }));
-vi.mock("@/lib/actions/store-notes", () => ({
+vi.mock("@/lib/actions/persistence/notes", () => ({
   buildPersistedNotes: vi.fn(),
 }));
 vi.mock("@/lib/actions/metadata", () => ({
@@ -73,6 +73,12 @@ vi.mock("@/lib/http/auth-responses", () => ({
 }));
 vi.mock("@/lib/geo/action-department-resolver", () => ({
   resolveActionDepartmentForPersistence: resolveActionDepartmentForPersistenceMock,
+}));
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({
+  reconcileActionParticipantImpactProgression: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/lib/gamification/reconciliation/school-action-recognition-persistence", () => ({
+  reconcileSchoolActionRecognitions: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { PATCH } from "./route";

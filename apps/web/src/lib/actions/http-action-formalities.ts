@@ -6,11 +6,11 @@ import type {
 import type {
   ActionFormalitiesFacts,
   ActionFormalitiesQualification,
-} from "./formalities-qualification";
+} from "./formalities/qualification";
 import type {
   ActionFormalitiesWorkflowState,
   FormalitiesWorkflowTransition,
-} from "./formalities-workflow";
+} from "./formalities/workflow";
 import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
 
 export type ActionAdministrativeRequirementsResponse = AdministrativeRequirementsRead & {

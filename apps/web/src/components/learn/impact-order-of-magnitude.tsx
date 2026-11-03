@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Calculator, Droplets, Leaf, TimerReset } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   buildImpactMagnitudeSnapshot,
   DEFAULT_IMPACT_MAGNITUDE_INPUTS,

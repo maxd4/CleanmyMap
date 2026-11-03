@@ -1,8 +1,8 @@
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 import type {
   GamificationReconciliationHistoryEntry,
   PendingGamificationReconciliation,
-} from "@/lib/gamification/gamification-reconciliation-notice";
+} from "@/lib/gamification/reconciliation/gamification-reconciliation-notice";
 
 export type MeResponse = {
   status: "ok";

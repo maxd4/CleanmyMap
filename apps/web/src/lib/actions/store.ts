@@ -1,26 +1,26 @@
-export { buildInitialActionRegistrationRows } from "./store-participants";
+export { buildInitialActionRegistrationRows } from "./persistence/participants";
 
 export {
   fetchActions,
   fetchRecentActionsByUser,
   loadActionById,
   loadActionResumeRowById,
-} from "./store-queries";
+} from "./persistence/queries";
 
-export type { ActionResumeRow } from "./store-queries";
+export type { ActionResumeRow } from "./persistence/queries";
 
 export {
   buildPersistedNotes,
   resolvePersistedCigaretteButts,
-} from "./store-notes";
+} from "./persistence/notes";
 
 export {
   buildCreateActionGeometry,
   buildActionInsertPayload,
   createAction,
   resolveCreateActionDrawing,
-} from "./store-create";
+} from "./persistence/create";
 
 export {
   recordRepollutionPredictionEvaluationForAction,
-} from "./store-post-processing";
+} from "./persistence/post-processing";

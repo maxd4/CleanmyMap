@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { toNonNegativeInteger, toSingleRow } from "../normalizers";
+import { toNonNegativeInteger, toSingleRow } from "../progression/normalizers";
 
 // COMPATIBILITY/LEGACY only. CURRENT gamification reads progression_events.
 

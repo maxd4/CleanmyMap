@@ -8,7 +8,7 @@ import {
 import { CigaretteButtsLotsTotalLimitError } from "@/lib/waste/cigarette-butts";
 import { extractActionMetadataFromNotes } from "./metadata";
 import { buildActionUpdateNotes } from "./action-update-notes";
-import { buildPersistedNotes } from "./store-notes";
+import { buildPersistedNotes } from "./persistence/notes";
 import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 function buildCurrent(notes: string | null): ActionRow {

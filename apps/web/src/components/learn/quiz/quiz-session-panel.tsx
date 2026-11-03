@@ -13,7 +13,7 @@ import type {
   CognitiveQuizStateId,
   SupportedLocale,
 } from "@/lib/learning/cognitive-principles";
-import type { SRSQuality } from "@/lib/gamification/quiz-srs";
+import type { SRSQuality } from "@/lib/gamification/progression/quiz-srs";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
 import type { QuizSessionSummary } from "@/lib/learning/quiz/quiz-session-types";
 import type { QuizReasoningType } from "@/lib/learning/quiz/quiz-reasoning-types";

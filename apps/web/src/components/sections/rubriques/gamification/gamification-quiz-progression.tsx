@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { buildQuizLearningProgressionSummary } from "@/lib/gamification/quiz-learning-progression";
+import { buildQuizLearningProgressionSummary } from "@/lib/gamification/progression/quiz-learning-progression";
 import { SectionLabel } from "./gamification-shell";
 
 export function QuizProgressionCard({ locale }: { locale: string }) {

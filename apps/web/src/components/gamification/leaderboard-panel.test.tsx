@@ -1,7 +1,7 @@
 import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { PublicLeaderboardResponseDto } from "@/lib/gamification/progression-types";
+import type { PublicLeaderboardResponseDto } from "@/lib/gamification/progression/progression-types";
 
 const swrState = vi.hoisted(() => ({
   current: {

@@ -1,4 +1,4 @@
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import {
   CO2_GRAMS_PER_CAR_KILOMETER,

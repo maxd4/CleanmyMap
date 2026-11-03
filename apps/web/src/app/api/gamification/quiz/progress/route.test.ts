@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
-vi.mock("@/lib/gamification/quiz-progress", () => ({
+vi.mock("@/lib/gamification/progression/quiz-progress", () => ({
   syncQuizQuestionTypeProgress: syncQuizQuestionTypeProgressMock,
 }));
 

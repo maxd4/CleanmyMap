@@ -105,7 +105,7 @@ test("action registrations expose an explicit browser deny policy append-only", 
 
 test("future participation consumers use registrations while post-action claims retain participants", () => {
   const futureConsumers = [
-    "apps/web/src/lib/actions/store-participants.ts",
+    "apps/web/src/lib/actions/persistence/participants.ts",
     "apps/web/src/lib/actions/participation/group-participation-membership.ts",
     "apps/web/src/lib/actions/participation/group-participation-review-read.ts",
     "apps/web/src/lib/actions/participation/participant-summaries.ts",

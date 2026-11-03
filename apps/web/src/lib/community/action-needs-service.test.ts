@@ -4,7 +4,7 @@ const fetchActionRowsMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/actions/store-queries", () => ({ fetchActionRows: fetchActionRowsMock }));
+vi.mock("@/lib/actions/persistence/queries", () => ({ fetchActionRows: fetchActionRowsMock }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({ loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsMock }));
 

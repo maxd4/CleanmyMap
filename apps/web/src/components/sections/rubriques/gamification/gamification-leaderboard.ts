@@ -3,10 +3,10 @@ import type {
   IndividualLeaderboardItem,
   LeaderboardMetric,
   PublicStructureLeaderboardItem,
-} from "@/lib/gamification/progression-types";
+} from "@/lib/gamification/progression/progression-types";
 import { isOrganizerType } from "@/lib/actions/organizer-type";
 
-export type { LeaderboardMetric } from "@/lib/gamification/progression-types";
+export type { LeaderboardMetric } from "@/lib/gamification/progression/progression-types";
 
 export type LeaderboardScope = "individual" | "collective";
 export type PublicIndividualLeaderboardItem = IndividualLeaderboardItem;

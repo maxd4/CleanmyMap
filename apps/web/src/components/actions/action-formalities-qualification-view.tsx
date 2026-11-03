@@ -6,8 +6,8 @@ import { CmmPill, type PillTone } from "@/components/ui/cmm-pill";
 import type { ActionFormalitiesResponse } from "@/lib/actions/http";
 import type {
   ActionFormalitiesQualification,
-} from "@/lib/actions/formalities-qualification";
-import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
+} from "@/lib/actions/formalities/qualification";
+import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
 
 type Formality = ActionFormalitiesResponse["qualification"]["formalities"][number];
 

@@ -18,7 +18,7 @@ import {
 import {
   buildActionInsertPayload,
   buildCreateActionGeometry,
-} from "./store-create-contract";
+} from "./persistence/create-contract";
 import type { CreateActionPayload } from "./types";
 import { createRoutePlannerSnapshotInput } from "@/lib/route/route-calibration-test-fixtures";
 import { createDefaultRouteTerritorialGuidedMode } from "@/lib/route/route-planning-mode";

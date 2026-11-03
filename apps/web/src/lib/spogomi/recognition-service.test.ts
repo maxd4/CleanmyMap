@@ -6,11 +6,11 @@ const reconcileUserGamificationMock = vi.hoisted(() => vi.fn());
 
 vi.mock("server-only", () => ({}));
 
-vi.mock("@/lib/gamification/gamification-facts-loader", () => ({
+vi.mock("@/lib/gamification/progression/gamification-facts-loader", () => ({
   loadCurrentGamificationFacts: loadCurrentGamificationFactsMock,
 }));
 
-vi.mock("@/lib/gamification/gamification-reconciliation", () => ({
+vi.mock("@/lib/gamification/reconciliation/gamification-reconciliation", () => ({
   reconcileUserGamification: reconcileUserGamificationMock,
 }));
 

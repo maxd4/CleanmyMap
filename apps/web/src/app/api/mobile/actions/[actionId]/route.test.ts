@@ -24,7 +24,7 @@ vi.mock("@/lib/actions/participation/post-action-claims", () => ({ claimFinished
 vi.mock("@/lib/actions/unified-source", () => ({ fetchUnifiedActionContracts: mocks.fetchUnified }));
 vi.mock("@/lib/actions/data-contract", () => ({ toPublicActionListItem: mocks.toPublic }));
 vi.mock("@/lib/actions/moderation-audit", () => ({ appendActionModerationAudit: mocks.audit }));
-vi.mock("@/lib/gamification/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
 
 import { DELETE, GET, POST } from "./route";
 

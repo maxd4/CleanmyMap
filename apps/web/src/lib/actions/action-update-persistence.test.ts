@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionUpdateInput } from "./action-update-audit";
-import type { ActionFormalitiesFacts } from "./formalities-qualification";
-import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
+import type { ActionFormalitiesFacts } from "./formalities/qualification";
+import type { ActionFormalitiesWorkflowState } from "./formalities/workflow";
 import { persistActionUpdate, prepareActionUpdate } from "./action-update-persistence";
 import { extractActionMetadataFromNotes } from "./metadata";
 

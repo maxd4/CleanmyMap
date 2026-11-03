@@ -45,7 +45,7 @@ vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverClientMock }));
 vi.mock("@/lib/actions/participation/group-participation", () => ({ loadUserParticipationHistory: historyMock }));
 vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({ getActionTitle: vi.fn(() => null) }));
-vi.mock("@/lib/gamification/progression-user-stats", () => ({ loadUserProgressionStats: progressionMock }));
+vi.mock("@/lib/gamification/progression/progression-user-stats", () => ({ loadUserProgressionStats: progressionMock }));
 vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock, trySyncClerkUserToSupabase: syncMock }));
 vi.mock("@/lib/rate-limit/server", () => ({
   enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import type { SRSStats } from "@/lib/gamification/quiz-srs";
+import type { SRSStats } from "@/lib/gamification/progression/quiz-srs";
 import type { QuizSelectionQuestionLike } from "./quiz-selection-engine";
 import { buildQuizDemoSessionDeck, buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";

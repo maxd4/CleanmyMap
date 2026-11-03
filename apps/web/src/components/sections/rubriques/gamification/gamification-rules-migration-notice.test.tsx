@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
 
 const summary = {

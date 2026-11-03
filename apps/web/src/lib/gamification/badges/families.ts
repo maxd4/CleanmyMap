@@ -1,13 +1,13 @@
-import { findBadgeDefinition } from "../badge-catalog";
+import { findBadgeDefinition } from "../progression/badge-catalog";
 import type {
   GamificationBadgeScale,
   GamificationBadgeStatus,
-} from "../progression-types";
+} from "../progression/progression-types";
 import {
   buildGemGradeCatalog,
   computeOrganisationProgress,
   ORGANISATION_GEM_CONFIG,
-} from "../gem-progression";
+} from "../progression/gem-progression";
 type ExplorerBadgeTier = "wood" | "bronze" | "silver" | "gold" | "diamond" | "cosmic";
 
 type ExplorerBadgeRank = {

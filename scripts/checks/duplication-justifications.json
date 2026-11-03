@@ -485,16 +485,16 @@
       "scope": "tests",
       "fingerprint": "651c4714a0d2f5f9",
       "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/actions/formalities-qualification.test.ts:455-468 ; symboles: supersedesRuleIds, department, result, qualifyActionFormalities et lib/actions/formalities-qualification.test.ts:514-527 ; symboles: formalityId, commune, formality, result restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/actions/formalities-qualification.test.ts:455-468 et lib/actions/formalities-qualification.test.ts:514-527 ; pair CURRENT relu.",
+      "reason": "Les occurrences CURRENT lib/actions/formalities/qualification.test.ts:455-468 ; symboles: supersedesRuleIds, department, result, qualifyActionFormalities et lib/actions/formalities/qualification.test.ts:514-527 ; symboles: formalityId, commune, formality, result restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
+      "evidence": "lib/actions/formalities/qualification.test.ts:455-468 et lib/actions/formalities/qualification.test.ts:514-527 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
       "scope": "tests",
       "fingerprint": "05fe0fc9741daddc",
       "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT lib/actions/geometry/route-reconstruction.test.ts:2-11 et lib/actions/store-create-gpx.test.ts:1-10 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "lib/actions/geometry/route-reconstruction.test.ts:2-11 et lib/actions/store-create-gpx.test.ts:1-10 ; pair CURRENT relu.",
+      "reason": "Les occurrences CURRENT lib/actions/geometry/route-reconstruction.test.ts:2-11 et lib/actions/persistence/create-gpx.test.ts:1-10 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
+      "evidence": "lib/actions/geometry/route-reconstruction.test.ts:2-11 et lib/actions/persistence/create-gpx.test.ts:1-10 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -789,8 +789,8 @@
       "scope": "runtime",
       "fingerprint": "4d40ac320934718c",
       "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT lib/actions/formalities-workflow.ts:349-354 ; symboles: export, preserveCanonicalFormalitiesWorkflow, currentPreparationData, incomingPreparationData et lib/actions/formalities-workflow.ts:363-368 ; symboles: export, preserveFormalitiesContextWhenOmitted, currentPreparationData, incomingPreparationData restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/lib/actions/formalities-workflow.ts:349-354 et apps/web/src/lib/actions/formalities-workflow.ts:363-368 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
+      "reason": "Les occurrences CURRENT lib/actions/formalities/workflow.ts:349-354 ; symboles: export, preserveCanonicalFormalitiesWorkflow, currentPreparationData, incomingPreparationData et lib/actions/formalities/workflow.ts:363-368 ; symboles: export, preserveFormalitiesContextWhenOmitted, currentPreparationData, incomingPreparationData restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
+      "evidence": "apps/web/src/lib/actions/formalities/workflow.ts:349-354 et apps/web/src/lib/actions/formalities/workflow.ts:363-368 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {

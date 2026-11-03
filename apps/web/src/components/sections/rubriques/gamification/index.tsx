@@ -19,7 +19,7 @@ import {
   WhyGamification,
 } from "./gamification-panels";
 import type { MeResponse } from "./gamification-types";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { GamificationCatalogPanel } from "./gamification-catalog-panel";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";

@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleApiError, parseAuthenticatedJsonRequest, validationErrorResponse } from "@/lib/http/api-errors";
-import { syncQuizQuestionTypeProgress } from "@/lib/gamification/quiz-progress";
+import { syncQuizQuestionTypeProgress } from "@/lib/gamification/progression/quiz-progress";
 import {
   isQuizAnswerCorrect,
   normalizeQuizAnswer,

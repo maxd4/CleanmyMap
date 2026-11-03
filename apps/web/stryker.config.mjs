@@ -7,14 +7,14 @@
  */
 const strykerConfig = {
   mutate: [
-    "src/lib/actions/formalities-qualification.ts:349-425",
-    "src/lib/actions/formalities-qualification.ts:438-458",
+    "src/lib/actions/formalities/qualification.ts:349-425",
+    "src/lib/actions/formalities/qualification.ts:438-458",
     "src/lib/actions/permissions.ts:22-104",
     "src/lib/actions/impact-calculators.ts:70-205",
     "src/lib/actions/action-update-status.ts:15-28",
   ],
   testFiles: [
-    "src/lib/actions/formalities-qualification.test.ts",
+    "src/lib/actions/formalities/qualification.test.ts",
     "src/lib/actions/permissions.test.ts",
     "src/lib/actions/impact-calculators.test.ts",
     "src/lib/actions/action-update-status.test.ts",

@@ -1,7 +1,7 @@
 "use client";
 
-import type { LearningProgressionSummary } from "../quiz-learning-progression";
-import type { GamificationBadgeDefinition } from "../progression-types";
+import type { LearningProgressionSummary } from "../progression/quiz-learning-progression";
+import type { GamificationBadgeDefinition } from "../progression/progression-types";
 
 type GamificationBadgeListItem = {
   id?: string;

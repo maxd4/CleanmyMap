@@ -16,10 +16,10 @@ vi.mock("@/lib/rate-limit/server", () => ({
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
-vi.mock("@/lib/gamification/progression-ranking", () => ({
+vi.mock("@/lib/gamification/progression/progression-ranking", () => ({
   buildPublicUserLeaderboard: buildPublicUserLeaderboardMock,
 }));
-vi.mock("@/lib/gamification/progression-structure-ranking", () => ({
+vi.mock("@/lib/gamification/progression/progression-structure-ranking", () => ({
   buildPublicStructureLeaderboard: buildPublicStructureLeaderboardMock,
 }));
 

@@ -1,7 +1,7 @@
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import type { ActionSourceName } from "@/lib/actions/types";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { buildPdfData, buildReportTitle, type DetailLevelId, type ModuleState } from "@/lib/reports/report-pdf-data";
 import { getReportGenerationPeriodDateBounds, REPORT_GENERATION_TIME_ZONE } from "@/lib/reports/generation-period";
 import { toReportsExportRow } from "@/lib/reports/page-data-export";

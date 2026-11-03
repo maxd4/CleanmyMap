@@ -1,5 +1,5 @@
 import { toActionListItem, toActionMapItem } from "@/lib/actions/data-contract";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { buildReportTitle, buildPdfData, type DetailLevelId, type ModuleState } from "@/lib/reports/report-pdf-data";
 import {
   getReportGenerationPeriodDateBounds,

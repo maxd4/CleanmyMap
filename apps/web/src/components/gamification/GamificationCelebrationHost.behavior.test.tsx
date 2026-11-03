@@ -10,7 +10,7 @@ vi.mock("framer-motion", () => ({
   motion: { div: (props: Record<string, unknown>) => React.createElement("div", props) },
 }));
 
-import { dispatchGamificationCelebration, GAMIFICATION_CELEBRATION_EVENT } from "@/lib/gamification/celebration";
+import { dispatchGamificationCelebration, GAMIFICATION_CELEBRATION_EVENT } from "@/lib/gamification/reconciliation/celebration";
 import { rendererText } from "@/__tests__/support/action-behavior-test-helpers";
 import { GamificationCelebrationHost } from "./GamificationCelebrationHost";
 

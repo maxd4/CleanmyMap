@@ -1,5 +1,5 @@
 import { ShieldCheck } from "lucide-react";
-import type { SensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
+import type { SensitiveZoneApaisementSummary } from "@/lib/gamification/progression/sensitive-zone-badge";
 
 type SensitiveZoneBadgeProps = {
   summary: SensitiveZoneApaisementSummary;

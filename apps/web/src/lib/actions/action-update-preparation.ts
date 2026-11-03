@@ -8,7 +8,7 @@ import {
 import {
   preserveCanonicalFormalitiesWorkflow,
   preserveFormalitiesContextWhenOmitted,
-} from "./formalities-workflow";
+} from "./formalities/workflow";
 
 export function prepareActionUpdateBody(
   current: ActionRow,

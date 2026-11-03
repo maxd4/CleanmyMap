@@ -356,7 +356,7 @@ unknown` tant que l'obligation locale n'est pas démontrée. `unknown` signifie
 not_required » ; ce n'est ni l'absence de formalité, ni une erreur technique.
 La qualification, sa source officielle, son périmètre et sa date de
 vérification restent rattachés au moteur
-`apps/web/src/lib/actions/formalities-qualification.ts` et à
+`apps/web/src/lib/actions/formalities/qualification.ts` et à
 `formalities-rules.ts`. Le parcours produit correspondant est décrit dans
 [`actions-new-README.md`](../pages_site/routes/02-agir/actions-new/actions-new-README.md).
 

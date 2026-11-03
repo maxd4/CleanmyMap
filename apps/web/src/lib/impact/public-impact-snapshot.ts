@@ -13,7 +13,7 @@ import {
   IMPACT_PROXY_CONFIG,
   isCurrentImpactProxyVersion,
   isKnownImpactProxyVersion,
-} from "@/lib/gamification/impact-proxy-config";
+} from "@/lib/gamification/progression/impact-proxy-config";
 import { MEGOTS_CONDITIONS } from "./impact-terrain-2026";
 import {
   isKnownPublicImpactProjectionVersion,

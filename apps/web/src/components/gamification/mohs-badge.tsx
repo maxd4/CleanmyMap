@@ -2,7 +2,7 @@ import {
   getMohsGradeInfo,
   MOHS_GRADES,
   type MohsImpactFamily,
-} from "@/lib/gamification/mohs-progression";
+} from "@/lib/gamification/progression/mohs-progression";
 
 type GradeColors = { text: string; border: string; bg: string; bar: string };
 
@@ -19,7 +19,7 @@ const GRADE_COLORS: Record<number, GradeColors> = {
   10: { text: "text-sky-300",     border: "border-sky-400/40",    bg: "bg-sky-400/10",   bar: "from-sky-400 to-cyan-300" },
 };
 
-export { getMohsGradeInfo } from "@/lib/gamification/mohs-progression";
+export { getMohsGradeInfo } from "@/lib/gamification/progression/mohs-progression";
 
 interface MohsBadgeProps {
   family: MohsImpactFamily;

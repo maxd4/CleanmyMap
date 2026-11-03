@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectEligibleCleanZoneSources,
   countEligibleCleanZones,
-} from "@/lib/gamification/clean-zones";
+} from "@/lib/gamification/progression/clean-zones";
 
 const NOW = new Date("2026-06-01T12:00:00.000Z");
 const EXPIRED_VALIDATION = "2026-05-30T10:00:00.000Z";

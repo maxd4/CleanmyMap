@@ -1,7 +1,7 @@
 import { copyValidatedActionToLocalStore } from "@/lib/data/local-sync";
 import { refreshActionImpactProgressionDependents } from "./route.action-progression";
 import { runActionTransitionSideEffects } from "@/lib/admin/moderation/transition";
-import { reconcileSchoolActionRecognitions } from "@/lib/gamification/school-action-recognition-persistence";
+import { reconcileSchoolActionRecognitions } from "@/lib/gamification/reconciliation/school-action-recognition-persistence";
 import { adminErrorResponse, adminSuccessResponse } from "@/lib/admin/response";
 import {
   canonicalTargetUserId,

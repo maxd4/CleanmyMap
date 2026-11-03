@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 import { buildCatalogGroups, GamificationCatalogPanel } from "./gamification-catalog-panel";
 
 function summary(overrides: Partial<GamificationSummary> = {}): GamificationSummary {

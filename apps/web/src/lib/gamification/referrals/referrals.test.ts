@@ -18,13 +18,13 @@ const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
 const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadCurrentValidatedActionIdsForUser: loadCurrentValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
 vi.mock("../progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
-vi.mock("../progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
+vi.mock("../reconciliation/progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
 
-vi.mock("../notifications", () => ({
+vi.mock("../reconciliation/notifications", () => ({
   auditXpAttribution: auditXpAttributionMock,
 }));
 
-vi.mock("@/lib/gamification/announcements", () => ({
+vi.mock("@/lib/gamification/reconciliation/announcements", () => ({
   broadcastGamificationAnnouncement: broadcastGamificationAnnouncementMock,
 }));
 

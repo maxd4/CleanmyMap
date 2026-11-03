@@ -3,9 +3,9 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";
-import { loadCurrentGamificationFacts } from "@/lib/gamification/gamification-facts-loader";
-import { reconcileUserGamification } from "@/lib/gamification/gamification-reconciliation";
-import type { GamificationFacts } from "@/lib/gamification/gamification-reconstruction";
+import { loadCurrentGamificationFacts } from "@/lib/gamification/progression/gamification-facts-loader";
+import { reconcileUserGamification } from "@/lib/gamification/reconciliation/gamification-reconciliation";
+import type { GamificationFacts } from "@/lib/gamification/progression/gamification-reconstruction";
 import {
   buildSpogomiRecognitionProjection,
   type SpogomiAward,

@@ -5,7 +5,7 @@ const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const toActionContractMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/actions/store-queries", () => ({ loadActionById: loadActionByIdMock }));
+vi.mock("@/lib/actions/persistence/queries", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
 vi.mock("@/lib/actions/unified-source/contracts", () => ({ toActionContract: toActionContractMock }));
 

@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
+import type { ActionBalanceSummary } from "@/lib/gamification/progression/action-balance";
 import {
   GamificationBadgePanel,
   getGamificationBadgeState,

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 
 export function GamificationRulesMigrationNotice({
   summary,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "@/lib/gamification/badge-catalog";
+import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "@/lib/gamification/progression/badge-catalog";
 import { buildSpogomiRecognitionProjection, type SpogomiRecognitionParticipant } from "./recognition";
 
 const participant = (overrides: Partial<SpogomiRecognitionParticipant> = {}): SpogomiRecognitionParticipant => ({

@@ -1212,7 +1212,7 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/formalities-qualification.ts",
+      "path": "apps/web/src/lib/actions/formalities/qualification.ts",
       "line": 349,
       "category": "métier/domain pur",
       "ceiling": 29,
@@ -1365,7 +1365,7 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/store-create-contract.ts",
+      "path": "apps/web/src/lib/actions/persistence/create-contract.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
       "ceiling": 1,
@@ -1374,7 +1374,7 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/store-create.ts",
+      "path": "apps/web/src/lib/actions/persistence/create.ts",
       "line": 51,
       "category": "runtime/services/orchestration",
       "ceiling": 8,
@@ -1383,7 +1383,7 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/store-create.ts",
+      "path": "apps/web/src/lib/actions/persistence/create.ts",
       "line": 157,
       "category": "runtime/services/orchestration",
       "ceiling": 4,
@@ -1392,7 +1392,7 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/store-selects.ts",
+      "path": "apps/web/src/lib/actions/persistence/selects.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
       "ceiling": 2,
@@ -3912,7 +3912,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/formalities-qualification.ts",
+      "path": "apps/web/src/lib/actions/formalities/qualification.ts",
       "line": 349,
       "category": "métier/domain pur",
       "ceiling": 76,
@@ -4074,7 +4074,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/store-create-contract.ts",
+      "path": "apps/web/src/lib/actions/persistence/create-contract.ts",
       "line": 90,
       "category": "runtime/services/orchestration",
       "ceiling": 4,
@@ -4083,7 +4083,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/store-create.ts",
+      "path": "apps/web/src/lib/actions/persistence/create.ts",
       "line": 159,
       "category": "runtime/services/orchestration",
       "ceiling": 28,
@@ -4308,7 +4308,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/annual-reset.ts",
+      "path": "apps/web/src/lib/gamification/progression/annual-reset.ts",
       "line": 16,
       "category": "métier/domain pur",
       "ceiling": 26,
@@ -4317,7 +4317,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-impact.ts",
+      "path": "apps/web/src/lib/gamification/progression/progression-impact.ts",
       "line": 72,
       "category": "métier/domain pur",
       "ceiling": 65,
@@ -4326,7 +4326,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-tracking.ts",
+      "path": "apps/web/src/lib/gamification/reconciliation/progression-tracking.ts",
       "line": 159,
       "category": "métier/domain pur",
       "ceiling": 14,
@@ -4335,7 +4335,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-tracking.ts",
+      "path": "apps/web/src/lib/gamification/reconciliation/progression-tracking.ts",
       "line": 395,
       "category": "métier/domain pur",
       "ceiling": 53,
@@ -4344,7 +4344,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/quiz-progress.ts",
+      "path": "apps/web/src/lib/gamification/progression/quiz-progress.ts",
       "line": 83,
       "category": "métier/domain pur",
       "ceiling": 24,

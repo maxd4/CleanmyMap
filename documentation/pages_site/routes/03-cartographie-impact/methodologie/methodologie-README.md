@@ -82,7 +82,7 @@ source domaine
 conversion centralisées dans
 `apps/web/src/lib/impact/impact-terrain-2026-constants.ts`. Elle compose les
 définitions et les formules affichées à partir des facteurs runtime de
-`apps/web/src/lib/gamification/impact-proxy-config.ts`. Le moteur d’impact, les
+`apps/web/src/lib/gamification/progression/impact-proxy-config.ts`. Le moteur d’impact, les
 agrégats publics et les futurs consommateurs de méthode doivent réutiliser ce
 domaine ; la page `/methodologie` ne devient pas une source de calcul.
 

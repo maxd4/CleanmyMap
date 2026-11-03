@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createAction } from "@/lib/actions/store-create";
+import { createAction } from "@/lib/actions/persistence/create";
 import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";

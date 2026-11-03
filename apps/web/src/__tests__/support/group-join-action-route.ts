@@ -28,7 +28,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: mocks.getSupabaseServerClientMock,
 }));
 
-vi.mock("@/lib/gamification/progression-tracking", () => ({
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({
   refreshProgressionProfile: mocks.refreshProgressionProfileMock,
 }));
 

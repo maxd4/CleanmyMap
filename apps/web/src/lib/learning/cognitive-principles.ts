@@ -1,4 +1,4 @@
-import type { SRSStats } from "@/lib/gamification/quiz-srs";
+import type { SRSStats } from "@/lib/gamification/progression/quiz-srs";
 
 export type SupportedLocale = "fr" | "en";
 

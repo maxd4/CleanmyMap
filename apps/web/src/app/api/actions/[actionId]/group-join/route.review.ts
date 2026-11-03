@@ -12,7 +12,7 @@ import {
   reviewActionParticipation,
 } from "@/lib/actions/participation/group-participation";
 import { POST_ACTION_CLAIM_PARTICIPATION_SOURCE } from "@/lib/actions/participation/group-participation.helpers";
-import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import {
   captureActionParticipantImpactSnapshot,

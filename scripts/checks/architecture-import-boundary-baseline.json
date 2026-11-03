@@ -1000,10 +1000,10 @@
       "reviewedRef": "ad3d4280a2d47914e65b35806b42ee49d42fad9c"
     },
     {
-      "id": "bbeadd7543d09e825d552b57",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/gamification/counters-client.ts|apps/web/src/lib/supabase/client.ts|runtime|runtime",
+      "id": "cc316943444e895d91a686b1",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/gamification/progression/counters-client.ts|apps/web/src/lib/supabase/client.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/lib/gamification/counters-client.ts",
+      "from": "apps/web/src/lib/gamification/progression/counters-client.ts",
       "to": "apps/web/src/lib/supabase/client.ts",
       "kind": "runtime",
       "sourceKind": "runtime",
@@ -1011,10 +1011,10 @@
       "reviewedRef": "ad3d4280a2d47914e65b35806b42ee49d42fad9c"
     },
     {
-      "id": "49c3fd3e2810da2058af84b4",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/gamification/quiz-progress-storage.ts|apps/web/src/lib/storage/local-storage.ts|runtime|runtime",
+      "id": "d11a489074355d6e54315360",
+      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/lib/gamification/progression/quiz-progress-storage.ts|apps/web/src/lib/storage/local-storage.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/lib/gamification/quiz-progress-storage.ts",
+      "from": "apps/web/src/lib/gamification/progression/quiz-progress-storage.ts",
       "to": "apps/web/src/lib/storage/local-storage.ts",
       "kind": "runtime",
       "sourceKind": "runtime",

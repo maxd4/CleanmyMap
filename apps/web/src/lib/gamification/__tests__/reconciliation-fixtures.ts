@@ -1,5 +1,5 @@
-import type { GamificationRulesV1 } from "../gamification-rules";
-import type { GamificationFacts } from "../gamification-reconstruction";
+import type { GamificationRulesV1 } from "../progression/gamification-rules";
+import type { GamificationFacts } from "../progression/gamification-reconstruction";
 
 export function rules(
   version: string,

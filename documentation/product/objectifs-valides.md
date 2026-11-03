@@ -40,7 +40,7 @@ unique et ne doublonnent pas le premier palier d'une progression.
 ## Hors taxonomie CURRENT
 
 Le registre de décision est `GAMIFICATION_REGISTRY` dans
-`apps/web/src/lib/gamification/progression-utils.ts`. Toute donnée métier
+`apps/web/src/lib/gamification/progression/progression-utils.ts`. Toute donnée métier
 pertinente y possède une catégorie explicite : `XP_PROGRESSION`,
 `XP_MILESTONE`, `BADGE_ONLY` ou `NON_GAMIFIED`.
 

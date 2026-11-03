@@ -18,7 +18,7 @@ import {
 const fetchActionRowByIdMock = vi.hoisted(() => vi.fn());
 const readActionRegistrationRecordMock = vi.hoisted(() => vi.fn());
 
-vi.mock("./store-queries", () => ({ fetchActionRowById: fetchActionRowByIdMock }));
+vi.mock("./persistence/queries", () => ({ fetchActionRowById: fetchActionRowByIdMock }));
 vi.mock("./participation/registration-records", () => ({ readActionRegistrationRecord: readActionRegistrationRecordMock }));
 
 type Result = { data: unknown; error: { code?: string; message?: string } | null };

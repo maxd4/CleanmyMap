@@ -23,7 +23,7 @@ vi.mock("@/lib/actions/administrative-requirement-notifications", () => ({
 vi.mock("@/lib/chat/association-action-announcement", () => ({
   publishOfficialAssociationActionAnnouncement: mocks.publishOfficialAssociationActionAnnouncement,
 }));
-vi.mock("@/lib/actions/formalities-publication-validation", () => ({
+vi.mock("@/lib/actions/formalities/publication-validation", () => ({
   validateActionFormalitiesForPublication: mocks.validateActionFormalitiesForPublication,
 }));
 vi.mock("@/lib/community/creator-inbox", () => ({

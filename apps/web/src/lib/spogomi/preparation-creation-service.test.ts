@@ -10,7 +10,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: mocks.getCurrentUserIdentity }));
 vi.mock("@/lib/actions/intervention-mode", () => ({ createActionInterventionMode: () => "fixed_area" }));
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: () => true }));
-vi.mock("@/lib/actions/store-create", () => ({ createAction: mocks.createAction }));
+vi.mock("@/lib/actions/persistence/create", () => ({ createAction: mocks.createAction }));
 vi.mock("@/lib/spogomi/public-service", () => ({
   normalizeSpogomiEventSlug: (name: string) => name.toLowerCase().replace(/\s+/g, "-"),
   isReservedSpogomiEventSlug: (slug: string) => ["nouveau", "mes-evenements"].includes(slug),

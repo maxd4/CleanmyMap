@@ -1,6 +1,6 @@
-import type { GamificationReconciliationReceipt } from "@/lib/gamification/gamification-reconciliation-receipt";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { GamificationReconciliationReceipt } from "@/lib/gamification/reconciliation/gamification-reconciliation-receipt";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 
 export type ReconciliationDetailProgression = {
   label: string;

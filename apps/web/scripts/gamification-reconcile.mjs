@@ -107,15 +107,15 @@ async function main() {
     return;
   }
   const { appendAdminOperationAudit } = await import("../src/lib/admin/audit/operation-audit.ts");
-  const { GAMIFICATION_RULES_V1 } = await import("../src/lib/gamification/gamification-rules.ts");
-  const { loadGamificationReconciliationSnapshot } = await import("../src/lib/gamification/gamification-reconciliation-plan.ts");
-  const { reconcileUserGamification } = await import("../src/lib/gamification/gamification-reconciliation.ts");
+  const { GAMIFICATION_RULES_V1 } = await import("../src/lib/gamification/progression/gamification-rules.ts");
+  const { loadGamificationReconciliationSnapshot } = await import("../src/lib/gamification/reconciliation/gamification-reconciliation-plan.ts");
+  const { reconcileUserGamification } = await import("../src/lib/gamification/reconciliation/gamification-reconciliation.ts");
   const {
     previewScientificImpactGamification,
     reconcileScientificImpactGamification,
   } = await import("../src/lib/gamification/scientific-impact-gamification-reconciliation.ts");
-  const { buildGamificationReconciliationReceipt } = await import("../src/lib/gamification/gamification-reconciliation-receipt.ts");
-  const { parseGamificationReconcileArgs, runGamificationReconcile } = await import("../src/lib/gamification/gamification-reconcile-runner.ts");
+  const { buildGamificationReconciliationReceipt } = await import("../src/lib/gamification/reconciliation/gamification-reconciliation-receipt.ts");
+  const { parseGamificationReconcileArgs, runGamificationReconcile } = await import("../src/lib/gamification/reconciliation/gamification-reconcile-runner.ts");
   const args = parseGamificationReconcileArgs(argv);
   const actorUserId = optionValue(argv, "--actor") || "system:gamification-reconcile";
   const supabase = await loadEnvironment();

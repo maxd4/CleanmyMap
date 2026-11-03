@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, LockKeyhole, Sparkles } from "lucide-react";
-import type { GamificationMilestoneState } from "@/lib/gamification/progression-types";
+import type { GamificationMilestoneState } from "@/lib/gamification/progression/progression-types";
 
 export function MilestonesPanel({
   milestones,

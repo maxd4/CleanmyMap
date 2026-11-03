@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BadgeCheck, ShieldCheck, Sparkles, Users } from "lucide-react";
-import type { ContributorRecognitionCard } from "@/lib/gamification/progression-types";
+import type { ContributorRecognitionCard } from "@/lib/gamification/progression/progression-types";
 import type { MeResponse } from "./gamification-types";
 import { SectionLabel } from "./gamification-shell";
 

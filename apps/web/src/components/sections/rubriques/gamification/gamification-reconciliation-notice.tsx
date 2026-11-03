@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { PendingGamificationReconciliation } from "@/lib/gamification/reconciliation/gamification-reconciliation-notice";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 import { buildReconciliationNoticeCopy, type ReconciliationNoticeCopy } from "./gamification-reconciliation-notice.model";
 import { GamificationReconciliationDetail } from "./gamification-reconciliation-detail";
 import { buildReconciliationDetailCopy } from "./gamification-reconciliation-detail.model";

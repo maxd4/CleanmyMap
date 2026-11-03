@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities-facts";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
-import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
+import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
+import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
+import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
 import { parseJsonSafely } from "@/lib/actions/http-errors";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());

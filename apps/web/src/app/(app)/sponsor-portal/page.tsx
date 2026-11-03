@@ -9,7 +9,7 @@ import {
   Activity
 } from "lucide-react";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { CmmButton } from "@/components/ui/cmm-button";

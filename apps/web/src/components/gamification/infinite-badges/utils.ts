@@ -3,7 +3,7 @@ import {
   computeGemProgression,
   MODERATION_GEM_CONFIG,
   ORGANISATION_GEM_CONFIG,
-} from "@/lib/gamification/gem-progression";
+} from "@/lib/gamification/progression/gem-progression";
 
 export type CanonicalBadgeFamily =
   | "explorer"

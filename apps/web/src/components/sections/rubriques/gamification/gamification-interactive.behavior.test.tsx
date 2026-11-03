@@ -1,9 +1,9 @@
 import { type ComponentProps } from "react";
 import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { PendingGamificationReconciliation } from "@/lib/gamification/reconciliation/gamification-reconciliation-notice";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 import { GamificationReconciliationNotice } from "./gamification-reconciliation-notice";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
 

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.access }));
-vi.mock("@/lib/gamification/gamification-reconciliation", () => ({
+vi.mock("@/lib/gamification/reconciliation/gamification-reconciliation", () => ({
   reconcileUserGamification: mocks.reconcile,
 }));
 vi.mock("@/lib/supabase/server", () => ({

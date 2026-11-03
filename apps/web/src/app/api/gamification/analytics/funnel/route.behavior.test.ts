@@ -4,7 +4,7 @@ const countsMock = vi.hoisted(() => vi.fn());
 const snapshotMock = vi.hoisted(() => vi.fn());
 const supabaseMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/gamification/counters", () => ({
+vi.mock("@/lib/gamification/progression/counters", () => ({
   loadGamificationFunnelCounts: countsMock,
 }));
 vi.mock("@/lib/public-surface-snapshot-service", () => ({

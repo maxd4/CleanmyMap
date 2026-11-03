@@ -88,7 +88,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | `apps/web/src/lib/actions/action-buddy.ts` | COHESIVE_SINGLE_FILE | NONE | préserver l'AuthZ d'action, l'idempotence, les transitions de demande/proposition et la résolution de contact | nouveau backend de buddy, contrat de lecture indépendant ou persistance séparée des mutations |
 | `apps/web/src/components/actions/action-drawing-map.tsx` | ALREADY_MODULARIZED | NONE | préserver la frontière client Leaflet, la provenance manual/routed, l'undo et l'accessibilité des contrôles | nouvelle responsabilité autonome de cycle de vie Leaflet ou de rendu hors de la façade |
 | `apps/web/src/lib/actions/volunteer-participation-research.ts` | COHESIVE_SINGLE_FILE | NONE | conserver le caractère RESEARCH / NON NORMATIF, les modèles A/B/C et la formule CURRENT séparée | nouveau modèle expérimental, source de référence ou contrat de simulation indépendant |
-| `apps/web/src/lib/actions/formalities-workflow.ts` | COHESIVE_SINGLE_FILE | NONE | préserver le fingerprint canonique, l'invalidation par dépendance et le blocage de publication | nouvelle famille de formalités, persistance ou qualification consommée indépendamment |
+| `apps/web/src/lib/actions/formalities/workflow.ts` | COHESIVE_SINGLE_FILE | NONE | préserver le fingerprint canonique, l'invalidation par dépendance et le blocage de publication | nouvelle famille de formalités, persistance ou qualification consommée indépendamment |
 
 ### Décisions établies — grille détaillée
 
@@ -1109,7 +1109,7 @@ automatique fondée sur la taille, la complexité ou une ressemblance textuelle.
 | DEPENDENCY_OR_BLOCKER | conserver le caractère RESEARCH / NON NORMATIF, les modèles A/B/C et la formule CURRENT séparée |
 | NEXT_TRIGGER | nouveau modèle expérimental, source de référence ou contrat de simulation indépendant |
 
-#### `apps/web/src/lib/actions/formalities-workflow.ts`
+#### `apps/web/src/lib/actions/formalities/workflow.ts`
 
 | Champ | Valeur |
 | --- | --- |

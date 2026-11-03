@@ -14,7 +14,7 @@ import { claimFinishedActionParticipation } from "@/lib/actions/participation/po
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { toPublicActionListItem } from "@/lib/actions/data-contract";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
-import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
 
 export const runtime = "nodejs";
 // Justification Vercel: this authenticated mobile action projection changes with workflow state.

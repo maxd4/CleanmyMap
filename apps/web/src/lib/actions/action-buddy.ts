@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchActionRowById } from "./store-queries";
+import { fetchActionRowById } from "./persistence/queries";
 import { isActionStartInFuture, isPublishedFuturePreAction } from "./temporal";
 import { readActionRegistrationRecord } from "./participation/registration-records";
 import type {

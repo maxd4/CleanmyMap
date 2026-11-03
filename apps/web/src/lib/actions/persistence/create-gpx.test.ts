@@ -1,0 +1,301 @@
+import { describe, expect, it, vi } from "vitest";
+
+const routeProviderMock = vi.hoisted(() => vi.fn());
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/route/fossgis-foot-routing", () => ({
+  routePolylineThroughFossgisFoot: routeProviderMock,
+}));
+
+import type { ActionDrawing, CreateActionPayload } from "../types";
+import {
+  buildActionInsertPayload,
+  buildCreateActionGeometry,
+  resolveCreateActionDrawing,
+} from "../store";
+
+const gpxDrawing: ActionDrawing = {
+  kind: "polyline" as const,
+  coordinates: [
+    [48.85, 2.35] as [number, number],
+    [48.86, 2.36],
+    [48.85, 2.35],
+  ],
+};
+
+function buildGpxPayload(overrides: Partial<CreateActionPayload> = {}): CreateActionPayload {
+  return {
+    associationName: "Action spontanée",
+    actionDate: "2026-04-22",
+    locationLabel: "Paris",
+    departureLocationLabel: "Paris",
+    routeTopology: "loop",
+    routeTargetDistanceKm: 2,
+    preparationData: {
+      routeTopology: "loop",
+      routeTargetDistanceKm: 2,
+      routeTargetDistanceSource: "manual",
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 999,
+        pointCount: 999,
+        inferredTopology: "loop",
+        fileName: "route.gpx",
+      },
+    },
+    manualDrawing: {
+      kind: gpxDrawing.kind,
+      coordinates: gpxDrawing.coordinates.map(([latitude, longitude]) => [latitude, longitude] as [number, number]),
+    },
+    geometrySource: "gpx_import",
+    wasteKg: null,
+    cigaretteButts: null,
+    volunteersCount: 1,
+    durationMinutes: 60,
+    ...overrides,
+  };
+}
+
+describe("GPX create-action priority", () => {
+  it("keeps location_only as a point-only choice and never reconstructs", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      latitude: 48.85,
+      longitude: 2.35,
+      preparationData: { geometryMethod: "location_only", routeTopology: "loop" },
+    }));
+
+    expect(result).toEqual({ drawing: null, geometrySource: null, routeGeometry: null, origin: null });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps location_only without coordinates free of an invented route", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      latitude: undefined,
+      longitude: undefined,
+      preparationData: { geometryMethod: "location_only" },
+    }));
+
+    expect(result).toEqual({ drawing: null, geometrySource: null, routeGeometry: null, origin: null });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an explicit manual source without silently routing", async () => {
+    routeProviderMock.mockClear();
+    await expect(resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "manual" },
+    }))).rejects.toMatchObject({
+      fieldErrors: { manualDrawing: expect.any(Array) },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unavailable GPX source without silently routing", async () => {
+    routeProviderMock.mockClear();
+    await expect(resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "gpx_import" },
+    }))).rejects.toMatchObject({
+      fieldErrors: { gpxImport: expect.any(Array) },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unavailable generator route without silently routing", async () => {
+    routeProviderMock.mockClear();
+    await expect(resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "generator" },
+    }))).rejects.toMatchObject({
+      fieldErrors: { geometryMethod: expect.any(Array) },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a valid generator route as the selected geometry", async () => {
+    routeProviderMock.mockClear();
+    const generatorRoute = {
+      routes: [{
+        routeId: "generated-1",
+        groupIndex: 1,
+        geometry: {
+          coordinates: [[48.7, 2.2], [48.71, 2.21]],
+          mode: "network",
+          estimated: false,
+        },
+        plannerTechnicalStops: [],
+      }],
+    } as never;
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      preparationData: { geometryMethod: "generator", operationalRoute: generatorRoute },
+    }));
+
+    expect(result).toMatchObject({
+      geometrySource: "routed",
+      drawing: { kind: "polyline", coordinates: [[48.7, 2.2], [48.71, 2.21]] },
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a valid manual drawing exact and never routes", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: gpxDrawing,
+      geometrySource: "manual",
+      preparationData: { geometryMethod: "manual" },
+    }));
+
+    expect(result).toMatchObject({
+      drawing: gpxDrawing,
+      geometrySource: "manual",
+      routeGeometry: null,
+      origin: gpxDrawing.coordinates[0],
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the imported trace and never calls the routing provider", async () => {
+    const result = await resolveCreateActionDrawing(buildGpxPayload());
+
+    expect(result).toMatchObject({
+      drawing: gpxDrawing,
+      geometrySource: "gpx_import",
+      routeGeometry: null,
+      origin: gpxDrawing.coordinates[0],
+    });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps GPX provenance and recalculates observed distance independently of the target", () => {
+    const payload = buildGpxPayload();
+    const geometry = buildCreateActionGeometry(payload, gpxDrawing, "gpx_import");
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload,
+      persistedGeometry: geometry,
+      finalDrawing: gpxDrawing,
+      routeGeometry: null,
+      status: "pending",
+    });
+
+    expect(geometry.geometrySource).toBe("gpx_import");
+    expect(row.geometry_source).toBe("gpx_import");
+    expect(row.preparation_data.routeTargetDistanceKm).toBe(2);
+    expect(row.preparation_data.routeObservedDistanceKm).toBeGreaterThan(0);
+    expect(row.preparation_data.routeObservedDistanceKm).not.toBe(2);
+    expect(row.preparation_data.gpxImport).toMatchObject({
+      source: "gpx_import",
+      pointCount: 3,
+      fileName: "route.gpx",
+    });
+    expect(row.preparation_data.gpxImport?.observedDistanceKm).toBe(
+      row.preparation_data.routeObservedDistanceKm,
+    );
+  });
+
+  it("keeps a planned GPX out of observed distance fields at creation", () => {
+    const payload = buildGpxPayload({
+      preparationData: {
+        ...buildGpxPayload().preparationData,
+        gpxImport: {
+          source: "gpx_import",
+          observedDistanceKm: 999,
+          pointCount: 999,
+          inferredTopology: "loop",
+          fileName: "route.gpx",
+          intent: "planned",
+          provenance: "planned",
+        },
+      },
+    });
+    const geometry = buildCreateActionGeometry(payload, gpxDrawing, "gpx_import");
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload,
+      persistedGeometry: geometry,
+      finalDrawing: gpxDrawing,
+      routeGeometry: null,
+      status: "pending",
+    });
+
+    expect(row.preparation_data.routeObservedDistanceKm).toBeUndefined();
+    expect(row.preparation_data.gpxImport?.observedDistanceKm).toBe(0);
+    expect(row.preparation_data.gpxImport?.intent).toBe("planned");
+  });
+
+  it("does not persist an older operational route beside an active GPX", async () => {
+    const payload = buildGpxPayload({
+      preparationData: {
+        ...buildGpxPayload().preparationData,
+        operationalRoute: {
+          routes: [{
+            routeId: "stale-route",
+            groupIndex: 1,
+            geometry: { coordinates: [[48.7, 2.2], [48.71, 2.21]] },
+            plannerTechnicalStops: [],
+          }],
+        },
+      } as never,
+    });
+
+    const result = await resolveCreateActionDrawing(payload);
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload,
+      persistedGeometry: buildCreateActionGeometry(payload, result.drawing, result.geometrySource),
+      finalDrawing: result.drawing,
+      routeGeometry: result.routeGeometry,
+      status: "pending",
+    });
+
+    expect(result.geometrySource).toBe("gpx_import");
+    expect(result.routeGeometry).toBeNull();
+    expect(row.preparation_data.operationalRoute).toBeUndefined();
+    expect(row.geometry_source).toBe("gpx_import");
+  });
+
+  it("reconstructs a bounded fallback route when no active drawing exists", async () => {
+    routeProviderMock.mockResolvedValue({
+      mode: "fallback",
+      provider: "none",
+      isLoop: true,
+      coordinates: [[48.85, 2.35], [48.851, 2.351], [48.85, 2.35]],
+      distanceKm: 0.2,
+      legs: [],
+    });
+    const result = await resolveCreateActionDrawing(buildGpxPayload({
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      latitude: 48.85,
+      longitude: 2.35,
+      preparationData: { routeTopology: "loop", routeTargetDistanceKm: 1 },
+    }));
+    expect(result).toMatchObject({ geometrySource: "estimated_route", origin: [48.85, 2.35] });
+    expect(result.drawing?.coordinates).toHaveLength(3);
+  });
+
+  it("keeps persistence explicit when route reconstruction has no usable origin", async () => {
+    routeProviderMock.mockClear();
+    const result = await resolveCreateActionDrawing({
+      ...buildGpxPayload(),
+      manualDrawing: undefined,
+      geometrySource: undefined,
+      locationLabel: "",
+      departureLocationLabel: undefined,
+      preparationData: { routeTopology: "loop" },
+    });
+    expect(result).toEqual({ drawing: null, geometrySource: null, routeGeometry: null, origin: null });
+    expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+});

@@ -16,7 +16,7 @@ seconde liste de progressions CURRENT. Les seuls IDs CURRENT sont ceux de la
 spécification canonique.
 
 La taxonomie CURRENT à utiliser dans cet inventaire est celle du registre
-`GAMIFICATION_REGISTRY` dans `apps/web/src/lib/gamification/progression-utils.ts`
+`GAMIFICATION_REGISTRY` dans `apps/web/src/lib/gamification/progression/progression-utils.ts`
 et de la [spécification canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md);
 elle contient exactement dix progressions infinies:
 

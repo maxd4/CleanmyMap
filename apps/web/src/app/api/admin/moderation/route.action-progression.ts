@@ -3,7 +3,7 @@ import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild
 import {
   refreshProgressionProfile,
   syncUserActionProgression,
-} from "@/lib/gamification/progression-tracking";
+} from "@/lib/gamification/reconciliation/progression-tracking";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import type { ModerationSupabaseClient } from "./route.shared";
 

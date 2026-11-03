@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   buildSchoolActionAttestation,
   isEligibleForSchoolActionRecognition,
-} from "@/lib/gamification/school-action-recognition";
+} from "@/lib/gamification/progression/school-action-recognition";
 
 export const runtime = "nodejs";
 // Justification Vercel : l’éligibilité et la visibilité de l’action sont relues côté serveur avant de produire l’attestation publique ; le cache de réponse reste limité au contrat HTTP existant (public, max-age=60, stale-while-revalidate=300).

@@ -8,7 +8,7 @@ export {
   minVerifiedContributions,
   xpStep,
   xpRequired,
-} from "./progression-formulas";
+} from "./progression/progression-formulas";
 
 export {
   syncUserActionProgression,
@@ -20,11 +20,11 @@ export {
   trackCommunityRsvpYes,
   trackCommunityOpsUpdate,
   trackRouteRecommendationUse,
-} from "./progression-tracking";
+} from "./reconciliation/progression-tracking";
 
 export {
   buildPostActionRetentionLoop,
   getGamificationLeaderboard,
   projectGamificationLeaderboardResponse,
-} from "./progression-leaderboard";
-export { getUserProgression } from "./progression-user";
+} from "./progression/progression-leaderboard";
+export { getUserProgression } from "./progression/progression-user";

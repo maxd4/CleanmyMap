@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CreateActionPayload } from "./types";
-import { buildActionInsertPayload, buildCreateActionGeometry } from "./store-create-contract";
+import { buildActionInsertPayload, buildCreateActionGeometry } from "./persistence/create-contract";
 
 function buildPayload(overrides: Partial<CreateActionPayload> = {}): CreateActionPayload {
   return {

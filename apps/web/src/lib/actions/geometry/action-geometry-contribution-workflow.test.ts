@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 const eligibleMock = vi.hoisted(() => vi.fn());
 const reconcileMock = vi.hoisted(() => vi.fn());
 vi.mock("./action-geometry-contributor-eligibility", () => ({ isActionGeometryContributorEligible: eligibleMock }));
-vi.mock("@/lib/gamification/gamification-reconciliation", () => ({ reconcileUserGamification: reconcileMock }));
+vi.mock("@/lib/gamification/reconciliation/gamification-reconciliation", () => ({ reconcileUserGamification: reconcileMock }));
 import {
   hasGpxGeometryContribution,
   recordGpxGeometryContributionIfPresent,

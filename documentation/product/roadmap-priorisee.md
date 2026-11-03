@@ -61,7 +61,7 @@ L'ordre I-06 à I-08 est technique et ne remplace pas les STOP CONDITIONS et pri
 
 - `apps/web/src/app/api/recycling/breakdown/route.ts` et `lib/recycling/breakdown.ts` : snapshot dérivé depuis des contrats Actions ; actuellement un `limit: 2000` est transmis au loader.
 - `apps/web/src/app/api/reports/governance-monthly/route.ts` pour `quality=1` : revue mensuelle depuis le loader unifié, `limit: 2000`.
-- `apps/web/src/lib/gamification/progression-ranking-batch.ts` : pages de 1 000 et groupes d'identifiants de 500, mais accumulation des résultats.
+- `apps/web/src/lib/gamification/progression/progression-ranking-batch.ts` : pages de 1 000 et groupes d'identifiants de 500, mais accumulation des résultats.
 
 **Décision :** **diagnostic read-only d'abord**. Prouver durée, nombre de requêtes, volume transféré, capacité à représenter toute la population requise, mémoire et coût.
 
@@ -278,6 +278,6 @@ action réelle → données fiables → rapport exploitable
 - `apps/web/scripts/export-actions-backup.mjs`.
 - `apps/web/src/app/api/recycling/breakdown/route.ts`.
 - `apps/web/src/app/api/reports/governance-monthly/route.ts`.
-- `apps/web/src/lib/gamification/progression-ranking-batch.ts`.
+- `apps/web/src/lib/gamification/progression/progression-ranking-batch.ts`.
 - `maintenance/python/src/analytics.py`.
 - `documentation/features/reports/report-pdf-themes-and-reuse.md`, `apps/web/supabase/migrations/20261018000002_report_generation_pdf_shares.sql`.

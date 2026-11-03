@@ -2,7 +2,7 @@
 
 import { useQuizSessionController } from "@/components/learn/quiz/session/use-quiz-session-controller";
 import { insertAdaptiveReinforcement } from "@/components/learn/quiz/quiz-adaptive";
-import { recordQuizQuestionCorrectAnswer } from "@/lib/gamification/api";
+import { recordQuizQuestionCorrectAnswer } from "@/lib/gamification/progression/api";
 import { getQuizReviewTarget } from "@/lib/learning/quiz/quiz-review-targets";
 import { buildQuizErrorGrid } from "@/lib/learning/quiz/quiz-error-grid";
 import type { QuizAccessTypeId } from "@/lib/learning/quiz/quiz-access-types";

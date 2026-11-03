@@ -39,7 +39,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
-vi.mock("@/lib/gamification/progression-tracking", () => ({
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({
   refreshProgressionProfile: refreshProgressionProfileMock,
 }));
 vi.mock("@/lib/gamification/badges/rebuild", () => ({ rebuildUserGamificationBadges: rebuildUserGamificationBadgesMock }));

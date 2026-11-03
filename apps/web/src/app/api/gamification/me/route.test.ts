@@ -24,7 +24,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/gamification/progression", () => ({
   getUserProgression: getUserProgressionMock,
 }));
-vi.mock("@/lib/gamification/gamification-reconciliation-notice", () => ({
+vi.mock("@/lib/gamification/reconciliation/gamification-reconciliation-notice", () => ({
   loadGamificationReconciliationInbox: loadGamificationReconciliationInboxMock,
   isGamificationReconciliationNotificationId: isGamificationReconciliationNotificationIdMock,
 }));

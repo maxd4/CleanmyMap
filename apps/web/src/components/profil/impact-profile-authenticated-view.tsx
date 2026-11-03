@@ -6,7 +6,7 @@ import { ImpactCard } from "@/components/profil/impact-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { ACTION_FIELD_ROLE_OPTIONS } from "@/lib/actions/field-roles";
 import type { CurrentAccountIdentity } from "@/lib/account/current-account-identity";
 import type { ImpactPageProgression } from "./impact-profile-page";

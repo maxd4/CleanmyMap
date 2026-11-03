@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { trackActionCreated } from "@/lib/gamification/progression";
-import { trackNewPlaceVisited } from "@/lib/gamification/progression-tracking";
+import { trackNewPlaceVisited } from "@/lib/gamification/reconciliation/progression-tracking";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import {
   resolveActionOrganizers,

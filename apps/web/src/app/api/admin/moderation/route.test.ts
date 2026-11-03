@@ -66,7 +66,7 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 
-vi.mock("@/lib/gamification/progression-tracking", () => ({
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({
   refreshProgressionProfile: refreshProgressionProfileMock,
   syncUserActionProgression: syncUserActionProgressionMock,
 }));

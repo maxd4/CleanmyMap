@@ -3,8 +3,8 @@ import {
   collectEligibleCleanZoneSources,
   type CleanZoneCanonicalRow,
   type CleanZoneProgressionEvent,
-} from "@/lib/gamification/clean-zones";
-import { loadGamificationUserCounters } from "../counters";
+} from "@/lib/gamification/progression/clean-zones";
+import { loadGamificationUserCounters } from "../progression/counters";
 import {
   buildCleanZonesBadges,
   buildExplorerFamily,
@@ -17,14 +17,14 @@ import {
 import {
   loadQuizLearningProgression,
   type LearningProgressionSummary,
-} from "../quiz-learning-progression";
-import { PERSONAL_BADGE_DEFINITIONS } from "../badge-catalog";
+} from "../progression/quiz-learning-progression";
+import { PERSONAL_BADGE_DEFINITIONS } from "../progression/badge-catalog";
 import {
   buildTerrainSpecializationProgressions,
   TERRAIN_SPECIALIZATION_EVENT_TYPE,
-} from "../terrain-specializations";
-import { loadTerrainSpecializationEvidence } from "../terrain-specialization-evidence";
-import { loadGamificationLedgerEvents, type GamificationLedgerEvent } from "../gamification-summary-loader";
+} from "../progression/terrain-specializations";
+import { loadTerrainSpecializationEvidence } from "../progression/terrain-specialization-evidence";
+import { loadGamificationLedgerEvents, type GamificationLedgerEvent } from "../progression/gamification-summary-loader";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 

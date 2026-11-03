@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
-import { computeNextSRSState, createInitialSRSState, type SRSQuality, type SRSStats } from "@/lib/gamification/quiz-srs";
+import { computeNextSRSState, createInitialSRSState, type SRSQuality, type SRSStats } from "@/lib/gamification/progression/quiz-srs";
 import { loadQuizSRSData, saveQuizSRSState } from "@/lib/services/quiz-srs-service";
 import {
   buildQuizDemoSessionDeck,

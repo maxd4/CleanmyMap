@@ -1,6 +1,6 @@
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
-import type { GamificationReconciliationReceipt } from "@/lib/gamification/gamification-reconciliation-receipt";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
+import type { GamificationReconciliationReceipt } from "@/lib/gamification/reconciliation/gamification-reconciliation-receipt";
 import { buildReconciliationTargetSummary } from "./gamification-reconciliation-detail.model";
 
 export type ReconciliationNoticeCopy = {

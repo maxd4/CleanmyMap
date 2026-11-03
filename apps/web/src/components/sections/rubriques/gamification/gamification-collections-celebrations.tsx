@@ -2,8 +2,8 @@
 
 import { useCallback, useMemo } from "react";
 import { BadgeCheck, PartyPopper, Play } from "lucide-react";
-import { announceGamificationGain } from "@/lib/gamification/announcements";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import { announceGamificationGain } from "@/lib/gamification/reconciliation/announcements";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 import { buildLightCelebrationPreview } from "./light-celebrations-panel";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
 

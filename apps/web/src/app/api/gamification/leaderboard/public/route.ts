@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
-import { buildPublicUserLeaderboard } from "@/lib/gamification/progression-ranking";
-import { buildPublicStructureLeaderboard } from "@/lib/gamification/progression-structure-ranking";
+import { buildPublicUserLeaderboard } from "@/lib/gamification/progression/progression-ranking";
+import { buildPublicStructureLeaderboard } from "@/lib/gamification/progression/progression-structure-ranking";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   LeaderboardMetric,
   PublicLeaderboardResponseDto,
-} from "@/lib/gamification/progression-types";
+} from "@/lib/gamification/progression/progression-types";
 
 export const runtime = "nodejs";
 

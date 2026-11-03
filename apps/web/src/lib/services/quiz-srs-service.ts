@@ -1,5 +1,5 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createInitialSRSState, SRSStats } from "@/lib/gamification/quiz-srs";
+import { createInitialSRSState, SRSStats } from "@/lib/gamification/progression/quiz-srs";
 
 const LOCAL_STORAGE_KEY = "cleanmymap_quiz_srs";
 const QUIZ_SRS_CACHE_TTL_MS = 60_000;

@@ -1,11 +1,11 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
 import {
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
-} from "@/lib/actions/formalities-workflow";
+} from "@/lib/actions/formalities/workflow";
 import { ActionFormalitiesQualificationView } from "./action-formalities-workflow-panel";
 
 describe("ActionFormalitiesQualificationView", () => {

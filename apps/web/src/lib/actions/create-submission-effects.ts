@@ -5,10 +5,10 @@ import { loadActionById } from "@/lib/actions/store";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import { logFailure } from "@/lib/logging/failure-log";
 import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
-import { actionFormalitiesFactsSchema, deriveActionFormalitiesFacts } from "@/lib/actions/formalities-facts";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
-import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
-import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
+import { actionFormalitiesFactsSchema, deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
+import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
+import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
+import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities/rules";
 
 function buildInitialFormalitiesState(payload: CreateActionPayload) {
   return resolveActionTerritory({

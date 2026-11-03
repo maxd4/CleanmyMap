@@ -148,7 +148,7 @@ vi.mock("@/lib/gamification/referrals/referrals-cache", () => ({
   fetchCachedReferralSummary: mocks.fetchCachedReferralSummary,
 }));
 
-vi.mock("@/lib/gamification/progression-ranking-data", () => ({
+vi.mock("@/lib/gamification/progression/progression-ranking-data", () => ({
   loadUserLevelRankingSummary: mocks.loadUserLevelRankingSummary,
 }));
 

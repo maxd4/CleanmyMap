@@ -11,8 +11,8 @@ import {
   xpStep,
   syncUserActionProgression,
 } from "@/lib/gamification/progression";
-import { deriveBadges } from "./progression-formulas";
-import type { UserProgressionStats } from "./progression-types";
+import { deriveBadges } from "./progression/progression-formulas";
+import type { UserProgressionStats } from "./progression/progression-types";
 
 function makeStats(overrides: Partial<UserProgressionStats> = {}): UserProgressionStats {
   return {

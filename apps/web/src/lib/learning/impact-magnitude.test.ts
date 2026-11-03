@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   buildImpactMagnitudeSnapshot,
   clampImpactMagnitudeInput,

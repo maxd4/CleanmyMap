@@ -3,13 +3,13 @@
 import { useMemo } from "react";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { InfiniteBadge } from "./InfiniteBadge";
-import { announceGamificationGain } from "@/lib/gamification/announcements";
-import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
+import { announceGamificationGain } from "@/lib/gamification/reconciliation/announcements";
+import type { ActionBalanceSummary } from "@/lib/gamification/progression/action-balance";
 import { ActionBalanceBadge } from "../action-balance-badge";
 import { MonthlyRegularityBadge } from "../monthly-regularity-badge";
 import { SensitiveZoneBadge } from "../sensitive-zone-badge";
-import type { GamificationProgressionState } from "@/lib/gamification/progression-types";
-import { findBadgeDefinitionByFamily } from "@/lib/gamification/badge-catalog";
+import type { GamificationProgressionState } from "@/lib/gamification/progression/progression-types";
+import { findBadgeDefinitionByFamily } from "@/lib/gamification/progression/badge-catalog";
 
 export function InfiniteBadgesPanel({
   totals,

@@ -1,5 +1,5 @@
 import type { ActionPhase, ActionPreparationData } from "./types";
-import { sanitizeFormalitiesWorkflowForCreation } from "./formalities-workflow";
+import { sanitizeFormalitiesWorkflowForCreation } from "./formalities/workflow";
 
 export type AdministrativeRequirementsStatus = "pending" | "validated";
 

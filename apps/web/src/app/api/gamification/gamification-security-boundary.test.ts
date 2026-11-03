@@ -45,7 +45,7 @@ describe("gamification security boundaries", () => {
       expect(existsSync(resolve(webRoot, routePath)), routePath).toBe(false);
     }
 
-    const apiSource = readWebFile("src/lib/gamification/api.ts");
+    const apiSource = readWebFile("src/lib/gamification/progression/api.ts");
     expect(apiSource).not.toContain("incrementBadge");
     expect(apiSource).not.toContain("BadgeIncrementType");
     expect(apiSource).not.toContain("/increment");

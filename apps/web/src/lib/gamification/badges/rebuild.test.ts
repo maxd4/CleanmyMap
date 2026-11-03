@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const reconcileUserGamificationMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../gamification-reconciliation", () => ({
+vi.mock("../reconciliation/gamification-reconciliation", () => ({
   reconcileUserGamification: reconcileUserGamificationMock,
 }));
 

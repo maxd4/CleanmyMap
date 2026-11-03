@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { PendingGamificationReconciliation } from "@/lib/gamification/reconciliation/gamification-reconciliation-notice";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 import { GamificationReconciliationNotice } from "./gamification-reconciliation-notice";
 
 export const progression = {

@@ -82,14 +82,14 @@ interprétées comme trois noms pour la même progression :
 
 | Notion | Contrat CURRENT | Source canonique | Ce qu'elle ne signifie pas |
 | --- | --- | --- | --- |
-| **Niveau** | progression générale numérique dérivée du ledger XP et des prérequis de contribution | `progression_events`, `progression-rules.ts`, `progression-formulas.ts` et `progression.summary` | ni une famille de badge, ni un rôle AuthZ |
+| **Niveau** | progression générale numérique dérivée du ledger XP et des prérequis de contribution | `progression_events`, `progression/progression-rules.ts`, `progression/progression-formulas.ts` et `progression.summary` | ni une famille de badge, ni un rôle AuthZ |
 | **Statut d'engagement** | reconnaissance qualitative ordonnée `Observateur → Contributeur → Référent → Mentor → Coordinateur` | `engagement-status.ts` | ni un badge spécialisé, ni une permission |
 | **Badge** | progression spécialisée ou jalon dans une famille métier | `BADGE_DEFINITIONS` / `CURRENT_BADGE_DEFINITIONS` dans `badge-catalog.ts` | ni le niveau global, ni le statut qualitatif |
 
 ### Contrat CURRENT des règles de niveau
 
 Le contrat CURRENT versionné `ProgressionRulesV2` est exposé par
-`apps/web/src/lib/gamification/progression-rules.ts` sous la version stable
+`apps/web/src/lib/gamification/progression/progression-rules.ts` sous la version stable
 `progression-rules-v2`. Le contrat historique `progression-rules-v1` reposait
 sur `minValidatedActions` et n'est plus l'identité du runtime CURRENT. V2
 conserve le calcul XP triangulaire et remplace le
@@ -235,7 +235,7 @@ mécaniques, les faits et les reçus historiques.
 
 Une réconciliation CURRENT qui modifie l'état utilisateur produit un
 `GamificationReconciliationReceipt`, contrat structuré défini par
-`apps/web/src/lib/gamification/gamification-reconciliation-receipt.ts`. Le
+`apps/web/src/lib/gamification/reconciliation/gamification-reconciliation-receipt.ts`. Le
 reçu est calculé depuis le même plan déterministe que les mutations du ledger
 et expose :
 

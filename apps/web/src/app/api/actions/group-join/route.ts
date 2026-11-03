@@ -12,7 +12,7 @@ import {
   getCurrentUserIdentity,
   requireAuthenticatedAccess,
 } from "@/lib/authz";
-import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 
 export const runtime = "nodejs";

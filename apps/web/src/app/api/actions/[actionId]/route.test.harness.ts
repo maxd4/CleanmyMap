@@ -40,11 +40,11 @@ vi.mock("@/lib/actions/store", () => ({
     recordRepollutionPredictionEvaluationForActionMock,
 }));
 
-vi.mock("@/lib/actions/store-notes", () => ({
+vi.mock("@/lib/actions/persistence/notes", () => ({
   buildPersistedNotes: vi.fn(),
 }));
 
-vi.mock("@/lib/actions/store-post-processing", () => ({
+vi.mock("@/lib/actions/persistence/post-processing", () => ({
   recordRepollutionPredictionEvaluationForAction:
     recordRepollutionPredictionEvaluationForActionMock,
 }));

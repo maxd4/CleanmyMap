@@ -5,9 +5,9 @@
 ## Taxonomie CURRENT et registre des décisions
 
 `GAMIFICATION_REGISTRY` dans
-`apps/web/src/lib/gamification/progression-utils.ts` est le registre canonique
+`apps/web/src/lib/gamification/progression/progression-utils.ts` est le registre canonique
 unique des mécaniques et signaux métier ; `BADGE_DEFINITIONS` dans
-`apps/web/src/lib/gamification/badge-catalog.ts` est le catalogue canonique
+`apps/web/src/lib/gamification/progression/badge-catalog.ts` est le catalogue canonique
 des identités de badges. Ces deux registres ont des responsabilités distinctes
 et remplacent les anciennes matrices de surface ; il n'existe pas de matrice
 produit parallèle à compléter plus tard. Chaque entrée de mécanique porte :

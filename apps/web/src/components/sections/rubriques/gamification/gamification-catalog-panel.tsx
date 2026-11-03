@@ -9,7 +9,7 @@ import type {
   GamificationSummary,
   GamificationSummaryMilestone,
   GamificationSummaryProgression,
-} from "@/lib/gamification/gamification-summary";
+} from "@/lib/gamification/progression/gamification-summary";
 import { TerrainSpecializationsPanel } from "./terrain-specializations-panel";
 
 type CatalogState = GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"];

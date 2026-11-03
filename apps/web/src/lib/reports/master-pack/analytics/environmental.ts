@@ -1,6 +1,6 @@
 import { computeEnvironmentalProxyMetrics } from "@/lib/reports/report-model/metrics";
 import { toFrNumber, toFrInt } from "@/lib/reports/report-model/formatters";
-import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
+import { buildPersonalImpactMethodology } from "@/lib/gamification/progression/progression-impact";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 export function computeEnvironmentalProxies(totalButts: number, totalKg: number, pollutionScoreAverage: number) {

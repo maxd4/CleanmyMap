@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 import { acquiredGamificationSummary } from "./gamification-collections-celebrations";
 
 function makeSummary(overrides: Partial<GamificationSummary> = {}): GamificationSummary {

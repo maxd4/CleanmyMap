@@ -1,4 +1,4 @@
-import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "@/lib/gamification/badge-catalog";
+import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "@/lib/gamification/progression/badge-catalog";
 import type { SpogomiSpecializedProgress } from "./progress";
 
 type SpogomiCollectionAwardStatus = "active" | "revoked" | "replaced";

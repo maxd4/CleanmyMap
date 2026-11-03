@@ -1,4 +1,4 @@
-import type { LevelRequirementCondition } from "@/lib/gamification/progression-types";
+import type { LevelRequirementCondition } from "@/lib/gamification/progression/progression-types";
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);

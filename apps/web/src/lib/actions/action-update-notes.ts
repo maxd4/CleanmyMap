@@ -1,7 +1,7 @@
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { parseDrawingFromNotes } from "./geometry/drawing";
-import { buildPersistedNotes } from "./store-notes";
+import { buildPersistedNotes } from "./persistence/notes";
 import {
   resolvePersistedVolunteerComposition,
   type ActionVolunteerParticipation,

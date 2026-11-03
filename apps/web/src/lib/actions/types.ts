@@ -36,8 +36,8 @@ import type {
 } from "@/lib/route/route-operational";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import type { AdministrativeRequirements } from "./administrative-requirements";
-import type { ActionFormalitiesFacts } from "./formalities-qualification";
-import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
+import type { ActionFormalitiesFacts } from "./formalities/qualification";
+import type { ActionFormalitiesWorkflowState } from "./formalities/workflow";
 import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route-contract";
 import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
 import type {

@@ -11,7 +11,7 @@ vi.mock("@/lib/actions/participation/organizers", () => ({ loadCanonicalActionOr
 vi.mock("@/lib/actions/permissions", () => ({ canReviewActionParticipants: mocks.canReview, canOverrideActionParticipants: mocks.canOverride }));
 vi.mock("@/lib/actions/participation/group-participation", () => ({ loadActionParticipationReviews: mocks.loadReviews, reviewActionParticipation: mocks.review, addActionParticipationByAdmin: vi.fn() }));
 vi.mock("@/lib/actions/moderation-audit", () => ({ appendActionModerationAudit: mocks.audit }));
-vi.mock("@/lib/gamification/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
 vi.mock("@/lib/gamification/badges/rebuild", () => ({ rebuildUserGamificationBadges: mocks.rebuildBadges }));
 
 import { GET, POST } from "./route";

@@ -88,10 +88,10 @@ Les ajustements récents reposent sur ces points d entrée:
 - `apps/web/src/lib/time-scopes.ts`
 - `apps/web/src/lib/gamification/annual-reset.ts`
 - `apps/web/src/lib/gamification/progression-data.ts`
-- `apps/web/src/lib/gamification/progression-user.ts` — owner de la progression personnelle
-- `apps/web/src/lib/gamification/progression-ranking.ts` — owner des classements
-- `apps/web/src/lib/gamification/progression-ranking-batch.ts` — owner des lectures batch des sources leaderboard
-- `apps/web/src/lib/gamification/progression-retention.ts` — owner de la rétention post-action
+- `apps/web/src/lib/gamification/progression/progression-user.ts` — owner de la progression personnelle
+- `apps/web/src/lib/gamification/progression/progression-ranking.ts` — owner des classements
+- `apps/web/src/lib/gamification/progression/progression-ranking-batch.ts` — owner des lectures batch des sources leaderboard
+- `apps/web/src/lib/gamification/progression/progression-retention.ts` — owner de la rétention post-action
 - `apps/web/src/app/api/gamification/analytics/points/route.ts`
 - `apps/web/src/app/api/gamification/leaderboard/route.ts`
 - `apps/web/src/components/sections/rubriques/gamification/gamification-level-progress-panel.tsx` — panneau niveau/progression

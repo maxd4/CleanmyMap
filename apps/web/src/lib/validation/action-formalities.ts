@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { actionFormalitiesFactsSchema } from "@/lib/actions/formalities-workflow";
-import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
+import { actionFormalitiesFactsSchema } from "@/lib/actions/formalities/workflow";
+import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
 
 export const preparationFormalitiesSchemaFields = {
   administrativeRequirements: z

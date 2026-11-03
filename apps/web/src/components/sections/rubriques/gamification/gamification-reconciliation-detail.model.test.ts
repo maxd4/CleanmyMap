@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 import { buildReconciliationDetailCopy } from "./gamification-reconciliation-detail.model";
 import { GamificationReconciliationDetail } from "./gamification-reconciliation-detail";
 import { progression as noticeProgression, reconciliation as noticeReconciliation } from "./gamification-reconciliation-notice.test";

@@ -1,5 +1,5 @@
 import { ShieldCheck, Sparkles } from "lucide-react";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 
 function formatXp(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toLocaleString("fr-FR", { maximumFractionDigits: 2 });

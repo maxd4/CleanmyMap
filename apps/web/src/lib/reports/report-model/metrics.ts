@@ -1,7 +1,7 @@
 import {
   mapItemCoordinates,
 } from "@/lib/actions/data-contract";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 

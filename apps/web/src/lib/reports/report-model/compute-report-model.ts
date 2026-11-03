@@ -3,7 +3,7 @@ import {
   mapItemType,
 } from "@/lib/actions/data-contract";
 import { evaluateActionQuality } from "@/lib/actions/quality/quality";
-import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
+import { buildPersonalImpactMethodology } from "@/lib/gamification/progression/progression-impact";
 import {
   computeActionImpactKpis,
   sumActionImpactKpis,

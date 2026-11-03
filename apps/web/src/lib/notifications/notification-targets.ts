@@ -1,5 +1,5 @@
 import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
-import { buildGamificationReconciliationHref } from "@/lib/gamification/gamification-notification-targets";
+import { buildGamificationReconciliationHref } from "@/lib/gamification/reconciliation/gamification-notification-targets";
 import { buildJoinActionHref } from "@/lib/sections/join-action-routes";
 import { buildCommunityEventHref, migrateLegacyCommunityEventHref } from "@/lib/community/event-links";
 

@@ -371,7 +371,7 @@
       "maxBytes": 32623
     },
     {
-      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
+      "path": "apps/web/src/lib/gamification/progression/progression-leaderboard.ts",
       "kind": "runtime",
       "status": "IMPROVED",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
@@ -515,7 +515,7 @@
       "maxBytes": 15313
     },
     {
-      "path": "apps/web/src/lib/actions/formalities-workflow.ts",
+      "path": "apps/web/src/lib/actions/formalities/workflow.ts",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "9047f2eb9e729a86a49ebadbdc8f0f3bf778a38e",

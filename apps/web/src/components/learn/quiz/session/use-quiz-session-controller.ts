@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { SRSQuality } from "@/lib/gamification/quiz-srs";
+import type { SRSQuality } from "@/lib/gamification/progression/quiz-srs";
 import {
   isQuizAnswerCorrect,
   normalizeQuizAnswer,

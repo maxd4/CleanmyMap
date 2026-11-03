@@ -3,7 +3,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
 import { AdministrativeRequirementsStatus } from "./administrative-requirements-status";
 import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 
 export function ActionCreationLegalPanel({
   actionId,

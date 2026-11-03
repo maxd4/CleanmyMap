@@ -29,7 +29,7 @@ créer de copie de la banque.
   revue ; la sélection combine mode, compétence, format, difficulté, piège et,
   pour l’école, niveau et parcours.
 - Le SRS est l’implémentation simplifiée de SM-2 de
-  `apps/web/src/lib/gamification/quiz-srs.ts`, persistée par le service dédié.
+  `apps/web/src/lib/gamification/progression/quiz-srs.ts`, persistée par le service dédié.
 - Les métriques pédagogiques sont agrégées par question, mode, compétence et
   type d’erreur ; elles ne constituent pas une collecte de réponses brutes.
 - `/admin/quiz-bank` reste une interface de revue et d’audit ; aucun éditeur

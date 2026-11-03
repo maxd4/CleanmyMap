@@ -8,7 +8,7 @@ import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import type {
   LeaderboardMetric,
   PublicLeaderboardItem,
-} from "@/lib/gamification/progression-types";
+} from "@/lib/gamification/progression/progression-types";
 import {
   buildPublicLeaderboardUrl,
   fetchPublicLeaderboard,

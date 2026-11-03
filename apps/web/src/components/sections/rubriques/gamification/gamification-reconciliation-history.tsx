@@ -7,8 +7,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { navigateToGamificationTarget } from "./gamification-focus";
 import { GamificationReconciliationDetail } from "./gamification-reconciliation-detail";
 import { buildReconciliationDetailCopy } from "./gamification-reconciliation-detail.model";
-import type { GamificationReconciliationHistoryEntry } from "@/lib/gamification/gamification-reconciliation-notice";
-import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
+import type { GamificationReconciliationHistoryEntry } from "@/lib/gamification/reconciliation/gamification-reconciliation-notice";
+import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
 
 function formatDate(value: string, locale: string): string {
   return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {

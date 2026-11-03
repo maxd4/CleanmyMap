@@ -17,7 +17,7 @@ import {
   type IndividualImpactRow,
 } from "@/lib/actions/participation/individual-impact";
 import { resolveReviewerAccess } from "../group-join/route";
-import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
 import {
   captureActionParticipantImpactSnapshot,
   emitActionParticipantImpactNotifications,

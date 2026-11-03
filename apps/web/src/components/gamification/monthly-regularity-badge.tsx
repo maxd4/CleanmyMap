@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { CalendarDays } from "lucide-react";
-import type { MonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
+import type { MonthlyRegularitySummary } from "@/lib/gamification/progression/monthly-regularity";
 import {
   GamificationBadgePanel,
   getGamificationBadgePanelStyleProps,

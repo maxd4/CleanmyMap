@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadPersonalMohsImpactTotals } from "@/lib/gamification/mohs-impact-reconciliation";
+import { loadPersonalMohsImpactTotals } from "@/lib/gamification/reconciliation/mohs-impact-reconciliation";
 
 export const runtime = "nodejs";
 

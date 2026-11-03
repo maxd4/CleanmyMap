@@ -1,4 +1,4 @@
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 
 export type PostActionImpactMetric = {
   id: "co2" | "water" | "surface";

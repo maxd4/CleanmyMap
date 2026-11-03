@@ -90,7 +90,7 @@ vi.mock("@/lib/pilotage/overview", () => ({
   buildPilotageOverviewFromContracts: buildPilotageOverviewFromContractsMock,
 }));
 
-vi.mock("@/lib/gamification/progression-impact", () => ({
+vi.mock("@/lib/gamification/progression/progression-impact", () => ({
   buildPersonalImpactMethodology: buildPersonalImpactMethodologyMock,
 }));
 

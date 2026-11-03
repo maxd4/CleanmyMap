@@ -69,7 +69,7 @@ Le code et les tests priment si une divergence apparaît.
   lecture publique ou un rendu de page.
 - les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
 - Le registre CURRENT `GAMIFICATION_REGISTRY` de
-  `apps/web/src/lib/gamification/progression-utils.ts` est l'unique catalogue
+  `apps/web/src/lib/gamification/progression/progression-utils.ts` est l'unique catalogue
   de décision des mécaniques métier. Chaque entrée porte un `id`, une
   `category` parmi `XP_PROGRESSION`, `XP_MILESTONE`, `BADGE_ONLY` et
   `NON_GAMIFIED`, un `progressionId` éventuel, une `xpPolicy`, une source

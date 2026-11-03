@@ -8,7 +8,7 @@ import {
   buildImpactMagnitudeSnapshot,
   type ImpactMagnitudeInputs,
 } from "@/lib/learning/impact-magnitude";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { formatLearnNumber } from "@/lib/learning/format-learn-number";
 
 type LearnVulgarisationMagnitudeComparatorProps = {

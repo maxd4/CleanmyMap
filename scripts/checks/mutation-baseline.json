@@ -17,7 +17,7 @@
     "score": 96.63608562691131
   },
   "files": {
-    "src/lib/actions/formalities-qualification.ts": {
+    "src/lib/actions/formalities/qualification.ts": {
       "total": 145,
       "counts": { "Killed": 142, "Survived": 3, "NoCoverage": 0, "Timeout": 0, "error": 0 },
       "score": 97.93103448275862

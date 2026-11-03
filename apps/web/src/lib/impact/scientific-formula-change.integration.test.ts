@@ -19,7 +19,7 @@ import {
 import {
   toIndividualImpactMeasurement,
 } from "@/lib/actions/participation/individual-impact";
-import { buildMohsThresholdAwards } from "@/lib/gamification/mohs-progression";
+import { buildMohsThresholdAwards } from "@/lib/gamification/progression/mohs-progression";
 import {
   deriveContextualCollectionUnits,
   isCurrentActionCollectionReferenceAverage,

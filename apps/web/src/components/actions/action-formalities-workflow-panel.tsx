@@ -8,11 +8,11 @@ import {
   updateActionFormalities,
   type ActionFormalitiesResponse,
 } from "@/lib/actions/http";
-import { qualifyActionFormalities, type ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import { qualifyActionFormalities, type ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import {
   buildFormalitiesWorkflowState,
   isFormalitiesPublicationBlocked,
-} from "@/lib/actions/formalities-workflow";
+} from "@/lib/actions/formalities/workflow";
 import {
   ActionFormalitiesQualificationView,
 } from "./action-formalities-qualification-view";

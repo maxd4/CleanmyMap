@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { GamificationSourceFact } from "@/lib/gamification/gamification-reconstruction";
+import type { GamificationSourceFact } from "@/lib/gamification/progression/gamification-reconstruction";
 import { readAllSpogomiPages } from "./pagination";
 import { isEligibleSpogomiMissionParticipant, type SpogomiRecognitionParticipant } from "./recognition";
 import { formatCivilDateInTimeZone } from "@/lib/time/civil-date";

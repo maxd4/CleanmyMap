@@ -5,7 +5,7 @@ import {
   type PostActionImpactMetric,
 } from "./post-action-summary-impact";
 import { evaluateActionQuality } from "./quality/quality";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import { resolveEffectiveVolunteerUnits } from "./volunteer-participation";
 import { computeActionImpactKpis } from "./impact-calculators";
 

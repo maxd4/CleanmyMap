@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { gamificationEventRegistry } from "@/lib/gamification/progression-utils";
+import { gamificationEventRegistry } from "@/lib/gamification/progression/progression-utils";
 
 describe("Forms compatibility boundary", () => {
   it("keeps historical Forms events registered without treating them as CURRENT progression", () => {

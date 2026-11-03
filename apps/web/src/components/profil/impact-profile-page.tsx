@@ -8,8 +8,8 @@ import { getBlockClasses } from "@/lib/ui/block-accents";
 import { fetchCurrentAccountIdentity, type CurrentAccountIdentity } from "@/lib/account/current-account-identity";
 import { useImpactProfileActions } from "@/components/profil/use-impact-profile-actions";
 import { ImpactProfileAuthenticatedView } from "@/components/profil/impact-profile-authenticated-view";
-import type { GamificationBadgeDefinition } from "@/lib/gamification/progression-types";
-import type { EngagementStatus } from "@/lib/gamification/engagement-status";
+import type { GamificationBadgeDefinition } from "@/lib/gamification/progression/progression-types";
+import type { EngagementStatus } from "@/lib/gamification/progression/engagement-status";
 
 export type ImpactPageProgression = {
   currentLevel: number;

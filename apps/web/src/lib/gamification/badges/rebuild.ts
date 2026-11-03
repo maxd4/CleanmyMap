@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { reconcileUserGamification } from "../gamification-reconciliation";
+import { reconcileUserGamification } from "../reconciliation/gamification-reconciliation";
 
 /**
  * Compatibility entry point for mutation flows that historically requested a

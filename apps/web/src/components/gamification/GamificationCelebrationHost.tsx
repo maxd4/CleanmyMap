@@ -8,7 +8,7 @@ import {
   GAMIFICATION_CELEBRATION_EVENT,
   type GamificationCelebrationPayload,
   type GamificationCelebrationTone,
-} from "@/lib/gamification/celebration";
+} from "@/lib/gamification/reconciliation/celebration";
 
 type CelebrationState = GamificationCelebrationPayload & {
   id: number;

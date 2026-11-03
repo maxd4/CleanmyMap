@@ -24,7 +24,7 @@ vi.mock("@/lib/actions/participation/group-participation", () => ({
 vi.mock("@/lib/actions/participation/post-action-claims", () => ({ claimFinishedActionParticipation: mocks.claim }));
 vi.mock("@/lib/actions/unified-source", () => ({ fetchUnifiedActionContracts: mocks.fetchUnified }));
 vi.mock("@/lib/actions/data-contract", () => ({ toPublicActionListItem: mocks.toPublic }));
-vi.mock("@/lib/gamification/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
+vi.mock("@/lib/gamification/reconciliation/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
 vi.mock("@/lib/gamification/badges/rebuild", () => ({ rebuildUserGamificationBadges: mocks.rebuildBadges }));
 
 import { GET, POST } from "./route";

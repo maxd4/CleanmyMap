@@ -3,7 +3,7 @@ import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
-import { CURRENT_GAMIFICATION_RULES_REVISION } from "@/lib/gamification/progression-types";
+import { CURRENT_GAMIFICATION_RULES_REVISION } from "@/lib/gamification/progression/progression-types";
 
 export const runtime = "nodejs";
 

@@ -1,5 +1,5 @@
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
-import { loadActionById } from "@/lib/actions/store-queries";
+import { loadActionById } from "@/lib/actions/persistence/queries";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { DetailLevelId, ModuleState } from "@/lib/reports/report-pdf-data";

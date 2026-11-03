@@ -5,7 +5,7 @@ import { decideAssociationActionReview, isAssociationActionReviewRequired } from
 import { emitAdministrativeRequirementNotifications } from "@/lib/actions/administrative-requirement-notifications";
 import { publishOfficialAssociationActionAnnouncement } from "@/lib/chat/association-action-announcement";
 import { buildAssociationActionReviewInboxItem, type CreatorInboxItem } from "@/lib/community/creator-inbox";
-import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities-publication-validation";
+import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities/publication-validation";
 import type { CreatorInboxAction } from "./route.shared";
 
 type AssociationActionParams = {

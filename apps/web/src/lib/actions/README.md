@@ -16,12 +16,21 @@ lib/actions/
 ├── signalement/     contrats et flux de signalement
 ├── unified-source/  source unifiée et adaptateurs associés
 ├── exports/         formats d'export Actions
-└── fichiers racine  types, validation, store et contrats transverses
+├── formalities/     faits, qualification, règles et workflow de formalités
+├── persistence/     création, lecture, normalisation et post-traitement
+└── fichiers racine  types, validation, façade store et contrats transverses
 ```
 
 Les sous-dossiers portent une responsabilité métier identifiable. Un nouveau
 module doit rejoindre le sous-domaine qui en possède l'invariant plutôt que
 d'être placé dans un dossier générique.
+
+`formalities/` est l'owner unique des familles de faits, règles, qualification,
+workflow et validation de publication des formalités. `persistence/` porte les
+implémentations de création, lecture, sélection, normalisation, notes,
+participants et post-traitement de la persistance Actions. Ces modules restent
+des contrats de domaine : ils ne sont pas déplacés dans l'UI et ne créent pas
+un second store.
 
 ## Frontières
 
@@ -57,10 +66,20 @@ consommateurs hors du domaine peuvent utiliser la surface publique explicite de
 multi-source. Son implémentation sous `unified-source/` est interne à ce
 sous-domaine et ne doit pas devenir un chemin public concurrent.
 
+`store.ts` reste la façade publique consommée par les routes et services pour
+les opérations de création et de lecture Actions. Elle réexporte les
+propriétaires de `persistence/` sans dupliquer leur logique. Les consommateurs
+qui ont besoin d'un contrat spécialisé de persistance importent le module
+propriétaire sous `persistence/`; les contrats `data-contract.ts` et
+`unified-source.ts` restent inchangés.
+
 ## Règles de placement
 
 - Placer ici une règle ou un contrat réutilisable indépendamment du rendu.
 - Garder les mutations et la persistance dans leurs modules Actions dédiés.
+- Placer une nouvelle formalité dans `formalities/` et une lecture ou mutation
+  de persistance dans `persistence/`, après vérification de son owner et de ses
+  consommateurs.
 - Préserver les contrôles d'authentification, d'autorisation et d'audit des
   flux sensibles.
 - Ajouter les tests auprès du module ou du sous-domaine vérifié.

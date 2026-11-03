@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { reconcileUserGamification } from "@/lib/gamification/gamification-reconciliation";
+import { reconcileUserGamification } from "@/lib/gamification/reconciliation/gamification-reconciliation";
 
 export const runtime = "nodejs";
 

@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
+import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
 
 export type ProfileGamificationSummaryProps = {
   summary: GamificationSummary | null | undefined;

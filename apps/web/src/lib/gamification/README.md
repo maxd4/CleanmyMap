@@ -1,13 +1,38 @@
 # Domaine Gamification
 
 Ce dossier porte les contrats et calculs de progression de l'application web :
-XP, niveaux, statuts, badges, jalons et événements de contribution.
+XP, niveaux, statuts, badges, jalons et journal d'événements de contribution.
+
+## Sous-domaines
+
+```text
+gamification/
+├── progression/       règles, faits, calculs, catalogues et projections
+├── reconciliation/    événements, plans, reçus, notifications et exécution
+├── badges/             catalogue et lectures de badges spécialisées
+├── points/             compatibilité analytique des points historiques
+├── referrals/          invitations et récompenses de parrainage
+├── progression.ts     façade publique historique de progression
+├── progression-data.ts façade publique historique des données de progression
+└── types.ts            types partagés minimaux
+```
+
+`progression/` est l'owner unique des règles versionnées, des faits métier,
+des formules XP/niveaux et des projections utilisateur, leaderboard et
+spécialisations. `reconciliation/` est l'owner unique de l'identité et de
+l'écriture des événements `progression_events`, des plans de diff, des reçus,
+notifications, refreshs et exécutions de réconciliation. Les deux frontières
+réutilisent les mêmes types et règles ; aucune seconde implémentation n'est
+créée.
+
+`badges/`, `points/` et `referrals/` restent des sous-domaines autonomes et ne
+sont pas réorganisés par ce découpage.
 
 ## Contrat courant
 
 Le contrat publié courant est `progression-rules-v2`, représenté par
 `ProgressionRulesV2` et `PROGRESSION_RULES_V2` dans
-`progression-rules.ts`. Cette version décrit la sémantique actuelle des
+`progression/progression-rules.ts`. Cette version décrit la sémantique actuelle des
 contributions vérifiées ; elle conserve les formules et seuils existants.
 
 La progression reste déterministe et dérivée de faits métier vérifiés. Les
@@ -18,7 +43,7 @@ un barrel ne doit pas recréer une seconde identité du contrat.
 
 Le moteur CURRENT est reconstructible depuis les faits métier canoniques. Le
 contrat versionné est `GAMIFICATION_RULES_V1` dans
-[`gamification-rules.ts`](./gamification-rules.ts). La chaîne de calcul est :
+[`progression/gamification-rules.ts`](./progression/gamification-rules.ts). La chaîne de calcul est :
 
 ```text
 sources métier → GamificationRulesV1 → computeExpectedGamificationState
@@ -56,7 +81,7 @@ et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
 
 ## Reçu utilisateur de réconciliation
 
-`gamification-reconciliation-receipt.ts` porte le contrat structuré
+`reconciliation/gamification-reconciliation-receipt.ts` porte le contrat structuré
 `GamificationReconciliationReceipt`. Le reconciler le construit depuis le
 même plan déterministe que les écritures `progression_events`, puis le
 persiste dans `app_notifications` uniquement lorsqu'une conséquence visible
@@ -110,8 +135,8 @@ remplacés ni recalculés depuis les notifications.
 ## Outil de réconciliation administrative
 
 Le plan de diff en lecture est porté par
-`gamification-reconciliation-plan.ts` et le traitement par lots par
-`gamification-reconcile-runner.ts`. L'interface serveur est le script
+`reconciliation/gamification-reconciliation-plan.ts` et le traitement par lots par
+`reconciliation/gamification-reconcile-runner.ts`. L'interface serveur est le script
 `apps/web/scripts/gamification-reconcile.mjs` :
 
 ```text
@@ -127,7 +152,9 @@ locale.
 
 ## Frontières
 
-- les formules et règles pures restent indépendantes du rendu ;
+- les formules et règles pures de `progression/` restent indépendantes du rendu ;
+- `reconciliation/` ne change jamais l'identité logique des événements, les
+  règles, l'ownership, l'idempotence ou l'atomicité des écritures ;
 - la persistance, les écritures d'événements et les lectures Supabase passent
   par leurs capacités dédiées ;
 - l'UI consomme les contrats de progression mais ne recalcule pas les règles ;
@@ -172,7 +199,7 @@ Les tests de progression restent auprès des modules concernés. Pour une
 modification locale :
 
 ```text
-npm run test -w apps/web -- src/lib/gamification
+npm run test -w apps/web -- src/lib/gamification/progression src/lib/gamification/reconciliation
 npm run typecheck -w apps/web
 npm run lint -w apps/web
 ```

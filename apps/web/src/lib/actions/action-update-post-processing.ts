@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { recordRepollutionPredictionEvaluationForAction } from "./store-post-processing";
+import { recordRepollutionPredictionEvaluationForAction } from "./persistence/post-processing";
 import {
   syncUpdatedOrganizers,
   syncUpdatedParticipants,
@@ -10,8 +10,8 @@ import {
 import type { ActionParticipantImpactSnapshot } from "./participation/group-participation-read";
 import type { appendActionModerationAudit } from "./moderation-audit";
 import type { UserIdentity } from "@/lib/authz";
-import { reconcileSchoolActionRecognitions } from "@/lib/gamification/school-action-recognition-persistence";
-import { reconcileActionParticipantImpactProgression } from "@/lib/gamification/progression-tracking";
+import { reconcileSchoolActionRecognitions } from "@/lib/gamification/reconciliation/school-action-recognition-persistence";
+import { reconcileActionParticipantImpactProgression } from "@/lib/gamification/reconciliation/progression-tracking";
 import type {
   ActionAuditSnapshots,
   ActionUpdateInput,

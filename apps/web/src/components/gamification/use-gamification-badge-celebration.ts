@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   announceGamificationGain,
   type GamificationAnnouncementPayload,
-} from "@/lib/gamification/announcements";
+} from "@/lib/gamification/reconciliation/announcements";
 
 export function useGamificationBadgeCelebration({
   progressValue,

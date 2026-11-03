@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { GamificationReconciliationHistoryEntry } from "@/lib/gamification/gamification-reconciliation-notice";
+import type { GamificationReconciliationHistoryEntry } from "@/lib/gamification/reconciliation/gamification-reconciliation-notice";
 import { GamificationReconciliationHistory } from "./gamification-reconciliation-history";
 
 const navigation = vi.hoisted(() => ({

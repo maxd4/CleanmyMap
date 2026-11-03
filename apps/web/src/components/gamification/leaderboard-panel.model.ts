@@ -3,7 +3,7 @@ import type {
   PublicLeaderboardItem,
   PublicLeaderboardResponseDto,
   PublicStructureLeaderboardItem,
-} from "@/lib/gamification/progression-types";
+} from "@/lib/gamification/progression/progression-types";
 import { fetchJson } from "@/lib/http/fetch-json";
 
 export type PublicLeaderboardScope = "user" | "structure";

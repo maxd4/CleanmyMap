@@ -1,0 +1,475 @@
+import { describe, expect, it } from "vitest";
+import { qualifyActionFormalities } from "./qualification";
+import {
+  applyFormalitiesWorkflowTransition,
+  buildFormalitiesWorkflowState,
+  deriveActionFormalitiesFacts,
+  getBlockedRequiredFormalityIds,
+  isFormalitiesPublicationBlocked,
+  normalizeActionFormalitiesWorkflow,
+} from "./workflow";
+import { buildReviewableFormalityEmailDraft } from "./email-draft";
+import type { ActionFormalitiesFacts } from "./qualification";
+
+const parisFacts = (overrides: Partial<ActionFormalitiesFacts> = {}): ActionFormalitiesFacts => ({
+  ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris" }),
+  publicSpace: "public_domain",
+  manager: { kind: "paris_city", label: null },
+  isPublicRoadwayActivity: false,
+  isItinerant: false,
+  isClaiming: false,
+  hasInstallations: true,
+  requiresPhysicalOccupation: true,
+  localCustomaryUse: false,
+  largeCrowdOrComplexInstallations: false,
+  ...overrides,
+});
+
+function sentParisFormalitiesWorkflow(actionDependencies?: {
+  locationLabel: string;
+  actionDate: string;
+  territoryFingerprint?: string;
+}) {
+  const facts = parisFacts();
+  const qualification = qualifyActionFormalities(facts);
+  const initial = buildFormalitiesWorkflowState({
+    facts,
+    qualification,
+    actionDependencies,
+    now: "2026-09-17T10:00:00.000Z",
+  });
+  const sent = applyFormalitiesWorkflowTransition({
+    workflow: initial,
+    transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+    now: "2026-09-17T10:01:00.000Z",
+  });
+  return { facts, qualification, sent };
+}
+
+describe("formalities workflow", () => {
+  it("starts every newly qualified formality as not_started and keeps the blocking policy pure", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      now: "2026-09-17T10:00:00.000Z",
+    });
+
+    expect(workflow.progress[0]).toMatchObject({
+      userStatus: "not_started",
+      proof: null,
+      validForQualification: true,
+    });
+    expect(isFormalitiesPublicationBlocked(qualification, workflow)).toBe(true);
+  });
+
+  it("distinguishes prepared from an explicit user declaration of sent", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const initial = buildFormalitiesWorkflowState({ facts, qualification, now: "2026-09-17T10:00:00.000Z" });
+    const prepared = applyFormalitiesWorkflowTransition({
+      workflow: initial,
+      transition: { formalityId: qualification.formalities[0].id, kind: "mark_prepared" },
+      now: "2026-09-17T10:01:00.000Z",
+    });
+    expect(prepared.progress[0].userStatus).toBe("prepared");
+    expect(prepared.progress[0].proof).toBeNull();
+
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: prepared,
+      transition: {
+        formalityId: qualification.formalities[0].id,
+        kind: "declare_sent",
+        proofReference: "dossier-42",
+      },
+      now: "2026-09-17T10:02:00.000Z",
+    });
+    expect(sent.progress[0]).toMatchObject({
+      userStatus: "sent",
+      proof: {
+        kind: "user_declared",
+        reference: "dossier-42",
+      },
+    });
+    expect(isFormalitiesPublicationBlocked(qualification, sent)).toBe(false);
+  });
+
+  it("invalidates only the affected formality and retains a prior proof", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const initial = buildFormalitiesWorkflowState({ facts, qualification, now: "2026-09-17T10:00:00.000Z" });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: initial,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+      now: "2026-09-17T10:01:00.000Z",
+    });
+    const changedFacts = { ...facts, hasInstallations: false, requiresPhysicalOccupation: false } as const;
+    const changedQualification = qualifyActionFormalities(changedFacts);
+    const changed = buildFormalitiesWorkflowState({
+      facts: changedFacts,
+      qualification: changedQualification,
+      previous: sent,
+      now: "2026-09-17T10:02:00.000Z",
+    });
+
+    expect(changed.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        active: false,
+        validForQualification: false,
+        userStatus: "sent",
+        proof: expect.objectContaining({ kind: "user_declared" }),
+      }),
+    );
+    expect(normalizeActionFormalitiesWorkflow(changed)).toEqual(changed);
+
+    const restored = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      previous: changed,
+      now: "2026-09-17T10:03:00.000Z",
+    });
+    expect(restored.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        active: true,
+        validForQualification: false,
+        contentVersion: restored.contentVersion,
+      }),
+    );
+    expect(getBlockedRequiredFormalityIds(qualification, restored)).toContain(
+      "paris-city-public-domain-aot",
+    );
+
+    const explicitlyResubmitted = applyFormalitiesWorkflowTransition({
+      workflow: applyFormalitiesWorkflowTransition({
+        workflow: restored,
+        transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" },
+        now: "2026-09-17T10:04:00.000Z",
+      }),
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+      now: "2026-09-17T10:05:00.000Z",
+    });
+    expect(normalizeActionFormalitiesWorkflow(explicitlyResubmitted)).toEqual(explicitlyResubmitted);
+    expect(isFormalitiesPublicationBlocked(qualification, explicitlyResubmitted)).toBe(false);
+  });
+
+  it("invalidates a qualification when the venue or date changes, without using the title as a dependency", () => {
+    const { facts, qualification, sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const sameDependencies = buildFormalitiesWorkflowState({
+      facts: { ...facts, isCleanwalk: false },
+      qualification: qualifyActionFormalities({ ...facts, isCleanwalk: false }),
+      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-20" },
+      previous: sent,
+      now: "2026-09-17T10:02:00.000Z",
+    });
+    expect(sameDependencies.progress[0].validForQualification).toBe(true);
+
+    const moved = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: { locationLabel: "Rue B", actionDate: "2026-09-20" },
+      previous: sent,
+      now: "2026-09-17T10:03:00.000Z",
+    });
+    expect(moved.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        validForQualification: false,
+        proof: expect.objectContaining({ kind: "user_declared" }),
+      }),
+    );
+  });
+
+  it("invalidates only when the resolved territory changes, not for a same-territory label change", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const territoryFingerprint = "FR|FR-PARIS|75056|75|11";
+    const initial = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: {
+        locationLabel: "Rue A, Paris",
+        actionDate: "2026-09-20",
+        territoryFingerprint,
+      },
+      now: "2026-09-17T10:00:00.000Z",
+    });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: initial,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+      now: "2026-09-17T10:01:00.000Z",
+    });
+
+    const sameTerritory = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: {
+        locationLabel: "Avenue B, Paris",
+        actionDate: "2026-09-20",
+        territoryFingerprint,
+      },
+      previous: sent,
+      now: "2026-09-17T10:02:00.000Z",
+    });
+    expect(sameTerritory.progress[0].validForQualification).toBe(true);
+
+    const lyonFacts = deriveActionFormalitiesFacts({
+      departmentCode: "69",
+      departmentName: "Rhône",
+    });
+    const changedTerritory = buildFormalitiesWorkflowState({
+      facts: lyonFacts,
+      qualification: qualifyActionFormalities(lyonFacts),
+      actionDependencies: {
+        locationLabel: "Rue de la République, Lyon",
+        actionDate: "2026-09-20",
+        territoryFingerprint: "FR|||69|84",
+      },
+      previous: sameTerritory,
+      now: "2026-09-17T10:03:00.000Z",
+    });
+    expect(changedTerritory.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        validForQualification: false,
+      }),
+    );
+  });
+
+  it("requalifies a legacy FNV trace instead of accepting it as equivalent", () => {
+    const { facts, qualification, sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const legacy = {
+      ...sent,
+      trace: { ...sent.trace, actionDependencyFingerprint: "fnv1a-test" },
+    };
+
+    const requalified = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-20" },
+      previous: legacy,
+      now: "2026-09-17T10:02:00.000Z",
+    });
+
+    expect(requalified.trace.actionDependencyFingerprint).toMatch(/^canonical-v2:/);
+    expect(requalified.progress[0]).toMatchObject({
+      validForQualification: false,
+      invalidatedAt: "2026-09-17T10:02:00.000Z",
+    });
+  });
+
+  it("rejects a trace without the canonical qualification and traceability fields", () => {
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        schemaVersion: "action-formalities-workflow-v1",
+        contentVersion: "v1",
+        trace: { formalities: [] },
+        progress: [],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects progress whose content version does not match the workflow", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: sent.progress.map((progress) => ({
+          ...progress,
+          contentVersion: "stale-content-version",
+        })),
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps a structurally valid inactive historical progress with its old content version", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const historical = {
+      ...sent.progress[0]!,
+      formalityId: "removed-formality",
+      contentVersion: "historical-content-version",
+      active: false,
+      validForQualification: false,
+      invalidatedAt: "2026-09-17T10:02:00.000Z",
+    };
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [...sent.progress, historical],
+      }),
+    ).not.toBeNull();
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [
+          ...sent.progress,
+          { ...historical, proof: { ...historical.proof!, kind: "invalid" } },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a proof with a non-ISO recordedAt timestamp", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: sent.progress.map((progress, index) => index === 0
+          ? { ...progress, proof: { ...progress.proof!, recordedAt: "not-a-timestamp" } }
+          : progress),
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects duplicate progress identifiers regardless of order", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const first = sent.progress[0]!;
+    const contradictory = {
+      ...first,
+      userStatus: "prepared" as const,
+      proof: null,
+    };
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [first, contradictory, ...sent.progress.slice(1)],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        progress: [contradictory, first, ...sent.progress.slice(1)],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects duplicate active formality identifiers", () => {
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+    const firstFormality = sent.trace.formalities[0]!;
+
+    expect(
+      normalizeActionFormalitiesWorkflow({
+        ...sent,
+        trace: {
+          ...sent.trace,
+          formalities: [...sent.trace.formalities, firstFormality],
+        },
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps complete workflows valid with no required formality or with a null proof reference", () => {
+    const noRequiredFacts = parisFacts({
+      manager: { kind: "unknown", label: null },
+      hasInstallations: false,
+      requiresPhysicalOccupation: false,
+    });
+    const noRequiredQualification = qualifyActionFormalities(noRequiredFacts);
+    const noRequired = buildFormalitiesWorkflowState({
+      facts: noRequiredFacts,
+      qualification: noRequiredQualification,
+      now: "2026-09-17T10:00:00.000Z",
+    });
+    const { sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
+    });
+
+    expect(normalizeActionFormalitiesWorkflow(noRequired)).not.toBeNull();
+    expect(normalizeActionFormalitiesWorkflow(sent)).not.toBeNull();
+    expect(sent.progress[0]?.proof?.reference).toBeNull();
+  });
+
+  it("does not block for recommendation or unknown qualification", () => {
+    const facts = parisFacts({ manager: { kind: "unknown", label: null }, hasInstallations: false, requiresPhysicalOccupation: false });
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+    expect(qualification.formalities.some((item) => item.requirementStatus === "recommended")).toBe(true);
+    expect(qualification.formalities.some((item) => item.requirementStatus === "unknown")).toBe(true);
+    expect(isFormalitiesPublicationBlocked(qualification, workflow)).toBe(false);
+  });
+
+  it("does not block publication for the national unknown fallback", () => {
+    const facts = deriveActionFormalitiesFacts({
+      departmentCode: "69",
+      departmentName: "Rhône",
+    });
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+
+    expect(qualification.formalities[0]?.requirementStatus).toBe("unknown");
+    expect(isFormalitiesPublicationBlocked(qualification, workflow)).toBe(false);
+  });
+
+  it("blocks only required formalities", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+
+    for (const status of ["recommended", "not_required", "unknown"] as const) {
+      const nonBlockingQualification = {
+        ...qualification,
+        formalities: [
+          { ...qualification.formalities[0], requirementStatus: status },
+        ],
+      };
+      expect(isFormalitiesPublicationBlocked(nonBlockingQualification, workflow)).toBe(false);
+    }
+  });
+
+  it("only creates an email draft for a source-proven official email channel and never marks it sent", () => {
+    const formality = qualifyActionFormalities(parisFacts()).formalities[0];
+    expect(
+      buildReviewableFormalityEmailDraft({ formality, action: { title: "Cleanwalk" } }),
+    ).toBeNull();
+
+    const officialChannelAddress = ["service", "ville.example"].join("@");
+    const emailFormality = {
+      ...formality,
+      officialChannel: {
+        kind: "official_email" as const,
+        label: "Canal officiel vérifié",
+        url: null,
+        emailAddress: officialChannelAddress,
+      },
+    };
+    const draft = buildReviewableFormalityEmailDraft({
+      formality: emailFormality,
+      action: { title: "Cleanwalk", location: "Paris" },
+    });
+    expect(draft).toMatchObject({
+      to: officialChannelAddress,
+      requiresReview: true,
+      sent: false,
+    });
+    expect(draft?.body).not.toContain("@example.com");
+    expect(draft?.body).not.toContain("+33");
+  });
+});

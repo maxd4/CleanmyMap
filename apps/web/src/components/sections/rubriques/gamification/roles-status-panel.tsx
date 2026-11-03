@@ -1,8 +1,8 @@
-import type { ContributorRecognitionCard } from "@/lib/gamification/progression-types";
+import type { ContributorRecognitionCard } from "@/lib/gamification/progression/progression-types";
 import {
   ENGAGEMENT_STATUS_DEFINITIONS,
   type EngagementStatusId,
-} from "@/lib/gamification/engagement-status";
+} from "@/lib/gamification/progression/engagement-status";
 
 type RoleStatusKey = EngagementStatusId;
 

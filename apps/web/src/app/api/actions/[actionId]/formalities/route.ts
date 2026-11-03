@@ -12,19 +12,19 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadActionById } from "@/lib/actions/store";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
-import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
 import {
   actionFormalitiesFactsSchema,
   applyFormalitiesWorkflowTransition,
   buildFormalitiesWorkflowState,
   normalizeActionFormalitiesWorkflow,
   type FormalitiesWorkflowTransition,
-} from "@/lib/actions/formalities-workflow";
+} from "@/lib/actions/formalities/workflow";
 import {
   buildFormalitiesTerritoryFingerprint,
-} from "@/lib/actions/formalities-rules";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
-import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities-action-context";
+} from "@/lib/actions/formalities/rules";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
+import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities/action-context";
 
 export const runtime = "nodejs";
 // Justification : cette route dynamique dépend de l'autorisation, des faits de qualification et de l'état persisté de l'action.

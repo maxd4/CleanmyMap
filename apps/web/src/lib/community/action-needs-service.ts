@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadActionById } from "@/lib/actions/store";
-import { fetchActionRows } from "@/lib/actions/store-queries";
+import { fetchActionRows } from "@/lib/actions/persistence/queries";
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import {

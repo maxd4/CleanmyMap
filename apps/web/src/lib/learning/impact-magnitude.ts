@@ -1,4 +1,4 @@
-import type { ImpactProxyFactors } from "@/lib/gamification/impact-proxy-config";
+import type { ImpactProxyFactors } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   computeImpactTerrain2026StreetCleaningSavings,
   type ImpactTerrain2026StreetCleaningSavings,

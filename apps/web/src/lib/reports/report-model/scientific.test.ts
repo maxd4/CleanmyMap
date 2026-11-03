@@ -7,7 +7,7 @@ import {
   computeActionImpactKpis,
   sumActionImpactKpis,
 } from "@/lib/actions/impact-calculators";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   STREET_CLEANING_EUROS_PER_WASTE_KG,
   VOLUNTEER_ACTION_EUROS_PER_HOUR,

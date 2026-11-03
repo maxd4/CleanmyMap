@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION_V1,

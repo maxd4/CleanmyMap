@@ -9,8 +9,8 @@ import { buildPublicationSummary } from "./model";
 import { buildPreparationDataFromForm } from "../payload";
 import { buildPublicActionPracticalInformation } from "@/lib/actions/participation/group-participation-public-projection";
 import { ActionCreationLegalPanel } from "../../action-creation-legal-panel";
-import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities-facts";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import { deriveActionVolunteerChecklist } from "@/lib/actions/action-preparation-checklist";
 import { createActionPreparationWeatherRequest, useActionPreparationWeather } from "../../use-action-preparation-weather";
 

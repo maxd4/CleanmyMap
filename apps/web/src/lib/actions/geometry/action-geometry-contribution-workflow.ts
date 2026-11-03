@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordActionGeometryContribution } from "./record-action-geometry-contribution";
 import { isActionGeometryContributorEligible } from "./action-geometry-contributor-eligibility";
-import { reconcileUserGamification } from "@/lib/gamification/gamification-reconciliation";
+import { reconcileUserGamification } from "@/lib/gamification/reconciliation/gamification-reconciliation";
 import { logFailure } from "@/lib/logging/failure-log";
 import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 

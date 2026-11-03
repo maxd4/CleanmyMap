@@ -3,7 +3,7 @@ import { getUserProgression } from"@/lib/gamification/progression";
 import {
  loadGamificationReconciliationInbox,
  isGamificationReconciliationNotificationId,
-} from"@/lib/gamification/gamification-reconciliation-notice";
+} from"@/lib/gamification/reconciliation/gamification-reconciliation-notice";
 import { requireAuthenticatedAccess } from"@/lib/authz";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";

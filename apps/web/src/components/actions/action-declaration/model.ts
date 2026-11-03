@@ -31,7 +31,7 @@ import type {
   ActionPreparationChecklistItem,
   ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import type { ActionFieldRoleCode } from "@/lib/actions/field-roles";
 
 export type FormState = {

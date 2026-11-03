@@ -4,16 +4,16 @@ import { z } from "zod";
 import {
   qualifyActionFormalities,
   type ActionFormality,
-} from "@/lib/actions/formalities-qualification";
+} from "@/lib/actions/formalities/qualification";
 import {
   actionFormalitiesFactsSchema,
   buildFormalitiesWorkflowState,
   deriveActionFormalitiesFacts,
   type ActionFormalitiesWorkflowState,
-} from "@/lib/actions/formalities-workflow";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+} from "@/lib/actions/formalities/workflow";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import type { ActionRow } from "@/types/database";
-import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
+import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities/rules";
 import { GET, PATCH } from "./route";
 
 const authMock = vi.hoisted(() =>

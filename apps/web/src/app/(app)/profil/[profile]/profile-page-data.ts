@@ -1,13 +1,13 @@
-import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
-import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
+import { computeMonthlyRegularitySummary } from "@/lib/gamification/progression/monthly-regularity";
+import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/progression/sensitive-zone-badge";
 import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
 import { loadCachedReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
 import {
   createFallbackActionBalanceSummary,
   getInfiniteBadgeTotals,
-} from "@/lib/gamification/infinite-badges-server";
-import { buildCurrentMilestones } from "@/lib/gamification/milestones";
-import { buildTerrainProgressions } from "@/lib/gamification/terrain-progressions";
+} from "@/lib/gamification/progression/infinite-badges-server";
+import { buildCurrentMilestones } from "@/lib/gamification/progression/milestones";
+import { buildTerrainProgressions } from "@/lib/gamification/progression/terrain-progressions";
 import { getUserProgression } from "@/lib/gamification/progression";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiCollectionForUser } from "@/lib/spogomi/recognition-service";

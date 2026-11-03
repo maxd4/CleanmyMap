@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildRoleStatusCards } from "./roles-status-panel";
-import type { ContributorRecognitionCard } from "@/lib/gamification/progression-types";
+import type { ContributorRecognitionCard } from "@/lib/gamification/progression/progression-types";
 
 function makeContributor(
   overrides: Partial<ContributorRecognitionCard> = {},

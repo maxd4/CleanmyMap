@@ -5,7 +5,7 @@ const isPublishedFuturePreActionMock = vi.hoisted(() => vi.fn());
 const isPublicActionReferenceAvailableMock = vi.hoisted(() => vi.fn());
 const resolveActionTerritoryDestinationMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/actions/store-queries", () => ({ fetchActionRows: fetchActionRowsMock }));
+vi.mock("@/lib/actions/persistence/queries", () => ({ fetchActionRows: fetchActionRowsMock }));
 vi.mock("@/lib/actions/temporal", () => ({ isPublishedFuturePreAction: isPublishedFuturePreActionMock }));
 vi.mock("@/lib/chat/action-sharing", () => ({
   isPublicActionReferenceAvailable: isPublicActionReferenceAvailableMock,

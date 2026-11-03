@@ -3,7 +3,7 @@ import {
   listAdminOperationAudit,
 } from "@/lib/admin/audit/operation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { reconcileModerationProgressionForUser } from "@/lib/gamification/moderation-progression";
+import { reconcileModerationProgressionForUser } from "@/lib/gamification/progression/moderation-progression";
 
 type ActionModerationAuditOutcome = "success" | "error";
 

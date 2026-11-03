@@ -19,11 +19,11 @@ describe("GET /api/gamification/me boundary", () => {
   it("does not invoke a rebuild or perform DML while reading progression", () => {
     const route = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
     const progression = readFileSync(
-      new URL("../../../../lib/gamification/progression-leaderboard.ts", import.meta.url),
+      new URL("../../../../lib/gamification/progression/progression-leaderboard.ts", import.meta.url),
       "utf8",
     );
     const profileBadges = readFileSync(
-      new URL("../../../../lib/gamification/infinite-badges-server.ts", import.meta.url),
+      new URL("../../../../lib/gamification/progression/infinite-badges-server.ts", import.meta.url),
       "utf8",
     );
 

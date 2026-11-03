@@ -17,7 +17,7 @@ import {
   type SelectedPeriodId,
 } from "./reports-web-document.shared";
 import { buildReportDataAvailabilityNotices } from "@/lib/reports/data-availability";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/progression/impact-proxy-config";
 import {
   REPORT_GENERATION_TIME_ZONE,
   filterReportGenerationContracts,

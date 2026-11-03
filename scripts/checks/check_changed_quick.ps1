@@ -136,19 +136,31 @@ Write-Host "[quick] changed web test files: $($webTestFiles.Count)"
 Write-Host "[quick] changed python files: $($pythonFiles.Count)"
 
 if ($webSourceFiles.Count -gt 0) {
-    Invoke-Step "eslint (changed web files)" {
-        # The package lint script intentionally owns the full `src` scope.
-        # A staged check must invoke ESLint directly so foreign Web files are
-        # not pulled into the candidate by that script's fixed argument.
-        & $npmCommand exec -- eslint --max-warnings=0 --config apps/web/eslint.config.mjs @webSourceFiles
+    # Keep each process invocation below Windows' command-line limit when a
+    # large coordinated candidate changes many Web files.
+    $eslintBatchSize = 32
+    for ($offset = 0; $offset -lt $webSourceFiles.Count; $offset += $eslintBatchSize) {
+        $end = [Math]::Min($offset + $eslintBatchSize - 1, $webSourceFiles.Count - 1)
+        $batch = @($webSourceFiles[$offset..$end])
+        Invoke-Step "eslint (changed web files $($offset + 1)-$($end + 1)/$($webSourceFiles.Count))" {
+            # The package lint script intentionally owns the full `src` scope.
+            # A staged check invokes ESLint directly so foreign Web files are
+            # not pulled into the candidate by that script's fixed argument.
+            & $npmCommand exec -- eslint --max-warnings=0 --config apps/web/eslint.config.mjs @batch
+        }
     }
 } else {
     Write-Host "[quick] Skip eslint (no changed web source files)."
 }
 
 if ($webTestFiles.Count -gt 0) {
-    Invoke-Step "vitest (changed web test files)" {
-        & $npmCommand --prefix apps/web run test -- @webTestFilesRelative
+    $vitestBatchSize = 24
+    for ($offset = 0; $offset -lt $webTestFilesRelative.Count; $offset += $vitestBatchSize) {
+        $end = [Math]::Min($offset + $vitestBatchSize - 1, $webTestFilesRelative.Count - 1)
+        $batch = @($webTestFilesRelative[$offset..$end])
+        Invoke-Step "vitest (changed web test files $($offset + 1)-$($end + 1)/$($webTestFilesRelative.Count))" {
+            & $npmCommand --prefix apps/web run test -- @batch
+        }
     }
 } else {
     Write-Host "[quick] Skip vitest (no changed web test files)."

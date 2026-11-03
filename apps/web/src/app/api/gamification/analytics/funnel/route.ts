@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError } from "@/lib/http/api-errors";
-import { loadGamificationFunnelCounts } from "@/lib/gamification/counters";
+import { loadGamificationFunnelCounts } from "@/lib/gamification/progression/counters";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 
 export const runtime = "nodejs";

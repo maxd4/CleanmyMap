@@ -11,7 +11,7 @@ import {
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { toPublicActionListItem } from "@/lib/actions/data-contract";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
-import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { refreshProgressionProfile } from "@/lib/gamification/reconciliation/progression-tracking";
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { parseActionInvitationRows, parseActionSupabaseResult } from "@/lib/actions/query";

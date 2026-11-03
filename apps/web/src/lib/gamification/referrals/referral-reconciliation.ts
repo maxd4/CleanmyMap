@@ -5,8 +5,8 @@ import {
   loadActionRowsForUser,
   loadCurrentValidatedActionIdsForUser,
 } from "../progression-data";
-import { CURRENT_GAMIFICATION_RULES_VERSION } from "../progression-types";
-import type { ProgressionEventType } from "../progression-types";
+import { CURRENT_GAMIFICATION_RULES_VERSION } from "../progression/progression-types";
+import type { ProgressionEventType } from "../progression/progression-types";
 
 export type ReferralContributionProof = {
   sourceTable: "actions";
@@ -119,7 +119,7 @@ async function refreshInviterProgressionProfile(
   supabase: SupabaseClient,
   inviterUserId: string,
 ): Promise<void> {
-  const { refreshProgressionProfile } = await import("../progression-tracking");
+  const { refreshProgressionProfile } = await import("../reconciliation/progression-tracking");
   await refreshProgressionProfile(supabase, inviterUserId);
 }
 
