@@ -8,7 +8,7 @@ Consulter le déroulé et les résultats admissibles d’une action passée.
 
 ## Référence Strava réelle
 
-![Référence visuelle officielle Strava : Visuel « Sync with your devices » : carte d’activité et statistiques, dans une composition promotionnelle.](./assets/strava/strava-activite-connectee.png)
+**Référence visuelle locale (non versionnée) :** consulter [l'emplacement et la provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees) ; la source officielle et la limite de correspondance sont indiquées ci-dessous.
 
 **Ce que montre réellement l’image :** Visuel « Sync with your devices » : carte d’activité et statistiques, dans une composition promotionnelle.
 

@@ -27,6 +27,8 @@ ne sont pas validés.
 Références :
 
 - [Architecture GPS companion](./architecture_gps_companion.md)
+- [Matrice UI benchmark Strava × CleanMyMap](./MATRICE_STRAVA_CLEANMYMAP_MOBILE.md)
+- [Référentiel visuel Strava et provenance des captures](./design-reference/README.md)
 
 ```txt
 documentation/architecture/adr/ADR-004-companion-identity.md

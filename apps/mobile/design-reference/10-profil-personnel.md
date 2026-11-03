@@ -8,7 +8,7 @@ Valoriser la contribution de la personne et rendre ses paramètres facilement ac
 
 ## Référence Strava réelle
 
-![Référence visuelle officielle Strava : Visuel « Share with friends » : carte d’activité, photo et actions sociales, dans une composition promotionnelle.](./assets/strava/strava-feed-social.png)
+**Référence visuelle locale (non versionnée) :** consulter [l'emplacement et la provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees) ; la source officielle et la limite de correspondance sont indiquées ci-dessous.
 
 **Ce que montre réellement l’image :** Visuel « Share with friends » : carte d’activité, photo et actions sociales, dans une composition promotionnelle.
 

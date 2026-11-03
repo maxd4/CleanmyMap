@@ -8,7 +8,7 @@ Créer un signalement terrain géolocalisé et photographié si nécessaire.
 
 ## Référence Strava réelle
 
-![Référence visuelle officielle Strava : Visuel « Track your workouts » : carte de suivi et contrôles d’enregistrement, dans une composition promotionnelle.](./assets/strava/strava-record-gps.png)
+**Référence visuelle locale (non versionnée) :** consulter [l'emplacement et la provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees) ; la source officielle et la limite de correspondance sont indiquées ci-dessous.
 
 **Ce que montre réellement l’image :** Visuel « Track your workouts » : carte de suivi et contrôles d’enregistrement, dans une composition promotionnelle.
 

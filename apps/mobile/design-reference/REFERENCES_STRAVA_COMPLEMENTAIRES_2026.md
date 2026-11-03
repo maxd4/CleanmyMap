@@ -45,6 +45,20 @@ Ce document complète les huit images Google Play déjà intégrées aux guides.
 - Les six maquettes CleanMyMap générées restent des **cibles de composition hypothétiques**. Le texte d'exemple, les chiffres, les conversions environnementales et les badges montrés ne prouvent aucun contrat scientifique ou métier.
 - Les libellés des liens supplémentaires permettent à Codex de **ouvrir la source exacte avant la réalisation d'une page**. Cela évite de présenter une image de marketing comme capture pixel-perfect de la sous-page.
 
+## Décision REA
+
+La décision actuelle est de ne pas utiliser de REA (reverse engineering analysis), de décompilation ou d'extraction technique de Strava. La décompilation serait disproportionnée pour l'objectif présent, les algorithmes et décisions côté serveur resteraient inconnus, et les contraintes contractuelles et juridiques ne sont pas suffisamment établies pour justifier ce travail.
+
+Le référentiel se limite donc à l'observation fonctionnelle autorisée : sources officielles, visuels publics dont la nature est explicitement qualifiée et captures locales sans données personnelles. REA pourra être réévaluée uniquement si un besoin technique précis apparaît avec un fondement juridique documenté, un périmètre autorisé et une méthode qui n'extrait ni identifiants, ni cookies, ni tokens, ni données de tiers.
+
+## Règles de réutilisation par Codex
+
+- Reprendre les compositions, proportions, hiérarchies, densités et interactions génériques observées.
+- Utiliser exclusivement les couleurs, textes, icônes, données, permissions et contrats propres à CleanMyMap.
+- Ne pas reproduire les logos, illustrations, captures, typographies, assets propriétaires ou code Strava dans le runtime.
+- Ne jamais déduire une formule métier, un calcul d'impact, une permission ou un modèle de données à partir d'une capture.
+- Conserver la distinction entre observation visuelle, hypothèse de conception et contrat CleanMyMap effectivement implémenté.
+
 ## Captures exactes encore prioritaires à collecter
 
 | Guides | Capture précise souhaitée | Source la plus fiable |

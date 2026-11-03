@@ -86,6 +86,11 @@ documentation/pages_site/routes/**/*.bmp
 documentation/pages_site/routes/**/*.tif
 documentation/pages_site/routes/**/*.tiff
 
+# Third-party Strava benchmark visuals remain local-only until redistribution
+# rights are explicitly established; the catalog and official source links are
+# versioned under apps/mobile/design-reference/.
+apps/mobile/design-reference/assets/strava/*.png
+
 # Canonical action fallback PNGs directly in this directory are versioned runtime assets.
 # Ignore only nested local image exports; never ignore canonical PNGs.
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][pP][gG]

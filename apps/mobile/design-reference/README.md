@@ -39,6 +39,14 @@ Ces documents proposent **page par page** une composition de mobile natif, acces
 4. Préserver les capacités opérationnelles natives et les ponts web; ne pas remplacer un parcours actif par une imitation visuelle.
 5. Après intégration par Codex, contrôler l’écran sur émulateur et documenter les écarts nécessaires aux contrats réels.
 
+## Gouvernance des captures et décision REA
+
+Le référentiel est rattaché à la [matrice fonctionnelle et UI](../MATRICE_STRAVA_CLEANMYMAP_MOBILE.md), qui reste la source canonique des identifiants, priorités et adaptations CleanMyMap. Les guides et catalogues de ce dossier portent uniquement l'observation visuelle, la provenance et les limites.
+
+Les huit visuels promotionnels déjà collectés sont conservés localement pour la comparaison UX, mais ne sont pas des assets publiables : les droits de redistribution dans le dépôt n'ont pas été démontrés. Les sources officielles et les emplacements locaux attendus sont décrits dans [l'inventaire de provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees). Aucun visuel tiers n'est utilisé par le runtime mobile.
+
+La décision actuelle est de ne pas lancer de **REA (reverse engineering analysis)** ou de décompilation de Strava : l'effort serait disproportionné pour un objectif UX, les algorithmes et décisions serveur resteraient inconnus, et les contraintes contractuelles/juridiques sont incertaines. Une recherche REA ne sera réévaluée que pour un besoin technique précis, avec un fondement juridique explicite et un périmètre autorisé.
+
 ## Cohérence globale
 
 - **Navigation actuelle :** `Agir`, `Carte`, `Compte`. Les cinq destinations inspirées de Strava restent une **option de roadmap**, jamais une modification automatique.

@@ -8,7 +8,7 @@ Relier clairement une session GPS terminée à son statut et à son éventuel bi
 
 ## Référence Strava réelle
 
-![Référence visuelle officielle Strava : Visuel « Lift it. Log it. See your gains. » : détail de session et métriques, dans une composition promotionnelle.](./assets/strava/strava-activite-structuree.png)
+**Référence visuelle locale (non versionnée) :** consulter [l'emplacement et la provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees) ; la source officielle et la limite de correspondance sont indiquées ci-dessous.
 
 **Ce que montre réellement l’image :** Visuel « Lift it. Log it. See your gains. » : détail de session et métriques, dans une composition promotionnelle.
 

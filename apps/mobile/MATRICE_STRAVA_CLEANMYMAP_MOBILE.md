@@ -25,7 +25,9 @@ Les capacités Strava réservées à un abonnement et les disponibilités par pl
 - **Reprise UI :** `R` = reproduire au plus près un pattern UX générique ; `A` = adapter la fonction au terrain ; `R+A` = les deux.
 - **Mobile :** `NATIF` = présent en code ; `PARTIEL` = capacité proche mais surface incomplète ; `PONT WEB` = ouverture du site ; `PLAN` = non implémenté nativement. Tous les états `NATIF` doivent être validés sur appareils réels avant diffusion.
 - **Priorité cible :** `P0` = cœur du parcours, `P1` = expérience sociale et rétention, `P2` = approfondissement. Ce sont des priorités **proposées**, non une roadmap approuvée.
-- **Sources :** codes `[S01]` à `[S22]`, liens vérifiables en section 8.
+- **Sources :** codes `[S01]` à `[S31]`, liens vérifiables en section 8.
+
+**Référentiel visuel associé :** [index des guides et références](./design-reference/README.md), [provenance des captures](./design-reference/REFERENCES_STRAVA.md) et [catalogue des sources complémentaires et des manques](./design-reference/REFERENCES_STRAVA_COMPLEMENTAIRES_2026.md). Ces documents complètent la matrice sans en recopier les contrats ni les priorités.
 
 ## 2. Architecture d'information et système UI cible
 

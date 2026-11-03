@@ -8,7 +8,7 @@ Mobiliser les bénévoles autour d’objectifs vérifiables et valoriser des jal
 
 ## Référence Strava réelle
 
-![Référence visuelle officielle Strava : Visuel « Improve with personalized data » : vue de progression, graphique et indicateurs, dans une composition promotionnelle.](./assets/strava/strava-progression.png)
+**Référence visuelle locale (non versionnée) :** consulter [l'emplacement et la provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees) ; la source officielle et la limite de correspondance sont indiquées ci-dessous.
 
 **Ce que montre réellement l’image :** Visuel « Improve with personalized data » : vue de progression, graphique et indicateurs, dans une composition promotionnelle.
 

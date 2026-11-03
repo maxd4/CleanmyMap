@@ -8,7 +8,7 @@ Consulter puis préparer un trajet de cleanwalk sans dupliquer le moteur du web.
 
 ## Référence Strava réelle
 
-![Référence visuelle officielle Strava : Visuel « Discover new routes » : carte, parcours et carte contextuelle, dans une composition promotionnelle.](./assets/strava/strava-cartographie.png)
+**Référence visuelle locale (non versionnée) :** consulter [l'emplacement et la provenance](./REFERENCES_STRAVA.md#captures-locales-non-versionnees) ; la source officielle et la limite de correspondance sont indiquées ci-dessous.
 
 **Ce que montre réellement l’image :** Visuel « Discover new routes » : carte, parcours et carte contextuelle, dans une composition promotionnelle.
 
