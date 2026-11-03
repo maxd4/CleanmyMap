@@ -32,14 +32,51 @@ const GREASY_CARDBOARD_KEYWORDS = [
   "dirty cardboard",
   "greasy cardboard",
   "soiled cardboard",
+  "greasy pizza box",
+  "dirty pizza box",
+];
+
+const CARDBOARD_PACKAGE_KEYWORDS = [
   "carton de pizza",
   "boite a pizza",
   "boîte à pizza",
   "pizza box",
-  "greasy pizza box",
-  "dirty pizza box",
   "boite a tacos",
   "boîte à tacos",
+  "taco box",
+];
+
+const CARDBOARD_CONTAMINATION_KEYWORDS = [
+  "gras",
+  "grasse",
+  "graisse",
+  "graisseux",
+  "souille",
+  "sale",
+  "dirty",
+  "greasy",
+  "soiled",
+  "contaminated",
+  "contamine",
+  "sauce",
+  "restes",
+  "leftovers",
+  "food residue",
+  "humide",
+  "wet",
+];
+
+const CLEAN_CARDBOARD_KEYWORDS = [
+  "carton de pizza propre",
+  "boite a pizza propre",
+  "boîte à pizza propre",
+  "carton de pizza vide",
+  "boite a pizza vide",
+  "boîte à pizza vide",
+  "clean pizza box",
+  "empty pizza box",
+  "clean taco box",
+  "empty taco box",
 ];
 
 function buildGreasyCardboardAnswer(
@@ -76,6 +113,38 @@ function buildGreasyCardboardAnswer(
       ],
       nextStep: "Separate the clean part if possible, otherwise put the dirty cardboard with non-recyclable waste.",
       note: publicSpaceReportNote,
+    },
+  );
+}
+
+function buildCardboardConditionClarificationAnswer(locale: Locale): Answer {
+  return localizedAnswer(
+    locale,
+    {
+      kind: "packaging",
+      tone: "amber",
+      badge: "Précise l'état du carton",
+      title: "Une boîte à pizza ne se trie pas de la même façon selon son état",
+      summary: "Une simple mention de boîte à pizza ne suffit pas : indique si le carton est propre et sec, ou gras et très souillé.",
+      bullets: [
+        "Propre et sec, il suit généralement la filière papier-carton locale.",
+        "Gras, humide ou fortement souillé par des restes, il va plutôt avec les déchets résiduels.",
+        "Sépare les parties propres lorsque c'est possible et sûr.",
+      ],
+      nextStep: "Précise si la boîte est propre, grasse ou très souillée pour obtenir la bonne consigne.",
+    },
+    {
+      kind: "packaging",
+      tone: "amber",
+      badge: "Specify the cardboard condition",
+      title: "A pizza box is sorted differently depending on its condition",
+      summary: "Mentioning a pizza box alone is not enough: say whether the cardboard is clean and dry or greasy and heavily soiled.",
+      bullets: [
+        "When clean and dry, it generally follows the local paper-and-cardboard stream.",
+        "When greasy, wet or heavily soiled with leftovers, it usually belongs in residual waste.",
+        "Separate clean sections when it is possible and safe.",
+      ],
+      nextStep: "Specify whether the box is clean, greasy or heavily soiled to get the right guidance.",
     },
   );
 }
@@ -210,11 +279,34 @@ export function buildAnswer(question: string, locale: Locale): Answer {
       : "if impossible: residual waste bin";
 
   const canonicalSlug = findWasteCategorySlug(text);
+  const isCardboardPackage = includesAny(text, CARDBOARD_PACKAGE_KEYWORDS);
+  const isExplicitlyCleanCardboard = includesAny(text, CLEAN_CARDBOARD_KEYWORDS);
+  const isExplicitlyContaminatedCardboard =
+    includesAny(text, GREASY_CARDBOARD_KEYWORDS) ||
+    (isCardboardPackage && includesAny(text, CARDBOARD_CONTAMINATION_KEYWORDS));
+  console.log({ text, canonicalSlug, isCardboardPackage, isExplicitlyCleanCardboard, isExplicitlyContaminatedCardboard });
   if (
-    includesAny(text, GREASY_CARDBOARD_KEYWORDS) &&
+    isExplicitlyContaminatedCardboard &&
     (!canonicalSlug || canonicalSlug === "paper_cardboard")
   ) {
     return buildGreasyCardboardAnswer(locale, fallbackBin, publicSpaceReportNote);
+  }
+
+  if (
+    isCardboardPackage &&
+    !isExplicitlyCleanCardboard &&
+    !isExplicitlyContaminatedCardboard &&
+    (!canonicalSlug || canonicalSlug === "paper_cardboard")
+  ) {
+    return buildCardboardConditionClarificationAnswer(locale);
+  }
+
+  if (isExplicitlyCleanCardboard && isCardboardPackage && !canonicalSlug) {
+    return buildCanonicalWasteAnswer(
+      getWastePedagogicalProjection("paper_cardboard", locale),
+      locale,
+      publicSpaceReportNote,
+    );
   }
 
   if (canonicalSlug) {

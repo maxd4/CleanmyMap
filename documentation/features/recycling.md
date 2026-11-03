@@ -28,3 +28,14 @@ issus du snapshot réel. Les options `swrRecentViewOptions` conservent le résul
 en mémoire pendant la consultation et évitent les rechargements automatiques
 ou les doublons lors d'un retour à une vue récente. Les informations
 pédagogiques et l'assistant restent indépendants de cette lecture privée.
+
+## Exception contextuelle de l'assistant de tri
+
+La mention d'une boîte à pizza ou d'un autre emballage en carton ne suffit pas
+à conclure qu'il est gras. L'assistant conserve la projection canonique
+papier-carton lorsqu'un carton est explicitement propre et sec ; si l'état d'une
+boîte à pizza n'est pas précisé, il demande cette précision. L'exception vers
+les déchets résiduels est réservée aux cartons explicitement gras, humides,
+très sales ou fortement souillés par des restes. Les catégories sensibles,
+notamment les médicaments, seringues, verre cassé et piles, conservent leur
+projection de sécurité prioritaire.

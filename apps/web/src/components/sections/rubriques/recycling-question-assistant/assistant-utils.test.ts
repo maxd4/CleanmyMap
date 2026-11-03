@@ -56,6 +56,7 @@ describe("recycling assistant waste convergence", () => {
     ["carton souillé de sauce", "fr"],
     ["greasy pizza box", "en"],
     ["dirty cardboard", "en"],
+    ["heavily soiled cardboard", "en"],
   ] as const)("keeps the contaminated-cardboard guidance for %s", (question, locale) => {
     const response = answerText(question, locale);
 
@@ -63,21 +64,46 @@ describe("recycling assistant waste convergence", () => {
     expect(response).toContain(locale === "fr" ? "résiduel" : "residual waste");
   });
 
-  it("keeps clean cardboard on the canonical paper-cardboard route", () => {
-    expect(findWasteCategorySlug("carton propre")).toBe("paper_cardboard");
+  it.each([
+    ["carton propre", "fr"],
+    ["carton de pizza propre", "fr"],
+    ["boîte à pizza propre", "fr"],
+    ["clean pizza box", "en"],
+  ] as const)("keeps explicitly clean cardboard on the canonical route for %s", (question, locale) => {
+    if (question === "carton propre") {
+      expect(findWasteCategorySlug(question)).toBe("paper_cardboard");
+    }
 
-    const response = answerText("carton propre");
+    const response = answerText(question, locale);
 
-    expect(response).toContain("papier et carton");
+    expect(response).toContain(locale === "fr" ? "papier et carton" : "paper and cardboard");
     expect(response).not.toContain("carton gras");
+    expect(response).not.toContain("residual waste");
   });
 
   it.each([
-    ["un médicament périmé", "pharmacie"],
-    ["une seringue trouvée", "ne pas ramasser"],
-    ["du verre cassé", "ne pas ramasser à mains nues"],
-    ["une pile usagée", "piles/batteries"],
-  ] as const)("keeps the canonical safety priority for %s", (question, expectedGuidance) => {
-    expect(answerText(question)).toContain(expectedGuidance);
+    ["carton de pizza", "fr"],
+    ["boîte à pizza", "fr"],
+    ["pizza box", "en"],
+  ] as const)("asks for the condition when a pizza box has no stated condition: %s", (question, locale) => {
+    const response = answerText(question, locale);
+
+    expect(response).toContain(locale === "fr" ? "précise l'état du carton" : "specify the cardboard condition");
+    expect(response).toContain(locale === "fr" ? "propre et sec" : "clean and dry");
+    expect(response).toContain(locale === "fr" ? "gras" : "greasy");
+    expect(response).not.toContain(locale === "fr" ? "carton gras ou très sale ne va pas" : "greasy or heavily soiled cardboard does not belong");
+  });
+
+  it.each([
+    ["un médicament périmé", "pharmacie", "fr"],
+    ["une seringue trouvée", "ne pas ramasser", "fr"],
+    ["du verre cassé", "ne pas ramasser à mains nues", "fr"],
+    ["une pile usagée", "piles/batteries", "fr"],
+    ["expired medicine", "pharmacy", "en"],
+    ["a found syringe", "do not pick up", "en"],
+    ["broken glass", "do not pick up with bare hands", "en"],
+    ["a used battery", "battery drop-off", "en"],
+  ] as const)("keeps the canonical safety priority for %s", (question, expectedGuidance, locale) => {
+    expect(answerText(question, locale)).toContain(expectedGuidance);
   });
 });
