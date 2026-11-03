@@ -491,7 +491,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
   const changedFiles = process.argv.filter((argument) => argument.startsWith("--changed-file=")).map((argument) => argument.slice("--changed-file=".length));
   const changedFilesFile = process.argv.find((argument) => argument.startsWith("--changed-files-file="))?.slice("--changed-files-file=".length) ?? null;
   const changedFilesFromFile = changedFilesFile
-    ? JSON.parse(fs.readFileSync(path.resolve(changedFilesFile), "utf8"))
+    ? JSON.parse(fs.readFileSync(path.resolve(changedFilesFile), "utf8").replace(/^\uFEFF/, ""))
     : [];
   if (!Array.isArray(changedFilesFromFile) || changedFilesFromFile.some((file) => typeof file !== "string")) {
     throw new Error("--changed-files-file must contain a JSON array of file paths.");
