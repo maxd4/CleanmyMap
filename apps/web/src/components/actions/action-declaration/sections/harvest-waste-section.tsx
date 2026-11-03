@@ -13,7 +13,7 @@ import {
   type ActionWasteMeasurementMethod,
   type WasteCategorySlug,
 } from "@/lib/waste";
-import { WasteComparisonVisual } from "../ui/harvest-gauges";
+import { TrashBinGauge, WasteComparisonVisual } from "../ui/harvest-gauges";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -149,6 +149,7 @@ export function HarvestWasteSection({
       <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
       <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
 
+      <TrashBinGauge value={parseKg(wasteKg)} />
       <WasteComparisonVisual
         currentPerVolunteer={wasteCurrentPerVolunteer}
         benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}

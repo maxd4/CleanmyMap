@@ -40,8 +40,10 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("Provenance : mesuré");
     expect(markup).toContain("Formule : impact-terrain-2026-butts-mass-v1");
     expect(markup).toContain('id="harvest-megots-condition"');
+    expect(markup).toContain('data-testid="butts-measurement-visual"');
+    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
     expect(markup).toContain('data-testid="butts-comparison-visual"');
-    expect(markup.match(/data-testid="butts-comparison-visual-icon"/g)).toHaveLength(3);
+    expect(markup).not.toContain('data-testid="butts-comparison-visual-icon"');
     expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Nombre de mégots"));
     expect(markup.indexOf("Nombre de mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
     expect(markup.indexOf("Masse de mégots")).toBeLessThan(markup.indexOf("Comparaison visuelle des mégots"));
@@ -82,13 +84,18 @@ describe("HarvestMegotsSection", () => {
 
   it("hides the butts comparison when its reference is unavailable", () => {
     const markup = renderMegots({
+      megotsKg: null,
+      megotsCount: null,
       megotsCurrentPerVolunteer: null,
       megotsBenchmarkPerVolunteer: null,
       megotsBenchmarkSourceCount: 0,
       megotsDeltaPercent: null,
     });
 
+    expect(markup).toContain('data-testid="butts-measurement-visual"');
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
     expect(markup).not.toContain('data-testid="butts-comparison-visual"');
+    expect(markup).not.toContain("Référence insuffisante");
   });
 
   it("renders explicit multi-lot sources and counted/estimated totals", () => {

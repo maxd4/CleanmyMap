@@ -7,7 +7,7 @@ import {
   MAX_CIGARETTE_BUTTS_COUNT,
 } from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
-import { ButtsComparisonVisual } from "../ui/harvest-gauges";
+import { ButtsComparisonVisual, DropletGauge } from "../ui/harvest-gauges";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 import {
@@ -283,6 +283,7 @@ export function HarvestMegotsSection({
         </div>
       ) : null}
 
+      <DropletGauge value={megotsCount} />
       <ButtsComparisonVisual
         currentPerVolunteer={megotsCurrentPerVolunteer}
         benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}

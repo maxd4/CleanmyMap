@@ -2,32 +2,49 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { ButtsComparisonVisual, TrashBinGauge, WasteComparisonVisual } from "./harvest-gauges";
+import { ButtsComparisonVisual, DropletGauge, TrashBinGauge, WasteComparisonVisual } from "./harvest-gauges";
 
 describe("TrashBinGauge", () => {
-  it("clamps the fill and keeps the comparison marker", () => {
+  it("keeps three outlined bins visible before any declaration", () => {
     const markup = renderToStaticMarkup(
       React.createElement(TrashBinGauge, {
-        value: 125,
-        comparisonValue: 75,
+        value: null,
       }),
     );
 
-    expect(markup).toContain("100,0 kg");
-    expect(markup).toContain("top:25%");
-    expect(markup).toContain("Poubelle");
+    expect(markup).toContain('data-testid="waste-measurement-visual"');
+    expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(3);
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup).toContain("Repère visuel uniquement");
   });
 
-  it("omits the marker when there is no comparison value", () => {
+  it("fills progressively from the declared mass and resets to empty", () => {
     const markup = renderToStaticMarkup(
       React.createElement(TrashBinGauge, {
-        value: 12,
-        comparisonValue: null,
+        value: 5,
       }),
     );
 
-    expect(markup).toContain("12,0 kg");
-    expect(markup).not.toContain("top:");
+    expect(markup).toContain("5,0 kg");
+    expect(markup).toContain('data-fill-percent="100"');
+    expect(markup).toContain('data-fill-percent="50"');
+    expect(markup).toContain('data-fill-percent="0"');
+
+    const resetMarkup = renderToStaticMarkup(React.createElement(TrashBinGauge, { value: 0 }));
+    expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+  });
+});
+
+describe("DropletGauge", () => {
+  it("uses the retained butt quantity independently of comparisons", () => {
+    const markup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 2_500 }));
+
+    expect(markup).toContain('data-testid="butts-measurement-visual"');
+    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
+    expect(markup).toContain("2 500 mégots");
+    expect(markup.match(/data-fill-percent="100"/g)).toHaveLength(1);
+    expect(markup).toContain('data-fill-percent="50"');
+    expect(markup).toContain('data-fill-percent="0"');
   });
 });
 
@@ -58,10 +75,9 @@ describe("WasteComparisonVisual", () => {
     expect(markup).toContain('data-testid="waste-comparison-visual"');
     expect(markup).toContain('data-trend="down"');
     expect(markup).toContain("-50%");
-    expect(markup.match(/data-testid="waste-comparison-visual-icon"/g)).toHaveLength(3);
-    expect(markup).toContain('data-fill-percent="100"');
-    expect(markup).toContain('data-fill-percent="50"');
-    expect(markup).toContain('data-fill-percent="0"');
+    expect(markup).not.toContain('data-testid="waste-comparison-visual-icon"');
+    expect(markup).toContain("text-rose-600");
+    expect(markup).toContain("La couleur indique uniquement");
   });
 
   it("keeps a near-reference result neutral and shows the signed delta", () => {
@@ -70,6 +86,7 @@ describe("WasteComparisonVisual", () => {
     expect(markup).toContain('data-trend="neutral"');
     expect(markup).toContain("+1%");
     expect(markup).toContain("moyenne : 8,0 kg");
+    expect(markup).toContain("text-slate-600");
   });
 
   it("shows an above-reference result and supports an explicit zero", () => {
@@ -78,29 +95,15 @@ describe("WasteComparisonVisual", () => {
 
     expect(aboveMarkup).toContain('data-trend="up"');
     expect(aboveMarkup).toContain("+50%");
-    expect(aboveMarkup.match(/data-fill-percent="100"/g)).toHaveLength(3);
+    expect(aboveMarkup).toContain("text-emerald-600");
     expect(zeroMarkup).toContain('data-trend="down"');
     expect(zeroMarkup).toContain("0,00 kg / unité opérationnelle");
-    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
   });
 
   it("does not render a comparison for missing or invalid reference data", () => {
     expect(renderComparison(8, null, null)).toBe("");
     expect(renderComparison(8, 0, Number.POSITIVE_INFINITY)).toBe("");
     expect(renderComparison(Number.NaN, 8, 0)).toBe("");
-  });
-
-  it("renders a descriptive zero-reference state without a percentage or trend", () => {
-    const markup = renderComparison(6, 0, null);
-
-    expect(markup).toContain('data-comparison-state="zero-reference"');
-    expect(markup).toContain("Moyenne nulle");
-    expect(markup).toContain("6,0 kg / unité opérationnelle");
-    expect(markup).toContain("moyenne : 0,00 kg / unité");
-    expect(markup).toContain("12 action(s)");
-    expect(markup).toContain("Variation en pourcentage non calculable");
-    expect(markup).not.toContain("data-trend=");
-    expect(markup).not.toContain("%");
   });
 });
 
@@ -117,11 +120,10 @@ describe("ButtsComparisonVisual", () => {
     );
 
     expect(markup).toContain('data-testid="butts-comparison-visual"');
-    expect(markup.match(/data-testid="butts-comparison-visual-icon"/g)).toHaveLength(3);
+    expect(markup).not.toContain('data-testid="butts-comparison-visual-icon"');
     expect(markup).toContain('data-trend="down"');
     expect(markup).toContain("-25%");
     expect(markup).toContain("3 000 mégots / unité opérationnelle");
-    expect(markup).toContain("lucide-droplet");
   });
 
   it("does not render when the observed reference is unavailable", () => {
@@ -135,6 +137,6 @@ describe("ButtsComparisonVisual", () => {
       }),
     );
 
-    expect(markup).toContain("Référence insuffisante");
+    expect(markup).toBe("");
   });
 });

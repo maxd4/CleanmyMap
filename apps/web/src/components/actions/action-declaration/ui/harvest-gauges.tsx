@@ -1,6 +1,6 @@
 "use client";
 
-import { Droplet, Minus, ShoppingBag, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { Droplet, Minus, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -13,57 +13,95 @@ import {
   type WasteComparisonTone,
 } from "../utils/harvest-utils";
 
-type TrashBinGaugeProps = {
-  value: number;
-  comparisonValue: number | null;
+/** UI-only display spans; they never validate, convert, or interpret a measurement. */
+export const HARVEST_WASTE_VISUAL_SCALE_KG = 10;
+export const HARVEST_BUTTS_VISUAL_SCALE_COUNT = 5_000;
+
+type QuantityGaugeVisualProps = {
+  value: number | null;
+  scale: number;
+  icon: LucideIcon;
+  colorClass: string;
+  label: string;
+  valueLabel: string;
+  testId: string;
 };
 
-export function TrashBinGauge({
+function QuantityGaugeVisual({
   value,
-  comparisonValue,
-}: TrashBinGaugeProps) {
-  const safeValue = clamp(Math.max(0, value), 0, 100);
-  const safeComparison =
-    comparisonValue != null && Number.isFinite(comparisonValue)
-      ? clamp(comparisonValue, 0, 100)
-      : null;
-  const fillHeight = `${safeValue}%`;
-  const markerTop = safeComparison == null ? null : `${100 - safeComparison}%`;
+  scale,
+  icon: GaugeIcon,
+  colorClass,
+  label,
+  valueLabel,
+  testId,
+}: QuantityGaugeVisualProps) {
+  const safeValue = value !== null && Number.isFinite(value) && value >= 0 ? value : 0;
+  const normalized = clamp(safeValue / scale, 0, 1);
 
   return (
-    <div className="relative mx-auto h-56 w-full overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 shadow-inner">
-      <div className="absolute left-1/2 top-4 h-4 w-24 -translate-x-1/2 rounded-full border border-slate-300 bg-slate-100" />
-      <div className="absolute inset-x-10 bottom-10 top-12 overflow-hidden rounded-[1.5rem] border-2 border-slate-300 bg-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)]">
-        <div
-          className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-emerald-500 via-lime-400 to-amber-300"
-          style={{ height: fillHeight }}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(15,23,42,0.03)_1px,transparent_1px)] bg-[length:100%_18px]" />
-        {markerTop ? (
-          <div
-            className="absolute left-0 right-0 h-0.5 bg-slate-900/70 shadow-[0_0_0_3px_rgba(255,255,255,0.9)]"
-            style={{ top: markerTop }}
-            aria-hidden="true"
-          />
-        ) : null}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
-            Poubelle
-          </div>
-        </div>
+    <div
+      className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
+      data-testid={testId}
+      role="img"
+      aria-label={`${label} : ${valueLabel}. Trois icônes indiquent uniquement la quantité déclarée, indépendamment des moyennes historiques.`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-slate-700">{label}</p>
+        <span className="text-xs font-semibold text-slate-600">{valueLabel}</span>
       </div>
-
-      <div className="absolute bottom-3 left-6 right-6 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-        <span>0kg</span>
-        <span>50kg</span>
-        <span>100kg</span>
+      <div className="mt-3 flex items-end justify-center gap-2">
+        {[0, 1, 2].map((index) => {
+          const fill = clamp(normalized * 3 - index, 0, 1) * 100;
+          return (
+            <div
+              key={index}
+              className="relative h-9 w-9"
+              data-testid={`${testId}-icon`}
+              data-fill-percent={Math.round(fill)}
+            >
+              <GaugeIcon size={36} strokeWidth={1.6} className="absolute inset-0 text-slate-200" aria-hidden="true" />
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{ clipPath: `inset(${100 - fill}% 0 0 0)` }}
+                aria-hidden="true"
+              >
+                <GaugeIcon size={36} strokeWidth={1.6} className={cn(colorClass, "fill-current")} />
+              </div>
+            </div>
+          );
+        })}
       </div>
-
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
-        <Trash2 size={12} className="mr-1 inline-block align-text-bottom" />
-        {formatKg(safeValue)} kg
-      </div>
+      <p className="mt-2 text-center text-xs text-slate-400">Repère visuel uniquement · l’échelle n’est pas un seuil scientifique</p>
     </div>
+  );
+}
+
+export function TrashBinGauge({ value }: { value: number | null }) {
+  return (
+    <QuantityGaugeVisual
+      value={value}
+      scale={HARVEST_WASTE_VISUAL_SCALE_KG}
+      icon={Trash2}
+      colorClass="text-emerald-400"
+      label="Quantité de déchets hors mégots"
+      valueLabel={`${formatKg(value ?? 0)} kg`}
+      testId="waste-measurement-visual"
+    />
+  );
+}
+
+export function DropletGauge({ value }: { value: number | null }) {
+  return (
+    <QuantityGaugeVisual
+      value={value}
+      scale={HARVEST_BUTTS_VISUAL_SCALE_COUNT}
+      icon={Droplet}
+      colorClass="text-amber-400"
+      label="Quantité de mégots retenue"
+      valueLabel={`${formatCount(value ?? 0)} mégots`}
+      testId="butts-measurement-visual"
+    />
   );
 }
 
@@ -72,7 +110,6 @@ type ComparisonVisualProps = {
   benchmarkPerVolunteer: number | null;
   deltaPercent: number | null;
   comparisonTone: WasteComparisonTone;
-  icon: LucideIcon;
   title: string;
   contextLabel: string;
   currentLabel: string;
@@ -81,8 +118,21 @@ type ComparisonVisualProps = {
   testId: string;
 };
 
-function getWasteComparisonColors(tone: WasteComparisonTone) {
-  void tone;
+function getWasteComparisonColors(deltaPercent: number) {
+  if (deltaPercent > 5) {
+    return {
+      accent: "text-emerald-600",
+      fill: "text-emerald-400",
+      bar: "bg-emerald-400",
+    };
+  }
+  if (deltaPercent < -5) {
+    return {
+      accent: "text-rose-600",
+      fill: "text-rose-400",
+      bar: "bg-rose-400",
+    };
+  }
   return {
     accent: "text-slate-600",
     fill: "text-slate-400",
@@ -94,8 +144,6 @@ function ComparisonVisual({
   currentPerVolunteer,
   benchmarkPerVolunteer,
   deltaPercent,
-  comparisonTone,
-  icon: ComparisonIcon,
   title,
   contextLabel,
   currentLabel,
@@ -103,13 +151,7 @@ function ComparisonVisual({
   testId,
   benchmarkSourceCount,
 }: ComparisonVisualProps) {
-  if (benchmarkSourceCount < 2) {
-    return (
-      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-500" role="status">
-        Référence insuffisante
-      </p>
-    );
-  }
+  if (benchmarkSourceCount < 2) return null;
   if (
     currentPerVolunteer === null ||
     benchmarkPerVolunteer === null ||
@@ -121,32 +163,7 @@ function ComparisonVisual({
     return null;
   }
 
-  if (benchmarkPerVolunteer === 0) {
-    if (deltaPercent !== null) return null;
-    return (
-      <div
-        className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
-        data-comparison-state="zero-reference"
-        data-testid={testId}
-        role="status"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold text-slate-700">{title}</p>
-            <p className="mt-0.5 text-xs text-slate-400">{contextLabel}</p>
-          </div>
-          <span className="text-xs font-semibold text-slate-600">Moyenne nulle</span>
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
-          <span>{currentLabel}</span>
-          <span>{benchmarkLabel}</span>
-        </div>
-        <p className="mt-2 text-xs text-slate-500">
-          Variation en pourcentage non calculable avec une moyenne de référence nulle.
-        </p>
-      </div>
-    );
-  }
+  if (benchmarkPerVolunteer <= 0) return null;
 
   if (
     deltaPercent === null ||
@@ -155,8 +172,7 @@ function ComparisonVisual({
     return null;
   }
 
-  const colors = getWasteComparisonColors(comparisonTone);
-  const ratio = currentPerVolunteer / benchmarkPerVolunteer;
+  const colors = getWasteComparisonColors(deltaPercent);
   const maxValue = deriveGaugeMax([currentPerVolunteer, benchmarkPerVolunteer], 1);
   const currentBarWidth = `${clamp((currentPerVolunteer / maxValue) * 100, 0, 100)}%`;
   const benchmarkMarkerLeft = `${clamp((benchmarkPerVolunteer / maxValue) * 100, 0, 100)}%`;
@@ -187,33 +203,6 @@ function ComparisonVisual({
         </div>
       </div>
 
-      <div
-        className="mt-3 flex items-end justify-center gap-2"
-        role="img"
-        aria-label={`Niveau visuel : ${formatSignedPercent(deltaPercent)} par rapport à la moyenne historique des actions comparables`}
-      >
-        {[0, 1, 2].map((index) => {
-          const fill = clamp(ratio * 3 - index, 0, 1) * 100;
-          return (
-            <div
-              key={index}
-              className="relative h-9 w-9"
-              data-testid={`${testId}-icon`}
-              data-fill-percent={Math.round(fill)}
-            >
-              <ComparisonIcon size={36} strokeWidth={1.6} className="absolute inset-0 text-slate-200" aria-hidden="true" />
-              <div
-                className="absolute inset-0 overflow-hidden"
-                style={{ clipPath: `inset(${100 - fill}% 0 0 0)` }}
-                aria-hidden="true"
-              >
-                <ComparisonIcon size={36} strokeWidth={1.6} className={cn(colors.fill, "fill-current")} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
       <div className="mt-3">
         <div className="relative h-2 rounded-full bg-slate-200" aria-hidden="true">
           <div className={cn("absolute inset-y-0 left-0 rounded-full", colors.bar)} style={{ width: currentBarWidth }} />
@@ -227,6 +216,9 @@ function ComparisonVisual({
           <span>{benchmarkLabel}</span>
         </div>
       </div>
+      <p className="mt-2 text-xs text-slate-400">
+        La couleur indique uniquement la quantité relative collectée ; elle n’évalue ni la qualité ni l’efficacité environnementale de l’action.
+      </p>
     </div>
   );
 }
@@ -237,14 +229,13 @@ export function WasteComparisonVisual({
   deltaPercent,
   comparisonTone,
   benchmarkSourceCount,
-}: Omit<ComparisonVisualProps, "icon" | "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
+}: Omit<ComparisonVisualProps, "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
   return (
     <ComparisonVisual
       currentPerVolunteer={currentPerVolunteer}
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       deltaPercent={deltaPercent}
       comparisonTone={comparisonTone}
-      icon={ShoppingBag}
       title="Comparaison visuelle"
       contextLabel={`Moyenne par unité opérationnelle estimée · ${benchmarkSourceCount} action(s)`}
       currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / unité opérationnelle`}
@@ -261,14 +252,13 @@ export function ButtsComparisonVisual({
   deltaPercent,
   comparisonTone,
   benchmarkSourceCount,
-}: Omit<ComparisonVisualProps, "icon" | "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
+}: Omit<ComparisonVisualProps, "title" | "contextLabel" | "currentLabel" | "benchmarkLabel" | "testId">) {
   return (
     <ComparisonVisual
       currentPerVolunteer={currentPerVolunteer}
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       deltaPercent={deltaPercent}
       comparisonTone={comparisonTone}
-      icon={Droplet}
       title="Comparaison visuelle des mégots"
       contextLabel={`Moyenne par unité opérationnelle estimée · ${benchmarkSourceCount} action(s)`}
       currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / unité opérationnelle`}

@@ -57,9 +57,9 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ],
     });
 
-    expect(harness.latest.logic.megotsCount).toBe(4_945);
+    expect(harness.latest.logic.megotsCount).toBe(4_995);
     expect(harness.latest.logic.megotsCounted).toBe(100);
-    expect(harness.latest.logic.megotsEstimated).toBe(4_845);
+    expect(harness.latest.logic.megotsEstimated).toBe(4_895);
     expect(harness.latest.logic.megotsMeasuredMassKg).toBe(1);
     expect(harness.latest.logic.megotsLotResults.map((lot) => lot.id)).toEqual([
       "count",

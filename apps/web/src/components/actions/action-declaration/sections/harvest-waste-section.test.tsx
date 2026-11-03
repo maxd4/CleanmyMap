@@ -411,9 +411,11 @@ describe("HarvestWasteSection comparison", () => {
     const markup = renderWasteSection();
 
     expect(markup).toContain('id="harvest-waste-kg"');
+    expect(markup).toContain('data-testid="waste-measurement-visual"');
+    expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(3);
     expect(markup).toContain('data-testid="waste-comparison-visual"');
     expect(markup).toContain("Comparaison visuelle");
-    expect(markup.match(/data-testid="waste-comparison-visual-icon"/g)).toHaveLength(3);
+    expect(markup).not.toContain('data-testid="waste-comparison-visual-icon"');
   });
 
   it("hides the comparison without a valid benchmark while preserving the input", () => {
@@ -423,7 +425,9 @@ describe("HarvestWasteSection comparison", () => {
     });
 
     expect(markup).toContain('id="harvest-waste-kg"');
+    expect(markup).toContain('data-testid="waste-measurement-visual"');
     expect(markup).not.toContain('data-testid="waste-comparison-visual"');
+    expect(markup).not.toContain("Référence insuffisante");
   });
 
   it("keeps an explicit zero visible and does not manufacture a value when absent", () => {
@@ -441,8 +445,12 @@ describe("HarvestWasteSection comparison", () => {
     });
 
     expect(zeroMarkup).toContain('value="0"');
+    expect(zeroMarkup).toContain('data-testid="waste-measurement-visual"');
+    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
     expect(zeroMarkup).toContain('data-testid="waste-comparison-visual"');
     expect(absentMarkup).toContain('value=""');
+    expect(absentMarkup).toContain('data-testid="waste-measurement-visual"');
+    expect(absentMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
     expect(absentMarkup).not.toContain('data-testid="waste-comparison-visual"');
   });
 
