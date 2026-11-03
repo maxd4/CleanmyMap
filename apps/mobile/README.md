@@ -39,6 +39,67 @@ est une preuve datée d'un artefact passé : elle ne constitue pas une preuve de
 release actuelle, de disponibilité store, de rotation des credentials ou de
 fonctionnement des parcours non exécutés.
 
+## Cartographie rapide vérifiée
+
+Cette section sert de point d'entrée. Elle résume les owners du checkout ; les
+contrats détaillés d'identité, de RLS, de stockage owner-scoped et de GPS restent
+dans [architecture_gps_companion.md](./architecture_gps_companion.md) et la
+décision d'identité dans
+[ADR-004](../../documentation/architecture/adr/ADR-004-companion-identity.md).
+
+| Surface | Owner actuel | Rôle vérifié |
+|---|---|---|
+| Entrée Expo | [`index.ts`](./index.ts), [`App.tsx`](./App.tsx), [`app.json`](./app.json) | Enregistre la tâche GPS avant `registerRootComponent`, initialise les polyfills, Clerk, le cache sécurisé et le shell. |
+| Navigation | [`screens/mobile-shell.tsx`](./screens/mobile-shell.tsx), [`mobile-shell-contract.ts`](./screens/mobile-shell-contract.ts) | Barre native persistante `Agir` / `Carte` / `Compte`; sous-vues `Rejoindre`, `Créer`, `Signaler`; `Accueil`, `Réseau`, `Apprendre` restent planifiées. |
+| Écrans | [`screens/mobile-shell.tsx`](./screens/mobile-shell.tsx) | Compte, création et participation d'action, signalement, mission active/carte, finalisation, contact et appel d'urgence. |
+| Hooks/controllers | [`hooks/use-companion-mission-controller.ts`](./hooks/use-companion-mission-controller.ts) | `useCompanionMissionController`, `useAccountController`, `useActionCreateController` portent respectivement mission/GPS, projection Compte et brouillon/création d'action. |
+| Services | [`lib/mobile-api-client.ts`](./lib/mobile-api-client.ts) | Client HTTP mobile, Actions, Compte, média de signalement, mission liée, tracking GPS, géométrie, permissions, environnement et contact d'urgence. |
+| Stockage | [`lib/storage.ts`](./lib/storage.ts), cache Clerk | `AsyncStorage` conserve surface, brouillons, mission, buffer, tracé et réconciliations namespacés par owner; `SecureStore` porte le cache de token Clerk et le contact d'urgence natif. |
+| GPS | [`lib/tracking-service.ts`](./lib/tracking-service.ts), [`tasks/gps-task.ts`](./tasks/gps-task.ts), [`screens/mission-active-map.tsx`](./screens/mission-active-map.tsx) | `expo-location`, `expo-task-manager` et `react-native-maps` couvrent permissions, suivi foreground, tâche background câblée, restauration/replay et affichage du tracé; les métriques finales restent serveur. |
+| Authentification | [`App.tsx`](./App.tsx), [`lib/supabase.ts`](./lib/supabase.ts) | Clerk est l'identité canonique; `ClerkProvider` + `tokenCache` et Bearer `session_token` alimentent Supabase Third-Party Auth et les frontières HTTP mobiles. |
+| API et données consommées | [`lib/mobile-actions-service.ts`](./lib/mobile-actions-service.ts), [`mobile-account-service.ts`](./lib/mobile-account-service.ts), [`tracking-service.ts`](./lib/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions`; tables Supabase `missions` et `gps_points`. |
+| Tests et contrôles | [`tests/mobile-shell-contract.test.ts`](./tests/mobile-shell-contract.test.ts), [`security/braces-security.test.mjs`](./security/braces-security.test.mjs) | Vitest couvre runtime, contrats, reprise, identité, stockage, GPS et écrans; les tests Node dédiés couvrent les dépendances vendorisées. Commandes: `mobile:typecheck`, `mobile:test`, `mobile:security`, `mobile:lint`, `quality:mobile-coverage`. |
+
+### Dépendances directes du workspace
+
+Les chemins HTTP effectivement appelés sont : `/api/mobile/actions` et ses
+sous-routes ; `/api/mobile/account` et `/api/mobile/account/deletion-request` ;
+`/api/actions` et ses sous-routes de création, publication, jour et rôles ;
+`/api/spots` ; `/api/signalements/me`,
+`/api/signalements/:id/media`, `/api/signalements/:id/media/intents` et
+`/api/signalements/:id/media/:mediaId/finalize` ;
+`/api/account/active-profile`, `/api/account/activity-status`,
+`/api/users/profile/display-name-mode` et `/api/notifications/preferences` ;
+`/api/missions` et `/api/missions/:id/reconcile`. Le code et les tests de chaque famille
+restent les owners de leur contrat ; cette liste n'en crée pas un second.
+
+Le manifeste [`package.json`](./package.json) est la liste exhaustive et
+versionnée. Les dépendances runtime structurantes sont `expo`, `react`,
+`react-native`, `@clerk/expo`, `@supabase/supabase-js`,
+`@react-native-async-storage/async-storage`, `expo-secure-store`,
+`expo-location`, `expo-task-manager`, `react-native-maps`,
+`react-native-safe-area-context`, `react-native-svg`, `lucide-react-native`,
+`@expo/vector-icons`, `expo-image-picker`, `expo-linking`, `expo-web-browser`,
+`expo-auth-session`, `expo-dev-client`, `expo-build-properties`, `expo-crypto`,
+`expo-constants`, `expo-splash-screen`, `expo-status-bar` et
+`react-native-url-polyfill`. Les dépendances de validation directes sont
+`@types/react`, `eslint`, `eslint-plugin-react`, `globals`, `typescript`,
+`typescript-eslint`, `vitest`, `@vitest/coverage-v8` et le correctif local
+`braces` déclarés dans `devDependencies`.
+
+### Statut des capacités
+
+| État | Capacités et limites |
+|---|---|
+| `CURRENT` | Shell et UI mobiles autonomes, authentification Clerk, missions GPS owner-scoped, carte/tracé, buffer et reprise locale, finalisation serveur, contact d'urgence, participation/création/signalement terrain et ponts web explicitement étiquetés. |
+| `LIMITED / NOT_PRODUCTION_READY` | Les tests locaux et la configuration Expo ne prouvent ni l'acceptation d'un JWT Clerk réel, ni le suivi background sur appareil, ni la reprise après kill/verrouillage/perte réseau en conditions opérationnelles, ni iOS, signature, stores ou conformité de distribution. |
+| `FUTURE` | Validation opérationnelle Android/iOS par plateforme, background headless réellement éprouvé, destinations planifiées et éventuelles évolutions `mission_actions`/photo de mission après décision dédiée. macOS reste hors engagement. |
+
+Ne pas lire `CURRENT` comme une preuve de production : les preuves historiques
+de build sont isolées dans la section `HISTORY` plus bas. Aucun package partagé
+mobile/web n'est requis tant qu'un consommateur réel et un owner commun ne sont
+pas démontrés.
+
 ## Périmètre V1
 
 La V1 mobile s'adresse aux bénévoles terrain et reste volontairement réduite

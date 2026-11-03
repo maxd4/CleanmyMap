@@ -15,6 +15,16 @@ activité GPS live avec carte et tracé temps réel, la reprise/offline, la
 finalisation serveur, les contacts d'urgence et les trois parcours métier
 natifs du bloc Agir.
 
+Le mobile est autonome pour son runtime, son UI native et ses modules métier :
+shell/navigation, mission/GPS et reprise locale, participation/création d'action,
+signalement/média, compte/identité et contact d'urgence. Il réutilise les
+owners backend et les contrats partagés nécessaires, sans transférer la
+propriété de son lifecycle ou de son UI au web. Les adaptations Android et iOS
+restent à valider par plateforme selon leurs permissions, cycles de vie,
+background GPS, builds et exigences de distribution. macOS est une cible
+distincte non engagée ; aucune compatibilité desktop ou Catalyst ne doit être
+déduite de ce workspace.
+
 Les autres capacités mobiles doivent réutiliser les contrats, données et
 services communs existants. Aucun package partagé générique, second modèle
 métier mobile ou système de gamification parallèle ne doit être créé pour la
@@ -73,6 +83,16 @@ Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne
 les retire pas simultanément avec les contrats, la documentation et les
 consommateurs concernés.
+
+## Découverte et frontière de travail
+
+Pour une tâche mobile, commencer par `apps/mobile/`, ce fichier, son README,
+`architecture_gps_companion.md` et les contrats mobiles directement concernés.
+Consulter `apps/web` ou le reste du dépôt seulement lorsqu'une dépendance, un
+contrat partagé, un consommateur, un test ou un impact transversal est
+effectivement identifié. Les écritures suivent cette frontière ; elles peuvent
+atteindre l'owner web, Supabase ou la documentation partagée lorsque le
+changement le nécessite réellement, sans créer de copie locale concurrente.
 
 ## Modularité préventive mobile
 

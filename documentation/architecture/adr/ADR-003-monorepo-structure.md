@@ -26,6 +26,35 @@ apps/mobile
 `packages/` reste une possibilité future pour du code réellement partagé ; ce
 dossier n'est pas une partie existante de l'architecture.
 
+### Autonomie des surfaces et frontières UI
+
+Les deux workspaces sont autonomes pour leur runtime, leur UI et leurs modules
+de présentation : le web possède sa navigation et ses parcours Next.js ; le
+mobile possède son shell natif, sa navigation `Agir` / `Carte` / `Compte`, ses
+écrans terrain et son cycle de vie GPS. Le mobile ne cherche pas à reproduire
+le chrome ou toutes les pages web. Les deux surfaces réutilisent seulement les
+owners communs réellement nécessaires — identité Clerk, data plane Supabase,
+routes et services métier serveur — sans transférer la propriété de leur UI ou
+de leur lifecycle à l'autre workspace.
+
+Les modules métier mobiles sont regroupés par responsabilité : shell et
+navigation, mission/GPS et reprise locale, participation et création d'action,
+signalement et média, compte/identité et contact d'urgence. Cette organisation
+décrit les frontières actuelles ; elle ne justifie ni un déplacement de runtime
+ni une extraction cosmétique.
+
+Les adaptations futures Android et iOS sont engagées séparément selon les
+permissions, le background GPS, le cycle de vie, les builds et les contrôles
+propres à chaque plateforme. `apps/mobile` reste le workspace Expo / React
+Native commun à ces deux cibles. macOS est une cible distincte non engagée :
+aucune compatibilité desktop, Catalyst ou runtime macOS ne doit être déduite de
+la présence du mobile.
+
+Un workspace ou package partagé ne sera créé que lorsqu'un consommateur réel,
+un owner clair et une réduction de duplication ou de divergence seront établis.
+Le partage de contrats backend ne suffit pas à justifier un package UI ou un
+déplacement de code entre workspaces.
+
 **Raisonnement :**
 1.  **Simplicité** : Pas besoin de Turborepo ou Nx pour un projet de cette taille au démarrage. Les workspaces natifs de npm suffisent pour partager des configurations.
 2.  **Partage de code** : Facilite la gestion des dépendances partagées entre

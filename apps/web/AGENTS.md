@@ -26,6 +26,16 @@ des scripts sont définies dans les `AGENTS.md` de ces sous-arbres.
 Les versions exactes ne doivent pas être recopiées ici : le manifeste et la
 matrice sont les sources de vérité du lot concerné.
 
+## Découverte et frontière de travail
+
+Pour une tâche web, commencer par `apps/web/`, ce fichier, le README du
+workspace et la documentation canonique directement concernée. Consulter le
+reste du dépôt — notamment `apps/mobile` — seulement lorsqu'une dépendance, un
+contrat partagé, un consommateur, un test ou un impact transversal est
+effectivement identifié. Les écritures suivent cette frontière ; elles peuvent
+atteindre un owner externe nécessaire, par exemple Supabase ou un contrat
+partagé, mais ne doivent pas créer une copie concurrente du comportement.
+
 ## Identité et domaine web
 
 - Clerk reste le fournisseur d'identité principal du web ;

@@ -59,6 +59,17 @@ un besoin sémantique réel. Vérifier la fraîcheur et lire les sources avant t
 décision. GitNexus reste facultatif et soumis aux conditions documentées dans
 `TESTING.md`.
 
+## Règle de découverte par workspace
+
+Pour une tâche ciblée sur un workspace, Codex commence par le workspace concerné
+(`apps/web` ou `apps/mobile`), son `AGENTS.md` scoped, son README et les sources
+documentaires canoniques directement rattachées. Le reste du dépôt n'est
+consulté que pour une dépendance, un contrat partagé, un consommateur, un test
+ou un impact transversal effectivement identifié. Les écritures suivent la même
+frontière : un fichier externe n'est modifié que si cette dépendance ou cet
+impact est démontré et nécessaire au lot ; cette règle ne crée pas une
+interdiction artificielle de corriger un owner externe réellement concerné.
+
 ## Modèle d’exécution
 
 Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
