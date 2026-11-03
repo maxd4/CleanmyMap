@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   auth: { isLoaded: true, isSignedIn: true, userId: 'user-a' as string | null },
   foregroundPermission: 'granted' as 'granted' | 'denied',
   position: { latitude: 48.8566, longitude: 2.3522 },
+  getCurrentPositionAsync: vi.fn(),
   createMobileAction: vi.fn(),
   updateMobileAction: vi.fn(),
   loadMobileActionEditor: vi.fn(async () => ({ status: 'ok', action: {} })),
@@ -28,7 +29,7 @@ vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
 vi.mock('expo-location', () => ({
   Accuracy: { Balanced: 'balanced' },
   requestForegroundPermissionsAsync: vi.fn(async () => ({ status: state.foregroundPermission })),
-  getCurrentPositionAsync: vi.fn(async () => ({ coords: state.position })),
+  getCurrentPositionAsync: state.getCurrentPositionAsync,
 }))
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: state.getItem, setItem: state.setItem },
@@ -61,6 +62,12 @@ function findButton(renderer: TestRenderer.ReactTestRenderer, label: string) {
   return renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity').find((node) => textContent(node).includes(label))
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
+}
+
 async function renderScreen(onSessionExpired = vi.fn(), onStartAction = vi.fn()) {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
@@ -84,6 +91,7 @@ describe('mobile action creation runtime', () => {
     state.createLinkedMission.mockReset()
     state.foregroundPermission = 'granted'
     state.position = { latitude: 48.8566, longitude: 2.3522 }
+    state.getCurrentPositionAsync.mockReset().mockResolvedValue({ coords: state.position })
     state.createMobileAction.mockResolvedValue({ status: 'created', id: 'action-1', source: 'actions' })
     state.updateMobileAction.mockResolvedValue({ status: 'ok', actionId: 'action-1', actionPhase: 'pre_action' })
     state.publishMobileAction.mockResolvedValue({ status: 'published', id: 'action-1', publishedAt: '2026-10-20T10:00:00.000Z', alreadyPublished: false })
@@ -174,6 +182,36 @@ describe('mobile action creation runtime', () => {
 
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
     expect(state.setItem.mock.calls.some(([key, value]) => key.endsWith(':user-a') && String(value).includes('Ne pas réutiliser'))).toBe(false)
+  })
+
+  it('does not write the previous owner draft into the next namespace before hydration', async () => {
+    const ownerBRead = deferred<string | null>()
+    state.getItem.mockImplementation((key: string) => {
+      if (key.endsWith(':user-a')) return Promise.resolve(JSON.stringify({ ownerId: 'user-a', draft: { title: 'Brouillon A' } }))
+      if (key.endsWith(':user-b')) return ownerBRead.promise
+      return Promise.resolve(null)
+    })
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    state.setItem.mockClear()
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await Promise.resolve()
+    })
+
+    expect(state.setItem.mock.calls.filter(([key]) => key.endsWith(':user-b'))).toHaveLength(0)
+
+    await act(async () => {
+      ownerBRead.resolve(null)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const ownerBWrites = state.setItem.mock.calls.filter(([key]) => key.endsWith(':user-b'))
+    expect(ownerBWrites.length).toBeGreaterThan(0)
+    expect(ownerBWrites.every(([, value]) => !String(value).includes('Brouillon A'))).toBe(true)
   })
 
   it('does not migrate an owner-less legacy global draft', async () => {
@@ -361,6 +399,35 @@ describe('mobile action creation runtime', () => {
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }), 'value')).toBe('48.856600')
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }), 'value')).toBe('2.352200')
     expect(renderer.root.findAll((node) => textContent(node).includes('Position actuelle ajoutée'))).not.toHaveLength(0)
+  })
+
+  it('ignores a late GPS response from the previous Clerk owner', async () => {
+    state.getItem.mockResolvedValue(null)
+    const gpsResponse = deferred<{ coords: { latitude: number; longitude: number } }>()
+    state.getCurrentPositionAsync.mockReturnValue(gpsResponse.promise)
+    const renderer = await renderScreen()
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    let pendingGps!: Promise<unknown>
+    await act(async () => {
+      pendingGps = callTestHandler(findButton(renderer, 'Utiliser ma position actuelle'), 'onPress') as Promise<unknown>
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Terrain'), 'onPress') })
+
+    gpsResponse.resolve({ coords: { latitude: 51.5074, longitude: -0.1278 } })
+    await act(async () => { await pendingGps; await Promise.resolve() })
+
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }), 'value')).toBe('')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }), 'value')).toBe('')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Position actuelle ajoutée'))).toHaveLength(0)
   })
 
   it('publishes exactly once after creating the server action and disables the published state', async () => {
@@ -569,5 +636,56 @@ describe('mobile action creation runtime', () => {
     await act(async () => { await callTestHandler(link, 'onPress') })
     expect(onStartAction).toHaveBeenCalledWith('action-1', 'Action mobile')
     expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré'))).not.toHaveLength(0)
+  })
+
+  it('does not let an old GPS link completion clear or update a new owner operation', async () => {
+    const ownerAStart = deferred<void>()
+    const ownerBStart = deferred<void>()
+    state.getItem.mockImplementation((key: string) => {
+      if (key.endsWith(':user-a')) return Promise.resolve(JSON.stringify({ ownerId: 'user-a', actionId: 'action-a', draft: { title: 'Action A' } }))
+      if (key.endsWith(':user-b')) return Promise.resolve(JSON.stringify({ ownerId: 'user-b', actionId: 'action-b', draft: { title: 'Action B' } }))
+      return Promise.resolve(null)
+    })
+    const onStartAction = vi.fn()
+      .mockImplementationOnce(() => ownerAStart.promise)
+      .mockImplementationOnce(() => ownerBStart.promise)
+    const renderer = await renderScreen(vi.fn(), onStartAction)
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Vérifier et publier'), 'onPress') })
+
+    let pendingA!: Promise<unknown>
+    await act(async () => {
+      pendingA = callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') as Promise<unknown>
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={onStartAction} />)
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Vérifier et publier'), 'onPress') })
+
+    let pendingB!: Promise<unknown>
+    await act(async () => {
+      pendingB = callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') as Promise<unknown>
+      await Promise.resolve()
+    })
+    const disabledButtons = () => renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && node.props.disabled === true)
+    expect(disabledButtons().length).toBeGreaterThan(0)
+
+    ownerAStart.resolve()
+    await act(async () => { await pendingA; await Promise.resolve() })
+
+    expect(disabledButtons().length).toBeGreaterThan(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.')).length).toBe(0)
+
+    ownerBStart.resolve()
+    await act(async () => { await pendingB; await Promise.resolve() })
+    expect(disabledButtons()).toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.')).length).toBeGreaterThan(0)
   })
 })

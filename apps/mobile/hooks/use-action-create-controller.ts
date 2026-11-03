@@ -1,5 +1,5 @@
 import { useAuth } from '@clerk/expo'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as Location from 'expo-location'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createLocalIdentifier } from '../lib/local-identifier'
@@ -156,11 +156,13 @@ function useActionCreatePersistence({
   const [draftReadError, setDraftReadError] = useState(false)
   const [draftWriteError, setDraftWriteError] = useState(false)
   const currentOwnerRef = useRef<string | null>(ownerId)
+  useLayoutEffect(() => {
+    currentOwnerRef.current = ownerId
+  }, [ownerId])
 
   useEffect(() => {
     let active = true
     let readSucceeded = false
-    currentOwnerRef.current = ownerId
     const scopedKey = ownerScopedStorageKey(ownerId)
     setDraftHydrated(false)
     setHydratedOwnerId(null)
@@ -175,6 +177,7 @@ function useActionCreatePersistence({
     if (!scopedKey) return () => { active = false }
 
     const restoreDraft = async () => {
+      const isCurrentOwner = () => active && currentOwnerRef.current === ownerId
       try {
         const scopedValue = await AsyncStorage.getItem(scopedKey)
         let stored = parseStoredDraft(scopedValue, ownerId)
@@ -184,8 +187,7 @@ function useActionCreatePersistence({
           const legacy = parseStoredDraft(await AsyncStorage.getItem(LEGACY_STORAGE_KEY))
           if (legacy.ownerId === ownerId) stored = legacy
         }
-        if (!active) return
-        if (currentOwnerRef.current !== ownerId) return
+        if (!isCurrentOwner()) return
         if (stored.draft) setDraft(stored.draft)
         if (stored.actionId) setActionId(stored.actionId)
         if (stored.section) setSection(stored.section)
@@ -194,9 +196,9 @@ function useActionCreatePersistence({
         readSucceeded = true
         setHydratedOwnerId(ownerId)
       } catch {
-        if (active) setDraftReadError(true)
+        if (isCurrentOwner()) setDraftReadError(true)
       } finally {
-        if (active && readSucceeded) setDraftHydrated(true)
+        if (isCurrentOwner() && readSucceeded) setDraftHydrated(true)
       }
     }
     void restoreDraft().catch(() => undefined)
@@ -205,15 +207,16 @@ function useActionCreatePersistence({
 
   useEffect(() => {
     const scopedKey = ownerScopedStorageKey(ownerId)
-    if (!draftHydrated || !scopedKey || !ownerId) return
+    if (!draftHydrated || hydratedOwnerId !== ownerId || !scopedKey || !ownerId) return
+    const ownerAtStart = ownerId
     let active = true
     setDraftWriteError(false)
     const storedValue = serializeStoredDraft(ownerId, { draft, actionId, section, published, clientRequestId })
-    void queueDraftWrite(scopedKey, storedValue, () => active && currentOwnerRef.current === ownerId).catch(() => {
-      if (active) setDraftWriteError(true)
+    void queueDraftWrite(scopedKey, storedValue, () => active && currentOwnerRef.current === ownerAtStart && hydratedOwnerId === ownerAtStart).catch(() => {
+      if (active && currentOwnerRef.current === ownerAtStart) setDraftWriteError(true)
     })
     return () => { active = false }
-  }, [actionId, clientRequestId, draft, draftHydrated, ownerId, published, section])
+  }, [actionId, clientRequestId, draft, draftHydrated, hydratedOwnerId, ownerId, published, section])
 
   return { draftHydrated, hydratedOwnerId, draftReadError, draftWriteError, retryDraftRead: () => setDraftReadAttempt((attempt) => attempt + 1) }
 }
@@ -305,10 +308,12 @@ function useActionCreateMutations({
   const [error, setError] = useState<string | null>(null)
   const [dayBriefing, setDayBriefing] = useState<MobileActionDay | null>(null)
   const currentOwnerRef = useRef<string | null>(ownerId)
+  useLayoutEffect(() => {
+    currentOwnerRef.current = ownerId
+  }, [ownerId])
   const mutationsBlocked = !ownerId || !draftHydrated || draftReadError || busy
 
   useEffect(() => {
-    currentOwnerRef.current = ownerId
     setBusy(false)
     setMessage(null)
     setError(null)
@@ -338,7 +343,9 @@ function useActionCreateMutations({
       setMessage('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
     } catch (value) {
       if (canMutate(ownerAtStart)) handleError(value)
-    } finally { setBusy(false) }
+    } finally {
+      if (canMutate(ownerAtStart)) setBusy(false)
+    }
   }
 
   async function publish() {
@@ -357,7 +364,9 @@ function useActionCreateMutations({
       setMessage('Publication confirmée par le serveur.')
     } catch (value) {
       if (canMutate(ownerAtStart)) handleError(value)
-    } finally { setBusy(false) }
+    } finally {
+      if (canMutate(ownerAtStart)) setBusy(false)
+    }
   }
 
   async function linkGps() {
@@ -369,7 +378,9 @@ function useActionCreateMutations({
       if (canMutate(ownerAtStart)) setMessage('Suivi GPS démarré pour cette action. La même mission sera finalisée puis réconciliée.')
     } catch (value) {
       if (canMutate(ownerAtStart)) handleError(value)
-    } finally { setBusy(false) }
+    } finally {
+      if (canMutate(ownerAtStart)) setBusy(false)
+    }
   }
 
   async function loadDayBriefing() {
@@ -384,7 +395,9 @@ function useActionCreateMutations({
       }
     } catch (value) {
       if (canMutate(ownerAtStart)) handleError(value)
-    } finally { setBusy(false) }
+    } finally {
+      if (canMutate(ownerAtStart)) setBusy(false)
+    }
   }
 
   return { busy, message, error, dayBriefing, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
@@ -402,6 +415,12 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   const [published, setPublished] = useState(false)
   const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId })
   const ownerHydrated = Boolean(ownerId && persistence.draftHydrated && persistence.hydratedOwnerId === ownerId)
+  const currentOwnerRef = useRef<string | null>(ownerId)
+  const ownerSessionRef = useRef({ ownerId: null as string | null, hydrated: false })
+  useLayoutEffect(() => {
+    currentOwnerRef.current = ownerId
+    ownerSessionRef.current = { ownerId, hydrated: ownerHydrated }
+  }, [ownerId, ownerHydrated])
   const visibleDraft = ownerHydrated ? draft : EMPTY
   const visibleActionId = ownerHydrated ? actionId : null
   const visiblePublished = ownerHydrated ? published : false
@@ -413,18 +432,26 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   useEffect(() => {
     if (!visibleActionId || !ownerId) return
     let active = true
+    const ownerAtStart = ownerId
     loadMobileActionEditor(visibleActionId).catch((value) => {
-      if (active && isUnauthorized(value)) onSessionExpired()
+      if (active && currentOwnerRef.current === ownerAtStart && isUnauthorized(value)) onSessionExpired()
     })
     return () => { active = false }
   }, [onSessionExpired, ownerId, visibleActionId])
 
   async function getCurrentPosition() {
+    const ownerAtStart = ownerId
+    const isCurrentOwnerHydrated = () => ownerSessionRef.current.ownerId === ownerAtStart && ownerSessionRef.current.hydrated
+    if (!isCurrentOwnerHydrated()) return
     const permission = await Location.requestForegroundPermissionsAsync()
+    if (!isCurrentOwnerHydrated()) return
     if (permission.status !== 'granted') { mutations.setError('La permission de localisation est nécessaire pour utiliser la position actuelle.'); return }
     const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-    if (!ownerHydrated) return
-    setDraft((current) => ({ ...current, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }))
+    if (!isCurrentOwnerHydrated()) return
+    setDraft((current) => {
+      if (!isCurrentOwnerHydrated()) return current
+      return { ...current, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }
+    })
     mutations.setMessage('Position actuelle ajoutée. Vérifiez-la avant de sauvegarder.')
   }
 
