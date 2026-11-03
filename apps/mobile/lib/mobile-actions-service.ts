@@ -82,6 +82,42 @@ export type MobileActionEditor = MobileActionItem & {
   notes?: string | null
 }
 
+export const MOBILE_ORGANIZER_TYPE_OPTIONS = [
+  { value: 'spontaneous', label: 'Action spontanée' },
+  { value: 'company', label: 'Entreprise' },
+  { value: 'association', label: 'Association' },
+  { value: 'student_association', label: 'Association étudiante' },
+  { value: 'collective', label: 'Collectif' },
+  { value: 'other', label: 'Autre' },
+] as const
+
+export type MobileOrganizerType = typeof MOBILE_ORGANIZER_TYPE_OPTIONS[number]['value']
+
+export function isMobileOrganizerType(value: unknown): value is MobileOrganizerType {
+  return typeof value === 'string' && MOBILE_ORGANIZER_TYPE_OPTIONS.some((option) => option.value === value)
+}
+
+export type MobileActionDay = {
+  status: string
+  actionId: string
+  access: string
+  action: {
+    title?: string | null
+    actionDate?: string | null
+    locationLabel?: string | null
+    meetingPoint?: string | null
+    meetingTime?: string | null
+    organizerLabel?: string | null
+    participantMessage?: string | null
+    safetyInstructions?: string | null
+    recommendedMaterials?: string | null
+    materialsProvided?: string | null
+    accessibility?: string | null
+    accessibilityStatus?: string | null
+    route?: { topology?: string | null; departureLabel?: string | null; arrivalLabel?: string | null }
+  }
+}
+
 export type MobileActionDraftPayload = {
   /** Stable per-draft key used by the server to make POST retries idempotent. */
   clientRequestId?: string
@@ -90,7 +126,7 @@ export type MobileActionDraftPayload = {
   latitude?: number
   longitude?: number
   associationName: string
-  organizerType: 'association' | 'spontaneous' | 'collective' | 'student_association' | 'other'
+  organizerType: MobileOrganizerType | null
   organizerName?: string
   organizerAccounts?: string[]
   participantAccounts?: string[]
@@ -207,7 +243,7 @@ export async function publishMobileAction(actionId: string) {
 }
 
 export async function loadMobileActionDay(actionId: string) {
-  return mobileRequest<{ status: string; actionId: string; access: string; action: Record<string, unknown> }>(
+  return mobileRequest<MobileActionDay>(
     `/api/actions/${encodeURIComponent(actionId)}/day`,
   )
 }

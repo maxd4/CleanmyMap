@@ -10,13 +10,17 @@ import {
   publishMobileAction,
   updateMobileAction,
   type MobileActionDraftPayload,
+  type MobileActionDay,
+  type MobileOrganizerType,
+  isMobileOrganizerType,
 } from '../lib/mobile-actions-service'
 
 export type Section = 'essentiel' | 'terrain' | 'equipe' | 'verification'
 export type Draft = {
   title: string
   description: string
-  association: string
+  organizerName: string
+  organizerType: MobileOrganizerType | null
   date: string
   start: string
   end: string
@@ -50,12 +54,13 @@ export const SECTIONS: Array<{ id: Section; label: string }> = [
 const STORAGE_KEY_PREFIX = 'cleanmymap.mobile.action-create.v1'
 const LEGACY_STORAGE_KEY = STORAGE_KEY_PREFIX
 const EMPTY: Draft = {
-  title: '', description: '', association: 'Mon organisation', date: '', start: '', end: '', location: '',
+  title: '', description: '', organizerName: '', organizerType: null, date: '', start: '', end: '', location: '',
   latitude: '', longitude: '', meetingPoint: '', materials: '', recommendedMaterials: '', logistics: '', checklist: '', safety: '', accessibility: '', coorganizers: '', invitees: '', departure: '', arrival: '', routeTopology: 'loop', participants: '1',
   duration: '60', notes: '',
 }
 
 type StoredDraft = { ownerId?: string; draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string }
+type StoredDraftInput = Partial<Draft> & { association?: unknown; organizerType?: unknown; organizerName?: unknown }
 
 function normalizeOwnerId(ownerId: string | null | undefined): string | null {
   const normalized = ownerId?.trim() ?? ''
@@ -77,8 +82,15 @@ function parseStoredDraft(value: string | null, expectedOwnerId?: string | null)
     const parsed = JSON.parse(value) as StoredDraft
     const storedOwnerId = normalizeOwnerId(parsed.ownerId ?? undefined) ?? undefined
     if (expectedOwnerId && storedOwnerId && storedOwnerId !== expectedOwnerId) return {}
+    const storedDraft = parsed.draft as StoredDraftInput | undefined
+    const organizerName = typeof storedDraft?.organizerName === 'string'
+      ? storedDraft.organizerName
+      : typeof storedDraft?.association === 'string'
+        ? storedDraft.association
+        : EMPTY.organizerName
+    const organizerType = isMobileOrganizerType(storedDraft?.organizerType) ? storedDraft.organizerType : null
     return {
-      draft: parsed.draft ? { ...EMPTY, ...parsed.draft } : undefined,
+      draft: storedDraft ? { ...EMPTY, ...storedDraft, organizerName, organizerType } : undefined,
       ownerId: storedOwnerId,
       actionId: parsed.actionId || undefined,
       section: isSection(parsed.section) ? parsed.section : undefined,
@@ -218,8 +230,9 @@ function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftP
     locationLabel: draft.location,
     latitude: draft.latitude ? Number(draft.latitude) : undefined,
     longitude: draft.longitude ? Number(draft.longitude) : undefined,
-    associationName: draft.association || 'Mon organisation',
-    organizerType: 'association',
+    associationName: draft.organizerType === 'spontaneous' ? 'Action spontanée' : draft.organizerName.trim(),
+    organizerName: draft.organizerName.trim() || undefined,
+    organizerType: draft.organizerType,
     organizerAccounts: splitTokens(draft.coorganizers),
     participantAccounts: splitTokens(draft.invitees),
     groupJoinEnabled: true,
@@ -290,6 +303,7 @@ function useActionCreateMutations({
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [dayBriefing, setDayBriefing] = useState<MobileActionDay | null>(null)
   const currentOwnerRef = useRef<string | null>(ownerId)
   const mutationsBlocked = !ownerId || !draftHydrated || draftReadError || busy
 
@@ -299,6 +313,10 @@ function useActionCreateMutations({
     setMessage(null)
     setError(null)
   }, [ownerId])
+
+  useEffect(() => {
+    setDayBriefing(null)
+  }, [actionId, ownerId])
 
   function canMutate(ownerAtStart: string | null): boolean {
     return Boolean(ownerAtStart && currentOwnerRef.current === ownerAtStart)
@@ -359,14 +377,17 @@ function useActionCreateMutations({
     const ownerAtStart = ownerId
     setBusy(true); setError(null)
     try {
-      await loadMobileActionDay(actionId)
-      if (canMutate(ownerAtStart)) setMessage('Les espaces Préparer et Jour J sont disponibles pour cette action.')
+      const result = await loadMobileActionDay(actionId)
+      if (canMutate(ownerAtStart)) {
+        setDayBriefing(result)
+        setMessage('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+      }
     } catch (value) {
       if (canMutate(ownerAtStart)) handleError(value)
     } finally { setBusy(false) }
   }
 
-  return { busy, message, error, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
+  return { busy, message, error, dayBriefing, setError, setMessage, mutationsBlocked, saveDraft, publish, linkGps, loadDayBriefing }
 }
 
 type ActionCreateControllerProps = { onSessionExpired: () => void; onStartAction: (actionId: string, label: string) => void | Promise<void> }

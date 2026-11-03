@@ -35,6 +35,15 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 }))
 vi.mock('../lib/linked-mission-service', () => ({ createLinkedMission: state.createLinkedMission }))
 vi.mock('../lib/mobile-actions-service', () => ({
+  MOBILE_ORGANIZER_TYPE_OPTIONS: [
+    { value: 'spontaneous', label: 'Action spontanée' },
+    { value: 'company', label: 'Entreprise' },
+    { value: 'association', label: 'Association' },
+    { value: 'student_association', label: 'Association étudiante' },
+    { value: 'collective', label: 'Collectif' },
+    { value: 'other', label: 'Autre' },
+  ],
+  isMobileOrganizerType: (value: unknown) => ['spontaneous', 'company', 'association', 'student_association', 'collective', 'other'].includes(value as string),
   createMobileAction: state.createMobileAction,
   updateMobileAction: state.updateMobileAction,
   loadMobileActionEditor: state.loadMobileActionEditor,
@@ -180,12 +189,14 @@ describe('mobile action creation runtime', () => {
 
   it('migrates a legacy global draft only when its Clerk owner is exact', async () => {
     state.getItem.mockImplementation(async (key: string) => key === 'cleanmymap.mobile.action-create.v1'
-      ? JSON.stringify({ ownerId: 'user-a', draft: { title: 'Ancien brouillon A' }, clientRequestId: 'legacy-request-a' })
+      ? JSON.stringify({ ownerId: 'user-a', draft: { title: 'Ancien brouillon A', association: 'Ancienne structure' }, clientRequestId: 'legacy-request-a' })
       : null)
     const renderer = await renderScreen()
     await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve() })
 
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('Ancien brouillon A')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'value')).toBe('Ancienne structure')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Association'))).not.toHaveLength(0)
     expect(state.setItem.mock.calls.some(([key, value]) => key === 'cleanmymap.mobile.action-create.v1:user-a' && String(value).includes('legacy-request-a'))).toBe(true)
   })
 
@@ -427,8 +438,74 @@ describe('mobile action creation runtime', () => {
 
     await act(async () => { await callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('liaison refusée'))).not.toHaveLength(0)
-    await act(async () => { await callTestHandler(findButton(renderer, 'Ouvrir Préparer / Jour J'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') })
     expect(renderer.root.findAll((node) => textContent(node).includes('briefing indisponible'))).not.toHaveLength(0)
+  })
+
+  it('loads and renders the authorized preparation and day briefing', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-day', section: 'verification', draft: { title: 'Action du jour' } }))
+    state.loadMobileActionDay.mockResolvedValueOnce({
+      status: 'ok',
+      actionId: 'action-day',
+      access: 'owner',
+      action: {
+        title: 'Action du jour',
+        locationLabel: 'Parc central',
+        meetingPoint: 'Entrée nord',
+        meetingTime: '10:00',
+        organizerLabel: 'Collectif local',
+        safetyInstructions: 'Gants et chaussures fermées',
+        materialsProvided: 'Sacs',
+        accessibility: 'Terrain plat',
+      },
+    })
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') })
+
+    expect(state.loadMobileActionDay).toHaveBeenCalledWith('action-day')
+    expect(renderer.root.findAll((node) => textContent(node).includes('Entrée nord'))).not.toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Gants et chaussures fermées'))).not.toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Les informations Préparer / Jour J ont été chargées depuis le serveur.'))).not.toHaveLength(0)
+  })
+
+  it('offers every canonical organizer choice without selecting association by default', async () => {
+    const renderer = await renderScreen()
+    const radios = renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && node.props.accessibilityRole === 'radio')
+
+    expect(radios.map(textContent)).toEqual([
+      'Action spontanée',
+      'Entreprise',
+      'Association',
+      'Association étudiante',
+      'Collectif',
+      'Autre',
+    ])
+    expect(radios.every((radio) => radio.props.accessibilityState?.checked === false)).toBe(true)
+  })
+
+  it.each([
+    { label: 'Action spontanée', value: 'spontaneous', name: '' },
+    { label: 'Entreprise', value: 'company', name: 'Entreprise locale' },
+    { label: 'Collectif', value: 'collective', name: 'Collectif du parc' },
+  ] as const)('persists the canonical organizer configuration: $label', async ({ label, value, name }) => {
+    state.getItem.mockResolvedValue(null)
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, label), 'onPress') })
+    if (name) {
+      await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Nom de la structure' }), 'onChangeText', name) })
+    }
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    const payload = state.createMobileAction.mock.calls[0]?.[0] as Record<string, unknown> | undefined
+    expect(payload).toMatchObject({
+      organizerType: value,
+      ...(name ? { associationName: name, organizerName: name } : { associationName: 'Action spontanée' }),
+    })
   })
 
   it('builds manual point-to-point coordinates with deduplicated participants and a truncated checklist', async () => {

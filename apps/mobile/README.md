@@ -202,7 +202,10 @@ sous-vues existantes.
 - `Rejoindre une action` est natif et passe par la frontière HTTP mobile
   `/api/mobile/actions` ;
 - `Organiser une action` réutilise les validations Actions côté serveur. Le
-  brouillon local est une aide de reprise ; une lecture AsyncStorage échouée
+  premier écran demande le type d'organisateur du contrat canonique (`Action
+  spontanée`, `Entreprise`, `Association`, `Association étudiante`, `Collectif`
+  ou `Autre`) et, lorsque nécessaire, son nom ; aucune valeur `association`
+  n'est injectée par défaut. Le brouillon local est une aide de reprise ; une lecture AsyncStorage échouée
   bloque toute écriture locale jusqu'à une récupération explicite, et la
   publication n'est confirmée qu'après réponse serveur. Chaque brouillon
   conserve une clé de création stable, envoyée dans `Idempotency-Key` lors du
@@ -218,7 +221,11 @@ sous-vues existantes.
   mutations jusqu'à la nouvelle hydratation. Une lecture différée de l'ancien
   compte est ignorée, et une ancienne clé globale n'est migrée que si elle
   contient un `ownerId` Clerk exact ; un brouillon global sans propriétaire
-  vérifiable reste ignoré.
+  vérifiable reste ignoré. Les anciens champs de nom d'association sont relus
+  comme nom d'organisateur sans attribuer de type ; le type doit être choisi
+  explicitement avant l'envoi au serveur. Après une demande autorisée,
+  `Préparer / Jour J` charge et affiche les informations renvoyées par l'API ;
+  le libellé devient `Charger` ou `Actualiser` selon l'état réel.
 - `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
   photos via les intents média canoniques et n'affiche jamais un statut avant
   confirmation serveur.

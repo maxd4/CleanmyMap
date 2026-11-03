@@ -93,6 +93,15 @@ vi.mock('../lib/mobile-account-service', () => ({
 }))
 
 vi.mock('../lib/mobile-actions-service', () => ({
+  MOBILE_ORGANIZER_TYPE_OPTIONS: [
+    { value: 'spontaneous', label: 'Action spontanée' },
+    { value: 'company', label: 'Entreprise' },
+    { value: 'association', label: 'Association' },
+    { value: 'student_association', label: 'Association étudiante' },
+    { value: 'collective', label: 'Collectif' },
+    { value: 'other', label: 'Autre' },
+  ],
+  isMobileOrganizerType: (value: unknown) => ['spontaneous', 'company', 'association', 'student_association', 'collective', 'other'].includes(value as string),
   loadMobileActions: vi.fn(async () => ({ future: [], past: [], history: [], invitations: [] })),
   loadMobileActionDetail: vi.fn(async () => ({ action: null, participation: null, canJoin: false, canClaim: false })),
   requestFutureAction: vi.fn(), claimPastAction: vi.fn(), cancelFutureAction: vi.fn(), respondToInvitation: vi.fn(),

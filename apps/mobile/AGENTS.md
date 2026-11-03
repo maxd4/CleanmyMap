@@ -47,6 +47,12 @@ Le parcours `Rejoindre une action` est natif : liste des actions futures
 publiées, recherche, détail, inscription, suivi, annulation, invitations,
 actions passées éligibles et demande de rattachement. `Créer une action` reprend
 les quatre sections du contrat web et confirme chaque mutation par le serveur.
+La première section doit laisser choisir explicitement le type d'organisateur
+du contrat Actions ; aucun type ne doit être injecté pour compléter un
+brouillon. Les anciens noms d'association peuvent être relus comme noms, mais
+ne constituent pas une preuve de type. L'accès `Préparer / Jour J` ne peut
+annoncer une ouverture qu'après avoir chargé et présenté la réponse autorisée
+de `/api/actions/:actionId/day`.
 `Signaler un déchet` utilise `trash_spotter_spots`, les catégories, la position
 actuelle ou manuelle, `Mes observations` et les intents média canoniques. Une
 réponse partielle reste reprenable et ne devient jamais un succès métier local.
