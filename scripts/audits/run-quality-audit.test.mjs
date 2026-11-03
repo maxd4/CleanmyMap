@@ -52,6 +52,22 @@ function fixtureResult(audit) {
   return { gateStatus: "PASS", status: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
 }
 
+function duplicationScopedFixture({ scope = "web", applicationStatus = "PASS", transverseStatus = "PASS", stale = [] } = {}) {
+  const applicationFailures = applicationStatus === "FAIL" ? [`new ${scope} clone fingerprints detected (1)`] : [];
+  const transverseFailures = transverseStatus === "FAIL" ? ["monorepo duplication ratchet exceeded"] : [];
+  return {
+    scope,
+    status: "FAIL",
+    results: [{
+      scopeName: "runtime",
+      metrics: { clones: transverseStatus === "FAIL" ? 1 : 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: transverseStatus === "FAIL" ? 1 : 0 },
+      comparison: { status: transverseStatus, failures: transverseFailures },
+      applicationComparison: { status: applicationStatus, failures: applicationFailures, newFingerprints: applicationFailures.length ? ["app-fingerprint"] : [], transverse: { status: transverseStatus, failures: transverseFailures } },
+    }],
+    justificationReport: { stale, staleKeepIntentional: stale, staleNoActionNoise: [] },
+  };
+}
+
 function fixtureDocumentation(auditedHead = sha, runId = "documentation-run") {
   const document = {
     path: "README.md",
@@ -536,6 +552,114 @@ test("attention rules cover dead-code, duplication, top-heavy, complexity and cy
   const cycles = fixtureResult("cycles");
   cycles.comparison.added.push("cycle");
   assert.equal(attentionRequired("cycles", cycles), true);
+});
+
+test("duplication scoped échoue quand l'application échoue même si le transverse passe", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("duplication", {
+      root,
+      scope: "web",
+      runId: "run-duplication-app-fail",
+      snapshot: () => stableSnapshot,
+      engine: async () => duplicationScopedFixture({ applicationStatus: "FAIL", transverseStatus: "PASS" }),
+    });
+    const entry = result.results[0];
+    const manifest = JSON.parse(fs.readFileSync(entry.paths.manifest, "utf8"));
+    const report = JSON.parse(fs.readFileSync(entry.paths.report, "utf8"));
+    assert.equal(result.status, "FAIL");
+    assert.equal(entry.status, "FAIL");
+    assert.equal(entry.attentionRequired, true);
+    assert.equal(manifest.applicationStatus, "FAIL");
+    assert.equal(manifest.transverseStatus, "PASS");
+    assert.equal(report.applicationStatus, "FAIL");
+    assert.equal(report.transverseStatus, "PASS");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("duplication scoped conserve le PASS applicatif et expose un échec transverse", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("duplication", {
+      root,
+      scope: "mobile",
+      runId: "run-duplication-transverse-fail",
+      snapshot: () => stableSnapshot,
+      engine: async () => duplicationScopedFixture({ scope: "mobile", applicationStatus: "PASS", transverseStatus: "FAIL" }),
+    });
+    const entry = result.results[0];
+    const manifest = JSON.parse(fs.readFileSync(entry.paths.manifest, "utf8"));
+    const report = JSON.parse(fs.readFileSync(entry.paths.report, "utf8"));
+    assert.equal(result.status, "PASS");
+    assert.equal(entry.status, "PASS");
+    assert.equal(entry.attentionRequired, false);
+    assert.equal(manifest.applicationStatus, "PASS");
+    assert.equal(manifest.applicationAttentionRequired, false);
+    assert.equal(manifest.transverseStatus, "FAIL");
+    assert.equal(manifest.transverseAttentionRequired, true);
+    assert.equal(report.applicationStatus, "PASS");
+    assert.equal(report.transverseStatus, "FAIL");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("duplication scope=all conserve le verdict historique et n'ajoute pas de projection applicative", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("duplication", {
+      root,
+      runId: "run-duplication-all-historical",
+      snapshot: () => stableSnapshot,
+      engine: async () => ({
+        ...fixtureResult("duplication"),
+        results: [{ ...fixtureResult("duplication").results[0], comparison: { status: "PASS_WITH_GRACE", failures: [] } }],
+        justificationReport: { stale: ["runtime:stale"], staleKeepIntentional: ["runtime:stale"], staleNoActionNoise: [] },
+      }),
+    });
+    const entry = result.results[0];
+    const manifest = JSON.parse(fs.readFileSync(entry.paths.manifest, "utf8"));
+    assert.equal(result.status, "FAIL");
+    assert.equal(entry.status, "FAIL");
+    assert.equal(entry.attentionRequired, true);
+    assert.equal(Object.hasOwn(manifest, "applicationStatus"), false);
+    assert.equal(Object.hasOwn(manifest, "transverseStatus"), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("duplication scoped aligne CLI, manifest et agrégat sur les deux verdicts", async () => {
+  const root = tempRoot();
+  try {
+    const result = await runQualityAudit("all", {
+      root,
+      scope: "mobile",
+      runId: "run-duplication-coherence",
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => audit === "duplication"
+        ? duplicationScopedFixture({ scope: "mobile", applicationStatus: "PASS", transverseStatus: "FAIL" })
+        : fixtureResult(audit),
+      documentationRunner: async () => fixtureDocumentation(),
+      architectureBuilder: () => ({ state: "PRESENT", files: [], domains: [] }),
+    });
+    const duplication = result.results.find((entry) => entry.audit === "duplication");
+    const aggregate = JSON.parse(fs.readFileSync(result.allPaths.report, "utf8"));
+    const aggregateDuplication = aggregate.audits.find((entry) => entry.audit === "duplication");
+    const cli = formatQualityAuditCliResult(result);
+    assert.equal(duplication.status, "PASS");
+    assert.equal(duplication.attentionRequired, false);
+    assert.equal(aggregateDuplication.status, "PASS");
+    assert.equal(aggregateDuplication.applicationStatus, "PASS");
+    assert.equal(aggregateDuplication.transverseStatus, "FAIL");
+    assert.ok(cli.includes("duplication: PASS; attention=false"));
+    assert.ok(cli.includes("duplication.application: PASS; attention=false"));
+    assert.ok(cli.includes("duplication.transverse: FAIL; attention=true"));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("top-heavy distingue les décisions acquises, REVIEW_REQUIRED et les deltas", () => {

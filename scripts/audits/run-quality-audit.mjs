@@ -125,9 +125,17 @@ export function serialize(value, active = new WeakSet()) {
 
 function statusForAudit(audit, result) {
   if (result?.status === "SKIPPED_BY_POLICY") return "SKIPPED_BY_POLICY";
-  if (result?.status === "FAIL") return "FAIL";
+  if (audit !== "duplication" && result?.status === "FAIL") return "FAIL";
   if (audit === "dead-code") return hasBlockingDeadCodeFindings(result.comparison) ? "FAIL" : "PASS";
   if (audit === "duplication") {
+    const scoped = result.scope && result.scope !== "all";
+    if (scoped) {
+      const statuses = (result.results ?? []).map((entry) => entry.applicationComparison?.status);
+      return statuses.includes("FAIL")
+        ? "FAIL"
+        : statuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
+    }
+    if (result?.status === "FAIL") return "FAIL";
     const statuses = (result.results ?? []).map((entry) => entry.comparison?.status);
     return statuses.includes("FAIL") || (result.justificationReport?.stale?.length ?? 0) > 0
       ? "FAIL"
@@ -233,6 +241,14 @@ export function attentionRequired(audit, result) {
       || comparison.baselineFresh === false;
   }
   if (audit === "duplication") {
+    if (result.scope && result.scope !== "all") {
+      return (result.results ?? []).some((entry) => {
+        const comparison = entry.applicationComparison;
+        return comparison?.status === "FAIL"
+          || comparison?.status === "PASS_WITH_GRACE"
+          || (comparison?.failures?.length ?? 0) > 0;
+      });
+    }
     return (result.results ?? []).some((entry) =>
       (entry.metrics?.newClones ?? 0) > 0
       || entry.comparison?.failures?.length > 0
@@ -539,6 +555,28 @@ function auditErrorResult(error) {
   return { status: "FAIL", error: { name: error?.name ?? "Error", message: error?.message ?? String(error), code: error?.code } };
 }
 
+function duplicationProjectionMetadata(result) {
+  if (!result?.scope || result.scope === "all") return null;
+  const applicationStatus = statusForAudit("duplication", result);
+  const applicationAttentionRequired = attentionRequired("duplication", result);
+  const transverseStatuses = (result.results ?? []).map((entry) => entry.comparison?.status);
+  const transverseStatus = transverseStatuses.includes("FAIL") || (result.justificationReport?.stale?.length ?? 0) > 0
+    ? "FAIL"
+    : transverseStatuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
+  const transverseAttentionRequired = (result.results ?? []).some((entry) =>
+    (entry.metrics?.newClones ?? 0) > 0
+    || entry.comparison?.failures?.length > 0
+    || entry.comparison?.status === "PASS_WITH_GRACE"
+  ) || (result.justificationReport?.staleKeepIntentional?.length ?? 0) > 0
+    || (result.justificationReport?.staleNoActionNoise?.length ?? 0) > 0;
+  return {
+    applicationStatus,
+    applicationAttentionRequired,
+    transverseStatus,
+    transverseAttentionRequired,
+  };
+}
+
 async function executeAuditBatch(audits, { engine, root, snapshot, scope = "all" }) {
   const results = [];
   for (const audit of audits) {
@@ -555,7 +593,16 @@ async function executeAuditBatch(audits, { engine, root, snapshot, scope = "all"
     } catch (error) {
       raw = auditErrorResult(error);
     }
-    results.push({ audit, result: raw, status: statusForAudit(audit, raw), attentionRequired: attentionRequired(audit, raw) });
+    const status = statusForAudit(audit, raw);
+    const attention = attentionRequired(audit, raw);
+    const projection = audit === "duplication" ? duplicationProjectionMetadata(raw) : null;
+    results.push({
+      audit,
+      result: projection ? { ...raw, ...projection, status } : raw,
+      status,
+      attentionRequired: attention,
+      ...(projection ?? {}),
+    });
   }
   return results;
 }
@@ -590,6 +637,12 @@ function writeAuditManifests({ root, auditedHead, runId, generatedAt, results, f
       ...evidence,
       status: entry.status,
       attentionRequired: entry.attentionRequired,
+      ...(entry.applicationStatus ? {
+        applicationStatus: entry.applicationStatus,
+        applicationAttentionRequired: entry.applicationAttentionRequired,
+        transverseStatus: entry.transverseStatus,
+        transverseAttentionRequired: entry.transverseAttentionRequired,
+      } : {}),
       generatedAt,
     };
     writeAuditArtifactFiles({
@@ -647,7 +700,14 @@ function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manife
       status: overallStatus,
       scope,
       attentionRequired: overallAttention,
-      audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, resultClass })),
+      audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass, applicationStatus, applicationAttentionRequired, transverseStatus, transverseAttentionRequired }) => ({
+        audit,
+        status,
+        attentionRequired: attention,
+        readProvenance,
+        resultClass,
+        ...(applicationStatus ? { applicationStatus, applicationAttentionRequired, transverseStatus, transverseAttentionRequired } : {}),
+      })),
       documentation,
     }),
     manifest: serialize(manifest),
@@ -770,7 +830,13 @@ export function formatQualityAuditCliResult(result) {
     `QUALITY_AUDIT_STATUS: ${result.status}`,
     `QUALITY_AUDIT_HEAD: ${result.auditedHead}`,
   ];
-  for (const entry of result.results) lines.push(`${entry.audit}: ${entry.status}; attention=${entry.attentionRequired}`);
+  for (const entry of result.results) {
+    lines.push(`${entry.audit}: ${entry.status}; attention=${entry.attentionRequired}`);
+    if (entry.applicationStatus) {
+      lines.push(`${entry.audit}.application: ${entry.applicationStatus}; attention=${entry.applicationAttentionRequired}`);
+      lines.push(`${entry.audit}.transverse: ${entry.transverseStatus}; attention=${entry.transverseAttentionRequired}`);
+    }
+  }
   if (result.projectionStatus) lines.push(`QUALITY_AUDIT_PROJECTION_STATUS: ${result.projectionStatus}`);
   if (result.documentation) lines.push(`QUALITY_AUDIT_DOCUMENTATION: ${result.documentation.status}; attention=${result.documentation.attentionRequired}`);
   if (result.projectionPaths?.error) lines.push(`QUALITY_AUDIT_PROJECTION_ERROR: ${result.projectionPaths.error}`);
