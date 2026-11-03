@@ -24,6 +24,20 @@ configuration Vitest et les conventions d'entrée App Router Next (`page`,
 `default`, etc.) sont exclus. Les routes API et les modules métier restent
 inclus ; aucune exclusion n'est motivée par une couverture faible.
 
+Le Mobile dispose d'un producteur Vitest indépendant :
+
+```bash
+npm run quality:mobile-coverage
+```
+
+Il produit `apps/mobile/coverage/coverage-summary.json`, son LCOV et sa
+preuve `coverage-evidence.json` avec `scope: mobile`. Les agrégations et
+préparations SonarQube consomment les rapports Web et Mobile séparément ; il
+n'existe pas de couverture monorepo déduite par addition des deux résumés.
+Une preuve est réutilisable uniquement pour le même SHA, la même configuration
+et le même scope. `generate-module-test-metrics.mjs` applique la même règle aux
+deux scopes et classe une observation non attestée sans la convertir en PASS.
+
 ## Politique de couverture fondée sur le risque — cibles futures
 
 La politique canonique définit les familles de risque et leurs objectifs

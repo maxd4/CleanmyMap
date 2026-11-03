@@ -16,8 +16,9 @@ import {
 import { gitExecutable } from "../ci/git-executable.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { createGitRepositoryView } from "../checks/repository-view.mjs";
+import { countPhysicalLines } from "./repository-growth.mjs";
 
-export const MODULE_TEST_METRICS_SCHEMA_VERSION = 2;
+export const MODULE_TEST_METRICS_SCHEMA_VERSION = 3;
 export const MODULE_TEST_METRICS_OUTPUT = "documentation/operations/audits/module-test-metrics.json";
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 const COVERAGE_METRICS = ["lines", "functions", "branches", "statements"];
@@ -45,10 +46,6 @@ function isGeneratedFile(file, content) {
   const normalized = normalize(file);
   return /(?:(?:^|\/)(?:generated|__generated__)(?:\/|$)|(?:^|\/)next-env\.d\.ts$)/i.test(normalized)
     || /@generated\b|generated\s+(?:file|source)|do not edit|ne pas modifier/i.test(content.slice(0, 4096));
-}
-
-function physicalLines(content) {
-  return content.replaceAll("\r\n", "\n").split("\n").length;
 }
 
 function webDomain(file) {
@@ -131,7 +128,7 @@ function readSourceFiles(sourceView, files) {
       file,
       domain: sourceDomain(file),
       kind: isTestFile(file) ? "test" : generated ? "generated" : "runtime",
-      lines: physicalLines(content),
+      lines: countPhysicalLines(content),
       imports: importSpecifiers(content),
     });
   }
@@ -241,9 +238,7 @@ function readCoverage(root, scope, requestedStatus, auditedSha) {
   let attestationStatus = "NOT_ATTESTED";
   let reason;
 
-  if (scope !== "web") {
-    reason = "NO_CANONICAL_MOBILE_COVERAGE_ATTESTATION";
-  } else if (requestedStatus !== "PASS") {
+  if (requestedStatus !== "PASS") {
     reason = "COVERAGE_EXECUTION_NOT_ATTESTED";
   } else if (auditedSha !== currentHead) {
     reason = "AUDITED_SHA_IS_NOT_CURRENT_HEAD";
@@ -255,7 +250,7 @@ function readCoverage(root, scope, requestedStatus, auditedSha) {
     reason = "COVERAGE_EVIDENCE_SHA_MISMATCH";
   } else {
     try {
-      validateCoverageEvidence({ repositoryRoot: root });
+      validateCoverageEvidence({ repositoryRoot: root, scope });
       attestationStatus = "ATTESTED";
       reason = null;
     } catch {
@@ -431,6 +426,28 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
   const duplication = runTestDuplication(root, auditedSha);
   const duplicationDomains = duplicationByDomain(duplication, records);
 
+  const accounting = Object.fromEntries(["web", "mobile", "scripts"].map((scope) => {
+    const scopeRecords = [...records.values()].filter((record) => {
+      if (scope === "web") return record.file.startsWith("apps/web/src/");
+      if (scope === "mobile") return record.file.startsWith("apps/mobile/");
+      return record.file.startsWith("scripts/");
+    });
+    const runtime = scopeRecords.filter((record) => record.kind === "runtime");
+    const tests = scopeRecords.filter((record) => record.kind === "test");
+    return [scope, {
+      runtimeFiles: runtime.length,
+      runtimeLines: runtime.reduce((sum, record) => sum + record.lines, 0),
+      testFiles: tests.length,
+      testLines: tests.reduce((sum, record) => sum + record.lines, 0),
+      testRuntimeRatio: {
+        files: runtime.length > 0 ? Number((tests.length / runtime.length).toFixed(4)) : null,
+        lines: runtime.reduce((sum, record) => sum + record.lines, 0) > 0
+          ? Number((tests.reduce((sum, record) => sum + record.lines, 0) / runtime.reduce((sum, record) => sum + record.lines, 0)).toFixed(4))
+          : null,
+      },
+    }];
+  }));
+
   for (const [domain, entry] of domains) {
     entry.testRuntimeRatio = {
       files: entry.runtimeFiles > 0 ? Number((entry.testFiles / entry.runtimeFiles).toFixed(4)) : null,
@@ -456,20 +473,45 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
     timestamp,
     methodology: {
       source: "git-tracked-source-at-sourceSha",
-      physicalLines: "UTF-8 lines after CRLF normalization; trailing split line retained, matching repository quality measurement.",
+      physicalLines: "Physical UTF-8 lines using the repository-growth counter; CRLF, LF and lone CR are separators and a final unterminated line counts once.",
       runtimeFiles: "tracked source files under apps/web/src, apps/mobile and scripts, excluding tests and generated files",
       testFiles: "tracked files identified by tests/__tests__ paths or .test/.spec filename markers",
       directAssociation: "same-stem test beside the runtime file or a test import resolving directly to the runtime file; absence is not a coverage claim",
-      coverageTruth: "coverage-summary.json grouped by the discovered domain; AVAILABLE requires canonical Web evidence for the audited sourceSha, a clean checkout and a PASS execution status; other summaries remain PRESENT_NOT_ATTESTED observations",
+      coverageTruth: "coverage-summary.json grouped by the discovered domain; AVAILABLE requires the canonical evidence for the matching Web or Mobile scope, the audited sourceSha, a clean checkout and a PASS execution status; other summaries remain PRESENT_NOT_ATTESTED observations",
       testDuplication: "raw jscpd test-scope clone pairs measured from the checkout; the report records working-tree provenance and does not attribute the observation to sourceSha unless the checkout is clean at that SHA",
       provenance: "structural metrics are read from the exact Git tree at sourceSha; coverage and jscpd are checkout observations and are attested only when their candidate evidence matches sourceSha",
       noThresholdIntroduced: true,
     },
     discovery: {
       roots: SOURCE_ROOTS,
-    domains: [...new Set([...domains.keys()])].sort((left, right) => left.localeCompare(right, "en")),
+      accountingCategories: ["web", "mobile", "scripts", "e2e", "documentation", "vendored", "shared_infrastructure"],
+      domains: [...new Set([...domains.keys()])].sort((left, right) => left.localeCompare(right, "en")),
       highPriorityDomains: highPriority,
       domainAssignment: "current repository path organization with semantic path rules for web and top-level module rules for mobile/scripts",
+    },
+    accounting: {
+      web: accounting.web,
+      mobile: accounting.mobile,
+      scripts: accounting.scripts,
+      e2e: { runtimeFiles: 0, runtimeLines: 0, testFiles: 0, testLines: 0, testRuntimeRatio: { files: null, lines: null }, note: "E2E is not part of SOURCE_ROOTS; repository-growth owns its physical inventory." },
+      documentation: { files: 0, physicalLines: 0, note: "Documentation is intentionally outside source/module metrics; repository-growth owns the monorepo inventory." },
+      vendored: { files: 0, physicalLines: 0, note: "Vendored/generated files are excluded from source discovery and counted once by repository-growth." },
+      sharedInfrastructure: { files: 0, physicalLines: 0, note: "Shared infrastructure is outside module source roots and counted once by repository-growth." },
+      monorepo: {
+        runtimeFiles: accounting.web.runtimeFiles + accounting.mobile.runtimeFiles + accounting.scripts.runtimeFiles,
+        runtimeLines: accounting.web.runtimeLines + accounting.mobile.runtimeLines + accounting.scripts.runtimeLines,
+        testFiles: accounting.web.testFiles + accounting.mobile.testFiles + accounting.scripts.testFiles,
+        testLines: accounting.web.testLines + accounting.mobile.testLines + accounting.scripts.testLines,
+        testRuntimeRatio: {
+          files: (accounting.web.runtimeFiles + accounting.mobile.runtimeFiles + accounting.scripts.runtimeFiles) > 0
+            ? Number(((accounting.web.testFiles + accounting.mobile.testFiles + accounting.scripts.testFiles) / (accounting.web.runtimeFiles + accounting.mobile.runtimeFiles + accounting.scripts.runtimeFiles)).toFixed(4))
+            : null,
+          lines: (accounting.web.runtimeLines + accounting.mobile.runtimeLines + accounting.scripts.runtimeLines) > 0
+            ? Number(((accounting.web.testLines + accounting.mobile.testLines + accounting.scripts.testLines) / (accounting.web.runtimeLines + accounting.mobile.runtimeLines + accounting.scripts.runtimeLines)).toFixed(4))
+            : null,
+        },
+        note: "Module totals include source roots only; the repository-growth total remains the authoritative all-tree total.",
+      },
     },
     totals: {
       runtimeFiles: totalRuntime,

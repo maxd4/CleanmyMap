@@ -116,12 +116,14 @@ function baselineIdentity(evidence) {
 export function buildQualitySummary({ candidateSha, evidenceByKey }) {
   const rows = EXPECTED_GATES.map((gate) => rowForGate(gate, evidenceByKey[gate.key], candidateSha));
   const identities = EXPECTED_GATES.map((gate) => baselineIdentity(evidenceByKey[gate.key])).filter(Boolean);
+  const scopes = [...new Set(Object.values(evidenceByKey).map((evidence) => evidence?.scope).filter(Boolean))].sort();
   const lines = [
-    "## Web quality evidence",
+    "## Quality evidence",
     "",
     `Candidate SHA: \`${candidateSha}\``,
     "",
     "Evidence is projected from the single execution of each gate; missing, malformed, or mismatched evidence is `NOT_RUN`. A policy skip is reported as `SKIPPED_BY_POLICY`, never as `PASS`.",
+    `Quality scope(s): ${scopes.length > 0 ? scopes.join(", ") : "all (legacy command)"}`,
     "",
     "| Gate | Status | Current | Delta | New findings |",
     "| --- | --- | --- | --- | ---: |",

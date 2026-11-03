@@ -16,6 +16,7 @@ import {
 } from "./top-heavy-policy.mjs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { normalizeQualityScope, qualityScopeRoots, scopeMetadata } from "./quality-scope.mjs";
 
 function readArg(args, name, fallback) {
   const prefixed = `${name}=`;
@@ -126,7 +127,8 @@ export function runTopHeavyPolicy({ root = process.cwd(), args = [] } = {}) {
   if (!Number.isFinite(topCount) || topCount <= 0) throw new Error("--top doit être un nombre positif.");
   const enforce = hasFlag(args, "--enforce");
   const baselinePath = normalizeRepositoryPath(readArg(args, "--baseline", "scripts/checks/heavy-files-baseline.json"));
-  const defaultScanRoots = TOP_HEAVY_SCAN_ROOTS.join(",");
+  const scope = normalizeQualityScope(readArg(args, "--scope", "all"));
+  const defaultScanRoots = (scope === "all" ? TOP_HEAVY_SCAN_ROOTS : qualityScopeRoots(scope)).join(",");
   const scanRoots = (readArg(args, "--roots", defaultScanRoots) ?? defaultScanRoots)
     .split(",").map((value) => normalizeRepositoryPath(value.trim())).filter(Boolean);
   const ref = parseRepositoryRef(args);
@@ -150,6 +152,7 @@ export function runTopHeavyPolicy({ root = process.cwd(), args = [] } = {}) {
       path: baselinePath,
     },
     evaluation,
+    ...scopeMetadata(scope),
   };
 }
 

@@ -88,6 +88,35 @@ test("hotspots mesure l'activité Git et ne transforme pas l'activité seule en 
   assert.equal(calls.some((args) => args[0] === "log" && args.includes("--since=2026-04-24T00:00:00.000Z")), true);
 });
 
+test("hotspots et testabilité exposent un scope mobile isolé", () => {
+  const fixture = historyFixture();
+  const gitRunner = (args) => {
+    if (args[0] === "show") return "2026-10-21T00:00:00+00:00";
+    if (args[0] === "log") return fixture.commits;
+    if (args[0] === "ls-tree") return `${fixture.files.join("\n")}\napps/mobile/App.tsx`;
+    throw new Error(`commande inattendue: ${args.join(" ")}`);
+  };
+  const hotspots = buildQualityHotspotsReport({ auditedSha, gitRunner, scope: "mobile" });
+  assert.equal(hotspots.scope, "mobile");
+  assert.equal(hotspots.files.length, 0);
+  const testability = buildQualityTestabilityReport({
+    auditedSha,
+    scope: "mobile",
+    moduleMetrics: {
+      schemaVersion: 3,
+      sourceSha: auditedSha,
+      domains: {
+        account: { runtimeFiles: 1, testFiles: 1, runtimeFilesWithDirectTest: 1, runtimeFilesWithoutDirectTest: 0, coverage: { status: "AVAILABLE", files: 1, metrics: {} } },
+        "mobile/screens": { runtimeFiles: 2, testFiles: 1, runtimeFilesWithDirectTest: 1, runtimeFilesWithoutDirectTest: 1, coverage: { status: "AVAILABLE", files: 2, metrics: {} } },
+        "scripts/checks": { runtimeFiles: 3, testFiles: 1, runtimeFilesWithDirectTest: 1, runtimeFilesWithoutDirectTest: 2, coverage: { status: "AVAILABLE", files: 3, metrics: {} } },
+      },
+      accounting: { mobile: { runtimeFiles: 2 } },
+    },
+  });
+  assert.equal(testability.scope, "mobile");
+  assert.deepEqual(testability.domains.map((entry) => entry.domain), ["mobile/screens"]);
+});
+
 test("hotspots ne qualifie la longueur de fonction que sur dépassement de cible ou finding", () => {
   const file = "apps/web/src/hot.ts";
   const base = (metrics, result = {}) => hotspotReport({ complexity: {

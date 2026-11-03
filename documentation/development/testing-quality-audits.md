@@ -19,7 +19,18 @@ npm run audit:quality -- hotspots
 npm run audit:quality -- testability
 npm run audit:quality -- coverage
 npm run audit:quality -- all
+npm run audit:quality -- all --scope=web
+npm run audit:quality -- all --scope=mobile
 ```
+
+Le sélecteur `--scope=web|mobile|all` est commun aux audits applicatifs.
+Web et Mobile restent des rapports attribuables séparément ; `all` conserve le
+verdict monorepo historique. Les engines qui lisent une baseline monorepo ou
+un graphe transversal conservent cette portée dans `transverse`/`roots` et ne
+fabriquent pas de baseline applicative par simple filtrage. Les catégories
+scripts, E2E, documentation, vendored et infrastructure commune sont donc
+signalées comme transversales dans les projections, sans être comptées deux
+fois dans Web ou Mobile.
 
 Les audits capturent immédiatement `auditedHead` et peuvent démarrer dans un
 checkout dirty, avec des fichiers untracked, des commits locaux non publiés,

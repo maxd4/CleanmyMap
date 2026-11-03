@@ -33,9 +33,11 @@ const CATEGORY_ORDER = Object.freeze([
   "mobile_runtime",
   "web_tests",
   "mobile_tests",
-  "e2e_and_script_tests",
+  "e2e_tests",
+  "script_tests",
   "documentation",
   "scripts_ci",
+  "shared_infrastructure",
   "sql_migrations",
   "data_configuration",
   "media_binaries",
@@ -49,9 +51,11 @@ const CATEGORY_LABELS = Object.freeze({
   mobile_runtime: "Mobile runtime",
   web_tests: "Web tests",
   mobile_tests: "Mobile tests",
-  e2e_and_script_tests: "E2E / script tests",
+  e2e_tests: "E2E tests",
+  script_tests: "Script tests",
   documentation: "Documentation",
   scripts_ci: "Scripts / CI",
+  shared_infrastructure: "Shared infrastructure",
   sql_migrations: "SQL / migrations",
   data_configuration: "Data / configuration",
   media_binaries: "Media / binaries",
@@ -146,12 +150,13 @@ export function classifyPath(file) {
   const normalized = String(file ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
   if (isLockfile(normalized) || isGeneratedOrVendored(normalized)) return "vendored_generated_lockfiles";
   if (isDocumentation(normalized)) return "documentation";
-  if (/^e2e(?:\/|$)/i.test(normalized)) return "e2e_and_script_tests";
+  if (/^e2e(?:\/|$)/i.test(normalized)) return "e2e_tests";
   if (/^apps\/web\//i.test(normalized) && isTestPath(normalized)) return "web_tests";
   if (/^apps\/mobile\//i.test(normalized) && isTestPath(normalized)) return "mobile_tests";
-  if (/^(?:scripts\/.*\.(?:test|spec)\.|scripts\/.*\/tests?\/)/i.test(normalized)) return "e2e_and_script_tests";
+  if (/^(?:scripts\/.*\.(?:test|spec)\.|scripts\/.*\/tests?\/)/i.test(normalized)) return "script_tests";
   if (/\.sql$/i.test(normalized) || /(?:^|\/)supabase\/migrations(?:\/|$)/i.test(normalized)) return "sql_migrations";
-  if (/^\.github(?:\/|$)/i.test(normalized) || /^scripts(?:\/|$)/i.test(normalized)) return "scripts_ci";
+  if (/^\.github(?:\/|$)/i.test(normalized) || /^(?:\.githooks|infrastructure)(?:\/|$)/i.test(normalized)) return "shared_infrastructure";
+  if (/^scripts(?:\/|$)/i.test(normalized)) return "scripts_ci";
   if (isDataOrConfiguration(normalized)) return "data_configuration";
   if (isKnownMedia(normalized)) return "media_binaries";
   if (/^apps\/web(?:\/|$)/i.test(normalized)) return "web_runtime";
@@ -243,9 +248,10 @@ export function measureEntries(entries, readBinary) {
     total.lineMeasuredFiles += measure.lineMeasuredFiles;
     total.lineNotApplicableFiles += measure.lineNotApplicableFiles;
   }
+  const normalizedTotals = { scope: "monorepo", ...normalizeMeasure(total) };
   return {
     categories: normalizedCategories,
-    totals: normalizeMeasure(total),
+    totals: normalizedTotals,
   };
 }
 
@@ -358,11 +364,44 @@ function testRuntimeRatio(inventory) {
   const mobile = inventory.categories.mobile_runtime.physicalLines;
   const webTests = inventory.categories.web_tests.physicalLines;
   const mobileTests = inventory.categories.mobile_tests.physicalLines;
-  const e2e = inventory.categories.e2e_and_script_tests.physicalLines;
+  const e2e = inventory.categories.e2e_tests.physicalLines;
+  const scriptTests = inventory.categories.script_tests.physicalLines;
+  const appRuntimeLines = (web ?? 0) + (mobile ?? 0);
+  const appTestLines = (webTests ?? 0) + (mobileTests ?? 0);
+  const monorepoTestLines = appTestLines + (e2e ?? 0) + (scriptTests ?? 0);
   return {
-    web: ratio(webTests, web),
-    mobile: ratio(mobileTests, mobile),
-    allRuntime: ratio((webTests ?? 0) + (mobileTests ?? 0) + (e2e ?? 0), (web ?? 0) + (mobile ?? 0)),
+    web: {
+      runtimeFiles: inventory.categories.web_runtime.files,
+      runtimeLines: web,
+      testFiles: inventory.categories.web_tests.files,
+      testLines: webTests,
+      testRuntimeRatio: ratio(webTests, web),
+    },
+    mobile: {
+      runtimeFiles: inventory.categories.mobile_runtime.files,
+      runtimeLines: mobile,
+      testFiles: inventory.categories.mobile_tests.files,
+      testLines: mobileTests,
+      testRuntimeRatio: ratio(mobileTests, mobile),
+    },
+    monorepo: {
+      runtimeFiles: inventory.categories.web_runtime.files + inventory.categories.mobile_runtime.files,
+      runtimeLines: appRuntimeLines,
+      testFiles: inventory.categories.web_tests.files + inventory.categories.mobile_tests.files + inventory.categories.e2e_tests.files + inventory.categories.script_tests.files,
+      testLines: monorepoTestLines,
+      testRuntimeRatio: ratio(monorepoTestLines, appRuntimeLines),
+      appTestLines,
+      e2eTestLines: e2e,
+      scriptTestLines: scriptTests,
+    },
+    // Compatibility alias for consumers that predate the explicit monorepo key.
+    allRuntime: ratio(monorepoTestLines, appRuntimeLines),
+    transverse: {
+      e2e: inventory.categories.e2e_tests,
+      scriptTests: inventory.categories.script_tests,
+      scriptsCi: inventory.categories.scripts_ci,
+      sharedInfrastructure: inventory.categories.shared_infrastructure,
+    },
     interpretation: DEFINITIONS.ratios,
   };
 }
@@ -448,7 +487,7 @@ function buildMarkdown(report) {
     const measure = report.current.inventory.categories[category];
     lines.push(`| ${measure.label} | ${formatInteger(measure.files)} | ${formatInteger(measure.bytes)} | ${formatInteger(measure.physicalLines)} |`);
   }
-  lines.push(`| **Total** | **${formatInteger(report.current.inventory.totals.files)}** | **${formatInteger(report.current.inventory.totals.bytes)}** | **${formatInteger(report.current.inventory.totals.physicalLines)}** |`);
+  lines.push(`| **Monorepo total (all categories)** | **${formatInteger(report.current.inventory.totals.files)}** | **${formatInteger(report.current.inventory.totals.bytes)}** | **${formatInteger(report.current.inventory.totals.physicalLines)}** |`);
   lines.push("", "## Comparison", "");
   if (!report.comparison) {
     lines.push("Comparison unavailable: the selected current ref has no parent.");
@@ -464,9 +503,10 @@ function buildMarkdown(report) {
     "",
     "## Tests / runtime volume ratio",
     "",
-    `- Web tests / web runtime: **${formatPercent(report.current.ratios.web)}**`,
-    `- Mobile tests / mobile runtime: **${formatPercent(report.current.ratios.mobile)}**`,
-    `- All listed tests / all runtime: **${formatPercent(report.current.ratios.allRuntime)}**`,
+    `- Web tests / web runtime: **${formatPercent(report.current.ratios.web.testRuntimeRatio)}** (${formatInteger(report.current.ratios.web.testLines)} / ${formatInteger(report.current.ratios.web.runtimeLines)} lignes)`,
+    `- Mobile tests / mobile runtime: **${formatPercent(report.current.ratios.mobile.testRuntimeRatio)}** (${formatInteger(report.current.ratios.mobile.testLines)} / ${formatInteger(report.current.ratios.mobile.runtimeLines)} lignes)`,
+    `- Monorepo tests / Web + Mobile runtime: **${formatPercent(report.current.ratios.monorepo.testRuntimeRatio)}** (${formatInteger(report.current.ratios.monorepo.testLines)} / ${formatInteger(report.current.ratios.monorepo.runtimeLines)} lignes)`,
+    `- Monorepo test lines: Web/Mobile ${formatInteger(report.current.ratios.monorepo.appTestLines)}, E2E ${formatInteger(report.current.ratios.monorepo.e2eTestLines)}, scripts ${formatInteger(report.current.ratios.monorepo.scriptTestLines)}`,
     "",
     "These ratios describe repository volume only; they are not coverage.",
     "",
@@ -480,19 +520,20 @@ function buildMarkdown(report) {
     "",
     "## Monthly history",
     "",
-    "| Month | Status | Commit SHA | Runtime lines | Test lines | Docs lines | Top-heavy REVIEW/HARD |",
-    "| --- | --- | --- | ---: | ---: | ---: | --- |",
+    "| Month | Status | Commit SHA | Web runtime/tests | Mobile runtime/tests | E2E/script tests | Docs lines | Top-heavy REVIEW/HARD |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
   );
   for (const point of report.monthly.points) {
     if (!point.inventory) {
-      lines.push(`| ${point.month} | ${point.status} | n/a | n/a | n/a | n/a | n/a |`);
+      lines.push(`| ${point.month} | ${point.status} | n/a | n/a | n/a | n/a | n/a | n/a |`);
       continue;
     }
     const categories = point.inventory.categories;
-    const runtime = (categories.web_runtime.physicalLines ?? 0) + (categories.mobile_runtime.physicalLines ?? 0);
-    const tests = (categories.web_tests.physicalLines ?? 0) + (categories.mobile_tests.physicalLines ?? 0) + (categories.e2e_and_script_tests.physicalLines ?? 0);
+    const web = `${formatInteger(categories.web_runtime.physicalLines)} / ${formatInteger(categories.web_tests.physicalLines)}`;
+    const mobile = `${formatInteger(categories.mobile_runtime.physicalLines)} / ${formatInteger(categories.mobile_tests.physicalLines)}`;
+    const transverseTests = `${formatInteger(categories.e2e_tests.physicalLines)} / ${formatInteger(categories.script_tests.physicalLines)}`;
     const docs = categories.documentation.physicalLines;
-    lines.push(`| ${point.month} | ${point.status} | \`${point.commit.sha}\` | ${formatInteger(runtime)} | ${formatInteger(tests)} | ${formatInteger(docs)} | ${formatInteger(point.quality.topHeavy.filesOverReview)} / ${formatInteger(point.quality.topHeavy.filesOverHard)} |`);
+    lines.push(`| ${point.month} | ${point.status} | \`${point.commit.sha}\` | ${web} | ${mobile} | ${transverseTests} | ${formatInteger(docs)} | ${formatInteger(point.quality.topHeavy.filesOverReview)} / ${formatInteger(point.quality.topHeavy.filesOverHard)} |`);
   }
   lines.push("", "## 30 / 90 day changes", "", "| Window | Base commit | Base date | Files | Bytes | Physical lines |", "| --- | --- | --- | ---: | ---: | ---: |");
   for (const window of [30, 90]) {
@@ -552,7 +593,7 @@ export function createReport({ root = REPOSITORY_ROOT, ref = "HEAD", compare = n
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     definitions: DEFINITIONS,
     current,
     comparison,

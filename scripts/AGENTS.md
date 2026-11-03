@@ -288,6 +288,14 @@ le rapport porte `ALREADY_PROVEN`. `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
 modes de validation. Les anciens alias (`checks:changed`, `checks`,
 `checks:global`) restent des compatibilités bornées vers les deux modes.
 
+Les quality checks applicatifs partagent aussi le sélecteur produit
+`--scope=web|mobile|all`, défini par `scripts/checks/quality-scope.mjs`.
+`web` et `mobile` restent attribuables à leur workspace ; `all` conserve le
+ratchet monorepo. Les scripts, E2E, documentation, vendor, workflows et
+contrats de dépendance restent transversaux et doivent être signalés comme
+tels, jamais ajoutés aux compteurs d'une application. Une commande historique
+sans `--scope` conserve `all` pour la compatibilité.
+
 La politique des fichiers volumineux est portée par
 `scripts/checks/top-heavy-policy.mjs` et réutilise `classifyFileKind()` :
 runtime REVIEW `>500` lignes ou `>40 KiB`, HARD `>1000` lignes ou `>50 KiB` ;

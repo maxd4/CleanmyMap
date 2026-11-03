@@ -13,6 +13,7 @@ import tseslint from "typescript-eslint";
 
 import { gitExecutable } from "../ci/git-executable.mjs";
 import { listFunctionMetadata } from "./complexity-policy.mjs";
+import { normalizeQualityScope, qualityScopeRoots, scopeMetadata } from "./quality-scope.mjs";
 
 const require = createRequire(import.meta.url);
 const TYPESCRIPT_ESLINT_PACKAGE = require("typescript-eslint/package.json");
@@ -330,9 +331,11 @@ function documentedFireAndForget(file, message, ast) {
   return /fire[- ]and[- ]forget\s*(?:--|:)/i.test(local) && hasExplicitVoidExpression(ast, message);
 }
 
-export async function analyzeTypeSafetySources({ root = process.cwd(), files, projects = projectDefinitions(root), eslintFactory = (options) => new ESLint(options) } = {}) {
+export async function analyzeTypeSafetySources({ root = process.cwd(), files, projects = projectDefinitions(root), eslintFactory = (options) => new ESLint(options), scope = "all" } = {}) {
+  const activeScope = normalizeQualityScope(scope);
+  const activeRoots = activeScope === "all" ? SOURCE_ROOTS : qualityScopeRoots(activeScope);
   const startedAt = performance.now();
-  const measuredFiles = files ?? sourceFileEntries(root, SOURCE_ROOTS);
+  const measuredFiles = (files ?? sourceFileEntries(root, activeRoots)).filter((file) => activeScope === "all" || (activeScope === "web" ? file.workspace === "web" : file.workspace === "mobile"));
   const findings = [];
   const diagnostics = [];
   const exceptions = [];
@@ -347,7 +350,7 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
     exceptions.push(...suppressions.exceptions);
   }
 
-  for (const project of projects) {
+  for (const project of projects.filter((candidate) => activeScope === "all" || candidate.workspace === activeScope)) {
     const workspaceFiles = filesByWorkspace.get(project.workspace) ?? [];
     if (workspaceFiles.length === 0) continue;
     const compatibility = compatibilityFor(project);
@@ -444,7 +447,8 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
     measurementStatus: diagnostics.length > 0 ? "MEASUREMENT_FAILED" : "MEASURED_NOT_RATCHETED",
     readProvenance: "WORKTREE_LIVE",
     engine: { name: "typescript-eslint", version: TYPESCRIPT_ESLINT_VERSION, eslint: ESLINT_VERSION, node: process.version, typescriptPeerRange: TYPESCRIPT_PEER_RANGE },
-    sourceRoots: SOURCE_ROOTS,
+    sourceRoots: activeRoots,
+    ...scopeMetadata(activeScope),
     coverage,
     rules: Object.fromEntries(Object.entries(RULES).map(([ruleId, configuration]) => [ruleId, {
       family: configuration.family,
@@ -484,12 +488,15 @@ export async function analyzeTypeSafetySources({ root = process.cwd(), files, pr
   };
 }
 
-export async function runTypeSafetyAudit({ root = process.cwd() } = {}) {
-  return analyzeTypeSafetySources({ root, files: sourceFileEntries(root, SOURCE_ROOTS) });
+export async function runTypeSafetyAudit({ root = process.cwd(), scope = "all" } = {}) {
+  const activeScope = normalizeQualityScope(scope);
+  const activeRoots = activeScope === "all" ? SOURCE_ROOTS : qualityScopeRoots(activeScope);
+  return analyzeTypeSafetySources({ root, files: sourceFileEntries(root, activeRoots), scope: activeScope });
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
-  const report = await runTypeSafetyAudit();
+  const scope = process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all";
+  const report = await runTypeSafetyAudit({ scope });
   console.log(`Type safety audit: ${report.summary.filesMeasured}/${report.summary.filesInScope} files typed, ${report.findings.length} findings, ${report.summary.elapsedMs} ms.`);
   if (report.status === "FAIL") process.exitCode = 1;
 }

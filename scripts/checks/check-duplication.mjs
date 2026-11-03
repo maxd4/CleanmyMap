@@ -20,6 +20,16 @@ import {
 } from "./duplication-policy.mjs";
 import { writeDuplicationPublicationProof } from "../ci/duplication-publication.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
+import { normalizeQualityScope, pathInQualityScope, scopeMetadata } from "./quality-scope.mjs";
+
+function occurrencePathInQualityScope(file, scope) {
+  if (pathInQualityScope(file, scope)) return true;
+  const normalized = String(file ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
+  const candidatePrefixes = scope === "web"
+    ? ["apps/web/", "apps/web/src/"]
+    : scope === "mobile" ? ["apps/mobile/"] : [];
+  return candidatePrefixes.some((prefix) => pathInQualityScope(`${prefix}${normalized}`, scope));
+}
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const metricsBaselinePath = path.join(repositoryRoot, "scripts", "checks", "duplication-metrics-baseline.json");
@@ -148,7 +158,9 @@ function runScope(scopeName, baseline, { reportDirectory = null } = {}) {
 export function runDuplicationPolicy({
   publicationRoot = process.env.CMM_DUPLICATION_PUBLICATION_ROOT ?? null,
   runScopeFn = runScope,
+  scope = "all",
 } = {}) {
+  const activeScope = normalizeQualityScope(scope);
   const baseline = JSON.parse(fs.readFileSync(metricsBaselinePath, "utf8"));
   assertBaselineFresh(baseline);
   const toolVersion = verifyExecutedJscpdVersion();
@@ -169,15 +181,25 @@ export function runDuplicationPolicy({
   const currentFingerprintsByScope = Object.fromEntries(results.map((result) => [result.scopeName, result.fingerprints]));
   const currentOccurrencesByScope = Object.fromEntries(results.map((result) => [result.scopeName, result.occurrences]));
   const justifications = JSON.parse(fs.readFileSync(justificationsPath, "utf8"));
-  const justificationReport = validateDuplicationJustificationsRegistry(justifications, {
-    nativeBaselines,
-    currentFingerprintsByScope,
-    currentOccurrencesByScope,
-    reviewedRefValidation: {
-      auditedSha,
-      gitRunner: (args) => execFileSync(gitExecutable(), args, { cwd: repositoryRoot, stdio: "ignore" }),
-    },
-  });
+  const justificationReport = activeScope === "all"
+    ? validateDuplicationJustificationsRegistry(justifications, {
+      nativeBaselines,
+      currentFingerprintsByScope,
+      currentOccurrencesByScope,
+      reviewedRefValidation: {
+        auditedSha,
+        gitRunner: (args) => execFileSync(gitExecutable(), args, { cwd: repositoryRoot, stdio: "ignore" }),
+      },
+    })
+    : {
+      keepIntentional: 0,
+      noActionNoise: 0,
+      staleKeepIntentional: [],
+      staleNoActionNoise: [],
+      stale: [],
+      classifications: {},
+      status: "NOT_APPLIED_TO_APPLICATION_PROJECTION",
+    };
   const qualifiedNewFingerprints = new Set(Object.values(justificationReport.classifications).flat());
   for (const result of results) {
     const scopeBaseline = baseline.scopes[result.scopeName];
@@ -200,22 +222,47 @@ export function runDuplicationPolicy({
       failures,
     };
   }
-  return { baseline, results, justificationReport, toolVersion, publicationDirectory };
+  const attributedResults = results.map((result) => ({
+    scopeName: result.scopeName,
+    occurrencePairs: (result.occurrences ?? []).filter((occurrence) => occurrencePathInQualityScope(occurrence.occurrenceA.path, activeScope) || occurrencePathInQualityScope(occurrence.occurrenceB.path, activeScope)).length,
+    status: activeScope === "all" ? result.comparison.status : "PROJECTION_ONLY",
+  }));
+  for (const result of results) {
+    const attribution = attributedResults.find((entry) => entry.scopeName === result.scopeName);
+    if (activeScope === "all") continue;
+    const scopedOccurrences = (result.occurrences ?? []).filter((occurrence) => occurrencePathInQualityScope(occurrence.occurrenceA.path, activeScope) || occurrencePathInQualityScope(occurrence.occurrenceB.path, activeScope));
+    const scopedFingerprints = new Set(scopedOccurrences.map((occurrence) => occurrence.fingerprint).filter(Boolean));
+    const nativeBaseline = nativeBaselines[result.scopeName];
+    const newFingerprints = [...scopedFingerprints].filter((fingerprint) => !Object.hasOwn(nativeBaseline.fingerprints, fingerprint));
+    result.applicationComparison = {
+      status: newFingerprints.length > 0 ? "FAIL" : "PASS",
+      failures: newFingerprints.length > 0 ? [`new ${activeScope} clone fingerprints detected (${newFingerprints.length})`] : [],
+      newFingerprints,
+      transverse: result.comparison,
+    };
+    attribution.status = result.applicationComparison.status;
+  }
+  return { baseline, results, justificationReport, toolVersion, publicationDirectory, attributedResults, ...scopeMetadata(activeScope) };
 }
 
-export function formatDuplicationReport({ results, justificationReport = null, toolVersion = null }) {
+export function formatDuplicationReport({ results, justificationReport = null, toolVersion = null, scope = "all", attributedResults = [] }) {
   const lines = [];
   if (toolVersion) lines.push(`JSCPD_VERSION: ${toolVersion.actual} (expected ${toolVersion.expected})`);
   for (const result of results) {
-    const { scopeName, metrics, comparison } = result;
+    const { scopeName, metrics } = result;
+    const comparison = scope === "all" ? result.comparison : result.applicationComparison;
+    const attribution = attributedResults.find((entry) => entry.scopeName === scopeName);
+    if (scope !== "all") {
+      lines.push(`${scopeName} (${scope} projection): ${attribution?.occurrencePairs ?? 0} occurrence pairs; application status=${comparison?.status ?? "NOT_MEASURED"}; transverse status=${result.comparison.status}.`);
+    }
     lines.push(`${scopeName}: ${metrics.clones} clones, ${metrics.duplicatedLines}/${metrics.lines} lines (${metrics.percentage.toFixed(2)}%), ${metrics.duplicatedTokens}/${metrics.tokens} tokens.`);
     lines.push(`  DUPLICATION_STATUS: ${comparison.status}`);
     lines.push(`  NEW_CLONE_FINGERPRINTS: ${metrics.newClones}`);
     lines.push(`  QUALIFIED_NEW_CLONE_FINGERPRINTS: ${result.qualifiedNewFingerprints?.length ?? 0}`);
-    lines.push(`  DUPLICATED_LINES_DELTA: ${comparison.deltas.duplicatedLines}`);
-    lines.push(`  DUPLICATED_TOKENS_DELTA: ${comparison.deltas.duplicatedTokens}`);
-    lines.push(`  LINE_PERCENTAGE_POINT_DELTA: ${comparison.deltas.linePercentagePoints.toFixed(6)}`);
-    lines.push(`  TOKEN_PERCENTAGE_POINT_DELTA: ${comparison.deltas.tokenPercentagePoints.toFixed(6)}`);
+    lines.push(`  DUPLICATED_LINES_DELTA: ${comparison.deltas?.duplicatedLines ?? "n/a"}`);
+    lines.push(`  DUPLICATED_TOKENS_DELTA: ${comparison.deltas?.duplicatedTokens ?? "n/a"}`);
+    lines.push(`  LINE_PERCENTAGE_POINT_DELTA: ${comparison.deltas?.linePercentagePoints?.toFixed(6) ?? "n/a"}`);
+    lines.push(`  TOKEN_PERCENTAGE_POINT_DELTA: ${comparison.deltas?.tokenPercentagePoints?.toFixed(6) ?? "n/a"}`);
     for (const failure of comparison.failures) lines.push(`  FAIL_REASON: ${failure}`);
   }
   if (justificationReport) {
@@ -231,41 +278,44 @@ export function formatDuplicationReport({ results, justificationReport = null, t
 
 async function main() {
   try {
-    const report = runDuplicationPolicy();
+    const scope = normalizeQualityScope(process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all");
+    const report = runDuplicationPolicy({ scope });
     const candidateSha = resolveCandidateSha(repositoryRoot);
     for (const result of report.results) {
       const scopeBaseline = report.baseline.scopes[result.scopeName];
-      const comparison = result.comparison;
+      const comparison = scope === "all" ? result.comparison : result.applicationComparison;
       writeQualityEvidence({
         gate: "duplication",
-        scope: result.scopeName,
-        fileKey: `duplication-${result.scopeName}`.replaceAll("/", "-"),
+        scope: scope === "all" ? result.scopeName : `${scope}-${result.scopeName}`,
+        fileKey: `duplication-${scope === "all" ? "" : `${scope}-`}${result.scopeName}`.replaceAll("/", "-"),
         candidateSha,
         status: comparison.status,
-        metrics: {
-          files: result.metrics.files,
-          lines: result.metrics.lines,
-          tokens: result.metrics.tokens,
-          clones: result.metrics.clones,
-          duplicatedLines: result.metrics.duplicatedLines,
-          duplicatedTokens: result.metrics.duplicatedTokens,
-          percentage: result.metrics.percentage,
-          percentageTokens: result.metrics.percentageTokens,
-          deltaDuplicatedLines: comparison.deltas.duplicatedLines,
-          deltaDuplicatedTokens: comparison.deltas.duplicatedTokens,
-          deltaLinePercentagePoints: comparison.deltas.linePercentagePoints,
-          deltaTokenPercentagePoints: comparison.deltas.tokenPercentagePoints,
-        },
-        newFindings: result.metrics.newClones,
+        metrics: scope === "all"
+          ? {
+            files: result.metrics.files,
+            lines: result.metrics.lines,
+            tokens: result.metrics.tokens,
+            clones: result.metrics.clones,
+            duplicatedLines: result.metrics.duplicatedLines,
+            duplicatedTokens: result.metrics.duplicatedTokens,
+            percentage: result.metrics.percentage,
+            percentageTokens: result.metrics.percentageTokens,
+            deltaDuplicatedLines: comparison.deltas?.duplicatedLines ?? null,
+            deltaDuplicatedTokens: comparison.deltas?.duplicatedTokens ?? null,
+            deltaLinePercentagePoints: comparison.deltas?.linePercentagePoints ?? null,
+            deltaTokenPercentagePoints: comparison.deltas?.tokenPercentagePoints ?? null,
+          }
+          : { applicationOccurrencePairs: report.attributedResults.find((entry) => entry.scopeName === result.scopeName)?.occurrencePairs ?? 0 },
+        newFindings: scope === "all" ? result.metrics.newClones : result.applicationComparison.newFingerprints.length,
         resolvedFindings: null,
-        historicalFindings: scopeBaseline.fingerprints,
+        historicalFindings: scope === "all" ? scopeBaseline.fingerprints : null,
         baseline: {
           sourceCommit: report.baseline.sourceCommit,
           tool: report.baseline.tool,
           toolVersion: report.baseline.toolVersion,
           policyFingerprint: report.baseline.policyFingerprint,
         },
-        details: { failures: comparison.failures, toolVersion: report.toolVersion },
+        details: { failures: comparison.failures, toolVersion: report.toolVersion, attribution: report.attributedResults.find((entry) => entry.scopeName === result.scopeName) },
       });
     }
     if (report.publicationDirectory) {
@@ -281,9 +331,9 @@ async function main() {
       });
       console.log(`DUPLICATION_PUBLICATION_PROOF_WRITTEN: ${publication.proofPath}`);
     }
-    console.log(formatDuplicationReport(report));
-    const statuses = report.results.map((result) => result.comparison.status);
-    const status = statuses.includes("FAIL") || report.justificationReport.stale.length > 0
+    console.log(formatDuplicationReport({ ...report, scope }));
+    const statuses = report.results.map((result) => (scope === "all" ? result.comparison.status : result.applicationComparison.status));
+    const status = statuses.includes("FAIL") || (scope === "all" && report.justificationReport.stale.length > 0)
       ? "FAIL"
       : statuses.includes("PASS_WITH_GRACE")
         ? "PASS_WITH_GRACE"
@@ -292,7 +342,7 @@ async function main() {
     if (status === "FAIL") {
       const failures = [
         ...report.results.flatMap((result) => result.comparison.failures),
-        ...report.justificationReport.stale.map((identity) => `stale durable justification (${identity})`),
+        ...(scope === "all" ? report.justificationReport.stale.map((identity) => `stale durable justification (${identity})`) : []),
       ];
       console.error(`FAIL: ${failures.length} duplication ratchet violation(s).`);
       process.exitCode = 1;

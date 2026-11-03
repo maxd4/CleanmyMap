@@ -94,6 +94,18 @@ effectivement identifié. Les écritures suivent cette frontière ; elles peuven
 atteindre l'owner web, Supabase ou la documentation partagée lorsque le
 changement le nécessite réellement, sans créer de copie locale concurrente.
 
+Les métriques et audits mobiles utilisent le scope canonique `mobile` :
+`node scripts/checks/check-complexity-policy.mjs --scope=mobile`,
+`node scripts/checks/check-maintainability.mjs --scope=mobile`,
+`node scripts/checks/check-type-safety.mjs --scope=mobile`,
+`node scripts/checks/check-top-heavy-files.mjs --scope=mobile --enforce` et
+`npm run audit:quality -- all --scope=mobile`. Un contrôle `all` reste le
+verdict monorepo ; scripts, E2E, documentation, vendor, workflows et contrats
+partagés restent transversaux et ne sont pas ajoutés aux compteurs Mobile.
+Une modification limitée à `apps/mobile/` doit privilégier les validations
+mobiles ; elle conserve toutefois les contrôles de dépendances et contrats
+partagés réellement concernés.
+
 ## Modularité préventive mobile
 
 Avant d'ajouter une fonctionnalité substantielle, décider `EXTEND_EXISTING`,

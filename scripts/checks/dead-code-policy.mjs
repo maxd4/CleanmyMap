@@ -7,6 +7,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { gitExecutable } from "../ci/git-executable.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
+import { normalizeQualityScope, pathInQualityScope, scopeMetadata } from "./quality-scope.mjs";
 
 export const DEAD_CODE_BASELINE_SCHEMA_VERSION = 1;
 export const DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION = 1;
@@ -320,21 +321,43 @@ export function runDeadCodePolicy({
   report,
   baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8")),
   justifications = loadDeadCodeJustifications(),
+  scope = "all",
 } = {}) {
+  const activeScope = normalizeQualityScope(scope);
   const currentFindings = normalizeKnipReport(report);
-  const comparison = compareDeadCodeFindings(currentFindings, baseline, justifications);
+  const scopedCurrentFindings = currentFindings.filter((finding) => pathInQualityScope(finding.file, activeScope));
+  const scopedBaselineFindings = baseline.findings.filter((finding) => pathInQualityScope(finding.file, activeScope));
+  const scopedBaseline = activeScope === "all" ? baseline : { ...baseline, findings: scopedBaselineFindings };
+  const scopedIds = new Set(scopedBaselineFindings.map((finding) => finding.id));
+  const scopedJustifications = activeScope === "all"
+    ? justifications
+    : { ...justifications, justifications: justifications.justifications.filter((finding) => scopedIds.has(finding.id)) };
+  const comparison = compareDeadCodeFindings(scopedCurrentFindings, scopedBaseline, scopedJustifications);
   if (!comparison.baselineFresh) throw new Error(`Dead-code baseline stale: ${baseline.sourceCommit} is not an ancestor of HEAD.`);
-  return { baseline, currentFindings, justifications, comparison };
+  return {
+    baseline: scopedBaseline,
+    currentFindings: scopedCurrentFindings,
+    justifications: scopedJustifications,
+    comparison,
+    transverse: activeScope === "all" ? null : {
+      currentFindings: currentFindings.length - scopedCurrentFindings.length,
+      baselineFindings: baseline.findings.length - scopedBaselineFindings.length,
+      status: "NOT_INCLUDED_IN_APPLICATION_SCOPE",
+    },
+    ...scopeMetadata(activeScope),
+  };
 }
 
 async function main() {
   try {
+    const scope = normalizeQualityScope(process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all");
     const report = runKnipReport();
-    const result = runDeadCodePolicy({ report });
+    const result = runDeadCodePolicy({ report, scope });
     console.log(formatDeadCodeReport(result));
     const blocking = hasBlockingDeadCodeFindings(result.comparison);
     writeQualityEvidence({
       gate: "dead-code",
+      scope,
       candidateSha: resolveCandidateSha(repositoryRoot),
       status: blocking ? "FAIL" : "PASS",
       metrics: {

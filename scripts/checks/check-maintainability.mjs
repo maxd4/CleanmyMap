@@ -13,10 +13,11 @@ import sonarjs from "eslint-plugin-sonarjs";
 import { listFunctionMetadata } from "./complexity-policy.mjs";
 import { profileFunctionControlFlow } from "./control-flow-profile.mjs";
 import { gitExecutable } from "../ci/git-executable.mjs";
+import { normalizeQualityScope, qualityScopeRoots, scopeMetadata } from "./quality-scope.mjs";
 
 const require = createRequire(import.meta.url);
 const SONARJS_VERSION = require("eslint-plugin-sonarjs/package.json").version;
-const SOURCE_ROOTS = Object.freeze(["apps/web/src", "apps/mobile", "scripts"]);
+export const SOURCE_ROOTS = Object.freeze(["apps/web/src", "apps/mobile", "scripts"]);
 const SOURCE_FILE_PATTERN = /\.(?:mjs|ts|tsx)$/;
 const EXCLUDED_SOURCE_DIRECTORIES = new Set(["fixture", "fixtures", "generated", "node_modules", "snapshot", "snapshots"]);
 const COGNITIVE_TARGET = 15;
@@ -322,12 +323,16 @@ export async function analyzeMaintainabilitySources({ files = [], complexityRepo
   return result;
 }
 
-export async function runMaintainabilityAudit({ root = process.cwd(), sourceRoots = SOURCE_ROOTS, complexityReport = null } = {}) {
-  return analyzeMaintainabilitySources({ files: sourceFileEntries(root, sourceRoots), sourceRoots, complexityReport });
+export async function runMaintainabilityAudit({ root = process.cwd(), sourceRoots = null, complexityReport = null, scope = "all" } = {}) {
+  const activeScope = normalizeQualityScope(scope);
+  const activeSourceRoots = sourceRoots ?? (activeScope === "all" ? SOURCE_ROOTS : qualityScopeRoots(activeScope));
+  const report = await analyzeMaintainabilitySources({ files: sourceFileEntries(root, activeSourceRoots), sourceRoots: activeSourceRoots, complexityReport });
+  return { ...report, ...scopeMetadata(activeScope) };
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
-  const report = await runMaintainabilityAudit();
+  const scope = process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all";
+  const report = await runMaintainabilityAudit({ scope });
   console.log(`Maintainability audit: ${report.summary.functionsMeasured} functions, ${report.summary.controlFlowFunctions} control-flow profiles, ${report.summary.controlFlowDecisionPoints} decision points, ${report.findings.length} local findings, ${report.summary.elapsedMs} ms.`);
   if (report.status === "FAIL") process.exitCode = 1;
 }

@@ -206,6 +206,8 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(codeScope.scope.docsOnly, false);
   assert.equal(codeScope.scope.webCodeRelevant, true);
   assert.equal(codeScope.scope.mobileCodeRelevant, true);
+  assert.equal(codeScope.scope.webOnly, false);
+  assert.equal(codeScope.scope.mobileOnly, false);
   assert.equal(codeScope.scope.dependencyGraphRelevant, true);
   assert.equal(codeScope.scope.webCoverageRelevant, true);
   assert.equal(codeScope.scope.nodeCoverageRelevant, true);
@@ -221,6 +223,8 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(docsScope.scope.docsOnly, true);
   assert.equal(docsScope.scope.webCodeRelevant, false);
   assert.equal(docsScope.scope.mobileCodeRelevant, false);
+  assert.equal(docsScope.scope.webOnly, false);
+  assert.equal(docsScope.scope.mobileOnly, false);
   assert.equal(docsScope.scope.webCoverageRelevant, false);
   assert.equal(docsScope.scope.nodeCoverageRelevant, false);
   assert.equal(docsScope.scope.pythonCoverageRelevant, false);
@@ -246,6 +250,33 @@ test("diff scope derives source-sensitive flags without widening a documentation
   assert.equal(coverageControlScope.scope.docsOnly, false);
   assert.equal(coverageControlScope.scope.webCodeRelevant, true);
   assert.equal(coverageControlScope.scope.webCoverageRelevant, true);
+});
+
+test("application-only changes select only their validation lane", () => {
+  const { baseSha, candidateSha } = currentRepositoryShas();
+  const mobile = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["apps/mobile/screens/map-screen.tsx"],
+  });
+  assert.equal(mobile.scope.mobileCodeRelevant, true);
+  assert.equal(mobile.scope.mobileOnly, true);
+  assert.equal(mobile.scope.webCodeRelevant, false);
+  assert.equal(mobile.scope.webOnly, false);
+
+  const web = resolveCiScope({
+    repositoryRoot: REPOSITORY_ROOT,
+    eventName: "push",
+    eventBefore: baseSha,
+    eventSha: candidateSha,
+    changedFiles: ["apps/web/src/app/page.tsx"],
+  });
+  assert.equal(web.scope.webCodeRelevant, true);
+  assert.equal(web.scope.webOnly, true);
+  assert.equal(web.scope.mobileCodeRelevant, false);
+  assert.equal(web.scope.mobileOnly, false);
 });
 
 test("Python source and every consumed dependency manifest select only the Python lane", () => {
@@ -436,6 +467,8 @@ test("scope outputs preserve the workflow's snake_case contract", () => {
   });
   assert.match(output, /docs_only=false/);
   assert.match(output, /web_code_relevant=true/);
+  assert.match(output, /web_only=false/);
+  assert.match(output, /mobile_only=false/);
   assert.match(output, /dependency_graph_relevant=true/);
   assert.match(output, /web_coverage_relevant=true/);
   assert.match(output, /node_coverage_relevant=true/);

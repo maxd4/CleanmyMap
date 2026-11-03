@@ -40,6 +40,7 @@ import {
   writeAuditArtifactFiles,
 } from "./quality-audit-storage.mjs";
 import { qualityAuditPolicy } from "./quality-audit-policy.mjs";
+import { normalizeQualityScope, scopeMetadata } from "../checks/quality-scope.mjs";
 
 export const QUALITY_GATE_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 export const AUXILIARY_AUDITS = Object.freeze(["maintainability", "type-safety", "hotspots", "testability", "coverage"]);
@@ -63,14 +64,19 @@ export class QualityAuditError extends Error {
 export { QUALITY_AUDIT_ROOT, createAuditPaths };
 
 export function usage() {
-  return `Usage: npm run audit:quality -- <${AUDIT_MODES.join("|")}>`;
+  return `Usage: npm run audit:quality -- <${AUDIT_MODES.join("|")}> [--scope=web|mobile|all]`;
 }
 
 export function parseAuditMode(argv = process.argv.slice(2)) {
-  if (argv.length !== 1 || !AUDIT_MODES.includes(argv[0])) {
+  const mode = argv.find((argument) => !argument.startsWith("--"));
+  if (!mode || !AUDIT_MODES.includes(mode)) {
     throw new QualityAuditError(`Mode d'audit inconnu ou manquant. ${usage()}`, "INVALID_MODE");
   }
-  return argv[0];
+  return mode;
+}
+
+export function parseAuditScope(argv = process.argv.slice(2)) {
+  return normalizeQualityScope(argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all");
 }
 
 function git(args, root) {
@@ -436,38 +442,40 @@ function createAuditExecutors({
   previousResults,
   topHeavyRunner,
   repositoryViewFactory,
+  scope = "all",
 }) {
+  const activeScope = normalizeQualityScope(scope);
   return {
     "dead-code": () => {
-      const result = runDeadCodePolicy({ report: runKnipReport() });
+      const result = runDeadCodePolicy({ report: runKnipReport(), scope: activeScope });
       return { result: { ...result, status: statusForAudit("dead-code", result), formatted: formatDeadCodeReport(result) }, readProvenance: "WORKTREE_LIVE" };
     },
     duplication: () => {
-      const result = runDuplicationPolicy();
+      const result = runDuplicationPolicy({ scope: activeScope });
       return { result: { ...result, status: statusForAudit("duplication", result), formatted: formatDuplicationReport(result) }, readProvenance: "WORKTREE_LIVE" };
     },
     "top-heavy": () => {
       const ref = auditedHead || "HEAD";
-      const result = topHeavyRunner({ root, args: [`--ref=${ref}`, "--enforce"] });
+      const result = topHeavyRunner({ root, args: [`--ref=${ref}`, "--enforce", `--scope=${activeScope}`] });
       const view = repositoryViewFactory({ root, ref });
       const humanDecisions = readHumanDecisionsFromView(view);
       const humanDecisionsByFile = buildHumanDecisionsByFile(humanDecisions.markdown);
       const enrichedResult = { ...result, evaluation: enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile) };
       return { result: { ...enrichedResult, status: statusForAudit("top-heavy", enrichedResult) }, readProvenance: "COMMITTED_SNAPSHOT" };
     },
-    complexity: async () => ({ result: await complexityRunner(), readProvenance: "WORKTREE_LIVE", validate: isComplexityResult }),
-    "type-safety": async () => ({ result: await typeSafetyRunner({ root }), readProvenance: "WORKTREE_LIVE", validate: isTypeSafetyResult }),
-    hotspots: () => ({ result: hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults }), readProvenance: "COMMITTED_SNAPSHOT", validate: isHotspotsResult }),
-    testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead }), readProvenance: "MIXED", validate: isTestabilityResult }),
-    coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
+    complexity: async () => ({ result: await complexityRunner({ scope: activeScope }), readProvenance: "WORKTREE_LIVE", validate: isComplexityResult }),
+    "type-safety": async () => ({ result: await typeSafetyRunner({ root, scope: activeScope }), readProvenance: "WORKTREE_LIVE", validate: isTypeSafetyResult }),
+    hotspots: () => ({ result: hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isHotspotsResult }),
+    testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "MIXED", validate: isTestabilityResult }),
+    coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null, scope: activeScope }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
     cycles: async () => {
-      const result = await cycleRunner();
+      const result = await cycleRunner({ scope: activeScope });
       const policy = qualityAuditPolicy("cycles");
       return result?.status === policy?.status
         ? { result, readProvenance: "NOT_RUN" }
         : { result, readProvenance: "WORKTREE_LIVE", validate: isCycleResult };
     },
-    maintainability: async () => ({ result: await maintainabilityRunner({ root, complexityReport: complexityResult ?? null }), readProvenance: "WORKTREE_LIVE", validate: isMaintainabilityResult }),
+    maintainability: async () => ({ result: await maintainabilityRunner({ root, complexityReport: complexityResult ?? null, scope: activeScope }), readProvenance: "WORKTREE_LIVE", validate: isMaintainabilityResult }),
   };
 }
 
@@ -493,8 +501,10 @@ export async function executeAudit(
     previousResults = {},
     topHeavyRunner = runTopHeavyPolicy,
     repositoryViewFactory = createRepositoryView,
+    scope = "all",
   } = {},
 ) {
+  const activeScope = normalizeQualityScope(scope);
   const executor = createAuditExecutors({
     root,
     auditedHead,
@@ -509,6 +519,7 @@ export async function executeAudit(
     previousResults,
     topHeavyRunner,
     repositoryViewFactory,
+    scope: activeScope,
   })[audit];
   if (!executor) throw new QualityAuditError(`Unknown audit: ${audit}`, "INVALID_MODE");
   return normalizeAuditExecution(audit, await executor());
@@ -528,7 +539,7 @@ function auditErrorResult(error) {
   return { status: "FAIL", error: { name: error?.name ?? "Error", message: error?.message ?? String(error), code: error?.code } };
 }
 
-async function executeAuditBatch(audits, { engine, root, snapshot }) {
+async function executeAuditBatch(audits, { engine, root, snapshot, scope = "all" }) {
   const results = [];
   for (const audit of audits) {
     const previousResults = Object.fromEntries(results.map((entry) => [entry.audit, entry.result]));
@@ -539,6 +550,7 @@ async function executeAuditBatch(audits, { engine, root, snapshot }) {
         snapshot,
         complexityResult: previousResults.complexity ?? null,
         previousResults,
+        scope,
       });
     } catch (error) {
       raw = auditErrorResult(error);
@@ -564,7 +576,7 @@ function addRadarProjection(results) {
   return results;
 }
 
-function writeAuditManifests({ root, auditedHead, runId, generatedAt, results, fsApi }) {
+function writeAuditManifests({ root, auditedHead, runId, generatedAt, results, fsApi, scope = "all" }) {
   return results.map((entry) => {
     const readProvenance = entry.result?.readProvenance ?? "WORKTREE_LIVE";
     const evidence = classifyEvidence({ readProvenance, status: entry.status });
@@ -574,6 +586,7 @@ function writeAuditManifests({ root, auditedHead, runId, generatedAt, results, f
       audit: entry.audit,
       runId,
       auditedHead,
+      scope,
       ...evidence,
       status: entry.status,
       attentionRequired: entry.attentionRequired,
@@ -611,7 +624,7 @@ async function buildAggregateInputs({ root, auditedHead, runId, documentationRun
   return { documentation, architecture };
 }
 
-function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manifests, overallStatus, overallAttention, documentation, fsApi }) {
+function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manifests, overallStatus, overallAttention, documentation, fsApi, scope = "all" }) {
   const paths = createAuditPaths({ root, auditedHead, audit: "all", runId });
   const aggregateEvidence = {
     readProvenance: manifests.every((entry) => entry.readProvenance === "COMMITTED_SNAPSHOT") ? "COMMITTED_SNAPSHOT" : "MIXED",
@@ -622,6 +635,7 @@ function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manife
     audit: "all",
     runId,
     auditedHead,
+    scope,
     ...aggregateEvidence,
     status: overallStatus,
     attentionRequired: overallAttention,
@@ -631,6 +645,7 @@ function writeAggregateArtifacts({ root, auditedHead, runId, generatedAt, manife
     paths,
     report: serialize({
       status: overallStatus,
+      scope,
       attentionRequired: overallAttention,
       audits: manifests.map(({ audit, status, attentionRequired: attention, readProvenance, resultClass }) => ({ audit, status, attentionRequired: attention, readProvenance, resultClass })),
       documentation,
@@ -677,6 +692,7 @@ export async function runQualityAudit(mode, {
   fsApi = fs,
   now = () => new Date().toISOString(),
   runId = randomUUID(),
+  scope = "all",
 } = {}) {
   if (!AUDIT_MODES.includes(mode)) throw new QualityAuditError(`Mode d'audit inconnu. ${usage()}`, "INVALID_MODE");
   const audits = mode === "all" ? [...QUALITY_GATE_AUDITS, ...AUXILIARY_AUDITS] : [mode];
@@ -684,11 +700,12 @@ export async function runQualityAudit(mode, {
   const activeMarker = await beginActiveAudit({ root, auditedHead: start.auditedHead, runId, fsApi });
 
   try {
-    const results = await executeAuditBatch(audits, { engine, root, snapshot: start });
+    const activeScope = normalizeQualityScope(scope);
+    const results = await executeAuditBatch(audits, { engine, root, snapshot: start, scope: activeScope });
     if (mode === "all") addRadarProjection(results);
 
     const generatedAt = now();
-    const manifests = writeAuditManifests({ root, auditedHead: start.auditedHead, runId, generatedAt, results, fsApi });
+    const manifests = writeAuditManifests({ root, auditedHead: start.auditedHead, runId, generatedAt, results, fsApi, scope: activeScope });
     const evaluatedManifests = mode === "all" ? manifests.filter((entry) => QUALITY_GATE_AUDITS.includes(entry.audit)) : manifests;
     const overallStatus = summarizeAuditStatus(evaluatedManifests);
     const overallAttention = manifests.some((entry) => entry.attentionRequired);
@@ -716,6 +733,7 @@ export async function runQualityAudit(mode, {
         overallAttention,
         documentation,
         fsApi,
+        scope: activeScope,
       });
       ({ projectionPaths, projectionStatus } = await buildQualityProjection({
         root,
@@ -730,6 +748,7 @@ export async function runQualityAudit(mode, {
     const retention = await retainRunArtifacts({ root, now, fsApi });
     return {
       mode,
+      ...scopeMetadata(activeScope),
       runId,
       status: overallStatus,
       attentionRequired: overallAttention,
@@ -762,7 +781,7 @@ export function formatQualityAuditCliResult(result) {
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   try {
     const mode = parseAuditMode();
-    const result = await runQualityAudit(mode);
+    const result = await runQualityAudit(mode, { scope: parseAuditScope() });
     const lines = formatQualityAuditCliResult(result);
     for (const line of lines) {
       if (line.startsWith("QUALITY_AUDIT_PROJECTION_ERROR:") || line.startsWith("QUALITY_AUDIT_RETENTION:")) console.error(line);

@@ -36,6 +36,17 @@ effectivement identifié. Les écritures suivent cette frontière ; elles peuven
 atteindre un owner externe nécessaire, par exemple Supabase ou un contrat
 partagé, mais ne doivent pas créer une copie concurrente du comportement.
 
+Les métriques et audits Web utilisent le scope canonique `web` :
+`node scripts/checks/check-complexity-policy.mjs --scope=web`,
+`node scripts/checks/check-maintainability.mjs --scope=web`,
+`node scripts/checks/check-type-safety.mjs --scope=web`,
+`node scripts/checks/check-top-heavy-files.mjs --scope=web --enforce` et
+`npm run audit:quality -- all --scope=web`. Un contrôle `all` reste le verdict
+monorepo ; scripts, E2E, documentation, vendor, workflows et contrats
+partagés restent transversaux. Une modification limitée au Web doit privilégier
+les validations Web, sans omettre un contrat ou une dépendance partagée
+identifiée.
+
 ## Identité et domaine web
 
 - Clerk reste le fournisseur d'identité principal du web ;

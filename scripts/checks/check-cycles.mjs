@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { gitExecutable } from "../ci/git-executable.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 import { qualityAuditPolicy } from "../audits/quality-audit-policy.mjs";
+import { normalizeQualityScope, pathInQualityScope, scopeMetadata } from "./quality-scope.mjs";
 
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
 import {
@@ -30,7 +31,7 @@ export class CycleGateError extends Error {
   }
 }
 
-export function skippedCycleGateResult(policy = qualityAuditPolicy("cycles")) {
+export function skippedCycleGateResult(policy = qualityAuditPolicy("cycles"), scope = "all") {
   return {
     status: policy.status,
     gateStatus: policy.status,
@@ -40,6 +41,7 @@ export function skippedCycleGateResult(policy = qualityAuditPolicy("cycles")) {
     cycles: [],
     cycleObjects: [],
     comparison: { added: [], stale: [] },
+    ...scopeMetadata(scope),
   };
 }
 
@@ -156,8 +158,9 @@ export function formatCycleDiagnostic(cycle) {
   return `files=${files}`;
 }
 
-export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppliedBaseline, cyclePolicy = qualityAuditPolicy("cycles") } = {}) {
-  if (cyclePolicy?.status === "SKIPPED_BY_POLICY") return skippedCycleGateResult(cyclePolicy);
+export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppliedBaseline, cyclePolicy = qualityAuditPolicy("cycles"), scope = "all" } = {}) {
+  const activeScope = normalizeQualityScope(scope);
+  if (cyclePolicy?.status === "SKIPPED_BY_POLICY") return skippedCycleGateResult(cyclePolicy, activeScope);
   if (!fs.existsSync(auditScriptPath)) throw cycleGateError("HOST_ENVIRONMENT", `HOST_ENVIRONMENT: GitNexus audit script missing: ${auditScriptPath}.`);
   let baseline;
   try {
@@ -187,6 +190,10 @@ export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppl
   }
   let cycles;
   try {
+    const scopedReport = activeScope === "all"
+      ? report
+      : { ...report, cycles: report.cycles.filter((cycle) => (cycle.files ?? []).some((file) => pathInQualityScope(file, activeScope))) };
+    report = scopedReport;
     cycles = normalizeCycleReport(report);
   } catch (error) {
     throw cycleGateError("MALFORMED_REPORT", error instanceof Error ? error.message : String(error));
@@ -197,15 +204,17 @@ export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppl
     : comparison.stale.length > 0
       ? "FAIL_STALE_BASELINE"
       : "PASS";
-  return { baseline, report, cycles, comparison, cycleObjects: report.cycles, gateStatus };
+  return { baseline, report, cycles, comparison, cycleObjects: report.cycles, gateStatus, ...scopeMetadata(activeScope) };
 }
 
 async function main() {
   try {
-    const result = await runCycleGate();
+    const scope = normalizeQualityScope(process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all");
+    const result = await runCycleGate({ scope });
     if (result.gateStatus === "SKIPPED_BY_POLICY") {
       writeQualityEvidence({
         gate: "cycles",
+        scope,
         candidateSha: resolveCandidateSha(repositoryRoot),
         status: "SKIPPED_BY_POLICY",
         metrics: {},
@@ -217,6 +226,7 @@ async function main() {
     }
     writeQualityEvidence({
       gate: "cycles",
+      scope,
       candidateSha: resolveCandidateSha(repositoryRoot),
       status: result.gateStatus === "PASS" ? "PASS" : "FAIL",
       metrics: {

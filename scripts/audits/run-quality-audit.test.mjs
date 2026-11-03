@@ -13,6 +13,7 @@ import {
   executeAudit,
   formatQualityAuditCliResult,
   parseAuditMode,
+  parseAuditScope,
   runQualityAudit,
   serialize,
 } from "./run-quality-audit.mjs";
@@ -198,6 +199,13 @@ test("CLI parser accepts the five gates and auxiliary audit modes and rejects un
   assert.throws(() => parseAuditMode(["knip"]), /Mode d'audit inconnu/);
   assert.throws(() => parseAuditMode([]), /Usage:/);
 });
+
+test("quality audit parser keeps the shared mode and product scope separate", () => {
+  assert.equal(parseAuditMode(["all", "--scope=mobile"]), "all");
+  assert.equal(parseAuditScope(["all", "--scope=mobile"]), "mobile");
+  assert.equal(parseAuditScope(["all"]), "all");
+  assert.throws(() => parseAuditScope(["all", "--scope=desktop"]), /web\|mobile\|all/);
+});
 test("artifact paths are deterministic and SHA-scoped", () => {
   const paths = createAuditPaths({ root: "C:/repo", auditedHead: sha, audit: "dead-code", runId: "run-path" });
   assert.equal(paths.auditRoot, path.join("C:/repo", "artifacts/quality-audits", sha));
@@ -216,6 +224,7 @@ test("a single audit writes manifest, raw report and generated summary only belo
       audit: "dead-code",
       runId: "run-single",
       auditedHead: sha,
+      scope: "all",
       readProvenance: "WORKTREE_LIVE",
       resultClass: "MEASURED",
       status: "PASS",

@@ -37,6 +37,8 @@ jobs:
       docs_only: ${{ steps.detect-scope.outputs.docs_only }}
       web_code_relevant: ${{ steps.detect-scope.outputs.web_code_relevant }}
       mobile_code_relevant: ${{ steps.detect-scope.outputs.mobile_code_relevant }}
+      web_only: ${{ steps.detect-scope.outputs.web_only }}
+      mobile_only: ${{ steps.detect-scope.outputs.mobile_only }}
       build_relevant: ${{ steps.detect-scope.outputs.build_relevant }}
       dependency_graph_relevant: ${{ steps.detect-scope.outputs.dependency_graph_relevant }}
       dependency_audit_relevant: ${{ steps.detect-scope.outputs.dependency_audit_relevant }}
@@ -735,6 +737,7 @@ jobs:
 
   mobile-validation:
     needs: scope
+    if: needs.scope.outputs.mobile_code_relevant == 'true' || (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

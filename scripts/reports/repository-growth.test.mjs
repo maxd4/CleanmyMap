@@ -17,16 +17,30 @@ test("classifies the mutually exclusive repository categories", () => {
   assert.equal(classifyPath("apps/web/src/page.tsx"), "web_runtime");
   assert.equal(classifyPath("apps/web/src/page.test.tsx"), "web_tests");
   assert.equal(classifyPath("apps/mobile/__tests__/storage.test.ts"), "mobile_tests");
-  assert.equal(classifyPath("e2e/actions.spec.ts"), "e2e_and_script_tests");
-  assert.equal(classifyPath("scripts/reports/repository-growth.test.mjs"), "e2e_and_script_tests");
+  assert.equal(classifyPath("e2e/actions.spec.ts"), "e2e_tests");
+  assert.equal(classifyPath("scripts/reports/repository-growth.test.mjs"), "script_tests");
   assert.equal(classifyPath("documentation/development/TESTING.md"), "documentation");
   assert.equal(classifyPath("apps/web/supabase/migrations/001.sql"), "sql_migrations");
   assert.equal(classifyPath("package-lock.json"), "vendored_generated_lockfiles");
   assert.equal(classifyPath("apps/mobile/vendor/node-forge/index.js"), "vendored_generated_lockfiles");
   assert.equal(classifyPath("apps/web/src/example.generated.ts"), "vendored_generated_lockfiles");
   assert.equal(classifyPath("apps/web/public/map.webp"), "media_binaries");
-  assert.equal(classifyPath(".github/workflows/ci.yml"), "scripts_ci");
+  assert.equal(classifyPath(".github/workflows/ci.yml"), "shared_infrastructure");
   assert.equal(classifyPath("package.json"), "data_configuration");
+});
+
+test("keeps E2E, script tests, scripts and shared infrastructure in distinct buckets", () => {
+  const paths = [
+    "e2e/actions.spec.ts",
+    "scripts/reports/repository-growth.test.mjs",
+    "scripts/reports/repository-growth.mjs",
+    ".github/workflows/ci.yml",
+    "documentation/development/TESTING.md",
+    "apps/mobile/vendor/node-forge/index.js",
+  ];
+  const categories = paths.map(classifyPath);
+  assert.equal(new Set(categories).size, paths.length);
+  assert.deepEqual(categories, ["e2e_tests", "script_tests", "scripts_ci", "shared_infrastructure", "documentation", "vendored_generated_lockfiles"]);
 });
 
 test("counts physical lines for LF, CRLF, lone CR, empty and unterminated content", () => {
@@ -53,6 +67,29 @@ test("measureEntries counts each tree entry once and preserves exact bytes", () 
   assert.equal(report.categories.web_runtime.physicalLines, 2);
   assert.equal(report.categories.web_tests.physicalLines, 1);
   assert.equal(report.categories.media_binaries.physicalLines, null);
+});
+
+test("measureEntries has a single accounting owner for every tree entry", () => {
+  const contents = new Map([
+    ["apps/web/src/page.tsx", Buffer.from("web\n")],
+    ["apps/web/src/page.test.tsx", Buffer.from("test\n")],
+    ["apps/mobile/src/map.tsx", Buffer.from("mobile\n")],
+    ["apps/mobile/src/map.test.tsx", Buffer.from("test\n")],
+    ["e2e/map.spec.ts", Buffer.from("e2e\n")],
+    ["scripts/checks/check.mjs", Buffer.from("script\n")],
+    ["documentation/README.md", Buffer.from("docs\n")],
+    ["package-lock.json", Buffer.from("{}\n")],
+    [".github/workflows/ci.yml", Buffer.from("name: ci\n")],
+  ]);
+  const entries = [...contents].map(([file, content]) => ({ type: "blob", path: file, size: content.length }));
+  const report = measureEntries(entries, (file) => contents.get(file));
+  const categoryFileTotal = Object.values(report.categories).reduce((sum, category) => sum + category.files, 0);
+  assert.equal(categoryFileTotal, entries.length);
+  assert.equal(report.totals.files, entries.length);
+  assert.equal(report.categories.e2e_tests.files, 1);
+  assert.equal(report.categories.script_tests.files, 0);
+  assert.equal(report.categories.scripts_ci.files, 1);
+  assert.equal(report.categories.shared_infrastructure.files, 1);
 });
 
 test("selects the deterministic first-parent commit at or before a UTC boundary", () => {

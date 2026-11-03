@@ -93,3 +93,10 @@ distincts, déclenchés par leurs périmètres respectifs. Une exécution
 `workflow_dispatch` avec `validation_mode=FULL` peut en plus demander les
 suites Web complètes et les ratchets associés. Un contrôle non exécuté doit
 rester explicitement `SKIPPED_BY_POLICY` ou `NOT_RUN`.
+
+Le planificateur publie également `web_only` et `mobile_only`. Un diff limité
+à `apps/mobile/` déclenche la lane mobile et évite la lane Web applicative ; un
+diff limité à `apps/web/` fait l'inverse. Les changements de workflow,
+manifestes, scripts de checks, contrats ou dépendances restent des changements
+transversaux et conservent les lanes nécessaires. Cette optimisation ne change
+ni les seuils, ni les ratchets, ni les producteurs Vitest indépendants.

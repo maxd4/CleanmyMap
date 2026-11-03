@@ -177,3 +177,44 @@ test("les rapports hors Web utilisent la preuve de publication canonique", () =>
     assert.deepEqual(validated, { repositoryRoot: root, candidateSha: sha, scope: "mobile" });
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+test("une couverture scoped ne réinjecte pas les métriques globales de duplication", () => {
+  const root = tempRoot();
+  try {
+    fixture(root);
+    const result = buildCoverageInsightsReport({
+      root,
+      auditedSha: sha,
+      scope: "web",
+      reports: [definition],
+      validateSonar: () => [{ status: "VALID" }],
+      validateEvidence: () => ({ gitHead: sha }),
+      duplicationReport: {
+        scope: "web",
+        attributedResults: [{ scopeName: "runtime", occurrencePairs: 1 }],
+        results: [{ scopeName: "runtime", metrics: { percentage: 99 }, applicationComparison: { status: "PASS" } }],
+      },
+    });
+    assert.equal(result.scope, "web");
+    assert.equal(result.duplication.scopes[0].state, "MEASURED");
+    assert.equal(result.duplication.scopes[0].percentage, null);
+    assert.equal(result.duplication.warnings.length, 0);
+    assert.deepEqual(result.duplication.transverse, { state: "PRESENT", source: "GLOBAL_DUPLICATION_RATCHET" });
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test("un rapport de couverture scoped ne mélange pas les producteurs Web et Mobile", () => {
+  const root = tempRoot();
+  try {
+    fixture(root);
+    const result = buildCoverageInsightsReport({
+      root,
+      auditedSha: sha,
+      scope: "web",
+      reports: [definition, mobileDefinition],
+      validateSonar: () => [{ status: "VALID" }],
+      validateEvidence: () => ({ gitHead: sha }),
+    });
+    assert.deepEqual(result.scopes.map((entry) => entry.scope), ["web"]);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

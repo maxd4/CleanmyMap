@@ -24,6 +24,8 @@ function fixture() {
   writeFile(root, "apps/web/src/lib/widget.test.ts", "import { widget } from \"./widget\";\nexport const result = widget;\n");
   writeFile(root, "apps/web/src/tests/fixture.ts", "export const fixture = true;\n");
   writeFile(root, "apps/web/src/components/__tests__/component.ts", "export const componentFixture = true;\n");
+  writeFile(root, "apps/mobile/screens/map.tsx", "export const map = true;\n");
+  writeFile(root, "apps/mobile/screens/map.test.tsx", "import { map } from \"./map\";\nexport const result = map;\n");
   git(root, ["init", "-q"]);
   git(root, ["add", "."]);
   git(root, ["-c", "user.name=fixture", "-c", "user.email=fixture", "commit", "-qm", "fixture v1"]);
@@ -45,13 +47,36 @@ test("structural metrics read the exact Git tree, not dirty checkout content", (
 
     assert.equal(report.sourceSha, sourceSha);
     assert.equal(report.domains.api.runtimeFiles, 1);
-    assert.equal(report.domains.api.runtimeLines, 2);
+    assert.equal(report.domains.api.runtimeLines, 1);
     assert.equal(report.domains.api.testFiles, 0);
     assert.equal(report.execution.webTests, "NOT_RUN");
     assert.equal(report.execution.mobileTests, "NOT_RUN");
     assert.equal(report.execution.webCoverage.execution, "NOT_RUN");
     assert.equal(report.execution.mobileCoverage.execution, "NOT_RUN");
     assert.equal(report.execution.testFilesModified, "NOT_ATTESTED");
+    assert.equal(report.accounting.mobile.runtimeFiles, 1);
+    assert.equal(report.accounting.mobile.testFiles, 1);
+    assert.equal(report.accounting.web.runtimeFiles, 2);
+    assert.equal(report.accounting.monorepo.runtimeFiles, report.accounting.web.runtimeFiles + report.accounting.mobile.runtimeFiles + report.accounting.scripts.runtimeFiles);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("web and mobile accounting do not double-count source records", () => {
+  const root = fixture();
+  try {
+    const report = buildModuleTestMetrics({ root, timestamp: "2026-10-14T00:00:00.000Z" });
+    assert.equal(
+      report.accounting.monorepo.runtimeFiles,
+      report.accounting.web.runtimeFiles + report.accounting.mobile.runtimeFiles + report.accounting.scripts.runtimeFiles,
+    );
+    assert.equal(
+      report.accounting.monorepo.testFiles,
+      report.accounting.web.testFiles + report.accounting.mobile.testFiles + report.accounting.scripts.testFiles,
+    );
+    assert.equal(report.accounting.documentation.files, 0);
+    assert.equal(report.accounting.vendored.files, 0);
   } finally {
     cleanup(root);
   }

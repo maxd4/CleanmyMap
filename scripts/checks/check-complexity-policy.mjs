@@ -17,6 +17,7 @@ import {
   validateBaselineShape,
 } from "./complexity-policy.mjs";
 import { createGitRepositoryView } from "./repository-view.mjs";
+import { normalizeQualityScope, qualityScopeRoots, scopeMetadata } from "./quality-scope.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const repositoryRoot = process.cwd();
@@ -25,7 +26,9 @@ const args = new Set(process.argv.slice(2));
 const changedOnly = args.has("--changed-only");
 const stagedOnly = args.has("--staged");
 const changedFromArgument = process.argv.slice(2).find((argument) => argument.startsWith("--changed-from="))?.slice("--changed-from=".length);
-const sourceRoots = (process.argv.slice(2).find((argument) => argument.startsWith("--roots="))?.slice("--roots=".length) ?? "apps/web/src,apps/mobile")
+const explicitSourceRoots = process.argv.slice(2).find((argument) => argument.startsWith("--roots="))?.slice("--roots=".length);
+const cliScope = normalizeQualityScope(process.argv.slice(2).find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all");
+const sourceRoots = (explicitSourceRoots ?? "apps/web/src,apps/mobile")
   .split(",")
   .map((root) => root.replaceAll("\\", "/").trim())
   .filter(Boolean);
@@ -276,7 +279,11 @@ const baselineSourceCommit = (() => {
   }
 })();
 
-export async function runComplexityPolicy() {
+export async function runComplexityPolicy({ scope = cliScope } = {}) {
+  const activeScope = normalizeQualityScope(scope);
+  const activeSourceRoots = explicitSourceRoots
+    ? sourceRoots
+    : qualityScopeRoots(activeScope);
   let view = null;
   let stagedTree = null;
   if (stagedOnly) {
@@ -310,8 +317,15 @@ export async function runComplexityPolicy() {
   const changedRanges = changedDiff.ranges;
   const changedHunks = changedDiff.hunks;
   const changedPaths = changedDiff.changedPaths;
+  for (const file of [...changedRanges.keys()]) {
+    if (!activeSourceRoots.some((root) => file === root || file.startsWith(`${root}/`))) {
+      changedRanges.delete(file);
+      changedHunks.delete(file);
+      changedPaths.delete(file);
+    }
+  }
   if (!stagedOnly) {
-    const untracked = git(["ls-files", "--others", "--exclude-standard", "--", ...sourceRoots])
+    const untracked = git(["ls-files", "--others", "--exclude-standard", "--", ...activeSourceRoots])
       .split(/\r?\n/).filter(Boolean)
       .map(normalizeRepositoryPath)
       .filter((file) => /\.(ts|tsx)$/.test(file));
@@ -346,10 +360,10 @@ export async function runComplexityPolicy() {
     ],
   });
   const sourceFiles = view
-      ? sourceRoots.flatMap((root) => view.listFiles(root)).filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file)))
+      ? activeSourceRoots.flatMap((root) => view.listFiles(root)).filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file)))
       : (changedOnly
         ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file)))
-        : git(["ls-files", "--", ...sourceRoots]).split(/\r?\n/).filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file))));
+        : git(["ls-files", "--", ...activeSourceRoots]).split(/\r?\n/).filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file))));
   const lintResults = await Promise.all(sourceFiles.map((file) => {
     const filePath = path.join(repositoryRoot, file);
     const source = view ? view.readText(file) : fs.readFileSync(filePath, "utf8");
@@ -361,7 +375,7 @@ export async function runComplexityPolicy() {
     baseline,
     changedRanges,
     changedHunks,
-    sourceRoots,
+    sourceRoots: activeSourceRoots,
     stalePaths: changedOnly ? changedPaths : null,
   });
   const blocking = result.failures.length > 0 || result.stale.length > 0;
@@ -371,13 +385,14 @@ export async function runComplexityPolicy() {
     result,
     changedPaths,
     sourceFiles,
+    ...scopeMetadata(activeScope),
     status: blocking ? "FAIL" : "PASS",
   };
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   try {
-    const report = await runComplexityPolicy();
+    const report = await runComplexityPolicy({ scope: cliScope });
     const result = report.result;
     writeQualityEvidence({
       gate: "complexity",
@@ -395,6 +410,8 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
       historicalFindings: null,
       baseline: { sourceCommit: report.baseline.sourceCommit, policyFingerprint: report.baseline.policyFingerprint },
       details: {
+        scope: report.scope,
+        roots: report.roots,
         failureKeys: result.failures.map((failure) => failure.key),
         improvementKeys: result.improvements.map((improvement) => improvement.key),
         staleKeys: result.stale.map((entry) => baselineKey(entry.metric, entry.path, entry.functionIdentity)),

@@ -47,6 +47,22 @@ const NATIVE_BASELINES = {
 };
 const CURRENT_JUSTIFICATIONS = JSON.parse(readFileSync(path.join(import.meta.dirname, "duplication-justifications.json"), "utf8"));
 
+test("une projection de duplication scoped sépare le verdict applicatif du ratchet transverse", () => {
+  const formatted = formatDuplicationReport({
+    scope: "mobile",
+    results: [{
+      scopeName: "runtime",
+      metrics: { clones: 1, duplicatedLines: 10, lines: 100, percentage: 10, duplicatedTokens: 20, tokens: 200, newClones: 0 },
+      comparison: { status: "FAIL", deltas: {}, failures: ["global finding"] },
+      applicationComparison: { status: "PASS", deltas: {}, failures: [], newFingerprints: [] },
+    }],
+    attributedResults: [{ scopeName: "runtime", occurrencePairs: 2 }],
+  });
+  assert.match(formatted, /mobile projection/);
+  assert.match(formatted, /application status=PASS/);
+  assert.match(formatted, /transverse status=FAIL/);
+});
+
 test("stable duplication baseline passes and a lower percentage is accepted", () => {
   validateDuplicationMetricsBaseline(BASELINE);
   assert.equal(

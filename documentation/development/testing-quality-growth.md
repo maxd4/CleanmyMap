@@ -23,17 +23,24 @@ mois sans commit accessible ou une histoire trop courte reste explicitement
 `MISSING_HISTORY` ou `INSUFFICIENT_HISTORY` ; aucune estimation n'est ajoutée.
 
 Les catégories sont exclusives et leur somme couvre toutes les entrées de
-l'arbre Git : web runtime, mobile runtime, tests web, tests mobile, E2E/tests
-de scripts, documentation, scripts/CI, SQL/migrations, données/configuration,
-médias/binaires, vendored/generated/lockfiles, autre texte et sous-modules.
+l'arbre Git : web runtime, mobile runtime, tests Web, tests Mobile, E2E,
+tests de scripts, scripts/CI, infrastructure commune, documentation,
+SQL/migrations, données/configuration, médias/binaires,
+vendored/generated/lockfiles, autre texte et sous-modules. Une entrée n'est
+jamais répétée dans plusieurs catégories.
 Les bytes sont les bytes bruts des blobs Git. Les lignes physiques comptent
 chaque CRLF, LF ou CR isolé comme un séparateur, avec une dernière ligne pour
 un blob non terminé ; un fichier vide compte zéro. Ce compteur n'est pas un
 LOC exécutable.
 
-Le rapport expose aussi le ratio de volume lignes tests/runtime. Ce ratio ne
-mesure pas la couverture. Le nombre de fichiers au-dessus de REVIEW, HARD et
-dans la zone préventive réutilise la politique `quality:top-heavy` existante.
+Le rapport expose séparément les fichiers, lignes physiques et ratios
+tests/runtime pour Web et Mobile. Il expose aussi un total **monorepo** dont le
+runtime est explicitement Web + Mobile ; les lignes E2E et de tests de scripts
+sont affichées à part et ne sont pas présentées comme du runtime applicatif.
+Le total de l'inventaire monorepo couvre, lui, toutes les catégories Git. Ces
+ratios décrivent le volume des sources et ne mesurent pas la couverture.
+Le nombre de fichiers au-dessus de REVIEW, HARD et dans la zone préventive
+réutilise la politique `quality:top-heavy` existante.
 Les historiques complexity, cycles, duplication et dead-code restent
 `NOT_MEASURED` lorsqu'une preuve exacte par SHA n'est pas disponible ; une
 baseline ou un résultat courant ne devient jamais une amélioration historique.

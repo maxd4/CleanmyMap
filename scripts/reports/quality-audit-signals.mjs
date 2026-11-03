@@ -6,6 +6,7 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 import { getComplexityTarget } from "../checks/complexity-policy.mjs";
 import { SOURCE_ROOTS as TYPE_SAFETY_SOURCE_ROOTS } from "../checks/check-type-safety.mjs";
 import { HEAVY_FILE_EXTENSIONS } from "../checks/top-heavy-measurement.mjs";
+import { normalizeQualityScope, pathInQualityScope, scopeMetadata } from "../checks/quality-scope.mjs";
 
 export const HOTSPOT_HISTORY_WINDOW_DAYS = 180;
 export const HOTSPOT_SUBSTANTIVE_LINE_THRESHOLD = 20;
@@ -68,19 +69,19 @@ function dateMinusDays(iso, days) {
   return date.toISOString();
 }
 
-function listTrackedFiles(root, auditedSha) {
-  return git(root, ["ls-tree", "-r", "--name-only", auditedSha, "--", ...SOURCE_ROOTS])
+function listTrackedFiles(root, auditedSha, roots = SOURCE_ROOTS) {
+  return git(root, ["ls-tree", "-r", "--name-only", auditedSha, "--", ...roots])
     .split(/\r?\n/)
     .map(normalize)
     .filter(Boolean);
 }
 
-function readHistory(root, auditedSha, windowDays) {
+function readHistory(root, auditedSha, windowDays, roots = SOURCE_ROOTS) {
   const auditedAt = git(root, ["show", "-s", "--format=%cI", auditedSha]);
   const windowStart = dateMinusDays(auditedAt, windowDays);
   const output = git(root, [
     "log", auditedSha, `--since=${windowStart}`, `--format=commit%x00%H%x00%cI`,
-    "--numstat", "--", ...SOURCE_ROOTS,
+    "--numstat", "--", ...roots,
   ]);
   const commits = [];
   let current = null;
@@ -371,10 +372,12 @@ function structuralDebtAvailability(reports, coverageIndexes) {
   return { state, availableReports, partialReports, missingReports, invalidReports, coverageReasons };
 }
 
-export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, reports = {}, windowDays = HOTSPOT_HISTORY_WINDOW_DAYS, gitRunner = git } = {}) {
+export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, reports = {}, windowDays = HOTSPOT_HISTORY_WINDOW_DAYS, gitRunner = git, scope = "all" } = {}) {
+  const activeScope = normalizeQualityScope(scope);
+  const historyRoots = activeScope === "all" ? SOURCE_ROOTS : scopeMetadata(activeScope).roots;
   if (!SHA_PATTERN.test(auditedSha ?? "")) throw new Error(`SHA hotspot invalide: ${auditedSha}`);
-  const history = readHistoryWithRunner(root, auditedSha, windowDays, gitRunner);
-  const tracked = new Set(listTrackedFilesWithRunner(root, auditedSha, gitRunner));
+  const history = readHistoryWithRunner(root, auditedSha, windowDays, gitRunner, historyRoots);
+  const tracked = new Set(listTrackedFilesWithRunner(root, auditedSha, gitRunner, historyRoots).filter((file) => pathInQualityScope(file, activeScope)));
   const byFile = new Map([...tracked].map((file) => [file, { file, commits: new Set(), substantiveChanges: 0, addedLines: 0, deletedLines: 0 }]));
   for (const commit of history.commits) {
     for (const change of commit.files) {
@@ -412,6 +415,7 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
   return {
     schemaVersion: 1,
     kind: "quality-hotspots",
+    ...scopeMetadata(activeScope),
     status: "PASS",
     blocking: false,
     measurementStatus: "MEASURED",
@@ -439,11 +443,11 @@ export function buildQualityHotspotsReport({ root = process.cwd(), auditedSha, r
   };
 }
 
-function readHistoryWithRunner(root, auditedSha, windowDays, gitRunner) {
-  if (gitRunner === git) return readHistory(root, auditedSha, windowDays);
+function readHistoryWithRunner(root, auditedSha, windowDays, gitRunner, roots = SOURCE_ROOTS) {
+  if (gitRunner === git) return readHistory(root, auditedSha, windowDays, roots);
   const auditedAt = gitRunner(["show", "-s", "--format=%cI", auditedSha], root);
   const windowStart = dateMinusDays(auditedAt, windowDays);
-  const output = gitRunner(["log", auditedSha, `--since=${windowStart}`, `--format=commit%x00%H%x00%cI`, "--numstat", "--", ...SOURCE_ROOTS], root);
+  const output = gitRunner(["log", auditedSha, `--since=${windowStart}`, `--format=commit%x00%H%x00%cI`, "--numstat", "--", ...roots], root);
   return parseHistory(output, auditedAt, windowStart);
 }
 
@@ -462,9 +466,9 @@ function parseHistory(output, auditedAt, windowStart) {
   return { auditedAt, windowStart, windowEnd: auditedAt, commits };
 }
 
-function listTrackedFilesWithRunner(root, auditedSha, gitRunner) {
-  if (gitRunner === git) return listTrackedFiles(root, auditedSha);
-  return gitRunner(["ls-tree", "-r", "--name-only", auditedSha, "--", ...SOURCE_ROOTS]).split(/\r?\n/).map(normalize).filter(Boolean);
+function listTrackedFilesWithRunner(root, auditedSha, gitRunner, roots = SOURCE_ROOTS) {
+  if (gitRunner === git) return listTrackedFiles(root, auditedSha, roots);
+  return gitRunner(["ls-tree", "-r", "--name-only", auditedSha, "--", ...roots]).split(/\r?\n/).map(normalize).filter(Boolean);
 }
 
 function metricOrNotMeasured(reason) {
@@ -483,7 +487,8 @@ function mutationEvidence(root, auditedSha) {
   return { state: "PRESENT", sourceSha, reportPath: "artifacts/quality-hardening/mutation/stryker-report.json", summary: report.summary ?? null };
 }
 
-export function buildQualityTestabilityReport({ root = process.cwd(), auditedSha, moduleMetrics = readJson(root, "documentation/operations/audits/module-test-metrics.json") } = {}) {
+export function buildQualityTestabilityReport({ root = process.cwd(), auditedSha, moduleMetrics = readJson(root, "documentation/operations/audits/module-test-metrics.json"), scope = "all" } = {}) {
+  const activeScope = normalizeQualityScope(scope);
   const moduleState = validModuleMetrics(moduleMetrics, auditedSha)
     ? { state: "PRESENT", sourceSha: moduleMetrics.sourceSha, provenance: "EXACT_SHA_MODULE_TEST_METRICS" }
     : metricOrNotMeasured(moduleMetrics ? "MODULE_TEST_METRICS_STALE_OR_UNATTRIBUTABLE" : "MODULE_TEST_METRICS_MISSING");
@@ -491,6 +496,10 @@ export function buildQualityTestabilityReport({ root = process.cwd(), auditedSha
   const domains = [];
   if (moduleState.state === "PRESENT") {
     for (const [domain, value] of Object.entries(moduleMetrics.domains)) {
+      const isMobileDomain = domain.startsWith("mobile/");
+      const isScriptDomain = domain.startsWith("scripts/");
+      if (activeScope === "mobile" && !isMobileDomain) continue;
+      if (activeScope === "web" && (isMobileDomain || isScriptDomain || domain === "cross-domain-tests")) continue;
       const critical = CRITICAL_DOMAINS.has(domain);
       const coverage = value.coverage?.status === "AVAILABLE" && value.coverage.metrics
         ? { state: "PRESENT", status: value.coverage.status, files: value.coverage.files, metrics: value.coverage.metrics }
@@ -510,15 +519,20 @@ export function buildQualityTestabilityReport({ root = process.cwd(), auditedSha
   const diagnostics = [];
   if (moduleState.state === "NOT_MEASURED") diagnostics.push({ code: moduleState.reason, message: "Les métriques de modules ne sont pas valides pour le SHA audité." });
   if (mutation.state === "NOT_MEASURED") diagnostics.push({ code: mutation.reason, message: "La mutation n'est pas attribuable au SHA audité ; aucun score n'est déduit." });
+  const applicationScopes = moduleState.state === "PRESENT" && moduleMetrics.accounting
+    ? Object.fromEntries(["web", "mobile", "monorepo"].map((scope) => [scope, moduleMetrics.accounting[scope] ?? null]))
+    : {};
   return {
     schemaVersion: QUALITY_TESTABILITY_SCHEMA_VERSION,
     kind: "quality-testability",
+    ...scopeMetadata(activeScope),
     status: "PASS",
     blocking: false,
     measurementStatus: moduleState.state === "PRESENT" ? "MEASURED" : "NOT_MEASURED",
     auditedSha,
     methodology: { noTestInferenceFromAbsence: true, noFunctionTestMappingInvented: true, noTestRerun: true, evidenceRule: "missing, stale or unattributable evidence is NOT_MEASURED" },
     sources: { moduleTestMetrics: moduleState, mutation },
+    applicationScopes,
     summary: { domainsMeasured: domains.length, criticalDomains: domains.filter((entry) => entry.criticalEvidence !== "NOT_APPLICABLE").length, criticalDomainsWithoutSufficientEvidence: domains.filter((entry) => entry.criticalEvidence === "NOT_MEASURED").length },
     domains,
     findings: [],

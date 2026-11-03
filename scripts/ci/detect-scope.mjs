@@ -20,6 +20,8 @@ const EMPTY_SCOPE = Object.freeze({
   docsOnly: false,
   webCodeRelevant: false,
   mobileCodeRelevant: false,
+  webOnly: false,
+  mobileOnly: false,
   buildRelevant: false,
   dependencyGraphRelevant: false,
   dependencyAuditRelevant: false,
@@ -33,6 +35,8 @@ const FULL_SCOPE = Object.freeze({
   docsOnly: false,
   webCodeRelevant: true,
   mobileCodeRelevant: true,
+  webOnly: false,
+  mobileOnly: false,
   buildRelevant: true,
   dependencyGraphRelevant: true,
   dependencyAuditRelevant: true,
@@ -46,6 +50,8 @@ const OUTPUT_KEYS = Object.freeze({
   docsOnly: "docs_only",
   webCodeRelevant: "web_code_relevant",
   mobileCodeRelevant: "mobile_code_relevant",
+  webOnly: "web_only",
+  mobileOnly: "mobile_only",
   buildRelevant: "build_relevant",
   dependencyGraphRelevant: "dependency_graph_relevant",
   dependencyAuditRelevant: "dependency_audit_relevant",
@@ -219,6 +225,8 @@ function deriveChangedScope(repositoryRoot, changedFiles) {
     docsOnly,
     webCodeRelevant,
     mobileCodeRelevant,
+    webOnly: webCodeRelevant && !mobileCodeRelevant,
+    mobileOnly: mobileCodeRelevant && !webCodeRelevant,
     buildRelevant: Boolean(policy.buildRelevant),
     dependencyGraphRelevant: Boolean(policy.dependencyGraphRelevant),
     dependencyAuditRelevant: Boolean(policy.dependencyAuditRelevant),
@@ -253,7 +261,7 @@ export function resolveCiScope({
 
 export function serializeCiScopeOutputs(scope) {
   return Object.entries(OUTPUT_KEYS)
-    .map(([key, outputKey]) => `${outputKey}=${scope[key]}`)
+    .map(([key, outputKey]) => `${outputKey}=${scope[key] ?? false}`)
     .join("\n") + "\n";
 }
 
