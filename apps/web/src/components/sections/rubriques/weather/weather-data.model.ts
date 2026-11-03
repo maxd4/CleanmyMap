@@ -9,7 +9,7 @@ import {
 import { TERRITORY_CENTER } from "@/lib/geo/territory";
 import type { OpenMeteoForecastResponse } from "@/lib/weather/open-meteo-client";
 import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
-import { formatDateShort } from "./helpers";
+import { formatDateShort } from "../helpers";
 import type {
   WeatherDataStatus,
   WeatherLocation,

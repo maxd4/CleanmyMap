@@ -3,7 +3,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { WeatherLocationSuggestion } from "./weather-types";
+import type { WeatherLocationSuggestion } from "./weather/weather-types";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -20,7 +20,7 @@ vi.mock("./use-weather-location-suggestions", () => ({
 }));
 
 import { useWeatherData } from "./use-weather-data";
-import { storeWeatherLocation } from "./weather-location-storage";
+import { storeWeatherLocation } from "./weather/weather-location-storage";
 
 type WeatherDraftContext = NonNullable<Parameters<typeof useWeatherData>[0]>;
 

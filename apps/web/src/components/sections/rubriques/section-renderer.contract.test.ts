@@ -21,7 +21,7 @@ vi.mock("next/dynamic", () => ({
       "./compost",
       "./climate",
       "./compare-section",
-      "./rejoindre-un-formulaire-section",
+      "./rejoindre-une-action/rejoindre-un-formulaire-section",
       "./connect-section",
     ];
     let index = 0;
@@ -87,7 +87,7 @@ describe("composed Climate heading contract", () => {
       "open-data": ["./open-data-section"],
       funding: ["./funding-section"],
       "trash-spotter": ["./trash-spotter-section"],
-      "rejoindre-une-action": ["./rejoindre-un-formulaire-section"],
+      "rejoindre-une-action": ["./rejoindre-une-action/rejoindre-un-formulaire-section"],
       recycling: ["./recycling-section"],
       compost: ["./compost"],
       climate: ["./climate", "./compare-section"],
@@ -113,6 +113,22 @@ describe("composed Climate heading contract", () => {
       const modules = [...markup.matchAll(/data-dynamic-section="([^"]+)"/g)].map((match) => match[1]);
       expect(modules, `${id} must use its registered component(s)`).toEqual(expectedModules[id]);
     }
+  });
+
+  it("composes the rejoindre une action section from its grouped entry point", () => {
+    const renderer = read("./section-renderer.tsx");
+    expect(renderer).toContain(
+      'import("./rejoindre-une-action/rejoindre-un-formulaire-section")',
+    );
+
+    const output = FINALIZED_SECTION_RENDERERS["rejoindre-une-action"]();
+    const markup = renderToStaticMarkup(
+      React.createElement(SitePreferencesProvider, null, output),
+    );
+
+    expect(markup).toContain(
+      'data-dynamic-section="./rejoindre-une-action/rejoindre-un-formulaire-section"',
+    );
   });
 
   it("preserves pending-section purpose and does not dispatch it as finalized", () => {

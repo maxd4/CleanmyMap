@@ -9,13 +9,13 @@ import {
   EventArticlePast,
   EventArticleUpcoming,
   EventListStates,
-} from "./community/community-events-components";
+} from "../community/community-events-components";
 import type {
   CommunityEventItem,
   CommunityRsvpStatus,
 } from "@/lib/community/http";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
-import type { OpsDraft } from "./community/types";
+import type { OpsDraft } from "../community/types";
 
 type JoinCommunityEventsPanelProps = {
   fr: boolean;

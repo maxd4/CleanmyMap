@@ -7,8 +7,8 @@ import { useJoinFormSectionActions } from "./rejoindre-un-formulaire-section.con
 import { type JoinableActionSort, type LocationFilter, type PeriodFilter } from "./rejoindre-un-formulaire-section.utils";
 import { fetchActions } from "@/lib/actions/http";
 import type { ActionListItem } from "@/lib/actions/types";
-import { useCommunityEvents } from "./community/use-community-events";
-import { useCommunityActions } from "./community/use-community-actions";
+import { useCommunityEvents } from "../community/use-community-events";
+import { useCommunityActions } from "../community/use-community-actions";
 import { useJoinFormControllerDerivedState } from "./rejoindre-un-formulaire-section.derived";
 import {
   isPastPublicAction,

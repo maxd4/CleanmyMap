@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
+import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs";
 import {
   ACTION_CREATION_SECTIONS,
   ACTION_CREATION_SECTION_LABELS,

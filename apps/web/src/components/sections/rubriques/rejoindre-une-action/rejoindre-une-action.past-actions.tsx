@@ -19,7 +19,7 @@ import {
   usePublicActionContinuity,
   type PublicActionContinuityState,
 } from "./rejoindre-une-action.public-continuity";
-import type { OpsDraft } from "./community/types";
+import type { OpsDraft } from "../community/types";
 
 function actionTitle(item: ActionListItem): string {
   return item.contract?.metadata.preparationData?.actionTitle?.trim() || item.location_label;

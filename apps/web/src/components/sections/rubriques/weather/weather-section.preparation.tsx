@@ -7,7 +7,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import type { ActionPreparationContext, ActionPreparationPersistenceStatus, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 import { ACTION_PREPARATION_CHECKLIST_DEFAULTS, type ActionPreparationChecklistItem } from "@/lib/actions/preparation-contract";
-import type { useWeatherData } from "./use-weather-data";
+import type { useWeatherData } from "../use-weather-data";
 import { WeatherLocationPicker } from "./weather-location-picker";
 import { getCurrentWindowLabel, getForecastLocalClockTime, getVigilanceLabel, getWeatherStateCopy } from "./weather-section.helpers";
 import { PreparationChecklist, PreparationMaterials, type PreparationContextUpdate } from "./weather-section.preparation-controls";

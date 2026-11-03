@@ -1,8 +1,12 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { ActionCard } from "./rejoindre-un-formulaire-section.cards";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => undefined }),
+}));
 
 const sectionSource = readFileSync(
   new URL("./rejoindre-un-formulaire-section.tsx", import.meta.url),
@@ -11,13 +15,13 @@ const sectionSource = readFileSync(
 
 const joinDocumentation = readFileSync(
   new URL(
-    "../../../../../../documentation/pages_site/routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md",
+    "../../../../../../../documentation/pages_site/routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md",
     import.meta.url,
   ),
   "utf8",
 );
 const groupActionDocumentation = readFileSync(
-  new URL("../../../../../../documentation/features/group-action.md", import.meta.url),
+  new URL("../../../../../../../documentation/features/group-action.md", import.meta.url),
   "utf8",
 );
 

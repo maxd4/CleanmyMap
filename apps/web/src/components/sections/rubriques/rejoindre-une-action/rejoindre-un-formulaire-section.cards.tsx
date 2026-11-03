@@ -10,8 +10,8 @@ import { ActionCardActions } from "./rejoindre-un-formulaire-section.card-action
 import { ActionPracticalInformation } from "./rejoindre-un-formulaire-section.practical-info";
 import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
 import { buildCommunityEventHref } from "@/lib/community/event-links";
-import { ActionBuddyPanel } from "./action-buddy-panel";
-import { ActionRidesPanel } from "./action-rides-panel";
+import { ActionBuddyPanel } from "../action-buddy-panel";
+import { ActionRidesPanel } from "../action-rides-panel";
 
 export function PillBadge({
   tone,

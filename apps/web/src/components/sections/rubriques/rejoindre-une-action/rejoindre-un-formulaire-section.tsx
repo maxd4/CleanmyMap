@@ -13,7 +13,7 @@ import { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
 import { JoinActionTabs } from "./rejoindre-une-action.tabs";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
-import { ActionNeedsPanel } from "./community/action-needs-panel";
+import { ActionNeedsPanel } from "../community/action-needs-panel";
 import { refreshCommunityDigest } from "@/lib/community/digest-http";
 
 export function JoinActionSection() {

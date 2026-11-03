@@ -4,12 +4,12 @@ import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state"
 import { ActionCreationLegalPanel } from "./action-creation-legal-panel";
 import { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
 import { RouteSection } from "@/components/sections/rubriques/route";
-import { WeatherSection } from "@/components/sections/rubriques/weather-section";
+import { WeatherSection } from "@/components/sections/rubriques/weather/weather-section";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { ACTION_WORKFLOW_STEP_LABELS, ACTION_WORKFLOW_STEPS, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
 import { buildActionCreationTabHref, type ActionCreationSpace, type ActionCreationTab } from "@/lib/actions/action-creation-routes";
-import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
+import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action/rejoindre-une-action.tabs";
 import { WorkflowStepper, ActionLifecycleNavigation } from "./action-creation-shell-navigation";
 import type { ActionCreationSharedViewProps } from "./action-creation-shell.types";
 

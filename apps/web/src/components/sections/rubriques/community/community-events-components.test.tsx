@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors/app-errors";
 import type { CommunityEventItem } from "@/lib/community/http";
 import { EventArticlePast, EventArticleUpcoming, EventListStates } from "./community-events-components";
-import { JoinCommunityEventsPanel } from "../rejoindre-une-action.community-events";
+import { JoinCommunityEventsPanel } from "../rejoindre-une-action/rejoindre-une-action.community-events";
 
 function makeEvent(canEditOwnOps: boolean): CommunityEventItem {
   return {

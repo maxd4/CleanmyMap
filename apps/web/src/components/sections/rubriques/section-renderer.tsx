@@ -60,7 +60,7 @@ const CompareSection = dynamic(() =>
   import("./compare-section").then((module) => module.CompareSection),
 );
 const JoinFormSection = dynamic(() =>
-  import("./rejoindre-un-formulaire-section").then((module) => module.JoinActionSection),
+  import("./rejoindre-une-action/rejoindre-un-formulaire-section").then((module) => module.JoinActionSection),
 );
 const ConnectSection = dynamic(() =>
   import("./connect-section").then((module) => module.ConnectSection),

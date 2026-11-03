@@ -8,7 +8,7 @@ import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { ConditionsPanel } from "./weather-section.conditions";
 import { PreparationForecastBlock, PreparationLocationBlock } from "./weather-section.preparation";
-import { useWeatherData } from "./use-weather-data";
+import { useWeatherData } from "../use-weather-data";
 import type { ActionPreparationContext, ActionPreparationPersistenceStatus, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 

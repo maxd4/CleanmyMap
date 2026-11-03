@@ -13,13 +13,26 @@ components/sections/rubriques/
 ├── compost/                     parcours compost
 ├── feedback/                    retours et discussions
 ├── gamification/                surfaces de gamification
+├── rejoindre-une-action/        composition, formulaires et continuité des actions
 ├── recycling-question-assistant/ aide au tri
-├── route/                       parcours route
+├── route/                        parcours route
+├── weather/                      modèles UI et composition de la météo
 └── fichiers racine              sections et compositions transverses
 ```
 
-Les sous-dossiers restent centrés sur une rubrique ou une capacité UI réelle.
-Les tests restent auprès des modules qu'ils couvrent.
+`rejoindre-une-action/` est l'owner UI de la rubrique d'actions : il regroupe
+les composants `rejoindre-un-formulaire-section*` et `rejoindre-une-action*`.
+Son entrée publique consommée par le renderer reste
+`rejoindre-un-formulaire-section.tsx`; les contrats métier et les actions
+restent dans leurs modules canoniques.
+
+`weather/` regroupe la composition météo, ses modèles, son stockage de
+préférence et ses tests. Le hook d'interface partagé reste à la racine pour
+conserver sa frontière avec la création d'action ; le domaine météo réutilisable
+reste dans `src/lib/weather/`.
+
+Les autres sous-dossiers restent centrés sur une rubrique ou une capacité UI
+réelle. Les tests restent auprès des modules qu'ils couvrent.
 
 ## Frontières
 

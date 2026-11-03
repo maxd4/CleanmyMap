@@ -1,4 +1,4 @@
-import type { useWeatherData } from "./use-weather-data";
+import type { useWeatherData } from "../use-weather-data";
 
 type WeatherData = ReturnType<typeof useWeatherData>;
 

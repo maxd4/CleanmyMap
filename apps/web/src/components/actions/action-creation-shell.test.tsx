@@ -61,7 +61,7 @@ vi.mock("./action-creation-legal-panel", () => ({
 vi.mock("@/components/sections/rubriques/route", () => ({
   RouteSection: () => <div data-testid="route-engine" />,
 }));
-vi.mock("@/components/sections/rubriques/weather-section", () => ({
+vi.mock("@/components/sections/rubriques/weather/weather-section", () => ({
   WeatherSection: () => <div data-testid="weather-engine" />,
 }));
 

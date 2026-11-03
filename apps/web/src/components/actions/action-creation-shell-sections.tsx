@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, CloudSun, ClipboardList, Map, Navigation, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { RouteSection } from "@/components/sections/rubriques/route";
-import { WeatherSection } from "@/components/sections/rubriques/weather-section";
+import { WeatherSection } from "@/components/sections/rubriques/weather/weather-section";
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
 import { ACTION_CREATION_SECTIONS, ACTION_CREATION_SECTION_LABELS, type ActionCreationSectionState } from "@/lib/actions/action-creation-sections";
 import type { ActionCreationPanelId, ActionCreationSectionId, ActionCreationSpace, ActionCreationSubsectionId } from "@/lib/actions/action-creation-routes";

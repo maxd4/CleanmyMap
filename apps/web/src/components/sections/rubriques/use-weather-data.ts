@@ -7,7 +7,7 @@ import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-locat
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { fetchOpenMeteoForecast } from "@/lib/weather/open-meteo-client";
-import { storeWeatherLocation, readStoredWeatherLocation } from "./weather-location-storage";
+import { storeWeatherLocation, readStoredWeatherLocation } from "./weather/weather-location-storage";
 import { useWeatherLocationSuggestions } from "./use-weather-location-suggestions";
 import {
   assessForecastDay,
@@ -22,15 +22,15 @@ import {
   isSameWeatherLocation,
   selectAutomaticWeatherLocationSource,
   selectForecastDayIndex,
-} from "./weather-data.model";
-import { resolveWeatherLocationRequest } from "./weather-location-resolution";
+} from "./weather/weather-data.model";
+import { resolveWeatherLocationRequest } from "./weather/weather-location-resolution";
 import type {
   WeatherDataStatus,
   WeatherLocation,
   WeatherLocationResolution,
   WeatherLocationSuggestion,
   WeatherPoint,
-} from "./weather-types";
+} from "./weather/weather-types";
 
 export {
   buildFallbackWeatherLocation,
@@ -38,7 +38,7 @@ export {
   canApplyAutomaticWeatherLocation,
   canApplyDraftWeatherLocation,
   shouldApplyDraftForecastDate,
-} from "./weather-data.model";
+} from "./weather/weather-data.model";
 
 type WeatherDraftContext = {
   locationLabel?: string;
