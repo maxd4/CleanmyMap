@@ -130,6 +130,17 @@ describe("action declaration payload identity and organisation", () => {
     expect(payload.preparationData?.arrivalCoordinates).toBeUndefined();
   });
 
+  it("does not re-inject out-of-range manual coordinates into the payload", () => {
+    const form = buildBaseForm();
+    form.latitude = "91";
+    form.longitude = "2.3522";
+
+    const payload = buildPayload(form);
+
+    expect(payload.latitude).toBeUndefined();
+    expect(payload.longitude).toBeUndefined();
+  });
+
   it("keeps the structure type separate from the organizer name", () => {
     const form = buildBaseForm();
     form.associationName = "Action spontanée";

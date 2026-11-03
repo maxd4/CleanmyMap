@@ -37,14 +37,20 @@ function parseDecimalPair(value: string): ActionLocationCoordinates | null {
   return buildPair(first, second);
 }
 
-function parseDmsComponent(degrees: string, minutes: string | undefined, seconds: string | undefined, hemisphere: string): number | null {
+function parseDmsComponent(
+  degrees: string,
+  minutes: string | undefined,
+  seconds: string | undefined,
+  hemisphere: string,
+  allowedHemisphere: "NS" | "EW",
+): number | null {
   const degreeValue = toDecimal(degrees);
   const minuteValue = minutes === undefined ? 0 : toDecimal(minutes);
   const secondValue = seconds === undefined ? 0 : toDecimal(seconds);
   if (degreeValue === null || minuteValue === null || secondValue === null || minuteValue >= 60 || secondValue >= 60) return null;
   const absolute = Math.abs(degreeValue) + minuteValue / 60 + secondValue / 3600;
   const normalizedHemisphere = hemisphere.toUpperCase();
-  if (!["N", "S", "E", "W"].includes(normalizedHemisphere)) return null;
+  if (!allowedHemisphere.includes(normalizedHemisphere)) return null;
   return normalizedHemisphere === "S" || normalizedHemisphere === "W" ? -absolute : absolute;
 }
 
@@ -53,14 +59,66 @@ function parseDmsPair(value: string): ActionLocationCoordinates | null {
   const match = value.trim().match(new RegExp(`^${component}\\s*[,;|/]?\\s*${component}$`, "i"));
   if (!match) return null;
 
-  const latitude = parseDmsComponent(match[1], match[2], match[3], match[4]);
-  const longitude = parseDmsComponent(match[5], match[6], match[7], match[8]);
+  const latitude = parseDmsComponent(match[1], match[2], match[3], match[4], "NS");
+  const longitude = parseDmsComponent(match[5], match[6], match[7], match[8], "EW");
   if (latitude === null || longitude === null || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
   return buildPair(latitude, longitude);
 }
 
 function parseCoordinateText(value: string): ActionLocationCoordinates | null {
   return parseDmsPair(value) ?? parseDecimalPair(value);
+}
+
+function parseExplicitUrlCoordinate(value: string): ActionLocationCoordinates | null {
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+  decoded = decoded.replace(/\+/g, " ").trim();
+
+  const parsedText = parseCoordinateText(decoded);
+  if (parsedText) return parsedText;
+
+  const decimalMatch = decoded.match(new RegExp(`^(${DECIMAL_NUMBER})\\s*,\\s*(${DECIMAL_NUMBER})$`));
+  if (!decimalMatch) return null;
+  return buildPair(toDecimal(decimalMatch[1]), toDecimal(decimalMatch[2]));
+}
+
+function parseGoogleMapsPathCoordinate(url: URL): ActionLocationCoordinates | null {
+  let path = url.pathname;
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    return null;
+  }
+
+  const explicitPath = path.match(/\/maps\/(?:place|search)\/([^/]+)/i);
+  if (explicitPath) {
+    const pair = parseExplicitUrlCoordinate(explicitPath[1]);
+    if (pair) return pair;
+  }
+
+  // Keep the existing coordinate-only Google Maps URL contract. In a place URL,
+  // the @ segment is deliberately ignored because it identifies the viewport.
+  if (/^\/maps\/@/i.test(path)) {
+    const viewportSegment = path.slice("/maps/@".length).split(/[/?]/, 1)[0];
+    const coordinateText = viewportSegment.split(",").slice(0, 2).join(",");
+    return parseExplicitUrlCoordinate(coordinateText);
+  }
+
+  return null;
+}
+
+function parseGoogleMapsUrl(url: URL): ActionLocationCoordinates | null {
+  for (const key of ["destination", "query", "q", "ll"] as const) {
+    const candidate = url.searchParams.get(key);
+    if (!candidate) continue;
+    const pair = parseExplicitUrlCoordinate(candidate);
+    if (pair) return pair;
+  }
+  return parseGoogleMapsPathCoordinate(url);
 }
 
 export function parseActionCoordinateInput(value: string): ActionLocationCoordinates | null {
@@ -79,16 +137,8 @@ export function parseActionCoordinateInput(value: string): ActionLocationCoordin
       (["google.com", "www.google.com"].includes(googleMapsUrl.hostname.toLowerCase()) &&
         googleMapsUrl.pathname.startsWith("/maps")))
   ) {
-    const urlCoordinatePatterns = [
-      /@\s*([-+]?\d{1,3}(?:[.,]\d+)?)[,\s]+([-+]?\d{1,3}(?:[.,]\d+)?)/i,
-      /(?:[?&#](?:q|query|ll)=|\/search\/)([-+]?\d{1,3}(?:[.,]\d+)?)[,\s]+([-+]?\d{1,3}(?:[.,]\d+)?)/i,
-    ];
-    for (const pattern of urlCoordinatePatterns) {
-      const match = trimmed.match(pattern);
-      if (!match) continue;
-      const pair = buildPair(toDecimal(match[1]), toDecimal(match[2]));
-      if (pair) return pair;
-    }
+    const pair = parseGoogleMapsUrl(googleMapsUrl);
+    if (pair) return pair;
   }
 
   return parseCoordinateText(trimmed);

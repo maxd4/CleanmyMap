@@ -14,7 +14,10 @@ describe("buildActionNavigationLinks", () => {
       googleMaps: "https://www.google.com/maps/dir/?api=1&destination=Place%20de%20la%20R%C3%A9publique%2C%20Paris",
       waze: "https://www.waze.com/ul?q=Place%20de%20la%20R%C3%A9publique%2C%20Paris&navigate=yes",
     });
-    expect(buildActionNavigationLinks({ latitude: 91, longitude: 2, address: "Adresse libre" })).not.toBeNull();
+    expect(buildActionNavigationLinks({ latitude: 91, longitude: 2, address: "Adresse libre" })).toEqual({
+      googleMaps: "https://www.google.com/maps/dir/?api=1&destination=Adresse%20libre",
+      waze: "https://www.waze.com/ul?q=Adresse%20libre&navigate=yes",
+    });
     expect(buildActionNavigationLinks({ latitude: null, longitude: null, address: " " })).toBeNull();
   });
 });
