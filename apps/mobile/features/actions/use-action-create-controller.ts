@@ -77,10 +77,14 @@ function isSection(value: unknown): value is Section {
   return typeof value === 'string' && SECTIONS.some((item) => item.id === value)
 }
 
+function normalizeOrganizerAccounts(value: string): string[] {
+  return splitTokens(value)
+}
+
 function normalizeOrganizerName(organizerType: MobileOrganizerType | null, organizerName: string, organizerAccounts: string): string {
   const trimmedName = organizerName.trim()
   if (organizerType === 'spontaneous') {
-    return trimmedName === SPONTANEOUS_PENDING_ORGANIZER_LABEL || organizerAccounts.trim()
+    return trimmedName === SPONTANEOUS_PENDING_ORGANIZER_LABEL || normalizeOrganizerAccounts(organizerAccounts).length > 0
       ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
       : ''
   }
@@ -263,7 +267,7 @@ function splitTokens(value: string): string[] {
 
 function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftPayload {
   const volunteersExpected = Math.max(1, Number(draft.participants) || 1)
-  const organizerAccounts = splitTokens(draft.coorganizers)
+  const organizerAccounts = normalizeOrganizerAccounts(draft.coorganizers)
   const enteredOrganizerName = draft.organizerName.trim()
   return {
     clientRequestId,
@@ -544,6 +548,10 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   const [clientRequestId, setClientRequestId] = useState(() => createLocalIdentifier('action-create'))
   const [actionId, setActionId] = useState<string | null>(null)
   const [published, setPublished] = useState(false)
+  const autoPendingOrganizerRef = useRef(false)
+  useLayoutEffect(() => {
+    autoPendingOrganizerRef.current = false
+  }, [ownerId])
   const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId, sessionRef })
   const ownerHydrated = Boolean(ownerId && persistence.draftHydrated && persistence.hydratedOwnerId === ownerId)
   const ownerSessionRef = useRef({ ownerId: null as string | null, hydrated: false })
@@ -587,12 +595,32 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   }
 
   const update = (key: keyof Draft, value: string) => {
-    if (ownerHydrated) setDraft((current) => ({ ...current, [key]: value }))
+    if (!ownerHydrated) return
+    setDraft((current) => {
+      if (key === 'organizerName') {
+        autoPendingOrganizerRef.current = false
+        return { ...current, [key]: value }
+      }
+      if (key === 'coorganizers') {
+        const hasOrganizerAccounts = normalizeOrganizerAccounts(value).length > 0
+        const clearImplicitPending = current.organizerType === 'spontaneous'
+          && !hasOrganizerAccounts
+          && autoPendingOrganizerRef.current
+          && current.organizerName.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL
+        if (clearImplicitPending) {
+          autoPendingOrganizerRef.current = false
+          return { ...current, coorganizers: value, organizerName: '' }
+        }
+      }
+      return { ...current, [key]: value }
+    })
   }
   const updateOrganizerType = (organizerType: MobileOrganizerType) => {
     if (ownerHydrated) {
       setDraft((current) => {
         if (current.organizerType === organizerType) return current
+        const hasOrganizerAccounts = normalizeOrganizerAccounts(current.coorganizers).length > 0
+        autoPendingOrganizerRef.current = organizerType === 'spontaneous' && hasOrganizerAccounts
         return {
           ...current,
           organizerType,
