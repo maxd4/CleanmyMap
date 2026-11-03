@@ -54,6 +54,33 @@ describe("ActionStepHarvest compact modes", () => {
     expect(html).not.toContain("Référence moyenne");
   });
 
+  it("exposes exact mass entry in the essentials variant without rewriting a historical value", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.wasteKg = "12345.6";
+    const html = renderToStaticMarkup(
+      React.createElement(ActionStepHarvest, {
+        mode: "essentials",
+        form,
+        updateField: () => undefined,
+        updateFields: () => undefined,
+        recordType: "action",
+        photoAssets: [],
+        visionEstimate: null,
+        visionStatus: "idle",
+        photoError: null,
+        estimatedWasteKgInterval: null,
+        onPhotoUpload: () => undefined,
+        onPhotoReplace: () => undefined,
+        onRemovePhoto: () => undefined,
+        onClearPhotos: () => undefined,
+        validationIssues: [],
+      } as ComponentProps<typeof ActionStepHarvest>),
+    );
+
+    expect(html).toContain('id="harvest-waste-kg-exact"');
+    expect(html).toContain('value="12345.6"');
+  });
+
   it("keeps secondary harvest controls out of the always-visible mode", () => {
     const html = renderHarvest("details");
 

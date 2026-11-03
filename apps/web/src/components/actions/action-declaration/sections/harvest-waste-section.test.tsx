@@ -46,6 +46,8 @@ describe("HarvestWasteSection visual order", () => {
     expect(markup.indexOf('data-testid="waste-measurement-visual"')).toBeLessThan(markup.indexOf('data-testid="harvest-waste-kg-slider-panel"'));
     expect(markup.indexOf('data-testid="harvest-waste-kg-slider-panel"')).toBeLessThan(markup.indexOf('data-testid="waste-comparison-visual"'));
     expect(markup.indexOf('data-testid="waste-comparison-visual"')).toBeLessThan(markup.indexOf("Méthode de mesure"));
+    expect(markup).toContain('id="harvest-waste-kg-exact"');
+    expect(markup).toContain('Saisie exacte (kg)');
   });
 });
 

@@ -103,6 +103,60 @@ describe("HarvestMeasurementSlider", () => {
     expect(onChange).toHaveBeenCalledWith("2501");
   });
 
+  it("supports exact absence, zero, positive and cleared mass transitions", () => {
+    const exactProps = {
+      exactInputId: "waste-exact",
+      exactInputLabel: "Saisie exacte (kg)",
+      exactInputMode: "decimal",
+    } as const;
+
+    const positiveTransition = renderSlider({ value: "", ...exactProps });
+    const positiveInput = container.querySelector("#waste-exact") as HTMLInputElement;
+    const positiveSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(positiveInput), "value")?.set;
+    act(() => {
+      positiveSetter?.call(positiveInput, "12.3");
+      positiveInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(positiveTransition.onChange).toHaveBeenCalledWith("12.3");
+
+    act(() => root.unmount());
+    const zeroTransition = renderSlider({ value: "", ...exactProps });
+    const zeroInput = container.querySelector("#waste-exact") as HTMLInputElement;
+    const zeroSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(zeroInput), "value")?.set;
+    act(() => {
+      zeroSetter?.call(zeroInput, "0");
+      zeroInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(zeroTransition.onChange).toHaveBeenCalledWith("0");
+
+    act(() => root.unmount());
+    const clearTransition = renderSlider({ value: "12.3", ...exactProps });
+    const clearInput = container.querySelector("#waste-exact") as HTMLInputElement;
+    const clearSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(clearInput), "value")?.set;
+    act(() => {
+      clearSetter?.call(clearInput, "");
+      clearInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(clearTransition.onChange).toHaveBeenCalledWith("");
+  });
+
+  it("keeps an elevated historical value available in the exact input", () => {
+    renderSlider({
+      value: "12345.6",
+      absoluteMax: 20_000,
+      exactInputId: "waste-exact",
+      exactInputLabel: "Saisie exacte (kg)",
+      exactInputMode: "decimal",
+    });
+
+    const exact = container.querySelector("#waste-exact") as HTMLInputElement;
+    const slider = container.querySelector("#measurement-slider") as HTMLInputElement;
+
+    expect(exact.value).toBe("12345.6");
+    expect(slider.value).toBe("12345.6");
+    expect(slider.getAttribute("max")).toBe("12360");
+  });
+
   it("renders a multi-lot total as a non-editable range", () => {
     const { slider, onChange } = renderSlider({
       value: "7000",

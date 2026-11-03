@@ -62,6 +62,9 @@ function HarvestEssentials({
     <div className="grid gap-3 lg:grid-cols-3">
       <HarvestMeasurementSlider
         id="harvest-waste-kg"
+        exactInputId="harvest-waste-kg-exact"
+        exactInputLabel="Saisie exacte (kg)"
+        exactInputMode="decimal"
         label="Masse collectée"
         value={form.wasteKg}
         initialMax={HARVEST_WASTE_SLIDER_INITIAL_MAX_KG}
