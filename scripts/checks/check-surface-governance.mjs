@@ -64,7 +64,7 @@ const documentedSpecializedSurfaceOverrides = new Map([
   ["apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx", "feedback questionnaire surface"],
   ["apps/web/src/components/sections/rubriques/gamification/gamification-catalog-panel.tsx", "gamification feedback CTA"],
   ["apps/web/src/components/sections/rubriques/open-data-section.tsx", "open-data API CTA"],
-  ["apps/web/src/components/sections/rubriques/weather-section.conditions.guidance.tsx", "weather safety guidance surface"],
+  ["apps/web/src/components/sections/rubriques/weather/weather-section.conditions.guidance.tsx", "weather safety guidance surface"],
 ]);
 
 function collectStaticClassTexts(expression, texts = []) {

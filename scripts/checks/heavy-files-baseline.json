@@ -251,7 +251,7 @@
       "maxBytes": 7587
     },
     {
-      "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
+      "path": "apps/web/src/components/sections/rubriques/weather/weather-section.conditions.tsx",
       "kind": "runtime",
       "status": "IMPROVED",
       "reviewedRef": "a5ec600adc31c4b09e33aa5eefaa0196391eb6f7",

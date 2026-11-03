@@ -9,7 +9,7 @@ export const LEGACY_MODAL_ALLOWLIST = new Set([
 
 const MIGRATED_CONSUMERS = new Map([
   [
-    "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section-dialog.tsx",
+    "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section-dialog.tsx",
     ["@/components/ui/cmm-dialog", "<CmmDialog", "initialFocusRef={confirmButtonRef}"],
   ],
   [
