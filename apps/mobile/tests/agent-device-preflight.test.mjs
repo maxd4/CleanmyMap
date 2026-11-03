@@ -34,6 +34,18 @@ test('returns READY_TO_BOOT when an emulator and an AVD are available', () => {
   assert.equal(result.next, 'agent-device boot --platform android --device cleanmymap-api-36')
 })
 
+test('prefers READY when a physical device is connected alongside a bootable emulator', () => {
+  const result = evaluatePreflight({
+    ...readyBase,
+    hasEmulator: true,
+    avds: ['cleanmymap-api-36'],
+    devices: ['R58M123456A'],
+  })
+
+  assert.equal(result.status, 'READY')
+  assert.equal(result.next, null)
+})
+
 test('returns BLOCKED when no Android target can be used', () => {
   const result = evaluatePreflight({
     ...readyBase,
@@ -57,4 +69,17 @@ test('keeps indispensable dependency failures BLOCKED even with a connected devi
 
   assert.equal(result.status, 'BLOCKED')
   assert.match(result.missing.join('\n'), /agent-device absent/)
+})
+
+test('keeps ADB indispensable even when a device identifier is supplied', () => {
+  const result = evaluatePreflight({
+    ...readyBase,
+    hasAdb: false,
+    hasEmulator: false,
+    avds: [],
+    devices: ['R58M123456A'],
+  })
+
+  assert.equal(result.status, 'BLOCKED')
+  assert.match(result.missing.join('\n'), /adb absent/)
 })
