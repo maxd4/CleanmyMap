@@ -436,3 +436,11 @@ test("manual invocation keeps the documented fallback visible", () => {
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=HEAD --candidate-range=remote-main-sha...HEAD");
   assertNoCommand(result.log, "npm run lint");
 });
+
+test("coverage publication receives changed files as a JSON array", () => {
+  assert.match(
+    GUARD_SOURCE,
+    /ConvertTo-Json -InputObject @\(\$ChangedFiles \| Sort-Object -Unique\) -Compress/,
+  );
+  assert.doesNotMatch(GUARD_SOURCE, /@\(\$ChangedFiles \| Sort-Object -Unique\) \| ConvertTo-Json/);
+});

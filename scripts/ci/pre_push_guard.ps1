@@ -476,7 +476,7 @@ function Invoke-GuardStep {
 
         $changedFilesFile = [System.IO.Path]::GetTempFileName()
         try {
-            @($ChangedFiles | Sort-Object -Unique) | ConvertTo-Json -Compress | Set-Content -LiteralPath $changedFilesFile -Encoding utf8
+            ConvertTo-Json -InputObject @($ChangedFiles | Sort-Object -Unique) -Compress | Set-Content -LiteralPath $changedFilesFile -Encoding utf8
             $coverageArguments = @(
                 "scripts/ci/coverage-publication.mjs",
                 "--candidate-ref=$CandidateRef",
