@@ -350,6 +350,37 @@ suivre `migration list --linked`, `db push --dry-run`, puis
 les validations PostgreSQL de 0008, 0009 et des versions suivantes doivent
 être rapportées séparément des contrôles statiques.
 
+## Exception syntaxique bornée — `20261103000003`
+
+Une exception strictement limitée est acceptée pour la migration
+`20261103000003_territorial_legend_rewards.sql`. Une lecture seule de
+`npx supabase migration list --linked`, effectuée avant ce lot sur le projet
+Supabase canonique `trktzkgujgpgsgkoyndn`, montre que l'historique distant
+s'arrête à `20261103000002` : `20261103000003` n'a jamais été enregistrée.
+La définition publiée ne pouvait pas être rejouée car la table des détentions
+déclarait deux fois `updated_at` et la table des preuves ne déclarait pas la
+colonne utilisée par la RPC d'invalidation.
+
+La réparation de `00003` est bornée à ces deux définitions de table. Elle ne
+modifie ni les données, ni les RLS, ni les grants, ni les signatures ou la
+sémantique métier des RPC. Le contrat JSON et le décodage des gagnants sont
+portés séparément, en migration forward-only, par
+`20261103000004_territorial_legend_rewards_contract.sql`.
+
+Les empreintes SHA-256 UTF-8 du fichier complet sont conservées pour le garde
+d'immutabilité :
+
+```text
+20261103000003_BEFORE_HASH: c69e9b3b6592fe3271ae5f297205fc675094f82385d5b1aeb33587620800709b
+20261103000003_AFTER_HASH:  2d3659ad43e30688ad4e09a601e976bae9f6566dc02dc8aadfdbf72a17906192
+```
+
+Cette exception n'autorise ni `supabase migration repair`, ni DDL manuelle,
+ni application distante implicite. La convergence doit être vérifiée par
+`migration list --linked`, `db push --dry-run`, puis une preuve PostgreSQL
+éphémère de reconstruction et de contrat RPC. Aucune mutation du projet lié
+n'a été effectuée pour établir cette preuve.
+
 ## Opérations temporaires de benchmark
 
 Une activation ou désactivation temporaire d'extension réalisée pour un

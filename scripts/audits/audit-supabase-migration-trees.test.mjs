@@ -170,6 +170,13 @@ it("approves only the bounded 0008 syntax-repair hash", () => {
   assert.doesNotMatch(source, /0e2abd25c59534d9c2ba9ea727c5921d4a140fa638e1699ec2530a93eef9cfff/);
 });
 
+it("approves only the bounded pre-application territorial rewards repair", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.match(source, /20261103000003_territorial_legend_rewards\.sql/);
+  assert.match(source, /2d3659ad43e30688ad4e09a601e976bae9f6566dc02dc8aadfdbf72a17906192/);
+  assert.doesNotMatch(source, /c69e9b3b6592fe3271ae5f297205fc675094f82385d5b1aeb33587620800709b/);
+});
+
 it("normalizes Buffer and UTF-8 string contents before comparing migrations", () => {
   const name = "20260101000000_published.sql";
   assert.deepEqual(

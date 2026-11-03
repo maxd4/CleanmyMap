@@ -38,6 +38,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/public-impact-waste-coverage.pgtap.sql",
     "apps/web/supabase/tests/quiz-progression-rpc-boundary.pgtap.sql",
     "apps/web/supabase/tests/scientific-projection-volume-lot-reconciliation.pgtap.sql",
+    "apps/web/supabase/tests/territorial-legend-rewards-contract.pgtap.sql",
     "apps/web/supabase/tests/user-data-boundaries.pgtap.sql",
   ]);
   assert.equal(inventory.contracts.length, 10);

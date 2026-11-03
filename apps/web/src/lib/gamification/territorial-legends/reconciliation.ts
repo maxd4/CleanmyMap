@@ -28,6 +28,20 @@ function nonNegativeInteger(value: unknown): number {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
 }
 
+function serializeWinnerSnapshots(winners: TerritorialLegendWinnerSnapshot[]) {
+  return winners.map((winner) => ({
+    user_id: winner.userId,
+    level: winner.level,
+    territory_code: winner.territoryCode,
+    territory_label: winner.territoryLabel,
+    effective_on: winner.effectiveOn,
+    score: winner.score,
+    rank: winner.rank,
+    tie_size: winner.tieSize,
+    source_fingerprint: winner.sourceFingerprint,
+  }));
+}
+
 export async function reconcileTerritorialLegendSnapshot(
   supabase: SupabaseClient,
   now = new Date(),
@@ -37,7 +51,7 @@ export async function reconcileTerritorialLegendSnapshot(
   const winners = buildTerritorialLegendWinnerSnapshots({ ...facts, now });
   const result = await supabase.rpc("reconcile_territorial_legend_snapshot", {
     p_effective_on: effectiveOn,
-    p_winners: winners,
+    p_winners: serializeWinnerSnapshots(winners),
   });
   if (result.error) throw new Error(result.error.message);
   const payload = result.data as {

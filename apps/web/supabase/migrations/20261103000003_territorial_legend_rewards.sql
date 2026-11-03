@@ -1,3 +1,7 @@
+-- BOUNDED PRE-APPLICATION REPAIR: this migration was published but is absent
+-- from the linked migration history. The repair only makes its table
+-- definitions executable; the RPC contract correction is forward-only in
+-- 20261103000004_territorial_legend_rewards_contract.sql.
 -- PURPOSE: Persist only territorial legend hold periods and award proofs, then
 --          reconcile them into the existing progression_events BADGE_ONLY ledger.
 -- CALLER: server-side daily/event reconciliation with service_role only.
@@ -20,7 +24,6 @@ create table if not exists public.territorial_legend_hold_periods (
   validity_status text not null default 'active' check (validity_status in ('active', 'closed', 'invalidated')),
   source_fingerprint text not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (last_verified_on >= started_on),
   check (ended_on is null or ended_on >= started_on),
@@ -53,6 +56,7 @@ create table if not exists public.territorial_legend_award_proofs (
   validity_status text not null default 'active' check (validity_status in ('active', 'invalidated')),
   source_fingerprint text not null,
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   check ((award_kind = 'conquest' and threshold_days = 0) or (award_kind = 'longevity' and threshold_days in (7, 30, 90, 180, 365, 730))),
   check (held_through_on >= hold_started_on),
   check (valid_until is null or valid_until >= valid_from)

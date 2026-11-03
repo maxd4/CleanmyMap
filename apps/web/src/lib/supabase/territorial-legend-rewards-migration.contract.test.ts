@@ -5,6 +5,14 @@ const migration = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const contractMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261103000004_territorial_legend_rewards_contract.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
+const migrationSource = readFileSync(
+  new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
+  "utf8",
+);
 
 describe("territorial legend rewards migration", () => {
   it("persists only reconstructible holds and award proofs", () => {
@@ -14,6 +22,10 @@ describe("territorial legend rewards migration", () => {
     expect(migration).toContain("territorial_legend_award_identity");
     expect(migration).toContain("hold_period_id bigint not null references public.territorial_legend_hold_periods(id)");
     expect(migration).toContain("validity_status in ('active', 'closed', 'invalidated')");
+    const holdDefinition = migrationSource.match(/create table if not exists public\.territorial_legend_hold_periods \(([\s\S]*?)\n\);/)?.[1];
+    expect(holdDefinition).toBeDefined();
+    expect(holdDefinition?.match(/\bupdated_at\s+timestamptz\b/g)).toHaveLength(1);
+    expect(migrationSource).toMatch(/create table if not exists public\.territorial_legend_award_proofs[\s\S]*?updated_at timestamptz not null default now\(\)/);
   });
 
   it("protects the snapshot RPC with service_role, a daily lock and no-fictitious-gap closure", () => {
@@ -34,5 +46,17 @@ describe("territorial legend rewards migration", () => {
     expect(migration).not.toContain("points_ledger");
     expect(migration).not.toContain("xp_awarded integer not null default 1");
     expect(migration).not.toContain("apply_gamification_reconciliation");
+  });
+
+  it("keeps the published syntax repair bounded and moves the JSON contract forward", () => {
+    expect(migration).toContain("BOUNDED PRE-APPLICATION REPAIR");
+    expect(contractMigration).toContain("alter table if exists public.territorial_legend_award_proofs");
+    expect(contractMigration).toContain("add column if not exists updated_at timestamptz not null default now()");
+    expect(contractMigration).toContain("jsonb_typeof(coalesce(p_winners, '[]'::jsonb)) <> 'array'");
+    expect(contractMigration).toContain("item ->> 'user_id'");
+    expect(contractMigration).toContain("item ->> 'territory_code'");
+    expect(contractMigration).toContain("user_id text");
+    expect(contractMigration).toContain("source_fingerprint text");
+    expect(contractMigration).not.toContain("item ->> 'userId'");
   });
 });
