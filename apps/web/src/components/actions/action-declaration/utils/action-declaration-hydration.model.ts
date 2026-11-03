@@ -123,7 +123,10 @@ function buildParticipationFields(action: ActionEditorRecord): Partial<FormState
       action.volunteerParticipation?.retiredCount == null
         ? ""
         : String(action.volunteerParticipation.retiredCount),
-    durationMinutes: String(action.durationMinutes),
+    durationMinutes:
+      action.preparationData?.durationMinutesDeclared === false
+        ? ""
+        : String(action.durationMinutes),
   };
 }
 
@@ -225,6 +228,7 @@ function applyDerivedHydrationFields(
     form.routeTargetDistanceKm = String(
       resolveRouteTargetDistance({
         durationMinutes: action.durationMinutes,
+        durationMinutesDeclared: action.preparationData?.durationMinutesDeclared,
         routeTargetDistanceSource: "derived",
       }).distanceKm,
     );

@@ -62,6 +62,7 @@ describe("action declaration payload données de préparation", () => {
 
     expect(absentPayload.durationMinutes).toBe(0);
     expect(absentPayload.preparationData?.durationMinutesDeclared).toBe(false);
+    expect(absentPayload.preparationData?.routeTargetDistanceKm).toBe(1);
 
     form.durationMinutes = "0";
     const explicitZeroPayload = buildCreateActionPayload({
@@ -76,6 +77,7 @@ describe("action declaration payload données de préparation", () => {
 
     expect(explicitZeroPayload.durationMinutes).toBe(0);
     expect(explicitZeroPayload.preparationData?.durationMinutesDeclared).toBe(true);
+    expect(explicitZeroPayload.preparationData?.routeTargetDistanceKm).toBe(0);
   });
 
   it("stores canonical waste expectations without persisting derived guidance", () => {

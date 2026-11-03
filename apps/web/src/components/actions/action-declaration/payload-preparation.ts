@@ -257,10 +257,12 @@ function buildHydratedTimingFields(
     meetingTime: form.meetingTime.trim() || preparationData.meetingTime || "",
     departureTime: form.departureTime.trim() || preparationData.departureTime || "",
     durationMinutes:
-      form.durationMinutes.trim() ||
-      (typeof preparationData.estimatedDurationMinutes === "number"
-        ? String(preparationData.estimatedDurationMinutes)
-        : ""),
+      preparationData.durationMinutesDeclared === false
+        ? ""
+        : form.durationMinutes.trim() ||
+          (typeof preparationData.estimatedDurationMinutes === "number"
+            ? String(preparationData.estimatedDurationMinutes)
+            : ""),
     routeTargetDistanceKm: String(resolvedTarget.distanceKm),
     routeTargetDistanceKmManuallySet: resolvedTarget.source === "manual",
   };
@@ -362,8 +364,8 @@ export function applyPreparationDataToForm(
   });
 
   const resolvedTarget = resolveRouteTargetDistance({
-    durationMinutes:
-      form.durationMinutes.trim() || preparationData.estimatedDurationMinutes,
+    durationMinutes: form.durationMinutes.trim() || preparationData.estimatedDurationMinutes,
+    durationMinutesDeclared: preparationData.durationMinutesDeclared,
     routeTargetDistanceKm: preparationData.routeTargetDistanceKm,
     routeTargetDistanceSource: preparationData.routeTargetDistanceSource,
   });

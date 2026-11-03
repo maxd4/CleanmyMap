@@ -105,4 +105,18 @@ describe("action context create persistence contract", () => {
       school_context_confirmed: null,
     });
   });
+
+  it("keeps an absent duration distinct from the SQL compatibility zero", () => {
+    const row = buildRow(buildPayload({
+      durationMinutes: 0,
+      preparationData: { durationMinutesDeclared: false },
+    }));
+
+    expect(row.duration_minutes).toBe(0);
+    expect(row.preparation_data).toMatchObject({
+      durationMinutesDeclared: false,
+      routeTargetDistanceKm: 1,
+      routeTargetDistanceSource: "derived",
+    });
+  });
 });

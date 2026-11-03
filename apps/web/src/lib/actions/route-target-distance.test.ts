@@ -2,11 +2,22 @@ import { describe, expect, it } from "vitest";
 import {
   CURRENT_ROUTE_DISTANCE_POLICY,
   CURRENT_ROUTE_DISTANCE_POLICY_VERSION,
+  deriveRouteTargetDistanceKm,
   resolveRouteTargetDistance,
   resolveRouteTargetDistanceFromPreparationData,
 } from "./route-target-distance";
 
 describe("route target distance policy", () => {
+  it.each([
+    ["", 1],
+    [undefined, 1],
+    [null, 1],
+    ["0", 0],
+    ["60", 1],
+  ] as const)("distinguishes an absent duration from an explicit zero (%s)", (durationMinutes, distanceKm) => {
+    expect(deriveRouteTargetDistanceKm(durationMinutes)).toBe(distanceKm);
+  });
+
   it("resolves 60 minutes to 1 km with route-distance-v1", () => {
     expect(
       resolveRouteTargetDistance({ durationMinutes: 60 }),

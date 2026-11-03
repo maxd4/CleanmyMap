@@ -6,6 +6,7 @@ import {
 } from "./payload";
 import { deriveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
 import { buildBaseForm } from "./payload.test-fixtures";
+import { prepareActionDeclarationFormUpdate } from "./hooks/action-declaration-form-geometry";
 
 describe("action declaration payload temporalité", () => {
   it("derives an editable route target from duration and ignores legacy unproven values", () => {
@@ -20,6 +21,13 @@ describe("action declaration payload temporalité", () => {
 
     expect(prepared.routeTargetDistanceKm).toBe("1.5");
     expect(prepared.routeTargetDistanceKmManuallySet).toBe(false);
+
+    const absent = applyPreparationDataToForm(createInitialFormState("Alice", "action"), {
+      durationMinutesDeclared: false,
+      estimatedDurationMinutes: 90,
+    });
+    expect(absent.durationMinutes).toBe("");
+    expect(absent.routeTargetDistanceKm).toBe("1");
   });
 
   it("prefills empty temporal fields from a planner but never overwrites entered values", () => {
@@ -78,6 +86,20 @@ describe("action declaration payload temporalité", () => {
     expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.5);
     expect(payload.preparationData?.routeTargetDistanceSource).toBe("derived");
     expect(payload.preparationData?.routeTargetDistancePolicyVersion).toBe("route-distance-v1");
+  });
+
+  it("recalculates the displayed target to the fallback when duration is erased", () => {
+    const form = createInitialFormState("Alice", "action");
+    form.durationMinutes = "60";
+    form.routeTargetDistanceKm = "1";
+
+    const erased = prepareActionDeclarationFormUpdate(form, { durationMinutes: "" });
+    const explicitZero = prepareActionDeclarationFormUpdate(form, { durationMinutes: "0" });
+
+    expect(erased.nextForm.durationMinutes).toBe("");
+    expect(erased.nextForm.routeTargetDistanceKm).toBe("1");
+    expect(explicitZero.nextForm.durationMinutes).toBe("0");
+    expect(explicitZero.nextForm.routeTargetDistanceKm).toBe("0");
   });
 
   it("persists a manual target without a policy version", () => {

@@ -20,12 +20,19 @@ export type ResolvedRouteTargetDistance = {
   policyVersion?: string;
 };
 
+export function resolveDurationMinutesForCalculation(
+  durationMinutes: number | string | null | undefined,
+  durationMinutesDeclared?: boolean,
+): number | string | null | undefined {
+  return durationMinutesDeclared === false ? undefined : durationMinutes;
+}
+
 export function deriveRouteTargetDistanceKm(
   durationMinutes: number | string | null | undefined,
   policy: RouteDistancePolicy = CURRENT_ROUTE_DISTANCE_POLICY,
 ): number {
   const duration = typeof durationMinutes === "string"
-    ? Number(durationMinutes)
+    ? durationMinutes.trim() === "" ? undefined : Number(durationMinutes)
     : durationMinutes;
   if (typeof duration !== "number" || !Number.isFinite(duration)) {
     return DEFAULT_ROUTE_TARGET_DISTANCE_KM;
@@ -45,6 +52,7 @@ function normalizeRouteTargetDistanceKm(
 
 export function resolveRouteTargetDistance(params: {
   durationMinutes: number | string | null | undefined;
+  durationMinutesDeclared?: boolean;
   routeTargetDistanceKm?: number | string | null;
   routeTargetDistanceSource?: RouteTargetDistanceSource | null;
   policy?: RouteDistancePolicy;
@@ -61,7 +69,10 @@ export function resolveRouteTargetDistance(params: {
   }
 
   return {
-    distanceKm: deriveRouteTargetDistanceKm(params.durationMinutes, policy),
+    distanceKm: deriveRouteTargetDistanceKm(
+      resolveDurationMinutesForCalculation(params.durationMinutes, params.durationMinutesDeclared),
+      policy,
+    ),
     source: "derived",
     policyVersion: policy.version,
   };
@@ -71,12 +82,13 @@ export function resolveRouteTargetDistanceFromPreparationData(params: {
   durationMinutes: number | string | null | undefined;
   preparationData?: Pick<
     ActionPreparationData,
-    "routeTargetDistanceKm" | "routeTargetDistanceSource"
+    "durationMinutesDeclared" | "routeTargetDistanceKm" | "routeTargetDistanceSource"
   > | null;
   policy?: RouteDistancePolicy;
 }): ResolvedRouteTargetDistance {
   return resolveRouteTargetDistance({
     durationMinutes: params.durationMinutes,
+    durationMinutesDeclared: params.preparationData?.durationMinutesDeclared,
     routeTargetDistanceKm: params.preparationData?.routeTargetDistanceKm,
     routeTargetDistanceSource: params.preparationData?.routeTargetDistanceSource,
     policy: params.policy,

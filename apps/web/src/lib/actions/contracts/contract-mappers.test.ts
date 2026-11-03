@@ -190,6 +190,43 @@ describe("canonical department attribution", () => {
     expect(row).toEqual(before);
   });
 
+  it("rebases an absent duration from the declaration marker, not the SQL zero", () => {
+    const row = buildRow({
+      duration_minutes: 0,
+      preparation_data: { durationMinutesDeclared: false },
+    });
+    const before = structuredClone(row);
+    const editor = buildActionEditorPayload(row as never);
+
+    expect(editor?.preparationData).toMatchObject({
+      durationMinutesDeclared: false,
+      routeTargetDistanceKm: 1,
+      routeTargetDistanceSource: "derived",
+    });
+    expect(toActionContract(row as never).metadata).toMatchObject({
+      durationMinutes: 0,
+      preparationData: {
+        durationMinutesDeclared: false,
+        routeTargetDistanceKm: 1,
+        routeTargetDistanceSource: "derived",
+      },
+    });
+    expect(row).toEqual(before);
+
+    const manual = buildActionEditorPayload(buildRow({
+      duration_minutes: 0,
+      preparation_data: {
+        durationMinutesDeclared: false,
+        routeTargetDistanceKm: 2.25,
+        routeTargetDistanceSource: "manual",
+      },
+    }) as never);
+    expect(manual?.preparationData).toMatchObject({
+      routeTargetDistanceKm: 2.25,
+      routeTargetDistanceSource: "manual",
+    });
+  });
+
   it("keeps manual targets and GPX observations unchanged during presentation rebasing", () => {
     const policy: RouteDistancePolicy = {
       version: "route-distance-v2",

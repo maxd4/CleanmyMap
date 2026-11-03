@@ -33,6 +33,7 @@ function buildPhaseAndPreparationFields(
     const nextPreparationData = normalizeActionPreparationData(body.preparationData ?? {});
     const resolvedTarget = resolveRouteTargetDistance({
       durationMinutes: body.durationMinutes ?? current.duration_minutes,
+      durationMinutesDeclared: nextPreparationData.durationMinutesDeclared,
       routeTargetDistanceKm: nextPreparationData.routeTargetDistanceKm,
       routeTargetDistanceSource: nextPreparationData.routeTargetDistanceSource,
     });

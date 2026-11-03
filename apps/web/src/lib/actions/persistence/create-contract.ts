@@ -224,6 +224,7 @@ function resolveInsertPreparationData(
     : normalizeActiveRoutePreparationData(inputPreparation, activeGeometry, recordType, routeTopology);
   const resolvedTarget = routeTopology === undefined ? null : resolveRouteTargetDistance({
     durationMinutes: params.payload.durationMinutes,
+    durationMinutesDeclared: normalized.durationMinutesDeclared,
     routeTargetDistanceKm: normalized.routeTargetDistanceKm ?? params.payload.routeTargetDistanceKm,
     routeTargetDistanceSource: normalized.routeTargetDistanceSource,
   });

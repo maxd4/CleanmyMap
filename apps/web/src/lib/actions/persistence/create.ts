@@ -315,6 +315,7 @@ async function resolveCreateActionPersistenceContext(
   };
   const resolvedTarget = routeTopology === undefined ? null : resolveRouteTargetDistance({
     durationMinutes: payload.durationMinutes,
+    durationMinutesDeclared: payload.preparationData?.durationMinutesDeclared,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
     routeTargetDistanceSource: payload.preparationData?.routeTargetDistanceSource,
   });

@@ -142,6 +142,60 @@ describe("action declaration hydration model", () => {
     expect(result.form.routeTargetDistanceKmManuallySet).toBe(false);
   });
 
+  it("rehydrates an absent duration as empty and keeps the default derived target", () => {
+    const result = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        durationMinutes: 0,
+        preparationData: { durationMinutesDeclared: false },
+      }),
+    );
+
+    expect(result.durationMinutes).toBe("");
+    expect(result.routeTargetDistanceKm).toBe("1");
+  });
+
+  it("keeps explicit zero, positive durations, historical compatibility and manual targets", () => {
+    const explicitZero = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        durationMinutes: 0,
+        preparationData: { durationMinutesDeclared: true },
+      }),
+    );
+    const positive = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        durationMinutes: 60,
+        preparationData: { durationMinutesDeclared: true },
+      }),
+    );
+    const historical = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({ durationMinutes: 0, preparationData: null }),
+    );
+    const manual = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        durationMinutes: 0,
+        preparationData: {
+          durationMinutesDeclared: false,
+          routeTargetDistanceKm: 2.25,
+          routeTargetDistanceSource: "manual",
+        },
+      }),
+    );
+
+    expect(explicitZero.durationMinutes).toBe("0");
+    expect(explicitZero.routeTargetDistanceKm).toBe("0");
+    expect(positive.durationMinutes).toBe("60");
+    expect(positive.routeTargetDistanceKm).toBe("1");
+    expect(historical.durationMinutes).toBe("0");
+    expect(manual.durationMinutes).toBe("");
+    expect(manual.routeTargetDistanceKm).toBe("2.25");
+    expect(manual.routeTargetDistanceKmManuallySet).toBe(true);
+  });
+
   it("keeps a historical total readable without inferring categories", () => {
     const action = createEditorRecord({
       volunteersCount: 7,
