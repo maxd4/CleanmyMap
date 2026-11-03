@@ -15,6 +15,7 @@ import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
 import { PrivateActionAccessSection } from "./private-action-access-section";
+import { ACTION_FIELD_ROLE_OPTIONS, normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
 
 type IdentityAndSharingSectionProps = BaseSectionProps & {
   userMetadata: {
@@ -183,23 +184,24 @@ function AssociatedAccountsFields({
 
   return (
     <>
-      {form.organizerType && form.organizerType !== "spontaneous" ? (
-        <CmmDisclosure
-          summary={<ActionFormDisclosureSummary label="Organisateurs associés" detail={organizerAccountIds.length ? `${organizerAccountIds.length} organisateur${organizerAccountIds.length > 1 ? "s" : ""}` : undefined} />}
-          tone="emerald"
-          size="md"
-        >
-          <ActionParticipantPicker
-            currentUserId={currentUserId}
-            value={organizerAccountIds}
-            onChange={(next) => updateField("organizerAccounts", next.join(", "))}
-            endpoint="/api/actions/account-options"
-            title="Organisateurs associés"
-            description="Recherchez les autres comptes CleanMyMap autorisés à organiser cette action."
-          />
-        </CmmDisclosure>
-      ) : null}
-
+      <CmmDisclosure
+        summary={<ActionFormDisclosureSummary label="Organisateurs associés" detail={organizerAccountIds.length ? `${organizerAccountIds.length} organisateur${organizerAccountIds.length > 1 ? "s" : ""}` : undefined} />}
+        tone="emerald"
+        size="md"
+      >
+        <ActionParticipantPicker
+          currentUserId={currentUserId}
+          value={organizerAccountIds}
+          onChange={(next) => updateField("organizerAccounts", next.join(", "))}
+          endpoint="/api/actions/account-options"
+          title="Organisateurs associés"
+          description="Recherchez jusqu’à 20 comptes CleanMyMap. Leur sélection crée une relation d’organisateur, pas une présence terrain."
+          maxSelected={20}
+          roleOptions={ACTION_FIELD_ROLE_OPTIONS.filter(({ code }) => code !== "organizer_primary")}
+          roleSelections={form.fieldRoleSelections}
+          onRoleSelectionsChange={(next) => updateField("fieldRoleSelections", Object.fromEntries(Object.entries(next).map(([userId, roleCodes]) => [userId, normalizeActionFieldRoleCodes(roleCodes)])))}
+        />
+      </CmmDisclosure>
     </>
   );
 }

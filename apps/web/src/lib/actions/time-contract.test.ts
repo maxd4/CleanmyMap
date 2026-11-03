@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatBusinessDurationHoursMinutes,
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
   getTimeContractValidationIssues,
@@ -11,6 +12,16 @@ import {
 } from "./time-contract";
 
 describe("action temporal contract", () => {
+  it.each([
+    [0, "0 min"],
+    [15, "15 min"],
+    [120, "2 h"],
+    [135, "2 h 15"],
+    [undefined, "Durée non renseignée"],
+  ] as const)("formats %s as a user-facing duration", (minutes, expected) => {
+    expect(formatBusinessDurationHoursMinutes(minutes)).toBe(expected);
+  });
+
   it("derives a same-day event window", () => {
     expect(deriveEventDurationMinutes("09:15", "11:00")).toEqual({
       eventDurationMinutes: 105,

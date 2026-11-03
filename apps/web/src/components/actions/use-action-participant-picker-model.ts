@@ -47,10 +47,12 @@ export function useParticipantPickerModel({
   onChange,
   endpoint,
   includeCurrentUser,
+  maxSelected = 20,
   pickerRef,
 }: Pick<ParticipantPickerProps, "currentUserId" | "value" | "onChange"> & {
   endpoint: string;
   includeCurrentUser: boolean;
+  maxSelected?: number;
   pickerRef: RefObject<HTMLElement | null>;
 }) {
   const searchInputId = useId();
@@ -135,7 +137,7 @@ export function useParticipantPickerModel({
   }
 
   function addUser(user: ChatUserOption) {
-    const selection = appendParticipantId(selectedIds, user.id, currentUserId, includeCurrentUser);
+    const selection = appendParticipantId(selectedIds, user.id, currentUserId, includeCurrentUser, maxSelected);
     if (selection.message) {
       setMessage(selection.message);
       return;
@@ -153,7 +155,7 @@ export function useParticipantPickerModel({
   return {
     searchInputId, query, setQuery, results, selectedIds, selectedUsers,
     menuOpen, setMenuOpen, loading, requestMode, error, initialized, hasMore, nextOffset,
-    showHelp, setShowHelp, message, submitSearch, openMenu, loadMore, addUser, removeUser,
+    showHelp, setShowHelp, message, submitSearch, openMenu, loadMore, addUser, removeUser, maxSelected,
   };
 }
 

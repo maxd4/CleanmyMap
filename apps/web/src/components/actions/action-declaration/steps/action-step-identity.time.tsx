@@ -1,11 +1,13 @@
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
+  formatBusinessDurationHoursMinutes,
   formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
 import type { FormState } from "../model";
 import { Field, inputCls, compactInputCls } from "./action-step-identity.ui";
 import { Clock } from "lucide-react";
+import { ActionDurationSlider } from "../before/planned-action-schedule-fields";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -28,24 +30,7 @@ export function ActionTimeSection({
   });
 
   if (variant === "duration") {
-    return (
-      <div className="grid gap-3 md:grid-cols-2">
-        <label htmlFor="action-duration-minutes" className="space-y-1.5">
-          <span className="block text-xs font-semibold text-emerald-900/75">
-            Durée d’action (min)
-          </span>
-          <input
-            id="action-duration-minutes"
-            type="number"
-            min="1"
-            inputMode="numeric"
-            className={compactInputCls}
-            value={form.durationMinutes}
-            onChange={(event) => updateField("durationMinutes", event.target.value)}
-          />
-        </label>
-      </div>
-    );
+    return <ActionDurationSlider id="action-duration-minutes" value={form.durationMinutes} onChange={(value) => updateField("durationMinutes", value)} />;
   }
 
   if (variant === "time") {
@@ -84,20 +69,11 @@ export function ActionTimeSection({
 
   return (
     <div>
-      <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field icon={Clock}>
-          <input
-            type="number"
-            min="1"
-            placeholder="Temps d’action (min)"
-            className={inputCls}
-            value={form.durationMinutes}
-            onChange={(event) => updateField("durationMinutes", event.target.value)}
-          />
-        </Field>
+      <div className="mt-3 max-w-xl">
+        <ActionDurationSlider id="action-duration-minutes" value={form.durationMinutes} onChange={(value) => updateField("durationMinutes", value)} />
       </div>
       <p className="mt-2 max-w-xl text-xs leading-5 text-emerald-900/55">
-        Le temps d’action couvre la marche, le ramassage, le tri et la pesée, sans séparer ces étapes. La durée enregistrée reste précise ; affichage métier : {formatBusinessDurationMinutes(Number(form.durationMinutes))}.
+        Le temps d’action couvre la marche, le ramassage, le tri et la pesée, sans séparer ces étapes. La durée enregistrée reste précise ; affichage métier : {formatBusinessDurationHoursMinutes(form.durationMinutes.trim() ? Number(form.durationMinutes) : undefined)}.
       </p>
       <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
         <Field icon={Clock}>

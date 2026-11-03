@@ -82,8 +82,8 @@ describe("GET /api/actions/account-options", () => {
       offset: 0,
     });
     expect(body.users).toEqual([
-      { id: "user-1", display_name: "Alice Martin", handle: "alice" },
-      { id: "user-2", display_name: "bob", handle: "bob" },
+      { id: "user-1", display_name: "Alice Martin", handle: "alice", image_url: null },
+      { id: "user-2", display_name: "bob", handle: "bob", image_url: null },
     ]);
     expect(body.users?.[0]).not.toHaveProperty("lastActiveAt");
     expect(body.users?.[0]).not.toHaveProperty("primaryEmailAddress");

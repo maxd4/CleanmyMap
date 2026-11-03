@@ -116,6 +116,23 @@ describe("ActionStepIdentity", () => {
     }
   });
 
+  it("keeps the date slot and co-organizer picker stable across organizer types", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.actionDate = "2026-11-15";
+    form.organizerAccounts = "user-organizer";
+
+    const associationHtml = renderIdentity(form);
+    form.organizerType = "spontaneous";
+    const spontaneousHtml = renderIdentity(form);
+
+    for (const html of [associationHtml, spontaneousHtml]) {
+      expect(html).toContain('id="action-action-date"');
+      expect(html).toContain('value="2026-11-15"');
+      expect(html).toContain("Comptes coorganisateurs");
+      expect((html.match(/id="action-action-date"/g) ?? []).length).toBe(1);
+    }
+  });
+
   it("shows national structures without a false Paris location and keeps a legacy value readable", () => {
     const nationalEntry = ORGANIZER_DIRECTORY.find(
       (entry) => entry.organizerType === "association" && entry.geographicScope === "national",
@@ -186,7 +203,7 @@ describe("ActionStepIdentity", () => {
     expect(participantsHtml).not.toContain("Date de l’action");
 
     const durationHtml = renderIdentity(form, undefined, "duration");
-    expect(durationHtml).toContain("Durée d’action (min)");
+    expect(durationHtml).toContain("Durée estimée");
     expect(durationHtml).not.toContain("Rendez-vous · début");
 
     const timeHtml = renderIdentity(form, undefined, "time");

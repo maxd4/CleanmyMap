@@ -32,6 +32,7 @@ import type {
   ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import type { ActionFieldRoleCode } from "@/lib/actions/field-roles";
 
 export type FormState = {
  actorName: string;
@@ -43,6 +44,7 @@ export type FormState = {
   actionContext: ActionContext | "";
   schoolContextConfirmed: boolean;
  organizerAccounts: string;
+ fieldRoleSelections: Record<string, ActionFieldRoleCode[]>;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
  accessMode: ActionAccessMode;
@@ -163,6 +165,7 @@ export const initialState: FormState = {
  actionContext:"",
  schoolContextConfirmed: false,
  organizerAccounts:"",
+ fieldRoleSelections: {},
  participantAccounts:[],
  groupJoinEnabled: false,
  accessMode: "public",
@@ -231,6 +234,7 @@ export function createInitialFormState(
   ...initialState,
   actorName,
   recordType,
+  fieldRoleSelections: Object.fromEntries(Object.entries(initialState.fieldRoleSelections).map(([userId, roles]) => [userId, [...roles]])),
   suggestedMaterials: [...initialState.suggestedMaterials],
   equipmentInventory: { ...initialState.equipmentInventory },
   refreshmentsProvided: { ...initialState.refreshmentsProvided },

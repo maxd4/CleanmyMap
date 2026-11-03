@@ -22,7 +22,9 @@ import {
   normalizeSuggestedMaterials,
 } from "../../../lib/actions/preparation-contract";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
+import { normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
 import type { DeclarationMode } from "./types";
+import { parseOrganizerAccounts } from "./payload-identity";
 
 function buildPreparationRouteFields(
   form: FormState,
@@ -67,7 +69,7 @@ function buildPreparationLocationFields(
     actionDate: form.actionDate.trim() || undefined,
     meetingTime: form.meetingTime.trim() || undefined,
     departureTime: form.departureTime.trim() || undefined,
-    ...(includesRoute ? { durationMinutesDeclared: form.durationMinutes.trim() !== "" } : {}),
+    durationMinutesDeclared: form.durationMinutes.trim() !== "",
   };
 }
 
@@ -124,6 +126,22 @@ function buildPreparationParticipationFields(
   };
 }
 
+function buildFieldRoleIntentions(
+  form: FormState,
+): ActionPreparationData["fieldRoleIntentions"] {
+  const selectedOrganizerIds = new Set(parseOrganizerAccounts(form.organizerAccounts));
+  const intentions = Object.entries(form.fieldRoleSelections)
+    .filter(([userId]) => selectedOrganizerIds.has(userId))
+    .map(([userId, roleCodes]) => ({
+      userId,
+      roleCodes: normalizeActionFieldRoleCodes(roleCodes),
+      status: "pending" as const,
+    }))
+    .filter(({ roleCodes }) => roleCodes.length > 0)
+    .slice(0, 20);
+  return intentions.length > 0 ? intentions : undefined;
+}
+
 function buildPreparationContentFields(
   form: FormState,
 ) {
@@ -146,6 +164,7 @@ function buildPreparationContentFields(
     ...(equipmentInventory ? { equipmentInventory } : {}),
     ...(refreshmentsProvided ? { refreshmentsProvided } : {}),
     participantMessage: form.participantMessage.trim() || undefined,
+    fieldRoleIntentions: buildFieldRoleIntentions(form),
     logisticsNotes: form.logisticsNotes.trim() || undefined,
     preparationChecklist:
       form.preparationChecklist.length > 0 ? [...form.preparationChecklist] : undefined,
@@ -289,6 +308,12 @@ function buildHydratedParticipationFields(
   preparationData: ActionPreparationData,
 ) {
   const participation = preparationData.volunteerParticipation;
+  const fieldRoleSelections = Object.fromEntries(
+    (preparationData.fieldRoleIntentions ?? []).map((intention) => [
+      intention.userId,
+      normalizeActionFieldRoleCodes(intention.roleCodes),
+    ]),
+  );
   return {
     volunteersCount:
       typeof preparationData.volunteersExpected === "number"
@@ -320,6 +345,7 @@ function buildHydratedParticipationFields(
       typeof preparationData.schoolContextConfirmed === "boolean"
         ? preparationData.schoolContextConfirmed
         : form.schoolContextConfirmed,
+    fieldRoleSelections,
   };
 }
 

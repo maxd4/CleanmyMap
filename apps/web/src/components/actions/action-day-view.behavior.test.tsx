@@ -100,8 +100,19 @@ describe("ActionDayView behavior", () => {
     await harness.flush();
 
     expect(mounted.querySelector('[data-testid="action-day-view"]')?.textContent).toContain("Action action-b");
-    expect(mounted.textContent).toContain("Coordonnées non disponibles");
-    expect(mounted.querySelector('a[href*="openstreetmap"]')).toBeNull();
+    expect(mounted.querySelector('a[href*="google.com/maps"]')).toBeTruthy();
+    expect(mounted.querySelector('a[href*="waze.com"]')).toBeTruthy();
+  });
+
+  it("prioritizes the validated rendez-vous coordinates for navigation", async () => {
+    fetchBriefingMock.mockResolvedValueOnce(briefing("action-coordinates", {
+      meetingPoint: "Adresse persistée",
+      map: { latitude: 48.8566, longitude: 2.3522, geometrySource: "manual", hasGeometry: true },
+    }));
+    const mounted = mount("action-coordinates");
+    await harness.flush();
+    expect(mounted.querySelector('a[href*="destination=48.8566%2C2.3522"]')).toBeTruthy();
+    expect(mounted.querySelector('a[href*="ll=48.8566%2C2.3522"]')).toBeTruthy();
   });
 
   it("exposes a recoverable loading error and keeps clipboard failure local to the copy action", async () => {

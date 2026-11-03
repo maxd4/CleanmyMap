@@ -27,6 +27,7 @@ import type {
 import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { ActionContext, ActionContextSource } from "./action-context";
+import type { ActionFieldRoleCode } from "./field-roles";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type {
   OperationalRoute,
@@ -195,6 +196,8 @@ export type ActionPreparationData = {
   /** Explicit school confirmation is traceable without children identities. */
   schoolContextConfirmed?: boolean;
   groupJoinEnabled?: boolean;
+  /** User-selected role intentions; never an active assignment before confirmation. */
+  fieldRoleIntentions?: ActionFieldRoleIntention[];
   expectedWasteCategories?: WasteCategorySlug[];
   midRouteLocationLabel?: string;
   /** Canonical route topology; legacy payloads are normalized before persistence. */
@@ -257,6 +260,12 @@ export type ActionPreparationData = {
   routeNetworkDistanceKm?: number;
   routeGeometryMode?: RouteGeometryMode;
   routeGeometryProvider?: RouteGeometryProvider;
+};
+
+export type ActionFieldRoleIntention = {
+  userId: string;
+  roleCodes: ActionFieldRoleCode[];
+  status: "pending";
 };
 
 export type ActionPhotoAsset = {

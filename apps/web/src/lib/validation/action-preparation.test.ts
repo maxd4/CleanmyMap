@@ -144,6 +144,22 @@ describe("HTTP preparation data contract", () => {
     expect(createActionSchema.safeParse({ ...valid, preparationData: { refreshmentsProvided: { waterDuringAction: true, drinksAfterAction: false } } }).success).toBe(true);
   });
 
+  it("validates pending field-role intentions without turning them into assignments", () => {
+    const valid = { ...basePayload, preparationData: {} };
+    expect(createActionSchema.safeParse({
+      ...valid,
+      preparationData: {
+        fieldRoleIntentions: [{ userId: "user-1", roleCodes: ["coorganizer", "glass_bag_lead"], status: "pending" }],
+      },
+    }).success).toBe(true);
+    expect(createActionSchema.safeParse({
+      ...valid,
+      preparationData: {
+        fieldRoleIntentions: [{ userId: "user-1", roleCodes: ["not-a-role"], status: "pending" }],
+      },
+    }).success).toBe(false);
+  });
+
   it("keeps derived route targets versioned and manual targets unversioned", () => {
     const derivedWithoutPolicy = createActionSchema.safeParse({
       ...basePayload,

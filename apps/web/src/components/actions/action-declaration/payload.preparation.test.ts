@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCreateActionPayload, buildPreparationDataFromForm, createInitialFormState } from "./payload";
+import { applyPreparationDataToForm, buildCreateActionPayload, buildPreparationDataFromForm, createInitialFormState } from "./payload";
 import { buildBaseForm } from "./payload.test-fixtures";
 
 describe("action declaration payload données de préparation", () => {
@@ -94,5 +94,24 @@ describe("action declaration payload données de préparation", () => {
       checked: true,
     });
     expect(preparation.safetyInstructions).toBeUndefined();
+  });
+
+  it("round-trips pending field-role intentions only for selected organizer accounts", () => {
+    const form = buildBaseForm();
+    form.organizerAccounts = "user-organizer, user-second";
+    form.fieldRoleSelections = {
+      "user-organizer": ["coorganizer", "group_lead"],
+      "user-removed": ["glass_bag_lead"],
+    };
+
+    const preparation = buildPreparationDataFromForm(form);
+    expect(preparation.fieldRoleIntentions).toEqual([
+      { userId: "user-organizer", roleCodes: ["coorganizer", "group_lead"], status: "pending" },
+    ]);
+
+    const hydrated = applyPreparationDataToForm(createInitialFormState("Alice", "action"), preparation);
+    expect(hydrated.fieldRoleSelections).toEqual({
+      "user-organizer": ["coorganizer", "group_lead"],
+    });
   });
 });

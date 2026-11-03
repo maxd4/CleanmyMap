@@ -22,12 +22,14 @@ type ClerkUserForActionPicker = {
   firstName: string | null;
   lastName: string | null;
   username: string | null;
+  imageUrl?: string | null;
 };
 
 export type ActionAccountOption = {
   id: string;
   display_name: string;
   handle: string | null;
+  image_url: string | null;
 };
 
 function parseOffset(value: string | null): number {
@@ -54,6 +56,7 @@ function toActionAccountOption(user: ClerkUserForActionPicker): ActionAccountOpt
     id: user.id,
     display_name: displayName || user.username?.trim() || user.id,
     handle: user.username?.trim().replace(/^@+/, "") || null,
+    image_url: user.imageUrl?.trim() || null,
   };
 }
 

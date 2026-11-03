@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import type { ActionLocationCoordinates } from "@/lib/actions/types";
 import type { GeoAddressSuggestion } from "@/lib/geo/address-suggestions";
+import { parseActionCoordinateInput } from "../action-coordinate-input";
 import {
   getAddressSuggestionHighlightIndex,
   getLocalGeoAddressSuggestions,
@@ -65,7 +66,7 @@ export function useActionAddressAutocomplete({ value, onChange }: UseActionAddre
     closeSuggestions();
   };
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.value);
+    onChange(event.target.value, parseActionCoordinateInput(event.target.value));
     setIsOpen(true);
     setHighlightedIndex(0);
     if (event.target.value.trim().length < 3) {

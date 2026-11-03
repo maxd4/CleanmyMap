@@ -13,6 +13,8 @@ import {
 } from "./action-step-identity.ui";
 import { Users } from "lucide-react";
 import { suggestPreActionContext } from "@/lib/actions/action-context";
+import { ACTION_FIELD_ROLE_OPTIONS, normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
+import { parseOrganizerAccounts } from "../payload-identity";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -293,49 +295,21 @@ function SupportingParticipation({
 
   return (
     <>
-      {showOrganizerAccounts && form.organizerType !== "spontaneous" ? (
+      {showOrganizerAccounts ? (
         <div className="mt-3 space-y-1">
-          {full ? (
-            <div className="space-y-1">
-              <label htmlFor="action-organizer-accounts" className="pl-1 text-xs font-semibold text-emerald-900/75">
-                Comptes coorganisateurs
-              </label>
-              <Field icon={Users}>
-                <input
-                  id="action-organizer-accounts"
-                  type="text"
-                  className={inputCls}
-                  placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
-                  value={form.organizerAccounts}
-                  onChange={(event) => updateField("organizerAccounts", event.target.value)}
-                  maxLength={300}
-                />
-              </Field>
-            </div>
-          ) : (
-            <>
-              <label
-                htmlFor="action-organizer-accounts"
-                className="text-xs font-semibold text-emerald-900/75"
-              >
-                Organisateurs associés
-              </label>
-              <input
-                id="action-organizer-accounts"
-                type="text"
-                className={compactInputCls}
-                value={form.organizerAccounts}
-                onChange={(event) => updateField("organizerAccounts", event.target.value)}
-                maxLength={300}
-                placeholder="Pseudo, nom affiché ou ID"
-              />
-            </>
-          )}
-          {full ? (
-            <p className="pl-1 text-xs text-emerald-900/55">
-              Renseignez les comptes qui ont réellement organisé l&apos;action. Ils restent distincts du nombre de participants présents.
-            </p>
-          ) : null}
+          <ActionParticipantPicker
+            currentUserId={userId}
+            value={parseOrganizerAccounts(form.organizerAccounts)}
+            onChange={(next) => updateField("organizerAccounts", next.join(", "))}
+            endpoint="/api/actions/account-options"
+            title={full ? "Comptes coorganisateurs" : "Organisateurs associés"}
+            description="Sélectionnez jusqu’à 20 comptes CleanMyMap. Ils restent distincts des participants présents."
+            compact={!full}
+            maxSelected={20}
+            roleOptions={ACTION_FIELD_ROLE_OPTIONS.filter(({ code }) => code !== "organizer_primary")}
+            roleSelections={form.fieldRoleSelections}
+            onRoleSelectionsChange={(next) => updateField("fieldRoleSelections", Object.fromEntries(Object.entries(next).map(([userId, roleCodes]) => [userId, normalizeActionFieldRoleCodes(roleCodes)])))}
+          />
         </div>
       ) : null}
       {showParticipantAccounts ? (

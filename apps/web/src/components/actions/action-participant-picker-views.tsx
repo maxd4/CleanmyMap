@@ -1,13 +1,14 @@
 import { Info, Loader2, Plus, Search, X } from "lucide-react";
+import Image from "next/image";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getPickerSearchKeyAction, labelForUser, type ChatUserOption, type InvitationStatus } from "./action-participant-picker-model";
 import type { ParticipantPickerModel } from "./use-action-participant-picker-model";
 
-export function PickerHeader({ title, description, count, showHelp, onToggleHelp }: { title: string; description: string; count: number; showHelp: boolean; onToggleHelp: () => void }) {
+export function PickerHeader({ title, description, count, maxSelected = 20, showHelp, onToggleHelp }: { title: string; description: string; count: number; maxSelected?: number; showHelp: boolean; onToggleHelp: () => void }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1"><div className="flex items-center gap-2"><h4 className="text-sm font-semibold text-emerald-950">{title}</h4><button type="button" onClick={onToggleHelp} aria-label={showHelp ? "Masquer l'aide" : "Afficher l'aide"} aria-expanded={showHelp} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50"><Info size={12} /></button></div><p className="text-xs leading-5 text-emerald-900/68">{description}</p></div>
-      <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-emerald-900">{count} membre{count > 1 ? "s" : ""}</span>
+      <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-emerald-900">{count} membre{count > 1 ? "s" : ""} · {count}/{maxSelected}</span>
       {showHelp ? <p className="basis-full rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-2 text-xs leading-5 text-emerald-900/72">Recherchez un pseudo, un nom affiché ou un identifiant utilisateur. Les membres ajoutés ici sont rattachés directement à l&apos;action.</p> : null}
     </div>
   );
@@ -65,10 +66,19 @@ const INVITATION_STATUS_LABELS: Record<InvitationStatus["status"], string> = {
   withdrawn: "Retirée",
 };
 
-export function SelectedParticipants({ users, onRemove, invitationStatuses = [] }: { users: ChatUserOption[]; onRemove: (userId: string) => void; invitationStatuses?: readonly InvitationStatus[] }) {
+export function SelectedParticipants({ users, onRemove, invitationStatuses = [], roleOptions = [], roleSelections = {}, onRoleSelectionsChange }: { users: ChatUserOption[]; onRemove: (userId: string) => void; invitationStatuses?: readonly InvitationStatus[]; roleOptions?: readonly { code: string; label: string; description: string }[]; roleSelections?: Readonly<Record<string, readonly string[]>>; onRoleSelectionsChange?: (next: Record<string, string[]>) => void }) {
   if (users.length === 0) return <p className="text-xs text-emerald-900/58">Aucun membre ajouté pour le moment.</p>;
   const statusByUserId = new Map(invitationStatuses.map((item) => [item.userId, item.status]));
-  return <div className="space-y-2"><p className="text-xs font-semibold text-emerald-950">Membres sélectionnés</p><div className="flex flex-wrap gap-2">{users.map((user) => { const status = statusByUserId.get(user.id); return <span key={user.id} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-950"><span className="max-w-[13rem] truncate">{labelForUser(user)}</span>{status ? <span className="text-emerald-800/70">{INVITATION_STATUS_LABELS[status]}</span> : null}<button type="button" onClick={() => onRemove(user.id)} aria-label={`Retirer ${labelForUser(user) || user.id}`} className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"><X size={12} /></button></span>; })}</div></div>;
+  const updateRoles = (userId: string, code: string, checked: boolean) => {
+    if (!onRoleSelectionsChange) return;
+    const current = new Set([...(roleSelections[userId] ?? [])]);
+    if (checked) current.add(code); else current.delete(code);
+    onRoleSelectionsChange({
+      ...Object.fromEntries(Object.entries(roleSelections).map(([id, codes]) => [id, [...codes]])),
+      [userId]: [...current],
+    });
+  };
+  return <div className="space-y-2"><p className="text-xs font-semibold text-emerald-950">Membres sélectionnés</p><div className="space-y-3">{users.map((user) => { const status = statusByUserId.get(user.id); const label = labelForUser(user) || user.id; return <div key={user.id} className="rounded-2xl border border-emerald-200 bg-white px-3 py-2"><div className="flex items-center gap-2 text-xs font-medium text-emerald-950">{user.image_url ? <Image src={user.image_url} alt="" width={28} height={28} unoptimized className="h-7 w-7 rounded-full object-cover" /> : <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{label.slice(0, 1).toUpperCase()}</span>}<span className="min-w-0 flex-1 truncate">{label}{user.handle ? <span className="ml-1 text-emerald-700/65">@{user.handle}</span> : null}</span>{status ? <span className="text-emerald-800/70">{INVITATION_STATUS_LABELS[status]}</span> : null}<button type="button" onClick={() => onRemove(user.id)} aria-label={`Retirer ${label}`} className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"><X size={12} /></button></div>{roleOptions.length > 0 ? <fieldset className="mt-2 grid gap-2 sm:grid-cols-2"><legend className="sr-only">Responsabilités pour {label}</legend>{roleOptions.map((option) => <label key={option.code} className="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/45 px-2.5 py-2 text-xs text-emerald-950"><input type="checkbox" checked={(roleSelections[user.id] ?? []).includes(option.code)} onChange={(event) => updateRoles(user.id, option.code, event.target.checked)} className="mt-0.5 accent-emerald-600" /><span><span className="block font-semibold">{option.label}</span><span className="block text-emerald-900/60">{option.description}</span></span></label>)}</fieldset> : null}</div>; })}</div>{roleOptions.length > 0 ? <p className="text-xs text-amber-700">Ces choix sont des intentions de responsabilité conservées dans la préparation. L’affectation effective reste soumise au workflow après confirmation de l’inscription.</p> : null}</div>;
 }
 
 export function InvitationStatusList({ statuses, selectedIds }: { statuses: readonly InvitationStatus[]; selectedIds: readonly string[] }) {

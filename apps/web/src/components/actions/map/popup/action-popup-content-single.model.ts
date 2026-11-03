@@ -30,6 +30,7 @@ import {
   resolveGeometryConfidenceLabel,
 } from "../layers/actions-map-geometry-render";
 import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
+import { buildActionNavigationLinks } from "@/lib/actions/navigation-links";
 
 type GeometryConfidence = ReturnType<typeof resolveActionMapGeometryViewModel>["confidence"];
 
@@ -124,6 +125,13 @@ function buildSingleActionPopupLinks(
       isJoinableAction && !groupJoinEnabled
         ? "Formulaire fermé par l'organisateur"
         : null,
+    navigationLinks: isAction
+      ? buildActionNavigationLinks({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          address: contract?.metadata.departureLocationLabel ?? mapItemLocationLabel(item),
+        })
+      : null,
   };
 }
 

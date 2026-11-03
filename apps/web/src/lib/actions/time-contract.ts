@@ -21,6 +21,11 @@ type TimeContractField =
   | "eventStartTime"
   | "eventEndTime";
 
+export const ACTION_DURATION_STEP_MINUTES = 15;
+export const ACTION_DURATION_INITIAL_MAX_MINUTES = 180;
+export const ACTION_DURATION_EXTENSION_MINUTES = 60;
+export const ACTION_DURATION_MAX_MINUTES = 24 * 60;
+
 export type TimeContractIssue = {
   field: TimeContractField;
   message: string;
@@ -204,6 +209,20 @@ export function roundBusinessDurationMinutes(
     return null;
   }
   return Math.round(value / 15) * 15;
+}
+
+export function formatBusinessDurationHoursMinutes(
+  value: number | null | undefined,
+): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return "Durée non renseignée";
+  }
+  const rounded = Math.round(value / ACTION_DURATION_STEP_MINUTES) * ACTION_DURATION_STEP_MINUTES;
+  const hours = Math.floor(rounded / 60);
+  const minutes = rounded % 60;
+  if (hours === 0) return `${minutes} min`;
+  if (minutes === 0) return `${hours} h`;
+  return `${hours} h ${minutes}`;
 }
 
 export function formatBusinessDurationMinutes(

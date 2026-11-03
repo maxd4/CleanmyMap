@@ -15,6 +15,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { formatNumber } from "./action-popup-content.helpers";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
+import type { ActionNavigationLinks } from "@/lib/actions/navigation-links";
 
 type ActionPopupContentBodyProps = {
   wasteKg: number;
@@ -33,6 +34,7 @@ type ActionPopupContentBodyProps = {
   updateHref: string | null;
   joinHref?: string | null;
   joinStatusLabel?: string | null;
+  navigationLinks?: ActionNavigationLinks | null;
   hasPollution: boolean;
   isAction: boolean;
   actionId?: string | null;
@@ -62,11 +64,12 @@ function ActionPopupMetricGrid({ compact, wasteLabel, buttsLabel, metricCellClas
   </div>;
 }
 
-function ActionPopupContextBlock({ compact, associationName, actionContextLabel = "Non classée", actionContextGlyph = "?", departure, arrival }: Pick<ActionPopupContentBodyProps, "compact" | "associationName" | "actionContextLabel" | "actionContextGlyph" | "departure" | "arrival">) {
+function ActionPopupContextBlock({ compact, associationName, actionContextLabel = "Non classée", actionContextGlyph = "?", departure, arrival, navigationLinks }: Pick<ActionPopupContentBodyProps, "compact" | "associationName" | "actionContextLabel" | "actionContextGlyph" | "departure" | "arrival" | "navigationLinks">) {
   return <div className={compact ? "space-y-2 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 dark:border-slate-800 dark:bg-slate-900/45" : "space-y-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/45"}>
     <div className="flex items-center gap-3"><div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-base ring-1 ring-inset ring-sky-200/60 dark:bg-sky-900/30 dark:ring-sky-800/50" aria-hidden="true">{actionContextGlyph}</div><p className="cmm-text-small font-semibold text-slate-950">Contexte : {actionContextLabel}</p></div>
     {associationName ? <div className="flex items-center gap-3"><div className="rounded-full bg-indigo-50 p-1.5 text-indigo-600 ring-1 ring-inset ring-indigo-200/60 dark:bg-indigo-900/30 dark:ring-indigo-800/50"><Shield size={14} /></div><p className="cmm-text-small font-semibold text-slate-950">{associationName}</p></div> : null}
     {departure || arrival ? <div className="flex items-start gap-3"><div className="mt-0.5 rounded-full bg-sky-50 p-1.5 text-sky-600 ring-1 ring-inset ring-sky-200/60 dark:bg-sky-900/30 dark:ring-sky-800/50"><ArrowRight size={14} /></div><div className="cmm-text-caption space-y-0.5">{departure ? <p className="text-slate-700"><span className="font-bold">Dép.</span> {departure}</p> : null}{arrival ? <p className="text-slate-700"><span className="font-bold">Arr.</span> {arrival}</p> : null}</div></div> : null}
+    {navigationLinks ? <div className="flex flex-wrap gap-2 pl-10 text-xs font-semibold"><a href={navigationLinks.googleMaps} target="_blank" rel="noreferrer" className="min-h-9 rounded-lg px-2 py-1.5 text-sky-700 underline decoration-sky-300 underline-offset-2 transition hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">Google Maps</a><a href={navigationLinks.waze} target="_blank" rel="noreferrer" className="min-h-9 rounded-lg px-2 py-1.5 text-sky-700 underline decoration-sky-300 underline-offset-2 transition hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">Waze</a></div> : null}
   </div>;
 }
 
@@ -150,6 +153,7 @@ function ActionPopupContentBodyLayout({
   updateHref,
   joinHref,
   joinStatusLabel,
+  navigationLinks,
   isAction,
   actionId = null,
   signalementId = null,
@@ -163,7 +167,7 @@ function ActionPopupContentBodyLayout({
       <ActionPopupMetricGrid compact={compact} wasteLabel={presentation.wasteLabel} buttsLabel={presentation.buttsLabel} metricCellClass={presentation.metricCellClass} metricLabelClass={presentation.metricLabelClass} metricValueClass={presentation.metricValueClass} wasteKg={wasteKg} butts={butts} volunteers={volunteers} durationMinutes={durationMinutes} />
 
       <ActionPopupMobilizationBlock compact={compact} operationalEngagementHours={operationalEngagementHours} />
-      <ActionPopupContextBlock compact={compact} associationName={associationName} actionContextLabel={actionContextLabel} actionContextGlyph={actionContextGlyph} departure={departure} arrival={arrival} />
+      <ActionPopupContextBlock compact={compact} associationName={associationName} actionContextLabel={actionContextLabel} actionContextGlyph={actionContextGlyph} departure={departure} arrival={arrival} navigationLinks={navigationLinks} />
       <ActionPopupNotesBlock compact={compact} notes={notes} />
       <ActionPopupActions compact={compact} isAction={isAction} actionId={actionId} signalementId={signalementId} onViewGeometry={onViewGeometry} geometryKind={geometryKind} observedAt={observedAt} sourceLabel={sourceLabel} updateHref={updateHref} actionLabel={presentation.actionLabel} joinHref={joinHref} joinStatusLabel={joinStatusLabel} />
     </div>

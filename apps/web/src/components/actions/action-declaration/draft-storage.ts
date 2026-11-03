@@ -51,6 +51,7 @@ const FORM_STATE_KEYS = [
   "actionContext",
   "schoolContextConfirmed",
   "organizerAccounts",
+  "fieldRoleSelections",
   "participantAccounts",
   "groupJoinEnabled",
   "accessMode",

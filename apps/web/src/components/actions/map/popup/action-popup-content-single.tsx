@@ -174,6 +174,7 @@ function SingleActionPopupView({
         updateHref={links.updateHref}
         joinHref={links.joinHref}
         joinStatusLabel={links.joinStatusLabel}
+        navigationLinks={links.navigationLinks}
         hasPollution={metrics.hasPollution}
         isAction={identity.isAction}
         actionId={identity.isAction ? details.itemId : null}

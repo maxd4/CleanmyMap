@@ -152,7 +152,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toMatch(/id="before-action-date"[^>]*value=""/);
     expect(html).toMatch(/id="before-meeting-time"[^>]*value=""/);
     expect(html).toMatch(/id="before-departure-time"[^>]*value=""/);
-    expect(html).toMatch(/id="before-duration-minutes"[^>]*value=""/);
+    expect(html).toMatch(/id="before-duration-minutes"[^>]*type="range"[^>]*aria-valuetext="Durée non renseignée"/);
     expect(html).toContain("Date et horaires principaux");
     expect(html).toContain("Créneau global");
     expect(html).not.toContain("Stockage précis ; affichage métier");
@@ -191,7 +191,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("1 catégorie");
     expect(html).toContain("Gants anti-coupure et contenant rigide adapté");
     expect(html).toContain("Balisser ou signaler la zone si la collecte n&#x27;est pas sûre.");
-    expect(html).toContain("60 min");
+    expect(html).toContain("1 h");
     expect(html).not.toContain("Stockage précis ; affichage métier");
     expect(html).not.toContain("affichage métier");
     expect((html.match(/Déchets attendus/g) ?? []).length).toBe(1);

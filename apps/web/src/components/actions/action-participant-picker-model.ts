@@ -2,6 +2,7 @@ export type ActionAccountOption = {
   id: string;
   handle: string | null;
   display_name: string | null;
+  image_url?: string | null;
 };
 
 export type ChatUserOption = ActionAccountOption;
@@ -23,6 +24,10 @@ export type ParticipantPickerProps = {
   className?: string;
   compact?: boolean;
   invitationStatuses?: readonly InvitationStatus[];
+  maxSelected?: number;
+  roleOptions?: readonly { code: string; label: string; description: string }[];
+  roleSelections?: Readonly<Record<string, readonly string[]>>;
+  onRoleSelectionsChange?: (next: Record<string, string[]>) => void;
 };
 
 export type InvitationStatus = {
@@ -43,12 +48,16 @@ export function appendParticipantId(
   userId: string,
   currentUserId: string,
   includeCurrentUser: boolean,
+  maxSelected = 20,
 ): { ids: string[]; message: string | null } {
   if (!includeCurrentUser && userId === currentUserId) {
     return { ids: selectedIds, message: "Vous ne pouvez pas vous ajouter vous-même." };
   }
   if (selectedIds.includes(userId)) {
     return { ids: selectedIds, message: "Ce membre est déjà sélectionné." };
+  }
+  if (selectedIds.length >= maxSelected) {
+    return { ids: selectedIds, message: `La limite de ${maxSelected} comptes est atteinte.` };
   }
   return { ids: [...selectedIds, userId], message: null };
 }

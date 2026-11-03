@@ -1,9 +1,15 @@
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
+  ACTION_DURATION_EXTENSION_MINUTES,
+  ACTION_DURATION_INITIAL_MAX_MINUTES,
+  ACTION_DURATION_MAX_MINUTES,
+  ACTION_DURATION_STEP_MINUTES,
+  formatBusinessDurationHoursMinutes,
   formatBusinessDurationMinutes,
   getTimeContractValidationIssues,
 } from "@/lib/actions/time-contract";
@@ -61,18 +67,97 @@ export function ScheduleFields({
           validationIssueFields={validationIssueFields}
           message={getTemporalIssueMessage(temporalIssues, "departureTime")}
         />
-        <CmmField
+        <ActionDurationSlider
           id="before-duration-minutes"
-          label="Durée estimée"
-          hint={formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes))}
+          value={form.durationMinutes}
+          onChange={(value) => updateField("durationMinutes", value)}
           error={hasValidationIssue(validationIssueFields, "durationMinutes") ? durationIssue : undefined}
-        >
-          <CmmInput type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} placeholder="Ex. 60" />
-        </CmmField>
+        />
       </div>
       <GlobalTimeDisclosure form={form} updateField={updateField} validationIssueFields={validationIssueFields} />
     </fieldset>
   );
+}
+
+export function ActionDurationSlider({
+  id,
+  value,
+  onChange,
+  error,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+}) {
+  const numericValue = toOptionalNumber(value);
+  const persistedMax = resolveActionDurationSliderMax(numericValue);
+  const maxMinutes = extendActionDurationSliderMax(persistedMax, numericValue ?? -1);
+
+  const hasDeclaredDuration = value.trim() !== "";
+  const sliderValue = numericValue ?? 0;
+  const displayValue = hasDeclaredDuration
+    ? formatBusinessDurationHoursMinutes(numericValue)
+    : "Durée non renseignée";
+
+  function handleChange(nextValue: string) {
+    const nextMinutes = Number(nextValue);
+    if (!Number.isInteger(nextMinutes) || nextMinutes < 0 || nextMinutes > ACTION_DURATION_MAX_MINUTES) return;
+    onChange(String(nextMinutes));
+  }
+
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className="cmm-field">
+      <label className="cmm-field-label" htmlFor={id}>
+        Durée estimée
+      </label>
+      <div className="space-y-3 rounded-xl border border-emerald-200/70 bg-[#F3FBF6] px-3.5 py-3">
+        <input
+          id={id}
+          type="range"
+          min="0"
+          max={maxMinutes}
+          step={ACTION_DURATION_STEP_MINUTES}
+          value={sliderValue}
+          onChange={(event) => handleChange(event.target.value)}
+          aria-valuetext={displayValue}
+          aria-describedby={`${hintId}${error ? ` ${errorId}` : ""}`}
+          className="w-full accent-emerald-600"
+        />
+        <div className="flex items-center justify-between gap-3 text-xs text-emerald-900/65">
+          <span>0 min</span>
+          <output htmlFor={id} className="font-black text-emerald-950">{displayValue}</output>
+          <span>{maxMinutes} min</span>
+        </div>
+        {hasDeclaredDuration ? (
+          <CmmButton type="button" tone="tertiary" variant="ghost" size="sm" onClick={() => onChange("")}>
+            Ne pas renseigner cette durée
+          </CmmButton>
+        ) : (
+          <p className="text-xs text-emerald-900/60">Choisissez 0 min pour déclarer explicitement une durée nulle.</p>
+        )}
+      </div>
+      <p className="cmm-field-hint" id={hintId}>{displayValue} · pas de {ACTION_DURATION_STEP_MINUTES} min</p>
+      {error ? <p className="cmm-field-error" id={errorId} role="alert">{error}</p> : null}
+    </div>
+  );
+}
+
+export function resolveActionDurationSliderMax(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value) || value < 0) {
+    return ACTION_DURATION_INITIAL_MAX_MINUTES;
+  }
+  return Math.min(
+    ACTION_DURATION_MAX_MINUTES,
+    Math.max(ACTION_DURATION_INITIAL_MAX_MINUTES, Math.ceil(value / ACTION_DURATION_EXTENSION_MINUTES) * ACTION_DURATION_EXTENSION_MINUTES),
+  );
+}
+
+export function extendActionDurationSliderMax(currentMax: number, selectedMinutes: number): number {
+  if (selectedMinutes < currentMax || currentMax >= ACTION_DURATION_MAX_MINUTES) return currentMax;
+  return Math.min(ACTION_DURATION_MAX_MINUTES, currentMax + ACTION_DURATION_EXTENSION_MINUTES);
 }
 
 function GlobalTimeDisclosure({

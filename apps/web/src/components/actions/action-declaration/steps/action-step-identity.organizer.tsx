@@ -206,18 +206,16 @@ function CompactOrganizerSection({
         ) : null}
       </div>
 
-      {form.organizerType ? (
-        <OrganizerSelection
-          form={form}
-          isActionMode={isActionMode}
-          missingAssociation={missingAssociation}
-          associationErrorId={associationErrorId}
-          onChange={onAssociationChange}
-          activeRole={activeRole}
-          currentUserId={currentUserId}
-          className="space-y-1.5"
-        />
-      ) : null}
+      <OrganizerSelection
+        form={form}
+        isActionMode={isActionMode}
+        missingAssociation={missingAssociation}
+        associationErrorId={associationErrorId}
+        onChange={onAssociationChange}
+        activeRole={activeRole}
+        currentUserId={currentUserId}
+        className="space-y-1.5"
+      />
     </div>
   );
 }
@@ -240,7 +238,7 @@ function FullOrganizerSection({
   return (
     <div>
       <SectionTitle color="bg-violet-500">Cadre &amp; calendrier</SectionTitle>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="space-y-1">
           <label
             htmlFor="action-organizer-type"
@@ -269,23 +267,13 @@ function FullOrganizerSection({
           ) : null}
         </div>
 
-        {form.organizerType ? (
-          <OrganizerSelection
-            form={form}
-            isActionMode={isActionMode}
-            missingAssociation={missingAssociation}
-            associationErrorId={associationErrorId}
-            onChange={onAssociationChange}
-            activeRole={activeRole}
-            currentUserId={currentUserId}
-            className="space-y-1"
-            errorClassName="pl-1"
-          />
-        ) : null}
-
         <div className="space-y-1">
+          <label htmlFor="action-action-date" className="pl-1 text-xs font-semibold text-emerald-900/70">
+            Date de l’action <span aria-hidden="true">{isActionMode ? "*" : ""}</span>
+          </label>
           <Field icon={Calendar}>
             <input
+              id="action-action-date"
               type="date"
               className={`${inputCls} ${missingDate ? inputErrCls : ""}`}
               value={form.actionDate}
@@ -300,6 +288,18 @@ function FullOrganizerSection({
             </p>
           ) : null}
         </div>
+
+        <OrganizerSelection
+          form={form}
+          isActionMode={isActionMode}
+          missingAssociation={missingAssociation}
+          associationErrorId={associationErrorId}
+          onChange={onAssociationChange}
+          activeRole={activeRole}
+          currentUserId={currentUserId}
+          className="space-y-1"
+          errorClassName="pl-1"
+        />
       </div>
     </div>
   );
@@ -345,7 +345,6 @@ export function ActionOrganizerSection({
       organizerType: nextType,
       organizerId: null,
       organizerName: "",
-      organizerAccounts: "",
       associationName:
         nextType === "spontaneous" ? "Action spontanée" : "",
     });

@@ -23,6 +23,9 @@ import {
   ACTION_REFRESHMENT_OPTIONS,
   isActionMaterialSuggestion,
 } from "@/lib/actions/preparation-contract";
+import { ACTION_FIELD_ROLE_OPTIONS as FIELD_ROLE_OPTIONS } from "@/lib/actions/field-roles";
+import type { ActionFieldRoleIntention } from "@/lib/actions/types";
+import type { ActionFieldRoleCode } from "@/lib/actions/field-roles";
 import type {
   ActionEquipmentAvailabilityKey,
   ActionEquipmentQuantityKey,
@@ -67,6 +70,14 @@ const equipmentInventorySchema = z.object({
 const refreshmentsProvidedSchema = z.object(
   Object.fromEntries(ACTION_REFRESHMENT_OPTIONS.map(({ key }) => [key, z.boolean().optional()])),
 ).strict() as z.ZodType<ActionRefreshmentsProvided>;
+const fieldRoleCodeSchema = z.enum(
+  FIELD_ROLE_OPTIONS.map(({ code }) => code) as [ActionFieldRoleCode, ...ActionFieldRoleCode[]],
+);
+const fieldRoleIntentionsSchema = z.array(z.object({
+  userId: z.string().trim().min(1).max(120),
+  roleCodes: z.array(fieldRoleCodeSchema).max(FIELD_ROLE_OPTIONS.length),
+  status: z.literal("pending"),
+}).strict()).max(20) as z.ZodType<ActionFieldRoleIntention[]>;
 
 export const preparationDataSchema = z
   .object({
@@ -113,6 +124,7 @@ export const preparationDataSchema = z
     actionContextSelection: z.enum(["citizen", "company", "school"]).nullable().optional(),
     schoolContextConfirmed: z.boolean().optional(),
     groupJoinEnabled: z.boolean().optional(),
+    fieldRoleIntentions: fieldRoleIntentionsSchema.optional(),
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
     midRouteLocationLabel: z.string().max(200).optional(),
     routeTopology: z.enum(["loop", "point_to_point"]).optional(),
