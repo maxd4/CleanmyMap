@@ -329,7 +329,7 @@ describe('tracking-service coverage edges', () => {
     })
 
     state.startError = null
-    state.client = createClient({ updateError: new Error('activation refused') })
+    state.client = createClient({ selectData: { ...mission, status: 'pending' as const, started_at: null }, updateError: new Error('activation refused') })
     await expect(startTracking('mission-1', 'user_123')).resolves.toEqual({
       ok: false,
       error: 'Impossible de démarrer la mission : activation refused',
@@ -364,7 +364,7 @@ describe('tracking-service coverage edges', () => {
       ok: true,
       data: mission,
     })
-    expect(createLinked).toHaveBeenCalledWith('Terrain', 'action-1', undefined)
+    expect(createLinked).toHaveBeenCalledWith('Terrain', 'action-1', undefined, 'user_123')
 
     await expect(createMission('   ', 'Mission')).resolves.toEqual({
       ok: false,

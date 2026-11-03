@@ -52,6 +52,9 @@ vi.mock('../features/tracking/gps-permission-rationale', () => ({
 
 vi.mock('../shared/lib/storage', () => createTrackingStorageMock({
   ...createMissionIdStorageOptions(state),
+  clearMissionStartRequestId: (_ownerId: string, requestId?: string) => {
+    state.sequence.push(`clear-request:${requestId ?? ''}`)
+  },
 }))
 
 import * as Location from 'expo-location'
@@ -126,6 +129,50 @@ describe('mobile mission startup', () => {
       }),
     )
     expect(state.sequence).not.toContain('insert')
+  })
+
+  it('resumes an idempotently recovered tracking mission without reinitializing it', async () => {
+    process.env.EXPO_PUBLIC_WEB_APP_URL = 'https://cleanmymap.test/'
+    const existingTracking = { ...pendingMission, action_id: 'action-1', status: 'tracking' as const, started_at: '2026-10-02T08:01:00.000Z' }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ mission: existingTracking }), { status: 200 })))
+
+    const result = await startMobileMission('user_123', 'Terrain', 'action-1')
+
+    expect(result).toEqual({ ok: true, data: existingTracking })
+    expect(state.sequence).toEqual(['permission-rationale', 'permission-foreground', 'permission-background', 'gps-start', 'clear-request:mission-start-action:action-1'])
+    expect(state.client?.updatePayloads).toHaveLength(0)
+  })
+
+  it.each(['completed', 'cancelled'] as const)('clears a confirmed %s idempotent mission for an explicit retry without restarting it', async (status) => {
+    process.env.EXPO_PUBLIC_WEB_APP_URL = 'https://cleanmymap.test/'
+    const terminalMission = { ...pendingMission, action_id: 'action-1', status, ended_at: '2026-10-02T08:30:00.000Z' }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ mission: terminalMission }), { status: 200 })))
+
+    const result = await startMobileMission('user_123', 'Terrain', 'action-1')
+
+    expect(result).toEqual({ ok: false, error: 'La mission précédente est déjà terminée. Une nouvelle tentative explicite est nécessaire.' })
+    expect(state.sequence).toEqual(['permission-rationale', 'permission-foreground', 'permission-background', 'clear-request:mission-start-action:action-1'])
+    expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+    expect(state.client?.updatePayloads).toHaveLength(0)
+  })
+
+  it('retains an ambiguous linked creation key until a retry succeeds without duplicating the mission', async () => {
+    process.env.EXPO_PUBLIC_WEB_APP_URL = 'https://cleanmymap.test/'
+    const linkedMission = { ...pendingMission, action_id: 'action-1' }
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ mission: linkedMission }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(startMobileMission('user_123', 'Terrain', 'action-1')).resolves.toEqual({
+      ok: false,
+      error: 'Impossible de joindre le site pour créer la mission liée : network unavailable',
+    })
+    expect(state.sequence).not.toContain('clear-request:mission-start-action:action-1')
+
+    await expect(startMobileMission('user_123', 'Terrain', 'action-1')).resolves.toEqual({ ok: true, data: activeMission })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(state.sequence).toContain('clear-request:mission-start-action:action-1')
   })
 
   it('does not create a mission after permission refusal', async () => {

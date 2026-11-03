@@ -108,6 +108,66 @@ describe("POST /api/missions", () => {
     await expect(response.json()).resolves.toEqual({ mission: existing });
   });
 
+  it("returns 200 for a compatible concurrent idempotency collision", async () => {
+    const existing = { id: "mission-1", volunteer_id: "user-1", label: "Terrain", action_id: action.id, status: "pending" };
+    const maybeSingle = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: existing, error: null });
+    const select = vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) })) }));
+    mocks.insert.mockReturnValue({
+      select: () => ({ single: async () => ({ data: null, error: { code: "23505", message: "duplicate key" } }) }),
+    });
+    mocks.getSupabaseServerClient.mockReturnValue({ from: () => ({ select, insert: mocks.insert }) });
+
+    const response = await POST(new Request("https://cleanmymap.test/api/missions", {
+      method: "POST",
+      headers: { "content-type": "application/json", "Idempotency-Key": "mission-start-action-1" },
+      body: JSON.stringify({ actionId: action.id, label: "Terrain" }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ mission: existing });
+  });
+
+  it("returns 409 for an incompatible concurrent idempotency collision", async () => {
+    const existing = { id: "mission-2", volunteer_id: "user-1", label: "Autre terrain", action_id: action.id, status: "pending" };
+    const maybeSingle = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: existing, error: null });
+    const select = vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) })) }));
+    mocks.insert.mockReturnValue({
+      select: () => ({ single: async () => ({ data: null, error: { code: "23505", message: "duplicate key" } }) }),
+    });
+    mocks.getSupabaseServerClient.mockReturnValue({ from: () => ({ select, insert: mocks.insert }) });
+
+    const response = await POST(new Request("https://cleanmymap.test/api/missions", {
+      method: "POST",
+      headers: { "content-type": "application/json", "Idempotency-Key": "mission-start-action-1" },
+      body: JSON.stringify({ actionId: action.id, label: "Terrain" }),
+    }));
+
+    expect(response.status).toBe(409);
+  });
+
+  it("keeps a technical collision lookup failure at 500", async () => {
+    const maybeSingle = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: null, error: new Error("database unavailable") });
+    const select = vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) })) }));
+    mocks.insert.mockReturnValue({
+      select: () => ({ single: async () => ({ data: null, error: { code: "23505", message: "duplicate key" } }) }),
+    });
+    mocks.getSupabaseServerClient.mockReturnValue({ from: () => ({ select, insert: mocks.insert }) });
+
+    const response = await POST(new Request("https://cleanmymap.test/api/missions", {
+      method: "POST",
+      headers: { "content-type": "application/json", "Idempotency-Key": "mission-start-action-1" },
+      body: JSON.stringify({ actionId: action.id, label: "Terrain" }),
+    }));
+
+    expect(response.status).toBe(500);
+  });
+
   it("rejects a user who is not eligible under the canonical geometry contract", async () => {
     mocks.isActionGeometryContributorEligible.mockResolvedValue(false);
 

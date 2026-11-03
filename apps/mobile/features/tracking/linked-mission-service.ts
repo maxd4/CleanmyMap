@@ -8,6 +8,8 @@ import { getMobileApiBaseUrl } from '../../shared/lib/mobile-environment';
 
 const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";
+const STALE_CLERK_IDENTITY_ERROR =
+  "Identité Clerk obsolète : opération mission interrompue.";
 
 export type LinkedMissionReconciliationResult =
   | { ok: true; data: { missionId: string; actionId: string } }
@@ -17,15 +19,27 @@ export async function createLinkedMission(
   label: string,
   actionId: string,
   idempotencyKey?: string,
+  ownerId?: string,
 ): Promise<ServiceResult<Mission>> {
   const baseUrl = getMobileApiBaseUrl();
   if (!baseUrl) {
     return { ok: false, error: 'URL du site web absente pour créer une mission liée.' };
   }
 
+  const expectedOwnerId = ownerId?.trim() || await getClerkUserId();
+  if (!expectedOwnerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (await getClerkUserId() !== expectedOwnerId) {
+    return { ok: false, error: STALE_CLERK_IDENTITY_ERROR };
+  }
+
   const token = await getClerkSupabaseAccessToken();
   if (!token) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (await getClerkUserId() !== expectedOwnerId) {
+    return { ok: false, error: STALE_CLERK_IDENTITY_ERROR };
   }
 
   try {
@@ -42,6 +56,9 @@ export async function createLinkedMission(
       mission?: Mission;
       error?: string;
     } | null;
+    if (await getClerkUserId() !== expectedOwnerId) {
+      return { ok: false, error: STALE_CLERK_IDENTITY_ERROR };
+    }
     if (!response.ok || !payload?.mission) {
       return {
         ok: false,
@@ -82,6 +99,9 @@ export async function reconcileLinkedMission(
     const payload = (await response.json().catch(() => null)) as {
       missionId?: string; actionId?: string; error?: string;
     } | null;
+    if (await getClerkUserId() !== expectedOwnerId) {
+      return { ok: false, error: STALE_CLERK_IDENTITY_ERROR, terminal: false };
+    }
     if (!response.ok || !payload?.missionId || !payload.actionId) {
       return {
         ok: false,

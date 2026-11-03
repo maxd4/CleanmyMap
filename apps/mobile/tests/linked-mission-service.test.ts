@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getToken = vi.hoisted(() => vi.fn())
 const getUserId = vi.hoisted(() => vi.fn())
@@ -13,7 +13,18 @@ vi.mock('../shared/lib/storage', () => ({
 
 import { createLinkedMission, reconcileLinkedMission } from '../features/tracking/linked-mission-service'
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
+}
+
 describe('linked mission gamification handoff', () => {
+  beforeEach(() => {
+    getToken.mockReset()
+    getUserId.mockReset().mockResolvedValue('user_123')
+  })
+
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
@@ -64,6 +75,54 @@ describe('linked mission gamification handoff', () => {
     expect(JSON.stringify(fetchMock.mock.calls[0]?.[1])).not.toContain('gps_points')
   })
 
+  it('stops before POST when the Clerk identity changes while the token is acquired', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test/')
+    const token = deferred<string>()
+    getUserId.mockResolvedValueOnce('user_123').mockResolvedValueOnce('user_other')
+    getToken.mockReturnValue(token.promise)
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const pending = createLinkedMission('Terrain', 'action-1', 'mission-start-key-1234', 'user_123')
+    token.resolve('clerk-bearer')
+
+    await expect(pending).resolves.toEqual({ ok: false, error: 'Identité Clerk obsolète : opération mission interrompue.' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('ignores a successful server response that becomes stale after an identity change', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test/')
+    getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValueOnce('user_123').mockResolvedValueOnce('user_123').mockResolvedValueOnce('user_other')
+    const response = deferred<Response>()
+    const fetchMock = vi.fn(() => response.promise)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const pending = createLinkedMission('Terrain', 'action-1', 'mission-start-key-1234', 'user_123')
+    response.resolve(new Response(JSON.stringify({ mission: { id: 'mission-1', status: 'pending' } }), { status: 201 }))
+
+    await expect(pending).resolves.toEqual({ ok: false, error: 'Identité Clerk obsolète : opération mission interrompue.' })
+  })
+
+  it('allows an ambiguous network failure to be retried with the same idempotency key', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test/')
+    getToken.mockResolvedValue('clerk-bearer')
+    const mission = { id: 'mission-1', action_id: 'action-1', volunteer_id: 'user_123', label: 'Terrain', status: 'pending' }
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ mission }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createLinkedMission('Terrain', 'action-1', 'mission-start-key-1234', 'user_123')).resolves.toEqual({
+      ok: false,
+      error: 'Impossible de joindre le site pour créer la mission liée : network unavailable',
+    })
+    await expect(createLinkedMission('Terrain', 'action-1', 'mission-start-key-1234', 'user_123')).resolves.toEqual({ ok: true, data: mission })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ headers: expect.objectContaining({ 'Idempotency-Key': 'mission-start-key-1234' }) }))
+    expect(fetchMock.mock.calls[1]?.[1]).toEqual(expect.objectContaining({ headers: expect.objectContaining({ 'Idempotency-Key': 'mission-start-key-1234' }) }))
+  })
+
   it('fails closed for missing tokens, forbidden responses and network errors without local success', async () => {
     vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
     const fetchMock = vi.fn()
@@ -80,6 +139,7 @@ describe('linked mission gamification handoff', () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 }))
     await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({ ok: false, error: 'Forbidden' })
 
+    getToken.mockResolvedValueOnce('clerk-bearer')
     fetchMock.mockRejectedValueOnce(new Error('network unavailable'))
     await expect(createLinkedMission('Terrain', 'action-1')).resolves.toEqual({
       ok: false,
@@ -262,5 +322,19 @@ describe('linked mission gamification handoff', () => {
       terminal: false,
     })
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not expose a late reconciliation response after an identity change', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValueOnce('user_123').mockResolvedValueOnce('user_123').mockResolvedValueOnce('user_other')
+    const response = deferred<Response>()
+    const fetchMock = vi.fn(() => response.promise)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const pending = reconcileLinkedMission('mission-1', 'user_123')
+    response.resolve(new Response(JSON.stringify({ missionId: 'mission-1', actionId: 'action-1' }), { status: 200 }))
+
+    await expect(pending).resolves.toEqual({ ok: false, error: 'Identité Clerk obsolète : opération mission interrompue.', terminal: false })
   })
 })

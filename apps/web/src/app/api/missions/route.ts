@@ -109,9 +109,24 @@ export async function POST(request: Request) {
       .eq("volunteer_id", access.userId)
       .eq("idempotency_key", idempotencyKey)
       .maybeSingle();
-    if (!retryResult.error && retryResult.data?.action_id === action.id && retryResult.data.label === parsed.data.label) {
-      return NextResponse.json({ mission: retryResult.data }, { status: 200 });
+    if (retryResult.error) {
+      console.error("Linked mission idempotency collision lookup failed", retryResult.error);
+      return NextResponse.json(
+        { error: "Impossible de vérifier la mission concurrente." },
+        { status: 500 },
+      );
     }
+    if (!retryResult.data) {
+      console.error("Linked mission idempotency collision returned no mission");
+      return NextResponse.json(
+        { error: "Impossible de vérifier la mission concurrente." },
+        { status: 500 },
+      );
+    }
+    if (retryResult.data.action_id !== action.id || retryResult.data.label !== parsed.data.label) {
+      return NextResponse.json({ error: "Cette clé d'idempotence est déjà liée à une autre mission." }, { status: 409 });
+    }
+    return NextResponse.json({ mission: retryResult.data }, { status: 200 });
   }
   if (result.error) {
     console.error("Linked mission creation failed", result.error);

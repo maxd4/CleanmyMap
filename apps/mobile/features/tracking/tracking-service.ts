@@ -34,6 +34,8 @@ export const EXPO_GO_TRACKING_WARNING =
   "Le GPS en arrière-plan ne fonctionne pas dans Expo Go. Utilise un development build (npx expo run:android ou npx expo run:ios).";
 export const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";
+const TERMINAL_MISSION_RETRY_ERROR =
+  'La mission précédente est déjà terminée. Une nouvelle tentative explicite est nécessaire.';
 
 export { createLinkedMission } from './linked-mission-service';
 
@@ -175,16 +177,47 @@ async function executeMissionQuery(
   return { ok: true, data };
 }
 
-export async function startTracking(missionId: string, ownerId: string): Promise<ServiceResult<Mission>> {
-  if (await getClerkUserId() !== ownerId.trim()) {
+export async function startTracking(
+  missionId: string,
+  ownerId: string,
+  knownMission?: Mission,
+): Promise<ServiceResult<Mission>> {
+  const expectedOwnerId = ownerId.trim();
+  if (await getClerkUserId() !== expectedOwnerId) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
-  if (await getClerkUserId() !== ownerId.trim()) {
+  if (await getClerkUserId() !== expectedOwnerId) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  const missionResult = knownMission
+    ? { ok: true as const, data: knownMission }
+    : await executeMissionQuery(
+      async () => client
+        .from('missions')
+        .select('*')
+        .eq('id', missionId)
+        .single<Mission>(),
+      'Impossible de retrouver la mission',
+    );
+  if (!missionResult.ok) return missionResult;
+
+  const mission = missionResult.data;
+  if (mission.volunteer_id && mission.volunteer_id !== expectedOwnerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (await getClerkUserId() !== expectedOwnerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (mission.status === 'completed' || mission.status === 'cancelled') {
+    return { ok: false, error: TERMINAL_MISSION_RETRY_ERROR };
+  }
+  if (mission.status !== 'pending' && mission.status !== 'tracking') {
+    return { ok: false, error: 'Statut de mission incompatible avec le démarrage GPS.' };
   }
 
   const trackingWarning = getBackgroundTrackingWarning();
@@ -200,26 +233,38 @@ export async function startTracking(missionId: string, ownerId: string): Promise
       error: `Impossible de démarrer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
     };
   }
-
-  const missionResult = await executeMissionQuery(
-    async () => client
-      .from('missions')
-      .update({
-        status: 'tracking',
-        started_at: new Date().toISOString(),
-      })
-      .eq('id', missionId)
-      .select()
-      .single<Mission>(),
-    'Impossible de démarrer la mission',
-  );
-  if (!missionResult.ok) {
+  if (await getClerkUserId() !== expectedOwnerId) {
     await stopStartedTracking();
-    return missionResult;
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  let activeMission = mission;
+  if (mission.status === 'pending') {
+    const activationResult = await executeMissionQuery(
+      async () => client
+        .from('missions')
+        .update({
+          status: 'tracking',
+          started_at: new Date().toISOString(),
+        })
+        .eq('id', missionId)
+        .select()
+        .single<Mission>(),
+      'Impossible de démarrer la mission',
+    );
+    if (!activationResult.ok) {
+      await stopStartedTracking();
+      return activationResult;
+    }
+    activeMission = activationResult.data;
+  }
+  if (await getClerkUserId() !== expectedOwnerId) {
+    await stopStartedTracking();
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
   try {
-    await setStoredMissionId(ownerId, missionId);
+    await setStoredMissionId(expectedOwnerId, missionId);
   } catch (error) {
     await stopStartedTracking();
     return {
@@ -227,8 +272,12 @@ export async function startTracking(missionId: string, ownerId: string): Promise
       error: `Impossible de mémoriser la mission active : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
     };
   }
+  if (await getClerkUserId() !== expectedOwnerId) {
+    await stopStartedTracking();
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
 
-  return missionResult;
+  return { ok: true, data: activeMission };
 }
 
 const mobileMissionStartInFlight = new Map<string, Promise<ServiceResult<Mission>>>();
@@ -253,12 +302,18 @@ async function startMobileMissionOnce(
   const missionResult = await createMission(volunteerId, label, normalizedActionId, requestId ?? undefined);
   if (!missionResult.ok) return missionResult;
 
-  const trackingResult = await startTracking(missionResult.data.id, volunteerId);
+  if (missionResult.data.status === 'completed' || missionResult.data.status === 'cancelled') {
+    if (requestId) await clearMissionStartRequestId(volunteerId, requestId);
+    return { ok: false, error: TERMINAL_MISSION_RETRY_ERROR };
+  }
+
+  const trackingResult = await startTracking(missionResult.data.id, volunteerId, missionResult.data);
   if (trackingResult.ok) {
     if (requestId) await clearMissionStartRequestId(volunteerId, requestId);
     return trackingResult;
   }
 
+  if (missionResult.data.status !== 'pending') return trackingResult;
   const cancellation = await cancelMissionAfterStartFailure(missionResult.data.id, volunteerId);
   if (requestId && cancellation?.ok) await clearMissionStartRequestId(volunteerId, requestId);
   return trackingResult;
@@ -300,7 +355,7 @@ export async function createMission(
   }
 
   if (actionId?.trim()) {
-    return createLinkedMission(normalizedLabel, actionId.trim(), idempotencyKey);
+    return createLinkedMission(normalizedLabel, actionId.trim(), idempotencyKey, normalizedVolunteerId);
   }
 
   const client = await getAuthenticatedSupabaseClient();
