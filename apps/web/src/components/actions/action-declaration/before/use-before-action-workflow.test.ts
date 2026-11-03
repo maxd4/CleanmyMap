@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { buildBeforeActionFormFromAction, buildBeforeActionInitialForm } from "./before-action-form-conversions";
-import { applyPreparationContextToForm, mergeBeforeActionHydrationWithLocalChanges, persistBeforeAction, resolveBeforeActionMutationId } from "./use-before-action-workflow";
-import { preservePersistedOrganizerPrimary } from "../payload";
+import { applyPreparationContextToForm, mergeBeforeActionHydrationWithLocalChanges, persistBeforeAction, preservePersistedPrimaryOrganizerHydration, resolveBeforeActionMutationId } from "./use-before-action-workflow";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("before-action resume hydration", () => {
@@ -119,24 +118,49 @@ describe("before-action resume hydration", () => {
     const initialForm = buildBeforeActionInitialForm(["Maxence"], "Maxence", "action");
     const localDraft = {
       ...initialForm,
+      organizerType: "spontaneous" as const,
       organizerName: "Ancien choix local",
       organizerAccounts: "user-helper, user-new",
     };
     const hydratedForm = {
       ...initialForm,
+      organizerType: "spontaneous" as const,
       organizerName: "Principal persisté",
       organizerAccounts: "user-primary, user-helper",
     };
 
-    const merged = mergeBeforeActionHydrationWithLocalChanges(initialForm, localDraft, hydratedForm);
-    merged.organizerAccounts = preservePersistedOrganizerPrimary(
-      merged.organizerAccounts,
-      hydratedForm.organizerAccounts.split(",")[0],
-    ).join(", ");
-    merged.organizerName = hydratedForm.organizerName;
+    const merged = preservePersistedPrimaryOrganizerHydration(
+      mergeBeforeActionHydrationWithLocalChanges(initialForm, localDraft, hydratedForm),
+      hydratedForm,
+    );
 
     expect(merged.organizerAccounts).toBe("user-primary, user-helper, user-new");
     expect(merged.organizerName).toBe("Principal persisté");
+  });
+
+  it("preserves a structured draft identity while restoring the persisted primary order", () => {
+    const initialForm = buildBeforeActionInitialForm(["Maxence"], "Maxence", "action");
+    const preservedForm = {
+      ...initialForm,
+      organizerType: "association" as const,
+      organizerId: "local-association",
+      organizerName: "Association sélectionnée localement",
+      organizerAccounts: "user-secondary, user-primary",
+    };
+    const hydratedForm = {
+      ...initialForm,
+      organizerType: "association" as const,
+      organizerId: "persisted-association",
+      organizerName: "Association persistée",
+      organizerAccounts: "user-primary, user-secondary",
+    };
+
+    const merged = preservePersistedPrimaryOrganizerHydration(preservedForm, hydratedForm);
+
+    expect(merged.organizerType).toBe("association");
+    expect(merged.organizerId).toBe("local-association");
+    expect(merged.organizerName).toBe("Association sélectionnée localement");
+    expect(merged.organizerAccounts).toBe("user-primary, user-secondary");
   });
 
   it("rehydrates organizers and participants from the authorized action payload", () => {

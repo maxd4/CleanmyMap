@@ -163,6 +163,91 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     expect(updateMock).not.toHaveBeenCalled();
   });
 
+  it("canonicalizes the reserved spontaneous name even when organizer accounts are omitted", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_name: "Compte A",
+    }));
+    loadActionOrganizerRowsForActionMock.mockResolvedValueOnce([{
+      action_id: "action-test-1",
+      organizer_clerk_id: "user-primary",
+      organizer_label: "Compte A",
+      organizer_handle: "compte-a",
+      is_primary: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    }]);
+
+    const response = await patchAction({
+      organizerType: "spontaneous",
+      organizerName: "Organisateur en attente de compte",
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ organizer_name: "Compte A" }));
+    expect(syncActionOrganizersMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an incompatible spontaneous name without organizer accounts before writing", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_name: "Compte A",
+    }));
+
+    const response = await patchAction({
+      organizerType: "spontaneous",
+      organizerName: "Compte B",
+    });
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(syncActionOrganizersMock).not.toHaveBeenCalled();
+  });
+
+  it("does not add organizer mutations to a patch that does not edit organizer fields", async () => {
+    const response = await patchAction({ actionDate: "2026-09-14" });
+
+    expect(response.status).toBe(200);
+    const updateData = updateMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(updateData).not.toHaveProperty("organizer_name");
+    expect(updateData).not.toHaveProperty("organizer_type");
+    expect(updateData).not.toHaveProperty("organizer_id");
+    expect(syncActionOrganizersMock).not.toHaveBeenCalled();
+  });
+
+  it("aligns the denormalized spontaneous name with the refreshed primary profile", async () => {
+    loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
+      organizer_type: "spontaneous",
+      organizer_name: "Ancien nom",
+    }));
+    loadActionOrganizerRowsForActionMock.mockResolvedValueOnce([{
+      action_id: "action-test-1",
+      organizer_clerk_id: "user-primary",
+      organizer_label: "Ancien nom",
+      organizer_handle: "ancien-nom",
+      is_primary: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    }]);
+    syncActionOrganizersMock.mockResolvedValueOnce({
+      organizers: [
+        { userId: "user-primary", displayName: "Nouveau nom", handle: "nouveau-nom", isPrimary: true, sourceToken: "user-primary" },
+        { userId: "user-secondary", displayName: "Coorganisateur", handle: "coorganisateur", isPrimary: false, sourceToken: "user-secondary" },
+      ],
+      unresolvedTokens: [],
+    });
+
+    const response = await patchAction({
+      organizerType: "spontaneous",
+      organizerName: "Ancien nom",
+      organizerAccounts: ["user-primary", "user-secondary"],
+    });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ organizer_name: "Nouveau nom" }));
+    expect(syncActionOrganizersMock).toHaveBeenCalledWith(expect.objectContaining({
+      organizerAccounts: ["user-primary", "user-secondary"],
+    }));
+  });
+
   it("allows the owner to finalize an approved pre-action in normal moderation", async () => {
     loadActionByIdMock.mockResolvedValueOnce(createPatchAction({
       status: "approved",

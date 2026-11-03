@@ -50,6 +50,24 @@ export function mergeBeforeActionHydrationWithLocalChanges(
   return merged;
 }
 
+export function preservePersistedPrimaryOrganizerHydration(
+  preservedForm: FormState,
+  hydratedForm: Pick<FormState, "organizerAccounts" | "organizerName">,
+): FormState {
+  const persistedPrimaryId = parseOrganizerAccounts(hydratedForm.organizerAccounts)[0];
+  if (!persistedPrimaryId) return preservedForm;
+  return {
+    ...preservedForm,
+    organizerAccounts: preservePersistedOrganizerPrimary(
+      preservedForm.organizerAccounts,
+      persistedPrimaryId,
+    ).join(", "),
+    ...(preservedForm.organizerType === "spontaneous"
+      ? { organizerName: hydratedForm.organizerName }
+      : {}),
+  };
+}
+
 type BeforeActionPersistenceDependencies = {
   create: typeof createAction;
   update: typeof updateAction;
@@ -135,15 +153,8 @@ function applyFetchedBeforeAction({
     ? mergeBeforeActionHydrationWithLocalChanges(initialForm, localDraft, hydratedForm)
     : hydratedForm;
   const preservedForm = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, hydratedWithLocalDraft);
-  const persistedPrimaryId = parseOrganizerAccounts(hydratedForm.organizerAccounts)[0];
-  if (persistedPrimaryId) {
-    preservedForm.organizerAccounts = preservePersistedOrganizerPrimary(
-      preservedForm.organizerAccounts,
-      persistedPrimaryId,
-    ).join(", ");
-    preservedForm.organizerName = hydratedForm.organizerName;
-  }
-  setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setInvitationStatuses(action.manualInvitationStatuses ?? []); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState("idle"); setPersistenceStatus(localDraft || matchingHandoff ? "unsaved" : "account"); setIsHydratingAction(false);
+  const formWithPersistedPrimary = preservePersistedPrimaryOrganizerHydration(preservedForm, hydratedForm);
+  setForm(formWithPersistedPrimary); onFormChange?.(formWithPersistedPrimary); setCreatedId(action.id); setPublishedAction(action); setInvitationStatuses(action.manualInvitationStatuses ?? []); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState("idle"); setPersistenceStatus(localDraft || matchingHandoff ? "unsaved" : "account"); setIsHydratingAction(false);
 }
 
 export function useBeforeActionHydration({

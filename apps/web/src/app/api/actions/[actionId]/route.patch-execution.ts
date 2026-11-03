@@ -133,6 +133,25 @@ type PreparedActionExecution = {
   organizersAlreadySynced: boolean;
 };
 
+function alignSpontaneousOrganizerNameWithResolution({
+  current,
+  body,
+  updateData,
+  organizerResolution,
+}: {
+  current: EditableAction;
+  body: PreparedActionUpdate["body"];
+  updateData: Record<string, unknown>;
+  organizerResolution: Awaited<ReturnType<typeof syncUpdatedOrganizers>>;
+}): Record<string, unknown> {
+  const nextOrganizerType = body.organizerType ?? current.organizer_type;
+  if (nextOrganizerType !== "spontaneous" || !organizerResolution) return updateData;
+  const primaryName = organizerResolution.organizers
+    .find((organizer) => organizer.isPrimary)
+    ?.displayName.trim();
+  return primaryName ? { ...updateData, organizer_name: primaryName } : updateData;
+}
+
 async function prepareActionExecution({
   supabase,
   actionId,
@@ -159,7 +178,7 @@ async function prepareActionExecution({
   });
   if (eligibilityResponse) return eligibilityResponse;
 
-  const scalarUpdateData = hasGeometryContribution
+  let scalarUpdateData = hasGeometryContribution
     ? stripObservedGeometryProjectionFields(updateData)
     : updateData;
   const previousImpactSnapshot = await captureActionUpdateParticipantImpactSnapshot({
@@ -174,7 +193,13 @@ async function prepareActionExecution({
     updateData: scalarUpdateData,
   });
   if (organizersAlreadySynced) {
-    await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
+    const organizerResolution = await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
+    scalarUpdateData = alignSpontaneousOrganizerNameWithResolution({
+      current,
+      body,
+      updateData: scalarUpdateData,
+      organizerResolution,
+    });
   }
 
   return {

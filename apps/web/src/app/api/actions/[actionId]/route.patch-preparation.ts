@@ -56,7 +56,7 @@ async function canonicalizePersistedPrimaryOrganizerName({
   organizerName?: string;
 }): Promise<Response | ActionUpdateInput> {
   const nextOrganizerType = parsed.organizerType ?? current.organizer_type;
-  if (nextOrganizerType !== "spontaneous" || parsed.organizerAccounts === undefined) return parsed;
+  if (nextOrganizerType !== "spontaneous" || parsed.organizerName === undefined) return parsed;
   const primary = (await loadActionOrganizerRowsForAction(supabase, actionId)).find((row) => row.is_primary);
   const normalizedName = organizerName?.trim() ?? "";
   const normalizedPrimaryName = primary?.organizer_label?.trim();

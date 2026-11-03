@@ -32,8 +32,8 @@ export async function syncUpdatedOrganizers({
   body: ActionUpdateInput;
   userId: string;
   identity: UserIdentity | null;
-}): Promise<void> {
-  if (body.organizerAccounts === undefined) return;
+}): Promise<Awaited<ReturnType<typeof syncActionOrganizers>> | null> {
+  if (body.organizerAccounts === undefined) return null;
 
   let organizerResolution: Awaited<ReturnType<typeof syncActionOrganizers>>;
   try {
@@ -55,6 +55,7 @@ export async function syncUpdatedOrganizers({
       `Comptes organisateurs introuvables: ${organizerResolution.unresolvedTokens.join(", ")}`,
     );
   }
+  return organizerResolution;
 }
 
 export async function syncUpdatedParticipants({
