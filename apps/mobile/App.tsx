@@ -148,10 +148,10 @@ function SignedOutScreen({ initialError }: { initialError?: string | null }) {
           <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
-      <TouchableOpacity accessibilityLabel={loading ? 'Connexion en cours' : 'Se connecter'} accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnPrimary} onPress={() => void handleSignIn().catch(() => undefined)} disabled={loading}>
+      <TouchableOpacity testID="mobile-auth-sign-in" accessibilityLabel={loading ? 'Connexion en cours' : 'Se connecter'} accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnPrimary} onPress={() => void handleSignIn().catch(() => undefined)} disabled={loading}>
         {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.hudBtnText}>SE CONNECTER</Text>}
       </TouchableOpacity>
-      <TouchableOpacity accessibilityLabel="Créer un compte" accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnSecondary} onPress={() => void handleSignUp().catch(() => undefined)} disabled={loading}>
+      <TouchableOpacity testID="mobile-auth-sign-up" accessibilityLabel="Créer un compte" accessibilityRole="button" accessibilityState={{ disabled: loading }} style={styles.hudBtnSecondary} onPress={() => void handleSignUp().catch(() => undefined)} disabled={loading}>
         <Text style={styles.hudBtnSecondaryText}>CRÉER UN COMPTE</Text>
       </TouchableOpacity>
     </SafeAreaView>

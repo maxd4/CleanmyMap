@@ -753,6 +753,124 @@ npm run mobile:lint
 npm run quality:mobile-coverage
 ```
 
+## Validation UI native — `agent-device` + émulateur Android
+
+Ce workflow est le point d'entrée de contrôle UI natif pour Codex. Il ne crée
+aucune dépendance dans l'application Expo : `agent-device` pilote l'application
+installée et lit son arbre d'accessibilité, ses captures et ses journaux. La
+documentation Expo confirme que l'outil fonctionne avec une application Expo
+déjà lancée et ne requiert pas de bibliothèque `agent-device` dans le projet.
+
+### Pré-requis et préflight
+
+Le préflight ne démarre ni serveur, ni émulateur, ni installation. Il vérifie
+Node.js, `agent-device`, `adb`, `emulator`, un AVD ou un appareil Android
+connecté :
+
+```bash
+npm run mobile:ui:preflight
+```
+
+L'installation globale d'`agent-device` est une étape d'environnement
+appartenant à l'utilisateur, à exécuter une seule fois hors du dépôt :
+
+```bash
+npm install -g agent-device@latest
+```
+
+Le SDK Android doit fournir `adb` et `emulator` dans `PATH`, avec un AVD
+Android configuré. Si le préflight retourne `UI_PREFLIGHT: BLOCKED`, aucune
+preuve UI native ne doit être annoncée. S'il retourne `READY_TO_BOOT`, le
+workflow peut démarrer l'AVD indiqué.
+
+### Parcours minimal contrôlable
+
+Depuis la racine du monorepo, dans deux terminaux si nécessaire :
+
+```bash
+# 1. Diagnostic outillage et cible Android
+agent-device doctor --platform android --app fr.cleanmymap.app
+agent-device boot --platform android --device <AVD> --headless
+
+# 2. Development build Expo (Expo Go ne prouve pas le GPS background)
+npx expo run:android --project-directory apps/mobile
+
+# 3. Contrôle par l'agent
+agent-device open fr.cleanmymap.app --platform android --foreground
+agent-device snapshot -i --platform android
+agent-device press @eN --settle --platform android
+agent-device screenshot artifacts/mobile-ui/android-agir.png --platform android
+agent-device logs start
+agent-device react-devtools errors --limit 20
+agent-device logs path
+
+# 4. Fin de session
+agent-device logs stop
+agent-device close fr.cleanmymap.app --platform android
+agent-device shutdown --platform android --device <AVD>
+```
+
+`@eN` est la référence retournée par le snapshot de la session ; elle ne doit
+pas être inventée ni conservée comme identifiant durable. Pour une preuve
+reproductible, conserver la capture, le SHA contrôlé, le nom de l'AVD, la
+commande exécutée et le résultat du snapshot/log. Les captures et journaux
+peuvent contenir des données de session : ne pas les publier sans filtrage.
+
+Les contrôles ciblés utilisent des identifiants stables uniquement pour les
+points d'entrée nécessaires à ce parcours : `mobile-auth-sign-in`,
+`mobile-auth-sign-up`, `mobile-shell`, `mobile-primary-navigation`,
+`mobile-tab-act`, `mobile-tab-map`, `mobile-tab-account`,
+`mobile-action-start` et `mobile-map-web-bridge`. Les autres éléments restent
+contrôlables par leurs rôles et labels d'accessibilité existants ; aucun
+identifiant n'est ajouté pour anticiper une fonctionnalité métier.
+
+### Limites de preuve
+
+Une capture ou un snapshot prouvent le rendu et l'interaction observés, pas
+l'AuthN/AuthZ serveur, la persistance Supabase ou le calcul GPS final. Une
+session Clerk réelle, le GPS background, le verrouillage, le kill/relaunch,
+l'offline et la distribution Android/iOS nécessitent leurs validations
+spécifiques. macOS reste une cible distincte non engagée. Sur cette machine,
+au `2026-11-03`, `agent-device`, `adb`, `emulator` et un environnement Android
+ne sont pas disponibles : le parcours UI natif est donc `BLOCKED`, sans capture
+de réussite revendiquée.
+
+Références d'outillage : [guide Expo agent-device](https://docs.expo.dev/agents/agent-device/)
+et [commandes agent-device](https://oss.callstack.com/agent-device/docs/commands/).
+
+## Snapshot de couverture Mobile et trajectoire vers 80 %
+
+Mesure locale canonique du `2026-11-03`, sur le SHA `7a7862bee…` :
+
+| Métrique | Mesure actuelle | Preuve |
+|---|---:|---|
+| Fichiers de tests | 41 | `npm run quality:mobile-coverage` |
+| Tests | 282/282 | Vitest Mobile |
+| Statements | 91,07 % | rapport V8 attribué au SHA |
+| Branches | 85,90 % | rapport V8 attribué au SHA |
+| Fonctions | 84,51 % | rapport V8 attribué au SHA |
+| Lignes | 96,31 % | rapport V8 attribué au SHA |
+
+Le résultat canonique est `COVERAGE_STATUS: PASS`, avec politique et
+enforcement `OBSERVE`. Cette mesure ne modifie ni les exclusions, ni les
+seuils, ni la baseline ; elle ne constitue pas une preuve appareil ou
+production.
+
+La trajectoire vers un objectif de pilotage à 80 % sur chaque métrique est :
+
+1. conserver `npm run quality:mobile-coverage` comme unique producteur et
+   rattacher chaque résultat à son SHA ;
+2. maintenir la couverture des contrôleurs, du shell, du stockage et du GPS
+   déjà couverts, puis ajouter les scénarios runtime manquants sur les erreurs,
+   permissions, reprise et changement d'identité ;
+3. compléter les preuves UI natives sur émulateur Android puis iOS lorsque les
+   outils et les contrats de plateforme seront disponibles ;
+4. re-mesurer les quatre métriques avec les exclusions existantes et ne proposer
+   un ratchet que sur une série de mesures stables et revue.
+
+L'objectif de 80 % décrit une trajectoire de gouvernance ; il ne transforme pas
+le statut `OBSERVE` actuel en gate et ne justifie aucune métrique artificielle.
+
 La baseline M0 couvre désormais par tests unitaires et contractuels :
 
 - restauration d'une mission active ;

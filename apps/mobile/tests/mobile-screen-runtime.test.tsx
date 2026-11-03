@@ -221,6 +221,8 @@ describe('mobile native shell runtime', () => {
     const tabs = renderer.root.findAllByProps({ accessibilityRole: 'tab' })
     const primaryTabs = tabs.filter((tab) => ['Agir', 'Carte', 'Compte'].includes(testProp<string>(tab, 'accessibilityLabel') ?? ''))
     expect([...new Set(primaryTabs.map((tab) => testProp<string>(tab, 'accessibilityLabel')))]).toEqual(['Agir', 'Carte', 'Compte'])
+    expect([...new Set(primaryTabs.map((tab) => testProp<string>(tab, 'testID')))]).toEqual(['mobile-tab-act', 'mobile-tab-map', 'mobile-tab-account'])
+    expect(renderer.root.findByProps({ testID: 'mobile-primary-navigation' })).toBeDefined()
     expect([...new Set(primaryTabs.filter((tab) => testProp<{ selected?: boolean }>(tab, 'accessibilityState')?.selected).map((tab) => testProp<string>(tab, 'accessibilityLabel')))]).toHaveLength(1)
     expect(renderer.root.findAllByProps({ accessibilityRole: 'tablist' })).not.toHaveLength(0)
     const safeRoot = renderer.root.findByType('SafeAreaView' as unknown as React.ElementType)
