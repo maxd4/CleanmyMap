@@ -3,6 +3,7 @@ import {
   ACTION_MEASUREMENT_MAX_KG,
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
+  compareWasteCharacterizationToTotal,
   compareWasteBreakdownToTotal,
   isAlignedToWasteMassResolution,
 } from "./measurement";
@@ -151,5 +152,23 @@ describe("canonical waste measurement contract", () => {
 
     expect(result.differencePercent).toBe(1);
     expect(result.status).toBe("warning");
+  });
+
+  it("treats characterization as a partial mass and only warns when it exceeds the total", () => {
+    expect(compareWasteCharacterizationToTotal(10, { plastic: 4, metal: 2 })).toEqual({
+      status: "coherent",
+      totalCharacterizedKg: 6,
+      excessKg: 0,
+    });
+    const nearBoundary = compareWasteCharacterizationToTotal(10, { plastic: 10.1 });
+    expect(nearBoundary.status).toBe("coherent");
+    expect(nearBoundary.totalCharacterizedKg).toBe(10.1);
+    expect(nearBoundary.excessKg).toBeCloseTo(0.1, 10);
+    expect(compareWasteCharacterizationToTotal(10, { plastic: 10.2 }).status).toBe("warning");
+    expect(compareWasteCharacterizationToTotal(10, { plastic: null })).toEqual({
+      status: "not_comparable",
+      totalCharacterizedKg: null,
+      excessKg: null,
+    });
   });
 });

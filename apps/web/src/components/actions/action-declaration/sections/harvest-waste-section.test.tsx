@@ -210,7 +210,7 @@ describe("HarvestWasteSection comparison", () => {
     const markup = renderWasteSection();
 
     expect(markup).toContain('aria-expanded="false"');
-    expect(markup).not.toContain("aria-controls");
+    expect(markup).toContain('aria-controls="harvest-waste-characterization-panel"');
     expect(markup).not.toContain('id="harvest-waste-tri-details"');
   });
 
@@ -237,7 +237,7 @@ describe("HarvestWasteSection comparison", () => {
       });
 
       const button = () => [...container.querySelectorAll("button")]
-        .find((candidate) => candidate.textContent?.includes("Détail du tri")) as HTMLButtonElement;
+        .find((candidate) => candidate.textContent?.includes("Ventilation historique")) as HTMLButtonElement;
       expect(button().getAttribute("aria-expanded")).toBe("false");
       expect(button().hasAttribute("aria-controls")).toBe(false);
       expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
@@ -295,7 +295,7 @@ describe("HarvestWasteSection comparison", () => {
       });
 
       const disclosure = () => [...container.querySelectorAll("button")]
-        .find((candidate) => candidate.textContent?.includes("Détail du tri")) as HTMLButtonElement;
+        .find((candidate) => candidate.textContent?.includes("Ventilation historique")) as HTMLButtonElement;
       expect(disclosure().getAttribute("aria-expanded")).toBe("false");
       expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();
 
@@ -343,7 +343,7 @@ describe("HarvestWasteSection comparison", () => {
         root.render(<HarvestValidationHarness participantOnly />);
       });
       const disclosure = [...container.querySelectorAll("button")]
-        .find((candidate) => candidate.textContent?.includes("Détail du tri")) as HTMLButtonElement;
+        .find((candidate) => candidate.textContent?.includes("Ventilation historique")) as HTMLButtonElement;
       act(() => { (container.querySelector("button") as HTMLButtonElement).click(); });
       expect(disclosure.getAttribute("aria-expanded")).toBe("false");
       expect(container.querySelector("#harvest-waste-tri-details")).toBeNull();

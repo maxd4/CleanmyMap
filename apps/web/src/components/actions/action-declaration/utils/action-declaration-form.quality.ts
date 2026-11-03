@@ -56,6 +56,7 @@ export function computeActionDataQuality({
  form.wasteGlassKg.trim().length > 0 ||
  form.wasteHouseholdKg.trim().length > 0 ||
  form.wasteOtherKg.trim().length > 0 ||
+ Object.values(form.wasteCharacterizationKg).some((value) => value.trim().length > 0) ||
  form.wasteUnusualObjects.trim().length > 0 ||
  form.wasteSpecialHandlingWaste.trim().length > 0 ||
  // Old draft fields remain readable but are not serialized by new writes.

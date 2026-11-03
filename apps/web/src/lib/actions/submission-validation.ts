@@ -21,6 +21,7 @@ type ActionMeasurementValidationField =
   | "wasteGlassKg"
   | "wasteHouseholdKg"
   | "wasteOtherKg"
+  | "wasteCharacterizationKg"
   | "wasteMegotsKg"
   | "cigaretteButtsCount"
   | "cigaretteButtsVolumeLiters";
@@ -47,6 +48,8 @@ function mapMeasurementPathToField(
       return "wasteHouseholdKg";
     case "wasteBreakdown.otherWasteKg":
       return "wasteOtherKg";
+    case "wasteBreakdown.characterizationKg":
+      return "wasteCharacterizationKg";
     case "cigaretteButtsMeasurements.cigaretteButtsMassKg":
     case "cigaretteButtsMassKg":
     case "cigaretteButtsKg":
@@ -73,6 +76,8 @@ function messageForMeasurementField(
     case "wasteHouseholdKg":
     case "wasteOtherKg":
       return "La masse de déchets doit être comprise entre 0 et 100 000 kg et respecter une résolution de 0,1 kg.";
+    case "wasteCharacterizationKg":
+      return "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.";
     case "wasteMegotsKg":
       return "La masse de mégots doit être comprise entre 0 et 100 000 kg.";
     case "cigaretteButtsCount":

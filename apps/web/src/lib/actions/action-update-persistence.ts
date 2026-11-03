@@ -27,6 +27,7 @@ import {
   resolvePersistedVolunteerParticipation,
 } from "./volunteer-participation";
 import { resolveActionContext } from "./action-context";
+import { compareWasteCharacterizationToTotal } from "@/lib/waste";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -145,6 +146,23 @@ function validateEffectiveActionCoordinates(
   }
 }
 
+function validateEffectiveWasteCharacterization(params: {
+  current: ActionRow;
+  body: ActionUpdateInput;
+  currentMetadata: ActionMetadata;
+}): void {
+  const comparison = compareWasteCharacterizationToTotal(
+    params.body.wasteKg ?? params.current.waste_kg,
+    params.body.wasteBreakdown?.characterizationKg ?? params.currentMetadata.wasteBreakdown?.characterizationKg,
+  );
+  if (comparison.status === "warning") {
+    throw new ActionUpdateValidationError(
+      "wasteBreakdown",
+      "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.",
+    );
+  }
+}
+
 export async function persistActionUpdate(params: {
   supabase: SupabaseClient;
   actionId: string;
@@ -179,6 +197,7 @@ function validateActionUpdateInput(params: {
   }
   validateEffectiveActionDate(current, body, nextActionPhase);
   validateEffectiveActionCoordinates(current, body);
+  validateEffectiveWasteCharacterization({ current, body, currentMetadata });
   if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
     throw new ActionUpdateValidationError("accessMode", "Le mode privé sur invitation est réservé aux pré-actions.");
   }

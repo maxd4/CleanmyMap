@@ -85,6 +85,10 @@ describe("action declaration hydration model", () => {
         megotsKg: 0.4,
         unusualObjects: "pneu",
         specialHandlingWaste: "batterie",
+        characterizationKg: {
+          plastic: 2.5,
+          glass: 0,
+        },
       },
       cigaretteButtsMeasurements: {
         cigaretteButtsCount: 20,
@@ -110,6 +114,10 @@ describe("action declaration hydration model", () => {
 
     expect(result.loadedActionPhase).toBe("post_action_complete");
     expect(result.form.wasteRecyclablesKg).toBe("1.5");
+    expect(result.form.wasteCharacterizationKg).toEqual({
+      plastic: "2.5",
+      glass: "0",
+    });
     expect(result.form.wasteMegotsKg).toBe("0.3");
     expect(result.form.cigaretteButtsInputSource).toBe("mass");
     expect(result.form.cigaretteButtsCountProvenance).toBe("weight_converted");

@@ -206,6 +206,7 @@ function HarvestStepContent({
             wasteGlassKg={form.wasteGlassKg}
             wasteHouseholdKg={form.wasteHouseholdKg}
             wasteOtherKg={form.wasteOtherKg}
+            wasteCharacterizationKg={form.wasteCharacterizationKg}
             wasteUnusualObjects={form.wasteUnusualObjects}
             wasteSpecialHandlingWaste={form.wasteSpecialHandlingWaste}
             onMeasurementMethodChange={(value) => updateField("wasteMeasurementMethod", value)}

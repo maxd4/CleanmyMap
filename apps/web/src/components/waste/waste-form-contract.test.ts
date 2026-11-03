@@ -9,7 +9,7 @@ describe("waste UX registry wiring", () => {
     expect(read("components/actions/quick-signalement-form.tsx")).toContain("WasteCategorySelector");
     expect(read("components/actions/quick-signalement-form.tsx")).toContain("TrashSpotterObservationForm");
     expect(read("components/actions/action-declaration/before/planned-action-waste-section.tsx")).toContain("WasteCategorySelector");
-    expect(read("components/actions/action-declaration/sections/harvest-waste-section.tsx")).toContain("WasteCategorySelector");
+    expect(read("components/actions/action-declaration/sections/harvest-waste-section.tsx")).toContain("WasteCharacterizationSelector");
   });
 
   it("does not retain the former local quick-report category catalog", () => {

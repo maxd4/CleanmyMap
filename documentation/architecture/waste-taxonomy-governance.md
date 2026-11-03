@@ -11,7 +11,8 @@ Le référentiel couvre actuellement :
 
 `cigarette_butt`, `nicotine_pouch`, `plastic`, `glass`, `broken_glass`, `metal`,
 `mixed_residual`, `bulky_furniture`, `wood`, `electrical_equipment`, `battery`,
-`medicine`, `sharps` et `other`.
+`medicine`, `sharps`, `rubber`, `textile`, `paper_cardboard`, `ceramic`,
+`sanitary_medical` et `other`.
 
 Chaque définition porte la famille, les labels FR/EN, des exemples, le niveau
 de danger (`hazardLevel`), la politique de prise en charge (`pickupPolicy`), la
@@ -37,6 +38,26 @@ L'audit a trouvé plusieurs vocabulaires historiques :
 Les anciens slugs ne doivent pas être supprimés tant que les payloads et les
 données existantes les utilisent. La table `trash_spotter_spots` n'est ni
 renommée ni transformée par cette décision.
+
+### Caractérisation facultative du bilan
+
+Le bilan après action propose une présentation compacte et spécifique composée
+de neuf slugs (`plastic`, `rubber`, `textile`, `paper_cardboard`, `wood`,
+`metal`, `glass`, `ceramic`, `sanitary_medical`). Elle est repliée par défaut
+et persiste, dans `ActionWasteBreakdown.characterizationKg`, uniquement les
+masses effectivement renseignées, à la résolution de 0,1 kg. Cette ventilation
+partielle ne remplace ni `wasteKg` ni les résultats des mégots : elle peut rester
+inférieure au total et n'est jamais additionnée une seconde fois.
+
+`cigarette_butt` et `nicotine_pouch` ne sont pas proposés dans cette vue. Les
+quatre champs historiques (`recyclablesKg`, `glassKg`, `householdWasteKg` et
+`otherWasteKg`) restent lisibles et persistés pour la compatibilité ; aucune
+conversion silencieuse ne les transforme en catégories détaillées. `sharps`
+reste une catégorie `no_pickup` pour les seringues et aiguilles : observation,
+sécurisation et signalement uniquement. Les précautions du catalogue pour le
+verre cassé, les médicaments et les déchets sanitaires restent applicables.
+La validation serveur signale une caractérisation supérieure au total lorsque
+les intervalles de mesure ne sont plus compatibles.
 
 ## Persistance future
 

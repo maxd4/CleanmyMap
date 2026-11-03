@@ -7,6 +7,7 @@ import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
 } from "@/lib/waste/measurement";
+import { ACTION_WASTE_CHARACTERIZATION_SLUGS } from "@/lib/waste/characterization";
 import {
   calculateCigaretteButtsLotsTotalCount,
   CIGARETTE_BUTTS_LOT_SOURCES,
@@ -29,6 +30,17 @@ const wasteBreakdownSchema = z.object({
   glassKg: wasteMassSchema.nullable().optional(),
   householdWasteKg: wasteMassSchema.nullable().optional(),
   otherWasteKg: wasteMassSchema.nullable().optional(),
+  characterizationKg: z.record(z.string(), wasteMassSchema.nullable()).superRefine((value, ctx) => {
+    for (const key of Object.keys(value)) {
+      if (!(ACTION_WASTE_CHARACTERIZATION_SLUGS as readonly string[]).includes(key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: "Catégorie de caractérisation inconnue ou non autorisée.",
+        });
+      }
+    }
+  }).optional(),
   unusualObjects: z.string().max(2000).nullable().optional(),
   specialHandlingWaste: z.string().max(2000).nullable().optional(),
   // Bounded read compatibility for existing metadata markers.

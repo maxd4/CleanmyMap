@@ -9,6 +9,10 @@ import type { CreateActionPayloadParts } from "./payload-contract";
 import { toOptionalNumber, toRequiredNumber } from "./payload-numbers";
 import { resolveOrganizerPayload } from "./organizer-payload";
 import type { DeclarationMode } from "./types";
+import {
+  ACTION_WASTE_CHARACTERIZATION_SLUGS,
+  type ActionWasteCharacterization,
+} from "@/lib/waste";
 
 function resolveCigaretteButtsLots(form: FormState) {
   if (form.cigaretteButtsLots === null) return undefined;
@@ -18,6 +22,19 @@ function resolveCigaretteButtsLots(form: FormState) {
     value: Number(lot.value),
     condition: lot.condition,
   }));
+}
+
+function resolveWasteCharacterization(form: FormState): ActionWasteCharacterization | undefined {
+  const selected = new Set(form.wasteCategories ?? []);
+  const characterization = Object.fromEntries(
+    ACTION_WASTE_CHARACTERIZATION_SLUGS.flatMap((slug) => {
+      const raw = form.wasteCharacterizationKg[slug]?.trim() ?? "";
+      if (!selected.has(slug) || !raw) return [];
+      const value = toOptionalNumber(raw);
+      return value === undefined ? [] : [[slug, value]];
+    }),
+  ) as ActionWasteCharacterization;
+  return Object.keys(characterization).length > 0 ? characterization : undefined;
 }
 
 export function buildVolunteerParticipationFromForm(
@@ -128,6 +145,7 @@ export function buildCreateActionPayloadMeasurementFields(
       glassKg: toOptionalNumber(form.wasteGlassKg) ?? null,
       householdWasteKg: toOptionalNumber(form.wasteHouseholdKg) ?? null,
       otherWasteKg: toOptionalNumber(form.wasteOtherKg) ?? null,
+      characterizationKg: resolveWasteCharacterization(form),
       unusualObjects: form.wasteUnusualObjects.trim() || null,
       specialHandlingWaste: form.wasteSpecialHandlingWaste.trim() || null,
     },

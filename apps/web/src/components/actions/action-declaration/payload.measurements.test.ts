@@ -207,4 +207,32 @@ describe("action declaration payload mesures", () => {
     expect(payload.cigaretteButtsMeasurements?.cigaretteButtsLots).toHaveLength(3);
     expect(payload.cigaretteButts).toBeNull();
   });
+
+  it("serializes optional characterization by canonical slug without changing the total", () => {
+    const form = buildBaseForm();
+    form.wasteKg = "12";
+    form.wasteCategories = ["plastic", "glass", "cigarette_butt"];
+    form.wasteCharacterizationKg = {
+      plastic: "2.5",
+      glass: "0",
+      cigarette_butt: "9",
+    } as typeof form.wasteCharacterizationKg;
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.wasteKg).toBe(12);
+    expect(payload.wasteBreakdown?.characterizationKg).toEqual({
+      plastic: 2.5,
+      glass: 0,
+    });
+    expect(payload.wasteBreakdown?.characterizationKg).not.toHaveProperty("cigarette_butt");
+  });
 });

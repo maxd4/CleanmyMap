@@ -152,6 +152,11 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
   const issues = fields.flatMap(([field, value]) => value.trim() && !Number.isFinite(Number(value))
     ? [{ field: field as ValidationIssue["field"], message: "Saisissez une mesure numérique valide ou laissez ce champ vide." }]
     : []);
+  for (const value of Object.values(form.wasteCharacterizationKg)) {
+    if (value?.trim() && !Number.isFinite(Number(value))) {
+      issues.push({ field: "wasteCharacterizationKg", message: "Saisissez une masse caractérisée numérique ou laissez le champ vide." });
+    }
+  }
   if (form.cigaretteButtsLots === null) return issues;
   if (form.cigaretteButtsLots.length > MAX_CIGARETTE_BUTTS_LOTS) {
     issues.push({ field: "cigaretteButtsLots", message: `Limitez les collectes de mégots à ${MAX_CIGARETTE_BUTTS_LOTS} lots.` });

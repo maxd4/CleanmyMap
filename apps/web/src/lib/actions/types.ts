@@ -20,6 +20,7 @@ import type {
   ActionWasteMeasurementMethod,
   CanonicalWasteBreakdown,
 } from "@/lib/waste/measurement";
+import type { ActionWasteCharacterization } from "@/lib/waste/characterization";
 import type {
   ActionCigaretteButtsMeasurements,
   RawCigaretteButtsMeasurementInput,
@@ -297,6 +298,8 @@ export type ActionVisionEstimate = {
 export type ActionMegotsCondition = "propre" | "humide" | "mouille";
 
 export type ActionWasteBreakdown = CanonicalWasteBreakdown & {
+  /** Optional partial post-action characterization keyed by canonical slug. */
+  characterizationKg?: ActionWasteCharacterization;
   /** Legacy read compatibility only; new writes use the canonical fields. */
   megotsKg?: number;
   megotsCondition?: ActionMegotsCondition;

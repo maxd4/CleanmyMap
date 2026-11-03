@@ -21,6 +21,7 @@ import {
   visionEstimateSchema,
   volunteerParticipationSchema,
 } from "./action-measurements";
+import { compareWasteCharacterizationToTotal } from "@/lib/waste";
 import { commonActionIdentitySchemaFields, userMetadataSchema } from "./action-identity";
 import { photoAssetSchema } from "./action-media";
 import {
@@ -128,6 +129,27 @@ function addPreActionVolunteerForecastIssue(
   }
 }
 
+function addWasteCharacterizationCoherenceIssue(
+  value: {
+    wasteKg?: number | null;
+    wasteBreakdown?: { characterizationKg?: Record<string, number | null> };
+  },
+  ctx: z.RefinementCtx,
+  path: (string | number)[] = ["wasteBreakdown", "characterizationKg"],
+) {
+  const comparison = compareWasteCharacterizationToTotal(
+    value.wasteKg,
+    value.wasteBreakdown?.characterizationKg,
+  );
+  if (comparison.status === "warning") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path,
+      message: "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.",
+    });
+  }
+}
+
 const createActionLegacyBaseSchema = z.object({
   ...commonActionIdentitySchemaFields,
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
@@ -168,6 +190,7 @@ const createActionLegacySchema = createActionLegacyBaseSchema
     addRouteTopologyIssue(value, ctx);
     addGpxImportIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
+    addWasteCharacterizationCoherenceIssue(value, ctx);
   });
 
 const createActionContractSchema = z.object({
@@ -240,6 +263,14 @@ const createActionContractSchema = z.object({
     submissionMode: value.metadata.submissionMode,
     preparationData: value.metadata.preparationData,
   }, ctx);
+  addWasteCharacterizationCoherenceIssue(
+    {
+      wasteKg: value.metadata.wasteKg,
+      wasteBreakdown: value.metadata.wasteBreakdown,
+    },
+    ctx,
+    ["metadata", "wasteBreakdown", "characterizationKg"],
+  );
 });
 
 export const createActionSchema = z

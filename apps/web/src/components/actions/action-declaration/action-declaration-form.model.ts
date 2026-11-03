@@ -12,6 +12,7 @@ export const ACTION_VALIDATION_FIELD_IDS: Record<string, string> = {
   wasteGlassKg: "harvest-waste-glass-kg",
   wasteHouseholdKg: "harvest-waste-household-kg",
   wasteOtherKg: "harvest-waste-other-kg",
+  wasteCharacterizationKg: "harvest-waste-characterization-toggle",
   wasteMegotsKg: "harvest-megots-kg",
   cigaretteButtsCount: "harvest-megots-count",
   cigaretteButtsVolumeLiters: "harvest-megots-volume",

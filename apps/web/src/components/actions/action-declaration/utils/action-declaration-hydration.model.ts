@@ -10,6 +10,10 @@ import {
 import type { CigaretteButtsLotDraft, FormState } from "../model";
 import { parseOrganizerAccounts } from "../payload";
 import { inferCigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
+import {
+  ACTION_WASTE_CHARACTERIZATION_SLUGS,
+  normalizeActionWasteCharacterization,
+} from "@/lib/waste";
 
 export type LoadedActionPhase =
   | "pre_action"
@@ -34,6 +38,7 @@ function clearPostActionMeasurements(form: FormState): void {
   form.wasteGlassKg = "";
   form.wasteHouseholdKg = "";
   form.wasteOtherKg = "";
+  form.wasteCharacterizationKg = {};
   form.wasteUnusualObjects = "";
   form.wasteSpecialHandlingWaste = "";
   form.cigaretteButts = "";
@@ -183,6 +188,7 @@ function buildWasteFields(
   action: ActionEditorRecord,
   storedBreakdown: Record<string, unknown>,
 ): Partial<FormState> {
+  const storedCharacterization = normalizeActionWasteCharacterization(storedBreakdown.characterizationKg);
   return {
     wasteKg: action.wasteKg === null ? "" : String(action.wasteKg),
     ...buildCigaretteFields(preparedForm, action, storedBreakdown),
@@ -192,6 +198,14 @@ function buildWasteFields(
     wasteGlassKg: toFormNumber(storedBreakdown.glassKg),
     wasteHouseholdKg: toFormNumber(storedBreakdown.householdWasteKg),
     wasteOtherKg: toFormNumber(storedBreakdown.otherWasteKg),
+    wasteCharacterizationKg: Object.fromEntries(
+      ACTION_WASTE_CHARACTERIZATION_SLUGS.flatMap((slug) => {
+        const value = storedCharacterization[slug];
+        return typeof value === "number" && Number.isFinite(value)
+          ? [[slug, String(value)]]
+          : [];
+      }),
+    ),
     wasteUnusualObjects:
       typeof storedBreakdown.unusualObjects === "string"
         ? storedBreakdown.unusualObjects

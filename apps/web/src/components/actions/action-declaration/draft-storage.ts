@@ -92,6 +92,7 @@ const FORM_STATE_KEYS = [
   "wasteGlassKg",
   "wasteHouseholdKg",
   "wasteOtherKg",
+  "wasteCharacterizationKg",
   "wasteUnusualObjects",
   "wasteSpecialHandlingWaste",
   "cigaretteButts",

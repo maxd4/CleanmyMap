@@ -5,7 +5,10 @@ import { Trash2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../model";
 import type { ValidationIssue } from "../model";
-import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
+import {
+  WasteCharacterizationSelector,
+  type WasteCharacterizationFormValues,
+} from "@/components/waste/waste-characterization-selector";
 import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_MEASUREMENT_MAX_KG,
@@ -24,12 +27,13 @@ type HarvestWasteSectionProps = {
   wasteGlassKg: string;
   wasteHouseholdKg: string;
   wasteOtherKg: string;
+  wasteCharacterizationKg?: FormState["wasteCharacterizationKg"];
   wasteUnusualObjects: string;
   wasteSpecialHandlingWaste: string;
   onMeasurementMethodChange: (value: ActionWasteMeasurementMethod | "") => void;
   notes: string;
   wasteCategories: WasteCategorySlug[];
-  onTriChange: <K extends "wasteRecyclablesKg" | "wasteGlassKg" | "wasteHouseholdKg" | "wasteOtherKg" | "wasteUnusualObjects" | "wasteSpecialHandlingWaste" | "notes" | "wasteCategories">(
+  onTriChange: <K extends "wasteRecyclablesKg" | "wasteGlassKg" | "wasteHouseholdKg" | "wasteOtherKg" | "wasteCharacterizationKg" | "wasteUnusualObjects" | "wasteSpecialHandlingWaste" | "notes" | "wasteCategories">(
     key: K, value: FormState[K]
   ) => void;
   hidePrimaryMeasurement?: boolean;
@@ -104,6 +108,7 @@ export function HarvestWasteSection({
   wasteGlassKg,
   wasteHouseholdKg,
   wasteOtherKg,
+  wasteCharacterizationKg = {},
   wasteUnusualObjects,
   wasteSpecialHandlingWaste,
   onMeasurementMethodChange,
@@ -118,7 +123,7 @@ export function HarvestWasteSection({
   comparisonTone,
   validationIssues,
 }: HarvestWasteSectionProps) {
-  const [triOpen, setTriOpen] = useState(false);
+  const [legacyTriOpen, setLegacyTriOpen] = useState(false);
   const hasTriValidationIssues = validationIssues.some((issue) =>
     issue.field === "wasteRecyclablesKg" ||
     issue.field === "wasteGlassKg" ||
@@ -127,7 +132,7 @@ export function HarvestWasteSection({
   );
 
   useDisclosureLayoutEffect(() => {
-    if (hasTriValidationIssues) setTriOpen(true);
+    if (hasTriValidationIssues) setLegacyTriOpen(true);
   }, [hasTriValidationIssues, validationIssues]);
 
   const parseKg = (value: string): number | null => {
@@ -142,7 +147,6 @@ export function HarvestWasteSection({
     householdWasteKg: parseKg(wasteHouseholdKg),
     otherWasteKg: parseKg(wasteOtherKg),
   });
-
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
       <HarvestWasteHeader />
@@ -158,35 +162,35 @@ export function HarvestWasteSection({
         comparisonTone={comparisonTone}
       />
 
-      <div className="border-t border-slate-100 pt-4">
-        <WasteCategorySelector
-          value={wasteCategories}
-          onChange={(value) => onTriChange("wasteCategories", value)}
-          idPrefix="harvest-waste"
-        />
-        <WasteFieldSummary value={wasteCategories} className="mt-4" />
-        {coherence.status === "warning" ? (
-          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-            Ventilation et total diffèrent. Vérifiez les valeurs.
-          </p>
-        ) : null}
-      </div>
+      <WasteCharacterizationSelector
+        categories={wasteCategories}
+        characterizationKg={wasteCharacterizationKg as WasteCharacterizationFormValues}
+        totalWasteKg={parseKg(wasteKg)}
+        onCategoriesChange={(value) => onTriChange("wasteCategories", value)}
+        onCharacterizationChange={(value) => onTriChange("wasteCharacterizationKg", value as FormState["wasteCharacterizationKg"])}
+        error={validationIssues.find((issue) => issue.field === "wasteCharacterizationKg")?.message}
+      />
 
-      {/* ── Tri détaillé (dépliable) ──────────────────────────────────── */}
+      {/* Historical four-field ventilation remains available for old records. */}
       <div className="border-t border-slate-100 pt-4">
         <button
           type="button"
-          onClick={() => setTriOpen((v) => !v)}
-          aria-expanded={triOpen}
-          aria-controls={triOpen ? "harvest-waste-tri-details" : undefined}
+          onClick={() => setLegacyTriOpen((v) => !v)}
+          aria-expanded={legacyTriOpen}
+          aria-controls={legacyTriOpen ? "harvest-waste-tri-details" : undefined}
           className="flex w-full items-center justify-between gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors"
         >
-          <span>Détail du tri (optionnel)</span>
-          <ChevronDown size={14} className={cn("transition-transform", triOpen && "rotate-180")} />
+          <span>Ventilation historique</span>
+          <ChevronDown size={14} className={cn("transition-transform", legacyTriOpen && "rotate-180")} />
         </button>
 
-        {triOpen && (
+        {legacyTriOpen && (
           <div id="harvest-waste-tri-details" className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            {coherence.status === "warning" ? (
+              <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                Ventilation historique et total diffèrent. Vérifiez les valeurs.
+              </p>
+            ) : null}
             <div className="grid grid-cols-2 gap-3">
               {[
                 { key: "wasteRecyclablesKg" as const, id: "harvest-waste-recyclables-kg", label: "Recyclables (kg)", value: wasteRecyclablesKg },

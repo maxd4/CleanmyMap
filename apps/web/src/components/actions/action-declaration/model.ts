@@ -16,7 +16,7 @@ import type {
   CigaretteButtsProvenance,
   CigaretteButtsLotSource,
 } from "@/lib/waste/cigarette-butts";
-import type { WasteCategorySlug } from "@/lib/waste";
+import type { ActionWasteCharacterizationSlug, WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext } from "@/lib/actions/action-context";
 import type { ActionInterventionModeSelection } from "@/lib/actions/intervention-mode";
@@ -88,6 +88,7 @@ export type FormState = {
  wasteGlassKg: string;
  wasteHouseholdKg: string;
  wasteOtherKg: string;
+ wasteCharacterizationKg: Partial<Record<ActionWasteCharacterizationSlug, string>>;
  wasteUnusualObjects: string;
  wasteSpecialHandlingWaste: string;
  cigaretteButts: string;
@@ -142,6 +143,7 @@ export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
  wasteGlassKg: "",
  wasteHouseholdKg: "",
  wasteOtherKg: "",
+ wasteCharacterizationKg: {},
  wasteUnusualObjects: "",
  wasteSpecialHandlingWaste: "",
  cigaretteButts: "",
@@ -284,6 +286,7 @@ export type ValidationIssue = {
  |"wasteGlassKg"
  |"wasteHouseholdKg"
  |"wasteOtherKg"
+ |"wasteCharacterizationKg"
  |"wasteMegotsKg"
  |"cigaretteButtsCount"
  |"cigaretteButtsVolumeLiters"

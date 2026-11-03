@@ -14,11 +14,26 @@ export type {
 export {
   ACTION_MEASUREMENT_MAX_KG,
   ACTION_WASTE_MASS_RESOLUTION_KG,
+  compareWasteCharacterizationToTotal,
   compareWasteBreakdownToTotal,
 } from "./measurement";
 export type {
   ActionWasteMeasurementMethod,
+  WasteCharacterizationCoherence,
 } from "./measurement";
+export {
+  ACTION_WASTE_CHARACTERIZATION_CATEGORIES,
+  ACTION_WASTE_CHARACTERIZATION_SLUGS,
+  getActionWasteCharacterizationCategory,
+  isActionWasteCharacterizationSlug,
+  normalizeActionWasteCharacterization,
+  sumActionWasteCharacterizationKg,
+} from "./characterization";
+export type {
+  ActionWasteCharacterization,
+  ActionWasteCharacterizationCategory,
+  ActionWasteCharacterizationSlug,
+} from "./characterization";
 export {
   appendWasteCategoriesToNotes,
   buildWasteFieldGuidance,

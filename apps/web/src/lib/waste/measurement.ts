@@ -25,6 +25,12 @@ export type CanonicalWasteBreakdown = {
   specialHandlingWaste?: string | null;
 };
 
+export type WasteCharacterizationCoherence = {
+  status: "not_comparable" | "coherent" | "warning";
+  totalCharacterizedKg: number | null;
+  excessKg: number | null;
+};
+
 export type WasteBreakdownCoherence = {
   status: "not_comparable" | "coherent" | "warning";
   totalBreakdownKg: number | null;
@@ -133,6 +139,64 @@ export function compareWasteBreakdownToTotal(
     differenceKg,
     differencePercent,
   };
+}
+
+/**
+ * A characterization is a partial observation. Missing rows are unknown, so
+ * only an excess over the declared total can be incoherent.
+ */
+export function compareWasteCharacterizationToTotal(
+  wasteKg: number | null | undefined,
+  characterization: Record<string, number | null | undefined> | null | undefined,
+  options: WasteBreakdownComparisonOptions = {},
+): WasteCharacterizationCoherence {
+  const resolutionKg = options.resolutionKg === undefined
+    ? ACTION_WASTE_MASS_RESOLUTION_KG
+    : options.resolutionKg;
+  if (
+    typeof wasteKg !== "number" ||
+    !Number.isFinite(wasteKg) ||
+    wasteKg < 0 ||
+    !characterization ||
+    resolutionKg === null ||
+    !isValidResolution(resolutionKg)
+  ) {
+    return {
+      status: "not_comparable",
+      totalCharacterizedKg: null,
+      excessKg: null,
+    };
+  }
+  const totalKg: number = wasteKg;
+
+  const values = Object.values(characterization);
+  if (values.some((value) => value !== null && value !== undefined && !isKnownKg(value))) {
+    return {
+      status: "not_comparable",
+      totalCharacterizedKg: null,
+      excessKg: null,
+    };
+  }
+  const knownValues = values.filter(isKnownKg);
+  if (knownValues.length === 0) {
+    return {
+      status: "not_comparable",
+      totalCharacterizedKg: null,
+      excessKg: null,
+    };
+  }
+
+  const totalCharacterizedKg = knownValues.reduce((sum, value) => sum + value, 0);
+  const excessKg = Math.max(0, totalCharacterizedKg - totalKg);
+  const characterizationInterval = sumQuantificationIntervals(knownValues, resolutionKg);
+  const totalInterval = quantificationInterval(totalKg, resolutionKg);
+  const tolerance = Number.EPSILON *
+    Math.max(1, characterizationInterval.max, totalInterval.max) * 16;
+  const status = characterizationInterval.min > totalInterval.max + tolerance
+    ? "warning"
+    : "coherent";
+
+  return { status, totalCharacterizedKg, excessKg };
 }
 
 function isValidResolution(value: number): boolean {

@@ -6,6 +6,10 @@ import {
   normalizeSuggestedMaterials,
 } from "@/lib/actions/preparation-contract";
 import type { FormState } from "./types";
+import {
+  ACTION_WASTE_CHARACTERIZATION_SLUGS,
+  isActionWasteCharacterizationSlug,
+} from "@/lib/waste";
 
 function restorePreparationDraftField(
   next: FormState & Record<string, unknown>,
@@ -79,6 +83,20 @@ export function restoreDraftFields(
         }))
       ) {
         next.cigaretteButtsLots = value as FormState["cigaretteButtsLots"];
+      }
+      continue;
+    }
+    if (key === "wasteCharacterizationKg") {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        const source = value as Record<string, unknown>;
+        next.wasteCharacterizationKg = Object.fromEntries(
+          ACTION_WASTE_CHARACTERIZATION_SLUGS.flatMap((slug) => {
+            const candidate = source[slug];
+            return isActionWasteCharacterizationSlug(slug) && typeof candidate === "string"
+              ? [[slug, candidate]]
+              : [];
+          }),
+        ) as FormState["wasteCharacterizationKg"];
       }
       continue;
     }

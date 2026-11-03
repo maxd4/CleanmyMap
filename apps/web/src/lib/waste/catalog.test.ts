@@ -8,6 +8,7 @@ import {
   isWasteCategorySlug,
 } from "@/lib/waste";
 import { findWasteCategorySlug, getWastePedagogicalProjection } from "@/lib/waste";
+import { ACTION_WASTE_CHARACTERIZATION_SLUGS } from "@/lib/waste";
 
 const REQUIRED_SLUGS = [
   "cigarette_butt",
@@ -110,5 +111,15 @@ describe("global waste category contract", () => {
   it("does not treat signalement provenance as a waste category", () => {
     expect(isWasteCategorySlug("trash_spotter_spots")).toBe(false);
     expect(WASTE_CATEGORY_DEFINITIONS).not.toHaveProperty("trash_spotter_spots");
+  });
+
+  it("keeps the action characterization presentation bounded and separate from nicotine", () => {
+    expect(ACTION_WASTE_CHARACTERIZATION_SLUGS).toHaveLength(9);
+    expect(ACTION_WASTE_CHARACTERIZATION_SLUGS).not.toContain("cigarette_butt");
+    expect(ACTION_WASTE_CHARACTERIZATION_SLUGS).not.toContain("nicotine_pouch");
+    expect(getWasteCategory("sharps").pickupPolicy).toBe("no_pickup");
+    expect(getWasteCategory("broken_glass").hazardLevel).toBe("high");
+    expect(getWasteCategory("broken_glass").pickupPolicy).toBe("trained_only");
+    expect(getWasteCategory("sanitary_medical").hazardLevel).toBe("high");
   });
 });
