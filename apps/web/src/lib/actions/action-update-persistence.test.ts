@@ -56,6 +56,7 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
     const prepared = await prepareActionUpdate({
       current: buildCurrent({
+        durationMinutesDeclared: false,
         routeTargetDistanceKm: 0.5,
         routeTargetDistanceSource: "derived",
         routeTargetDistancePolicyVersion: "route-distance-v1",
@@ -64,6 +65,7 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
 
     expect(prepared.updateData.preparation_data).toMatchObject({
+      durationMinutesDeclared: true,
       routeTargetDistanceKm: 1.5,
       routeTargetDistanceSource: "derived",
       routeTargetDistancePolicyVersion: "route-distance-v1",
@@ -84,6 +86,7 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
 
     expect(prepared.updateData.preparation_data).toMatchObject({
+      durationMinutesDeclared: true,
       routeTargetDistanceKm: 2.25,
       routeTargetDistanceSource: "manual",
     });
@@ -536,6 +539,51 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
         } as unknown as ActionUpdateInput),
       }),
     ).rejects.toThrow("La somme de la répartition (8) doit correspondre");
+  });
+  });
+
+describe("prepareActionUpdate duration declaration boundary", () => {
+  it("preserves an absent duration declaration across a partial preparation PATCH", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        durationMinutesDeclared: false,
+        estimatedDurationMinutes: 45,
+        routeTargetDistanceKm: 1,
+        routeTargetDistanceSource: "derived",
+        routeTargetDistancePolicyVersion: "route-distance-v1",
+      }, { duration_minutes: 0 }),
+      parsedBody: ({ preparationData: { actionTitle: "Après" } } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      actionTitle: "Après",
+      durationMinutesDeclared: false,
+      estimatedDurationMinutes: 45,
+      routeTargetDistanceKm: 1,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
+    });
+  });
+
+  it("honors an explicit absent-duration marker instead of the SQL zero", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        durationMinutesDeclared: true,
+        routeTargetDistanceKm: 0,
+        routeTargetDistanceSource: "derived",
+        routeTargetDistancePolicyVersion: "route-distance-v1",
+      }, { duration_minutes: 0 }),
+      parsedBody: ({ preparationData: { durationMinutesDeclared: false } } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      durationMinutesDeclared: false,
+      routeTargetDistanceKm: 1,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
+    });
   });
 });
 

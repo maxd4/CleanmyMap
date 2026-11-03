@@ -243,6 +243,7 @@ async function resolveReconstructedCreateActionDrawing(
       recordType: payload.recordType ?? "action",
     }),
     durationMinutes: payload.durationMinutes,
+    durationMinutesDeclared: payload.preparationData?.durationMinutesDeclared,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
     routeTargetDistanceSource: payload.preparationData?.routeTargetDistanceSource,
   });

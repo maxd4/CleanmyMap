@@ -308,6 +308,7 @@ type ReconstructActionRouteParams = {
   topology?: ActionRouteTopology | null;
   recordType?: ActionRecordType | LegacyActionRecordType | null;
   durationMinutes: number | null | undefined;
+  durationMinutesDeclared?: boolean;
   routeTargetDistanceKm?: number | null;
   routeTargetDistanceSource?: "derived" | "manual" | null;
 };
@@ -422,6 +423,7 @@ export async function reconstructActionRoute(
   const originPair = originResolution.originPair;
   const targetDistanceKm = resolveRouteTargetDistance({
     durationMinutes: params.durationMinutes,
+    durationMinutesDeclared: params.durationMinutesDeclared,
     routeTargetDistanceKm: params.routeTargetDistanceKm,
     routeTargetDistanceSource: params.routeTargetDistanceSource,
   }).distanceKm;

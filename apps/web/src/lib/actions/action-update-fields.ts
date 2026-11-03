@@ -15,6 +15,37 @@ import {
   geometryRepresentativeCoordinates,
 } from "./action-observed-geometry";
 
+function hasOwnField(value: object, field: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, field);
+}
+
+function prepareDurationMetadataForUpdate(
+  currentPreparationData: ActionPreparationData,
+  submittedPreparationData: ActionPreparationData,
+  body: ActionUpdateInput,
+): ActionPreparationData {
+  const nextPreparationData = { ...submittedPreparationData };
+  if (
+    !hasOwnField(nextPreparationData, "durationMinutesDeclared") &&
+    currentPreparationData.durationMinutesDeclared !== undefined
+  ) {
+    nextPreparationData.durationMinutesDeclared = currentPreparationData.durationMinutesDeclared;
+  }
+  if (
+    !hasOwnField(nextPreparationData, "estimatedDurationMinutes") &&
+    currentPreparationData.estimatedDurationMinutes !== undefined
+  ) {
+    nextPreparationData.estimatedDurationMinutes = currentPreparationData.estimatedDurationMinutes;
+  }
+  if (
+    body.durationMinutes !== undefined &&
+    !hasOwnField(submittedPreparationData, "durationMinutesDeclared")
+  ) {
+    nextPreparationData.durationMinutesDeclared = true;
+  }
+  return nextPreparationData;
+}
+
 function buildPhaseAndPreparationFields(
   current: ActionRow,
   body: ActionUpdateInput,
@@ -30,7 +61,12 @@ function buildPhaseAndPreparationFields(
     }
   }
   if (body.preparationData !== undefined) {
-    const nextPreparationData = normalizeActionPreparationData(body.preparationData ?? {});
+    const currentPreparationData = normalizeActionPreparationData(current.preparation_data ?? {});
+    const nextPreparationData = prepareDurationMetadataForUpdate(
+      currentPreparationData,
+      normalizeActionPreparationData(body.preparationData ?? {}),
+      body,
+    );
     const resolvedTarget = resolveRouteTargetDistance({
       durationMinutes: body.durationMinutes ?? current.duration_minutes,
       durationMinutesDeclared: nextPreparationData.durationMinutesDeclared,
@@ -112,13 +148,18 @@ function buildTimingFields(
       const currentPreparationData = normalizeActionPreparationData(
         current.preparation_data ?? {},
       );
+      const preparationDataForUpdate = {
+        ...currentPreparationData,
+        durationMinutesDeclared: true,
+      };
       const resolvedTarget = resolveRouteTargetDistance({
         durationMinutes: body.durationMinutes,
-        routeTargetDistanceKm: currentPreparationData.routeTargetDistanceKm,
-        routeTargetDistanceSource: currentPreparationData.routeTargetDistanceSource,
+        durationMinutesDeclared: preparationDataForUpdate.durationMinutesDeclared,
+        routeTargetDistanceKm: preparationDataForUpdate.routeTargetDistanceKm,
+        routeTargetDistanceSource: preparationDataForUpdate.routeTargetDistanceSource,
       });
       updateData["preparation_data"] = persistResolvedRouteTargetDistance(
-        currentPreparationData,
+        preparationDataForUpdate,
         resolvedTarget,
       );
     }

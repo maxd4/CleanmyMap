@@ -78,6 +78,62 @@ describe("createAction behavioral persistence orchestration", () => {
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
   });
 
+  it("passes the absent-duration status and the persisted fallback target to reconstruction", async () => {
+    const fixture = harness({ action_id: "action-absent-duration", replayed: false });
+
+    await createAction(fixture.client, {
+      userId: "user-1",
+      payload: payload({
+        durationMinutes: 0,
+        routeTopology: "loop",
+        preparationData: { durationMinutesDeclared: false },
+      }),
+      organizers: [],
+    });
+
+    expect(reconstructActionRouteMock).toHaveBeenCalledWith(expect.objectContaining({
+      durationMinutes: 0,
+      durationMinutesDeclared: false,
+      routeTargetDistanceKm: 1,
+      routeTargetDistanceSource: "derived",
+    }));
+    expect(fixture.rpc.mock.calls[0]?.[1]?.p_action).toMatchObject({
+      preparation_data: {
+        durationMinutesDeclared: false,
+        routeTargetDistanceKm: 1,
+        routeTargetDistanceSource: "derived",
+      },
+    });
+  });
+
+  it("keeps an explicitly declared zero distinct during reconstruction", async () => {
+    const fixture = harness({ action_id: "action-zero-duration", replayed: false });
+
+    await createAction(fixture.client, {
+      userId: "user-1",
+      payload: payload({
+        durationMinutes: 0,
+        routeTopology: "loop",
+        preparationData: { durationMinutesDeclared: true },
+      }),
+      organizers: [],
+    });
+
+    expect(reconstructActionRouteMock).toHaveBeenCalledWith(expect.objectContaining({
+      durationMinutes: 0,
+      durationMinutesDeclared: true,
+      routeTargetDistanceKm: 0,
+      routeTargetDistanceSource: "derived",
+    }));
+    expect(fixture.rpc.mock.calls[0]?.[1]?.p_action).toMatchObject({
+      preparation_data: {
+        durationMinutesDeclared: true,
+        routeTargetDistanceKm: 0,
+        routeTargetDistanceSource: "derived",
+      },
+    });
+  });
+
   it("returns an atomic replay without running post-processing again", async () => {
     const fixture = harness({ action_id: "action-existing", replayed: true });
     await expect(createAction(fixture.client, {

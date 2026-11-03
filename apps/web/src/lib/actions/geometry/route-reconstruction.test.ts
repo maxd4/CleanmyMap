@@ -80,6 +80,24 @@ describe("server-side action route reconstruction", () => {
     expect(networkGeometry.distanceKm).toBe(1.02);
   });
 
+  it("uses the persisted fallback target when the SQL duration is absent", async () => {
+    routeProviderMock.mockResolvedValue(networkGeometry);
+
+    await reconstructActionRoute({
+      topology: "loop",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      durationMinutes: 0,
+      durationMinutesDeclared: false,
+      routeTargetDistanceKm: 1,
+      routeTargetDistanceSource: "derived",
+    });
+
+    const requestedWaypoints = routeProviderMock.mock.calls[0]?.[0] as [number, number][];
+    expect(requestedWaypoints[1][0]).toBeGreaterThan(48.851);
+  });
+
   it("marks a provider fallback as an estimated route and keeps the loop", async () => {
     routeProviderMock.mockResolvedValue({
       ...networkGeometry,
