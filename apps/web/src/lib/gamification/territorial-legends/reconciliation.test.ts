@@ -14,6 +14,7 @@ import { reconcileTerritorialLegendSnapshot } from "./reconciliation";
 
 const winner: TerritorialLegendWinnerSnapshot = {
   userId: "user-1",
+  campaignYear: 2026,
   level: "commune",
   territoryCode: "75056",
   territoryLabel: "Paris",
@@ -77,6 +78,7 @@ describe("territorial legend snapshot reconciliation", () => {
     expect(fixture.calls[0]?.p_winners).toEqual([
       {
         user_id: "user-1",
+        campaign_year: 2026,
         level: "commune",
         territory_code: "75056",
         territory_label: "Paris",
@@ -88,6 +90,7 @@ describe("territorial legend snapshot reconciliation", () => {
       },
       {
         user_id: "user-2",
+        campaign_year: 2026,
         level: "commune",
         territory_code: "75056",
         territory_label: "Paris",

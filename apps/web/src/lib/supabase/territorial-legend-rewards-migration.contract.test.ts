@@ -9,6 +9,10 @@ const contractMigration = readFileSync(
   new URL("../../../supabase/migrations/20261103000004_territorial_legend_rewards_contract.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const annualMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261104000001_territorial_legend_annual_campaigns.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
@@ -58,5 +62,17 @@ describe("territorial legend rewards migration", () => {
     expect(contractMigration).toContain("user_id text");
     expect(contractMigration).toContain("source_fingerprint text");
     expect(contractMigration).not.toContain("item ->> 'userId'");
+  });
+
+  it("makes the annual campaign boundary explicit without rewriting old files", () => {
+    expect(annualMigration).toContain("add column if not exists campaign_year integer");
+    expect(annualMigration).toContain("territorial_legend_conquest_campaign_identity");
+    expect(annualMigration).toContain("territorial_legend_season_end_campaign_identity");
+    expect(annualMigration).toContain("make_date(v_campaign_year, 12, 31)");
+    expect(annualMigration).toContain("array[7, 30, 90, 180]");
+    expect(annualMigration).not.toContain("array[7, 30, 90, 180, 365, 730]");
+    expect(annualMigration).toContain("item ->> 'campaign_year'");
+    expect(annualMigration).toContain(":*:conquest:0");
+    expect(annualMigration).toContain("h.campaign_year is distinct from v_campaign_year");
   });
 });

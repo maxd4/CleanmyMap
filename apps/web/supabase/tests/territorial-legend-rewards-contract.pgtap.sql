@@ -3,7 +3,7 @@
 -- migration reset; it must never target the linked or production database.
 
 begin;
-select plan(30);
+select plan(46);
 
 set local role postgres;
 create temp table territorial_legend_contract_state (
@@ -14,15 +14,16 @@ insert into territorial_legend_contract_state (effective_on)
 values ((now() at time zone 'Europe/Paris')::date - 10);
 
 delete from public.territorial_legend_award_proofs
- where user_id in ('legend-contract-a', 'legend-contract-b');
+ where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
 delete from public.territorial_legend_hold_periods
- where user_id in ('legend-contract-a', 'legend-contract-b');
+ where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
 
 select ok(to_regclass('public.territorial_legend_hold_periods') is not null, 'hold periods table exists after replay');
 select ok(to_regclass('public.territorial_legend_award_proofs') is not null, 'award proofs table exists after replay');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261103000002'), 'previous territorial migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261103000003'), 'repaired territorial migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261103000004'), 'forward contract migration is registered');
+select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000001'), 'annual campaign migration is registered');
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
@@ -33,13 +34,13 @@ select is(
     (select effective_on from territorial_legend_contract_state),
     jsonb_build_array(
       jsonb_build_object(
-        'user_id', 'legend-contract-a', 'level', 'commune',
+        'user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on from territorial_legend_contract_state))::integer, 'level', 'commune',
         'territory_code', '75056', 'territory_label', 'Paris',
         'effective_on', (select effective_on from territorial_legend_contract_state),
         'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-a'
       ),
       jsonb_build_object(
-        'user_id', 'legend-contract-b', 'level', 'commune',
+        'user_id', 'legend-contract-b', 'campaign_year', extract(year from (select effective_on from territorial_legend_contract_state))::integer, 'level', 'commune',
         'territory_code', '75056', 'territory_label', 'Paris',
         'effective_on', (select effective_on from territorial_legend_contract_state),
         'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-b'
@@ -56,8 +57,8 @@ select is(
   (public.reconcile_territorial_legend_snapshot(
     (select effective_on from territorial_legend_contract_state),
     jsonb_build_array(
-      jsonb_build_object('user_id', 'legend-contract-a', 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-a'),
-      jsonb_build_object('user_id', 'legend-contract-b', 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-b')
+      jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-a'),
+      jsonb_build_object('user_id', 'legend-contract-b', 'campaign_year', extract(year from (select effective_on from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-b')
     )
   )->>'insertedProofs',
   '0',
@@ -68,7 +69,7 @@ select is((select count(*)::integer from public.territorial_legend_hold_periods 
 select is(
   (public.reconcile_territorial_legend_snapshot(
     (select effective_on + 2 from territorial_legend_contract_state),
-    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-gap'))
+    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-gap'))
   )->>'closedPeriods',
   '2',
   'an interruption closes the absent winner and the gapped period'
@@ -82,9 +83,9 @@ declare
   v_snapshot jsonb;
 begin
   select effective_on into v_day from territorial_legend_contract_state;
-  v_snapshot := jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-continuous'));
+  v_snapshot := jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from v_day)::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-continuous'));
   for v_offset in 3..8 loop
-    v_snapshot := jsonb_set(v_snapshot, '{0,effective_on}', to_jsonb(v_day + v_offset));
+    v_snapshot := jsonb_set(jsonb_set(v_snapshot, '{0,effective_on}', to_jsonb(v_day + v_offset)), '{0,campaign_year}', to_jsonb(extract(year from v_day + v_offset)::integer));
     perform public.reconcile_territorial_legend_snapshot(v_day + v_offset, v_snapshot);
   end loop;
 end;
@@ -96,7 +97,7 @@ select is((select last_verified_on from public.territorial_legend_hold_periods w
 select is(
   (public.reconcile_territorial_legend_snapshot(
     (select effective_on + 10 from territorial_legend_contract_state),
-    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 10 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-reconquest'))
+    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-a', 'campaign_year', extract(year from (select effective_on + 10 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 10 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'contract-source-a-reconquest'))
   )->>'status',
   'applied',
   'a later verified title is treated as a new detention after a gap'
@@ -113,14 +114,91 @@ update territorial_legend_contract_state
 select is(
   (public.invalidate_territorial_legend_history(
     array[(select first_period_id from territorial_legend_contract_state)],
-    array['legend-contract-a:commune:75056:conquest:0']::text[],
+    array['legend-contract-a:commune:' || extract(year from (select effective_on from territorial_legend_contract_state))::integer || ':*:conquest:0']::text[],
     (select effective_on + 10 from territorial_legend_contract_state)
   )->>'status',
   'applied',
   'historical correction executes through the privileged RPC'
 );
 select is((select count(*)::integer from public.territorial_legend_hold_periods where id = (select first_period_id from territorial_legend_contract_state) and validity_status = 'invalidated'), 1, 'historical correction invalidates the selected hold period');
-select is((select count(*)::integer from public.territorial_legend_award_proofs where proof_id = 'legend-contract-a:commune:75056:conquest:0' and validity_status = 'invalidated'), 1, 'historical correction invalidates the selected proof');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where proof_id = 'legend-contract-a:commune:' || extract(year from (select effective_on from territorial_legend_contract_state))::integer || ':*:conquest:0' and validity_status = 'invalidated'), 1, 'historical correction invalidates the selected proof');
+
+select ok(exists (
+  select 1 from information_schema.columns
+   where table_schema = 'public' and table_name = 'territorial_legend_hold_periods' and column_name = 'campaign_year'
+), 'hold periods persist a campaign year');
+select ok(exists (
+  select 1 from information_schema.columns
+   where table_schema = 'public' and table_name = 'territorial_legend_award_proofs' and column_name = 'campaign_year'
+), 'award proofs persist a campaign year');
+
+do $$
+declare
+  v_day date;
+begin
+  for v_day in
+    select date '2025-07-05' + day_offset
+      from generate_series(0, 178) as day_series(day_offset)
+  loop
+    perform public.reconcile_territorial_legend_snapshot(
+      v_day,
+      jsonb_build_array(jsonb_build_object(
+        'user_id', 'legend-contract-year', 'campaign_year', 2025, 'level', 'commune',
+        'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', v_day,
+        'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'annual-' || v_day::text
+      ))
+    );
+  end loop;
+end;
+$$;
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    date '2025-12-31',
+    jsonb_build_array(jsonb_build_object(
+      'user_id', 'legend-contract-year', 'campaign_year', 2025, 'level', 'commune',
+      'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', date '2025-12-31',
+      'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'annual-2025-12-31'
+    ))
+  )->>'status',
+  'applied',
+  '31 December awards the verified season-end proof'
+);
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'longevity' and threshold_days = 180), 1, '180 consecutive verified days create the annual longevity proof');
+select is((select started_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025), date '2025-07-05', 'the annual series starts on its first verified day');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'season_end'), 1, 'season-end reward is distinct and annual');
+select is((select last_verified_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025), date '2025-12-31', 'the prior period ends on 31 December');
+
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    date '2026-01-01',
+    jsonb_build_array(jsonb_build_object(
+      'user_id', 'legend-contract-year', 'campaign_year', 2026, 'level', 'commune',
+      'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', date '2026-01-01',
+      'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'annual-2026-01-01'
+    ))
+  )->>'status',
+  'applied',
+  '1 January starts a new campaign instead of extending the prior title'
+);
+select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025 and validity_status = 'closed'), 1, 'the previous campaign period is closed without deletion');
+select is((select started_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2026 and validity_status = 'active'), date '2026-01-01', 'the new campaign period starts on 1 January');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and award_kind = 'conquest'), 1, 'the same grade can be conquered once again in the new campaign');
+
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    date '2026-01-02',
+    jsonb_build_array(jsonb_build_object(
+      'user_id', 'legend-contract-year', 'campaign_year', 2026, 'level', 'commune',
+      'territory_code', '69123', 'territory_label', 'Lyon', 'effective_on', date '2026-01-02',
+      'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'annual-2026-01-02-lyon'
+    ))
+  )->>'status',
+  'applied',
+  'a second territory in the same grade remains in the same annual campaign'
+);
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and award_kind = 'conquest'), 1, 'conquest is deduplicated per user, grade and campaign across territories');
+select is((select territory_code from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2026 and validity_status = 'active'), '69123', 'the active title follows the current territory without transferring days');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and threshold_days in (365, 730)), 0, 'annual campaigns never create legacy 365 or 730 day rewards');
 
 set_config('request.jwt.claims', '{"role":"authenticated"}', true);
 set_config('request.jwt.claim.role', 'authenticated', true);

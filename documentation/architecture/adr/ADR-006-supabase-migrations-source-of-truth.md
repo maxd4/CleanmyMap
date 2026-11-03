@@ -381,6 +381,18 @@ ni application distante implicite. La convergence doit être vérifiée par
 éphémère de reconstruction et de contrat RPC. Aucune mutation du projet lié
 n'a été effectuée pour établir cette preuve.
 
+## Évolution forward-only — `20261104000001`
+
+La migration `20261104000001_territorial_legend_annual_campaigns.sql` porte
+la décision produit des campagnes annuelles après `00003` et `00004`, sans
+réécrire ces fichiers. Elle ajoute `campaign_year`, conserve sans les
+réinterpréter les éventuelles lignes historiques dépourvues d'année, et
+remplace la RPC de réconciliation par une version bornée au 1er janvier–31
+décembre Europe/Paris. Les identités de conquête, longévité et fin de saison
+incluent désormais l'année ; les seuils annuels sont 7, 30, 90 et 180 jours.
+La migration ne fabrique aucun historique et ne modifie aucun environnement
+lié pour obtenir une preuve.
+
 ## Opérations temporaires de benchmark
 
 Une activation ou désactivation temporaire d'extension réalisée pour un

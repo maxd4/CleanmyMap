@@ -31,6 +31,7 @@ function nonNegativeInteger(value: unknown): number {
 function serializeWinnerSnapshots(winners: TerritorialLegendWinnerSnapshot[]) {
   return winners.map((winner) => ({
     user_id: winner.userId,
+    campaign_year: winner.campaignYear,
     level: winner.level,
     territory_code: winner.territoryCode,
     territory_label: winner.territoryLabel,

@@ -7,6 +7,7 @@ function parseProof(value: unknown): TerritorialLegendAwardProof | null {
   const row = value as Partial<Record<keyof TerritorialLegendAwardProof, unknown>> & {
     proof_id?: unknown;
     territory_code?: unknown;
+    campaign_year?: unknown;
     award_kind?: unknown;
     threshold_days?: unknown;
     hold_started_on?: unknown;
@@ -19,11 +20,14 @@ function parseProof(value: unknown): TerritorialLegendAwardProof | null {
     user_id?: unknown;
   };
   const level = row.level;
+  const campaignYear = Number(row.campaign_year);
   return typeof row.proof_id === "string" &&
     typeof row.user_id === "string" &&
+    row.campaign_year !== null && row.campaign_year !== undefined &&
+    Number.isInteger(campaignYear) && campaignYear > 0 &&
     typeof level === "string" &&
     typeof row.territory_code === "string" &&
-    (row.award_kind === "conquest" || row.award_kind === "longevity") &&
+    (row.award_kind === "conquest" || row.award_kind === "longevity" || row.award_kind === "season_end") &&
     Number.isInteger(Number(row.threshold_days)) &&
     typeof row.hold_started_on === "string" &&
     typeof row.held_through_on === "string" &&
@@ -35,6 +39,7 @@ function parseProof(value: unknown): TerritorialLegendAwardProof | null {
     ? {
         proofId: row.proof_id,
         userId: row.user_id,
+        campaignYear,
         level: level as TerritorialLegendLevel,
         territoryCode: row.territory_code,
         awardKind: row.award_kind,
@@ -56,7 +61,7 @@ export async function loadTerritorialLegendAwardProofs(
 ): Promise<TerritorialLegendAwardProof[]> {
   const result = await supabase
     .from("territorial_legend_award_proofs")
-    .select("proof_id, user_id, level, territory_code, award_kind, threshold_days, hold_started_on, held_through_on, awarded_on, valid_from, valid_until, validity_status, source_fingerprint")
+    .select("proof_id, user_id, campaign_year, level, territory_code, award_kind, threshold_days, hold_started_on, held_through_on, awarded_on, valid_from, valid_until, validity_status, source_fingerprint")
     .eq("user_id", userId)
     .eq("validity_status", "active")
     .limit(10000);

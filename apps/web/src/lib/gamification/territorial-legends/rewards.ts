@@ -1,4 +1,5 @@
 import type { GamificationSourceFact } from "../progression/gamification-reconstruction";
+import { campaignEndDate, campaignStartDate } from "./campaign";
 import type {
   TerritorialLegendAwardProof,
   TerritorialLegendHoldPeriod,
@@ -9,7 +10,7 @@ import type {
 export const TERRITORIAL_LEGEND_REWARD_EVENT_TYPE = "territorial_legend_reward" as const;
 export const TERRITORIAL_LEGEND_SOURCE_TABLE = "territorial_legend_award_proofs" as const;
 export const TERRITORIAL_LEGEND_HOLD_SOURCE_TABLE = "territorial_legend_hold_periods" as const;
-export const TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS = [7, 30, 90, 180, 365, 730] as const;
+export const TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS = [7, 30, 90, 180] as const;
 
 export type TerritorialLegendRewardFamilyId = `territorial_legend:${TerritorialLegendLevel}`;
 
@@ -44,11 +45,13 @@ export function inclusiveCivilDays(start: string, end: string): number {
 export function awardProofId(
   userId: string,
   level: TerritorialLegendLevel,
+  campaignYear: number,
   territoryCode: string,
   awardKind: TerritorialLegendAwardProof["awardKind"],
   thresholdDays: number,
 ): string {
-  return [userId, level, territoryCode, awardKind, thresholdDays].join(":");
+  const identityTerritory = awardKind === "conquest" ? "*" : territoryCode;
+  return [userId, level, campaignYear, identityTerritory, awardKind, thresholdDays].join(":");
 }
 
 export function buildTerritorialLegendHoldTransition(
@@ -60,9 +63,10 @@ export function buildTerritorialLegendHoldTransition(
     return { ...current, endedOn: current.lastVerifiedOn, validityStatus: "closed" };
   }
 
-  if (!current || current.validityStatus !== "active" || current.endedOn) {
+  if (!current || current.campaignYear !== winner.campaignYear || current.validityStatus !== "active" || current.endedOn) {
     return {
       userId: winner.userId,
+      campaignYear: winner.campaignYear,
       level: winner.level,
       territoryCode: winner.territoryCode,
       territoryLabel: winner.territoryLabel,
@@ -87,6 +91,7 @@ export function buildTerritorialLegendHoldTransition(
   // fictional interval. The caller closes the old period and opens this one.
   return {
     userId: winner.userId,
+    campaignYear: winner.campaignYear,
     level: winner.level,
     territoryCode: winner.territoryCode,
     territoryLabel: winner.territoryLabel,
@@ -104,6 +109,7 @@ export function buildTerritorialLegendAwardProofs(
 ): TerritorialLegendAwardProof[] {
   if (period.validityStatus === "invalidated") return [];
   const heldThroughOn = period.lastVerifiedOn;
+  if (period.startedOn < campaignStartDate(period.campaignYear) || heldThroughOn > campaignEndDate(period.campaignYear)) return [];
   const days = inclusiveCivilDays(period.startedOn, heldThroughOn);
   const candidates: Array<{ awardKind: TerritorialLegendAwardProof["awardKind"]; thresholdDays: number }> = [
     { awardKind: "conquest", thresholdDays: 0 },
@@ -111,12 +117,16 @@ export function buildTerritorialLegendAwardProofs(
       .filter((thresholdDays) => days >= thresholdDays)
       .map((thresholdDays) => ({ awardKind: "longevity" as const, thresholdDays })),
   ];
+  if (heldThroughOn === campaignEndDate(period.campaignYear)) {
+    candidates.push({ awardKind: "season_end", thresholdDays: 0 });
+  }
   return candidates.flatMap(({ awardKind, thresholdDays }) => {
-    const proofId = awardProofId(period.userId, period.level, period.territoryCode, awardKind, thresholdDays);
+    const proofId = awardProofId(period.userId, period.level, period.campaignYear, period.territoryCode, awardKind, thresholdDays);
     if (existingProofIds.has(proofId)) return [];
     return [{
       proofId,
       userId: period.userId,
+      campaignYear: period.campaignYear,
       level: period.level,
       territoryCode: period.territoryCode,
       awardKind,
@@ -146,6 +156,7 @@ export function territorialLegendProofToFact(proof: TerritorialLegendAwardProof)
     badgeId: territorialLegendFamilyId(proof.level),
     metadata: {
       awardKind: proof.awardKind,
+      campaignYear: proof.campaignYear,
       territorialLevel: proof.level,
       territoryCode: proof.territoryCode,
       holdStartedOn: proof.holdStartedOn,

@@ -53,6 +53,7 @@ export type TerritorialLegendEntry = {
 
 export type TerritorialLegendPage = {
   level: TerritorialLegendLevel;
+  campaignYear: number;
   territoryCode: string;
   territoryLabel: string | null;
   generatedAt: string;
@@ -74,6 +75,7 @@ export type TerritorialLegendPage = {
 
 export type TerritorialLegendWinnerSnapshot = {
   userId: string;
+  campaignYear: number;
   level: TerritorialLegendLevel;
   territoryCode: string;
   territoryLabel: string;
@@ -87,6 +89,7 @@ export type TerritorialLegendWinnerSnapshot = {
 export type TerritorialLegendHoldPeriod = {
   id?: number | string;
   userId: string;
+  campaignYear: number;
   level: TerritorialLegendLevel;
   territoryCode: string;
   territoryLabel: string;
@@ -100,9 +103,10 @@ export type TerritorialLegendHoldPeriod = {
 export type TerritorialLegendAwardProof = {
   proofId: string;
   userId: string;
+  campaignYear: number;
   level: TerritorialLegendLevel;
   territoryCode: string;
-  awardKind: "conquest" | "longevity";
+  awardKind: "conquest" | "longevity" | "season_end";
   thresholdDays: number;
   holdStartedOn: string;
   heldThroughOn: string;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildTerritorialLegendPage, buildTerritorialLegendWinnerSnapshots } from "./engine";
+import { campaignEndDate, campaignStartDate, campaignYearForCivilDate, isDateInCampaign } from "./campaign";
 import type {
   TerritorialActionFact,
   TerritorialLegendConsent,
@@ -84,6 +85,7 @@ describe("territorial legend engine", () => {
       });
       expect(page.items.map((item) => item.publicLabel)).toEqual(["Alice", "Bob", "Chloé"]);
       expect(page.items.every((item) => !Object.hasOwn(item, "userId"))).toBe(true);
+      expect(page.campaignYear).toBe(2026);
     }
   });
 
@@ -180,5 +182,36 @@ describe("territorial legend engine", () => {
     const arrondissementWinners = winners.filter((winner) => winner.level === "arrondissement" && winner.territoryCode === "75105");
     expect(arrondissementWinners).toHaveLength(1);
     expect(arrondissementWinners[0]).toMatchObject({ userId: "u-a", rank: 1, score: 2, tieSize: 1 });
+  });
+
+  it("bounds the rolling window at the campaign start on 1 January", () => {
+    const page = buildTerritorialLegendPage({
+      level: "commune",
+      territoryCode: "75056",
+      now: new Date("2027-01-01T12:00:00.000Z"),
+      actions: [
+        action("previous-campaign", "2026-12-31"),
+        action("current-campaign", "2027-01-01"),
+      ],
+      participations: [
+        { actionId: "previous-campaign", userId: "u-a", joinedAt: "2026-12-31T10:00:00.000Z" },
+        { actionId: "current-campaign", userId: "u-b", joinedAt: "2027-01-01T10:00:00.000Z" },
+      ],
+      consents: [
+        { userId: "u-a", enabled: true, activatedAt: "2026-01-01T00:00:00.000Z" },
+        { userId: "u-b", enabled: true, activatedAt: "2026-12-31T00:00:00.000Z" },
+      ],
+      profiles: [{ userId: "u-a", publicLabel: "Alice" }, { userId: "u-b", publicLabel: "Bob" }],
+    });
+    expect(page.campaignYear).toBe(2027);
+    expect(page.items).toEqual([{ rank: 1, publicLabel: "Bob", score: 1, distinctActions: 1, tied: false, tieSize: 1 }]);
+  });
+
+  it("uses civil campaign dates for leap years", () => {
+    expect(campaignYearForCivilDate("2024-02-29")).toBe(2024);
+    expect(campaignStartDate(2024)).toBe("2024-01-01");
+    expect(campaignEndDate(2024)).toBe("2024-12-31");
+    expect(isDateInCampaign("2024-02-29", 2024)).toBe(true);
+    expect(isDateInCampaign("2025-01-01", 2024)).toBe(false);
   });
 });

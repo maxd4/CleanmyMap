@@ -57,7 +57,8 @@ personnelle, séparée du leaderboard.
 ## Exception publique `TERRITORIAL_LEGENDS_EXCEPTION`
 
 Les Légendes territoriales sont une exception publique distincte du leaderboard
-XP. Elles n'ajoutent ni métrique XP, ni badge CURRENT, ni progression parallèle.
+XP. Elles n'ajoutent ni métrique XP ni progression parallèle ; leurs cinq
+familles `BADGE_ONLY` sont exposées par le catalogue CURRENT dédié.
 Le moteur serveur expose cinq niveaux COG : arrondissement municipal (Paris,
 Lyon et Marseille uniquement), commune, département ou équivalent, région ou
 équivalent et France entière. Les codes et les relations de parenté sont ceux
@@ -70,7 +71,8 @@ participation `confirmed`. L'action est résolue par le service territorial
 existant sur son emplacement canonique ; un passage GPS ou une chaîne de
 caractères ambiguë ne crée jamais une attribution. Sur une fenêtre glissante de
 90 jours en `Europe/Paris`, une même action compte au plus une fois par
-utilisateur et par niveau parent. Les actions non résolues ou devenues non
+utilisateur et par niveau parent ; cette fenêtre est bornée par le 1er janvier
+de la campagne civile en cours. Les actions non résolues ou devenues non
 publiables sont exclues.
 
 Le consentement territorial est séparé de
@@ -100,28 +102,44 @@ ni les dix progressions infinies CURRENT.
 Les récompenses sont une extension de cette même exception et restent
 `BADGE_ONLY` (`0 XP`). Le registre CURRENT contient exactement cinq familles
 évolutives, une par niveau territorial : arrondissement, commune, département,
-région et France. Une famille porte deux axes internes : la conquête, attribuée
-une seule fois lors de la première attribution effective d’une Légende à
-l’utilisateur et au niveau, puis la longévité avec les paliers 7, 30, 90, 180,
-365 et 730 jours. Ces paliers ne deviennent pas trente badges indépendants.
+région et France. Une campagne est identifiée par `campaignYear` et couvre
+strictement l’année civile Europe/Paris, du 1er janvier inclus au 1er janvier
+suivant exclu. Une famille porte les axes internes suivants : la conquête,
+attribuée une seule fois par utilisateur, niveau et campagne, indépendamment
+du nombre de territoires conquis ; la longévité avec les paliers 7, 30, 90 et
+180 jours ; et une reconnaissance distincte de fin de saison. Ces paliers ne
+deviennent pas trente badges indépendants.
 
-Une détention n’avance que lorsqu’une réconciliation quotidienne confirme le
-même détenteur, le même niveau et le même code territorial sur la date civile
-suivante. Une interruption ferme la période à son dernier jour vérifié ; une
-reprise ouvre une nouvelle période et ne complète jamais le trou. Les égalités
-au rang 1 sont des détentions valides pour chaque utilisateur concerné, sans
-créer de détenteur artificiel. Les changements de détenteur ferment les
-périodes sortantes et ouvrent celles du ou des nouveaux gagnants.
+Le classement et les titres sont remis à zéro au changement de campagne. La
+fenêtre glissante de 90 jours est bornée par le 1er janvier de la campagne :
+aucune contribution de décembre ne concourt dans la campagne suivante. Une
+détention n’avance que lorsqu’une réconciliation quotidienne confirme le même
+détenteur, le même niveau, le même code territorial et la même campagne sur la
+date civile suivante. Une interruption ferme la période à son dernier jour
+vérifié ; une reprise ouvre une nouvelle période et ne complète jamais le trou.
+Les égalités au rang 1 sont des détentions valides pour chaque utilisateur
+concerné, sans créer de détenteur artificiel. Les changements de détenteur
+ferment les périodes sortantes et ouvrent celles du ou des nouveaux gagnants.
+Une période ne peut jamais traverser le 1er janvier et sa durée maximale est
+donc celle de l’année civile, y compris 366 jours pour une année bissextile.
+La fin de saison est attribuée uniquement aux détenteurs effectivement
+confirmés dans le snapshot du 31 décembre ; elle ne déduit aucune journée
+absente.
 
-`territorial_legend_hold_periods` conserve les périodes vérifiées et leur
-empreinte de source. `territorial_legend_award_proofs` conserve les preuves
-d’attribution, leur période, leur seuil et leur validité. Les identités de
-preuve sont uniques par utilisateur, niveau, territoire, axe et seuil ; les
-reprises, recalculs et écritures concurrentes sont donc idempotents. Une preuve
-invalidée reste dans l’audit mais n’est plus rechargée comme fait CURRENT. Une
-révocation du consentement exclut immédiatement la compétition et arrête la
-période courante ; elle ne transforme pas une attribution historique déjà
-prouvée en nouvelle attribution.
+`territorial_legend_hold_periods` conserve les périodes vérifiées, leur
+`campaign_year` et leur empreinte de source. `territorial_legend_award_proofs`
+conserve les preuves d’attribution, leur campagne, leur période, leur seuil,
+leur territoire et leur validité. Les identités de preuve comportent l’année :
+la conquête est unique par utilisateur, niveau et campagne, tandis que la
+longévité et la fin de saison sont propres au territoire détenu. Les reprises,
+recalculs et écritures concurrentes sont donc idempotents sans transférer de
+jours entre territoires ou campagnes. Une preuve invalidée reste dans l’audit
+mais n’est plus rechargée comme fait CURRENT. Les éventuelles lignes
+historiques dépourvues de campagne sont conservées comme archives non
+compétitives ; aucune année n’est fabriquée rétroactivement. Une révocation du
+consentement exclut immédiatement la compétition et arrête la période courante ;
+elle ne transforme pas une attribution historique déjà prouvée en nouvelle
+attribution.
 
 Une correction historique passe par `invalidate_territorial_legend_history` :
 elle invalide une période et/ou ses preuves sous verrou service-only, conserve

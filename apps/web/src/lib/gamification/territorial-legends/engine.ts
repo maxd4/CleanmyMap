@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPublicLeaderboardLabel } from "@/lib/gamification/progression/progression-ranking";
 import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
 import type { ActionGeometryKind } from "@/lib/actions/types";
+import { campaignStartDate, campaignYearForCivilDate } from "./campaign";
 import {
   TERRITORIAL_LEGEND_LEVELS,
   type TerritorialActionFact,
@@ -55,9 +56,12 @@ function parseActionDate(value: string): Date | null {
 }
 
 function windowStart(now: Date): Date {
-  const [year, month, day] = parisDate(now).split("-").map(Number);
+  const currentDate = parisDate(now);
+  const [year, month, day] = currentDate.split("-").map(Number);
   const start = new Date(Date.UTC(year, month - 1, day, 12));
   start.setUTCDate(start.getUTCDate() - (TERRITORIAL_LEGEND_WINDOW_DAYS - 1));
+  const campaignStart = new Date(`${campaignStartDate(campaignYearForCivilDate(currentDate))}T12:00:00Z`);
+  if (start < campaignStart) return campaignStart;
   return start;
 }
 
@@ -149,6 +153,7 @@ function contributionIsEligible(
   const start = windowStart(now);
   const currentParisDate = parisDate(now);
   if (actionAt < start || action.actionDate > currentParisDate) return false;
+  if (campaignYearForCivilDate(action.actionDate) !== campaignYearForCivilDate(currentParisDate)) return false;
   if (!consent.enabled || !consent.activatedAt) return false;
   const activatedAt = new Date(consent.activatedAt);
   if (Number.isNaN(activatedAt.getTime())) return false;
@@ -175,12 +180,14 @@ export function buildTerritorialLegendPage(params: BuildLeaderboardParams): Terr
   const maxScore = internal[0]?.score ?? 0;
   const titleEligible = internal.length >= 2 && maxScore >= 2;
   const label = params.territoryLabel?.trim() || null;
+  const campaignYear = campaignYearForCivilDate(parisDate(now));
 
   const owner = params.ownerUserId
     ? internal.find((item) => item.userId === params.ownerUserId) ?? null
     : undefined;
   return {
     level: params.level,
+    campaignYear,
     territoryCode: targetCode,
     territoryLabel: label,
     generatedAt: now.toISOString(),
@@ -219,6 +226,7 @@ export function buildTerritorialLegendWinnerSnapshots(params: {
       for (const winner of ranked.filter((entry) => entry.rank === 1)) {
         snapshots.push({
           userId: winner.userId,
+          campaignYear: campaignYearForDate(now),
           level,
           territoryCode,
           territoryLabel: territoryPart.name,
@@ -226,7 +234,7 @@ export function buildTerritorialLegendWinnerSnapshots(params: {
           score: winner.score,
           rank: 1,
           tieSize: winner.tieSize,
-          sourceFingerprint: [level, territoryCode, winner.userId, winner.actionIds.join(","), winner.score, winner.tieSize].join("|"),
+          sourceFingerprint: [campaignYearForDate(now), level, territoryCode, winner.userId, winner.actionIds.join(","), winner.score, winner.tieSize].join("|"),
         });
       }
     }
@@ -236,6 +244,10 @@ export function buildTerritorialLegendWinnerSnapshots(params: {
     left.territoryCode.localeCompare(right.territoryCode) ||
     left.userId.localeCompare(right.userId),
   );
+}
+
+function campaignYearForDate(value: Date): number {
+  return campaignYearForCivilDate(parisDate(value));
 }
 
 type RawActionRow = {

@@ -39,6 +39,7 @@ export async function GET(request: Request) {
       {
         status: "ok",
         level: page.level,
+        campaignYear: page.campaignYear,
         territoryCode: page.territoryCode,
         territoryLabel: page.territoryLabel,
         generatedAt: page.generatedAt,

@@ -131,7 +131,7 @@ export const CURRENT_TERRITORIAL_LEGEND_MECHANICS = TERRITORIAL_LEGEND_LEVELS.ma
   visibility: "current_user" as const,
   rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
   introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
-  description: `Famille évolutive de conquête et longévité au niveau ${level}.`,
+  description: `Famille annuelle évolutive de conquête, longévité et fin de saison au niveau ${level}.`,
   eventType: TERRITORIAL_LEGEND_REWARD_EVENT_TYPE,
 })) satisfies readonly (GamificationMechanicDefinition & { eventType: ProgressionEventType })[];
 

@@ -32,6 +32,7 @@ import {
   TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS,
   territorialLegendFamilyId,
 } from "../territorial-legends/rewards";
+import { campaignYearForCivilDate } from "../territorial-legends/campaign";
 import { TERRITORIAL_LEGEND_LEVELS } from "../territorial-legends/types";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
@@ -165,10 +166,18 @@ function buildTerrainSpecializationBadges(
 function buildTerritorialLegendBadges(
   proofs: Awaited<ReturnType<typeof loadTerritorialLegendAwardProofs>>,
 ): GamificationBadgeEntry[] {
+  const currentCampaignYear = campaignYearForCivilDate(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()));
   return TERRITORIAL_LEGEND_LEVELS.map((level) => {
-    const familyProofs = proofs.filter((proof) => proof.level === level);
-    const current = familyProofs.reduce((max, proof) => Math.max(max, proof.thresholdDays), 0);
+    const familyProofs = proofs.filter((proof) => proof.level === level && proof.campaignYear === currentCampaignYear);
+    const longevityProofs = familyProofs.filter((proof) => proof.awardKind === "longevity");
+    const current = longevityProofs.reduce((max, proof) => Math.max(max, proof.thresholdDays), 0);
     const next = TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS.find((threshold) => threshold > current) ?? null;
+    const seasonEnded = familyProofs.some((proof) => proof.awardKind === "season_end");
     const definitionId = territorialLegendFamilyId(level);
     return {
       id: `${definitionId}:current`,
@@ -177,12 +186,16 @@ function buildTerritorialLegendBadges(
       status: "CURRENT",
       scale: "territorial",
       name: `Légende territoriale — ${level}`,
-      description: "Conquête one-shot puis détention continue à 7, 30, 90, 180, 365 et 730 jours.",
+      description: "Conquête annuelle puis détention continue à 7, 30, 90 et 180 jours, avec fin de saison.",
       icon: "🗺️",
       unlocked: familyProofs.length > 0,
       progress: { current, target: next },
       visualVariant: "territorial",
-      tooltip: next ? `Palier actuel ${current} jour(s) · prochain palier ${next} jour(s)` : `Palier maximal acquis: ${current} jour(s)`,
+      tooltip: seasonEnded
+        ? `Fin de saison vérifiée · palier ${current} jour(s)`
+        : next
+          ? `Palier actuel ${current} jour(s) · prochain palier ${next} jour(s)`
+          : `Palier maximal acquis: ${current} jour(s)`,
     } satisfies GamificationBadgeEntry;
   });
 }

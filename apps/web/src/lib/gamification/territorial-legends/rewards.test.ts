@@ -12,6 +12,7 @@ import type { TerritorialLegendHoldPeriod, TerritorialLegendWinnerSnapshot } fro
 function winner(overrides: Partial<TerritorialLegendWinnerSnapshot> = {}): TerritorialLegendWinnerSnapshot {
   return {
     userId: "user-1",
+    campaignYear: 2026,
     level: "commune",
     territoryCode: "75056",
     territoryLabel: "Paris",
@@ -27,6 +28,7 @@ function winner(overrides: Partial<TerritorialLegendWinnerSnapshot> = {}): Terri
 function period(overrides: Partial<TerritorialLegendHoldPeriod> = {}): TerritorialLegendHoldPeriod {
   return {
     userId: "user-1",
+    campaignYear: 2026,
     level: "commune",
     territoryCode: "75056",
     territoryLabel: "Paris",
@@ -49,7 +51,7 @@ describe("territorial legend rewards", () => {
 
     const thirtyDays = buildTerritorialLegendAwardProofs(period({ lastVerifiedOn: "2026-01-30" }));
     expect(thirtyDays.map((proof) => proof.thresholdDays)).toEqual([0, 7, 30]);
-    expect(TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS).toEqual([7, 30, 90, 180, 365, 730]);
+    expect(TERRITORIAL_LEGEND_LONGEVITY_THRESHOLDS).toEqual([7, 30, 90, 180]);
     expect(inclusiveCivilDays("2026-01-01", "2026-01-07")).toBe(7);
   });
 
@@ -57,8 +59,8 @@ describe("territorial legend rewards", () => {
     const proofs = buildTerritorialLegendAwardProofs(
       period({ lastVerifiedOn: "2026-01-30" }),
       new Set([
-        "user-1:commune:75056:conquest:0",
-        "user-1:commune:75056:longevity:7",
+        "user-1:commune:2026:*:conquest:0",
+        "user-1:commune:2026:75056:longevity:7",
       ]),
     );
     expect(proofs.map((proof) => proof.thresholdDays)).toEqual([30]);
@@ -85,5 +87,32 @@ describe("territorial legend rewards", () => {
   it("keeps territorial families independent", () => {
     expect(territorialLegendFamilyId("arrondissement")).not.toBe(territorialLegendFamilyId("commune"));
     expect(territorialLegendFamilyId("country")).toBe("territorial_legend:country");
+  });
+
+  it("resets a hold at the campaign boundary and recognizes the season end", () => {
+    const previous = period({ campaignYear: 2025, startedOn: "2025-12-31", lastVerifiedOn: "2025-12-31" });
+    const january = buildTerritorialLegendHoldTransition(previous, winner({ campaignYear: 2026, effectiveOn: "2026-01-01" }));
+    expect(january).toMatchObject({ campaignYear: 2026, startedOn: "2026-01-01", lastVerifiedOn: "2026-01-01" });
+
+    const season = buildTerritorialLegendAwardProofs(period({ startedOn: "2026-07-05", lastVerifiedOn: "2026-12-31" }));
+    expect(season.map((proof) => proof.awardKind)).toEqual(["conquest", "longevity", "longevity", "longevity", "longevity", "season_end"]);
+    expect(season.map((proof) => proof.thresholdDays)).toEqual([0, 7, 30, 90, 180, 0]);
+    expect(season.every((proof) => proof.proofId.includes(":2026:"))).toBe(true);
+  });
+
+  it("awards conquest once per level and campaign, independently of territory", () => {
+    const first = buildTerritorialLegendAwardProofs(period({ territoryCode: "75056" }));
+    const second = buildTerritorialLegendAwardProofs(
+      period({ territoryCode: "69123" }),
+      new Set(first.map((proof) => proof.proofId)),
+    );
+    expect(first.filter((proof) => proof.awardKind === "conquest")).toHaveLength(1);
+    expect(second.filter((proof) => proof.awardKind === "conquest")).toHaveLength(0);
+  });
+
+  it("never creates legacy 365/730 thresholds or crosses a campaign", () => {
+    const proofs = buildTerritorialLegendAwardProofs(period({ startedOn: "2026-01-01", lastVerifiedOn: "2026-12-31" }));
+    expect(proofs.map((proof) => proof.thresholdDays)).not.toEqual(expect.arrayContaining([365, 730]));
+    expect(proofs.every((proof) => proof.campaignYear === 2026)).toBe(true);
   });
 });

@@ -24,6 +24,7 @@ describe("public territorial leaderboard route", () => {
     verifyRateLimitMock.mockResolvedValue({ allowed: true });
     loadPageMock.mockResolvedValue({
       level: "department",
+      campaignYear: 2026,
       territoryCode: "974",
       territoryLabel: "La Réunion",
       generatedAt: "2026-11-03T12:00:00.000Z",
@@ -38,6 +39,7 @@ describe("public territorial leaderboard route", () => {
     const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/public?level=department&territoryCode=974"));
     const payload = await response.json();
     expect(response.status).toBe(200);
+    expect(payload.campaignYear).toBe(2026);
     expect(payload.items[0]).not.toHaveProperty("userId");
     expect(payload).not.toHaveProperty("consents");
     expect(payload).not.toHaveProperty("participations");

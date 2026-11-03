@@ -130,7 +130,7 @@ export const CURRENT_TERRITORIAL_LEGEND_BADGE_DEFINITIONS = TERRITORIAL_LEGEND_L
   progressionId: null,
   rule: {
     kind: "infinite_thresholds" as const,
-    description: "Conquête one-shot puis longévité à 7, 30, 90, 180, 365 et 730 jours.",
+    description: "Conquête annuelle puis détention continue à 7, 30, 90 et 180 jours, avec reconnaissance de fin de saison.",
   },
   xpPolicy: {
     kind: "none" as const,
