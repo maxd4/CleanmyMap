@@ -70,6 +70,10 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
+async function flushMicrotasks(count = 4) {
+  for (let index = 0; index < count; index += 1) await Promise.resolve()
+}
+
 async function renderScreen(onSessionExpired = vi.fn(), onStartAction = vi.fn()) {
   let renderer!: TestRenderer.ReactTestRenderer
   await act(async () => {
@@ -835,5 +839,163 @@ describe('mobile action creation runtime', () => {
     await act(async () => { await pendingB; await Promise.resolve() })
     expect(disabledButtons()).toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.')).length).toBeGreaterThan(0)
+  })
+
+  it('ignores a stale save response after Clerk A to B to A, even with the same user restored', async () => {
+    state.getItem.mockImplementation(async (key: string) => key.endsWith(':user-a')
+      ? JSON.stringify({ ownerId: 'user-a', draft: { title: 'Action A' } })
+      : key.endsWith(':user-b')
+        ? JSON.stringify({ ownerId: 'user-b', draft: { title: 'Action B' } })
+        : null)
+    const oldSave = deferred<{ status: 'created'; id: string; source: 'actions' }>()
+    const currentSave = deferred<{ status: 'created'; id: string; source: 'actions' }>()
+    state.createMobileAction.mockReturnValueOnce(oldSave.promise).mockReturnValueOnce(currentSave.promise)
+    let controller!: ReturnType<typeof useActionCreateController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await flushMicrotasks()
+    })
+
+    let oldRequest!: Promise<unknown>
+    await act(async () => { oldRequest = controller.saveDraft() })
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ControllerProbe onController={(value) => { controller = value }} />)
+      await flushMicrotasks()
+    })
+    await act(async () => {
+      state.auth.userId = 'user-a'
+      renderer.update(<ControllerProbe onController={(value) => { controller = value }} />)
+      await flushMicrotasks()
+    })
+
+    let currentRequest!: Promise<unknown>
+    await act(async () => { currentRequest = controller.saveDraft() })
+    const storageCallsBeforeOldResolution = state.setItem.mock.calls.length
+    oldSave.resolve({ status: 'created', id: 'action-old', source: 'actions' })
+    await act(async () => { await oldRequest; await flushMicrotasks() })
+
+    expect(controller.actionId).toBeNull()
+    expect(controller.busy).toBe(true)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Brouillon enregistré sur le serveur'))).toHaveLength(0)
+    expect(state.setItem.mock.calls.slice(storageCallsBeforeOldResolution).some(([key, value]) => key.endsWith(':user-a') && value.includes('action-old'))).toBe(false)
+
+    currentSave.resolve({ status: 'created', id: 'action-current', source: 'actions' })
+    await act(async () => { await currentRequest; await flushMicrotasks() })
+    expect(controller.actionId).toBe('action-current')
+    expect(controller.message).toContain('Brouillon enregistré sur le serveur')
+  })
+
+  it('ignores a stale linked-GPS completion after Clerk A to B to A', async () => {
+    state.getItem.mockImplementation((key: string) => {
+      if (key.endsWith(':user-a')) return Promise.resolve(JSON.stringify({ ownerId: 'user-a', actionId: 'action-a', section: 'verification', draft: { title: 'Action A' } }))
+      if (key.endsWith(':user-b')) return Promise.resolve(JSON.stringify({ ownerId: 'user-b', actionId: 'action-b', section: 'verification', draft: { title: 'Action B' } }))
+      return Promise.resolve(null)
+    })
+    const oldLink = deferred<void>()
+    const currentLink = deferred<void>()
+    const onStartAction = vi.fn().mockReturnValueOnce(oldLink.promise).mockReturnValueOnce(currentLink.promise)
+    const renderer = await renderScreen(vi.fn(), onStartAction)
+    await act(async () => { await flushMicrotasks() })
+
+    let oldRequest!: Promise<unknown>
+    await act(async () => { oldRequest = callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') as Promise<unknown> })
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={onStartAction} />)
+      await flushMicrotasks()
+    })
+    await act(async () => {
+      state.auth.userId = 'user-a'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={onStartAction} />)
+      await flushMicrotasks()
+    })
+
+    let currentRequest!: Promise<unknown>
+    await act(async () => { currentRequest = callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') as Promise<unknown> })
+    oldLink.resolve()
+    await act(async () => { await oldRequest; await flushMicrotasks() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.'))).toHaveLength(0)
+    expect(renderer.root.findAll((node) => String(node.type) === 'TouchableOpacity' && node.props.disabled === true).length).toBeGreaterThan(0)
+
+    currentLink.resolve()
+    await act(async () => { await currentRequest; await flushMicrotasks() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.'))).not.toHaveLength(0)
+  })
+
+  it('applies only the current GPS position after Clerk A to B to A', async () => {
+    state.getItem.mockImplementation((key: string) => key.endsWith(':user-a')
+      ? Promise.resolve(JSON.stringify({ ownerId: 'user-a', draft: { title: 'Action A' } }))
+      : key.endsWith(':user-b')
+        ? Promise.resolve(JSON.stringify({ ownerId: 'user-b', draft: { title: 'Action B' } }))
+        : Promise.resolve(null))
+    const oldPosition = deferred<{ coords: { latitude: number; longitude: number } }>()
+    const currentPosition = deferred<{ coords: { latitude: number; longitude: number } }>()
+    state.getCurrentPositionAsync.mockReturnValueOnce(oldPosition.promise).mockReturnValueOnce(currentPosition.promise)
+    const renderer = await renderScreen()
+    await act(async () => { await flushMicrotasks() })
+
+    let oldRequest!: Promise<unknown>
+    await act(async () => { oldRequest = callTestHandler(findButton(renderer, 'Utiliser ma position actuelle'), 'onPress') as Promise<unknown> })
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await flushMicrotasks()
+    })
+    await act(async () => {
+      state.auth.userId = 'user-a'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await flushMicrotasks()
+    })
+
+    let currentRequest!: Promise<unknown>
+    await act(async () => { currentRequest = callTestHandler(findButton(renderer, 'Utiliser ma position actuelle'), 'onPress') as Promise<unknown> })
+    oldPosition.resolve({ coords: { latitude: 1.111111, longitude: 2.222222 } })
+    await act(async () => { await oldRequest; await flushMicrotasks() })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Terrain'), 'onPress') })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }), 'value')).not.toBe('1.111111')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }), 'value')).not.toBe('2.222222')
+
+    currentPosition.resolve({ coords: { latitude: 3.333333, longitude: 4.444444 } })
+    await act(async () => { await currentRequest; await flushMicrotasks() })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Latitude' }), 'value')).toBe('3.333333')
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Longitude' }), 'value')).toBe('4.444444')
+  })
+
+  it('keeps only the current briefing after Clerk A to B to A', async () => {
+    state.getItem.mockImplementation((key: string) => {
+      if (key.endsWith(':user-a')) return Promise.resolve(JSON.stringify({ ownerId: 'user-a', actionId: 'action-a', section: 'verification', draft: { title: 'Action A' } }))
+      if (key.endsWith(':user-b')) return Promise.resolve(JSON.stringify({ ownerId: 'user-b', actionId: 'action-b', section: 'verification', draft: { title: 'Action B' } }))
+      return Promise.resolve(null)
+    })
+    const oldBriefing = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string; meetingPoint: string } }>()
+    const currentBriefing = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string; meetingPoint: string } }>()
+    state.loadMobileActionDay.mockReturnValueOnce(oldBriefing.promise).mockReturnValueOnce(currentBriefing.promise)
+    const renderer = await renderScreen()
+    await act(async () => { await flushMicrotasks() })
+
+    let oldRequest!: Promise<unknown>
+    await act(async () => { oldRequest = callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') as Promise<unknown> })
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await flushMicrotasks()
+    })
+    await act(async () => {
+      state.auth.userId = 'user-a'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await flushMicrotasks()
+    })
+
+    let currentRequest!: Promise<unknown>
+    await act(async () => { currentRequest = callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') as Promise<unknown> })
+    oldBriefing.resolve({ status: 'ok', actionId: 'action-a', access: 'owner', action: { title: 'Briefing A ancien', meetingPoint: 'Rendez-vous A ancien' } })
+    await act(async () => { await oldRequest; await flushMicrotasks() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Rendez-vous A ancien'))).toHaveLength(0)
+
+    currentBriefing.resolve({ status: 'ok', actionId: 'action-a', access: 'owner', action: { title: 'Briefing A courant', meetingPoint: 'Rendez-vous A courant' } })
+    await act(async () => { await currentRequest; await flushMicrotasks() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Rendez-vous A courant'))).not.toHaveLength(0)
   })
 })

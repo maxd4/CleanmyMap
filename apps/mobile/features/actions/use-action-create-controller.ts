@@ -109,6 +109,29 @@ function serializeStoredDraft(ownerId: string, value: Omit<StoredDraft, 'ownerId
 
 const draftWritesInFlight = new Map<string, Promise<void>>()
 
+type SessionIdentity = { ownerId: string | null; generation: number }
+type SessionToken = { ownerId: string; generation: number }
+type SessionRef = React.MutableRefObject<SessionIdentity>
+
+function invalidateSession(sessionRef: SessionRef, ownerId: string): SessionToken {
+  const generation = sessionRef.current.generation + 1
+  sessionRef.current = { ownerId, generation }
+  return { ownerId, generation }
+}
+
+function captureSession(sessionRef: SessionRef): SessionToken | null {
+  const { ownerId, generation } = sessionRef.current
+  return ownerId ? { ownerId, generation } : null
+}
+
+function isCurrentSession(sessionRef: SessionRef, sessionAtStart: SessionToken | null): boolean {
+  return Boolean(
+    sessionAtStart
+      && sessionRef.current.ownerId === sessionAtStart.ownerId
+      && sessionRef.current.generation === sessionAtStart.generation,
+  )
+}
+
 function queueDraftWrite(key: string, value: string, canWrite: () => boolean): Promise<void> {
   const previous = draftWritesInFlight.get(key) ?? Promise.resolve()
   const mutation = previous.then(async () => {
@@ -138,6 +161,7 @@ function useActionCreatePersistence({
   setPublished,
   setClientRequestId,
   ownerId,
+  sessionRef,
 }: {
   draft: Draft
   actionId: string | null
@@ -150,17 +174,13 @@ function useActionCreatePersistence({
   setPublished: React.Dispatch<React.SetStateAction<boolean>>
   setClientRequestId: React.Dispatch<React.SetStateAction<string>>
   ownerId: string | null
+  sessionRef: SessionRef
 }) {
   const [draftHydrated, setDraftHydrated] = useState(false)
   const [hydratedOwnerId, setHydratedOwnerId] = useState<string | null>(null)
   const [draftReadAttempt, setDraftReadAttempt] = useState(0)
   const [draftReadError, setDraftReadError] = useState(false)
   const [draftWriteError, setDraftWriteError] = useState(false)
-  const currentOwnerRef = useRef<string | null>(ownerId)
-  useLayoutEffect(() => {
-    currentOwnerRef.current = ownerId
-  }, [ownerId])
-
   useEffect(() => {
     let active = true
     let readSucceeded = false
@@ -176,9 +196,10 @@ function useActionCreatePersistence({
     setClientRequestId(createLocalIdentifier('action-create'))
 
     if (!scopedKey) return () => { active = false }
+    const sessionAtHydration = invalidateSession(sessionRef, ownerId as string)
 
     const restoreDraft = async () => {
-      const isCurrentOwner = () => active && currentOwnerRef.current === ownerId
+      const isCurrentOwner = () => active && isCurrentSession(sessionRef, sessionAtHydration)
       try {
         const scopedValue = await AsyncStorage.getItem(scopedKey)
         let stored = parseStoredDraft(scopedValue, ownerId)
@@ -204,20 +225,21 @@ function useActionCreatePersistence({
     }
     void restoreDraft().catch(() => undefined)
     return () => { active = false }
-  }, [draftReadAttempt, ownerId, setActionId, setClientRequestId, setDraft, setPublished, setSection])
+  }, [draftReadAttempt, ownerId, sessionRef, setActionId, setClientRequestId, setDraft, setPublished, setSection])
 
   useEffect(() => {
     const scopedKey = ownerScopedStorageKey(ownerId)
     if (!draftHydrated || hydratedOwnerId !== ownerId || !scopedKey || !ownerId) return
-    const ownerAtStart = ownerId
+    const sessionAtStart = captureSession(sessionRef)
+    if (!sessionAtStart) return
     let active = true
     setDraftWriteError(false)
     const storedValue = serializeStoredDraft(ownerId, { draft, actionId, section, published, clientRequestId })
-    void queueDraftWrite(scopedKey, storedValue, () => active && currentOwnerRef.current === ownerAtStart && hydratedOwnerId === ownerAtStart).catch(() => {
-      if (active && currentOwnerRef.current === ownerAtStart) setDraftWriteError(true)
+    void queueDraftWrite(scopedKey, storedValue, () => active && isCurrentSession(sessionRef, sessionAtStart) && hydratedOwnerId === sessionAtStart.ownerId).catch(() => {
+      if (active && isCurrentSession(sessionRef, sessionAtStart)) setDraftWriteError(true)
     })
     return () => { active = false }
-  }, [actionId, clientRequestId, draft, draftHydrated, hydratedOwnerId, ownerId, published, section])
+  }, [actionId, clientRequestId, draft, draftHydrated, hydratedOwnerId, ownerId, published, section, sessionRef])
 
   return { draftHydrated, hydratedOwnerId, draftReadError, draftWriteError, retryDraftRead: () => setDraftReadAttempt((attempt) => attempt + 1) }
 }
@@ -313,6 +335,7 @@ function useActionCreateMutations({
   onStartAction,
   setActionId,
   setPublished,
+  sessionRef,
 }: {
   draft: Draft
   actionId: string | null
@@ -325,18 +348,15 @@ function useActionCreateMutations({
   onStartAction: (actionId: string, label: string) => void | Promise<void>
   setActionId: React.Dispatch<React.SetStateAction<string | null>>
   setPublished: React.Dispatch<React.SetStateAction<boolean>>
+  sessionRef: SessionRef
 }) {
   const [busy, setBusy] = useState(false)
   const [briefingBusy, setBriefingBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dayBriefing, setDayBriefing] = useState<MobileActionDay | null>(null)
-  const currentOwnerRef = useRef<string | null>(ownerId)
   const briefingContextRef = useRef({ ownerId, actionId })
   const briefingGenerationRef = useRef(0)
-  useLayoutEffect(() => {
-    currentOwnerRef.current = ownerId
-  }, [ownerId])
   useLayoutEffect(() => {
     briefingContextRef.current = { ownerId, actionId }
     briefingGenerationRef.current += 1
@@ -352,13 +372,13 @@ function useActionCreateMutations({
     setError(null)
   }, [ownerId])
 
-  function canMutate(ownerAtStart: string | null): boolean {
-    return Boolean(ownerAtStart && currentOwnerRef.current === ownerAtStart)
+  function canMutate(sessionAtStart: SessionToken | null): boolean {
+    return isCurrentSession(sessionRef, sessionAtStart)
   }
 
-  function canApplyBriefing(ownerAtStart: string, actionAtStart: string, generationAtStart: number): boolean {
-    return canMutate(ownerAtStart)
-      && briefingContextRef.current.ownerId === ownerAtStart
+  function canApplyBriefing(sessionAtStart: SessionToken | null, actionAtStart: string, generationAtStart: number): boolean {
+    return canMutate(sessionAtStart)
+      && briefingContextRef.current.ownerId === sessionAtStart?.ownerId
       && briefingContextRef.current.actionId === actionAtStart
       && briefingGenerationRef.current === generationAtStart
   }
@@ -373,17 +393,18 @@ function useActionCreateMutations({
     if (mutationsBlocked) return
     const organizerSelectionError = getOrganizerSelectionError(payload)
     if (organizerSelectionError) { setError(organizerSelectionError); return }
-    const ownerAtStart = ownerId
+    const sessionAtStart = captureSession(sessionRef)
+    if (!sessionAtStart) return
     setBusy(true); setError(null); setMessage(null)
     try {
       const result = actionId ? await updateMobileAction(actionId, payload) : await createMobileAction(payload)
-      if (!canMutate(ownerAtStart)) return
+      if (!canMutate(sessionAtStart)) return
       if (!actionId && 'id' in result) setActionId(result.id)
       setMessage('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
     } catch (value) {
-      if (canMutate(ownerAtStart)) handleError(value)
+      if (canMutate(sessionAtStart)) handleError(value)
     } finally {
-      if (canMutate(ownerAtStart)) setBusy(false)
+      if (canMutate(sessionAtStart)) setBusy(false)
     }
   }
 
@@ -391,58 +412,61 @@ function useActionCreateMutations({
     if (mutationsBlocked || published) return
     const organizerSelectionError = getOrganizerSelectionError(payload)
     if (organizerSelectionError) { setError(organizerSelectionError); return }
-    const ownerAtStart = ownerId
+    const sessionAtStart = captureSession(sessionRef)
+    if (!sessionAtStart) return
     setBusy(true); setError(null); setMessage(null)
     try {
       const currentActionId = actionId ?? (await createMobileAction(payload)).id
-      if (!canMutate(ownerAtStart)) return
+      if (!canMutate(sessionAtStart)) return
       if (!actionId) setActionId(currentActionId)
       if (actionId) await updateMobileAction(actionId, payload)
-      if (!canMutate(ownerAtStart)) return
+      if (!canMutate(sessionAtStart)) return
       await publishMobileAction(currentActionId)
-      if (!canMutate(ownerAtStart)) return
+      if (!canMutate(sessionAtStart)) return
       setPublished(true)
       setMessage('Publication confirmée par le serveur.')
     } catch (value) {
-      if (canMutate(ownerAtStart)) handleError(value)
+      if (canMutate(sessionAtStart)) handleError(value)
     } finally {
-      if (canMutate(ownerAtStart)) setBusy(false)
+      if (canMutate(sessionAtStart)) setBusy(false)
     }
   }
 
   async function linkGps() {
     if (!ownerId || !actionId) { setError('Enregistrez le brouillon avant de relier une activité GPS.'); return }
-    const ownerAtStart = ownerId
+    const sessionAtStart = captureSession(sessionRef)
+    if (!sessionAtStart) return
     setBusy(true); setError(null)
     try {
       await onStartAction(actionId, draft.title || draft.location || 'Action mobile')
-      if (canMutate(ownerAtStart)) setMessage('Suivi GPS démarré pour cette action. La même mission sera finalisée puis réconciliée.')
+      if (canMutate(sessionAtStart)) setMessage('Suivi GPS démarré pour cette action. La même mission sera finalisée puis réconciliée.')
     } catch (value) {
-      if (canMutate(ownerAtStart)) handleError(value)
+      if (canMutate(sessionAtStart)) handleError(value)
     } finally {
-      if (canMutate(ownerAtStart)) setBusy(false)
+      if (canMutate(sessionAtStart)) setBusy(false)
     }
   }
 
   async function loadDayBriefing() {
     if (!ownerId || !actionId) return
-    const ownerAtStart = ownerId
+    const sessionAtStart = captureSession(sessionRef)
+    if (!sessionAtStart) return
     const actionAtStart = actionId
     const generationAtStart = ++briefingGenerationRef.current
     setBriefingBusy(true); setError(null); setMessage(null)
     try {
       const result = await loadMobileActionDay(actionAtStart)
-      if (canApplyBriefing(ownerAtStart, actionAtStart, generationAtStart)) {
+      if (canApplyBriefing(sessionAtStart, actionAtStart, generationAtStart)) {
         setDayBriefing(result)
         setMessage('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
       }
     } catch (value) {
-      if (canApplyBriefing(ownerAtStart, actionAtStart, generationAtStart)) {
+      if (canApplyBriefing(sessionAtStart, actionAtStart, generationAtStart)) {
         setDayBriefing(null)
         handleError(value)
       }
     } finally {
-      if (briefingGenerationRef.current === generationAtStart) setBriefingBusy(false)
+      if (canMutate(sessionAtStart) && briefingGenerationRef.current === generationAtStart) setBriefingBusy(false)
     }
   }
 
@@ -454,17 +478,21 @@ type ActionCreateControllerProps = { onSessionExpired: () => void; onStartAction
 export function useActionCreateController({ onSessionExpired, onStartAction }: ActionCreateControllerProps) {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const ownerId = isLoaded && isSignedIn ? normalizeOwnerId(userId) : null
+  const sessionRef = useRef<SessionIdentity>({ ownerId, generation: 0 })
+  useLayoutEffect(() => {
+    if (sessionRef.current.ownerId !== ownerId) {
+      sessionRef.current = { ownerId, generation: sessionRef.current.generation + 1 }
+    }
+  }, [ownerId])
   const [section, setSection] = useState<Section>('essentiel')
   const [draft, setDraft] = useState<Draft>(EMPTY)
   const [clientRequestId, setClientRequestId] = useState(() => createLocalIdentifier('action-create'))
   const [actionId, setActionId] = useState<string | null>(null)
   const [published, setPublished] = useState(false)
-  const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId })
+  const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId, sessionRef })
   const ownerHydrated = Boolean(ownerId && persistence.draftHydrated && persistence.hydratedOwnerId === ownerId)
-  const currentOwnerRef = useRef<string | null>(ownerId)
   const ownerSessionRef = useRef({ ownerId: null as string | null, hydrated: false })
   useLayoutEffect(() => {
-    currentOwnerRef.current = ownerId
     ownerSessionRef.current = { ownerId, hydrated: ownerHydrated }
   }, [ownerId, ownerHydrated])
   const visibleDraft = ownerHydrated ? draft : EMPTY
@@ -473,21 +501,23 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   const visibleSection = ownerHydrated ? section : 'essentiel'
   const visibleClientRequestId = ownerHydrated ? clientRequestId : ''
   const payload = useMemo(() => buildPayload(visibleDraft, visibleClientRequestId), [visibleClientRequestId, visibleDraft])
-  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, onStartAction, setActionId, setPublished })
+  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, onStartAction, setActionId, setPublished, sessionRef })
 
   useEffect(() => {
     if (!visibleActionId || !ownerId) return
     let active = true
-    const ownerAtStart = ownerId
+    const sessionAtStart = captureSession(sessionRef)
     loadMobileActionEditor(visibleActionId).catch((value) => {
-      if (active && currentOwnerRef.current === ownerAtStart && isUnauthorized(value)) onSessionExpired()
+      if (active && isCurrentSession(sessionRef, sessionAtStart) && isUnauthorized(value)) onSessionExpired()
     })
     return () => { active = false }
   }, [onSessionExpired, ownerId, visibleActionId])
 
   async function getCurrentPosition() {
-    const ownerAtStart = ownerId
-    const isCurrentOwnerHydrated = () => ownerSessionRef.current.ownerId === ownerAtStart && ownerSessionRef.current.hydrated
+    const sessionAtStart = captureSession(sessionRef)
+    const isCurrentOwnerHydrated = () => isCurrentSession(sessionRef, sessionAtStart)
+      && ownerSessionRef.current.ownerId === sessionAtStart?.ownerId
+      && ownerSessionRef.current.hydrated
     if (!isCurrentOwnerHydrated()) return
     const permission = await Location.requestForegroundPermissionsAsync()
     if (!isCurrentOwnerHydrated()) return
