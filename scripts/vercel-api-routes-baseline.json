@@ -393,6 +393,27 @@
       "reason": "Suppression authentifiée d'un abonnement communautaire appartenant au compte courant.",
       "costContract": "DELETE borné à un subscriptionId et à l'identité Clerk, avec contrôle owner-scoped et réponse sans cache partagé.",
       "reviewedAt": "2026-10-31"
+    },
+    {
+      "route": "apps/web/src/app/api/gamification/territorial-leaderboard/me/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Lecture owner-scoped des résultats territoriaux d'un compte authentifié, séparée de la projection publique minimisée et du leaderboard XP.",
+      "costContract": "GET borné à un niveau et un code COG, fenêtre serveur de 90 jours, page de 100 résultats calculée avant projection et réponse privée no-store ; aucun compétiteur ni identifiant public n'est renvoyé.",
+      "reviewedAt": "2026-11-03"
+    },
+    {
+      "route": "apps/web/src/app/api/gamification/territorial-leaderboard/public/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Projection publique séparée des Légendes territoriales, fondée sur les actions publiées et participations confirmées après consentement explicite.",
+      "costContract": "GET public rate-limité, borné à un niveau, un code COG, 100 lignes et un curseur ; la sortie ne contient ni identifiant Clerk, ni consentement, ni participation brute.",
+      "reviewedAt": "2026-11-03"
+    },
+    {
+      "route": "apps/web/src/app/api/users/profile/territorial-legend-consent/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Consentement territorial distinct, privé par défaut, contrôlé par la barrière d'âge et révocable sans réutiliser le consentement du leaderboard XP.",
+      "costContract": "GET/PATCH bornés au compte Clerk courant, réponse private/no-store, payload Zod strict et une seule ligne de consentement ; l'activation écrit une borne non rétroactive.",
+      "reviewedAt": "2026-11-03"
     }
   ],
   "apiRoutes": [
@@ -515,6 +536,8 @@
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",
     "apps/web/src/app/api/gamification/spogomi/collection/route.ts",
+    "apps/web/src/app/api/gamification/territorial-leaderboard/me/route.ts",
+    "apps/web/src/app/api/gamification/territorial-leaderboard/public/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/admin/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/me/route.ts",
     "apps/web/src/app/api/geo/address-suggestions/route.ts",
@@ -610,6 +633,7 @@
     "apps/web/src/app/api/users/map-viewport-fallback/route.ts",
     "apps/web/src/app/api/users/profile/display-name-mode/route.ts",
     "apps/web/src/app/api/users/profile/handle/route.ts",
-    "apps/web/src/app/api/users/profile/leaderboard-opt-in/route.ts"
+    "apps/web/src/app/api/users/profile/leaderboard-opt-in/route.ts",
+    "apps/web/src/app/api/users/profile/territorial-legend-consent/route.ts"
   ]
 }

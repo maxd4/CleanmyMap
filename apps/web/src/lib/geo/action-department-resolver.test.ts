@@ -145,6 +145,30 @@ describe("action department resolver", () => {
     });
   });
 
+  it("resolves only an official municipal arrondissement code for Paris, without reading the label", async () => {
+    const calls: string[] = [];
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (calls.length === 1) {
+        return jsonResponse([{ code: "75056", nom: "Paris", codeDepartement: "75", codeRegion: "11" }]);
+      }
+      if (calls.length === 2) return jsonResponse({ code: "75", nom: "Paris" });
+      if (calls.length === 3) return jsonResponse({ code: "11", nom: "Île-de-France" });
+      return jsonResponse({ features: [{ properties: { citycode: "75105", district: "Paris 5e arrondissement" } }] });
+    });
+
+    await expect(resolveActionTerritory({
+      latitude: 48.853,
+      longitude: 2.347,
+      departmentName: "Un libellé ignoré",
+    }, { fetchImpl: fetchImpl as typeof fetch })).resolves.toMatchObject({
+      commune: { code: "75056" },
+      arrondissement: { code: "75105", name: "Paris 5e arrondissement" },
+    });
+    expect(calls[3]).toContain("api-adresse.data.gouv.fr/reverse");
+  });
+
   it("returns null for network failures and never rejects the write path", async () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error("network unavailable");

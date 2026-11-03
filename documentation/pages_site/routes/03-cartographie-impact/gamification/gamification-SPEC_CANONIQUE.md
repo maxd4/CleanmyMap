@@ -54,6 +54,47 @@ classement structurel. Cette route détaillée n'a pas de paramètre `period` :
 les contrats lifetime et année en cours restent ceux de la reconnaissance
 personnelle, séparée du leaderboard.
 
+## Exception publique `TERRITORIAL_LEGENDS_EXCEPTION`
+
+Les Légendes territoriales sont une exception publique distincte du leaderboard
+XP. Elles n'ajoutent ni métrique XP, ni badge CURRENT, ni progression parallèle.
+Le moteur serveur expose cinq niveaux COG : arrondissement municipal (Paris,
+Lyon et Marseille uniquement), commune, département ou équivalent, région ou
+équivalent et France entière. Les codes et les relations de parenté sont ceux
+de la résolution territoriale officielle et du millésime COG courant ; un
+territoire non résolu n'est pas deviné depuis un libellé ou une trace GPS.
+
+Une contribution compétitive est le couple d'une action `approved`,
+`post_action_complete`, explicitement publiée, visible et publique, et d'une
+participation `confirmed`. L'action est résolue par le service territorial
+existant sur son emplacement canonique ; un passage GPS ou une chaîne de
+caractères ambiguë ne crée jamais une attribution. Sur une fenêtre glissante de
+90 jours en `Europe/Paris`, une même action compte au plus une fois par
+utilisateur et par niveau parent. Les actions non résolues ou devenues non
+publiables sont exclues.
+
+Le consentement territorial est séparé de
+`profiles.leaderboard_public_opt_in`, privé par défaut et conservé dans
+`territorial_legend_consents`. Son activation est soumise à la même barrière
+d'âge facultative et, si nécessaire, à l'accord parental. La révocation exclut
+immédiatement l'utilisateur de la compétition ; une nouvelle activation crée
+une nouvelle borne `activated_at`, de sorte qu'aucune contribution antérieure
+ne devient rétroactivement compétitive.
+
+La lecture publique
+`GET /api/gamification/territorial-leaderboard/public?level=...&territoryCode=...`
+ne renvoie qu'un label public, le score, le nombre d'actions distinctes, le
+rang et les informations d'égalité, avec pagination par curseur. La lecture
+personnelle
+`GET /api/gamification/territorial-leaderboard/me?level=...&territoryCode=...`
+reste authentifiée, owner-scoped et ne renvoie pas les compétiteurs. Un titre
+requiert au moins deux compétiteurs éligibles et un score maximal d'au moins
+deux actions distinctes. Les égalités utilisent un rang de compétition
+explicite (`1, 1, 3`) et leur taille est exposée.
+
+Cette exception ne modifie pas les routes XP, les leaderboards `level|xp|badges`
+ni les dix progressions infinies CURRENT.
+
 Il centralise:
 
 - les règles métier réellement appliquées par le code;
