@@ -15,6 +15,7 @@ import { Users } from "lucide-react";
 import { suggestPreActionContext } from "@/lib/actions/action-context";
 import { ACTION_FIELD_ROLE_OPTIONS, normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
 import { parseOrganizerAccounts } from "../payload-identity";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -30,6 +31,12 @@ type ParticipantSectionProps = {
   supportingFull?: boolean;
   showOrganizerAccounts?: boolean;
   showParticipantAccounts?: boolean;
+  participantAccountsOverride?: readonly string[];
+  participantReadOnly?: boolean;
+  participantTitle?: string;
+  participantDescription?: string;
+  participantEmptyMessage?: string;
+  participantInvitationStatuses?: readonly ActionManualInvitationStatusRecord[];
 };
 
 function ParticipantContextControl({
@@ -257,6 +264,12 @@ function SupportingParticipation({
   full,
   showOrganizerAccounts,
   showParticipantAccounts,
+  participantAccountsOverride,
+  participantReadOnly = false,
+  participantTitle = "Comptes participants identifiés",
+  participantDescription = "Comptes identifiés ; présence non confirmée.",
+  participantEmptyMessage = "Aucun membre ajouté pour le moment.",
+  participantInvitationStatuses,
 }: Omit<ParticipantSectionProps, "variant"> & {
   full: boolean;
   showOrganizerAccounts: boolean;
@@ -289,15 +302,16 @@ function SupportingParticipation({
         <div className="mt-4">
           <ActionParticipantPicker
             currentUserId={userId}
-            value={form.participantAccounts}
-            onChange={(next) => updateField("participantAccounts", next)}
+            value={[...(participantAccountsOverride ?? form.participantAccounts)]}
+            onChange={(next) => {
+              if (!participantReadOnly) updateField("participantAccounts", next);
+            }}
             endpoint="/api/actions/account-options"
-            description={
-              full
-                ? "Comptes identifiés ; présence non confirmée."
-                : "Comptes identifiés ; présence non confirmée."
-            }
-            title="Comptes participants identifiés"
+            description={participantDescription}
+            title={participantTitle}
+            readOnly={participantReadOnly}
+            emptyMessage={participantEmptyMessage}
+            invitationStatuses={participantInvitationStatuses}
           />
         </div>
       ) : null}
@@ -314,6 +328,12 @@ export function ActionParticipantSection({
   supportingFull,
   showOrganizerAccounts = true,
   showParticipantAccounts = true,
+  participantAccountsOverride,
+  participantReadOnly = false,
+  participantTitle,
+  participantDescription,
+  participantEmptyMessage,
+  participantInvitationStatuses,
 }: ParticipantSectionProps) {
   if (variant === "compact") {
     return <ParticipantCounts form={form} updateField={updateField} compact />;
@@ -332,6 +352,12 @@ export function ActionParticipantSection({
       full={supportingFull ?? false}
       showOrganizerAccounts={showOrganizerAccounts}
       showParticipantAccounts={showParticipantAccounts}
+      participantAccountsOverride={participantAccountsOverride}
+      participantReadOnly={participantReadOnly}
+      participantTitle={participantTitle}
+      participantDescription={participantDescription}
+      participantEmptyMessage={participantEmptyMessage}
+      participantInvitationStatuses={participantInvitationStatuses}
     />
   );
 }

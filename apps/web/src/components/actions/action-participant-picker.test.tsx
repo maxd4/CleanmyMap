@@ -101,6 +101,25 @@ describe("action participant picker rendering", () => {
     expect(emptyHtml).toContain("Aucun membre ajouté pour le moment.");
   });
 
+  it("renders a planned or confirmed roster without exposing edit controls", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ActionParticipantPicker, {
+        currentUserId: "current",
+        value: ["user-1"],
+        onChange: vi.fn(),
+        readOnly: true,
+        title: "Présences confirmées",
+        description: "Source finale",
+        emptyMessage: "Aucune présence confirmée.",
+      }),
+    );
+
+    expect(html).not.toContain('type="search"');
+    expect(html).not.toContain("Retirer user-1");
+    expect(html).toContain("Présences confirmées");
+    expect(html).toContain("user-1");
+  });
+
   it("keeps the organizer combobox keyboard and aria contract", () => {
     const html = renderToStaticMarkup(
       React.createElement(ActionAccountSelector, {

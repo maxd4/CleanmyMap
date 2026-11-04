@@ -288,25 +288,66 @@ export function ActionDeclarationFormSections({
       {isActionMode ? (
         <section id="action-declaration-participants" aria-labelledby="action-declaration-participants-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
           <GroupHeading id="action-declaration-participants-title" number="02" title="Déclarer les participants" />
-          <ActionParticipantSection
-            form={identity.form}
-            updateField={identity.updateField}
-            userId={identity.userMetadata.userId}
-            variant="compact"
-            isActionMode
-          />
-          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 px-4 py-3 text-xs leading-5 text-sky-950">
-            Présence terrain distincte des comptes identifiés.
-          </p>
-          <ActionParticipantSection
-            form={identity.form}
-            updateField={identity.updateField}
-            userId={identity.userMetadata.userId}
-            variant="supporting"
-            isActionMode
-            supportingFull
-            showOrganizerAccounts={false}
-          />
+          <div className="grid gap-4 xl:grid-cols-2">
+            <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-emerald-200/80 bg-[#ECF8EF] p-4" aria-labelledby="action-declaration-planned-participants-title">
+              <div>
+                <h3 id="action-declaration-planned-participants-title" className="text-base font-bold text-emerald-950">Participants prévus</h3>
+                <p className="mt-1 text-xs leading-5 text-emerald-900/70">Inscriptions et comptes prévus ; ils ne valent pas présence le jour J.</p>
+              </div>
+              <ActionParticipantSection
+                form={identity.form}
+                updateField={identity.updateField}
+                userId={identity.userMetadata.userId}
+                variant="supporting"
+                isActionMode
+                supportingFull
+                showOrganizerAccounts={false}
+                participantReadOnly
+                participantTitle="Comptes inscrits ou prévus"
+                participantDescription="Statut d’inscription conservé ; aucune présence n’est confirmée ici."
+                participantEmptyMessage="Non renseigné pour cette action."
+                participantInvitationStatuses={identity.manualInvitationStatuses}
+              />
+            </section>
+            <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-emerald-200/80 bg-[#ECF8EF] p-4" aria-labelledby="action-declaration-present-participants-title">
+              <div>
+                <h3 id="action-declaration-present-participants-title" className="text-base font-bold text-emerald-950">Participants présents le jour J</h3>
+                <p className="mt-1 text-xs leading-5 text-emerald-900/70">Déclarez l’effectif réellement présent et identifiez les comptes concernés.</p>
+              </div>
+              <ActionParticipantSection
+                form={identity.form}
+                updateField={identity.updateField}
+                userId={identity.userMetadata.userId}
+                variant="counts"
+                isActionMode
+              />
+              <ActionParticipantSection
+                form={identity.form}
+                updateField={identity.updateField}
+                userId={identity.userMetadata.userId}
+                variant="supporting"
+                isActionMode
+                supportingFull
+                showOrganizerAccounts={false}
+                participantTitle="Comptes identifiés pour la présence"
+                participantDescription="Identification conservée séparément de la présence confirmée."
+              />
+              <ActionParticipantSection
+                form={identity.form}
+                updateField={identity.updateField}
+                userId={identity.userMetadata.userId}
+                variant="supporting"
+                isActionMode
+                supportingFull
+                showOrganizerAccounts={false}
+                participantAccountsOverride={identity.confirmedParticipantAccounts ?? []}
+                participantReadOnly
+                participantTitle="Présences confirmées"
+                participantDescription="Présences issues du workflow canonique de participation finale."
+                participantEmptyMessage="Aucune présence confirmée via le workflow."
+              />
+            </section>
+          </div>
         </section>
       ) : null}
 

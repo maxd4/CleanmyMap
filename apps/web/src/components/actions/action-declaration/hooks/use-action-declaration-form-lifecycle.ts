@@ -7,6 +7,7 @@ import {
   createInitialFormState,
 } from "../payload";
 import type { FormState } from "../model";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { useActionDeclarationHydration } from "./use-action-declaration-hydration";
 import { useActionDeclarationDraft } from "./use-action-declaration-draft";
 
@@ -39,6 +40,8 @@ export function useActionDeclarationFormLifecycle({
   const [manualDrawingSourceState, setManualDrawingSourceState] = useState<ActionGeometrySource | null>(null);
   const [persistedDrawing, setPersistedDrawing] = useState<ActionDrawing | null>(null);
   const [persistedDrawingSource, setPersistedDrawingSource] = useState<ActionGeometrySource | null>(null);
+  const [manualInvitationStatuses, setManualInvitationStatuses] = useState<ActionManualInvitationStatusRecord[]>([]);
+  const [confirmedParticipantAccounts, setConfirmedParticipantAccounts] = useState<string[]>([]);
   const [gpxError, setGpxError] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [manualDrawingEnabled] = useState<boolean>(true);
@@ -59,6 +62,8 @@ export function useActionDeclarationFormLifecycle({
     setManualDrawingSource: setManualDrawingSourceState,
     setPersistedDrawing,
     setPersistedDrawingSource,
+    setManualInvitationStatuses,
+    setConfirmedParticipantAccounts,
   });
   const draft = useActionDeclarationDraft({
     initialActionId,
@@ -79,6 +84,10 @@ export function useActionDeclarationFormLifecycle({
     manualDrawingSource: manualDrawingSourceState,
     persistedDrawing,
     persistedDrawingSource,
+    manualInvitationStatuses,
+    setManualInvitationStatuses,
+    confirmedParticipantAccounts,
+    setConfirmedParticipantAccounts,
     setPersistedDrawing,
     setPersistedDrawingSource,
     setManualDrawingState,

@@ -8,6 +8,7 @@ import {
 } from "./group-participation";
 import {
   buildJoinableItem,
+  loadConfirmedParticipantIdsForAction,
   resolveParticipationUpdatedAt,
 } from "./group-participation.helpers";
 
@@ -27,6 +28,29 @@ type ActionRow = {
 };
 
 const TEST_NOW = new Date("2026-06-01T09:00:00.000Z");
+
+describe("confirmed participant roster", () => {
+  it("returns only distinct users confirmed in the final participation register", async () => {
+    const eq = vi.fn().mockResolvedValue({
+      data: [
+        { user_id: "user-confirmed", participation_status: "confirmed" },
+        { user_id: "user-confirmed", participation_status: "confirmed" },
+        { user_id: "user-pending", participation_status: "pending" },
+        { user_id: null, participation_status: "confirmed" },
+      ],
+      error: null,
+    });
+    const supabase = {
+      from: vi.fn(() => ({ select: vi.fn(() => ({ eq })) })),
+    } as unknown as SupabaseClient;
+
+    await expect(loadConfirmedParticipantIdsForAction(supabase, "action-1")).resolves.toEqual([
+      "user-confirmed",
+    ]);
+    expect(supabase.from).toHaveBeenCalledWith("action_participants");
+    expect(eq).toHaveBeenCalledWith("action_id", "action-1");
+  });
+});
 
 function createActionsChain(actions: ActionRow[]) {
   const chain = {

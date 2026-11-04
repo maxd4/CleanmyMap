@@ -23,6 +23,8 @@ export type ParticipantPickerProps = {
   description?: string;
   className?: string;
   compact?: boolean;
+  readOnly?: boolean;
+  emptyMessage?: string;
   invitationStatuses?: readonly InvitationStatus[];
   maxSelected?: number;
   roleOptions?: readonly { code: string; label: string; description: string }[];

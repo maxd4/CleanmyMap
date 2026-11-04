@@ -101,6 +101,10 @@ describe("ActionDeclarationValidationSummary", () => {
     expect(markup).toContain("Identifier l’action");
     expect(markup).toContain("05");
     expect(markup).toContain("Vérifier et transmettre");
+    expect(markup).toContain("Participants prévus");
+    expect(markup).toContain("Participants présents le jour J");
+    expect(markup).toContain("action-declaration-planned-participants-title");
+    expect(markup).toContain("action-declaration-present-participants-title");
   });
 });
 

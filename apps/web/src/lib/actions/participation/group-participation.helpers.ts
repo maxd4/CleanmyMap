@@ -212,6 +212,29 @@ export async function countParticipantsForAction(
   return countActiveParticipants(supabase, actionId);
 }
 
+export async function loadConfirmedParticipantIdsForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<string[]> {
+  const result = await supabase
+    .from("action_participants")
+    .select("user_id, participation_status")
+    .eq("action_id", actionId);
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return Array.from(
+    new Set(
+      (result.data ?? [])
+        .filter((row) => row.participation_status === ACTIVE_PARTICIPATION_STATUS)
+        .map((row) => String(row.user_id ?? "").trim())
+        .filter((userId) => userId.length > 0),
+    ),
+  );
+}
+
 export async function loadParticipantProfilesForUserIds(
   supabase: SupabaseClient,
   userIds: string[],

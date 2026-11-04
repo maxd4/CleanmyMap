@@ -33,7 +33,7 @@ function buildActionDeclarationSectionProps(
     updateField,
     updateFields,
   } = state;
-  const identity = { form, updateField, updateFields, userMetadata: props.userMetadata, recordType: form.recordType, hasAttemptedSubmit, isExistingAction: Boolean(props.initialActionId) };
+  const identity = { form, updateField, updateFields, userMetadata: props.userMetadata, recordType: form.recordType, hasAttemptedSubmit, isExistingAction: Boolean(props.initialActionId), manualInvitationStatuses: state.manualInvitationStatuses, confirmedParticipantAccounts: state.confirmedParticipantAccounts };
   const harvest = {
     form,
     updateField,

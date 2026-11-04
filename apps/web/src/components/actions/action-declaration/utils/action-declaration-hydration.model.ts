@@ -8,6 +8,7 @@ import {
   applyPreparationDataToForm,
 } from "../payload";
 import type { CigaretteButtsLotDraft, FormState } from "../model";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { parseOrganizerAccounts } from "../payload";
 import { inferCigaretteButtsInputSource } from "@/lib/waste/cigarette-butts";
 import {
@@ -25,6 +26,8 @@ export type ActionDeclarationHydration = {
   form: FormState;
   loadedActionPhase: LoadedActionPhase;
   geometry: HydratedActionGeometry;
+  manualInvitationStatuses: ActionManualInvitationStatusRecord[];
+  confirmedParticipantAccounts: string[];
 };
 
 function toFormNumber(value: unknown): string {
@@ -273,5 +276,7 @@ export function buildActionDeclarationHydration(
       operationalRoute: form.operationalRoute,
       geometryMethod: form.geometryMethod,
     }),
+    manualInvitationStatuses: action.manualInvitationStatuses ?? [],
+    confirmedParticipantAccounts: action.confirmedParticipantAccounts ?? [],
   };
 }

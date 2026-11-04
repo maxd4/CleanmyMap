@@ -19,7 +19,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     });
 
     const body = (await response.json()) as {
-      action?: { organizerAccounts?: string[]; participantAccounts?: string[]; manualInvitationStatuses?: unknown[] };
+      action?: { organizerAccounts?: string[]; participantAccounts?: string[]; manualInvitationStatuses?: unknown[]; confirmedParticipantAccounts?: string[] };
     };
 
     expect(response.status).toBe(200);
@@ -29,6 +29,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       { userId: "user-manual-1", status: "pending" },
       { userId: "user-refused", status: "rejected" },
     ]);
+    expect(body.action?.confirmedParticipantAccounts).toEqual([]);
     expect(loadManualRegistrationIdsForActionMock).toHaveBeenCalledWith(
       expect.anything(),
       "action-test-1",

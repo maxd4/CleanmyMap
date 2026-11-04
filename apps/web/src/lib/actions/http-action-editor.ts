@@ -74,6 +74,7 @@ export type ActionEditorRecord = {
   accessMode?: ActionAccessMode;
   participantAccounts: string[];
   manualInvitationStatuses?: ActionManualInvitationStatusRecord[];
+  confirmedParticipantAccounts?: string[];
   placeType: string | null;
   departureLocationLabel: string | null;
   arrivalLocationLabel: string | null;

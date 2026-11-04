@@ -110,7 +110,11 @@ describe("action declaration hydration model", () => {
 
     const result = buildActionDeclarationHydration(
       createInitialFormState("Alex", "action"),
-      action,
+      {
+        ...action,
+        manualInvitationStatuses: [{ userId: "@lea", status: "accepted" }],
+        confirmedParticipantAccounts: ["user-confirmed"],
+      },
     );
 
     expect(result.loadedActionPhase).toBe("post_action_complete");
@@ -147,6 +151,8 @@ describe("action declaration hydration model", () => {
     expect(result.form.retiredCount).toBe("1");
     expect(result.form.eventStartTime).toBe("09:00");
     expect(result.form.eventEndTime).toBe("11:00");
+    expect(result.manualInvitationStatuses).toEqual([{ userId: "@lea", status: "accepted" }]);
+    expect(result.confirmedParticipantAccounts).toEqual(["user-confirmed"]);
     expect(result.form.routeTargetDistanceKm).toBe(
       String(
         resolveRouteTargetDistance({

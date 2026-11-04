@@ -17,6 +17,7 @@ import {
   loadActionOrganizerRowsForAction,
   loadCanonicalActionOrganizerIdsForAction,
 } from "@/lib/actions/participation/organizers";
+import { loadConfirmedParticipantIdsForAction } from "@/lib/actions/participation/group-participation.helpers";
 import { updateActionSchema } from "@/lib/validation/action";
 import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
 import type { ActionUpdateInput } from "@/lib/actions/action-update-audit";
@@ -239,6 +240,10 @@ export async function GET(
       supabase,
       trimmedActionId,
     ).catch(() => []);
+    const confirmedParticipantAccounts = await loadConfirmedParticipantIdsForAction(
+      supabase,
+      trimmedActionId,
+    ).catch(() => []);
     const organizerRows = await loadActionOrganizerRowsForAction(supabase, trimmedActionId);
     const primaryOrganizerName = organizerRows.find((organizer) => organizer.is_primary)?.organizer_label?.trim();
     const editorPayload = buildActionEditorPayload(row);
@@ -253,6 +258,7 @@ export async function GET(
           : organizerIds.filter((organizerId) => organizerId !== row.created_by_clerk_id),
       participantAccounts,
       manualInvitationStatuses,
+      confirmedParticipantAccounts,
     };
     return NextResponse.json({ status: "ok", action });
   } catch (error) {

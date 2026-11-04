@@ -65,6 +65,8 @@ function buildResetForm(params: {
   setManualDrawingSource: (value: null) => void;
   setPersistedDrawing: (value: null) => void;
   setPersistedDrawingSource: (value: null) => void;
+  setManualInvitationStatuses: (value: []) => void;
+  setConfirmedParticipantAccounts: (value: []) => void;
   setGpxError: (value: null) => void;
   clearPhotos: () => void;
   resetSubmission: () => void;
@@ -75,6 +77,8 @@ function buildResetForm(params: {
     params.setManualDrawingSource(null);
     params.setPersistedDrawing(null);
     params.setPersistedDrawingSource(null);
+    params.setManualInvitationStatuses([]);
+    params.setConfirmedParticipantAccounts([]);
     params.setGpxError(null);
     params.clearPhotos();
     params.resetSubmission();
@@ -137,6 +141,8 @@ export function useActionDeclarationForm({
     setForm,
     setPersistedDrawing,
     setPersistedDrawingSource,
+    setManualInvitationStatuses,
+    setConfirmedParticipantAccounts,
     setManualDrawingState,
     setManualDrawingSource,
     setGpxError,
@@ -168,6 +174,8 @@ export function useActionDeclarationForm({
     setManualDrawingSource,
     setPersistedDrawing,
     setPersistedDrawingSource,
+    setManualInvitationStatuses,
+    setConfirmedParticipantAccounts,
     setGpxError,
     clearPhotos: media.clearPhotos,
     resetSubmission: execution.submission.resetSubmission,
