@@ -17,6 +17,10 @@ const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
 );
+const pgtap = readFileSync(
+  new URL("../../../supabase/tests/territorial-legend-rewards-contract.pgtap.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 
 describe("territorial legend rewards migration", () => {
   it("persists only reconstructible holds and award proofs", () => {
@@ -74,5 +78,13 @@ describe("territorial legend rewards migration", () => {
     expect(annualMigration).toContain("item ->> 'campaign_year'");
     expect(annualMigration).toContain(":*:conquest:0");
     expect(annualMigration).toContain("h.campaign_year is distinct from v_campaign_year");
+  });
+
+  it("keeps the PostgreSQL replay contract executable across role changes", () => {
+    expect(pgtap).toContain("grant select, update on territorial_legend_contract_state to service_role;");
+    expect(pgtap).toContain("reset role; set local role authenticated;");
+    expect(pgtap).not.toMatch(/(?:^|;)\s*set_config\(/i);
+    expect(pgtap).toContain("'42501', null, 'authenticated cannot invoke snapshot reconciliation'");
+    expect(pgtap).toContain("'42501', null, 'authenticated cannot invoke history invalidation'");
   });
 });

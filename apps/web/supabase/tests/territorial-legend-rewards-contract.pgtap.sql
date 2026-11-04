@@ -10,6 +10,7 @@ create temp table territorial_legend_contract_state (
   effective_on date not null,
   first_period_id bigint
 ) on commit drop;
+grant select, update on territorial_legend_contract_state to service_role;
 insert into territorial_legend_contract_state (effective_on)
 values ((now() at time zone 'Europe/Paris')::date - 10);
 
@@ -200,10 +201,12 @@ select is((select count(*)::integer from public.territorial_legend_award_proofs 
 select is((select territory_code from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2026 and validity_status = 'active'), '69123', 'the active title follows the current territory without transferring days');
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and threshold_days in (365, 730)), 0, 'annual campaigns never create legacy 365 or 730 day rewards');
 
-set_config('request.jwt.claims', '{"role":"authenticated"}', true);
-set_config('request.jwt.claim.role', 'authenticated', true);
-select throws_ok($$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb)$$, 'P0001', 'service_role required', 'authenticated cannot invoke snapshot reconciliation');
-select throws_ok($$select public.invalidate_territorial_legend_history('{}'::bigint[], '{}'::text[], current_date)$$, 'P0001', 'service_role required', 'authenticated cannot invoke history invalidation');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"role":"authenticated"}', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select throws_ok($$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb)$$, '42501', null, 'authenticated cannot invoke snapshot reconciliation');
+select throws_ok($$select public.invalidate_territorial_legend_history('{}'::bigint[], '{}'::text[], current_date)$$, '42501', null, 'authenticated cannot invoke history invalidation');
 
 select ok(not has_table_privilege('authenticated', 'public.territorial_legend_hold_periods', 'select'), 'authenticated cannot read private hold periods');
 select ok(not has_table_privilege('authenticated', 'public.territorial_legend_award_proofs', 'select'), 'authenticated cannot read private award proofs');
