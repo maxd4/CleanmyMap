@@ -270,8 +270,10 @@ export async function POST(request: Request) {
           routingStatus: initialPlanning.routeGeometry.mode === "network" ? "network" : "fallback",
           providerCalls: initialPlanning.finalRoutingReconciliation?.providerCalls ?? 0,
         },
-        evaluate: async (candidateOrigin) => {
+        evaluate: async (candidateOrigin, signal) => {
+          if (signal.aborted) return null;
           const candidatePlanning = await buildPlanning(candidateOrigin, undefined, "loop");
+          if (signal.aborted) return null;
           const candidateInput = buildResponseInput(candidateOrigin, undefined, "loop", candidatePlanning);
           alternativePlans.set(`${candidateOrigin.latitude.toFixed(7)}:${candidateOrigin.longitude.toFixed(7)}`, candidatePlanning);
           const candidateGroupRoutes = candidatePlanning.groupRoutes ?? [];

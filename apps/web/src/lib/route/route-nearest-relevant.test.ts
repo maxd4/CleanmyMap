@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PedestrianNetworkGraph } from "./pedestrian-network";
 import {
   buildRouteNearestRelevantProbePoints,
@@ -80,6 +80,10 @@ function evaluate(score: number | null, groups?: number[]) {
 }
 
 describe("route nearest relevant search", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("uses the bounded Paris radii and keeps probe points inside Paris", () => {
     expect(ROUTE_NEAREST_RELEVANT_RADII_KM).toEqual([0.5, 1, 2, 3, 5]);
     expect(buildRouteNearestRelevantProbePoints(reference()).every((point) =>
@@ -141,5 +145,41 @@ describe("route nearest relevant search", () => {
     expect(result.search.status).toBe("unavailable");
     expect(result.search.reason).toBe("network_unavailable");
     expect(result.search.limitations[0]).toContain("graphe piéton");
+  });
+
+  it("isolates provider rejections, preserves the initial route and counts attempts", async () => {
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1, 0.2]),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: async () => {
+        throw new Error("provider unavailable");
+      },
+    });
+
+    expect(result.selected).toBeNull();
+    expect(result.search.status).toBe("not_found");
+    expect(result.search.plansEvaluated).toBe(2);
+    expect(result.search.limitations.some((limitation) => limitation.includes("ont échoué"))).toBe(true);
+  });
+
+  it("counts expired attempts and stops at the global search budget", async () => {
+    vi.useFakeTimers();
+    const resultPromise = findNearestRelevantRoute({
+      graph: graphAtDistances(Array.from({ length: 20 }, (_, index) => 0.1 + index * 0.2)),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: (_origin, signal) => new Promise((resolve) => {
+        signal.addEventListener("abort", () => resolve(null), { once: true });
+      }),
+    });
+
+    await vi.advanceTimersByTimeAsync(12_000);
+    const result = await resultPromise;
+
+    expect(result.selected).toBeNull();
+    expect(result.search.plansEvaluated).toBeGreaterThan(0);
+    expect(result.search.plansEvaluated).toBeLessThanOrEqual(4);
+    expect(result.search.limitations.some((limitation) => limitation.includes("expiré"))).toBe(true);
   });
 });

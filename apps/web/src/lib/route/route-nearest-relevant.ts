@@ -17,6 +17,7 @@ export const ROUTE_NEAREST_RELEVANT_MAX_CANDIDATES_PER_RADIUS = 8;
 export const ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS = 40;
 export const ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS = 4;
 export const ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS = 3_000;
+export const ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS = 12_000;
 
 const PARIS_INTRA_MUROS_BOUNDS = {
   south: 48.8156,
@@ -212,17 +213,24 @@ function compareBestAttempt(left: CandidateEvaluation, right: CandidateEvaluatio
 }
 
 async function evaluateWithTimeout(
-  evaluate: (origin: RoutePlannerOrigin) => Promise<PlanEvaluation | null>,
+  evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal) => Promise<PlanEvaluation | null>,
   origin: RoutePlannerOrigin,
-): Promise<PlanEvaluation | null> {
+  timeoutMs: number,
+): Promise<{ result: PlanEvaluation | null; timedOut: boolean; failed: boolean }> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  const controller = new AbortController();
   try {
-    return await Promise.race([
-      evaluate(origin),
-      new Promise<null>((resolve) => {
-        timeoutHandle = setTimeout(() => resolve(null), ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS);
-      }),
-    ]);
+    const evaluation = Promise.resolve()
+      .then(() => evaluate(origin, controller.signal))
+      .then((result) => ({ result, timedOut: false, failed: false }))
+      .catch(() => ({ result: null, timedOut: false, failed: true }));
+    const timeout = new Promise<{ result: null; timedOut: true; failed: false }>((resolve) => {
+        timeoutHandle = setTimeout(() => {
+          controller.abort();
+          resolve({ result: null, timedOut: true, failed: false });
+        }, timeoutMs);
+      });
+    return await Promise.race([evaluation, timeout]);
   } finally {
     if (timeoutHandle) clearTimeout(timeoutHandle);
   }
@@ -318,7 +326,7 @@ export async function findNearestRelevantRoute(input: {
   graph: PedestrianNetworkGraph | null;
   reference: RouteNearestRelevantReference;
   baseline: PlanEvaluation;
-  evaluate: (origin: RoutePlannerOrigin) => Promise<PlanEvaluation | null>;
+  evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal) => Promise<PlanEvaluation | null>;
 }): Promise<RouteNearestRelevantSearchResult> {
   if (!input.graph || input.graph.edges.length === 0) {
     return { search: emptySearch(input.reference, input.baseline, "network_unavailable", "unavailable", {
@@ -335,31 +343,48 @@ export async function findNearestRelevantRoute(input: {
 
   const evaluated: CandidateEvaluation[] = [];
   const triedRadiiKm: number[] = [];
+  let attemptsEvaluated = 0;
   let providerCalls = 0;
   let previousRadiusKm = 0;
+  const startedAt = Date.now();
+  let timedOutAttempts = 0;
+  let failedAttempts = 0;
+  let searchTimedOut = false;
   for (const radiusKm of ROUTE_NEAREST_RELEVANT_RADII_KM) {
     triedRadiiKm.push(radiusKm);
     const candidates = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm);
     const successfulPlans: CandidateEvaluation[] = [];
     for (const candidate of candidates) {
-      if (evaluated.length >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS) break;
+      if (attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS) break;
+      const remainingMs = ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS - (Date.now() - startedAt);
+      if (remainingMs <= 0) {
+        searchTimedOut = true;
+        break;
+      }
       const origin: RoutePlannerOrigin = {
         latitude: candidate.point[0],
         longitude: candidate.point[1],
         source: "planner",
       };
-      const result = await evaluateWithTimeout(input.evaluate, origin);
-      if (!result) continue;
-      providerCalls += Math.max(0, result.providerCalls ?? 0);
-      const evaluation: CandidateEvaluation = {
+      const evaluation = await evaluateWithTimeout(
+        input.evaluate,
+        origin,
+        Math.min(ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS, remainingMs),
+      );
+      attemptsEvaluated += 1;
+      if (evaluation.timedOut) timedOutAttempts += 1;
+      if (evaluation.failed) failedAttempts += 1;
+      if (!evaluation.result) continue;
+      providerCalls += Math.max(0, evaluation.result.providerCalls ?? 0);
+      const candidateEvaluation: CandidateEvaluation = {
         origin,
         radiusKm,
         accessDistanceKm: round(candidate.accessDistanceKm),
-        result,
+        result: evaluation.result,
       };
-      evaluated.push(evaluation);
-      if (assessmentIsSufficient(result.relevance) && result.withinBudget && result.loopVerified) {
-        successfulPlans.push(evaluation);
+      evaluated.push(candidateEvaluation);
+      if (assessmentIsSufficient(candidateEvaluation.result.relevance) && candidateEvaluation.result.withinBudget && candidateEvaluation.result.loopVerified) {
+        successfulPlans.push(candidateEvaluation);
       }
       if (providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
     }
@@ -377,14 +402,14 @@ export async function findNearestRelevantRoute(input: {
           confidenceAfter: selected.result.relevance.confidence.score,
           routingStatus: selected.result.routingStatus,
           triedRadiiKm,
-          candidatesEvaluated: evaluated.length,
-          plansEvaluated: evaluated.length,
+          candidatesEvaluated: attemptsEvaluated,
+          plansEvaluated: attemptsEvaluated,
           limitations: ["La recherche a retenu le premier rayon contenant une boucle admissible ; l’accès est mesuré depuis la demande initiale."],
         },
       };
     }
     previousRadiusKm = radiusKm;
-    if (evaluated.length >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS || providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
+    if (searchTimedOut || attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS || providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
   }
 
   const bestAttempt = [...evaluated]
@@ -408,8 +433,8 @@ export async function findNearestRelevantRoute(input: {
     search: {
       ...emptySearch(input.reference, input.baseline, reason, "not_found"),
       triedRadiiKm,
-      candidatesEvaluated: evaluated.length,
-      plansEvaluated: evaluated.length,
+      candidatesEvaluated: attemptsEvaluated,
+      plansEvaluated: attemptsEvaluated,
       routingStatus: bestAttempt?.result.routingStatus ?? "unavailable",
       bestAttempt: bestAttempt
         ? {
@@ -422,7 +447,12 @@ export async function findNearestRelevantRoute(input: {
             routingStatus: bestAttempt.result.routingStatus,
           }
         : null,
-      limitations: ["Aucune boucle ne respecte simultanément le seuil de pertinence, la confiance, la sécurité et les budgets dans les rayons explorés."],
+      limitations: [
+        "Aucune boucle ne respecte simultanément le seuil de pertinence, la confiance, la sécurité et les budgets dans les rayons explorés.",
+        ...(timedOutAttempts > 0 ? [`${timedOutAttempts} évaluation(s) ont expiré après ${ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS} ms.`] : []),
+        ...(failedAttempts > 0 ? [`${failedAttempts} évaluation(s) fournisseur ont échoué et ont été ignorées.`] : []),
+        ...(searchTimedOut ? [`Le budget global de ${ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS} ms a été atteint.`] : []),
+      ],
     },
   };
 }

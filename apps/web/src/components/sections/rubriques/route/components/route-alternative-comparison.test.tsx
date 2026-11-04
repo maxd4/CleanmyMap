@@ -114,4 +114,21 @@ describe("RouteAlternativeComparison", () => {
     expect(markup).toContain("L’itinéraire actuel reste conservé");
     expect(markup).not.toContain("Alternative proposée");
   });
+
+  it("affiche l'erreur même sans données alternatives et conserve le parcours initial", () => {
+    const markup = renderToStaticMarkup(
+      <RouteAlternativeComparison
+        current={route()}
+        isLoading={false}
+        error={new Error("provider unavailable")}
+        onAccept={vi.fn()}
+        onKeep={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("role=\"alert\"");
+    expect(markup).toContain("La recherche alternative n’a pas abouti");
+    expect(markup).toContain("Votre itinéraire initial est conservé");
+    expect(markup).not.toContain("Alternative proposée");
+  });
 });

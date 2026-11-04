@@ -285,9 +285,13 @@ La réponse `nearestRelevantSearch` distingue le score avant/après, le nouveau
 rendez-vous, la distance et la durée d'accès, le rayon utilisé, les limites,
 le meilleur résultat insuffisant et le statut du routage (`network` ou
 `fallback`). Le déplacement d'accès n'est pas ajouté à la durée de collecte.
-La recherche est bornée à 40 plans, à quatre appels fournisseur cumulés et à
-trois secondes par plan ; une absence de solution conserve l'itinéraire initial
-et expose explicitement la cause sans le présenter comme suffisant.
+La recherche est bornée à 40 tentatives, à quatre appels fournisseur cumulés,
+à trois secondes par plan et à un budget global de 12 secondes. Les tentatives
+expirées ou rejetées sont comptabilisées dans `plansEvaluated` ; leur travail
+est signalé par un `AbortSignal` et n'est plus retenu comme alternative. Une
+absence de solution, un rejet fournisseur ou une expiration conserve
+l'itinéraire initial et expose explicitement l'état contrôlé sans le présenter
+comme suffisant.
 
 ### Comparaison et remplacement explicite
 
@@ -310,7 +314,9 @@ l'ancien tracé. La saisie historique des contraintes et de l'adresse n'est pas
 réécrite silencieusement.
 
 Un refus, une absence de solution, une erreur ou un changement de saisie
-invalide la proposition en cours et conserve le parcours initial. La sélection
+invalide la proposition en cours et conserve le parcours initial. L'erreur de
+recherche reste visible même lorsqu'aucune donnée alternative n'est disponible,
+avec une action explicite pour conserver le parcours. La sélection
 ne crée aucune nouvelle source de scoring et ne change pas les scores
 historiques des actions. Pour plusieurs groupes, la comparaison et le choix
 portent sur la réponse complète : départ commun, boucles complémentaires et
