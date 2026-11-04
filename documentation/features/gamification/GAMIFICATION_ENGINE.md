@@ -58,6 +58,16 @@ d'éligibilité ne reste pas dans un cache partagé. Les statistiques personnell
 restent séparées : elles ne réinscrivent jamais un propriétaire révoqué dans la
 compétition publique.
 
+Les classements ne géocodent jamais à la lecture. Ils chargent des pages
+déterministes et bornées d'actions, participations, consentements et profils,
+puis utilisent uniquement `actions.territorial_legend_attribution`, une
+projection JSONB server-owned vérifiée par le résolveur officiel et versionnée
+par le COG. Une attribution absente, invalide ou non vérifiable exclut l'action
+sans la remplacer par un libellé. La création et les changements de localisation
+rafraîchissent ou invalident cette projection ; la réconciliation contrôlée ne
+réessaie que les actions admissibles qui n'en possèdent pas. Une erreur de page
+ne produit donc jamais un classement partiel silencieux.
+
 La non-rétroactivité compare `action_participants.joined_at` à
 `territorial_legend_consents.activated_at` avec une précision d'horodatage ;
 un timestamp absent ou invalide est exclu. Les routes privées utilisent

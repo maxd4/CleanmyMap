@@ -5,6 +5,7 @@ import { loadActionById } from "@/lib/actions/store";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import { logFailure } from "@/lib/logging/failure-log";
 import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
+import { buildTerritorialLegendAttribution } from "@/lib/gamification/territorial-legends/attribution";
 import { actionFormalitiesFactsSchema, deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
 import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
 import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
@@ -44,7 +45,7 @@ function buildInitialFormalitiesState(payload: CreateActionPayload) {
         territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
       },
     });
-    return { facts, workflow };
+    return { facts, workflow, resolvedTerritory };
   });
 }
 
@@ -54,7 +55,7 @@ export async function persistInitialFormalities(params: {
   payload: CreateActionPayload;
 }): Promise<void> {
   try {
-    const { facts, workflow } = await buildInitialFormalitiesState(params.payload);
+    const { facts, workflow, resolvedTerritory } = await buildInitialFormalitiesState(params.payload);
     if (typeof (params.supabase as unknown as { from?: unknown }).from !== "function") return;
     const current = await loadActionById(params.supabase, params.actionId);
     const result = await params.supabase
@@ -65,6 +66,11 @@ export async function persistInitialFormalities(params: {
           formalitiesContext: facts,
           formalitiesWorkflow: workflow,
         },
+        territorial_legend_attribution: buildTerritorialLegendAttribution({
+          actionId: params.actionId,
+          actionDate: params.payload.actionDate,
+          resolved: resolvedTerritory,
+        }),
       })
       .eq("id", params.actionId);
     if (result.error) throw result.error;

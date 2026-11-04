@@ -3,6 +3,7 @@ import {
   buildTerritorialLegendWinnerSnapshots,
   loadTerritorialLegendFacts,
 } from "./engine";
+import { refreshMissingTerritorialLegendAttributions } from "./attribution-refresh";
 import type { TerritorialLegendWinnerSnapshot } from "./types";
 
 function parisCivilDate(value: Date): string {
@@ -21,6 +22,8 @@ export type TerritorialLegendReconciliationResult = {
   insertedProofs: number;
   extendedPeriods: number;
   closedPeriods: number;
+  refreshedAttributions: number;
+  unverifiableAttributions: number;
 };
 
 function nonNegativeInteger(value: unknown): number {
@@ -46,8 +49,12 @@ function serializeWinnerSnapshots(winners: TerritorialLegendWinnerSnapshot[]) {
 export async function reconcileTerritorialLegendSnapshot(
   supabase: SupabaseClient,
   now = new Date(),
+  options: { refreshMissingAttributions?: boolean } = {},
 ): Promise<TerritorialLegendReconciliationResult> {
   const effectiveOn = parisCivilDate(now);
+  const attributionRefresh = options.refreshMissingAttributions === true
+    ? await refreshMissingTerritorialLegendAttributions(supabase, now)
+    : { refreshed: 0, unverifiable: 0 };
   const facts = await loadTerritorialLegendFacts(supabase, { now });
   const winners = buildTerritorialLegendWinnerSnapshots({ ...facts, now });
   const result = await supabase.rpc("reconcile_territorial_legend_snapshot", {
@@ -73,5 +80,7 @@ export async function reconcileTerritorialLegendSnapshot(
     insertedProofs: nonNegativeInteger(payload.insertedProofs),
     extendedPeriods: nonNegativeInteger(payload.extendedPeriods),
     closedPeriods: nonNegativeInteger(payload.closedPeriods),
+    refreshedAttributions: attributionRefresh.refreshed,
+    unverifiableAttributions: attributionRefresh.unverifiable,
   };
 }

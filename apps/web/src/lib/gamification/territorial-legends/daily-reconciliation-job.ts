@@ -17,7 +17,7 @@ export async function runTerritorialLegendDailyReconciliation(params: {
 } = {}) {
   const now = params.now ?? new Date();
   const supabase = params.supabase ?? getSupabaseServerClient(true);
-  const snapshot = await reconcileTerritorialLegendSnapshot(supabase, now);
+  const snapshot = await reconcileTerritorialLegendSnapshot(supabase, now, { refreshMissingAttributions: true });
   let projectedUsers = 0;
   for (const userId of snapshot.affectedUserIds) {
     await reconcileUserGamification(supabase, userId, {

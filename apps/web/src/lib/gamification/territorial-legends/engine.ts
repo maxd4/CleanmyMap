@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPublicLeaderboardLabel } from "@/lib/gamification/progression/progression-ranking";
-import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
-import type { ActionGeometryKind } from "@/lib/actions/types";
 import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
 import { campaignStartDate, campaignYearForCivilDate } from "./campaign";
+import { parseTerritorialLegendAttribution } from "./attribution";
+import { loadTerritorialLegendPages } from "./pagination";
 import {
   TERRITORIAL_LEGEND_LEVELS,
   type TerritorialActionFact,
@@ -18,7 +18,7 @@ import {
 } from "./types";
 
 export const TERRITORIAL_LEGEND_WINDOW_DAYS = 90;
-export const TERRITORIAL_LEGEND_COG_YEAR = 2026;
+export { TERRITORIAL_LEGEND_COG_YEAR } from "./attribution";
 
 type RankedInternalEntry = TerritorialLegendEntry & { userId: string; actionIds: string[] };
 
@@ -273,12 +273,7 @@ function campaignYearForDate(value: Date): number {
 type RawActionRow = {
   id: string;
   action_date: string;
-  latitude: number | null;
-  longitude: number | null;
-  derived_geometry_kind: ActionGeometryKind | null;
-  derived_geometry_geojson: string | null;
-  department_code: string | null;
-  department_name: string | null;
+  territorial_legend_attribution: unknown;
 };
 
 type RawParticipantRow = { action_id: string; user_id: string; joined_at: string };
@@ -297,40 +292,9 @@ function asActionRow(value: unknown): RawActionRow | null {
     ? {
         id: row.id,
         action_date: row.action_date,
-        latitude: typeof row.latitude === "number" ? row.latitude : null,
-        longitude: typeof row.longitude === "number" ? row.longitude : null,
-        derived_geometry_kind: row.derived_geometry_kind ?? null,
-        derived_geometry_geojson: typeof row.derived_geometry_geojson === "string" ? row.derived_geometry_geojson : null,
-        department_code: typeof row.department_code === "string" ? row.department_code : null,
-        department_name: typeof row.department_name === "string" ? row.department_name : null,
+        territorial_legend_attribution: row.territorial_legend_attribution,
       }
     : null;
-}
-
-async function resolveActions(rows: readonly RawActionRow[]): Promise<TerritorialActionFact[]> {
-  const resolved: TerritorialActionFact[] = [];
-  for (const row of rows) {
-    const territory = await resolveActionTerritory({
-      latitude: row.latitude,
-      longitude: row.longitude,
-      geometry: { kind: row.derived_geometry_kind, geojson: row.derived_geometry_geojson },
-      departmentCode: row.department_code,
-      departmentName: row.department_name,
-    });
-    if (!territory?.commune || !territory.department || !territory.region || territory.source !== "geo.api.gouv.fr") continue;
-    resolved.push({
-      actionId: row.id,
-      actionDate: row.action_date,
-      territory: {
-        country: { code: "FR", name: "France" },
-        region: territory.region,
-        department: territory.department,
-        commune: territory.commune,
-        arrondissement: territory.arrondissement ?? null,
-      },
-    });
-  }
-  return resolved;
 }
 
 async function loadInChunks<T>(load: (ids: string[]) => Promise<T[]>, ids: readonly string[]): Promise<T[]> {
@@ -354,26 +318,60 @@ export async function loadTerritorialLegendFacts(
 ): Promise<TerritorialLegendLoadedFacts> {
   const now = params.now ?? new Date();
   const start = parisDate(windowStart(now));
-  const actionResult = await supabase
-    .from("actions")
-    .select("id, action_date, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, department_code, department_name")
-    .eq("status", "approved")
-    .eq("action_phase", "post_action_complete")
-    .not("published_at", "is", null)
-    .eq("moderation_visibility", "visible")
-    .eq("access_mode", "public")
-    .or("review_state.is.null,review_state.in.(not_required,approved)")
-    .gte("action_date", start)
-    .lte("action_date", parisDate(now));
-  if (actionResult.error) throw actionResult.error;
-  const actions = (Array.isArray(actionResult.data) ? actionResult.data : []).map(asActionRow).filter((row): row is RawActionRow => row !== null);
+  const actionRows = await loadTerritorialLegendPages({
+    resource: "actions",
+    loadPage: async (from, to) => {
+      const result = await supabase
+        .from("actions")
+        .select("id, action_date, territorial_legend_attribution")
+        .eq("status", "approved")
+        .eq("action_phase", "post_action_complete")
+        .not("published_at", "is", null)
+        .eq("moderation_visibility", "visible")
+        .eq("access_mode", "public")
+        .or("review_state.is.null,review_state.in.(not_required,approved)")
+        .gte("action_date", start)
+        .lte("action_date", parisDate(now))
+        .order("id", { ascending: true })
+        .range(from, to);
+      return {
+        data: Array.isArray(result.data) ? result.data as RawActionRow[] : result.data,
+        error: result.error,
+      };
+    },
+  });
+  const actions = actionRows
+    .map(asActionRow)
+    .filter((row): row is RawActionRow => row !== null)
+    .flatMap((row) => {
+      const territory = parseTerritorialLegendAttribution(row.territorial_legend_attribution, {
+        actionId: row.id,
+        actionDate: row.action_date,
+      });
+      return territory ? [{ actionId: row.id, actionDate: row.action_date, territory }] : [];
+    });
   if (actions.length === 0) return { actions: [], participations: [], consents: [], profiles: [] };
 
-  const actionIds = actions.map((action) => action.id);
+  const actionIds = actions.map((action) => action.actionId);
   const participationResult = await loadInChunks(async (ids) => {
-    const result = await supabase.from("action_participants").select("action_id, user_id, joined_at").in("action_id", ids).eq("participation_status", "confirmed");
-    if (result.error) throw result.error;
-    return (Array.isArray(result.data) ? result.data : []) as RawParticipantRow[];
+    return loadTerritorialLegendPages({
+      resource: "action_participants",
+      loadPage: async (from, to) => {
+        const result = await supabase
+          .from("action_participants")
+          .select("action_id, user_id, joined_at")
+          .in("action_id", ids)
+          .eq("participation_status", "confirmed")
+          .order("action_id", { ascending: true })
+          .order("user_id", { ascending: true })
+          .order("joined_at", { ascending: true })
+          .range(from, to);
+        return {
+          data: Array.isArray(result.data) ? result.data as RawParticipantRow[] : result.data,
+          error: result.error,
+        };
+      },
+    });
   }, actionIds);
   const participations: TerritorialParticipationFact[] = participationResult.map((row) => ({
     actionId: row.action_id,
@@ -382,9 +380,19 @@ export async function loadTerritorialLegendFacts(
   }));
   const userIds = [...new Set(participations.map((row) => row.userId).filter(Boolean))];
   const consentResult = await loadInChunks<TerritorialLegendConsent>(async (ids) => {
-    const result = await supabase.from("territorial_legend_consents").select("user_id, enabled, activated_at, revoked_at").in("user_id", ids);
-    if (result.error) throw result.error;
-    return (Array.isArray(result.data) ? result.data : []).flatMap((row) => {
+    const rows = await loadTerritorialLegendPages({
+      resource: "territorial_legend_consents",
+      loadPage: async (from, to) => {
+        const result = await supabase
+          .from("territorial_legend_consents")
+          .select("user_id, enabled, activated_at, revoked_at")
+          .in("user_id", ids)
+          .order("user_id", { ascending: true })
+          .range(from, to);
+        return { data: Array.isArray(result.data) ? result.data : result.data, error: result.error };
+      },
+    });
+    return rows.flatMap((row) => {
       const value = row as { user_id?: unknown; enabled?: unknown; activated_at?: unknown; revoked_at?: unknown };
       return typeof value.user_id === "string"
         ? [{
@@ -414,18 +422,29 @@ export async function loadTerritorialLegendFacts(
     }
   }
   const profileResult = await loadInChunks(async (ids) => {
-    const result = await supabase.from("profiles").select("id, display_name, display_name_mode, handle").in("id", ids);
-    if (result.error) throw result.error;
-    return (Array.isArray(result.data) ? result.data : []) as RawProfileRow[];
+    return loadTerritorialLegendPages({
+      resource: "profiles",
+      loadPage: async (from, to) => {
+        const result = await supabase
+          .from("profiles")
+          .select("id, display_name, display_name_mode, handle")
+          .in("id", ids)
+          .order("id", { ascending: true })
+          .range(from, to);
+        return {
+          data: Array.isArray(result.data) ? result.data as RawProfileRow[] : result.data,
+          error: result.error,
+        };
+      },
+    });
   }, eligibleUserIds);
   const profiles = profileResult.flatMap((row) => {
     const publicLabel = buildPublicLeaderboardLabel({ display_name: row.display_name, display_name_mode: row.display_name_mode, handle: row.handle });
     if (publicLabel) return [{ userId: row.id, publicLabel }];
     return params.ownerUserId === row.id ? [{ userId: row.id, publicLabel: "Vous" }] : [];
   });
-  const actionsWithTerritory = await resolveActions(actions);
   return {
-    actions: actionsWithTerritory,
+    actions,
     participations,
     consents: consentResult,
     profiles,

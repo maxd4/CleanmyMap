@@ -58,8 +58,8 @@ describe("territorial legend snapshot reconciliation", () => {
     const fixture = supabase();
     const now = new Date("2026-11-03T02:00:00.000Z");
     await Promise.all([
-      reconcileTerritorialLegendSnapshot(fixture.client, now),
-      reconcileTerritorialLegendSnapshot(fixture.client, now),
+      reconcileTerritorialLegendSnapshot(fixture.client, now, { refreshMissingAttributions: false }),
+      reconcileTerritorialLegendSnapshot(fixture.client, now, { refreshMissingAttributions: false }),
     ]);
     expect(fixture.calls).toHaveLength(2);
     expect(fixture.calls[0]).toEqual(fixture.calls[1]);
@@ -73,7 +73,7 @@ describe("territorial legend snapshot reconciliation", () => {
     winnersMock.mockReturnValue([winner, tiedWinner]);
     const fixture = supabase();
 
-    await reconcileTerritorialLegendSnapshot(fixture.client, new Date("2026-11-03T12:00:00.000Z"));
+    await reconcileTerritorialLegendSnapshot(fixture.client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false });
 
     expect(fixture.calls[0]?.p_winners).toEqual([
       {
@@ -108,7 +108,7 @@ describe("territorial legend snapshot reconciliation", () => {
     const client = {
       rpc: vi.fn().mockResolvedValue({ data: { status: "conflict" }, error: null }),
     } as unknown as SupabaseClient;
-    await expect(reconcileTerritorialLegendSnapshot(client, new Date("2026-11-03T12:00:00.000Z")))
+    await expect(reconcileTerritorialLegendSnapshot(client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false }))
       .rejects.toThrow("réponse invalide");
   });
 });

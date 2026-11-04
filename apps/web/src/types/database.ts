@@ -131,6 +131,7 @@ export type ActionRow = {
   derived_geometry_geojson: string | null;
   geometry_confidence: number | null;
   waste_kg: number | null;
+  territorial_legend_attribution?: Record<string, unknown> | null;
   cigarette_butts: number | null;
   volunteers_count: number | null;
   children_count?: number | null;

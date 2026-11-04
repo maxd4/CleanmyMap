@@ -33,6 +33,11 @@ describe("territorial legend daily reconciliation", () => {
       affectedUserIds: ["user-1", "user-2"],
       projectedUsers: 2,
     });
+    expect(snapshotMock).toHaveBeenCalledWith(
+      expect.anything(),
+      new Date("2026-11-03T12:00:00.000Z"),
+      { refreshMissingAttributions: true },
+    );
     expect(reconcileUserMock).toHaveBeenNthCalledWith(1, expect.anything(), "user-1", {
       reasonCategory: "other",
       reconcileTerritorialLegends: false,

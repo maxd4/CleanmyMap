@@ -99,6 +99,19 @@ d'un propriétaire révoqué sans le réintroduire dans la projection publique.
 Les routes privées acceptent la session Web et le Bearer Clerk Mobile, avec
 ownership résolu exclusivement côté serveur.
 
+Le moteur ne résout pas la géographie pendant une lecture de classement. Il
+charge exhaustivement, par pages déterministes bornées, les faits admissibles
+et réutilise l'attribution COG vérifiée persistée sur l'action dans la colonne
+server-owned `territorial_legend_attribution`. Cette attribution porte sa
+version de schéma, son millésime COG, sa provenance, son empreinte, les cinq
+niveaux et, lorsqu'il est officiellement résolu, l'arrondissement municipal.
+Une attribution absente, invalide, périmée par une modification géographique ou
+non vérifiable exclut l'action ; aucun libellé ambigu ni passage GPS ne la
+remplace. Les créations et changements géographiques la rafraîchissent ou la
+mettent à NULL, tandis qu'une réconciliation contrôlée peut traiter les
+attributions manquantes. Une erreur ou une limite de pagination est signalée
+plutôt que transformée en classement tronqué.
+
 La lecture publique
 `GET /api/gamification/territorial-leaderboard/public?level=...&territoryCode=...`
 ne renvoie qu'un label public, le score, le nombre d'actions distinctes, le
