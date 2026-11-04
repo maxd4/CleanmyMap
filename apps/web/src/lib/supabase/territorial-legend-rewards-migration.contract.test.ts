@@ -17,6 +17,10 @@ const integrityMigration = readFileSync(
   new URL("../../../supabase/migrations/20261104000007_territorial_legend_annual_integrity.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const temporalMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261104000009_territorial_legend_temporal_reconciliation.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
@@ -107,5 +111,15 @@ describe("territorial legend rewards migration", () => {
     expect(pgtap).toContain("annual integrity migration is registered");
     expect(pgtap).toContain("season-end reward waits until after the civil year ends");
     expect(pgtap).toContain("replaying the closure remains idempotent");
+  });
+
+  it("guards same-day replay and rejects snapshots older than verified state", () => {
+    expect(temporalMigration).toContain("snapshot is older than the last verified territorial state");
+    expect(temporalMigration).toContain("h.validity_status = 'closed'");
+    expect(temporalMigration).toContain("h.ended_on = p_effective_on");
+    expect(temporalMigration).toContain("invalidated history is never resurrected");
+    expect(temporalMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb) to service_role");
+    expect(pgtap).toContain("same-day return reuses the verified period");
+    expect(pgtap).toContain("an older snapshot is rejected before mutation");
   });
 });

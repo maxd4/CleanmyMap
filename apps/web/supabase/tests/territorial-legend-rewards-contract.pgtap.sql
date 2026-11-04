@@ -3,7 +3,7 @@
 -- migration reset; it must never target the linked or production database.
 
 begin;
-select plan(62);
+select plan(73);
 
 set local role postgres;
 create temp table territorial_legend_contract_state (
@@ -111,6 +111,59 @@ select is(
   'an interruption closes the absent winner and the gapped period'
 );
 select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id like 'legend-contract-%' and validity_status = 'active'), 1, 'the interrupted snapshot leaves only the current winner active');
+
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    (select effective_on + 2 from territorial_legend_contract_state),
+    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-same-day', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'same-day-gain'))
+  )->>'status',
+  'applied',
+  'same-day transition first records the title'
+);
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    (select effective_on + 2 from territorial_legend_contract_state),
+    '[]'::jsonb
+  )->>'status',
+  'applied',
+  'same-day loss is replayable without deleting the period'
+);
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    (select effective_on + 2 from territorial_legend_contract_state),
+    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-same-day', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'same-day-return'))
+  )->>'status',
+  'applied',
+  'same-day return reuses the verified period'
+);
+select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-contract-same-day'), 1, 'same-day return does not create a duplicate hold period');
+select is((select validity_status from public.territorial_legend_hold_periods where user_id = 'legend-contract-same-day'), 'active', 'same-day return leaves the period active');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-same-day' and award_kind = 'conquest'), 1, 'same-day return does not duplicate conquest proof');
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    (select effective_on + 2 from territorial_legend_contract_state),
+    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-same-day', 'campaign_year', extract(year from (select effective_on + 2 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 2 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'same-day-replay'))
+  )->>'status',
+  'applied',
+  'same-day return replay remains idempotent'
+);
+select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-contract-same-day'), 1, 'same-day replay keeps one hold period');
+
+select is(
+  (public.reconcile_territorial_legend_snapshot(
+    (select effective_on + 3 from territorial_legend_contract_state),
+    jsonb_build_array(jsonb_build_object('user_id', 'legend-contract-order', 'campaign_year', extract(year from (select effective_on + 3 from territorial_legend_contract_state))::integer, 'level', 'commune', 'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', (select effective_on + 3 from territorial_legend_contract_state), 'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'newer-state'))
+  )->>'status',
+  'applied',
+  'newer snapshot establishes the ordering watermark'
+);
+select throws_ok(
+  $$select public.reconcile_territorial_legend_snapshot((select effective_on + 2 from territorial_legend_contract_state), '[]'::jsonb)$$,
+  'P0001',
+  'snapshot is older than the last verified territorial state',
+  'an older snapshot is rejected before mutation'
+);
+select is((select last_verified_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-order'), (select effective_on + 3 from territorial_legend_contract_state), 'rejected older snapshot leaves the verified state unchanged');
 
 do $$
 declare
