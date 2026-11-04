@@ -188,9 +188,9 @@ export function ActionDeclarationFormSurface({
             </div>
           </div>
         ) : null}
-        <form noValidate onSubmit={onSubmit} className="overflow-visible rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
-          <div className="relative space-y-8 p-6 md:p-10">
-            <fieldset className="relative z-10 space-y-8">
+        <form noValidate onSubmit={onSubmit} className="action-declaration-full-form overflow-visible overflow-x-clip rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
+          <div className="relative space-y-6 p-5 md:p-8 lg:p-10">
+            <fieldset className="relative z-10 space-y-6">
               <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-2xl">
                   <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-black tracking-tighter text-emerald-950">Déclarer les résultats terrain</h2>

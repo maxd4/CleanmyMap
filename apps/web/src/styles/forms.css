@@ -164,4 +164,96 @@
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
   }
 
+  /* ============================================================
+     COMPLETE ACTION DECLARATION FORM — scoped editable controls
+     ============================================================ */
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    ):not(:disabled):not([readonly]) {
+    border-color: rgb(52 211 153 / 0.55);
+    background-color: #064e3b;
+    color: #ffffff;
+    caret-color: #ffffff;
+    color-scheme: dark;
+  }
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    ):not(:disabled):not([readonly])::placeholder {
+    color: rgb(255 255 255 / 0.7);
+    opacity: 1;
+  }
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    ):not(:disabled):not([readonly]):focus-visible {
+    border-color: #a7f3d0;
+    outline: 3px solid rgb(167 243 208 / 0.55);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    )[aria-invalid="true"] {
+    border-color: #fda4af;
+    box-shadow: 0 0 0 3px rgb(251 113 133 / 0.3);
+  }
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    )[aria-invalid="true"]:focus-visible {
+    border-color: #fecdd3;
+    outline-color: rgb(253 164 175 / 0.65);
+  }
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    ):disabled {
+    border-color: rgb(110 145 128 / 0.45);
+    background-color: #e5efe9;
+    color: #526b60;
+    color-scheme: light;
+    cursor: not-allowed;
+    opacity: 0.82;
+  }
+
+  .action-declaration-full-form :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+      select,
+      textarea
+    )[readonly] {
+    border-color: rgb(110 145 128 / 0.45);
+    background-color: #eaf5ee;
+    color: #174936;
+    color-scheme: light;
+  }
+
+  .action-declaration-full-form select option {
+    background-color: #064e3b;
+    color: #ffffff;
+  }
+
+  .action-declaration-full-form .action-declaration-field-icon {
+    color: rgb(236 253 245 / 0.72);
+  }
+
+  .action-declaration-full-form input[type="date"]::-webkit-calendar-picker-indicator,
+  .action-declaration-full-form input[type="time"]::-webkit-calendar-picker-indicator {
+    opacity: 0.9;
+  }
+
 }

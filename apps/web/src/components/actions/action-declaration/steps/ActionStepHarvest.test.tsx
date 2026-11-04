@@ -38,7 +38,7 @@ describe("ActionStepHarvest compact modes", () => {
   it("keeps the two harvest cards in equal columns from the tablet breakpoint", () => {
     const html = renderHarvest("details");
 
-    expect(html).toContain("lg:grid-cols-2");
+    expect(html).toContain("xl:grid-cols-2");
     expect(html).toContain("min-w-0");
   });
 

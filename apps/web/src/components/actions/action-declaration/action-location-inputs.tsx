@@ -81,14 +81,14 @@ export function RouteTopologyFieldset({
   return (
     <fieldset className="mt-4 rounded-xl border border-sky-200/80 bg-white p-4">
       <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-900/65">Type de parcours</legend>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {[
           { value: "loop" as const, title: "Boucle", description: "Retour explicite au point de départ." },
           { value: "point_to_point" as const, title: "Départ → arrivée", description: "Arrivée obligatoire, sans retour automatique." },
         ].map((option) => {
           const selected = form.routeTopology === option.value;
           return (
-            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
+            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-500/35", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
               <input id={`route-topology-${option.value}`} type="radio" name="route-topology" value={option.value} aria-label={option.title} checked={selected} onChange={() => updateField("routeTopology", option.value)} className="mt-1 accent-sky-600" />
               <span><span className="block text-sm font-semibold text-sky-950">{option.title}</span><span className="mt-0.5 block text-xs text-sky-900/60">{option.description}</span></span>
             </label>
@@ -135,14 +135,14 @@ function GeometryMethodFieldset({
     <fieldset className="mt-4 rounded-xl border border-emerald-200/80 bg-white p-4">
       <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900/65">Source du repère cartographique</legend>
       <p className="mt-1 text-xs leading-5 text-emerald-900/60">Trace GPS/GPX observée prioritaire.</p>
-      <div className="mt-3 grid gap-2 md:grid-cols-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         {options.map((option) => {
           const isSelected = selected === option.value;
           const missingSource =
             (option.value === "generator" && !hasGeneratorRoute) ||
             (option.value === "gpx_import" && !hasGpx);
           return (
-            <label htmlFor={`geometry-method-${option.value}`} key={option.value} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition", isSelected ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-500/15" : "border-slate-200 bg-white hover:border-emerald-300")}>
+            <label htmlFor={`geometry-method-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500/35", isSelected ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-500/15" : "border-slate-200 bg-white hover:border-emerald-300")}>
               <input id={`geometry-method-${option.value}`} type="radio" name="geometry-method" value={option.value} aria-label={option.title} checked={isSelected} onChange={() => updateField("geometryMethod", option.value)} className="mt-1 accent-emerald-600" />
               <span><span className="block text-sm font-semibold text-emerald-950">{option.title}</span><span className="mt-0.5 block text-xs text-emerald-900/60">{option.description}</span>{missingSource ? <span className="mt-1 block text-xs font-medium text-amber-700">Source à fournir dans le formulaire.</span> : null}</span>
             </label>

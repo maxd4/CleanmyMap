@@ -96,6 +96,11 @@ describe("ActionDeclarationValidationSummary", () => {
     expect(markup.match(/Vérifier et envoyer/g)).toHaveLength(1);
     expect(markup).not.toContain("action-disclosure-");
     expect(markup).toContain("Exporter le récapitulatif");
+    expect(markup).toContain("01");
+    expect(markup).toContain("|");
+    expect(markup).toContain("Identifier l’action");
+    expect(markup).toContain("05");
+    expect(markup).toContain("Vérifier et transmettre");
   });
 });
 

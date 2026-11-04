@@ -21,7 +21,7 @@ export function SectionTitle({
   return (
     <div className="mb-4 flex items-center gap-2.5">
       <span className={cn("h-1 w-6 rounded-full", color)} />
-      <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-900/60">
+      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-900/70">
         {children}
       </h3>
     </div>
@@ -39,7 +39,7 @@ export function Field({
 }) {
   return (
     <div className={cn("relative", className)}>
-      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-900/30">
+      <div className="action-declaration-field-icon pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-900/30">
         <Icon size={16} />
       </div>
       {children}

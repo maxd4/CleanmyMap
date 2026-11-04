@@ -223,6 +223,7 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
     const volunteersCount = container.querySelector("#action-volunteers-count") as HTMLInputElement;
 
     expect(form?.noValidate).toBe(true);
+    expect(form?.classList.contains("action-declaration-full-form")).toBe(true);
     expect(form?.checkValidity()).toBe(false);
 
     await act(async () => {

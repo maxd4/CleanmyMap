@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { CheckCircle2, Download, AlertCircle } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { ActionCollectionSection } from "./steps/action-step-identity.collection";
@@ -29,20 +29,21 @@ function GroupHeading({
   id,
   number,
   title,
-  description,
+  action,
 }: {
   id: string;
   number: string;
   title: string;
-  description?: string;
+  action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2 border-b border-emerald-200/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">{number}</p>
-        <h3 id={id} className="mt-1 text-xl font-black tracking-tight text-emerald-950">{title}</h3>
+    <div className="flex min-w-0 flex-col gap-3 border-b border-emerald-200/70 pb-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="shrink-0 text-sm font-black uppercase tracking-[0.16em] text-emerald-700">{number}</span>
+        <span aria-hidden="true" className="shrink-0 text-lg font-semibold text-emerald-400">|</span>
+        <h3 id={id} className="min-w-0 text-[clamp(1.75rem,3.4vw,2.25rem)] font-black leading-tight tracking-tight text-emerald-950 md:whitespace-nowrap">{title}</h3>
       </div>
-      {description ? <p className="max-w-xl text-sm leading-6 text-emerald-900">{description}</p> : null}
+      {action}
     </div>
   );
 }
@@ -252,12 +253,12 @@ export function ActionDeclarationFormSections({
   const isActionMode = form.recordType === "action";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {hasAttemptedSubmit && validationIssues.length > 0 ? (
         <ActionDeclarationValidationSummary validationIssues={validationIssues} />
       ) : null}
 
-      <section id="action-declaration-identify" aria-labelledby="action-declaration-identify-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
+      <section id="action-declaration-identify" aria-labelledby="action-declaration-identify-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
         <GroupHeading id="action-declaration-identify-title" number="01" title="Identifier l’action" />
         <ActionTitleField form={identity.form} updateField={identity.updateField} />
         <ActionOrganizerSection
@@ -285,7 +286,7 @@ export function ActionDeclarationFormSections({
       </section>
 
       {isActionMode ? (
-        <section id="action-declaration-participants" aria-labelledby="action-declaration-participants-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
+        <section id="action-declaration-participants" aria-labelledby="action-declaration-participants-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
           <GroupHeading id="action-declaration-participants-title" number="02" title="Déclarer les participants" />
           <ActionParticipantSection
             form={identity.form}
@@ -309,12 +310,12 @@ export function ActionDeclarationFormSections({
         </section>
       ) : null}
 
-      <section id="action-declaration-results" aria-labelledby="action-declaration-results-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
+      <section id="action-declaration-results" aria-labelledby="action-declaration-results-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
         <GroupHeading id="action-declaration-results-title" number="03" title="Déclarer les résultats collectés" />
         <ActionStepHarvest {...harvest} mode="all" />
       </section>
 
-      <section id="action-declaration-terrain" aria-labelledby="action-declaration-terrain-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
+      <section id="action-declaration-terrain" aria-labelledby="action-declaration-terrain-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
         <GroupHeading id="action-declaration-terrain-title" number="04" title="Documenter le terrain" />
         {showPreparationSummary ? (
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3">
@@ -327,14 +328,18 @@ export function ActionDeclarationFormSections({
         <ActionTimeSection form={identity.form} updateField={identity.updateField} variant="time" />
       </section>
 
-      <section id="action-declaration-review" aria-labelledby="action-declaration-review-title" className="space-y-5 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm md:p-6">
-        <div className="flex flex-col gap-3 border-b border-emerald-200/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
-          <GroupHeading id="action-declaration-review-title" number="05" title="Vérifier et transmettre" />
-          <button type="button" onClick={onOpenExport} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30">
-            <Download size={14} aria-hidden="true" />
-            Exporter le récapitulatif
-          </button>
-        </div>
+      <section id="action-declaration-review" aria-labelledby="action-declaration-review-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
+        <GroupHeading
+          id="action-declaration-review-title"
+          number="05"
+          title="Vérifier et transmettre"
+          action={(
+            <button type="button" onClick={onOpenExport} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30">
+              <Download size={14} aria-hidden="true" />
+              Exporter le récapitulatif
+            </button>
+          )}
+        />
         <ActionDeclarationReviewSummary
           form={form}
           hasAttemptedSubmit={hasAttemptedSubmit}

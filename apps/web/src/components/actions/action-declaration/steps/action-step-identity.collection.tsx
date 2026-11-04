@@ -77,8 +77,7 @@ export function ActionCollectionSection({
       <SectionTitle color="bg-emerald-500">Environnement de collecte</SectionTitle>
       <div
         className={cn(
-          "grid grid-cols-2 gap-2 sm:grid-cols-3",
-          full ? "xl:grid-cols-3" : "",
+          "flex flex-wrap gap-2",
         )}
       >
         {PLACE_TYPE_TILE_OPTIONS.map((option) => {
@@ -92,10 +91,10 @@ export function ActionCollectionSection({
               aria-pressed={isSelected}
               onClick={() => updateField("placeType", option.value)}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center",
+                "relative flex min-w-[9.25rem] flex-1 basis-[9.25rem] flex-col items-center justify-center gap-1.5 rounded-2xl border px-3 py-2.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
                 full
-                  ? "min-h-[92px] transition-all duration-200"
-                  : "min-h-[80px] transition-all",
+                  ? "min-h-[72px] transition-all duration-200"
+                  : "min-h-[64px] transition-all",
                 isSelected
                   ? "border-emerald-300 bg-[#ECF8EF] shadow-sm"
                   : "border-emerald-200/70 bg-[#F3FBF6] hover:border-emerald-300 hover:bg-[#EAF7EF]",
