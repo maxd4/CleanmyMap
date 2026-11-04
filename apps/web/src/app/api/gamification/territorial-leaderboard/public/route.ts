@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { status: "ok", ...page },
       // Public eligibility can change when Clerk age metadata or consent is
-      // revoked; a shared CDN response must never outlive that decision.
+      // revoked; this no-store response must never outlive that decision in a shared CDN.
       { headers: { "Cache-Control": "public, no-store, max-age=0" } },
     );
   } catch (error) {

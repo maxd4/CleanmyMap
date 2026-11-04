@@ -21,6 +21,8 @@ export async function GET(request: Request) {
     );
     return NextResponse.json(
       { status: "ok", ...overview },
+      // This authenticated projection contains account-scoped territorial data;
+      // it must never be stored in a shared cache or served to another account.
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
