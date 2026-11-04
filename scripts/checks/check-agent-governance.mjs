@@ -110,7 +110,8 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
 
 const publicationPolicyTerms = ["commit isolé", "push", "vérification de convergence"];
 const explicitNoPushExceptionTerms = ["mode de développement rapide", "interdiction explicite", "sans push"];
-const chatgptPublicationAuthorization = "ChatGPT est autorisé à modifier GitHub, committer et pousser";
+const chatgptReadOnlyPolicy = "ChatGPT est limité à la lecture et à la revue";
+const codexPublicationResponsibility = "Codex est responsable de l'intégration locale, du commit isolé et de la publication fast-forward";
 
 function validateCurrentWorkflowDoctrine(view, findings) {
   const rootAgents = readIfPresent(view, "AGENTS.md");
@@ -165,11 +166,12 @@ function validateCurrentWorkflowDoctrine(view, findings) {
   if (/l['’]état local est prioritaire sur l['’](?:état|etat) github/i.test(normalizedRoot)) {
     findings.push("AGENTS.md: global local-over-GitHub priority is not a CURRENT rule.");
   }
-  if (!normalizedCurrentChatgpt.toLocaleLowerCase("fr-FR").includes(chatgptPublicationAuthorization.toLocaleLowerCase("fr-FR"))) {
-    findings.push("CHATGPT.md: current policy must authorize ChatGPT to commit and push on main.");
+  const normalizedCurrentChatgptLower = normalizedCurrentChatgpt.toLocaleLowerCase("fr-FR");
+  if (!normalizedCurrentChatgptLower.includes(chatgptReadOnlyPolicy.toLocaleLowerCase("fr-FR"))) {
+    findings.push("CHATGPT.md: current policy must limit ChatGPT to GitHub reading and review.");
   }
-  if (/lecture et vérification uniquement|ne jamais modifier github, committer, pousser/i.test(normalizedCurrentChatgpt)) {
-    findings.push("CHATGPT.md: current GitHub policy must not remain read-only.");
+  if (!normalizedCurrentChatgptLower.includes(codexPublicationResponsibility.toLocaleLowerCase("fr-FR"))) {
+    findings.push("CHATGPT.md: current policy must assign integration, commits and publication to Codex.");
   }
 }
 

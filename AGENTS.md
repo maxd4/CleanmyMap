@@ -27,6 +27,48 @@ proposer une alternative étayée sans abaisser silencieusement l'acceptation.
 Appliquer cette profondeur proportionnellement au risque ; ne pas transformer
 une correction locale évidente en audit général.
 
+## Catégories de lots et conduite d'exécution
+
+Les prompts Codex sont classés, à titre indicatif, dans quatre catégories :
+
+- **Correction** : cause racine bornée et résultat attendu précis ; le volume
+  de changement peut varier selon la cause et les preuves nécessaires.
+- **Micro-lot** : environ 5 minutes, changement local et cohésif.
+- **Macro-lot** : environ 15 à 30 minutes, fonctionnalité ou évolution cohérente
+  avec ses consommateurs directs.
+- **Lot XL** : cible d'environ 45 à 75 minutes, plusieurs fonctionnalités liées
+  intégrées dans une même exécution.
+
+Les durées et les volumes de lignes sont des repères de cadrage, jamais des
+quotas, des budgets bloquants ou des conditions d'arrêt. La `STOP CONDITION`
+reste définie par les critères fonctionnels, les invariants, les preuves et les
+validations du lot.
+
+Un lot XL comporte 2 à 4 jalons internes ordonnés, explicitement listés avant
+l'écriture. Codex les implémente successivement dans la même exécution : la
+réussite d'un jalon ne clôture pas le chantier et n'autorise pas l'arrêt tant
+que les jalons restants, les critères fonctionnels et les validations ne sont
+pas traités. Un blocage réel doit indiquer les jalons terminés, le jalon
+bloqué, les jalons restants et la preuve du blocage ; il ne doit pas être
+déduit d'une durée ou d'un volume atteint.
+
+Pour tout lot qui modifie un comportement fonctionnel ou un contrat runtime,
+le même lot doit fournir, au niveau approprié au risque :
+
+- une consommation réellement exécutée du runtime concerné, et non seulement
+  une lecture du code, un mock ou une assertion statique ;
+- des tests comportementaux et les régressions utiles du périmètre ;
+- une mesure de couverture pertinente, sans seuil, baseline, exclusion ou test
+  artificiel ajouté pour améliorer le résultat ;
+- la mise à jour des documents `CURRENT` qui portent les contrats modifiés.
+
+Les couvertures Web et Mobile restent indépendantes et ne doivent pas être
+fusionnées dans un chiffre unique. Toute mesure absente ou non comparable est
+déclarée explicitement `NOT_MEASURED`, avec sa cause. Un lot purement
+documentaire ne doit pas provoquer de changement runtime ni de test artificiel ;
+il reste soumis aux contrôles documentaires, de liens, de cohérence et de
+références qui lui sont pertinents.
+
 Avant d'écrire : lire l'état courant de la zone, le `AGENTS.md` scoped, les
 contrats, callers, consommateurs et tests pertinents. Pour un contrat métier,
 cartographier les voies de mutation directes et indirectes (API, jobs, imports,
@@ -175,16 +217,18 @@ développement, macro-lot, correction, refactorisation ou campagne de qualité :
    SEO, consentement ou logique métier. Une évolution nécessaire doit être
    explicitement bornée, attribuée à son owner, testée sur ses scénarios
    positifs et négatifs, documentée dans le même lot et signalée dans le bilan.
-3. **Campagne substantielle et preuves typées.** Chaque macro-lot exige une
-   campagne de tests couvrant l'intégralité de son périmètre autorisé, ses
-   consommateurs directs et, selon le risque, les cas nominaux, limites,
-   invalides, adversariaux, erreurs, transitions, concurrence, reprises et
-   régressions. Le bilan distingue obligatoirement `STATIC_CONTRACT`,
-   `EXECUTED_BEHAVIOR` et `INTEGRATION_PROOF`. Mesurer statements, branches,
-   functions et lines avant/après à périmètre, méthode et environnement
-   comparables lorsque c'est possible ; sinon déclarer `NOT_MEASURED` avec la
-   cause. Aucun seuil, baseline, exclusion ou test artificiel ne peut être
-   modifié pour améliorer le résultat.
+3. **Campagne substantielle et preuves typées.** Chaque lot fonctionnel exige
+   une consommation réellement exécutée du runtime concerné, des tests
+   comportementaux et régressions utiles, une couverture pertinente et la mise
+   à jour des documents `CURRENT` portant les contrats modifiés. La campagne
+   couvre l'intégralité de son périmètre autorisé, ses consommateurs directs
+   et, selon le risque, les cas nominaux, limites, invalides, adversariaux,
+   erreurs, transitions, concurrence, reprises et régressions. Le bilan
+   distingue obligatoirement `STATIC_CONTRACT`, `EXECUTED_BEHAVIOR` et
+   `INTEGRATION_PROOF`. Web et Mobile conservent des couvertures indépendantes ;
+   une mesure absente ou non comparable est `NOT_MEASURED` avec sa cause.
+   Aucun seuil, baseline, exclusion ou test artificiel ne peut être modifié
+   pour améliorer le résultat.
 4. **Matrice UI/UX gelée pendant les lots 01 à 11.** Dans le plan
    `PLAN_MACRO_LOTS_UI_UX_CODEX.md`, les lots 01 à 11 ne doivent ni créer,
    modifier, régénérer ni synchroniser
@@ -343,12 +387,14 @@ Pour tout changement fonctionnel, Codex ajoute ou adapte les tests nécessaires
 avant publication et respecte la politique canonique de couverture de
 `documentation/development/testing-quality-coverage.md`.
 
-### Tests massifs et couverture approfondie — obligatoire
+### Tests massifs et couverture approfondie — obligatoire pour les lots fonctionnels
 
-Tous les lots Codex, y compris les corrections de bugs, refactorisations,
-évolutions fonctionnelles, chantiers d'architecture et campagnes de qualité,
-exigent une campagne de tests large sur l'intégralité du périmètre autorisé.
-Quelques tests ciblés ne suffisent jamais à clôturer un lot.
+Tous les lots Codex qui modifient le runtime, y compris les corrections de
+bugs, refactorisations, évolutions fonctionnelles, chantiers d'architecture et
+campagnes de qualité, exigent une campagne de tests large sur l'intégralité du
+périmètre autorisé. Quelques tests ciblés ne suffisent jamais à clôturer un lot
+fonctionnel. Cette exigence ne s'applique pas à un lot purement documentaire,
+qui ne doit pas recevoir de tests ou de runtime artificiels.
 
 **TESTS MASSIFS OBLIGATOIRES :** enrichir largement et méthodiquement les
 suites de tests du périmètre traité. Explorer les branches et comportements

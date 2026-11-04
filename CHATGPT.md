@@ -60,17 +60,18 @@ publie selon `AGENTS.md`. Il remonte un conflit réel, une impossibilité ou une
 meilleure alternative étayée ; il n'élargit pas unilatéralement la responsabilité
 du lot.
 
-**Politique GitHub de ChatGPT** : ChatGPT est autorisé à modifier GitHub,
-committer et pousser sur `main`, et chaque lot demandé qui modifie le dépôt doit
-demander et réaliser un commit isolé puis un push fast-forward sur `main`, sauf
-interdiction explicite de l'utilisateur. Il doit suivre le workflow décrit par
-`AGENTS.md` et `scripts/AGENTS.md` : validation proportionnée, staging explicite
-de l'allowlist, préservation des changements étrangers, vérification de
-convergence et aucun force-push ni réécriture d'historique.
+**Politique GitHub de ChatGPT** : ChatGPT est limité à la lecture et à la revue
+de GitHub. Il ne modifie pas GitHub, ne committe pas, ne pousse pas, ne merge
+pas et ne publie pas. Codex est responsable de l'intégration locale, du commit
+isolé et de la publication fast-forward sur `main`, conformément à `AGENTS.md`
+et `scripts/AGENTS.md`. Les prompts doivent laisser Codex appliquer la
+validation proportionnée, le staging explicite de l'allowlist, la préservation
+des changements étrangers, la vérification de convergence et l'interdiction du
+force-push ou de la réécriture d'historique. ChatGPT peut ensuite relire l'état
+publié en lecture seule ; cette revue ne remplace pas la preuve observée par
+Codex.
 La création d'une branche, d'une PR, d'un clone ou d'un worktree reste soumise
-à la demande du lot. Un compte rendu Codex ou un commit local ne constitue pas
-à lui seul une preuve de publication ; ChatGPT vérifie le `main` réellement
-publié après le push.
+à la demande du lot et aux règles d'exécution de Codex.
 
 ## 4. Conversation et prompts Codex
 
@@ -87,6 +88,31 @@ interdiction d'adapter les consommateurs directs identifiés localement.
 Ne pas recopier la politique Git, les commandes standards ou la lecture de
 `main` déjà exigées par `AGENTS.md`. Ne pas demander à Codex d'« auditer et
 décider » ce que ChatGPT peut déterminer.
+
+### Typologie des prompts
+
+ChatGPT classe chaque prompt selon les catégories d'exécution de `AGENTS.md` :
+**Correction** (cause racine bornée, volume variable), **Micro-lot** (environ
+5 minutes, changement local), **Macro-lot** (environ 15 à 30 minutes,
+fonctionnalité cohérente) ou **Lot XL** (cible 45 à 75 minutes, plusieurs
+fonctionnalités liées dans une même exécution). Ces durées et volumes de lignes
+restent indicatifs : ils ne sont ni quotas, ni budgets bloquants, ni conditions
+d'arrêt.
+
+Pour un lot XL, le prompt doit énumérer 2 à 4 jalons internes ordonnés. Codex
+les implémente successivement sans interrompre le chantier au premier jalon
+réussi ; la `STOP CONDITION` porte sur le résultat fonctionnel et les
+validations/preuves finales. En cas de blocage réel, le prompt et le compte
+rendu doivent permettre d'identifier les jalons terminés et restants, avec la
+preuve du blocage.
+
+Pour tout prompt fonctionnel, demander explicitement dans le même lot :
+consommation réellement exécutée du runtime concerné, tests comportementaux et
+régressions utiles, mesure de couverture pertinente et mise à jour des documents
+`CURRENT` des contrats modifiés. Web et Mobile gardent des couvertures
+indépendantes ; une mesure absente ou non comparable est `NOT_MEASURED` avec sa
+cause. Un prompt purement documentaire ne demande ni modification runtime ni
+test artificiel, mais conserve les contrôles documentaires pertinents.
 
 Avant le **premier prompt** d'un chantier fonctionnel ou transversal, ChatGPT
 examine dans un périmètre proportionné :
@@ -217,10 +243,10 @@ collision d’attribution en écrasement silencieux. Les scopes `WORKTREE_LIVE`,
 `STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE` restent distincts ; une
 preuve locale ne devient pas une preuve de publication.
 
-Pour chaque exécution de travail qui produit un lot : validation → commit
-isolé → push `main` → vérification de convergence. Le mode de développement
-rapide ne supprime pas cette publication ; seule une interdiction explicite de
-l'utilisateur autorise un commit local sans push.
+Pour chaque exécution de travail qui produit un lot, le prompt demande à Codex :
+validation → commit isolé → push `main` → vérification de convergence. Le mode
+de développement rapide ne supprime pas cette publication ; seule une
+interdiction explicite de l'utilisateur autorise un commit local sans push.
 
 ## 8. Exécution, tests, qualité et publication
 
