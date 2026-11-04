@@ -349,14 +349,14 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Authenticated current-user territorial legend consent read",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess current-user gate + owner-scoped server consent read",
-      evidence: ["requireAuthenticatedAccess", "userId", "getSupabaseServerClient", ".eq(\"user_id\", access.userId)"],
+      actual: "requireActionRequestAccess preserves Web cookie and Clerk Mobile Bearer transports before owner-scoped server consent read",
+      evidence: ["requireActionRequestAccess", "userId", "getSupabaseServerClient", ".eq(\"user_id\", access.userId)"],
     },
     PATCH: {
       expected: "Authenticated current-user territorial legend consent write with age gate",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess current-user gate + optional-consent age gate + owner-scoped upsert",
-      evidence: ["requireAuthenticatedAccess", "getUserOptionalConsentEligibility", "isOptionalConsentTreatmentAllowed", "user_id: access.userId"],
+      actual: "requireActionRequestAccess preserves Web cookie and Clerk Mobile Bearer transports + optional-consent age gate + service-only idempotent consent RPC",
+      evidence: ["requireActionRequestAccess", "getUserOptionalConsentEligibility", "isOptionalConsentTreatmentAllowed", "set_territorial_legend_consent", "p_user_id: access.userId"],
     },
   },
 } as const satisfies ApiAuthorizationContract;

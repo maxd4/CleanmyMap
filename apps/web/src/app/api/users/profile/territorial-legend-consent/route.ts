@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { requireAuthenticatedAccess } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { handleApiError, parseJsonBodyWithValidation } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
@@ -17,8 +17,8 @@ function privateResponse(data: Record<string, unknown>) {
   return NextResponse.json(data, { headers: { "Cache-Control": "private, no-store" } });
 }
 
-export async function GET() {
-  const access = await requireAuthenticatedAccess();
+export async function GET(request: Request) {
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
   try {
     const eligibility = await getUserOptionalConsentEligibility(access.userId);
@@ -46,7 +46,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
   const parsed = await parseJsonBodyWithValidation(request, updateSchema);
   if (!parsed.ok) return parsed.response;
@@ -61,27 +61,21 @@ export async function PATCH(request: Request) {
 
   try {
     const now = new Date().toISOString();
-    const result = await getSupabaseServerClient(true)
-      .from("territorial_legend_consents")
-      .upsert({
-        user_id: access.userId,
-        enabled: parsed.data.enabled,
-        age_band: eligibility.ageBand,
-        activated_at: parsed.data.enabled ? now : null,
-        revoked_at: parsed.data.enabled ? null : now,
-        updated_at: now,
-      }, { onConflict: "user_id" })
-      .select("enabled, age_band, activated_at, revoked_at, updated_at")
-      .single();
+    const result = await getSupabaseServerClient(true).rpc("set_territorial_legend_consent", {
+      p_user_id: access.userId,
+      p_enabled: parsed.data.enabled,
+      p_age_band: eligibility.ageBand,
+      p_now: now,
+    });
     if (result.error) throw result.error;
-    const row = result.data as { enabled: boolean; age_band: string; activated_at: string | null; revoked_at: string | null; updated_at: string | null };
+    const row = result.data as { enabled?: boolean; age_band?: string; activated_at?: string | null; revoked_at?: string | null; updated_at?: string | null } | null;
     return privateResponse({
       status: "updated",
-      enabled: row.enabled === true,
-      ageBand: row.age_band,
-      activatedAt: row.activated_at,
-      revokedAt: row.revoked_at,
-      updatedAt: row.updated_at,
+      enabled: row?.enabled === true,
+      ageBand: row?.age_band ?? eligibility.ageBand,
+      activatedAt: row?.activated_at ?? null,
+      revokedAt: row?.revoked_at ?? null,
+      updatedAt: row?.updated_at ?? now,
     });
   } catch (error) {
     return handleApiError(error, "PATCH /api/users/profile/territorial-legend-consent");

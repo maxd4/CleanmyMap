@@ -45,6 +45,25 @@ badge ; une future surface native doit utiliser le Bearer Clerk et les mêmes
 routes, en respectant la lecture publique minimisée et la lecture personnelle
 owner-scoped.
 
+Le consentement territorial reste une mutation serveur-only : le rôle
+`authenticated` conserve uniquement la lecture RLS owner-scoped et ne peut pas
+falsifier `age_band`, `activated_at` ou `revoked_at`. Le RPC de mutation
+sérialise les activations par utilisateur ; une activation déjà effective garde
+son watermark, tandis qu'une réactivation après révocation reçoit une nouvelle
+borne. Une révocation ferme aussi les détentions actives de ce propriétaire
+dans la même transaction, sans effacer les preuves historiques. Avant chaque
+projection publique, l'éligibilité d'âge Clerk courante est revalidée. Le
+classement public est `no-store` afin qu'une révocation ou une perte
+d'éligibilité ne reste pas dans un cache partagé. Les statistiques personnelles
+restent séparées : elles ne réinscrivent jamais un propriétaire révoqué dans la
+compétition publique.
+
+La non-rétroactivité compare `action_participants.joined_at` à
+`territorial_legend_consents.activated_at` avec une précision d'horodatage ;
+un timestamp absent ou invalide est exclu. Les routes privées utilisent
+`requireActionRequestAccess`, qui accepte la session Web et le Bearer Clerk
+Mobile tout en transmettant l'identité owner-scoped au serveur.
+
 ## Frontières techniques
 
 - `progression_events` est l'unique journal CURRENT de progression XP et

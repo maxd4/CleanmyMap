@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { requireAuthenticatedAccess } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 const levelSchema = z.enum(TERRITORIAL_LEGEND_LEVELS);
 
 export async function GET(request: Request) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
   const url = new URL(request.url);
   const level = levelSchema.safeParse(url.searchParams.get("level"));

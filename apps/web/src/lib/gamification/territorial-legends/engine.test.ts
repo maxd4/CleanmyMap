@@ -214,4 +214,48 @@ describe("territorial legend engine", () => {
     expect(isDateInCampaign("2024-02-29", 2024)).toBe(true);
     expect(isDateInCampaign("2025-01-01", 2024)).toBe(false);
   });
+
+  it("uses the confirmed participation timestamp and excludes an earlier same-day contribution", () => {
+    const page = buildTerritorialLegendPage({
+      level: "commune",
+      territoryCode: "75056",
+      now: new Date("2026-11-03T12:00:00.000Z"),
+      actions: [action("same-day", "2026-11-03")],
+      participations: [{ actionId: "same-day", userId: "u-a", joinedAt: "2026-11-03T08:59:59.000Z" }],
+      consents: [{ userId: "u-a", enabled: true, activatedAt: "2026-11-03T09:00:00.000Z" }],
+      profiles: [{ userId: "u-a", publicLabel: "Alice" }],
+    });
+
+    expect(page.items).toEqual([]);
+  });
+
+  it("excludes a user whose current age eligibility was revoked from the public projection", () => {
+    const page = buildTerritorialLegendPage({
+      level: "commune",
+      territoryCode: "75056",
+      now,
+      actions: [action("age-revoked", "2026-10-01")],
+      participations: [{ actionId: "age-revoked", userId: "u-a", joinedAt: "2026-09-20T10:00:00.000Z" }],
+      consents: [{ userId: "u-a", enabled: true, activatedAt: "2026-09-01T00:00:00.000Z", ageEligible: false }],
+      profiles: [{ userId: "u-a", publicLabel: "Alice" }],
+    });
+
+    expect(page.items).toEqual([]);
+  });
+
+  it("keeps private owner statistics available after public consent revocation", () => {
+    const page = buildTerritorialLegendPage({
+      level: "commune",
+      territoryCode: "75056",
+      now,
+      ownerUserId: "u-a",
+      actions: [action("private-history", "2026-10-01")],
+      participations: [{ actionId: "private-history", userId: "u-a", joinedAt: "2026-09-20T10:00:00.000Z" }],
+      consents: [{ userId: "u-a", enabled: false, activatedAt: "2026-09-01T00:00:00.000Z", revokedAt: "2026-10-15T00:00:00.000Z" }],
+      profiles: [{ userId: "u-a", publicLabel: "Alice" }],
+    });
+
+    expect(page.items).toEqual([]);
+    expect(page.owner).toEqual({ rank: null, score: 1, distinctActions: 1, tied: false, tieSize: 1 });
+  });
 });

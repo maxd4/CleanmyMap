@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPublicLeaderboardLabel } from "@/lib/gamification/progression/progression-ranking";
 import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
 import type { ActionGeometryKind } from "@/lib/actions/types";
+import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
 import { campaignStartDate, campaignYearForCivilDate } from "./campaign";
 import {
   TERRITORIAL_LEGEND_LEVELS,
@@ -113,7 +114,8 @@ function rankEntries(entries: readonly RankedInternalEntry[]): RankedInternalEnt
 }
 
 function buildRankedEntries(
-  params: Pick<BuildLeaderboardParams, "level" | "territoryCode" | "now" | "actions" | "participations" | "consents" | "profiles">,
+  params: Pick<BuildLeaderboardParams, "level" | "territoryCode" | "now" | "actions" | "participations" | "consents" | "profiles" | "ownerUserId">,
+  options: { includeOwnerPrivate?: boolean } = {},
 ): RankedInternalEntry[] {
   const now = params.now ?? new Date();
   const targetCode = params.territoryCode.trim();
@@ -125,7 +127,8 @@ function buildRankedEntries(
   for (const participation of params.participations) {
     const action = actionById.get(participation.actionId);
     const consent = consentByUser.get(participation.userId);
-    if (!action || !consent || !contributionIsEligible(action, consent, now)) continue;
+    const isPrivateOwner = options.includeOwnerPrivate === true && params.ownerUserId === participation.userId;
+    if (!action || !consent || !contributionIsEligible(action, participation, consent, now, isPrivateOwner)) continue;
     const territory = territoryPartForLevel(action, params.level);
     if (!territory || territory.code !== targetCode) continue;
     if (!profileByUser.has(participation.userId)) continue;
@@ -145,8 +148,10 @@ function buildRankedEntries(
 
 function contributionIsEligible(
   action: TerritorialActionFact,
+  participation: TerritorialParticipationFact,
   consent: TerritorialLegendConsent,
   now: Date,
+  privateOwner: boolean,
 ): boolean {
   const actionAt = parseActionDate(action.actionDate);
   if (!actionAt) return false;
@@ -154,12 +159,14 @@ function contributionIsEligible(
   const currentParisDate = parisDate(now);
   if (actionAt < start || action.actionDate > currentParisDate) return false;
   if (campaignYearForCivilDate(action.actionDate) !== campaignYearForCivilDate(currentParisDate)) return false;
-  if (!consent.enabled || !consent.activatedAt) return false;
+  if ((!privateOwner && (!consent.enabled || consent.ageEligible === false)) || !consent.activatedAt) return false;
   const activatedAt = new Date(consent.activatedAt);
   if (Number.isNaN(activatedAt.getTime())) return false;
-  // Compare civil dates in Europe/Paris. A same-day activation never makes an
-  // already completed action retroactively competitive.
-  return action.actionDate >= parisDate(activatedAt);
+  const joinedAt = new Date(participation.joinedAt);
+  if (Number.isNaN(joinedAt.getTime())) return false;
+  // The confirmed participation timestamp is the contribution boundary. A
+  // civil action date alone cannot distinguish an earlier same-day contribution.
+  return joinedAt.getTime() >= activatedAt.getTime();
 }
 
 export function buildTerritorialLegendPage(params: BuildLeaderboardParams): TerritorialLegendPage {
@@ -182,9 +189,12 @@ export function buildTerritorialLegendPage(params: BuildLeaderboardParams): Terr
   const label = params.territoryLabel?.trim() || null;
   const campaignYear = campaignYearForCivilDate(parisDate(now));
 
-  const owner = params.ownerUserId
+  const publicOwner = params.ownerUserId
     ? internal.find((item) => item.userId === params.ownerUserId) ?? null
-    : undefined;
+    : null;
+  const privateOwner = params.ownerUserId && !publicOwner
+    ? buildRankedEntries(params, { includeOwnerPrivate: true }).find((item) => item.userId === params.ownerUserId) ?? null
+    : publicOwner;
   return {
     level: params.level,
     campaignYear,
@@ -199,7 +209,17 @@ export function buildTerritorialLegendPage(params: BuildLeaderboardParams): Terr
     items,
     nextCursor,
     ...(params.ownerUserId
-      ? { owner: owner ? { rank: owner.rank, score: owner.score, distinctActions: owner.distinctActions, tied: owner.tied, tieSize: owner.tieSize } : null }
+      ? {
+          owner: privateOwner
+            ? {
+                rank: publicOwner?.rank ?? null,
+                score: privateOwner.score,
+                distinctActions: privateOwner.distinctActions,
+                tied: publicOwner?.tied ?? false,
+                tieSize: publicOwner?.tieSize ?? 1,
+              }
+            : null,
+        }
       : {}),
   };
 }
@@ -361,17 +381,38 @@ export async function loadTerritorialLegendFacts(
     joinedAt: row.joined_at,
   }));
   const userIds = [...new Set(participations.map((row) => row.userId).filter(Boolean))];
-  const consentResult = await loadInChunks(async (ids) => {
-    const result = await supabase.from("territorial_legend_consents").select("user_id, enabled, activated_at").in("user_id", ids).eq("enabled", true);
+  const consentResult = await loadInChunks<TerritorialLegendConsent>(async (ids) => {
+    const result = await supabase.from("territorial_legend_consents").select("user_id, enabled, activated_at, revoked_at").in("user_id", ids);
     if (result.error) throw result.error;
     return (Array.isArray(result.data) ? result.data : []).flatMap((row) => {
-      const value = row as { user_id?: unknown; enabled?: unknown; activated_at?: unknown };
+      const value = row as { user_id?: unknown; enabled?: unknown; activated_at?: unknown; revoked_at?: unknown };
       return typeof value.user_id === "string"
-        ? [{ userId: value.user_id, enabled: value.enabled === true, activatedAt: typeof value.activated_at === "string" ? value.activated_at : null }]
+        ? [{
+            userId: value.user_id,
+            enabled: value.enabled === true,
+            activatedAt: typeof value.activated_at === "string" ? value.activated_at : null,
+            revokedAt: typeof value.revoked_at === "string" ? value.revoked_at : null,
+            ageEligible: undefined,
+          }]
         : [];
     });
   }, userIds);
-  const eligibleUserIds = consentResult.map((row) => row.userId);
+  const publicConsentIds = new Set(
+    (await Promise.all(consentResult.filter((consent) => consent.enabled).map(async (consent) => ({
+      userId: consent.userId,
+      ageEligible: await isOptionalConsentTreatmentAllowedForUser(consent.userId),
+    })))).filter((consent) => consent.ageEligible).map((consent) => consent.userId),
+  );
+  const ownerUserId = params.ownerUserId ?? null;
+  const eligibleUserIds = [...new Set([
+    ...publicConsentIds,
+    ...(ownerUserId && userIds.includes(ownerUserId) ? [ownerUserId] : []),
+  ])];
+  for (const consent of consentResult) {
+    if (consent.enabled) {
+      consent.ageEligible = publicConsentIds.has(consent.userId);
+    }
+  }
   const profileResult = await loadInChunks(async (ids) => {
     const result = await supabase.from("profiles").select("id, display_name, display_name_mode, handle").in("id", ids);
     if (result.error) throw result.error;

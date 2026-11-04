@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
+const requireActionRequestAccessMock = vi.hoisted(() => vi.fn());
 const loadHistoryMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
+vi.mock("@/lib/auth/action-request-access", () => ({ requireActionRequestAccess: requireActionRequestAccessMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
 vi.mock("@/lib/gamification/territorial-legends/award-facts", () => ({
   loadTerritorialLegendAwardHistory: loadHistoryMock,
@@ -19,7 +19,7 @@ describe("GET /api/gamification/territorial-leaderboard/history", () => {
   });
 
   it("requires the authenticated owner and returns invalidated proofs for one campaign", async () => {
-    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
+    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     loadHistoryMock.mockResolvedValue([
       {
         proofId: "user-1:commune:2025:*:conquest:0",
@@ -56,7 +56,7 @@ describe("GET /api/gamification/territorial-leaderboard/history", () => {
   });
 
   it("rejects unauthenticated reads before touching the database", async () => {
-    requireAuthenticatedAccessMock.mockResolvedValue({ ok: false });
+    requireActionRequestAccessMock.mockResolvedValue({ ok: false });
 
     const response = await GET(new Request(
       "http://localhost/api/gamification/territorial-leaderboard/history?campaignYear=2025",
@@ -73,7 +73,7 @@ describe("GET /api/gamification/territorial-leaderboard/history", () => {
     "campaignYear=2025&territoryCode=75056",
     "campaignYear=2025&level=country&territoryCode=75056",
   ])("rejects an invalid history scope: %s", async (query) => {
-    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
+    requireActionRequestAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
 
     const response = await GET(new Request(`http://localhost/api/gamification/territorial-leaderboard/history?${query}`));
 

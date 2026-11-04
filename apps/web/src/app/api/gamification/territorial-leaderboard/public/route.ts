@@ -44,7 +44,9 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(
       { status: "ok", ...page },
-      { headers: { "Cache-Control": "public, max-age=0, s-maxage=15, stale-while-revalidate=30" } },
+      // Public eligibility can change when Clerk age metadata or consent is
+      // revoked; a shared CDN response must never outlive that decision.
+      { headers: { "Cache-Control": "public, no-store, max-age=0" } },
     );
   } catch (error) {
     return handleApiError(error, "GET /api/gamification/territorial-leaderboard/public");

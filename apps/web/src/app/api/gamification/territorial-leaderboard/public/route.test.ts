@@ -39,6 +39,7 @@ describe("public territorial leaderboard route", () => {
     const response = await GET(new Request("http://localhost/api/gamification/territorial-leaderboard/public?level=department&territoryCode=974"));
     const payload = await response.json();
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("public, no-store, max-age=0");
     expect(payload.campaignYear).toBe(2026);
     expect(payload.items[0]).not.toHaveProperty("userId");
     expect(payload).not.toHaveProperty("consents");

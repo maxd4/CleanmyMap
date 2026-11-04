@@ -3,7 +3,7 @@
 -- migration reset; it must never target the linked or production database.
 
 begin;
-select plan(46);
+select plan(58);
 
 set local role postgres;
 create temp table territorial_legend_contract_state (
@@ -25,10 +25,44 @@ select ok(exists (select 1 from supabase_migrations.schema_migrations where vers
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261103000003'), 'repaired territorial migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261103000004'), 'forward contract migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000001'), 'annual campaign migration is registered');
+select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000002'), 'consent hardening migration is registered');
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
+
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-03T10:00:00Z'::timestamptz)->>'enabled'),
+  'true',
+  'service-only consent RPC activates an eligible server decision'
+);
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-04T10:00:00Z'::timestamptz)->>'activated_at'),
+  '2026-11-03T10:00:00+00:00',
+  'repeated activation preserves the original activation watermark'
+);
+insert into public.territorial_legend_hold_periods (
+  user_id, campaign_year, level, territory_code, territory_label,
+  started_on, last_verified_on, validity_status, source_fingerprint
+) values (
+  'legend-consent-contract', extract(year from current_date)::integer, 'commune', '75056', 'Paris',
+  current_date - 2, current_date - 1, 'active', 'consent-revocation-hold'
+);
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', false, '15_or_over', '2026-11-05T10:00:00Z'::timestamptz)->>'activated_at'),
+  '2026-11-03T10:00:00+00:00',
+  'revocation keeps the owner-scoped activation history'
+);
+select is(
+  (select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-consent-contract' and validity_status = 'closed'),
+  1,
+  'revocation closes active detention without deleting its period'
+);
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-06T10:00:00Z'::timestamptz)->>'activated_at'),
+  '2026-11-06T10:00:00+00:00',
+  'reactivation creates a new non-retroactive watermark'
+);
 
 select is(
   (public.reconcile_territorial_legend_snapshot(
@@ -210,8 +244,14 @@ select throws_ok($$select public.invalidate_territorial_legend_history('{}'::big
 
 select ok(not has_table_privilege('authenticated', 'public.territorial_legend_hold_periods', 'select'), 'authenticated cannot read private hold periods');
 select ok(not has_table_privilege('authenticated', 'public.territorial_legend_award_proofs', 'select'), 'authenticated cannot read private award proofs');
+select ok(has_table_privilege('authenticated', 'public.territorial_legend_consents', 'select'), 'authenticated can read only its consent projection through RLS');
+select ok(not has_table_privilege('authenticated', 'public.territorial_legend_consents', 'insert'), 'authenticated cannot insert consent state directly');
+select ok(not has_table_privilege('authenticated', 'public.territorial_legend_consents', 'update'), 'authenticated cannot update consent state directly');
+select throws_ok($$insert into public.territorial_legend_consents (user_id, enabled, age_band) values ('forged-consent', true, '15_or_over')$$, '42501', null, 'authenticated direct consent insert is refused');
+select throws_ok($$update public.territorial_legend_consents set enabled = true where user_id = 'legend-consent-contract'$$, '42501', null, 'authenticated direct consent update is refused');
 select ok(not has_function_privilege('authenticated', 'public.reconcile_territorial_legend_snapshot(date, jsonb)', 'execute'), 'authenticated cannot execute snapshot reconciliation');
 select ok(not has_function_privilege('authenticated', 'public.invalidate_territorial_legend_history(bigint[], text[], date)', 'execute'), 'authenticated cannot execute history invalidation');
+select ok(not has_function_privilege('authenticated', 'public.set_territorial_legend_consent(text, boolean, text, timestamptz)', 'execute'), 'authenticated cannot execute the consent mutation RPC');
 select ok(has_table_privilege('service_role', 'public.territorial_legend_hold_periods', 'select'), 'service_role can read hold periods');
 select ok(has_table_privilege('service_role', 'public.territorial_legend_award_proofs', 'select'), 'service_role can read award proofs');
 select ok(has_function_privilege('service_role', 'public.reconcile_territorial_legend_snapshot(date, jsonb)', 'execute'), 'service_role can execute snapshot reconciliation');

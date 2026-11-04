@@ -79,9 +79,25 @@ Le consentement territorial est séparé de
 `profiles.leaderboard_public_opt_in`, privé par défaut et conservé dans
 `territorial_legend_consents`. Son activation est soumise à la même barrière
 d'âge facultative et, si nécessaire, à l'accord parental. La révocation exclut
-immédiatement l'utilisateur de la compétition ; une nouvelle activation crée
-une nouvelle borne `activated_at`, de sorte qu'aucune contribution antérieure
-ne devient rétroactivement compétitive.
+immédiatement l'utilisateur de la compétition et ferme sa détention active,
+sans supprimer les preuves historiques. Les écritures
+passent exclusivement par la frontière serveur autorisée : le rôle
+`authenticated` ne peut ni insérer ni modifier la ligne ou son `age_band`.
+L'activation est idempotente tant qu'elle reste active ; une réactivation après
+révocation crée une nouvelle borne `activated_at`, de sorte qu'aucune
+contribution antérieure ne devient rétroactivement compétitive. Le classement
+public réévalue l'éligibilité d'âge Clerk courante et est servi sans cache
+partagé ; une réponse d'âge ou de consentement devenue invalide ne peut donc
+rester exposée par un CDN.
+
+La contribution est bornée par l'horodatage fiable de la participation
+`confirmed.joined_at`, comparé à `activated_at`, en plus de la date civile de
+l'action. Une précision absente ou invalide est exclue conservativement, y
+compris lorsqu'elle serait le même jour. La lecture personnelle owner-scoped
+reste séparée du classement public et peut restituer les statistiques privées
+d'un propriétaire révoqué sans le réintroduire dans la projection publique.
+Les routes privées acceptent la session Web et le Bearer Clerk Mobile, avec
+ownership résolu exclusivement côté serveur.
 
 La lecture publique
 `GET /api/gamification/territorial-leaderboard/public?level=...&territoryCode=...`

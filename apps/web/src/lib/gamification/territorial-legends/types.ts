@@ -35,6 +35,9 @@ export type TerritorialLegendConsent = {
   userId: string;
   enabled: boolean;
   activatedAt: string | null;
+  revokedAt?: string | null;
+  /** Current Clerk age eligibility, checked before public projection. */
+  ageEligible?: boolean;
 };
 
 export type TerritorialPublicProfile = {
@@ -65,7 +68,7 @@ export type TerritorialLegendPage = {
   items: TerritorialLegendEntry[];
   nextCursor: string | null;
   owner?: {
-    rank: number;
+    rank: number | null;
     score: number;
     distinctActions: number;
     tied: boolean;
