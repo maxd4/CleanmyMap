@@ -54,12 +54,12 @@ décision d'identité dans
 | Entrée Expo | [`index.ts`](./index.ts), [`App.tsx`](./App.tsx), [`app.json`](./app.json) | Enregistre la tâche GPS avant `registerRootComponent`, initialise les polyfills, Clerk, le cache sécurisé et le shell. |
 | Navigation | [`navigation/mobile-shell.tsx`](./navigation/mobile-shell.tsx), [`navigation/mobile-shell-contract.ts`](./navigation/mobile-shell-contract.ts) | Barre native persistante `Agir` / `Carte` / `Compte`; sous-vues `Rejoindre`, `Créer`, `Signaler`; `Accueil`, `Réseau`, `Apprendre` restent planifiées. |
 | Écrans | [`navigation/mobile-shell.tsx`](./navigation/mobile-shell.tsx) | Compte, création et participation d'action, signalement, mission active/carte, finalisation, contact et appel d'urgence. |
-| Hooks/controllers | [`features/tracking/use-companion-mission-controller.ts`](./features/tracking/use-companion-mission-controller.ts) | `useCompanionMissionController`, `useAccountController`, `useActionCreateController` portent respectivement mission/GPS, projection Compte et brouillon/création d'action dans leurs domaines. |
-| Services | [`shared/lib/mobile-api-client.ts`](./shared/lib/mobile-api-client.ts) | Client HTTP partagé ; les services Actions, Compte, signalement et tracking restent dans leurs domaines fonctionnels. |
+| Hooks/controllers | [`features/tracking/use-companion-mission-controller.ts`](./features/tracking/use-companion-mission-controller.ts) | `useCompanionMissionController`, `useAccountController`, `useTerritorialLegendsController` et `useActionCreateController` portent respectivement mission/GPS, projection Compte, lecture owner-scoped des Légendes et brouillon/création d'action dans leurs domaines. |
+| Services | [`shared/lib/mobile-api-client.ts`](./shared/lib/mobile-api-client.ts), [`features/territorial-legends/mobile-territorial-legends-service.ts`](./features/territorial-legends/mobile-territorial-legends-service.ts) | Client HTTP partagé ; les services Actions, Compte, Légendes territoriales, signalement et tracking restent dans leurs domaines fonctionnels et consomment les contrats serveur Web/Bearer existants. |
 | Stockage | [`shared/lib/storage.ts`](./shared/lib/storage.ts), cache Clerk | `AsyncStorage` conserve surface, brouillons, mission, buffer, tracé, réconciliations et la clé de reprise de création de mission namespacés par owner; `SecureStore` porte le cache de token Clerk et le contact d'urgence natif. |
 | GPS | [`features/tracking/tracking-service.ts`](./features/tracking/tracking-service.ts), [`tasks/gps-task.ts`](./tasks/gps-task.ts), [`features/tracking/mission-active-map.tsx`](./features/tracking/mission-active-map.tsx) | `expo-location`, `expo-task-manager` et `react-native-maps` couvrent permissions, suivi foreground, tâche background câblée, restauration/replay et affichage du tracé; les métriques finales restent serveur. |
 | Authentification | [`App.tsx`](./App.tsx), [`shared/lib/supabase.ts`](./shared/lib/supabase.ts) | Clerk est l'identité canonique; `ClerkProvider` + `tokenCache` et Bearer `session_token` alimentent Supabase Third-Party Auth et les frontières HTTP mobiles. |
-| API et données consommées | [`features/actions/mobile-actions-service.ts`](./features/actions/mobile-actions-service.ts), [`features/account/mobile-account-service.ts`](./features/account/mobile-account-service.ts), [`features/tracking/tracking-service.ts`](./features/tracking/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions` et `/api/missions/:id/reconcile`; les routes mission acceptent le Bearer Clerk mobile via la frontière canonique et la création liée porte une `Idempotency-Key` owner-scoped. Tables Supabase `missions` et `gps_points`. |
+| API et données consommées | [`features/actions/mobile-actions-service.ts`](./features/actions/mobile-actions-service.ts), [`features/account/mobile-account-service.ts`](./features/account/mobile-account-service.ts), [`features/territorial-legends/mobile-territorial-legends-service.ts`](./features/territorial-legends/mobile-territorial-legends-service.ts), [`features/tracking/tracking-service.ts`](./features/tracking/tracking-service.ts) | Routes `/api/mobile/actions`, `/api/mobile/account`, `/api/mobile/account/deletion-request`, `/api/gamification/territorial-leaderboard/overview`, `/api/users/profile/territorial-legend-consent`, `/api/actions`, `/api/spots`, `/api/signalements`, `/api/account`, `/api/users/profile`, `/api/notifications`, `/api/missions` et `/api/missions/:id/reconcile`; les lectures territoriales et mutations de consentement portent le Bearer Clerk et restent owner-scoped côté serveur. Tables Supabase `missions` et `gps_points`. |
 | Tests et contrôles | [`tests/mobile-shell-contract.test.ts`](./tests/mobile-shell-contract.test.ts), [`security/braces-security.test.mjs`](./security/braces-security.test.mjs) | Vitest couvre runtime, contrats, reprise, identité, stockage, GPS et écrans; les tests Node dédiés couvrent les dépendances vendorisées. Commandes: `mobile:typecheck`, `mobile:test`, `mobile:security`, `mobile:lint`, `quality:mobile-coverage`. |
 
 ### Dépendances directes du workspace
@@ -246,8 +246,9 @@ GPS plein écran et ses interfaces de finalisation.
 
 La destination `Carte` ouvre `/actions/map` pour la consultation existante. Le
 mobile n'implémente pas de deuxième messagerie. `Compte` est un hub à sections
-(`Mon profil`, `Activité et notifications`, `Préférences`, `Rechercher`, `Aide
-et feedback`, `À propos et informations légales`) et charge une projection
+(`Mon profil`, `Activité et notifications`, `Légendes territoriales`,
+`Préférences`, `Rechercher`, `Aide et feedback`, `À propos et informations
+légales`) et charge une projection
 privée bornée depuis `/api/mobile/account` : identité Clerk, onboarding,
 localisations préférées, rôle attribué/parcours actif, préférences, indicateurs
 serveur, historique, invitations, missions GPS et actions organisées. Les
@@ -260,6 +261,17 @@ CleanMyMap` ouvre `/sections/annuaire` et `Groupes de discussion` ouvre
 `/sections/messagerie`. Le pont ouvre une URL web externe et ne transfère pas
 automatiquement la session Clerk native vers une session de navigateur ; une
 connexion web distincte peut donc être requise par la surface cible.
+La surface `Légendes territoriales` est accessible depuis le profil et le bloc
+`Progression et indicateurs serveur` de l'activité. Elle consomme
+`/api/gamification/territorial-leaderboard/overview` avec le Bearer Clerk et
+présente uniquement les cinq grades, les territoires, les classements publics
+autorisés, les titres confirmés, les périodes de détention et les récompenses
+renvoyées par le serveur. Les règles et détails d'un territoire sont
+consultables sans recalcul local ; une réponse vide ou partielle reste
+explicitement vide. `Compte > Préférences` synchronise le consentement avec
+`/api/users/profile/territorial-legend-consent`. Les lectures sont abandonnées
+si l'identité Clerk change pendant la requête.
+
 Le compte permet aussi d'enregistrer un unique contact d'urgence dans le
 SecureStore local.
 Avant toute boîte de permission système, le mobile affiche une explication

@@ -11,7 +11,7 @@ import {
 } from './mobile-account-service'
 
 export type AccountData = MobileAccountPayload
-export type AccountSection = 'profile' | 'activity' | 'preferences' | 'search' | 'help' | 'about'
+export type AccountSection = 'profile' | 'activity' | 'territorialLegends' | 'preferences' | 'search' | 'help' | 'about'
 
 type AccountControllerProps = { onSessionExpired: () => void }
 

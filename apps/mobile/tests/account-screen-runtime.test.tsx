@@ -26,6 +26,8 @@ vi.mock('react-native', () => ({
   TextInput: nativeComponent('TextInput'),
   TouchableOpacity: nativeComponent('TouchableOpacity'),
   View: nativeComponent('View'),
+  Platform: { OS: 'ios', Version: '17' },
+  ScrollView: nativeComponent('ScrollView'),
 }))
 vi.mock('lucide-react-native', () => ({
   Bell: nativeComponent('Icon'),
@@ -46,6 +48,15 @@ vi.mock('../features/account/mobile-account-service', () => ({
   updateMobileDisplayNameMode: state.updateMobileDisplayNameMode,
   updateMobileNotificationPreferences: state.updateMobileNotificationPreferences,
   requestMobileAccountDeletion: state.requestMobileAccountDeletion,
+}))
+vi.mock('../features/territorial-legends/mobile-territorial-legends-service', () => ({
+  loadMobileTerritorialLegendConsent: vi.fn(async () => ({ status: 'ok', enabled: false, ageBand: 'unknown', activatedAt: null, revokedAt: null })),
+  loadMobileTerritorialLegendOverview: vi.fn(async () => ({ status: 'ok', campaignYear: 2026, windowDays: 90, levels: [], territories: [] })),
+  updateMobileTerritorialLegendConsent: vi.fn(async (enabled: boolean) => ({ status: 'ok', enabled, ageBand: '15_or_over', activatedAt: null, revokedAt: enabled ? null : '2026-11-04T10:00:00.000Z' })),
+}))
+vi.mock('../shared/lib/supabase', () => ({
+  getClerkUserId: vi.fn(async () => 'user-a'),
+  subscribeToClerkIdentityChanges: () => () => undefined,
 }))
 
 import { AccountScreen } from '../features/account/account'
@@ -136,6 +147,11 @@ describe('mobile account screen runtime', () => {
     const activitySwitch = renderer.root.findAll((node) => testProp<string>(node, 'accessibilityRole') === 'switch').at(-1)
     await act(async () => { await callTestHandler(activitySwitch, 'onPress'); await settle() })
     expect(state.updateMobileActivityStatus).toHaveBeenCalledWith('inactive')
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Voir la progression territoriale'), 'onPress'); await settle() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Aucune compétition territoriale disponible'))).not.toHaveLength(0)
+    await act(async () => { await callTestHandler(findButton(renderer, 'Gérer dans Préférences'), 'onPress'); await settle() })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Consentement territorial'))).not.toHaveLength(0)
 
     await act(async () => { await callTestHandler(findButton(renderer, 'Préférences'), 'onPress'); await settle() })
     await act(async () => { await callTestHandler(findButton(renderer, 'Pseudo'), 'onPress'); await settle() })

@@ -39,10 +39,12 @@ describe('mobile native navigation UI contract', () => {
     expect(shellSource).toContain('Rejoindre une action')
     expect(shellSource).toContain('Créer une action')
     expect(shellSource).toContain('Signaler un déchet')
-    for (const label of ['Mon profil', 'Activité et notifications', 'Préférences', 'Rechercher', 'Aide et feedback', 'À propos et informations légales']) {
+    for (const label of ['Mon profil', 'Activité et notifications', 'Légendes territoriales', 'Préférences', 'Rechercher', 'Aide et feedback', 'À propos et informations légales']) {
       expect(accountSource).toContain(label)
     }
     expect(accountSource).toContain("section === 'profile'")
     expect(accountSource).toContain("section === 'activity'")
+    expect(accountSource).toContain("section === 'territorialLegends'")
+    expect(accountSource).toContain('useTerritorialLegendsController')
   })
 })

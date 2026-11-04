@@ -31,7 +31,8 @@ vi.mock('react-native', () => ({
   KeyboardAvoidingView: nativeComponent('KeyboardAvoidingView'),
   Image: nativeComponent('Image'),
   Linking: { openURL: vi.fn(async (url: string) => { state.openedUrls.push(url) }) },
-  Platform: { OS: 'ios' },
+  NativeModules: {},
+  Platform: { OS: 'ios', Version: '17' },
   SafeAreaView: nativeComponent('SafeAreaView'),
   ScrollView: nativeComponent('ScrollView'),
 }))
@@ -50,6 +51,10 @@ vi.mock('@clerk/expo/hosted-auth', () => ({
   useHostedAuth: () => ({ startHostedAuth: appState.startHostedAuth }),
 }))
 vi.mock('@clerk/expo/token-cache', () => ({ tokenCache: { getToken: vi.fn(), saveToken: vi.fn(), clearToken: vi.fn() } }))
+vi.mock('../shared/lib/supabase', () => ({
+  getClerkUserId: vi.fn(async () => 'user-a'),
+  subscribeToClerkIdentityChanges: () => () => undefined,
+}))
 vi.mock('../features/tracking/use-companion-mission-controller', () => ({
   useCompanionMissionController: () => appState.controller,
 }))

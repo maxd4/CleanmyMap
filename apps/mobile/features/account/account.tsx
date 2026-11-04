@@ -4,11 +4,15 @@ import { Bell, CircleHelp, ExternalLink, Info, Search, Settings2, UserRound, typ
 import { useAccountController, type AccountData, type AccountSection } from './use-account-controller'
 import { EmergencyContactPanel } from './emergency-contact'
 import { PlannedCapabilityMenu, type PlannedCapabilityId } from '../../navigation/planned-capabilities'
+import { TerritorialLegendConsentSetting } from '../territorial-legends/territorial-legend-consent-setting'
+import { TerritorialLegendsScreen } from '../territorial-legends/territorial-legends-screen'
+import { useTerritorialLegendsController } from '../territorial-legends/use-territorial-legends-controller'
 
 type AccountProps = { onSignOut: () => void; onSessionExpired: () => void; onOpenWeb: (path: string) => void; onOpenPlanned?: (id: PlannedCapabilityId) => void }
 const ACCOUNT_SECTIONS: Array<{ id: AccountSection; label: string; description: string; icon: LucideIcon }> = [
   { id: 'profile', label: 'Mon profil', description: 'Identité, onboarding et parcours actif', icon: UserRound },
   { id: 'activity', label: 'Activité et notifications', description: 'Historique, invitations et alertes', icon: Bell },
+  { id: 'territorialLegends', label: 'Légendes territoriales', description: 'Grades, territoires et récompenses serveur', icon: CircleHelp },
   { id: 'preferences', label: 'Préférences', description: 'Affichage et choix synchronisés', icon: Settings2 },
   { id: 'search', label: 'Rechercher', description: 'Retrouver les surfaces de recherche', icon: Search },
   { id: 'help', label: 'Aide et feedback', description: 'Contact, aide et retour d’expérience', icon: CircleHelp },
@@ -37,6 +41,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb, onOpenPl
     changeDisplayNameMode: changeDisplayNameModeAsync, changeActivityStatus: changeActivityStatusAsync,
     changeNotification: changeNotificationAsync, sendDeletionRequest: sendDeletionRequestAsync,
   } = useAccountController({ onSessionExpired })
+  const territorialLegends = useTerritorialLegendsController({ ownerId: account?.identity.userId ?? null, shouldLoadOverview: section === 'territorialLegends', onSessionExpired })
 
   const refresh = () => { void refreshAsync().catch(() => undefined) }
   const saveProfile = (completeOnboarding = false) => { void saveProfileAsync(completeOnboarding).catch(() => undefined) }
@@ -95,6 +100,10 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb, onOpenPl
       <View style={styles.chips}>{account.identity.availableActiveRoles.map((role) => <TouchableOpacity key={role} style={[styles.chip, account.identity.activeRole === role && styles.chipSelected]} onPress={() => void changeActiveRole(role)} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: account.identity.activeRole === role }}><Text style={styles.chipLabel}>{roleLabel(role)}</Text></TouchableOpacity>)}</View>
       <Text style={styles.helper}>Le rôle attribué est conservé. Seul le parcours actif autorisé peut changer.</Text>
     </Card>
+    <Card title="Progression territoriale">
+      <Text style={styles.helper}>Consultez vos cinq grades, vos territoires et les récompenses confirmées par le serveur.</Text>
+      <TouchableOpacity style={styles.outlineButton} onPress={() => setSection('territorialLegends')} accessibilityRole="button"><Text style={styles.secondaryLabel}>Ouvrir les Légendes territoriales</Text></TouchableOpacity>
+    </Card>
     </SectionContent>
 
     <SectionContent visible={section === 'activity'}>
@@ -110,6 +119,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb, onOpenPl
       <Text style={styles.metric}>Contributions vérifiées : {valueOrUnknown(progression.verifiedContributions)}</Text>
       <Text style={styles.metric}>Déchets pesés disponibles : {valueOrUnknown(progression.totalKg, 'kg')}</Text>
       <Text style={styles.helper}>Ces valeurs sont calculées par le serveur. Le mobile ne les recalcule pas.</Text>
+      <TouchableOpacity style={styles.outlineButton} onPress={() => setSection('territorialLegends')} accessibilityRole="button"><Text style={styles.secondaryLabel}>Voir la progression territoriale</Text></TouchableOpacity>
     </Card>
 
     <HistoryCard account={account} />
@@ -119,10 +129,15 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb, onOpenPl
     <PlannedCapabilityMenu ids={['notifications', 'detailed-history', 'impacts-reports']} onOpen={openPlanned} />
     </SectionContent>
 
+    <SectionContent visible={section === 'territorialLegends'}>
+      <TerritorialLegendsScreen controller={territorialLegends} onOpenPreferences={() => setSection('preferences')} />
+    </SectionContent>
+
     <SectionContent visible={section === 'preferences'}><Card title="Préférences d’affichage">
       <Text style={styles.helper}>Ces choix sont synchronisés avec votre compte CleanMyMap. La langue et les réglages web détaillés restent accessibles depuis leur surface canonique.</Text>
       <Text style={styles.label}>Nom affiché</Text>
       <View style={styles.row}><TouchableOpacity style={[styles.outlineButton, account.identity.displayNameMode === 'full_name' && styles.selectedButton]} onPress={() => void changeDisplayNameMode('full_name')} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: account.identity.displayNameMode === 'full_name' }}><Text style={styles.secondaryLabel}>Nom complet</Text></TouchableOpacity><TouchableOpacity style={[styles.outlineButton, account.identity.displayNameMode === 'pseudo' && styles.selectedButton]} onPress={() => void changeDisplayNameMode('pseudo')} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: account.identity.displayNameMode === 'pseudo' }}><Text style={styles.secondaryLabel}>Pseudo</Text></TouchableOpacity></View>
+      <TerritorialLegendConsentSetting controller={territorialLegends} />
       <LinkButton label="Ouvrir les réglages web" onPress={() => onOpenWeb('/reglages')} />
     </Card></SectionContent>
 
