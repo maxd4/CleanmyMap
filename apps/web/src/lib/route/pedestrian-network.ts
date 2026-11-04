@@ -46,6 +46,15 @@ export type PedestrianNetworkEdge = {
   tags: Record<string, string>;
 };
 
+export type PedestrianNetworkPointResolution = {
+  nodeId: string;
+  coordinate: Coordinate;
+  distanceM: number;
+  resolution: "exact_node" | "nearest_verified_node";
+};
+
+export const MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M = 50;
+
 export type PedestrianNetworkConnection = {
   fromNodeId: string;
   toNodeId: string;
@@ -425,14 +434,25 @@ export function buildPedestrianNetwork(input: {
   };
 }
 
-function exactNode(
+export function resolvePedestrianNetworkPoint(
   point: Coordinate,
   nodes: Map<string, Coordinate>,
-): string | null {
+  maxSnapDistanceM = MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M,
+): PedestrianNetworkPointResolution | null {
+  let nearest: PedestrianNetworkPointResolution | null = null;
   for (const [id, node] of nodes) {
-    if (point[0] === node[0] && point[1] === node[1]) return id;
+    const distanceM = haversineMeters(point, node);
+    if (!nearest || distanceM < nearest.distanceM ||
+      (distanceM === nearest.distanceM && id.localeCompare(nearest.nodeId) < 0)) {
+      nearest = {
+        nodeId: id,
+        coordinate: node,
+        distanceM,
+        resolution: distanceM === 0 ? "exact_node" : "nearest_verified_node",
+      };
+    }
   }
-  return null;
+  return nearest && nearest.distanceM <= maxSnapDistanceM ? nearest : null;
 }
 
 function routeBetweenNodes(
@@ -485,8 +505,11 @@ export function routeThroughPedestrianNetwork(
     outgoing.push(edge);
     adjacency.set(edge.fromNodeId, outgoing);
   }
-  const snappedNodeIds = requestedCoordinates.map((point) => exactNode(point, nodes));
-  if (snappedNodeIds.some((nodeId) => nodeId === null)) return null;
+  const resolvedPoints = requestedCoordinates.map((point) =>
+    resolvePedestrianNetworkPoint(point, nodes, options.maxSnapDistanceM),
+  );
+  if (resolvedPoints.some((resolved) => resolved === null)) return null;
+  const snappedNodeIds = resolvedPoints.map((resolved) => resolved!.nodeId);
 
   const coordinates: Coordinate[] = [];
   const legs: RouteGeometryLeg[] = [];
@@ -527,7 +550,7 @@ export function routeThroughPedestrianNetwork(
   }
   return {
     isLoop,
-    origin: nodes.get(snappedNodeIds[0]!) ?? null,
+    origin: resolvedPoints[0]!.coordinate,
     returnLeg: isLoop ? legs.at(-1) ?? null : null,
     coordinates,
     distanceKm: Number((totalDistanceM / 1000).toFixed(2)),

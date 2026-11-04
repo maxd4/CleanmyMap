@@ -221,6 +221,20 @@ describe("pedestrian segment route planner", () => {
     expect(result!.metrics.safetyStatus).toBe("network_access_allowed_safety_unknown");
   });
 
+  it("resolves a nearby requested origin to a verified network node without inventing a connector", () => {
+    const result = plan([candidate("nearby", "s-0", 90, 90)], "all", {
+      origin: { ...origin, latitude: 48.0002 },
+      maxStops: 1,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.routeGeometry.mode).toBe("network");
+    expect(result!.metrics.originResolution).toBe("nearest_verified_node");
+    expect(result!.metrics.originSnapDistanceM).toBeGreaterThan(0);
+    expect(result!.metrics.originSnapDistanceM).toBeLessThan(50);
+    expect(result!.routeGeometry.coordinates[0]).toEqual([48, 2]);
+  });
+
   it("splits two groups into distinct predicted segments and does not count a street twice", () => {
     const candidates = [
       candidate("a", "s-0", 90, 30),
@@ -294,6 +308,25 @@ describe("pedestrian segment route planner", () => {
     expect(result!.routeGeometry.mode).toBe("network");
     expect(result!.routeGeometry.distanceKm).toBeCloseTo(0.444, 2);
     expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
+  });
+
+  it("counts selected projection portions rather than only their OSM edge keys", () => {
+    const result = plan([
+      candidate("first-portion", "iris-a", 90, 90),
+      candidate("second-portion", "iris-b", 80, 80),
+    ], "all", {
+      maxStops: 2,
+      projection: {
+        ...projection(["iris-a", "iris-b", "s-2", "s-3"]),
+        segments: projection(["iris-a", "iris-b", "s-2", "s-3"]).segments.map((segment, index) =>
+          index < 2 ? { ...segment, edgeKey: "e-ab" } : segment,
+        ),
+      } as never,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.metrics.selectedProjectionSegmentIds).toEqual(["iris-a"]);
+    expect(result!.metrics.selectedSegments).toBe(1);
   });
 
   it("rejects a risk projection attached to another active graph version", () => {

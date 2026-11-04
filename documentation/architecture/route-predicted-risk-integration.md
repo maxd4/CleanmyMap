@@ -45,8 +45,13 @@ de graphe et une date `generated_at` constantes sur toutes les pages. Une page
 interrompue ou une identité modifiée rend la projection indisponible au lieu de
 présenter un corpus tronqué comme complet. Les dates de génération de la
 projection et des snapshots sources restent distinctes. Les
-origines, arrivées et candidats doivent être des points du graphe vérifiés : un
-raccordement géodésique direct n'est pas présenté comme un chemin piéton.
+origines, arrivées et candidats doivent être rattachés à des points du graphe
+vérifiés : une demande située à proximité peut être résolue vers le nœud vérifié
+le plus proche dans la limite de 50 m, mais la distance hors réseau n'est pas
+présentée comme un chemin piéton ni valorisée pour la collecte. Au-delà de cette
+limite, ou lorsqu'aucun chemin dirigé ne relie les nœuds, le planner utilise le
+repli explicite. La résolution et la distance de snap sont exposées dans les
+métriques afin de distinguer départ demandé, point vérifié et parcours réseau.
 Lorsqu'un segment sélectionné est inaccessible dans le graphe dirigé, il est
 écarté avant la construction finale ; les arrêts, distances, durées, budgets,
 indices théoriques et statuts de dégradation sont alors recalculés à partir des
@@ -57,6 +62,11 @@ pas mesurables.
 ## Deux passages et sélection bornée
 
 Un premier passage pur du planner sélectionne et ordonne les cibles observées.
+Lorsque la branche segmentaire réseau est disponible, la présélection conserve
+jusqu'à `600 + 72` candidats avant la déduplication par rue : la borne protège
+le calcul sans laisser les premières occurrences d'une seule rue masquer les
+autres rues admissibles. Les audits de présélection conservent les exclusions
+réelles et leur cause.
 Ces points ordonnés, précédés de l'origine, forment `ordered_baseline`. Ils
 servent uniquement de support déterministe de distance ; ce n'est pas une
 géométrie réseau. Sans arrêt observé de base, le support est `origin_only`.
@@ -227,8 +237,10 @@ La réponse route peut aussi porter `pollutionPotential`, dont le schéma est
 potentiel théorique relatif sur 100, sans signifier une probabilité ni une
 quantité mesurée. Les scores historiques ne sont donc jamais réécrits.
 
-Le calcul est réalisé sur les identifiants de segments prédits réellement
-retenus par le planner. Les identifiants sont dédupliqués avant la pondération
+Le calcul est réalisé sur les identifiants de sous-segments IRIS réellement
+retenus et parcourus par le planner. Ces identifiants restent distincts même
+quand plusieurs portions partagent une arête OSM ; les raccordements du graphe
+ne sont jamais des portions valorisées. Les identifiants sont dédupliqués avant la pondération
 par longueur ; un passage répété, une liaison de déplacement ou un candidat
 observé ne reçoit pas de valeur de couverture supplémentaire. Les catégories
 `waste` et `cigaretteButts` sont calculées séparément. `mixed` est la moyenne

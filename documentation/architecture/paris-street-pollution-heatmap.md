@@ -505,6 +505,15 @@ ne devient jamais un risque nul. Les segments portant le même rattachement
 IRIS reçoivent le même score zonal : aucune différenciation de rue n'est
 inventée sans facteur local sourcé et versionné.
 
+Le planner conserve cette granularité de sous-segment jusqu'à la route finale :
+une arête OSM traversant plusieurs IRIS ne permet pas de valoriser toute l'arête
+à partir d'un seul sous-segment. Les portions comptées, leurs longueurs, risques
+et identifiants de couverture sont ceux des segments effectivement sélectionnés
+et parcourus ; les raccordements nécessaires à la circulation restent exclus des
+indices et de la couverture. Un départ proche du réseau est ancré au nœud piéton
+vérifié le plus proche dans la limite autorisée de 50 m, sans transformer la distance
+hors réseau en trajet collectable.
+
 La projection réutilise `paris-pressure-risk-v3-urban-morphology` pour la
 référence zonale et conserve séparément `wasteRisk` et
 `cigaretteButtRisk`, leurs confiances, facteurs disponibles/manquants,

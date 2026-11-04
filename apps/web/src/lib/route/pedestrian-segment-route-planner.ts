@@ -1,8 +1,10 @@
 import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
 import {
   type Coordinate,
+  type PedestrianNetworkPointResolution,
   type PedestrianNetworkEdge,
   type PedestrianNetworkGraph,
+  resolvePedestrianNetworkPoint,
 } from "./pedestrian-network";
 import type { RouteGeometry, RouteTopology } from "./route-contract";
 import {
@@ -36,6 +38,7 @@ export type SegmentRouteSelectionMetrics = {
   consideredSegments: number;
   candidateCap: number;
   selectedSegments: number;
+  selectedProjectionSegmentIds: string[];
   uniqueStreetCount: number;
   duplicateStreetCandidatesSkipped: number;
   unavailableSegmentsSkipped: number;
@@ -43,6 +46,10 @@ export type SegmentRouteSelectionMetrics = {
   groupCount: number;
   routeMode: "network" | "fallback";
   safetyStatus: "network_access_allowed_safety_unknown";
+  originResolution: "exact_node" | "nearest_verified_node";
+  originSnapDistanceM: number;
+  arrivalResolution: "exact_node" | "nearest_verified_node" | "not_applicable";
+  arrivalSnapDistanceM: number;
 };
 
 export type PedestrianSegmentRoutePlan = {
@@ -61,6 +68,7 @@ export type PedestrianSegmentRoutePlan = {
 type SegmentCandidate = {
   candidate: RoutePlannerCandidate;
   edge: PedestrianNetworkEdge;
+  projectionSegmentId: string;
   streetKey: string;
   wasteRisk: number;
   cigaretteButtRisk: number;
@@ -80,6 +88,8 @@ type GroupRouteBuild = {
   selectedEdges: PedestrianNetworkEdge[];
   routedCandidates: SegmentCandidate[];
   connectorSegments: number;
+  originResolution: PedestrianNetworkPointResolution;
+  arrivalResolution: PedestrianNetworkPointResolution | null;
 };
 
 export function isPedestrianRiskProjectionCompatible(
@@ -150,16 +160,6 @@ function buildNodeCoordinates(graph: PedestrianNetworkGraph): Map<string, Coordi
     if (last) nodes.set(edge.toNodeId, last);
   }
   return nodes;
-}
-
-function exactNode(
-  point: Coordinate,
-  nodes: ReadonlyMap<string, Coordinate>,
-): string | null {
-  for (const [id, node] of nodes) {
-    if (point[0] === node[0] && point[1] === node[1]) return id;
-  }
-  return null;
 }
 
 function shortestPath(
@@ -355,7 +355,13 @@ function buildSegmentCandidates(
       continue;
     }
     const risks = candidateRisk(candidate);
-    const segment = { candidate, edge, streetKey: streetKey(edge), ...risks };
+    const segment = {
+      candidate,
+      edge,
+      projectionSegmentId: projectionSegment.projectionSegmentId,
+      streetKey: streetKey(edge),
+      ...risks,
+    };
     totalSegments += 1;
     const previous = byStreet.get(segment.streetKey);
     if (!previous || segmentSortValue(segment, focus) > segmentSortValue(previous, focus) ||
@@ -423,16 +429,26 @@ function buildGroupGeometry(
   topology: RouteTopology,
   candidates: readonly SegmentCandidate[],
   graph: PedestrianNetworkGraph,
-): { geometry: RouteGeometry; selectedEdges: PedestrianNetworkEdge[]; routedCandidates: SegmentCandidate[]; connectorSegments: number } | null {
+): {
+  geometry: RouteGeometry;
+  selectedEdges: PedestrianNetworkEdge[];
+  routedCandidates: SegmentCandidate[];
+  connectorSegments: number;
+  originResolution: PedestrianNetworkPointResolution;
+  arrivalResolution: PedestrianNetworkPointResolution | null;
+} | null {
   const adjacency = buildAdjacency(graph);
   const nodes = buildNodeCoordinates(graph);
-  const originNodeId = exactNode([origin.latitude, origin.longitude], nodes);
-  const destinationNodeId = topology === "loop"
-    ? originNodeId
-    : arrival ? exactNode([arrival.latitude, arrival.longitude], nodes) : originNodeId;
-  if (!originNodeId || !destinationNodeId) return null;
-  const originNode = nodes.get(originNodeId)!;
-  const destinationNode = nodes.get(destinationNodeId)!;
+  const originResolution = resolvePedestrianNetworkPoint([origin.latitude, origin.longitude], nodes);
+  const arrivalResolution = topology === "loop"
+    ? null
+    : arrival ? resolvePedestrianNetworkPoint([arrival.latitude, arrival.longitude], nodes) : null;
+  if (!originResolution || (arrival && !arrivalResolution)) return null;
+  const originNodeId = originResolution.nodeId;
+  const destinationResolution = topology === "loop" ? originResolution : arrivalResolution ?? originResolution;
+  const destinationNodeId = destinationResolution.nodeId;
+  const originNode = originResolution.coordinate;
+  const destinationNode = destinationResolution.coordinate;
   const routeEdges: PedestrianNetworkEdge[] = [];
   const selectedEdgeIndexes: number[] = [];
   const routedCandidates: SegmentCandidate[] = [];
@@ -459,6 +475,8 @@ function buildGroupGeometry(
     selectedEdges: routedCandidates.map(({ edge }) => edge),
     routedCandidates,
     connectorSegments,
+    originResolution,
+    arrivalResolution,
   };
 }
 
@@ -605,6 +623,8 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       selectedEdges: finalBuilt.selectedEdges,
       routedCandidates: finalBuilt.routedCandidates,
       connectorSegments: finalBuilt.connectorSegments,
+      originResolution: finalBuilt.originResolution,
+      arrivalResolution: finalBuilt.arrivalResolution,
     });
   }
   const effectiveGroups = builtGroups.map((builtGroup, index) => ({
@@ -632,8 +652,9 @@ export function planPredictedPedestrianSegmentRoutes(input: {
   const groupDurations = groupRoutes.map(({ travelMinutes }) => travelMinutes);
   const plannedStops = builtGroups.flatMap(({ plannedStops: stops }) => stops);
   const uniqueStreetCount = new Set(builtGroups.flatMap(({ selectedEdges }) => selectedEdges.map(streetKey))).size;
-  const allSelectedEdges = builtGroups.flatMap(({ selectedEdges }) => selectedEdges);
-  const uniqueSelectedEdgeKeys = new Set(allSelectedEdges.map(({ edgeKey }) => edgeKey));
+  const uniqueSelectedProjectionSegmentIds = new Set(
+    builtGroups.flatMap(({ routedCandidates }) => routedCandidates.map(({ projectionSegmentId }) => projectionSegmentId)),
+  );
   const partitionWithActualRoutes: RouteGroupPartitionResult = {
     ...partition,
     groups: groupRoutes.map((route) => ({
@@ -664,7 +685,8 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       source: "materialized_pedestrian_risk_projection",
       consideredSegments: segmentData.totalSegments,
       candidateCap: MAX_SEGMENT_ROUTE_CANDIDATES,
-      selectedSegments: uniqueSelectedEdgeKeys.size,
+      selectedSegments: uniqueSelectedProjectionSegmentIds.size,
+      selectedProjectionSegmentIds: [...uniqueSelectedProjectionSegmentIds].sort(),
       uniqueStreetCount,
       duplicateStreetCandidatesSkipped: segmentData.duplicateStreetCandidatesSkipped,
       unavailableSegmentsSkipped: segmentData.unavailableSegmentsSkipped,
@@ -672,6 +694,11 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       groupCount: input.groupCount,
       routeMode: "network",
       safetyStatus: "network_access_allowed_safety_unknown",
+      originResolution: builtGroups[0]?.originResolution?.resolution ?? "exact_node",
+      originSnapDistanceM: round(builtGroups[0]?.originResolution?.distanceM ?? 0, 1),
+      arrivalResolution: builtGroups[0]?.arrivalResolution?.resolution ??
+        (input.routeTopology === "loop" ? "not_applicable" : "exact_node"),
+      arrivalSnapDistanceM: round(builtGroups[0]?.arrivalResolution?.distanceM ?? 0, 1),
     },
     warning: excludedCandidateIds.size > 0
       ? "Certains segments prédictifs n’ont pas pu être reliés au graphe piéton ou respecter le budget ; ils ont été exclus du parcours final."

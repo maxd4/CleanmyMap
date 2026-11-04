@@ -146,6 +146,41 @@ describe("route theoretical pollution potential", () => {
     expect(potential.groups[1]?.index.uniqueSegmentCount).toBe(2);
   });
 
+  it("keeps distinct IRIS portions on one OSM edge separate in coverage and risk weighting", () => {
+    const current = projection();
+    current.segments[0] = {
+      ...current.segments[0]!,
+      projectionSegmentId: "iris-west",
+      edgeKey: "osm-edge-shared",
+      lengthM: 100,
+      intersectionLengthM: 100,
+      wasteRisk: 20,
+      cigaretteButtRisk: 40,
+      mixedRisk: 30,
+    };
+    current.segments[1] = {
+      ...current.segments[1]!,
+      projectionSegmentId: "iris-east",
+      edgeKey: "osm-edge-shared",
+      lengthM: 300,
+      intersectionLengthM: 300,
+      wasteRisk: 80,
+      cigaretteButtRisk: 100,
+      mixedRisk: 90,
+    };
+    const potential = buildRoutePollutionPotential(routeInput({
+      projection: current,
+      candidates: [candidate("west", "iris-west"), candidate("east", "iris-east")],
+      groups: [{ groupIndex: 1, candidateIds: ["west", "east"], volunteerCount: 5, travelBudgetMinutes: 60 }],
+      referenceCatalog: null,
+    }));
+
+    expect(potential.coverage.uniqueSegmentCount).toBe(2);
+    expect(potential.coverage.collectionLengthM).toBe(400);
+    expect(potential.global.categories.waste.rawProjectionIndex).toBe(65);
+    expect(potential.global.categories.cigaretteButts.rawProjectionIndex).toBe(85);
+  });
+
   it("averages the two normalized category indices for mixed", () => {
     const referenceCatalog = catalog();
     const reference = referenceCatalog.references[0];

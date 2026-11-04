@@ -24,6 +24,7 @@ import type { RouteGeometry, RouteTopology } from "@/lib/route/route-contract";
 import type { PedestrianNetworkGraph } from "@/lib/route/pedestrian-network";
 import {
   planPredictedPedestrianSegmentRoutes,
+  MAX_SEGMENT_ROUTE_CANDIDATES,
   type PedestrianSegmentRoutePlan,
   type SegmentRouteSelectionMetrics,
 } from "@/lib/route/pedestrian-segment-route-planner";
@@ -139,6 +140,20 @@ type RouteRecommendationInput = {
   weatherContext?: PlannerWeatherContext;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
 };
+
+export function getRoutePlannerCandidatePoolLimit(input: Pick<
+  RouteRecommendationInput,
+  "maxStops" | "groupCount" | "planningMode" | "pedestrianNetwork" | "pedestrianRiskProjection"
+>): number {
+  if (input.pedestrianNetwork && input.pedestrianRiskProjection && input.planningMode.type === "free") {
+    return MAX_SEGMENT_ROUTE_CANDIDATES + MAX_ROUTE_PARTITION_CANDIDATES;
+  }
+  if (input.groupCount === 1) return Math.max(input.maxStops * 2, 8);
+  return Math.min(
+    MAX_ROUTE_PARTITION_CANDIDATES,
+    Math.max(input.maxStops * input.groupCount * 2, 8),
+  );
+}
 
 function finalizeRouteRecommendationPreparation(
   input: RouteRecommendationInput,
@@ -264,12 +279,7 @@ function prepareRouteRecommendation(input: RouteRecommendationInput) {
       (candidate) => candidate.family === "predicted",
     ),
     effectiveRiskFocus,
-    maxCandidates: input.groupCount === 1
-      ? Math.max(input.maxStops * 2, 8)
-      : Math.min(
-          MAX_ROUTE_PARTITION_CANDIDATES,
-          Math.max(input.maxStops * input.groupCount * 2, 8),
-        ),
+    maxCandidates: getRoutePlannerCandidatePoolLimit(input),
     allowUnknownPredictedSafety: Boolean(
       input.pedestrianNetwork &&
       input.pedestrianRiskProjection &&
