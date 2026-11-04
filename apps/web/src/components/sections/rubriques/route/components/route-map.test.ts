@@ -65,7 +65,13 @@ vi.mock("leaflet", () => ({
   divIcon: vi.fn((options) => ({ options })),
 }));
 
-import { buildRouteMapCoordinates, RouteMap } from "./route-map";
+import {
+  buildRouteMapCoordinates,
+  routeMapBoundsFromCoordinates,
+  RouteMap,
+  selectVisibleHeatmapSegments,
+  uniqueRouteMapCoordinates,
+} from "./route-map";
 
 let capturedMapHandlers: {
   click?: (event: { latlng: { lat: number; lng: number } }) => void;
@@ -123,7 +129,7 @@ const riskHeatmap = {
   counts: { sourceEdges: 1, projectedSegments: 1, predictedSegments: 1, unavailableSegments: 0, zonesIntersected: 1 },
   segments: [{
     projectionSegmentId: "risk-1",
-    coordinates: [[48.85, 2.35], [48.851, 2.351]],
+    coordinates: [[48.86, 2.36], [48.861, 2.361]],
     lengthM: 100,
     zoneId: "iris-1",
     intersectedZoneIds: ["iris-1"],
@@ -361,5 +367,27 @@ describe("RouteMap", () => {
     expect(markup).toContain("risk-v3");
     expect(markup).toContain("2026-11-04T09:00:00.000Z");
     expect(markup).toContain("Risque théorique du segment");
+  });
+
+  it("keeps mixed confidence dimensions separate and selects visible segments linearly", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        riskHeatmap,
+        riskHeatmapCategory: "mixed",
+        fr: true,
+      }),
+    );
+
+    expect(markup).toContain("Déchets: medium (70 %) · Mégots: low (40 %)");
+    const segments = Array.from({ length: 40661 }, (_, index) => ({
+      ...riskHeatmap.segments[0]!,
+      projectionSegmentId: "segment-" + index,
+      coordinates: [[48.86 + index / 100000, 2.36], [48.861 + index / 100000, 2.361]] as [number, number][],
+    }));
+    const bounds = routeMapBoundsFromCoordinates([[48.86, 2.36], [48.87, 2.37]]);
+    expect(selectVisibleHeatmapSegments(segments, bounds)).toHaveLength(1001);
+    expect(uniqueRouteMapCoordinates([...segments[0]!.coordinates, ...segments[0]!.coordinates])).toHaveLength(2);
   });
 });

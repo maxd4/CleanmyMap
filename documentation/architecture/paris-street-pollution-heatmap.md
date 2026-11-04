@@ -17,6 +17,13 @@
 6. **Nettoyage et accessibilité séparés** : le risque de production de déchets, le stock résiduel disponible, l'additionnalité bénévole et l'autorisation de nettoyer sont quatre dimensions différentes. Pas de bonus automatique à une zone dangereuse ou inaccessible.
 7. **Une seule source de vérité** : la heatmap route expose le cache `paris-pedestrian-risk-projection-v1`, construit avec `paris-pressure-snapshot`, `paris-pressure-risk-v3-urban-morphology`, la serviceabilité municipale et leurs provenances. Elle est activable comme calque prédictif et le planner sélectionne dans ce même cache ; aucun second modèle IRIS ni aucune donnée observée ne sont fabriqués dans l'interface.
 
+La carte ne cadre pas sur les 40 661 sous-segments du pilote : elle cadre sur les
+parcours et groupes affichés, puis rend seulement les segments intersectant la
+fenêtre visible. Les détails scientifiques restent ceux du cache canonique.
+La catégorie choisie et l'échelle d'intensité sont deux signaux visuels
+distincts. Le mode mixte affiche les deux confiances séparément et ne prétend
+pas garantir une quantité ou une composition de déchets collectés.
+
 ### Classification des affirmations
 
 - `CURRENT` : implémenté ou documenté dans `main` à la révision indiquée ; cela ne vaut pas preuve de couverture réelle ou de test passé en production.

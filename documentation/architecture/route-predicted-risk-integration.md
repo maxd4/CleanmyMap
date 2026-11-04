@@ -151,15 +151,27 @@ théoriques estimés, avec leur modèle et leur fraîcheur ; elles ne sont pas d
 mesures de pollution observée. Les signalements `observed` ajoutés après la
 boucle prédictive restent comptés séparément.
 
+Le cadrage initial de la carte suit uniquement le parcours, les groupes et les
+points auxiliaires effectivement affichés ; l'étendue complète de la heatmap
+ne déplace pas la vue. Les segments de la heatmap restent la source canonique,
+mais seuls ceux qui intersectent la fenêtre cartographique courante sont
+rendus. La déduplication des coordonnées de cadrage est linéaire. La bordure
+du bouton identifie la catégorie sélectionnée ; les couleurs vert/ambre/rouge
+restent exclusivement l'échelle d'intensité du risque. En mode mixte, les
+confiances déchets et mégots sont présentées séparément : aucune équivalence
+n'est déduite de l'identité de leurs objets.
+
 `plannerRiskContext` est copié dans `OperationalRoute`, le handoff vers la
 création d'action et les snapshots/proofs via le résumé prédictif. Les routes
 historiques sans ce champ restent valides. La géométrie planifiée est donc
 conservée séparément de toute géométrie de trajet réellement observé.
 
 L'export PDF conserve les groupes, leurs métriques et leurs passages distincts,
-et ajoute la provenance de la projection lorsqu'elle existe. Il rappelle que
-le risque est théorique et que les observations terrain sont une famille
-différente.
+et ajoute la provenance de la projection lorsqu'elle existe. Les récapitulatifs
+distinguent les cibles prédites, les observations validées et les passages
+planifiés, globalement et par groupe ; une cible sans provenance reste
+explicitement qualifiée. Il rappelle que le risque est théorique et que les
+observations terrain sont une famille différente.
 
 Le résumé prédictif distingue les compteurs et identifiants :
 

@@ -24,6 +24,40 @@ type ExportRoute = {
   guidedRouting?: RouteGuidedRoutingAudit;
 };
 
+export type RoutePdfStopCounts = {
+  predictedTargets: number;
+  validatedObservations: number;
+  unspecifiedTargets: number;
+  plannedPassages: number;
+};
+
+function countLabel(count: number, singular: string, plural: string): string {
+  return count + " " + (count === 1 ? singular : plural);
+}
+
+export function countRoutePdfStops(route: Pick<ExportRoute, "stops" | "plannedWaypoints">): RoutePdfStopCounts {
+  return {
+    predictedTargets: route.stops.filter((stop) => stop.evidence?.family === "predicted").length,
+    validatedObservations: route.stops.filter((stop) => stop.evidence?.family === "observed").length,
+    unspecifiedTargets: route.stops.filter((stop) => !stop.evidence?.family).length,
+    plannedPassages: route.plannedWaypoints?.length ?? 0,
+  };
+}
+
+function routePdfStopSummary(routes: ExportRoute[]): string {
+  const counts = routes.reduce<RoutePdfStopCounts>((total, route) => {
+    const current = countRoutePdfStops(route);
+    return {
+      predictedTargets: total.predictedTargets + current.predictedTargets,
+      validatedObservations: total.validatedObservations + current.validatedObservations,
+      unspecifiedTargets: total.unspecifiedTargets + current.unspecifiedTargets,
+      plannedPassages: total.plannedPassages + current.plannedPassages,
+    };
+  }, { predictedTargets: 0, validatedObservations: 0, unspecifiedTargets: 0, plannedPassages: 0 });
+  const unspecified = counts.unspecifiedTargets > 0 ? ` · ${countLabel(counts.unspecifiedTargets, "cible", "cibles")} sans provenance` : "";
+  return `${countLabel(counts.predictedTargets, "cible prédite", "cibles prédites")} · ${countLabel(counts.validatedObservations, "observation validée", "observations validées")}${unspecified} · ${countLabel(counts.plannedPassages, "passage planifié", "passages planifiés")}`;
+}
+
 type ProjectedPoint = {
   x: number;
   y: number;
@@ -309,7 +343,9 @@ function renderPredictiveRiskSummary(data: RouteResponse): string {
 function renderStops(routes: ExportRoute[]): string {
   return routes
     .map(
-      (route) => `<section class="route-pdf-stops"><h3>${escapeHtml(route.label || `Groupe ${route.groupIndex}`)} — passages et observations</h3>${route.plannedWaypoints && route.plannedWaypoints.length > 0 ? `<p><strong>Passages planifiés (ordre)</strong></p><ol>${route.plannedWaypoints.map((waypoint) => `<li><strong>${escapeHtml(waypoint.label)}</strong><span>Point planifié · ${escapeHtml(`${waypoint.latitude.toFixed(5)}, ${waypoint.longitude.toFixed(5)}`)} · aucune observation associée</span></li>`).join("")}</ol>` : ""}${route.stops.length > 0 ? `<p><strong>Observations / cibles retenues</strong></p><ol>${route.stops.map((stop) => { const family = stop.evidence?.family === "observed" ? "Observation" : stop.evidence?.family === "predicted" ? "Prédiction" : "Source non précisée"; return `<li><strong>${escapeHtml(stop.label)}</strong><span>${escapeHtml(family)} · ${escapeHtml(stop.priorityReason)} · score ${formatScorePercent(stop.score, 1)} · ${escapeHtml(formatDistance(stop.segmentKm))} · ${escapeHtml(formatDuration(stop.estimatedMinutes))}</span></li>`; }).join("")}</ol>` : "<p>Aucune observation ou cible retenue.</p>"}</section>`,
+      (route) => {
+        return `<section class="route-pdf-stops"><h3>${escapeHtml(route.label || `Groupe ${route.groupIndex}`)} — passages et cibles</h3><p><strong>${routePdfStopSummary([route])}</strong></p>${route.plannedWaypoints && route.plannedWaypoints.length > 0 ? `<p><strong>Passages planifiés (ordre)</strong></p><ol>${route.plannedWaypoints.map((waypoint) => `<li><strong>${escapeHtml(waypoint.label)}</strong><span>Point planifié · ${escapeHtml(`${waypoint.latitude.toFixed(5)}, ${waypoint.longitude.toFixed(5)}`)} · aucune observation associée</span></li>`).join("")}</ol>` : ""}${route.stops.length > 0 ? `<p><strong>Cibles retenues</strong></p><ol>${route.stops.map((stop) => { const family = stop.evidence?.family === "observed" ? "Observation validée" : stop.evidence?.family === "predicted" ? "Cible prédite" : "Source non précisée"; return `<li><strong>${escapeHtml(stop.label)}</strong><span>${escapeHtml(family)} · ${escapeHtml(stop.priorityReason)} · score ${formatScorePercent(stop.score, 1)} · ${escapeHtml(formatDistance(stop.segmentKm))} · ${escapeHtml(formatDuration(stop.estimatedMinutes))}</span></li>`; }).join("")}</ol>` : "<p>Aucune cible retenue.</p>"}</section>`;
+      },
     )
     .join("");
 }
@@ -363,7 +399,7 @@ function renderGroupPage(
 ): string {
   const label = route.label || `Groupe ${route.groupIndex}`;
   const rendezVous = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)}`;
-  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} observations · ${route.plannedWaypoints?.length ?? 0} passages planifiés · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · ${escapeHtml(arrivalProvenanceLabel(data))}</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderPredictiveRiskSummary(data)}${renderGuidedPlan(data, [route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
+  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${routePdfStopSummary([route])} · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · ${escapeHtml(arrivalProvenanceLabel(data))}</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderPredictiveRiskSummary(data)}${renderGuidedPlan(data, [route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
 }
 
 export function buildRoutePdfCss(routeCount: number): string {
@@ -420,7 +456,7 @@ export function buildRoutePdfHtml(
   const title = event ? `Itinéraire CleanMyMap — ${event.title}` : "Itinéraire CleanMyMap";
   const originLabel = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)} · ${data.origin.source === "map" ? "carte" : data.origin.source === "browser" ? "navigateur" : "zone enregistrée approximative"}`;
   const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : isLoopTopology(data) ? "Vue générale — 1 boucle" : "Vue générale — 1 trajet ouvert";
-  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderPredictiveRiskSummary(data)}${renderGuidedPlan(data, routes)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
+  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p><p><strong>Cibles et passages :</strong> ${escapeHtml(routePdfStopSummary(routes))}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderPredictiveRiskSummary(data)}${renderGuidedPlan(data, routes)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
   const groupPages = multi ? routes.map((route) => renderGroupPage(data, route, displayMode)).join("") : "";
 
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escapeHtml(title)}</title><style>${buildRoutePdfCss(routes.length)}</style></head><body>${overview}${groupPages}<script>window.addEventListener("afterprint", () => window.close()); window.addEventListener("load", () => setTimeout(() => window.print(), 250));</script></body></html>`;

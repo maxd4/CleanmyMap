@@ -177,23 +177,23 @@ export function RouteOptionsForm({
                 [
                   "balanced",
                   "Mixte",
-                  "Le circuit équilibre les risques déchets et mégots à l’échelle des segments retenus.",
+                  "Le score mixte est la moyenne arithmétique des deux risques théoriques ; il ne garantit ni quantité ni composition des déchets collectés.",
                   "Mixed",
-                  "The circuit balances waste and cigarette-butt risks across selected segments.",
+                  "The mixed score is the arithmetic mean of the two theoretical risks; it guarantees neither collected quantity nor waste composition.",
                 ],
                 [
                   "waste",
-                  "Majorité déchets",
-                  "Le calcul privilégie le risque déchets des zones prédites.",
-                  "Waste",
-                  "The calculation prioritizes waste risk in predicted zones.",
+                  "Priorité théorique déchets",
+                  "Le calcul privilégie le risque théorique déchets des zones prédites ; cela ne décrit pas une proportion observée.",
+                  "Theoretical waste priority",
+                  "The calculation prioritizes theoretical waste risk in predicted zones; it does not describe an observed proportion.",
                 ],
                 [
                   "cigarette_butts",
-                  "Majorité mégots",
-                  "Le calcul privilégie le risque mégots des zones prédites.",
-                  "Cigarette butts",
-                  "The calculation prioritizes cigarette-butt risk in predicted zones.",
+                  "Priorité théorique mégots",
+                  "Le calcul privilégie le risque théorique mégots des zones prédites ; cela ne décrit pas une proportion observée.",
+                  "Theoretical cigarette-butt priority",
+                  "The calculation prioritizes theoretical cigarette-butt risk in predicted zones; it does not describe an observed proportion.",
                 ],
               ] as const
             ).map(([value, label, help, englishLabel, englishHelp]) => {

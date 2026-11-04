@@ -62,11 +62,10 @@ describe("route organization and representation UI contract", () => {
     expect(markup).toContain("12 bénévoles → 3 groupes");
     expect(markup).toContain("Que souhaitez-vous principalement ramasser ?");
     expect(markup).toContain("Mixte");
-    expect(markup).toContain("Majorité déchets");
-    expect(markup).toContain("Majorité mégots");
-    expect(markup).toContain("Le circuit équilibre les risques déchets et mégots à l’échelle des segments retenus.");
-    expect(markup).toContain("Le calcul privilégie le risque déchets des zones prédites.");
-    expect(markup).toContain("Le calcul privilégie le risque mégots des zones prédites.");
+    expect(markup).toContain("Priorité théorique déchets");
+    expect(markup).toContain("Priorité théorique mégots");
+    expect(markup).toContain("Le score mixte est la moyenne arithmétique des deux risques théoriques");
+    expect(markup).toContain("cela ne décrit pas une proportion observée.");
     expect(setOptions).not.toHaveBeenCalled();
   });
 });

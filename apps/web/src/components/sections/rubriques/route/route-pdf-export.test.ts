@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
 import { createDefaultRouteTerritorialGuidedMode } from "@/lib/route/route-planning-mode";
-import { buildRoutePdfHtml } from "./route-pdf-export";
+import { buildRoutePdfHtml, countRoutePdfStops } from "./route-pdf-export";
 
 const stop = (
   id: string,
@@ -308,11 +308,28 @@ describe("route PDF export", () => {
     expect(html).toContain("Passages planifiés (ordre)");
     expect(html).toContain("aucune observation associée");
     expect(html).toContain("Observation");
-    expect(html).toContain("Prédiction");
+    expect(html).toContain("Cible prédite");
     expect(html).toContain('data-route-planned-waypoint="group-1-waypoint-1"');
     expect(html).toContain("réseau piéton");
     expect(html).toContain("secteur inconnu (géométrie finale non vérifiable)");
     expect(html).toContain("45 min réservées");
+  });
+
+  it("compte séparément les cibles prédites, observations validées et passages planifiés", () => {
+    const data = buildFixture(2);
+    data.groupRoutes[0]!.stops[0] = { ...data.groupRoutes[0]!.stops[0]!, evidence: { family: "predicted" } as never };
+    data.groupRoutes[1]!.stops[0] = { ...data.groupRoutes[1]!.stops[0]!, evidence: { family: "observed" } as never };
+    data.groupRoutes[0]!.plannedWaypoints = [{ id: "planned", label: "Point", latitude: 48.86, longitude: 2.36, order: 0 }];
+
+    expect(countRoutePdfStops(data.groupRoutes[0]!)).toMatchObject({
+      predictedTargets: 1,
+      validatedObservations: 0,
+      plannedPassages: 1,
+    });
+    const html = buildRoutePdfHtml(data, "colors", data.generatedAt);
+    expect(html).toContain("1 cible prédite · 1 observation validée");
+    expect(html).toContain("1 passage planifié");
+    expect(html).not.toContain("2 observations ·");
   });
 
   it("exporte la provenance du risque théorique sans le présenter comme une observation", () => {

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CircleMarker,
   Circle,
@@ -46,17 +46,43 @@ export function buildRouteMapCoordinates(
   return [...originCoordinates, ...routeGeometry.coordinates, ...stopCoordinates];
 }
 
+export type RouteMapViewportBounds = { south: number; west: number; north: number; east: number };
+
+export function uniqueRouteMapCoordinates(coordinates: [number, number][]): [number, number][] {
+  const seen = new Set<string>();
+  return coordinates.filter((coordinate) => {
+    const key = `${coordinate[0]},${coordinate[1]}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function routeMapBoundsFromCoordinates(coordinates: [number, number][]): RouteMapViewportBounds | null {
+  if (coordinates.length === 0) return null;
+  return coordinates.reduce<RouteMapViewportBounds>((bounds, [latitude, longitude]) => ({
+    south: Math.min(bounds.south, latitude),
+    west: Math.min(bounds.west, longitude),
+    north: Math.max(bounds.north, latitude),
+    east: Math.max(bounds.east, longitude),
+  }), { south: coordinates[0]![0], west: coordinates[0]![1], north: coordinates[0]![0], east: coordinates[0]![1] });
+}
+
+export function selectVisibleHeatmapSegments(
+  segments: RouteRiskHeatmap["segments"],
+  bounds: RouteMapViewportBounds | null,
+): RouteRiskHeatmap["segments"] {
+  if (!bounds) return [];
+  return segments.filter((segment) => segment.coordinates.some(([latitude, longitude]) =>
+    latitude >= bounds.south && latitude <= bounds.north && longitude >= bounds.west && longitude <= bounds.east,
+  ));
+}
+
 function RouteMapViewport({ coordinates }: { coordinates: [number, number][] }) {
   const map = useMap();
 
   useEffect(() => {
-    const uniqueCoordinates = coordinates.filter(
-      (coordinate, index) =>
-        coordinates.findIndex(
-          (candidate) =>
-            candidate[0] === coordinate[0] && candidate[1] === coordinate[1],
-        ) === index,
-    );
+    const uniqueCoordinates = uniqueRouteMapCoordinates(coordinates);
     if (uniqueCoordinates.length >= 2) {
       map.fitBounds(uniqueCoordinates, {
         padding: [32, 32],
@@ -254,28 +280,48 @@ function heatmapCategoryLabel(category: RouteRiskHeatmapCategory, fr: boolean): 
   return fr ? "Mixte" : "Mixed";
 }
 
+function formatHeatmapConfidence(
+  confidence: RouteRiskHeatmap["segments"][number]["wasteConfidence"],
+  fr: boolean,
+): string {
+  return confidence
+    ? confidence.level + " (" + Math.round(confidence.score * 100) + " %)"
+    : fr ? "inconnue" : "unknown";
+}
+
 function RouteRiskHeatmapLayer({
   heatmap,
   category,
   fr,
+  initialViewportCoordinates,
 }: {
   heatmap: RouteRiskHeatmap;
   category: RouteRiskHeatmapCategory;
   fr: boolean;
+  initialViewportCoordinates: [number, number][];
 }) {
-  return <>{heatmap.segments.map((segment) => {
+  const map = useMap();
+  const initialBounds = useMemo(() => routeMapBoundsFromCoordinates(initialViewportCoordinates), [initialViewportCoordinates]);
+  const [viewportBounds, setViewportBounds] = useState<RouteMapViewportBounds | null>(null);
+  useMapEvents({
+    moveend: () => {
+      const bounds = map.getBounds?.();
+      if (!bounds) return;
+      setViewportBounds({ south: bounds.getSouth(), west: bounds.getWest(), north: bounds.getNorth(), east: bounds.getEast() });
+    },
+  });
+
+  return <>{selectVisibleHeatmapSegments(heatmap.segments, viewportBounds ?? initialBounds).map((segment) => {
     const value = heatmapRiskValue(segment, category);
     if (value === null || segment.coordinates.length < 2) return null;
     const confidence = category === "waste"
       ? segment.wasteConfidence
       : category === "cigaretteButts"
         ? segment.cigaretteButtConfidence
-        : segment.wasteConfidence === segment.cigaretteButtConfidence
-          ? segment.wasteConfidence
-          : null;
-    const confidenceLabel = confidence
-      ? `${confidence.level} (${Math.round(confidence.score * 100)} %)`
-      : (fr ? "inconnue" : "unknown");
+        : null;
+    const confidenceLabel = category === "mixed"
+      ? (fr ? "Déchets" : "Waste") + ": " + formatHeatmapConfidence(segment.wasteConfidence, fr) + " · " + (fr ? "Mégots" : "Cigarette butts") + ": " + formatHeatmapConfidence(segment.cigaretteButtConfidence, fr)
+      : formatHeatmapConfidence(confidence, fr);
     return <Polyline
       key={`risk-${segment.projectionSegmentId}`}
       positions={segment.coordinates}
@@ -292,7 +338,7 @@ function RouteRiskHeatmapLayer({
         <br />
         {heatmapCategoryLabel(category, fr)} : {Math.round(value)}/100
         <br />
-        {fr ? "Confiance" : "Confidence"} : {confidenceLabel}
+        {fr ? "Confiances" : "Confidence"} : {confidenceLabel}
         <br />
         {fr ? "Résolution" : "Resolution"} : {segment.effectiveResolution}
         <br />
@@ -317,16 +363,16 @@ function RouteRiskHeatmapControls({
   fr: boolean;
 }) {
   const buttons: Array<[RouteRiskHeatmapCategory, string, string]> = [
-    ["cigaretteButts", fr ? "Mégots" : "Cigarette butts", "#dc2626"],
-    ["waste", fr ? "Déchets" : "Waste", "#f59e0b"],
-    ["mixed", fr ? "Mixte" : "Mixed", "#16a34a"],
+    ["cigaretteButts", fr ? "Mégots" : "Cigarette butts", "#e2e8f0"],
+    ["waste", fr ? "Déchets" : "Waste", "#e2e8f0"],
+    ["mixed", fr ? "Mixte" : "Mixed", "#e2e8f0"],
   ];
   return <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-[1000] rounded-2xl border border-white/15 bg-slate-950/90 p-3 text-white shadow-xl backdrop-blur-xl" data-route-risk-heatmap>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <fieldset>
         <legend className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-100/75">{fr ? "Couche de risque théorique" : "Theoretical risk layer"}</legend>
         <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={fr ? "Filtrer la couche de risque" : "Filter risk layer"}>
-          {buttons.map(([value, label, color]) => <button key={value} type="button" aria-pressed={category === value} onClick={() => onChange?.(value)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${category === value ? "border-white bg-white/15" : "border-white/15 bg-white/[0.04] hover:border-white/35"}`}><span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: color }} />{label}</button>)}
+          {buttons.map(([value, label, color]) => <button key={value} type="button" aria-pressed={category === value} onClick={() => onChange?.(value)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${category === value ? "border-white bg-white/15" : "border-white/15 bg-white/[0.04] hover:border-white/35"}`}><span aria-hidden="true" className={`mr-1.5 inline-block h-2 w-2 rounded-full border border-slate-300 ${category === value ? "ring-2 ring-emerald-300 ring-offset-1 ring-offset-slate-950" : ""}`} style={{ backgroundColor: color }} />{label}</button>)}
         </div>
       </fieldset>
       <div className="text-right text-xs font-semibold text-slate-200/80">
@@ -335,7 +381,8 @@ function RouteRiskHeatmapControls({
         <p className="text-emerald-100/70">{fr ? "Ce n’est pas une mesure de pollution observée." : "This is not a measurement of observed pollution."}</p>
       </div>
     </div>
-    <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-slate-200/75" aria-label={fr ? "Légende du risque" : "Risk legend"}>
+    <p className="mt-2 text-xs font-semibold text-slate-200/75">{fr ? "La bordure indique la catégorie sélectionnée ; la couleur indique uniquement l’intensité du risque théorique." : "The border marks the selected category; color indicates theoretical risk intensity only."}</p>
+    <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-slate-200/75" aria-label={fr ? "Légende de l’intensité du risque" : "Risk intensity legend"}>
       <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-green-600" />0–49</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-500" />50–74</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-red-600" />75–100</span>
     </div>
   </div>;
@@ -373,7 +420,7 @@ function RouteMapLayers({
   return (
     <>
       <RouteMapViewport coordinates={mapCoordinates} />
-      {riskHeatmap ? <RouteRiskHeatmapLayer heatmap={riskHeatmap} category={riskHeatmapCategory ?? "mixed"} fr={fr} /> : null}
+      {riskHeatmap ? <RouteRiskHeatmapLayer key={mapCoordinates.map((coordinate) => coordinate.join(",")).join("|")} heatmap={riskHeatmap} category={riskHeatmapCategory ?? "mixed"} fr={fr} initialViewportCoordinates={mapCoordinates} /> : null}
       <RouteComparisonLayer comparison={comparison} selectedGroupIndex={selectedGroupIndex} fr={fr} />
       {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
       {onSelectZoneCenter ? <RouteZoneCenterPicker onSelectZoneCenter={onSelectZoneCenter} /> : null}
@@ -639,7 +686,6 @@ export function RouteMap({
     if (groupRoutes.length === 0) {
       return [
         ...buildRouteMapCoordinates(stops, routeGeometry, origin),
-        ...(riskHeatmap?.segments.flatMap((segment) => segment.coordinates) ?? []),
         ...(startZone ? [[startZone.center.latitude, startZone.center.longitude] as [number, number]] : []),
         ...(comparison ? [
           [comparison.current.origin.latitude, comparison.current.origin.longitude] as [number, number],
@@ -660,7 +706,6 @@ export function RouteMap({
         ...geometry.coordinates,
         ...groupStops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
       ]),
-      ...(riskHeatmap?.segments.flatMap((segment) => segment.coordinates) ?? []),
       ...(comparison ? [
         [comparison.current.origin.latitude, comparison.current.origin.longitude] as [number, number],
         [comparison.alternative.origin.latitude, comparison.alternative.origin.longitude] as [number, number],
@@ -670,7 +715,7 @@ export function RouteMap({
         ...comparison.alternative.groupRoutes.flatMap((group) => group.routeGeometry.coordinates),
       ] : []),
     ];
-  }, [comparison, groupRoutes, origin, renderedGuidedGroups, riskHeatmap, routeGeometry, startZone, stops, visibleGroupRoutes]);
+  }, [comparison, groupRoutes, origin, renderedGuidedGroups, routeGeometry, startZone, stops, visibleGroupRoutes]);
   const routeCoordinates =
     routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
