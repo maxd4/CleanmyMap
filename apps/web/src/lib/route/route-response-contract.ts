@@ -28,6 +28,10 @@ import type {
 } from "./route-meeting-opportunities";
 import type { SegmentRouteSelectionMetrics } from "./pedestrian-segment-route-planner";
 import type { RouteObservedEnrichmentMetrics } from "./route-observed-enrichment";
+import type {
+  RoutePlannerRiskContext,
+  RouteRiskHeatmap,
+} from "./route-risk-heatmap-contract";
 
 export type { MeetingOpportunity } from "./route-meeting-opportunities";
 
@@ -215,6 +219,10 @@ export type RouteRecommendationResponse = {
   streetCleaningCorridors?: StreetCleaningCorridorHandoff;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;
+  /** The same materialized projection used by the planner, reduced to map-safe fields. */
+  riskHeatmap?: RouteRiskHeatmap;
+  /** Versioned predictive context carried into action preparation and history. */
+  plannerRiskContext?: RoutePlannerRiskContext;
   /** Auditable segment selection when the materialized pedestrian projection is used. */
   segmentSelection?: SegmentRouteSelectionMetrics;
   observedEnrichment?: RouteObservedEnrichmentMetrics;

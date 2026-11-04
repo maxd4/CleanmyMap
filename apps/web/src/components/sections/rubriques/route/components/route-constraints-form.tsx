@@ -176,21 +176,21 @@ export function RouteOptionsForm({
               [
                 [
                   "balanced",
-                  "Sans préférence",
-                  "Aucun type n’est explicitement favorisé dans les zones prédites.",
-                  "No preference",
-                  "No type is explicitly favored in predicted zones.",
+                  "Mixte",
+                  "Le circuit équilibre les risques déchets et mégots à l’échelle des segments retenus.",
+                  "Mixed",
+                  "The circuit balances waste and cigarette-butt risks across selected segments.",
                 ],
                 [
                   "waste",
-                  "Déchets",
+                  "Majorité déchets",
                   "Le calcul privilégie le risque déchets des zones prédites.",
                   "Waste",
                   "The calculation prioritizes waste risk in predicted zones.",
                 ],
                 [
                   "cigarette_butts",
-                  "Mégots",
+                  "Majorité mégots",
                   "Le calcul privilégie le risque mégots des zones prédites.",
                   "Cigarette butts",
                   "The calculation prioritizes cigarette-butt risk in predicted zones.",

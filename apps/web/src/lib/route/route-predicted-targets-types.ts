@@ -11,6 +11,9 @@ export type RoutePredictionSummary = {
   snapshot: RoutePredictedEvidence["snapshot"] | null;
   riskFocus: RouteRiskFocus;
   projectionVersionId?: string | null;
+  projectionSchemaVersion?: string | null;
+  networkVersionId?: string | null;
+  projectionGeneratedAt?: string | null;
   zonesConsidered: number;
   candidatesConsidered: number;
   admitted: number;

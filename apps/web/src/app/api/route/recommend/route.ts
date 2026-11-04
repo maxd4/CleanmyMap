@@ -196,6 +196,7 @@ export async function POST(request: Request) {
       pickupPreference: options.pickupPreference,
       weatherContext,
       startLocation: options.startLocation,
+      pedestrianRiskProjection,
     });
 
     try {

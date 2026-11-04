@@ -33,6 +33,7 @@ import type { ActionPreparationData } from "@/lib/actions/types";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationContract } from "@/lib/actions/preparation-contract";
 import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
+import type { RoutePlannerRiskContext } from "./route-risk-heatmap-contract";
 
 const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 /**
@@ -88,6 +89,8 @@ export type OperationalRoute = {
   /** Optional guided context added to the existing operational-route-v1 shape. */
   guidedBudget?: RouteGuidedBudget;
   plannerWarnings?: string[];
+  /** Predictive provenance only; observed trip geometry remains separate. */
+  plannerRiskContext?: RoutePlannerRiskContext;
 };
 
 export type PublicOperationalRoute = {
@@ -109,8 +112,24 @@ export type PlannerActionHandoff = {
   expiresAt: string;
 };
 
+function isRoutePlannerRiskContext(value: unknown): value is RoutePlannerRiskContext {
+  if (!value || typeof value !== "object") return false;
+  const context = value as Partial<RoutePlannerRiskContext>;
+  return context.schemaVersion === "route-planner-risk-context-v1" &&
+    (context.riskFocus === "all" || context.riskFocus === "waste" || context.riskFocus === "cigaretteButts") &&
+    context.source === "materialized_pedestrian_risk_projection" &&
+    (context.predictionStatus === "available" || context.predictionStatus === "partial" || context.predictionStatus === "unavailable") &&
+    (context.modelVersion === null || typeof context.modelVersion === "string") &&
+    (context.projectionKey === null || typeof context.projectionKey === "string") &&
+    (context.projectionVersionId === null || typeof context.projectionVersionId === "string") &&
+    (context.networkVersionId === null || typeof context.networkVersionId === "string") &&
+    typeof context.consideredSegments === "number" && Number.isInteger(context.consideredSegments) && context.consideredSegments >= 0 &&
+    typeof context.selectedSegments === "number" && Number.isInteger(context.selectedSegments) && context.selectedSegments >= 0 &&
+    (context.generatedAt === null || isIsoDate(context.generatedAt));
+}
+
 export function createOperationalRouteFromRecommendation(
-  recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry"> & {
+  recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry" | "plannerRiskContext"> & {
     routeTopology?: RouteTopology;
     startLocation?: RouteStartSelection;
     stops: readonly RouteStop[];
@@ -158,6 +177,7 @@ export function createOperationalRouteFromRecommendation(
     routes,
     ...(recommendation.guidedBudget ? { guidedBudget: structuredClone(recommendation.guidedBudget) } : {}),
     ...(recommendation.trace?.warnings ? { plannerWarnings: [...recommendation.trace.warnings] } : {}),
+    ...(recommendation.plannerRiskContext ? { plannerRiskContext: structuredClone(recommendation.plannerRiskContext) } : {}),
     zones: {
       departure: {
         label: null,
@@ -506,7 +526,8 @@ export function isOperationalRoute(value: unknown): value is OperationalRoute {
     route.routes.every(isOperationalRouteLoop) &&
     isOperationalRouteZones(route.zones) &&
     (route.guidedBudget === undefined || isRouteGuidedBudget(route.guidedBudget)) &&
-    (route.plannerWarnings === undefined || (Array.isArray(route.plannerWarnings) && route.plannerWarnings.every((warning) => typeof warning === "string")))
+    (route.plannerWarnings === undefined || (Array.isArray(route.plannerWarnings) && route.plannerWarnings.every((warning) => typeof warning === "string"))) &&
+    (route.plannerRiskContext === undefined || isRoutePlannerRiskContext(route.plannerRiskContext))
   );
 }
 

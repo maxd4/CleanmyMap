@@ -17,7 +17,21 @@ describe("action route active version contract", () => {
       routeGeometry: snapshot.geometry,
       stops: snapshot.selectedStops,
       groupRoutes: [],
+      plannerRiskContext: {
+        schemaVersion: "route-planner-risk-context-v1",
+        riskFocus: "all",
+        source: "materialized_pedestrian_risk_projection",
+        modelVersion: "paris-pressure-risk-v3-urban-morphology",
+        projectionKey: "paris-pantheon-jardin-des-plantes",
+        projectionVersionId: "projection-1",
+        networkVersionId: "network-1",
+        predictionStatus: "available",
+        consideredSegments: 10,
+        selectedSegments: 2,
+        generatedAt: snapshot.generatedAt,
+      },
     });
+    expect(operationalRoute.plannerRiskContext?.projectionVersionId).toBe("projection-1");
     const versioning = buildActionRouteVersioning({
       snapshot,
       operationalRoute,

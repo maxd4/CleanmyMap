@@ -23,6 +23,10 @@ import type {
 import type { RouteGuidedCoordinate, RouteTerritorialGuidedGroup } from "@/lib/route/route-planning-mode";
 import { getRouteGroupVisualStyle } from "../route-types";
 import type { MeetingPointProjection, RouteGroupRoute } from "@/lib/route/route-response-contract";
+import type {
+  RouteRiskHeatmap,
+  RouteRiskHeatmapCategory,
+} from "@/lib/route/route-risk-heatmap-contract";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 const EMPTY_CENTER: [number, number] = [48.8566, 2.3522];
@@ -149,6 +153,9 @@ type RouteMapProps = {
   guidedGroups?: RouteTerritorialGuidedGroup[];
   guidedActiveGroupIndex?: number | null;
   onSelectGuidedPoint?: (coordinate: RouteGuidedCoordinate) => void;
+  riskHeatmap?: RouteRiskHeatmap;
+  riskHeatmapCategory?: RouteRiskHeatmapCategory;
+  onRiskHeatmapCategoryChange?: (category: RouteRiskHeatmapCategory) => void;
   fr: boolean;
 };
 
@@ -178,6 +185,115 @@ function RouteMapOrigin({ origin, fr, onClearOrigin }: Pick<RouteMapRenderProps,
   </Marker>;
 }
 
+function heatmapRiskValue(
+  segment: RouteRiskHeatmap["segments"][number],
+  category: RouteRiskHeatmapCategory,
+): number | null {
+  if (segment.riskStatus !== "predicted") return null;
+  if (category === "waste") return segment.wasteRisk;
+  if (category === "cigaretteButts") return segment.cigaretteButtRisk;
+  return segment.mixedRisk;
+}
+
+function heatmapColor(value: number): string {
+  if (value >= 75) return "#dc2626";
+  if (value >= 50) return "#f59e0b";
+  return "#16a34a";
+}
+
+function heatmapCategoryLabel(category: RouteRiskHeatmapCategory, fr: boolean): string {
+  if (category === "waste") return fr ? "Déchets" : "Waste";
+  if (category === "cigaretteButts") return fr ? "Mégots" : "Cigarette butts";
+  return fr ? "Mixte" : "Mixed";
+}
+
+function RouteRiskHeatmapLayer({
+  heatmap,
+  category,
+  fr,
+}: {
+  heatmap: RouteRiskHeatmap;
+  category: RouteRiskHeatmapCategory;
+  fr: boolean;
+}) {
+  return <>{heatmap.segments.map((segment) => {
+    const value = heatmapRiskValue(segment, category);
+    if (value === null || segment.coordinates.length < 2) return null;
+    const confidence = category === "waste"
+      ? segment.wasteConfidence
+      : category === "cigaretteButts"
+        ? segment.cigaretteButtConfidence
+        : segment.wasteConfidence === segment.cigaretteButtConfidence
+          ? segment.wasteConfidence
+          : null;
+    const confidenceLabel = confidence
+      ? `${confidence.level} (${Math.round(confidence.score * 100)} %)`
+      : (fr ? "inconnue" : "unknown");
+    return <Polyline
+      key={`risk-${segment.projectionSegmentId}`}
+      positions={segment.coordinates}
+      pathOptions={{
+        color: heatmapColor(value),
+        weight: 7,
+        opacity: 0.3 + (Math.max(0, Math.min(100, value)) / 100) * 0.55,
+        lineCap: "round",
+      }}
+    >
+      <Tooltip sticky>{`${heatmapCategoryLabel(category, fr)} · ${Math.round(value)}/100 · ${confidenceLabel}`}</Tooltip>
+      <Popup>
+        <strong>{fr ? "Risque théorique du segment" : "Theoretical segment risk"}</strong>
+        <br />
+        {heatmapCategoryLabel(category, fr)} : {Math.round(value)}/100
+        <br />
+        {fr ? "Confiance" : "Confidence"} : {confidenceLabel}
+        <br />
+        {fr ? "Résolution" : "Resolution"} : {segment.effectiveResolution}
+        <br />
+        {fr ? "Source" : "Source"} : {segment.sourceVersions.riskModelVersion}
+        <br />
+        {fr ? "Rafraîchi" : "Refreshed"} : {segment.sourceVersions.pressureRefreshedAt}
+        {segment.provenance.length > 0 ? <><br />{fr ? "Provenance" : "Provenance"} : {segment.provenance.join(", ")}</> : null}
+      </Popup>
+    </Polyline>;
+  })}</>;
+}
+
+function RouteRiskHeatmapControls({
+  heatmap,
+  category,
+  onChange,
+  fr,
+}: {
+  heatmap: RouteRiskHeatmap;
+  category: RouteRiskHeatmapCategory;
+  onChange?: (category: RouteRiskHeatmapCategory) => void;
+  fr: boolean;
+}) {
+  const buttons: Array<[RouteRiskHeatmapCategory, string, string]> = [
+    ["cigaretteButts", fr ? "Mégots" : "Cigarette butts", "#dc2626"],
+    ["waste", fr ? "Déchets" : "Waste", "#f59e0b"],
+    ["mixed", fr ? "Mixte" : "Mixed", "#16a34a"],
+  ];
+  return <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-[1000] rounded-2xl border border-white/15 bg-slate-950/90 p-3 text-white shadow-xl backdrop-blur-xl" data-route-risk-heatmap>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <fieldset>
+        <legend className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-100/75">{fr ? "Couche de risque théorique" : "Theoretical risk layer"}</legend>
+        <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={fr ? "Filtrer la couche de risque" : "Filter risk layer"}>
+          {buttons.map(([value, label, color]) => <button key={value} type="button" aria-pressed={category === value} onClick={() => onChange?.(value)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${category === value ? "border-white bg-white/15" : "border-white/15 bg-white/[0.04] hover:border-white/35"}`}><span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: color }} />{label}</button>)}
+        </div>
+      </fieldset>
+      <div className="text-right text-xs font-semibold text-slate-200/80">
+        <p>{heatmap.counts.predictedSegments} {fr ? "segments estimés" : "estimated segments"} · {heatmap.counts.unavailableSegments} {fr ? "indisponibles" : "unavailable"}</p>
+        <p>{fr ? "Modèle" : "Model"} : {heatmap.sourceVersions.riskModelVersion} · {fr ? "rafraîchi" : "refreshed"} {heatmap.sourceVersions.pressureRefreshedAt}</p>
+        <p className="text-emerald-100/70">{fr ? "Ce n’est pas une mesure de pollution observée." : "This is not a measurement of observed pollution."}</p>
+      </div>
+    </div>
+    <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-slate-200/75" aria-label={fr ? "Légende du risque" : "Risk legend"}>
+      <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-green-600" />0–49</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-500" />50–74</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-red-600" />75–100</span>
+    </div>
+  </div>;
+}
+
 function RouteMapLayers({
   stops,
   routeGeometry,
@@ -196,6 +312,8 @@ function RouteMapLayers({
   guidedActiveGroupIndex,
   onSelectGuidedPoint,
   fr,
+  riskHeatmap,
+  riskHeatmapCategory,
   visibleGroupRoutes,
   mapCoordinates,
   routeCoordinates,
@@ -207,6 +325,7 @@ function RouteMapLayers({
   return (
     <>
       <RouteMapViewport coordinates={mapCoordinates} />
+      {riskHeatmap ? <RouteRiskHeatmapLayer heatmap={riskHeatmap} category={riskHeatmapCategory ?? "mixed"} fr={fr} /> : null}
       {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
       {onSelectZoneCenter ? <RouteZoneCenterPicker onSelectZoneCenter={onSelectZoneCenter} /> : null}
       {onSelectGuidedPoint ? <RouteGuidedPointPicker onSelectGuidedPoint={onSelectGuidedPoint} /> : null}
@@ -370,6 +489,9 @@ function RouteMapCanvas({
   guidedActiveGroupIndex,
   onSelectGuidedPoint,
   fr,
+  riskHeatmap,
+  riskHeatmapCategory,
+  onRiskHeatmapCategoryChange,
   visibleGroupRoutes,
   mapCoordinates,
   routeCoordinates,
@@ -411,11 +533,15 @@ function RouteMapCanvas({
           guidedActiveGroupIndex={guidedActiveGroupIndex}
           onSelectGuidedPoint={onSelectGuidedPoint}
           fr={fr}
+          riskHeatmap={riskHeatmap}
+          riskHeatmapCategory={riskHeatmapCategory}
+          onRiskHeatmapCategoryChange={onRiskHeatmapCategoryChange}
           visibleGroupRoutes={visibleGroupRoutes}
           mapCoordinates={mapCoordinates}
           routeCoordinates={routeCoordinates}
         />
       </MapContainer>
+      {riskHeatmap ? <RouteRiskHeatmapControls heatmap={riskHeatmap} category={riskHeatmapCategory ?? "mixed"} onChange={onRiskHeatmapCategoryChange} fr={fr} /> : null}
       <RouteMapProviderNotice routeGeometry={routeGeometry} />
     </section>
   );
@@ -438,6 +564,9 @@ export function RouteMap({
   guidedActiveGroupIndex,
   onSelectGuidedPoint,
   fr,
+  riskHeatmap,
+  riskHeatmapCategory = "mixed",
+  onRiskHeatmapCategoryChange,
 }: RouteMapProps) {
   const visibleGroupRoutes = selectedGroupIndex === null
     ? groupRoutes
@@ -457,6 +586,7 @@ export function RouteMap({
     if (groupRoutes.length === 0) {
       return [
         ...buildRouteMapCoordinates(stops, routeGeometry, origin),
+        ...(riskHeatmap?.segments.flatMap((segment) => segment.coordinates) ?? []),
         ...(startZone ? [[startZone.center.latitude, startZone.center.longitude] as [number, number]] : []),
       ];
     }
@@ -471,8 +601,9 @@ export function RouteMap({
         ...geometry.coordinates,
         ...groupStops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
       ]),
+      ...(riskHeatmap?.segments.flatMap((segment) => segment.coordinates) ?? []),
     ];
-  }, [groupRoutes, origin, renderedGuidedGroups, routeGeometry, startZone, stops, visibleGroupRoutes]);
+  }, [groupRoutes, origin, renderedGuidedGroups, riskHeatmap, routeGeometry, startZone, stops, visibleGroupRoutes]);
   const routeCoordinates =
     routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
@@ -507,6 +638,9 @@ export function RouteMap({
     guidedActiveGroupIndex={guidedActiveGroupIndex}
     onSelectGuidedPoint={onSelectGuidedPoint}
     fr={fr}
+    riskHeatmap={riskHeatmap}
+    riskHeatmapCategory={riskHeatmapCategory}
+    onRiskHeatmapCategoryChange={onRiskHeatmapCategoryChange}
     visibleGroupRoutes={visibleGroupRoutes}
     mapCoordinates={mapCoordinates}
     routeCoordinates={routeCoordinates}

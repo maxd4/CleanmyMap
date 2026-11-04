@@ -1,9 +1,9 @@
 # Heatmap prédictive polarisée des voies piétonnes de Paris
 
-**Statut : CURRENT / PILOT. Calque public facultatif livré pour Paris 5e/6e ; coefficients non calibrés.**<br>
+**Statut : CURRENT / PILOT. Calque route facultatif livré pour le secteur Panthéon/Jardin des Plantes ; coefficients non calibrés.**<br>
 **Périmètre : Paris intra-muros, commune INSEE 75056, domaine public accessible aux piétons.**<br>
-**Identifiant de politique du pilote : `paris-street-risk-heuristics-v1-polarized-pilot`.**<br>
-**Implémentation : snapshot OSM local `paris-5e-6e-osm-pilot-2026-11-01-iris-clipped-v1`, module géospatial pur et couche Leaflet facultative ; aucune requête fournisseur à l'ouverture.**<br>
+**Identifiant de politique du pilote : `segment-zonal-neutral-v1`, dans `paris-pedestrian-risk-projection-v1`.**<br>
+**Implémentation : projection Supabase matérialisée issue du graphe OSM piéton et des sources canoniques IRIS ; la carte Leaflet consomme le même cache serveur que le planner, sans requête OSM à l'ouverture.**<br>
 **Chemin exact prévu : `documentation/architecture/paris-street-pollution-heatmap.md`.**<br>
 **Document remplacé : proposition `paris-street-risk-heuristics-v0` soumise par l'utilisateur.**
 
@@ -15,7 +15,7 @@
 4. **IRIS comme référence** : réutiliser le modèle zonal existant et sa provenance, sans réécrire ni doubler ses composantes. Les matrices polarisées sont une proposition de redistribution spatiale *au sein* des zones à partir de facteurs locaux crédibles.
 5. **Données maximales, preuves explicites** : collecter autant de proxys locaux pertinents que leurs sources et licences le permettent, mais ne donner un effet numérique qu'aux facteurs effectivement vérifiés à leur maille réelle. Un champ absent reste inconnu ; « zéro observation » ne veut pas dire « rue propre ».
 6. **Nettoyage et accessibilité séparés** : le risque de production de déchets, le stock résiduel disponible, l'additionnalité bénévole et l'autorisation de nettoyer sont quatre dimensions différentes. Pas de bonus automatique à une zone dangereuse ou inaccessible.
-7. **Aucune intégration silencieuse** : `v1-polarized-pilot` reste distinct de `paris-pressure-risk-v3-urban-morphology`, de `urban-morphology-prior-v1` et des observations. Il est activable uniquement comme calque prédictif facultatif de la carte ; il ne modifie ni le planner ni les scores d'action.
+7. **Une seule source de vérité** : la heatmap route expose le cache `paris-pedestrian-risk-projection-v1`, construit avec `paris-pressure-snapshot`, `paris-pressure-risk-v3-urban-morphology`, la serviceabilité municipale et leurs provenances. Elle est activable comme calque prédictif et le planner sélectionne dans ce même cache ; aucun second modèle IRIS ni aucune donnée observée ne sont fabriqués dans l'interface.
 
 ### Classification des affirmations
 

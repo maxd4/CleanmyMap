@@ -12,6 +12,7 @@ import type {
   MeetingPointProjection,
   RouteGroupRoute,
 } from "@/lib/route/route-response-contract";
+import type { RouteRiskHeatmapCategory } from "@/lib/route/route-risk-heatmap-contract";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -123,6 +124,12 @@ function RouteResultSummary({
   data: RouteResponse;
 }) {
   const isLoop = (data.routeTopology ?? (data.isLoop ? "loop" : "open")) === "loop";
+  const pickupPreference = data.constraintsApplied?.pickupPreference ?? "balanced";
+  const preferenceLabel = pickupPreference === "waste"
+    ? (fr ? "majorité déchets" : "waste majority")
+    : pickupPreference === "cigarette_butts"
+      ? (fr ? "majorité mégots" : "cigarette-butt majority")
+      : (fr ? "mixte" : "mixed");
   return (
     <div className="relative overflow-hidden rounded-2xl border border-emerald-300/20 bg-slate-950/90 p-4 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)] sm:p-5">
       <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -162,6 +169,12 @@ function RouteResultSummary({
                 ? `Boucle de ${totalKm.toFixed(2)} km · départ et arrivée au même endroit`
                 : `Trajet ouvert de ${totalKm.toFixed(2)} km · départ / arrivée`}
           </p>
+          <div className="grid gap-2 text-xs font-semibold text-slate-300 sm:grid-cols-3" data-route-risk-summary>
+            <div className="rounded-xl border border-emerald-200/10 bg-white/[0.04] px-3 py-2"><span className="block cmm-text-caption font-black uppercase tracking-[0.12em] text-emerald-100/60">Préférence</span><span className="mt-1 block text-white">{preferenceLabel}</span></div>
+            <div className="rounded-xl border border-emerald-200/10 bg-white/[0.04] px-3 py-2"><span className="block cmm-text-caption font-black uppercase tracking-[0.12em] text-emerald-100/60">Segments retenus</span><span className="mt-1 block text-white">{data.segmentSelection?.selectedSegments ?? data.prediction?.selected ?? 0}</span></div>
+            <div className="rounded-xl border border-emerald-200/10 bg-white/[0.04] px-3 py-2"><span className="block cmm-text-caption font-black uppercase tracking-[0.12em] text-emerald-100/60">Signalements ajoutés</span><span className="mt-1 block text-white">{data.observedEnrichment?.acceptedCandidateIds.length ?? 0} <span className="text-slate-400">observés</span></span></div>
+          </div>
+          {data.plannerRiskContext ? <p className="text-xs font-semibold text-emerald-100/65">{fr ? "Projection" : "Projection"} {data.plannerRiskContext.projectionVersionId ?? "non versionnée"} · {data.plannerRiskContext.modelVersion ?? (fr ? "modèle indisponible" : "model unavailable")} · {data.riskHeatmap ? `${data.riskHeatmap.counts.predictedSegments} segments affichables` : (fr ? "couche indisponible" : "layer unavailable")}.</p> : null}
         </div>
         <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-emerald-200/15 bg-white/[0.04] p-3 lg:min-w-44 lg:text-right">
           <p className="cmm-text-caption font-black uppercase tracking-widest text-emerald-200/80">{fr ? "Priorité moyenne" : "Average priority"}</p>
@@ -268,6 +281,8 @@ export function RouteResults({
   setSelectedGroupIndex,
   multiRouteDisplayMode,
   setMultiRouteDisplayMode,
+  riskHeatmapCategory,
+  setRiskHeatmapCategory,
   groupRoutes,
   visibleStops,
   visibleGeometry,
@@ -297,18 +312,20 @@ export function RouteResults({
   setSelectedGroupIndex: (index: number | null) => void;
   multiRouteDisplayMode: RouteMultiRouteDisplayMode;
   setMultiRouteDisplayMode: (mode: RouteMultiRouteDisplayMode) => void;
+  riskHeatmapCategory: RouteRiskHeatmapCategory;
+  setRiskHeatmapCategory: (category: RouteRiskHeatmapCategory) => void;
   visibleStops: RouteStop[];
   visibleGeometry: RouteGeometry;
 }) {
   return <>
-    {!hasRoute && (originMode === "map" || startZone) ? <RouteMap stops={[]} routeGeometry={EMPTY_ROUTE_GEOMETRY} origin={mapOrigin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} startZone={startZone} onSelectZoneCenter={startZone ? onSelectZoneCenter : undefined} fr={fr} /> : null}
+    {!hasRoute && (originMode === "map" || startZone) ? <RouteMap stops={[]} routeGeometry={EMPTY_ROUTE_GEOMETRY} origin={mapOrigin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} startZone={startZone} onSelectZoneCenter={startZone ? onSelectZoneCenter : undefined} riskHeatmap={data?.riskHeatmap} riskHeatmapCategory={riskHeatmapCategory} onRiskHeatmapCategoryChange={setRiskHeatmapCategory} fr={fr} /> : null}
     {data?.weatherContext ? <RouteWeatherSummary context={data.weatherContext} fr={fr} /> : null}
     <AnimatePresence mode="wait">
       {hasRoute && data ? <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
         <RouteResultSummary data={data} fr={fr} groupRoutes={groupRoutes} totalKm={totalKm} totalMinutes={totalMinutes} serviceMinutes={serviceMinutes} operationalTotalMinutes={operationalTotalMinutes} actionDurationLabel={actionDurationLabel} operationalTotalLabel={operationalTotalLabel} eventBudgetMinutes={eventBudgetMinutes} actionBudgetMinutes={actionBudgetMinutes} organizationMarginMinutes={organizationMarginMinutes} onCreateAction={onCreateAction} />
         <RouteGroupSelection data={data} fr={fr} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} setSelectedGroupIndex={setSelectedGroupIndex} multiRouteDisplayMode={multiRouteDisplayMode} setMultiRouteDisplayMode={setMultiRouteDisplayMode} />
         {hasData ? <RouteMethodology data={data} fr={fr} /> : null}
-        <RouteMap stops={visibleStops} routeGeometry={visibleGeometry} meetingPoint={data.meetingPoint} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} representationMode={multiRouteDisplayMode} origin={data.origin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} startZone={startZone} onSelectZoneCenter={startZone ? onSelectZoneCenter : undefined} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} fr={fr} />
+        <RouteMap stops={visibleStops} routeGeometry={visibleGeometry} meetingPoint={data.meetingPoint} groupRoutes={groupRoutes} selectedGroupIndex={selectedGroupIndex} representationMode={multiRouteDisplayMode} origin={data.origin} onSelectOrigin={originMode === "map" ? setMapOrigin : undefined} onClearOrigin={originMode === "map" ? clearMapOrigin : undefined} startZone={startZone} onSelectZoneCenter={startZone ? onSelectZoneCenter : undefined} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} riskHeatmap={data.riskHeatmap} riskHeatmapCategory={riskHeatmapCategory} onRiskHeatmapCategoryChange={setRiskHeatmapCategory} fr={fr} />
         <RoutePdfExport data={data} displayMode={multiRouteDisplayMode} onUsePatterns={() => setMultiRouteDisplayMode("patterns")} />
         <RouteList hasRoute={hasRoute} picks={visibleStops} fr={fr} selectedStopId={selectedStopId} onSelectStop={setSelectedStopId} />
       </motion.div> : null}

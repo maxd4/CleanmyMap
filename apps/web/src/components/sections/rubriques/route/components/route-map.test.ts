@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
+import type { RouteRiskHeatmap } from "@/lib/route/route-risk-heatmap-contract";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -111,6 +112,33 @@ const networkGeometry: RouteGeometry = {
   mode: "network",
   estimated: false,
 };
+
+const riskHeatmap = {
+  schemaVersion: "route-risk-heatmap-v1",
+  projectionKey: "paris-pantheon-jardin-des-plantes",
+  projectionVersionId: "projection-1",
+  networkVersionId: "network-1",
+  generatedAt: "2026-11-04T10:00:00.000Z",
+  sourceVersions: { riskModelVersion: "risk-v3", pressureRefreshedAt: "2026-11-04T09:00:00.000Z" },
+  counts: { sourceEdges: 1, projectedSegments: 1, predictedSegments: 1, unavailableSegments: 0, zonesIntersected: 1 },
+  segments: [{
+    projectionSegmentId: "risk-1",
+    coordinates: [[48.85, 2.35], [48.851, 2.351]],
+    lengthM: 100,
+    zoneId: "iris-1",
+    intersectedZoneIds: ["iris-1"],
+    effectiveResolution: "iris",
+    riskStatus: "predicted",
+    wasteRisk: 80,
+    cigaretteButtRisk: 25,
+    mixedRisk: 52,
+    wasteConfidence: { level: "medium", score: 0.7 },
+    cigaretteButtConfidence: { level: "low", score: 0.4 },
+    sourceVersions: { riskModelVersion: "risk-v3", pressureRefreshedAt: "2026-11-04T09:00:00.000Z" },
+    provenance: ["pressure_snapshot"],
+    notes: [],
+  }],
+} as unknown as RouteRiskHeatmap;
 
 function groupRoute(groupIndex: number, mode: RouteGeometry["mode"] = "network"): RouteGroupRoute {
   return {
@@ -312,5 +340,26 @@ describe("RouteMap", () => {
     expect(markup).toContain("Passage planifié · aucune observation");
     expect(markup).toContain("Passage école");
     expect(markup).toContain('data-testid="route-line"');
+  });
+
+  it("renders the canonical theoretical risk layer with category filters and freshness", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        riskHeatmap,
+        riskHeatmapCategory: "waste",
+        fr: true,
+      }),
+    );
+
+    expect(markup).toContain('data-route-risk-heatmap');
+    expect(markup).toContain("Couche de risque théorique");
+    expect(markup).toContain("Déchets");
+    expect(markup).toContain("Mégots");
+    expect(markup).toContain("Mixte");
+    expect(markup).toContain("risk-v3");
+    expect(markup).toContain("2026-11-04T09:00:00.000Z");
+    expect(markup).toContain("Risque théorique du segment");
   });
 });

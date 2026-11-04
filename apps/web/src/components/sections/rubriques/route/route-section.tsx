@@ -19,6 +19,7 @@ import {
   createPlannerActionPreparationData,
 } from "@/lib/route/route-operational";
 import { writePlannerActionHandoff } from "@/lib/route/route-action-handoff";
+import type { RouteRiskHeatmapCategory } from "@/lib/route/route-risk-heatmap-contract";
 
 export function buildPlannerActionHref(
   actionId: string | null | undefined,
@@ -35,6 +36,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(null);
   const [multiRouteDisplayMode, setMultiRouteDisplayMode] = useState<RouteMultiRouteDisplayMode>("colors");
+  const [riskHeatmapCategory, setRiskHeatmapCategory] = useState<RouteRiskHeatmapCategory>("mixed");
   const { isLoaded, isSignedIn } = useEffectiveAuthState();
   const routeData = useRouteData();
   const {
@@ -93,6 +95,8 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
             setSelectedGroupIndex={setSelectedGroupIndex}
             multiRouteDisplayMode={multiRouteDisplayMode}
             setMultiRouteDisplayMode={setMultiRouteDisplayMode}
+            riskHeatmapCategory={riskHeatmapCategory}
+            setRiskHeatmapCategory={setRiskHeatmapCategory}
             groupRoutes={derived.groupRoutes} visibleStops={derived.visibleStops}
             visibleGeometry={derived.visibleGeometry} totalKm={totalKm}
             totalMinutes={totalMinutes} serviceMinutes={serviceMinutes}

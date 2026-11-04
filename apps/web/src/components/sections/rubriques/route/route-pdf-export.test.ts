@@ -314,4 +314,45 @@ describe("route PDF export", () => {
     expect(html).toContain("secteur inconnu (géométrie finale non vérifiable)");
     expect(html).toContain("45 min réservées");
   });
+
+  it("exporte la provenance du risque théorique sans le présenter comme une observation", () => {
+    const data = buildFixture();
+    data.plannerRiskContext = {
+      schemaVersion: "route-planner-risk-context-v1",
+      riskFocus: "all",
+      source: "materialized_pedestrian_risk_projection",
+      modelVersion: "paris-pressure-risk-v3-urban-morphology",
+      projectionKey: "paris-pantheon-jardin-des-plantes",
+      projectionVersionId: "projection-1",
+      networkVersionId: "network-1",
+      predictionStatus: "available",
+      consideredSegments: 12,
+      selectedSegments: 4,
+      generatedAt: data.generatedAt,
+    };
+    data.prediction.selected = 4;
+    data.observedEnrichment = {
+      source: "validated_trash_spotter_spots",
+      predictedCandidatesRetained: 4,
+      considered: 1,
+      accepted: 1,
+      rejected: 0,
+      rejectedByReason: {},
+      acceptedCandidateIds: ["observed-1"],
+      evaluations: [],
+      totalDetourDistanceKm: 0.1,
+      totalDetourMinutes: 3,
+      routeBudgetMinutes: 60,
+      routeDurationBeforeMinutes: 18,
+      routeDurationAfterMinutes: 21,
+      observedDoesNotReplacePrediction: true,
+    };
+
+    const html = buildRoutePdfHtml(data, "colors", data.generatedAt);
+
+    expect(html).toContain("Risques théoriques retenus");
+    expect(html).toContain("projection-1");
+    expect(html).toContain("signalements observés ajoutés");
+    expect(html).toContain("elles ne mesurent pas une pollution observée");
+  });
 });

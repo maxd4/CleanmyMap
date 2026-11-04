@@ -31,6 +31,7 @@ import type { RouteEventPressureContext, RouteCandidateData } from "./route.cand
 import type { RoutePlanningResult } from "./route.planning";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteStartSelection } from "@/lib/route/route-response-contract";
+import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
 import {
   buildRoutePlannerSnapshotForProof,
   buildRouteSnapshotStops,
@@ -56,6 +57,7 @@ export type RouteRecommendationResponseInput = {
   pickupPreference: RoutePickupPreference;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
+  pedestrianRiskProjection?: PedestrianRiskProjectionSnapshot | null;
 };
 
 const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT = {

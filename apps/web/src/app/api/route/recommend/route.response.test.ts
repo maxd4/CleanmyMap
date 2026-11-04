@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
+import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
 import type { RouteGroupPartitionResult } from "@/lib/route/route-group-partition";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
@@ -305,6 +306,64 @@ const guidedBudget = {
   travelMaxMinutes: 30,
 } as const;
 
+function responseProjection(): PedestrianRiskProjectionSnapshot {
+  return {
+    schemaVersion: "paris-pedestrian-risk-projection-v1",
+    projectionKey: "paris-pantheon-jardin-des-plantes",
+    policyVersion: "segment-zonal-neutral-v1",
+    projectionVersionId: "projection-response-test",
+    networkVersionId: "network-response-test",
+    generatedAt: "2026-11-04T10:00:00.000Z",
+    sourceVersions: {
+      networkKey: "pilot",
+      networkImporterVersion: "importer-v1",
+      networkSourceSha256: "sha",
+      networkSourceRetrievedAt: "2026-11-04T09:00:00.000Z",
+      pressureSnapshotId: "pressure-1",
+      pressureSchemaVersion: "paris-pressure-v1",
+      pressureGeneratedAt: "2026-11-04T08:00:00.000Z",
+      pressureRefreshedAt: "2026-11-04T08:30:00.000Z",
+      riskModelVersion: "paris-pressure-risk-v3-urban-morphology",
+      serviceabilitySnapshotId: null,
+      serviceabilitySchemaVersion: null,
+      serviceabilityModelVersion: null,
+      serviceabilityGeneratedAt: null,
+      serviceabilityRefreshedAt: null,
+    },
+    counts: { sourceEdges: 1, projectedSegments: 1, predictedSegments: 1, unavailableSegments: 0, zonesIntersected: 1 },
+    segments: [{
+      projectionSegmentId: "segment-response-test",
+      edgeKey: "edge-response-test",
+      osmWayId: "way-response-test",
+      segmentIndex: 0,
+      direction: "forward",
+      fromNodeId: "a",
+      toNodeId: "b",
+      lengthM: 100,
+      intersectionLengthM: 100,
+      coordinates: [[48.85, 2.35], [48.851, 2.351]],
+      midpoint: [48.8505, 2.3505],
+      zoneId: "iris-response-test",
+      intersectedZoneIds: ["iris-response-test"],
+      effectiveResolution: "iris",
+      riskStatus: "predicted",
+      wasteRisk: 70,
+      cigaretteButtRisk: 30,
+      mixedRisk: 50,
+      wasteConfidence: null,
+      cigaretteButtConfidence: null,
+      wasteFactors: null,
+      cigaretteButtFactors: null,
+      availableFactors: { waste: [], cigaretteButts: [] },
+      missingFactors: { waste: [], cigaretteButts: [] },
+      serviceability: null,
+      sourceVersions: {} as PedestrianRiskProjectionSnapshot["sourceVersions"],
+      provenance: [],
+      notes: [],
+    }],
+  };
+}
+
 function guidedGroupRoute(
   groupIndex: number,
   distanceKm: number,
@@ -368,6 +427,28 @@ function guidedGroupRoute(
 }
 
 describe("route recommendation response trace contract", () => {
+  it("publishes the same versioned projection metadata used by the planner", async () => {
+    installDefaultMocks();
+    const response = await readRouteResponse(buildRouteRecommendationResponse(responseInput({
+      pedestrianRiskProjection: responseProjection(),
+      planning: {
+        segmentSelection: { selectedSegments: 1 },
+      },
+    })));
+
+    expect(response.riskHeatmap).toMatchObject({
+      schemaVersion: "route-risk-heatmap-v1",
+      projectionVersionId: "projection-response-test",
+      segments: [{ projectionSegmentId: "segment-response-test", wasteRisk: 70, cigaretteButtRisk: 30, mixedRisk: 50 }],
+    });
+    expect(response.plannerRiskContext).toMatchObject({
+      schemaVersion: "route-planner-risk-context-v1",
+      source: "materialized_pedestrian_risk_projection",
+      projectionVersionId: "projection-response-test",
+      selectedSegments: 1,
+    });
+  });
+
   it("publishes an open route even when no scientific stops are selected", async () => {
     installDefaultMocks();
     const openRouteGeometry = {

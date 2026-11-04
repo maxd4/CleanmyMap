@@ -94,6 +94,33 @@ sécurité, d'additionalité, d'événement, de distance, de budget et de résea
 restent prioritaires. Une zone prédite sans preuve de sécurité `safe` n'est pas
 transmise au planner ; aucune préférence ne peut lever cette exclusion.
 
+## Contrat d'interface, d'export et de transfert
+
+La réponse `RouteResponse` expose `riskHeatmap` uniquement lorsqu'une projection
+géospatiale matérialisée a effectivement été chargée. Cette couche reprend les
+segments, les deux risques, le risque mixte canonique, la résolution effective,
+la confiance, la provenance, les versions de sources et la date de
+rafraîchissement de `pedestrian_risk_projection` ; elle ne recalcule aucun
+score dans le navigateur. L'absence de projection reste une absence de couche,
+jamais une couche à zéro.
+
+La carte route réutilise cette couche pour les filtres `Déchets`, `Mégots` et
+`Mixte`. Le mode mixte est celui du cache (`mixedRisk`) et n'est pas défini par
+le maximum des deux familles. Les valeurs sont affichées comme risques
+théoriques estimés, avec leur modèle et leur fraîcheur ; elles ne sont pas des
+mesures de pollution observée. Les signalements `observed` ajoutés après la
+boucle prédictive restent comptés séparément.
+
+`plannerRiskContext` est copié dans `OperationalRoute`, le handoff vers la
+création d'action et les snapshots/proofs via le résumé prédictif. Les routes
+historiques sans ce champ restent valides. La géométrie planifiée est donc
+conservée séparément de toute géométrie de trajet réellement observé.
+
+L'export PDF conserve les groupes, leurs métriques et leurs passages distincts,
+et ajoute la provenance de la projection lorsqu'elle existe. Il rappelle que
+le risque est théorique et que les observations terrain sont une famille
+différente.
+
 Le résumé prédictif distingue les compteurs et identifiants :
 
 - `admitted` : zones prédites admises après le corridor et la déduplication ;

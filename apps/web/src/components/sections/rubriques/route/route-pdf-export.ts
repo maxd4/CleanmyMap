@@ -294,6 +294,18 @@ function renderMetrics(data: RouteResponse, routes: ExportRoute[], multi: boolea
   return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée déplacement réseau</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée d’action</dt><dd>${escapeHtml(serviceLabel)}</dd></div><div><dt>Créneau total</dt><dd>${escapeHtml(formatDuration(guidedBudget?.totalMinutes ?? data.travelBudgetMinutes))}</dd></div><div><dt>Marge organisation</dt><dd>${escapeHtml(formatDuration(guidedBudget?.organizationMarginMinutes ?? 15))}</dd></div><div><dt>Collecte minimale</dt><dd>${escapeHtml(formatDuration(guidedBudget?.minimumCollectionMinutes ?? null))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
 }
 
+function renderPredictiveRiskSummary(data: RouteResponse): string {
+  const preference = data.constraintsApplied.pickupPreference === "waste"
+    ? "majorité déchets"
+    : data.constraintsApplied.pickupPreference === "cigarette_butts"
+      ? "majorité mégots"
+      : "mixte";
+  const context = data.plannerRiskContext;
+  const heatmap = data.riskHeatmap;
+  if (!context && !heatmap) return "";
+  return `<section class="route-pdf-risk"><h3>Risques théoriques retenus</h3><p><strong>Préférence :</strong> ${escapeHtml(preference)} · <strong>segments retenus :</strong> ${data.segmentSelection?.selectedSegments ?? data.prediction.selected} · <strong>signalements observés ajoutés :</strong> ${data.observedEnrichment?.acceptedCandidateIds.length ?? 0}</p>${context ? `<p><strong>Projection :</strong> ${escapeHtml(context.projectionVersionId ?? "non versionnée")} · modèle ${escapeHtml(context.modelVersion ?? "indisponible")} · ${context.predictionStatus}</p>` : ""}${heatmap ? `<p><strong>Couche cartographique :</strong> ${heatmap.counts.predictedSegments} segments estimés · ${heatmap.counts.unavailableSegments} indisponibles · rafraîchie le ${escapeHtml(heatmap.sourceVersions.pressureRefreshedAt)}.</p>` : ""}<p class="route-pdf-risk-note">Ces valeurs sont des risques théoriques issus de la projection géospatiale ; elles ne mesurent pas une pollution observée. Les signalements réels restent identifiés séparément.</p></section>`;
+}
+
 function renderStops(routes: ExportRoute[]): string {
   return routes
     .map(
@@ -351,7 +363,7 @@ function renderGroupPage(
 ): string {
   const label = route.label || `Groupe ${route.groupIndex}`;
   const rendezVous = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)}`;
-  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} observations · ${route.plannedWaypoints?.length ?? 0} passages planifiés · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · ${escapeHtml(arrivalProvenanceLabel(data))}</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderGuidedPlan(data, [route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
+  return `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">Fiche terrain</p><h1>${escapeHtml(label)}</h1><p>${route.volunteerCount} bénévoles · ${route.stops.length} observations · ${route.plannedWaypoints?.length ?? 0} passages planifiés · ${escapeHtml(route.geometry.mode === "network" ? "Tracé réseau" : "Tracé estimé / fallback")}</p><p class="route-pdf-meta"><strong>Point de rendez-vous :</strong> ${escapeHtml(rendezVous)} · ${escapeHtml(arrivalProvenanceLabel(data))}</p></header><div class="route-pdf-map-shell">${renderSvgMap(data, [route], displayMode, label)}</div>${renderLegend([route], displayMode)}${renderMetrics(data, [route], false)}${renderPredictiveRiskSummary(data)}${renderGuidedPlan(data, [route])}${renderStops([route])}${renderCorridors([route], data, false)}${renderInstructions(data, [route])}</section>`;
 }
 
 export function buildRoutePdfCss(routeCount: number): string {
@@ -381,6 +393,8 @@ p { margin: 1.5mm 0; }
 .route-pdf-metrics dd { margin: 1mm 0 0; font-weight: 700; }
 .route-pdf-stops, .route-pdf-corridors, .route-pdf-instructions { break-inside: avoid; margin-top: 4mm; }
 .route-pdf-guided { break-inside: avoid; margin-top: 4mm; border: 1px solid #bae6fd; background: #f0f9ff; padding: 3mm; }
+.route-pdf-risk { break-inside: avoid; margin-top: 4mm; border: 1px solid #a7f3d0; background: #ecfdf5; padding: 3mm; }
+.route-pdf-risk-note { color: #475569; font-size: 9pt; }
 .route-pdf-guided article { border-top: 1px solid #bae6fd; margin-top: 2mm; padding-top: 2mm; }
 .route-pdf-guided article:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
 .route-pdf-map-shell, .route-pdf-legend, .route-pdf-metrics { break-inside: avoid; page-break-inside: avoid; }
@@ -406,7 +420,7 @@ export function buildRoutePdfHtml(
   const title = event ? `Itinéraire CleanMyMap — ${event.title}` : "Itinéraire CleanMyMap";
   const originLabel = `${data.origin.latitude.toFixed(6)}, ${data.origin.longitude.toFixed(6)} · ${data.origin.source === "map" ? "carte" : data.origin.source === "browser" ? "navigateur" : "zone enregistrée approximative"}`;
   const overviewTitle = multi ? `Vue générale — ${routes.length} groupes` : isLoopTopology(data) ? "Vue générale — 1 boucle" : "Vue générale — 1 trajet ouvert";
-  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderGuidedPlan(data, routes)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
+  const overview = `<section class="route-pdf-page"><header><p class="route-pdf-eyebrow">CleanMyMap · export terrain</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(overviewTitle)}</p><p class="route-pdf-meta">Généré le ${escapeHtml(formatDateTime(generatedAt))}${event ? ` · Événement : ${escapeHtml(event.title)} · ${escapeHtml(formatDate(event.eventDate))}` : ""}</p></header><div class="route-pdf-summary"><p><strong>Point de rendez-vous :</strong> ${escapeHtml(originLabel)}</p><p><strong>Bénévoles :</strong> ${data.volunteers} · <strong>Groupes :</strong> ${routes.length}</p></div><div class="route-pdf-map-shell">${renderSvgMap(data, routes, displayMode, overviewTitle)}</div>${renderLegend(routes, displayMode)}${renderMetrics(data, routes, multi)}${renderPredictiveRiskSummary(data)}${renderGuidedPlan(data, routes)}${renderStops(routes)}${renderCorridors(routes, data, true)}${renderInstructions(data, routes)}</section>`;
   const groupPages = multi ? routes.map((route) => renderGroupPage(data, route, displayMode)).join("") : "";
 
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escapeHtml(title)}</title><style>${buildRoutePdfCss(routes.length)}</style></head><body>${overview}${groupPages}<script>window.addEventListener("afterprint", () => window.close()); window.addEventListener("load", () => setTimeout(() => window.print(), 250));</script></body></html>`;

@@ -10,6 +10,7 @@ import {
 import type { RouteStop } from "@/lib/route/route-contract";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
 import { ROUTE_ORGANIZATION_MARGIN_MINUTES } from "@/lib/route/route-operational-budget";
+import { buildRouteRiskHeatmap } from "@/lib/route/route-risk-heatmap-contract";
 import {
   type OperationalContext,
   type ProofContext,
@@ -72,6 +73,22 @@ function buildCommonPayload({
 }: CommonPayloadInput): RouteRecommendationResponse {
   const { candidateData, planning } = input;
   const routeTopology = input.routeTopology ?? (planning.routeGeometry.isLoop ? "loop" : "open");
+  const riskHeatmap = buildRouteRiskHeatmap(input.pedestrianRiskProjection);
+  const plannerRiskContext = input.pedestrianRiskProjection
+    ? {
+        schemaVersion: "route-planner-risk-context-v1" as const,
+        riskFocus: planning.predictionSummary.riskFocus,
+        source: "materialized_pedestrian_risk_projection" as const,
+        modelVersion: input.pedestrianRiskProjection.sourceVersions.riskModelVersion,
+        projectionKey: input.pedestrianRiskProjection.projectionKey,
+        projectionVersionId: input.pedestrianRiskProjection.projectionVersionId,
+        networkVersionId: input.pedestrianRiskProjection.networkVersionId,
+        predictionStatus: planning.predictionSummary.status,
+        consideredSegments: input.pedestrianRiskProjection.counts.projectedSegments,
+        selectedSegments: planning.segmentSelection?.selectedSegments ?? 0,
+        generatedAt: input.pedestrianRiskProjection.generatedAt,
+      }
+    : undefined;
   const arrival = input.arrival
     ? { ...input.arrival, source: input.arrival.source }
     : planning.routeGeometry.isLoop
@@ -139,6 +156,8 @@ function buildCommonPayload({
     streetCleaningCorridors: input.planning.streetCleaningCorridors ?? buildUnknownStreetCleaningCorridorHandoff(),
     stops,
     prediction: proofs.predictionSummary,
+    ...(riskHeatmap ? { riskHeatmap } : {}),
+    ...(plannerRiskContext ? { plannerRiskContext } : {}),
     ...(planning.segmentSelection ? { segmentSelection: planning.segmentSelection } : {}),
     ...(planning.observedEnrichment ? { observedEnrichment: planning.observedEnrichment } : {}),
     trace: proofs.trace,
