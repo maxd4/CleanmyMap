@@ -39,6 +39,12 @@ preuves historiques invalidées restent lisibles par le propriétaire avec
 `GET /api/gamification/territorial-leaderboard/history?campaignYear=...`, mais
 ne sont pas rechargées comme faits CURRENT.
 
+La preuve `season_end` n'est jamais remise par le snapshot du 31 décembre :
+elle exige une période dont le dernier jour confirmé est le 31 décembre et une
+réconciliation après la fin de l'année civile Europe/Paris. Le rattrapage du
+1er janvier et ses rejouements sont idempotents ; aucun jour manquant ni
+détenteur provisoire n'est transformé en récompense définitive.
+
 Web et Mobile consomment cette projection serveur identique. Mobile ne doit
 pas implémenter un calcul local de score, de rang, de série, de conquête ou de
 badge ; une future surface native doit utiliser le Bearer Clerk et les mêmes
@@ -49,7 +55,10 @@ La surface Web agrégée utilise
 `GET /api/gamification/territorial-leaderboard/overview`, une projection
 owner-scoped et `no-store` qui regroupe les cinq niveaux, les fiches de
 territoire, le classement public autorisé, les égalités, la détention courante,
-le meilleur historique et les récompenses de la campagne. Elle est consommée
+le meilleur historique et les récompenses de la campagne. Elle inclut les
+territoires admissibles issus des faits canoniques même avant la première
+détention ou récompense. Les faits sont chargés une seule fois par requête,
+alors que les projections publique et personnelle restent séparées. Elle est consommée
 par les profils Web et `/sections/gamification` ; le client ne recalcule ni
 rang, ni score, ni durée, ni titre. Les titres ne sont affichés que lorsqu'une
 éligibilité confirmée est renvoyée par la lecture personnelle.
@@ -76,6 +85,11 @@ sans la remplacer par un libellé. La création et les changements de localisati
 rafraîchissent ou invalident cette projection ; la réconciliation contrôlée ne
 réessaie que les actions admissibles qui n'en possèdent pas. Une erreur de page
 ne produit donc jamais un classement partiel silencieux.
+
+L'attribution manquante est écrite avec la version `actions.updated_at` lue
+avant résolution et une condition atomique sur cette version. Une modification
+concurrente de géométrie perd donc l'écriture et laisse l'attribution à `NULL`
+pour une nouvelle tentative ; une attribution incertaine n'est jamais inventée.
 
 La non-rétroactivité compare `action_participants.joined_at` à
 `territorial_legend_consents.activated_at` avec une précision d'horodatage ;

@@ -57,6 +57,31 @@ describe('territorial legends screen runtime', () => {
     expect(text).not.toContain('Première conquête')
   })
 
+  it('renders an eligible territory before the first title or reward', async () => {
+    const overview = controller().overview!
+    const territory = overview.territories[0]!
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<TerritorialLegendsScreen controller={controller({
+        overview: {
+          ...overview,
+          territories: [{
+            ...territory,
+            private: { rank: null, score: 1, distinctActions: 1, tied: false, tieSize: 1, title: null },
+            public: { competitorCount: 0, maxScore: 0, titleEligible: false, title: null, items: [] },
+            currentHold: null,
+            bestHistory: null,
+            rewards: [],
+          }],
+        },
+      })} onOpenPreferences={vi.fn()} />)
+    })
+    const text = textContent(renderer.root)
+    expect(text).toContain('Paris')
+    expect(text).toContain('Aucune récompense confirmée')
+    expect(text).not.toContain('Première conquête')
+  })
+
   it('renders the loading and error states', async () => {
     let loading!: TestRenderer.ReactTestRenderer
     await act(async () => { loading = TestRenderer.create(<TerritorialLegendsScreen controller={controller({ overview: null, overviewLoading: true })} onOpenPreferences={vi.fn()} />) })

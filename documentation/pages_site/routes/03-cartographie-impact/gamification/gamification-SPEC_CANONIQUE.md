@@ -146,9 +146,13 @@ Les surfaces Web de profil et `/sections/gamification` consomment également
 privée, authentifiée, owner-scoped et `no-store` regroupe les cinq grades, les
 territoires concernés, les rangs et nombres de cleanwalks admissibles, la
 fenêtre de 90 jours, la détention courante, le meilleur historique et les
-récompenses de la campagne. Elle peut inclure le classement public minimisé et
+récompenses de la campagne. Elle inclut aussi les territoires admissibles depuis
+les faits canoniques avant la première détention ou récompense. Elle peut
+inclure le classement public minimisé et
 ses égalités pour chaque territoire autorisé, mais ne renvoie ni identifiant
-utilisateur, ni empreinte de source, ni historique privé d'un tiers. Un titre
+utilisateur, ni empreinte de source, ni historique privé d'un tiers. Le chargement
+des faits est mutualisé par requête HTTP ; les projections publique et
+personnelle restent séparées. Un titre
 est renvoyé et affiché uniquement lorsqu'il est confirmé par la projection
 personnelle ; une donnée absente reste absente.
 
@@ -180,16 +184,22 @@ concerné, sans créer de détenteur artificiel. Les changements de détenteur
 ferment les périodes sortantes et ouvrent celles du ou des nouveaux gagnants.
 Une période ne peut jamais traverser le 1er janvier et sa durée maximale est
 donc celle de l’année civile, y compris 366 jours pour une année bissextile.
-La fin de saison est attribuée uniquement aux détenteurs effectivement
-confirmés dans le snapshot du 31 décembre ; elle ne déduit aucune journée
-absente.
+La fin de saison est attribuée uniquement après la fin vérifiable de l'année
+civile Europe/Paris, à partir d'une période dont le dernier jour confirmé est
+exactement le 31 décembre. Le snapshot du 31 décembre ne remet donc pas encore
+la récompense définitive ; un passage du 1er janvier ou d'une date ultérieure
+peut rattraper une clôture manquée, sans déduire une journée absente ni
+fabriquer une détention. La clôture est rejouable et idempotente ; un
+changement de détenteur ou une correction invalide la preuve concernée.
 
 `territorial_legend_hold_periods` conserve les périodes vérifiées, leur
 `campaign_year` et leur empreinte de source. `territorial_legend_award_proofs`
 conserve les preuves d’attribution, leur campagne, leur période, leur seuil,
-leur territoire et leur validité. Les identités de preuve comportent l’année :
-la conquête est unique par utilisateur, niveau et campagne, tandis que la
-longévité et la fin de saison sont propres au territoire détenu. Les reprises,
+leur territoire et leur validité. Les identités de preuve comportent l’année
+pour les campagnes annuelles : la conquête est unique par utilisateur, niveau
+et campagne, tandis que la longévité et la fin de saison sont propres au
+territoire détenu. Les archives historiques sans année sont conservées dans
+une identité séparée et ne bloquent pas une attribution annuelle. Les reprises,
 recalculs et écritures concurrentes sont donc idempotents sans transférer de
 jours entre territoires ou campagnes. Une preuve invalidée reste dans l’audit
 mais n’est plus rechargée comme fait CURRENT. Les éventuelles lignes

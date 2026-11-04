@@ -7,6 +7,7 @@ import { TERRITORIAL_LEGEND_WINDOW_DAYS } from "./engine";
 
 type CandidateRow = {
   id: string;
+  updated_at: string;
   action_date: string;
   latitude: number | null;
   longitude: number | null;
@@ -60,7 +61,7 @@ export async function refreshMissingTerritorialLegendAttributions(
     loadPage: async (from, to) => {
       const result = await supabase
         .from("actions")
-        .select("id, action_date, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, department_code, department_name")
+        .select("id, updated_at, action_date, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, department_code, department_name")
         .eq("status", "approved")
         .eq("action_phase", "post_action_complete")
         .not("published_at", "is", null)
@@ -98,8 +99,11 @@ export async function refreshMissingTerritorialLegendAttributions(
       .from("actions")
       .update({ territorial_legend_attribution: attribution })
       .eq("id", row.id)
-      .is("territorial_legend_attribution", null);
+      .eq("updated_at", row.updated_at)
+      .is("territorial_legend_attribution", null)
+      .select("id");
     if (result.error) throw result.error;
+    if (Array.isArray(result.data) && result.data.length === 0) continue;
     refreshed += 1;
   }
   return { refreshed, unverifiable };

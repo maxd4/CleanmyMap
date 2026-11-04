@@ -9,6 +9,7 @@ export type MobileTerritorialLegendReward = {
 }
 
 export type MobileTerritorialLegendOverviewTerritory = {
+  /** The server may expose an owner-eligible territory before any title or reward exists. */
   level: MobileTerritorialLegendLevel
   territoryCode: string
   territoryLabel: string | null

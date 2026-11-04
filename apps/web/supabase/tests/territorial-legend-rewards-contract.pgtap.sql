@@ -3,7 +3,7 @@
 -- migration reset; it must never target the linked or production database.
 
 begin;
-select plan(58);
+select plan(62);
 
 set local role postgres;
 create temp table territorial_legend_contract_state (
@@ -26,6 +26,7 @@ select ok(exists (select 1 from supabase_migrations.schema_migrations where vers
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261103000004'), 'forward contract migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000001'), 'annual campaign migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000002'), 'consent hardening migration is registered');
+select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000007'), 'annual integrity migration is registered');
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
@@ -166,6 +167,7 @@ select ok(exists (
   select 1 from information_schema.columns
    where table_schema = 'public' and table_name = 'territorial_legend_award_proofs' and column_name = 'campaign_year'
 ), 'award proofs persist a campaign year');
+select is((select count(*)::integer from pg_constraint where conrelid = 'public.territorial_legend_award_proofs'::regclass and contype = 'c' and conname = 'territorial_legend_award_proofs_annual_kind_check'), 1, 'the annual award_kind constraint is the only inherited kind gate');
 
 do $$
 declare
@@ -196,11 +198,11 @@ select is(
     ))
   )->>'status',
   'applied',
-  '31 December awards the verified season-end proof'
+  '31 December records the final verified day without closing the season'
 );
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'longevity' and threshold_days = 180), 1, '180 consecutive verified days create the annual longevity proof');
 select is((select started_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025), date '2025-07-05', 'the annual series starts on its first verified day');
-select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'season_end'), 1, 'season-end reward is distinct and annual');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'season_end'), 0, 'season-end reward waits until after the civil year ends');
 select is((select last_verified_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025), date '2025-12-31', 'the prior period ends on 31 December');
 
 select is(
@@ -218,6 +220,17 @@ select is(
 select is((select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2025 and validity_status = 'closed'), 1, 'the previous campaign period is closed without deletion');
 select is((select started_on from public.territorial_legend_hold_periods where user_id = 'legend-contract-year' and campaign_year = 2026 and validity_status = 'active'), date '2026-01-01', 'the new campaign period starts on 1 January');
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and award_kind = 'conquest'), 1, 'the same grade can be conquered once again in the new campaign');
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'season_end'), 1, 'the missed closure is recovered on 1 January from the verified 31 December hold');
+
+select public.reconcile_territorial_legend_snapshot(
+  date '2026-01-01',
+  jsonb_build_array(jsonb_build_object(
+    'user_id', 'legend-contract-year', 'campaign_year', 2026, 'level', 'commune',
+    'territory_code', '75056', 'territory_label', 'Paris', 'effective_on', date '2026-01-01',
+    'score', 2, 'rank', 1, 'tie_size', 1, 'source_fingerprint', 'annual-2026-01-01-replay'
+  ))
+);
+select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2025 and award_kind = 'season_end'), 1, 'replaying the closure remains idempotent');
 
 select is(
   (public.reconcile_territorial_legend_snapshot(

@@ -33,6 +33,7 @@ describe("territorial legends presentation model", () => {
       "longevity",
       "season_end",
     ]);
+    expect(TERRITORIAL_REWARD_STEPS.at(-1)?.description).toContain("après la clôture civile");
   });
 
   it("does not expose an acquired title or reward from a partial private projection", () => {

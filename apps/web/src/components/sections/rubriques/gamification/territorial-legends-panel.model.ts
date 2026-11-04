@@ -43,7 +43,7 @@ export const TERRITORIAL_REWARD_STEPS: TerritorialRewardStep[] = [
     awardKind: "season_end",
     thresholdDays: 0,
     label: "Fin de saison",
-    description: "Détenteur confirmé dans le snapshot du 31 décembre.",
+    description: "Détenteur confirmé au 31 décembre, récompense remise après la clôture civile.",
   },
 ];
 

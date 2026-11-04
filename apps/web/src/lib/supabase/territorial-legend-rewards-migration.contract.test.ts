@@ -13,6 +13,10 @@ const annualMigration = readFileSync(
   new URL("../../../supabase/migrations/20261104000001_territorial_legend_annual_campaigns.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const integrityMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261104000007_territorial_legend_annual_integrity.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
@@ -80,11 +84,28 @@ describe("territorial legend rewards migration", () => {
     expect(annualMigration).toContain("h.campaign_year is distinct from v_campaign_year");
   });
 
+  it("removes inherited award identities and waits for a verifiable civil-year closure", () => {
+    expect(integrityMigration).toContain("drop index if exists public.territorial_legend_award_identity");
+    expect(integrityMigration).toContain("where campaign_year is null");
+    expect(integrityMigration).toContain("from pg_constraint");
+    expect(integrityMigration).toContain("pg_get_constraintdef(oid) ilike '%award_kind%'");
+    expect(integrityMigration).toContain("territorial_legend_award_proofs_annual_kind_check");
+    expect(integrityMigration).toContain("h.last_verified_on = v_previous_campaign_end");
+    expect(integrityMigration).toContain("if p_effective_on > v_previous_campaign_end then");
+    expect(integrityMigration).toContain("validity_status = 'invalidated'");
+    expect(integrityMigration).toContain("on conflict (proof_id) do update");
+    expect(integrityMigration).not.toContain("if p_effective_on = make_date(v_campaign_year, 12, 31) then");
+    expect(integrityMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb) to service_role");
+  });
+
   it("keeps the PostgreSQL replay contract executable across role changes", () => {
     expect(pgtap).toContain("grant select, update on territorial_legend_contract_state to service_role;");
     expect(pgtap).toContain("reset role; set local role authenticated;");
     expect(pgtap).not.toMatch(/(?:^|;)\s*set_config\(/i);
     expect(pgtap).toContain("'42501', null, 'authenticated cannot invoke snapshot reconciliation'");
     expect(pgtap).toContain("'42501', null, 'authenticated cannot invoke history invalidation'");
+    expect(pgtap).toContain("annual integrity migration is registered");
+    expect(pgtap).toContain("season-end reward waits until after the civil year ends");
+    expect(pgtap).toContain("replaying the closure remains idempotent");
   });
 });
