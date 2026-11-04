@@ -232,3 +232,21 @@ pas lieu à une normalisation de convenance : le parcours expose un statut
 `unavailable`, ses limites et sa provenance. Le champ contient également la
 couverture, la confiance, la référence utilisée, la version et les limites,
 ainsi qu'un indice global et un indice par groupe.
+
+### Évaluation de pertinence
+
+`RoutePollutionRelevanceAssessment` applique la policy versionnée
+`route-pollution-relevance-v1` aux scores serveur du potentiel. Un score
+strictement inférieur à 40 déclenche un avertissement rouge ; de 40 inclus à
+65 exclu, un avertissement orange ; à partir de 65, aucune alerte. La policy
+exige aussi une confiance d'au moins 0,5 ; une confiance inconnue ou inférieure
+rend la pertinence non évaluable et ne déclenche pas d'alerte de faible
+pollution.
+
+Le résumé de `RouteResults` affiche le score, la catégorie, la confiance, la
+référence parisienne et le rappel qu'il s'agit d'un potentiel théorique relatif.
+Les indices de chaque groupe restent visibles et leurs avertissements ne sont
+pas masqués par une moyenne globale favorable. Le bouton de recherche
+alternative n'est présent que lorsqu'un avertissement serveur rouge ou orange
+est évalué ; il relance le planner avec la priorité théorique maximale, sans
+interdire la création de l'action courante et sans qualifier une rue de propre.

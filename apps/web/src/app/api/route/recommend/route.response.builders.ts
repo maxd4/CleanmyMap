@@ -36,7 +36,13 @@ import type {
   RoutePollutionPotential,
   RoutePollutionReferenceCatalog,
 } from "@/lib/route/route-pollution-potential";
-import { buildRoutePollutionPotential } from "@/lib/route/route-pollution-potential";
+import {
+  buildRoutePollutionPotential,
+} from "@/lib/route/route-pollution-potential";
+import {
+  evaluateRoutePollutionRelevance,
+  type RoutePollutionRelevanceAssessment,
+} from "@/lib/route/route-pollution-relevance";
 import {
   buildRoutePlannerSnapshotForProof,
   buildRouteSnapshotStops,
@@ -104,6 +110,7 @@ export type ProofContext = {
   plannerProof: ReturnType<typeof createRoutePlannerProof>;
   calibrationContext: ReturnType<typeof buildVerifiedRouteCalibrationContext>;
   pollutionPotential: RoutePollutionPotential;
+  pollutionRelevance: RoutePollutionRelevanceAssessment;
 };
 
 function buildTraceCandidateSummary(
@@ -453,6 +460,7 @@ export function buildRouteProofContext(
   const { candidates, isTruncated, sourceHealth } = candidateData;
   const predictionSummary = buildPredictionSummary(planning);
   const pollutionPotential = buildPlannerPollutionPotential(input);
+  const pollutionRelevance = evaluateRoutePollutionRelevance(pollutionPotential);
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
     prediction: {
@@ -471,6 +479,7 @@ export function buildRouteProofContext(
     dataLayers,
     snapshotStops,
     pollutionPotential,
+    pollutionRelevance,
     trace.warnings,
   );
   const plannerProof = createRoutePlannerProof({
@@ -492,5 +501,6 @@ export function buildRouteProofContext(
     plannerProof,
     calibrationContext,
     pollutionPotential,
+    pollutionRelevance,
   };
 }

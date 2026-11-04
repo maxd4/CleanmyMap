@@ -458,6 +458,17 @@ describe("route recommendation response trace contract", () => {
       },
     });
     expect(response.pollutionPotential?.limitations).toContain("Catalogue de références pré-calculé absent.");
+    expect(response.pollutionRelevance).toMatchObject({
+      schemaVersion: "route-pollution-relevance-v1",
+      policyVersion: "route-pollution-relevance-v1",
+      status: "unavailable",
+      warning: "unavailable",
+      alternativeSearch: { relevant: false, reason: "unavailable" },
+    });
+    expect(response.calibrationContext?.plannerSnapshot?.pollutionRelevance).toMatchObject({
+      policyVersion: "route-pollution-relevance-v1",
+      warning: "unavailable",
+    });
   });
 
   it("publishes an open route even when no scientific stops are selected", async () => {

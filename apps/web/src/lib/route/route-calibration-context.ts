@@ -17,6 +17,7 @@ import type { RouteGeometry, RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
 import type { RoutePlannerOrigin } from "./route-planner";
 import type { RoutePollutionPotential } from "./route-pollution-potential";
+import type { RoutePollutionRelevanceAssessment } from "./route-pollution-relevance";
 import type { RouteTopology } from "./route-contract";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
@@ -95,6 +96,7 @@ export function buildRoutePlannerSnapshot(input: {
   prediction: RoutePredictionSummary | null;
   durationModelVersion?: string | null;
   pollutionPotential?: RoutePollutionPotential;
+  pollutionRelevance?: RoutePollutionRelevanceAssessment;
   weatherContext?: PlannerWeatherContext;
 }): RoutePlannerSnapshot {
   const selectedCandidates = input.selectedCandidates.map((candidate) =>
@@ -156,6 +158,9 @@ export function buildRoutePlannerSnapshot(input: {
     },
     ...(input.pollutionPotential
       ? { pollutionPotential: structuredClone(input.pollutionPotential) }
+      : {}),
+    ...(input.pollutionRelevance
+      ? { pollutionRelevance: structuredClone(input.pollutionRelevance) }
       : {}),
     ...(input.weatherContext
       ? { weatherContext: structuredClone(input.weatherContext) }

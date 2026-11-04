@@ -28,6 +28,7 @@ import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { OperationalRoute } from "./route-operational";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RoutePollutionPotential } from "./route-pollution-potential";
+import type { RoutePollutionRelevanceAssessment } from "./route-pollution-relevance";
 import {
   ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION,
   ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION,
@@ -132,6 +133,7 @@ export type RoutePlannerSnapshot = {
   };
   /** Relative theoretical pollution potential, separate from historical scores. */
   pollutionPotential?: RoutePollutionPotential;
+  pollutionRelevance?: RoutePollutionRelevanceAssessment;
   weatherContext?: PlannerWeatherContext;
 };
 

@@ -252,6 +252,56 @@ export function useRouteData() {
   );
   const planningModeValidationError = routeTerritorialGuidedModeValidationError(planningMode);
 
+  const requestRecommendation = useCallback(async (overrides: Partial<RouteOptions> = {}) => {
+    const requestOptions = { ...options, ...overrides };
+    if (planningModeValidationError) return;
+    if (effectiveOriginMode === "map" && !effectiveMapOrigin) {
+      setOriginSelectionError(true);
+      return;
+    }
+    if (effectiveOriginMode === "zone" && !(requestOptions.startLocation?.mode === "zone" && requestOptions.startLocation.zone.confirmed)) {
+      setOriginSelectionError(true);
+      return;
+    }
+    if ((effectiveOriginMode === "address" || effectiveOriginMode === "gps") && requestOptions.startLocation?.mode !== "precise") {
+      setOriginSelectionError(true);
+      return;
+    }
+
+    if (!requestGate.current.start()) return;
+
+    setIsRequestInFlight(true);
+    setIsResolvingOrigin(effectiveOriginMode === "browser");
+
+    let origin: RouteRecommendationOrigin | undefined = requestOptions.startLocation?.mode === "precise"
+      ? requestOptions.startLocation.origin
+      : undefined;
+    try {
+      if (effectiveOriginMode === "browser") {
+        origin = await resolveRouteRequestOrigin(effectiveOriginMode, effectiveMapOrigin, resolveBrowserRouteOrigin);
+      }
+    } catch {
+      origin = undefined;
+    } finally {
+      setIsResolvingOrigin(false);
+    }
+
+    requestSequence.current += 1;
+    setRecommendationRequest(
+      createRouteRecommendationSubmission(
+        requestSequence.current,
+        requestOptions,
+        origin,
+        planningMode,
+      ),
+    );
+  }, [effectiveMapOrigin, effectiveOriginMode, options, planningMode, planningModeValidationError]);
+
+  const requestNearestRelevantRoute = useCallback(
+    () => requestRecommendation({ priorityVsTravel: 100 }),
+    [requestRecommendation],
+  );
+
   return {
     options,
     setOptions,
@@ -279,48 +329,7 @@ export function useRouteData() {
     originSelectionError,
     isResolvingOrigin,
     isRequestInFlight,
-    requestRecommendation: async () => {
-      if (planningModeValidationError) return;
-      if (effectiveOriginMode === "map" && !effectiveMapOrigin) {
-        setOriginSelectionError(true);
-        return;
-      }
-      if (effectiveOriginMode === "zone" && !(options.startLocation?.mode === "zone" && options.startLocation.zone.confirmed)) {
-        setOriginSelectionError(true);
-        return;
-      }
-      if ((effectiveOriginMode === "address" || effectiveOriginMode === "gps") && options.startLocation?.mode !== "precise") {
-        setOriginSelectionError(true);
-        return;
-      }
-
-      if (!requestGate.current.start()) return;
-
-      setIsRequestInFlight(true);
-      setIsResolvingOrigin(effectiveOriginMode === "browser");
-
-      let origin: RouteRecommendationOrigin | undefined = options.startLocation?.mode === "precise"
-        ? options.startLocation.origin
-        : undefined;
-      try {
-        if (effectiveOriginMode === "browser") {
-          origin = await resolveRouteRequestOrigin(effectiveOriginMode, effectiveMapOrigin, resolveBrowserRouteOrigin);
-        }
-      } catch {
-        origin = undefined;
-      } finally {
-        setIsResolvingOrigin(false);
-      }
-
-      requestSequence.current += 1;
-      setRecommendationRequest(
-        createRouteRecommendationSubmission(
-          requestSequence.current,
-          options,
-          origin,
-          planningMode,
-        ),
-      );
-    },
+    requestRecommendation,
+    requestNearestRelevantRoute,
   };
 }

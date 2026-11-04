@@ -157,6 +157,7 @@ function buildCommonPayload({
     stops,
     prediction: proofs.predictionSummary,
     pollutionPotential: proofs.pollutionPotential,
+    pollutionRelevance: proofs.pollutionRelevance,
     ...(riskHeatmap ? { riskHeatmap } : {}),
     ...(plannerRiskContext ? { plannerRiskContext } : {}),
     ...(planning.segmentSelection ? { segmentSelection: planning.segmentSelection } : {}),

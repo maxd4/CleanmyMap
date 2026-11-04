@@ -193,4 +193,17 @@ describe("useRouteData explicit request gate", () => {
     expect(latestRoute?.mapOrigin).toBeNull();
     expect(latestRoute?.options.startLocation).toBeUndefined();
   });
+
+  it("reuses the current constraints while asking the server for a relevance-first alternative", async () => {
+    renderClientHarness();
+
+    await act(async () => {
+      await latestRoute?.requestNearestRelevantRoute();
+    });
+
+    const payload = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string);
+    expect(payload.priorityVsTravel).toBe(100);
+    expect(payload.travelBudgetMinutes).toBe(DEFAULT_ROUTE_OPTIONS.travelBudgetMinutes);
+    expect(payload.pickupPreference).toBe(DEFAULT_ROUTE_OPTIONS.pickupPreference);
+  });
 });

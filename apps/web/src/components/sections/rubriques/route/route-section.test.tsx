@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useUser: vi.fn(),
   requestRecommendation: vi.fn(),
+  requestNearestRelevantRoute: vi.fn(),
   routeData: {
     status: "ok",
     dataStatus: "complete",
@@ -55,6 +56,7 @@ vi.mock("./hooks/use-route-data", () => ({
     isResolvingOrigin: false,
     isRequestInFlight: false,
     requestRecommendation: mocks.requestRecommendation,
+    requestNearestRelevantRoute: mocks.requestNearestRelevantRoute,
   }),
 }));
 
@@ -181,6 +183,25 @@ describe("RouteSection explainability wiring", () => {
         { groupIndex: 2, volunteerCount: 4, travelDistanceKm: 2.7, travelMinutes: 22, targetCount: 3, meetingPoint: { coordinates: [48.86, 2.36], cumulativeDistanceKm: 1.35, progress: 0.5, estimatedDurationMinutes: 11, provenance: "final_geometry_midpoint" } },
         { groupIndex: 3, volunteerCount: 4, travelDistanceKm: 3.1, travelMinutes: 25, targetCount: 2, meetingPoint: { coordinates: [48.87, 2.37], cumulativeDistanceKm: 1.55, progress: 0.5, estimatedDurationMinutes: 12, provenance: "final_geometry_midpoint" } },
       ],
+      pollutionRelevance: {
+        schemaVersion: "route-pollution-relevance-v1",
+        policyVersion: "route-pollution-relevance-v1",
+        score: 72,
+        status: "evaluated",
+        warning: "none",
+        reason: null,
+        selectedCategory: "mixed",
+        confidence: { level: "high", score: 0.9, source: "segment_projection" },
+        reference: { id: "paris-reference", label: "Référence parisienne théorique", kind: "theoretical_network", historicalScore: null, comparison: { pickupPreference: "balanced", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 400 }, provenance: ["test"] },
+        groups: [
+          { groupIndex: 1, score: 72, status: "available", warning: "none", confidence: { level: "high", score: 0.9, source: "segment_projection" }, reason: null },
+          { groupIndex: 2, score: 39, status: "available", warning: "red", confidence: { level: "high", score: 0.9, source: "segment_projection" }, reason: null },
+          { groupIndex: 3, score: 64.99, status: "available", warning: "orange", confidence: { level: "high", score: 0.9, source: "segment_projection" }, reason: null },
+        ],
+        alternativeSearch: { relevant: true, reason: "group_warning" },
+        policy: { warningRedBelow: 40, warningOrangeBelow: 65, minimumConfidenceScore: 0.5 },
+        limitations: [],
+      },
       tradeoffs: [],
     });
 
@@ -207,6 +228,12 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("prédiction");
     expect(markup).toContain('aria-label="Légende des boucles"');
     expect(markup).toContain("La durée d’action complète n’est pas encore fiable");
+    expect(markup).toContain("Pertinence théorique");
+    expect(markup).toContain("Référence parisienne : Référence parisienne théorique");
+    expect(markup).toContain("Groupe 2");
+    expect(markup).toContain("Alerte : pertinence faible pour cet itinéraire.");
+    expect(markup).toContain("Trouver l’itinéraire pertinent le plus proche");
+    expect(markup).toContain('role="status"');
   });
 
   it("labels multi-group open guided routes without treating loop verification as a failure", () => {
@@ -237,6 +264,21 @@ describe("RouteSection explainability wiring", () => {
           budget: { totalMinutes: 90, organizationMarginMinutes: 15, minimumCollectionMinutes: 45, travelMaxMinutes: 30, travelMinutes: 20, collectionMinutesAvailable: 55, withinBudget: true },
         },
       })),
+      pollutionRelevance: {
+        schemaVersion: "route-pollution-relevance-v1",
+        policyVersion: "route-pollution-relevance-v1",
+        score: 70,
+        status: "evaluated",
+        warning: "none",
+        reason: null,
+        selectedCategory: "mixed",
+        confidence: { level: "high", score: 0.9, source: "segment_projection" },
+        reference: null,
+        groups: [1, 2].map((groupIndex) => ({ groupIndex, score: 70, status: "available", warning: "none", confidence: { level: "high", score: 0.9, source: "segment_projection" }, reason: null })),
+        alternativeSearch: { relevant: false, reason: "not_relevant" },
+        policy: { warningRedBelow: 40, warningOrangeBelow: 65, minimumConfidenceScore: 0.5 },
+        limitations: [],
+      },
       tradeoffs: [],
     });
 
@@ -250,5 +292,6 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("Trajet ouvert · ordre respecté");
     expect(markup).not.toContain("Boucle à vérifier");
     expect(markup).not.toContain("Légende des boucles");
+    expect(markup).not.toContain("Trouver l’itinéraire pertinent le plus proche");
   });
 });

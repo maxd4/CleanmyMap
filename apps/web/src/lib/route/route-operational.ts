@@ -38,6 +38,10 @@ import {
   isRoutePollutionPotential,
   type RoutePollutionPotential,
 } from "./route-pollution-potential";
+import {
+  isRoutePollutionRelevanceAssessment,
+  type RoutePollutionRelevanceAssessment,
+} from "./route-pollution-relevance";
 
 const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 /**
@@ -97,6 +101,7 @@ export type OperationalRoute = {
   plannerRiskContext?: RoutePlannerRiskContext;
   /** Relative theoretical pollution potential; historical scores are separate. */
   pollutionPotential?: RoutePollutionPotential;
+  pollutionRelevance?: RoutePollutionRelevanceAssessment;
 };
 
 export type PublicOperationalRoute = {
@@ -135,7 +140,7 @@ function isRoutePlannerRiskContext(value: unknown): value is RoutePlannerRiskCon
 }
 
 export function createOperationalRouteFromRecommendation(
-  recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry" | "plannerRiskContext" | "pollutionPotential"> & {
+  recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry" | "plannerRiskContext" | "pollutionPotential" | "pollutionRelevance"> & {
     routeTopology?: RouteTopology;
     startLocation?: RouteStartSelection;
     stops: readonly RouteStop[];
@@ -185,6 +190,7 @@ export function createOperationalRouteFromRecommendation(
     ...(recommendation.trace?.warnings ? { plannerWarnings: [...recommendation.trace.warnings] } : {}),
     ...(recommendation.plannerRiskContext ? { plannerRiskContext: structuredClone(recommendation.plannerRiskContext) } : {}),
     ...(recommendation.pollutionPotential ? { pollutionPotential: structuredClone(recommendation.pollutionPotential) } : {}),
+    ...(recommendation.pollutionRelevance ? { pollutionRelevance: structuredClone(recommendation.pollutionRelevance) } : {}),
     zones: {
       departure: {
         label: null,
@@ -535,7 +541,8 @@ export function isOperationalRoute(value: unknown): value is OperationalRoute {
     (route.guidedBudget === undefined || isRouteGuidedBudget(route.guidedBudget)) &&
     (route.plannerWarnings === undefined || (Array.isArray(route.plannerWarnings) && route.plannerWarnings.every((warning) => typeof warning === "string"))) &&
     (route.plannerRiskContext === undefined || isRoutePlannerRiskContext(route.plannerRiskContext)) &&
-    (route.pollutionPotential === undefined || isRoutePollutionPotential(route.pollutionPotential))
+    (route.pollutionPotential === undefined || isRoutePollutionPotential(route.pollutionPotential)) &&
+    (route.pollutionRelevance === undefined || isRoutePollutionRelevanceAssessment(route.pollutionRelevance))
   );
 }
 
