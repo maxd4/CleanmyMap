@@ -71,6 +71,14 @@ describe("global waste category contract", () => {
     expect(findWasteCategorySlug("carton gras de pizza")).toBe("paper_cardboard");
   });
 
+  it("documents the empty-before-sorting rule without excluding grease marks", () => {
+    const projection = getWastePedagogicalProjection("paper_cardboard", "fr");
+    const englishProjection = getWastePedagogicalProjection("paper_cardboard", "en");
+
+    expect(projection.instructions[0]).toMatch(/restes alimentaires.*traces de graisse/i);
+    expect(englishProjection.instructions[0]).toMatch(/food leftovers.*grease marks/i);
+  });
+
   it("reserves medicine for unused medicine or packaging that still contains medicine", () => {
     const medicine = getWasteCategory("medicine");
     const examples = medicine.examples.map((example) => `${example.fr} ${example.en}`).join(" ");

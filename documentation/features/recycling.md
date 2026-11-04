@@ -32,10 +32,15 @@ pédagogiques et l'assistant restent indépendants de cette lecture privée.
 ## Exception contextuelle de l'assistant de tri
 
 La mention d'une boîte à pizza ou d'un autre emballage en carton ne suffit pas
-à conclure qu'il est gras. L'assistant conserve la projection canonique
-papier-carton lorsqu'un carton est explicitement propre et sec ; si l'état d'une
-boîte à pizza n'est pas précisé, il demande cette précision. L'exception vers
-les déchets résiduels est réservée aux cartons explicitement gras, humides,
-très sales ou fortement souillés par des restes. Les catégories sensibles,
-notamment les médicaments, seringues, verre cassé et piles, conservent leur
-projection de sécurité prioritaire.
+à conclure qu'il contient encore des restes. Un emballage en carton vide reste
+dans la filière papier-carton même s'il porte des traces de graisse ou de sauce ;
+l'assistant demande de retirer les restes alimentaires avant le tri. Si la
+question ne précise pas si la boîte est vide, il demande cette précision sans
+déduire les déchets résiduels de la seule graisse. Si l'objet n'est pas un
+emballage, sa nature doit être précisée avant de choisir une filière.
+Les catégories sensibles, notamment les médicaments, seringues, verre cassé et
+piles, conservent leur projection de sécurité prioritaire.
+
+Cette règle suit les consignes de l'[ADEME sur les emballages en carton](https://quefairedemesdechets.ademe.fr/categories/emballages/emballages-en-carton/)
+et de la [Ville de Paris sur le tri des emballages](https://www.paris.fr/pages/en-2019-paris-vous-facilite-le-tri-6266/),
+à compléter par la consigne locale lorsque celle-ci diffère.

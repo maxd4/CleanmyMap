@@ -64,16 +64,37 @@ describe("recycling assistant waste convergence", () => {
 
   it.each([
     ["carton gras de pizza", "fr"],
+    ["boîte à pizza grasse mais vide", "fr"],
     ["boîte à pizza très sale", "fr"],
-    ["carton souillé de sauce", "fr"],
+    ["carton présentant de la sauce", "fr"],
     ["greasy pizza box", "en"],
+    ["greasy but empty pizza box", "en"],
     ["dirty cardboard", "en"],
     ["heavily soiled cardboard", "en"],
-  ] as const)("keeps the contaminated-cardboard guidance for %s", (question, locale) => {
+  ] as const)("sorts empty or grease-marked cardboard packaging for %s", (question, locale) => {
     const response = answerText(question, locale);
 
-    expect(response).toContain(locale === "fr" ? "ne va pas au tri papier-carton" : "does not belong in paper recycling");
-    expect(response).toContain(locale === "fr" ? "résiduel" : "residual waste");
+    expect(response).toContain(locale === "fr" ? "se trie" : "belongs in recycling");
+    expect(response).toContain(locale === "fr" ? "traces de graisse" : "grease marks");
+    expect(response).not.toContain(locale === "fr" ? "déchets résiduels" : "residual waste");
+  });
+
+  it.each([
+    ["carton contenant encore des aliments", "fr"],
+    ["cardboard containing food", "en"],
+  ] as const)("asks to remove food leftovers before sorting %s", (question, locale) => {
+    const response = answerText(question, locale);
+
+    expect(response).toContain(locale === "fr" ? "retire les restes alimentaires" : "remove the food leftovers");
+    expect(response).toContain(locale === "fr" ? "se trie" : "belongs in the paper-and-cardboard stream");
+    expect(response).not.toContain(locale === "fr" ? "déchets résiduels" : "residual waste");
+  });
+
+  it("does not infer a packaging route from a greasy cardboard material alone", () => {
+    const response = answerText("carton gras");
+
+    expect(response).toContain("si l'objet n'est pas un emballage en carton");
+    expect(response).toContain("la matière seule ne suffit pas");
   });
 
   it.each([
@@ -100,10 +121,21 @@ describe("recycling assistant waste convergence", () => {
   ] as const)("asks for the condition when a pizza box has no stated condition: %s", (question, locale) => {
     const response = answerText(question, locale);
 
-    expect(response).toContain(locale === "fr" ? "précise l'état du carton" : "specify the cardboard condition");
-    expect(response).toContain(locale === "fr" ? "propre et sec" : "clean and dry");
-    expect(response).toContain(locale === "fr" ? "gras" : "greasy");
-    expect(response).not.toContain(locale === "fr" ? "carton gras ou très sale ne va pas" : "greasy or heavily soiled cardboard does not belong");
+    expect(response).toContain(locale === "fr" ? "boîte à pizza vide se trie" : "empty pizza box belongs in recycling");
+    expect(response).toContain(locale === "fr" ? "retire les restes alimentaires" : "remove food leftovers");
+    expect(response).toContain(locale === "fr" ? "traces de graisse" : "grease marks");
+    expect(response).not.toContain(locale === "fr" ? "déchets résiduels" : "residual waste");
+  });
+
+  it.each([
+    ["carton de pizza vide", "fr"],
+    ["boîte à pizza propre", "fr"],
+    ["empty pizza box", "en"],
+  ] as const)("keeps an explicitly empty or clean package on the canonical route for %s", (question, locale) => {
+    const response = answerText(question, locale);
+
+    expect(response).toContain(locale === "fr" ? "papier et carton" : "paper and cardboard");
+    expect(response).not.toContain(locale === "fr" ? "déchets résiduels" : "residual waste");
   });
 
   it.each([

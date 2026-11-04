@@ -66,6 +66,24 @@ const CARDBOARD_CONTAMINATION_KEYWORDS = [
   "wet",
 ];
 
+const CARDBOARD_FOOD_REMAINS_KEYWORDS = [
+  "contenant encore des aliments",
+  "contient encore des aliments",
+  "contient des aliments",
+  "containing food",
+  "contains food",
+  "food inside",
+  "still has food",
+  "still contains food",
+  "avec des restes",
+  "with leftovers",
+  "leftovers inside",
+  "restes alimentaires",
+  "restes de nourriture",
+];
+
+const CARDBOARD_MATERIAL_KEYWORDS = ["carton", "cardboard"];
+
 const CLEAN_CARDBOARD_KEYWORDS = [
   "carton de pizza propre",
   "boite a pizza propre",
@@ -81,37 +99,41 @@ const CLEAN_CARDBOARD_KEYWORDS = [
 
 function buildGreasyCardboardAnswer(
   locale: Locale,
-  fallbackBin: string,
   publicSpaceReportNote?: string,
+  hasFoodRemains = false,
 ): Answer {
   return localizedAnswer(
     locale,
     {
       kind: "packaging",
       tone: "amber",
-      badge: "Carton sale",
-      title: "Un carton gras ou très sale ne va pas au tri papier-carton",
-      summary: `S'il est fortement souillé par la graisse ou des restes, il faut le mettre en résiduel. Si une partie est encore propre, tu peux parfois la séparer (${fallbackBin}).`,
+      badge: "Carton gras / emballage",
+      title: "Un emballage en carton se trie même s'il est gras",
+      summary: hasFoodRemains
+        ? "Retire d'abord les restes alimentaires. Une fois vide, l'emballage en carton se trie avec le papier-carton, même s'il porte des traces de graisse."
+        : "Des traces de graisse ou une boîte à pizza souillée ne changent pas la consigne : vide l'emballage en carton puis trie-le.",
       bullets: [
-        "Le gras et les restes alimentaires dégradent le recyclage du carton.",
-        "Découpe si besoin les zones propres pour les garder au tri.",
-        "Une boîte à pizza propre peut parfois être triée; si elle est trop grasse, garde-la en résiduel.",
+        "Retire les restes alimentaires et sépare les éléments qui ne sont pas en carton avant le tri.",
+        "Une boîte à pizza ou un carton d'emballage vide, propre ou marqué par la graisse, reste dans la filière papier-carton locale.",
+        "Si l'objet n'est pas un emballage en carton, précise sa nature : la matière seule ne suffit pas à déduire sa filière.",
       ],
-      nextStep: "Sépare la partie propre si possible, sinon mets le carton sale avec les déchets non recyclables.",
+      nextStep: "Vide l'emballage, retire les restes, puis dépose le carton en vrac dans le bac de tri local.",
       note: publicSpaceReportNote,
     },
     {
       kind: "packaging",
       tone: "amber",
-      badge: "Dirty cardboard",
-      title: "Greasy or heavily soiled cardboard does not belong in paper recycling",
-      summary: `If it is heavily contaminated with grease or leftovers, put it in residual waste. If a clean part remains, separate it when possible (${fallbackBin}).`,
+      badge: "Greasy cardboard / packaging",
+      title: "Cardboard packaging belongs in recycling even when it is greasy",
+      summary: hasFoodRemains
+        ? "Remove the food leftovers first. Once empty, cardboard packaging belongs in the paper-and-cardboard stream even when it has grease marks."
+        : "Grease marks or a soiled pizza box do not change the guidance: empty the cardboard package and sort it.",
       bullets: [
-        "Grease and food residue reduce cardboard recyclability.",
-        "Cut off clean sections if you can keep them in the recycling stream.",
-        "A clean pizza box may be accepted; if it is too greasy, keep it in residual waste.",
+        "Remove food leftovers and separate parts that are not cardboard before sorting.",
+        "An empty pizza box or cardboard package, clean or marked with grease, remains in the local paper-and-cardboard stream.",
+        "If the item is not cardboard packaging, specify what it is: material alone is not enough to infer its route.",
       ],
-      nextStep: "Separate the clean part if possible, otherwise put the dirty cardboard with non-recyclable waste.",
+      nextStep: "Empty the package, remove leftovers, then place the cardboard loose in your local recycling bin.",
       note: publicSpaceReportNote,
     },
   );
@@ -124,27 +146,27 @@ function buildCardboardConditionClarificationAnswer(locale: Locale): Answer {
       kind: "packaging",
       tone: "amber",
       badge: "Précise l'état du carton",
-      title: "Une boîte à pizza ne se trie pas de la même façon selon son état",
-      summary: "Une simple mention de boîte à pizza ne suffit pas : indique si le carton est propre et sec, ou gras et très souillé.",
+      title: "Une boîte à pizza vide se trie, même avec des traces de graisse",
+      summary: "Précise surtout si des restes alimentaires sont encore dans la boîte : retire-les d'abord, puis trie l'emballage en carton.",
       bullets: [
-        "Propre et sec, il suit généralement la filière papier-carton locale.",
-        "Gras, humide ou fortement souillé par des restes, il va plutôt avec les déchets résiduels.",
-        "Sépare les parties propres lorsque c'est possible et sûr.",
+        "Vide la boîte et retire les restes alimentaires avant de la trier.",
+        "Une boîte en carton vide, propre ou marquée par la graisse, va dans la filière papier-carton locale.",
+        "Si ce n'est pas un emballage en carton, précise l'objet : la matière seule ne suffit pas.",
       ],
-      nextStep: "Précise si la boîte est propre, grasse ou très souillée pour obtenir la bonne consigne.",
+      nextStep: "Indique si la boîte est vide ou contient encore des restes alimentaires.",
     },
     {
       kind: "packaging",
       tone: "amber",
       badge: "Specify the cardboard condition",
-      title: "A pizza box is sorted differently depending on its condition",
-      summary: "Mentioning a pizza box alone is not enough: say whether the cardboard is clean and dry or greasy and heavily soiled.",
+      title: "An empty pizza box belongs in recycling, even with grease marks",
+      summary: "The key detail is whether food leftovers are still inside: remove them first, then sort the cardboard packaging.",
       bullets: [
-        "When clean and dry, it generally follows the local paper-and-cardboard stream.",
-        "When greasy, wet or heavily soiled with leftovers, it usually belongs in residual waste.",
-        "Separate clean sections when it is possible and safe.",
+        "Empty the box and remove food leftovers before sorting it.",
+        "An empty cardboard box, clean or marked with grease, belongs in the local paper-and-cardboard stream.",
+        "If it is not cardboard packaging, specify the item: material alone is not enough.",
       ],
-      nextStep: "Specify whether the box is clean, greasy or heavily soiled to get the right guidance.",
+      nextStep: "Say whether the box is empty or still contains food leftovers.",
     },
   );
 }
@@ -280,15 +302,18 @@ export function buildAnswer(question: string, locale: Locale): Answer {
 
   const canonicalSlug = findWasteCategorySlug(text);
   const isCardboardPackage = includesAny(text, CARDBOARD_PACKAGE_KEYWORDS);
+  const isCardboardMaterial = includesAny(text, CARDBOARD_MATERIAL_KEYWORDS);
   const isExplicitlyCleanCardboard = includesAny(text, CLEAN_CARDBOARD_KEYWORDS);
+  const hasFoodRemains = includesAny(text, CARDBOARD_FOOD_REMAINS_KEYWORDS);
   const isExplicitlyContaminatedCardboard =
     includesAny(text, GREASY_CARDBOARD_KEYWORDS) ||
-    (isCardboardPackage && includesAny(text, CARDBOARD_CONTAMINATION_KEYWORDS));
+    ((isCardboardPackage || isCardboardMaterial) && includesAny(text, CARDBOARD_CONTAMINATION_KEYWORDS));
   if (
-    isExplicitlyContaminatedCardboard &&
+    (isExplicitlyContaminatedCardboard || hasFoodRemains) &&
+    (isCardboardPackage || isCardboardMaterial) &&
     (!canonicalSlug || canonicalSlug === "paper_cardboard")
   ) {
-    return buildGreasyCardboardAnswer(locale, fallbackBin, publicSpaceReportNote);
+    return buildGreasyCardboardAnswer(locale, publicSpaceReportNote, hasFoodRemains);
   }
 
   if (
@@ -630,7 +655,7 @@ export function buildAnswer(question: string, locale: Locale): Answer {
           summary: `Bouteille plastique, canette ou carton propre: va vers le bac emballages/papiers de ta commune (${fallbackBin}).`,
           bullets: [
             "Aplatis le carton et vide l'objet avant de le jeter.",
-            "Si c'est gras, plein de restes ou humide, ce n'est plus un bon recyclable.",
+            "Pour un emballage en carton, retire les restes alimentaires : une trace de graisse seule ne l'exclut pas du tri.",
             "Un carton de boîte à chaussures propre se trie comme un emballage carton.",
           ],
           nextStep: "Vide, aplatis et sépare les éléments différents avant de trier.",
@@ -644,7 +669,7 @@ export function buildAnswer(question: string, locale: Locale): Answer {
           summary: `Plastic bottles, cans and clean cardboard usually go to the packaging/paper stream of your city (${fallbackBin}).`,
           bullets: [
             "Flatten cardboard and empty the item first.",
-            "If it is greasy, full of leftovers or wet, it is no longer a good recyclable.",
+            "For cardboard packaging, remove food leftovers first: a grease mark alone does not exclude it from recycling.",
             "A clean cardboard shoe box is sorted as cardboard packaging.",
           ],
           nextStep: "Empty, flatten and separate the different materials before sorting.",

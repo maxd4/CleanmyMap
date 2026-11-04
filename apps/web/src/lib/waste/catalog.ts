@@ -125,7 +125,7 @@ export const WASTE_CATEGORY_DEFINITIONS: Readonly<Record<WasteCategorySlug, Wast
     pickupPolicy: "basic_ppe_ok",
     disposalRoute: "municipal_recycling",
     ppe: [text("Gants de collecte", "Collection gloves")],
-    fieldInstructions: [text("Séparer les éléments manifestement recyclables lorsqu'ils sont propres et secs.", "Separate clearly recyclable items when they are clean and dry.")],
+    fieldInstructions: [text("Vider l'emballage et retirer les restes alimentaires avant de le déposer dans la filière locale de tri, même si le carton porte des traces de graisse.", "Empty the packaging and remove food leftovers before placing it in the local recycling stream, even when the cardboard has grease marks.")],
     prohibitions: [text("Ne pas supposer qu'un emballage composite suit la filière papier-carton.", "Do not assume composite packaging follows the paper-cardboard route.")],
     pedagogicalTags: ["papier", "carton", "tri"],
   },
