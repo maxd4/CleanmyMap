@@ -141,6 +141,14 @@ même cause ; si la `STOP CONDITION` est atteinte, clôturer. Pour une demande
 « Vérifie les commits », appliquer le protocole de revue explicitement fourni
 par l'utilisateur, y compris son contrat de sortie strict.
 
+Par défaut, la revue est consolidée sur les `N` derniers commits pertinents :
+inspecter chaque commit, son message, son diff et les preuves qu'il revendique,
+puis inspecter l'état final de `main`. Le message de commit constitue la
+passation principale ; ne demander un bilan Codex séparé que lorsqu'une preuve
+matérielle manque ou qu'une ambiguïté ne peut pas être résolue par le dépôt.
+Les prompts correctifs restent séparés par chantier indépendant, généralement
+un ou deux, sans découper artificiellement un même chantier cohérent.
+
 ## 5. Produit, responsabilité et sécurité
 
 CleanMyMap est un produit civique web/mobile. Viser la fiabilité de sa boucle
@@ -302,11 +310,12 @@ un extrait présenté comme remplacement complet. Ne pas créer de clone ou
 worktree Git, ni modifier le dépôt distant.
 
 Un chantier long conserve seulement : objectif, état vérifié, décision,
-incertitudes actives, `STOP CONDITION` et prochaine action. Une passation
-historique reste du contexte, non un contrat du runtime. Ne pas ouvrir un
-nouveau prompt sans gain de preuve ou décision nouvelle. Ne pas poursuivre une
-suite d'audits et micro-corrections si la cause commune peut être traitée une
-fois ou si les invariants sont déjà satisfaits.
+incertitudes actives, `STOP CONDITION` et prochaine action. Pour la passation,
+le message du commit et l'état final de `main` priment sur un bilan de
+conversation. Une passation historique reste du contexte, non un contrat du
+runtime. Ne pas ouvrir un nouveau prompt sans gain de preuve ou décision
+nouvelle. Ne pas poursuivre une suite d'audits et micro-corrections si la cause
+commune peut être traitée une fois ou si les invariants sont déjà satisfaits.
 
 ## 10. Clôture
 

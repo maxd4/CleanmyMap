@@ -167,6 +167,56 @@ reste prioritaire et doit être signalée comme exception. Le mode de
 développement rapide ne supprime pas l'exigence de commit et push ; il ne peut
 donc produire un commit local sans push que si cette interdiction est explicite.
 
+### Messages de commit Codex
+
+Chaque chantier cohérent produit un commit isolé. Ce commit contient toutes les
+modifications du chantier réellement concernées — runtime, tests et
+documentation lorsqu'elles existent — sans séparer artificiellement un même
+contrat par fichier ou par couche. Les chantiers indépendants restent dans des
+commits distincts. Cette règle précise le contenu et la traçabilité du commit ;
+elle ne modifie pas le workflow Git de validation, staging, commit, push et
+convergence défini ci-dessus.
+
+Le sujet du commit doit être court, spécifique et compréhensible directement
+dans GitHub, de préférence sous la forme `type(scope): résultat`. Il ne doit pas
+dépendre d'un bilan Codex externe pour expliquer l'intention.
+
+Pour un changement fonctionnel, le corps du message est structuré et
+proportionné au lot, avec les rubriques suivantes dans cet ordre :
+
+```text
+POURQUOI
+
+- Besoin ou anomalie initiale et contrat concerné.
+
+CHANGEMENTS ET CONTRATS
+
+- Comportement avant/après, décisions appliquées, invariants préservés.
+- Owners, API et consommateurs Web/mobile affectés, migrations si pertinentes.
+
+TESTS ET PREUVES
+
+- Scénarios ajoutés et régressions protégées.
+- Commandes réellement exécutées, résultats et périmètre du candidat.
+- Couverture par workspace : lines, branches, functions et statements
+  avant/après si mesurés et comparables ; sinon NOT_MEASURED avec justification.
+- Limites explicites : tests non exécutés, CI en attente,
+  DB_SEMANTICS_NOT_EXECUTED, validation native absente, etc., uniquement si
+  pertinentes.
+
+DOCUMENTATION
+
+- Sources canoniques mises à jour et contrats documentés.
+
+LIMITES OU SUITE
+
+- Blocages et éléments réellement non démontrés.
+```
+
+Ne jamais présenter un test ajouté comme exécuté, un push comme une CI réussie
+ou une migration versionnée comme appliquée en production. Éviter les secrets,
+informations personnelles, logs volumineux et messages artificiellement longs.
+
 **Mode de développement rapide**, uniquement sur activation explicite : commit
 isolé et push par lot selon `documentation/development/rapid-development-mode.md`.
 Une demande explicite de ne pas committer ou pousser prévaut. Les mécanismes Git exacts, candidats `WORKTREE_LIVE`,
