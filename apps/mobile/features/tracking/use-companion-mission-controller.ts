@@ -133,6 +133,11 @@ export function useCompanionMissionController() {
   const [restoreAttempt, setRestoreAttempt] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const readPendingGpsPointCount = useCallback(
+    () => userId ? getPendingGpsPointCount(userId) : Promise.resolve(0),
+    [userId],
+  )
+
   const stopDurationTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = null
@@ -146,7 +151,7 @@ export function useCompanionMissionController() {
 
   const refreshPendingGpsPointCount = usePendingGpsPointCountPolling({
     isVisible: phase === 'tracking' && mission !== null,
-    readCount: () => userId ? getPendingGpsPointCount(userId) : Promise.resolve(0),
+    readCount: readPendingGpsPointCount,
     onCount: setPendingGpsPointCount,
   })
 

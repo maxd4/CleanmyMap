@@ -44,8 +44,9 @@ describe('active mobile mission live map contract', () => {
   it('only polls pending points while the active mission screen is visible', () => {
     expect(controllerSource).toContain('usePendingGpsPointCountPolling')
     expect(pendingPollingSource).toContain('createPendingGpsPointPoller')
-    expect(pendingPollingSource).toContain("if (isVisible) poller?.start()")
-    expect(pendingPollingSource).toContain("else poller?.stop()")
+    expect(pendingPollingSource).toContain('if (isVisible)')
+    expect(pendingPollingSource).toContain('poller.start()')
+    expect(pendingPollingSource).toContain('poller.stop()')
     expect(pendingPollingSource).toContain('pollerRef.current?.dispose()')
     expect(controllerSource).not.toContain('setInterval(() => void refreshPendingGpsPointCount(), 5000)')
   })

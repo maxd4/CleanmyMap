@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import React, { useEffect } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
 import {
   createPendingGpsPointPoller,
@@ -156,6 +156,30 @@ describe('pending GPS point polling', () => {
     expect(onCount).toHaveBeenCalledWith(9)
   })
 
+  it('switches the reader, resets the displayed count and rejects the previous owner result', async () => {
+    let releaseA!: (count: number) => void
+    let releaseB!: (count: number) => void
+    const readA = vi.fn(() => new Promise<number>((resolve) => { releaseA = resolve }))
+    const readB = vi.fn(() => new Promise<number>((resolve) => { releaseB = resolve }))
+    const onCount = vi.fn()
+    const poller = createPendingGpsPointPoller({ readCount: readA, onCount })
+
+    poller.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(poller.setReadCount(readB)).toBe(true)
+    const currentRead = poller.refresh()
+    releaseB(52)
+    await currentRead
+    releaseA(41)
+    await Promise.resolve()
+
+    expect(readA).toHaveBeenCalledOnce()
+    expect(readB).toHaveBeenCalledOnce()
+    expect(onCount).toHaveBeenCalledWith(0)
+    expect(onCount).toHaveBeenLastCalledWith(52)
+    expect(onCount).not.toHaveBeenCalledWith(41)
+  })
+
   it('does not start a read after disposal, including an explicit refresh', async () => {
     const readCount = vi.fn(async () => 4)
     const onCount = vi.fn()
@@ -247,6 +271,35 @@ describe('pending GPS point polling', () => {
 
     expect(onCount).toHaveBeenCalledWith(14)
     expect(onCount).not.toHaveBeenCalledWith(13)
+    renderer.unmount()
+  })
+
+  it('follows first-load, account-change and sign-out readers without exposing a stale count', async () => {
+    const pending: Array<{ owner: string | null; resolve: (count: number) => void }> = []
+    const onCount = vi.fn()
+    function Harness({ owner }: { owner: string | null }) {
+      const readCount = useCallback(
+        () => new Promise<number>((resolve) => { pending.push({ owner, resolve }) }),
+        [owner],
+      )
+      usePendingGpsPointCountPolling({ isVisible: true, readCount, onCount })
+      return React.createElement('Harness', { owner })
+    }
+
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(React.createElement(Harness, { owner: null })) })
+    await act(async () => { renderer.update(React.createElement(Harness, { owner: 'user-a' })) })
+    await act(async () => { renderer.update(React.createElement(Harness, { owner: 'user-b' })) })
+    await act(async () => { renderer.update(React.createElement(Harness, { owner: null })) })
+
+    pending.find((read) => read.owner === 'user-a')?.resolve(41)
+    pending.find((read) => read.owner === 'user-b')?.resolve(52)
+    pending.find((read) => read.owner === null)?.resolve(0)
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    expect(onCount).not.toHaveBeenCalledWith(41)
+    expect(onCount).not.toHaveBeenCalledWith(52)
+    expect(onCount).toHaveBeenLastCalledWith(0)
     renderer.unmount()
   })
 })

@@ -11,6 +11,7 @@ type PendingGpsPointPollerOptions = {
 export type PendingGpsPointPoller = {
   start: () => void
   stop: () => void
+  setReadCount: (readCount: () => Promise<number>) => boolean
   refresh: () => Promise<void>
   dispose: () => void
   isRunning: () => boolean
@@ -25,6 +26,7 @@ export function createPendingGpsPointPoller({
   let generation = 0
   let running = false
   let disposed = false
+  let currentReadCount = readCount
 
   function clearIntervalIfNeeded() {
     if (interval) clearInterval(interval)
@@ -36,7 +38,7 @@ export function createPendingGpsPointPoller({
 
     const requestGeneration = ++generation
     try {
-      const count = await readCount()
+      const count = await currentReadCount()
       if (disposed || requestGeneration !== generation) return
       onCount(count)
     } catch {
@@ -59,6 +61,15 @@ export function createPendingGpsPointPoller({
     clearIntervalIfNeeded()
   }
 
+  function setReadCount(nextReadCount: () => Promise<number>): boolean {
+    if (disposed || currentReadCount === nextReadCount) return false
+
+    currentReadCount = nextReadCount
+    generation += 1
+    onCount(0)
+    return true
+  }
+
   function dispose() {
     stop()
     disposed = true
@@ -68,6 +79,7 @@ export function createPendingGpsPointPoller({
   return {
     start,
     stop,
+    setReadCount,
     refresh,
     dispose,
     isRunning: () => running,
@@ -98,9 +110,15 @@ export function usePendingGpsPointCountPolling({
 
   useEffect(() => {
     const poller = pollerRef.current
-    if (isVisible) poller?.start()
-    else poller?.stop()
-  }, [isVisible])
+    if (!poller) return
+    const readCountChanged = poller.setReadCount(readCount)
+    if (isVisible) {
+      poller.start()
+      if (readCountChanged) void poller.refresh().catch(() => undefined)
+    } else {
+      poller.stop()
+    }
+  }, [isVisible, readCount])
 
   useEffect(() => () => pollerRef.current?.dispose(), [])
 

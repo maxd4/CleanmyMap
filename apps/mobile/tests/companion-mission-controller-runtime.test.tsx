@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import TestRenderer, { act } from 'react-test-renderer'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mission } from '../features/tracking/mission'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -17,7 +17,6 @@ const state = vi.hoisted(() => ({
   flushBuffer: vi.fn(),
   reconcilePendingLinkedMissions: vi.fn(),
   getPendingGpsPointCount: vi.fn(),
-  refreshPendingGpsPointCount: vi.fn(async () => undefined),
   alert: vi.fn(),
   appStateListener: undefined as ((state: string) => void) | undefined,
   appStateRemove: vi.fn(),
@@ -44,7 +43,6 @@ vi.mock('../shared/lib/storage', () => ({
   getPendingGpsPointCount: state.getPendingGpsPointCount,
 }))
 vi.mock('../features/tracking/linked-mission-service', () => ({ reconcilePendingLinkedMissions: state.reconcilePendingLinkedMissions }))
-vi.mock('../features/tracking/pending-gps-point-polling', () => ({ usePendingGpsPointCountPolling: () => state.refreshPendingGpsPointCount }))
 
 import { useCompanionMissionController } from '../features/tracking/use-companion-mission-controller'
 
@@ -75,7 +73,16 @@ async function renderController() {
     renderer = TestRenderer.create(<Probe onChange={onChange} />)
     await settle()
   })
-  return { renderer, getController: () => latest }
+  return {
+    renderer,
+    getController: () => latest,
+    update: async () => {
+      await act(async () => {
+        renderer.update(<Probe onChange={onChange} />)
+        await settle()
+      })
+    },
+  }
 }
 
 describe('mobile companion mission controller runtime', () => {
@@ -91,10 +98,13 @@ describe('mobile companion mission controller runtime', () => {
     state.flushBuffer.mockReset().mockResolvedValue(undefined)
     state.reconcilePendingLinkedMissions.mockReset().mockResolvedValue(undefined)
     state.getPendingGpsPointCount.mockReset().mockResolvedValue(2)
-    state.refreshPendingGpsPointCount.mockClear()
     state.alert.mockReset()
     state.appStateListener = undefined
     state.appStateRemove.mockClear()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
     vi.useRealTimers()
   })
 
@@ -121,11 +131,39 @@ describe('mobile companion mission controller runtime', () => {
     expect(state.ensureNativeTracking).toHaveBeenCalledWith('mission-1', 'user-a', mission)
     expect(getController().phase).toBe('tracking')
     expect(getController().mission?.id).toBe('mission-1')
-    expect(state.refreshPendingGpsPointCount).toHaveBeenCalled()
+    expect(state.getPendingGpsPointCount).toHaveBeenCalledWith('user-a')
     expect(state.appStateListener).toBeTypeOf('function')
 
     await act(async () => { renderer.unmount() })
     expect(state.appStateRemove).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the pending count scoped to the current Clerk owner across A to B to sign-out', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    state.restoreActiveTracking.mockResolvedValue('mission-1')
+    state.getMission.mockResolvedValue({ ok: true, data: mission })
+    const pendingReads: Array<{ owner: string; resolve: (count: number) => void }> = []
+    state.getPendingGpsPointCount.mockImplementation((owner: string) => new Promise<number>((resolve) => {
+      pendingReads.push({ owner, resolve })
+    }))
+
+    const { renderer, getController, update } = await renderController()
+    await act(async () => { await settle() })
+    expect(pendingReads.some((read) => read.owner === 'user-a')).toBe(true)
+
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await update()
+    expect(getController().pendingGpsPointCount).toBe(0)
+
+    pendingReads.filter((read) => read.owner === 'user-a').forEach((read) => read.resolve(41))
+    pendingReads.filter((read) => read.owner === 'user-b').forEach((read) => read.resolve(52))
+    await act(async () => { await settle() })
+    expect(getController().pendingGpsPointCount).toBe(52)
+
+    state.auth = { isLoaded: true, isSignedIn: false, userId: null }
+    await update()
+    expect(getController().pendingGpsPointCount).toBe(0)
+    await act(async () => { renderer.unmount() })
   })
 
   it('does not present a restored mission as tracking when native GPS is unavailable and offers explicit retry', async () => {
@@ -293,7 +331,7 @@ describe('mobile companion mission controller runtime', () => {
     expect(state.getMission).toHaveBeenCalledWith('mission-1')
     expect(getController().phase).toBe('idle')
     expect(getController().mission).toBeNull()
-    expect(state.refreshPendingGpsPointCount).not.toHaveBeenCalled()
+    expect(state.getPendingGpsPointCount).not.toHaveBeenCalled()
   })
 
   it('does not open a finalization prompt when no mission is active', async () => {
