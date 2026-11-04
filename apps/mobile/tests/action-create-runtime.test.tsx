@@ -867,9 +867,79 @@ describe('mobile action creation runtime', () => {
     expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('Organisateur en attente de compte')
   })
 
+  it('persists automatic pending provenance and clears it after remount and last-account removal', async () => {
+    const stored = new Map<string, string>()
+    state.getItem.mockImplementation(async (key: string) => stored.get(key) ?? null)
+    state.setItem.mockImplementation(async (key: string, value: string) => { stored.set(key, value) })
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Association'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Équipe et logistique'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Coorganisateurs (identifiants séparés par des virgules)' }), 'onChangeText', 'orga-1') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Essentiel'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+    await act(async () => { await flushMicrotasks(4) })
+
+    const saved = JSON.parse(stored.get('cleanmymap.mobile.action-create.v1:user-a') ?? '{}') as { pendingOrganizerOrigin?: string }
+    expect(saved.pendingOrganizerOrigin).toBe('automatic')
+
+    await act(async () => { renderer.unmount() })
+    const remounted = await renderScreen()
+    expect(testProp<string>(remounted.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('Organisateur en attente de compte')
+
+    await act(async () => { await callTestHandler(findButton(remounted, 'Équipe et logistique'), 'onPress') })
+    await act(async () => { callTestHandler(remounted.root.findByProps({ accessibilityLabel: 'Comptes organisateurs (identifiants séparés par des virgules)' }), 'onChangeText', '') })
+    await act(async () => { await callTestHandler(findButton(remounted, 'Essentiel'), 'onPress') })
+    expect(testProp<string>(remounted.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('')
+
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(remounted, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(remounted, 'Publier'), 'onPress') })
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+  })
+
+  it('restores multiple accounts with automatic provenance and keeps the remaining account', async () => {
+    state.getItem.mockResolvedValue(JSON.stringify({
+      ownerId: 'user-a',
+      pendingOrganizerOrigin: 'automatic',
+      draft: { organizerType: 'spontaneous', organizerName: 'Organisateur en attente de compte', coorganizers: 'orga-1, orga-2' },
+    }))
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Équipe et logistique'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Comptes organisateurs (identifiants séparés par des virgules)' }), 'onChangeText', 'orga-2') })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Comptes organisateurs (identifiants séparés par des virgules)' }), 'value')).toBe('orga-2')
+    await act(async () => { await callTestHandler(findButton(renderer, 'Essentiel'), 'onPress') })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('Organisateur en attente de compte')
+  })
+
+  it('persists explicit pending provenance and restores it for publication', async () => {
+    const stored = new Map<string, string>()
+    state.getItem.mockImplementation(async (key: string) => stored.get(key) ?? null)
+    state.setItem.mockImplementation(async (key: string, value: string) => { stored.set(key, value) })
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Action spontanée'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Organisateur en attente de compte'), 'onPress') })
+    await act(async () => { await flushMicrotasks(4) })
+    const saved = JSON.parse(stored.get('cleanmymap.mobile.action-create.v1:user-a') ?? '{}') as { pendingOrganizerOrigin?: string }
+    expect(saved.pendingOrganizerOrigin).toBe('explicit')
+
+    await act(async () => { renderer.unmount() })
+    const remounted = await renderScreen()
+    expect(testProp<string>(remounted.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('Organisateur en attente de compte')
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(remounted, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(remounted, 'Publier'), 'onPress') })
+    expect(state.createMobileAction).toHaveBeenCalledWith(expect.objectContaining({ organizerName: 'Organisateur en attente de compte', organizerAccounts: [] }))
+  })
+
   it('preserves an explicitly recorded pending organizer in an owner-scoped draft', async () => {
     state.getItem.mockResolvedValue(JSON.stringify({
       ownerId: 'user-a',
+      pendingOrganizerOrigin: 'explicit',
       draft: { organizerType: 'spontaneous', organizerName: 'Organisateur en attente de compte', coorganizers: '', title: 'Action reprise' },
     }))
     const renderer = await renderScreen()
@@ -886,6 +956,67 @@ describe('mobile action creation runtime', () => {
       organizerName: 'Organisateur en attente de compte',
       organizerAccounts: [],
     }))
+  })
+
+  it('does not infer explicit provenance for an older pending draft without metadata', async () => {
+    state.getItem.mockResolvedValue(JSON.stringify({
+      ownerId: 'user-a',
+      draft: { organizerType: 'spontaneous', organizerName: 'Organisateur en attente de compte', coorganizers: '', title: 'Ancien brouillon' },
+    }))
+    const renderer = await renderScreen()
+
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+    expect(state.createMobileAction).not.toHaveBeenCalled()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Essentiel'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Organisateur en attente de compte'), 'onPress') })
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => { await callTestHandler(findButton(renderer, 'Continuer'), 'onPress') })
+    }
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+    expect(state.createMobileAction).toHaveBeenCalled()
+  })
+
+  it('clears automatic pending provenance restored with separator-only accounts', async () => {
+    state.getItem.mockResolvedValue(JSON.stringify({
+      ownerId: 'user-a',
+      pendingOrganizerOrigin: 'automatic',
+      draft: { organizerType: 'spontaneous', organizerName: 'Organisateur en attente de compte', coorganizers: ',,,' },
+    }))
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Équipe et logistique'), 'onPress') })
+    await act(async () => { callTestHandler(renderer.root.findByProps({ accessibilityLabel: 'Comptes organisateurs (identifiants séparés par des virgules)' }), 'onChangeText', ',,,') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Essentiel'), 'onPress') })
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Organisateur (compte identifié ou attente)' }), 'value')).toBe('')
+    expect(testProp<{ checked?: boolean }>(findButton(renderer, 'Organisateur en attente de compte'), 'accessibilityState')?.checked).toBe(false)
+  })
+
+  it('does not reuse restored organizer provenance after a deferred Clerk owner change', async () => {
+    let resolveOwnerA!: (value: string | null) => void
+    state.getItem.mockImplementation((key: string) => key.endsWith(':user-a')
+      ? new Promise((resolve) => { resolveOwnerA = resolve })
+      : Promise.resolve(null))
+    const renderer = await renderScreen()
+
+    await act(async () => {
+      state.auth.userId = 'user-b'
+      renderer.update(<ActionCreateScreen onSessionExpired={vi.fn()} onStartAction={vi.fn()} />)
+      await Promise.resolve()
+      resolveOwnerA(JSON.stringify({
+        ownerId: 'user-a',
+        pendingOrganizerOrigin: 'automatic',
+        draft: { organizerType: 'spontaneous', organizerName: 'Organisateur en attente de compte', coorganizers: 'orga-a', title: 'Ne pas réutiliser' },
+      }))
+      await flushMicrotasks()
+    })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Organisateur en attente de compte'))).toHaveLength(0)
+    expect(testProp<string>(renderer.root.findByProps({ accessibilityLabel: 'Titre de l’action' }), 'value')).toBe('')
+    expect(state.setItem.mock.calls.some(([key, value]) => key.endsWith(':user-b') && String(value).includes('Ne pas réutiliser'))).toBe(false)
   })
 
   it('publishes after explicitly selecting the pending organizer without accounts', async () => {

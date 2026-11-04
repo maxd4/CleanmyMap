@@ -1,5 +1,5 @@
 import { useAuth } from '@clerk/expo'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as Location from 'expo-location'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createLocalIdentifier } from '../../shared/lib/local-identifier'
@@ -60,7 +60,8 @@ const EMPTY: Draft = {
   duration: '60', notes: '',
 }
 
-type StoredDraft = { ownerId?: string; draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string }
+type PendingOrganizerOrigin = 'automatic' | 'explicit' | 'unknown'
+type StoredDraft = { ownerId?: string; draft?: Draft; actionId?: string | null; section?: Section; published?: boolean; clientRequestId?: string; pendingOrganizerOrigin?: PendingOrganizerOrigin | null }
 type StoredDraftInput = Partial<Draft> & { association?: unknown; organizerType?: unknown; organizerName?: unknown }
 
 function normalizeOwnerId(ownerId: string | null | undefined): string | null {
@@ -75,6 +76,10 @@ function ownerScopedStorageKey(ownerId: string | null): string | null {
 
 function isSection(value: unknown): value is Section {
   return typeof value === 'string' && SECTIONS.some((item) => item.id === value)
+}
+
+function isPendingOrganizerOrigin(value: unknown): value is PendingOrganizerOrigin {
+  return value === 'automatic' || value === 'explicit' || value === 'unknown'
 }
 
 function normalizeOrganizerAccounts(value: string): string[] {
@@ -106,6 +111,9 @@ function parseStoredDraft(value: string | null, expectedOwnerId?: string | null)
     const organizerType = isMobileOrganizerType(storedDraft?.organizerType) ? storedDraft.organizerType : null
     const organizerAccounts = typeof storedDraft?.coorganizers === 'string' ? storedDraft.coorganizers : EMPTY.coorganizers
     const normalizedOrganizerName = normalizeOrganizerName(organizerType, organizerName, organizerAccounts)
+    const pendingOrganizerOrigin = organizerType === 'spontaneous' && normalizedOrganizerName === SPONTANEOUS_PENDING_ORGANIZER_LABEL
+      ? isPendingOrganizerOrigin(parsed.pendingOrganizerOrigin) ? parsed.pendingOrganizerOrigin : 'unknown'
+      : null
     return {
       draft: storedDraft ? { ...EMPTY, ...storedDraft, organizerName: normalizedOrganizerName, organizerType } : undefined,
       ownerId: storedOwnerId,
@@ -113,6 +121,7 @@ function parseStoredDraft(value: string | null, expectedOwnerId?: string | null)
       section: isSection(parsed.section) ? parsed.section : undefined,
       published: Boolean(parsed.published),
       clientRequestId: typeof parsed.clientRequestId === 'string' && parsed.clientRequestId.trim() ? parsed.clientRequestId : undefined,
+      pendingOrganizerOrigin,
     }
   } catch {
     return {}
@@ -172,6 +181,8 @@ function useActionCreatePersistence({
   section,
   published,
   clientRequestId,
+  pendingOrganizerOrigin,
+  setPendingOrganizerOrigin,
   setDraft,
   setActionId,
   setSection,
@@ -185,6 +196,8 @@ function useActionCreatePersistence({
   section: Section
   published: boolean
   clientRequestId: string
+  pendingOrganizerOrigin: PendingOrganizerOrigin | null
+  setPendingOrganizerOrigin: (origin: PendingOrganizerOrigin | null) => void
   setDraft: React.Dispatch<React.SetStateAction<Draft>>
   setActionId: React.Dispatch<React.SetStateAction<string | null>>
   setSection: React.Dispatch<React.SetStateAction<Section>>
@@ -211,6 +224,7 @@ function useActionCreatePersistence({
     setSection('essentiel')
     setPublished(false)
     setClientRequestId(createLocalIdentifier('action-create'))
+    setPendingOrganizerOrigin(null)
 
     if (!scopedKey) return () => { active = false }
     const sessionAtHydration = invalidateSession(sessionRef, ownerId as string)
@@ -232,6 +246,7 @@ function useActionCreatePersistence({
         if (stored.section) setSection(stored.section)
         if (stored.published) setPublished(true)
         if (stored.clientRequestId) setClientRequestId(stored.clientRequestId)
+        if (stored.pendingOrganizerOrigin) setPendingOrganizerOrigin(stored.pendingOrganizerOrigin)
         readSucceeded = true
         setHydratedOwnerId(ownerId)
       } catch {
@@ -242,7 +257,7 @@ function useActionCreatePersistence({
     }
     void restoreDraft().catch(() => undefined)
     return () => { active = false }
-  }, [draftReadAttempt, ownerId, sessionRef, setActionId, setClientRequestId, setDraft, setPublished, setSection])
+  }, [draftReadAttempt, ownerId, sessionRef, setActionId, setClientRequestId, setDraft, setPendingOrganizerOrigin, setPublished, setSection])
 
   useEffect(() => {
     const scopedKey = ownerScopedStorageKey(ownerId)
@@ -251,12 +266,12 @@ function useActionCreatePersistence({
     if (!sessionAtStart) return
     let active = true
     setDraftWriteError(false)
-    const storedValue = serializeStoredDraft(ownerId, { draft, actionId, section, published, clientRequestId })
+    const storedValue = serializeStoredDraft(ownerId, { draft, actionId, section, published, clientRequestId, pendingOrganizerOrigin })
     void queueDraftWrite(scopedKey, storedValue, () => active && isCurrentSession(sessionRef, sessionAtStart) && hydratedOwnerId === sessionAtStart.ownerId).catch(() => {
       if (active && isCurrentSession(sessionRef, sessionAtStart)) setDraftWriteError(true)
     })
     return () => { active = false }
-  }, [actionId, clientRequestId, draft, draftHydrated, hydratedOwnerId, ownerId, published, section, sessionRef])
+  }, [actionId, clientRequestId, draft, draftHydrated, hydratedOwnerId, ownerId, pendingOrganizerOrigin, published, section, sessionRef])
 
   return { draftHydrated, hydratedOwnerId, draftReadError, draftWriteError, retryDraftRead: () => setDraftReadAttempt((attempt) => attempt + 1) }
 }
@@ -316,12 +331,15 @@ function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftP
   }
 }
 
-function getOrganizerSelectionError(payload: MobileActionDraftPayload): string | null {
+function getOrganizerSelectionError(payload: MobileActionDraftPayload, pendingOrganizerOrigin: PendingOrganizerOrigin | null): string | null {
   if (payload.organizerType !== 'spontaneous') return null
   const hasOrganizerAccount = (payload.organizerAccounts?.length ?? 0) > 0
   const hasPendingOrganizer = payload.organizerName?.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL
   if (hasOrganizerAccount && payload.organizerName?.trim() && !hasPendingOrganizer) {
     return 'Un nom libre ne rattache pas un compte organisateur. Sélectionnez le compte identifié sans nom libre.'
+  }
+  if (!hasOrganizerAccount && hasPendingOrganizer && pendingOrganizerOrigin !== 'explicit') {
+    return 'Resélectionnez explicitement « Organisateur en attente de compte » pour confirmer ce choix.'
   }
   if (!hasOrganizerAccount && !hasPendingOrganizer) {
     return 'Pour une action spontanée, sélectionnez un compte organisateur ou « Organisateur en attente de compte ».'
@@ -342,6 +360,7 @@ function useActionCreateMutations({
   actionId,
   published,
   payload,
+  pendingOrganizerOrigin,
   draftHydrated,
   draftReadError,
   ownerId,
@@ -355,6 +374,7 @@ function useActionCreateMutations({
   actionId: string | null
   published: boolean
   payload: MobileActionDraftPayload
+  pendingOrganizerOrigin: PendingOrganizerOrigin | null
   draftHydrated: boolean
   draftReadError: boolean
   ownerId: string | null
@@ -420,7 +440,7 @@ function useActionCreateMutations({
 
   async function saveDraft() {
     if (mutationsBlocked) return
-    const organizerSelectionError = getOrganizerSelectionError(payload)
+    const organizerSelectionError = getOrganizerSelectionError(payload, pendingOrganizerOrigin)
     if (organizerSelectionError) { setError(organizerSelectionError); return }
     const sessionAtStart = captureSession(sessionRef)
     if (!sessionAtStart) return
@@ -439,7 +459,7 @@ function useActionCreateMutations({
 
   async function publish() {
     if (mutationsBlocked || published) return
-    const organizerSelectionError = getOrganizerSelectionError(payload)
+    const organizerSelectionError = getOrganizerSelectionError(payload, pendingOrganizerOrigin)
     if (organizerSelectionError) { setError(organizerSelectionError); return }
     const sessionAtStart = captureSession(sessionRef)
     if (!sessionAtStart) return
@@ -549,10 +569,15 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   const [actionId, setActionId] = useState<string | null>(null)
   const [published, setPublished] = useState(false)
   const autoPendingOrganizerRef = useRef(false)
+  const [pendingOrganizerOrigin, setPendingOrganizerOriginState] = useState<PendingOrganizerOrigin | null>(null)
+  const setPendingOrganizerOrigin = useCallback((origin: PendingOrganizerOrigin | null) => {
+    autoPendingOrganizerRef.current = origin === 'automatic'
+    setPendingOrganizerOriginState(origin)
+  }, [])
   useLayoutEffect(() => {
-    autoPendingOrganizerRef.current = false
-  }, [ownerId])
-  const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId, sessionRef })
+    setPendingOrganizerOrigin(null)
+  }, [ownerId, setPendingOrganizerOrigin])
+  const persistence = useActionCreatePersistence({ draft, actionId, section, published, clientRequestId, pendingOrganizerOrigin, setPendingOrganizerOrigin, setDraft, setActionId, setSection, setPublished, setClientRequestId, ownerId, sessionRef })
   const ownerHydrated = Boolean(ownerId && persistence.draftHydrated && persistence.hydratedOwnerId === ownerId)
   const ownerSessionRef = useRef({ ownerId: null as string | null, hydrated: false })
   useLayoutEffect(() => {
@@ -564,7 +589,7 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
   const visibleSection = ownerHydrated ? section : 'essentiel'
   const visibleClientRequestId = ownerHydrated ? clientRequestId : ''
   const payload = useMemo(() => buildPayload(visibleDraft, visibleClientRequestId), [visibleClientRequestId, visibleDraft])
-  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, onStartAction, setActionId, setPublished, sessionRef })
+  const mutations = useActionCreateMutations({ draft: visibleDraft, actionId: visibleActionId, published: visiblePublished, payload, pendingOrganizerOrigin: ownerHydrated ? pendingOrganizerOrigin : null, draftHydrated: ownerHydrated, draftReadError: persistence.draftReadError, ownerId, onSessionExpired, onStartAction, setActionId, setPublished, sessionRef })
 
   useEffect(() => {
     if (!visibleActionId || !ownerId) return
@@ -598,7 +623,7 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
     if (!ownerHydrated) return
     setDraft((current) => {
       if (key === 'organizerName') {
-        autoPendingOrganizerRef.current = false
+        setPendingOrganizerOrigin(value.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL ? 'explicit' : null)
         return { ...current, [key]: value }
       }
       if (key === 'coorganizers') {
@@ -608,7 +633,7 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
           && autoPendingOrganizerRef.current
           && current.organizerName.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL
         if (clearImplicitPending) {
-          autoPendingOrganizerRef.current = false
+          setPendingOrganizerOrigin(null)
           return { ...current, coorganizers: value, organizerName: '' }
         }
       }
@@ -620,7 +645,7 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
       setDraft((current) => {
         if (current.organizerType === organizerType) return current
         const hasOrganizerAccounts = normalizeOrganizerAccounts(current.coorganizers).length > 0
-        autoPendingOrganizerRef.current = organizerType === 'spontaneous' && hasOrganizerAccounts
+        setPendingOrganizerOrigin(organizerType === 'spontaneous' && hasOrganizerAccounts ? 'automatic' : null)
         return {
           ...current,
           organizerType,
