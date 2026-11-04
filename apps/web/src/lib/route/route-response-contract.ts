@@ -26,6 +26,7 @@ import type {
   MeetingOpportunity,
   MeetingOpportunityTrace,
 } from "./route-meeting-opportunities";
+import type { SegmentRouteSelectionMetrics } from "./pedestrian-segment-route-planner";
 
 export type { MeetingOpportunity } from "./route-meeting-opportunities";
 
@@ -213,6 +214,8 @@ export type RouteRecommendationResponse = {
   streetCleaningCorridors?: StreetCleaningCorridorHandoff;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;
+  /** Auditable segment selection when the materialized pedestrian projection is used. */
+  segmentSelection?: SegmentRouteSelectionMetrics;
   trace: RouteRecommendationTrace;
   routeGeometry: RouteGeometry;
   scoreBreakdown: {

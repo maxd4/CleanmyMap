@@ -1,0 +1,612 @@
+import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
+import {
+  haversineMeters,
+  type Coordinate,
+  type PedestrianNetworkEdge,
+  type PedestrianNetworkGraph,
+} from "./pedestrian-network";
+import type { RouteGeometry, RouteTopology } from "./route-contract";
+import {
+  isRoutePlannerCandidateEligible,
+  planRoute,
+  routeDistanceKm,
+  travelMinutesForDistance,
+  type PlannedRouteStop,
+  type RoutePlannerCandidate,
+  type RoutePlannerOrigin,
+  type RoutePlannerResult,
+} from "./route-planner";
+import type { RouteGroupRoute } from "./route-response-contract";
+import {
+  partitionRouteCandidates,
+  type RouteGroupPartitionResult,
+} from "./route-group-partition";
+
+export const PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION =
+  "pedestrian-segment-route-planner-v1" as const;
+export const MAX_SEGMENT_ROUTE_CANDIDATES = 600;
+const MAX_SEGMENTS_PER_GROUP = 32;
+const MAX_SNAP_DISTANCE_M = 250;
+
+export type SegmentRouteSelectionMetrics = {
+  plannerVersion: typeof PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION;
+  source: "materialized_pedestrian_risk_projection";
+  consideredSegments: number;
+  candidateCap: number;
+  selectedSegments: number;
+  uniqueStreetCount: number;
+  duplicateStreetCandidatesSkipped: number;
+  unavailableSegmentsSkipped: number;
+  connectorSegments: number;
+  groupCount: number;
+  routeMode: "network" | "fallback";
+  safetyStatus: "network_access_allowed_safety_unknown";
+};
+
+export type PedestrianSegmentRoutePlan = {
+  plannerResult: RoutePlannerResult;
+  partition: RouteGroupPartitionResult;
+  plannedStops: PlannedRouteStop[];
+  groupRoutes: RouteGroupRoute[];
+  routeGeometry: RouteGeometry;
+  metrics: SegmentRouteSelectionMetrics;
+  warning: string | null;
+  degraded: boolean;
+};
+
+type SegmentCandidate = {
+  candidate: RoutePlannerCandidate;
+  edge: PedestrianNetworkEdge;
+  streetKey: string;
+  wasteRisk: number;
+  cigaretteButtRisk: number;
+  mixedRisk: number;
+};
+
+type Path = {
+  edges: PedestrianNetworkEdge[];
+  distanceM: number;
+};
+
+type GroupRouteBuild = {
+  groupIndex: number;
+  candidates: RoutePlannerCandidate[];
+  geometry: RouteGeometry;
+  plannedStops: PlannedRouteStop[];
+  selectedEdges: PedestrianNetworkEdge[];
+  connectorSegments: number;
+};
+
+function finiteRisk(value: number | null | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, value ?? 0) : 0;
+}
+
+function coordinateKey(point: Coordinate): string {
+  return `${point[0].toFixed(7)}:${point[1].toFixed(7)}`;
+}
+
+function streetKey(edge: PedestrianNetworkEdge): string {
+  const name = edge.name?.trim().toLocaleLowerCase();
+  return name ? `name:${name}` : `way:${edge.osmWayId}`;
+}
+
+function candidateRisk(candidate: RoutePlannerCandidate): Pick<SegmentCandidate, "wasteRisk" | "cigaretteButtRisk" | "mixedRisk"> {
+  const evidence = candidate.family === "predicted" ? candidate.evidence : null;
+  const wasteRisk = finiteRisk(evidence?.wasteRisk);
+  const cigaretteButtRisk = finiteRisk(evidence?.cigaretteButtRisk);
+  return {
+    wasteRisk,
+    cigaretteButtRisk,
+    mixedRisk: (wasteRisk + cigaretteButtRisk) / 2,
+  };
+}
+
+function focusValue(segment: SegmentCandidate, focus: "all" | "waste" | "cigaretteButts"): number {
+  if (focus === "waste") return segment.wasteRisk;
+  if (focus === "cigaretteButts") return segment.cigaretteButtRisk;
+  return segment.mixedRisk;
+}
+
+function segmentSortValue(segment: SegmentCandidate, focus: "all" | "waste" | "cigaretteButts"): number {
+  if (focus !== "all") return focusValue(segment, focus);
+  // Balanced is a circuit-level average. The minimum adds a deterministic
+  // preference for segments that contribute to both categories without using max().
+  return segment.mixedRisk + Math.min(segment.wasteRisk, segment.cigaretteButtRisk) * 0.25;
+}
+
+function buildAdjacency(graph: PedestrianNetworkGraph): Map<string, PedestrianNetworkEdge[]> {
+  const adjacency = new Map<string, PedestrianNetworkEdge[]>();
+  for (const edge of graph.edges) {
+    const outgoing = adjacency.get(edge.fromNodeId) ?? [];
+    outgoing.push(edge);
+    adjacency.set(edge.fromNodeId, outgoing);
+  }
+  for (const edges of adjacency.values()) {
+    edges.sort((left, right) =>
+      left.lengthM - right.lengthM || left.edgeKey.localeCompare(right.edgeKey),
+    );
+  }
+  return adjacency;
+}
+
+function buildNodeCoordinates(graph: PedestrianNetworkGraph): Map<string, Coordinate> {
+  const nodes = new Map<string, Coordinate>();
+  for (const edge of graph.edges) {
+    const first = edge.coordinates[0];
+    const last = edge.coordinates.at(-1);
+    if (first) nodes.set(edge.fromNodeId, first);
+    if (last) nodes.set(edge.toNodeId, last);
+  }
+  return nodes;
+}
+
+function closestNode(
+  point: Coordinate,
+  nodes: ReadonlyMap<string, Coordinate>,
+): string | null {
+  let best: { id: string; distanceM: number } | null = null;
+  for (const [id, node] of nodes) {
+    const distanceM = haversineMeters(point, node);
+    if (distanceM <= MAX_SNAP_DISTANCE_M && (!best || distanceM < best.distanceM ||
+      (distanceM === best.distanceM && id.localeCompare(best.id) < 0))) {
+      best = { id, distanceM };
+    }
+  }
+  return best?.id ?? null;
+}
+
+function shortestPath(
+  fromNodeId: string,
+  toNodeId: string,
+  adjacency: ReadonlyMap<string, PedestrianNetworkEdge[]>,
+): Path | null {
+  const distances = new Map<string, number>([[fromNodeId, 0]]);
+  const previous = new Map<string, { nodeId: string; edge: PedestrianNetworkEdge }>();
+  const pending = new Set([fromNodeId]);
+  while (pending.size > 0) {
+    const current = [...pending].sort((left, right) =>
+      (distances.get(left) ?? Number.POSITIVE_INFINITY) -
+        (distances.get(right) ?? Number.POSITIVE_INFINITY) || left.localeCompare(right),
+    )[0]!;
+    pending.delete(current);
+    if (current === toNodeId) break;
+    for (const edge of adjacency.get(current) ?? []) {
+      const candidateDistance = (distances.get(current) ?? Number.POSITIVE_INFINITY) + edge.lengthM;
+      const knownDistance = distances.get(edge.toNodeId) ?? Number.POSITIVE_INFINITY;
+      if (candidateDistance < knownDistance ||
+        (candidateDistance === knownDistance && edge.edgeKey.localeCompare(previous.get(edge.toNodeId)?.edge.edgeKey ?? "") < 0)) {
+        distances.set(edge.toNodeId, candidateDistance);
+        previous.set(edge.toNodeId, { nodeId: current, edge });
+        pending.add(edge.toNodeId);
+      }
+    }
+  }
+  if (!distances.has(toNodeId)) return null;
+  const edges: PedestrianNetworkEdge[] = [];
+  let current = toNodeId;
+  while (current !== fromNodeId) {
+    const step = previous.get(current);
+    if (!step) return null;
+    edges.unshift(step.edge);
+    current = step.nodeId;
+  }
+  return { edges, distanceM: distances.get(toNodeId) ?? 0 };
+}
+
+function appendCoordinates(target: Coordinate[], edges: readonly PedestrianNetworkEdge[]): void {
+  for (const edge of edges) {
+    if (target.length === 0) target.push(...edge.coordinates);
+    else target.push(...edge.coordinates.slice(1));
+  }
+}
+
+function distanceMForCoordinates(coordinates: readonly Coordinate[]): number {
+  return coordinates.slice(0, -1).reduce((total, point, index) =>
+    total + haversineMeters(point, coordinates[index + 1]!), 0);
+}
+
+function round(value: number, digits = 2): number {
+  return Number(value.toFixed(digits));
+}
+
+function geometryFromEdges(
+  origin: RoutePlannerOrigin,
+  arrival: RoutePlannerOrigin | undefined,
+  topology: RouteTopology,
+  routeEdges: readonly PedestrianNetworkEdge[],
+  selectedEdgeIndexes: readonly number[],
+  networkOrigin: Coordinate,
+  networkDestination: Coordinate,
+): RouteGeometry {
+  const coordinates: Coordinate[] = [];
+  appendCoordinates(coordinates, routeEdges);
+  const originCoordinate: Coordinate = [origin.latitude, origin.longitude];
+  const destinationCoordinate: Coordinate = topology === "loop"
+    ? originCoordinate
+    : arrival ? [arrival.latitude, arrival.longitude] : networkDestination;
+  if (coordinates.length === 0) coordinates.push(networkOrigin);
+  if (coordinateKey(coordinates[0]!) !== coordinateKey(originCoordinate)) coordinates.unshift(originCoordinate);
+  if (coordinateKey(coordinates.at(-1)!) !== coordinateKey(destinationCoordinate)) coordinates.push(destinationCoordinate);
+
+  const boundaries = [
+    -1,
+    ...selectedEdgeIndexes,
+    routeEdges.length - 1,
+  ];
+  const legs = boundaries.slice(1).map((edgeIndex, legIndex) => {
+    const startEdge = boundaries[legIndex]! + 1;
+    const endEdge = edgeIndex;
+    const edges = routeEdges.slice(startEdge, endEdge + 1);
+    const distanceKm = edges.reduce((total, edge) => total + edge.lengthM, 0) / 1000;
+    return {
+      fromStopIndex: legIndex,
+      toStopIndex: legIndex + 1,
+      distanceKm: round(distanceKm),
+      estimatedMinutes: Math.max(0, Math.round(travelMinutesForDistance(distanceKm))),
+      steps: edges.map((edge) => ({
+        name: edge.name,
+        distanceKm: round(edge.lengthM / 1000),
+        durationMinutes: Math.max(0, Math.round(travelMinutesForDistance(edge.lengthM / 1000))),
+        maneuver: null,
+        segmentReference: edge.edgeKey,
+        geometry: edge.coordinates,
+      })),
+    };
+  });
+  const distanceM = routeEdges.reduce((total, edge) => total + edge.lengthM, 0) +
+    distanceMForCoordinates([originCoordinate, networkOrigin]) +
+    (topology === "open" ? distanceMForCoordinates([networkDestination, destinationCoordinate]) : 0);
+  return {
+    isLoop: topology === "loop",
+    origin: originCoordinate,
+    returnLeg: topology === "loop" ? legs.at(-1) ?? null : null,
+    coordinates,
+    distanceKm: round(distanceM / 1000),
+    durationMinutes: Math.max(0, Math.round(travelMinutesForDistance(distanceM / 1000))),
+    legs,
+    provider: "stored-network",
+    profile: "foot",
+    mode: "network",
+    estimated: true,
+  };
+}
+
+function plannedStopsForGeometry(
+  origin: RoutePlannerOrigin,
+  candidates: readonly RoutePlannerCandidate[],
+  geometry: RouteGeometry,
+): PlannedRouteStop[] {
+  let cumulativeDistanceKm = 0;
+  let cumulativeTravelMinutes = 0;
+  return candidates.map((candidate, index) => {
+    const leg = geometry.legs[index];
+    const incrementalDistanceKm = leg?.distanceKm ?? routeDistanceKm(
+      index === 0 ? origin : candidates[index - 1]!,
+      candidate,
+    );
+    const incrementalTravelMinutes = leg?.estimatedMinutes ?? Math.round(travelMinutesForDistance(incrementalDistanceKm));
+    cumulativeDistanceKm += incrementalDistanceKm;
+    cumulativeTravelMinutes += incrementalTravelMinutes;
+    const returnLeg = geometry.isLoop ? geometry.legs.at(-1) : undefined;
+    const returnDistanceKm = returnLeg?.distanceKm ?? routeDistanceKm(candidate, origin);
+    const returnTravelMinutes = returnLeg?.estimatedMinutes ?? Math.round(travelMinutesForDistance(returnDistanceKm));
+    return {
+      candidate,
+      incrementalDistanceKm,
+      incrementalTravelMinutes,
+      cumulativeTravelMinutes,
+      returnDistanceKm,
+      returnTravelMinutes,
+      loopDistanceKm: cumulativeDistanceKm + returnDistanceKm,
+      loopTravelMinutes: cumulativeTravelMinutes + returnTravelMinutes,
+    };
+  });
+}
+
+function fallbackGeometry(origin: RoutePlannerOrigin, topology: RouteTopology, arrival?: RoutePlannerOrigin): RouteGeometry {
+  const coordinates: Coordinate[] = [
+    [origin.latitude, origin.longitude],
+    ...(topology === "loop" ? [[origin.latitude, origin.longitude] as Coordinate] : arrival ? [[arrival.latitude, arrival.longitude] as Coordinate] : []),
+  ];
+  const distanceKm = coordinates.length > 1
+    ? routeDistanceKm({ latitude: coordinates[0]![0], longitude: coordinates[0]![1] }, { latitude: coordinates[1]![0], longitude: coordinates[1]![1] })
+    : 0;
+  const leg = coordinates.length > 1 ? {
+    fromStopIndex: 0,
+    toStopIndex: 1,
+    distanceKm: round(distanceKm),
+    estimatedMinutes: Math.round(travelMinutesForDistance(distanceKm)),
+  } : null;
+  return {
+    isLoop: topology === "loop",
+    origin: coordinates[0] ?? null,
+    returnLeg: topology === "loop" ? leg : null,
+    coordinates,
+    distanceKm: round(distanceKm),
+    durationMinutes: Math.round(travelMinutesForDistance(distanceKm)),
+    legs: leg ? [leg] : [],
+    provider: "none",
+    profile: null,
+    mode: "fallback",
+    estimated: true,
+  };
+}
+
+function buildSegmentCandidates(
+  candidates: readonly RoutePlannerCandidate[],
+  graph: PedestrianNetworkGraph,
+  projection: PedestrianRiskProjectionSnapshot,
+  focus: "all" | "waste" | "cigaretteButts",
+): { segments: SegmentCandidate[]; totalSegments: number; unavailableSegmentsSkipped: number; duplicateStreetCandidatesSkipped: number } {
+  const edgesByKey = new Map(graph.edges.map((edge) => [edge.edgeKey, edge]));
+  const projectionById = new Map(projection.segments.map((segment) => [segment.projectionSegmentId, segment]));
+  const byStreet = new Map<string, SegmentCandidate>();
+  let unavailableSegmentsSkipped = 0;
+  let duplicateStreetCandidatesSkipped = 0;
+  let totalSegments = 0;
+  for (const candidate of candidates) {
+    if (candidate.family !== "predicted" || !isRoutePlannerCandidateEligible(candidate, {
+      allowUnknownPredictedSafety: true,
+    })) continue;
+    const segmentId = candidate.evidence.segmentId;
+    const projectionSegment = segmentId ? projectionById.get(segmentId) : undefined;
+    const edge = projectionSegment ? edgesByKey.get(projectionSegment.edgeKey) : undefined;
+    if (!projectionSegment || !edge || projectionSegment.riskStatus !== "predicted" ||
+      projectionSegment.wasteRisk === null || projectionSegment.cigaretteButtRisk === null) {
+      unavailableSegmentsSkipped += 1;
+      continue;
+    }
+    const risks = candidateRisk(candidate);
+    const segment = { candidate, edge, streetKey: streetKey(edge), ...risks };
+    totalSegments += 1;
+    const previous = byStreet.get(segment.streetKey);
+    if (!previous || segmentSortValue(segment, focus) > segmentSortValue(previous, focus) ||
+      (segmentSortValue(segment, focus) === segmentSortValue(previous, focus) && edge.edgeKey.localeCompare(previous.edge.edgeKey) < 0)) {
+      if (previous) duplicateStreetCandidatesSkipped += 1;
+      byStreet.set(segment.streetKey, segment);
+    } else {
+      duplicateStreetCandidatesSkipped += 1;
+    }
+  }
+  const segments = [...byStreet.values()].sort((left, right) =>
+    segmentSortValue(right, focus) - segmentSortValue(left, focus) ||
+    right.edge.lengthM - left.edge.lengthM ||
+    left.edge.edgeKey.localeCompare(right.edge.edgeKey),
+  );
+  return {
+    segments: segments.slice(0, MAX_SEGMENT_ROUTE_CANDIDATES),
+    totalSegments,
+    unavailableSegmentsSkipped,
+    duplicateStreetCandidatesSkipped,
+  };
+}
+
+function buildGroupRoute(
+  group: { groupIndex: number; volunteerCount: number; candidateIds: string[]; origin: RoutePlannerOrigin; targetCount: number; estimatedDistanceKm: number; estimatedDurationMinutes: number },
+  candidatesById: ReadonlyMap<string, RoutePlannerCandidate>,
+  geometry: RouteGeometry,
+  travelBudgetMinutes: number,
+): { route: RouteGroupRoute; plannedStops: PlannedRouteStop[] } {
+  const candidates = group.candidateIds.map((id) => candidatesById.get(id)).filter((candidate): candidate is RoutePlannerCandidate => Boolean(candidate));
+  const plannedStops = plannedStopsForGeometry(group.origin, candidates, geometry);
+  const stops = plannedStops.map(({ candidate, incrementalDistanceKm, incrementalTravelMinutes }) => ({
+    id: candidate.id,
+    label: candidate.label,
+    latitude: candidate.latitude,
+    longitude: candidate.longitude,
+    segmentKm: incrementalDistanceKm,
+    estimatedMinutes: incrementalTravelMinutes,
+    priorityReason: candidate.reason,
+    score: Number(candidate.score.toFixed(2)),
+    evidence: candidate.evidence,
+  }));
+  return {
+    plannedStops,
+    route: {
+      ...group,
+      targetCount: candidates.length,
+      estimatedDistanceKm: geometry.distanceKm,
+      estimatedDurationMinutes: geometry.durationMinutes,
+      reservedCandidateIds: [],
+      stops,
+      routeGeometry: geometry,
+      travelDistanceKm: geometry.distanceKm,
+      travelMinutes: geometry.durationMinutes,
+      travelBudgetMinutes,
+      withinBudget: geometry.durationMinutes <= travelBudgetMinutes,
+      meetingPoint: undefined,
+    },
+  };
+}
+
+function buildGroupGeometry(
+  origin: RoutePlannerOrigin,
+  arrival: RoutePlannerOrigin | undefined,
+  topology: RouteTopology,
+  candidates: readonly SegmentCandidate[],
+  graph: PedestrianNetworkGraph,
+): { geometry: RouteGeometry; selectedEdges: PedestrianNetworkEdge[]; connectorSegments: number } | null {
+  const adjacency = buildAdjacency(graph);
+  const nodes = buildNodeCoordinates(graph);
+  const originNodeId = closestNode([origin.latitude, origin.longitude], nodes);
+  const destinationNodeId = topology === "loop"
+    ? originNodeId
+    : arrival ? closestNode([arrival.latitude, arrival.longitude], nodes) : originNodeId;
+  if (!originNodeId || !destinationNodeId) return null;
+  const originNode = nodes.get(originNodeId)!;
+  const destinationNode = nodes.get(destinationNodeId)!;
+  const routeEdges: PedestrianNetworkEdge[] = [];
+  const selectedEdgeIndexes: number[] = [];
+  let currentNodeId = originNodeId;
+  let connectorSegments = 0;
+  for (const segment of candidates) {
+    const connector = shortestPath(currentNodeId, segment.edge.fromNodeId, adjacency);
+    if (!connector) continue;
+    connectorSegments += connector.edges.length;
+    routeEdges.push(...connector.edges);
+    routeEdges.push(segment.edge);
+    selectedEdgeIndexes.push(routeEdges.length - 1);
+    currentNodeId = segment.edge.toNodeId;
+  }
+  const closing = shortestPath(currentNodeId, destinationNodeId, adjacency);
+  if (!closing) return null;
+  connectorSegments += closing.edges.length;
+  routeEdges.push(...closing.edges);
+  return {
+    geometry: geometryFromEdges(origin, arrival, topology, routeEdges, selectedEdgeIndexes, originNode, destinationNode),
+    selectedEdges: candidates.map(({ edge }) => edge),
+    connectorSegments,
+  };
+}
+
+function candidateIdsFromGroups(groups: readonly { candidateIds: string[] }[]): Set<string> {
+  return new Set(groups.flatMap(({ candidateIds }) => candidateIds));
+}
+
+export function planPredictedPedestrianSegmentRoutes(input: {
+  origin: RoutePlannerOrigin;
+  arrival?: RoutePlannerOrigin;
+  routeTopology: RouteTopology;
+  candidates: readonly RoutePlannerCandidate[];
+  projection: PedestrianRiskProjectionSnapshot;
+  pedestrianNetwork: PedestrianNetworkGraph;
+  travelBudgetMinutes: number;
+  maxStops: number;
+  priorityVsTravel: number;
+  volunteers: number;
+  groupCount: number;
+  effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
+}): PedestrianSegmentRoutePlan | null {
+  const segmentData = buildSegmentCandidates(
+    input.candidates,
+    input.pedestrianNetwork,
+    input.projection,
+    input.effectiveRiskFocus,
+  );
+  if (segmentData.segments.length === 0) return null;
+  const orderedCandidates = segmentData.segments.map(({ candidate }) => candidate);
+  const plannerResult = planRoute({
+    origin: input.origin,
+    arrival: input.arrival,
+    routeTopology: input.routeTopology,
+    candidates: orderedCandidates,
+    travelBudgetMinutes: input.travelBudgetMinutes,
+    maxStops: Math.min(input.maxStops, MAX_SEGMENTS_PER_GROUP),
+    priorityVsTravel: input.priorityVsTravel,
+    effectiveRiskFocus: input.effectiveRiskFocus,
+    volunteersExpected: input.volunteers,
+    groupCount: input.groupCount,
+    allowUnknownPredictedSafety: true,
+  });
+  const partition = partitionRouteCandidates({
+    origin: input.origin,
+    arrival: input.arrival,
+    routeTopology: input.routeTopology,
+    candidates: orderedCandidates,
+    volunteers: input.volunteers,
+    groupCount: input.groupCount,
+    travelBudgetMinutes: input.travelBudgetMinutes,
+    maxStops: Math.min(input.maxStops, MAX_SEGMENTS_PER_GROUP),
+    priorityVsTravel: input.priorityVsTravel,
+    plannerResult,
+    effectiveRiskFocus: input.effectiveRiskFocus,
+    allowUnknownPredictedSafety: true,
+  });
+  const segmentByCandidateId = new Map(segmentData.segments.map((segment) => [segment.candidate.id, segment]));
+  const candidatesById = new Map(orderedCandidates.map((candidate) => [candidate.id, candidate]));
+  const builtGroups: GroupRouteBuild[] = [];
+  for (const group of partition.groups) {
+    let selected = group.candidateIds
+      .map((id) => segmentByCandidateId.get(id))
+      .filter((segment): segment is SegmentCandidate => Boolean(segment));
+    let built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
+    if (!built) return null;
+    while (selected.length > 0 && built.geometry.durationMinutes > input.travelBudgetMinutes) {
+      selected = selected.slice(0, -1);
+      built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
+      if (!built) return null;
+    }
+    const groupWithActualCandidates = {
+      ...group,
+      candidateIds: selected.map(({ candidate }) => candidate.id),
+    };
+    const groupBuild = buildGroupRoute(groupWithActualCandidates, candidatesById, built.geometry, input.travelBudgetMinutes);
+    builtGroups.push({
+      groupIndex: group.groupIndex,
+      candidates: selected.map(({ candidate }) => candidate),
+      geometry: built.geometry,
+      plannedStops: groupBuild.plannedStops,
+      selectedEdges: built.selectedEdges,
+      connectorSegments: built.connectorSegments,
+    });
+  }
+  const effectiveGroups = builtGroups.map((builtGroup, index) => ({
+    ...partition.groups[index]!,
+    candidateIds: builtGroup.candidates.map(({ id }) => id),
+  }));
+  const allSelectedIds = candidateIdsFromGroups(effectiveGroups);
+  if (allSelectedIds.size === 0) return null;
+  const groupRoutes = builtGroups.map((group, index) => {
+    const route = buildGroupRoute(
+      effectiveGroups[index]!,
+      candidatesById,
+      group.geometry,
+      input.travelBudgetMinutes,
+    ).route;
+    return {
+      ...route,
+      reservedCandidateIds: builtGroups
+        .filter((other) => other.groupIndex !== group.groupIndex)
+        .flatMap(({ candidates }) => candidates.map(({ id }) => id)),
+    };
+  });
+  const routeGeometry = groupRoutes[0]?.routeGeometry ?? fallbackGeometry(input.origin, input.routeTopology, input.arrival);
+  const groupDistances = groupRoutes.map(({ travelDistanceKm }) => travelDistanceKm);
+  const groupDurations = groupRoutes.map(({ travelMinutes }) => travelMinutes);
+  const plannedStops = builtGroups.flatMap(({ plannedStops: stops }) => stops);
+  const uniqueStreetCount = new Set(builtGroups.flatMap(({ selectedEdges }) => selectedEdges.map(streetKey))).size;
+  const allSelectedEdges = builtGroups.flatMap(({ selectedEdges }) => selectedEdges);
+  const uniqueSelectedEdgeKeys = new Set(allSelectedEdges.map(({ edgeKey }) => edgeKey));
+  const partitionWithActualRoutes: RouteGroupPartitionResult = {
+    ...partition,
+    groups: groupRoutes.map((route) => ({
+      ...partition.groups.find(({ groupIndex }) => groupIndex === route.groupIndex)!,
+      candidateIds: [...route.candidateIds],
+      targetCount: route.targetCount,
+      estimatedDistanceKm: route.travelDistanceKm,
+      estimatedDurationMinutes: route.travelMinutes,
+    })),
+    metrics: {
+      ...partition.metrics,
+      balanceDistance: groupDistances.length > 0 ? Math.max(...groupDistances) - Math.min(...groupDistances) : 0,
+      balanceDuration: groupDurations.length > 0 ? Math.max(...groupDurations) - Math.min(...groupDurations) : 0,
+      balanceTargetCount: groupRoutes.length > 0 ? Math.max(...groupRoutes.map(({ targetCount }) => targetCount)) - Math.min(...groupRoutes.map(({ targetCount }) => targetCount)) : 0,
+    },
+  };
+  return {
+    plannerResult: {
+      ...plannerResult,
+      stops: plannedStops,
+    },
+    partition: partitionWithActualRoutes,
+    plannedStops,
+    groupRoutes,
+    routeGeometry,
+    metrics: {
+      plannerVersion: PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION,
+      source: "materialized_pedestrian_risk_projection",
+      consideredSegments: segmentData.totalSegments,
+      candidateCap: MAX_SEGMENT_ROUTE_CANDIDATES,
+      selectedSegments: uniqueSelectedEdgeKeys.size,
+      uniqueStreetCount,
+      duplicateStreetCandidatesSkipped: segmentData.duplicateStreetCandidatesSkipped,
+      unavailableSegmentsSkipped: segmentData.unavailableSegmentsSkipped,
+      connectorSegments: builtGroups.reduce((total, group) => total + group.connectorSegments, 0),
+      groupCount: input.groupCount,
+      routeMode: "network",
+      safetyStatus: "network_access_allowed_safety_unknown",
+    },
+    warning: null,
+    degraded: false,
+  };
+}

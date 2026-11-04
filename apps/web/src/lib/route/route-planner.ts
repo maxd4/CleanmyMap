@@ -116,6 +116,8 @@ export type RoutePlannerInput = {
   weatherContext?: PlannerWeatherContext;
   volunteersExpected?: number;
   groupCount?: number;
+  /** The graph can be usable while volunteer-safety evidence remains unknown. */
+  allowUnknownPredictedSafety?: boolean;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -130,18 +132,23 @@ function plannerContribution(candidate: RoutePlannerCandidate): number {
   );
 }
 
-function isPlannerSafetyExcluded(candidate: RoutePlannerCandidate): boolean {
+function isPlannerSafetyExcluded(
+  candidate: RoutePlannerCandidate,
+  options: { allowUnknownPredictedSafety?: boolean } = {},
+): boolean {
   return candidate.volunteerSafety?.status === "excluded" ||
     (candidate.family === "predicted" &&
       candidate.volunteerSafety !== undefined &&
-      candidate.volunteerSafety.status !== "safe");
+      candidate.volunteerSafety.status !== "safe" &&
+      !(options.allowUnknownPredictedSafety && candidate.volunteerSafety.status === "unknown"));
 }
 
 /** Shared server-side eligibility gate used by single- and multi-group planning. */
 export function isRoutePlannerCandidateEligible(
   candidate: RoutePlannerCandidate,
+  options: { allowUnknownPredictedSafety?: boolean } = {},
 ): boolean {
-  return !isPlannerSafetyExcluded(candidate) &&
+  return !isPlannerSafetyExcluded(candidate, options) &&
     (candidate.family === "predicted" || isVolunteerRouteEligible(candidate));
 }
 
@@ -210,7 +217,11 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const effectiveRiskFocus = input.effectiveRiskFocus ?? "all";
   const budgetMinutes = Math.max(0, input.travelBudgetMinutes);
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
-  const safeCandidates = input.candidates.filter(isRoutePlannerCandidateEligible);
+  const safeCandidates = input.candidates.filter((candidate) =>
+    isRoutePlannerCandidateEligible(candidate, {
+      allowUnknownPredictedSafety: input.allowUnknownPredictedSafety,
+    }),
+  );
   const remaining = [...safeCandidates];
   const stops: PlannedRouteStop[] = [];
   let current: { latitude: number; longitude: number } = input.origin;

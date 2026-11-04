@@ -1,0 +1,235 @@
+import { describe, expect, it } from "vitest";
+import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
+import type { PedestrianNetworkEdge, PedestrianNetworkGraph } from "./pedestrian-network";
+import type { RoutePlannerCandidate, RoutePlannerOrigin } from "./route-planner";
+import {
+  planPredictedPedestrianSegmentRoutes,
+} from "./pedestrian-segment-route-planner";
+
+const origin: RoutePlannerOrigin = {
+  latitude: 48,
+  longitude: 2,
+  source: "planner",
+};
+
+function edge(
+  edgeKey: string,
+  fromNodeId: string,
+  toNodeId: string,
+  start: [number, number],
+  end: [number, number],
+  name: string,
+): PedestrianNetworkEdge {
+  return {
+    edgeKey,
+    osmWayId: edgeKey,
+    segmentIndex: 0,
+    direction: "forward",
+    fromNodeId,
+    toNodeId,
+    highway: "footway",
+    name,
+    accessStatus: "allowed",
+    lengthM: 111,
+    coordinates: [start, end],
+    tags: { foot: "yes" },
+  };
+}
+
+const graph: PedestrianNetworkGraph = {
+  versionId: "network-v1",
+  networkKey: "test-network",
+  sourceRetrievedAt: "2026-11-04T00:00:00.000Z",
+  bounds: { south: 47.99, west: 1.99, north: 48.01, east: 2.01 },
+  edges: [
+    edge("e-ab", "a", "b", [48, 2], [48.001, 2], "Rue A"),
+    edge("e-bc", "b", "c", [48.001, 2], [48.001, 2.001], "Rue B"),
+    edge("e-cd", "c", "d", [48.001, 2.001], [48, 2.001], "Rue C"),
+    edge("e-da", "d", "a", [48, 2.001], [48, 2], "Rue D"),
+  ],
+};
+
+function candidate(
+  id: string,
+  segmentId: string,
+  wasteRisk: number,
+  cigaretteButtRisk: number,
+  score = (wasteRisk + cigaretteButtRisk) / 2,
+): RoutePlannerCandidate {
+  return {
+    family: "predicted",
+    id,
+    label: id,
+    latitude: 48,
+    longitude: 2,
+    score,
+    reason: "projection test",
+    volunteerSafety: { status: "unknown", suitability: null, confidence: 0, evidenceIds: [] },
+    evidence: {
+      family: "predicted",
+      source: "urban-pressure-model",
+      modelVersion: "test-model",
+      zoneId: id,
+      zoneLabel: id,
+      segmentId,
+      effectiveResolution: "iris",
+      calibrationStatus: "not_calibrated_theoretical",
+      geographicLevel: "iris",
+      centroid: [48, 2],
+      radiusKm: 0.01,
+      areaKm2: null,
+      distanceToCorridorKm: 0,
+      planningCorridor: { source: "origin_only", pointCount: 1, isNetworkGeometry: false, note: "test" },
+      detourDistanceKm: 0,
+      detourMinutes: 0,
+      riskFocus: "all",
+      dominantRisk: wasteRisk >= cigaretteButtRisk ? "waste" : "cigaretteButts",
+      wasteRisk,
+      cigaretteButtRisk,
+      mixedRisk: (wasteRisk + cigaretteButtRisk) / 2,
+      confidence: { waste: {} as never, cigaretteButts: {} as never },
+      contributions: { waste: [], cigaretteButts: [] },
+      cleanlinessCorrection: { waste: {} as never, cigaretteButts: {} as never },
+      urbanMorphologyPrior: { waste: {} as never, cigaretteButts: {} as never },
+      snapshot: { snapshotId: "snapshot", schemaVersion: "paris-pressure-v1", generatedAt: "2026-11-04", refreshedAt: "2026-11-04" },
+      provenance: [],
+      contextProvenance: [],
+      provenanceGaps: [],
+    },
+  } as unknown as RoutePlannerCandidate;
+}
+
+function projection(ids: string[]): PedestrianRiskProjectionSnapshot {
+  const edges = graph.edges;
+  return {
+    schemaVersion: "paris-pedestrian-risk-projection-v1",
+    projectionKey: "paris-pantheon-jardin-des-plantes",
+    policyVersion: "segment-zonal-neutral-v1",
+    projectionVersionId: "projection-v1",
+    networkVersionId: "network-v1",
+    sourceVersions: {} as never,
+    generatedAt: "2026-11-04T00:00:00.000Z",
+    counts: { sourceEdges: edges.length, projectedSegments: edges.length, predictedSegments: edges.length, unavailableSegments: 0, zonesIntersected: edges.length },
+    segments: edges.map((item, index) => ({
+      projectionSegmentId: ids[index] ?? `s-${index}`,
+      edgeKey: item.edgeKey,
+      osmWayId: item.osmWayId,
+      segmentIndex: 0,
+      direction: "forward",
+      fromNodeId: item.fromNodeId,
+      toNodeId: item.toNodeId,
+      lengthM: item.lengthM,
+      intersectionLengthM: item.lengthM,
+      coordinates: item.coordinates,
+      midpoint: item.coordinates[0]!,
+      zoneId: `zone-${index}`,
+      intersectedZoneIds: [`zone-${index}`],
+      effectiveResolution: "iris",
+      riskStatus: "predicted",
+      wasteRisk: 50,
+      cigaretteButtRisk: 50,
+      mixedRisk: 50,
+      wasteConfidence: {} as never,
+      cigaretteButtConfidence: {} as never,
+      wasteFactors: {} as never,
+      cigaretteButtFactors: {} as never,
+      availableFactors: { waste: [], cigaretteButts: [] },
+      missingFactors: { waste: [], cigaretteButts: [] },
+      serviceability: null,
+      sourceVersions: {} as never,
+      provenance: [],
+      notes: [],
+    })),
+  } as PedestrianRiskProjectionSnapshot;
+}
+
+function plan(
+  candidates: RoutePlannerCandidate[],
+  focus: "all" | "waste" | "cigaretteButts",
+  overrides: Partial<Parameters<typeof planPredictedPedestrianSegmentRoutes>[0]> = {},
+) {
+  return planPredictedPedestrianSegmentRoutes({
+    origin,
+    routeTopology: "loop",
+    candidates,
+    projection: projection(candidates.map((item) =>
+      item.family === "predicted" ? item.evidence.segmentId! : "unknown",
+    )),
+    pedestrianNetwork: graph,
+    travelBudgetMinutes: 20,
+    maxStops: 2,
+    priorityVsTravel: 100,
+    volunteers: 1,
+    groupCount: 1,
+    effectiveRiskFocus: focus,
+    ...overrides,
+  });
+}
+
+describe("pedestrian segment route planner", () => {
+  it.each([
+    ["waste", "a", [90, 20, 30, 40], [20, 20, 30, 40]],
+    ["cigaretteButts", "b", [20, 20, 30, 40], [90, 100, 30, 40]],
+  ] as const)("follows the %s prediction without changing the other preference", (focus, expectedId, wasteByEdge, cigaretteByEdge) => {
+    const result = plan([
+      candidate("a", "s-0", wasteByEdge[0], cigaretteByEdge[0]),
+      candidate("b", "s-1", wasteByEdge[1], cigaretteByEdge[1]),
+      candidate("c", "s-2", wasteByEdge[2], 30),
+      candidate("d", "s-3", wasteByEdge[3], 40),
+    ], focus, { maxStops: 1 });
+    expect(result?.plannedStops[0]?.candidate.id).toBe(expectedId);
+  });
+
+  it("uses both categories for balanced coverage instead of max", () => {
+    const result = plan([
+      candidate("waste-only", "s-0", 100, 0),
+      candidate("balanced", "s-1", 65, 65),
+      candidate("butt-only", "s-2", 0, 100),
+      candidate("low", "s-3", 20, 20),
+    ], "all", { maxStops: 1 });
+    expect(result?.plannedStops[0]?.candidate.id).toBe("balanced");
+  });
+
+  it("returns closed network geometry within the travel budget and records unknown safety", () => {
+    const result = plan([
+      candidate("a", "s-0", 90, 20),
+      candidate("b", "s-1", 80, 20),
+    ], "waste", { travelBudgetMinutes: 8, maxStops: 2 });
+    expect(result).not.toBeNull();
+    expect(result!.routeGeometry.mode).toBe("network");
+    expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
+    expect(result!.routeGeometry.durationMinutes).toBeLessThanOrEqual(8);
+    expect(result!.metrics.safetyStatus).toBe("network_access_allowed_safety_unknown");
+  });
+
+  it("splits two groups into distinct predicted segments and does not count a street twice", () => {
+    const candidates = [
+      candidate("a", "s-0", 90, 30),
+      candidate("b", "s-1", 80, 30),
+      candidate("c", "s-2", 70, 30),
+      candidate("d", "s-3", 60, 30),
+    ];
+    const result = plan(candidates, "waste", {
+      volunteers: 10,
+      groupCount: 2,
+      maxStops: 2,
+    });
+    expect(result).not.toBeNull();
+    expect(result!.groupRoutes).toHaveLength(2);
+    const first = new Set(result!.groupRoutes[0]!.stops.map((stop) => stop.id));
+    const second = new Set(result!.groupRoutes[1]!.stops.map((stop) => stop.id));
+    expect([...first].some((id) => second.has(id))).toBe(false);
+    expect(result!.metrics.selectedSegments).toBe(first.size + second.size);
+    expect(result!.metrics.groupCount).toBe(2);
+  });
+
+  it("skips unavailable projection segments and duplicate street candidates deterministically", () => {
+    const sameStreet = candidate("same-street", "s-0", 100, 100);
+    const duplicate = candidate("duplicate-street", "s-0", 20, 20);
+    const result = plan([sameStreet, duplicate], "all", { maxStops: 2 });
+    expect(result).not.toBeNull();
+    expect(result!.metrics.duplicateStreetCandidatesSkipped).toBe(1);
+    expect(result!.metrics.consideredSegments).toBe(2);
+    expect(result!.metrics.selectedSegments).toBeGreaterThan(0);
+  });
+});

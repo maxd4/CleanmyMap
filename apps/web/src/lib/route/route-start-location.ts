@@ -18,7 +18,7 @@ export function selectRouteOriginWithinZone(
   candidates: readonly RoutePlannerCandidate[],
 ): RoutePlannerOrigin | null {
   const eligible = candidates
-    .filter(isRoutePlannerCandidateEligible)
+    .filter((candidate) => isRoutePlannerCandidateEligible(candidate))
     .filter((candidate) => routeStartZoneContains(zone, candidate))
     .sort((left, right) => {
       const scoreDifference = (right.finalPlannerContribution ?? right.score) -

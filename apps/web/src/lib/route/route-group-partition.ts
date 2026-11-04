@@ -61,6 +61,7 @@ export type RouteGroupPartitionInput = {
   effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
+  allowUnknownPredictedSafety?: boolean;
 };
 
 export type RouteGroupAssignment = {
@@ -220,7 +221,9 @@ function buildSingleGroupResult(
       effectiveRiskFocus: input.effectiveRiskFocus ?? "all",
       consideredCandidateIds: orderedCandidates.map(({ id }) => id),
       excludedUnsafeCandidateIds: orderedCandidates
-        .filter((candidate) => !isRoutePlannerCandidateEligible(candidate))
+        .filter((candidate) => !isRoutePlannerCandidateEligible(candidate, {
+          allowUnknownPredictedSafety: input.allowUnknownPredictedSafety,
+        }))
         .map(({ id }) => id),
       excludedByPartitionBoundCandidateIds: [],
       assignments: plannerResult.stops.map((stop) => ({
@@ -519,7 +522,11 @@ export function partitionRouteCandidates(
   }
 
   const orderedCandidates = uniqueOrderedCandidates(input.candidates);
-  const eligibleCandidates = orderedCandidates.filter(isRoutePlannerCandidateEligible);
+  const eligibleCandidates = orderedCandidates.filter((candidate) =>
+    isRoutePlannerCandidateEligible(candidate, {
+      allowUnknownPredictedSafety: input.allowUnknownPredictedSafety,
+    }),
+  );
   const preselectedCandidates = eligibleCandidates.slice(0, MAX_ROUTE_PARTITION_CANDIDATES);
   const preselectionExcluded = eligibleCandidates.slice(MAX_ROUTE_PARTITION_CANDIDATES);
   const volunteerCounts = balancedVolunteerCounts(input.volunteers, input.groupCount);
@@ -637,7 +644,9 @@ export function partitionRouteCandidates(
       effectiveRiskFocus: input.effectiveRiskFocus ?? "all",
       consideredCandidateIds: orderedCandidates.map(({ id }) => id),
       excludedUnsafeCandidateIds: orderedCandidates
-        .filter((candidate) => !isRoutePlannerCandidateEligible(candidate))
+        .filter((candidate) => !isRoutePlannerCandidateEligible(candidate, {
+          allowUnknownPredictedSafety: input.allowUnknownPredictedSafety,
+        }))
         .map(({ id }) => id),
       excludedByPartitionBoundCandidateIds: [
         ...preselectionExcluded.map(({ id }) => id),

@@ -22,6 +22,11 @@ import {
 import type { RouteOperationalBudgetDependency } from "@/lib/route/route-operational-budget";
 import type { RouteGeometry, RouteTopology } from "@/lib/route/route-contract";
 import type { PedestrianNetworkGraph } from "@/lib/route/pedestrian-network";
+import {
+  planPredictedPedestrianSegmentRoutes,
+  type PedestrianSegmentRoutePlan,
+  type SegmentRouteSelectionMetrics,
+} from "@/lib/route/pedestrian-segment-route-planner";
 import type { TrashSpotterRouteCandidate } from "@/lib/route/trash-spotter-recommendation";
 import {
   buildEventCenteredCandidates,
@@ -74,6 +79,7 @@ export type RoutePlanningResult = {
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
   streetCleaningCorridors?: StreetCleaningCorridorHandoff;
+  segmentSelection?: SegmentRouteSelectionMetrics;
 };
 
 function planRecommendationCandidates(
@@ -261,6 +267,11 @@ function prepareRouteRecommendation(input: RouteRecommendationInput) {
           MAX_ROUTE_PARTITION_CANDIDATES,
           Math.max(input.maxStops * input.groupCount * 2, 8),
         ),
+    allowUnknownPredictedSafety: Boolean(
+      input.pedestrianNetwork &&
+      input.pedestrianRiskProjection &&
+      input.planningMode.type === "free",
+    ),
   });
   return finalizeRouteRecommendationPreparation(
     input,
@@ -371,6 +382,26 @@ async function buildMultiGroupRoutingState(
 
 export async function planRouteRecommendation(input: RouteRecommendationInput): Promise<RoutePlanningResult> {
   const preparation = prepareRouteRecommendation(input);
+  const segmentRoutePlan = input.pedestrianNetwork && input.pedestrianRiskProjection &&
+    input.planningMode.type === "free"
+    ? planPredictedPedestrianSegmentRoutes({
+        origin: input.origin,
+        arrival: input.arrival,
+        routeTopology: input.routeTopology,
+        candidates: preparation.candidatePool.candidates,
+        projection: input.pedestrianRiskProjection,
+        pedestrianNetwork: input.pedestrianNetwork,
+        travelBudgetMinutes: input.travelBudgetMinutes,
+        maxStops: input.maxStops,
+        priorityVsTravel: input.priorityVsTravel,
+        volunteers: input.volunteers,
+        groupCount: input.groupCount,
+        effectiveRiskFocus: input.effectiveRiskFocus,
+      })
+    : null;
+  if (segmentRoutePlan) {
+    return finalizePredictedSegmentRouteRecommendation(input, preparation, segmentRoutePlan);
+  }
   const {
     effectiveRiskFocus,
     eventCenteredBuild,
@@ -451,6 +482,85 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
     multiRouteMetrics,
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
+    streetCleaningCorridors: buildUnknownStreetCleaningCorridorHandoff(
+      "Aucune source géographique auditée ne prouve encore le côté du corridor.",
+      operationalCorridorPlan,
+    ),
+    ...(input.weatherContext ? { weatherContext: structuredClone(input.weatherContext) } : {}),
+  };
+}
+
+function finalizePredictedSegmentRouteRecommendation(
+  input: RouteRecommendationInput,
+  preparation: ReturnType<typeof prepareRouteRecommendation>,
+  segmentRoutePlan: PedestrianSegmentRoutePlan,
+): RoutePlanningResult {
+  let predictionSummary = applyRoutePredictionPlannerBudgetAudit(
+    preparation.predictionSummary,
+    {
+      passedCandidateIds: preparation.candidatePool.audit.passedToPlannerCandidateIds,
+      evaluations: segmentRoutePlan.plannerResult.audit.evaluations,
+    },
+  );
+  predictionSummary = applyRoutePredictionFinalRoutingBudgetAudit(predictionSummary, []);
+  const routeGeometry = segmentRoutePlan.routeGeometry;
+  const groupRoutes = segmentRoutePlan.groupRoutes;
+  const groupDistances = groupRoutes.map(({ travelDistanceKm }) => travelDistanceKm);
+  const groupDurations = groupRoutes.map(({ travelMinutes }) => travelMinutes);
+  const groupVolunteers = groupRoutes.map(({ volunteerCount }) => volunteerCount);
+  const totalDistanceKm = groupDistances.reduce((total, distance) => total + distance, 0);
+  const totalDurationMinutes = groupDurations.reduce((total, duration) => total + duration, 0);
+  const multiRouteMetrics: RouteMultiRouteMetrics = {
+    groupCount: input.groupCount,
+    volunteers: input.volunteers,
+    totalDistanceKm: Number(totalDistanceKm.toFixed(2)),
+    totalDurationMinutes,
+    coverageGain: Number(groupRoutes.reduce((total, route) =>
+      total + route.candidateIds.reduce((sum, id) => {
+        const candidate = preparation.candidatePool.candidates.find(({ id: candidateId }) => candidateId === id);
+        return sum + (candidate?.score ?? 0) / 100;
+      }, 0), 0).toFixed(2)),
+    sharedTargetRatio: 0,
+    sharedDistanceKm: 0,
+    sharedDistanceRatio: 0,
+    networkOverlap: 0,
+    cleaningCoverageOverlap: 0,
+    balanceDistance: groupDistances.length > 0 ? Math.max(...groupDistances) - Math.min(...groupDistances) : 0,
+    balanceDuration: groupDurations.length > 0 ? Math.max(...groupDurations) - Math.min(...groupDurations) : 0,
+    balanceTargetCount: groupRoutes.length > 0 ? Math.max(...groupRoutes.map(({ targetCount }) => targetCount)) - Math.min(...groupRoutes.map(({ targetCount }) => targetCount)) : 0,
+    balanceVolunteerCount: groupVolunteers.length > 0
+      ? Math.max(...groupVolunteers) - Math.min(...groupVolunteers)
+      : 0,
+    fallbackGroupCount: groupRoutes.filter(({ routeGeometry: geometry }) => geometry.mode === "fallback").length,
+    networkDistanceMeasured: true,
+  };
+  const operationalPasses = buildOperationalPasses(groupRoutes, routeGeometry);
+  const operationalCorridorPlan = planOperationalStreetCorridors({ passes: operationalPasses });
+  return {
+    plannerResult: segmentRoutePlan.plannerResult,
+    candidates: preparation.candidatePool.candidates,
+    predictionSummary,
+    effectiveRiskFocus: input.effectiveRiskFocus,
+    plannedStops: segmentRoutePlan.plannedStops,
+    routeGeometry,
+    eventCenteredContext: null,
+    budgetPrefixApplied: false,
+    finalRoutingReconciliation: {
+      stopsBefore: segmentRoutePlan.plannerResult.stops.length,
+      stopsAfter: segmentRoutePlan.plannedStops.length,
+      excludedCandidateIds: [],
+      providerCalls: 0,
+      firstProviderMode: routeGeometry.mode,
+      finalGeometryMode: routeGeometry.mode,
+      degraded: segmentRoutePlan.degraded,
+      warning: segmentRoutePlan.warning,
+    },
+    groupPartition: segmentRoutePlan.partition,
+    groupRoutes,
+    multiRouteMetrics,
+    operationalBudget: input.operationalBudget,
+    weatherContext: input.weatherContext,
+    segmentSelection: segmentRoutePlan.metrics,
     streetCleaningCorridors: buildUnknownStreetCleaningCorridorHandoff(
       "Aucune source géographique auditée ne prouve encore le côté du corridor.",
       operationalCorridorPlan,

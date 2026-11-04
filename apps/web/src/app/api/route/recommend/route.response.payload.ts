@@ -139,6 +139,7 @@ function buildCommonPayload({
     streetCleaningCorridors: input.planning.streetCleaningCorridors ?? buildUnknownStreetCleaningCorridorHandoff(),
     stops,
     prediction: proofs.predictionSummary,
+    ...(planning.segmentSelection ? { segmentSelection: planning.segmentSelection } : {}),
     trace: proofs.trace,
     routeGeometry: planning.routeGeometry,
     scoreBreakdown,

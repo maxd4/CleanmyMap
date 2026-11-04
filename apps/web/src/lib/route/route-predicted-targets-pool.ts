@@ -14,6 +14,7 @@ export function buildRoutePlannerCandidatePool(input: {
   predictedCandidates: readonly RoutePredictedCandidate[];
   maxCandidates: number;
   effectiveRiskFocus?: RouteRiskFocus;
+  allowUnknownPredictedSafety?: boolean;
 }): {
   candidates: RoutePlannerCandidate[];
   audit: RoutePredictionPoolAudit;
@@ -23,7 +24,8 @@ export function buildRoutePlannerCandidatePool(input: {
       !(
         candidate.family === "predicted" &&
         candidate.volunteerSafety !== undefined &&
-        candidate.volunteerSafety.status !== "safe"
+        candidate.volunteerSafety.status !== "safe" &&
+        !(input.allowUnknownPredictedSafety && candidate.volunteerSafety.status === "unknown")
       ),
   );
   const ordered = [...all].sort((left, right) => {
