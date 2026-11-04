@@ -102,6 +102,24 @@ describe("pedestrian network importer and graph", () => {
     expect(routeThroughPedestrianNetwork(graph, [[48.8405, 2.34], [48.841, 2.34]], { topology: "open" })).toBeNull();
   });
 
+  it("anchors a nearby coordinate to the closest verified node while preserving directed routing", () => {
+    const result = build([
+      way("42-near", { highway: "footway", oneway: "yes" }, node("near-a", 48.84, 2.34), node("near-b", 48.841, 2.34)),
+    ]);
+    const graph = {
+      versionId: "pilot-v1",
+      networkKey: result.networkKey,
+      sourceRetrievedAt: result.sourceRetrievedAt,
+      bounds: result.bounds,
+      edges: result.edges,
+    };
+
+    const route = routeThroughPedestrianNetwork(graph, [[48.8402, 2.34], [48.841, 2.34]], { topology: "open" });
+    expect(route?.provider).toBe("stored-network");
+    expect(route?.origin).toEqual([48.84, 2.34]);
+    expect(route?.coordinates).toEqual([[48.84, 2.34], [48.841, 2.34]]);
+  });
+
   it("keeps a same-node leg network-verified with zero distance", () => {
     const result = build([
       way("43", { highway: "footway" }, node("43a", 48.84, 2.34), node("43b", 48.841, 2.34)),
