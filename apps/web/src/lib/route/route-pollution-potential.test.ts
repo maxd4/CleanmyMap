@@ -4,10 +4,12 @@ import type { RoutePlannerCandidate } from "./route-planner";
 import {
   buildRoutePollutionPotential,
   buildRoutePollutionReferenceCatalog,
+  isRoutePollutionPotential,
   ROUTE_POLLUTION_REFERENCE_COMPARISON_METHOD_VERSION,
   selectRoutePollutionReference,
   type RouteHistoricalPollutionReferenceInput,
 } from "./route-pollution-potential";
+import { evaluateRoutePollutionRelevance } from "./route-pollution-relevance";
 
 function projection(overrides: {
   missingCigaretteButts?: boolean;
@@ -105,7 +107,7 @@ function catalog(
         usefulCollectionLengthM: 400,
       },
       geometry: {
-        coordinates: [[48.85, 2.35], [48.853, 2.353]],
+        coordinates: [[48.852, 2.35], [48.8525, 2.3505], [48.853, 2.35], [48.8535, 2.3505]],
         source: "planner_snapshot" as const,
         mode: "network" as const,
       },
@@ -209,13 +211,105 @@ describe("route theoretical pollution potential", () => {
     expect(potential.reference?.comparison.pickupPreference).toBe(pickupPreference);
   });
 
+  it("classe les références selon la préférence demandée, pas selon la moyenne globale", () => {
+    const current = projection();
+    current.segments[0] = { ...current.segments[0]!, wasteRisk: 100, cigaretteButtRisk: 20 };
+    current.segments[1] = { ...current.segments[1]!, wasteRisk: 80, cigaretteButtRisk: 10 };
+    current.segments[2] = { ...current.segments[2]!, wasteRisk: 20, cigaretteButtRisk: 100 };
+    current.segments[3] = { ...current.segments[3]!, wasteRisk: 20, cigaretteButtRisk: 100 };
+    const references = buildRoutePollutionReferenceCatalog({
+      projection: current,
+      theoreticalReferences: [
+        {
+          id: "waste-strong",
+          label: "Waste strong",
+          comparison: { pickupPreference: "waste", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 400 },
+          geometry: { coordinates: [[48.85, 2.35], [48.8505, 2.3505], [48.851, 2.35], [48.8515, 2.3505]], source: "planner_snapshot", mode: "network" },
+          collectionSegmentIds: ["s-1", "s-2"],
+          provenance: ["test"],
+        },
+        {
+          id: "waste-weak",
+          label: "Waste weak",
+          comparison: { pickupPreference: "waste", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 400 },
+          geometry: { coordinates: [[48.852, 2.35], [48.8525, 2.3505], [48.853, 2.35], [48.8535, 2.3505]], source: "planner_snapshot", mode: "network" },
+          collectionSegmentIds: ["s-3", "s-4"],
+          provenance: ["test"],
+        },
+      ],
+      generatedAt: "2026-11-04T11:00:00.000Z",
+    });
+
+    expect(selectRoutePollutionReference(references, {
+      pickupPreference: "waste",
+      routeTopology: "loop",
+      travelBudgetMinutes: 60,
+      usefulCollectionLengthM: 400,
+    })?.id).toBe("waste-strong");
+  });
+
+  it("propagate la confiance de la catégorie sélectionnée", () => {
+    const current = projection();
+    for (const segment of current.segments) {
+      segment.wasteConfidence = null;
+      segment.cigaretteButtConfidence = { level: "high", score: 0.9 } as never;
+    }
+    const waste = buildRoutePollutionPotential(routeInput({ projection: current, pickupPreference: "waste", referenceCatalog: catalog(current) }));
+    const cigaretteButts = buildRoutePollutionPotential(routeInput({ projection: current, pickupPreference: "cigarette_butts", referenceCatalog: catalog(current) }));
+
+    expect(waste.confidence).toMatchObject({ level: "unknown", score: null, source: "unavailable" });
+    expect(cigaretteButts.confidence).toMatchObject({ level: "high", score: 0.9, source: "segment_projection" });
+    expect(waste.groups[0]?.index.confidence.level).toBe("unknown");
+    const relevance = evaluateRoutePollutionRelevance(waste);
+    expect(relevance.status).toBe("unavailable");
+    expect(relevance.reason).toBe("confidence_unknown");
+    expect(relevance.groups[0]?.reason).toBe("confidence_unknown");
+  });
+
+  it("refuse une référence dont la géométrie ou la longueur ne prouvent pas les segments déclarés", () => {
+    const current = projection();
+    const invalid = buildRoutePollutionReferenceCatalog({
+      projection: current,
+      historicalReferences: [{
+        id: "invalid-reference",
+        label: "Invalid",
+        historicalScore: 100,
+        comparison: { pickupPreference: "balanced", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 900 },
+        geometry: { coordinates: [[1, 1], [1.1, 1.1]], source: "planner_snapshot", mode: "network" },
+        collectionSegmentIds: ["s-3", "s-4"],
+        measurements: {
+          waste: { value: 90, methodVersion: ROUTE_POLLUTION_REFERENCE_COMPARISON_METHOD_VERSION, provenance: "test" },
+          cigaretteButts: { value: 90, methodVersion: ROUTE_POLLUTION_REFERENCE_COMPARISON_METHOD_VERSION, provenance: "test" },
+        },
+        provenance: ["test"],
+      }],
+      theoreticalReferences: [],
+      generatedAt: "2026-11-04T11:00:00.000Z",
+    });
+
+    expect(invalid.diagnostics.historicalAdmitted).toBe(0);
+    expect(invalid.diagnostics.historicalExcluded[0]?.reason).toBe("collection_geometry_not_mapped_to_network");
+  });
+
+  it("refuse les snapshots persistés incomplets ou contradictoires", () => {
+    const potential = buildRoutePollutionPotential(routeInput());
+    expect(isRoutePollutionPotential(potential)).toBe(true);
+    expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, categories: { waste: {} } } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, confidence: { level: "high", score: null, source: "segment_projection" } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, comparison: {} } })).toBe(false);
+  });
+
   it("marks a missing category explicitly while averaging the available category for mixed", () => {
     const current = projection({ missingCigaretteButts: true });
+    for (const segment of current.segments) {
+      segment.wasteConfidence = { level: "high", score: 0.8 } as never;
+    }
     const potential = buildRoutePollutionPotential(routeInput({ projection: current, referenceCatalog: catalog() }));
 
     expect(potential.global.categories.waste.value).toBe(65);
     expect(potential.global.categories.cigaretteButts.value).toBeNull();
     expect(potential.global.categories.mixed.status).toBe("partial");
+    expect(potential.global.categories.mixed.confidence.source).toBe("segment_projection");
     expect(potential.global.missingCategories).toContain("cigaretteButts");
     expect(potential.global.categories.mixed.missingReasons).toContain("cigarette_butts_category_missing");
   });
@@ -232,7 +326,7 @@ describe("route theoretical pollution potential", () => {
         usefulCollectionLengthM: 400,
       },
       geometry: {
-        coordinates: [[48.85, 2.35], [48.853, 2.353]],
+        coordinates: [[48.852, 2.35], [48.8525, 2.3505], [48.853, 2.35], [48.8535, 2.3505]],
         source: "planner_snapshot" as const,
         mode: "network" as const,
       },

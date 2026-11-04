@@ -401,7 +401,7 @@ function buildIndex(
     coverageRatio: stats.collectionLengthM > 0
       ? round(Math.max(waste.coveredLengthM, cigaretteButts.coveredLengthM) / stats.collectionLengthM, 4)
       : null,
-    confidence: combineConfidence([waste, cigaretteButts]),
+    confidence: selectedResult.confidence,
     missingCategories,
     limitations: [...new Set(limitations)],
   };
@@ -413,8 +413,9 @@ function referenceStrength(values: CategoryValues, preference: RoutePickupPrefer
     : preference === "cigarette_butts"
       ? [values.cigaretteButts]
       : [values.waste, values.cigaretteButts];
-  if (relevant.some((value) => value === null)) return null;
-  return mixedValue(values);
+  const available = relevant.filter((value): value is number => value !== null);
+  if (available.length !== relevant.length || available.length === 0) return null;
+  return available.reduce((sum, value) => sum + value, 0) / available.length;
 }
 
 function referenceCategoryValues(
@@ -425,8 +426,32 @@ function referenceCategoryValues(
   return stats.values;
 }
 
-function validReferenceGeometry(geometry: ReferenceGeometryInput): boolean {
-  return geometry.mode === "network" && geometry.coordinates.length >= 2 && geometry.coordinates.every(validCoordinate);
+function geometryContainsSegment(
+  geometry: ReferenceGeometryInput,
+  segment: PedestrianRiskProjectionSegment,
+): boolean {
+  const matches = (coordinate: readonly number[]) => geometry.coordinates.some(
+    (candidate) =>
+      Math.abs(candidate[0] - coordinate[0]) <= 1e-6 &&
+      Math.abs(candidate[1] - coordinate[1]) <= 1e-6,
+  );
+  return segment.coordinates.length >= 2 &&
+    segment.coordinates.every(validCoordinate) &&
+    segment.coordinates.every(matches);
+}
+
+function validReferenceGeometry(
+  geometry: ReferenceGeometryInput,
+  segmentIds: readonly string[],
+  segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
+  usefulCollectionLengthM: number,
+): boolean {
+  if (geometry.mode !== "network" || geometry.coordinates.length < 2 || !geometry.coordinates.every(validCoordinate)) return false;
+  const mappedSegments = segmentIds.map((id) => segments.get(id));
+  if (mappedSegments.some((segment) => !segment || segment.riskStatus !== "predicted" || !finitePositive(segment.lengthM))) return false;
+  if (mappedSegments.some((segment) => !geometryContainsSegment(geometry, segment!))) return false;
+  const segmentLength = mappedSegments.reduce((sum, segment) => sum + (segment?.lengthM ?? 0), 0);
+  return Math.abs(segmentLength - usefulCollectionLengthM) / Math.max(segmentLength, usefulCollectionLengthM, 1) <= ROUTE_REFERENCE_LENGTH_TOLERANCE;
 }
 
 function validComparison(comparison: RoutePollutionReferenceComparison): boolean {
@@ -449,8 +474,8 @@ function makeReference(
   },
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
 ): RoutePollutionReference | null {
-  const segmentIds = uniqueIds(input.collectionSegmentIds).filter((id) => segments.has(id));
-  if (!validComparison(input.comparison) || !validReferenceGeometry(input.geometry) || segmentIds.length === 0) return null;
+  const segmentIds = uniqueIds(input.collectionSegmentIds);
+  if (!validComparison(input.comparison) || segmentIds.length === 0 || segmentIds.length !== input.collectionSegmentIds.length || !validReferenceGeometry(input.geometry, segmentIds, segments, input.comparison.usefulCollectionLengthM)) return null;
   const rawProjectionIndex = referenceCategoryValues(segmentIds, segments);
   if (referenceStrength(rawProjectionIndex, input.comparison.pickupPreference) === null) return null;
   return {
@@ -473,10 +498,13 @@ function makeReference(
   };
 }
 
-function historicalExclusion(input: RouteHistoricalPollutionReferenceInput): string | null {
+function historicalExclusion(
+  input: RouteHistoricalPollutionReferenceInput,
+  segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
+): string | null {
   if (input.historicalScore !== 100) return "historical_score_is_not_100";
-  if (!validReferenceGeometry(input.geometry)) return "network_geometry_required";
   if (!validComparison(input.comparison)) return "comparison_dimensions_missing";
+  const segmentIds = uniqueIds(input.collectionSegmentIds);
   const requiredMeasurements: HistoricalMeasurement[] = input.comparison.pickupPreference === "waste"
     ? [input.measurements.waste]
     : input.comparison.pickupPreference === "cigarette_butts"
@@ -488,7 +516,7 @@ function historicalExclusion(input: RouteHistoricalPollutionReferenceInput): str
   if (requiredMeasurements.some((measurement) => measurement.methodVersion !== ROUTE_POLLUTION_REFERENCE_COMPARISON_METHOD_VERSION)) {
     return "measurement_method_not_homogeneous";
   }
-  if (uniqueIds(input.collectionSegmentIds).length === 0) return "collection_geometry_not_mapped_to_network";
+  if (segmentIds.length === 0 || segmentIds.length !== input.collectionSegmentIds.length || !validReferenceGeometry(input.geometry, segmentIds, segments, input.comparison.usefulCollectionLengthM)) return "collection_geometry_not_mapped_to_network";
   return null;
 }
 
@@ -502,7 +530,7 @@ export function buildRoutePollutionReferenceCatalog(input: {
   const references: RoutePollutionReference[] = [];
   const historicalExcluded: Array<{ id: string; reason: string }> = [];
   for (const historical of input.historicalReferences ?? []) {
-    const reason = historicalExclusion(historical);
+    const reason = historicalExclusion(historical, segments);
     if (reason) {
       historicalExcluded.push({ id: historical.id, reason });
       continue;
@@ -720,39 +748,7 @@ export function buildRoutePollutionPotential(
   };
 }
 
-function validNullableNumber(value: unknown): value is number | null {
-  return value === null || (typeof value === "number" && Number.isFinite(value));
-}
-
-function isRoutePollutionPotentialIndex(value: unknown): value is RoutePollutionPotentialIndex {
-  if (!value || typeof value !== "object") return false;
-  const index = value as RoutePollutionPotentialIndex;
-  return (index.status === "available" || index.status === "partial" || index.status === "unavailable") &&
-    validNullableNumber(index.value) &&
-    Number.isInteger(index.uniqueSegmentCount) && index.uniqueSegmentCount >= 0 &&
-    Number.isFinite(index.collectionLengthM) && index.collectionLengthM >= 0 &&
-    Number.isFinite(index.coveredLengthM) && index.coveredLengthM >= 0 &&
-    validNullableNumber(index.coverageRatio) &&
-    Array.isArray(index.missingCategories) && Array.isArray(index.limitations) &&
-    typeof index.categories === "object" && index.categories !== null;
-}
-
-export function isRoutePollutionPotential(value: unknown): value is RoutePollutionPotential {
-  if (!value || typeof value !== "object") return false;
-  const potential = value as RoutePollutionPotential;
-  return potential.schemaVersion === ROUTE_POLLUTION_POTENTIAL_SCHEMA_VERSION &&
-    (potential.status === "available" || potential.status === "partial" || potential.status === "unavailable") &&
-    (potential.selectedCategory === "waste" || potential.selectedCategory === "cigaretteButts" || potential.selectedCategory === "mixed") &&
-    validNullableNumber(potential.value) &&
-    isRoutePollutionPotentialIndex(potential.global) &&
-    Array.isArray(potential.groups) && potential.groups.every((group) =>
-      Number.isInteger(group.groupIndex) && Number.isInteger(group.volunteerCount) && isRoutePollutionPotentialIndex(group.index),
-    ) &&
-    (potential.reference === null || typeof potential.reference.id === "string") &&
-    Number.isInteger(potential.coverage.uniqueSegmentCount) && potential.coverage.uniqueSegmentCount >= 0 &&
-    Number.isFinite(potential.coverage.collectionLengthM) && potential.coverage.collectionLengthM >= 0 &&
-    Number.isFinite(potential.coverage.coveredLengthM) && potential.coverage.coveredLengthM >= 0 &&
-    validNullableNumber(potential.coverage.coverageRatio) &&
-    Array.isArray(potential.provenance) && Array.isArray(potential.limitations) &&
-    typeof potential.version === "object" && potential.version !== null;
-}
+export {
+  isRoutePollutionPotential,
+  isRoutePollutionPotentialConfidence,
+} from "./route-pollution-potential-validation";

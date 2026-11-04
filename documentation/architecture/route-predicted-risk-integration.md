@@ -275,10 +275,21 @@ Les références sont construites hors requête par
 `buildRoutePollutionReferenceCatalog`. Elles sont comparées sur la préférence,
 la topologie, le budget et la longueur utile. Une action historique n'est
 admissible que si son score vaut 100, sa géométrie est un tracé réseau, ses
-segments sont mappés et les mesures requises utilisent la méthode de
-comparaison versionnée. Ces mesures qualifient l'homogénéité de la référence ;
-elles ne sont jamais transformées en risque spatial. À défaut, une référence
-théorique admissible du réseau pré-calculé peut être utilisée.
+segments sont mappés à la géométrie déclarée, que leur longueur cumulée reste
+compatible avec la longueur utile comparée et que les mesures requises utilisent
+la méthode de comparaison versionnée. Une préférence `waste` classe les
+références sur la seule valeur déchets, `cigarette_butts` sur la seule valeur
+mégots et `balanced` sur leur moyenne ; une autre catégorie forte ne peut donc
+pas masquer la catégorie demandée. Ces mesures qualifient l'homogénéité de la
+référence ; elles ne sont jamais transformées en risque spatial. À défaut, une
+référence théorique admissible du réseau pré-calculé peut être utilisée.
+
+La confiance de l'indice global et de chaque groupe suit strictement la
+catégorie sélectionnée. Le mode mixte combine uniquement les catégories
+disponibles et reste `partial` lorsqu'une catégorie manque. Les snapshots
+transportés sont refusés si leurs catégories, confiances, références, versions
+ou couvertures sont incomplets ou contradictoires ; l'absence historique de
+`pollutionPotential` reste compatible.
 
 Le catalogue embarque l'identité exacte de la projection, du graphe et du
 modèle. Un catalogue absent ou incompatible avec le snapshot courant ne donne
