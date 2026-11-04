@@ -10,8 +10,8 @@ import { RouteOriginAndTriggerControls } from "./route-section.controls";
 import { deriveRouteSectionState } from "./route-section.model";
 import { RouteResults } from "./route-section.results";
 import { getRouteOriginLabel, getRouteRecommendationErrorMessage } from "./route-origin";
-import { SectionShell } from "@/components/sections/rubriques/shared";
-import { Navigation, Info } from "lucide-react";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { Info } from "lucide-react";
 import { motion } from "framer-motion";
 import type { RoutePlanningMode, RouteMultiRouteDisplayMode } from "./route-types";
 import {
@@ -45,6 +45,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
     planningModeValidationError, isResolvingOrigin, isRequestInFlight, requestRecommendation,
   } = routeData;
   const derived = deriveRouteSectionState({ data, picks, selectedGroupIndex, fr, serviceMinutes, operationalTotalMinutes });
+  const showResultsColumn = hasData || isLoading || Boolean(error) || originMode === "map" || options.startLocation?.mode === "zone";
   const createActionFromRecommendation = () => {
     if (!data) return;
     writePlannerActionHandoff({
@@ -58,10 +59,10 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
     router.push(buildPlannerActionHref(actionId, planningMode));
   };
   return (
-    <SectionShell id="route" title={fr ? "Où agir" : "Where to act"} subtitle={fr ? "Décidez rapidement où agir selon la priorité opérationnelle, le déplacement et le nombre d’arrêts." : "Choose where to act using operational priority, travel, and the number of stops."} icon={Navigation} gradient="from-blue-500/20 via-indigo-500/10 to-transparent">
-      <div className="grid gap-10 xl:grid-cols-[1fr_1.5fr] pt-12 pb-20">
-        <aside className="space-y-8">
-          <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
+    <div data-route-planner className="space-y-4">
+      <div className={`grid items-start gap-4 ${showResultsColumn ? "xl:grid-cols-[minmax(19rem,0.78fr)_minmax(0,1.42fr)]" : "xl:grid-cols-1"}`}>
+        <aside className={`min-w-0 space-y-4 ${showResultsColumn ? "xl:sticky xl:top-4" : ""}`}>
+          <div className="space-y-3">
             <RouteOriginAndTriggerControls
               options={options} setOptions={setOptions} fr={fr}
               planningMode={planningMode} setPlanningMode={setPlanningMode}
@@ -77,11 +78,11 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
             <RouteAssistant data={data} hasData={hasData} fr={fr} />
           </div>
         </aside>
-        <div className="space-y-8">
-          {isLoading ? <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6"><CmmSkeleton className="h-12 w-1/3 rounded-xl bg-white/5" /><div className="grid grid-cols-2 gap-6"><CmmSkeleton className="h-24 rounded-2xl bg-white/5" /><CmmSkeleton className="h-24 rounded-2xl bg-white/5" /></div><CmmSkeleton className="h-[400px] rounded-[2rem] bg-white/5" /></div> : null}
-          {error ? <motion.div initial={{ opacity: 1, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-10 rounded-[3rem] border border-rose-500/20 bg-rose-500/5 backdrop-blur-3xl shadow-2xl flex items-center gap-8"><div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500"><Info size={32} /></div><p className="text-lg font-black text-white tracking-tight leading-snug">{getRouteRecommendationErrorMessage(error, fr)}</p></motion.div> : null}
-          {derived.dataStatusMessage && data ? <div role="status" data-route-status={data.status} data-route-data-status={data.dataStatus} className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-5 py-4 text-sm font-semibold text-amber-50"><p>{derived.dataStatusMessage}</p>{data.isTruncated ? <p className="mt-1 text-xs font-medium text-amber-100/75">{fr ? "Le volume chargé a atteint la limite de recommandation." : "The loaded volume reached the recommendation limit."}</p> : null}{data.sourceHealth.warnings.map((warning) => <p key={warning} className="mt-1 text-xs font-medium text-amber-100/75">{warning}</p>)}</div> : null}
-          {data ? <p role="status" data-route-origin-source={data.origin.source} className="rounded-2xl border border-blue-300/15 bg-blue-500/5 px-5 py-3 text-sm font-semibold text-blue-50">{fr ? "Point de départ utilisé : " : "Starting point used: "}{getRouteOriginLabel(data.origin.source, fr)}</p> : null}
+        <section aria-label={fr ? "Résultats de l’itinéraire" : "Route results"} className="min-w-0 space-y-4">
+          {isLoading ? <CmmCard tone="emerald" variant="muted" size="md" className="space-y-4"><CmmSkeleton className="h-8 w-1/3 rounded-xl" /><div className="grid grid-cols-2 gap-3"><CmmSkeleton className="h-20 rounded-2xl" /><CmmSkeleton className="h-20 rounded-2xl" /></div><CmmSkeleton className="h-[min(48vh,28rem)] rounded-2xl" /></CmmCard> : null}
+          {error ? <motion.div initial={{ opacity: 1, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} role="alert" className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-950"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700"><Info size={20} aria-hidden="true" /></div><p className="text-sm font-bold leading-snug">{getRouteRecommendationErrorMessage(error, fr)}</p></motion.div> : null}
+          {derived.dataStatusMessage && data ? <div role="status" data-route-status={data.status} data-route-data-status={data.dataStatus} className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"><p>{derived.dataStatusMessage}</p>{data.isTruncated ? <p className="mt-1 text-xs font-medium text-amber-900/75">{fr ? "Le volume chargé a atteint la limite de recommandation." : "The loaded volume reached the recommendation limit."}</p> : null}{data.sourceHealth.warnings.map((warning) => <p key={warning} className="mt-1 text-xs font-medium text-amber-900/75">{warning}</p>)}</div> : null}
+          {data ? <p role="status" data-route-origin-source={data.origin.source} className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-950">{fr ? "Point de départ utilisé : " : "Starting point used: "}{getRouteOriginLabel(data.origin.source, fr)}</p> : null}
           <RouteResults
             data={data} fr={fr} hasData={hasData} hasRoute={hasRoute}
             originMode={originMode} mapOrigin={mapOrigin} setMapOrigin={setMapOrigin}
@@ -103,8 +104,8 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
             organizationMarginMinutes={derived.organizationMarginMinutes}
             onCreateAction={createActionFromRecommendation}
           />
-        </div>
+        </section>
       </div>
-    </SectionShell>
+    </div>
   );
 }

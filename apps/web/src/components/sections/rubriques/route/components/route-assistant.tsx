@@ -1,4 +1,5 @@
 import { RouteResponse } from "../route-types";
+import { CmmCard } from "@/components/ui/cmm-card";
 
 interface RouteAssistantProps {
   data: RouteResponse | undefined;
@@ -11,26 +12,26 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
 
   return (
     <>
-      <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(14,56,40,0.9)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-        <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
-          {fr ? "Assistant proactif" : "Proactive assistant"}
+      <CmmCard as="section" tone="emerald" variant="muted" size="sm">
+        <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-emerald-800">
+          {fr ? "À retenir" : "Key takeaways"}
         </p>
-        <div className="mt-3 space-y-3">
-          <p className="text-sm font-semibold text-white">{data.proactiveAssistant.actNow}</p>
-          <p className="text-sm leading-relaxed text-white">
+        <div className="mt-2 space-y-2">
+          <p className="text-sm font-semibold text-emerald-950">{data.proactiveAssistant.actNow}</p>
+          <p className="text-sm leading-relaxed text-emerald-950">
             {data.proactiveAssistant.criticalNearby}
           </p>
-          <p className="text-sm leading-relaxed text-white">
+          <p className="text-sm leading-relaxed text-emerald-950">
             {data.proactiveAssistant.mostUsefulAction}
           </p>
         </div>
         <div className="mt-4 grid gap-2 md:grid-cols-2">
           {data.proactiveAssistant.operationalSignalZones.length > 0 ? (
-            <div className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] p-3">
-              <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-emerald-100/64">
+            <div className="rounded-xl border border-emerald-200/70 bg-white/70 p-3">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-800">
                 {fr ? "Signaux opérationnels" : "Operational signals"}
               </p>
-              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white">
+              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-emerald-950">
                 {data.proactiveAssistant.operationalSignalZones.slice(0, 2).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -38,11 +39,11 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
             </div>
           ) : null}
           {data.proactiveAssistant.upcomingEvents.length > 0 ? (
-            <div className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] p-3">
-              <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-emerald-100/64">
+            <div className="rounded-xl border border-emerald-200/70 bg-white/70 p-3">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-800">
                 {fr ? "Événements à venir" : "Upcoming events"}
               </p>
-              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white">
+              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-emerald-950">
                 {data.proactiveAssistant.upcomingEvents.slice(0, 2).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -50,42 +51,42 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
             </div>
           ) : null}
         </div>
-      </section>
+      </CmmCard>
 
       {data.proactiveAssistant.hotspots.length > 0 ? (
-        <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-          <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
+        <CmmCard as="section" tone="emerald" variant="muted" size="sm">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-emerald-800">
             {fr ? "Hotspots détectés" : "Detected hotspots"}
           </p>
           <ul className="mt-4 space-y-2">
             {data.proactiveAssistant.hotspots.slice(0, 3).map((hotspot) => (
               <li
                 key={`${hotspot.zoneLabel}-${hotspot.operationalSignalScore}`}
-                className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] p-3"
+                className="rounded-xl border border-emerald-200/70 bg-white/70 p-3"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="font-semibold text-white">
+                  <p className="font-semibold text-emerald-950">
                     {hotspot.zoneLabel} - signal{" "}
                     {hotspot.operationalSignalScore.toFixed(1)}/10
                   </p>
                   {hotspot.distanceKm !== null ? (
-                    <p className="text-xs font-semibold text-emerald-100/66">
+                    <p className="text-xs font-semibold text-emerald-800">
                       {hotspot.distanceKm} km
                     </p>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-white">
+                <p className="mt-2 text-sm leading-relaxed text-emerald-950">
                   {fr
                     ? `Actions récentes: ${hotspot.recentActions} | Spots: ${hotspot.recentSpots} | Pression événement: ${hotspot.eventPressure.toFixed(1)}`
                     : `Recent actions: ${hotspot.recentActions} | Spots: ${hotspot.recentSpots} | Event pressure: ${hotspot.eventPressure.toFixed(1)}`}
                 </p>
-                <p className="mt-2 text-sm font-medium text-emerald-50/78">
+                <p className="mt-2 text-sm font-medium text-emerald-900/80">
                   {hotspot.reason}
                 </p>
               </li>
             ))}
           </ul>
-        </section>
+        </CmmCard>
       ) : null}
     </>
   );

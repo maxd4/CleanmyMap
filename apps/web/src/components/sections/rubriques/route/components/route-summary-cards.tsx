@@ -1,4 +1,5 @@
 import { RouteOptions } from "../route-types";
+import { CmmCard } from "@/components/ui/cmm-card";
 
 interface RouteSummaryCardsProps {
   options: RouteOptions;
@@ -30,33 +31,21 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
   ] as const;
 
   return (
-    <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-      <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
-        {fr ? "Lecture rapide" : "Quick read"}
-      </p>
-      <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
-        {fr ? "Ce que la recommandation utilise" : "What the recommendation uses"}
-      </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white">
-        {fr
-          ? "La sélection combine la priorité opérationnelle disponible (fraîcheur des signalements) et le déplacement."
-          : "The selection combines the available operational priority (report freshness) and travel."}
-      </p>
-
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label={fr ? "Résumé des paramètres" : "Settings summary"}>
+      <CmmCard tone="emerald" variant="outlined" size="sm" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {summaryCards.map((item) => (
           <div
             key={item.label}
-            className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-4 py-3"
+            className="min-w-0 rounded-xl border border-emerald-200/60 bg-emerald-50/70 px-3 py-2"
           >
-            <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-emerald-100/58">
+            <p className="cmm-text-caption font-black uppercase leading-4 tracking-[0.08em] text-emerald-800">
               {item.label}
             </p>
-            <p className="mt-2 text-lg font-black text-white">{item.value}</p>
-            <p className="mt-1 text-xs text-white/64">{item.note}</p>
+            <p className="mt-1 text-sm font-black text-emerald-950 sm:text-base">{item.value}</p>
+            <p className="mt-0.5 cmm-text-caption font-medium leading-4 text-emerald-800/80">{item.note}</p>
           </div>
         ))}
-      </div>
+      </CmmCard>
     </section>
   );
 }

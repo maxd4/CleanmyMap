@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { RouteOriginMode, RouteRecommendationOrigin } from "./route-types";
 
 export function RouteRecommendationTrigger({
@@ -37,8 +37,8 @@ export function RouteRecommendationTrigger({
         : fr
           ? recommendationRequested ? "Recalculer la recommandation" : "Calculer la recommandation"
           : recommendationRequested ? "Recalculate recommendation" : "Calculate recommendation";
-  return <div className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-    {planningModeError ? <p role="alert" className="mb-3 rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-xs font-bold text-amber-100">{planningModeError}</p> : null}
-    {isLoaded && isSignedIn ? <button type="button" onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestRecommendation(); }} disabled={disabled} aria-busy={isResolvingOrigin || isLoading || isRequestInFlight} className="min-h-11 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60">{label}</button> : <Link href={buildSignInRedirectHref("/actions/new?panel=itineraire")} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400">{fr ? "Se connecter pour calculer" : "Sign in to calculate"}</Link>}
+  return <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+    {planningModeError ? <p role="alert" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-950">{planningModeError}</p> : null}
+    {isLoaded && isSignedIn ? <CmmButton tone="primary" width="wide" loading={isResolvingOrigin || isLoading || isRequestInFlight} disabled={disabled} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ requestRecommendation(); }} className="w-full justify-center text-center font-black uppercase tracking-[0.12em]">{label}</CmmButton> : <CmmButton href={buildSignInRedirectHref("/actions/new?panel=itineraire")} tone="primary" width="wide" className="w-full justify-center text-center font-black uppercase tracking-[0.12em]">{fr ? "Se connecter pour calculer" : "Sign in to calculate"}</CmmButton>}
   </div>;
 }

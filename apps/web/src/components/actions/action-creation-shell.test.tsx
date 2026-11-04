@@ -229,6 +229,7 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain("Vérifier et publier");
     expect(markup).toContain('data-workflow-section="terrain"');
     expect(markup).toContain('data-testid="route-engine"');
+    expect(markup).not.toContain('data-testid="fixed-area-route-state"');
     expect(markup).toContain('data-testid="weather-engine"');
     expect(markup).toContain('data-testid="pre-formulaire-engine"');
     expect(beforeFormPropsMock).toHaveBeenCalledTimes(1);

@@ -3,9 +3,10 @@ import {
   type RoutePickupPreference,
   type RouteOptions,
 } from "../route-types";
+import { CmmCard } from "@/components/ui/cmm-card";
 
 function buildInputClass() {
-  return "min-h-[44px] rounded-2xl border border-emerald-200/14 bg-[rgba(11,34,25,0.92)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-emerald-300/45";
+    return "min-h-[44px] rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200";
 }
 
 interface RouteOptionsFormProps {
@@ -22,35 +23,29 @@ export function RouteOptionsForm({
   guided = false,
 }: RouteOptionsFormProps) {
   return (
-    <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
+    <CmmCard as="section" tone="emerald" variant="outlined" size="sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-emerald-800">
             {fr ? "Paramètres du circuit" : "Route settings"}
           </p>
-          <h3 className="mt-2 text-xl font-bold tracking-[-0.02em] text-white">
-            {fr ? "Ajuster la sortie" : "Tune the sortie"}
-          </h3>
         </div>
-        <p className="rounded-full border border-emerald-200/14 bg-[rgba(17,56,41,0.76)] px-3 py-1.5 text-xs font-semibold text-emerald-50/92">
-          Mobile-first
-        </p>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <fieldset
-          className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
+          className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3 sm:col-span-2"
           aria-label={fr ? "Type d'itinéraire" : "Route type"}
         >
-          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+          <legend className="px-1 text-sm font-bold text-emerald-950">
             {fr ? "Type d’itinéraire" : "Route type"}
           </legend>
-          <div className="mt-2 grid gap-3 md:grid-cols-2" role="radiogroup">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup">
             {([
               ["loop", fr ? "Boucle" : "Loop", fr ? "Départ et arrivée identiques." : "Start and finish at the same point."],
               ["open", fr ? "Départ / arrivée" : "Start / finish", fr ? "Départ fixé par la localisation ; arrivée fournie ou déterminée par le planner." : "Location fixes the start; finish is provided or determined by the planner."],
             ] as const).map(([value, label, help]) => (
-              <label key={value} className="flex min-h-16 cursor-pointer flex-col gap-1 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10">
+              <label key={value} className="flex min-h-14 cursor-pointer flex-col gap-1 rounded-xl border border-emerald-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-emerald-950 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-100">
                 <span className="flex items-center gap-3">
                   <input
                     type="radio"
@@ -62,12 +57,12 @@ export function RouteOptionsForm({
                   />
                   {label}
                 </span>
-                <span className="pl-7 text-xs font-medium text-emerald-100/64">{help}</span>
+                <span className="pl-7 text-xs font-medium text-emerald-900/70">{help}</span>
               </label>
             ))}
           </div>
         </fieldset>
-        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold text-emerald-950">
           {fr ? "Nombre de bénévoles" : "Volunteers"}
           <input
             type="number"
@@ -89,18 +84,18 @@ export function RouteOptionsForm({
             }
             className={buildInputClass()}
           />
-          {guided ? <span className="text-xs font-medium text-emerald-100/64">{fr ? "Effectif piloté par les groupes guidés ci-dessus." : "Staffing is controlled by the guided groups above."}</span> : null}
+          {guided ? <span className="text-xs font-medium text-emerald-900/70">{fr ? "Effectif piloté par les groupes guidés." : "Staffing is controlled by the guided groups."}</span> : null}
         </label>
 
         {!guided ? <fieldset
-          className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
+          className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3 sm:col-span-2"
           aria-label={fr ? "Organisation du groupe" : "Group organization"}
         >
-          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+          <legend className="px-1 text-sm font-bold text-emerald-950">
             {fr ? "Organisation du groupe" : "Group organization"}
           </legend>
-          <div className="mt-2 grid gap-3 md:grid-cols-2" role="radiogroup">
-            <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup">
+            <label className="flex min-h-12 items-center gap-3 rounded-xl border border-emerald-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-emerald-950 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-100">
               <input
                 type="radio"
                 name="route-organization-mode"
@@ -113,7 +108,7 @@ export function RouteOptionsForm({
               />
               {fr ? "Garder le groupe entier" : "Keep the whole group"}
             </label>
-            <label className={`flex min-h-12 items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10 ${options.volunteers < 2 ? "cursor-not-allowed opacity-50" : ""}`}>
+            <label className={`flex min-h-12 items-center gap-3 rounded-xl border border-emerald-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-emerald-950 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-100 ${options.volunteers < 2 ? "cursor-not-allowed opacity-50" : ""}`}>
               <input
                 type="radio"
                 name="route-organization-mode"
@@ -128,7 +123,7 @@ export function RouteOptionsForm({
               {fr ? "Diviser le groupe" : "Split the group"}
             </label>
           </div>
-          <p className="mt-3 text-xs font-medium text-emerald-100/64">
+          <p className="mt-2 text-xs font-medium text-emerald-900/70">
             {options.groupCount > 1
               ? fr
                 ? `${options.volunteers} bénévoles → ${options.groupCount} groupes → environ ${Math.ceil(options.volunteers / options.groupCount)} personne(s) par groupe`
@@ -138,7 +133,7 @@ export function RouteOptionsForm({
                 : "One loop for the whole group."}
           </p>
           {options.groupCount > 1 ? (
-            <label className="mt-4 flex max-w-sm flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+            <label className="mt-3 flex max-w-sm flex-col gap-1.5 text-sm font-semibold text-emerald-950">
               {fr ? "Nombre de sous-groupes" : "Number of sub-groups"}
               <input
                 type="number"
@@ -158,7 +153,7 @@ export function RouteOptionsForm({
                 }
                 className={buildInputClass()}
               />
-              <span className="text-xs font-medium text-emerald-100/64">
+              <span className="text-xs font-medium text-emerald-900/70">
                 {fr
                   ? `Maximum : ${Math.min(12, options.volunteers)} groupes`
                   : `Maximum: ${Math.min(12, options.volunteers)} groups`}
@@ -168,15 +163,15 @@ export function RouteOptionsForm({
         </fieldset> : null}
 
         <fieldset
-          className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
+          className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3 sm:col-span-2"
           aria-label={fr ? "Préférence de collecte" : "Pickup preference"}
         >
-          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+          <legend className="px-1 text-sm font-bold text-emerald-950">
             {fr
               ? "Que souhaitez-vous principalement ramasser ?"
               : "What would you mainly like to collect?"}
           </legend>
-          <div className="mt-2 grid gap-3 md:grid-cols-3" role="radiogroup">
+          <div className="mt-2 grid gap-2 sm:grid-cols-3" role="radiogroup">
             {(
               [
                 [
@@ -206,7 +201,7 @@ export function RouteOptionsForm({
               return (
                 <label
                   key={value}
-                  className="flex min-h-24 cursor-pointer flex-col gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10"
+                  className="flex min-h-20 cursor-pointer flex-col gap-1.5 rounded-xl border border-emerald-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-emerald-950 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-100"
                 >
                   <span className="flex items-center gap-3">
                     <input
@@ -224,21 +219,16 @@ export function RouteOptionsForm({
                     />
                     {fr ? label : englishLabel}
                   </span>
-                  <span className="pl-7 text-xs font-medium leading-relaxed text-emerald-100/64">
+                  <span className="pl-7 cmm-text-small font-medium leading-relaxed text-emerald-900/70">
                     {fr ? help : englishHelp}
                   </span>
                 </label>
               );
             })}
           </div>
-          <p className="mt-3 text-xs font-medium leading-relaxed text-emerald-100/70">
-            {fr
-              ? "La sécurité, la distance et l’utilité restent prises en compte."
-              : "Safety, distance, and usefulness remain part of the calculation."}
-          </p>
         </fieldset>
 
-        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold text-emerald-950">
           {fr ? "Pondération priorité / déplacement" : "Priority / travel weighting"}
           <input
             type="range"
@@ -253,14 +243,14 @@ export function RouteOptionsForm({
             }
             className="mt-1 accent-emerald-300"
           />
-          <span className="text-xs font-medium text-emerald-100/64">
+          <span className="text-xs font-medium text-emerald-900/70">
             {fr
               ? `${options.priorityVsTravel}% priorité / ${100 - options.priorityVsTravel}% déplacement`
               : `${options.priorityVsTravel}% priority / ${100 - options.priorityVsTravel}% travel`}
           </span>
         </label>
 
-        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold text-emerald-950">
           {fr ? "Créneau total de l’événement (minutes)" : "Total event slot (minutes)"}
           <input
             type="number"
@@ -278,19 +268,19 @@ export function RouteOptionsForm({
             }
             className={buildInputClass()}
           />
-          <span className="text-xs font-medium text-emerald-100/64">
+          <span className="text-xs font-medium text-emerald-900/70">
             {guided
               ? (fr ? "Créneau piloté par le budget guidé ci-dessus." : "Slot is controlled by the guided budget above.")
               : (fr ? "Durée d’action + 15 min de marge organisationnelle" : "Action duration + 15 min organization margin")}
           </span>
         </label>
 
-        <fieldset className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2">
-          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+        <fieldset className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3 sm:col-span-2">
+          <legend className="px-1 text-sm font-bold text-emerald-950">
             {fr ? "Créneau météo prévu (facultatif)" : "Planned weather window (optional)"}
           </legend>
-          <div className="mt-2 grid gap-3 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-sm font-semibold text-emerald-950">
               {fr ? "Début" : "Start"}
               <input
                 type="datetime-local"
@@ -301,7 +291,7 @@ export function RouteOptionsForm({
                 className={buildInputClass()}
               />
             </label>
-            <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+            <label className="flex flex-col gap-1.5 text-sm font-semibold text-emerald-950">
               {fr ? "Fin" : "End"}
               <input
                 type="datetime-local"
@@ -313,14 +303,9 @@ export function RouteOptionsForm({
               />
             </label>
           </div>
-          <p className="mt-3 text-xs font-medium leading-relaxed text-emerald-100/64">
-            {fr
-              ? "La prévision couvre ce créneau en heure de Paris et n’influence pas encore le tracé, la durée ni le budget."
-              : "The forecast covers this Paris-time window and does not yet influence route, duration, or budget."}
-          </p>
         </fieldset>
 
-        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold text-emerald-950">
           {fr ? "Arrêts maximum" : "Max stops"}
           <input
             type="number"
@@ -337,6 +322,6 @@ export function RouteOptionsForm({
           />
         </label>
       </div>
-    </section>
+    </CmmCard>
   );
 }

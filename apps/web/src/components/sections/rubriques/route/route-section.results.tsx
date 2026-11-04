@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import { Info, Route as RouteIcon, Sparkles } from "lucide-react";
+import { Info } from "lucide-react";
 import { RouteExplanation } from "./components/route-explanation";
 import { RouteList } from "./components/route-list";
 import { RoutePdfExport } from "./components/route-pdf-export";
@@ -19,6 +19,7 @@ import {
 } from "./route-types";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import { EMPTY_ROUTE_GEOMETRY } from "./route-section.model";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 const RouteMap = dynamic(
   () => import("./components/route-map").then((module) => module.RouteMap),
@@ -123,29 +124,22 @@ function RouteResultSummary({
 }) {
   const isLoop = (data.routeTopology ?? (data.isLoop ? "loop" : "open")) === "loop";
   return (
-    <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group overflow-hidden relative">
-      <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-        <RouteIcon size={120} className="text-blue-400" />
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-10 relative z-10">
-        <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 cmm-text-caption font-black uppercase tracking-[0.3em] text-blue-400">
-            <Sparkles size={12} />
-            {fr ? "Où agir" : "Where to act"}
+    <div className="relative overflow-hidden rounded-2xl border border-emerald-300/20 bg-slate-950/90 p-4 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)] sm:p-5">
+      <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-4xl font-black tracking-tighter text-white sm:text-5xl">{totalKm.toFixed(2)}</span>
+            <span className="text-sm font-black uppercase tracking-widest text-emerald-200">km</span>
+            <span className="mx-1 text-2xl font-black text-white/25">/</span>
+            <span className="text-4xl font-black tracking-tighter text-white sm:text-5xl">{totalMinutes}</span>
+            <span className="text-sm font-black uppercase tracking-widest text-emerald-200">min déplacement</span>
           </div>
-          <div className="flex items-baseline gap-4">
-            <span className="text-5xl font-black text-white tracking-tighter">{totalKm.toFixed(2)}</span>
-            <span className="text-xl font-black text-slate-500 tracking-widest uppercase">km</span>
-            <span className="text-4xl font-black text-white/20 mx-4">/</span>
-            <span className="text-5xl font-black text-white tracking-tighter">{totalMinutes}</span>
-            <span className="text-xl font-black text-slate-500 tracking-widest uppercase">min déplacement</span>
-          </div>
-          <dl className="grid gap-3 text-sm text-white/80 sm:grid-cols-3" data-route-operational-budget>
+          <dl className="grid gap-2 text-sm text-white/80 sm:grid-cols-3" data-route-operational-budget>
             <div><dt className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">Déplacement</dt><dd className="mt-1 font-bold">{totalMinutes} min</dd></div>
             <div><dt className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">Durée d’action</dt><dd className="mt-1 font-bold">{serviceMinutes === null ? "Non fiable" : actionDurationLabel}</dd></div>
             <div><dt className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">Créneau total</dt><dd className="mt-1 font-bold">{operationalTotalMinutes === null ? "Non disponible" : operationalTotalLabel}</dd></div>
           </dl>
-          <p className="text-xs font-semibold text-slate-300/80">
+          <p className="text-xs font-semibold leading-relaxed text-slate-300/80">
             Créneau utilisateur : {eventBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {actionBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes === null ? "Non disponible" : `${organizationMarginMinutes} min`}.
           </p>
           {serviceMinutes === null ? <p className="text-xs font-semibold text-amber-100/80">La durée d’action complète n’est pas encore fiable ; le planner conserve son fonctionnement avec le temps réseau disponible.</p> : null}
@@ -169,12 +163,12 @@ function RouteResultSummary({
                 : `Trajet ouvert de ${totalKm.toFixed(2)} km · départ / arrivée`}
           </p>
         </div>
-        <div className="text-right space-y-2">
-          <p className="cmm-text-caption font-black text-slate-500 uppercase tracking-widest">{fr ? "Priorité moyenne" : "Average priority"}</p>
-          <p className="text-6xl font-black text-white tracking-tighter leading-none">{data.scoreBreakdown.priority}</p>
-          <button type="button" onClick={onCreateAction} className="mt-4 rounded-2xl bg-emerald-400 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-emerald-300">
+        <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-emerald-200/15 bg-white/[0.04] p-3 lg:min-w-44 lg:text-right">
+          <p className="cmm-text-caption font-black uppercase tracking-widest text-emerald-200/80">{fr ? "Priorité moyenne" : "Average priority"}</p>
+          <p className="text-5xl font-black leading-none tracking-tighter text-white">{data.scoreBreakdown.priority}</p>
+          <CmmButton type="button" tone="primary" size="sm" onClick={onCreateAction} className="mt-1 w-full justify-center text-center font-black uppercase tracking-[0.1em]">
             Créer une action avec cet itinéraire
-          </button>
+          </CmmButton>
         </div>
       </div>
     </div>
@@ -251,9 +245,9 @@ function RouteGroupSelection({
 }
 
 function RouteMethodology({ data, fr }: { data: RouteResponse; fr: boolean }) {
-  return <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
-    <div className="flex items-center gap-4"><div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400"><Info size={20} /></div><h3 className="text-xl font-black text-white tracking-tight">{fr ? "Méthode de sélection" : "Selection method"}</h3></div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{data.tradeoffs.length > 0 ? data.tradeoffs.map((line, index) => <div key={index} className="p-5 rounded-2xl bg-white/5 border border-white/5 text-xs font-bold text-slate-200 leading-relaxed flex items-center gap-4 group hover:bg-white/10 transition-all"><div className="w-1.5 h-1.5 rounded-full bg-blue-500/40 group-hover:bg-blue-400" />{line}</div>) : <div className="col-span-2 p-10 rounded-2xl border border-dashed border-white/10 text-center text-slate-200 font-bold text-sm">{fr ? "Aucun ajustement majeur nécessaire." : "No major adjustment needed."}</div>}</div>
+  return <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+    <div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-slate-300"><Info size={16} aria-hidden="true" /></div><h3 className="text-base font-black tracking-tight text-white">{fr ? "Méthode de sélection" : "Selection method"}</h3></div>
+    <div className="grid gap-2 md:grid-cols-2">{data.tradeoffs.length > 0 ? data.tradeoffs.map((line, index) => <div key={index} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold leading-relaxed text-slate-200"><div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-300" />{line}</div>) : <div className="rounded-xl border border-dashed border-white/10 p-4 text-center text-sm font-bold text-slate-200 md:col-span-2">{fr ? "Aucun ajustement majeur nécessaire." : "No major adjustment needed."}</div>}</div>
   </div>;
 }
 

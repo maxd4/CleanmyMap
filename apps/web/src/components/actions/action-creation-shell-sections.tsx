@@ -58,6 +58,7 @@ export function ActionCreationSectionContent({
   initialPanel: ActionCreationPanelId;
 }) {
   const { currentActionId, formProps, preparationContext, formalitiesReadiness, localDevAuth, draftContext, preparationPersistenceStatus, onFormChange, onActionPersisted, onFormalitiesReadiness, onPassToComplete, onPreparationValidated, onPreparationSelection, onPreparationContextChange } = viewProps;
+  const routeRequested = initialPanel === "itineraire" || initialSubsection === "route";
   return (
     <div className="space-y-4">
       <ActionBeforeDeclarationForm
@@ -74,23 +75,23 @@ export function ActionCreationSectionContent({
       />
       {activeSection === "terrain" ? (
         <div data-active-subsection={initialSubsection ?? "terrain"}>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <CmmCard tone="emerald" variant="glass" size="lg">
+          <div className={`grid gap-4 ${routeRequested ? "" : "xl:grid-cols-2"}`}>
+            <CmmCard tone="emerald" variant="glass" size="lg" className={routeRequested ? "xl:col-span-2" : undefined}>
               <div className="space-y-3">
                 <div className="flex items-center gap-2"><Navigation size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Carte et itinéraire</h3></div>
-                <p className="cmm-text-body cmm-text-primary">L’itinéraire reste optionnel et réutilise le planificateur existant.</p>
                 {(() => {
-                  const selectedMode = formSnapshot.interventionMode?.mode ?? (initialPanel === "itineraire" || initialSubsection === "route" ? "itinerary" : "fixed_area");
+                  const selectedMode = initialPanel === "itineraire" || initialSubsection === "route"
+                    ? "itinerary"
+                    : formSnapshot.interventionMode?.mode ?? "fixed_area";
                   return isRouteInterventionMode(selectedMode)
                     ? <EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider>
                     : <p data-testid="fixed-area-route-state" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">Mode zone fixe actif : la carte et le rendez-vous suffisent. Le planificateur d’itinéraire reste fermé.</p>;
                 })()}
               </div>
             </CmmCard>
-            <CmmCard tone="emerald" variant="glass" size="lg">
+            <CmmCard tone="emerald" variant="glass" size="lg" className={routeRequested ? "xl:col-span-2" : undefined}>
               <div className="space-y-3">
                 <div className="flex items-center gap-2"><CloudSun size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Météo et créneau</h3></div>
-                <p className="cmm-text-body cmm-text-primary">Les prévisions restent consultatives et ne modifient l’action qu’après un choix explicite.</p>
                 <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
               </div>
             </CmmCard>

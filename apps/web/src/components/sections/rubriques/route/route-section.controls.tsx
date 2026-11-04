@@ -6,7 +6,6 @@ import { RouteRecommendationTrigger } from "./route-section.trigger";
 import type { RouteOptions, RouteOriginMode, RoutePlanningMode, RouteRecommendationOrigin } from "./route-types";
 import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "@/lib/route/route-planning-mode";
 import type { RouteTerritorialGuidedMode } from "@/lib/route/route-planning-mode";
-import { Zap } from "lucide-react";
 import { RouteGuidedEditor } from "./components/route-guided-editor";
 
 export function RouteOriginAndTriggerControls({
@@ -50,8 +49,7 @@ export function RouteOriginAndTriggerControls({
     }));
   };
 
-  return <>
-    <div className="flex items-center gap-4"><div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400"><Zap size={20} /></div><h3 className="text-xl font-black text-white tracking-tight">{fr ? "Configuration" : "Settings"}</h3></div>
+  return <div className="space-y-3">
     <RouteSummaryCards options={options} fr={fr} />
     <RouteEventSelector
       planningMode={planningMode}
@@ -81,5 +79,5 @@ export function RouteOriginAndTriggerControls({
       guided={planningMode.type === "territorial-guided" && planningMode.version === ROUTE_TERRITORIAL_GUIDED_VERSION}
     />
     <RouteRecommendationTrigger fr={fr} originMode={originMode} mapOrigin={mapOrigin} isLoaded={isLoaded} isSignedIn={isSignedIn} isLoading={isLoading} isRequestInFlight={isRequestInFlight} isResolvingOrigin={isResolvingOrigin} recommendationRequested={recommendationRequested} planningModeError={planningModeValidationError} requestRecommendation={requestRecommendation} />
-  </>;
+  </div>;
 }

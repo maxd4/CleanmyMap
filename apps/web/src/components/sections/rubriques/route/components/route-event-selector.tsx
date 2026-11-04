@@ -13,6 +13,7 @@ import {
   routeEventStatusLabel,
   type RouteEventDateFilter,
 } from "./route-event-selector.model";
+import { CmmCard } from "@/components/ui/cmm-card";
 
 type RouteEventSelectorProps = {
   planningMode: RoutePlanningMode;
@@ -50,19 +51,14 @@ export function RouteEventSelector({
       : undefined;
 
   return (
-    <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5">
-      <h3 className="text-base font-black text-white">
+    <CmmCard as="section" tone="emerald" variant="outlined" size="sm" className="space-y-3">
+      <h3 className="text-sm font-black text-emerald-950">
         {fr ? "Mode d’itinéraire" : "Route mode"}
       </h3>
-      <p className="mt-1 text-xs leading-5 text-emerald-50/70">
-        {fr
-          ? "Le mode libre reste le choix par défaut. Un événement peut devenir une ancre explicite du calcul."
-          : "Free mode is the default. An event can be used as an explicit route anchor."}
-      </p>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
           <button
           type="button"
-          className="min-h-11 rounded-xl border border-emerald-200/20 px-3 py-2 text-sm font-bold text-white"
+          className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold text-emerald-950 transition hover:border-emerald-400 ${planningMode.type === "free" ? "border-emerald-500 bg-emerald-100" : "border-emerald-200/70 bg-white/70"}`}
           aria-pressed={planningMode.type === "free"}
           onClick={() => setPlanningMode({ type: "free" })}
         >
@@ -70,7 +66,7 @@ export function RouteEventSelector({
         </button>
         <button
           type="button"
-          className="min-h-11 rounded-xl border border-emerald-200/20 px-3 py-2 text-sm font-bold text-white"
+          className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold text-emerald-950 transition hover:border-emerald-400 ${planningMode.type === "event-centered" ? "border-emerald-500 bg-emerald-100" : "border-emerald-200/70 bg-white/70"}`}
           aria-pressed={planningMode.type === "event-centered"}
           disabled={isLoading || Boolean(error) || events.length === 0}
           onClick={() => {
@@ -81,7 +77,7 @@ export function RouteEventSelector({
         </button>
         <button
           type="button"
-          className="min-h-11 rounded-xl border border-emerald-200/20 px-3 py-2 text-sm font-bold text-white sm:col-span-2"
+          className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold text-emerald-950 transition hover:border-emerald-400 sm:col-span-2 ${planningMode.type === "territorial-guided" ? "border-emerald-500 bg-emerald-100" : "border-emerald-200/70 bg-white/70"}`}
           aria-pressed={planningMode.type === "territorial-guided"}
           onClick={() => setPlanningMode(createDefaultRouteTerritorialGuidedMode(volunteers, groupCount))}
         >
@@ -89,13 +85,13 @@ export function RouteEventSelector({
         </button>
       </div>
       {planningMode.type === "event-centered" ? (
-        <div className="mt-4 space-y-3">
+        <div className="space-y-2">
           {selectedEvent ? (
-            <p className="rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-xs text-amber-50">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-950">
               {selectedEvent.title} · {selectedEvent.locationLabel}
             </p>
           ) : null}
-          <label className="flex flex-col gap-2 text-xs font-semibold text-emerald-50/90">
+          <label className="flex flex-col gap-1.5 text-xs font-semibold text-emerald-950">
             {fr ? "Événement" : "Event"}
             <select
               value={selectedEvent?.id ?? ""}
@@ -104,7 +100,7 @@ export function RouteEventSelector({
                   setPlanningMode({ type: "event-centered", eventId: event.target.value });
                 }
               }}
-              className="min-h-11 rounded-xl border border-emerald-200/14 bg-[rgba(11,34,25,0.92)] px-3 py-2 text-sm text-white"
+              className="min-h-11 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-950"
             >
               <option value="">
                 {isLoading ? (fr ? "Chargement…" : "Loading…") : fr ? "Sélectionner" : "Select"}
@@ -116,12 +112,12 @@ export function RouteEventSelector({
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-2 text-xs font-semibold text-emerald-50/90">
+          <label className="flex flex-col gap-1.5 text-xs font-semibold text-emerald-950">
             {fr ? "Filtrer par date" : "Filter by date"}
             <select
               value={dateFilter}
               onChange={(event) => setDateFilter(event.target.value as RouteEventDateFilter)}
-              className="min-h-11 rounded-xl border border-emerald-200/14 bg-[rgba(11,34,25,0.92)] px-3 py-2 text-sm text-white"
+              className="min-h-11 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-950"
             >
               <option value="all">{fr ? "Toutes les dates" : "All dates"}</option>
               <option value="past">{fr ? "Passés" : "Past"}</option>
@@ -131,6 +127,6 @@ export function RouteEventSelector({
           </label>
         </div>
      ) : null}
-   </section>
+    </CmmCard>
  );
 }
