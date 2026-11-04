@@ -22,13 +22,24 @@ le graphe stocké et budget restant. L'ordre de décision est déterministe
 (score, puis identifiant) et la borne d'opportunités est explicite.
 
 Une observation acceptée est ajoutée aux arrêts et la géométrie est recalculée
-avec `routeThroughPedestrianNetwork`; elle ne modifie ni `wasteRisk`, ni
-`cigaretteButtRisk`, ni le classement des segments prédits. Les observations
-refusées conservent une raison d'audit (`outside_corridor`, sécurité,
-réseau inaccessible ou budget). Les groupes se partagent les observations
-acceptées sans réutiliser le même identifiant. Un signalement `cleaned` ou
-ancien n'est pas converti en preuve de pollution actuelle : il est exclu par
-la source canonique ou par son admissibilité avant l'enrichissement.
+avec `routeThroughPedestrianNetwork`; les points prédits sont projetés sur la
+géométrie théorique existante afin qu'un centre de sous-segment situé au milieu
+d'une arête ne rende pas le réseau indisponible. La géométrie enrichie doit
+conserver les arêtes prédictives dans leur ordre ; une reconstruction qui en
+perd une est rejetée. Un point observé hors nœud peut être ancré à un nœud
+vérifié dans la limite de 75 m propre à l'enrichissement, sans raccordement fictif. L'enrichissement ne
+modifie ni `wasteRisk`, ni `cigaretteButtRisk`, ni le classement des segments
+prédits. Les observations refusées conservent une raison d'audit
+(`outside_corridor`, sécurité, réseau inaccessible, parcours prédictif non
+préservé ou budget). Les groupes se partagent les observations acceptées sans
+réutiliser le même identifiant. Un signalement `cleaned` ou ancien n'est pas
+converti en preuve de pollution actuelle : il est exclu par la source canonique
+ou par son admissibilité avant l'enrichissement.
+
+Les détours de chaque tentative sont calculés entre deux géométries successives.
+Le total publié est la différence entre la géométrie finale et la géométrie
+théorique initiale ; les écarts intermédiaires ne sont donc pas additionnés deux
+fois lorsque plusieurs observations sont acceptées.
 
 Les métriques `observedEnrichment` distinguent le nombre de prédictions
 conservées, les observations considérées et acceptées, les détours et les

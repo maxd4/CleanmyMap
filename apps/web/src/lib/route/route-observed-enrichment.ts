@@ -6,6 +6,7 @@ import {
 } from "./route-planner";
 import {
   routeThroughPedestrianNetwork,
+  haversineMeters,
   type Coordinate,
   type PedestrianNetworkGraph,
 } from "./pedestrian-network";
@@ -22,6 +23,7 @@ export type RouteObservedEnrichmentRejectionReason =
   | "outside_corridor"
   | "no_interest"
   | "network_unreachable"
+  | "predictive_route_not_preserved"
   | "detour_over_budget"
   | "opportunity_cap";
 
@@ -76,13 +78,26 @@ function increment(
   target[reason] = (target[reason] ?? 0) + 1;
 }
 
+function nearestBaseGeometryCoordinate(
+  candidate: RoutePlannerCandidate,
+  baseGeometry: RouteGeometry,
+): Coordinate | null {
+  const point: Coordinate = [candidate.latitude, candidate.longitude];
+  return baseGeometry.coordinates.reduce<Coordinate | null>((nearest, coordinate) => {
+    if (!nearest || haversineMeters(point, coordinate) < haversineMeters(point, nearest)) return coordinate;
+    return nearest;
+  }, null);
+}
+
 function coordinatesForRoute(
   input: EnrichmentInput,
   candidates: readonly RoutePlannerCandidate[],
 ): Coordinate[] {
   const coordinates: Coordinate[] = [
     [input.origin.latitude, input.origin.longitude],
-    ...candidates.map((candidate) => [candidate.latitude, candidate.longitude] as Coordinate),
+    ...candidates.map((candidate) => candidate.family === "predicted"
+      ? nearestBaseGeometryCoordinate(candidate, input.baseGeometry) ?? [candidate.latitude, candidate.longitude] as Coordinate
+      : [candidate.latitude, candidate.longitude] as Coordinate),
   ];
   if (input.routeTopology === "loop") {
     coordinates.push([input.origin.latitude, input.origin.longitude]);
@@ -99,12 +114,25 @@ function routeWithCandidates(
   return routeThroughPedestrianNetwork(
     input.pedestrianNetwork,
     coordinatesForRoute(input, candidates),
-    { topology: input.routeTopology },
+    { topology: input.routeTopology, maxSnapDistanceM: 75 },
   );
 }
 
-function finiteNumber(value: number): number {
-  return Number.isFinite(value) ? value : 0;
+function networkEdgeReferences(geometry: RouteGeometry): string[] {
+  return geometry.legs.flatMap((leg) => leg.steps ?? [])
+    .map((step) => step.segmentReference)
+    .filter((reference): reference is string => Boolean(reference));
+}
+
+function preservesPredictiveRoute(baseGeometry: RouteGeometry, tentativeGeometry: RouteGeometry): boolean {
+  const required = networkEdgeReferences(baseGeometry);
+  if (required.length === 0) return true;
+  let requiredIndex = 0;
+  for (const reference of networkEdgeReferences(tentativeGeometry)) {
+    if (reference === required[requiredIndex]) requiredIndex += 1;
+    if (requiredIndex === required.length) return true;
+  }
+  return false;
 }
 
 /**
@@ -184,9 +212,15 @@ export function enrichTheoreticalRouteWithObservedCandidates(
       evaluations.push({ candidateId: candidate.id, accepted: false, distanceToCorridorKm, detourDistanceKm: null, detourMinutes: null, reason: "network_unreachable" });
       continue;
     }
-    const detourDistanceKm = Math.max(0, tentativeGeometry.distanceKm - input.baseGeometry.distanceKm);
-    const detourMinutes = Math.max(0, tentativeGeometry.durationMinutes - input.baseGeometry.durationMinutes);
-    if (detourMinutes > remainingDetourMinutes || tentativeGeometry.durationMinutes > input.travelBudgetMinutes) {
+    if (!preservesPredictiveRoute(input.baseGeometry, tentativeGeometry)) {
+      increment(rejectedByReason, "predictive_route_not_preserved");
+      evaluations.push({ candidateId: candidate.id, accepted: false, distanceToCorridorKm, detourDistanceKm: null, detourMinutes: null, reason: "predictive_route_not_preserved" });
+      continue;
+    }
+    const detourDistanceKm = Math.max(0, tentativeGeometry.distanceKm - currentGeometry.distanceKm);
+    const detourMinutes = Math.max(0, tentativeGeometry.durationMinutes - currentGeometry.durationMinutes);
+    const totalDetourMinutes = Math.max(0, tentativeGeometry.durationMinutes - input.baseGeometry.durationMinutes);
+    if (totalDetourMinutes > remainingDetourMinutes || tentativeGeometry.durationMinutes > input.travelBudgetMinutes) {
       increment(rejectedByReason, "detour_over_budget");
       evaluations.push({ candidateId: candidate.id, accepted: false, distanceToCorridorKm, detourDistanceKm, detourMinutes, reason: "detour_over_budget" });
       continue;
@@ -197,7 +231,6 @@ export function enrichTheoreticalRouteWithObservedCandidates(
   }
 
   const acceptedCandidateIds = acceptedCandidates.map((candidate) => candidate.id);
-  const acceptedEvaluations = evaluations.filter((evaluation) => evaluation.accepted);
   const finalGeometry = acceptedCandidates.length > 0 ? currentGeometry : input.baseGeometry;
   return {
     candidates: [...input.baseCandidates, ...acceptedCandidates],
@@ -211,8 +244,8 @@ export function enrichTheoreticalRouteWithObservedCandidates(
       rejectedByReason,
       acceptedCandidateIds,
       evaluations,
-      totalDetourDistanceKm: Number(acceptedEvaluations.reduce((sum, evaluation) => sum + finiteNumber(evaluation.detourDistanceKm ?? 0), 0).toFixed(2)),
-      totalDetourMinutes: acceptedEvaluations.reduce((sum, evaluation) => sum + finiteNumber(evaluation.detourMinutes ?? 0), 0),
+      totalDetourDistanceKm: Number(Math.max(0, finalGeometry.distanceKm - input.baseGeometry.distanceKm).toFixed(2)),
+      totalDetourMinutes: Math.max(0, finalGeometry.durationMinutes - input.baseGeometry.durationMinutes),
       routeBudgetMinutes: input.travelBudgetMinutes,
       routeDurationBeforeMinutes: input.baseGeometry.durationMinutes,
       routeDurationAfterMinutes: finalGeometry.durationMinutes,

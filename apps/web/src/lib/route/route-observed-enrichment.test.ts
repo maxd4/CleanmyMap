@@ -23,7 +23,7 @@ const predicted: RoutePlannerCandidate = {
   family: "predicted",
   id: "predicted-b",
   label: "Segment B",
-  latitude: 48.001,
+  latitude: 48.0005,
   longitude: 2,
   score: 80,
   reason: "predicted",
@@ -77,6 +77,24 @@ describe("route observed enrichment", () => {
     expect(result.routeGeometry.provider).toBe("stored-network");
     expect(result.routeGeometry.coordinates.at(-1)).toEqual([48, 2]);
     expect(result.metrics.observedDoesNotReplacePrediction).toBe(true);
+    expect(result.routeGeometry.legs.flatMap((leg) => leg.steps ?? []).map((step) => step.segmentReference)).toEqual(["ab", "bc", "cd", "da"]);
+  });
+
+  it("accepts an observed point off-node while keeping the predictive loop edges", () => {
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [observed("observed-mid-edge", 48.001, 2.0005)],
+      baseGeometry: baseGeometry(),
+      pedestrianNetwork: graph,
+      travelBudgetMinutes: 20,
+      maxObserved: 2,
+    });
+
+    expect(result.metrics.acceptedCandidateIds).toEqual(["observed-mid-edge"]);
+    expect(result.metrics.rejectedByReason.network_unreachable).toBeUndefined();
+    expect(result.routeGeometry.legs.flatMap((leg) => leg.steps ?? []).map((step) => step.segmentReference)).toEqual(["ab", "bc", "cd", "da"]);
   });
 
   it("rejects an observation whose network detour exceeds the remaining budget", () => {
@@ -114,5 +132,50 @@ describe("route observed enrichment", () => {
     expect(result.metrics.accepted).toBe(0);
     expect(result.metrics.rejectedByReason.unsafe_or_ineligible).toBe(1);
     expect(result.metrics.rejectedByReason.outside_corridor).toBe(1);
+  });
+
+  it("measures successive detours from successive geometries and totals only the final delta", () => {
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [
+        observed("observed-b", 48.001, 2.0004),
+        observed("observed-c", 48.0006, 2.001),
+      ],
+      baseGeometry: baseGeometry(),
+      pedestrianNetwork: graph,
+      travelBudgetMinutes: 20,
+      maxObserved: 2,
+    });
+    const accepted = result.metrics.evaluations.filter((evaluation) => evaluation.accepted);
+
+    expect(accepted).toHaveLength(2);
+    expect(accepted[0]?.detourMinutes).toBeGreaterThanOrEqual(0);
+    expect(accepted[1]?.detourMinutes).toBeGreaterThanOrEqual(0);
+    expect(result.metrics.totalDetourDistanceKm).toBeCloseTo(
+      Math.max(0, result.routeGeometry.distanceKm - baseGeometry().distanceKm),
+      2,
+    );
+    expect(result.metrics.totalDetourMinutes).toBe(
+      Math.max(0, result.routeGeometry.durationMinutes - baseGeometry().durationMinutes),
+    );
+  });
+
+  it("rejects a candidate whose reconstructed route would drop a predictive edge", () => {
+    const reducedGraph = { ...graph, edges: graph.edges.filter((edge) => edge.edgeKey !== "cd") };
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [observed("observed-b", 48.001, 2.0004)],
+      baseGeometry: baseGeometry(),
+      pedestrianNetwork: reducedGraph,
+      travelBudgetMinutes: 20,
+      maxObserved: 2,
+    });
+
+    expect(result.metrics.accepted).toBe(0);
+    expect(result.metrics.rejectedByReason.network_unreachable ?? 0).toBeGreaterThan(0);
   });
 });
