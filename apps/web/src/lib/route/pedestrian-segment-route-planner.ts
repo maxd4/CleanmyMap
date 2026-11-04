@@ -18,6 +18,10 @@ import {
 } from "./route-planner";
 import type { RouteGroupRoute } from "./route-response-contract";
 import {
+  enrichTheoreticalRouteWithObservedCandidates,
+  type RouteObservedEnrichmentMetrics,
+} from "./route-observed-enrichment";
+import {
   partitionRouteCandidates,
   type RouteGroupPartitionResult,
 } from "./route-group-partition";
@@ -52,6 +56,7 @@ export type PedestrianSegmentRoutePlan = {
   metrics: SegmentRouteSelectionMetrics;
   warning: string | null;
   degraded: boolean;
+  observedEnrichment: RouteObservedEnrichmentMetrics;
 };
 
 type SegmentCandidate = {
@@ -463,6 +468,38 @@ function candidateIdsFromGroups(groups: readonly { candidateIds: string[] }[]): 
   return new Set(groups.flatMap(({ candidateIds }) => candidateIds));
 }
 
+function mergeObservedEnrichmentMetrics(
+  metrics: readonly RouteObservedEnrichmentMetrics[],
+  travelBudgetMinutes: number,
+): RouteObservedEnrichmentMetrics {
+  const evaluations = metrics.flatMap((item) => item.evaluations);
+  const acceptedCandidateIds = [...new Set(metrics.flatMap((item) => item.acceptedCandidateIds))];
+  const rejectedByReason: RouteObservedEnrichmentMetrics["rejectedByReason"] = {};
+  for (const item of metrics) {
+    for (const [reason, count] of Object.entries(item.rejectedByReason)) {
+      if (count === undefined) continue;
+      const key = reason as keyof RouteObservedEnrichmentMetrics["rejectedByReason"];
+      rejectedByReason[key] = (rejectedByReason[key] ?? 0) + count;
+    }
+  }
+  return {
+    source: "validated_trash_spotter_spots",
+    predictedCandidatesRetained: metrics.reduce((total, item) => total + item.predictedCandidatesRetained, 0),
+    considered: metrics.reduce((total, item) => total + item.considered, 0),
+    accepted: acceptedCandidateIds.length,
+    rejected: evaluations.length - acceptedCandidateIds.length,
+    rejectedByReason,
+    acceptedCandidateIds,
+    evaluations,
+    totalDetourDistanceKm: Number(metrics.reduce((total, item) => total + item.totalDetourDistanceKm, 0).toFixed(2)),
+    totalDetourMinutes: metrics.reduce((total, item) => total + item.totalDetourMinutes, 0),
+    routeBudgetMinutes: travelBudgetMinutes,
+    routeDurationBeforeMinutes: metrics.reduce((total, item) => total + item.routeDurationBeforeMinutes, 0),
+    routeDurationAfterMinutes: metrics.reduce((total, item) => total + item.routeDurationAfterMinutes, 0),
+    observedDoesNotReplacePrediction: true,
+  };
+}
+
 export function planPredictedPedestrianSegmentRoutes(input: {
   origin: RoutePlannerOrigin;
   arrival?: RoutePlannerOrigin;
@@ -513,8 +550,11 @@ export function planPredictedPedestrianSegmentRoutes(input: {
     allowUnknownPredictedSafety: true,
   });
   const segmentByCandidateId = new Map(segmentData.segments.map((segment) => [segment.candidate.id, segment]));
-  const candidatesById = new Map(orderedCandidates.map((candidate) => [candidate.id, candidate]));
+  const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const builtGroups: GroupRouteBuild[] = [];
+  const observedEnrichmentMetrics: RouteObservedEnrichmentMetrics[] = [];
+  const assignedObservedCandidateIds = new Set<string>();
+  const observedCandidates = input.candidates.filter((candidate) => candidate.family === "observed");
   for (const group of partition.groups) {
     let selected = group.candidateIds
       .map((id) => segmentByCandidateId.get(id))
@@ -526,15 +566,28 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
       if (!built) return null;
     }
+    const enrichment = enrichTheoreticalRouteWithObservedCandidates({
+      origin: group.origin,
+      arrival: input.arrival,
+      routeTopology: input.routeTopology,
+      baseCandidates: selected.map(({ candidate }) => candidate),
+      observedCandidates: observedCandidates.filter((candidate) => !assignedObservedCandidateIds.has(candidate.id)),
+      baseGeometry: built.geometry,
+      pedestrianNetwork: input.pedestrianNetwork,
+      travelBudgetMinutes: input.travelBudgetMinutes,
+      maxObserved: Math.max(0, Math.min(MAX_SEGMENTS_PER_GROUP - selected.length, input.maxStops - selected.length)),
+    });
+    enrichment.metrics.acceptedCandidateIds.forEach((id) => assignedObservedCandidateIds.add(id));
+    observedEnrichmentMetrics.push(enrichment.metrics);
     const groupWithActualCandidates = {
       ...group,
-      candidateIds: selected.map(({ candidate }) => candidate.id),
+      candidateIds: enrichment.candidates.map((candidate) => candidate.id),
     };
-    const groupBuild = buildGroupRoute(groupWithActualCandidates, candidatesById, built.geometry, input.travelBudgetMinutes);
+    const groupBuild = buildGroupRoute(groupWithActualCandidates, candidatesById, enrichment.routeGeometry, input.travelBudgetMinutes);
     builtGroups.push({
       groupIndex: group.groupIndex,
-      candidates: selected.map(({ candidate }) => candidate),
-      geometry: built.geometry,
+      candidates: enrichment.candidates,
+      geometry: enrichment.routeGeometry,
       plannedStops: groupBuild.plannedStops,
       selectedEdges: built.selectedEdges,
       connectorSegments: built.connectorSegments,
@@ -608,5 +661,6 @@ export function planPredictedPedestrianSegmentRoutes(input: {
     },
     warning: null,
     degraded: false,
+    observedEnrichment: mergeObservedEnrichmentMetrics(observedEnrichmentMetrics, input.travelBudgetMinutes),
   };
 }

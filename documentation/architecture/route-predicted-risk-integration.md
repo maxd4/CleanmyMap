@@ -11,6 +11,30 @@ Le planner conserve deux familles distinctes :
 Une zone prédite n'est jamais insérée dans les spots et n'est jamais présentée
 comme une observation.
 
+## Enrichissement post-parcours par les observations
+
+Quand le planner dispose du graphe piéton et de la projection segmentaire, il
+calcule d'abord la boucle théorique sur les segments prédits. Il évalue ensuite
+les candidats `observed` issus exclusivement des signalements
+`trash_spotter_spots` `validated` : preuve, admissibilité bénévole, proximité
+de la géométrie (rayon de la policy de corridor existante), détour mesuré sur
+le graphe stocké et budget restant. L'ordre de décision est déterministe
+(score, puis identifiant) et la borne d'opportunités est explicite.
+
+Une observation acceptée est ajoutée aux arrêts et la géométrie est recalculée
+avec `routeThroughPedestrianNetwork`; elle ne modifie ni `wasteRisk`, ni
+`cigaretteButtRisk`, ni le classement des segments prédits. Les observations
+refusées conservent une raison d'audit (`outside_corridor`, sécurité,
+réseau inaccessible ou budget). Les groupes se partagent les observations
+acceptées sans réutiliser le même identifiant. Un signalement `cleaned` ou
+ancien n'est pas converti en preuve de pollution actuelle : il est exclu par
+la source canonique ou par son admissibilité avant l'enrichissement.
+
+Les métriques `observedEnrichment` distinguent le nombre de prédictions
+conservées, les observations considérées et acceptées, les détours et les
+raisons de rejet. La propriété `observedDoesNotReplacePrediction` est toujours
+vraie lorsque cette branche est utilisée.
+
 ## Deux passages et sélection bornée
 
 Un premier passage pur du planner sélectionne et ordonne les cibles observées.

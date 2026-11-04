@@ -53,6 +53,7 @@ import {
   type RouteGroupPartitionResult,
 } from "@/lib/route/route-group-partition";
 import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
+import type { RouteObservedEnrichmentMetrics } from "@/lib/route/route-observed-enrichment";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import {
   buildStreetCleaningStreetPassesFromGeometry,
@@ -80,6 +81,7 @@ export type RoutePlanningResult = {
   weatherContext?: PlannerWeatherContext;
   streetCleaningCorridors?: StreetCleaningCorridorHandoff;
   segmentSelection?: SegmentRouteSelectionMetrics;
+  observedEnrichment?: RouteObservedEnrichmentMetrics;
 };
 
 function planRecommendationCandidates(
@@ -561,6 +563,7 @@ function finalizePredictedSegmentRouteRecommendation(
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
     segmentSelection: segmentRoutePlan.metrics,
+    observedEnrichment: segmentRoutePlan.observedEnrichment,
     streetCleaningCorridors: buildUnknownStreetCleaningCorridorHandoff(
       "Aucune source géographique auditée ne prouve encore le côté du corridor.",
       operationalCorridorPlan,

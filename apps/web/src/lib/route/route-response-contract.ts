@@ -27,6 +27,7 @@ import type {
   MeetingOpportunityTrace,
 } from "./route-meeting-opportunities";
 import type { SegmentRouteSelectionMetrics } from "./pedestrian-segment-route-planner";
+import type { RouteObservedEnrichmentMetrics } from "./route-observed-enrichment";
 
 export type { MeetingOpportunity } from "./route-meeting-opportunities";
 
@@ -216,6 +217,7 @@ export type RouteRecommendationResponse = {
   prediction: RoutePredictionSummary;
   /** Auditable segment selection when the materialized pedestrian projection is used. */
   segmentSelection?: SegmentRouteSelectionMetrics;
+  observedEnrichment?: RouteObservedEnrichmentMetrics;
   trace: RouteRecommendationTrace;
   routeGeometry: RouteGeometry;
   scoreBreakdown: {

@@ -516,6 +516,34 @@ géométries sont indexées par GiST. L'installation distante de PostGIS et la
 présence effective des tables restent des preuves d'intégration distinctes de
 la migration versionnée.
 
+### 6.2.2. Cache incrémental des observations de terrain (`CURRENT`)
+
+Le cache d'observations est une projection auxiliaire du graphe et ne devient
+pas une seconde source de vérité. Les triggers des signalements et des actions
+de nettoyage éligibles déposent dans
+`pedestrian_risk_cache_invalidation_events` une seule entrée idempotente par
+mutation, avec les géométries ancienne et nouvelle. Un déplacement invalide
+donc l'union des segments touchés ; une suppression conserve la géométrie
+ancienne pour permettre le retrait local. Les signalements non validés et les
+actions sans statut `approved` ne déclenchent pas cette actualisation.
+
+Le worker `apps/web/scripts/refresh-pedestrian-observation-cache.mjs` réclame
+des lots avec `SKIP LOCKED`, récupère les segments affectés, recalcule seulement
+leurs associations aux signalements toujours `validated`, puis publie un
+snapshot versionné par `publish_pedestrian_observation_cache`. Le verrou
+d'advisory et `p_replace_segment_ids` empêchent qu'un second worker écrase une
+mise à jour concurrente ; les événements terminés et les lignes du cache sont
+publiés dans la même transaction. Une erreur remet le lot en attente avec un
+backoff ; un bail expiré est reprenable. Tant qu'une publication ne réussit pas,
+le dernier snapshot actif reste lisible.
+
+Une actualisation temporelle ou un changement de modèle, de source ou de graphe
+OSM appelle `enqueue_pedestrian_risk_cache_rebuild` avec respectivement
+`temporal`, `model` ou `network`. Ces événements système demandent une
+reconstruction complète, alors qu'une mutation locale ne recalcule que les
+segments spatialement affectés. Les lignes observées restent séparées des
+risques théoriques et ne prétendent pas mesurer une probabilité calibrée.
+
 ### 6.2. Contrat de sortie proposé
 
 ```ts

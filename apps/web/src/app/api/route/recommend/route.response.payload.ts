@@ -140,6 +140,7 @@ function buildCommonPayload({
     stops,
     prediction: proofs.predictionSummary,
     ...(planning.segmentSelection ? { segmentSelection: planning.segmentSelection } : {}),
+    ...(planning.observedEnrichment ? { observedEnrichment: planning.observedEnrichment } : {}),
     trace: proofs.trace,
     routeGeometry: planning.routeGeometry,
     scoreBreakdown,

@@ -99,6 +99,25 @@ function candidate(
   } as unknown as RoutePlannerCandidate;
 }
 
+function observedCandidate(id: string, latitude = 48.001, longitude = 2.001): RoutePlannerCandidate {
+  return {
+    family: "observed",
+    id,
+    label: id,
+    latitude,
+    longitude,
+    observedAt: "2026-11-03T00:00:00.000Z",
+    wasteCategories: ["other"],
+    source: "trash_spotter_spots",
+    sourceStatus: "validated",
+    safety: { volunteerEligibility: "eligible", specializationReason: null },
+    contract: {} as never,
+    score: 90,
+    reason: "validated observation",
+    evidence: { family: "observed", source: "trash_spotter_spots", proof: "validated", observedAt: "2026-11-03T00:00:00.000Z" },
+  } as RoutePlannerCandidate;
+}
+
 function projection(ids: string[]): PedestrianRiskProjectionSnapshot {
   const edges = graph.edges;
   return {
@@ -231,5 +250,17 @@ describe("pedestrian segment route planner", () => {
     expect(result!.metrics.duplicateStreetCandidatesSkipped).toBe(1);
     expect(result!.metrics.consideredSegments).toBe(2);
     expect(result!.metrics.selectedSegments).toBeGreaterThan(0);
+  });
+
+  it("enriches the graph route with a validated observation after selecting predicted segments", () => {
+    const result = plan([
+      candidate("predicted", "s-0", 90, 90),
+      observedCandidate("observed"),
+    ], "all", { maxStops: 2, travelBudgetMinutes: 20 });
+    expect(result).not.toBeNull();
+    expect(result!.plannedStops.map(({ candidate: item }) => item.id)).toContain("predicted");
+    expect(result!.plannedStops.map(({ candidate: item }) => item.id)).toContain("observed");
+    expect(result!.observedEnrichment.acceptedCandidateIds).toEqual(["observed"]);
+    expect(result!.observedEnrichment.observedDoesNotReplacePrediction).toBe(true);
   });
 });
