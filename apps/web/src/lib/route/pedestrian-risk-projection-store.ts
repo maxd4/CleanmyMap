@@ -15,6 +15,7 @@ type ProjectionRow = {
   schema_version: string;
   policy_version: string;
   network_version_id: string | null;
+  generated_at: string;
   source_versions: PedestrianRiskProjectionSourceVersions;
   projection_segment_id: string;
   edge_key: string;
@@ -44,6 +45,17 @@ type ProjectionRow = {
   provenance: PedestrianRiskProjectionSegment["provenance"];
   notes: string[];
 };
+
+const PROJECTION_PAGE_SIZE = 900;
+
+function sameProjectionIdentity(left: ProjectionRow, right: ProjectionRow): boolean {
+  return left.projection_version_id === right.projection_version_id &&
+    left.projection_key === right.projection_key &&
+    left.schema_version === right.schema_version &&
+    left.policy_version === right.policy_version &&
+    left.network_version_id === right.network_version_id &&
+    left.generated_at === right.generated_at;
+}
 
 function coordinatesFromGeoJson(value: unknown): Coordinate[] | null {
   const coordinates = (value as { coordinates?: unknown } | null)?.coordinates;
@@ -80,20 +92,33 @@ export async function loadActivePedestrianRiskProjection(
     north: Math.max(...validPoints.map((point) => point.latitude)) + 0.002,
     east: Math.max(...validPoints.map((point) => point.longitude)) + 0.002,
   };
-  const { data, error } = await supabase.rpc("get_active_pedestrian_risk_projection", {
-    p_south: bounds.south,
-    p_west: bounds.west,
-    p_north: bounds.north,
-    p_east: bounds.east,
-  });
-  if (error || !Array.isArray(data) || data.length === 0) return null;
-  const rows = data as ProjectionRow[];
-  const first = rows[0]!;
+  const rows: ProjectionRow[] = [];
+  let offset = 0;
+  let first: ProjectionRow | null = null;
+  for (;;) {
+    const { data, error } = await supabase.rpc("get_active_pedestrian_risk_projection_page", {
+      p_south: bounds.south,
+      p_west: bounds.west,
+      p_north: bounds.north,
+      p_east: bounds.east,
+      p_limit: PROJECTION_PAGE_SIZE,
+      p_offset: offset,
+    });
+    if (error || !Array.isArray(data) || data.length > PROJECTION_PAGE_SIZE + 1) return null;
+    const pageRows = data as ProjectionRow[];
+    if (pageRows.length === 0 && rows.length === 0) return null;
+    if (!first && pageRows.length > 0) first = pageRows[0]!;
+    if (first && pageRows.some((row) => !sameProjectionIdentity(first!, row))) return null;
+    rows.push(...pageRows.slice(0, PROJECTION_PAGE_SIZE));
+    if (pageRows.length <= PROJECTION_PAGE_SIZE) break;
+    offset += PROJECTION_PAGE_SIZE;
+  }
+  if (!first || rows.length === 0 || first.network_version_id === null) return null;
   const segments: PedestrianRiskProjectionSegment[] = [];
   for (const row of rows) {
     const coordinates = coordinatesFromGeoJson(row.geometry_geojson);
     const segmentMidpoint = pointFromGeoJson(row.midpoint_geojson);
-    if (!coordinates || !segmentMidpoint) continue;
+    if (!coordinates || !segmentMidpoint || !sameProjectionIdentity(first, row)) return null;
     segments.push({
       projectionSegmentId: row.projection_segment_id,
       edgeKey: row.edge_key,
@@ -134,7 +159,7 @@ export async function loadActivePedestrianRiskProjection(
     projectionVersionId: first.projection_version_id,
     networkVersionId: first.network_version_id,
     sourceVersions,
-    generatedAt: sourceVersions.pressureGeneratedAt,
+    generatedAt: first.generated_at,
     counts: {
       sourceEdges: new Set(segments.map((segment) => segment.edgeKey)).size,
       projectedSegments: segments.length,

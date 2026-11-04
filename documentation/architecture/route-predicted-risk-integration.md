@@ -39,6 +39,12 @@ Le routage réseau prédictif est autorisé uniquement si `networkVersionId` de 
 projection active correspond exactement à `versionId` du graphe actif. La RPC
 de lecture joint ces identités versionnées ; une absence ou une incompatibilité
 ne fabrique pas de correspondance et déclenche le repli explicite prévu. Les
+segments sont lus par pages ordonnées et bornées (`get_active_pedestrian_risk_projection_page`)
+avec une ligne de continuation ; le lecteur exige une identité de projection,
+de graphe et une date `generated_at` constantes sur toutes les pages. Une page
+interrompue ou une identité modifiée rend la projection indisponible au lieu de
+présenter un corpus tronqué comme complet. Les dates de génération de la
+projection et des snapshots sources restent distinctes. Les
 origines, arrivées et candidats doivent être des points du graphe vérifiés : un
 raccordement géodésique direct n'est pas présenté comme un chemin piéton.
 Lorsqu'un segment sélectionné est inaccessible dans le graphe dirigé, il est

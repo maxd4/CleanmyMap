@@ -482,8 +482,13 @@ du snapshot `paris-pressure-snapshot` et du snapshot municipal de
 serviceabilité. Le calcul est hors requête et la publication passe par
 `publish_pedestrian_risk_projection(jsonb)` dans
 `apps/web/supabase/migrations/20261104000005_pedestrian_risk_projection.sql`.
-La lecture active du générateur passe exclusivement par
-`get_active_pedestrian_risk_projection(...)`.
+La lecture active du générateur passe exclusivement par la lecture paginée
+`get_active_pedestrian_risk_projection_page(...)`. Chaque page est ordonnée
+par `edge_key, projection_segment_id`, reste sous la limite API de 1000 lignes
+et porte l'identité du snapshot, la version exacte du graphe actif et la date
+persistée `generated_at`. Le serveur rejette une page incomplète, une erreur,
+un changement d'identité entre pages ou une projection sans graphe compatible ;
+il ne transforme jamais ce cas en projection partielle silencieuse.
 
 La propriété `retrievedAt` est la date de récupération OSM réellement portée
 par la source d'acquisition et ne doit pas être remplacée par une date de
