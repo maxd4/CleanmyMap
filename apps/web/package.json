@@ -21,6 +21,7 @@
     "data:departments:backfill": "node --experimental-strip-types scripts/backfill-action-departments.mjs",
     "data:sheet:push": "node scripts/push-google-sheet-from-form-like.mjs",
     "data:validated:sync": "node scripts/sync-validated-local-store.mjs",
+    "data:projection:build": "node --experimental-strip-types scripts/build-pedestrian-risk-projection.mjs",
     "data:archive:supabase": "node scripts/export-supabase-archive.mjs",
     "data:cleanup:supabase": "node scripts/cleanup-supabase-retention.mjs",
     "analyze:bundle": "node scripts/analyze-bundle.mjs",

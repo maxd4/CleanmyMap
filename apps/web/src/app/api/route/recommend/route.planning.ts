@@ -1,4 +1,5 @@
 import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
+import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
 import type { MunicipalCleaningServiceabilitySnapshot } from "@/lib/geo/municipal-cleaning-serviceability-contract";
 import {
   applyRoutePredictionFinalRoutingBudgetAudit,
@@ -113,6 +114,7 @@ type RouteRecommendationInput = {
   routeTopology: RouteTopology;
   spatialCandidates: TrashSpotterRouteCandidate[];
   parisPressureSnapshot: ParisPressureSnapshot | null;
+  pedestrianRiskProjection?: PedestrianRiskProjectionSnapshot | null;
   municipalCleaningSnapshot?: MunicipalCleaningServiceabilitySnapshot | null;
   travelBudgetMinutes: number;
   maxStops: number;
@@ -211,6 +213,7 @@ function prepareRouteRecommendation(input: RouteRecommendationInput) {
   });
   const predictionBuild = buildPredictedRouteCandidates({
     snapshot: input.parisPressureSnapshot,
+    projection: input.pedestrianRiskProjection,
     municipalCleaningSnapshot: input.municipalCleaningSnapshot,
     origin: input.origin,
     corridor: {

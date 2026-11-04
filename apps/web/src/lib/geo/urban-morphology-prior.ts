@@ -8,7 +8,7 @@ import type {
 } from "./paris-pressure-risk-contract";
 import {
   URBAN_MORPHOLOGY_PRIOR_VERSION,
-} from "./urban-morphology-prior-contract";
+} from "./urban-morphology-prior-contract.ts";
 import type {
   UrbanMorphologyPriorApplication,
   UrbanMorphologyPriorStatus,

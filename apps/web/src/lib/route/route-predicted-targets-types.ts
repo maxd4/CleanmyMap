@@ -10,6 +10,7 @@ export type RoutePredictionSummary = {
   modelVersion: string | null;
   snapshot: RoutePredictedEvidence["snapshot"] | null;
   riskFocus: RouteRiskFocus;
+  projectionVersionId?: string | null;
   zonesConsidered: number;
   candidatesConsidered: number;
   admitted: number;

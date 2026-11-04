@@ -2,7 +2,7 @@ import {
   PARIS_PRESSURE_RISK_MODEL_CONFIG,
   type ParisPressureRiskContext,
   type ParisPressureRiskEvent,
-} from "./paris-pressure-risk-contract";
+} from "./paris-pressure-risk-contract.ts";
 
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;

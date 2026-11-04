@@ -8,6 +8,8 @@ import {
 import type { RoutePredictionSummary } from "@/lib/route/route-predicted-targets-types";
 import type { RoutePlannerResult } from "@/lib/route/route-planner";
 
+vi.mock("server-only", () => ({}));
+
 export { candidate, fallbackGeometry, plannedStop, predictedCandidate, request } from "./route.test.fixtures";
 
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn<typeof import("@/lib/auth/safe-session").getSafeAuthSession>());
@@ -33,6 +35,7 @@ const planRouteMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-pl
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-planner").fallbackRoutePrefixWithinBudget>());
 const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/paris-pressure-loader").loadParisPressureSnapshot>());
 const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/municipal-cleaning-serviceability-loader").loadMunicipalCleaningServiceabilitySnapshot>());
+const loadActivePedestrianRiskProjectionMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/pedestrian-risk-projection-store").loadActivePedestrianRiskProjection>());
 const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/paris-pressure-route-adapter").applyParisPressureToCandidates>());
 const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").buildPredictedRouteCandidates>());
 const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").buildRoutePlannerCandidatePool>());
@@ -63,6 +66,7 @@ export {
   fallbackRoutePrefixWithinBudgetMock,
   buildPredictedRouteCandidatesMock,
   buildRoutePlannerCandidatePoolMock,
+  loadActivePedestrianRiskProjectionMock,
 };
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -122,6 +126,9 @@ vi.mock("@/lib/geo/municipal-cleaning-serviceability-loader", () => ({
 }));
 vi.mock("@/lib/route/paris-pressure-route-adapter", () => ({
   applyParisPressureToCandidates: applyParisPressureToCandidatesMock,
+}));
+vi.mock("@/lib/route/pedestrian-risk-projection-store", () => ({
+  loadActivePedestrianRiskProjection: loadActivePedestrianRiskProjectionMock,
 }));
 vi.mock("@/lib/route/route-predicted-targets", () => ({
   buildPredictedRouteCandidates: buildPredictedRouteCandidatesMock,

@@ -473,17 +473,17 @@ IRIS + modèle de pression CURRENT      OSM/Geofabrik + contraintes piétonnes
 
 Le modèle conserve un **seul propriétaire** pour chaque signal. Le snapshot du pilote est une projection statique reproductible, jamais une seconde source canonique d'observations. Aucun nouveau modèle IRIS parallèle n'est créé.
 
-### 6.2.1. Pilote livré Paris 5e/6e (`CURRENT / PILOT`)
+### 6.2.1. Pilote Panthéon/Jardin des Plantes (`CURRENT / PILOT`)
 
-Le pilote actuel est une projection partielle du réseau OSM, préparée par
-`apps/web/scripts/refresh-paris-heatmap-pilot.mjs` depuis
-`apps/web/data/geospatial/paris-heatmap-pilot-osm-source.json` et les polygones
-IRIS du snapshot `paris-iris-2024-pop-2021-r2-polygon`. Le résultat versionné
-est `apps/web/data/geospatial/paris-heatmap-pilot.json` (`schemaVersion: 2`,
-`geometryVersion: iris-clipped-v1`). Au snapshot publié du 2 novembre 2026, il
-contient 58 voies dérivées, 62 micro-lieux, 562 sous-tronçons et 19 références
-IRIS utilisées. Ces chiffres décrivent le jeu publié, pas une couverture
-intégrale des 5e et 6e arrondissements.
+Le pilote matérialisé est construit par
+`apps/web/scripts/build-pedestrian-risk-projection.mjs` à partir du graphe
+OSM borné `apps/web/data/geospatial/paris-pedestrian-network-pilot-osm-source.json`,
+du snapshot `paris-pressure-snapshot` et du snapshot municipal de
+serviceabilité. Le calcul est hors requête et la publication passe par
+`publish_pedestrian_risk_projection(jsonb)` dans
+`apps/web/supabase/migrations/20261104000005_pedestrian_risk_projection.sql`.
+La lecture active du générateur passe exclusivement par
+`get_active_pedestrian_risk_projection(...)`.
 
 La propriété `retrievedAt` est la date de récupération OSM réellement portée
 par la source d'acquisition et ne doit pas être remplacée par une date de
@@ -492,43 +492,35 @@ paramètre de substitution ; `--retrieved-at` est refusé afin de ne pas
 fabriquer une provenance temporelle. Une éventuelle date de publication relève
 du versionnement externe et ne change pas `retrievedAt`.
 
-Le périmètre publié est l'union des polygones IRIS des codes arrondissement
-`75105` et `75106`, et non les rectangles des requêtes OSM historiques. Chaque
-arête OSM est découpée aux frontières IRIS ; elle n'est conservée que si son
-intervalle possède un rattachement unique démontrable. Les portions hors
-périmètre, les points ambigus et les rattachements non prouvés sont exclus et
-ne reçoivent ni interpolation ni score inventé. `sourceWayId`, les URLs OSM,
-`referenceGeometrySnapshotId` et `identifierVersion` permettent de relier la
-projection aux provenances et aux géométries de référence. La carte rend
-uniquement les lignes et les micro-points : les géométries IRIS servent au
-calcul invisible et ne sont jamais ajoutées à la carte.
+Chaque arête acceptée du graphe est découpée aux frontières réelles des
+géométries IRIS. Une portion est associée à une seule zone seulement lorsque
+son rattachement est démontrable. Une portion hors couverture ou sur une
+frontière ambiguë est conservée comme `unavailable`, avec scores `null` ; elle
+ne devient jamais un risque nul. Les segments portant le même rattachement
+IRIS reçoivent le même score zonal : aucune différenciation de rue n'est
+inventée sans facteur local sourcé et versionné.
 
-Le calcul réutilise `paris-pressure-risk-v3-urban-morphology` pour la référence
-zonale, applique les coefficients de voie et de micro-lieu de la matrice
-polarisée, choisit séparément l'influence dominante pour les mégots et les
-déchets après déduplication et atténuation spatiale, puis résout un facteur
-d'échelle par zone afin de conserver la moyenne pondérée par longueur après
-écrêtage. Les coefficients de micro-lieux et les scores du pilote restent des
-hypothèses ; le statut `partial`, le producteur, le millésime, la version et
-les dates des sources IRIS sont copiés depuis le snapshot canonique, sans
-reconstruire une provenance `available`. La couche sépare la provenance OSM du
-réseau de celle du snapshot IRIS et expose l'influence effectivement appliquée
-pour chaque branche. Les facteurs socio-démographiques documentés dans le plan
-associé restent des hypothèses non calibrées et ne sont pas activés ; la
-densité n'est donc pas comptée une seconde fois. Les documents liés sont
-indexés sans duplication dans l’index documentaire transverse.
+La projection réutilise `paris-pressure-risk-v3-urban-morphology` pour la
+référence zonale et conserve séparément `wasteRisk` et
+`cigaretteButtRisk`, leurs confiances, facteurs disponibles/manquants,
+résolution effective, dates, versions, provenance et serviceabilité
+municipale. `mixedRisk` est la moyenne arithmétique exacte des deux scores
+avant arrondi. Le risque est explicitement théorique et non calibré ; il ne
+représente ni une probabilité, ni une quantité de déchets, ni un rendement de
+collecte.
 
-Le calque est optionnel, désactivé par défaut, et affiche les trois modes
-`Mixte`, `Mégots` et `Déchets`. Un segment ou un rattachement indisponible reste
-`unavailable`; les micro-points sont masqués si les voies ne sont pas
-exploitables. Le pilote n'alimente pas le planner, les annotations
-communautaires, les observations réelles ou les exports d'action.
+La publication remplace les lignes d'une version sous verrou transactionnel,
+puis bascule un unique snapshot actif. Une erreur laisse l'ancien snapshot
+actif intact. Le stockage et la lecture sont réservés à `service_role` et les
+géométries sont indexées par GiST. L'installation distante de PostGIS et la
+présence effective des tables restent des preuves d'intégration distinctes de
+la migration versionnée.
 
 ### 6.2. Contrat de sortie proposé
 
 ```ts
-// Schéma conceptuel du contrat complet futur ; le pilote UI utilise le type
-// interne paris-heatmap-pilot.ts et son snapshot statique versionné.
+// Contrat conceptuel aligné sur la projection matérialisée ; le graphe et les
+// sources restent versionnés séparément.
 interface ParisStreetRiskSegment {
   segmentId: string;                 // stable pour graphVersion seulement
   graphVersion: string;
@@ -538,11 +530,12 @@ interface ParisStreetRiskSegment {
   irisParts: Array<{ irisId: string; lengthMeters: number }>;
   sourcePressureSnapshotId: string;
   sourceRiskModelVersion: string;
-  heuristicPolicyVersion: string;
+  projectionPolicyVersion: string;
   wasteRisk: number | null;
   cigaretteButtRisk: number | null;
   mixedRisk: number | null;
-  roadContext: string | null;
+  effectiveResolution: 'iris' | 'unknown';
+  calibrationStatus: 'not_calibrated_theoretical';
   evidence: Array<{
     sourceId: string;
     factorId: string;
@@ -563,10 +556,10 @@ interface ParisStreetRiskSegment {
 
 - **Couverture territoriale** : géométrie réelle de Paris intra-muros, avec le périmètre intérieur au boulevard périphérique défini par un polygone administratif/géographique validé, puis restriction du réseau OSM à cette emprise. **La seule commune INSEE `75056` ne suffit pas au masque intra-muros** : Paris comprend aussi les bois de Boulogne et de Vincennes hors de ce périmètre. Ne pas utiliser un rectangle comme masque de publication, ni confondre les limites des IRIS et celles du pilote.
 - **Stockage** : préférer une projection géographique PostgreSQL indexée, si les capacités du projet et son budget le permettent ; vérifier PostGIS et les migrations canoniques avant toute création. Alternative technique : artefact/tuiles spatiales pré-calculées si le stockage et les coûts le justifient.
-- **État CURRENT du dépôt** : le snapshot IRIS reste localement chargé par `apps/web/src/lib/geo/paris-pressure-loader.ts` ; le pilote 5e/6e ajoute un snapshot segmentaire statique borné, sans prétendre constituer encore le graphe complet des deux arrondissements ni de Paris. La préparation conserve séparément l'entrée OSM brute et sa projection IRIS écrêtée afin que le rerun soit déterministe.
+- **État CURRENT du dépôt** : les snapshots IRIS de pression et de serviceabilité restent des sources locales versionnées pour le rebuild hors requête ; la projection segmentaire est stockée dans Supabase, avec une version active unique et un RPC borné pour le générateur. Le pilote reste limité au graphe Panthéon/Jardin des Plantes et son extension à Paris réutilisera le même contrat, sans copie concurrente du modèle IRIS.
 - **Index et accès** : requêter uniquement les segments d'une emprise bornée, avec quantité de géométries et volume de réponse plafonnés ; la carte publique n'expose pas de donnée personnelle ou de données administrateur.
 - **Licence** : conserver provenance et millésime des données OSM/Apur/Paris/IDFM ; ne pas effacer les obligations de redistribution et d'attribution en fusionnant des jeux sous licences différentes.
-- **Versioning** : `graphVersion`, `pressureSnapshotId`, `heuristicsVersion`, `publicationVersion` indispensables pour une lecture cohérente et un rerun déterministe.
+- **Versioning** : `networkSourceSha256`, `networkImporterVersion`, `pressureSnapshotId`, `riskModelVersion`, `serviceabilitySnapshotId`, `policyVersion` et l'identifiant de publication sont indispensables pour une lecture cohérente et un rerun déterministe.
 - **Rendu** : colorer des **lignes de réseau piéton** plutôt qu'un nuage de chaleur opaque sur les immeubles. Une couleur distincte exprime `unavailable`, jamais le risque faible.
 
 ### 6.4. Invalidation incrémentale et actualisation du cache
@@ -589,7 +582,7 @@ Le traitement recommandé est une file durable d'invalidation, des workers born�
 
 **Carte** : sélecteur Mégots/Déchets/Mixte, légende des scores *théoriques*, date et version des sources, indice de confiance, description des facteurs du tronçon, superposition des deux groupes. Le `mixte` est strictement arithmétique à la lecture, pas un nouveau modèle indépendant.
 
-**Générateur** : optimiser les segments *uniques* parcourus et nettoyables, sur le graphe routable, par scores distincts. Dans le mode mixte, contrôler la couverture de chacune des deux familles, au lieu de sélectionner simplement les tronçons maximisant `max(wasteRisk, cigaretteButtRisk)`. Ne pas confondre trajet à travers une rue et nettoyage effectif du trottoir. Respecter origine/arrivée et topologie, budgets de marche et de collecte, accessibilité et interdictions.
+**Générateur** : lire uniquement la projection active des segments piétons, puis optimiser les segments *uniques* parcourus et nettoyables sur le graphe routable. Dans le mode mixte, utiliser `mixedRisk` matérialisé et contrôler la couverture de chacune des deux familles ; ne jamais sélectionner simplement les tronçons maximisant `max(wasteRisk, cigaretteButtRisk)`. Ne pas confondre trajet à travers une rue et nettoyage effectif du trottoir. Respecter origine/arrivée et topologie, budgets de marche et de collecte, accessibilité et interdictions.
 
 **Observations locales** : chercher ensuite les signalements validés proches du parcours théorique. Évaluer leur détour via le graphe (pas la seule distance à vol d'oiseau) et leur validité temporelle. Insérer seulement les détours faisables sans écraser la préférence de parcours ni changer leur provenance `observed`.
 

@@ -15,14 +15,14 @@ import {
   type ParisPressureRiskFactor,
   type ParisPressureRiskKind,
   type ParisPressureRiskScore,
-} from "./paris-pressure-risk-contract";
+} from "./paris-pressure-risk-contract.ts";
 import {
   cleanlinessCorrection,
   normalizedCount,
   normalizedSignal,
   resolveEventPressure,
-} from "./paris-pressure-risk-normalization";
-import { applyUrbanMorphologyPrior } from "./urban-morphology-prior";
+} from "./paris-pressure-risk-normalization.ts";
+import { applyUrbanMorphologyPrior } from "./urban-morphology-prior.ts";
 
 type Factor = {
   key: ParisPressureRiskFactor;

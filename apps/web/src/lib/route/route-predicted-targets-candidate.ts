@@ -46,7 +46,7 @@ function chosenRisk(
 ): number {
   if (riskFocus === "waste") return estimate.wasteRisk;
   if (riskFocus === "cigaretteButts") return estimate.cigaretteButtRisk;
-  return Math.max(estimate.wasteRisk, estimate.cigaretteButtRisk);
+  return Number(((estimate.wasteRisk + estimate.cigaretteButtRisk) / 2).toFixed(3));
 }
 
 function actualFactorLabels(score: ParisPressureRiskScore): string[] {

@@ -36,6 +36,16 @@ export type RoutePredictedEvidence = {
   modelVersion: string;
   zoneId: string;
   zoneLabel: string;
+  /** Present when the candidate comes from the materialized segment projection. */
+  segmentId?: string;
+  projectionVersionId?: string | null;
+  networkVersionId?: string | null;
+  effectiveResolution?: "iris" | "unknown";
+  calibrationStatus?: "not_calibrated_theoretical";
+  segmentGeometry?: {
+    type: "LineString";
+    coordinates: Array<[number, number]>;
+  };
   geographicLevel: ParisPressureZone["geographicLevel"];
   centroid: ParisPressureZone["centroid"];
   radiusKm: number;
@@ -60,6 +70,7 @@ export type RoutePredictedEvidence = {
   dominantRisk: "waste" | "cigaretteButts";
   wasteRisk: number;
   cigaretteButtRisk: number;
+  mixedRisk?: number;
   confidence: {
     waste: ParisPressureRiskConfidence;
     cigaretteButts: ParisPressureRiskConfidence;
@@ -83,6 +94,15 @@ export type RoutePredictedEvidence = {
   provenance: ParisPressureProvenance[];
   contextProvenance: ParisPressureRiskEstimate["contextProvenance"];
   provenanceGaps: ParisPressureRiskEstimate["provenanceGaps"];
+  availableFactors?: {
+    waste: string[];
+    cigaretteButts: string[];
+  };
+  missingFactors?: {
+    waste: string[];
+    cigaretteButts: string[];
+  };
+  serviceability?: unknown;
   pollutionPriority?: number;
   volunteerAdditionality?: number | null;
   finalPlannerContribution?: number;

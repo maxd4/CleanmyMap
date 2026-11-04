@@ -22,6 +22,7 @@ import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
 import { routeGuidedBudgetForMode } from "@/lib/route/route-planning-mode";
 import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { loadActivePedestrianNetwork } from "@/lib/route/pedestrian-network-store";
+import { loadActivePedestrianRiskProjection } from "@/lib/route/pedestrian-risk-projection-store";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -139,6 +140,14 @@ export async function POST(request: Request) {
         longitude: candidate.longitude,
       })),
     ]);
+    const pedestrianRiskProjection = await loadActivePedestrianRiskProjection(supabase, [
+      origin,
+      ...(options.arrival ? [options.arrival] : []),
+      ...spatialCandidates.map((candidate) => ({
+        latitude: candidate.latitude,
+        longitude: candidate.longitude,
+      })),
+    ]);
     const weatherContext = await fetchPlannerWeatherContext({
       latitude: origin.latitude,
       longitude: origin.longitude,
@@ -150,7 +159,11 @@ export async function POST(request: Request) {
       arrival: options.arrival,
       routeTopology: options.routeTopology,
       spatialCandidates,
-      parisPressureSnapshot: candidateData.parisPressureSnapshot,
+      // Predicted targets are server-backed by the materialized projection;
+      // the historical pressure snapshot remains available only to observed
+      // candidate enrichment in loadRouteCandidateData.
+      parisPressureSnapshot: null,
+      pedestrianRiskProjection,
       municipalCleaningSnapshot: candidateData.municipalCleaningSnapshot,
       travelBudgetMinutes: effectiveTravelBudgetMinutes,
       maxStops: options.maxStops,

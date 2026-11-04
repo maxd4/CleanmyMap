@@ -16,6 +16,8 @@ import {
 } from "./route.test.fixtures";
 import { buildBoundedRouteStartZone } from "@/lib/route/route-start-location";
 
+vi.mock("server-only", () => ({}));
+
 type RouteTestCandidate = typeof candidate;
 type RouteTestObservedLayer = { candidateCount: number; isTruncated: boolean; sourceHealth: { failedSources: string[]; availableSources: string[]; partial: boolean } };
 type RouteTestPredictionLayer = { status: "available" | "partial" | "unavailable"; selectedCount: number };
@@ -48,6 +50,7 @@ const planRouteMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
 const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn());
+const loadActivePedestrianRiskProjectionMock = vi.hoisted(() => vi.fn());
 const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn());
 const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn<(
   input: { effectiveRiskFocus: RoutePredictionSummary["riskFocus"] },
@@ -118,6 +121,9 @@ vi.mock("@/lib/geo/municipal-cleaning-serviceability-loader", () => ({
 }));
 vi.mock("@/lib/route/paris-pressure-route-adapter", () => ({
   applyParisPressureToCandidates: applyParisPressureToCandidatesMock,
+}));
+vi.mock("@/lib/route/pedestrian-risk-projection-store", () => ({
+  loadActivePedestrianRiskProjection: loadActivePedestrianRiskProjectionMock,
 }));
 vi.mock("@/lib/route/route-predicted-targets", () => ({
   buildPredictedRouteCandidates: buildPredictedRouteCandidatesMock,
