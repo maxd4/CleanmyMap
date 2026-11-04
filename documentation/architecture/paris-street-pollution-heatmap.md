@@ -542,14 +542,17 @@ ancienne pour permettre le retrait local. Les signalements non validés et les
 actions sans statut `approved` ne déclenchent pas cette actualisation.
 
 Le worker `apps/web/scripts/refresh-pedestrian-observation-cache.mjs` réclame
-des lots avec `SKIP LOCKED`, récupère les segments affectés, recalcule seulement
-leurs associations aux signalements toujours `validated`, puis publie un
-snapshot versionné par `publish_pedestrian_observation_cache`. Le verrou
-d'advisory et `p_replace_segment_ids` empêchent qu'un second worker écrase une
-mise à jour concurrente ; les événements terminés et les lignes du cache sont
-publiés dans la même transaction. Une erreur remet le lot en attente avec un
-backoff ; un bail expiré est reprenable. Tant qu'une publication ne réussit pas,
-le dernier snapshot actif reste lisible.
+des lots avec `SKIP LOCKED`, puis délègue le calcul et la publication à
+`refresh_pedestrian_observation_cache`. La RPC calcule les lignes en base,
+construit explicitement le transport `projectionSegmentId`, `observationIds`,
+`observedCount`, `latestObservedAt`, et publie sans transférer un corpus qui
+pourrait être plafonné par PostgREST. Le verrou d'advisory, l'identité du
+worker et le bail courant sont vérifiés par la publication et l'échec ; un
+worker expiré ou remplacé ne peut donc pas clore ni remettre en attente le lot
+d'un autre worker. `p_replace_segment_ids` conserve l'actualisation locale,
+les événements terminés et les lignes du cache sont publiés dans la même
+transaction, et le dernier snapshot actif reste lisible tant qu'une publication
+ne réussit pas.
 
 Une actualisation temporelle ou un changement de modèle, de source ou de graphe
 OSM appelle `enqueue_pedestrian_risk_cache_rebuild` avec respectivement

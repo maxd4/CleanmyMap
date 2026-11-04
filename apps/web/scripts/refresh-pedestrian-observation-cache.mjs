@@ -7,15 +7,6 @@ function option(name, fallback) {
   return index >= 0 ? process.argv[index + 1] ?? fallback : fallback;
 }
 
-function mergeRows(previous, refreshed, affectedIds) {
-  const affected = new Set(affectedIds);
-  const refreshedById = new Map(refreshed.map((row) => [row.projection_segment_id, row]));
-  return [...previous.filter((row) => !affected.has(row.projection_segment_id)), ...refreshed]
-    .filter((row, index, rows) => rows.findIndex((candidate) => candidate.projection_segment_id === row.projection_segment_id) === index)
-    .map((row) => refreshedById.get(row.projection_segment_id) ?? row)
-    .sort((left, right) => left.projection_segment_id.localeCompare(right.projection_segment_id));
-}
-
 function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -27,6 +18,22 @@ async function checkedRpc(client, name, args) {
   const { data, error } = await client.rpc(name, args);
   if (error) throw new Error(`${name}: ${error.message}`);
   return data ?? [];
+}
+
+export function buildObservationCacheRefreshRequest(projectionVersionId, eventIds, workerId) {
+  return {
+    p_projection_version_id: projectionVersionId,
+    p_event_ids: eventIds,
+    p_worker_id: workerId,
+  };
+}
+
+export function buildObservationCacheFailureRequest(eventIds, error, workerId) {
+  return {
+    p_event_ids: eventIds,
+    p_error: error,
+    p_worker_id: workerId,
+  };
 }
 
 export async function refreshPedestrianObservationCache() {
@@ -64,45 +71,16 @@ export async function refreshPedestrianObservationCache() {
     if (projectionError) throw projectionError;
     if (!projection?.id) throw new Error("Aucune projection piétonne active.");
 
-    const affected = await checkedRpc(client, "get_pedestrian_observation_cache_affected_segments", {
-      p_projection_version_id: projection.id,
-      p_event_ids: eventIds,
-    });
-    const { data: previous, error: previousError } = await client.rpc("get_active_pedestrian_observation_cache", {
-      p_projection_version_id: projection.id,
-      p_segment_ids: null,
-    });
-    if (previousError) throw previousError;
-    const previousRows = previous ?? [];
-    const affectedIds = affected.map((row) => row.projection_segment_id);
-    const refreshAll = previousRows.length === 0 || claimed.some((event) => event.source_table === "system");
-    const refreshed = await checkedRpc(client, "compute_pedestrian_observation_cache_rows", {
-      p_projection_version_id: projection.id,
-      p_segment_ids: refreshAll ? null : affectedIds,
-    });
-    const rows = refreshAll ? refreshed : mergeRows(previousRows, refreshed, affectedIds);
-    const { data: watermarkRows, error: watermarkError } = await client
-      .from("trash_spotter_spots")
-      .select("updated_at")
-      .eq("status", "validated")
-      .order("updated_at", { ascending: false })
-      .limit(1);
-    if (watermarkError) throw watermarkError;
-    const sourceWatermark = watermarkRows?.[0]?.updated_at ?? new Date().toISOString();
-    const published = await checkedRpc(client, "publish_pedestrian_observation_cache", {
-      p_projection_version_id: projection.id,
-      p_source_watermark: sourceWatermark,
-      p_rows: refreshAll ? rows : refreshed,
-      p_counts: { segments: rows.length, refreshedSegments: refreshed.length, events: claimed.length },
-      p_event_ids: eventIds,
-      p_replace_segment_ids: refreshAll ? null : affectedIds,
-    });
-    return { claimed: claimed.length, refreshedSegments: refreshed.length, published: true, cacheVersionId: published };
+    const published = await checkedRpc(client, "refresh_pedestrian_observation_cache",
+      buildObservationCacheRefreshRequest(projection.id, eventIds, workerId));
+    return { claimed: claimed.length, published: true, cacheVersionId: published };
   } catch (error) {
-    await checkedRpc(client, "fail_pedestrian_observation_invalidation_events", {
-      p_event_ids: eventIds,
-      p_error: error instanceof Error ? error.message : String(error),
-    });
+    await checkedRpc(client, "fail_pedestrian_observation_invalidation_events",
+      buildObservationCacheFailureRequest(
+        eventIds,
+        error instanceof Error ? error.message : String(error),
+        workerId,
+      ));
     throw error;
   }
 }
