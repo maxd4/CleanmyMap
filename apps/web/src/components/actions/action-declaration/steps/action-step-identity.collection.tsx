@@ -34,85 +34,44 @@ export function ActionCollectionSection({
   variant: "compact" | "full";
 }) {
   const full = variant === "full";
+  const gridClassName = full
+    ? "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+    : "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3";
+
   return (
     <div>
       <SectionTitle color="bg-emerald-500">Environnement de collecte</SectionTitle>
-      <div
-        className={cn(
-          "flex flex-wrap gap-2",
-        )}
-      >
+      <div className={gridClassName} role="group" aria-label="Environnements de collecte">
         {PLACE_TYPE_CATALOG.map((option) => {
           const Icon = PLACE_TYPE_ICONS[option.icon];
           const isSelected = option.value === form.placeType;
           return (
             <button
-              key={option.label}
+              key={option.value}
               type="button"
-              title={option.description}
               aria-pressed={isSelected}
               onClick={() => updateField("placeType", option.value)}
               className={cn(
-                "relative flex min-w-[9.25rem] flex-1 basis-[9.25rem] flex-col items-center justify-center gap-1.5 rounded-2xl border px-3 py-2.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
-                full
-                  ? "min-h-[72px] transition-all duration-200"
-                  : "min-h-[64px] transition-all",
+                "flex min-h-11 w-full items-center justify-start gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:text-sm",
                 isSelected
-                  ? "border-emerald-300 bg-[#ECF8EF] shadow-sm"
-                  : "border-emerald-200/70 bg-[#F3FBF6] hover:border-emerald-300 hover:bg-[#EAF7EF]",
+                  ? "border-emerald-950 bg-emerald-900 text-white shadow-sm hover:border-emerald-950 hover:bg-emerald-800"
+                  : "border-emerald-200/80 bg-white text-emerald-950 hover:border-emerald-400 hover:bg-emerald-50",
               )}
             >
-              {full ? (
-                <div
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
-                    isSelected
-                      ? "bg-emerald-500 text-white"
-                      : "bg-emerald-100 text-emerald-700",
-                  )}
-                >
-                  <Icon size={16} />
-                </div>
-              ) : (
-                <Icon
-                  size={16}
-                  className={isSelected ? "text-emerald-700" : "text-emerald-600/70"}
-                />
-              )}
-              {full ? (
-                <div>
-                  <p
-                    className={cn(
-                      "cmm-text-small font-semibold leading-tight",
-                      isSelected ? "text-emerald-950" : "text-emerald-900/70",
-                    )}
-                  >
-                    {option.label}
-                  </p>
-                  <p className="mt-0.5 hidden cmm-text-small leading-tight text-emerald-900/45 sm:block">
-                    {option.description}
-                  </p>
-                </div>
-              ) : (
-                <span
-                  className={cn(
-                    "text-xs font-semibold leading-tight",
-                    isSelected ? "text-emerald-950" : "text-emerald-900/70",
-                  )}
-                >
-                  {option.label}
-                </span>
-              )}
-              {full && isSelected ? (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500" />
-              ) : null}
+              <Icon size={16} aria-hidden="true" className="shrink-0" />
+              <span className="min-w-0">{option.label}</span>
             </button>
           );
         })}
       </div>
       {form.placeType && !PLACE_TYPE_CATALOG.some((option) => option.value === form.placeType) ? (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-amber-950">
+        <p role="note" className="mt-2 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-amber-950">
           Valeur historique conservée : <strong>{form.placeType}</strong>. Choisissez une catégorie pour reclasser explicitement cette action.
+        </p>
+      ) : null}
+      {form.placeType === "roadside_areas" ? (
+        <p role="alert" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-950">
+          Ne pas accéder aux zones de circulation. Respectez les restrictions et autorisations applicables.
         </p>
       ) : null}
       <button
@@ -120,10 +79,10 @@ export function ActionCollectionSection({
         aria-pressed={form.placeType === ""}
         onClick={() => updateField("placeType", "")}
         className={cn(
-          "mt-3 rounded-xl border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+          "mt-2 inline-flex min-h-10 items-center rounded-lg border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
           form.placeType === ""
-            ? "border-emerald-300 bg-emerald-50 text-emerald-950"
-            : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60",
+            ? "border-emerald-950 bg-emerald-900 text-white"
+            : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50",
         )}
       >
         Type d’environnement non renseigné
