@@ -29,6 +29,7 @@ describe("route recommendation HTTP request schema", () => {
     if (parsed.success) {
       expect(parsed.data).toEqual({
         ...payload,
+        searchMode: "standard",
         routeTopology: "loop",
         planningMode: { type: "free" },
         riskFocus: "all",

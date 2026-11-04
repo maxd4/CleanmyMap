@@ -202,7 +202,8 @@ describe("useRouteData explicit request gate", () => {
     });
 
     const payload = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string);
-    expect(payload.priorityVsTravel).toBe(100);
+    expect(payload.priorityVsTravel).toBe(DEFAULT_ROUTE_OPTIONS.priorityVsTravel);
+    expect(payload.searchMode).toBe("nearest_relevant");
     expect(payload.travelBudgetMinutes).toBe(DEFAULT_ROUTE_OPTIONS.travelBudgetMinutes);
     expect(payload.pickupPreference).toBe(DEFAULT_ROUTE_OPTIONS.pickupPreference);
   });

@@ -11,6 +11,7 @@ export type RouteRecommendationSubmission = {
   id: number;
   options: RouteOptions;
   planningMode: RoutePlanningMode;
+  searchMode?: "standard" | "nearest_relevant";
   origin?: RouteRecommendationOrigin;
 };
 
@@ -41,6 +42,7 @@ export function createRouteRecommendationSubmission(
   options: RouteOptions,
   origin?: RouteRecommendationOrigin,
   planningMode: RoutePlanningMode = DEFAULT_ROUTE_PLANNING_MODE,
+  searchMode: "standard" | "nearest_relevant" = "standard",
 ): RouteRecommendationSubmission {
   return {
     id,
@@ -57,6 +59,7 @@ export function createRouteRecommendationSubmission(
             })),
           }
         : { type: "free" },
+    ...(searchMode === "nearest_relevant" ? { searchMode } : {}),
     ...(origin ? { origin: { ...origin } } : {}),
   };
 }
@@ -94,6 +97,7 @@ export async function fetchRouteRecommendation(
   const payload = {
     ...request.options,
     planningMode: request.planningMode,
+    ...(request.searchMode ? { searchMode: request.searchMode } : {}),
     ...(request.origin ? { origin: request.origin } : {}),
     ...(request.options.arrival ? { arrival: request.options.arrival } : {}),
     routeTopology: request.options.routeTopology ?? "loop",

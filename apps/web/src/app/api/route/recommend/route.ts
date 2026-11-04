@@ -17,12 +17,21 @@ import { resolveRouteOrigin } from "./route.origin";
 import { selectRouteOriginWithinZone } from "@/lib/route/route-start-location";
 import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
+import type { RouteRecommendationResponseInput } from "./route.response.builders";
+import {
+  buildPlannerPollutionRelevance,
+} from "./route.response.builders";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
 import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
 import { routeGuidedBudgetForMode } from "@/lib/route/route-planning-mode";
 import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { loadActivePedestrianNetwork } from "@/lib/route/pedestrian-network-store";
 import { loadActivePedestrianRiskProjection } from "@/lib/route/pedestrian-risk-projection-store";
+import {
+  buildRouteNearestRelevantProbePoints,
+  createRouteNearestRelevantReference,
+  findNearestRelevantRoute,
+} from "@/lib/route/route-nearest-relevant";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -70,6 +79,7 @@ export async function POST(request: Request) {
   }
 
     const options = parsed.data;
+    const searchMode = options.searchMode;
     const priorityVsTravel = resolvePriorityVsTravel(options);
     const effectiveRiskFocus = resolveEffectiveRiskFocus({
       pickupPreference: options.pickupPreference,
@@ -131,6 +141,27 @@ export async function POST(request: Request) {
     if (!origin) {
       return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
     }
+    const nearestRelevantReference = searchMode === "nearest_relevant"
+      ? createRouteNearestRelevantReference({
+          origin: startZone
+            ? undefined
+            : {
+                ...origin,
+                ...(options.startLocation?.mode === "precise" ? { label: options.startLocation.label } : {}),
+              },
+          zone: startZone
+            ? {
+                label: options.startLocation?.label ?? "Zone demandée",
+                center: startZone.center,
+                radiusKm: startZone.radiusKm,
+                bounds: startZone.bounds,
+              }
+            : undefined,
+        })
+      : null;
+    const nearestRelevantProbePoints = nearestRelevantReference
+      ? buildRouteNearestRelevantProbePoints(nearestRelevantReference)
+      : [];
     const spatialCandidates = candidateData.spatialCandidates;
     const pedestrianNetwork = await loadActivePedestrianNetwork(supabase, [
       origin,
@@ -139,6 +170,7 @@ export async function POST(request: Request) {
         latitude: candidate.latitude,
         longitude: candidate.longitude,
       })),
+      ...nearestRelevantProbePoints,
     ]);
     const pedestrianRiskProjection = await loadActivePedestrianRiskProjection(supabase, [
       origin,
@@ -147,6 +179,7 @@ export async function POST(request: Request) {
         latitude: candidate.latitude,
         longitude: candidate.longitude,
       })),
+      ...nearestRelevantProbePoints,
     ]);
     const weatherContext = await fetchPlannerWeatherContext({
       latitude: origin.latitude,
@@ -154,10 +187,14 @@ export async function POST(request: Request) {
       scheduledStartAt: options.scheduledStartAt,
       scheduledEndAt: options.scheduledEndAt,
     });
-    const planning = await planRouteRecommendation({
-      origin,
-      arrival: options.arrival,
-      routeTopology: options.routeTopology,
+    const buildPlanning = (
+      candidateOrigin: typeof origin,
+      candidateArrival: typeof options.arrival,
+      candidateTopology: typeof options.routeTopology,
+    ) => planRouteRecommendation({
+      origin: candidateOrigin,
+      arrival: candidateArrival,
+      routeTopology: candidateTopology,
       spatialCandidates,
       // Predicted targets are server-backed by the materialized projection;
       // the historical pressure snapshot remains available only to observed
@@ -178,14 +215,22 @@ export async function POST(request: Request) {
       weatherContext,
       pedestrianNetwork,
     });
-    const response = buildRouteRecommendationResponse({
-      origin,
-      arrival: options.arrival,
-      routeTopology: options.routeTopology,
+
+    const initialPlanning = await buildPlanning(origin, options.arrival, options.routeTopology);
+    const buildResponseInput = (
+      candidateOrigin: typeof origin,
+      candidateArrival: typeof options.arrival,
+      candidateTopology: typeof options.routeTopology,
+      candidatePlanning: typeof initialPlanning,
+      nearestRelevantSearch?: RouteRecommendationResponseInput["nearestRelevantSearch"],
+    ): RouteRecommendationResponseInput => ({
+      origin: candidateOrigin,
+      arrival: candidateArrival,
+      routeTopology: candidateTopology,
       locationPreference,
       eventPressureContext,
       candidateData,
-      planning,
+      planning: candidatePlanning,
       planningMode,
       guidedBudget: guidedBudget ?? undefined,
       maxStops: options.maxStops,
@@ -197,7 +242,69 @@ export async function POST(request: Request) {
       weatherContext,
       startLocation: options.startLocation,
       pedestrianRiskProjection,
+      ...(nearestRelevantSearch ? { nearestRelevantSearch } : {}),
     });
+
+    const initialResponseInput = buildResponseInput(
+      origin,
+      options.arrival,
+      options.routeTopology,
+      initialPlanning,
+    );
+    let selectedResponseInput = initialResponseInput;
+    if (searchMode === "nearest_relevant" && nearestRelevantReference) {
+      const initialRelevance = buildPlannerPollutionRelevance(initialResponseInput);
+      const alternativePlans = new Map<string, typeof initialPlanning>();
+      const nearestSearch = await findNearestRelevantRoute({
+        graph: pedestrianNetwork,
+        reference: nearestRelevantReference,
+        baseline: {
+          relevance: initialRelevance,
+          withinBudget: initialPlanning.routeGeometry.durationMinutes <= effectiveTravelBudgetMinutes,
+          loopVerified: initialPlanning.routeGeometry.isLoop,
+          routingStatus: initialPlanning.routeGeometry.mode === "network" ? "network" : "fallback",
+          providerCalls: initialPlanning.finalRoutingReconciliation?.providerCalls ?? 0,
+        },
+        evaluate: async (candidateOrigin) => {
+          const candidatePlanning = await buildPlanning(candidateOrigin, undefined, "loop");
+          const candidateInput = buildResponseInput(candidateOrigin, undefined, "loop", candidatePlanning);
+          alternativePlans.set(`${candidateOrigin.latitude.toFixed(7)}:${candidateOrigin.longitude.toFixed(7)}`, candidatePlanning);
+          const candidateGroupRoutes = candidatePlanning.groupRoutes ?? [];
+          return {
+            relevance: buildPlannerPollutionRelevance(candidateInput),
+            withinBudget: candidateGroupRoutes.length > 0
+              ? candidateGroupRoutes.every((group) => group.withinBudget)
+              : candidatePlanning.routeGeometry.durationMinutes <= effectiveTravelBudgetMinutes,
+            loopVerified: candidatePlanning.routeGeometry.isLoop &&
+              candidateGroupRoutes.every((group) => group.routeGeometry.isLoop),
+            routingStatus: candidatePlanning.routeGeometry.mode === "network" ? "network" : "fallback",
+            providerCalls: candidatePlanning.finalRoutingReconciliation?.providerCalls ?? 0,
+          };
+        },
+      });
+      if (nearestSearch.selected) {
+        const selectedKey = `${nearestSearch.selected.origin.latitude.toFixed(7)}:${nearestSearch.selected.origin.longitude.toFixed(7)}`;
+        const selectedPlanning = alternativePlans.get(selectedKey);
+        if (selectedPlanning) {
+          selectedResponseInput = buildResponseInput(
+            nearestSearch.selected.origin,
+            undefined,
+            "loop",
+            selectedPlanning,
+            nearestSearch.search,
+          );
+        }
+      } else {
+        selectedResponseInput = buildResponseInput(
+          origin,
+          options.arrival,
+          options.routeTopology,
+          initialPlanning,
+          nearestSearch.search,
+        );
+      }
+    }
+    const response = buildRouteRecommendationResponse(selectedResponseInput);
 
     try {
       await trackRouteRecommendationUse(supabase, { userId });

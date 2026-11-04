@@ -77,6 +77,7 @@ const guidedBudgetSchema = z.object({
 
 export const routeRecommendationRequestSchema = z
   .object({
+    searchMode: z.enum(["standard", "nearest_relevant"]).default("standard"),
     origin: routeEndpointSchema.optional(),
     startLocation: routeStartSelectionSchema.optional(),
     arrival: routeEndpointSchema.optional(),

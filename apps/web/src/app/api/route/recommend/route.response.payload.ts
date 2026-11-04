@@ -158,6 +158,7 @@ function buildCommonPayload({
     prediction: proofs.predictionSummary,
     pollutionPotential: proofs.pollutionPotential,
     pollutionRelevance: proofs.pollutionRelevance,
+    ...(input.nearestRelevantSearch ? { nearestRelevantSearch: input.nearestRelevantSearch } : {}),
     ...(riskHeatmap ? { riskHeatmap } : {}),
     ...(plannerRiskContext ? { plannerRiskContext } : {}),
     ...(planning.segmentSelection ? { segmentSelection: planning.segmentSelection } : {}),

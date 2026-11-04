@@ -72,4 +72,43 @@ describe("RoutePollutionRelevanceCard", () => {
     expect(markup).toContain("w-full");
     expect(markup).toContain("sm:w-auto");
   });
+
+  it("shows the server-reported access and before/after scores", () => {
+    const markup = renderToStaticMarkup(
+      <RoutePollutionRelevanceCard
+        assessment={assessment({
+          score: 38,
+          warning: "red",
+          alternativeSearch: { relevant: true, reason: "warning" },
+        })}
+        fr
+        onFindNearestRelevantRoute={vi.fn()}
+        nearestRelevantSearch={{
+          schemaVersion: "route-nearest-relevant-v1",
+          status: "found",
+          reason: "found",
+          requestedOrigin: { kind: "precise", center: { latitude: 48.85, longitude: 2.35 }, source: "address", label: "Panthéon" },
+          rendezvous: { latitude: 48.8566, longitude: 2.3522, source: "planner" },
+          accessDistanceKm: 0.42,
+          accessDurationMinutes: 6,
+          radiusKm: 0.5,
+          scoreBefore: 38,
+          scoreAfter: 74,
+          confidenceBefore: 0.9,
+          confidenceAfter: 0.9,
+          routingStatus: "network",
+          triedRadiiKm: [0.5],
+          candidatesEvaluated: 2,
+          plansEvaluated: 2,
+          bestAttempt: null,
+          policy: { version: "route-nearest-relevant-v1", acceptanceScore: 65, minimumConfidenceScore: 0.5, radiiKm: [0.5, 1, 2, 3, 5] },
+          limitations: [],
+        }}
+      />,
+    );
+
+    expect(markup).toContain("Score avant / après : 38 / 74");
+    expect(markup).toContain("0.42 km d’accès piéton");
+    expect(markup).toContain("Nouveau rendez-vous");
+  });
 });

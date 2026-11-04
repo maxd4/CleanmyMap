@@ -226,6 +226,31 @@ describe("route recommendation request gate", () => {
     expect(JSON.parse(transport.mock.calls[1]?.[1]?.body as string).startLocation).toEqual(zoneOptions.startLocation);
   });
 
+  it("marks the nearest-relevant action without changing the original request snapshot", async () => {
+    const origin = { latitude: 48.8566, longitude: 2.3522, source: "address" as const };
+    const options = {
+      ...DEFAULT_ROUTE_OPTIONS,
+      routeTopology: "open" as const,
+      travelBudgetMinutes: 48,
+      startLocation: { mode: "precise" as const, label: "Panthéon", origin },
+    };
+    const submitted = createRouteRecommendationSubmission(18, options, origin, { type: "free" }, "nearest_relevant");
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(submitted, transport);
+
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      searchMode: "nearest_relevant",
+      routeTopology: "open",
+      travelBudgetMinutes: 48,
+      startLocation: options.startLocation,
+      origin,
+    });
+    expect(submitted.options).toEqual(options);
+  });
+
   it("omits origin from the HTTP payload when the submission has no origin", async () => {
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(responsePayload), { status: 200 }),

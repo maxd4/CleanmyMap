@@ -250,3 +250,28 @@ pas masqués par une moyenne globale favorable. Le bouton de recherche
 alternative n'est présent que lorsqu'un avertissement serveur rouge ou orange
 est évalué ; il relance le planner avec la priorité théorique maximale, sans
 interdire la création de l'action courante et sans qualifier une rue de propre.
+
+### Recherche du parcours pertinent le plus proche
+
+Le bouton transmet désormais `searchMode=nearest_relevant` à la même frontière
+serveur que la recommandation initiale. Le serveur recalcule d'abord la demande
+d'origine, conserve son point précis ou la géométrie de zone, puis explore le
+graphe piéton actif par élargissements bornés de `0,5`, `1`, `2`, `3` et `5 km`.
+Les départs candidats sont des nœuds sortants du réseau couvert et situés dans
+Paris intra-muros ; leur nombre est plafonné par rayon et par requête.
+
+Chaque candidat est planifié comme une boucle avec la préférence, les groupes,
+les effectifs, la sécurité et les budgets de la demande initiale. Une solution
+n'est retenue que si le score serveur atteint `65`, que la confiance est au
+moins celle de `route-pollution-relevance-v1`, que chaque groupe respecte ces
+deux conditions et que la boucle respecte les budgets. Dans le premier rayon
+admissible, la distance d'accès depuis le point initial — ou depuis la limite
+de la zone — est prioritaire ; le score départage les accès équivalents.
+
+La réponse `nearestRelevantSearch` distingue le score avant/après, le nouveau
+rendez-vous, la distance et la durée d'accès, le rayon utilisé, les limites,
+le meilleur résultat insuffisant et le statut du routage (`network` ou
+`fallback`). Le déplacement d'accès n'est pas ajouté à la durée de collecte.
+La recherche est bornée à 40 plans, à quatre appels fournisseur cumulés et à
+trois secondes par plan ; une absence de solution conserve l'itinéraire initial
+et expose explicitement la cause sans le présenter comme suffisant.

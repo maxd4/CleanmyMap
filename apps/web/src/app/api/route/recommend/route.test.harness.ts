@@ -36,6 +36,7 @@ const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn<typeof import
 const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/paris-pressure-loader").loadParisPressureSnapshot>());
 const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn<typeof import("@/lib/geo/municipal-cleaning-serviceability-loader").loadMunicipalCleaningServiceabilitySnapshot>());
 const loadActivePedestrianRiskProjectionMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/pedestrian-risk-projection-store").loadActivePedestrianRiskProjection>());
+const loadActivePedestrianNetworkMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/pedestrian-network-store").loadActivePedestrianNetwork>());
 const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/paris-pressure-route-adapter").applyParisPressureToCandidates>());
 const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").buildPredictedRouteCandidates>());
 const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn<typeof import("@/lib/route/route-predicted-targets").buildRoutePlannerCandidatePool>());
@@ -129,6 +130,9 @@ vi.mock("@/lib/route/paris-pressure-route-adapter", () => ({
 }));
 vi.mock("@/lib/route/pedestrian-risk-projection-store", () => ({
   loadActivePedestrianRiskProjection: loadActivePedestrianRiskProjectionMock,
+}));
+vi.mock("@/lib/route/pedestrian-network-store", () => ({
+  loadActivePedestrianNetwork: loadActivePedestrianNetworkMock,
 }));
 vi.mock("@/lib/route/route-predicted-targets", () => ({
   buildPredictedRouteCandidates: buildPredictedRouteCandidatesMock,

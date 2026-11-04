@@ -34,6 +34,7 @@ import type {
 } from "./route-risk-heatmap-contract";
 import type { RoutePollutionPotential } from "./route-pollution-potential";
 import type { RoutePollutionRelevanceAssessment } from "./route-pollution-relevance";
+import type { RouteNearestRelevantSearch } from "./route-nearest-relevant";
 
 export type { MeetingOpportunity } from "./route-meeting-opportunities";
 
@@ -44,6 +45,7 @@ export type { RoutePickupPreference } from "./route-pickup-preference";
 
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {
+  searchMode?: "standard" | "nearest_relevant";
   origin?: RouteRecommendationOrigin;
   startLocation?: RouteStartSelection;
   arrival?: RouteRecommendationOrigin;
@@ -229,6 +231,8 @@ export type RouteRecommendationResponse = {
   pollutionPotential?: RoutePollutionPotential;
   /** Server-side threshold evaluation of the theoretical potential. */
   pollutionRelevance?: RoutePollutionRelevanceAssessment;
+  /** Bounded server search launched from the original route request. */
+  nearestRelevantSearch?: RouteNearestRelevantSearch;
   /** Auditable segment selection when the materialized pedestrian projection is used. */
   segmentSelection?: SegmentRouteSelectionMetrics;
   observedEnrichment?: RouteObservedEnrichmentMetrics;

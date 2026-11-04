@@ -1,4 +1,5 @@
 import type { RoutePollutionRelevanceAssessment, RoutePollutionRelevanceWarning } from "@/lib/route/route-pollution-relevance";
+import type { RouteNearestRelevantSearch } from "@/lib/route/route-nearest-relevant";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 function categoryLabel(category: RoutePollutionRelevanceAssessment["selectedCategory"], fr: boolean): string {
@@ -40,10 +41,12 @@ export function RoutePollutionRelevanceCard({
   assessment,
   fr,
   onFindNearestRelevantRoute,
+  nearestRelevantSearch,
 }: {
   assessment: RoutePollutionRelevanceAssessment;
   fr: boolean;
   onFindNearestRelevantRoute?: () => void;
+  nearestRelevantSearch?: RouteNearestRelevantSearch;
 }) {
   const warning = warningLabel(assessment.warning, fr);
   const showAlternative = assessment.alternativeSearch.relevant && Boolean(onFindNearestRelevantRoute);
@@ -100,6 +103,35 @@ export function RoutePollutionRelevanceCard({
         >
           {fr ? "Trouver l’itinéraire pertinent le plus proche" : "Find the nearest relevant route"}
         </CmmButton>
+      ) : null}
+      {nearestRelevantSearch ? (
+        <div className="mt-4 border-t border-current/15 pt-3 text-xs font-semibold leading-relaxed" data-route-nearest-relevant-search={nearestRelevantSearch.status}>
+          <p className="font-black">
+            {nearestRelevantSearch.status === "found"
+              ? (fr ? "Itinéraire pertinent trouvé" : "Relevant route found")
+              : (fr ? "Recherche alternative non suffisante" : "Alternative search was not sufficient")}
+          </p>
+          <p className="mt-1">
+            {fr ? "Score avant / après : " : "Score before / after: "}
+            {nearestRelevantSearch.scoreBefore ?? "—"} / {nearestRelevantSearch.scoreAfter ?? "—"}
+            {nearestRelevantSearch.accessDistanceKm !== null
+              ? ` · ${nearestRelevantSearch.accessDistanceKm.toFixed(2)} km d’accès piéton · ${nearestRelevantSearch.accessDurationMinutes ?? "—"} min d’accès`
+              : " · distance d’accès indisponible"}
+          </p>
+          {nearestRelevantSearch.rendezvous ? (
+            <p className="mt-1">
+              {fr ? "Nouveau rendez-vous : " : "New meeting point: "}
+              {nearestRelevantSearch.rendezvous.latitude.toFixed(5)}, {nearestRelevantSearch.rendezvous.longitude.toFixed(5)}
+              {nearestRelevantSearch.routingStatus === "fallback" ? " · routage estimé" : " · réseau piéton"}
+            </p>
+          ) : null}
+          {nearestRelevantSearch.bestAttempt ? (
+            <p className="mt-1 text-current/75">
+              {fr ? "Meilleur résultat identifié : " : "Best identified result: "}
+              {nearestRelevantSearch.bestAttempt.score ?? "—"} / 100 · {fr ? "insuffisant" : "insufficient"}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

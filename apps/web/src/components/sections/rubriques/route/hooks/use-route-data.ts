@@ -252,7 +252,10 @@ export function useRouteData() {
   );
   const planningModeValidationError = routeTerritorialGuidedModeValidationError(planningMode);
 
-  const requestRecommendation = useCallback(async (overrides: Partial<RouteOptions> = {}) => {
+  const requestRecommendation = useCallback(async (
+    overrides: Partial<RouteOptions> = {},
+    searchMode: "standard" | "nearest_relevant" = "standard",
+  ) => {
     const requestOptions = { ...options, ...overrides };
     if (planningModeValidationError) return;
     if (effectiveOriginMode === "map" && !effectiveMapOrigin) {
@@ -293,13 +296,27 @@ export function useRouteData() {
         requestOptions,
         origin,
         planningMode,
+        searchMode,
       ),
     );
   }, [effectiveMapOrigin, effectiveOriginMode, options, planningMode, planningModeValidationError]);
 
   const requestNearestRelevantRoute = useCallback(
-    () => requestRecommendation({ priorityVsTravel: 100 }),
-    [requestRecommendation],
+    async () => {
+      if (!recommendationRequest) {
+        await requestRecommendation({}, "nearest_relevant");
+        return;
+      }
+      if (!requestGate.current.start()) return;
+      setIsRequestInFlight(true);
+      requestSequence.current += 1;
+      setRecommendationRequest({
+        ...recommendationRequest,
+        id: requestSequence.current,
+        searchMode: "nearest_relevant",
+      });
+    },
+    [recommendationRequest, requestRecommendation],
   );
 
   return {

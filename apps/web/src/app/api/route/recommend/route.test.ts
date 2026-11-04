@@ -423,6 +423,30 @@ describe("POST /api/route/recommend", () => {
     );
   });
 
+  it("returns a controlled nearest-relevant result when the active pedestrian graph is unavailable", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.8462, longitude: 2.3464, source: "address" },
+      routeTopology: "open",
+      searchMode: "nearest_relevant",
+    }));
+
+    expect(response.status).toBe(200);
+    const payload = await readRouteResponse(response);
+    expect(payload.routeTopology).toBe("open");
+    expect(payload.nearestRelevantSearch).toMatchObject({
+      status: "unavailable",
+      reason: "network_unavailable",
+      requestedOrigin: {
+        kind: "precise",
+        center: { latitude: 48.8462, longitude: 2.3464 },
+        source: "address",
+      },
+      rendezvous: null,
+      scoreAfter: null,
+    });
+  });
+
   it("propagates the effective predictive focus to the response and trace", async () => {
     const summary = {
       status: "unavailable" as const,

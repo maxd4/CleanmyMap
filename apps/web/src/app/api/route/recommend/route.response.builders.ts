@@ -32,6 +32,7 @@ import type { RoutePlanningResult } from "./route.planning";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteStartSelection } from "@/lib/route/route-response-contract";
 import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
+import type { RouteNearestRelevantSearch } from "@/lib/route/route-nearest-relevant";
 import type {
   RoutePollutionPotential,
   RoutePollutionReferenceCatalog,
@@ -71,6 +72,7 @@ export type RouteRecommendationResponseInput = {
   pedestrianRiskProjection?: PedestrianRiskProjectionSnapshot | null;
   /** Offline-built references; the request path never constructs them. */
   pollutionReferenceCatalog?: RoutePollutionReferenceCatalog | null;
+  nearestRelevantSearch?: RouteNearestRelevantSearch;
 };
 
 const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT = {
@@ -424,7 +426,7 @@ function buildRouteProofTrace(
   });
 }
 
-function buildPlannerPollutionPotential(
+export function buildPlannerPollutionPotential(
   input: RouteRecommendationResponseInput,
 ): RoutePollutionPotential {
   const { planning } = input;
@@ -450,6 +452,12 @@ function buildPlannerPollutionPotential(
     travelBudgetMinutes: input.travelBudgetMinutes,
     referenceCatalog: input.pollutionReferenceCatalog,
   });
+}
+
+export function buildPlannerPollutionRelevance(
+  input: RouteRecommendationResponseInput,
+): RoutePollutionRelevanceAssessment {
+  return evaluateRoutePollutionRelevance(buildPlannerPollutionPotential(input));
 }
 
 export function buildRouteProofContext(
