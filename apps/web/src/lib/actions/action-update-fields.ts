@@ -38,6 +38,24 @@ function prepareDurationMetadataForUpdate(
     nextPreparationData.estimatedDurationMinutes = currentPreparationData.estimatedDurationMinutes;
   }
   if (
+    !hasOwnField(nextPreparationData, "routeTargetDistanceKm") &&
+    currentPreparationData.routeTargetDistanceKm !== undefined
+  ) {
+    nextPreparationData.routeTargetDistanceKm = currentPreparationData.routeTargetDistanceKm;
+  }
+  if (
+    !hasOwnField(nextPreparationData, "routeTargetDistanceSource") &&
+    currentPreparationData.routeTargetDistanceSource !== undefined
+  ) {
+    nextPreparationData.routeTargetDistanceSource = currentPreparationData.routeTargetDistanceSource;
+  }
+  if (
+    !hasOwnField(nextPreparationData, "routeTargetDistancePolicyVersion") &&
+    currentPreparationData.routeTargetDistancePolicyVersion !== undefined
+  ) {
+    nextPreparationData.routeTargetDistancePolicyVersion = currentPreparationData.routeTargetDistancePolicyVersion;
+  }
+  if (
     body.durationMinutes !== undefined &&
     !hasOwnField(submittedPreparationData, "durationMinutesDeclared")
   ) {

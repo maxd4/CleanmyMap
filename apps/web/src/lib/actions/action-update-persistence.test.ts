@@ -566,6 +566,52 @@ describe("prepareActionUpdate duration declaration boundary", () => {
     });
   });
 
+  it("preserves a manual target across a partial preparation PATCH", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        durationMinutesDeclared: false,
+        routeTargetDistanceKm: 2.25,
+        routeTargetDistanceSource: "manual",
+      }, { duration_minutes: 0 }),
+      parsedBody: ({ preparationData: { actionTitle: "Après" } } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      actionTitle: "Après",
+      durationMinutesDeclared: false,
+      routeTargetDistanceKm: 2.25,
+      routeTargetDistanceSource: "manual",
+    });
+    expect(prepared.updateData.preparation_data).not.toHaveProperty(
+      "routeTargetDistancePolicyVersion",
+    );
+  });
+
+  it("honors an explicit target modification instead of the persisted target", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        routeTargetDistanceKm: 2.25,
+        routeTargetDistanceSource: "manual",
+      }),
+      parsedBody: ({
+        preparationData: {
+          routeTargetDistanceKm: 3.5,
+          routeTargetDistanceSource: "manual",
+        },
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      routeTargetDistanceKm: 3.5,
+      routeTargetDistanceSource: "manual",
+    });
+    expect(prepared.updateData.preparation_data).not.toHaveProperty(
+      "routeTargetDistancePolicyVersion",
+    );
+  });
+
   it("honors an explicit absent-duration marker instead of the SQL zero", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
     const prepared = await prepareActionUpdate({
