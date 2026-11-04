@@ -29,6 +29,13 @@ export const contractedApiFamilies = new Set([
   "email",
 ]);
 
+// Some API families still contain legacy routes that are not yet represented
+// in the authorization contract. New routes can opt in individually without
+// widening this inventory to the whole family.
+export const contractedApiRoutes = new Set([
+  "gamification/territorial-leaderboard/overview",
+]);
+
 export const apiRoot = dirname(fileURLToPath(import.meta.url));
 const httpMethodPattern =
   /export\s+(?:async\s+function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(|const\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*=)/g;

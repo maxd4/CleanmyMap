@@ -20,6 +20,7 @@ import { ReferralProfileTabs } from "@/components/gamification/referral-profile-
 import { ProfileGamificationSummary } from "@/components/gamification/profile-gamification-summary";
 import { MilestonesPanel } from "@/components/gamification/milestones-panel";
 import { ProfileSpogomiSummary } from "@/components/gamification/profile-spogomi-summary";
+import { TerritorialLegendsPanel } from "@/components/sections/rubriques/gamification/territorial-legends-panel";
 import type { UserIdentity } from "@/lib/authz-identity";
 import { loadProfilePageData, type ProfilePageData } from "./profile-page-data";
 
@@ -68,6 +69,7 @@ function ProfilePageContent({
 
         <FamilyRubriqueCard withTopBar={true} topBarContent="Progression & badges" className="p-12">
           <ProfileGamificationSummary summary={gamification?.summary} />
+          <TerritorialLegendsPanel />
           <ProfileSpogomiSummary collection={spogomiCollection} volunteerSummary={spogomiVolunteerSummary} />
           <InfiniteBadgesPanel totals={infiniteTotals} />
           <MilestonesPanel milestones={infiniteTotals.milestones} />

@@ -142,6 +142,26 @@ Le parti pris est de montrer:
   dimensions supportées `scope=user|structure` et
   `metric=level|xp|badges`.
 
+### Légendes territoriales dans les surfaces Web
+
+Les profils dynamiques `/profil/[profile]` et `/sections/gamification`
+consomment la projection privée
+`/api/gamification/territorial-leaderboard/overview`. Elle fournit les cinq
+grades et les fiches des territoires effectivement renvoyés par le serveur,
+avec les rangs, cleanwalks admissibles, fenêtre de 90 jours, détention actuelle,
+meilleur historique, classement public autorisé et égalités. La surface ne
+fabrique aucune fiche pour une donnée absente et n'affiche un titre que si la
+lecture personnelle le confirme.
+
+Le bloc global expose cinq défis de première conquête. Chaque fiche de
+territoire expose six marqueurs de récompense selon le contrat annuel actuel :
+première conquête, longévité à 7, 30, 90 et 180 jours, puis fin de saison.
+Chaque marqueur est `Acquis`, `En cours` ou `Non acquis`; l'état est dérivé
+uniquement des preuves et détentions renvoyées par le serveur. Le réglage de
+consentement territorial existant dans `/reglages` reste l'unique surface de
+mutation ; sa révocation retire la projection publique sans effacer l'historique
+privé auditable.
+
 ## Points de vigilance
 
 - Ne pas confondre `XP cumulée` et `impact annuel`.

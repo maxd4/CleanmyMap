@@ -141,6 +141,17 @@ provenance et `validityStatus` — y compris les preuves invalidées conservées
 pour l'audit. Elle est privée, sans cache partagé, et ne transforme jamais une
 preuve invalidée en badge CURRENT.
 
+Les surfaces Web de profil et `/sections/gamification` consomment également
+`GET /api/gamification/territorial-leaderboard/overview`. Cette projection
+privée, authentifiée, owner-scoped et `no-store` regroupe les cinq grades, les
+territoires concernés, les rangs et nombres de cleanwalks admissibles, la
+fenêtre de 90 jours, la détention courante, le meilleur historique et les
+récompenses de la campagne. Elle peut inclure le classement public minimisé et
+ses égalités pour chaque territoire autorisé, mais ne renvoie ni identifiant
+utilisateur, ni empreinte de source, ni historique privé d'un tiers. Un titre
+est renvoyé et affiché uniquement lorsqu'il est confirmé par la projection
+personnelle ; une donnée absente reste absente.
+
 Cette exception ne modifie pas les routes XP, les leaderboards `level|xp|badges`
 ni les dix progressions infinies CURRENT.
 

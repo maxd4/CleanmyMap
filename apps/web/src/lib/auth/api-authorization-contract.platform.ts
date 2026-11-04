@@ -359,4 +359,12 @@ export const platformAuthorizationContract = {
       evidence: ["requireActionRequestAccess", "getUserOptionalConsentEligibility", "isOptionalConsentTreatmentAllowed", "set_territorial_legend_consent", "p_user_id: access.userId"],
     },
   },
+  "gamification/territorial-leaderboard/overview": {
+    GET: {
+      expected: "Authenticated owner-scoped territorial legend overview read",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess preserves Web cookie and Clerk Mobile Bearer transports before server-owned owner projection",
+      evidence: ["requireActionRequestAccess", "userId", "getSupabaseServerClient(true)", "loadTerritorialLegendOverview"],
+    },
+  },
 } as const satisfies ApiAuthorizationContract;

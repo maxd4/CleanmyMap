@@ -45,6 +45,15 @@ badge ; une future surface native doit utiliser le Bearer Clerk et les mêmes
 routes, en respectant la lecture publique minimisée et la lecture personnelle
 owner-scoped.
 
+La surface Web agrégée utilise
+`GET /api/gamification/territorial-leaderboard/overview`, une projection
+owner-scoped et `no-store` qui regroupe les cinq niveaux, les fiches de
+territoire, le classement public autorisé, les égalités, la détention courante,
+le meilleur historique et les récompenses de la campagne. Elle est consommée
+par les profils Web et `/sections/gamification` ; le client ne recalcule ni
+rang, ni score, ni durée, ni titre. Les titres ne sont affichés que lorsqu'une
+éligibilité confirmée est renvoyée par la lecture personnelle.
+
 Le consentement territorial reste une mutation serveur-only : le rôle
 `authenticated` conserve uniquement la lecture RLS owner-scoped et ne peut pas
 falsifier `age_band`, `activated_at` ou `revoked_at`. Le RPC de mutation

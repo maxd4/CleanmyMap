@@ -402,6 +402,13 @@
       "reviewedAt": "2026-11-03"
     },
     {
+      "route": "apps/web/src/app/api/gamification/territorial-leaderboard/overview/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Lecture owner-scoped agrégée des cinq niveaux territoriaux pour les profils Web et la section gamification, séparée des projections publiques minimisées.",
+      "costContract": "GET authentifié borné à 100 scopes territoriaux issus des preuves/périodes du propriétaire, projections serveur de 90 jours et récompenses annuelles, réponse privée no-store ; aucun calcul de score, rang ou durée n'est effectué dans le client.",
+      "reviewedAt": "2026-11-04"
+    },
+    {
       "route": "apps/web/src/app/api/gamification/territorial-leaderboard/history/route.ts",
       "introducedBy": "WORKTREE-CANDIDATE",
       "reason": "Lecture owner-scoped de l'historique annuel des preuves territoriales, y compris les invalidations conservées pour audit et séparée du classement public.",
@@ -545,6 +552,7 @@
     "apps/web/src/app/api/gamification/spogomi/collection/route.ts",
     "apps/web/src/app/api/gamification/territorial-leaderboard/history/route.ts",
     "apps/web/src/app/api/gamification/territorial-leaderboard/me/route.ts",
+    "apps/web/src/app/api/gamification/territorial-leaderboard/overview/route.ts",
     "apps/web/src/app/api/gamification/territorial-leaderboard/public/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/admin/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/me/route.ts",

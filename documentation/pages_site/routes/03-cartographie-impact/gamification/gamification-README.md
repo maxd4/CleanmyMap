@@ -73,6 +73,18 @@ d’arbitrage certifié, avec les paliers `1, 3, 5, 10, 25, 50, 75, 100`, puis
 `+25` indéfiniment ; elles ne produisent aucune XP. Le profil affiche un
 résumé distinct, sans modifier `badgeTotal`.
 
+Les Légendes territoriales sont affichées dans `/sections/gamification` et sur
+les profils Web dynamiques (`/profil/[profile]`) à partir de la projection
+serveur `GET /api/gamification/territorial-leaderboard/overview`. La surface
+présente les cinq grades, les territoires concernés, le titre courant confirmé
+le cas échéant, le rang, les cleanwalks admissibles, la fenêtre de 90 jours,
+la détention actuelle, le meilleur historique, le classement autorisé et les
+égalités. Elle distingue les états `Acquis`, `En cours` et `Non acquis` pour
+les cinq défis de première conquête et les six marqueurs de récompense de la
+campagne courante. La progression privée reste disponible sans consentement
+public ; l'activation et la révocation du consentement utilisent le réglage
+territorial existant dans `/reglages`.
+
 **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,
 `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le soft-gate décrit la
 présentation anonyme ; il ne rend pas la progression personnelle indexable.

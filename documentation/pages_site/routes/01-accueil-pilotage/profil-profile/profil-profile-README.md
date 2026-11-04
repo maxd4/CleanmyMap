@@ -23,6 +23,8 @@
 - cartes métriques
 - CTA de navigation
 - Accès contextuel : le bloc « Progression & badges » expose « Voir ma carte d’impact » vers `/profil/impact`.
+- Le bloc « Légendes territoriales » expose la projection personnelle des cinq grades, des territoires concernés, des titres confirmés, des rangs, des cleanwalks admissibles, de la fenêtre de 90 jours, des détentions et des récompenses ; il ne publie aucune donnée privée d’un tiers.
+- Le consentement territorial et sa révocation restent gérés dans `/reglages`, sans bloquer la consultation privée de la progression.
 - Configuration : le bloc « Configuration » expose « Ouvrir les réglages » vers `/reglages` ; la confidentialité, la suppression et les préférences ne sont pas dupliquées dans le profil.
 - indicateurs prioritaires
 - **Textes à réduire ou supprimer** :

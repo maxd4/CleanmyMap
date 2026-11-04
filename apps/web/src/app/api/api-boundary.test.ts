@@ -9,6 +9,7 @@ import type { ApiAuthorizationContract } from "@/lib/auth/api-authorization-cont
 import {
   apiRoot,
   contractedApiFamilies,
+  contractedApiRoutes,
   contractEntries,
   extractRouteMethods,
   walk,
@@ -25,7 +26,7 @@ function readRouteInventory() {
     .map((path) => {
       const route = relative(apiRoot, dirname(path)).replaceAll("\\", "/");
       const family = route.split("/")[0] ?? "";
-      if (!contractedApiFamilies.has(family)) return null;
+      if (!contractedApiFamilies.has(family) && !contractedApiRoutes.has(route)) return null;
 
       const source = readFileSync(path, "utf8");
       const resolved = resolveRouteMethods(path, source);
