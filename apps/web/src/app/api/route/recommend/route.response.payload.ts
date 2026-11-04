@@ -156,6 +156,7 @@ function buildCommonPayload({
     streetCleaningCorridors: input.planning.streetCleaningCorridors ?? buildUnknownStreetCleaningCorridorHandoff(),
     stops,
     prediction: proofs.predictionSummary,
+    pollutionPotential: proofs.pollutionPotential,
     ...(riskHeatmap ? { riskHeatmap } : {}),
     ...(plannerRiskContext ? { plannerRiskContext } : {}),
     ...(planning.segmentSelection ? { segmentSelection: planning.segmentSelection } : {}),

@@ -34,6 +34,10 @@ import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance"
 import { normalizeActionPreparationContract } from "@/lib/actions/preparation-contract";
 import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
 import type { RoutePlannerRiskContext } from "./route-risk-heatmap-contract";
+import {
+  isRoutePollutionPotential,
+  type RoutePollutionPotential,
+} from "./route-pollution-potential";
 
 const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 /**
@@ -91,6 +95,8 @@ export type OperationalRoute = {
   plannerWarnings?: string[];
   /** Predictive provenance only; observed trip geometry remains separate. */
   plannerRiskContext?: RoutePlannerRiskContext;
+  /** Relative theoretical pollution potential; historical scores are separate. */
+  pollutionPotential?: RoutePollutionPotential;
 };
 
 export type PublicOperationalRoute = {
@@ -129,7 +135,7 @@ function isRoutePlannerRiskContext(value: unknown): value is RoutePlannerRiskCon
 }
 
 export function createOperationalRouteFromRecommendation(
-  recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry" | "plannerRiskContext"> & {
+  recommendation: Pick<RouteRecommendationResponse, "generatedAt" | "groupCount" | "routeGeometry" | "plannerRiskContext" | "pollutionPotential"> & {
     routeTopology?: RouteTopology;
     startLocation?: RouteStartSelection;
     stops: readonly RouteStop[];
@@ -178,6 +184,7 @@ export function createOperationalRouteFromRecommendation(
     ...(recommendation.guidedBudget ? { guidedBudget: structuredClone(recommendation.guidedBudget) } : {}),
     ...(recommendation.trace?.warnings ? { plannerWarnings: [...recommendation.trace.warnings] } : {}),
     ...(recommendation.plannerRiskContext ? { plannerRiskContext: structuredClone(recommendation.plannerRiskContext) } : {}),
+    ...(recommendation.pollutionPotential ? { pollutionPotential: structuredClone(recommendation.pollutionPotential) } : {}),
     zones: {
       departure: {
         label: null,
@@ -527,7 +534,8 @@ export function isOperationalRoute(value: unknown): value is OperationalRoute {
     isOperationalRouteZones(route.zones) &&
     (route.guidedBudget === undefined || isRouteGuidedBudget(route.guidedBudget)) &&
     (route.plannerWarnings === undefined || (Array.isArray(route.plannerWarnings) && route.plannerWarnings.every((warning) => typeof warning === "string"))) &&
-    (route.plannerRiskContext === undefined || isRoutePlannerRiskContext(route.plannerRiskContext))
+    (route.plannerRiskContext === undefined || isRoutePlannerRiskContext(route.plannerRiskContext)) &&
+    (route.pollutionPotential === undefined || isRoutePollutionPotential(route.pollutionPotential))
   );
 }
 

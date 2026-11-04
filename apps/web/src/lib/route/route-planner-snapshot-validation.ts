@@ -22,6 +22,7 @@ import { isRouteOperationalBudget } from "./route-operational-budget-contract";
 import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { sameStringSet } from "./route-calibration-helpers";
 import { isRouteStartSelection } from "./route-start-location";
+import { isRoutePollutionPotential } from "./route-pollution-potential";
 
 export function isRoutePlannerSnapshot(
   value: unknown,
@@ -75,7 +76,8 @@ function validateRoutePlannerSnapshotV1(
     isRoutePlannerSnapshotProvenance(snapshot.provenance) &&
     (snapshot.weatherContext === undefined || isPlannerWeatherContext(snapshot.weatherContext)) &&
     (snapshot.guidedBudget === undefined || isRouteGuidedBudget(snapshot.guidedBudget)) &&
-    (snapshot.plannerWarnings === undefined || isStringArray(snapshot.plannerWarnings))
+    (snapshot.plannerWarnings === undefined || isStringArray(snapshot.plannerWarnings)) &&
+    (snapshot.pollutionPotential === undefined || isRoutePollutionPotential(snapshot.pollutionPotential))
   );
 }
 

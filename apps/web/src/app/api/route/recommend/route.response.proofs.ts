@@ -81,6 +81,7 @@ export function buildRoutePlannerSnapshotForProof(
   predictionSummary: ProofContext["predictionSummary"],
   dataLayers: ReturnType<typeof resolveRouteDataLayers>,
   snapshotStops: RouteStop[],
+  pollutionPotential: ProofContext["pollutionPotential"],
   plannerWarnings: readonly string[] = [],
 ): ReturnType<typeof buildRoutePlannerSnapshot> {
   const { candidateData, planning } = input;
@@ -110,6 +111,7 @@ export function buildRoutePlannerSnapshotForProof(
     dataLayers,
     sourceHealth: candidateData.sourceHealth,
     prediction: predictionSummary,
+    pollutionPotential,
     durationModelVersion: context.operationalBudget.durationModelVersion,
     weatherContext: input.weatherContext,
     guidedBudget: input.guidedBudget,

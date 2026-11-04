@@ -32,6 +32,7 @@ import type {
   RoutePlannerRiskContext,
   RouteRiskHeatmap,
 } from "./route-risk-heatmap-contract";
+import type { RoutePollutionPotential } from "./route-pollution-potential";
 
 export type { MeetingOpportunity } from "./route-meeting-opportunities";
 
@@ -223,6 +224,8 @@ export type RouteRecommendationResponse = {
   riskHeatmap?: RouteRiskHeatmap;
   /** Versioned predictive context carried into action preparation and history. */
   plannerRiskContext?: RoutePlannerRiskContext;
+  /** Relative theoretical pollution potential; never the historical priority score. */
+  pollutionPotential?: RoutePollutionPotential;
   /** Auditable segment selection when the materialized pedestrian projection is used. */
   segmentSelection?: SegmentRouteSelectionMetrics;
   observedEnrichment?: RouteObservedEnrichmentMetrics;

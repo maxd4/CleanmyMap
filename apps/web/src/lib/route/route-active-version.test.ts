@@ -7,10 +7,23 @@ import {
   buildActionRouteVersioning,
 } from "./route-active-version";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
+import { buildRoutePollutionPotential } from "./route-pollution-potential";
 
 describe("action route active version contract", () => {
   it("keeps audit metadata without copying the planner datasets", () => {
-    const snapshot = buildRoutePlannerSnapshot(createRoutePlannerSnapshotInput(2));
+    const pollutionPotential = buildRoutePollutionPotential({
+      projection: null,
+      candidates: [],
+      groups: [],
+      pickupPreference: "balanced",
+      routeTopology: "loop",
+      travelBudgetMinutes: 60,
+      referenceCatalog: null,
+    });
+    const snapshot = buildRoutePlannerSnapshot({
+      ...createRoutePlannerSnapshotInput(2),
+      pollutionPotential,
+    });
     const operationalRoute = createOperationalRouteFromRecommendation({
       generatedAt: snapshot.generatedAt,
       groupCount: snapshot.parameters.groupCount,
@@ -30,8 +43,11 @@ describe("action route active version contract", () => {
         selectedSegments: 2,
         generatedAt: snapshot.generatedAt,
       },
+      pollutionPotential,
     });
     expect(operationalRoute.plannerRiskContext?.projectionVersionId).toBe("projection-1");
+    expect(operationalRoute.pollutionPotential?.status).toBe("unavailable");
+    expect(snapshot.pollutionPotential?.schemaVersion).toBe("route-pollution-potential-v1");
     const versioning = buildActionRouteVersioning({
       snapshot,
       operationalRoute,

@@ -447,6 +447,17 @@ describe("route recommendation response trace contract", () => {
       projectionVersionId: "projection-response-test",
       selectedSegments: 1,
     });
+    expect(response.pollutionPotential).toMatchObject({
+      schemaVersion: "route-pollution-potential-v1",
+      status: "unavailable",
+      value: null,
+      selectedCategory: "mixed",
+      version: {
+        projectionVersionId: "projection-response-test",
+        riskModelVersion: "paris-pressure-risk-v3-urban-morphology",
+      },
+    });
+    expect(response.pollutionPotential?.limitations).toContain("Catalogue de références pré-calculé absent.");
   });
 
   it("publishes an open route even when no scientific stops are selected", async () => {

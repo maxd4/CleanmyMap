@@ -199,3 +199,36 @@ est explicitement à vol d'oiseau, leur provenance observée ou prédite reste
 visible, et aucune accessibilité piétonne, aucun détour ni second itinéraire
 n'est fabriqué ; les garanties de sécurité et d'accessibilité manquantes les
 excluent.
+
+## Potentiel théorique versionné du parcours
+
+La réponse route peut aussi porter `pollutionPotential`, dont le schéma est
+`route-pollution-potential-v1`. Ce champ est distinct de
+`scoreBreakdown.priority` et des scores historiques des actions : il décrit un
+potentiel théorique relatif sur 100, sans signifier une probabilité ni une
+quantité mesurée. Les scores historiques ne sont donc jamais réécrits.
+
+Le calcul est réalisé sur les identifiants de segments prédits réellement
+retenus par le planner. Les identifiants sont dédupliqués avant la pondération
+par longueur ; un passage répété, une liaison de déplacement ou un candidat
+observé ne reçoit pas de valeur de couverture supplémentaire. Les catégories
+`waste` et `cigaretteButts` sont calculées séparément. `mixed` est la moyenne
+des indices de catégories normalisés disponibles ; si une catégorie manque,
+elle reste explicitement absente et le résultat est `partial` lorsque l'autre
+catégorie est disponible.
+
+Les références sont construites hors requête par
+`buildRoutePollutionReferenceCatalog`. Elles sont comparées sur la préférence,
+la topologie, le budget et la longueur utile. Une action historique n'est
+admissible que si son score vaut 100, sa géométrie est un tracé réseau, ses
+segments sont mappés et les mesures requises utilisent la méthode de
+comparaison versionnée. Ces mesures qualifient l'homogénéité de la référence ;
+elles ne sont jamais transformées en risque spatial. À défaut, une référence
+théorique admissible du réseau pré-calculé peut être utilisée.
+
+Le catalogue embarque l'identité exacte de la projection, du graphe et du
+modèle. Un catalogue absent ou incompatible avec le snapshot courant ne donne
+pas lieu à une normalisation de convenance : le parcours expose un statut
+`unavailable`, ses limites et sa provenance. Le champ contient également la
+couverture, la confiance, la référence utilisée, la version et les limites,
+ainsi qu'un indice global et un indice par groupe.

@@ -32,6 +32,11 @@ import type { RoutePlanningResult } from "./route.planning";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteStartSelection } from "@/lib/route/route-response-contract";
 import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
+import type {
+  RoutePollutionPotential,
+  RoutePollutionReferenceCatalog,
+} from "@/lib/route/route-pollution-potential";
+import { buildRoutePollutionPotential } from "@/lib/route/route-pollution-potential";
 import {
   buildRoutePlannerSnapshotForProof,
   buildRouteSnapshotStops,
@@ -58,6 +63,8 @@ export type RouteRecommendationResponseInput = {
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
   pedestrianRiskProjection?: PedestrianRiskProjectionSnapshot | null;
+  /** Offline-built references; the request path never constructs them. */
+  pollutionReferenceCatalog?: RoutePollutionReferenceCatalog | null;
 };
 
 const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT = {
@@ -96,6 +103,7 @@ export type ProofContext = {
   plannerSnapshot: ReturnType<typeof buildRoutePlannerSnapshot>;
   plannerProof: ReturnType<typeof createRoutePlannerProof>;
   calibrationContext: ReturnType<typeof buildVerifiedRouteCalibrationContext>;
+  pollutionPotential: RoutePollutionPotential;
 };
 
 function buildTraceCandidateSummary(
@@ -409,6 +417,34 @@ function buildRouteProofTrace(
   });
 }
 
+function buildPlannerPollutionPotential(
+  input: RouteRecommendationResponseInput,
+): RoutePollutionPotential {
+  const { planning } = input;
+  const groups = planning.groupRoutes && planning.groupRoutes.length > 0
+    ? planning.groupRoutes.map((group) => ({
+        groupIndex: group.groupIndex,
+        candidateIds: group.candidateIds,
+        volunteerCount: group.volunteerCount,
+        travelBudgetMinutes: group.travelBudgetMinutes,
+      }))
+    : planning.groupPartition.groups.map((group) => ({
+        groupIndex: group.groupIndex,
+        candidateIds: group.candidateIds,
+        volunteerCount: group.volunteerCount,
+        travelBudgetMinutes: input.travelBudgetMinutes,
+      }));
+  return buildRoutePollutionPotential({
+    projection: input.pedestrianRiskProjection,
+    candidates: planning.candidates ?? input.candidateData.candidates,
+    groups,
+    pickupPreference: input.pickupPreference,
+    routeTopology: input.routeTopology ?? (planning.routeGeometry.isLoop ? "loop" : "open"),
+    travelBudgetMinutes: input.travelBudgetMinutes,
+    referenceCatalog: input.pollutionReferenceCatalog,
+  });
+}
+
 export function buildRouteProofContext(
   input: RouteRecommendationResponseInput,
   context: OperationalContext,
@@ -416,6 +452,7 @@ export function buildRouteProofContext(
   const { candidateData, planning } = input;
   const { candidates, isTruncated, sourceHealth } = candidateData;
   const predictionSummary = buildPredictionSummary(planning);
+  const pollutionPotential = buildPlannerPollutionPotential(input);
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
     prediction: {
@@ -433,6 +470,7 @@ export function buildRouteProofContext(
     predictionSummary,
     dataLayers,
     snapshotStops,
+    pollutionPotential,
     trace.warnings,
   );
   const plannerProof = createRoutePlannerProof({
@@ -453,5 +491,6 @@ export function buildRouteProofContext(
     plannerSnapshot,
     plannerProof,
     calibrationContext,
+    pollutionPotential,
   };
 }
