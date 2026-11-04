@@ -270,7 +270,12 @@ renvoyées par le serveur. Les règles et détails d'un territoire sont
 consultables sans recalcul local ; une réponse vide ou partielle reste
 explicitement vide. `Compte > Préférences` synchronise le consentement avec
 `/api/users/profile/territorial-legend-consent`. Les lectures sont abandonnées
-si l'identité Clerk change pendant la requête.
+si l'identité Clerk change pendant la requête. Le contrôleur associe aussi
+explicitement chaque projection à l'`ownerId` Clerk exact : lors d'une
+transition de compte, d'une déconnexion ou d'une identité inconnue, l'overview
+et le consentement précédents sont masqués immédiatement et toute réponse dont
+l'identité courante n'est pas exactement celle attendue est rejetée. Le
+consentement reste exclusivement serveur-owned.
 
 Le compte permet aussi d'enregistrer un unique contact d'urgence dans le
 SecureStore local.

@@ -30,7 +30,7 @@ import { useTerritorialLegendsController } from '../features/territorial-legends
 const consent = { status: 'ok', enabled: false, ageBand: '15_or_over', activatedAt: null, revokedAt: null }
 const overview = { status: 'ok', campaignYear: 2026, windowDays: 90, levels: ['arrondissement', 'commune', 'department', 'region', 'country'], territories: [] }
 
-function Probe({ ownerId, onValue, onSessionExpired }: { ownerId: string; onValue: (value: ReturnType<typeof useTerritorialLegendsController>) => void; onSessionExpired: () => void }) {
+function Probe({ ownerId, onValue, onSessionExpired }: { ownerId: string | null; onValue: (value: ReturnType<typeof useTerritorialLegendsController>) => void; onSessionExpired: () => void }) {
   const value = useTerritorialLegendsController({ ownerId, shouldLoadOverview: true, onSessionExpired })
   useEffect(() => { onValue(value) }, [onValue, value])
   return null
@@ -75,6 +75,82 @@ describe('territorial legends controller runtime', () => {
     expect(state.updateConsent).toHaveBeenCalledWith(true)
     expect(latest.consent?.enabled).toBe(true)
     expect(state.loadOverview).toHaveBeenCalledTimes(2)
+    renderer.unmount()
+  })
+
+  it('clears owner data on prop transitions A to B to A and then null without a subscription event', async () => {
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(latest.overview).toBe(overview)
+
+    let resolveB!: (value: typeof overview) => void
+    state.currentUserId = 'user-b'
+    state.loadOverview.mockReturnValueOnce(new Promise((resolve) => { resolveB = resolve }))
+    await act(async () => {
+      renderer.update(<Probe ownerId="user-b" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(latest.overview).toBeNull()
+    expect(latest.consent).toBeNull()
+    resolveB(overview)
+    await act(async () => { await settle() })
+    expect(latest.overview).toBe(overview)
+
+    state.currentUserId = 'user-a'
+    await act(async () => {
+      renderer.update(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(latest.overview).toBe(overview)
+
+    state.currentUserId = null
+    await act(async () => {
+      renderer.update(<Probe ownerId={null} onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(latest.overview).toBeNull()
+    expect(latest.consent).toBeNull()
+    renderer.unmount()
+  })
+
+  it('rejects a response when Clerk identity is unknown instead of treating null as compatible', async () => {
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    state.currentUserId = null
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    expect(latest.overview).toBeNull()
+    expect(latest.consent).toBeNull()
+    renderer.unmount()
+  })
+
+  it('keeps the newest concurrent refresh and drops the older response', async () => {
+    let latest!: ReturnType<typeof useTerritorialLegendsController>
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => {
+      renderer = TestRenderer.create(<Probe ownerId="user-a" onValue={(value) => { latest = value }} onSessionExpired={vi.fn()} />)
+      await settle()
+    })
+    let resolveFirst!: (value: typeof overview) => void
+    state.loadOverview.mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve }))
+    state.loadOverview.mockResolvedValueOnce({ ...overview, campaignYear: 2027 })
+    let first!: Promise<void>
+    let second!: Promise<void>
+    await act(async () => {
+      first = latest.refresh()
+      second = latest.refresh()
+      await second
+      resolveFirst(overview)
+      await first
+      await settle()
+    })
+    expect(latest.overview?.campaignYear).toBe(2027)
     renderer.unmount()
   })
 })

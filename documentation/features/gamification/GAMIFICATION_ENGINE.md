@@ -56,9 +56,13 @@ La surface Web agrégée utilise
 owner-scoped et `no-store` qui regroupe les cinq niveaux, les fiches de
 territoire, le classement public autorisé, les égalités, la détention courante,
 le meilleur historique et les récompenses de la campagne. Elle inclut les
-territoires admissibles issus des faits canoniques même avant la première
-détention ou récompense. Les faits sont chargés une seule fois par requête,
-alors que les projections publique et personnelle restent séparées. Elle est consommée
+territoires admissibles issus des participations confirmées du propriétaire,
+de ses périodes et de ses preuves, même avant la première détention ou
+récompense. Les territoires d'actions appartenant à d'autres utilisateurs ne
+peuvent pas consommer cette collection privée avant sa validation ; les
+classements publics de chaque territoire restent paginés et bornés séparément.
+Les faits sont chargés une seule fois par requête, alors que les projections
+publique et personnelle restent séparées. Elle est consommée
 par les profils Web et `/sections/gamification` ; le client ne recalcule ni
 rang, ni score, ni durée, ni titre. Les titres ne sont affichés que lorsqu'une
 éligibilité confirmée est renvoyée par la lecture personnelle.

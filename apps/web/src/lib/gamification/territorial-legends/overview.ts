@@ -14,8 +14,6 @@ import {
   type TerritorialLegendLevel,
 } from "./types";
 
-const TERRITORIAL_OVERVIEW_SCOPE_LIMIT = 100;
-
 export type TerritorialLegendOverviewItem = {
   /** Includes owner-eligible canonical territories even without a hold or reward. */
   level: TerritorialLegendLevel;
@@ -133,7 +131,13 @@ export async function loadTerritorialLegendOverview(
   for (const proof of proofs) {
     scopes.set(scopeKey(proof.level, proof.territoryCode), { level: proof.level, territoryCode: proof.territoryCode });
   }
+  const ownerActionIds = new Set(
+    facts.participations
+      .filter((participation) => participation.userId === userId)
+      .map((participation) => participation.actionId),
+  );
   for (const action of facts.actions) {
+    if (!ownerActionIds.has(action.actionId)) continue;
     for (const level of TERRITORIAL_LEGEND_LEVELS) {
       const territory = action.territory[level];
       if (!territory) continue;
@@ -143,7 +147,7 @@ export async function loadTerritorialLegendOverview(
     }
   }
 
-  const territories = await Promise.all([...scopes.values()].slice(0, TERRITORIAL_OVERVIEW_SCOPE_LIMIT).map(async ({ level, territoryCode }) => {
+  const territories = await Promise.all([...scopes.values()].map(async ({ level, territoryCode }) => {
     const page = buildTerritorialLegendPage({
       level,
       territoryCode,

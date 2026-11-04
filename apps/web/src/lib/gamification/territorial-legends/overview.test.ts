@@ -91,7 +91,7 @@ describe("loadTerritorialLegendOverview", () => {
     expect(JSON.stringify(overview)).not.toContain("userId");
     expect(JSON.stringify(overview)).not.toContain("server-proof");
     expect(loadFactsMock).toHaveBeenCalledTimes(1);
-    expect(buildPageMock).toHaveBeenCalledTimes(4);
+    expect(buildPageMock).toHaveBeenCalledTimes(1);
   });
 
   it("includes an eligible territory before the first title or reward", async () => {
@@ -134,5 +134,66 @@ describe("loadTerritorialLegendOverview", () => {
     expect(overview.territories).toEqual(expect.arrayContaining([
       expect.objectContaining({ level: "commune", territoryCode: "75056", private: expect.objectContaining({ score: 1 }), rewards: [] }),
     ]));
+  });
+
+  it("does not let more than 100 foreign territories hide the owner's eligible territory", async () => {
+    loadProofsMock.mockResolvedValue([]);
+    loadPeriodsMock.mockResolvedValue([]);
+    const foreignActions = Array.from({ length: 101 }, (_, index) => ({
+      actionId: `foreign-${index}`,
+      actionDate: "2026-11-03",
+      territory: {
+        country: { code: "FR", name: "France" },
+        region: { code: "11", name: "Île-de-France" },
+        department: { code: "75", name: "Paris" },
+        commune: { code: String(10000 + index).padStart(5, "0"), name: `Territoire étranger ${index}` },
+        arrondissement: null,
+      },
+    }));
+    const ownerAction = {
+      actionId: "owner-action",
+      actionDate: "2026-11-03",
+      territory: {
+        country: { code: "FR", name: "France" },
+        region: { code: "11", name: "Île-de-France" },
+        department: { code: "75", name: "Paris" },
+        commune: { code: "19999", name: "Territoire propriétaire" },
+        arrondissement: null,
+      },
+    };
+    loadFactsMock.mockResolvedValue({
+      actions: [...foreignActions, ownerAction],
+      participations: [{ actionId: "owner-action", userId: "user-1", joinedAt: "2026-11-03T10:00:00.000Z" }],
+      consents: [{ userId: "user-1", enabled: true, activatedAt: "2026-11-01T10:00:00.000Z", ageEligible: true }],
+      profiles: [{ userId: "user-1", publicLabel: "Vous" }],
+    });
+    buildPageMock.mockImplementation((params: { level: string; territoryCode: string }) => ({
+      level: params.level,
+      campaignYear: 2026,
+      territoryCode: params.territoryCode,
+      territoryLabel: params.territoryCode === "19999" ? "Territoire propriétaire" : params.territoryCode,
+      generatedAt: "2026-11-04T12:00:00.000Z",
+      windowDays: 90,
+      competitorCount: 0,
+      maxScore: 0,
+      titleEligible: false,
+      title: null,
+      owner: params.territoryCode === "19999"
+        ? { rank: null, score: 1, distinctActions: 1, tied: false, tieSize: 1 }
+        : null,
+      items: [],
+      nextCursor: null,
+    }));
+
+    const overview = await loadTerritorialLegendOverview({} as never, "user-1", new Date("2026-11-04T12:00:00.000Z"));
+
+    expect(overview.territories).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        level: "commune",
+        territoryCode: "19999",
+        private: expect.objectContaining({ score: 1, title: null }),
+      }),
+    ]));
+    expect(overview.territories.some(({ territoryCode }) => territoryCode === "10000")).toBe(false);
   });
 });

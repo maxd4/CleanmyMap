@@ -35,7 +35,7 @@ export function useTerritorialLegendsController({ ownerId, shouldLoadOverview, o
   const isCurrentRequest = useCallback(async (expectedOwnerId: string, generation: number) => {
     if (requestGeneration.current !== generation) return false
     const currentOwnerId = await getClerkUserId()
-    return requestGeneration.current === generation && (!currentOwnerId || currentOwnerId === expectedOwnerId)
+    return requestGeneration.current === generation && currentOwnerId === expectedOwnerId
   }, [])
 
   const refresh = useCallback(async () => {
@@ -66,13 +66,24 @@ export function useTerritorialLegendsController({ ownerId, shouldLoadOverview, o
   }, [isCurrentRequest, onSessionExpired, ownerId, shouldLoadOverview])
 
   useEffect(() => {
-    if (!ownerId) return
     const generation = ++requestGeneration.current
+    setOverview(null)
+    setConsent(null)
+    setError(null)
+    setMessage(null)
+    setOverviewLoading(false)
+    setConsentLoading(false)
+    setSavingConsent(false)
+    if (!ownerId) return
     const unsubscribe = subscribeToClerkIdentityChanges((nextOwnerId) => {
       if (nextOwnerId === ownerId) return
       requestGeneration.current += 1
       setOverview(null)
       setConsent(null)
+      setMessage(null)
+      setOverviewLoading(false)
+      setConsentLoading(false)
+      setSavingConsent(false)
       setError('Le compte Clerk a changé. Rechargez les données du compte courant.')
     })
     void (async () => {
