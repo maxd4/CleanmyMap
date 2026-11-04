@@ -1,6 +1,6 @@
 import type { RouteGeometry, RouteGeometryLeg, RouteTopology } from "./route-contract";
 
-export const PEDESTRIAN_NETWORK_IMPORTER_VERSION = "pedestrian-network-v1" as const;
+export const PEDESTRIAN_NETWORK_IMPORTER_VERSION = "pedestrian-network-v2" as const;
 export const PEDESTRIAN_NETWORK_KEY = "paris-pantheon-jardin-des-plantes" as const;
 
 export type Coordinate = [latitude: number, longitude: number];
@@ -103,18 +103,18 @@ export type PedestrianNetworkGraph = {
 };
 
 const KNOWN_PEDESTRIAN_HIGHWAYS = new Set([
-  "bridleway",
   "corridor",
-  "cycleway",
   "footway",
   "path",
   "pedestrian",
   "steps",
-  "track",
 ]);
 
 const SUPPORTED_HIGHWAYS = new Set([
   ...KNOWN_PEDESTRIAN_HIGHWAYS,
+  "bridleway",
+  "cycleway",
+  "track",
   "living_street",
   "primary",
   "residential",

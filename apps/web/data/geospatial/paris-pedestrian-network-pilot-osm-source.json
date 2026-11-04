@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "networkKey": "paris-pantheon-jardin-des-plantes",
-  "importerVersion": "pedestrian-network-v1",
+  "importerVersion": "pedestrian-network-v2",
   "retrievedAt": "2026-11-04T11:00:01.085Z",
   "endpoint": "https://api.openstreetmap.org/api/0.6/map",
   "sha256": "b77369355f064a920c1265e8710d052c27ca94df9b9cea02bdcdf2cc27ce0bda",

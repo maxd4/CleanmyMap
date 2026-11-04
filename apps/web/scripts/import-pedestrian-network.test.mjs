@@ -28,7 +28,7 @@ test("pedestrian network import script builds the same document twice for the sa
     const source = {
       schemaVersion: 1,
       networkKey: "paris-pantheon-jardin-des-plantes",
-      importerVersion: "pedestrian-network-v1",
+      importerVersion: "pedestrian-network-v2",
       retrievedAt: "2026-11-04T11:00:00.000Z",
       endpoint: "https://api.openstreetmap.org/api/0.6/map",
       sha256: "b".repeat(64),

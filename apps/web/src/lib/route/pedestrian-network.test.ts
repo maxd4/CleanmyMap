@@ -43,14 +43,16 @@ describe("pedestrian network importer and graph", () => {
       way("20", { highway: "residential" }, node("20a", 48.84, 2.35), node("20b", 48.841, 2.35)),
       way("21", { highway: "footway", access: "private" }, node("21a", 48.84, 2.36), node("21b", 48.841, 2.36)),
       way("22", { highway: "service", foot: "yes" }, node("22a", 48.84, 2.37), node("22b", 48.841, 2.37)),
+      way("23", { highway: "cycleway" }, node("23a", 48.84, 2.38), node("23b", 48.841, 2.38)),
+      way("24", { highway: "cycleway", foot: "yes" }, node("24a", 48.84, 2.39), node("24b", 48.841, 2.39)),
     ]);
 
-    expect(result.edges.map((edge) => edge.osmWayId)).toEqual(["22", "22"]);
+    expect(result.edges.map((edge) => edge.osmWayId)).toEqual(["22", "22", "24", "24"]);
     expect(result.diagnostics.map((entry) => entry.reasonCode)).toEqual(expect.arrayContaining([
       "access_unknown",
       "access_forbidden",
     ]));
-    expect(result.counts.rejectedWays).toBe(2);
+    expect(result.counts.rejectedWays).toBe(3);
   });
 
   it("respects pedestrian-specific and generic one-way tags", () => {
