@@ -539,8 +539,10 @@ function useActionCreateMutations({
     : null
   return {
     busy: busy || briefingBusy,
-    message: currentBriefingFeedback?.message ?? message,
-    error: currentBriefingFeedback?.error ?? error,
+    message,
+    error,
+    briefingMessage: currentBriefingFeedback?.message ?? null,
+    briefingError: currentBriefingFeedback?.error ?? null,
     dayBriefing,
     setError,
     setMessage,

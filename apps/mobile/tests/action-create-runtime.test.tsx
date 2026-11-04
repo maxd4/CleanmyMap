@@ -610,12 +610,13 @@ describe('mobile action creation runtime', () => {
     })
 
     await act(async () => { await controller.loadDayBriefing() })
-    expect(controller.message).toBe('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+    expect(controller.briefingMessage).toBe('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+    expect(controller.message).toBeNull()
     await act(async () => { controller.setActionId('action-next') })
 
     expect(controller.dayBriefing).toBeNull()
-    expect(controller.message).toBeNull()
-    expect(controller.error).toBeNull()
+    expect(controller.briefingMessage).toBeNull()
+    expect(controller.briefingError).toBeNull()
   })
 
   it('clears the briefing refusal when the selected action changes', async () => {
@@ -629,12 +630,55 @@ describe('mobile action creation runtime', () => {
     })
 
     await act(async () => { await controller.loadDayBriefing() })
-    expect(controller.error).toBe('Accès refusé pour cette action.')
+    expect(controller.briefingError).toBe('Accès refusé pour cette action.')
     await act(async () => { controller.setActionId('action-next') })
 
     expect(controller.dayBriefing).toBeNull()
+    expect(controller.briefingError).toBeNull()
+    expect(controller.briefingMessage).toBeNull()
+  })
+
+  it('keeps a briefing refusal separate when publication succeeds afterwards', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-publication', section: 'verification' }))
+    state.loadMobileActionDay.mockRejectedValueOnce({ status: 403 })
+    let controller!: ReturnType<typeof useActionCreateController>
+    await act(async () => {
+      TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => { await controller.loadDayBriefing() })
+    await act(async () => { await controller.publish() })
+
     expect(controller.error).toBeNull()
+    expect(controller.message).toBe('Publication confirmée par le serveur.')
+    expect(controller.briefingError).toBe('Accès refusé pour cette action.')
+    expect(controller.briefingMessage).toBeNull()
+  })
+
+  it('keeps briefing success separate from later save success and refusal', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-save', section: 'verification' }))
+    state.loadMobileActionDay.mockResolvedValueOnce({ status: 'ok', actionId: 'action-save', access: 'owner', action: { title: 'Briefing sauvegarde' } })
+    state.updateMobileAction.mockResolvedValueOnce({ status: 'ok', actionId: 'action-save', actionPhase: 'pre_action' }).mockRejectedValueOnce({ status: 403 })
+    let controller!: ReturnType<typeof useActionCreateController>
+    await act(async () => {
+      TestRenderer.create(<ControllerProbe onController={(value) => { controller = value }} />)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => { await controller.loadDayBriefing() })
+    await act(async () => { await controller.saveDraft() })
+    expect(controller.message).toBe('Brouillon enregistré sur le serveur. Vous pouvez reprendre plus tard.')
+    expect(controller.error).toBeNull()
+    expect(controller.briefingMessage).toBe('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+
+    await act(async () => { await controller.saveDraft() })
     expect(controller.message).toBeNull()
+    expect(controller.error).toBe('Accès refusé pour cette action.')
+    expect(controller.briefingMessage).toBe('Les informations Préparer / Jour J ont été chargées depuis le serveur.')
+    expect(controller.briefingError).toBeNull()
   })
 
   it('preserves an independent message while ignoring a deferred briefing after an action change', async () => {
@@ -700,6 +744,37 @@ describe('mobile action creation runtime', () => {
 
     expect(renderer.root.findAll((node) => textContent(node).includes('Point autorisé'))).toHaveLength(0)
     expect(renderer.root.findAll((node) => textContent(node).includes('Accès refusé pour cette action.'))).not.toHaveLength(0)
+  })
+
+  it('renders briefing refusal in context without masking a later publication success', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-context', section: 'verification', draft: { title: 'Action contextuelle' } }))
+    state.loadMobileActionDay.mockRejectedValueOnce({ status: 403 })
+    const renderer = await renderScreen()
+
+    await act(async () => { await callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Publication confirmée par le serveur.'))).not.toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Accès refusé pour cette action.'))).not.toHaveLength(0)
+  })
+
+  it('keeps a GPS notification visible while a deferred briefing succeeds', async () => {
+    state.getItem.mockResolvedValueOnce(JSON.stringify({ actionId: 'action-gps-briefing', section: 'verification', draft: { title: 'Action GPS' } }))
+    const response = deferred<{ status: 'ok'; actionId: string; access: 'owner'; action: { title: string } }>()
+    state.loadMobileActionDay.mockReturnValueOnce(response.promise)
+    const onStartAction = vi.fn().mockResolvedValue(undefined)
+    const renderer = await renderScreen(vi.fn(), onStartAction)
+
+    let request!: Promise<unknown>
+    await act(async () => { request = callTestHandler(findButton(renderer, 'Charger Préparer / Jour J'), 'onPress') as Promise<unknown> })
+    await act(async () => { await callTestHandler(findButton(renderer, 'Relier une activité GPS'), 'onPress') })
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.'))).not.toHaveLength(0)
+
+    response.resolve({ status: 'ok', actionId: 'action-gps-briefing', access: 'owner', action: { title: 'Briefing GPS' } })
+    await act(async () => { await request })
+
+    expect(renderer.root.findAll((node) => textContent(node).includes('Suivi GPS démarré pour cette action.'))).not.toHaveLength(0)
+    expect(renderer.root.findAll((node) => textContent(node).includes('Les informations Préparer / Jour J ont été chargées depuis le serveur.'))).not.toHaveLength(0)
   })
 
   it('offers every canonical organizer choice without selecting association by default', async () => {
