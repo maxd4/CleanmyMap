@@ -57,4 +57,19 @@ describe("exportFormAsPdf", () => {
 
     expect(exportFormAsPdf(form, "Camille Martin")).toBe(false);
   });
+
+  it("exports the canonical label while preserving an unknown historical label", () => {
+    let renderedHtml = "";
+    const popup = {
+      document: {
+        open: vi.fn(),
+        write: vi.fn((html: string) => { renderedHtml = html; }),
+        close: vi.fn(),
+      },
+    } as unknown as Window;
+    vi.stubGlobal("window", { open: vi.fn(() => popup) });
+
+    expect(exportFormAsPdf({ ...form, placeType: "urban_streets" }, "Camille Martin")).toBe(true);
+    expect(renderedHtml).toContain("Rues &amp; espaces urbains");
+  });
 });

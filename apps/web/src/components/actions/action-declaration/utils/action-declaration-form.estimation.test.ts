@@ -39,4 +39,11 @@ describe("action-declaration-form.estimation", () => {
   });
  expect(parkWithMegots).toBeGreaterThan(street);
  });
+
+ it("accepts canonical environment identifiers", () => {
+ const parks = estimateWasteKg({ volunteersCount:"10", durationMinutes:"60", placeType:"parks_gardens" });
+ const water = estimateWasteKg({ volunteersCount:"10", durationMinutes:"60", placeType:"rivers_lakes" });
+ expect(parks).toBe(15.6);
+ expect(water).toBe(13.8);
+ });
 });

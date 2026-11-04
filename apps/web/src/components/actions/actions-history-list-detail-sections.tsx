@@ -7,6 +7,7 @@ import { isSignalementRecordType } from "@/lib/actions/signalement/signalement-m
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 import { formatDate } from "./actions-history-list.helpers";
 import { formatScorePercent } from "@/lib/formatters/score";
+import { getPlaceTypeLabel } from "@/lib/actions/place-type-options";
 
 export type ActionQualityResult = {
   score: number;
@@ -59,7 +60,7 @@ export function ActionHistoryQualitySection({
       <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">Detail score qualite</p>
       <p className="mt-1 cmm-text-small cmm-text-secondary">
         <span className="font-semibold">{selectedQuality.grade} ({formatScorePercent(selectedQuality.score)})</span>{" "}- points perdus: {selectedLostPoints}
-        {selectedItem.contract?.metadata.placeType && <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 cmm-text-caption cmm-text-secondary">Type: {selectedItem.contract.metadata.placeType}</span>}
+        {selectedItem.contract?.metadata.placeType && <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 cmm-text-caption cmm-text-secondary">Type: {getPlaceTypeLabel(selectedItem.contract.metadata.placeType)}</span>}
       </p>
       <p className="mt-1 cmm-text-caption cmm-text-secondary">Facteurs: {" "}{selectedQuality.flags.length > 0 ? selectedQuality.flags.join(",") : "Aucun facteur critique."}</p>
       <p className="mt-1 cmm-text-caption cmm-text-secondary">Action corrective recommandee: {correctiveAction}</p>

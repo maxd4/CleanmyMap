@@ -1,6 +1,6 @@
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
-import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
+import { getPlaceTypeFormOptions } from "@/lib/actions/place-type-options";
 import { getVolunteerParticipationDisclosureDetail } from "@/lib/actions/volunteer-participation";
 import type { FormState } from "../model";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
@@ -30,7 +30,7 @@ export function PlannedActionVolunteerSection({
       </CmmField>
       <div className="grid gap-4 md:grid-cols-3">
         <SelectField label="Type d’action prévue" value={form.plannedObjective} onChange={(value) => updateField("plannedObjective", value as FormState["plannedObjective"])} options={PLANNED_OBJECTIVE_OPTIONS} placeholder="Sélectionnez un type d’action" />
-        <SelectField label="Type de zone" value={form.placeType} onChange={(value) => updateField("placeType", value)} options={PLACE_TYPE_FORM_OPTIONS.map((option) => ({ value: option.value, label: option.label }))} placeholder="Sélectionnez un type de zone" />
+        <SelectField label="Type de zone" value={form.placeType} onChange={(value) => updateField("placeType", value)} options={getPlaceTypeFormOptions(form.placeType)} placeholder="Sélectionnez un type de zone" />
         <SelectField label="Niveau de difficulté estimé" value={form.estimatedDifficulty} onChange={(value) => updateField("estimatedDifficulty", value as FormState["estimatedDifficulty"])} options={DIFFICULTY_OPTIONS} placeholder="Sélectionnez un niveau" />
       </div>
       <ExpectedWasteSection form={form} updateField={updateField} />

@@ -2,6 +2,7 @@ import {
   resolveEffectiveVolunteerUnits,
   type ActionVolunteerParticipation,
 } from "./volunteer-participation";
+import { getPlaceTypeLabel } from "./place-type-options";
 
 export type ActionOperationalContext = {
   placeType: string | null;
@@ -117,7 +118,7 @@ export function getActionOperationalContext(
       engagementMinutes === null
         ? null
         : Number((engagementMinutes / 60).toFixed(1)),
-    placeTypeLabel: placeType ?? "Type de lieu non précisé",
+    placeTypeLabel: getPlaceTypeLabel(placeType) ?? "Type de lieu non précisé",
     routeStyleLabel: formatRouteStyleLabel(routeStyle),
   };
 }

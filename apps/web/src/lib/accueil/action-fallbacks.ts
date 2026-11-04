@@ -1,4 +1,5 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
+import { resolvePlaceTypeCategory, type CanonicalPlaceType } from "@/lib/actions/place-type-options";
 import fallbackManifest from "../../../public/images/action-fallbacks/action-fallback-images.json";
 
 type ActionFallbackEnvironment =
@@ -51,7 +52,31 @@ function includesAny(value: string, needles: readonly string[]): boolean {
   return needles.some((needle) => value.includes(needle));
 }
 
-function environmentFromCanonicalPlaceType(
+function environmentFromResolvedPlaceType(
+  value: CanonicalPlaceType | null,
+): ActionFallbackEnvironment | null {
+  switch (value) {
+    case "urban_streets":
+    case "stations_covered_spaces":
+    case "parking_activity_zones":
+      return "urban";
+    case "parks_gardens":
+      return "park";
+    case "forests_countryside":
+      return "forest";
+    case "rivers_lakes":
+      return "riverside";
+    case "coast_beaches":
+      return "beach";
+    case "roadside_areas":
+      return "countryside";
+    case "other":
+    case null:
+      return null;
+  }
+}
+
+function environmentFromLocationText(
   value: string | null | undefined,
 ): ActionFallbackEnvironment | null {
   const normalized = normalize(value);
@@ -116,7 +141,7 @@ function getCanonicalPlaceTypeValues(contract: ActionDataContract): string[] {
 
 function resolveEnvironment(contract: ActionDataContract): ActionFallbackEnvironment | null {
   const canonicalPlaceType = getCanonicalPlaceTypeValues(contract)
-    .map(environmentFromCanonicalPlaceType)
+    .map((value) => environmentFromResolvedPlaceType(resolvePlaceTypeCategory(value)))
     .find((value): value is ActionFallbackEnvironment => value !== null);
   if (canonicalPlaceType) {
     return canonicalPlaceType;
@@ -127,14 +152,14 @@ function resolveEnvironment(contract: ActionDataContract): ActionFallbackEnviron
     contract.metadata.departureLocationLabel,
     contract.metadata.arrivalLocationLabel,
   ]
-    .map(environmentFromCanonicalPlaceType)
+    .map(environmentFromLocationText)
     .find((value): value is ActionFallbackEnvironment => value !== null);
   if (structuredGeography) {
     return structuredGeography;
   }
 
   // The location label is only consulted after all structured fields above.
-  return environmentFromCanonicalPlaceType(contract.location.label);
+  return environmentFromLocationText(contract.location.label);
 }
 
 function resolveActionKind(contract: ActionDataContract): ActionFallbackKind | null {

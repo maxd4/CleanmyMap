@@ -80,18 +80,28 @@ describe("action fallback images", () => {
     expect(first?.publicPath).toMatch(/^\/images\/action-fallbacks\//);
   });
 
-  it("uses the most specific compatible environment for forest and water contexts", () => {
+  it("uses the canonical environment for forest and water contexts", () => {
     const forestAction = makeContract("forest-action", {
-      placeType: "Forêt",
+      placeType: "forests_countryside",
     });
     const lakeAction = makeContract("lake-action", {
-      placeType: "Lac",
+      placeType: "rivers_lakes",
     });
 
     expect(getActionFallbackContext(forestAction).environment).toBe("forest");
     expect(selectActionFallback(forestAction)?.environment).toBe("forest");
-    expect(getActionFallbackContext(lakeAction).environment).toBe("lake");
-    expect(selectActionFallback(lakeAction)?.waterContext).toBe(true);
+    expect(getActionFallbackContext(lakeAction).environment).toBe("riverside");
+    expect(selectActionFallback(lakeAction)?.compatibleEnvironments).toContain("riverside");
+  });
+
+  it("does not reclassify ambiguous historical place types", () => {
+    const contract = makeContract("ambiguous-legacy", {
+      placeType: "Bois/Parc/Jardin/Square/Sentier",
+      locationLabel: "Lieu sans contexte",
+    });
+
+    expect(getActionFallbackContext(contract).environment).toBeNull();
+    expect(selectActionFallback(contract)?.isNeutral).toBe(true);
   });
 
   it("filters by action kind when the canonical objective is relevant", () => {

@@ -10,6 +10,7 @@ import type { ActionMapItem } from "@/lib/actions/types";
 import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
+import { getPlaceTypeLabel } from "@/lib/actions/place-type-options";
 import { useActionPopupScores } from "./use-action-popup-scores";
 import {
   buildSingleActionPopupDetails,
@@ -134,7 +135,7 @@ function SingleActionPopupView({
         wasteScore={scores.wasteScore}
         buttsScore={scores.buttsScore}
         statusLabel={identity.statusLabel}
-        placeType={contract?.metadata.placeType?.trim() ?? null}
+        placeType={getPlaceTypeLabel(contract?.metadata.placeType) ?? null}
         quality={identity.quality}
         geometryLabel={geometry.geometry.label}
         geometryModeLabel={geometry.geometryModeLabel}

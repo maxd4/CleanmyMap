@@ -63,7 +63,7 @@ describe("ActionStepIdentity", () => {
     expect(html).not.toContain("Lieu propre");
   });
 
-  it("does not visually select a collection place before an explicit choice", () => {
+  it("keeps an ambiguous historical collection place visible until explicit reclassification", () => {
     const form = createInitialFormState("Aperçu local", "action");
     const blankHtml = renderIdentity(form);
 
@@ -72,17 +72,20 @@ describe("ActionStepIdentity", () => {
 
     form.placeType = "Bois/Parc/Jardin/Square/Sentier";
     const selectedHtml = renderIdentity(form);
-    expect(selectedHtml).toContain('aria-pressed="true"');
+    expect(selectedHtml).toContain("Valeur historique conservée");
+    expect(selectedHtml).toContain("Bois/Parc/Jardin/Square/Sentier");
+    expect(selectedHtml).not.toMatch(/<button[^>]*aria-pressed="true"[^>]*>Rues &amp; espaces urbains/);
   });
 
-  it("keeps Monument as a distinct editable historical environment", () => {
+  it("keeps Monument as a distinct editable historical value", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.placeType = "Monument";
 
     const html = renderIdentity(form);
 
-    expect(html).toContain(">Monument</p>");
-    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("Monument");
+    expect(html).toContain("Valeur historique conservée");
+    expect(html).toContain("Monument");
     expect(html).toContain("Type d’environnement non renseigné");
   });
 

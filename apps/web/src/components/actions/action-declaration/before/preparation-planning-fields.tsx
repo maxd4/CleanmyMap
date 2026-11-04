@@ -3,7 +3,7 @@
 import { ClipboardList } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
-import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
+import { getPlaceTypeFormOptions } from "@/lib/actions/place-type-options";
 import { getVolunteerParticipationDisclosureDetail } from "@/lib/actions/volunteer-participation";
 import type { BaseSectionProps } from "./section-contract";
 import { SelectField, VolunteerForecast } from "./planned-action-volunteer-section";
@@ -55,7 +55,7 @@ export function PreparationPlanningFields({
             label="Type de zone"
             value={form.placeType}
             onChange={(value) => updateField("placeType", value)}
-            options={PLACE_TYPE_FORM_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+            options={getPlaceTypeFormOptions(form.placeType)}
             placeholder="Sélectionnez un type de zone"
           />
           <SelectField

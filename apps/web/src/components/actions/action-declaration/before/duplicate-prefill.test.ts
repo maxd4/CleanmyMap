@@ -55,4 +55,13 @@ describe("duplicate prefill form mapping", () => {
     expect(result.refreshmentsProvided).toEqual({ waterDuringAction: true });
     expect(result.preparationChecklist.every((item) => item.checked === false)).toBe(true);
   });
+
+  it("preserves a historical environment until the user explicitly reclassifies it", () => {
+    const result = applyDuplicatePrefillToForm(initialState, {
+      ...prefill,
+      placeType: "Quai/Pont/Port",
+    });
+
+    expect(result.placeType).toBe("Quai/Pont/Port");
+  });
 });

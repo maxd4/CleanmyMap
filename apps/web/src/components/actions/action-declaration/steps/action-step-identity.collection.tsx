@@ -1,7 +1,8 @@
 import {
-  Building,
-  Building2,
+  CircleHelp,
   Map as MapIcon,
+  ParkingSquare,
+  Route,
   Trees,
   TrainFront,
   Waves,
@@ -9,58 +10,19 @@ import {
 import type { FormState } from "../model";
 import { cn } from "@/lib/utils";
 import { SectionTitle } from "./action-step-identity.ui";
+import { PLACE_TYPE_CATALOG, type PlaceTypeIcon } from "@/lib/actions/place-type-options";
 
-const PLACE_TYPE_TILE_OPTIONS = [
-  {
-    values: ["N° Rue/Allée/Villa/Ruelle/Impasse"],
-    value: "N° Rue/Allée/Villa/Ruelle/Impasse",
-    icon: MapIcon,
-    label: "Voirie",
-    sub: "Rue, allée, impasse",
-  },
-  {
-    values: ["Bois/Parc/Jardin/Square/Sentier"],
-    value: "Bois/Parc/Jardin/Square/Sentier",
-    icon: Trees,
-    label: "Espace vert",
-    sub: "Parc, jardin, sentier",
-  },
-  {
-    values: ["Quai/Pont/Port"],
-    value: "Quai/Pont/Port",
-    icon: Waves,
-    label: "Pont & Quai",
-    sub: "Berge, port, pont",
-  },
-  {
-    values: ["N° Boulevard/Avenue/Place"],
-    value: "N° Boulevard/Avenue/Place",
-    icon: Building2,
-    label: "Avenue & Place",
-    sub: "Boulevard, place",
-  },
-  {
-    values: ["Gare/Station/Portique"],
-    value: "Gare/Station/Portique",
-    icon: TrainFront,
-    label: "Espace couvert",
-    sub: "Gare, station, portique",
-  },
-  {
-    values: ["Galerie/Passage couvert"],
-    value: "Galerie/Passage couvert",
-    icon: Building,
-    label: "Galerie & passage",
-    sub: "Passage, galerie, site couvert",
-  },
-  {
-    values: ["Monument"],
-    value: "Monument",
-    icon: Building,
-    label: "Monument",
-    sub: "Monument ou site patrimonial",
-  },
-] as const;
+const PLACE_TYPE_ICONS: Record<PlaceTypeIcon, typeof MapIcon> = {
+  urban: MapIcon,
+  parks: Trees,
+  forest: Trees,
+  water: Waves,
+  coast: Waves,
+  covered: TrainFront,
+  activity: ParkingSquare,
+  roadside: Route,
+  other: CircleHelp,
+};
 
 export function ActionCollectionSection({
   form,
@@ -80,14 +42,14 @@ export function ActionCollectionSection({
           "flex flex-wrap gap-2",
         )}
       >
-        {PLACE_TYPE_TILE_OPTIONS.map((option) => {
-          const Icon = option.icon;
-          const isSelected = option.values.some((value) => value === form.placeType);
+        {PLACE_TYPE_CATALOG.map((option) => {
+          const Icon = PLACE_TYPE_ICONS[option.icon];
+          const isSelected = option.value === form.placeType;
           return (
             <button
               key={option.label}
               type="button"
-              title={option.sub}
+              title={option.description}
               aria-pressed={isSelected}
               onClick={() => updateField("placeType", option.value)}
               className={cn(
@@ -128,7 +90,7 @@ export function ActionCollectionSection({
                     {option.label}
                   </p>
                   <p className="mt-0.5 hidden cmm-text-small leading-tight text-emerald-900/45 sm:block">
-                    {option.sub}
+                    {option.description}
                   </p>
                 </div>
               ) : (
@@ -148,6 +110,11 @@ export function ActionCollectionSection({
           );
         })}
       </div>
+      {form.placeType && !PLACE_TYPE_CATALOG.some((option) => option.value === form.placeType) ? (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs leading-5 text-amber-950">
+          Valeur historique conservée : <strong>{form.placeType}</strong>. Choisissez une catégorie pour reclasser explicitement cette action.
+        </p>
+      ) : null}
       <button
         type="button"
         aria-pressed={form.placeType === ""}

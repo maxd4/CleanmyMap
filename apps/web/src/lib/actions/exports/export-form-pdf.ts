@@ -1,6 +1,7 @@
 import type { ExportForm } from "./export-form-contract";
 import { createClientIdentifier } from "@/lib/client-identifier";
 import { LOCAL_PRINT_FONT_STACK } from "@/lib/pdf-export/print-font-stack";
+import { getPlaceTypeLabel } from "@/lib/actions/place-type-options";
 
 function esc(v: string): string {
   return v
@@ -49,7 +50,7 @@ export function exportFormAsPdf(form: ExportForm, actorName: string): boolean {
   const harvestRows =
     row("Déchets collectés", form.wasteKg ? `${form.wasteKg} kg` : "") +
     row("Mégots", form.wasteMegotsKg ? `${form.wasteMegotsKg} kg` : "") +
-    row("Type de lieu", form.placeType);
+    row("Type de lieu", getPlaceTypeLabel(form.placeType) ?? "");
 
   const locationRows =
     row("Lieu", form.locationLabel) +

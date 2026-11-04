@@ -4,6 +4,7 @@ import type { CreateActionPayload } from "@/lib/actions/types";
 import { summarizeActionDrawingValidation } from "../action-drawing-validation";
 import { formatGeometryPointCount } from "../../map/layers/actions-map-geometry-render";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
+import { getPlaceTypeLabel } from "@/lib/actions/place-type-options";
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
@@ -77,7 +78,7 @@ function ConfirmationDetails({
         <ConfirmationOrganizer form={form} payload={payload} />
         <SummaryItem label="Lieu de référence">
           {payload.locationLabel || "Non renseigné"}
-          <span className="mt-1 block text-xs font-normal text-emerald-900/60">{form.placeType || "Environnement non renseigné"}</span>
+          <span className="mt-1 block text-xs font-normal text-emerald-900/60">{getPlaceTypeLabel(form.placeType) || "Environnement non renseigné"}</span>
         </SummaryItem>
         <ConfirmationParticipants isCleanPlaceMode={isCleanPlaceMode} payload={payload} />
         <SummaryItem label="Durée réelle">
