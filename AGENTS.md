@@ -410,6 +410,17 @@ que la convergence distante peut être vérifiée. Sinon STOP. Cette délégatio
 suppression de données, modification de secrets ou autre mutation distante.
 Toute migration déjà appliquée se corrige par une migration forward-only.
 
+**Mode Supabase lié uniquement — Docker local en pause** : le poste utilisateur
+n'utilise ni Docker, ni WSL, ni conteneur, ni `supabase start`, `supabase status`
+ou `supabase db reset`. Une demande explicite d'application autorise Codex à
+utiliser exclusivement la CLI Supabase contre le projet lié : vérifier la cible,
+l'identité CLI, `migration list --linked`, le dry-run exact, les advisors et les
+préconditions de sécurité, puis exécuter `npx supabase db push --linked --yes`.
+Après l'application, relire l'historique lié et les contrôles read-only ; une
+preuve de migration appliquée ne devient pas une preuve pgTAP, RLS ou de
+concurrence. Si la CLI liée ou ses permissions sont indisponibles, ne pas
+installer ni démarrer Docker en repli : classer le blocage précisément.
+
 Les dispositifs de *security deception* ou leurres actifs ne sont pas du
 dead-code gratuit : exiger owner, aucune permission/secret réel, absence
 d'effet métier, surveillance exploitable, tests positifs/négatifs et

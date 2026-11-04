@@ -5,6 +5,16 @@ Ces règles concernent la configuration et les migrations du workspace web.
 
 ## Arbre de migrations
 
+### Décision CURRENT — Supabase lié uniquement
+
+Docker local, WSL, conteneurs et runtime Supabase local sont en pause sur le
+poste utilisateur. Codex ne les installe, ne les démarre, ne les sonde et ne
+les arrête pas. Le chemin d'application autorisé est la CLI Supabase contre le
+projet explicitement lié, après contrôles read-only ; une demande d'application
+explicite de l'utilisateur couvre la mutation `db push --linked --yes` prévue
+par cette procédure. La lane CI éphémère éventuellement utilisée pour un
+replay PostgreSQL reste une capacité de runner séparée, pas un fallback local.
+
 - `apps/web/supabase/migrations/` est l'unique arbre de migrations éditable et
   canonique ;
 - ne créer ni migration ni copie dans un second arbre ;
@@ -152,6 +162,22 @@ migrations canoniques ; il ne nécessite pas une confirmation supplémentaire
 par lot. Cette autonomie ne couvre ni `migration repair`, ni une DDL manuelle,
 ni un reset, ni une mutation distante hors migration versionnée.
 
+Une migration déjà appliquée se corrige exclusivement par une migration
+forward-only. Une migration publiée mais absente de l'historique du projet lié
+peut être corrigée avant application uniquement si un replay ou un push autorisé
+reproduit une erreur bloquante dans cette migration ; le correctif doit rester
+minimal, être prouvé, et ne pas devenir une réécriture d'une migration déjà
+appliquée.
+
+Lorsque l'utilisateur demande l'application, conserver la sortie exacte du
+dry-run, la cible, `CLI_AUTH_SOURCE`, l'historique avant/après et le résultat
+de la commande. Une migration distante appliquée ne prouve pas à elle seule
+les RLS, grants, triggers, transactions, RPC, concurrence ou pgTAP. Le contrat
+pgTAP qui crée et supprime des données de test ne doit pas être lancé contre le
+projet lié par simple commodité ; utiliser uniquement une base Supabase
+éphémère ou une branche de test explicitement autorisée et détruire cette
+surface selon son protocole.
+
 Le plugin/MCP est le canal privilégié pour l'observation distante structurée :
 projet, branches, historique, schéma, logs et advisors. Pour un inventaire
 Advisors exhaustif, récupérer séparément `security` et `performance`, avec les
@@ -275,9 +301,9 @@ justifie pas à lui seul un `repair`, un reset ou un push.
 
 ## Runtime local non supporté
 
-- Docker, WSL, Supabase local et les autres runtimes de conteneurs ne font plus
-  partie de l'environnement de développement et de validation locale supporté
-  sur le poste utilisateur.
+- Docker est explicitement **en pause complète sur le poste utilisateur**.
+  Docker, WSL, Supabase local et les autres runtimes de conteneurs ne font plus
+  partie de l'environnement de développement et de validation locale supporté.
 - Ne jamais demander à Codex d'installer, démarrer, sonder ou arrêter Docker,
   WSL, un daemon ou un runtime de conteneurs localement.
 - Cette règle n'interdit pas un runtime de conteneurs fourni par un runner CI

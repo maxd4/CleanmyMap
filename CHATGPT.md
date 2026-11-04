@@ -164,6 +164,14 @@ Supabase porte persistance et RLS, mais une configuration Git ne prouve pas
 l'état distant. L'arbre de migrations éditable est
 `apps/web/supabase/migrations/`. Ne jamais proposer `service_role` au client,
 désactivation RLS, garde d'accès uniquement côté UI ou permissions implicites.
+Le mode CURRENT demandé pour les migrations est **Supabase lié uniquement** :
+les prompts ne demandent pas à Codex d'installer, démarrer ou sonder Docker,
+WSL ou Supabase local. Pour une application explicitement autorisée, le prompt
+demande les contrôles read-only de cible/historique/dry-run, puis la CLI
+Supabase liée, la vérification post-application et la distinction entre
+migration appliquée et preuve PostgreSQL/pgTAP. Si l'accès ou la CLI manque,
+le prompt conserve le blocage et `DB_SEMANTICS_NOT_EXECUTED` au lieu de proposer
+Docker comme repli.
 Le propriétaire, l'organisateur, le modérateur et l'administrateur ne sont pas
 interchangeables. Voir `documentation/security/` et les scoped applicables.
 

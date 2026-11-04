@@ -381,6 +381,39 @@ ni application distante implicite. La convergence doit être vérifiée par
 éphémère de reconstruction et de contrat RPC. Aucune mutation du projet lié
 n'a été effectuée pour établir cette preuve.
 
+## Exception syntaxique bornée — replay territorial 00003–00007
+
+Lors de la première application autorisée de la série territoriale sur le
+projet Supabase lié, PostgreSQL a rejeté `20261103000003` avec `SQLSTATE 42601`
+sur `FOREACH v_threshold IN array[...]`. La même syntaxe invalide était
+présente dans les redéfinitions de la RPC des migrations `00004`, `00001` et
+`00007`. La première transaction ayant échoué avant l'enregistrement de la
+version, aucune de ces neuf migrations n'était appliquée sur la cible.
+
+La correction remplace uniquement `IN array[...]` par `IN ARRAY ARRAY[...]`.
+Elle ne modifie ni les signatures, les contrats JSON, les seuils, l'ordre, les
+RLS, les grants, les verrous, ni la sémantique métier. Le garde de publication
+autorise uniquement les empreintes corrigées ci-dessous, après cette preuve
+réelle d'erreur et avant la première application de la série concernée.
+
+```text
+20261103000003_BEFORE_HASH: 2d3659ad43e30688ad4e09a601e976bae9f6566dc02dc8aadfdbf72a17906192
+20261103000003_AFTER_HASH:  2ef23664006f25b7db0d2f5d2644e911d448e5a81db6dae982f02520c71916d6
+20261103000004_BEFORE_HASH: e725e7b87a8af7c94928f78f00af364a3568dcdafe6c4a8bf2b54f0581f4d485
+20261103000004_AFTER_HASH:  fffc07baed3480eacddd41309af6a9992040fa55734ff34e3f4f6e5555f5f4a1
+20261104000001_BEFORE_HASH: 43323dff6ef780a05aa3665f06a3675661ee0168e7ebdad10e30f2a4489a665c
+20261104000001_AFTER_HASH:  612a934ecf7c6c791cc6e8ba25c13d1ddd4674c4668f75ee60ec0990887d35da
+20261104000007_BEFORE_HASH: 1765a328617c24bae0c335a6ff43f85e41e89137bb63bf8f28a847443977c5a9
+20261104000007_AFTER_HASH:  91fdbcc048b60296fa32262543c5081e92d909d959ec40e481c059e839c9122d
+```
+
+La série a ensuite été appliquée par la CLI Supabase liée, sans Docker,
+`migration repair`, DDL manuelle, reset ni écriture hors migrations. La
+convergence de l'historique est prouvée séparément ; le pgTAP et les scénarios
+RPC qui créent des données de test restent `DB_SEMANTICS_NOT_EXECUTED` tant
+qu'une branche Supabase ou un environnement éphémère explicitement autorisé
+n'est pas disponible.
+
 ## Évolution forward-only — `20261104000001`
 
 La migration `20261104000001_territorial_legend_annual_campaigns.sql` porte

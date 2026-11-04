@@ -21,7 +21,7 @@
 1. Partir du chemin de lecture/écriture réel et de son propriétaire : API, client navigateur/mobile, import, RPC, fonction ou trigger. Ne jamais transformer une table d'audit, une projection ou un cache en source métier concurrente.
 2. Pour une requête croissante, borner le périmètre (utilisateur, action, période, territoire, statut), sélectionner les colonnes utiles et vérifier pagination, volume et index. Un compteur n'exige pas l'export complet de sa table.
 3. Préserver AuthN/AuthZ serveur, ownership, RLS, permissions des fonctions, restrictions de Storage et projection publique. `service_role` est une capacité technique serveur, **pas** une autorisation utilisateur.
-4. Les modifications persistantes passent par l'unique arbre canonique de migrations et impliquent consommateurs, types, tests et rétrocompatibilité justifiée. Ne jamais appliquer un correctif silencieux directement sur une base distante.
+4. Les modifications persistantes passent par l'unique arbre canonique de migrations et impliquent consommateurs, types, tests et rétrocompatibilité justifiée. Le mode d'exécution CURRENT utilise uniquement la CLI Supabase contre le projet lié ; Docker local, WSL et Supabase local restent en pause. Une application distante exige la vérification de la cible, de l'historique, du dry-run et des contrôles de sécurité avant `db push --linked --yes` ; elle ne remplace pas les preuves PostgreSQL ou pgTAP.
 5. Distinguer explicitement `STATIC_CONTRACT`, test exécuté et validation transactionnelle PostgreSQL. Si les contraintes, triggers ou règles RLS n'ont pas été exécutés, déclarer `DB_SEMANTICS_NOT_EXECUTED`.
 
 ### CURRENT — besoins structurés d'action (6A1)

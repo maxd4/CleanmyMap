@@ -54,7 +54,8 @@ overlays, éléments conditionnels, toasts et décorations explicitement
 identifiés.
 
 Les validations Supabase courantes utilisent `npx supabase` contre le projet
-distant explicitement lié. Depuis `apps/web`, vérifier d'abord l'accès puis
+distant explicitement lié. Docker local, WSL et Supabase local sont en pause et
+ne constituent pas un repli. Depuis `apps/web`, vérifier d'abord l'accès puis
 utiliser les contrôles read-only suivants :
 
 ```bash
@@ -109,10 +110,10 @@ ne prouve pas qu'une migration est appliquée. Seule la comparaison
 `npx supabase db reset` ne corrigent pas un problème d'authentification ou de
 scope ; ne pas les utiliser comme remèdes à un `403`. Le `db push` des
 migrations canoniques est automatique après les précontrôles de
-réconciliation ; `migration repair`, une DDL manuelle et `db reset` restent
-des opérations séparées et non déléguées. Une opération qui exige un runtime
-conteneurisé local est `UNSUPPORTED_CONTAINER_RUNTIME` sur le poste
-utilisateur.
+réconciliation et une demande explicite d'application ; `migration repair`, une
+DDL manuelle et `db reset` restent des opérations séparées et non déléguées.
+Une opération qui exige un runtime conteneurisé local est
+`UNSUPPORTED_CONTAINER_RUNTIME` sur le poste utilisateur.
 
 Un runner CI hébergé et éphémère peut toutefois utiliser ce runtime uniquement
 dans une CI explicitement dédiée au replay Supabase.

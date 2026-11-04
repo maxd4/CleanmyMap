@@ -43,7 +43,13 @@ const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
   ["20261030000024_action_need_offers.sql", new Set(["e04593971d7c4bea0a89645d96d1c3c8ec409e1b5e4d9b75906d6bc98d1f310c"])],
   ["20261030000026_action_need_offers_need_identity.sql", new Set(["5dcec92626543ce7aff34277db4d90220404bfabdfbb6ff99452fdf90a1fa09f"])],
   ["20261101000008_public_impact_butt_mass_provenance.sql", new Set(["f1c80202cb180538c1b02f2cfd6307e188e1d66af77a324e7933f5fd102425ae"])],
-  ["20261103000003_territorial_legend_rewards.sql", new Set(["2d3659ad43e30688ad4e09a601e976bae9f6566dc02dc8aadfdbf72a17906192"])],
+  ["20261103000003_territorial_legend_rewards.sql", new Set([
+    "2d3659ad43e30688ad4e09a601e976bae9f6566dc02dc8aadfdbf72a17906192",
+    "2ef23664006f25b7db0d2f5d2644e911d448e5a81db6dae982f02520c71916d6",
+  ])],
+  ["20261103000004_territorial_legend_rewards_contract.sql", new Set(["fffc07baed3480eacddd41309af6a9992040fa55734ff34e3f4f6e5555f5f4a1"])],
+  ["20261104000001_territorial_legend_annual_campaigns.sql", new Set(["612a934ecf7c6c791cc6e8ba25c13d1ddd4674c4668f75ee60ec0990887d35da"])],
+  ["20261104000007_territorial_legend_annual_integrity.sql", new Set(["91fdbcc048b60296fa32262543c5081e92d909d959ec40e481c059e839c9122d"])],
 ]);
 
 function normalizeMigrationContent(content) {

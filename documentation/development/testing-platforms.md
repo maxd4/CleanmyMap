@@ -40,6 +40,21 @@ attendu justifie réellement l'évolution de la preuve.
 
 ## E2E
 
+### Mode Supabase lié uniquement
+
+Sur le poste utilisateur, Docker est en pause complète : aucune validation ne
+doit démarrer ou sonder Docker, WSL ou Supabase local. Les migrations destinées
+au projet lié utilisent exclusivement la CLI Supabase, après vérification
+read-only de la cible, de l'historique, du dry-run et des contrôles de sécurité.
+La commande d'application et la vérification post-application sont décrites
+dans [`testing-execution.md`](testing-execution.md).
+
+La lane GitHub Actions éphémère décrite ci-dessous peut encore utiliser un
+runtime Docker fourni par son runner pour une preuve PostgreSQL isolée ; cela
+ne constitue ni une action locale Codex ni le chemin d'application du projet
+lié. Si cette lane est indisponible, la preuve reste
+`DB_SEMANTICS_NOT_EXECUTED`.
+
 Lister les E2E locaux sans persistence Supabase :
 
 ```bash

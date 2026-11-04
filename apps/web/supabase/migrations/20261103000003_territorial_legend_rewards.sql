@@ -230,7 +230,7 @@ begin
     v_inserted_proofs := v_inserted_proofs + v_row_count;
 
     v_days := v_last_verified_on - v_started_on + 1;
-    foreach v_threshold in array[7, 30, 90, 180, 365, 730] loop
+    foreach v_threshold in array array[7, 30, 90, 180, 365, 730] loop
       if v_days >= v_threshold then
         insert into public.territorial_legend_award_proofs (
           proof_id, user_id, level, territory_code, award_kind, threshold_days,
