@@ -87,6 +87,39 @@ describe("pedestrian network importer and graph", () => {
     expect(reverse).toBeNull();
   });
 
+  it("rejects coordinates that are not verified graph nodes instead of drawing a direct connector", () => {
+    const result = build([
+      way("42", { highway: "footway" }, node("42a", 48.84, 2.34), node("42b", 48.841, 2.34)),
+    ]);
+    const graph = {
+      versionId: "pilot-v1",
+      networkKey: result.networkKey,
+      sourceRetrievedAt: result.sourceRetrievedAt,
+      bounds: result.bounds,
+      edges: result.edges,
+    };
+
+    expect(routeThroughPedestrianNetwork(graph, [[48.8405, 2.34], [48.841, 2.34]], { topology: "open" })).toBeNull();
+  });
+
+  it("keeps a same-node leg network-verified with zero distance", () => {
+    const result = build([
+      way("43", { highway: "footway" }, node("43a", 48.84, 2.34), node("43b", 48.841, 2.34)),
+    ]);
+    const graph = {
+      versionId: "pilot-v1",
+      networkKey: result.networkKey,
+      sourceRetrievedAt: result.sourceRetrievedAt,
+      bounds: result.bounds,
+      edges: result.edges,
+    };
+
+    const route = routeThroughPedestrianNetwork(graph, [[48.84, 2.34], [48.84, 2.34]], { topology: "open" });
+    expect(route?.mode).toBe("network");
+    expect(route?.distanceKm).toBe(0);
+    expect(route?.coordinates).toEqual([[48.84, 2.34]]);
+  });
+
   it("is deterministic and idempotent for the same source", () => {
     const ways = [way("50", { highway: "footway" }, node("50a", 48.84, 2.34), node("50b", 48.841, 2.34))];
     expect(build(ways)).toEqual(build(ways));

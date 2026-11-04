@@ -40,6 +40,7 @@ import type { RouteGuidedBudget } from "@/lib/route/route-planning-mode";
 import type { RouteFinalRoutingReconciliation } from "@/lib/route/route-trace";
 import {
   buildSingleGroupRoute,
+  measureSharedNetworkDistanceKm,
   routePartitionedGroups,
   type RouteMultiRouteResult,
 } from "@/lib/route/route-multi-route";
@@ -504,7 +505,10 @@ function finalizePredictedSegmentRouteRecommendation(
       evaluations: segmentRoutePlan.plannerResult.audit.evaluations,
     },
   );
-  predictionSummary = applyRoutePredictionFinalRoutingBudgetAudit(predictionSummary, []);
+  predictionSummary = applyRoutePredictionFinalRoutingBudgetAudit(
+    predictionSummary,
+    segmentRoutePlan.excludedCandidateIds,
+  );
   const routeGeometry = segmentRoutePlan.routeGeometry;
   const groupRoutes = segmentRoutePlan.groupRoutes;
   const groupDistances = groupRoutes.map(({ travelDistanceKm }) => travelDistanceKm);
@@ -512,6 +516,13 @@ function finalizePredictedSegmentRouteRecommendation(
   const groupVolunteers = groupRoutes.map(({ volunteerCount }) => volunteerCount);
   const totalDistanceKm = groupDistances.reduce((total, distance) => total + distance, 0);
   const totalDurationMinutes = groupDurations.reduce((total, duration) => total + duration, 0);
+  const sharedDistanceKm = measureSharedNetworkDistanceKm(groupRoutes);
+  const sharedTargetIds = groupRoutes.flatMap(({ candidateIds }) => candidateIds);
+  const sharedTargetRatio = sharedTargetIds.length === 0
+    ? 0
+    : Number(((sharedTargetIds.length - new Set(sharedTargetIds).size) / sharedTargetIds.length).toFixed(3));
+  const operationalPasses = buildOperationalPasses(groupRoutes, routeGeometry);
+  const operationalCorridorPlan = planOperationalStreetCorridors({ passes: operationalPasses });
   const multiRouteMetrics: RouteMultiRouteMetrics = {
     groupCount: input.groupCount,
     volunteers: input.volunteers,
@@ -522,11 +533,13 @@ function finalizePredictedSegmentRouteRecommendation(
         const candidate = preparation.candidatePool.candidates.find(({ id: candidateId }) => candidateId === id);
         return sum + (candidate?.score ?? 0) / 100;
       }, 0), 0).toFixed(2)),
-    sharedTargetRatio: 0,
-    sharedDistanceKm: 0,
-    sharedDistanceRatio: 0,
-    networkOverlap: 0,
-    cleaningCoverageOverlap: 0,
+    sharedTargetRatio,
+    sharedDistanceKm,
+    sharedDistanceRatio: sharedDistanceKm === null || totalDistanceKm === 0
+      ? null
+      : Number((sharedDistanceKm / totalDistanceKm).toFixed(3)),
+    networkOverlap: operationalCorridorPlan.networkOverlap,
+    cleaningCoverageOverlap: operationalCorridorPlan.cleaningCoverageOverlap,
     balanceDistance: groupDistances.length > 0 ? Math.max(...groupDistances) - Math.min(...groupDistances) : 0,
     balanceDuration: groupDurations.length > 0 ? Math.max(...groupDurations) - Math.min(...groupDurations) : 0,
     balanceTargetCount: groupRoutes.length > 0 ? Math.max(...groupRoutes.map(({ targetCount }) => targetCount)) - Math.min(...groupRoutes.map(({ targetCount }) => targetCount)) : 0,
@@ -534,10 +547,8 @@ function finalizePredictedSegmentRouteRecommendation(
       ? Math.max(...groupVolunteers) - Math.min(...groupVolunteers)
       : 0,
     fallbackGroupCount: groupRoutes.filter(({ routeGeometry: geometry }) => geometry.mode === "fallback").length,
-    networkDistanceMeasured: true,
+    networkDistanceMeasured: sharedDistanceKm !== null,
   };
-  const operationalPasses = buildOperationalPasses(groupRoutes, routeGeometry);
-  const operationalCorridorPlan = planOperationalStreetCorridors({ passes: operationalPasses });
   return {
     plannerResult: segmentRoutePlan.plannerResult,
     candidates: preparation.candidatePool.candidates,
@@ -550,7 +561,7 @@ function finalizePredictedSegmentRouteRecommendation(
     finalRoutingReconciliation: {
       stopsBefore: segmentRoutePlan.plannerResult.stops.length,
       stopsAfter: segmentRoutePlan.plannedStops.length,
-      excludedCandidateIds: [],
+      excludedCandidateIds: segmentRoutePlan.excludedCandidateIds,
       providerCalls: 0,
       firstProviderMode: routeGeometry.mode,
       finalGeometryMode: routeGeometry.mode,

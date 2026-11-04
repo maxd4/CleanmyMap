@@ -425,19 +425,14 @@ export function buildPedestrianNetwork(input: {
   };
 }
 
-function closestNode(
+function exactNode(
   point: Coordinate,
   nodes: Map<string, Coordinate>,
-  maxSnapDistanceM: number,
 ): string | null {
-  let closest: { id: string; distanceM: number } | null = null;
   for (const [id, node] of nodes) {
-    const distanceM = haversineMeters(point, node);
-    if (distanceM <= maxSnapDistanceM && (!closest || distanceM < closest.distanceM)) {
-      closest = { id, distanceM };
-    }
+    if (point[0] === node[0] && point[1] === node[1]) return id;
   }
-  return closest?.id ?? null;
+  return null;
 }
 
 function routeBetweenNodes(
@@ -490,8 +485,7 @@ export function routeThroughPedestrianNetwork(
     outgoing.push(edge);
     adjacency.set(edge.fromNodeId, outgoing);
   }
-  const snapDistance = options.maxSnapDistanceM ?? 250;
-  const snappedNodeIds = requestedCoordinates.map((point) => closestNode(point, nodes, snapDistance));
+  const snappedNodeIds = requestedCoordinates.map((point) => exactNode(point, nodes));
   if (snappedNodeIds.some((nodeId) => nodeId === null)) return null;
 
   const coordinates: Coordinate[] = [];
@@ -505,8 +499,12 @@ export function routeThroughPedestrianNetwork(
     const legCoordinates = route.edges.flatMap((edge, edgeIndex) =>
       edgeIndex === 0 ? edge.coordinates : edge.coordinates.slice(1),
     );
-    if (coordinates.length === 0) coordinates.push(...legCoordinates);
-    else coordinates.push(...legCoordinates.slice(1));
+    if (legCoordinates.length > 0) {
+      if (coordinates.length === 0) coordinates.push(...legCoordinates);
+      else coordinates.push(...legCoordinates.slice(1));
+    } else if (coordinates.length === 0) {
+      coordinates.push(nodes.get(fromNodeId)!);
+    }
     totalDistanceM += route.distanceM;
     legs.push({
       fromStopIndex: index,
@@ -524,9 +522,12 @@ export function routeThroughPedestrianNetwork(
     });
   }
   const isLoop = (options.topology ?? "loop") === "loop";
+  if (coordinates.length === 0) {
+    coordinates.push(nodes.get(snappedNodeIds[0]!)!);
+  }
   return {
     isLoop,
-    origin: requestedCoordinates[0] ?? null,
+    origin: nodes.get(snappedNodeIds[0]!) ?? null,
     returnLeg: isLoop ? legs.at(-1) ?? null : null,
     coordinates,
     distanceKm: Number((totalDistanceM / 1000).toFixed(2)),

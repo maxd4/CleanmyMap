@@ -252,6 +252,57 @@ describe("pedestrian segment route planner", () => {
     expect(result!.metrics.selectedSegments).toBeGreaterThan(0);
   });
 
+  it("removes a selected candidate when its directed component cannot be reached", () => {
+    const disconnectedEdge = edge("e-xy", "x", "y", [48.01, 2.01], [48.011, 2.01], "Rue Isolée");
+    const disconnectedGraph: PedestrianNetworkGraph = {
+      ...graph,
+      edges: [...graph.edges, disconnectedEdge],
+    };
+    const disconnectedProjection = projection(["s-0", "s-1", "s-2", "s-3"]);
+    disconnectedProjection.segments[0] = {
+      ...disconnectedProjection.segments[0]!,
+      edgeKey: disconnectedEdge.edgeKey,
+      fromNodeId: disconnectedEdge.fromNodeId,
+      toNodeId: disconnectedEdge.toNodeId,
+      coordinates: disconnectedEdge.coordinates,
+    };
+    const result = plan([
+      candidate("blocked", "s-0", 100, 100),
+      candidate("reachable", "s-1", 50, 50),
+    ], "all", {
+      pedestrianNetwork: disconnectedGraph,
+      projection: disconnectedProjection,
+      maxStops: 2,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.plannedStops.map(({ candidate: item }) => item.id)).toEqual(["reachable"]);
+    expect(result!.excludedCandidateIds).toEqual(["blocked"]);
+    expect(result!.degraded).toBe(true);
+  });
+
+  it("does not create a network route for an origin outside the graph", () => {
+    const result = plan([candidate("candidate", "s-0", 90, 90)], "all", {
+      origin: { ...origin, latitude: 48.005 },
+    });
+    expect(result).toBeNull();
+  });
+
+  it("keeps loop distance equal to the verified directed edges", () => {
+    const result = plan([candidate("candidate", "s-0", 90, 90)], "all", { maxStops: 1 });
+    expect(result).not.toBeNull();
+    expect(result!.routeGeometry.mode).toBe("network");
+    expect(result!.routeGeometry.distanceKm).toBeCloseTo(0.444, 2);
+    expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
+  });
+
+  it("rejects a risk projection attached to another active graph version", () => {
+    const result = plan([candidate("candidate", "s-0", 90, 90)], "all", {
+      projection: { ...projection(["s-0", "s-1", "s-2", "s-3"]), networkVersionId: "network-v2" },
+    });
+    expect(result).toBeNull();
+  });
+
   it("enriches the graph route with a validated observation after selecting predicted segments", () => {
     const result = plan([
       candidate("predicted", "s-0", 90, 90),

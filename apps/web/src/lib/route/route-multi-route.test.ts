@@ -4,7 +4,7 @@ import { buildActionDataContract } from "@/lib/actions/data-contract";
 import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { routeDistanceKm, type RoutePlannerCandidate, type RoutePlannerOrigin } from "./route-planner";
 import { partitionRouteCandidates } from "./route-group-partition";
-import { routePartitionedGroups } from "./route-multi-route";
+import { measureSharedNetworkDistanceKm, routePartitionedGroups } from "./route-multi-route";
 import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
 
 const routeProviderMock = vi.hoisted(() => vi.fn());
@@ -189,6 +189,20 @@ describe("coordinated multi-route routing", () => {
       profile: "foot",
       estimated: false,
     }));
+  });
+
+  it("measures a shared network corridor instead of returning a fixed zero", () => {
+    const sharedCoordinates: [number, number][] = [
+      [48.8566, 2.3522],
+      [48.857, 2.3522],
+      [48.8574, 2.3522],
+    ];
+    const measured = measureSharedNetworkDistanceKm([
+      { routeGeometry: networkGeometryWithCoordinates(sharedCoordinates, sharedCoordinates) },
+      { routeGeometry: networkGeometryWithCoordinates(sharedCoordinates, sharedCoordinates) },
+    ]);
+
+    expect(measured).toBeGreaterThan(0);
   });
 
   it("routes every partitioned group as a distinct closed loop without re-planning", async () => {

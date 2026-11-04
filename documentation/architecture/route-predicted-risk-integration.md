@@ -35,6 +35,19 @@ conservées, les observations considérées et acceptées, les détours et les
 raisons de rejet. La propriété `observedDoesNotReplacePrediction` est toujours
 vraie lorsque cette branche est utilisée.
 
+Le routage réseau prédictif est autorisé uniquement si `networkVersionId` de la
+projection active correspond exactement à `versionId` du graphe actif. La RPC
+de lecture joint ces identités versionnées ; une absence ou une incompatibilité
+ne fabrique pas de correspondance et déclenche le repli explicite prévu. Les
+origines, arrivées et candidats doivent être des points du graphe vérifiés : un
+raccordement géodésique direct n'est pas présenté comme un chemin piéton.
+Lorsqu'un segment sélectionné est inaccessible dans le graphe dirigé, il est
+écarté avant la construction finale ; les arrêts, distances, durées, budgets,
+indices théoriques et statuts de dégradation sont alors recalculés à partir des
+seuls segments effectivement traversés. Les chevauchements de groupes sont
+mesurés sur les géométries réseau finales et restent `null` lorsqu'ils ne sont
+pas mesurables.
+
 ## Deux passages et sélection bornée
 
 Un premier passage pur du planner sélectionne et ordonne les cibles observées.

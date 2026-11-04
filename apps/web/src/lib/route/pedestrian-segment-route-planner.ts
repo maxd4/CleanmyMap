@@ -1,6 +1,5 @@
 import type { PedestrianRiskProjectionSnapshot } from "@/lib/geo/pedestrian-risk-projection";
 import {
-  haversineMeters,
   type Coordinate,
   type PedestrianNetworkEdge,
   type PedestrianNetworkGraph,
@@ -30,7 +29,6 @@ export const PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION =
   "pedestrian-segment-route-planner-v1" as const;
 export const MAX_SEGMENT_ROUTE_CANDIDATES = 600;
 const MAX_SEGMENTS_PER_GROUP = 32;
-const MAX_SNAP_DISTANCE_M = 250;
 
 export type SegmentRouteSelectionMetrics = {
   plannerVersion: typeof PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION;
@@ -56,6 +54,7 @@ export type PedestrianSegmentRoutePlan = {
   metrics: SegmentRouteSelectionMetrics;
   warning: string | null;
   degraded: boolean;
+  excludedCandidateIds: string[];
   observedEnrichment: RouteObservedEnrichmentMetrics;
 };
 
@@ -79,8 +78,16 @@ type GroupRouteBuild = {
   geometry: RouteGeometry;
   plannedStops: PlannedRouteStop[];
   selectedEdges: PedestrianNetworkEdge[];
+  routedCandidates: SegmentCandidate[];
   connectorSegments: number;
 };
+
+export function isPedestrianRiskProjectionCompatible(
+  graph: PedestrianNetworkGraph,
+  projection: PedestrianRiskProjectionSnapshot,
+): boolean {
+  return projection.networkVersionId !== null && projection.networkVersionId === graph.versionId;
+}
 
 function finiteRisk(value: number | null | undefined): number {
   return Number.isFinite(value) ? Math.max(0, value ?? 0) : 0;
@@ -145,19 +152,14 @@ function buildNodeCoordinates(graph: PedestrianNetworkGraph): Map<string, Coordi
   return nodes;
 }
 
-function closestNode(
+function exactNode(
   point: Coordinate,
   nodes: ReadonlyMap<string, Coordinate>,
 ): string | null {
-  let best: { id: string; distanceM: number } | null = null;
   for (const [id, node] of nodes) {
-    const distanceM = haversineMeters(point, node);
-    if (distanceM <= MAX_SNAP_DISTANCE_M && (!best || distanceM < best.distanceM ||
-      (distanceM === best.distanceM && id.localeCompare(best.id) < 0))) {
-      best = { id, distanceM };
-    }
+    if (point[0] === node[0] && point[1] === node[1]) return id;
   }
-  return best?.id ?? null;
+  return null;
 }
 
 function shortestPath(
@@ -205,33 +207,26 @@ function appendCoordinates(target: Coordinate[], edges: readonly PedestrianNetwo
   }
 }
 
-function distanceMForCoordinates(coordinates: readonly Coordinate[]): number {
-  return coordinates.slice(0, -1).reduce((total, point, index) =>
-    total + haversineMeters(point, coordinates[index + 1]!), 0);
-}
-
 function round(value: number, digits = 2): number {
   return Number(value.toFixed(digits));
 }
 
 function geometryFromEdges(
-  origin: RoutePlannerOrigin,
-  arrival: RoutePlannerOrigin | undefined,
   topology: RouteTopology,
   routeEdges: readonly PedestrianNetworkEdge[],
   selectedEdgeIndexes: readonly number[],
   networkOrigin: Coordinate,
   networkDestination: Coordinate,
-): RouteGeometry {
+): RouteGeometry | null {
   const coordinates: Coordinate[] = [];
   appendCoordinates(coordinates, routeEdges);
-  const originCoordinate: Coordinate = [origin.latitude, origin.longitude];
-  const destinationCoordinate: Coordinate = topology === "loop"
-    ? originCoordinate
-    : arrival ? [arrival.latitude, arrival.longitude] : networkDestination;
+  const originCoordinate = networkOrigin;
+  const destinationCoordinate = topology === "loop" ? networkOrigin : networkDestination;
   if (coordinates.length === 0) coordinates.push(networkOrigin);
-  if (coordinateKey(coordinates[0]!) !== coordinateKey(originCoordinate)) coordinates.unshift(originCoordinate);
-  if (coordinateKey(coordinates.at(-1)!) !== coordinateKey(destinationCoordinate)) coordinates.push(destinationCoordinate);
+  if (coordinateKey(coordinates[0]!) !== coordinateKey(originCoordinate) ||
+    coordinateKey(coordinates.at(-1)!) !== coordinateKey(destinationCoordinate)) {
+    return null;
+  }
 
   const boundaries = [
     -1,
@@ -258,9 +253,7 @@ function geometryFromEdges(
       })),
     };
   });
-  const distanceM = routeEdges.reduce((total, edge) => total + edge.lengthM, 0) +
-    distanceMForCoordinates([originCoordinate, networkOrigin]) +
-    (topology === "open" ? distanceMForCoordinates([networkDestination, destinationCoordinate]) : 0);
+  const distanceM = routeEdges.reduce((total, edge) => total + edge.lengthM, 0);
   return {
     isLoop: topology === "loop",
     origin: originCoordinate,
@@ -430,18 +423,19 @@ function buildGroupGeometry(
   topology: RouteTopology,
   candidates: readonly SegmentCandidate[],
   graph: PedestrianNetworkGraph,
-): { geometry: RouteGeometry; selectedEdges: PedestrianNetworkEdge[]; connectorSegments: number } | null {
+): { geometry: RouteGeometry; selectedEdges: PedestrianNetworkEdge[]; routedCandidates: SegmentCandidate[]; connectorSegments: number } | null {
   const adjacency = buildAdjacency(graph);
   const nodes = buildNodeCoordinates(graph);
-  const originNodeId = closestNode([origin.latitude, origin.longitude], nodes);
+  const originNodeId = exactNode([origin.latitude, origin.longitude], nodes);
   const destinationNodeId = topology === "loop"
     ? originNodeId
-    : arrival ? closestNode([arrival.latitude, arrival.longitude], nodes) : originNodeId;
+    : arrival ? exactNode([arrival.latitude, arrival.longitude], nodes) : originNodeId;
   if (!originNodeId || !destinationNodeId) return null;
   const originNode = nodes.get(originNodeId)!;
   const destinationNode = nodes.get(destinationNodeId)!;
   const routeEdges: PedestrianNetworkEdge[] = [];
   const selectedEdgeIndexes: number[] = [];
+  const routedCandidates: SegmentCandidate[] = [];
   let currentNodeId = originNodeId;
   let connectorSegments = 0;
   for (const segment of candidates) {
@@ -451,15 +445,19 @@ function buildGroupGeometry(
     routeEdges.push(...connector.edges);
     routeEdges.push(segment.edge);
     selectedEdgeIndexes.push(routeEdges.length - 1);
+    routedCandidates.push(segment);
     currentNodeId = segment.edge.toNodeId;
   }
   const closing = shortestPath(currentNodeId, destinationNodeId, adjacency);
   if (!closing) return null;
   connectorSegments += closing.edges.length;
   routeEdges.push(...closing.edges);
+  const geometry = geometryFromEdges(topology, routeEdges, selectedEdgeIndexes, originNode, destinationNode);
+  if (!geometry) return null;
   return {
-    geometry: geometryFromEdges(origin, arrival, topology, routeEdges, selectedEdgeIndexes, originNode, destinationNode),
-    selectedEdges: candidates.map(({ edge }) => edge),
+    geometry,
+    selectedEdges: routedCandidates.map(({ edge }) => edge),
+    routedCandidates,
     connectorSegments,
   };
 }
@@ -514,6 +512,7 @@ export function planPredictedPedestrianSegmentRoutes(input: {
   groupCount: number;
   effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
 }): PedestrianSegmentRoutePlan | null {
+  if (!isPedestrianRiskProjectionCompatible(input.pedestrianNetwork, input.projection)) return null;
   const segmentData = buildSegmentCandidates(
     input.candidates,
     input.pedestrianNetwork,
@@ -554,25 +553,39 @@ export function planPredictedPedestrianSegmentRoutes(input: {
   const builtGroups: GroupRouteBuild[] = [];
   const observedEnrichmentMetrics: RouteObservedEnrichmentMetrics[] = [];
   const assignedObservedCandidateIds = new Set<string>();
+  const excludedCandidateIds = new Set<string>();
   const observedCandidates = input.candidates.filter((candidate) => candidate.family === "observed");
   for (const group of partition.groups) {
     let selected = group.candidateIds
       .map((id) => segmentByCandidateId.get(id))
       .filter((segment): segment is SegmentCandidate => Boolean(segment));
+    const requestedCandidateIds = new Set(selected.map(({ candidate }) => candidate.id));
     let built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
     if (!built) return null;
+    const initialBuilt = built;
+    requestedCandidateIds.forEach((candidateId) => {
+      if (!initialBuilt.routedCandidates.some(({ candidate }) => candidate.id === candidateId)) {
+        excludedCandidateIds.add(candidateId);
+      }
+    });
+    selected = initialBuilt.routedCandidates;
     while (selected.length > 0 && built.geometry.durationMinutes > input.travelBudgetMinutes) {
-      selected = selected.slice(0, -1);
+      selected = built.routedCandidates.slice(0, -1);
+      const retainedCandidateIds = new Set(selected.map(({ candidate }) => candidate.id));
+      requestedCandidateIds.forEach((candidateId) => {
+        if (!retainedCandidateIds.has(candidateId)) excludedCandidateIds.add(candidateId);
+      });
       built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
       if (!built) return null;
     }
+    const finalBuilt = built;
     const enrichment = enrichTheoreticalRouteWithObservedCandidates({
       origin: group.origin,
       arrival: input.arrival,
       routeTopology: input.routeTopology,
       baseCandidates: selected.map(({ candidate }) => candidate),
       observedCandidates: observedCandidates.filter((candidate) => !assignedObservedCandidateIds.has(candidate.id)),
-      baseGeometry: built.geometry,
+      baseGeometry: finalBuilt.geometry,
       pedestrianNetwork: input.pedestrianNetwork,
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxObserved: Math.max(0, Math.min(MAX_SEGMENTS_PER_GROUP - selected.length, input.maxStops - selected.length)),
@@ -589,8 +602,9 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       candidates: enrichment.candidates,
       geometry: enrichment.routeGeometry,
       plannedStops: groupBuild.plannedStops,
-      selectedEdges: built.selectedEdges,
-      connectorSegments: built.connectorSegments,
+      selectedEdges: finalBuilt.selectedEdges,
+      routedCandidates: finalBuilt.routedCandidates,
+      connectorSegments: finalBuilt.connectorSegments,
     });
   }
   const effectiveGroups = builtGroups.map((builtGroup, index) => ({
@@ -659,8 +673,11 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       routeMode: "network",
       safetyStatus: "network_access_allowed_safety_unknown",
     },
-    warning: null,
-    degraded: false,
+    warning: excludedCandidateIds.size > 0
+      ? "Certains segments prédictifs n’ont pas pu être reliés au graphe piéton ou respecter le budget ; ils ont été exclus du parcours final."
+      : null,
+    degraded: excludedCandidateIds.size > 0,
+    excludedCandidateIds: [...excludedCandidateIds].sort(),
     observedEnrichment: mergeObservedEnrichmentMetrics(observedEnrichmentMetrics, input.travelBudgetMinutes),
   };
 }

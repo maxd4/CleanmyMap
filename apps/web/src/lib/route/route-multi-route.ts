@@ -168,7 +168,9 @@ function sharedDistanceForPair(
   return sharedDistanceKm;
 }
 
-function measuredSharedDistanceKm(routes: readonly RouteGroupRoutingResult[]): number | null {
+export function measureSharedNetworkDistanceKm(
+  routes: readonly Pick<RouteGroupRoutingResult, "routeGeometry">[],
+): number | null {
   if (routes.length < 2 || routes.some(({ routeGeometry }) => routeGeometry.mode !== "network")) {
     return null;
   }
@@ -181,6 +183,10 @@ function measuredSharedDistanceKm(routes: readonly RouteGroupRoutingResult[]): n
     }
   }
   return round(sharedDistanceKm, 2);
+}
+
+function measuredSharedDistanceKm(routes: readonly RouteGroupRoutingResult[]): number | null {
+  return measureSharedNetworkDistanceKm(routes);
 }
 
 function sharedTargetRatio(routes: readonly RouteGroupRoutingResult[]): number {

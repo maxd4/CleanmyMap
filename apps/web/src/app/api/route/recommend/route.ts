@@ -27,6 +27,7 @@ import { routeGuidedBudgetForMode } from "@/lib/route/route-planning-mode";
 import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { loadActivePedestrianNetwork } from "@/lib/route/pedestrian-network-store";
 import { loadActivePedestrianRiskProjection } from "@/lib/route/pedestrian-risk-projection-store";
+import { isPedestrianRiskProjectionCompatible } from "@/lib/route/pedestrian-segment-route-planner";
 import {
   buildRouteNearestRelevantProbePoints,
   createRouteNearestRelevantReference,
@@ -163,7 +164,7 @@ export async function POST(request: Request) {
       ? buildRouteNearestRelevantProbePoints(nearestRelevantReference)
       : [];
     const spatialCandidates = candidateData.spatialCandidates;
-    const pedestrianNetwork = await loadActivePedestrianNetwork(supabase, [
+    const loadedPedestrianNetwork = await loadActivePedestrianNetwork(supabase, [
       origin,
       ...(options.arrival ? [options.arrival] : []),
       ...spatialCandidates.map((candidate) => ({
@@ -181,6 +182,10 @@ export async function POST(request: Request) {
       })),
       ...nearestRelevantProbePoints,
     ]);
+    const pedestrianNetwork = loadedPedestrianNetwork &&
+      (!pedestrianRiskProjection || isPedestrianRiskProjectionCompatible(loadedPedestrianNetwork, pedestrianRiskProjection))
+      ? loadedPedestrianNetwork
+      : null;
     const weatherContext = await fetchPlannerWeatherContext({
       latitude: origin.latitude,
       longitude: origin.longitude,

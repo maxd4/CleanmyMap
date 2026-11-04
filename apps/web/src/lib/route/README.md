@@ -21,6 +21,14 @@ pour produire une décision de planner contrainte et explicable.
   planner route sur ce graphe dirigé sans appel OSM/FOSSGIS ; un point ou une
   restriction non prouvés restent exclus et sont conservés dans les
   diagnostics d’import.
+- Le planner ne combine la projection de risque et le graphe stocké que lorsque
+  leurs identifiants de version réseau concordent exactement. Une projection
+  sans graphe actif correspondant conserve sa projection pour la couche de
+  risque, mais force le repli de routage explicite. Une géométrie `network` ne
+  contient aucun raccordement direct vers un point approximatif : l’origine,
+  l’arrivée et chaque segment sélectionné doivent être des nœuds ou arêtes
+  vérifiés, sinon le segment est écarté et les arrêts, budgets et métriques sont
+  recalculés.
 - `route-predicted-targets.ts` : candidats prédits, distincts des spots
   observés, avec provenance, modèle et état de disponibilité.
 - `route-data-status.ts` : états de disponibilité et de dégradation exposés
@@ -62,7 +70,9 @@ opérationnelle en deux identifiants abstraits `A` et `B` pour une rue routable
 "unknown"` tant qu’aucune preuve n’est disponible. `networkOverlap` mesure le
 passage réseau commun ou proche uniquement lorsqu’une référence de segment ou
 une géométrie de step permet de l’identifier ; sinon il vaut `null` (inconnu),
-et non zéro. Le nom de rue reste un label. `cleaningCoverageOverlap` ne compte
+et non zéro. Les métriques de distance partagée sont également recalculées sur
+les géométries réseau finales des groupes ; elles ne sont jamais forcées à
+zéro. Le nom de rue reste un label. `cleaningCoverageOverlap` ne compte
 que la répétition du même corridor opérationnel ; une exception versionnée à un
 seul corridor prévaut sur le défaut.
 
