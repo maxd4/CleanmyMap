@@ -35,9 +35,9 @@ export function ActionTimeSection({
 
   if (variant === "time") {
     return (
-      <div className="space-y-3">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label htmlFor="action-event-start" className="space-y-1.5">
+      <div className="space-y-2">
+        <div className="grid gap-2 md:grid-cols-2">
+          <label htmlFor="action-event-start" className="space-y-1">
             <span className="block text-xs font-semibold text-emerald-900/75">
               Rendez-vous · début
             </span>
@@ -49,7 +49,7 @@ export function ActionTimeSection({
               onChange={(event) => updateField("eventStartTime", event.target.value)}
             />
           </label>
-          <label htmlFor="action-event-end" className="space-y-1.5">
+          <label htmlFor="action-event-end" className="space-y-1">
             <span className="block text-xs font-semibold text-emerald-900/75">
               Fin du créneau
             </span>

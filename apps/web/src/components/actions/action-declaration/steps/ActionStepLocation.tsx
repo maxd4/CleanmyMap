@@ -13,9 +13,9 @@ export function ActionStepLocation({
   }
 
   return (
-    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className={`${mode === "details" ? "space-y-3" : "space-y-5"} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
       <ActionLocationInputs {...props} mode={mode} />
-      <ActionLocationGeometryPanel {...props} />
+      <ActionLocationGeometryPanel {...props} compact={mode === "details"} />
     </div>
   );
 }

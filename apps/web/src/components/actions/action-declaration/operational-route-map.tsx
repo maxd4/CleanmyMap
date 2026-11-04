@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 import { getOperationalRouteMeetingPoint, getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 import { TERRITORY_CENTER, buildTerritoryLeafletBounds } from "@/lib/geo/territory";
+import { cn } from "@/lib/utils";
 
 function FitOperationalRouteBounds({ operationalRoute }: { operationalRoute: OperationalRoute }) {
   const map = useMap();
@@ -26,7 +27,7 @@ function FitOperationalRouteBounds({ operationalRoute }: { operationalRoute: Ope
   return null;
 }
 
-export function OperationalRouteMap({ operationalRoute }: { operationalRoute: OperationalRoute }) {
+export function OperationalRouteMap({ operationalRoute, compact = false }: { operationalRoute: OperationalRoute; compact?: boolean }) {
   const segments = getPublicOperationalRouteSegments(operationalRoute);
   const zones = [
     ["Départ", operationalRoute.zones.departure.coordinate],
@@ -40,7 +41,7 @@ export function OperationalRouteMap({ operationalRoute }: { operationalRoute: Op
   const guidedWaypoints = operationalRoute.routes.flatMap((route) => (route.plannedWaypoints ?? []).map((waypoint) => ({ route, waypoint })));
 
   return (
-    <div className="h-[320px] overflow-hidden rounded-2xl border border-emerald-200/70">
+    <div className={cn("overflow-hidden rounded-2xl border border-emerald-200/70", compact ? "h-[240px]" : "h-[320px]")}>
       <MapContainer
         center={TERRITORY_CENTER}
         zoom={5}

@@ -54,6 +54,7 @@ describe("action location input modes", () => {
     expect(markup).toContain('id="midpoint"');
     expect(markup).toContain("Type de parcours");
     expect(markup).toContain('id="route-target-distance"');
+    expect(markup).toContain("p-3");
   });
 
   it("renders the complete location controls in all mode", () => {

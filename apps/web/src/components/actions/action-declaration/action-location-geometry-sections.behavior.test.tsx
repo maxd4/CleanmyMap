@@ -99,6 +99,26 @@ describe("ActionLocationMapPanel reversible external clearing", () => {
     expect(host?.textContent).not.toContain("Tracé retiré");
   });
 
+  it("keeps the map controls and reversible clearing available in compact details mode", () => {
+    act(() => {
+      root = createRoot(host!);
+      root.render(
+        <ActionLocationMapPanel
+          form={{ recordType: "action" } as never}
+          setManualDrawing={vi.fn()}
+          onResetManualDrawing={vi.fn()}
+          gpxImport={null}
+          viewModel={makeViewModel(initialDrawing, "manual")}
+          compact
+        />,
+      );
+    });
+
+    expect(host?.querySelector('[class*="h-[300px]"]')).not.toBeNull();
+    expect(host?.querySelector('[aria-label="Effacer le repère manuel"]')).not.toBeNull();
+    expect(host?.textContent).toContain("Repère manuel");
+  });
+
   it("does not restore after an external replacement and leaves the workflow owner untouched", () => {
     const replacement: ActionDrawing = { kind: "polyline", coordinates: [[48.9, 2.4], [48.901, 2.401]] };
     let setDrawingFromHarness: ((drawing: ActionDrawing | null, source: ActionGeometrySource | null) => void) | null = null;

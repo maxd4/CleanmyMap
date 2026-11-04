@@ -12,6 +12,7 @@ import {
   updateOperationalRouteZone,
 } from "@/lib/route/route-operational";
 import { CmmInput } from "@/components/ui/cmm-field";
+import { cn } from "@/lib/utils";
 
 const OperationalRouteMap = dynamic(
   () => import("./operational-route-map").then((module) => module.OperationalRouteMap),
@@ -21,16 +22,18 @@ const OperationalRouteMap = dynamic(
 export function OperationalRouteEditor({
   operationalRoute,
   onChange,
+  compact = false,
 }: {
   operationalRoute: OperationalRoute;
   onChange: (operationalRoute: OperationalRoute) => void;
+  compact?: boolean;
 }) {
   const updateZoneLabel = (zone: OperationalRouteZoneKey, label: string) => {
     onChange(updateOperationalRouteZone(operationalRoute, zone, { label: label.trim() || null }));
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5">
+    <section className={cn("rounded-2xl border border-emerald-200/70 bg-[#F3FBF6]", compact ? "space-y-3 p-3" : "space-y-4 p-5")}>
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/60">
           Parcours opérationnel
@@ -43,7 +46,7 @@ export function OperationalRouteEditor({
         </p>
       </div>
 
-      <OperationalRouteMap operationalRoute={operationalRoute} />
+      <OperationalRouteMap operationalRoute={operationalRoute} compact={compact} />
 
       <div className="grid gap-2 md:grid-cols-2" data-operational-meeting-points>
         {operationalRoute.routes.map((route) => {

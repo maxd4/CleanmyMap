@@ -25,12 +25,12 @@ function SectionTitle({ color, children }: { color: string; children: React.Reac
   return <div className="mb-3 flex items-center gap-2"><span className={cn("h-1 w-5 rounded-full", color)} /><h3 className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-900/60">{children}</h3></div>;
 }
 
-type GpxImportProps = Pick<ActionLocationGeometryPanelProps, "form" | "gpxImport" | "gpxError" | "onImportGpx" | "onRemoveGpx" | "onSetGpxIntent">;
+type GpxImportProps = Pick<ActionLocationGeometryPanelProps, "form" | "gpxImport" | "gpxError" | "onImportGpx" | "onRemoveGpx" | "onSetGpxIntent"> & { compact?: boolean };
 
-export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx, onRemoveGpx, onSetGpxIntent }: GpxImportProps) {
+export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx, onRemoveGpx, onSetGpxIntent, compact = false }: GpxImportProps) {
   if (form.recordType === "clean_place") return null;
   return (
-    <div className="rounded-xl border border-violet-200/80 bg-violet-50/55 px-4 py-3">
+    <div className={cn("rounded-xl border border-violet-200/80 bg-violet-50/55", compact ? "px-3 py-2" : "px-4 py-3")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><p className="flex items-center gap-2 text-sm font-semibold text-violet-950"><Upload size={16} aria-hidden="true" />Importer un tracé GPX</p><p className="mt-1 text-xs text-violet-900/70">Tracé importé.</p></div>
         <label htmlFor="gpx-import" className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 focus-within:ring-2 focus-within:ring-violet-500/20">
@@ -49,7 +49,7 @@ export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx
   );
 }
 
-type MapPanelProps = Pick<ActionLocationGeometryPanelProps, "form" | "setManualDrawing" | "onResetManualDrawing" | "gpxImport"> & { viewModel: ActionLocationViewModel };
+type MapPanelProps = Pick<ActionLocationGeometryPanelProps, "form" | "setManualDrawing" | "onResetManualDrawing" | "gpxImport"> & { viewModel: ActionLocationViewModel; compact?: boolean };
 
 const statusStyles = {
   success: "border-emerald-200/70 bg-[#ECF8EF] text-emerald-700",
@@ -94,7 +94,8 @@ function ActionLocationMapCanvas({
 function ActionLocationStatus({
   viewModel,
   onResetManualDrawing,
-}: Pick<MapPanelProps, "viewModel" | "onResetManualDrawing">) {
+  compact = false,
+}: Pick<MapPanelProps, "viewModel" | "onResetManualDrawing"> & { compact?: boolean }) {
   const label = viewModel.isGpx
     ? "Tracé GPX importé"
     : viewModel.isTracking
@@ -105,7 +106,7 @@ function ActionLocationStatus({
           ? "Aperçu automatique"
           : "Aucun repère";
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-[#ECF8EF] px-4 py-3">
+    <div className={cn("flex items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-[#ECF8EF]", compact ? "px-3 py-2" : "px-4 py-3")}>
       <div className="flex flex-wrap items-center gap-2"><span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold", statusStyles[viewModel.statusTone])}>{label}</span>{viewModel.hasDrawing ? <span className="text-xs text-emerald-900/55">{formatGeometryPointCount(viewModel.activeSummary.pointCount)}</span> : null}</div>
       {viewModel.isManual && !viewModel.isGpx && !viewModel.isTracking && onResetManualDrawing ? <button type="button" onClick={onResetManualDrawing} aria-label="Effacer le repère manuel" className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-[#FFF7F8] px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-[#FFEFF2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"><X size={13} />Effacer</button> : null}
       {!viewModel.hasDrawing ? <span className="text-xs text-emerald-900/45">Saisissez un lieu, utilisez le GPS ou placez un repère sur la carte</span> : null}
@@ -113,7 +114,7 @@ function ActionLocationStatus({
   );
 }
 
-export function ActionLocationMapPanel({ form, setManualDrawing, onResetManualDrawing, gpxImport, viewModel }: MapPanelProps) {
+export function ActionLocationMapPanel({ form, setManualDrawing, onResetManualDrawing, gpxImport, viewModel, compact = false }: MapPanelProps) {
   const isCleanPlaceMode = form.recordType === "clean_place";
   const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({ rootMargin: "260px 0px" });
   const [undoState, setUndoState] = useState<ActionDrawingUndoState | null>(null);
@@ -148,21 +149,21 @@ export function ActionLocationMapPanel({ form, setManualDrawing, onResetManualDr
     ? undoState
     : null;
   return (
-    <div className="block space-y-3 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)]">
+    <div className={cn("block rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)]", compact ? "space-y-2 p-3" : "space-y-3 p-5")}>
       <div className="flex items-center justify-between gap-3"><SectionTitle color="bg-slate-700">{isCleanPlaceMode ? "Point géographique" : "Aperçu de localisation"}</SectionTitle><p className="cmm-text-small text-emerald-900/45">{isCleanPlaceMode ? "Situez le lieu sur la carte" : "Situez le lieu sur la carte ou renseignez une adresse"}</p></div>
-      <div ref={mapShellRef} className="relative h-[420px] overflow-hidden rounded-xl border border-emerald-200/70 bg-[#EFFAF3]">
+      <div ref={mapShellRef} className={cn("relative overflow-hidden rounded-xl border border-emerald-200/70 bg-[#EFFAF3]", compact ? "h-[300px] sm:h-[320px]" : "h-[420px]")}>
         <ActionLocationMapCanvas isMapVisible={isMapVisible} form={form} setManualDrawing={setManualDrawing} gpxImport={gpxImport} viewModel={viewModel} undoState={visibleUndoState} onUndoAvailable={onUndoAvailable} onUndo={onUndo} onCloseUndo={() => setUndoState(null)} />
       </div>
-      <ActionLocationStatus viewModel={viewModel} onResetManualDrawing={onResetManualDrawingWithUndo} />
+      <ActionLocationStatus viewModel={viewModel} onResetManualDrawing={onResetManualDrawingWithUndo} compact={compact} />
     </div>
   );
 }
 
-type AdjustmentProps = Pick<ActionLocationGeometryPanelProps, "form" | "updateField">;
+type AdjustmentProps = Pick<ActionLocationGeometryPanelProps, "form" | "updateField"> & { compact?: boolean };
 
-export function ActionLocationAdjustmentNotes({ form, updateField }: AdjustmentProps) {
+export function ActionLocationAdjustmentNotes({ form, updateField, compact = false }: AdjustmentProps) {
   return <>
-    <div className="space-y-3 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] md:hidden"><div className="flex items-center gap-2"><MapPinOff size={15} className="text-emerald-700/45" /><SectionTitle color="bg-emerald-500">Précisions de localisation</SectionTitle></div><p className="-mt-2 text-xs text-emerald-900/45">Optionnel.</p><textarea rows={5} placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…" className="w-full resize-none rounded-xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950 outline-none transition placeholder:text-emerald-700/35 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15" value={form.routeAdjustmentMessage} onChange={(event) => updateField("routeAdjustmentMessage", event.target.value)} /></div>
-    <div className="hidden space-y-3 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] md:block"><SectionTitle color="bg-emerald-500">Précisions de localisation</SectionTitle><p className="-mt-2 text-xs text-emerald-900/45">Optionnel.</p><textarea rows={3} placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…" className="w-full resize-none rounded-xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950 outline-none transition placeholder:text-emerald-700/35 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15" value={form.routeAdjustmentMessage} onChange={(event) => updateField("routeAdjustmentMessage", event.target.value)} /></div>
+    <div className={cn("rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] md:hidden", compact ? "space-y-2 p-3" : "space-y-3 p-5")}><div className="flex items-center gap-2"><MapPinOff size={15} className="text-emerald-700/45" /><SectionTitle color="bg-emerald-500">Précisions de localisation</SectionTitle></div><p className={cn("text-xs text-emerald-900/45", compact ? "-mt-1" : "-mt-2")}>Optionnel.</p><textarea rows={compact ? 3 : 5} placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…" className={cn("w-full resize-none rounded-xl border border-emerald-200/70 bg-[#F3FBF6] text-sm text-emerald-950 outline-none transition placeholder:text-emerald-700/35 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15", compact ? "px-3 py-2" : "px-4 py-3")} value={form.routeAdjustmentMessage} onChange={(event) => updateField("routeAdjustmentMessage", event.target.value)} /></div>
+    <div className={cn("hidden rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] md:block", compact ? "space-y-2 p-3" : "space-y-3 p-5")}><SectionTitle color="bg-emerald-500">Précisions de localisation</SectionTitle><p className={cn("text-xs text-emerald-900/45", compact ? "-mt-1" : "-mt-2")}>Optionnel.</p><textarea rows={compact ? 2 : 3} placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…" className={cn("w-full resize-none rounded-xl border border-emerald-200/70 bg-[#F3FBF6] text-sm text-emerald-950 outline-none transition placeholder:text-emerald-700/35 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15", compact ? "px-3 py-2" : "px-4 py-3")} value={form.routeAdjustmentMessage} onChange={(event) => updateField("routeAdjustmentMessage", event.target.value)} /></div>
   </>;
 }

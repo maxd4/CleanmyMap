@@ -6,9 +6,9 @@ import { ActionAddressAutocomplete } from "./action-address-autocomplete";
 import type { ActionGeometryMethod } from "@/lib/actions/types";
 import type { ActionLocationInputProps } from "./action-location.types";
 
-function SectionTitle({ color, children }: { color: string; children: React.ReactNode }) {
+function SectionTitle({ color, children, compact = false }: { color: string; children: React.ReactNode; compact?: boolean }) {
   return (
-    <div className="mb-3 flex items-center gap-2">
+    <div className={cn(compact ? "mb-2" : "mb-3", "flex items-center gap-2")}>
       <span className={cn("h-1 w-5 rounded-full", color)} />
       <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-900/60">{children}</h3>
     </div>
@@ -19,20 +19,24 @@ function GpsButton({
   gpsStatus: status,
   gpsMessage: message,
   onAutofillGps: onAutofill,
-}: Pick<ActionLocationInputProps, "gpsStatus" | "gpsMessage" | "onAutofillGps">) {
+  compact = false,
+}: Pick<ActionLocationInputProps, "gpsStatus" | "gpsMessage" | "onAutofillGps"> & { compact?: boolean }) {
   const isLocating = status === "locating";
   const isSuccess = status === "success";
   const isError = status === "error";
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <button
         type="button"
         onClick={onAutofill}
         disabled={isLocating}
         aria-label="Utiliser la position actuelle de mon appareil"
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30",
+          cn(
+            "flex w-full items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30",
+            compact ? "px-3 py-2.5 text-xs" : "px-4 py-3",
+          ),
           isSuccess
             ? "border-emerald-300 bg-[#ECF8EF] text-emerald-800 hover:bg-[#E0F4E6]"
             : isError
@@ -77,18 +81,19 @@ function GpsButton({
 export function RouteTopologyFieldset({
   form,
   updateField,
-}: Pick<ActionLocationInputProps, "form" | "updateField">) {
+  compact = false,
+}: Pick<ActionLocationInputProps, "form" | "updateField"> & { compact?: boolean }) {
   return (
-    <fieldset className="mt-4 rounded-xl border border-sky-200/80 bg-white p-4">
+    <fieldset className={cn("rounded-xl border border-sky-200/80 bg-white", compact ? "mt-2 p-3" : "mt-4 p-4")}>
       <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-900/65">Type de parcours</legend>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className={cn(compact ? "mt-1.5 gap-1.5" : "mt-2 gap-2", "flex flex-wrap")}>
         {[
           { value: "loop" as const, title: "Boucle", description: "Retour explicite au point de départ." },
           { value: "point_to_point" as const, title: "Départ → arrivée", description: "Arrivée obligatoire, sans retour automatique." },
         ].map((option) => {
           const selected = form.routeTopology === option.value;
           return (
-            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-500/35", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
+            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start rounded-xl border transition focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-500/35", compact ? "gap-2 px-2.5 py-2" : "gap-2.5 px-3 py-2.5", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
               <input id={`route-topology-${option.value}`} type="radio" name="route-topology" value={option.value} aria-label={option.title} checked={selected} onChange={() => updateField("routeTopology", option.value)} className="mt-1 accent-sky-600" />
               <span><span className="block text-sm font-semibold text-sky-950">{option.title}</span><span className="mt-0.5 block text-xs text-sky-900/60">{option.description}</span></span>
             </label>
@@ -119,7 +124,8 @@ function GeometryMethodFieldset({
   manualDrawingSource,
   routePreviewSource,
   gpxImport,
-}: Pick<ActionLocationInputProps, "form" | "updateField" | "manualDrawingSource" | "routePreviewSource" | "gpxImport">) {
+  compact = false,
+}: Pick<ActionLocationInputProps, "form" | "updateField" | "manualDrawingSource" | "routePreviewSource" | "gpxImport"> & { compact?: boolean }) {
   const selected = resolveGeometryMethod({ form, manualDrawingSource, routePreviewSource, gpxImport });
   const options: Array<{ value: ActionGeometryMethod; title: string; description: string }> = [
     { value: "automatic", title: "Proposition automatique", description: "Réseau piéton si disponible." },
@@ -132,17 +138,17 @@ function GeometryMethodFieldset({
   const hasGpx = Boolean(gpxImport);
 
   return (
-    <fieldset className="mt-4 rounded-xl border border-emerald-200/80 bg-white p-4">
+    <fieldset className={cn("rounded-xl border border-emerald-200/80 bg-white", compact ? "mt-2 p-3" : "mt-4 p-4")}>
       <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900/65">Source du repère cartographique</legend>
       <p className="mt-1 text-xs leading-5 text-emerald-900/60">Trace GPS/GPX observée prioritaire.</p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className={cn(compact ? "mt-1.5 gap-1.5" : "mt-3 gap-2", "flex flex-wrap")}>
         {options.map((option) => {
           const isSelected = selected === option.value;
           const missingSource =
             (option.value === "generator" && !hasGeneratorRoute) ||
             (option.value === "gpx_import" && !hasGpx);
           return (
-            <label htmlFor={`geometry-method-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500/35", isSelected ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-500/15" : "border-slate-200 bg-white hover:border-emerald-300")}>
+            <label htmlFor={`geometry-method-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start rounded-xl border transition focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500/35", compact ? "gap-2 px-2.5 py-2" : "gap-2.5 px-3 py-2.5", isSelected ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-500/15" : "border-slate-200 bg-white hover:border-emerald-300")}>
               <input id={`geometry-method-${option.value}`} type="radio" name="geometry-method" value={option.value} aria-label={option.title} checked={isSelected} onChange={() => updateField("geometryMethod", option.value)} className="mt-1 accent-emerald-600" />
               <span><span className="block text-sm font-semibold text-emerald-950">{option.title}</span><span className="mt-0.5 block text-xs text-emerald-900/60">{option.description}</span>{missingSource ? <span className="mt-1 block text-xs font-medium text-amber-700">Source à fournir dans le formulaire.</span> : null}</span>
             </label>
@@ -169,6 +175,7 @@ export function ActionLocationInputs({
   mode = "all",
 }: ActionLocationInputProps) {
   const isCleanPlaceMode = recordType === "clean_place";
+  const compact = mode === "details";
   const departureInput = (
     <ActionAddressAutocomplete
       id="departure"
@@ -192,14 +199,14 @@ export function ActionLocationInputs({
   }
 
   return (
-    <div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)]">
-      <SectionTitle color="bg-sky-500">
+    <div className={cn("rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)]", compact ? "p-3" : "p-5")}>
+      <SectionTitle color="bg-sky-500" compact={compact}>
         {isCleanPlaceMode ? "Géolocalisation du lieu" : "Localisation de collecte"}
       </SectionTitle>
 
-      <p className="-mt-2 text-xs leading-5 text-emerald-900/50">Adresse ou position GPS.</p>
+      <p className={cn("text-xs leading-5 text-emerald-900/50", compact ? "-mt-1" : "-mt-2")}>Adresse ou position GPS.</p>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2", compact ? "mt-2 gap-2" : "mt-4 gap-3")}>
         {mode !== "details" ? departureInput : null}
         <ActionAddressAutocomplete
           id="midpoint"
@@ -235,13 +242,13 @@ export function ActionLocationInputs({
         ) : null}
       </div>
 
-      {!isCleanPlaceMode ? <RouteTopologyFieldset form={form} updateField={updateField} /> : null}
-      {!isCleanPlaceMode ? <GeometryMethodFieldset form={form} updateField={updateField} manualDrawingSource={manualDrawingSource} routePreviewSource={routePreviewSource} gpxImport={gpxImport} /> : null}
+      {!isCleanPlaceMode ? <RouteTopologyFieldset form={form} updateField={updateField} compact={compact} /> : null}
+      {!isCleanPlaceMode ? <GeometryMethodFieldset form={form} updateField={updateField} manualDrawingSource={manualDrawingSource} routePreviewSource={routePreviewSource} gpxImport={gpxImport} compact={compact} /> : null}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <GpsButton gpsStatus={gpsStatus} gpsMessage={gpsMessage} onAutofillGps={onAutofillGps} />
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2", compact ? "mt-3 gap-2" : "mt-4 gap-3")}>
+        <GpsButton gpsStatus={gpsStatus} gpsMessage={gpsMessage} onAutofillGps={onAutofillGps} compact={compact} />
         {!isCleanPlaceMode ? (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
+          <div className={cn("flex items-center justify-between gap-3 rounded-xl border border-emerald-200/70 bg-[#ECF8EF]", compact ? "px-3 py-2" : "px-4 py-3")}>
             <div>
               <p className="text-xs font-medium text-emerald-700">Topologie sélectionnée</p>
               <p className="mt-0.5 text-sm font-semibold text-emerald-900">
@@ -256,7 +263,7 @@ export function ActionLocationInputs({
       </div>
 
       {!isCleanPlaceMode ? (
-        <div className="mt-4 rounded-xl border border-sky-200/80 bg-white px-4 py-3">
+        <div className={cn("rounded-xl border border-sky-200/80 bg-white", compact ? "mt-3 px-3 py-2.5" : "mt-4 px-4 py-3")}>
           <label htmlFor="route-target-distance" className="block text-sm font-semibold text-sky-950">
             Distance cible du parcours (km)
           </label>

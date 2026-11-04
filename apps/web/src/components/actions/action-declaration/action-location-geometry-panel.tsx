@@ -24,6 +24,7 @@ export function ActionLocationGeometryPanel({
   onRemoveGpx,
   onSetGpxIntent,
   onResetManualDrawing,
+  compact = false,
 }: ActionLocationGeometryPanelProps) {
   const viewModel = buildActionLocationViewModel({
     form,
@@ -42,12 +43,12 @@ export function ActionLocationGeometryPanel({
   };
 
   return (
-    <div id="action-location-geometry" className="space-y-4">
-      <ActionLocationGpxImport form={form} gpxImport={gpxImport} gpxError={gpxError} onImportGpx={onImportGpx} onRemoveGpx={onRemoveGpx} onSetGpxIntent={onSetGpxIntent} />
-      {viewModel.activeGeometry?.operationalRoute ? <OperationalRouteEditor operationalRoute={viewModel.activeGeometry.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} /> : null}
+    <div id="action-location-geometry" className={compact ? "space-y-3" : "space-y-4"}>
+      <ActionLocationGpxImport form={form} gpxImport={gpxImport} gpxError={gpxError} onImportGpx={onImportGpx} onRemoveGpx={onRemoveGpx} onSetGpxIntent={onSetGpxIntent} compact={compact} />
+      {viewModel.activeGeometry?.operationalRoute ? <OperationalRouteEditor operationalRoute={viewModel.activeGeometry.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} compact={compact} /> : null}
       <ActionGpxExportButton input={{ finalGeometry: viewModel.activeGeometry, operationalRoute: form.operationalRoute, drawing: manualDrawing, gpxImport, routeTopology: form.routeTopology, departureLabel: form.departureLocationLabel, midpointLabel: form.midRouteLocationLabel, midpointCoordinates: form.midRouteCoordinates, arrivalLabel: form.arrivalLocationLabel }} />
-      <ActionLocationMapPanel form={form} gpxImport={gpxImport} setManualDrawing={handleDrawingChange} onResetManualDrawing={onResetManualDrawing} viewModel={viewModel} />
-      <ActionLocationAdjustmentNotes form={form} updateField={updateField} />
+      <ActionLocationMapPanel form={form} gpxImport={gpxImport} setManualDrawing={handleDrawingChange} onResetManualDrawing={onResetManualDrawing} viewModel={viewModel} compact={compact} />
+      <ActionLocationAdjustmentNotes form={form} updateField={updateField} compact={compact} />
     </div>
   );
 }

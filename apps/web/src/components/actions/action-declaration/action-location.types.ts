@@ -52,7 +52,9 @@ export type ActionLocationGeometryPanelProps = ActionLocationGeometryInput &
     | "onSetGpxIntent"
     | "onResetManualDrawing"
     | "gpxError"
-  >;
+  > & {
+    compact?: boolean;
+  };
 
 export type ActionLocationInputProps = Pick<
   ActionStepLocationProps,

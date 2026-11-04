@@ -356,12 +356,12 @@ export function ActionDeclarationFormSections({
         <ActionStepHarvest {...harvest} mode="all" />
       </section>
 
-      <section id="action-declaration-terrain" aria-labelledby="action-declaration-terrain-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
+      <section id="action-declaration-terrain" aria-labelledby="action-declaration-terrain-title" className="space-y-3 rounded-2xl border border-emerald-200/80 bg-white/75 p-3 shadow-sm md:p-4">
         <GroupHeading id="action-declaration-terrain-title" number="04" title="Documenter le terrain" />
         {showPreparationSummary ? (
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3">
-            <p className="text-sm font-bold text-amber-950">Préparation existante reprise</p>
-            <p className="mt-1 text-xs leading-5 text-amber-950/75">Contexte préparé · non observé.</p>
+          <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 px-3 py-2">
+            <p className="text-xs font-bold text-amber-950">Préparation existante reprise</p>
+            <p className="mt-0.5 text-xs leading-4 text-amber-950/75">Contexte préparé · non observé.</p>
           </div>
         ) : null}
         <ActionCollectionSection form={identity.form} updateField={identity.updateField} variant="full" />
