@@ -13,7 +13,7 @@ import {
   type LoadedActionPhase,
 } from "../utils/action-declaration-hydration.model";
 import type { FormState } from "../model";
-import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+import type { ActionManualInvitationStatusRecord, ActionRegistrationProjectionRecord } from "@/lib/actions/participation/registration-records";
 
 type SetFormState = Dispatch<SetStateAction<FormState>>;
 
@@ -26,6 +26,7 @@ type UseActionDeclarationHydrationParams = {
   setPersistedDrawing: Dispatch<SetStateAction<ActionDrawing | null>>;
   setPersistedDrawingSource: Dispatch<SetStateAction<ActionGeometrySource | null>>;
   setManualInvitationStatuses: Dispatch<SetStateAction<ActionManualInvitationStatusRecord[]>>;
+  setRegistrationStatuses: Dispatch<SetStateAction<ActionRegistrationProjectionRecord[]>>;
   setConfirmedParticipantAccounts: Dispatch<SetStateAction<string[]>>;
 };
 
@@ -38,6 +39,7 @@ export function useActionDeclarationHydration({
   setPersistedDrawing,
   setPersistedDrawingSource,
   setManualInvitationStatuses,
+  setRegistrationStatuses,
   setConfirmedParticipantAccounts,
 }: UseActionDeclarationHydrationParams) {
   const [loadedActionPhase, setLoadedActionPhase] =
@@ -71,6 +73,7 @@ export function useActionDeclarationHydration({
         setPersistedDrawing(hydrated.geometry.reconstructedDrawing);
         setPersistedDrawingSource(hydrated.geometry.reconstructedSource);
         setManualInvitationStatuses(hydrated.manualInvitationStatuses);
+        setRegistrationStatuses(hydrated.registrationStatuses);
         setConfirmedParticipantAccounts(hydrated.confirmedParticipantAccounts);
         setIsHydratingAction(false);
       })
@@ -98,6 +101,7 @@ export function useActionDeclarationHydration({
     setPersistedDrawing,
     setPersistedDrawingSource,
     setManualInvitationStatuses,
+    setRegistrationStatuses,
     setConfirmedParticipantAccounts,
   ]);
 

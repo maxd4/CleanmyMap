@@ -5,6 +5,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 const loadManualRegistrationIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadActionRegistrationProjectionForActionMock = vi.hoisted(() => vi.fn());
 const loadManualInvitationStatusesForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
@@ -51,6 +52,7 @@ vi.mock("@/lib/actions/persistence/post-processing", () => ({
 }));
 
 vi.mock("@/lib/actions/participation/registration-records", () => ({
+  loadActionRegistrationProjectionForAction: loadActionRegistrationProjectionForActionMock,
   loadManualRegistrationIdsForAction: loadManualRegistrationIdsForActionMock,
   loadManualInvitationStatusesForAction: loadManualInvitationStatusesForActionMock,
 }));
@@ -141,11 +143,13 @@ export {
   emitActionUpdateNotificationsMock,
   extractActionMetadataFromNotesMock,
   getCurrentUserIdentityMock,
+  handleApiErrorMock,
   loadActionByIdMock,
   loadCanonicalActionOrganizerIdsForActionMock,
   loadActionOrganizerRowsForActionMock,
   loadActionOrganizerIdsForActionMock,
   loadManualRegistrationIdsForActionMock,
+  loadActionRegistrationProjectionForActionMock,
   loadManualInvitationStatusesForActionMock,
   recordRepollutionPredictionEvaluationForActionMock,
   requireAuthenticatedAccessMock,
@@ -244,6 +248,9 @@ export function resetPatchRouteMocks() {
     notes: null,
   });
   loadManualRegistrationIdsForActionMock.mockResolvedValue(["user-manual-1"]);
+  loadActionRegistrationProjectionForActionMock.mockResolvedValue([
+    { userId: "user-manual-1", status: "confirmed", source: "manual_add", cancellationReason: null },
+  ]);
   loadManualInvitationStatusesForActionMock.mockResolvedValue([]);
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);

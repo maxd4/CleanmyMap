@@ -15,7 +15,7 @@ import { Users } from "lucide-react";
 import { suggestPreActionContext } from "@/lib/actions/action-context";
 import { ACTION_FIELD_ROLE_OPTIONS, normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
 import { parseOrganizerAccounts } from "../payload-identity";
-import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+import type { ActionManualInvitationStatusRecord, ActionRegistrationProjectionRecord } from "@/lib/actions/participation/registration-records";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -37,6 +37,7 @@ type ParticipantSectionProps = {
   participantDescription?: string;
   participantEmptyMessage?: string;
   participantInvitationStatuses?: readonly ActionManualInvitationStatusRecord[];
+  participantRegistrationStatuses?: readonly ActionRegistrationProjectionRecord[];
 };
 
 function ParticipantContextControl({
@@ -270,6 +271,7 @@ function SupportingParticipation({
   participantDescription = "Comptes identifiés ; présence non confirmée.",
   participantEmptyMessage = "Aucun membre ajouté pour le moment.",
   participantInvitationStatuses,
+  participantRegistrationStatuses,
 }: Omit<ParticipantSectionProps, "variant"> & {
   full: boolean;
   showOrganizerAccounts: boolean;
@@ -312,6 +314,7 @@ function SupportingParticipation({
             readOnly={participantReadOnly}
             emptyMessage={participantEmptyMessage}
             invitationStatuses={participantInvitationStatuses}
+            registrationStatuses={participantRegistrationStatuses}
           />
         </div>
       ) : null}
@@ -334,6 +337,7 @@ export function ActionParticipantSection({
   participantDescription,
   participantEmptyMessage,
   participantInvitationStatuses,
+  participantRegistrationStatuses,
 }: ParticipantSectionProps) {
   if (variant === "compact") {
     return <ParticipantCounts form={form} updateField={updateField} compact />;
@@ -358,6 +362,7 @@ export function ActionParticipantSection({
       participantDescription={participantDescription}
       participantEmptyMessage={participantEmptyMessage}
       participantInvitationStatuses={participantInvitationStatuses}
+      participantRegistrationStatuses={participantRegistrationStatuses}
     />
   );
 }

@@ -11,7 +11,7 @@ import type {
 import type { ActionVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext, ActionContextSource } from "@/lib/actions/action-context";
-import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+import type { ActionManualInvitationStatusRecord, ActionRegistrationProjectionRecord } from "@/lib/actions/participation/registration-records";
 import { AppError } from "@/lib/errors/app-errors";
 import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
 import type { ActionDuplicatePrefill } from "./action-duplication";
@@ -73,6 +73,7 @@ export type ActionEditorRecord = {
   groupJoinEnabled: boolean;
   accessMode?: ActionAccessMode;
   participantAccounts: string[];
+  registrationStatuses?: ActionRegistrationProjectionRecord[];
   manualInvitationStatuses?: ActionManualInvitationStatusRecord[];
   confirmedParticipantAccounts?: string[];
   placeType: string | null;

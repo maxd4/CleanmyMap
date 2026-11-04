@@ -307,6 +307,7 @@ export function ActionDeclarationFormSections({
                 participantDescription="Statut d’inscription conservé ; aucune présence n’est confirmée ici."
                 participantEmptyMessage="Non renseigné pour cette action."
                 participantInvitationStatuses={identity.manualInvitationStatuses}
+                participantRegistrationStatuses={identity.registrationStatuses}
               />
             </section>
             <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-emerald-200/80 bg-[#ECF8EF] p-4" aria-labelledby="action-declaration-present-participants-title">

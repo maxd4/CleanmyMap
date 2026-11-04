@@ -113,6 +113,7 @@ un compte Clerk doit être l'organisateur autorisé ou disposer d'une inscriptio
 - Les inscriptions et les participations finales doivent rester traçables, y compris si leur statut change.
 - La jonction ne cree pas de nouveau formulaire.
 - Une seule inscription active est conservee par benevole et par action dans `action_registrations`; une inscription et une participation finale peuvent coexister pour le même utilisateur et la même action.
+- Dans la reprise et le bilan organisateur, `participantAccounts` reste la projection éditable des ajouts `manual_add`; la lecture expose séparément toutes les lignes `action_registrations` avec leur `registration_status` et leur `registration_source`. Les inscriptions acceptées ou en attente ne sont jamais présentées comme des présences finales : celles-ci proviennent exclusivement des lignes `action_participants` `confirmed`, y compris pour le créateur lorsqu'il a suivi le claim explicite.
 - L'organisateur peut fermer ou rouvrir les inscriptions apres publication.
 - Le sélecteur « Inviter des membres » prépare des invitations, sans envoi pendant la saisie du brouillon. Les comptes déjà sélectionnés sont conservés jusqu'à la publication ou leur retrait explicite.
 - L'inscription reste tracée dans `action_registrations`, mais la page bénévole permet d'annuler une demande en attente ou une inscription confirmée.

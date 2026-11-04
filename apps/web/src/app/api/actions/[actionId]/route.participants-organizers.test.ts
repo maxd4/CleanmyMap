@@ -1,14 +1,21 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadActionOrganizerRowsForActionMock, loadCanonicalActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, requireAuthenticatedAccessMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, createPatchAction, getCurrentUserIdentityMock, handleApiErrorMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadActionOrganizerRowsForActionMock, loadCanonicalActionOrganizerIdsForActionMock, loadActionRegistrationProjectionForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, requireAuthenticatedAccessMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
     resetPatchRouteMocks();
   });
 
-  it("returns manual participants with the action editor payload", async () => {
+  it("keeps manual participant editing separate from the full registration projection", async () => {
     const { GET } = await import("./route");
+    loadManualRegistrationIdsForActionMock.mockResolvedValueOnce(["user-manual-1"]);
+    loadActionRegistrationProjectionForActionMock.mockResolvedValueOnce([
+      { userId: "user-group", status: "confirmed", source: "group_form", cancellationReason: null },
+      { userId: "user-manual-1", status: "confirmed", source: "manual_add", cancellationReason: null },
+      { userId: "user-invite", status: "pending", source: "invite_link", cancellationReason: null },
+      { userId: "user-cancelled", status: "cancelled", source: "group_form", cancellationReason: "organizer_withdrawn" },
+    ]);
     loadManualInvitationStatusesForActionMock.mockResolvedValueOnce([
       { userId: "user-manual-1", status: "pending" },
       { userId: "user-refused", status: "rejected" },
@@ -19,17 +26,27 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     });
 
     const body = (await response.json()) as {
-      action?: { organizerAccounts?: string[]; participantAccounts?: string[]; manualInvitationStatuses?: unknown[]; confirmedParticipantAccounts?: string[] };
+      action?: { organizerAccounts?: string[]; participantAccounts?: string[]; registrationStatuses?: unknown[]; manualInvitationStatuses?: unknown[]; confirmedParticipantAccounts?: string[] };
     };
 
     expect(response.status).toBe(200);
     expect(body.action?.organizerAccounts).toEqual([]);
     expect(body.action?.participantAccounts).toEqual(["user-manual-1"]);
+    expect(body.action?.registrationStatuses).toEqual([
+      { userId: "user-group", status: "confirmed", source: "group_form", cancellationReason: null },
+      { userId: "user-manual-1", status: "confirmed", source: "manual_add", cancellationReason: null },
+      { userId: "user-invite", status: "pending", source: "invite_link", cancellationReason: null },
+      { userId: "user-cancelled", status: "cancelled", source: "group_form", cancellationReason: "organizer_withdrawn" },
+    ]);
     expect(body.action?.manualInvitationStatuses).toEqual([
       { userId: "user-manual-1", status: "pending" },
       { userId: "user-refused", status: "rejected" },
     ]);
     expect(body.action?.confirmedParticipantAccounts).toEqual([]);
+    expect(loadActionRegistrationProjectionForActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "action-test-1",
+    );
     expect(loadManualRegistrationIdsForActionMock).toHaveBeenCalledWith(
       expect.anything(),
       "action-test-1",
@@ -39,6 +56,18 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       "action-test-1",
     );
   }, 15000);
+
+  it("returns an explicit server error when the registration projection is unavailable", async () => {
+    const { GET } = await import("./route");
+    loadActionRegistrationProjectionForActionMock.mockRejectedValueOnce(new Error("registration read failed"));
+
+    const response = await GET(new Request("http://localhost/api/actions/action-test-1"), {
+      params: Promise.resolve({ actionId: "action-test-1" }),
+    });
+
+    expect(response.status).toBe(500);
+    expect(handleApiErrorMock).toHaveBeenCalledWith(expect.any(Error), "GET /api/actions/:actionId");
+  });
 
   it("returns the persisted primary name and canonical account order after a divergent legacy row", async () => {
     const { GET } = await import("./route");

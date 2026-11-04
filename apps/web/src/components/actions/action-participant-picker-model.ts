@@ -7,6 +7,12 @@ export type ActionAccountOption = {
 
 export type ChatUserOption = ActionAccountOption;
 
+export type ParticipantRegistrationStatus = {
+  userId: string;
+  status: "pending" | "confirmed" | "cancelled";
+  source: "group_form" | "manual_add" | "admin" | "admin_override" | "import" | "invite_link";
+};
+
 export type ParticipantPage = {
   items: ChatUserOption[];
   nextOffset: number | null;
@@ -26,6 +32,7 @@ export type ParticipantPickerProps = {
   readOnly?: boolean;
   emptyMessage?: string;
   invitationStatuses?: readonly InvitationStatus[];
+  registrationStatuses?: readonly ParticipantRegistrationStatus[];
   maxSelected?: number;
   roleOptions?: readonly { code: string; label: string; description: string }[];
   roleSelections?: Readonly<Record<string, readonly string[]>>;

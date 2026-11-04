@@ -113,6 +113,7 @@ describe("action declaration hydration model", () => {
       {
         ...action,
         manualInvitationStatuses: [{ userId: "@lea", status: "accepted" }],
+        registrationStatuses: [{ userId: "@lea", status: "confirmed", source: "manual_add", cancellationReason: null }],
         confirmedParticipantAccounts: ["user-confirmed"],
       },
     );
@@ -152,6 +153,7 @@ describe("action declaration hydration model", () => {
     expect(result.form.eventStartTime).toBe("09:00");
     expect(result.form.eventEndTime).toBe("11:00");
     expect(result.manualInvitationStatuses).toEqual([{ userId: "@lea", status: "accepted" }]);
+    expect(result.registrationStatuses).toEqual([{ userId: "@lea", status: "confirmed", source: "manual_add", cancellationReason: null }]);
     expect(result.confirmedParticipantAccounts).toEqual(["user-confirmed"]);
     expect(result.form.routeTargetDistanceKm).toBe(
       String(

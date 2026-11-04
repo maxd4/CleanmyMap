@@ -12,7 +12,7 @@ import {
   requireAuthenticatedAccess,
 } from "@/lib/authz";
 import { canManageAction } from "@/lib/actions/permissions";
-import { loadManualInvitationStatusesForAction, loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
+import { loadActionRegistrationProjectionForAction, loadManualInvitationStatusesForAction, loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
 import {
   loadActionOrganizerRowsForAction,
   loadCanonicalActionOrganizerIdsForAction,
@@ -235,15 +235,19 @@ export async function GET(
     const participantAccounts = await loadManualRegistrationIdsForAction(
       supabase,
       trimmedActionId,
-    ).catch(() => []);
+    );
+    const registrationStatuses = await loadActionRegistrationProjectionForAction(
+      supabase,
+      trimmedActionId,
+    );
     const manualInvitationStatuses = await loadManualInvitationStatusesForAction(
       supabase,
       trimmedActionId,
-    ).catch(() => []);
+    );
     const confirmedParticipantAccounts = await loadConfirmedParticipantIdsForAction(
       supabase,
       trimmedActionId,
-    ).catch(() => []);
+    );
     const organizerRows = await loadActionOrganizerRowsForAction(supabase, trimmedActionId);
     const primaryOrganizerName = organizerRows.find((organizer) => organizer.is_primary)?.organizer_label?.trim();
     const editorPayload = buildActionEditorPayload(row);
@@ -257,6 +261,7 @@ export async function GET(
           ? organizerIds
           : organizerIds.filter((organizerId) => organizerId !== row.created_by_clerk_id),
       participantAccounts,
+      registrationStatuses,
       manualInvitationStatuses,
       confirmedParticipantAccounts,
     };

@@ -23,7 +23,7 @@ export function buildActionDeclarationFormResult({
   isCleanPlaceMode: boolean;
   resetForm: () => void;
 }) {
-  const { form, setForm, manualDrawing, manualDrawingSource, gpxError, hasAttemptedSubmit, setManualDrawing, hydration, draft, resolvedDefaultActorName, manualInvitationStatuses, confirmedParticipantAccounts } = lifecycle;
+  const { form, setForm, manualDrawing, manualDrawingSource, gpxError, hasAttemptedSubmit, setManualDrawing, hydration, draft, resolvedDefaultActorName, manualInvitationStatuses, registrationStatuses, confirmedParticipantAccounts } = lifecycle;
   const { photoAssets, visionEstimate, visionStatus, photoError, photoPreparationPending, handlePhotoUpload, handlePhotoReplace, removePhoto, clearPhotos } = media;
   const { submission, updates } = execution;
   const setManualDrawingWithInvalidation = (
@@ -59,6 +59,7 @@ export function buildActionDeclarationFormResult({
     retentionLoop: submission.retentionLoop,
     loadedActionPhase: hydration.loadedActionPhase,
     manualInvitationStatuses,
+    registrationStatuses,
     confirmedParticipantAccounts,
     isHydratingAction: hydration.isHydratingAction,
     hydrationError: hydration.hydrationError,

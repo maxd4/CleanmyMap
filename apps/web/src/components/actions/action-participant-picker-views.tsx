@@ -1,7 +1,7 @@
 import { Info, Loader2, Plus, Search, X } from "lucide-react";
 import Image from "next/image";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { getPickerSearchKeyAction, labelForUser, type ChatUserOption, type InvitationStatus } from "./action-participant-picker-model";
+import { getPickerSearchKeyAction, labelForUser, type ChatUserOption, type InvitationStatus, type ParticipantRegistrationStatus } from "./action-participant-picker-model";
 import type { ParticipantPickerModel } from "./use-action-participant-picker-model";
 
 export function PickerHeader({ title, description, count, maxSelected = 20, showHelp, onToggleHelp }: { title: string; description: string; count: number; maxSelected?: number; showHelp: boolean; onToggleHelp: () => void }) {
@@ -66,9 +66,25 @@ const INVITATION_STATUS_LABELS: Record<InvitationStatus["status"], string> = {
   withdrawn: "Retirée",
 };
 
-export function SelectedParticipants({ users, onRemove, readOnly = false, emptyMessage = "Aucun membre ajouté pour le moment.", invitationStatuses = [], roleOptions = [], roleSelections = {}, onRoleSelectionsChange }: { users: ChatUserOption[]; onRemove: (userId: string) => void; readOnly?: boolean; emptyMessage?: string; invitationStatuses?: readonly InvitationStatus[]; roleOptions?: readonly { code: string; label: string; description: string }[]; roleSelections?: Readonly<Record<string, readonly string[]>>; onRoleSelectionsChange?: (next: Record<string, string[]>) => void }) {
+const REGISTRATION_STATUS_LABELS: Record<ParticipantRegistrationStatus["status"], string> = {
+  pending: "Inscription en attente",
+  confirmed: "Inscription acceptée",
+  cancelled: "Inscription annulée",
+};
+
+const REGISTRATION_SOURCE_LABELS: Record<ParticipantRegistrationStatus["source"], string> = {
+  group_form: "formulaire de groupe",
+  manual_add: "ajout manuel",
+  admin: "administration",
+  admin_override: "correction administrative",
+  import: "import",
+  invite_link: "lien d'invitation",
+};
+
+export function SelectedParticipants({ users, onRemove, readOnly = false, emptyMessage = "Aucun membre ajouté pour le moment.", invitationStatuses = [], registrationStatuses = [], roleOptions = [], roleSelections = {}, onRoleSelectionsChange }: { users: ChatUserOption[]; onRemove: (userId: string) => void; readOnly?: boolean; emptyMessage?: string; invitationStatuses?: readonly InvitationStatus[]; registrationStatuses?: readonly ParticipantRegistrationStatus[]; roleOptions?: readonly { code: string; label: string; description: string }[]; roleSelections?: Readonly<Record<string, readonly string[]>>; onRoleSelectionsChange?: (next: Record<string, string[]>) => void }) {
   if (users.length === 0) return <p className="text-xs text-emerald-900/58">{emptyMessage}</p>;
   const statusByUserId = new Map(invitationStatuses.map((item) => [item.userId, item.status]));
+  const registrationByUserId = new Map(registrationStatuses.map((item) => [item.userId, item]));
   const updateRoles = (userId: string, code: string, checked: boolean) => {
     if (!onRoleSelectionsChange) return;
     const current = new Set([...(roleSelections[userId] ?? [])]);
@@ -78,11 +94,17 @@ export function SelectedParticipants({ users, onRemove, readOnly = false, emptyM
       [userId]: [...current],
     });
   };
-  return <div className="space-y-2"><p className="text-xs font-semibold text-emerald-950">{readOnly ? "Comptes concernés" : "Membres sélectionnés"}</p><div className="space-y-3">{users.map((user) => { const status = statusByUserId.get(user.id); const label = labelForUser(user) || user.id; return <div key={user.id} className="rounded-2xl border border-emerald-200 bg-white px-3 py-2"><div className="flex items-center gap-2 text-xs font-medium text-emerald-950">{user.image_url ? <Image src={user.image_url} alt="" width={28} height={28} unoptimized className="h-7 w-7 rounded-full object-cover" /> : <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{label.slice(0, 1).toUpperCase()}</span>}<span className="min-w-0 flex-1 truncate">{label}{user.handle ? <span className="ml-1 text-emerald-700/65">@{user.handle}</span> : null}</span>{status ? <span className="text-emerald-800/70">{INVITATION_STATUS_LABELS[status]}</span> : null}{!readOnly ? <button type="button" onClick={() => onRemove(user.id)} aria-label={`Retirer ${label}`} className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"><X size={12} /></button> : null}</div>{!readOnly && roleOptions.length > 0 ? <fieldset className="mt-2 grid gap-2 sm:grid-cols-2"><legend className="sr-only">Responsabilités pour {label}</legend>{roleOptions.map((option) => <label key={option.code} className="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/45 px-2.5 py-2 text-xs text-emerald-950"><input type="checkbox" checked={(roleSelections[user.id] ?? []).includes(option.code)} onChange={(event) => updateRoles(user.id, option.code, event.target.checked)} className="mt-0.5 accent-emerald-600" /><span><span className="block font-semibold">{option.label}</span><span className="block text-emerald-900/60">{option.description}</span></span></label>)}</fieldset> : null}</div>; })}</div>{!readOnly && roleOptions.length > 0 ? <p className="text-xs text-amber-700">Ces choix sont des intentions de responsabilité conservées dans la préparation. L’affectation effective reste soumise au workflow après confirmation de l’inscription.</p> : null}</div>;
+  return <div className="space-y-2"><p className="text-xs font-semibold text-emerald-950">{readOnly ? "Comptes concernés" : "Membres sélectionnés"}</p><div className="space-y-3">{users.map((user) => { const status = statusByUserId.get(user.id); const registration = registrationByUserId.get(user.id); const label = labelForUser(user) || user.id; return <div key={user.id} className="rounded-2xl border border-emerald-200 bg-white px-3 py-2"><div className="flex items-center gap-2 text-xs font-medium text-emerald-950">{user.image_url ? <Image src={user.image_url} alt="" width={28} height={28} unoptimized className="h-7 w-7 rounded-full object-cover" /> : <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{label.slice(0, 1).toUpperCase()}</span>}<span className="min-w-0 flex-1 truncate">{label}{user.handle ? <span className="ml-1 text-emerald-700/65">@{user.handle}</span> : null}</span>{registration ? <span className="text-emerald-800/70">{REGISTRATION_STATUS_LABELS[registration.status]}</span> : status ? <span className="text-emerald-800/70">{INVITATION_STATUS_LABELS[status]}</span> : null}{!readOnly ? <button type="button" onClick={() => onRemove(user.id)} aria-label={`Retirer ${label}`} className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"><X size={12} /></button> : null}</div>{registration ? <p className="mt-1 text-xs text-emerald-900/60">Source : {REGISTRATION_SOURCE_LABELS[registration.source]}</p> : null}{!readOnly && roleOptions.length > 0 ? <fieldset className="mt-2 grid gap-2 sm:grid-cols-2"><legend className="sr-only">Responsabilités pour {label}</legend>{roleOptions.map((option) => <label key={option.code} className="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/45 px-2.5 py-2 text-xs text-emerald-950"><input type="checkbox" checked={(roleSelections[user.id] ?? []).includes(option.code)} onChange={(event) => updateRoles(user.id, option.code, event.target.checked)} className="mt-0.5 accent-emerald-600" /><span><span className="block font-semibold">{option.label}</span><span className="block text-emerald-900/60">{option.description}</span></span></label>)}</fieldset> : null}</div>; })}</div>{!readOnly && roleOptions.length > 0 ? <p className="text-xs text-amber-700">Ces choix sont des intentions de responsabilité conservées dans la préparation. L’affectation effective reste soumise au workflow après confirmation de l’inscription.</p> : null}</div>;
 }
 
 export function InvitationStatusList({ statuses, selectedIds }: { statuses: readonly InvitationStatus[]; selectedIds: readonly string[] }) {
   const historical = statuses.filter((item) => !selectedIds.includes(item.userId));
   if (historical.length === 0) return null;
   return <div className="space-y-2" aria-label="Historique des invitations"><p className="text-xs font-semibold text-emerald-950">Historique des invitations</p><ul className="space-y-1.5">{historical.map((item) => <li key={`${item.userId}-${item.status}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"><span className="font-medium text-slate-800">Compte {item.userId}</span><span className="font-semibold text-slate-600">{INVITATION_STATUS_LABELS[item.status]}</span></li>)}</ul></div>;
+}
+
+export function RegistrationStatusList({ statuses, selectedIds }: { statuses: readonly ParticipantRegistrationStatus[]; selectedIds: readonly string[] }) {
+  const historical = statuses.filter((item) => item.status === "cancelled" || !selectedIds.includes(item.userId));
+  if (historical.length === 0) return null;
+  return <div className="space-y-2" aria-label="Historique des inscriptions"><p className="text-xs font-semibold text-emerald-950">Historique des inscriptions</p><ul className="space-y-1.5">{historical.map((item) => <li key={`${item.userId}-${item.status}-${item.source}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"><span className="font-medium text-slate-800">Compte {item.userId}</span><span className="font-semibold text-slate-600">{REGISTRATION_STATUS_LABELS[item.status]} · {REGISTRATION_SOURCE_LABELS[item.source]}</span></li>)}</ul></div>;
 }

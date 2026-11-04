@@ -5,7 +5,7 @@ import type { KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import { getAccountPickerKeyAction, type ActionAccountOption, type ParticipantPickerProps } from "./action-participant-picker-model";
 import { useParticipantPickerModel } from "./use-action-participant-picker-model";
-import { InvitationStatusList, ParticipantResultsMenu, PickerHeader, PickerSearch, SelectedParticipants, SingleAccountResults } from "./action-participant-picker-views";
+import { InvitationStatusList, ParticipantResultsMenu, PickerHeader, PickerSearch, RegistrationStatusList, SelectedParticipants, SingleAccountResults } from "./action-participant-picker-views";
 
 export function ActionParticipantPicker({
   currentUserId,
@@ -20,20 +20,23 @@ export function ActionParticipantPicker({
   readOnly = false,
   emptyMessage,
   invitationStatuses,
+  registrationStatuses,
   maxSelected = 20,
   roleOptions,
   roleSelections,
   onRoleSelectionsChange,
 }: ParticipantPickerProps) {
   const pickerRef = useRef<HTMLElement>(null);
-  const model = useParticipantPickerModel({ currentUserId, value, onChange, endpoint, includeCurrentUser, maxSelected, pickerRef });
+  const effectiveIncludeCurrentUser = readOnly || includeCurrentUser;
+  const model = useParticipantPickerModel({ currentUserId, value, onChange, endpoint, includeCurrentUser: effectiveIncludeCurrentUser, maxSelected, pickerRef });
   return (
     <section ref={pickerRef} className={cn(compact ? "rounded-lg border border-emerald-100/70 bg-transparent px-0 py-0 shadow-none" : "rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-4 shadow-sm", className)}>
       <PickerHeader title={title} description={description} count={model.selectedIds.length} maxSelected={maxSelected} showHelp={model.showHelp} onToggleHelp={() => model.setShowHelp((current) => !current)} />
       <div className={cn(compact ? "mt-3 space-y-3" : "mt-4 space-y-3")}>
         {!readOnly ? <PickerSearch id={model.searchInputId} query={model.query} onChange={model.setQuery} onFocus={model.openMenu} onSearch={model.submitSearch} onClose={() => model.setMenuOpen(false)} /> : null}
         {!readOnly && model.menuOpen ? <ParticipantResultsMenu model={model} /> : null}
-      <SelectedParticipants users={model.selectedUsers} onRemove={model.removeUser} readOnly={readOnly} emptyMessage={emptyMessage} invitationStatuses={invitationStatuses} roleOptions={roleOptions} roleSelections={roleSelections} onRoleSelectionsChange={onRoleSelectionsChange} />
+      <SelectedParticipants users={model.selectedUsers} onRemove={model.removeUser} readOnly={readOnly} emptyMessage={emptyMessage} invitationStatuses={invitationStatuses} registrationStatuses={registrationStatuses} roleOptions={roleOptions} roleSelections={roleSelections} onRoleSelectionsChange={onRoleSelectionsChange} />
+      {registrationStatuses?.length ? <RegistrationStatusList statuses={registrationStatuses} selectedIds={model.selectedIds} /> : null}
       {model.message ? <p role="status" className="text-xs font-medium text-amber-700" aria-live="polite">{model.message}</p> : null}
       {invitationStatuses?.length ? <InvitationStatusList statuses={invitationStatuses} selectedIds={model.selectedIds} /> : null}
       </div>

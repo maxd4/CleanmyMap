@@ -120,6 +120,49 @@ describe("action participant picker rendering", () => {
     expect(html).toContain("user-1");
   });
 
+  it("keeps the current account in a readonly confirmed roster", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ActionParticipantPicker, {
+        currentUserId: "current",
+        value: ["current", "user-1"],
+        onChange: vi.fn(),
+        readOnly: true,
+        title: "Présences confirmées",
+        description: "Source finale",
+        emptyMessage: "Aucune présence confirmée.",
+      }),
+    );
+
+    expect(html).toContain("2 membres");
+    expect(html).toContain("current");
+    expect(html).toContain("user-1");
+    expect(html).not.toContain('type="search"');
+  });
+
+  it("distinguishes pending, accepted and cancelled registration projections", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ActionParticipantPicker, {
+        currentUserId: "current",
+        value: ["manual-user"],
+        onChange: vi.fn(),
+        readOnly: true,
+        title: "Inscriptions",
+        description: "Source canonique",
+        registrationStatuses: [
+          { userId: "manual-user", status: "confirmed", source: "manual_add" },
+          { userId: "pending-user", status: "pending", source: "group_form" },
+          { userId: "cancelled-user", status: "cancelled", source: "invite_link" },
+        ],
+      }),
+    );
+
+    expect(html).toContain("Inscription acceptée");
+    expect(html).toContain("Inscription en attente");
+    expect(html).toContain("Inscription annulée");
+    expect(html).toContain("formulaire de groupe");
+    expect(html).toContain("lien d&#x27;invitation");
+  });
+
   it("keeps the organizer combobox keyboard and aria contract", () => {
     const html = renderToStaticMarkup(
       React.createElement(ActionAccountSelector, {

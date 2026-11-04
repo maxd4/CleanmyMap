@@ -7,7 +7,7 @@ import {
   createInitialFormState,
 } from "../payload";
 import type { FormState } from "../model";
-import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+import type { ActionManualInvitationStatusRecord, ActionRegistrationProjectionRecord } from "@/lib/actions/participation/registration-records";
 import { useActionDeclarationHydration } from "./use-action-declaration-hydration";
 import { useActionDeclarationDraft } from "./use-action-declaration-draft";
 
@@ -41,6 +41,7 @@ export function useActionDeclarationFormLifecycle({
   const [persistedDrawing, setPersistedDrawing] = useState<ActionDrawing | null>(null);
   const [persistedDrawingSource, setPersistedDrawingSource] = useState<ActionGeometrySource | null>(null);
   const [manualInvitationStatuses, setManualInvitationStatuses] = useState<ActionManualInvitationStatusRecord[]>([]);
+  const [registrationStatuses, setRegistrationStatuses] = useState<ActionRegistrationProjectionRecord[]>([]);
   const [confirmedParticipantAccounts, setConfirmedParticipantAccounts] = useState<string[]>([]);
   const [gpxError, setGpxError] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
@@ -63,6 +64,7 @@ export function useActionDeclarationFormLifecycle({
     setPersistedDrawing,
     setPersistedDrawingSource,
     setManualInvitationStatuses,
+    setRegistrationStatuses,
     setConfirmedParticipantAccounts,
   });
   const draft = useActionDeclarationDraft({
@@ -86,6 +88,8 @@ export function useActionDeclarationFormLifecycle({
     persistedDrawingSource,
     manualInvitationStatuses,
     setManualInvitationStatuses,
+    registrationStatuses,
+    setRegistrationStatuses,
     confirmedParticipantAccounts,
     setConfirmedParticipantAccounts,
     setPersistedDrawing,

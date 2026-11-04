@@ -1,5 +1,5 @@
 import type { ActiveRole } from "@/lib/domain-language";
-import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
+import type { ActionManualInvitationStatusRecord, ActionRegistrationProjectionRecord } from "@/lib/actions/participation/registration-records";
 import type { FormState } from "../model";
 
 export interface ActionStepIdentityProps {
@@ -17,6 +17,7 @@ export interface ActionStepIdentityProps {
   hasAttemptedSubmit?: boolean;
   isExistingAction?: boolean;
   manualInvitationStatuses?: readonly ActionManualInvitationStatusRecord[];
+  registrationStatuses?: readonly ActionRegistrationProjectionRecord[];
   confirmedParticipantAccounts?: readonly string[];
   mode?:
     | "all"

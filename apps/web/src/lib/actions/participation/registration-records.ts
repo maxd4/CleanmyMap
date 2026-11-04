@@ -7,6 +7,13 @@ export type ActionRegistrationCancellationReason = NonNullable<
   ActionRegistrationRow["registration_cancellation_reason"]
 >;
 
+export type ActionRegistrationProjectionRecord = {
+  userId: string;
+  status: ActionRegistrationStatus;
+  source: ActionRegistrationSource;
+  cancellationReason: ActionRegistrationRow["registration_cancellation_reason"];
+};
+
 type ActionManualInvitationStatus = "pending" | "accepted" | "rejected" | "withdrawn";
 
 export type ActionManualInvitationStatusRecord = {
@@ -58,6 +65,9 @@ const REGISTRATION_STATUS_COLUMNS =
   "action_id, created_at, registered_at, updated_at, registration_status, registration_source, registration_cancellation_reason, manual_invitation_version";
 const REGISTRATION_REVIEW_COLUMNS =
   "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source, registration_cancellation_reason, manual_invitation_version";
+
+const REGISTRATION_PROJECTION_COLUMNS =
+  "user_id, registration_status, registration_source, registration_cancellation_reason";
 
 function normalizeRegistrationUserIds(rows: readonly { user_id?: string | null }[]): string[] {
   return Array.from(
@@ -226,6 +236,34 @@ export async function loadManualRegistrationIdsForAction(
   }
 
   return normalizeRegistrationUserIds(result.data ?? []);
+}
+
+export async function loadActionRegistrationProjectionForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<ActionRegistrationProjectionRecord[]> {
+  const result = await supabase
+    .from("action_registrations")
+    .select(REGISTRATION_PROJECTION_COLUMNS)
+    .eq("action_id", actionId)
+    .order("registered_at", { ascending: true });
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return (result.data ?? [])
+    .map((row) => {
+      const userId = String(row.user_id ?? "").trim();
+      if (!userId) return null;
+      return {
+        userId,
+        status: row.registration_status as ActionRegistrationStatus,
+        source: row.registration_source as ActionRegistrationSource,
+        cancellationReason: row.registration_cancellation_reason ?? null,
+      } satisfies ActionRegistrationProjectionRecord;
+    })
+    .filter((row): row is ActionRegistrationProjectionRecord => row !== null);
 }
 
 export async function loadManualInvitationStatusesForAction(
