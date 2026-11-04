@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getWastePedagogicalProjection, findWasteCategorySlug } from "@/lib/waste";
 import { buildAnswer } from "./assistant-utils";
 
@@ -10,6 +10,18 @@ function answerText(question: string, locale: "fr" | "en" = "fr"): string {
 }
 
 describe("recycling assistant waste convergence", () => {
+  it("does not log the user's question while building an answer", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      buildAnswer("carton de pizza propre", "fr");
+
+      expect(logSpy).not.toHaveBeenCalled();
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
   it.each([
     ["snus usagé", "nicotine_pouch"],
     ["un mégot", "cigarette_butt"],

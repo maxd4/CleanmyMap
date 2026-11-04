@@ -284,7 +284,6 @@ export function buildAnswer(question: string, locale: Locale): Answer {
   const isExplicitlyContaminatedCardboard =
     includesAny(text, GREASY_CARDBOARD_KEYWORDS) ||
     (isCardboardPackage && includesAny(text, CARDBOARD_CONTAMINATION_KEYWORDS));
-  console.log({ text, canonicalSlug, isCardboardPackage, isExplicitlyCleanCardboard, isExplicitlyContaminatedCardboard });
   if (
     isExplicitlyContaminatedCardboard &&
     (!canonicalSlug || canonicalSlug === "paper_cardboard")
