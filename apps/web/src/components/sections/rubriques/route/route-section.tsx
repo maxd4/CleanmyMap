@@ -45,7 +45,8 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
     recommendationRequested, planningMode, setPlanningMode, originMode,
     setOriginMode, mapOrigin, setMapOrigin, setZoneCenter, clearMapOrigin, originSelectionError,
     planningModeValidationError, isResolvingOrigin, isRequestInFlight, requestRecommendation,
-    requestNearestRelevantRoute,
+    requestNearestRelevantRoute, alternativeData, comparisonData,
+    isAlternativeLoading, alternativeError, acceptNearestRelevantRoute, keepCurrentRoute,
   } = routeData;
   const derived = deriveRouteSectionState({ data, picks, selectedGroupIndex, fr, serviceMinutes, operationalTotalMinutes });
   const showResultsColumn = hasData || isLoading || Boolean(error) || originMode === "map" || options.startLocation?.mode === "zone";
@@ -109,6 +110,13 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
             organizationMarginMinutes={derived.organizationMarginMinutes}
             onCreateAction={createActionFromRecommendation}
             onFindNearestRelevantRoute={requestNearestRelevantRoute}
+            nearestRelevantSearch={alternativeData?.nearestRelevantSearch}
+            alternativeData={alternativeData}
+            comparisonData={comparisonData}
+            isAlternativeLoading={isAlternativeLoading}
+            alternativeError={alternativeError}
+            onAcceptAlternative={acceptNearestRelevantRoute}
+            onKeepCurrentRoute={keepCurrentRoute}
           />
         </section>
       </div>

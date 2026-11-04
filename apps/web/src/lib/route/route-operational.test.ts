@@ -124,6 +124,34 @@ describe("operational route contract", () => {
     })).toBe(false);
   });
 
+  it("transfers the accepted alternative departure, loop geometry and topology as one route copy", () => {
+    const alternativeGeometry = createFallbackRouteGeometry([
+      [48.8566, 2.3522],
+      [48.8576, 2.3532],
+      [48.8566, 2.3522],
+    ]);
+    const startLocation = {
+      mode: "precise" as const,
+      label: "Nouveau rendez-vous",
+      origin: { latitude: 48.8566, longitude: 2.3522, source: "address" as const },
+    };
+    const accepted = {
+      ...recommendation,
+      routeTopology: "loop" as const,
+      startLocation,
+      routeGeometry: alternativeGeometry,
+      groupRoutes: [{ groupIndex: 1, stops: [], routeGeometry: alternativeGeometry }],
+    };
+
+    const route = createOperationalRouteFromRecommendation(accepted);
+
+    expect(route.routeTopology).toBe("loop");
+    expect(route.startLocation).toEqual(startLocation);
+    expect(route.routes[0]?.geometry).toEqual(alternativeGeometry);
+    expect(route.zones.departure.coordinate).toEqual(alternativeGeometry.origin);
+    expect(route.routes[0]?.geometry.coordinates).not.toEqual(recommendation.routeGeometry.coordinates);
+  });
+
   it("transfers an open topology without manufacturing a return leg", () => {
     const openGeometry = createFallbackRouteGeometry([
       [48.85, 2.34],

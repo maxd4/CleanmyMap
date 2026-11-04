@@ -275,3 +275,30 @@ le meilleur résultat insuffisant et le statut du routage (`network` ou
 La recherche est bornée à 40 plans, à quatre appels fournisseur cumulés et à
 trois secondes par plan ; une absence de solution conserve l'itinéraire initial
 et expose explicitement la cause sans le présenter comme suffisant.
+
+### Comparaison et remplacement explicite
+
+La réponse initiale reste la réponse active tant que l'utilisateur n'a pas
+choisi une proposition. Pendant la recherche, `RouteResults` conserve donc le
+résumé, les métriques, la topologie, le départ et les exports du parcours
+initial ; la carte superpose l'ancien tracé et l'alternative lorsqu'elle est
+admissible, avec les deux départs, leurs distances, leurs temps de déplacement,
+leurs scores théoriques et la distance/durée d'accès au nouveau rendez-vous.
+Cette distance d'accès reste distincte du temps de collecte.
+
+`Conserver mon itinéraire` ferme la comparaison sans muter la saisie ou la
+réponse initiale. `Utiliser cet itinéraire` remplace explicitement la réponse
+active par la réponse serveur de l'alternative : son départ réel, sa boucle,
+ses groupes, ses versions de projection/graphe/modèle, sa trace et ses preuves
+restent ceux calculés pour cette alternative. Le handoff de création d'action
+est construit uniquement depuis cette réponse active ; `OperationalRoute`,
+reprise, PDF, GPX et les liens de navigation en aval ne reçoivent donc pas
+l'ancien tracé. La saisie historique des contraintes et de l'adresse n'est pas
+réécrite silencieusement.
+
+Un refus, une absence de solution, une erreur ou un changement de saisie
+invalide la proposition en cours et conserve le parcours initial. La sélection
+ne crée aucune nouvelle source de scoring et ne change pas les scores
+historiques des actions. Pour plusieurs groupes, la comparaison et le choix
+portent sur la réponse complète : départ commun, boucles complémentaires et
+preuves propres à chaque groupe sont conservés ensemble.

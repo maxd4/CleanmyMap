@@ -103,6 +103,11 @@ export function useRouteData() {
   );
   const [recommendationRequest, setRecommendationRequest] =
     useState<RouteRecommendationSubmission | null>(null);
+  const [nearestRelevantRequest, setNearestRelevantRequest] =
+    useState<RouteRecommendationSubmission | null>(null);
+  const [acceptedAlternative, setAcceptedAlternative] =
+    useState<RouteResponse | null>(null);
+  const [alternativeDismissed, setAlternativeDismissed] = useState(false);
   const [planningMode, setPlanningModeState] = useState<RoutePlanningMode>({ type: "free" });
   const [originMode, setOriginModeState] = useState<RouteOriginMode>("browser");
   const [mapOrigin, setMapOriginState] =
@@ -111,6 +116,7 @@ export function useRouteData() {
   const [isResolvingOrigin, setIsResolvingOrigin] = useState(false);
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
   const requestSequence = useRef(0);
+  const activeRequestId = useRef<number | null>(null);
   const requestGate = useRef(createRouteRequestGate());
   const [draftEditedBeforeHydration, setDraftEditedBeforeHydration] = useState(false);
 
@@ -132,6 +138,13 @@ export function useRouteData() {
     const shouldApplyHydratedDraft =
       routeDraftSnapshot.hydrated && !draftEditedBeforeHydration;
     const baseOptions = shouldApplyHydratedDraft ? routeDraftSnapshot.options : optionsState;
+    setNearestRelevantRequest(null);
+    setAcceptedAlternative(null);
+    setAlternativeDismissed(true);
+    requestSequence.current += 1;
+    activeRequestId.current = null;
+    requestGate.current.finish();
+    setIsRequestInFlight(false);
     setDraftEditedBeforeHydration(true);
     setOptionsState(() =>
       typeof update === "function" ? update(baseOptions) : update,
@@ -214,7 +227,7 @@ export function useRouteData() {
     writeRouteDraftOptions(readRouteDraftStorage(), options);
   }, [options, isDraftHydrated]);
 
-  const { data, isLoading, error } = useSWR<RouteResponse, Error>(
+  const { data: primaryData, isLoading, error } = useSWR<RouteResponse, Error>(
     recommendationRequest
       ? ["section-route", recommendationRequest]
       : null,
@@ -225,15 +238,53 @@ export function useRouteData() {
       revalidateOnReconnect: false,
       shouldRetryOnError: false,
       onSuccess: () => {
+        if (recommendationRequest?.id !== activeRequestId.current) return;
+        activeRequestId.current = null;
         requestGate.current.finish();
         setIsRequestInFlight(false);
       },
       onError: () => {
+        if (recommendationRequest?.id !== activeRequestId.current) return;
+        activeRequestId.current = null;
         requestGate.current.finish();
         setIsRequestInFlight(false);
       },
     },
   );
+
+  const {
+    data: alternativeData,
+    isLoading: isAlternativeLoading,
+    error: alternativeError,
+  } = useSWR<RouteResponse, Error>(
+    nearestRelevantRequest
+      ? ["section-route-nearest-relevant", nearestRelevantRequest]
+      : null,
+    ([, request]: readonly [string, RouteRecommendationSubmission]) =>
+      fetchRouteRecommendation(request),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+      onSuccess: () => {
+        if (nearestRelevantRequest?.id !== activeRequestId.current) return;
+        activeRequestId.current = null;
+        requestGate.current.finish();
+        setIsRequestInFlight(false);
+      },
+      onError: () => {
+        if (nearestRelevantRequest?.id !== activeRequestId.current) return;
+        activeRequestId.current = null;
+        requestGate.current.finish();
+        setIsRequestInFlight(false);
+      },
+    },
+  );
+
+  const data = acceptedAlternative ?? primaryData;
+  const comparisonData = !acceptedAlternative && alternativeData?.nearestRelevantSearch?.status === "found"
+    ? alternativeData
+    : undefined;
 
   const picks = useMemo(() => data?.stops ?? [], [data?.stops]);
 
@@ -273,8 +324,16 @@ export function useRouteData() {
 
     if (!requestGate.current.start()) return;
 
+    if (searchMode === "standard") {
+      setNearestRelevantRequest(null);
+      setAcceptedAlternative(null);
+      setAlternativeDismissed(true);
+    }
     setIsRequestInFlight(true);
     setIsResolvingOrigin(effectiveOriginMode === "browser");
+    requestSequence.current += 1;
+    const requestId = requestSequence.current;
+    activeRequestId.current = requestId;
 
     let origin: RouteRecommendationOrigin | undefined = requestOptions.startLocation?.mode === "precise"
       ? requestOptions.startLocation.origin
@@ -289,10 +348,10 @@ export function useRouteData() {
       setIsResolvingOrigin(false);
     }
 
-    requestSequence.current += 1;
+    if (activeRequestId.current !== requestId) return;
     setRecommendationRequest(
       createRouteRecommendationSubmission(
-        requestSequence.current,
+        requestId,
         requestOptions,
         origin,
         planningMode,
@@ -303,6 +362,7 @@ export function useRouteData() {
 
   const requestNearestRelevantRoute = useCallback(
     async () => {
+      setAlternativeDismissed(false);
       if (!recommendationRequest) {
         await requestRecommendation({}, "nearest_relevant");
         return;
@@ -310,19 +370,44 @@ export function useRouteData() {
       if (!requestGate.current.start()) return;
       setIsRequestInFlight(true);
       requestSequence.current += 1;
-      setRecommendationRequest({
+      const requestId = requestSequence.current;
+      activeRequestId.current = requestId;
+      setNearestRelevantRequest({
         ...recommendationRequest,
-        id: requestSequence.current,
+        id: requestId,
         searchMode: "nearest_relevant",
       });
     },
     [recommendationRequest, requestRecommendation],
   );
 
+  const acceptNearestRelevantRoute = useCallback(() => {
+    if (!alternativeData || alternativeData.nearestRelevantSearch?.status !== "found") return;
+    setAcceptedAlternative(alternativeData);
+    setAlternativeDismissed(true);
+    setNearestRelevantRequest(null);
+    activeRequestId.current = null;
+    requestGate.current.finish();
+    setIsRequestInFlight(false);
+  }, [alternativeData]);
+
+  const keepCurrentRoute = useCallback(() => {
+    setAlternativeDismissed(true);
+    setNearestRelevantRequest(null);
+    activeRequestId.current = null;
+    requestGate.current.finish();
+    setIsRequestInFlight(false);
+  }, []);
+
   return {
     options,
     setOptions,
     data,
+    initialData: primaryData,
+    alternativeData: alternativeDismissed ? undefined : alternativeData,
+    comparisonData,
+    isAlternativeLoading,
+    alternativeError,
     isLoading,
     error,
     picks,
@@ -348,5 +433,7 @@ export function useRouteData() {
     isRequestInFlight,
     requestRecommendation,
     requestNearestRelevantRoute,
+    acceptNearestRelevantRoute,
+    keepCurrentRoute,
   };
 }

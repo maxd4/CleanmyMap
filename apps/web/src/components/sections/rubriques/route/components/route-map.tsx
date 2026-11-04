@@ -17,6 +17,7 @@ import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type {
   RouteRecommendationOrigin,
   RouteResponseOrigin,
+  RouteResponse,
   RouteMultiRouteDisplayMode,
   RouteStartZone,
 } from "../route-types";
@@ -156,6 +157,10 @@ type RouteMapProps = {
   riskHeatmap?: RouteRiskHeatmap;
   riskHeatmapCategory?: RouteRiskHeatmapCategory;
   onRiskHeatmapCategoryChange?: (category: RouteRiskHeatmapCategory) => void;
+  comparison?: {
+    current: Pick<RouteResponse, "origin" | "routeGeometry" | "groupRoutes">;
+    alternative: Pick<RouteResponse, "origin" | "routeGeometry" | "groupRoutes">;
+  };
   fr: boolean;
 };
 
@@ -183,6 +188,48 @@ function RouteMapOrigin({ origin, fr, onClearOrigin }: Pick<RouteMapRenderProps,
       {onClearOrigin ? <button type="button" onClick={onClearOrigin}>{fr ? "Réinitialiser" : "Reset"}</button> : null}
     </Popup>
   </Marker>;
+}
+
+function RouteComparisonLayer({
+  comparison,
+  selectedGroupIndex,
+  fr,
+}: Pick<RouteMapRenderProps, "comparison" | "selectedGroupIndex" | "fr">) {
+  if (!comparison) return null;
+  const routes = [
+    { kind: "current" as const, data: comparison.current, color: "#cbd5e1", dashArray: "6 8" },
+    { kind: "alternative" as const, data: comparison.alternative, color: "#fbbf24", dashArray: undefined },
+  ];
+  return <>
+    <Marker position={[comparison.alternative.origin.latitude, comparison.alternative.origin.longitude]} icon={buildOriginIcon()}>
+      <Tooltip direction="top" offset={[0, -12]}>{fr ? "Nouveau départ proposé" : "Proposed new departure"}</Tooltip>
+      <Popup>{fr ? "Nouveau départ proposé" : "Proposed new departure"}</Popup>
+    </Marker>
+    {routes.flatMap(({ kind, data, color, dashArray }) => {
+      const visibleGroups = selectedGroupIndex === null
+        ? data.groupRoutes
+        : data.groupRoutes.filter((group) => group.groupIndex === selectedGroupIndex);
+      const geometries = data.groupRoutes.length > 1
+        ? visibleGroups.map((group) => ({ key: `group-${group.groupIndex}`, geometry: group.routeGeometry }))
+        : [{ key: "route", geometry: data.routeGeometry }];
+      return geometries.map(({ key, geometry }) => geometry.coordinates.length >= 2 ? (
+        <Polyline
+          key={`comparison-${kind}-${key}`}
+          positions={geometry.coordinates}
+          pathOptions={{
+            color,
+            weight: kind === "alternative" ? 7 : 5,
+            opacity: kind === "alternative" ? 0.95 : 0.8,
+            dashArray,
+          }}
+        >
+          <Tooltip sticky>{kind === "current"
+            ? (fr ? "Ancien tracé conservé" : "Current route kept")
+            : (fr ? "Alternative recommandée" : "Recommended alternative")}</Tooltip>
+        </Polyline>
+      ) : null);
+    })}
+  </>;
 }
 
 function heatmapRiskValue(
@@ -314,6 +361,7 @@ function RouteMapLayers({
   fr,
   riskHeatmap,
   riskHeatmapCategory,
+  comparison,
   visibleGroupRoutes,
   mapCoordinates,
   routeCoordinates,
@@ -326,6 +374,7 @@ function RouteMapLayers({
     <>
       <RouteMapViewport coordinates={mapCoordinates} />
       {riskHeatmap ? <RouteRiskHeatmapLayer heatmap={riskHeatmap} category={riskHeatmapCategory ?? "mixed"} fr={fr} /> : null}
+      <RouteComparisonLayer comparison={comparison} selectedGroupIndex={selectedGroupIndex} fr={fr} />
       {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
       {onSelectZoneCenter ? <RouteZoneCenterPicker onSelectZoneCenter={onSelectZoneCenter} /> : null}
       {onSelectGuidedPoint ? <RouteGuidedPointPicker onSelectGuidedPoint={onSelectGuidedPoint} /> : null}
@@ -383,7 +432,7 @@ function RouteMapLayers({
           </Popup>
         </CircleMarker>
       ))}
-      {groupRoutes.length > 1
+      {!comparison && (groupRoutes.length > 1
         ? visibleGroupRoutes.map((group) => {
             const visualStyle = getRouteGroupVisualStyle(group.groupIndex, representationMode);
             return group.routeGeometry.coordinates.length >= 2 ? (
@@ -429,7 +478,7 @@ function RouteMapLayers({
                 : "Estimated line between stops"}
           </Tooltip>
         </Polyline>
-      ) : null}
+      ) : null)}
       {(groupRoutes.length > 1
         ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop, index) => ({ group, stop, index })))
         : stops.map((stop, index) => ({ group: null, stop, index }))).map(({ group, stop, index }) => {
@@ -492,6 +541,7 @@ function RouteMapCanvas({
   riskHeatmap,
   riskHeatmapCategory,
   onRiskHeatmapCategoryChange,
+  comparison,
   visibleGroupRoutes,
   mapCoordinates,
   routeCoordinates,
@@ -504,6 +554,7 @@ function RouteMapCanvas({
 }) {  return (
     <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[rgba(10,31,50,0.98)] shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
       <RouteMapModeLabel groupRoutes={groupRoutes} visibleGroupRoutes={visibleGroupRoutes} routeGeometry={routeGeometry} fr={fr} />
+      {comparison ? <div className="pointer-events-none absolute right-4 top-4 z-[1000] rounded-xl border border-white/15 bg-slate-950/85 px-3 py-2 text-xs font-bold text-white backdrop-blur-xl" aria-label={fr ? "Légende de comparaison des itinéraires" : "Route comparison legend"}><span className="mr-3 inline-flex items-center gap-1.5"><i aria-hidden="true" className="h-1 w-6 border-t-2 border-dashed border-slate-300" />{fr ? "ancien" : "current"}</span><span className="inline-flex items-center gap-1.5"><i aria-hidden="true" className="h-1 w-6 border-t-2 border-amber-300" />{fr ? "proposé" : "proposed"}</span></div> : null}
       <MapContainer
         center={center}
         zoom={13}
@@ -536,6 +587,7 @@ function RouteMapCanvas({
           riskHeatmap={riskHeatmap}
           riskHeatmapCategory={riskHeatmapCategory}
           onRiskHeatmapCategoryChange={onRiskHeatmapCategoryChange}
+          comparison={comparison}
           visibleGroupRoutes={visibleGroupRoutes}
           mapCoordinates={mapCoordinates}
           routeCoordinates={routeCoordinates}
@@ -567,6 +619,7 @@ export function RouteMap({
   riskHeatmap,
   riskHeatmapCategory = "mixed",
   onRiskHeatmapCategoryChange,
+  comparison,
 }: RouteMapProps) {
   const visibleGroupRoutes = selectedGroupIndex === null
     ? groupRoutes
@@ -588,6 +641,12 @@ export function RouteMap({
         ...buildRouteMapCoordinates(stops, routeGeometry, origin),
         ...(riskHeatmap?.segments.flatMap((segment) => segment.coordinates) ?? []),
         ...(startZone ? [[startZone.center.latitude, startZone.center.longitude] as [number, number]] : []),
+        ...(comparison ? [
+          [comparison.current.origin.latitude, comparison.current.origin.longitude] as [number, number],
+          [comparison.alternative.origin.latitude, comparison.alternative.origin.longitude] as [number, number],
+          ...comparison.current.routeGeometry.coordinates,
+          ...comparison.alternative.routeGeometry.coordinates,
+        ] : []),
       ];
     }
     return [
@@ -602,8 +661,16 @@ export function RouteMap({
         ...groupStops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
       ]),
       ...(riskHeatmap?.segments.flatMap((segment) => segment.coordinates) ?? []),
+      ...(comparison ? [
+        [comparison.current.origin.latitude, comparison.current.origin.longitude] as [number, number],
+        [comparison.alternative.origin.latitude, comparison.alternative.origin.longitude] as [number, number],
+        ...comparison.current.routeGeometry.coordinates,
+        ...comparison.alternative.routeGeometry.coordinates,
+        ...comparison.current.groupRoutes.flatMap((group) => group.routeGeometry.coordinates),
+        ...comparison.alternative.groupRoutes.flatMap((group) => group.routeGeometry.coordinates),
+      ] : []),
     ];
-  }, [groupRoutes, origin, renderedGuidedGroups, riskHeatmap, routeGeometry, startZone, stops, visibleGroupRoutes]);
+  }, [comparison, groupRoutes, origin, renderedGuidedGroups, riskHeatmap, routeGeometry, startZone, stops, visibleGroupRoutes]);
   const routeCoordinates =
     routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
@@ -641,6 +708,7 @@ export function RouteMap({
     riskHeatmap={riskHeatmap}
     riskHeatmapCategory={riskHeatmapCategory}
     onRiskHeatmapCategoryChange={onRiskHeatmapCategoryChange}
+    comparison={comparison}
     visibleGroupRoutes={visibleGroupRoutes}
     mapCoordinates={mapCoordinates}
     routeCoordinates={routeCoordinates}

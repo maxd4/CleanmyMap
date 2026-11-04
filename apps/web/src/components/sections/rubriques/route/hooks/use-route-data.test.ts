@@ -207,4 +207,43 @@ describe("useRouteData explicit request gate", () => {
     expect(payload.travelBudgetMinutes).toBe(DEFAULT_ROUTE_OPTIONS.travelBudgetMinutes);
     expect(payload.pickupPreference).toBe(DEFAULT_ROUTE_OPTIONS.pickupPreference);
   });
+
+  it("cancels a pending alternative when the user changes the request and accepts a new standard request", async () => {
+    const seenKeys = new Set<string>();
+    let releaseAlternative: (() => void) | undefined;
+    let swrCalls = 0;
+    swrMock.mockImplementation((
+      key: unknown,
+      fetcher: (key: unknown) => Promise<unknown>,
+      config: { onSuccess?: (value: unknown) => void },
+    ) => {
+      const serializedKey = key === null ? null : JSON.stringify(key);
+      if (serializedKey !== null && !seenKeys.has(serializedKey)) {
+        seenKeys.add(serializedKey);
+        swrCalls += 1;
+        const request = swrCalls === 1
+          ? new Promise<void>((resolve) => { releaseAlternative = resolve; }).then(() => fetcher(key))
+          : fetcher(key);
+        void request.then((value) => config.onSuccess?.(value));
+      }
+      return {
+        data: undefined,
+        isLoading: serializedKey !== null,
+        error: undefined,
+      };
+    });
+
+    renderClientHarness();
+    await act(async () => { await latestRoute?.requestNearestRelevantRoute(); });
+    await act(async () => {
+      latestRoute?.setOptions({ ...DEFAULT_ROUTE_OPTIONS, travelBudgetMinutes: 45 });
+    });
+    await act(async () => { await latestRoute?.requestRecommendation(); });
+
+    releaseAlternative?.();
+    await act(async () => { await Promise.resolve(); });
+    const payloads = vi.mocked(fetch).mock.calls.map(([, init]) => JSON.parse(init?.body as string));
+    expect(payloads.some((payload) => payload.searchMode === "nearest_relevant")).toBe(true);
+    expect(payloads.some((payload) => !payload.searchMode && payload.travelBudgetMinutes === 45)).toBe(true);
+  });
 });
