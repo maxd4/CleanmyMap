@@ -21,6 +21,7 @@ import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-l
 import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
 import { routeGuidedBudgetForMode } from "@/lib/route/route-planning-mode";
 import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
+import { loadActivePedestrianNetwork } from "@/lib/route/pedestrian-network-store";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -130,6 +131,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A route origin is required." }, { status: 422 });
     }
     const spatialCandidates = candidateData.spatialCandidates;
+    const pedestrianNetwork = await loadActivePedestrianNetwork(supabase, [
+      origin,
+      ...(options.arrival ? [options.arrival] : []),
+      ...spatialCandidates.map((candidate) => ({
+        latitude: candidate.latitude,
+        longitude: candidate.longitude,
+      })),
+    ]);
     const weatherContext = await fetchPlannerWeatherContext({
       latitude: origin.latitude,
       longitude: origin.longitude,
@@ -154,6 +163,7 @@ export async function POST(request: Request) {
       eventCenteredAnchor,
       eventSignalContext: candidateData.routeEventSignalContext,
       weatherContext,
+      pedestrianNetwork,
     });
     const response = buildRouteRecommendationResponse({
       origin,

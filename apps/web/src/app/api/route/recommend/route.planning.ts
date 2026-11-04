@@ -20,6 +20,7 @@ import {
 } from "@/lib/route/route-geometry-reconciliation";
 import type { RouteOperationalBudgetDependency } from "@/lib/route/route-operational-budget";
 import type { RouteGeometry, RouteTopology } from "@/lib/route/route-contract";
+import type { PedestrianNetworkGraph } from "@/lib/route/pedestrian-network";
 import type { TrashSpotterRouteCandidate } from "@/lib/route/trash-spotter-recommendation";
 import {
   buildEventCenteredCandidates,
@@ -125,6 +126,7 @@ type RouteRecommendationInput = {
   eventSignalContext: RouteEventSignalContext;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
+  pedestrianNetwork?: PedestrianNetworkGraph | null;
 };
 
 function finalizeRouteRecommendationPreparation(
@@ -346,6 +348,7 @@ async function buildMultiGroupRoutingState(
     guidedBudget: input.guidedBudget,
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
+    pedestrianNetwork: input.pedestrianNetwork,
   });
   return {
     plannedStops: multiRouteResult.plannedStops,
@@ -381,6 +384,7 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
           plannerResult.stops,
           input.routeTopology,
           input.arrival,
+          input.pedestrianNetwork,
         ),
       )
     : await buildMultiGroupRoutingState(input, preparation);

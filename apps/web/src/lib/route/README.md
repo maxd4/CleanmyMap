@@ -14,6 +14,13 @@ pour produire une décision de planner contrainte et explicable.
   réseau et fallback explicitement estimé. L’API reçoit une séquence adaptée à
   la topologie : `origine → stops → origine` pour une boucle, ou
   `origine → stops → arrivée` pour un trajet ouvert.
+- `pedestrian-network.ts`, `pedestrian-network-store.ts` et
+  `../../scripts/import-pedestrian-network.mjs` : représentation versionnée du
+  graphe OSM piéton, import borné Panthéon/Jardin des Plantes et lecture
+  serveur par RPC. Quand une version active couvre la recommandation, le
+  planner route sur ce graphe dirigé sans appel OSM/FOSSGIS ; un point ou une
+  restriction non prouvés restent exclus et sont conservés dans les
+  diagnostics d’import.
 - `route-predicted-targets.ts` : candidats prédits, distincts des spots
   observés, avec provenance, modèle et état de disponibilité.
 - `route-data-status.ts` : états de disponibilité et de dégradation exposés
@@ -66,8 +73,9 @@ pas un résultat du fournisseur de routage; une estimation ou un fallback est
 identifié comme tel.
 
 Le budget et la sécurité sont des contraintes dures. À entrées identiques, la
-sélection est déterministe et aucun appel externe supplémentaire n’est réalisé
-pendant les calculs hors des providers déjà contractuels.
+sélection est déterministe. Une version active du graphe pilote évite les
+appels de routage externes pendant la recommandation ; en son absence, le
+provider FOSSGIS existant reste le chemin de compatibilité documenté.
 
 Le contrat de recommandation expose la topologie (`routeTopology: "loop"` par
 défaut ou `"open"`), la sélection de départ (`startLocation`) et l’origine

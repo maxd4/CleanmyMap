@@ -6,6 +6,10 @@ import {
 } from "@/lib/route/route-planner";
 import type { RouteGeometry, RouteTopology } from "@/lib/route/route-contract";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
+import {
+  routeThroughPedestrianNetwork,
+  type PedestrianNetworkGraph,
+} from "@/lib/route/pedestrian-network";
 
 export function fallbackGeometryForPrefix(
   origin: RoutePlannerOrigin,
@@ -50,12 +54,28 @@ type NetworkReconciliation = {
   reconciled: boolean;
 };
 
+async function routeWithAvailableNetwork(
+  coordinates: [number, number][],
+  topology: RouteTopology,
+  pedestrianNetwork?: PedestrianNetworkGraph | null,
+): Promise<RouteGeometry> {
+  if (pedestrianNetwork) {
+    return routeThroughPedestrianNetwork(pedestrianNetwork, coordinates, { topology }) ??
+      createFallbackRouteGeometry(coordinates, { topology });
+  }
+  return routePolylineThroughFossgisFoot(
+    coordinates,
+    topology === "loop" ? {} : { topology },
+  );
+}
+
 async function tryReconcileRetainedStops(
   origin: RoutePlannerOrigin,
   retainedStops: RoutePlannerResult["stops"],
   travelBudgetMinutes: number,
   topology: RouteTopology,
   arrival?: RoutePlannerOrigin,
+  pedestrianNetwork?: PedestrianNetworkGraph | null,
 ): Promise<{ geometry: RouteGeometry; degraded: boolean; warning: string | null } | null> {
   const retainedCoordinates: [number, number][] = [
     [origin.latitude, origin.longitude],
@@ -69,7 +89,7 @@ async function tryReconcileRetainedStops(
         : []),
   ];
   try {
-    const geometry = await routePolylineThroughFossgisFoot(retainedCoordinates, topology === "loop" ? {} : { topology });
+    const geometry = await routeWithAvailableNetwork(retainedCoordinates, topology, pedestrianNetwork);
     if (geometry.durationMinutes > travelBudgetMinutes) return null;
     return {
       geometry,
@@ -95,6 +115,7 @@ async function reconcileNetworkRoute(
   initialStops: RoutePlannerResult["stops"],
   topology: RouteTopology,
   arrival?: RoutePlannerOrigin,
+  pedestrianNetwork?: PedestrianNetworkGraph | null,
 ): Promise<NetworkReconciliation> {
   let plannedStops = initialStops;
   let routeGeometry = initialGeometry;
@@ -114,6 +135,7 @@ async function reconcileNetworkRoute(
       travelBudgetMinutes,
       topology,
       arrival,
+      pedestrianNetwork,
     );
     if (attempt?.warning?.startsWith("La mesure réseau")) {
       finalRoutingDegraded = true;
@@ -181,6 +203,7 @@ export async function reconcileSingleRouteGeometry(
   initialStops: RoutePlannerResult["stops"],
   topology: RouteTopology = "loop",
   arrival?: RoutePlannerOrigin,
+  pedestrianNetwork?: PedestrianNetworkGraph | null,
 ): Promise<RouteGeometryReconciliation> {
   let plannedStops = initialStops;
   let routeGeometry = fallbackGeometryForPrefix(origin, [], topology, arrival);
@@ -203,13 +226,13 @@ export async function reconcileSingleRouteGeometry(
           ? [[arrival.latitude, arrival.longitude] as [number, number]]
           : []),
     ];
-    routeGeometry = await routePolylineThroughFossgisFoot(routeCoordinates, topology === "loop" ? {} : { topology });
+    routeGeometry = await routeWithAvailableNetwork(routeCoordinates, topology, pedestrianNetwork);
     providerCalls += 1; firstProviderMode = routeGeometry.mode;
 
     if (routeGeometry.durationMinutes > travelBudgetMinutes) {
       budgetPrefixApplied = true;
       const network = routeGeometry.mode === "network"
-        ? await reconcileNetworkRoute(origin, travelBudgetMinutes, routeGeometry, plannedStops, topology, arrival)
+        ? await reconcileNetworkRoute(origin, travelBudgetMinutes, routeGeometry, plannedStops, topology, arrival, pedestrianNetwork)
         : null;
       if (network) {
         plannedStops = network.plannedStops;

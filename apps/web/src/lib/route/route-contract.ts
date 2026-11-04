@@ -3,7 +3,7 @@ export type RouteGeometryMode = "network" | "fallback";
 /** Route topology is independent from the planning mode and target source. */
 export type RouteTopology = "loop" | "open";
 
-export type RouteGeometryProvider = "osrm" | "fossgis-osrm" | "none";
+export type RouteGeometryProvider = "osrm" | "fossgis-osrm" | "stored-network" | "none";
 
 export type RouteNetworkGeometryProvider = Exclude<
   RouteGeometryProvider,

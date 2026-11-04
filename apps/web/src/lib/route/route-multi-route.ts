@@ -27,6 +27,7 @@ import {
 import { projectMeetingPointFromGeometry } from "./route-operational";
 import { FOSSGIS_QUOTA_INTERVAL_MS } from "./fossgis-foot-routing";
 import type { RouteGuidedBudget } from "./route-planning-mode";
+import type { PedestrianNetworkGraph } from "./pedestrian-network";
 
 type Coordinate = [number, number];
 
@@ -235,6 +236,7 @@ async function routeMultiGroups(input: {
   weatherContext?: PlannerWeatherContext;
   guidedBudget?: RouteGuidedBudget;
   waitForQuotaInterval?: (milliseconds: number) => Promise<void>;
+  pedestrianNetwork?: PedestrianNetworkGraph | null;
 }): Promise<RouteGroupRoutingResult[]> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
@@ -263,6 +265,7 @@ async function routeMultiGroups(input: {
       input.partition.groupCount,
       input.routeTopology ?? "loop",
       input.arrival,
+      input.pedestrianNetwork,
     ));
   }
   return routedGroups;
@@ -359,6 +362,7 @@ export async function routePartitionedGroups(input: {
   weatherContext?: PlannerWeatherContext;
   guidedBudget?: RouteGuidedBudget;
   waitForQuotaInterval?: (milliseconds: number) => Promise<void>;
+  pedestrianNetwork?: PedestrianNetworkGraph | null;
 }): Promise<RouteMultiRouteResult> {
   const routedGroups = await routeMultiGroups(input);
 
