@@ -42,6 +42,12 @@ describe('mobile actions transport', () => {
     expect(requestMock).toHaveBeenCalledWith('/api/mobile/actions?view=all&limit=24&historyLimit=200')
   })
 
+  it('does not send a meaningless search parameter for whitespace-only input', async () => {
+    await loadMobileActions({ view: 'past', query: '   ' })
+
+    expect(requestMock).toHaveBeenCalledWith('/api/mobile/actions?view=past&limit=24&historyLimit=200')
+  })
+
   it('keeps action identifiers encoded for reads and mutations', async () => {
     await loadMobileActionDetail('action/1')
     await claimPastAction('action/1')
@@ -82,6 +88,15 @@ describe('mobile actions transport', () => {
     expect(requestMock).toHaveBeenNthCalledWith(2, '/api/actions/action%2F1/field-roles', { method: 'PUT', body: JSON.stringify({ userId: 'user/1', roleCodes: ['group_lead'] }) })
     expect(requestMock).toHaveBeenNthCalledWith(3, '/api/actions/action%2F1/field-roles/transfer', { method: 'POST', body: JSON.stringify({ successorUserId: 'successor/1' }) })
     expect(requestMock).toHaveBeenNthCalledWith(4, '/api/actions/action%2F1/field-roles/transfer', { method: 'PATCH', body: JSON.stringify({ proposalId: 'proposal-1', decision: 'reject', reason: 'Indisponible' }) })
+  })
+
+  it('omits an optional transfer reason instead of sending an empty authorization field', async () => {
+    await respondMobileActionFieldRoleTransfer('action-1', 'proposal-1', 'accept')
+
+    expect(requestMock).toHaveBeenCalledWith('/api/actions/action-1/field-roles/transfer', {
+      method: 'PATCH',
+      body: JSON.stringify({ proposalId: 'proposal-1', decision: 'accept' }),
+    })
   })
 
   it('posts action creation and signalement payloads without local result calculations', async () => {

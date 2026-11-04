@@ -540,7 +540,12 @@ couverture, l'intégrité de la preuve et les rapports obligatoires restent
 fail-closed et bloquants. Aucun de ces contrôles ne peut donc devenir vert par
 simple masquage de son code de sortie.
 
-Le même moteur V8 mesure séparément le mobile :
+Le même moteur V8 mesure séparément le mobile. Le périmètre mobile est
+désormais `ENFORCE` : chaque candidat doit atteindre au moins 80 % en
+instructions, branches, fonctions et lignes. Le contrôle échoue en cas de
+rapport absent, incomplet, falsifié ou inférieur à l'un de ces seuils ; aucun
+fichier insuffisamment couvert n'est masqué par une exclusion ou une
+modification du dénominateur.
 
 ```bash
 npm run quality:mobile-coverage
@@ -562,10 +567,9 @@ LCOV ; le gate vérifie ces éléments séparément du Web. Une preuve mobile d'
 autre candidat, un résumé ou LCOV modifié, une configuration divergente, une
 mesure absente ou incomplète ne peut donc pas être réutilisée comme succès.
 Les preuves valides du même candidat sont réutilisées sans relancer Vitest.
-Comme pour le Web, la comparaison historique mobile reste reportée mais ne
-bloque ni CI, ni FULL, ni le scan SonarQube ; l'échec des tests, de la
-production du rapport ou de sa validation reste bloquant lorsqu'un périmètre
-est activé.
+La comparaison historique mobile reste informative, mais l'échec des tests,
+de la production du rapport, de sa validation ou du seuil courant bloque la
+lane mobile CI et le contrôle de publication lorsque le périmètre est activé.
 
 Les couvertures Web et mobile produites par Vitest/V8, Node par c8/V8 et Python
 par coverage.py mesurent chacune leur propre périmètre instrumenté ; leurs

@@ -90,7 +90,7 @@ export function runCoverageCheck({
   console.log(`COVERAGE_POLICY_STATUS: ${policy.status}`);
   for (const observation of policy.observations) {
     console.log(
-      `COVERAGE_POLICY_OBSERVATION: ${observation.domain}.${observation.metric} `
+      `COVERAGE_POLICY_OBSERVATION: ${observation.domain ?? observation.scope ?? scope}.${observation.metric} `
       + `current=${observation.current.toFixed(2)}% target=${observation.target.toFixed(2)}% `
       + `gap=${observation.gapPp.toFixed(2)}pp state=${observation.state}`,
     );

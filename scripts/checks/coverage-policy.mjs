@@ -78,7 +78,16 @@ export const COVERAGE_ENFORCEMENT_POLICY = Object.freeze({
       historical: observePolicyEntry(),
       changedLines: COVERAGE_CHANGED_LINE_POLICY,
     }),
-    mobile: Object.freeze({ kind: "global-metrics", minimum: null, ...observePolicyEntry() }),
+    // Mobile has a stable, representative V8 campaign and now enforces the
+    // four global metrics. The activation points at the measured parent
+    // candidate; the exact proof is still required for every later candidate.
+    mobile: Object.freeze({
+      kind: "global-metrics",
+      minimum: Object.freeze({ statements: 80, branches: 80, functions: 80, lines: 80 }),
+      state: "ENFORCE",
+      policyVersion: COVERAGE_ENFORCEMENT_SCHEMA_VERSION,
+      activation: Object.freeze({ version: 1, sourceCommit: "27d3d7554359aa1d6e93c777c456ac5916a4fefb" }),
+    }),
     node: Object.freeze({
       kind: "external-report",
       reportPath: "scripts/coverage/coverage-summary.json",

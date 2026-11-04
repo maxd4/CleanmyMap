@@ -561,7 +561,21 @@ test("la couverture mobile reste un scope indépendant sans domaines web", () =>
   assert.doesNotThrow(() => validateBaseline(baseline, { scope: "mobile" }));
   assert.deepEqual(compareCoverage(current, baseline), { status: "PASS", failures: [], grace: [] });
   assert.throws(() => validateBaseline({ ...baseline, scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT }, { scope: "mobile" }), /stale/);
-  assert.equal(evaluateCoveragePolicy(current, { scope: "mobile" }).status, "OBSERVE");
+  assert.equal(evaluateCoveragePolicy(current, { scope: "mobile" }).status, "FAIL");
+});
+
+test("la politique mobile publiée exige les quatre métriques à 80 pour cent", () => {
+  const mobilePolicy = COVERAGE_ENFORCEMENT_POLICY.scopes.mobile;
+
+  assert.equal(mobilePolicy.state, "ENFORCE");
+  assert.deepEqual(mobilePolicy.minimum, {
+    statements: 80,
+    branches: 80,
+    functions: 80,
+    lines: 80,
+  });
+  assert.equal(mobilePolicy.activation.version, 1);
+  assert.match(mobilePolicy.activation.sourceCommit, /^[0-9a-f]{40}$/);
 });
 
 test("une activation mobile compare un ratio exact et refuse un seuil non atteint", () => {
