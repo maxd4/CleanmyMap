@@ -155,5 +155,12 @@ describe("territorial legend rewards migration", () => {
     expect(pgtap).toContain("select plan(78)");
     expect(pgtap).toContain("non-maximal fact deletion advances the canonical revision");
     expect(pgtap).toContain("anon cannot execute snapshot reconciliation");
+    expect(pgtap.indexOf("a two-winner snapshot is accepted")).toBeLessThan(
+      pgtap.indexOf("service-only consent RPC activates"),
+    );
+    expect(pgtap.indexOf("service-only consent RPC activates")).toBeLessThan(
+      pgtap.indexOf("date '2025-07-05'"),
+    );
+    expect(pgtap).toContain("delete from public.territorial_legend_consents where user_id = 'legend-consent-contract'");
   });
 });

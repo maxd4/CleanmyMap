@@ -17,9 +17,11 @@ insert into territorial_legend_contract_state (effective_on)
 values ((now() at time zone 'Europe/Paris')::date - 10);
 
 delete from public.territorial_legend_award_proofs
- where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
+ where user_id like 'legend-contract-%';
 delete from public.territorial_legend_hold_periods
- where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
+ where user_id like 'legend-contract-%';
+delete from public.territorial_legend_consents
+ where user_id = 'legend-consent-contract';
 
 select ok(to_regclass('public.territorial_legend_hold_periods') is not null, 'hold periods table exists after replay');
 select ok(to_regclass('public.territorial_legend_award_proofs') is not null, 'award proofs table exists after replay');
@@ -63,39 +65,6 @@ delete from public.action_participants
 select ok(
   public.get_territorial_legend_fact_revision() > (select fact_revision from territorial_legend_contract_state),
   'non-maximal fact deletion advances the canonical revision'
-);
-
-select is(
-  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-03T10:00:00Z'::timestamptz)->>'enabled'),
-  'true',
-  'service-only consent RPC activates an eligible server decision'
-);
-select is(
-  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-04T10:00:00Z'::timestamptz)->>'activated_at'),
-  '2026-11-03T10:00:00+00:00',
-  'repeated activation preserves the original activation watermark'
-);
-insert into public.territorial_legend_hold_periods (
-  user_id, campaign_year, level, territory_code, territory_label,
-  started_on, last_verified_on, validity_status, source_fingerprint
-) values (
-  'legend-consent-contract', extract(year from current_date)::integer, 'commune', '75056', 'Paris',
-  current_date - 2, current_date - 1, 'active', 'consent-revocation-hold'
-);
-select is(
-  (public.set_territorial_legend_consent('legend-consent-contract', false, '15_or_over', '2026-11-05T10:00:00Z'::timestamptz)->>'activated_at'),
-  '2026-11-03T10:00:00+00:00',
-  'revocation keeps the owner-scoped activation history'
-);
-select is(
-  (select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-consent-contract' and validity_status = 'closed'),
-  1,
-  'revocation closes active detention without deleting its period'
-);
-select is(
-  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-06T10:00:00Z'::timestamptz)->>'activated_at'),
-  '2026-11-06T10:00:00+00:00',
-  'reactivation creates a new non-retroactive watermark'
 );
 
 -- The legacy two-argument writer is exercised only as the migration's
@@ -261,14 +230,49 @@ select ok(exists (
 ), 'award proofs persist a campaign year');
 select is((select count(*)::integer from pg_constraint where conrelid = 'public.territorial_legend_award_proofs'::regclass and contype = 'c' and conname = 'territorial_legend_award_proofs_annual_kind_check'), 1, 'the annual award_kind constraint is the only inherited kind gate');
 
--- The preceding current-relative contract and this historical campaign are
--- isolated fixtures. Production keeps the global monotonicity guard; the
--- historical campaign must start with no later fixture watermark in the same
--- transaction.
+-- The consent scenario runs after the current-relative reconciliation so its
+-- current-day hold cannot make an earlier current snapshot look stale.
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-03T10:00:00Z'::timestamptz)->>'enabled'),
+  'true',
+  'service-only consent RPC activates an eligible server decision'
+);
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-04T10:00:00Z'::timestamptz)->>'activated_at'),
+  '2026-11-03T10:00:00+00:00',
+  'repeated activation preserves the original activation watermark'
+);
+insert into public.territorial_legend_hold_periods (
+  user_id, campaign_year, level, territory_code, territory_label,
+  started_on, last_verified_on, validity_status, source_fingerprint
+) values (
+  'legend-consent-contract', extract(year from current_date)::integer, 'commune', '75056', 'Paris',
+  current_date - 2, current_date - 1, 'active', 'consent-revocation-hold'
+);
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', false, '15_or_over', '2026-11-05T10:00:00Z'::timestamptz)->>'activated_at'),
+  '2026-11-03T10:00:00+00:00',
+  'revocation keeps the owner-scoped activation history'
+);
+select is(
+  (select count(*)::integer from public.territorial_legend_hold_periods where user_id = 'legend-consent-contract' and validity_status = 'closed'),
+  1,
+  'revocation closes active detention without deleting its period'
+);
+select is(
+  (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-06T10:00:00Z'::timestamptz)->>'activated_at'),
+  '2026-11-06T10:00:00+00:00',
+  'reactivation creates a new non-retroactive watermark'
+);
+
+-- Isolate the historical campaign from every current-relative fixture. This
+-- exercises the production monotonicity guard without weakening it.
 delete from public.territorial_legend_award_proofs
- where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
+ where user_id like 'legend-contract-%';
 delete from public.territorial_legend_hold_periods
- where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
+ where user_id like 'legend-contract-%';
+delete from public.territorial_legend_consents
+ where user_id = 'legend-consent-contract';
 
 do $$
 declare
