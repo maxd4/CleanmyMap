@@ -139,6 +139,13 @@ Le validateur du snapshot est total et rejette toute structure absente,
 tronquée ou contradictoire sans lever d'exception. Les snapshots historiques
 sans `pollutionPotential` restent compatibles.
 
+La confiance des indices est normalisée avant l'attribution de son niveau : le
+score persisté arrondi et le niveau sont toujours évalués sur la même valeur,
+notamment aux seuils `0,5` et `0,75`. Une pertinence globale `unavailable`
+conserve les alertes de groupes réellement évaluables pour l'audit, mais ne
+déclenche jamais la recherche d'un itinéraire alternatif et n'expose aucun
+bouton d'action.
+
 L'admission géographique hors corridor reste évaluée avec le risque global
 `all`. Ainsi, une préférence focalisée peut réordonner une zone de l'autre type
 sans la transformer en exclusion absolue ; le corridor, la sécurité,

@@ -127,11 +127,13 @@ export function evaluateRoutePollutionRelevance(
   });
   const globalWarning = global.warning === "red" || global.warning === "orange";
   const groupWarning = groups.some((group) => group.warning === "red" || group.warning === "orange");
-  const alternativeSearch = globalWarning || groupWarning
-    ? { relevant: true, reason: globalWarning ? "warning" as const : "group_warning" as const }
+  const alternativeSearch = global.warning === "unavailable"
+    ? { relevant: false, reason: "unavailable" as const }
+    : globalWarning || groupWarning
+      ? { relevant: true, reason: globalWarning ? "warning" as const : "group_warning" as const }
     : {
         relevant: false,
-        reason: global.warning === "unavailable" ? "unavailable" as const : "not_relevant" as const,
+        reason: "not_relevant" as const,
       };
   const limitations = [...potential.limitations];
   if (global.warning === "unavailable") {
@@ -220,7 +222,7 @@ function expectedWarning(
       : "none";
 }
 
-function validReference(value: unknown): boolean {
+function validReference(value: unknown, selectedCategory: RoutePollutionPotential["selectedCategory"]): boolean {
   if (value === null) return true;
   if (!isRecord(value)) return false;
   const reference = value as RoutePollutionRelevanceAssessment["reference"] & Record<string, unknown>;
@@ -228,14 +230,17 @@ function validReference(value: unknown): boolean {
   return (
     typeof reference.id === "string" && reference.id.trim().length > 0 &&
     typeof reference.label === "string" && reference.label.trim().length > 0 &&
-    (reference.kind === "historical_action_score_100" || reference.kind === "theoretical_network") &&
-    (reference.historicalScore === null || reference.historicalScore === 100) &&
+    ((reference.kind === "historical_action_score_100" && reference.historicalScore === 100) ||
+      (reference.kind === "theoretical_network" && reference.historicalScore === null)) &&
     isRecord(comparison) &&
     (comparison.pickupPreference === "balanced" || comparison.pickupPreference === "waste" || comparison.pickupPreference === "cigarette_butts") &&
     (comparison.routeTopology === "loop" || comparison.routeTopology === "open") &&
     typeof comparison.travelBudgetMinutes === "number" && Number.isFinite(comparison.travelBudgetMinutes) && comparison.travelBudgetMinutes > 0 &&
     typeof comparison.usefulCollectionLengthM === "number" && Number.isFinite(comparison.usefulCollectionLengthM) && comparison.usefulCollectionLengthM > 0 &&
-    validStringArray(reference.provenance)
+    validStringArray(reference.provenance) &&
+    ((selectedCategory === "waste" && comparison.pickupPreference === "waste") ||
+      (selectedCategory === "cigaretteButts" && comparison.pickupPreference === "cigarette_butts") ||
+      (selectedCategory === "mixed" && comparison.pickupPreference === "balanced"))
   );
 }
 
@@ -265,7 +270,7 @@ export function isRoutePollutionRelevanceAssessment(
     !validScore(assessment.score) ||
     (assessment.selectedCategory !== "waste" && assessment.selectedCategory !== "cigaretteButts" && assessment.selectedCategory !== "mixed") ||
     !isValidRelevanceConfidence(assessment.confidence) ||
-    !validReference(assessment.reference) ||
+    !validReference(assessment.reference, assessment.selectedCategory) ||
     !Array.isArray(assessment.groups) ||
     new Set(assessment.groups.map((group) => isRecord(group) ? group.groupIndex : undefined)).size !== assessment.groups.length ||
     !assessment.groups.every(validGroupAssessment) ||
@@ -287,12 +292,12 @@ export function isRoutePollutionRelevanceAssessment(
   const status = globalReason === null ? "evaluated" : "unavailable";
   const hasGlobalWarning = globalWarning === "red" || globalWarning === "orange";
   const hasGroupWarning = assessment.groups.some((group) => group.warning === "red" || group.warning === "orange");
-  const expectedAlternative = hasGlobalWarning
-    ? { relevant: true, reason: "warning" }
-    : hasGroupWarning
-      ? { relevant: true, reason: "group_warning" }
-      : globalWarning === "unavailable"
-        ? { relevant: false, reason: "unavailable" }
+  const expectedAlternative = globalWarning === "unavailable"
+    ? { relevant: false, reason: "unavailable" }
+    : hasGlobalWarning
+      ? { relevant: true, reason: "warning" }
+      : hasGroupWarning
+        ? { relevant: true, reason: "group_warning" }
         : { relevant: false, reason: "not_relevant" };
 
   return (

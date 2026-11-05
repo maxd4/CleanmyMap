@@ -308,6 +308,25 @@ describe("route theoretical pollution potential", () => {
     expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, comparison: {} } })).toBe(false);
   });
 
+  it.each([
+    [0.4996, 0.5, "medium"],
+    [0.5, 0.5, "medium"],
+    [0.5004, 0.5, "medium"],
+    [0.7496, 0.75, "high"],
+    [0.75, 0.75, "high"],
+    [0.7504, 0.75, "high"],
+  ] as const)("normalise la confiance %s avant son niveau", (rawScore, normalizedScore, level) => {
+    const current = projection();
+    for (const segment of current.segments) {
+      segment.wasteConfidence = { level: "low", score: rawScore } as never;
+      segment.cigaretteButtConfidence = { level: "low", score: rawScore } as never;
+    }
+    const potential = buildRoutePollutionPotential(routeInput({ projection: current, referenceCatalog: catalog(current) }));
+
+    expect(potential.global.confidence).toMatchObject({ level, score: normalizedScore, source: "segment_projection" });
+    expect(isRoutePollutionPotential(potential)).toBe(true);
+  });
+
   it("refuse les références dont les sommets ou les arêtes ne prouvent pas un parcours dirigé", () => {
     const dispersed = catalog(projection(), [], {
       coordinates: [[48.852, 2.35], [48.854, 2.35], [48.852, 2.35], [48.854, 2.35]],

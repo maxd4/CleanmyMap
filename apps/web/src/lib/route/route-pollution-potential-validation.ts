@@ -43,7 +43,9 @@ function validConfidenceRecord(value: unknown): value is JsonRecord {
   if (!validLevel || !validSource) return false;
   return value.score === null
     ? value.level === "unknown" && value.source === "unavailable"
-    : value.source === "segment_projection" && value.score >= 0 && value.score <= 1;
+    : value.source === "segment_projection" && value.score >= 0 && value.score <= 1 &&
+      value.score === Number(value.score.toFixed(3)) &&
+      value.level === (value.score >= 0.75 ? "high" : value.score >= 0.5 ? "medium" : "low");
 }
 
 export function isRoutePollutionPotentialConfidence(value: unknown): value is RoutePollutionPotentialConfidence {
@@ -90,7 +92,7 @@ function validIndex(value: unknown): value is RoutePollutionPotentialIndex {
   const expectedMissing = categories.flatMap((category, index) => category.value === null ? (["waste", "cigaretteButts", "mixed"] as const).slice(index, index + 1) : []);
   if (!Array.isArray(value.missingCategories) || value.missingCategories.length !== expectedMissing.length || value.missingCategories.some((category, index) => category !== expectedMissing[index])) return false;
   if (!categories.some((category) => sameNullableNumber(category.value, value.value) && category.status === value.status && sameConfidence(category.confidence, value.confidence))) return false;
-  return value.value === null ? value.status === "unavailable" && value.confidence.score === null : value.status !== "unavailable";
+  return value.value === null ? value.status === "unavailable" : value.status !== "unavailable";
 }
 
 function validReferenceComparison(value: unknown): value is RoutePollutionReferenceComparison {

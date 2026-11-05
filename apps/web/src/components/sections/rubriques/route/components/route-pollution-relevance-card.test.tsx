@@ -94,6 +94,31 @@ describe("RoutePollutionRelevanceCard", () => {
     expect(markup).toContain("sm:w-auto");
   });
 
+  it("keeps an evaluable red group visible without offering an alternative when global relevance is unavailable", () => {
+    const markup = renderToStaticMarkup(
+      <RoutePollutionRelevanceCard
+        assessment={assessment({
+          score: 72,
+          status: "unavailable",
+          warning: "unavailable",
+          reason: "confidence_unknown",
+          confidence: { level: "unknown", score: null, source: "unavailable" },
+          groups: [
+            { groupIndex: 1, score: 39, status: "available", warning: "red", confidence: { level: "high", score: 0.9, source: "segment_projection" }, reason: null },
+            { groupIndex: 2, score: 72, status: "available", warning: "none", confidence: { level: "high", score: 0.9, source: "segment_projection" }, reason: null },
+          ],
+          alternativeSearch: { relevant: false, reason: "unavailable" },
+        })}
+        fr
+        onFindNearestRelevantRoute={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Groupe 1");
+    expect(markup).toContain("Alerte : pertinence faible pour cet itinéraire.");
+    expect(markup).not.toContain("Trouver l’itinéraire pertinent le plus proche");
+  });
+
   it("shows the server-reported access and before/after scores", () => {
     const markup = renderToStaticMarkup(
       <RoutePollutionRelevanceCard

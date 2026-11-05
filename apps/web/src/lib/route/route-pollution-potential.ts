@@ -289,9 +289,10 @@ function mixedValue(values: CategoryValues): number | null {
 }
 function confidenceFor(score: number | null): RoutePollutionPotentialConfidence {
   if (score === null) return { level: "unknown", score: null, source: "unavailable" };
+  const normalizedScore = round(clamp(score, 0, 1), 3);
   return {
-    level: score >= 0.75 ? "high" : score >= 0.5 ? "medium" : "low",
-    score: round(clamp(score, 0, 1), 3),
+    level: normalizedScore >= 0.75 ? "high" : normalizedScore >= 0.5 ? "medium" : "low",
+    score: normalizedScore,
     source: "segment_projection",
   };
 }

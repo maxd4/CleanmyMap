@@ -122,6 +122,15 @@ describe("route pollution relevance policy", () => {
     expect(assessment.alternativeSearch).toEqual({ relevant: true, reason: "group_warning" });
   });
 
+  it("keeps group warnings visible without enabling alternative search when global relevance is unavailable", () => {
+    const assessment = evaluateRoutePollutionRelevance(potential(72, [39], null));
+
+    expect(assessment.status).toBe("unavailable");
+    expect(assessment.groups[0]?.warning).toBe("red");
+    expect(assessment.alternativeSearch).toEqual({ relevant: false, reason: "unavailable" });
+    expect(isRoutePollutionRelevanceAssessment(assessment)).toBe(true);
+  });
+
   it("exposes the reference and selected category without changing historical scores", () => {
     const assessment = evaluateRoutePollutionRelevance(potential(65));
 
@@ -140,6 +149,9 @@ describe("route pollution relevance policy", () => {
     ["alerte incompatible", (assessment: Record<string, unknown>) => { assessment.warning = "red"; }],
     ["confiance incompatible avec l'alerte", (assessment: Record<string, unknown>) => { assessment.confidence = { level: "unknown", score: null, source: "unavailable" }; assessment.status = "unavailable"; assessment.warning = "unavailable"; assessment.reason = "confidence_unknown"; assessment.alternativeSearch = { relevant: true, reason: "warning" }; }],
     ["décision alternative incohérente", (assessment: Record<string, unknown>) => { assessment.alternativeSearch = { relevant: true, reason: "warning" }; }],
+    ["référence historique sans score 100", (assessment: Record<string, unknown>) => { (assessment.reference as Record<string, unknown>).kind = "historical_action_score_100"; (assessment.reference as Record<string, unknown>).historicalScore = null; }],
+    ["référence théorique avec score historique", (assessment: Record<string, unknown>) => { (assessment.reference as Record<string, unknown>).kind = "theoretical_network"; (assessment.reference as Record<string, unknown>).historicalScore = 100; }],
+    ["référence incompatible avec la catégorie", (assessment: Record<string, unknown>) => { ((assessment.reference as Record<string, unknown>).comparison as Record<string, unknown>).pickupPreference = "waste"; }],
   ] as const)("refuse %s sans exception", (_label, mutate) => {
     const candidate = structuredClone(evaluateRoutePollutionRelevance(potential(72, [72])));
     mutate(candidate as Record<string, unknown>);
