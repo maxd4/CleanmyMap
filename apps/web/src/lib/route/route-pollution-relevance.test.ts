@@ -6,6 +6,7 @@ import type {
 } from "./route-pollution-potential";
 import {
   evaluateRoutePollutionRelevance,
+  isRoutePollutionRelevanceAssessment,
   ROUTE_POLLUTION_RELEVANCE_POLICY,
 } from "./route-pollution-relevance";
 
@@ -128,5 +129,38 @@ describe("route pollution relevance policy", () => {
     expect(assessment.reference?.label).toBe("Référence parisienne théorique");
     expect(assessment.reference?.historicalScore).toBeNull();
     expect(assessment.policyVersion).toBe("route-pollution-relevance-v1");
+  });
+
+  it.each([
+    ["confidence absente", (assessment: Record<string, unknown>) => { delete assessment.confidence; }],
+    ["confidence malformée", (assessment: Record<string, unknown>) => { assessment.confidence = { level: "high", score: 0.2, source: "segment_projection" }; }],
+    ["groupe incomplet", (assessment: Record<string, unknown>) => { assessment.groups = [{ groupIndex: 1, score: 72 }]; }],
+    ["référence invalide", (assessment: Record<string, unknown>) => { assessment.reference = { id: "reference", label: "Reference", kind: "theoretical_network", historicalScore: null, comparison: {}, provenance: [] }; }],
+    ["seuils divergents", (assessment: Record<string, unknown>) => { (assessment.policy as Record<string, unknown>).warningRedBelow = 41; }],
+    ["alerte incompatible", (assessment: Record<string, unknown>) => { assessment.warning = "red"; }],
+    ["confiance incompatible avec l'alerte", (assessment: Record<string, unknown>) => { assessment.confidence = { level: "unknown", score: null, source: "unavailable" }; assessment.status = "unavailable"; assessment.warning = "unavailable"; assessment.reason = "confidence_unknown"; assessment.alternativeSearch = { relevant: true, reason: "warning" }; }],
+    ["décision alternative incohérente", (assessment: Record<string, unknown>) => { assessment.alternativeSearch = { relevant: true, reason: "warning" }; }],
+  ] as const)("refuse %s sans exception", (_label, mutate) => {
+    const candidate = structuredClone(evaluateRoutePollutionRelevance(potential(72, [72])));
+    mutate(candidate as Record<string, unknown>);
+
+    expect(() => isRoutePollutionRelevanceAssessment(candidate)).not.toThrow();
+    expect(isRoutePollutionRelevanceAssessment(candidate)).toBe(false);
+  });
+
+  it("accepts an unavailable score only as an auditable, non-actionable state", () => {
+    const assessment = evaluateRoutePollutionRelevance(potential(20, [], null));
+
+    expect(isRoutePollutionRelevanceAssessment(assessment)).toBe(true);
+    expect(assessment.status).toBe("unavailable");
+    expect(assessment.score).toBe(20);
+    expect(assessment.alternativeSearch).toEqual({ relevant: false, reason: "unavailable" });
+  });
+
+  it("rejects a validly shaped group warning when its score does not justify it", () => {
+    const assessment = structuredClone(evaluateRoutePollutionRelevance(potential(72, [72, 39])));
+    assessment.groups[1]!.warning = "none";
+
+    expect(isRoutePollutionRelevanceAssessment(assessment)).toBe(false);
   });
 });

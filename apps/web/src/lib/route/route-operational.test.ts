@@ -16,6 +16,8 @@ import {
 } from "./route-operational";
 import { createDefaultRouteTerritorialGuidedMode } from "./route-planning-mode";
 import { haversineDistanceKm } from "@/lib/geo/geodesic-distance";
+import { buildRoutePollutionPotential } from "./route-pollution-potential";
+import { evaluateRoutePollutionRelevance } from "./route-pollution-relevance";
 import {
   MAX_OPERATIONAL_ROUTE_LOOPS,
   MAX_ROUTE_GEOMETRY_COORDINATES,
@@ -92,6 +94,16 @@ const guidedRecommendation = {
   })),
 } as const;
 
+const unavailableRelevance = evaluateRoutePollutionRelevance(buildRoutePollutionPotential({
+  projection: null,
+  candidates: [],
+  groups: [],
+  pickupPreference: "balanced",
+  routeTopology: "loop",
+  travelBudgetMinutes: 60,
+  referenceCatalog: null,
+}));
+
 describe("operational route contract", () => {
   it("carries the confirmed departure selection into the action handoff", () => {
     const startLocation = {
@@ -120,6 +132,22 @@ describe("operational route contract", () => {
       startLocation: {
         ...startLocation,
         zone: { ...startLocation.zone, source: "planner" },
+      },
+    })).toBe(false);
+  });
+
+  it("carries only a validated relevance assessment and rejects contradictions", () => {
+    const operationalRoute = createOperationalRouteFromRecommendation({
+      ...recommendation,
+      pollutionRelevance: unavailableRelevance,
+    });
+
+    expect(isOperationalRoute(operationalRoute)).toBe(true);
+    expect(isOperationalRoute({
+      ...operationalRoute,
+      pollutionRelevance: {
+        ...unavailableRelevance,
+        alternativeSearch: { relevant: true, reason: "warning" },
       },
     })).toBe(false);
   });
@@ -399,6 +427,7 @@ describe("operational route contract", () => {
     expect(normalized.operationalRoute?.version).toBe("operational-route-v1");
     expect(normalized.operationalRoute?.routes[0]?.plannerTechnicalStops[0]?.id).toBe("technical-1");
     expect(normalizeOperationalRoute(legacy)?.state).toBe("planner_copy");
+    expect(normalizeOperationalRoute(legacy)).not.toHaveProperty("pollutionRelevance");
   });
 
   it("gives operationalRoute priority when both keys are present", () => {

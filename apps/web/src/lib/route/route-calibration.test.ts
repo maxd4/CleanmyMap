@@ -13,6 +13,9 @@ import {
 } from "./route-calibration";
 import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
+import { buildRoutePollutionPotential } from "./route-pollution-potential";
+import { evaluateRoutePollutionRelevance } from "./route-pollution-relevance";
+import { isRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 
 const workload = {
   modelVersion: "route-cleanup-workload-v1" as const,
@@ -129,6 +132,42 @@ describe("route calibration context and validation", () => {
     for (const invalidContext of invalidContexts) {
       expect(isRouteCalibrationContext(invalidContext)).toBe(false);
     }
+  });
+
+  it("validates persisted relevance in snapshots and keeps the legacy omission compatible", () => {
+    const relevance = evaluateRoutePollutionRelevance(buildRoutePollutionPotential({
+      projection: null,
+      candidates: [],
+      groups: [],
+      pickupPreference: "balanced",
+      routeTopology: "loop",
+      travelBudgetMinutes: 60,
+      referenceCatalog: null,
+    }));
+    const snapshot = buildRoutePlannerSnapshot({
+      ...createRoutePlannerSnapshotInput(),
+      pollutionRelevance: relevance,
+    });
+
+    expect(isRoutePlannerSnapshot(snapshot)).toBe(true);
+    expect(isRoutePlannerSnapshot({
+      ...snapshot,
+      pollutionRelevance: {
+        ...relevance,
+        confidence: undefined,
+      },
+    })).toBe(false);
+    expect(isRoutePlannerSnapshot({
+      ...snapshot,
+      pollutionRelevance: {
+        ...relevance,
+        policy: { ...relevance.policy, warningOrangeBelow: 66 },
+      },
+    })).toBe(false);
+
+    const legacySnapshot = { ...snapshot };
+    delete legacySnapshot.pollutionRelevance;
+    expect(isRoutePlannerSnapshot(legacySnapshot)).toBe(true);
   });
 
   it("requires verified v3 provenance by default and keeps an explicit diagnostic opt-out", () => {

@@ -1,4 +1,8 @@
-import type { RoutePollutionRelevanceAssessment, RoutePollutionRelevanceWarning } from "@/lib/route/route-pollution-relevance";
+import {
+  isRoutePollutionRelevanceAssessment,
+  type RoutePollutionRelevanceAssessment,
+  type RoutePollutionRelevanceWarning,
+} from "@/lib/route/route-pollution-relevance";
 import type { RouteNearestRelevantSearch } from "@/lib/route/route-nearest-relevant";
 import { CmmButton } from "@/components/ui/cmm-button";
 
@@ -24,10 +28,18 @@ function warningLabel(warning: RoutePollutionRelevanceWarning, fr: boolean): str
   return null;
 }
 
-function scoreLabel(score: number | null, fr: boolean): string {
-  return score === null
+function scoreLabel(score: number | null, evaluated: boolean, fr: boolean): string {
+  return !evaluated || score === null
     ? (fr ? "Pertinence non évaluable" : "Relevance cannot be assessed")
     : `${Number.isInteger(score) ? score : score.toFixed(2)} / 100`;
+}
+
+function auditScoreLabel(score: number | null, fr: boolean): string | null {
+  return score === null
+    ? null
+    : fr
+      ? `Indice conservé pour audit : ${Number.isInteger(score) ? score : score.toFixed(2)} / 100`
+      : `Index retained for audit: ${Number.isInteger(score) ? score : score.toFixed(2)} / 100`;
 }
 
 function warningTone(warning: RoutePollutionRelevanceWarning): string {
@@ -48,8 +60,32 @@ export function RoutePollutionRelevanceCard({
   onFindNearestRelevantRoute?: () => void;
   nearestRelevantSearch?: RouteNearestRelevantSearch;
 }) {
+  if (!isRoutePollutionRelevanceAssessment(assessment)) {
+    return (
+      <section
+        aria-labelledby="route-pollution-relevance-title"
+        data-route-pollution-relevance
+        data-route-pollution-warning="unavailable"
+        className="rounded-2xl border border-slate-300/20 bg-white/[0.05] p-4 text-slate-100"
+      >
+        <p id="route-pollution-relevance-title" className="text-xs font-black uppercase tracking-[0.16em] text-current/75">
+          {fr ? "Pertinence théorique" : "Theoretical relevance"}
+        </p>
+        <p className="mt-1 text-3xl font-black tracking-tight" data-route-pollution-score>
+          {fr ? "Pertinence non évaluable" : "Relevance cannot be assessed"}
+        </p>
+        <p role="status" aria-live="polite" className="mt-3 text-sm font-black" data-route-pollution-warning-message>
+          {fr ? "Pertinence non évaluable." : "Relevance cannot be assessed."}
+        </p>
+      </section>
+    );
+  }
+
   const warning = warningLabel(assessment.warning, fr);
   const showAlternative = assessment.alternativeSearch.relevant && Boolean(onFindNearestRelevantRoute);
+  const auditScore = assessment.status === "unavailable"
+    ? auditScoreLabel(assessment.score, fr)
+    : null;
   return (
     <section
       aria-labelledby="route-pollution-relevance-title"
@@ -63,8 +99,9 @@ export function RoutePollutionRelevanceCard({
             {fr ? "Pertinence théorique" : "Theoretical relevance"}
           </p>
           <p className="mt-1 text-3xl font-black tracking-tight" data-route-pollution-score>
-            {scoreLabel(assessment.score, fr)}
+            {scoreLabel(assessment.score, assessment.status === "evaluated", fr)}
           </p>
+          {auditScore ? <p className="mt-1 text-xs font-semibold text-current/65" data-route-pollution-audit-score>{auditScore}</p> : null}
           <p className="mt-1 text-xs font-semibold text-current/80">
             {categoryLabel(assessment.selectedCategory, fr)} · {fr ? "confiance" : "confidence"} {confidenceLabel(assessment.confidence.score, fr)}
           </p>
@@ -86,7 +123,8 @@ export function RoutePollutionRelevanceCard({
             {assessment.groups.map((group) => (
               <li key={group.groupIndex} role={group.warning !== "none" ? "status" : undefined} aria-live={group.warning !== "none" ? "polite" : undefined} className="rounded-xl border border-current/15 bg-black/10 px-3 py-2 text-xs font-semibold">
                 <span className="font-black">{fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`}</span>
-                <span className="ml-2">{scoreLabel(group.score, fr)}</span>
+                <span className="ml-2">{scoreLabel(group.score, group.warning !== "unavailable", fr)}</span>
+                {group.warning === "unavailable" && group.score !== null ? <span className="mt-1 block text-current/65">{auditScoreLabel(group.score, fr)}</span> : null}
                 {group.warning !== "none" ? <span className="mt-1 block font-black">{warningLabel(group.warning, fr)}</span> : null}
               </li>
             ))}

@@ -306,15 +306,25 @@ strictement inférieur à 40 déclenche un avertissement rouge ; de 40 inclus à
 65 exclu, un avertissement orange ; à partir de 65, aucune alerte. La policy
 exige aussi une confiance d'au moins 0,5 ; une confiance inconnue ou inférieure
 rend la pertinence non évaluable et ne déclenche pas d'alerte de faible
-pollution.
+pollution. Le validateur refuse toute pertinence persistée dont `confidence`,
+`reference`, `groups`, `reason`, `alternativeSearch` ou `policy` est incomplet,
+dont les seuils divergent de la policy, ou dont le statut, l'alerte et la
+décision alternative ne sont pas la dérivation exacte de cette policy. Un
+indice numérique conservé dans un état `unavailable` est réservé à l'audit et
+n'est jamais présenté comme une pertinence évaluée.
 
-Le résumé de `RouteResults` affiche le score, la catégorie, la confiance, la
-référence parisienne et le rappel qu'il s'agit d'un potentiel théorique relatif.
-Les indices de chaque groupe restent visibles et leurs avertissements ne sont
-pas masqués par une moyenne globale favorable. Le bouton de recherche
-alternative n'est présent que lorsqu'un avertissement serveur rouge ou orange
-est évalué ; il relance le planner avec la priorité théorique maximale, sans
-interdire la création de l'action courante et sans qualifier une rue de propre.
+Le résumé de `RouteResults` affiche le score évalué, la catégorie, la confiance,
+la référence parisienne et le rappel qu'il s'agit d'un potentiel théorique
+relatif. Lorsque l'évaluation est indisponible, le résultat principal est
+`Pertinence non évaluable` ; l'indice numérique éventuel reste séparé et
+explicitement marqué comme conservé pour audit. Les indices de chaque groupe
+restent visibles et leurs avertissements ne sont pas masqués par une moyenne
+globale favorable. Le bouton de recherche alternative n'est présent que
+lorsqu'un avertissement rouge ou orange est réellement évalué au niveau global
+ou d'un groupe ; un score non évaluable ou une décision persistée incohérente
+ne peut donc pas déclencher de recherche. La recherche relance le planner avec
+la priorité théorique maximale, sans interdire la création de l'action courante
+et sans qualifier une rue de propre.
 
 ### Recherche du parcours pertinent le plus proche
 

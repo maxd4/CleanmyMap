@@ -169,50 +169,137 @@ function validNullableNumber(value: unknown): value is number | null {
   return value === null || (typeof value === "number" && Number.isFinite(value));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string" && item.trim().length > 0);
+}
+
+function validScore(value: unknown): value is number | null {
+  return validNullableNumber(value) && (value === null || (value >= 0 && value <= 100));
+}
+
+function isValidRelevanceConfidence(value: unknown): value is RoutePollutionPotentialConfidence {
+  if (!isRoutePollutionPotentialConfidence(value)) return false;
+  const confidence = value as RoutePollutionPotentialConfidence;
+  if (confidence.score === null) {
+    return confidence.level === "unknown" && confidence.source === "unavailable";
+  }
+  const expectedLevel = confidence.score >= 0.75
+    ? "high"
+    : confidence.score >= 0.5
+      ? "medium"
+      : "low";
+  return confidence.level === expectedLevel && confidence.source === "segment_projection";
+}
+
+function expectedReason(
+  score: number | null,
+  confidence: RoutePollutionPotentialConfidence,
+): RoutePollutionRelevanceReason {
+  if (score === null) return "score_missing";
+  if (confidence.score === null) return "confidence_unknown";
+  if (confidence.score < ROUTE_POLLUTION_RELEVANCE_POLICY.minimumConfidenceScore) {
+    return "confidence_insufficient";
+  }
+  return null;
+}
+
+function expectedWarning(
+  score: number | null,
+  confidence: RoutePollutionPotentialConfidence,
+): RoutePollutionRelevanceWarning {
+  if (expectedReason(score, confidence) !== null) return "unavailable";
+  if (score === null) return "unavailable";
+  return score < ROUTE_POLLUTION_RELEVANCE_POLICY.warningRedBelow
+    ? "red"
+    : score < ROUTE_POLLUTION_RELEVANCE_POLICY.warningOrangeBelow
+      ? "orange"
+      : "none";
+}
+
+function validReference(value: unknown): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  const reference = value as RoutePollutionRelevanceAssessment["reference"] & Record<string, unknown>;
+  const comparison = reference.comparison;
+  return (
+    typeof reference.id === "string" && reference.id.trim().length > 0 &&
+    typeof reference.label === "string" && reference.label.trim().length > 0 &&
+    (reference.kind === "historical_action_score_100" || reference.kind === "theoretical_network") &&
+    (reference.historicalScore === null || reference.historicalScore === 100) &&
+    isRecord(comparison) &&
+    (comparison.pickupPreference === "balanced" || comparison.pickupPreference === "waste" || comparison.pickupPreference === "cigarette_butts") &&
+    (comparison.routeTopology === "loop" || comparison.routeTopology === "open") &&
+    typeof comparison.travelBudgetMinutes === "number" && Number.isFinite(comparison.travelBudgetMinutes) && comparison.travelBudgetMinutes > 0 &&
+    typeof comparison.usefulCollectionLengthM === "number" && Number.isFinite(comparison.usefulCollectionLengthM) && comparison.usefulCollectionLengthM > 0 &&
+    validStringArray(reference.provenance)
+  );
+}
+
+function validGroupAssessment(value: unknown): value is RoutePollutionRelevanceGroupAssessment {
+  if (!isRecord(value)) return false;
+  const group = value as RoutePollutionRelevanceGroupAssessment;
+  if (!Number.isInteger(group.groupIndex) || group.groupIndex < 1 ||
+      !validScore(group.score) || !isValidRelevanceConfidence(group.confidence)) {
+    return false;
+  }
+  const reason = expectedReason(group.score, group.confidence);
+  const warning = expectedWarning(group.score, group.confidence);
+  const status = reason === null
+    ? group.status === "available" || group.status === "partial"
+    : group.status === "unavailable";
+  return status && group.warning === warning && group.reason === reason;
+}
+
 export function isRoutePollutionRelevanceAssessment(
   value: unknown,
 ): value is RoutePollutionRelevanceAssessment {
-  if (!value || typeof value !== "object") return false;
+  if (!isRecord(value)) return false;
   const assessment = value as RoutePollutionRelevanceAssessment;
-  const validReference = assessment.reference === null || (
-    typeof assessment.reference === "object" &&
-    typeof assessment.reference.id === "string" &&
-    typeof assessment.reference.label === "string" &&
-    (assessment.reference.kind === "historical_action_score_100" || assessment.reference.kind === "theoretical_network") &&
-    (assessment.reference.historicalScore === null || assessment.reference.historicalScore === 100) &&
-    typeof assessment.reference.comparison === "object" &&
-    assessment.reference.comparison !== null &&
-    (assessment.reference.comparison.pickupPreference === "balanced" || assessment.reference.comparison.pickupPreference === "waste" || assessment.reference.comparison.pickupPreference === "cigarette_butts") &&
-    (assessment.reference.comparison.routeTopology === "loop" || assessment.reference.comparison.routeTopology === "open") &&
-    Number.isFinite(assessment.reference.comparison.travelBudgetMinutes) &&
-    Number.isFinite(assessment.reference.comparison.usefulCollectionLengthM) &&
-    Array.isArray(assessment.reference.provenance) &&
-    assessment.reference.provenance.every((item) => typeof item === "string")
+  if (
+    assessment.schemaVersion !== ROUTE_POLLUTION_RELEVANCE_POLICY_VERSION ||
+    assessment.policyVersion !== ROUTE_POLLUTION_RELEVANCE_POLICY_VERSION ||
+    !validScore(assessment.score) ||
+    (assessment.selectedCategory !== "waste" && assessment.selectedCategory !== "cigaretteButts" && assessment.selectedCategory !== "mixed") ||
+    !isValidRelevanceConfidence(assessment.confidence) ||
+    !validReference(assessment.reference) ||
+    !Array.isArray(assessment.groups) ||
+    new Set(assessment.groups.map((group) => isRecord(group) ? group.groupIndex : undefined)).size !== assessment.groups.length ||
+    !assessment.groups.every(validGroupAssessment) ||
+    !isRecord(assessment.alternativeSearch) ||
+    typeof assessment.alternativeSearch.relevant !== "boolean" ||
+    !["warning", "group_warning", "not_relevant", "unavailable"].includes(assessment.alternativeSearch.reason as string) ||
+    !validStringArray(assessment.limitations) ||
+    !isRecord(assessment.policy) ||
+    assessment.policy.version !== ROUTE_POLLUTION_RELEVANCE_POLICY_VERSION ||
+    assessment.policy.warningRedBelow !== ROUTE_POLLUTION_RELEVANCE_POLICY.warningRedBelow ||
+    assessment.policy.warningOrangeBelow !== ROUTE_POLLUTION_RELEVANCE_POLICY.warningOrangeBelow ||
+    assessment.policy.minimumConfidenceScore !== ROUTE_POLLUTION_RELEVANCE_POLICY.minimumConfidenceScore
+  ) {
+    return false;
+  }
+
+  const globalReason = expectedReason(assessment.score, assessment.confidence);
+  const globalWarning = expectedWarning(assessment.score, assessment.confidence);
+  const status = globalReason === null ? "evaluated" : "unavailable";
+  const hasGlobalWarning = globalWarning === "red" || globalWarning === "orange";
+  const hasGroupWarning = assessment.groups.some((group) => group.warning === "red" || group.warning === "orange");
+  const expectedAlternative = hasGlobalWarning
+    ? { relevant: true, reason: "warning" }
+    : hasGroupWarning
+      ? { relevant: true, reason: "group_warning" }
+      : globalWarning === "unavailable"
+        ? { relevant: false, reason: "unavailable" }
+        : { relevant: false, reason: "not_relevant" };
+
+  return (
+    assessment.status === status &&
+    assessment.warning === globalWarning &&
+    assessment.reason === globalReason &&
+    assessment.alternativeSearch.relevant === expectedAlternative.relevant &&
+    assessment.alternativeSearch.reason === expectedAlternative.reason
   );
-  return assessment.schemaVersion === ROUTE_POLLUTION_RELEVANCE_POLICY_VERSION &&
-    assessment.policyVersion === ROUTE_POLLUTION_RELEVANCE_POLICY_VERSION &&
-    validNullableNumber(assessment.score) &&
-    (assessment.status === "evaluated" || assessment.status === "unavailable") &&
-    (assessment.warning === "red" || assessment.warning === "orange" || assessment.warning === "none" || assessment.warning === "unavailable") &&
-    (assessment.selectedCategory === "waste" || assessment.selectedCategory === "cigaretteButts" || assessment.selectedCategory === "mixed") &&
-    isRoutePollutionPotentialConfidence(assessment.confidence) &&
-    validReference &&
-    Array.isArray(assessment.groups) &&
-    assessment.groups.every((group) =>
-      Number.isInteger(group.groupIndex) &&
-      validNullableNumber(group.score) &&
-      (group.status === "available" || group.status === "partial" || group.status === "unavailable") &&
-      (group.warning === "red" || group.warning === "orange" || group.warning === "none" || group.warning === "unavailable") &&
-      isRoutePollutionPotentialConfidence(group.confidence) &&
-      (group.reason === null || group.reason === "score_missing" || group.reason === "confidence_unknown" || group.reason === "confidence_insufficient"),
-    ) &&
-    typeof assessment.alternativeSearch === "object" && assessment.alternativeSearch !== null &&
-    typeof assessment.alternativeSearch.relevant === "boolean" &&
-    (assessment.alternativeSearch.reason === "warning" || assessment.alternativeSearch.reason === "group_warning" || assessment.alternativeSearch.reason === "not_relevant" || assessment.alternativeSearch.reason === "unavailable") &&
-    Array.isArray(assessment.limitations) &&
-    typeof assessment.policy === "object" && assessment.policy !== null &&
-    assessment.policy.version === ROUTE_POLLUTION_RELEVANCE_POLICY_VERSION &&
-    Number.isFinite(assessment.policy.warningRedBelow) &&
-    Number.isFinite(assessment.policy.warningOrangeBelow) &&
-    Number.isFinite(assessment.policy.minimumConfidenceScore);
 }
