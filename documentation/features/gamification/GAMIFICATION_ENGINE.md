@@ -74,8 +74,10 @@ sérialise les activations par utilisateur ; une activation déjà effective gar
 son watermark, tandis qu'une réactivation après révocation reçoit une nouvelle
 borne. Une révocation ferme aussi les détentions actives de ce propriétaire
 dans la même transaction, sans effacer les preuves historiques. Avant chaque
-projection publique, l'éligibilité d'âge Clerk courante est revalidée. Le
-classement public est `no-store` afin qu'une révocation ou une perte
+projection publique, l'éligibilité d'âge Clerk courante est revalidée. Une
+réponse Clerk indisponible est un état non vérifiable : elle exclut l'utilisateur
+de l'affichage et interrompt toute réconciliation, sans produire une liste de
+gagnants réputée complète. Le classement public est `no-store` afin qu'une révocation ou une perte
 d'éligibilité ne reste pas dans un cache partagé. Les statistiques personnelles
 restent séparées : elles ne réinscrivent jamais un propriétaire révoqué dans la
 compétition publique.
@@ -100,7 +102,10 @@ des faits canoniques avant et après le calcul. Des triggers `AFTER INSERT`,
 `UPDATE` et `DELETE` sur les actions, participations, consentements et profils
 font avancer cette révision dans la même transaction que la mutation ; une
 suppression ne peut donc pas rester invisible parce que son ancien
-`updated_at` n’était pas le maximum global. La publication exige cette
+`updated_at` n’était pas le maximum global. Une perte d'éligibilité Clerk
+confirmée est d'abord répercutée par la mutation serveur-only de
+`territorial_legend_consents`, ce qui avance la même révision et ferme la
+détention active dans sa transaction. La publication exige ensuite cette
 révision et verrouille les tables sources en `SHARE` avant de la comparer à
 leur état courant ; un calcul obsolète ne peut donc pas remplacer un état plus
 récent du même jour. `source_fingerprint` reste une preuve d'origine, jamais

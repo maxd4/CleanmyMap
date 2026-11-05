@@ -29,7 +29,7 @@ describe("server-side optional consent eligibility", () => {
 
     const eligibility = await getUserOptionalConsentEligibility("user-1");
 
-    expect(eligibility).toEqual({ ageBand: "under_15", parentalConsentVerified: false });
+    expect(eligibility).toEqual({ ageBand: "under_15", parentalConsentVerified: false, status: "verified" });
     expect(await isOptionalConsentTreatmentAllowedForUser("user-1")).toBe(false);
   });
 
@@ -40,6 +40,7 @@ describe("server-side optional consent eligibility", () => {
     await expect(getUserOptionalConsentEligibility("user-1")).resolves.toEqual({
       ageBand: "unknown",
       parentalConsentVerified: false,
+      status: "unavailable",
     });
   });
 });

@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPublicLeaderboardLabel } from "@/lib/gamification/progression/progression-ranking";
-import { isOptionalConsentTreatmentAllowedForUser } from "@/lib/minor-consent-server";
+import {
+  getUserOptionalConsentEligibility,
+} from "@/lib/minor-consent-server";
+import { isOptionalConsentTreatmentAllowed, parseAgeBand } from "@/lib/minor-consent";
 import { campaignStartDate, campaignYearForCivilDate } from "./campaign";
 import { parseTerritorialLegendAttribution } from "./attribution";
 import { loadTerritorialLegendPages } from "./pagination";
@@ -310,6 +313,7 @@ export type TerritorialLegendLoadedFacts = {
   participations: TerritorialParticipationFact[];
   consents: TerritorialLegendConsent[];
   profiles: TerritorialPublicProfile[];
+  clerkEligibilityUnavailableUserIds: string[];
 };
 
 export async function loadTerritorialLegendFacts(
@@ -350,7 +354,13 @@ export async function loadTerritorialLegendFacts(
       });
       return territory ? [{ actionId: row.id, actionDate: row.action_date, territory }] : [];
     });
-  if (actions.length === 0) return { actions: [], participations: [], consents: [], profiles: [] };
+  if (actions.length === 0) return {
+    actions: [],
+    participations: [],
+    consents: [],
+    profiles: [],
+    clerkEligibilityUnavailableUserIds: [],
+  };
 
   const actionIds = actions.map((action) => action.actionId);
   const participationResult = await loadInChunks(async (ids) => {
@@ -385,7 +395,7 @@ export async function loadTerritorialLegendFacts(
       loadPage: async (from, to) => {
         const result = await supabase
           .from("territorial_legend_consents")
-          .select("user_id, enabled, activated_at, revoked_at")
+          .select("user_id, enabled, age_band, activated_at, revoked_at")
           .in("user_id", ids)
           .order("user_id", { ascending: true })
           .range(from, to);
@@ -393,11 +403,12 @@ export async function loadTerritorialLegendFacts(
       },
     });
     return rows.flatMap((row) => {
-      const value = row as { user_id?: unknown; enabled?: unknown; activated_at?: unknown; revoked_at?: unknown };
+      const value = row as { user_id?: unknown; enabled?: unknown; age_band?: unknown; activated_at?: unknown; revoked_at?: unknown };
       return typeof value.user_id === "string"
         ? [{
             userId: value.user_id,
             enabled: value.enabled === true,
+            ageBand: parseAgeBand(value.age_band),
             activatedAt: typeof value.activated_at === "string" ? value.activated_at : null,
             revokedAt: typeof value.revoked_at === "string" ? value.revoked_at : null,
             ageEligible: undefined,
@@ -405,11 +416,19 @@ export async function loadTerritorialLegendFacts(
         : [];
     });
   }, userIds);
-  const publicConsentIds = new Set(
-    (await Promise.all(consentResult.filter((consent) => consent.enabled).map(async (consent) => ({
+  const clerkEligibility = await Promise.all(consentResult.filter((consent) => consent.enabled).map(async (consent) => {
+    const eligibility = await getUserOptionalConsentEligibility(consent.userId);
+    return {
       userId: consent.userId,
-      ageEligible: await isOptionalConsentTreatmentAllowedForUser(consent.userId),
-    })))).filter((consent) => consent.ageEligible).map((consent) => consent.userId),
+      available: eligibility.status === "verified",
+      ageEligible: eligibility.status === "verified" && isOptionalConsentTreatmentAllowed(eligibility),
+    };
+  }));
+  const clerkEligibilityUnavailableUserIds = clerkEligibility
+    .filter((consent) => !consent.available)
+    .map((consent) => consent.userId);
+  const publicConsentIds = new Set(
+    clerkEligibility.filter((consent) => consent.ageEligible).map((consent) => consent.userId),
   );
   const ownerUserId = params.ownerUserId ?? null;
   const eligibleUserIds = [...new Set([
@@ -418,7 +437,10 @@ export async function loadTerritorialLegendFacts(
   ])];
   for (const consent of consentResult) {
     if (consent.enabled) {
-      consent.ageEligible = publicConsentIds.has(consent.userId);
+      const currentEligibility = clerkEligibility.find((entry) => entry.userId === consent.userId);
+      consent.ageEligible = currentEligibility?.available
+        ? publicConsentIds.has(consent.userId)
+        : false;
     }
   }
   const profileResult = await loadInChunks(async (ids) => {
@@ -448,6 +470,7 @@ export async function loadTerritorialLegendFacts(
     participations,
     consents: consentResult,
     profiles,
+    clerkEligibilityUnavailableUserIds,
   };
 }
 

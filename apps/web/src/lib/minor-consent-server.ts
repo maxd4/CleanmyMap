@@ -11,11 +11,13 @@ import {
 export type OptionalConsentEligibility = {
   ageBand: AgeBand;
   parentalConsentVerified: boolean;
+  status: "verified" | "unavailable";
 };
 
 const UNKNOWN_ELIGIBILITY: OptionalConsentEligibility = {
   ageBand: "unknown",
   parentalConsentVerified: false,
+  status: "unavailable",
 };
 
 function readEligibility(metadata: Record<string, unknown> | null | undefined): OptionalConsentEligibility {
@@ -23,6 +25,7 @@ function readEligibility(metadata: Record<string, unknown> | null | undefined): 
     ageBand: parseAgeBand(metadata?.[CLERK_AGE_BAND_METADATA_KEY]),
     parentalConsentVerified:
       metadata?.[CLERK_PARENTAL_CONSENT_METADATA_KEY] === true,
+    status: "verified",
   };
 }
 

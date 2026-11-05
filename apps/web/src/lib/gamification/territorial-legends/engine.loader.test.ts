@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
-const ageEligibilityMock = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+const ageEligibilityMock = vi.hoisted(() => vi.fn().mockResolvedValue({
+  ageBand: "15_or_over",
+  parentalConsentVerified: false,
+  status: "verified",
+}));
 const resolveActionTerritoryMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/minor-consent-server", () => ({
-  isOptionalConsentTreatmentAllowedForUser: ageEligibilityMock,
+  getUserOptionalConsentEligibility: ageEligibilityMock,
+}));
+vi.mock("@/lib/minor-consent", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/minor-consent")>("@/lib/minor-consent")),
+  isOptionalConsentTreatmentAllowed: () => true,
 }));
 vi.mock("@/lib/geo/action-territory-resolver", () => ({
   resolveActionTerritory: resolveActionTerritoryMock,
@@ -79,6 +87,7 @@ describe("territorial legend fact loading", () => {
     expect(facts.participations).toHaveLength(TERRITORIAL_LEGEND_PAGE_SIZE + 1);
     expect(facts.actions.at(-1)?.actionId).toBe("action-0500");
     expect(facts.consents).toEqual([expect.objectContaining({ userId: "user-1", ageEligible: true })]);
+    expect(facts.clerkEligibilityUnavailableUserIds).toEqual([]);
     expect(resolveActionTerritoryMock).not.toHaveBeenCalled();
   });
 
@@ -86,6 +95,34 @@ describe("territorial legend fact loading", () => {
     await expect(loadTerritorialLegendFacts(supabaseFixture({ failActionPage: 1 }) as never, {
       now: new Date("2026-11-03T12:00:00.000Z"),
     })).rejects.toThrow("page unavailable");
+  });
+
+  it("records Clerk unavailability instead of treating the consent as ineligible", async () => {
+    ageEligibilityMock.mockResolvedValue({ ageBand: "unknown", parentalConsentVerified: false, status: "unavailable" });
+
+    const facts = await loadTerritorialLegendFacts(supabaseFixture() as never, {
+      now: new Date("2026-11-03T12:00:00.000Z"),
+    });
+
+    expect(facts.clerkEligibilityUnavailableUserIds).toEqual(["user-1"]);
+    expect(facts.consents[0]?.ageEligible).toBe(false);
+  });
+
+  it("recovers on a later verified Clerk read without reusing the unavailable state", async () => {
+    ageEligibilityMock
+      .mockResolvedValueOnce({ ageBand: "unknown", parentalConsentVerified: false, status: "unavailable" })
+      .mockResolvedValueOnce({ ageBand: "15_or_over", parentalConsentVerified: false, status: "verified" });
+
+    const unavailable = await loadTerritorialLegendFacts(supabaseFixture() as never, {
+      now: new Date("2026-11-03T12:00:00.000Z"),
+    });
+    const recovered = await loadTerritorialLegendFacts(supabaseFixture() as never, {
+      now: new Date("2026-11-03T12:00:00.000Z"),
+    });
+
+    expect(unavailable.clerkEligibilityUnavailableUserIds).toEqual(["user-1"]);
+    expect(recovered.clerkEligibilityUnavailableUserIds).toEqual([]);
+    expect(recovered.consents[0]?.ageEligible).toBe(true);
   });
 
   it("excludes unverifiable attributions instead of falling back to a provider", async () => {

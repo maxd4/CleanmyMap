@@ -55,8 +55,44 @@ export async function reconcileTerritorialLegendSnapshot(
   const attributionRefresh = options.refreshMissingAttributions === true
     ? await refreshMissingTerritorialLegendAttributions(supabase, now)
     : { refreshed: 0, unverifiable: 0 };
-  const revisionBefore = await readFactRevision(supabase);
-  const facts = await loadTerritorialLegendFacts(supabase, { now });
+  let revisionBefore = await readFactRevision(supabase);
+  let facts = await loadTerritorialLegendFacts(supabase, { now });
+  if (facts.clerkEligibilityUnavailableUserIds?.length) {
+    throw new Error("La réconciliation territoriale est interrompue : l’éligibilité Clerk est indisponible.");
+  }
+  let revokedByEligibility = facts.consents.filter((consent) =>
+    consent.enabled && consent.ageEligible === false,
+  );
+  if (revokedByEligibility.length > 0) {
+    // Re-check before mutating the durable consent projection. A transient
+    // Clerk outage must never turn an incomplete read into a revocation.
+    facts = await loadTerritorialLegendFacts(supabase, { now });
+    if (facts.clerkEligibilityUnavailableUserIds?.length) {
+      throw new Error("La réconciliation territoriale est interrompue : l’éligibilité Clerk est indisponible.");
+    }
+    revokedByEligibility = facts.consents.filter((consent) =>
+      consent.enabled && consent.ageEligible === false,
+    );
+    for (const consent of revokedByEligibility) {
+      const sync = await supabase.rpc("set_territorial_legend_consent", {
+        p_user_id: consent.userId,
+        p_enabled: false,
+        p_age_band: consent.ageBand ?? "unknown",
+        p_now: now.toISOString(),
+      });
+      if (sync.error) throw new Error(sync.error.message);
+    }
+    if (revokedByEligibility.length > 0) {
+      const revokedUserIds = new Set(revokedByEligibility.map((consent) => consent.userId));
+      facts = {
+        ...facts,
+        consents: facts.consents.map((consent) => revokedUserIds.has(consent.userId)
+          ? { ...consent, enabled: false, revokedAt: now.toISOString(), ageEligible: false }
+          : consent),
+      };
+      revisionBefore = await readFactRevision(supabase);
+    }
+  }
   const winners = buildTerritorialLegendWinnerSnapshots({ ...facts, now });
   const revisionAfter = await readFactRevision(supabase);
   if (revisionBefore !== revisionAfter) {
