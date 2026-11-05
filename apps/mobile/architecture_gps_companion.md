@@ -127,6 +127,10 @@ projection est masquée dès le rendu où l'identité change, et les résultats
 tardifs du démarrage, de la restauration ou de la finalisation sont ignorés.
 `missions.volunteer_id` n'est jamais utilisé pour remplacer une identité Clerk
 courante absente ou non vérifiée.
+Les callbacks différés de démarrage, de confirmation de finalisation et de
+retour à l'accueil capturent la session d'identité ; s'ils deviennent
+obsolètes, ils sont rejetés avant toute mutation d'état, arrêt de timer,
+permission GPS ou appel au service de tracking.
 
 La suppression de compte reste une demande RGPD, pas une suppression
 automatique. `Compte` appelle `/api/mobile/account/deletion-request`, qui

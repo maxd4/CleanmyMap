@@ -320,6 +320,62 @@ describe('mobile companion mission controller runtime', () => {
     expect(getController().errorMsg).toBeNull()
   })
 
+  it('rejects a confirmation callback created under A after B has resumed a mission', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const missionB = { ...mission, id: 'mission-b', volunteer_id: 'user-b' }
+    state.startMobileMission
+      .mockResolvedValueOnce({ ok: true, data: mission })
+      .mockResolvedValueOnce({ ok: true, data: missionB })
+    const { getController, update } = await renderController()
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+    await act(async () => { getController().handleStop() })
+    const buttons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
+    const obsoleteConfirmation = buttons.find((button) => button.text === 'Terminer')?.onPress
+
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await update()
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+    expect(getController().mission?.volunteer_id).toBe('user-b')
+
+    await act(async () => { obsoleteConfirmation?.(); await settle() })
+
+    expect(state.stopTracking).not.toHaveBeenCalled()
+    expect(getController().mission?.volunteer_id).toBe('user-b')
+    expect(getController().phase).toBe('tracking')
+    expect(getController().finalizationStage).toBeNull()
+  })
+
+  it('rejects a start callback captured under A before it can call the tracking service for B', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const startA = await renderController()
+    const obsoleteStart = startA.getController().handleStartMobileMission
+
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await startA.update()
+    await act(async () => { obsoleteStart(); await settle() })
+
+    expect(state.startMobileMission).not.toHaveBeenCalled()
+    expect(startA.getController().mission).toBeNull()
+    expect(startA.getController().phase).toBe('idle')
+  })
+
+  it('rejects an old return-home callback without clearing B mission state', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const { getController, update } = await renderController()
+    const obsoleteReturnHome = getController().handleReturnHome
+
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await update()
+    state.startMobileMission.mockResolvedValueOnce({ ok: true, data: { ...mission, id: 'mission-b', volunteer_id: 'user-b' } })
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+    expect(getController().mission?.volunteer_id).toBe('user-b')
+
+    await act(async () => { obsoleteReturnHome(); await settle() })
+
+    expect(getController().mission?.volunteer_id).toBe('user-b')
+    expect(getController().phase).toBe('tracking')
+  })
+
   it('does not retain A completion or apply a late finalization after switching to B', async () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     const finalization = deferred<{ ok: true; data: Mission }>()

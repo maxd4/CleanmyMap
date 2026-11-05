@@ -137,12 +137,17 @@ export function useCompanionMissionController() {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const { signOut } = useClerk()
   const currentOwnerId = userId ?? null
-  const identityRef = useRef<string | null>(null)
-  const operationRef = useRef(0)
+  const identityRef = useRef<string | null>(currentOwnerId)
+  const identityVersionRef = useRef(1)
+  const [identityVersion, setIdentityVersion] = useState(1)
+  const operationRef = useRef(1)
+  const callbackIdentityVersion = identityVersion
   useLayoutEffect(() => {
     if (identityRef.current !== currentOwnerId) {
       identityRef.current = currentOwnerId
+      identityVersionRef.current += 1
       operationRef.current += 1
+      setIdentityVersion(identityVersionRef.current)
     }
   }, [currentOwnerId])
 
@@ -162,6 +167,8 @@ export function useCompanionMissionController() {
   }, [])
   const isCurrentOperation = useCallback((ownerId: string, operationId: number) =>
     identityRef.current === ownerId && operationRef.current === operationId, [])
+  const isCurrentIdentity = useCallback((ownerId: string, identityVersion: number) =>
+    identityRef.current === ownerId && identityVersionRef.current === identityVersion, [])
 
   const mission = missionState?.ownerId === currentOwnerId ? missionState.value : null
   const phase = phaseState?.ownerId === currentOwnerId ? phaseState.value : 'idle'
@@ -225,9 +232,6 @@ export function useCompanionMissionController() {
 
   const handleStartMobileMission = useCallback(async (actionId?: string, label = 'Action bénévole mobile') => {
     const ownerId = userId
-    const operationId = ownerId ? beginOperation(ownerId) : 0
-    setErrorMsg(null)
-    setCompletionSummary(null)
 
     if (!ownerId) {
       const error = 'Connexion Clerk requise pour démarrer une mission.'
@@ -235,6 +239,12 @@ export function useCompanionMissionController() {
       Alert.alert('Connexion requise', error)
       return
     }
+
+    if (!isCurrentIdentity(ownerId, callbackIdentityVersion)) return
+    const operationId = beginOperation(ownerId)
+    if (operationId < 0) return
+    setErrorMsg(null)
+    setCompletionSummary(null)
 
     setPhase(owned(ownerId, 'requesting'))
     const trackingResult = await startMobileMission(ownerId, label, actionId)
@@ -249,27 +259,32 @@ export function useCompanionMissionController() {
     setMission(owned(ownerId, trackingResult.data))
     setPhase(owned(ownerId, 'tracking'))
     startDurationTimer(ownerId, trackingResult.data.started_at ?? new Date().toISOString())
-  }, [beginOperation, isCurrentOperation, startDurationTimer, userId])
+  }, [beginOperation, callbackIdentityVersion, isCurrentIdentity, isCurrentOperation, startDurationTimer, userId])
 
   const handleSessionExpired = useCallback(async () => {
     const ownerId = userId ?? null
+    if (ownerId && !isCurrentIdentity(ownerId, callbackIdentityVersion)) return
     operationRef.current += 1
     setErrorMsg(owned(ownerId, 'Votre session Clerk a expiré. Connectez-vous à nouveau pour continuer.'))
     await signOut().catch(() => null)
-  }, [signOut, userId])
+  }, [callbackIdentityVersion, isCurrentIdentity, signOut, userId])
 
   const handleRetryMission = useCallback(() => {
     if (!userId) return
-    beginOperation(userId)
+    if (!isCurrentIdentity(userId, callbackIdentityVersion)) return
+    const operationId = beginOperation(userId)
+    if (operationId < 0) return
     setErrorMsg(null)
     setPhase(owned(userId, 'requesting'))
     setRestoreAttempt((attempt) => attempt + 1)
-  }, [beginOperation, userId])
+  }, [beginOperation, callbackIdentityVersion, isCurrentIdentity, userId])
 
   const finalizeMission = useCallback(async (activeMission: Mission) => {
     const ownerId = userId
     if (!ownerId) return
+    if (!isCurrentIdentity(ownerId, callbackIdentityVersion)) return
     const operationId = beginOperation(ownerId)
+    if (operationId < 0) return
     setErrorMsg(null)
     setFinalizationStage(owned(ownerId, 'synchronizing'))
     setPhase(owned(ownerId, 'stopping'))
@@ -295,10 +310,11 @@ export function useCompanionMissionController() {
     setCompletionSummary(owned(ownerId, result.data))
     setFinalizationStage(null)
     setPhase(null)
-  }, [beginOperation, isCurrentOperation, refreshPendingGpsPointCount, stopDurationTimer, userId])
+  }, [beginOperation, callbackIdentityVersion, isCurrentIdentity, isCurrentOperation, refreshPendingGpsPointCount, stopDurationTimer, userId])
 
   const handleStop = useCallback(() => {
     if (!mission) return
+    if (!userId || !isCurrentIdentity(userId, callbackIdentityVersion)) return
     Alert.alert(
       'Terminer la mission ?',
       'Les points GPS seront synchronisés avant la finalisation serveur.',
@@ -307,15 +323,16 @@ export function useCompanionMissionController() {
         { text: 'Terminer', style: 'destructive', onPress: () => void finalizeMission(mission).catch(() => undefined) },
       ],
     )
-  }, [finalizeMission, mission])
+  }, [callbackIdentityVersion, finalizeMission, isCurrentIdentity, mission, userId])
 
   const handleReturnHome = useCallback(() => {
+    if (!userId || !isCurrentIdentity(userId, callbackIdentityVersion)) return
     operationRef.current += 1
     setCompletionSummary(null)
     setErrorMsg(null)
     setMission(null)
     setPhase(null)
-  }, [])
+  }, [callbackIdentityVersion, isCurrentIdentity, userId])
 
   return {
     isLoaded,
