@@ -65,6 +65,11 @@ select is(
   'reactivation creates a new non-retroactive watermark'
 );
 
+-- The legacy two-argument writer is exercised only as the migration's
+-- postgres-owned implementation. The exposed service boundary below is the
+-- three-argument, revision-checked wrapper.
+set local role postgres;
+
 select is(
   (public.reconcile_territorial_legend_snapshot(
     (select effective_on from territorial_legend_contract_state),
@@ -81,7 +86,8 @@ select is(
         'effective_on', (select effective_on from territorial_legend_contract_state),
         'score', 2, 'rank', 1, 'tie_size', 2, 'source_fingerprint', 'contract-source-b'
       )
-    )
+    ),
+    public.get_territorial_legend_fact_revision()
   )->>'status',
   'applied',
   'a two-winner snapshot is accepted with snake_case payload fields'
@@ -222,6 +228,15 @@ select ok(exists (
 ), 'award proofs persist a campaign year');
 select is((select count(*)::integer from pg_constraint where conrelid = 'public.territorial_legend_award_proofs'::regclass and contype = 'c' and conname = 'territorial_legend_award_proofs_annual_kind_check'), 1, 'the annual award_kind constraint is the only inherited kind gate');
 
+-- The preceding current-relative contract and this historical campaign are
+-- isolated fixtures. Production keeps the global monotonicity guard; the
+-- historical campaign must start with no later fixture watermark in the same
+-- transaction.
+delete from public.territorial_legend_award_proofs
+ where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
+delete from public.territorial_legend_hold_periods
+ where user_id in ('legend-contract-a', 'legend-contract-b', 'legend-contract-year');
+
 do $$
 declare
   v_day date;
@@ -315,12 +330,12 @@ select ok(not has_table_privilege('authenticated', 'public.territorial_legend_co
 select ok(not has_table_privilege('authenticated', 'public.territorial_legend_consents', 'update'), 'authenticated cannot update consent state directly');
 select throws_ok($$insert into public.territorial_legend_consents (user_id, enabled, age_band) values ('forged-consent', true, '15_or_over')$$, '42501', null, 'authenticated direct consent insert is refused');
 select throws_ok($$update public.territorial_legend_consents set enabled = true where user_id = 'legend-consent-contract'$$, '42501', null, 'authenticated direct consent update is refused');
-select ok(not has_function_privilege('authenticated', 'public.reconcile_territorial_legend_snapshot(date, jsonb)', 'execute'), 'authenticated cannot execute snapshot reconciliation');
+select ok(not has_function_privilege('authenticated', 'public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)', 'execute'), 'authenticated cannot execute snapshot reconciliation');
 select ok(not has_function_privilege('authenticated', 'public.invalidate_territorial_legend_history(bigint[], text[], date)', 'execute'), 'authenticated cannot execute history invalidation');
 select ok(not has_function_privilege('authenticated', 'public.set_territorial_legend_consent(text, boolean, text, timestamptz)', 'execute'), 'authenticated cannot execute the consent mutation RPC');
 select ok(has_table_privilege('service_role', 'public.territorial_legend_hold_periods', 'select'), 'service_role can read hold periods');
 select ok(has_table_privilege('service_role', 'public.territorial_legend_award_proofs', 'select'), 'service_role can read award proofs');
-select ok(has_function_privilege('service_role', 'public.reconcile_territorial_legend_snapshot(date, jsonb)', 'execute'), 'service_role can execute snapshot reconciliation');
+select ok(has_function_privilege('service_role', 'public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)', 'execute'), 'service_role can execute snapshot reconciliation');
 select ok(has_function_privilege('service_role', 'public.invalidate_territorial_legend_history(bigint[], text[], date)', 'execute'), 'service_role can execute history invalidation');
 
 select * from finish();

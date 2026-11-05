@@ -55,11 +55,17 @@ export async function reconcileTerritorialLegendSnapshot(
   const attributionRefresh = options.refreshMissingAttributions === true
     ? await refreshMissingTerritorialLegendAttributions(supabase, now)
     : { refreshed: 0, unverifiable: 0 };
+  const revisionBefore = await readFactRevision(supabase);
   const facts = await loadTerritorialLegendFacts(supabase, { now });
   const winners = buildTerritorialLegendWinnerSnapshots({ ...facts, now });
+  const revisionAfter = await readFactRevision(supabase);
+  if (revisionBefore !== revisionAfter) {
+    throw new Error("La réconciliation territoriale a été invalidée par une modification des faits sources.");
+  }
   const result = await supabase.rpc("reconcile_territorial_legend_snapshot", {
     p_effective_on: effectiveOn,
     p_winners: serializeWinnerSnapshots(winners),
+    p_fact_revision: revisionAfter,
   });
   if (result.error) throw new Error(result.error.message);
   const payload = result.data as {
@@ -83,4 +89,12 @@ export async function reconcileTerritorialLegendSnapshot(
     refreshedAttributions: attributionRefresh.refreshed,
     unverifiableAttributions: attributionRefresh.unverifiable,
   };
+}
+
+async function readFactRevision(supabase: SupabaseClient): Promise<string> {
+  const result = await supabase.rpc("get_territorial_legend_fact_revision");
+  if (result.error || typeof result.data !== "string") {
+    throw new Error(result.error?.message ?? "La révision des faits territoriaux est invalide.");
+  }
+  return result.data;
 }

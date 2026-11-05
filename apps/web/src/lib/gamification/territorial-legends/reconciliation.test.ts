@@ -36,8 +36,11 @@ function supabase() {
   return {
     calls,
     client: {
-      rpc: vi.fn(async (_name: string, args: Record<string, unknown>) => {
-        calls.push(args);
+      rpc: vi.fn(async (name: string, args?: Record<string, unknown>) => {
+        if (name === "get_territorial_legend_fact_revision") {
+          return { data: "2026-11-03T10:00:00.000Z", error: null };
+        }
+        calls.push(args ?? {});
         return {
           data: { status: "applied", affectedUserIds: ["user-1"], insertedProofs: 1, extendedPeriods: 0, closedPeriods: 0 },
           error: null,
@@ -65,6 +68,7 @@ describe("territorial legend snapshot reconciliation", () => {
     expect(fixture.calls[0]).toEqual(fixture.calls[1]);
     expect(fixture.calls[0]).toMatchObject({
       p_effective_on: "2026-11-03",
+      p_fact_revision: "2026-11-03T10:00:00.000Z",
       p_winners: [{ user_id: "user-1", territory_code: "75056", tie_size: 2 }],
     });
   });
@@ -106,9 +110,28 @@ describe("territorial legend snapshot reconciliation", () => {
 
   it("fails closed when the persistence RPC does not apply", async () => {
     const client = {
-      rpc: vi.fn().mockResolvedValue({ data: { status: "conflict" }, error: null }),
+      rpc: vi.fn(async (name: string) => name === "get_territorial_legend_fact_revision"
+        ? { data: "2026-11-03T10:00:00.000Z", error: null }
+        : { data: { status: "conflict" }, error: null }),
     } as unknown as SupabaseClient;
     await expect(reconcileTerritorialLegendSnapshot(client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false }))
       .rejects.toThrow("réponse invalide");
+  });
+
+  it("refuses to publish when the canonical fact revision changes during calculation", async () => {
+    let revisionReads = 0;
+    const client = {
+      rpc: vi.fn(async (name: string) => {
+        if (name === "get_territorial_legend_fact_revision") {
+          revisionReads += 1;
+          return { data: revisionReads === 1 ? "2026-11-03T10:00:00.000Z" : "2026-11-03T10:01:00.000Z", error: null };
+        }
+        return { data: { status: "applied" }, error: null };
+      }),
+    } as unknown as SupabaseClient;
+
+    await expect(reconcileTerritorialLegendSnapshot(client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false }))
+      .rejects.toThrow("modification des faits sources");
+    expect(client.rpc).toHaveBeenCalledTimes(2);
   });
 });

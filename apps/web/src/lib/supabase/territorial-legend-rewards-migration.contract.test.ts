@@ -21,6 +21,10 @@ const temporalMigration = readFileSync(
   new URL("../../../supabase/migrations/20261104000009_territorial_legend_temporal_reconciliation.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const revisionMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261105000013_territorial_legend_fact_revision.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
@@ -121,5 +125,16 @@ describe("territorial legend rewards migration", () => {
     expect(temporalMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb) to service_role");
     expect(pgtap).toContain("same-day return reuses the verified period");
     expect(pgtap).toContain("an older snapshot is rejected before mutation");
+  });
+
+  it("requires a canonical fact revision before exposing the writer", () => {
+    expect(revisionMigration).toContain("create or replace function public.get_territorial_legend_fact_revision()");
+    expect(revisionMigration).toContain("lock table public.actions, public.action_participants");
+    expect(revisionMigration).toContain("p_fact_revision timestamptz");
+    expect(revisionMigration).toContain("p_fact_revision < v_current_revision");
+    expect(revisionMigration).toContain("revoke all on function public.reconcile_territorial_legend_snapshot(date, jsonb)");
+    expect(revisionMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz) to service_role");
+    expect(pgtap).toContain("public.get_territorial_legend_fact_revision()");
+    expect(pgtap).toContain("select plan(73)");
   });
 });

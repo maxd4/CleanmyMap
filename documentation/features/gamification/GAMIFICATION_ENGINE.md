@@ -95,6 +95,14 @@ avant résolution et une condition atomique sur cette version. Une modification
 concurrente de géométrie perd donc l'écriture et laisse l'attribution à `NULL`
 pour une nouvelle tentative ; une attribution incertaine n'est jamais inventée.
 
+La réconciliation territoriale capture la révision canonique `updated_at` des
+faits sources avant et après le calcul. La publication exige cette révision et
+verrouille les tables sources en `SHARE` avant de la comparer à leur état
+courant ; un calcul obsolète ne peut donc pas remplacer un état plus récent du
+même jour. `source_fingerprint` reste une preuve d'origine, jamais une
+chronologie. Le RPC de publication révisé est réservé à `service_role` et les
+reprises valides restent idempotentes.
+
 La non-rétroactivité compare `action_participants.joined_at` à
 `territorial_legend_consents.activated_at` avec une précision d'horodatage ;
 un timestamp absent ou invalide est exclu. Les routes privées utilisent

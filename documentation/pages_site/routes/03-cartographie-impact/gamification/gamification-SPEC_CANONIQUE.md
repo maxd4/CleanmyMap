@@ -217,8 +217,12 @@ actives.
 
 Le RPC `reconcile_territorial_legend_snapshot` sérialise la journée par verrou
 PostgreSQL et est appelé par la réconciliation événementielle ainsi que par le
-job quotidien `territorial-legends`. Un snapshot antérieur au dernier état
-vérifié est rejeté avant toute mutation. Une perte puis un retour le même jour
+job quotidien `territorial-legends`. Le worker capture la révision `updated_at`
+canonique des faits avant et après son calcul ; le RPC exige cette révision,
+verrouille les tables sources en `SHARE` et rejette une publication calculée
+sur une révision plus ancienne. Un snapshot antérieur au dernier état vérifié
+est également rejeté avant toute mutation. `source_fingerprint` décrit la
+provenance du snapshot mais ne sert pas à ordonner les publications. Une perte puis un retour le même jour
 réutilise la période encore valide fermée ce jour-là ; une période invalidée
 n'est jamais rouverte. Après le snapshot, les utilisateurs
 concernés repassent dans la réconciliation CURRENT existante, qui écrit leurs
