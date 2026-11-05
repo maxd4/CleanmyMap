@@ -333,15 +333,22 @@ serveur que la recommandation initiale. Le serveur recalcule d'abord la demande
 d'origine, conserve son point précis ou la géométrie de zone, puis explore le
 graphe piéton actif par élargissements bornés de `0,5`, `1`, `2`, `3` et `5 km`.
 Les départs candidats sont des nœuds sortants du réseau couvert et situés dans
-Paris intra-muros ; leur nombre est plafonné par rayon et par requête.
+Paris intra-muros ; leur nombre est plafonné par rayon et par requête. Pour un
+départ précis, l’accès est mesuré depuis l’origine demandée. Pour un départ
+zoné, la zone est une emprise admissible : l’accès est mesuré depuis un nœud
+sortant vérifié dans cette emprise, sans imposer de passage par son centroïde.
+Un candidat sans chemin dirigé vérifiable depuis un tel point d’accès est
+exclu et la recherche conserve un motif d’indisponibilité réseau si aucune
+évaluation n’a pu être exécutée.
 
 Chaque candidat est planifié comme une boucle avec la préférence, les groupes,
 les effectifs, la sécurité et les budgets de la demande initiale. Une solution
 n'est retenue que si le score serveur atteint `65`, que la confiance est au
 moins celle de `route-pollution-relevance-v1`, que chaque groupe respecte ces
 deux conditions et que la boucle respecte les budgets. Dans le premier rayon
-admissible, la distance d'accès depuis le point initial — ou depuis la limite
-de la zone — est prioritaire ; le score départage les accès équivalents.
+admissible, la distance d'accès depuis le point initial — ou le meilleur point
+d'accès vérifié dans la zone — est prioritaire ; le score départage les accès
+équivalents.
 
 La réponse `nearestRelevantSearch` distingue le score avant/après, le nouveau
 rendez-vous, la distance et la durée d'accès, le rayon utilisé, les limites,

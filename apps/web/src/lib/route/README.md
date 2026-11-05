@@ -88,11 +88,14 @@ pas un résultat du fournisseur de routage; une estimation ou un fallback est
 identifié comme tel.
 
 La recherche `nearest_relevant` est bornée : elle inspecte au plus huit nœuds
-par rayon et n’est donc jamais présentée comme exhaustive. La distance d’accès
-au rendez-vous est calculée par chemin dirigé sur le graphe piéton depuis le
-départ demandé ; un composant déconnecté, une barrière ou un graphe absent
-rend l’accès inconnu et exclut le candidat. Une géométrie fallback ne peut
-jamais être qualifiée de réseau vérifié. Le quota global de quatre opérations
+par rayon et n’est donc jamais présentée comme exhaustive. Pour un départ précis,
+la distance d’accès au rendez-vous est calculée par chemin dirigé sur le graphe
+piéton depuis l’origine demandée. Pour une zone, elle est calculée depuis un
+point d’accès du graphe vérifié à l’intérieur de l’emprise ; le centroïde de la
+zone n’est jamais utilisé comme origine physique. Un composant déconnecté, une
+barrière, l’absence de point d’accès admissible ou un graphe absent rend
+l’accès inconnu et exclut le candidat. Une géométrie fallback ne peut jamais
+être qualifiée de réseau vérifié. Le quota global de quatre opérations
 de routage inclut le baseline, les erreurs et les expirations ; le signal
 d’annulation de la recherche est transmis au transport fournisseur.
 

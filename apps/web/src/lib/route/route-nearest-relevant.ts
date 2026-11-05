@@ -144,6 +144,22 @@ function cumulativeDistanceKm(reference: RouteNearestRelevantReference, point: C
   return haversineMeters(reference.center, point) / 1000;
 }
 
+function relativeDistanceKm(reference: RouteNearestRelevantReference, point: Coordinate): number {
+  return reference.kind === "zone"
+    ? distanceFromReferenceKm(reference, point)
+    : cumulativeDistanceKm(reference, point);
+}
+
+function pointInReferenceZone(reference: RouteNearestRelevantReference, point: Coordinate): boolean {
+  if (reference.kind !== "zone") return false;
+  const bounds = reference.bounds;
+  const insideBounds = !bounds || (
+    point[0] >= bounds.south && point[0] <= bounds.north &&
+    point[1] >= bounds.west && point[1] <= bounds.east
+  );
+  return insideBounds && cumulativeDistanceKm(reference, point) <= referenceRadiusKm(reference) + Number.EPSILON;
+}
+
 function nodeCoordinates(graph: PedestrianNetworkGraph): Array<{ id: string; point: Coordinate }> {
   const nodes = new Map<string, Coordinate>();
   const outgoing = new Set<string>();
@@ -166,35 +182,47 @@ function candidateNodesForRadius(
   previousRadiusKm: number,
   radiusKm: number,
   graph: PedestrianNetworkGraph,
-): Array<{ id: string; point: Coordinate; accessDistanceKm: number }> {
-  const lowerBound = referenceRadiusKm(reference) + previousRadiusKm;
-  const upperBound = referenceRadiusKm(reference) + radiusKm;
+): { candidates: Array<{ id: string; point: Coordinate; accessDistanceKm: number }>; considered: number } {
   const candidates = nodes
     .map((node) => ({
       ...node,
-      cumulativeDistanceKm: cumulativeDistanceKm(reference, node.point),
-      accessDistanceKm: distanceFromReferenceKm(reference, node.point),
+      relativeDistanceKm: relativeDistanceKm(reference, node.point),
     }))
-    .filter(({ cumulativeDistanceKm: distance }) =>
-      distance <= upperBound + Number.EPSILON &&
-      distance > Number.EPSILON &&
-      (previousRadiusKm === 0 || distance > lowerBound + Number.EPSILON),
+    .filter(({ relativeDistanceKm: distance }) =>
+      distance <= radiusKm + Number.EPSILON &&
+      (reference.kind === "zone" || distance > Number.EPSILON) &&
+      (previousRadiusKm === 0 || distance > previousRadiusKm + Number.EPSILON),
     )
     .sort((left, right) =>
-      left.accessDistanceKm - right.accessDistanceKm || left.id.localeCompare(right.id),
+      left.relativeDistanceKm - right.relativeDistanceKm || left.id.localeCompare(right.id),
     );
 
-  return candidates.slice(0, ROUTE_NEAREST_RELEVANT_MAX_CANDIDATES_PER_RADIUS)
-    .flatMap((candidate) => {
-      const access = routeThroughPedestrianNetwork(
-        graph,
-        [reference.center, candidate.point],
-        { topology: "open" },
+  const boundedCandidates = candidates.slice(0, ROUTE_NEAREST_RELEVANT_MAX_CANDIDATES_PER_RADIUS);
+  const accessPoints = reference.kind === "zone"
+    ? nodes.filter(({ point }) => pointInReferenceZone(reference, point))
+    : [{ id: "precise-origin", point: reference.center }];
+  const routedCandidates = boundedCandidates.flatMap((candidate) => {
+    const accessOptions = accessPoints
+      .map((accessPoint) => ({
+        accessPoint,
+        route: routeThroughPedestrianNetwork(
+          graph,
+          [accessPoint.point, candidate.point],
+          { topology: "open" },
+        ),
+      }))
+      .filter(({ route }) => route?.mode === "network")
+      .sort((left, right) =>
+        (left.route?.distanceKm ?? Number.POSITIVE_INFINITY) -
+          (right.route?.distanceKm ?? Number.POSITIVE_INFINITY) ||
+        left.accessPoint.id.localeCompare(right.accessPoint.id),
       );
-      return access?.mode === "network"
-        ? [{ ...candidate, accessDistanceKm: access.distanceKm }]
-        : [];
-    });
+    const access = accessOptions[0]?.route;
+    return access?.mode === "network"
+      ? [{ id: candidate.id, point: candidate.point, accessDistanceKm: access.distanceKm }]
+      : [];
+  });
+  return { candidates: routedCandidates, considered: boundedCandidates.length };
 }
 
 function assessmentIsSufficient(assessment: RoutePollutionRelevanceAssessment): boolean {
@@ -372,10 +400,13 @@ export async function findNearestRelevantRoute(input: {
   const startedAt = Date.now();
   let timedOutAttempts = 0;
   let failedAttempts = 0;
+  let networkAccessFailures = 0;
   let searchTimedOut = false;
   for (const radiusKm of ROUTE_NEAREST_RELEVANT_RADII_KM) {
     triedRadiiKm.push(radiusKm);
-    const candidates = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm, input.graph);
+    const candidateResult = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm, input.graph);
+    const candidates = candidateResult.candidates;
+    networkAccessFailures += candidateResult.considered - candidates.length;
     const successfulPlans: CandidateEvaluation[] = [];
     for (const candidate of candidates) {
       if (attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS) break;
@@ -432,7 +463,10 @@ export async function findNearestRelevantRoute(input: {
           triedRadiiKm,
           candidatesEvaluated: attemptsEvaluated,
           plansEvaluated: attemptsEvaluated,
-          limitations: ["La recherche est bornée à huit candidats par rayon ; l’accès est mesuré sur le graphe piéton dirigé depuis la demande initiale."],
+          limitations: [
+            "La recherche est bornée à huit candidats par rayon ; l’accès est mesuré sur le graphe piéton dirigé depuis " +
+              (input.reference.kind === "zone" ? "un point d’accès vérifié dans la zone." : "le départ précis demandé."),
+          ],
         },
       };
     }
@@ -445,7 +479,9 @@ export async function findNearestRelevantRoute(input: {
     .sort(compareBestAttempt)[0] ?? null;
   const hasScore = evaluated.some(({ result }) => result.relevance.score !== null);
   const hasConfidence = evaluated.some(({ result }) => result.relevance.confidence.score !== null);
-  const reason: RouteNearestRelevantSearch["reason"] = !hasScore
+  const reason: RouteNearestRelevantSearch["reason"] = !hasScore && networkAccessFailures > 0
+    ? "network_unavailable"
+    : !hasScore
     ? "score_unavailable"
     : !hasConfidence
       ? "confidence_insufficient"
@@ -459,7 +495,12 @@ export async function findNearestRelevantRoute(input: {
   return {
     selected: null,
     search: {
-      ...emptySearch(input.reference, input.baseline, reason, "not_found"),
+      ...emptySearch(
+        input.reference,
+        input.baseline,
+        reason,
+        reason === "network_unavailable" && evaluated.length === 0 ? "unavailable" : "not_found",
+      ),
       triedRadiiKm,
       candidatesEvaluated: attemptsEvaluated,
       plansEvaluated: attemptsEvaluated,
@@ -477,6 +518,7 @@ export async function findNearestRelevantRoute(input: {
         : null,
       limitations: [
         "Aucune boucle ne respecte simultanément le seuil de pertinence, la confiance, la sécurité et les budgets dans les rayons explorés.",
+        ...(reason === "network_unavailable" ? ["Aucun chemin piéton dirigé vérifiable ne relie les candidats à un point d’accès admissible de la zone ou au départ précis."] : []),
         ...(timedOutAttempts > 0 ? [`${timedOutAttempts} évaluation(s) ont expiré après ${ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS} ms.`] : []),
         ...(failedAttempts > 0 ? [`${failedAttempts} évaluation(s) fournisseur ont échoué et ont été comptées dans le quota.`] : []),
         ...(searchTimedOut ? [`Le budget global de ${ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS} ms a été atteint.`] : []),

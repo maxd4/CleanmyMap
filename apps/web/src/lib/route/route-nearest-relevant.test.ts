@@ -83,6 +83,22 @@ function reference() {
   })!;
 }
 
+function zoneReference(centerPoint: { latitude: number; longitude: number }, radiusKm: number) {
+  return createRouteNearestRelevantReference({
+    zone: {
+      label: "Zone de départ",
+      center: centerPoint,
+      radiusKm,
+      bounds: {
+        south: centerPoint.latitude - 0.03,
+        west: centerPoint.longitude - 0.03,
+        north: centerPoint.latitude + 0.03,
+        east: centerPoint.longitude + 0.03,
+      },
+    },
+  })!;
+}
+
 function evaluate(score: number | null, groups?: number[]) {
   return {
     relevance: assessment(score, 0.8, groups),
@@ -118,6 +134,36 @@ describe("route nearest relevant search", () => {
     expect(result.search.scoreAfter).toBe(70);
     expect(result.selected?.accessDistanceKm).toBeLessThanOrEqual(0.5);
     expect(result.selected?.origin.source).toBe("planner");
+  });
+
+  it("uses a verified access node inside a zone whose center is off-network", async () => {
+    const zone = zoneReference({ latitude: 48.855, longitude: 2.3522 }, 0.3);
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: zone,
+      baseline: evaluate(48),
+      evaluate: async () => evaluate(80),
+    });
+
+    expect(result.search.status).toBe("found");
+    expect(result.selected?.accessDistanceKm).toBe(0);
+    expect(result.selected?.origin.latitude).toBeGreaterThan(48.856);
+    expect(result.search.accessDurationMinutes).toBe(0);
+  });
+
+  it("routes to a rendezvous outside the zone from an access node inside it", async () => {
+    const zone = zoneReference({ latitude: 48.855, longitude: 2.3522 }, 0.3);
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.4]),
+      reference: zone,
+      baseline: evaluate(48),
+      evaluate: async (origin) => evaluate(origin.latitude > 48.859 ? 80 : 60),
+    });
+
+    expect(result.search.status).toBe("found");
+    expect(result.selected?.origin.latitude).toBeGreaterThan(48.859);
+    expect(result.selected?.accessDistanceKm).toBeGreaterThan(0);
+    expect(result.selected?.accessDistanceKm).toBeLessThan(0.5);
   });
 
   it("requires every group to clear the threshold", async () => {
@@ -172,7 +218,27 @@ describe("route nearest relevant search", () => {
     });
 
     expect(result.selected).toBeNull();
-    expect(result.search.status).toBe("not_found");
+    expect(result.search.status).toBe("unavailable");
+    expect(result.search.reason).toBe("network_unavailable");
+    expect(evaluateMock).not.toHaveBeenCalled();
+  });
+
+  it("reports network unavailability when a zone access component cannot reach its candidates", async () => {
+    const zone = zoneReference({ latitude: 48.855, longitude: 2.3522 }, 0.3);
+    const disconnected = graphAtDistances([0.4]);
+    disconnected.edges = disconnected.edges.filter((edge) => !edge.edgeKey.endsWith("-access"));
+    const evaluateMock = vi.fn(async () => evaluate(80));
+    const result = await findNearestRelevantRoute({
+      graph: disconnected,
+      reference: zone,
+      baseline: evaluate(48),
+      evaluate: evaluateMock,
+    });
+
+    expect(result.selected).toBeNull();
+    expect(result.search.status).toBe("unavailable");
+    expect(result.search.reason).toBe("network_unavailable");
+    expect(result.search.scoreAfter).toBeNull();
     expect(evaluateMock).not.toHaveBeenCalled();
   });
 
