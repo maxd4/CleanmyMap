@@ -47,6 +47,7 @@ recyclable ordinaire.
 Les catégories sensibles, notamment les médicaments, seringues, verre cassé et
 piles, conservent leur projection de sécurité prioritaire.
 
-Cette règle suit les consignes de l'[ADEME sur les emballages en carton](https://quefairedemesdechets.ademe.fr/categories/emballages/emballages-en-carton/)
+Cette règle suit les consignes de l'[ADEME sur les emballages en carton](https://quefairedemesdechets.ademe.fr/categories/emballages/emballages-en-carton/),
+les recommandations de l'[ADEME pour un emballage souillé par un produit dangereux](https://quefairedemesdechets.ademe.fr/dechet/emballage-souille-par-un-produit-dangereux/)
 et de la [Ville de Paris sur le tri des emballages](https://www.paris.fr/pages/en-2019-paris-vous-facilite-le-tri-6266/),
 à compléter par la consigne locale lorsque celle-ci diffère.

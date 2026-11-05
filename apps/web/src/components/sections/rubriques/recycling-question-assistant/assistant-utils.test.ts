@@ -90,6 +90,7 @@ describe("recycling assistant waste convergence", () => {
   it.each([
     ["carton gras", "fr"],
     ["dirty cardboard", "en"],
+    ["carton humide", "fr"],
     ["carton non alimentaire", "fr"],
     ["carton composite", "fr"],
     ["composite cardboard", "en"],
@@ -101,6 +102,7 @@ describe("recycling assistant waste convergence", () => {
     expect(answer.title).not.toMatch(/recycl|trie|recycling|sort/i);
     expect(answer.summary).not.toMatch(/se trie|recycl|recycling/i);
     expect(answer.nextStep).toMatch(/nature|item|specify|précise/i);
+    expect(answer.bullets.join(" ")).toMatch(/matière|objet|material|item|contamination/i);
     expect(response).toMatch(locale === "fr" ? /matière|contamination/ : /material|contamination/);
   });
 
@@ -115,6 +117,8 @@ describe("recycling assistant waste convergence", () => {
     expect(answer.kind).toBe("decheterie");
     expect(answer.title).toMatch(/filière vérifiée|verified route/i);
     expect(answer.summary).not.toMatch(/papier-carton|paper-and-cardboard stream|ordinary recycling/i);
+    expect(answer.bullets.join(" ")).toMatch(/peinture|solvants|produits chimiques|paint|solvents|chemicals/i);
+    expect(answer.bullets.join(" ")).not.toMatch(/papier-carton|paper-and-cardboard stream/i);
     expect(answer.nextStep).toMatch(/filière|déchèterie|route|recycling center/i);
   });
 

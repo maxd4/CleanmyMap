@@ -33,8 +33,6 @@ const CARDBOARD_FOOD_CONTAMINATION_KEYWORDS = [
   "restes",
   "leftovers",
   "food residue",
-  "humide",
-  "wet",
 ];
 
 const CARDBOARD_GENERIC_CONTAMINATION_KEYWORDS = [
