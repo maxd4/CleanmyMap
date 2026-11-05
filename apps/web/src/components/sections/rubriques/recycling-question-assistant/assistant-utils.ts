@@ -23,47 +23,55 @@ function localizedAnswer(locale: Locale, frAnswer: Answer, enAnswer: Answer): An
   return locale === "fr" ? frAnswer : enAnswer;
 }
 
-const GREASY_CARDBOARD_KEYWORDS = [
-  "carton gras",
-  "carton graisse",
-  "carton graisseux",
-  "carton souille",
-  "carton sale",
-  "dirty cardboard",
-  "greasy cardboard",
-  "soiled cardboard",
-  "greasy pizza box",
-  "dirty pizza box",
-];
-
-const CARDBOARD_PACKAGE_KEYWORDS = [
-  "carton de pizza",
-  "boite a pizza",
-  "boîte à pizza",
-  "pizza box",
-  "boite a tacos",
-  "boîte à tacos",
-  "taco box",
-];
-
-const CARDBOARD_CONTAMINATION_KEYWORDS = [
+const CARDBOARD_FOOD_CONTAMINATION_KEYWORDS = [
   "gras",
   "grasse",
   "graisse",
   "graisseux",
-  "souille",
-  "sale",
-  "dirty",
   "greasy",
-  "soiled",
-  "contaminated",
-  "contamine",
   "sauce",
   "restes",
   "leftovers",
   "food residue",
   "humide",
   "wet",
+];
+
+const CARDBOARD_GENERIC_CONTAMINATION_KEYWORDS = [
+  "souille",
+  "sale",
+  "dirty",
+  "soiled",
+  "contaminated",
+  "contamine",
+];
+
+const CARDBOARD_HAZARDOUS_CONTAMINATION_KEYWORDS = [
+  "peinture",
+  "paint",
+  "solvant",
+  "solvent",
+  "huile",
+  "oil",
+  "aerosol",
+  "aérosol",
+  "produit chimique",
+  "chemical",
+  "pesticide",
+  "hydrocarbure",
+  "fuel",
+];
+
+const CARDBOARD_PACKAGE_KEYWORDS = [
+  "carton de pizza",
+  "carton gras de pizza",
+  "carton graisseux de pizza",
+  "boite a pizza",
+  "boîte à pizza",
+  "pizza box",
+  "boite a tacos",
+  "boîte à tacos",
+  "taco box",
 ];
 
 const CARDBOARD_FOOD_REMAINS_KEYWORDS = [
@@ -83,6 +91,24 @@ const CARDBOARD_FOOD_REMAINS_KEYWORDS = [
 ];
 
 const CARDBOARD_MATERIAL_KEYWORDS = ["carton", "cardboard"];
+
+const CONFIRMED_CARDBOARD_PACKAGING_KEYWORDS = [
+  "emballage en carton",
+  "emballage carton",
+  "cardboard packaging",
+  "cardboard box",
+  "boite en carton",
+  "boîte en carton",
+];
+
+const CARDBOARD_COMPOSITE_KEYWORDS = [
+  "carton composite",
+  "composite cardboard",
+  "brique alimentaire",
+  "food carton",
+  "tetra pak",
+  "tetrapak",
+];
 
 const CLEAN_CARDBOARD_KEYWORDS = [
   "carton de pizza propre",
@@ -167,6 +193,99 @@ function buildCardboardConditionClarificationAnswer(locale: Locale): Answer {
         "If it is not cardboard packaging, specify the item: material alone is not enough.",
       ],
       nextStep: "Say whether the box is empty or still contains food leftovers.",
+    },
+  );
+}
+
+function buildAmbiguousCardboardAnswer(
+  locale: Locale,
+  mode: "material" | "contamination" | "hazardous" = "material",
+): Answer {
+  const hazardous = mode === "hazardous";
+  const uncertainContamination = mode === "contamination";
+  return localizedAnswer(
+    locale,
+    {
+      kind: hazardous ? "decheterie" : "unknown",
+      tone: hazardous ? "rose" : "amber",
+      badge: hazardous
+        ? "Contamination à vérifier"
+        : uncertainContamination
+          ? "Contamination du carton à préciser"
+          : "Nature du carton à préciser",
+      title: hazardous
+        ? "Un carton contaminé par un produit doit suivre une filière vérifiée"
+        : uncertainContamination
+          ? "La contamination du carton ne permet pas de choisir le bac"
+          : "La matière carton ne suffit pas à déterminer la filière",
+      summary: hazardous
+        ? "Ne le mets pas automatiquement dans le bac de tri : vérifie la filière locale pour les déchets chimiques ou dangereux."
+        : uncertainContamination
+          ? "Précise la nature de la contamination avant de choisir une filière : une salissure générique ne prouve pas qu'il s'agit de graisse alimentaire."
+          : "Précise s'il s'agit d'un emballage, d'un objet en carton ou d'un carton composite avant de choisir un bac.",
+      bullets: hazardous
+        ? [
+            "La peinture, les solvants, les huiles et autres produits chimiques ne suivent pas le tri ordinaire.",
+            "Garde l'objet isolé et ne l'ouvre pas si son contenu est incertain.",
+            "La filière dépend du produit et de la consigne de la collectivité.",
+          ]
+        : uncertainContamination
+          ? [
+              "Une contamination décrite comme sale, souillée ou contaminée peut être alimentaire, chimique ou autre.",
+              "Une trace de graisse alimentaire sur un emballage vide suit la consigne papier-carton, mais elle doit être établie.",
+              "Ne choisis pas le bac papier-carton tant que la nature de la contamination n'est pas connue.",
+            ]
+          : [
+              "Un emballage carton vide peut se trier, même avec une trace de graisse.",
+              "Une matière seule, un carton composite ou un objet non identifié ne prouve pas qu'il s'agit d'un emballage.",
+              "Ne choisis pas le bac papier-carton avant d'avoir identifié l'objet.",
+            ],
+      nextStep: hazardous
+        ? "Identifie le produit et vérifie la déchèterie ou la filière locale pour déchets dangereux."
+        : uncertainContamination
+          ? "Précise la contamination : trace alimentaire, produit chimique ou autre souillure."
+          : "Précise la nature exacte de l'objet : emballage vide, boîte, carton composite ou autre objet.",
+    },
+    {
+      kind: hazardous ? "decheterie" : "unknown",
+      tone: hazardous ? "rose" : "amber",
+      badge: hazardous
+        ? "Contamination to verify"
+        : uncertainContamination
+          ? "Specify the cardboard contamination"
+          : "Specify the cardboard item",
+      title: hazardous
+        ? "Cardboard contaminated by a product needs a verified route"
+        : uncertainContamination
+          ? "The cardboard contamination is not enough to choose a bin"
+          : "Cardboard material alone is not enough to choose a route",
+      summary: hazardous
+        ? "Do not automatically put it in recycling: check the local route for chemical or hazardous waste."
+        : uncertainContamination
+          ? "Specify the contamination before choosing a route: generic dirt does not prove that it is food grease."
+          : "Say whether it is packaging, a cardboard object or composite cardboard before choosing a bin.",
+      bullets: hazardous
+        ? [
+            "Paint, solvents, oils and other chemicals do not follow ordinary recycling.",
+            "Keep the item isolated and do not open it if its contents are uncertain.",
+            "The route depends on the product and local-authority guidance.",
+          ]
+        : uncertainContamination
+          ? [
+              "Dirt, soiling or contamination can be food-related, chemical or something else.",
+              "A food-grease mark on empty packaging follows the paper-and-cardboard guidance, but it must be established.",
+              "Do not choose the paper-and-cardboard bin while the contamination is unknown.",
+            ]
+          : [
+              "Empty cardboard packaging can be recycled, even with a grease mark.",
+              "Material alone, composite cardboard or an unidentified object does not prove that it is packaging.",
+              "Do not choose the paper-and-cardboard bin before identifying the item.",
+            ],
+      nextStep: hazardous
+        ? "Identify the product and check the recycling center or local hazardous-waste route."
+        : uncertainContamination
+          ? "Specify the contamination: food residue, chemical product or another type of soiling."
+          : "Specify the item: empty packaging, box, composite carton or another cardboard object.",
     },
   );
 }
@@ -303,29 +422,53 @@ export function buildAnswer(question: string, locale: Locale): Answer {
   const canonicalSlug = findWasteCategorySlug(text);
   const isCardboardPackage = includesAny(text, CARDBOARD_PACKAGE_KEYWORDS);
   const isCardboardMaterial = includesAny(text, CARDBOARD_MATERIAL_KEYWORDS);
+  const isConfirmedCardboardPackaging =
+    isCardboardPackage || includesAny(text, CONFIRMED_CARDBOARD_PACKAGING_KEYWORDS);
+  const isCompositeCardboard = includesAny(text, CARDBOARD_COMPOSITE_KEYWORDS);
   const isExplicitlyCleanCardboard = includesAny(text, CLEAN_CARDBOARD_KEYWORDS);
   const hasFoodRemains = includesAny(text, CARDBOARD_FOOD_REMAINS_KEYWORDS);
-  const isExplicitlyContaminatedCardboard =
-    includesAny(text, GREASY_CARDBOARD_KEYWORDS) ||
-    ((isCardboardPackage || isCardboardMaterial) && includesAny(text, CARDBOARD_CONTAMINATION_KEYWORDS));
+  const hasFoodContamination = includesAny(text, CARDBOARD_FOOD_CONTAMINATION_KEYWORDS);
+  const hasGenericContamination = includesAny(text, CARDBOARD_GENERIC_CONTAMINATION_KEYWORDS);
+  const hasHazardousContamination = includesAny(text, CARDBOARD_HAZARDOUS_CONTAMINATION_KEYWORDS);
+  const isPaperCardboardCanonical = !canonicalSlug || canonicalSlug === "paper_cardboard";
+
   if (
-    (isExplicitlyContaminatedCardboard || hasFoodRemains) &&
-    (isCardboardPackage || isCardboardMaterial) &&
-    (!canonicalSlug || canonicalSlug === "paper_cardboard")
+    isCardboardMaterial &&
+    isPaperCardboardCanonical &&
+    (hasHazardousContamination || isCompositeCardboard)
   ) {
-    return buildGreasyCardboardAnswer(locale, publicSpaceReportNote, hasFoodRemains);
+    return buildAmbiguousCardboardAnswer(locale, hasHazardousContamination ? "hazardous" : "material");
   }
 
   if (
-    isCardboardPackage &&
+    (hasFoodContamination || hasFoodRemains) &&
+    isPaperCardboardCanonical
+  ) {
+    return isConfirmedCardboardPackaging
+      ? buildGreasyCardboardAnswer(locale, publicSpaceReportNote, hasFoodRemains)
+      : buildAmbiguousCardboardAnswer(locale, "material");
+  }
+
+  if (hasGenericContamination && isCardboardMaterial && isPaperCardboardCanonical) {
+    return buildAmbiguousCardboardAnswer(locale, "contamination");
+  }
+
+  if (isCardboardMaterial && !isConfirmedCardboardPackaging && isPaperCardboardCanonical) {
+    return buildAmbiguousCardboardAnswer(locale, "material");
+  }
+
+  if (
+    isConfirmedCardboardPackaging &&
     !isExplicitlyCleanCardboard &&
-    !isExplicitlyContaminatedCardboard &&
-    (!canonicalSlug || canonicalSlug === "paper_cardboard")
+    !hasFoodContamination &&
+    !hasFoodRemains &&
+    !hasGenericContamination &&
+    isPaperCardboardCanonical
   ) {
     return buildCardboardConditionClarificationAnswer(locale);
   }
 
-  if (isExplicitlyCleanCardboard && isCardboardPackage && !canonicalSlug) {
+  if (isExplicitlyCleanCardboard && isConfirmedCardboardPackaging && !canonicalSlug) {
     return buildCanonicalWasteAnswer(
       getWastePedagogicalProjection("paper_cardboard", locale),
       locale,

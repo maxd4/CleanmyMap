@@ -56,7 +56,7 @@ describe("recycling assistant waste convergence", () => {
 
   it("preserves useful pedagogical complements that have no canonical category yet", () => {
     expect(answerText("déchets alimentaires / compost")).toContain("compost");
-    expect(answerText("carton gras de pizza")).toContain("carton gras");
+    expect(answerText("carton gras de pizza")).toContain("emballage en carton");
     expect(answerText("ampoule usagée")).toContain("ampoules");
     expect(answerText("cartouche d'encre vide")).toContain("cartouches");
     expect(answerText("chaussures usées")).toContain("chaussures");
@@ -65,12 +65,9 @@ describe("recycling assistant waste convergence", () => {
   it.each([
     ["carton gras de pizza", "fr"],
     ["boîte à pizza grasse mais vide", "fr"],
-    ["boîte à pizza très sale", "fr"],
-    ["carton présentant de la sauce", "fr"],
+    ["boîte à pizza présentant de la sauce", "fr"],
     ["greasy pizza box", "en"],
     ["greasy but empty pizza box", "en"],
-    ["dirty cardboard", "en"],
-    ["heavily soiled cardboard", "en"],
   ] as const)("sorts empty or grease-marked cardboard packaging for %s", (question, locale) => {
     const response = answerText(question, locale);
 
@@ -80,8 +77,8 @@ describe("recycling assistant waste convergence", () => {
   });
 
   it.each([
-    ["carton contenant encore des aliments", "fr"],
-    ["cardboard containing food", "en"],
+    ["boîte à pizza contenant encore des aliments", "fr"],
+    ["pizza box containing food", "en"],
   ] as const)("asks to remove food leftovers before sorting %s", (question, locale) => {
     const response = answerText(question, locale);
 
@@ -90,28 +87,58 @@ describe("recycling assistant waste convergence", () => {
     expect(response).not.toContain(locale === "fr" ? "déchets résiduels" : "residual waste");
   });
 
-  it("does not infer a packaging route from a greasy cardboard material alone", () => {
-    const response = answerText("carton gras");
+  it.each([
+    ["carton gras", "fr"],
+    ["dirty cardboard", "en"],
+    ["carton non alimentaire", "fr"],
+    ["carton composite", "fr"],
+    ["composite cardboard", "en"],
+  ] as const)("does not infer a packaging route from uncertain cardboard: %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
 
-    expect(response).toContain("si l'objet n'est pas un emballage en carton");
-    expect(response).toContain("la matière seule ne suffit pas");
+    expect(answer.kind).toBe("unknown");
+    expect(answer.title).not.toMatch(/recycl|trie|recycling|sort/i);
+    expect(answer.summary).not.toMatch(/se trie|recycl|recycling/i);
+    expect(answer.nextStep).toMatch(/nature|item|specify|précise/i);
+    expect(response).toMatch(locale === "fr" ? /matière|contamination/ : /material|contamination/);
   });
 
   it.each([
-    ["carton propre", "fr"],
+    ["carton gras imbibé de peinture", "fr"],
+    ["cardboard contaminated with paint", "en"],
+    ["boîte en carton avec du solvant", "fr"],
+    ["cardboard box with solvent", "en"],
+  ] as const)("does not route chemically contaminated cardboard to ordinary recycling: %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+
+    expect(answer.kind).toBe("decheterie");
+    expect(answer.title).toMatch(/filière vérifiée|verified route/i);
+    expect(answer.summary).not.toMatch(/papier-carton|paper-and-cardboard stream|ordinary recycling/i);
+    expect(answer.nextStep).toMatch(/filière|déchèterie|route|recycling center/i);
+  });
+
+  it.each([
     ["carton de pizza propre", "fr"],
     ["boîte à pizza propre", "fr"],
     ["clean pizza box", "en"],
   ] as const)("keeps explicitly clean cardboard on the canonical route for %s", (question, locale) => {
-    if (question === "carton propre") {
-      expect(findWasteCategorySlug(question)).toBe("paper_cardboard");
-    }
-
     const response = answerText(question, locale);
 
     expect(response).toContain(locale === "fr" ? "papier et carton" : "paper and cardboard");
     expect(response).not.toContain("carton gras");
     expect(response).not.toContain("residual waste");
+  });
+
+  it.each([
+    ["carton propre", "fr"],
+    ["clean cardboard", "en"],
+  ] as const)("asks for the object when only cardboard material is named: %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+
+    expect(answer.kind).toBe("unknown");
+    expect(answer.title).not.toMatch(/papier|paper|recycl/i);
+    expect(answer.nextStep).toMatch(/nature|item|specify|précise/i);
   });
 
   it.each([
@@ -149,5 +176,17 @@ describe("recycling assistant waste convergence", () => {
     ["a used battery", "battery drop-off", "en"],
   ] as const)("keeps the canonical safety priority for %s", (question, expectedGuidance, locale) => {
     expect(answerText(question, locale)).toContain(expectedGuidance);
+  });
+
+  it.each([
+    ["carton contenant une seringue", "sharps", "fr"],
+    ["cardboard box with a battery", "battery", "en"],
+  ] as const)("keeps a dangerous canonical category ahead of cardboard wording for %s", (question, slug, locale) => {
+    const answer = buildAnswer(question, locale);
+    const projection = getWastePedagogicalProjection(slug, locale);
+
+    expect(findWasteCategorySlug(question)).toBe(slug);
+    expect(answer.kind).not.toBe("packaging");
+    expect(answerText(question, locale)).toContain(projection.instructions[0].toLowerCase());
   });
 });

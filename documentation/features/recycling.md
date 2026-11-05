@@ -37,7 +37,13 @@ dans la filière papier-carton même s'il porte des traces de graisse ou de sauc
 l'assistant demande de retirer les restes alimentaires avant le tri. Si la
 question ne précise pas si la boîte est vide, il demande cette précision sans
 déduire les déchets résiduels de la seule graisse. Si l'objet n'est pas un
-emballage, sa nature doit être précisée avant de choisir une filière.
+emballage, sa nature doit être précisée avant de choisir une filière ; la seule
+mention de « carton » ou une salissure générique (« sale », « souillé »,
+« contaminé ») ne constitue pas une preuve d'emballage ni de graisse
+alimentaire. Une peinture, un solvant ou une autre contamination chimique
+impose de vérifier la filière dédiée avant toute orientation. Les cartons
+composites restent à identifier explicitement, sans être assimilés au carton
+recyclable ordinaire.
 Les catégories sensibles, notamment les médicaments, seringues, verre cassé et
 piles, conservent leur projection de sécurité prioritaire.
 

@@ -103,6 +103,16 @@ function getSearchTerms(category: WasteCategoryDefinition): string[] {
     .filter((term) => term.length > 1);
 }
 
+function hazardPriority(level: WasteHazardLevel): number {
+  return {
+    low: 0,
+    caution: 1,
+    high: 2,
+    critical: 3,
+    unknown: 4,
+  }[level];
+}
+
 export function findWasteCategorySlug(value: string): WasteCategorySlug | null {
   const normalized = normalizeSearchText(value);
   if (!normalized) return null;
@@ -110,8 +120,13 @@ export function findWasteCategorySlug(value: string): WasteCategorySlug | null {
   const matches = WASTE_CATEGORY_SLUGS.flatMap((slug) =>
     getSearchTerms(getWasteCategory(slug))
       .filter((term) => normalized.includes(term))
-      .map((term) => ({ slug, term })),
-  ).sort((left, right) => right.term.length - left.term.length || left.slug.localeCompare(right.slug));
+      .map((term) => ({ slug, term, hazard: getWasteCategory(slug).hazardLevel })),
+  ).sort(
+    (left, right) =>
+      hazardPriority(right.hazard) - hazardPriority(left.hazard) ||
+      right.term.length - left.term.length ||
+      left.slug.localeCompare(right.slug),
+  );
 
   return matches[0]?.slug ?? null;
 }
