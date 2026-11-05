@@ -243,6 +243,7 @@ async function routeMultiGroups(input: {
   guidedBudget?: RouteGuidedBudget;
   waitForQuotaInterval?: (milliseconds: number) => Promise<void>;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
+  signal?: AbortSignal;
 }): Promise<RouteGroupRoutingResult[]> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
@@ -272,6 +273,7 @@ async function routeMultiGroups(input: {
       input.routeTopology ?? "loop",
       input.arrival,
       input.pedestrianNetwork,
+      input.signal,
     ));
   }
   return routedGroups;
@@ -369,6 +371,7 @@ export async function routePartitionedGroups(input: {
   guidedBudget?: RouteGuidedBudget;
   waitForQuotaInterval?: (milliseconds: number) => Promise<void>;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
+  signal?: AbortSignal;
 }): Promise<RouteMultiRouteResult> {
   const routedGroups = await routeMultiGroups(input);
 

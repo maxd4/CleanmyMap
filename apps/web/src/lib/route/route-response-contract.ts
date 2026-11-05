@@ -102,11 +102,13 @@ export type RouteStartSelection =
       mode: "precise";
       label: string;
       origin: RouteRecommendationOrigin;
+      resolvedOrigin?: RouteResponseOrigin;
     }
   | {
       mode: "zone";
       label: string;
       zone: RouteStartZone;
+      resolvedOrigin?: RouteResponseOrigin;
     };
 
 export type RouteResponseOrigin = {

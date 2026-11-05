@@ -95,7 +95,7 @@ function isValidRouteInput(coordinates: [number, number][]): boolean {
 
 export type FossgisFootRoutingOptions = Pick<
   RoutePolylineOptions,
-  "transport" | "timeoutMs" | "topology"
+  "transport" | "timeoutMs" | "topology" | "signal"
 >;
 
 /**
@@ -128,6 +128,7 @@ export async function routePolylineThroughFossgisFoot(
     provider: FOSSGIS_FOOT_PROVIDER,
     profile: FOSSGIS_FOOT_PROFILE,
     topology: options.topology,
+    signal: options.signal,
     headers: {
       "User-Agent": FOSSGIS_FOOT_USER_AGENT,
       Referer: FOSSGIS_FOOT_REFERER,

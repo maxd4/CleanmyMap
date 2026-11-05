@@ -27,6 +27,14 @@ type NetworkRow = {
   tags: Record<string, string>;
 };
 
+const NETWORK_PAGE_SIZE = 900;
+
+function sameNetworkIdentity(left: NetworkRow, right: NetworkRow): boolean {
+  return left.network_version_id === right.network_version_id &&
+    left.network_key === right.network_key &&
+    left.source_retrieved_at === right.source_retrieved_at;
+}
+
 function validCoordinate(value: unknown): value is [number, number] {
   return Array.isArray(value) && value.length >= 2 &&
     Number.isFinite(value[0]) && Number.isFinite(value[1]);
@@ -76,22 +84,47 @@ export async function loadActivePedestrianNetwork(
     north: Math.max(...validPoints.map((point) => point.latitude)),
     east: Math.max(...validPoints.map((point) => point.longitude)),
   };
-  const { data, error } = await supabase.rpc("get_active_pedestrian_network", {
-    p_south: fallbackBounds.south - 0.002,
-    p_west: fallbackBounds.west - 0.002,
-    p_north: fallbackBounds.north + 0.002,
-    p_east: fallbackBounds.east + 0.002,
-  });
-  if (error || !Array.isArray(data) || data.length === 0) return null;
+  const bounds = {
+    south: fallbackBounds.south - 0.002,
+    west: fallbackBounds.west - 0.002,
+    north: fallbackBounds.north + 0.002,
+    east: fallbackBounds.east + 0.002,
+  };
+  const rows: NetworkRow[] = [];
+  let offset = 0;
+  let first: NetworkRow | null = null;
+  for (;;) {
+    const { data, error } = await supabase.rpc("get_active_pedestrian_network_page", {
+      p_south: bounds.south,
+      p_west: bounds.west,
+      p_north: bounds.north,
+      p_east: bounds.east,
+      p_limit: NETWORK_PAGE_SIZE,
+      p_offset: offset,
+    });
+    if (error || !Array.isArray(data) || data.length > NETWORK_PAGE_SIZE + 1) return null;
+    const pageRows = data as NetworkRow[];
+    if (pageRows.length === 0 && rows.length === 0) return null;
+    if (!first && pageRows.length > 0) first = pageRows[0]!;
+    if (first && pageRows.some((row) => !sameNetworkIdentity(first!, row))) return null;
+    rows.push(...pageRows.slice(0, NETWORK_PAGE_SIZE));
+    if (pageRows.length <= NETWORK_PAGE_SIZE) break;
+    offset += NETWORK_PAGE_SIZE;
+  }
+  if (!first || rows.length === 0) return null;
 
-  const rows = data as NetworkRow[];
   const edges: PedestrianNetworkEdge[] = [];
   for (const row of rows) {
     const coordinates = coordinatesFromGeoJson(row.geometry_geojson);
     const osmWayId = finiteNumber(row.osm_way_id);
+    if (!sameNetworkIdentity(first, row) || !Number.isFinite(row.length_m) || row.length_m <= 0 ||
+      !Number.isInteger(row.segment_index) || !row.highway || row.pedestrian_access_status !== "allowed" ||
+      !row.tags || typeof row.tags !== "object") return null;
     const fromNodeId = String(row.from_node_id);
     const toNodeId = String(row.to_node_id);
-    if (!coordinates || osmWayId === null || !row.edge_key || !row.direction) continue;
+    if (!coordinates || osmWayId === null || !row.edge_key ||
+      (row.direction !== "forward" && row.direction !== "reverse") ||
+      !fromNodeId || !toNodeId) return null;
     edges.push({
       edgeKey: row.edge_key,
       osmWayId: String(row.osm_way_id),
@@ -108,7 +141,6 @@ export async function loadActivePedestrianNetwork(
     });
   }
   if (edges.length === 0) return null;
-  const first = rows[0];
   return {
     versionId: first.network_version_id,
     networkKey: first.network_key,

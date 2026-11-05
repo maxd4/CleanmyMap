@@ -16,14 +16,27 @@ function graphAtDistances(distancesKm: readonly number[]): PedestrianNetworkGrap
     networkKey: "paris-pilot",
     sourceRetrievedAt: "2026-11-04T00:00:00.000Z",
     bounds: { south: 48.8, west: 2.2, north: 48.9, east: 2.5 },
-    edges: distancesKm.map((distanceKm, index) => {
+    edges: distancesKm.flatMap((distanceKm, index) => {
       const latitude = center.latitude + distanceKm / 111.32;
       const fromNodeId = `node-${index}`;
       const toNodeId = `node-${index}-end`;
-      return {
-        edgeKey: `edge-${index}`,
+      return [{
+        edgeKey: `edge-${index}-access`,
         osmWayId: `way-${index}`,
         segmentIndex: 0,
+        direction: "forward" as const,
+        fromNodeId: "center",
+        toNodeId: fromNodeId,
+        highway: "footway",
+        name: `Rue ${index}`,
+        accessStatus: "allowed" as const,
+        lengthM: distanceKm * 1000,
+        coordinates: [[center.latitude, center.longitude], [latitude, center.longitude]],
+        tags: { highway: "footway" },
+      }, {
+        edgeKey: `edge-${index}-tail`,
+        osmWayId: `way-${index}`,
+        segmentIndex: 1,
         direction: "forward" as const,
         fromNodeId,
         toNodeId,
@@ -33,7 +46,7 @@ function graphAtDistances(distancesKm: readonly number[]): PedestrianNetworkGrap
         lengthM: 80,
         coordinates: [[latitude, center.longitude], [latitude + 0.0001, center.longitude]],
         tags: { highway: "footway" },
-      };
+      }];
     }),
   };
 }
@@ -145,6 +158,52 @@ describe("route nearest relevant search", () => {
     expect(result.search.status).toBe("unavailable");
     expect(result.search.reason).toBe("network_unavailable");
     expect(result.search.limitations[0]).toContain("graphe piéton");
+  });
+
+  it("does not present a geodesic distance as pedestrian access across a barrier", async () => {
+    const graph = graphAtDistances([0.1]);
+    graph.edges = graph.edges.filter((edge) => edge.edgeKey !== "edge-0-access");
+    const evaluateMock = vi.fn(async () => evaluate(80));
+    const result = await findNearestRelevantRoute({
+      graph,
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: evaluateMock,
+    });
+
+    expect(result.selected).toBeNull();
+    expect(result.search.status).toBe("not_found");
+    expect(evaluateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects candidates inside the envelope but outside the Paris intra-muros geometry", async () => {
+    const graph = graphAtDistances([0.1]);
+    const outside: [number, number] = [48.8566, 2.45];
+    const access = graph.edges.find((edge) => edge.edgeKey === "edge-0-access")!;
+    const tail = graph.edges.find((edge) => edge.edgeKey === "edge-0-tail")!;
+    access.coordinates = [[center.latitude, center.longitude], outside];
+    tail.coordinates = [outside, [outside[0] + 0.0001, outside[1]]];
+    const result = await findNearestRelevantRoute({
+      graph,
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: async () => evaluate(80),
+    });
+
+    expect(result.selected).toBeNull();
+  });
+
+  it("counts the baseline in the global provider quota", async () => {
+    const evaluateMock = vi.fn(async () => evaluate(80));
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: reference(),
+      baseline: { ...evaluate(48), providerCalls: 4 },
+      evaluate: evaluateMock,
+    });
+
+    expect(result.selected).toBeNull();
+    expect(evaluateMock).not.toHaveBeenCalled();
   });
 
   it("isolates provider rejections, preserves the initial route and counts attempts", async () => {

@@ -21,6 +21,11 @@ pour produire une décision de planner contrainte et explicable.
   planner route sur ce graphe dirigé sans appel OSM/FOSSGIS ; un point ou une
   restriction non prouvés restent exclus et sont conservés dans les
   diagnostics d’import.
+- La lecture serveur du graphe actif utilise `get_active_pedestrian_network_page`
+  par pages de 900 lignes avec une ligne sentinelle, un ordre `edge_key` stable
+  et une identité de version contrôlée entre pages. Une page incomplète, une
+  ligne malformée ou un changement de version rend le graphe indisponible ;
+  aucune troncature PostgREST à 1000 lignes n’est acceptée comme preuve.
 - Le planner ne combine la projection de risque et le graphe stocké que lorsque
   leurs identifiants de version réseau concordent exactement. Une projection
   sans graphe actif correspondant conserve sa projection pour la couche de
@@ -82,6 +87,15 @@ planner. `observed` n’est jamais `predicted`; une décision du planner n’est
 pas un résultat du fournisseur de routage; une estimation ou un fallback est
 identifié comme tel.
 
+La recherche `nearest_relevant` est bornée : elle inspecte au plus huit nœuds
+par rayon et n’est donc jamais présentée comme exhaustive. La distance d’accès
+au rendez-vous est calculée par chemin dirigé sur le graphe piéton depuis le
+départ demandé ; un composant déconnecté, une barrière ou un graphe absent
+rend l’accès inconnu et exclut le candidat. Une géométrie fallback ne peut
+jamais être qualifiée de réseau vérifié. Le quota global de quatre opérations
+de routage inclut le baseline, les erreurs et les expirations ; le signal
+d’annulation de la recherche est transmis au transport fournisseur.
+
 Le budget et la sécurité sont des contraintes dures. À entrées identiques, la
 sélection est déterministe. Une version active du graphe pilote évite les
 appels de routage externes pendant la recommandation ; en son absence, le
@@ -116,6 +130,10 @@ déterminent les cibles. Les sélections persistées réutilisent le même préd
 structurel partagé que les brouillons, snapshots et `OperationalRoute` ; un
 historique sans `startLocation` reste valide, mais une sélection présente doit
 respecter intégralement le contrat de coordonnées, bornes et énumérations.
+Lorsqu’une recherche `nearest_relevant` remplace le départ, `requestedOrigin`
+reste la demande initiale dans la preuve de recherche et `startLocation` porte
+également `resolvedOrigin`; l’origine de la réponse, du snapshot, de la preuve
+et de l’`OperationalRoute` est alors le rendez-vous effectivement routé.
 
 ## Répartition multi-groupe
 

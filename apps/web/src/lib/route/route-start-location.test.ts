@@ -39,6 +39,10 @@ describe("route start location", () => {
 
     expect(isRouteStartSelection(precise)).toBe(true);
     expect(isRouteStartSelection(zone)).toBe(true);
+    expect(isRouteStartSelection({
+      ...precise,
+      resolvedOrigin: { latitude: 48.85, longitude: 2.35, source: "planner" },
+    })).toBe(true);
   });
 
   it("rejects incomplete or out-of-contract precise origins", () => {

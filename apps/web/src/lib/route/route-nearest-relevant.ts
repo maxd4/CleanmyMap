@@ -1,5 +1,6 @@
 import {
   haversineMeters,
+  routeThroughPedestrianNetwork,
   type Coordinate,
   type PedestrianNetworkGraph,
 } from "./pedestrian-network";
@@ -8,6 +9,9 @@ import {
   ROUTE_POLLUTION_RELEVANCE_POLICY,
   type RoutePollutionRelevanceAssessment,
 } from "./route-pollution-relevance";
+import parisPressureSnapshot from "../../../data/geospatial/paris-pressure-snapshot.json";
+import { pointInParisPressureGeometry } from "@/lib/geo/paris-pressure-geometry-core.mjs";
+import type { ParisPressureGeometry } from "@/lib/geo/paris-pressure-spatial-types";
 
 export const ROUTE_NEAREST_RELEVANT_POLICY_VERSION =
   "route-nearest-relevant-v1" as const;
@@ -113,10 +117,17 @@ function round(value: number, digits = 2): number {
   return Number(value.toFixed(digits));
 }
 function inParis(point: Coordinate): boolean {
-  return point[0] >= PARIS_INTRA_MUROS_BOUNDS.south &&
+  const insideEnvelope = point[0] >= PARIS_INTRA_MUROS_BOUNDS.south &&
     point[0] <= PARIS_INTRA_MUROS_BOUNDS.north &&
     point[1] >= PARIS_INTRA_MUROS_BOUNDS.west &&
     point[1] <= PARIS_INTRA_MUROS_BOUNDS.east;
+  if (!insideEnvelope) return false;
+  return parisPressureSnapshot.zones.some((zone: { geometry: unknown }) =>
+    pointInParisPressureGeometry(
+      { latitude: point[0], longitude: point[1] },
+      zone.geometry as ParisPressureGeometry,
+    ),
+  );
 }
 function referenceRadiusKm(reference: RouteNearestRelevantReference): number {
   return reference.kind === "zone" ? reference.radiusKm ?? 0 : 0;
@@ -154,6 +165,7 @@ function candidateNodesForRadius(
   reference: RouteNearestRelevantReference,
   previousRadiusKm: number,
   radiusKm: number,
+  graph: PedestrianNetworkGraph,
 ): Array<{ id: string; point: Coordinate; accessDistanceKm: number }> {
   const lowerBound = referenceRadiusKm(reference) + previousRadiusKm;
   const upperBound = referenceRadiusKm(reference) + radiusKm;
@@ -165,13 +177,24 @@ function candidateNodesForRadius(
     }))
     .filter(({ cumulativeDistanceKm: distance }) =>
       distance <= upperBound + Number.EPSILON &&
+      distance > Number.EPSILON &&
       (previousRadiusKm === 0 || distance > lowerBound + Number.EPSILON),
     )
     .sort((left, right) =>
       left.accessDistanceKm - right.accessDistanceKm || left.id.localeCompare(right.id),
     );
 
-  return candidates.slice(0, ROUTE_NEAREST_RELEVANT_MAX_CANDIDATES_PER_RADIUS);
+  return candidates.slice(0, ROUTE_NEAREST_RELEVANT_MAX_CANDIDATES_PER_RADIUS)
+    .flatMap((candidate) => {
+      const access = routeThroughPedestrianNetwork(
+        graph,
+        [reference.center, candidate.point],
+        { topology: "open" },
+      );
+      return access?.mode === "network"
+        ? [{ ...candidate, accessDistanceKm: access.distanceKm }]
+        : [];
+    });
 }
 
 function assessmentIsSufficient(assessment: RoutePollutionRelevanceAssessment): boolean {
@@ -344,7 +367,7 @@ export async function findNearestRelevantRoute(input: {
   const evaluated: CandidateEvaluation[] = [];
   const triedRadiiKm: number[] = [];
   let attemptsEvaluated = 0;
-  let providerCalls = 0;
+  let providerCalls = Math.max(0, input.baseline.providerCalls ?? 0);
   let previousRadiusKm = 0;
   const startedAt = Date.now();
   let timedOutAttempts = 0;
@@ -352,10 +375,11 @@ export async function findNearestRelevantRoute(input: {
   let searchTimedOut = false;
   for (const radiusKm of ROUTE_NEAREST_RELEVANT_RADII_KM) {
     triedRadiiKm.push(radiusKm);
-    const candidates = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm);
+    const candidates = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm, input.graph);
     const successfulPlans: CandidateEvaluation[] = [];
     for (const candidate of candidates) {
       if (attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS) break;
+      if (providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
       const remainingMs = ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS - (Date.now() - startedAt);
       if (remainingMs <= 0) {
         searchTimedOut = true;
@@ -372,10 +396,12 @@ export async function findNearestRelevantRoute(input: {
         Math.min(ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS, remainingMs),
       );
       attemptsEvaluated += 1;
+      // Reserve one provider operation before invoking the callback. This
+      // counts failures and timeouts, whose result cannot report a call count.
+      providerCalls += Math.max(1, evaluation.result?.providerCalls ?? 1);
       if (evaluation.timedOut) timedOutAttempts += 1;
       if (evaluation.failed) failedAttempts += 1;
       if (!evaluation.result) continue;
-      providerCalls += Math.max(0, evaluation.result.providerCalls ?? 0);
       const candidateEvaluation: CandidateEvaluation = {
         origin,
         radiusKm,
@@ -383,7 +409,9 @@ export async function findNearestRelevantRoute(input: {
         result: evaluation.result,
       };
       evaluated.push(candidateEvaluation);
-      if (assessmentIsSufficient(candidateEvaluation.result.relevance) && candidateEvaluation.result.withinBudget && candidateEvaluation.result.loopVerified) {
+      if (candidateEvaluation.result.routingStatus === "network" &&
+        assessmentIsSufficient(candidateEvaluation.result.relevance) &&
+        candidateEvaluation.result.withinBudget && candidateEvaluation.result.loopVerified) {
         successfulPlans.push(candidateEvaluation);
       }
       if (providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
@@ -404,7 +432,7 @@ export async function findNearestRelevantRoute(input: {
           triedRadiiKm,
           candidatesEvaluated: attemptsEvaluated,
           plansEvaluated: attemptsEvaluated,
-          limitations: ["La recherche a retenu le premier rayon contenant une boucle admissible ; l’accès est mesuré depuis la demande initiale."],
+          limitations: ["La recherche est bornée à huit candidats par rayon ; l’accès est mesuré sur le graphe piéton dirigé depuis la demande initiale."],
         },
       };
     }
@@ -450,7 +478,7 @@ export async function findNearestRelevantRoute(input: {
       limitations: [
         "Aucune boucle ne respecte simultanément le seuil de pertinence, la confiance, la sécurité et les budgets dans les rayons explorés.",
         ...(timedOutAttempts > 0 ? [`${timedOutAttempts} évaluation(s) ont expiré après ${ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS} ms.`] : []),
-        ...(failedAttempts > 0 ? [`${failedAttempts} évaluation(s) fournisseur ont échoué et ont été ignorées.`] : []),
+        ...(failedAttempts > 0 ? [`${failedAttempts} évaluation(s) fournisseur ont échoué et ont été comptées dans le quota.`] : []),
         ...(searchTimedOut ? [`Le budget global de ${ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS} ms a été atteint.`] : []),
       ],
     },

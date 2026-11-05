@@ -139,6 +139,7 @@ type RouteRecommendationInput = {
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
+  signal?: AbortSignal;
 };
 
 export function getRoutePlannerCandidatePoolLimit(input: Pick<
@@ -376,6 +377,7 @@ async function buildMultiGroupRoutingState(
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
     pedestrianNetwork: input.pedestrianNetwork,
+    signal: input.signal,
   });
   return {
     plannedStops: multiRouteResult.plannedStops,
@@ -432,6 +434,7 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
           input.routeTopology,
           input.arrival,
           input.pedestrianNetwork,
+          input.signal,
         ),
       )
     : await buildMultiGroupRoutingState(input, preparation);

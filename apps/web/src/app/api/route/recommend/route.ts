@@ -23,6 +23,7 @@ import {
 } from "./route.response.builders";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
 import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
+import type { RouteStartSelection } from "@/lib/route/route-response-contract";
 import { routeGuidedBudgetForMode } from "@/lib/route/route-planning-mode";
 import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { loadActivePedestrianNetwork } from "@/lib/route/pedestrian-network-store";
@@ -196,6 +197,7 @@ export async function POST(request: Request) {
       candidateOrigin: typeof origin,
       candidateArrival: typeof options.arrival,
       candidateTopology: typeof options.routeTopology,
+      signal?: AbortSignal,
     ) => planRouteRecommendation({
       origin: candidateOrigin,
       arrival: candidateArrival,
@@ -219,6 +221,7 @@ export async function POST(request: Request) {
       eventSignalContext: candidateData.routeEventSignalContext,
       weatherContext,
       pedestrianNetwork,
+      signal,
     });
 
     const initialPlanning = await buildPlanning(origin, options.arrival, options.routeTopology);
@@ -228,6 +231,7 @@ export async function POST(request: Request) {
       candidateTopology: typeof options.routeTopology,
       candidatePlanning: typeof initialPlanning,
       nearestRelevantSearch?: RouteRecommendationResponseInput["nearestRelevantSearch"],
+      effectiveStartLocation: RouteStartSelection | undefined = options.startLocation,
     ): RouteRecommendationResponseInput => ({
       origin: candidateOrigin,
       arrival: candidateArrival,
@@ -245,7 +249,7 @@ export async function POST(request: Request) {
       groupCount: options.groupCount,
       pickupPreference: options.pickupPreference,
       weatherContext,
-      startLocation: options.startLocation,
+      startLocation: effectiveStartLocation,
       pedestrianRiskProjection,
       ...(nearestRelevantSearch ? { nearestRelevantSearch } : {}),
     });
@@ -272,7 +276,7 @@ export async function POST(request: Request) {
         },
         evaluate: async (candidateOrigin, signal) => {
           if (signal.aborted) return null;
-          const candidatePlanning = await buildPlanning(candidateOrigin, undefined, "loop");
+          const candidatePlanning = await buildPlanning(candidateOrigin, undefined, "loop", signal);
           if (signal.aborted) return null;
           const candidateInput = buildResponseInput(candidateOrigin, undefined, "loop", candidatePlanning);
           alternativePlans.set(`${candidateOrigin.latitude.toFixed(7)}:${candidateOrigin.longitude.toFixed(7)}`, candidatePlanning);
@@ -299,6 +303,9 @@ export async function POST(request: Request) {
             "loop",
             selectedPlanning,
             nearestSearch.search,
+            options.startLocation
+              ? { ...options.startLocation, resolvedOrigin: nearestSearch.selected.origin }
+              : undefined,
           );
         }
       } else {

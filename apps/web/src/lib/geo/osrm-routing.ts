@@ -27,6 +27,7 @@ export type RoutePolylineOptions = {
   profile?: Exclude<RouteGeometryProfile, null>;
   headers?: HeadersInit;
   topology?: RouteTopology;
+  signal?: AbortSignal;
 };
 
 type OsrmLeg = {
@@ -383,6 +384,8 @@ async function fetchOsrmRoute(
 ): Promise<RouteGeometry | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const abortExternal = () => controller.abort();
+  options.signal?.addEventListener("abort", abortExternal, { once: true });
 
   try {
     const headers = new Headers(options.headers);
@@ -415,6 +418,7 @@ async function fetchOsrmRoute(
     return null;
   } finally {
     clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abortExternal);
   }
 }
 

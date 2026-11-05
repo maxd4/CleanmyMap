@@ -61,10 +61,18 @@ export function buildBoundedRouteStartZone(
 export function isRouteStartSelection(value: unknown): value is RouteStartSelection {
   if (!value || typeof value !== "object") return false;
   const selection = value as Partial<RouteStartSelection>;
+  if (selection.resolvedOrigin !== undefined && !isResolvedRouteOrigin(selection.resolvedOrigin)) return false;
   if (selection.mode === "precise") {
     return isRouteStartLabel(selection.label) && isRouteRecommendationOrigin(selection.origin);
   }
   return selection.mode === "zone" && isRouteStartLabel(selection.label) && isRouteStartZone(selection.zone);
+}
+
+function isResolvedRouteOrigin(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const origin = value as { latitude?: unknown; longitude?: unknown; source?: unknown };
+  return isCoordinate([origin.latitude, origin.longitude]) &&
+    ["browser", "map", "address", "gps", "planner", "approximate_saved_area"].includes(origin.source as string);
 }
 
 function isRouteStartLabel(value: unknown): value is string {

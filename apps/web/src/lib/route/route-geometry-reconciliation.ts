@@ -58,6 +58,7 @@ async function routeWithAvailableNetwork(
   coordinates: [number, number][],
   topology: RouteTopology,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
+  signal?: AbortSignal,
 ): Promise<RouteGeometry> {
   if (pedestrianNetwork) {
     return routeThroughPedestrianNetwork(pedestrianNetwork, coordinates, { topology }) ??
@@ -65,7 +66,7 @@ async function routeWithAvailableNetwork(
   }
   return routePolylineThroughFossgisFoot(
     coordinates,
-    topology === "loop" ? {} : { topology },
+    topology === "loop" ? { signal } : { topology, signal },
   );
 }
 
@@ -76,6 +77,7 @@ async function tryReconcileRetainedStops(
   topology: RouteTopology,
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
+  signal?: AbortSignal,
 ): Promise<{ geometry: RouteGeometry; degraded: boolean; warning: string | null } | null> {
   const retainedCoordinates: [number, number][] = [
     [origin.latitude, origin.longitude],
@@ -89,7 +91,7 @@ async function tryReconcileRetainedStops(
         : []),
   ];
   try {
-    const geometry = await routeWithAvailableNetwork(retainedCoordinates, topology, pedestrianNetwork);
+    const geometry = await routeWithAvailableNetwork(retainedCoordinates, topology, pedestrianNetwork, signal);
     if (geometry.durationMinutes > travelBudgetMinutes) return null;
     return {
       geometry,
@@ -116,6 +118,7 @@ async function reconcileNetworkRoute(
   topology: RouteTopology,
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
+  signal?: AbortSignal,
 ): Promise<NetworkReconciliation> {
   let plannedStops = initialStops;
   let routeGeometry = initialGeometry;
@@ -136,6 +139,7 @@ async function reconcileNetworkRoute(
       topology,
       arrival,
       pedestrianNetwork,
+      signal,
     );
     if (attempt?.warning?.startsWith("La mesure réseau")) {
       finalRoutingDegraded = true;
@@ -204,6 +208,7 @@ export async function reconcileSingleRouteGeometry(
   topology: RouteTopology = "loop",
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
+  signal?: AbortSignal,
 ): Promise<RouteGeometryReconciliation> {
   let plannedStops = initialStops;
   let routeGeometry = fallbackGeometryForPrefix(origin, [], topology, arrival);
@@ -226,13 +231,13 @@ export async function reconcileSingleRouteGeometry(
           ? [[arrival.latitude, arrival.longitude] as [number, number]]
           : []),
     ];
-    routeGeometry = await routeWithAvailableNetwork(routeCoordinates, topology, pedestrianNetwork);
+    routeGeometry = await routeWithAvailableNetwork(routeCoordinates, topology, pedestrianNetwork, signal);
     providerCalls += 1; firstProviderMode = routeGeometry.mode;
 
     if (routeGeometry.durationMinutes > travelBudgetMinutes) {
       budgetPrefixApplied = true;
       const network = routeGeometry.mode === "network"
-        ? await reconcileNetworkRoute(origin, travelBudgetMinutes, routeGeometry, plannedStops, topology, arrival, pedestrianNetwork)
+        ? await reconcileNetworkRoute(origin, travelBudgetMinutes, routeGeometry, plannedStops, topology, arrival, pedestrianNetwork, signal)
         : null;
       if (network) {
         plannedStops = network.plannedStops;

@@ -330,6 +330,7 @@ async function reduceNetworkCandidates(params: {
   topology: RouteTopology;
   arrival?: RoutePlannerOrigin;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
+  signal?: AbortSignal;
 }): Promise<NetworkReduction> {
   let candidates = [...params.candidates];
   let geometry = params.geometry;
@@ -345,7 +346,7 @@ async function reduceNetworkCandidates(params: {
         return {
           geometry: params.pedestrianNetwork
             ? routeThroughPedestrianNetwork(params.pedestrianNetwork, coordinates, { topology: params.topology }) ?? fallbackGeometry(params.origin, candidates, params.topology, params.arrival)
-            : await routePolylineThroughFossgisFoot(coordinates, { topology: params.topology }),
+            : await routePolylineThroughFossgisFoot(coordinates, { topology: params.topology, signal: params.signal }),
           failed: false,
         };
       } catch {
@@ -450,6 +451,7 @@ async function adjustRouteToBudget(params: {
   topology: RouteTopology;
   arrival?: RoutePlannerOrigin;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
+  signal?: AbortSignal;
 }): Promise<{ candidates: RoutePlannerCandidate[]; geometry: RouteGeometry; providerCalls: number; degraded: boolean; warning: string | null; budgetPrefixApplied: boolean }> {
   if (params.fitsBudget(params.candidates, params.geometry)) return { ...params, budgetPrefixApplied: false };
   let candidates = params.candidates;
@@ -458,7 +460,7 @@ async function adjustRouteToBudget(params: {
   let degraded = params.degraded;
   let warning = params.warning;
   if (geometry.mode === "network") {
-    const reduction = await reduceNetworkCandidates({ origin: params.origin, candidates, geometry, fitsBudget: params.fitsBudget, topology: params.topology, arrival: params.arrival, pedestrianNetwork: params.pedestrianNetwork });
+    const reduction = await reduceNetworkCandidates({ origin: params.origin, candidates, geometry, fitsBudget: params.fitsBudget, topology: params.topology, arrival: params.arrival, pedestrianNetwork: params.pedestrianNetwork, signal: params.signal });
     candidates = reduction.candidates;
     geometry = reduction.geometry;
     providerCalls += reduction.providerCalls;
@@ -475,7 +477,7 @@ async function adjustRouteToBudget(params: {
   return { candidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied: true };
 }
 
-async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[], topology: RouteTopology, arrival?: RoutePlannerOrigin, pedestrianNetwork?: PedestrianNetworkGraph | null): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
+async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[], topology: RouteTopology, arrival?: RoutePlannerOrigin, pedestrianNetwork?: PedestrianNetworkGraph | null, signal?: AbortSignal): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
   const coordinates = routeCoordinates(origin, points, topology, arrival);
   if (pedestrianNetwork) {
     const geometry = routeThroughPedestrianNetwork(pedestrianNetwork, coordinates, { topology }) ?? fallbackGeometry(origin, points, topology, arrival);
@@ -488,7 +490,7 @@ async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: read
     };
   }
   try {
-    const geometry = await routePolylineThroughFossgisFoot(coordinates, { topology });
+    const geometry = await routePolylineThroughFossgisFoot(coordinates, { topology, signal });
     return {
       geometry,
       providerCalls: 1,
@@ -529,6 +531,7 @@ export async function routeGroupWithinBudget(
   topology: RouteTopology = "loop",
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
+  signal?: AbortSignal,
 ): Promise<RouteGroupRoutingResult> {
   const initialCandidates = resolveGroupCandidates(group, candidatesById);
   const plannedWaypoints = group.plannedWaypoints ?? [];
@@ -542,7 +545,7 @@ export async function routeGroupWithinBudget(
   if (initialCandidates.length === 0 && plannedWaypoints.length === 0 && !arrival) return emptyRouteGroupResult(origin, group, topology, arrival);
   let retainedCandidates = [...initialCandidates];
   const routePoints = plannedWaypoints.length > 0 ? plannedWaypoints : retainedCandidates;
-  const initialRoute = await loadInitialRouteGeometry(origin, routePoints, topology, arrival, pedestrianNetwork);
+  const initialRoute = await loadInitialRouteGeometry(origin, routePoints, topology, arrival, pedestrianNetwork, signal);
   let geometry = initialRoute.geometry;
   providerCalls += initialRoute.providerCalls;
   firstProviderMode = initialRoute.firstProviderMode;
@@ -551,7 +554,7 @@ export async function routeGroupWithinBudget(
   let guidedSegments: RouteGuidedSegment[] | undefined;
   let guidedRouting: RouteGuidedRoutingAudit | undefined;
   if (plannedWaypoints.length === 0) {
-    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget, topology, arrival, pedestrianNetwork }));
+    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget, topology, arrival, pedestrianNetwork, signal }));
   }
   if (plannedWaypoints.length > 0 && guidedBudget) {
     if (!geometryMatchesGuidedPlan(origin, plannedWaypoints, geometry, topology, arrival)) {
