@@ -73,7 +73,7 @@ function validCategoryResult(value: unknown): value is RoutePollutionPotentialCa
   if (!validNullableNumber(coverageRatio)) return false;
   if (!validCoverage(value.collectionLengthM, value.coveredLengthM, coverageRatio) || !validConfidenceRecord(value.confidence) || !validStringArray(value.missingReasons)) return false;
   if (value.value === null) {
-    return value.status === "unavailable" && (value.rawProjectionIndex === null ? value.confidence.score === null : value.confidence.score !== null);
+    return value.status === "unavailable" && (value.rawProjectionIndex !== null || value.confidence.score === null);
   }
   return value.status === (coverageRatio !== null && coverageRatio < 1 ? "partial" : "available");
 }
