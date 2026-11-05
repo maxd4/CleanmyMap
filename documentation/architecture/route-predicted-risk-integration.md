@@ -128,6 +128,17 @@ signalements observés ne sont pas repondérés : leur scoring observé reste
 inchangé. Les champs `serviceMinutesEstimate` et `totalMinutesEstimate` restent
 `null`.
 
+Les indices théoriques persistés ne peuvent utiliser une référence réseau que si
+la séquence d'arêtes piétonnes canoniques est attestée dans le bon ordre, dans
+la bonne direction et avec une continuité de nœuds ; la seule présence de
+coordonnées ou de sommets dispersés ne constitue pas une preuve. Le mode
+`balanced` compare uniquement des références construites sur le même ensemble
+de catégories effectivement disponible : un sous-ensemble homogène peut rester
+`partial`, mais il n'est pas comparé à une référence couvrant un autre ensemble.
+Le validateur du snapshot est total et rejette toute structure absente,
+tronquée ou contradictoire sans lever d'exception. Les snapshots historiques
+sans `pollutionPotential` restent compatibles.
+
 L'admission géographique hors corridor reste évaluée avec le risque global
 `all`. Ainsi, une préférence focalisée peut réordonner une zone de l'autre type
 sans la transformer en exclusion absolue ; le corridor, la sécurité,

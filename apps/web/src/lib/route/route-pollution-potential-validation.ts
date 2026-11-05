@@ -10,6 +10,12 @@ import type {
   RoutePollutionReferenceComparison,
 } from "./route-pollution-potential";
 
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function validNullableNumber(value: unknown): value is number | null {
   return value === null || (typeof value === "number" && Number.isFinite(value));
 }
@@ -18,97 +24,116 @@ function validStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function sameNullableNumber(left: unknown, right: unknown): boolean {
+  return left === right || (typeof left === "number" && typeof right === "number" && Object.is(left, right));
+}
+
+function close(left: number, right: number, tolerance = 0.001): boolean {
+  return Math.abs(left - right) <= tolerance;
+}
+
+function validStatus(value: unknown): value is "available" | "partial" | "unavailable" {
+  return value === "available" || value === "partial" || value === "unavailable";
+}
+
+function validConfidenceRecord(value: unknown): value is JsonRecord {
+  if (!isRecord(value) || !validNullableNumber(value.score)) return false;
+  const validLevel = value.level === "high" || value.level === "medium" || value.level === "low" || value.level === "unknown";
+  const validSource = value.source === "segment_projection" || value.source === "unavailable";
+  if (!validLevel || !validSource) return false;
+  return value.score === null
+    ? value.level === "unknown" && value.source === "unavailable"
+    : value.source === "segment_projection" && value.score >= 0 && value.score <= 1;
+}
+
 export function isRoutePollutionPotentialConfidence(value: unknown): value is RoutePollutionPotentialConfidence {
-  if (!value || typeof value !== "object") return false;
-  const confidence = value as RoutePollutionPotentialConfidence;
-  return (confidence.level === "high" || confidence.level === "medium" || confidence.level === "low" || confidence.level === "unknown") &&
-    validNullableNumber(confidence.score) &&
-    (confidence.source === "segment_projection" || confidence.source === "unavailable") &&
-    (confidence.score === null ? confidence.level === "unknown" && confidence.source === "unavailable" : confidence.source === "segment_projection" && confidence.score >= 0 && confidence.score <= 1);
+  return validConfidenceRecord(value);
+}
+
+function validCoverage(collectionLengthM: unknown, coveredLengthM: unknown, coverageRatio: unknown): boolean {
+  if (typeof collectionLengthM !== "number" || !Number.isFinite(collectionLengthM) || collectionLengthM < 0) return false;
+  if (typeof coveredLengthM !== "number" || !Number.isFinite(coveredLengthM) || coveredLengthM < 0 || coveredLengthM > collectionLengthM) return false;
+  if (!validNullableNumber(coverageRatio) || (coverageRatio !== null && (coverageRatio < 0 || coverageRatio > 1))) return false;
+  return collectionLengthM === 0
+    ? coverageRatio === null && coveredLengthM === 0
+    : coverageRatio !== null && close(coverageRatio, coveredLengthM / collectionLengthM, 0.0015);
+}
+
+function sameConfidence(left: unknown, right: unknown): boolean {
+  return isRecord(left) && isRecord(right) && left.level === right.level && sameNullableNumber(left.score, right.score) && left.source === right.source;
 }
 
 function validCategoryResult(value: unknown): value is RoutePollutionPotentialCategoryResult {
-  if (!value || typeof value !== "object") return false;
-  const result = value as RoutePollutionPotentialCategoryResult;
-  return validNullableNumber(result.value) &&
-    validNullableNumber(result.rawProjectionIndex) &&
-    (result.status === "available" || result.status === "partial" || result.status === "unavailable") &&
-    Number.isInteger(result.uniqueSegmentCount) && result.uniqueSegmentCount >= 0 &&
-    Number.isInteger(result.availableSegmentCount) && result.availableSegmentCount >= 0 &&
-    Number.isFinite(result.collectionLengthM) && result.collectionLengthM >= 0 &&
-    Number.isFinite(result.coveredLengthM) && result.coveredLengthM >= 0 &&
-    validNullableNumber(result.coverageRatio) &&
-    (result.coverageRatio === null || (result.coverageRatio >= 0 && result.coverageRatio <= 1)) &&
-    isRoutePollutionPotentialConfidence(result.confidence) &&
-    validStringArray(result.missingReasons);
+  if (!isRecord(value) || !validNullableNumber(value.value) || !validNullableNumber(value.rawProjectionIndex) || !validStatus(value.status)) return false;
+  const uniqueSegmentCount = value.uniqueSegmentCount;
+  const availableSegmentCount = value.availableSegmentCount;
+  const coverageRatio = value.coverageRatio;
+  if (typeof uniqueSegmentCount !== "number" || !Number.isInteger(uniqueSegmentCount) || uniqueSegmentCount < 0) return false;
+  if (typeof availableSegmentCount !== "number" || !Number.isInteger(availableSegmentCount) || availableSegmentCount < 0 || availableSegmentCount > uniqueSegmentCount) return false;
+  if (!validNullableNumber(coverageRatio)) return false;
+  if (!validCoverage(value.collectionLengthM, value.coveredLengthM, coverageRatio) || !validConfidenceRecord(value.confidence) || !validStringArray(value.missingReasons)) return false;
+  if (value.value === null) {
+    return value.status === "unavailable" && (value.rawProjectionIndex === null ? value.confidence.score === null : value.confidence.score !== null);
+  }
+  return value.status === (coverageRatio !== null && coverageRatio < 1 ? "partial" : "available");
 }
 
 function validIndex(value: unknown): value is RoutePollutionPotentialIndex {
-  if (!value || typeof value !== "object") return false;
-  const index = value as RoutePollutionPotentialIndex;
-  return (index.status === "available" || index.status === "partial" || index.status === "unavailable") &&
-    validNullableNumber(index.value) &&
-    Number.isInteger(index.uniqueSegmentCount) && index.uniqueSegmentCount >= 0 &&
-    Number.isFinite(index.collectionLengthM) && index.collectionLengthM >= 0 &&
-    Number.isFinite(index.coveredLengthM) && index.coveredLengthM >= 0 &&
-    validNullableNumber(index.coverageRatio) &&
-    (index.coverageRatio === null || (index.coverageRatio >= 0 && index.coverageRatio <= 1)) &&
-    isRoutePollutionPotentialConfidence(index.confidence) &&
-    Array.isArray(index.missingCategories) && index.missingCategories.every((category) => category === "waste" || category === "cigaretteButts" || category === "mixed") &&
-    validStringArray(index.limitations) &&
-    typeof index.categories === "object" && index.categories !== null &&
-    validCategoryResult(index.categories.waste) &&
-    validCategoryResult(index.categories.cigaretteButts) &&
-    validCategoryResult(index.categories.mixed);
+  if (!isRecord(value) || !validStatus(value.status) || !validNullableNumber(value.value)) return false;
+  const uniqueSegmentCount = value.uniqueSegmentCount;
+  if (typeof uniqueSegmentCount !== "number" || !Number.isInteger(uniqueSegmentCount) || uniqueSegmentCount < 0 || !validCoverage(value.collectionLengthM, value.coveredLengthM, value.coverageRatio)) return false;
+  if (!validConfidenceRecord(value.confidence) || !validStringArray(value.limitations) || !isRecord(value.categories)) return false;
+  const categories = [value.categories.waste, value.categories.cigaretteButts, value.categories.mixed];
+  if (!categories.every(validCategoryResult)) return false;
+  if (categories.some((category) => category.uniqueSegmentCount !== uniqueSegmentCount || category.collectionLengthM !== value.collectionLengthM)) return false;
+  if (value.coveredLengthM !== Math.max(...categories.map((category) => category.coveredLengthM))) return false;
+  const expectedMissing = categories.flatMap((category, index) => category.value === null ? (["waste", "cigaretteButts", "mixed"] as const).slice(index, index + 1) : []);
+  if (!Array.isArray(value.missingCategories) || value.missingCategories.length !== expectedMissing.length || value.missingCategories.some((category, index) => category !== expectedMissing[index])) return false;
+  if (!categories.some((category) => sameNullableNumber(category.value, value.value) && category.status === value.status && sameConfidence(category.confidence, value.confidence))) return false;
+  return value.value === null ? value.status === "unavailable" && value.confidence.score === null : value.status !== "unavailable";
 }
 
 function validReferenceComparison(value: unknown): value is RoutePollutionReferenceComparison {
-  if (!value || typeof value !== "object") return false;
-  const comparison = value as RoutePollutionReferenceComparison;
-  return (comparison.pickupPreference === "balanced" || comparison.pickupPreference === "waste" || comparison.pickupPreference === "cigarette_butts") &&
-    (comparison.routeTopology === "loop" || comparison.routeTopology === "open") &&
-    Number.isFinite(comparison.travelBudgetMinutes) && comparison.travelBudgetMinutes > 0 &&
-    Number.isFinite(comparison.usefulCollectionLengthM) && comparison.usefulCollectionLengthM > 0;
+  if (!isRecord(value)) return false;
+  return (value.pickupPreference === "balanced" || value.pickupPreference === "waste" || value.pickupPreference === "cigarette_butts") &&
+    (value.routeTopology === "loop" || value.routeTopology === "open") &&
+    typeof value.travelBudgetMinutes === "number" && Number.isFinite(value.travelBudgetMinutes) && value.travelBudgetMinutes > 0 &&
+    typeof value.usefulCollectionLengthM === "number" && Number.isFinite(value.usefulCollectionLengthM) && value.usefulCollectionLengthM > 0;
+}
+
+function validReference(value: unknown): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  return typeof value.id === "string" && value.id.length > 0 && typeof value.label === "string" &&
+    (value.kind === "historical_action_score_100" || value.kind === "theoretical_network") &&
+    (value.historicalScore === null || value.historicalScore === 100) && validReferenceComparison(value.comparison) && validStringArray(value.provenance);
+}
+
+function validVersion(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return value.potentialSchemaVersion === ROUTE_POLLUTION_POTENTIAL_SCHEMA_VERSION &&
+    (value.referenceCatalogSchemaVersion === null || value.referenceCatalogSchemaVersion === ROUTE_POLLUTION_REFERENCE_CATALOG_SCHEMA_VERSION) &&
+    (value.projectionSchemaVersion === null || typeof value.projectionSchemaVersion === "string") &&
+    (value.projectionVersionId === null || typeof value.projectionVersionId === "string") &&
+    (value.networkVersionId === null || typeof value.networkVersionId === "string") &&
+    (value.riskModelVersion === null || typeof value.riskModelVersion === "string");
 }
 
 export function isRoutePollutionPotential(value: unknown): value is RoutePollutionPotential {
-  if (!value || typeof value !== "object") return false;
-  const potential = value as RoutePollutionPotential;
-  const reference = potential.reference;
-  const version = potential.version;
-  const validReference = reference === null || (
-    typeof reference === "object" &&
-    typeof reference.id === "string" && reference.id.length > 0 &&
-    typeof reference.label === "string" &&
-    (reference.kind === "historical_action_score_100" || reference.kind === "theoretical_network") &&
-    (reference.historicalScore === null || reference.historicalScore === 100) &&
-    validReferenceComparison(reference.comparison) &&
-    validStringArray(reference.provenance)
-  );
-  return potential.schemaVersion === ROUTE_POLLUTION_POTENTIAL_SCHEMA_VERSION &&
-    (potential.status === "available" || potential.status === "partial" || potential.status === "unavailable") &&
-    (potential.selectedCategory === "waste" || potential.selectedCategory === "cigaretteButts" || potential.selectedCategory === "mixed") &&
-    validNullableNumber(potential.value) &&
-    validIndex(potential.global) &&
-    Array.isArray(potential.groups) && potential.groups.every((group) =>
-      Number.isInteger(group.groupIndex) && group.groupIndex >= 1 &&
-      Number.isInteger(group.volunteerCount) && group.volunteerCount >= 0 &&
-      validIndex(group.index),
-    ) &&
-    validReference &&
-    Number.isInteger(potential.coverage.uniqueSegmentCount) && potential.coverage.uniqueSegmentCount >= 0 &&
-    Number.isFinite(potential.coverage.collectionLengthM) && potential.coverage.collectionLengthM >= 0 &&
-    Number.isFinite(potential.coverage.coveredLengthM) && potential.coverage.coveredLengthM >= 0 &&
-    validNullableNumber(potential.coverage.coverageRatio) &&
-    (potential.coverage.coverageRatio === null || (potential.coverage.coverageRatio >= 0 && potential.coverage.coverageRatio <= 1)) &&
-    Number.isInteger(potential.coverage.groupCount) && potential.coverage.groupCount >= 0 &&
-    isRoutePollutionPotentialConfidence(potential.confidence) &&
-    validStringArray(potential.provenance) && validStringArray(potential.limitations) &&
-    typeof version === "object" && version !== null &&
-    version.potentialSchemaVersion === ROUTE_POLLUTION_POTENTIAL_SCHEMA_VERSION &&
-    (version.referenceCatalogSchemaVersion === null || version.referenceCatalogSchemaVersion === ROUTE_POLLUTION_REFERENCE_CATALOG_SCHEMA_VERSION) &&
-    (version.projectionSchemaVersion === null || typeof version.projectionSchemaVersion === "string") &&
-    (version.projectionVersionId === null || typeof version.projectionVersionId === "string") &&
-    (version.networkVersionId === null || typeof version.networkVersionId === "string") &&
-    (version.riskModelVersion === null || typeof version.riskModelVersion === "string");
+  if (!isRecord(value) || value.schemaVersion !== ROUTE_POLLUTION_POTENTIAL_SCHEMA_VERSION || !validStatus(value.status)) return false;
+  if (value.selectedCategory !== "waste" && value.selectedCategory !== "cigaretteButts" && value.selectedCategory !== "mixed") return false;
+  if (!validNullableNumber(value.value) || !validIndex(value.global) || !Array.isArray(value.groups) || !validReference(value.reference)) return false;
+  if (!value.groups.every((group) => {
+    if (!isRecord(group)) return false;
+    const groupIndex = group.groupIndex;
+    const volunteerCount = group.volunteerCount;
+    return typeof groupIndex === "number" && Number.isInteger(groupIndex) && groupIndex >= 1 && typeof volunteerCount === "number" && Number.isInteger(volunteerCount) && volunteerCount >= 0 && validIndex(group.index);
+  })) return false;
+  if (!isRecord(value.coverage) || !validCoverage(value.coverage.collectionLengthM, value.coverage.coveredLengthM, value.coverage.coverageRatio)) return false;
+  if (value.coverage.uniqueSegmentCount !== value.global.uniqueSegmentCount || value.coverage.collectionLengthM !== value.global.collectionLengthM || value.coverage.coveredLengthM !== value.global.coveredLengthM || !sameNullableNumber(value.coverage.coverageRatio, value.global.coverageRatio) || value.coverage.groupCount !== value.groups.length) return false;
+  if (!validConfidenceRecord(value.confidence) || !validStringArray(value.provenance) || !validStringArray(value.limitations) || !validVersion(value.version)) return false;
+  if (!sameNullableNumber(value.value, value.global.value) || value.status !== value.global.status || !sameConfidence(value.confidence, value.global.confidence)) return false;
+  const selected = value.global.categories[value.selectedCategory];
+  if (!sameNullableNumber(value.global.value, selected.value) || value.global.status !== selected.status || !sameConfidence(value.global.confidence, selected.confidence)) return false;
+  return value.value === null ? value.status === "unavailable" : value.status !== "unavailable";
 }

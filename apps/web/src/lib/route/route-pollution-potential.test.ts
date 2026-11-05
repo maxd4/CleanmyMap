@@ -50,12 +50,12 @@ function projection(overrides: {
       osmWayId: `way-${id}`,
       segmentIndex: index,
       direction: "forward" as const,
-      fromNodeId: `${id}-from`,
-      toNodeId: `${id}-to`,
+      fromNodeId: `node-${index}`,
+      toNodeId: `node-${index + 1}`,
       lengthM,
       intersectionLengthM: lengthM,
-      coordinates: [[48.85 + index * 0.001, 2.35], [48.8505 + index * 0.001, 2.3505]] as [[number, number], [number, number]],
-      midpoint: [48.85025 + index * 0.001, 2.35025],
+      coordinates: [[48.85 + index * 0.001, 2.35], [48.851 + index * 0.001, 2.35]] as [[number, number], [number, number]],
+      midpoint: [48.8505 + index * 0.001, 2.35],
       zoneId: `iris-${id}`,
       intersectedZoneIds: [`iris-${id}`],
       effectiveResolution: "iris" as const,
@@ -93,6 +93,7 @@ function candidate(id: string, segmentId: string): RoutePlannerCandidate {
 function catalog(
   inputProjection = projection(),
   historicalReferences: readonly RouteHistoricalPollutionReferenceInput[] = [],
+  geometryOverrides?: { coordinates: Array<[number, number]>; edgeKeys: string[] },
 ) {
   return buildRoutePollutionReferenceCatalog({
     projection: inputProjection,
@@ -107,7 +108,8 @@ function catalog(
         usefulCollectionLengthM: 400,
       },
       geometry: {
-        coordinates: [[48.852, 2.35], [48.8525, 2.3505], [48.853, 2.35], [48.8535, 2.3505]],
+        coordinates: geometryOverrides?.coordinates ?? [[48.852, 2.35], [48.853, 2.35], [48.853, 2.35], [48.854, 2.35]],
+        edgeKeys: geometryOverrides?.edgeKeys ?? ["edge-s-3", "edge-s-4"],
         source: "planner_snapshot" as const,
         mode: "network" as const,
       },
@@ -224,7 +226,7 @@ describe("route theoretical pollution potential", () => {
           id: "waste-strong",
           label: "Waste strong",
           comparison: { pickupPreference: "waste", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 400 },
-          geometry: { coordinates: [[48.85, 2.35], [48.8505, 2.3505], [48.851, 2.35], [48.8515, 2.3505]], source: "planner_snapshot", mode: "network" },
+          geometry: { coordinates: [[48.85, 2.35], [48.851, 2.35], [48.851, 2.35], [48.852, 2.35]], edgeKeys: ["edge-s-1", "edge-s-2"], source: "planner_snapshot", mode: "network" },
           collectionSegmentIds: ["s-1", "s-2"],
           provenance: ["test"],
         },
@@ -232,7 +234,7 @@ describe("route theoretical pollution potential", () => {
           id: "waste-weak",
           label: "Waste weak",
           comparison: { pickupPreference: "waste", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 400 },
-          geometry: { coordinates: [[48.852, 2.35], [48.8525, 2.3505], [48.853, 2.35], [48.8535, 2.3505]], source: "planner_snapshot", mode: "network" },
+          geometry: { coordinates: [[48.852, 2.35], [48.853, 2.35], [48.853, 2.35], [48.854, 2.35]], edgeKeys: ["edge-s-3", "edge-s-4"], source: "planner_snapshot", mode: "network" },
           collectionSegmentIds: ["s-3", "s-4"],
           provenance: ["test"],
         },
@@ -275,7 +277,7 @@ describe("route theoretical pollution potential", () => {
         label: "Invalid",
         historicalScore: 100,
         comparison: { pickupPreference: "balanced", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 900 },
-        geometry: { coordinates: [[1, 1], [1.1, 1.1]], source: "planner_snapshot", mode: "network" },
+        geometry: { coordinates: [[1, 1], [1.1, 1.1]], edgeKeys: ["edge-s-3", "edge-s-4"], source: "planner_snapshot", mode: "network" },
         collectionSegmentIds: ["s-3", "s-4"],
         measurements: {
           waste: { value: 90, methodVersion: ROUTE_POLLUTION_REFERENCE_COMPARISON_METHOD_VERSION, provenance: "test" },
@@ -294,9 +296,34 @@ describe("route theoretical pollution potential", () => {
   it("refuse les snapshots persistés incomplets ou contradictoires", () => {
     const potential = buildRoutePollutionPotential(routeInput());
     expect(isRoutePollutionPotential(potential)).toBe(true);
+    expect(() => isRoutePollutionPotential(undefined)).not.toThrow();
+    expect(isRoutePollutionPotential({ ...potential, coverage: undefined })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, groups: [null] })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, value: 12 })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, status: "unavailable" })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, coverage: { ...potential.coverage, coveredLengthM: 1 } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, confidence: { level: "high", score: 1, source: "segment_projection" } } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, categories: { waste: {} } } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, confidence: { level: "high", score: null, source: "segment_projection" } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, comparison: {} } })).toBe(false);
+  });
+
+  it("refuse les références dont les sommets ou les arêtes ne prouvent pas un parcours dirigé", () => {
+    const dispersed = catalog(projection(), [], {
+      coordinates: [[48.852, 2.35], [48.854, 2.35], [48.852, 2.35], [48.854, 2.35]],
+      edgeKeys: ["edge-s-3", "edge-s-4"],
+    });
+    const reverse = catalog(projection(), [], {
+      coordinates: [[48.853, 2.35], [48.854, 2.35], [48.852, 2.35], [48.853, 2.35]],
+      edgeKeys: ["edge-s-4", "edge-s-3"],
+    });
+    const fictitious = catalog(projection(), [], {
+      coordinates: [[48.852, 2.35], [48.853, 2.35], [48.853, 2.35], [48.854, 2.35]],
+      edgeKeys: ["edge-s-3", "fake-edge", "edge-s-4"],
+    });
+    expect(dispersed.references).toHaveLength(0);
+    expect(reverse.references).toHaveLength(0);
+    expect(fictitious.references).toHaveLength(0);
   });
 
   it("marks a missing category explicitly while averaging the available category for mixed", () => {
@@ -304,7 +331,7 @@ describe("route theoretical pollution potential", () => {
     for (const segment of current.segments) {
       segment.wasteConfidence = { level: "high", score: 0.8 } as never;
     }
-    const potential = buildRoutePollutionPotential(routeInput({ projection: current, referenceCatalog: catalog() }));
+    const potential = buildRoutePollutionPotential(routeInput({ projection: current, referenceCatalog: catalog(current) }));
 
     expect(potential.global.categories.waste.value).toBe(65);
     expect(potential.global.categories.cigaretteButts.value).toBeNull();
@@ -326,7 +353,8 @@ describe("route theoretical pollution potential", () => {
         usefulCollectionLengthM: 400,
       },
       geometry: {
-        coordinates: [[48.852, 2.35], [48.8525, 2.3505], [48.853, 2.35], [48.8535, 2.3505]],
+        coordinates: [[48.852, 2.35], [48.853, 2.35], [48.853, 2.35], [48.854, 2.35]],
+        edgeKeys: ["edge-s-3", "edge-s-4"],
         source: "planner_snapshot" as const,
         mode: "network" as const,
       },
@@ -356,7 +384,7 @@ describe("route theoretical pollution potential", () => {
       label: "Action incompatible",
       historicalScore: 100,
       comparison: { pickupPreference: "balanced", routeTopology: "loop", travelBudgetMinutes: 60, usefulCollectionLengthM: 400 },
-      geometry: { coordinates: [[48.85, 2.35], [48.853, 2.353]], source: "planner_snapshot", mode: "network" },
+      geometry: { coordinates: [[48.852, 2.35], [48.853, 2.35], [48.853, 2.35], [48.854, 2.35]], edgeKeys: ["edge-s-3", "edge-s-4"], source: "planner_snapshot", mode: "network" },
       collectionSegmentIds: ["s-3", "s-4"],
       measurements: {
         waste: { value: 99, methodVersion: "legacy-unknown", provenance: "unknown" },

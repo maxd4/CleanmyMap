@@ -106,6 +106,8 @@ export type RoutePollutionReferenceCatalog = {
 
 type ReferenceGeometryInput = {
   coordinates: readonly Coordinate[];
+  /** Canonical directed network edge sequence attesting the traversed path. */
+  edgeKeys: readonly string[];
   source: "planner_snapshot" | "operational_route";
   mode: "network";
 };
@@ -215,29 +217,23 @@ const ROUTE_REFERENCE_BUDGET_TOLERANCE_MINUTES = 5;
 function clamp(value: number, min = 0, max = 100): number {
   return Math.min(max, Math.max(min, value));
 }
-
 function round(value: number, digits = 2): number {
   return Number(value.toFixed(digits));
 }
-
 function finitePositive(value: number | null | undefined): number | null {
   return Number.isFinite(value) && (value ?? 0) > 0 ? value! : null;
 }
-
 function validCoordinate(coordinate: readonly number[]): coordinate is Coordinate {
   return coordinate.length === 2 && coordinate.every((value) => Number.isFinite(value));
 }
-
 function uniqueIds(ids: readonly string[]): string[] {
   return [...new Set(ids.filter((id) => id.trim().length > 0))].sort();
 }
-
 function projectionSegmentMap(
   projection: PedestrianRiskProjectionSnapshot,
 ): Map<string, PedestrianRiskProjectionSegment> {
   return new Map(projection.segments.map((segment) => [segment.projectionSegmentId, segment]));
 }
-
 function weightedSegmentStats(
   segmentIds: readonly string[],
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
@@ -287,12 +283,10 @@ function weightedSegmentStats(
     },
   };
 }
-
 function mixedValue(values: CategoryValues): number | null {
   const available = Object.values(values).filter((value): value is number => value !== null);
   return available.length > 0 ? available.reduce((sum, value) => sum + value, 0) / available.length : null;
 }
-
 function confidenceFor(score: number | null): RoutePollutionPotentialConfidence {
   if (score === null) return { level: "unknown", score: null, source: "unavailable" };
   return {
@@ -301,7 +295,6 @@ function confidenceFor(score: number | null): RoutePollutionPotentialConfidence 
     source: "segment_projection",
   };
 }
-
 function combineConfidence(
   values: readonly RoutePollutionPotentialCategoryResult[],
 ): RoutePollutionPotentialConfidence {
@@ -309,12 +302,10 @@ function combineConfidence(
   if (available.length === 0) return confidenceFor(null);
   return confidenceFor(available.reduce((sum, item) => sum + (item.confidence.score ?? 0), 0) / available.length);
 }
-
 function relativeValue(raw: number | null, reference: number | null): number | null {
   if (raw === null || reference === null || reference <= 0) return null;
   return round(clamp((raw / reference) * 100));
 }
-
 function categoryResult(
   category: Category,
   stats: SegmentStats,
@@ -350,7 +341,6 @@ function categoryResult(
     missingReasons: [...new Set(missingReasons)],
   };
 }
-
 function buildIndex(
   segmentIds: readonly string[],
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
@@ -406,7 +396,6 @@ function buildIndex(
     limitations: [...new Set(limitations)],
   };
 }
-
 function referenceStrength(values: CategoryValues, preference: RoutePickupPreference): number | null {
   const relevant = preference === "waste"
     ? [values.waste]
@@ -414,10 +403,9 @@ function referenceStrength(values: CategoryValues, preference: RoutePickupPrefer
       ? [values.cigaretteButts]
       : [values.waste, values.cigaretteButts];
   const available = relevant.filter((value): value is number => value !== null);
-  if (available.length !== relevant.length || available.length === 0) return null;
+  if (available.length === 0) return null;
   return available.reduce((sum, value) => sum + value, 0) / available.length;
 }
-
 function referenceCategoryValues(
   segmentIds: readonly string[],
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
@@ -425,40 +413,64 @@ function referenceCategoryValues(
   const stats = weightedSegmentStats(segmentIds, segments);
   return stats.values;
 }
-
-function geometryContainsSegment(
+function networkPathIsDirectedAndContinuous(
   geometry: ReferenceGeometryInput,
-  segment: PedestrianRiskProjectionSegment,
+  segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
 ): boolean {
-  const matches = (coordinate: readonly number[]) => geometry.coordinates.some(
-    (candidate) =>
-      Math.abs(candidate[0] - coordinate[0]) <= 1e-6 &&
-      Math.abs(candidate[1] - coordinate[1]) <= 1e-6,
-  );
-  return segment.coordinates.length >= 2 &&
-    segment.coordinates.every(validCoordinate) &&
-    segment.coordinates.every(matches);
+  if (geometry.edgeKeys.length === 0) return false;
+  const edges = geometry.edgeKeys.map((edgeKey) => [...segments.values()].find((candidate) => candidate.edgeKey === edgeKey));
+  if (edges.some((edge) => !edge || edge.riskStatus !== "predicted" || !finitePositive(edge.lengthM))) return false;
+  return edges.every((edge, index) => index === 0 || edges[index - 1]!.toNodeId === edge!.fromNodeId);
 }
-
+function geometryFollowsEdgeSequence(
+  geometry: ReferenceGeometryInput,
+  segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
+): boolean {
+  const matches = (left: readonly number[], right: readonly number[]) =>
+    Math.abs(left[0] - right[0]) <= 1e-6 && Math.abs(left[1] - right[1]) <= 1e-6;
+  let cursor = 0;
+  for (const edgeKey of geometry.edgeKeys) {
+    const segment = [...segments.values()].find((candidate) => candidate.edgeKey === edgeKey);
+    if (!segment) return false;
+    const start = geometry.coordinates.findIndex((_, index) => index >= cursor && segment.coordinates.every((coordinate, offset) => matches(geometry.coordinates[index + offset] ?? [], coordinate)));
+    if (start < 0) return false;
+    cursor = start + segment.coordinates.length - 1;
+  }
+  return true;
+}
+function selectedSegmentsFollowPath(
+  geometry: ReferenceGeometryInput,
+  segmentIds: readonly string[],
+  segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
+): boolean {
+  let edgeIndex = 0;
+  return segmentIds.every((segmentId) => {
+    const segment = segments.get(segmentId);
+    const nextIndex = segment ? geometry.edgeKeys.indexOf(segment.edgeKey, edgeIndex) : -1;
+    if (nextIndex < 0) return false;
+    edgeIndex = nextIndex + 1;
+    return true;
+  });
+}
 function validReferenceGeometry(
   geometry: ReferenceGeometryInput,
   segmentIds: readonly string[],
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
   usefulCollectionLengthM: number,
 ): boolean {
-  if (geometry.mode !== "network" || geometry.coordinates.length < 2 || !geometry.coordinates.every(validCoordinate)) return false;
+  if (geometry.mode !== "network" || geometry.coordinates.length < 2 || !geometry.coordinates.every(validCoordinate) || !Array.isArray(geometry.edgeKeys) || !geometry.edgeKeys.every((edgeKey) => typeof edgeKey === "string" && edgeKey.length > 0)) return false;
+  const pathValid = networkPathIsDirectedAndContinuous(geometry, segments);
+  const selectedValid = selectedSegmentsFollowPath(geometry, segmentIds, segments);
+  if (!pathValid || !selectedValid || !geometryFollowsEdgeSequence(geometry, segments)) return false;
   const mappedSegments = segmentIds.map((id) => segments.get(id));
   if (mappedSegments.some((segment) => !segment || segment.riskStatus !== "predicted" || !finitePositive(segment.lengthM))) return false;
-  if (mappedSegments.some((segment) => !geometryContainsSegment(geometry, segment!))) return false;
   const segmentLength = mappedSegments.reduce((sum, segment) => sum + (segment?.lengthM ?? 0), 0);
   return Math.abs(segmentLength - usefulCollectionLengthM) / Math.max(segmentLength, usefulCollectionLengthM, 1) <= ROUTE_REFERENCE_LENGTH_TOLERANCE;
 }
-
 function validComparison(comparison: RoutePollutionReferenceComparison): boolean {
   return Number.isFinite(comparison.travelBudgetMinutes) && comparison.travelBudgetMinutes > 0 &&
     Number.isFinite(comparison.usefulCollectionLengthM) && comparison.usefulCollectionLengthM > 0;
 }
-
 function makeReference(
   input: {
     id: string;
@@ -474,7 +486,7 @@ function makeReference(
   },
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
 ): RoutePollutionReference | null {
-  const segmentIds = uniqueIds(input.collectionSegmentIds);
+  const segmentIds = [...input.collectionSegmentIds];
   if (!validComparison(input.comparison) || segmentIds.length === 0 || segmentIds.length !== input.collectionSegmentIds.length || !validReferenceGeometry(input.geometry, segmentIds, segments, input.comparison.usefulCollectionLengthM)) return null;
   const rawProjectionIndex = referenceCategoryValues(segmentIds, segments);
   if (referenceStrength(rawProjectionIndex, input.comparison.pickupPreference) === null) return null;
@@ -497,14 +509,13 @@ function makeReference(
     limitations: [...new Set(input.limitations)],
   };
 }
-
 function historicalExclusion(
   input: RouteHistoricalPollutionReferenceInput,
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
 ): string | null {
   if (input.historicalScore !== 100) return "historical_score_is_not_100";
   if (!validComparison(input.comparison)) return "comparison_dimensions_missing";
-  const segmentIds = uniqueIds(input.collectionSegmentIds);
+  const segmentIds = [...input.collectionSegmentIds];
   const requiredMeasurements: HistoricalMeasurement[] = input.comparison.pickupPreference === "waste"
     ? [input.measurements.waste]
     : input.comparison.pickupPreference === "cigarette_butts"
@@ -597,10 +608,11 @@ export function buildRoutePollutionReferenceCatalog(input: {
     ],
   };
 }
-
 function comparableReference(
   reference: RoutePollutionReference,
-  input: Pick<RoutePollutionPotentialRouteInput, "pickupPreference" | "routeTopology" | "travelBudgetMinutes" | "usefulCollectionLengthM">,
+  input: Pick<RoutePollutionPotentialRouteInput, "pickupPreference" | "routeTopology" | "travelBudgetMinutes" | "usefulCollectionLengthM"> & {
+    availableCategories?: ReadonlyArray<"waste" | "cigaretteButts">;
+  },
 ): boolean {
   if (reference.comparison.pickupPreference !== input.pickupPreference || reference.comparison.routeTopology !== input.routeTopology) return false;
   const budgetDelta = Math.abs(reference.comparison.travelBudgetMinutes - input.travelBudgetMinutes);
@@ -608,9 +620,15 @@ function comparableReference(
   if (input.usefulCollectionLengthM === null || input.usefulCollectionLengthM === undefined) return true;
   const referenceLength = reference.comparison.usefulCollectionLengthM;
   const ratio = Math.abs(referenceLength - input.usefulCollectionLengthM) / Math.max(referenceLength, input.usefulCollectionLengthM, 1);
-  return ratio <= ROUTE_REFERENCE_LENGTH_TOLERANCE;
+  if (ratio > ROUTE_REFERENCE_LENGTH_TOLERANCE) return false;
+  if (!input.availableCategories) return true;
+  if (input.pickupPreference !== "balanced") {
+    const selectedCategory = input.pickupPreference === "waste" ? "waste" : "cigaretteButts";
+    return reference.rawProjectionIndex[selectedCategory] !== null;
+  }
+  const referenceCategories = (["waste", "cigaretteButts"] as const).filter((category) => reference.rawProjectionIndex[category] !== null);
+  return referenceCategories.length === input.availableCategories.length && referenceCategories.every((category, index) => category === input.availableCategories?.[index]);
 }
-
 function catalogMatchesProjection(
   catalog: RoutePollutionReferenceCatalog,
   projection: PedestrianRiskProjectionSnapshot,
@@ -621,10 +639,11 @@ function catalogMatchesProjection(
     catalog.projection.networkVersionId === projection.networkVersionId &&
     catalog.projection.riskModelVersion === projection.sourceVersions.riskModelVersion;
 }
-
 export function selectRoutePollutionReference(
   catalog: RoutePollutionReferenceCatalog | null | undefined,
-  input: Pick<RoutePollutionPotentialRouteInput, "pickupPreference" | "routeTopology" | "travelBudgetMinutes" | "usefulCollectionLengthM">,
+  input: Pick<RoutePollutionPotentialRouteInput, "pickupPreference" | "routeTopology" | "travelBudgetMinutes" | "usefulCollectionLengthM"> & {
+    availableCategories?: ReadonlyArray<"waste" | "cigaretteButts">;
+  },
 ): RoutePollutionReference | null {
   if (!catalog || catalog.schemaVersion !== ROUTE_POLLUTION_REFERENCE_CATALOG_SCHEMA_VERSION) return null;
   const compatible = catalog.references.filter((reference) => comparableReference(reference, input));
@@ -634,7 +653,6 @@ export function selectRoutePollutionReference(
     return (right.strength ?? -1) - (left.strength ?? -1) || left.id.localeCompare(right.id);
   })[0] ?? null;
 }
-
 function selectedSegmentIds(
   groups: readonly RoutePollutionPotentialGroupInput[],
   candidates: readonly RoutePlannerCandidate[],
@@ -645,7 +663,6 @@ function selectedSegmentIds(
     return candidate?.family === "predicted" && candidate.evidence.segmentId ? [candidate.evidence.segmentId] : [];
   })));
 }
-
 function indexLimitations(
   route: RoutePollutionPotentialRouteInput,
   reference: RoutePollutionReference | null,
@@ -662,7 +679,6 @@ function indexLimitations(
   if (!reference) limitations.push("Aucune référence homogène et réalisable n'est disponible pour ces dimensions.");
   return limitations;
 }
-
 export function buildRoutePollutionPotential(
   input: RoutePollutionPotentialRouteInput,
 ): RoutePollutionPotential {
@@ -671,6 +687,10 @@ export function buildRoutePollutionPotential(
   const idsByGroup = selectedSegmentIds(input.groups, input.candidates);
   const allSegmentIds = uniqueIds(idsByGroup.flat());
   const usefulCollectionLengthM = input.usefulCollectionLengthM ?? weightedSegmentStats(allSegmentIds, segments).collectionLengthM;
+  const routeValues = weightedSegmentStats(allSegmentIds, segments).values;
+  const availableCategories = input.pickupPreference === "balanced"
+    ? (["waste", "cigaretteButts"] as const).filter((category) => routeValues[category] !== null)
+    : [input.pickupPreference === "waste" ? "waste" : "cigaretteButts"] as const;
   const selectedCategory: RoutePollutionPotentialCategory = input.pickupPreference === "waste"
     ? "waste"
     : input.pickupPreference === "cigarette_butts"
@@ -685,6 +705,7 @@ export function buildRoutePollutionPotential(
     routeTopology: input.routeTopology,
     travelBudgetMinutes: input.travelBudgetMinutes,
     usefulCollectionLengthM,
+    availableCategories,
   });
   const limitations = indexLimitations(input, reference, catalogMatches);
   const global = buildIndex(allSegmentIds, segments, reference, limitations, selectedCategory);
@@ -748,7 +769,4 @@ export function buildRoutePollutionPotential(
   };
 }
 
-export {
-  isRoutePollutionPotential,
-  isRoutePollutionPotentialConfidence,
-} from "./route-pollution-potential-validation";
+export { isRoutePollutionPotential, isRoutePollutionPotentialConfidence } from "./route-pollution-potential-validation";
