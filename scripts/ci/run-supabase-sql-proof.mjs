@@ -32,6 +32,7 @@ const MULTISESSION_PROOFS = new Map([
   ["e2e/action-buddy-concurrency.mjs", /Action buddy two-session matching invariant passed\./],
   ["e2e/community-helper-skills-concurrency.mjs", /Community helper skills two-session exact replacement contract passed\./],
   ["e2e/gamification-reconciliation-concurrency.mjs", /Gamification reconciliation two-session lock, CAS, atomicity and idempotence passed\./],
+  ["e2e/territorial-legend-revision-concurrency.mjs", /Territorial legend monotone fact revision and stale same-day reconciliation concurrency passed\./],
   ["e2e/quiz-progression-concurrency.mjs", /Quiz progression two-session user lock and balanced milestone passed\./],
   ["e2e/reports-postgres-concurrency.mjs", /EXECUTED_DB_CONTRACT: Reports quota and PDF artifact two-session concurrency contract passed\./],
   ["e2e/security-02-two-sessions.mjs", /SECURITY-02 two-session PostgreSQL contract passed\./],

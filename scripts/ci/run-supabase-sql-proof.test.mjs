@@ -52,6 +52,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "e2e/reports-postgres-concurrency.mjs",
     "e2e/security-02-two-sessions.mjs",
     "e2e/spogomi-concurrency.mjs",
+    "e2e/territorial-legend-revision-concurrency.mjs",
   ]);
 });
 

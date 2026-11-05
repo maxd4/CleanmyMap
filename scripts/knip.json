@@ -14,6 +14,7 @@
         "e2e/action-buddy-concurrency.mjs",
         "e2e/community-helper-skills-concurrency.mjs",
         "e2e/gamification-reconciliation-concurrency.mjs",
+        "e2e/territorial-legend-revision-concurrency.mjs",
         "e2e/quiz-progression-concurrency.mjs",
         "e2e/reports-postgres-concurrency.mjs",
         "scripts/ci/run-static-candidate-check.mjs",

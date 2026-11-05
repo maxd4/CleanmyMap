@@ -25,6 +25,10 @@ const revisionMigration = readFileSync(
   new URL("../../../supabase/migrations/20261105000013_territorial_legend_fact_revision.sql", import.meta.url),
   "utf8",
 ).replace(/\s+/g, " ");
+const monotoneRevisionMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261105000014_territorial_legend_monotone_fact_revision.sql", import.meta.url),
+  "utf8",
+).replace(/\s+/g, " ");
 const migrationSource = readFileSync(
   new URL("../../../supabase/migrations/20261103000003_territorial_legend_rewards.sql", import.meta.url),
   "utf8",
@@ -135,6 +139,21 @@ describe("territorial legend rewards migration", () => {
     expect(revisionMigration).toContain("revoke all on function public.reconcile_territorial_legend_snapshot(date, jsonb)");
     expect(revisionMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz) to service_role");
     expect(pgtap).toContain("public.get_territorial_legend_fact_revision()");
-    expect(pgtap).toContain("select plan(73)");
+    expect(pgtap).toContain("select plan(78)");
+  });
+
+  it("makes the privileged writer private and advances the watermark on every fact mutation", () => {
+    expect(monotoneRevisionMigration).toContain("create table if not exists public.territorial_legend_fact_revision_state");
+    expect(monotoneRevisionMigration).toContain("after insert or update or delete on public.actions");
+    expect(monotoneRevisionMigration).toContain("after insert or update or delete on public.action_participants");
+    expect(monotoneRevisionMigration).toContain("after insert or update or delete on public.territorial_legend_consents");
+    expect(monotoneRevisionMigration).toContain("after insert or update or delete on public.profiles");
+    expect(monotoneRevisionMigration).toContain("for update");
+    expect(monotoneRevisionMigration).toContain("current_setting('request.jwt.claim.role', true), '') <> 'service_role'");
+    expect(monotoneRevisionMigration).toContain("revoke all on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)");
+    expect(monotoneRevisionMigration).toContain("grant execute on function public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)");
+    expect(pgtap).toContain("select plan(78)");
+    expect(pgtap).toContain("non-maximal fact deletion advances the canonical revision");
+    expect(pgtap).toContain("anon cannot execute snapshot reconciliation");
   });
 });

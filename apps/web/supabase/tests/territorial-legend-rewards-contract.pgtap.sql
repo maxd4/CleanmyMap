@@ -3,12 +3,14 @@
 -- migration reset; it must never target the linked or production database.
 
 begin;
-select plan(73);
+select plan(78);
 
 set local role postgres;
 create temp table territorial_legend_contract_state (
   effective_on date not null,
-  first_period_id bigint
+  first_period_id bigint,
+  fact_revision timestamptz,
+  fact_action_id uuid
 ) on commit drop;
 grant select, update on territorial_legend_contract_state to service_role;
 insert into territorial_legend_contract_state (effective_on)
@@ -27,10 +29,41 @@ select ok(exists (select 1 from supabase_migrations.schema_migrations where vers
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000001'), 'annual campaign migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000002'), 'consent hardening migration is registered');
 select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261104000007'), 'annual integrity migration is registered');
+select ok(exists (select 1 from supabase_migrations.schema_migrations where version = '20261105000014'), 'monotone fact revision migration is registered');
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
+
+update territorial_legend_contract_state
+   set fact_revision = public.get_territorial_legend_fact_revision();
+do $$
+declare
+  v_action_id uuid;
+begin
+  insert into public.actions (created_by_clerk_id, action_date, location_label, status)
+  values ('legend-contract-fact', current_date, 'Fact revision contract', 'approved')
+  returning id into v_action_id;
+  insert into public.action_participants (action_id, user_id)
+  values (v_action_id, 'legend-contract-fact-user');
+  update territorial_legend_contract_state set fact_action_id = v_action_id;
+end;
+$$;
+select ok(
+  public.get_territorial_legend_fact_revision() > (select fact_revision from territorial_legend_contract_state),
+  'canonical revision advances after a fact insert'
+);
+update territorial_legend_contract_state set fact_revision = public.get_territorial_legend_fact_revision();
+update public.actions
+   set notes = 'later non-participant fact'
+ where id = (select fact_action_id from territorial_legend_contract_state);
+update territorial_legend_contract_state set fact_revision = public.get_territorial_legend_fact_revision();
+delete from public.action_participants
+ where action_id = (select fact_action_id from territorial_legend_contract_state);
+select ok(
+  public.get_territorial_legend_fact_revision() > (select fact_revision from territorial_legend_contract_state),
+  'non-maximal fact deletion advances the canonical revision'
+);
 
 select is(
   (public.set_territorial_legend_consent('legend-consent-contract', true, '15_or_over', '2026-11-03T10:00:00Z'::timestamptz)->>'enabled'),
@@ -317,10 +350,17 @@ select is((select territory_code from public.territorial_legend_hold_periods whe
 select is((select count(*)::integer from public.territorial_legend_award_proofs where user_id = 'legend-contract-year' and campaign_year = 2026 and threshold_days in (365, 730)), 0, 'annual campaigns never create legacy 365 or 730 day rewards');
 
 reset role;
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+select set_config('request.jwt.claim.role', 'anon', true);
+select throws_ok($$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb, now())$$, '42501', null, 'anon cannot execute snapshot reconciliation');
+select ok(not has_function_privilege('anon', 'public.reconcile_territorial_legend_snapshot(date, jsonb, timestamptz)', 'execute'), 'anon has no snapshot reconciliation privilege');
+
+reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated"}', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select throws_ok($$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb)$$, '42501', null, 'authenticated cannot invoke snapshot reconciliation');
+select throws_ok($$select public.reconcile_territorial_legend_snapshot(current_date, '[]'::jsonb, now())$$, '42501', null, 'authenticated cannot invoke snapshot reconciliation');
 select throws_ok($$select public.invalidate_territorial_legend_history('{}'::bigint[], '{}'::text[], current_date)$$, '42501', null, 'authenticated cannot invoke history invalidation');
 
 select ok(not has_table_privilege('authenticated', 'public.territorial_legend_hold_periods', 'select'), 'authenticated cannot read private hold periods');

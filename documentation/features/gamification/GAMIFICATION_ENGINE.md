@@ -95,13 +95,18 @@ avant résolution et une condition atomique sur cette version. Une modification
 concurrente de géométrie perd donc l'écriture et laisse l'attribution à `NULL`
 pour une nouvelle tentative ; une attribution incertaine n'est jamais inventée.
 
-La réconciliation territoriale capture la révision canonique `updated_at` des
-faits sources avant et après le calcul. La publication exige cette révision et
-verrouille les tables sources en `SHARE` avant de la comparer à leur état
-courant ; un calcul obsolète ne peut donc pas remplacer un état plus récent du
-même jour. `source_fingerprint` reste une preuve d'origine, jamais une
-chronologie. Le RPC de publication révisé est réservé à `service_role` et les
-reprises valides restent idempotentes.
+La réconciliation territoriale capture une révision monotone et transactionnelle
+des faits canoniques avant et après le calcul. Des triggers `AFTER INSERT`,
+`UPDATE` et `DELETE` sur les actions, participations, consentements et profils
+font avancer cette révision dans la même transaction que la mutation ; une
+suppression ne peut donc pas rester invisible parce que son ancien
+`updated_at` n’était pas le maximum global. La publication exige cette
+révision et verrouille les tables sources en `SHARE` avant de la comparer à
+leur état courant ; un calcul obsolète ne peut donc pas remplacer un état plus
+récent du même jour. `source_fingerprint` reste une preuve d'origine, jamais
+une chronologie. Le RPC de publication révisé est réservé à `service_role`,
+avec un contrôle de rôle avant verrouillage, et les reprises valides restent
+idempotentes.
 
 La non-rétroactivité compare `action_participants.joined_at` à
 `territorial_legend_consents.activated_at` avec une précision d'horodatage ;
