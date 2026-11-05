@@ -101,6 +101,13 @@ type PlanEvaluation = {
   providerCalls?: number;
 };
 
+type TimedEvaluation = {
+  result: PlanEvaluation | null;
+  timedOut: boolean;
+  failed: boolean;
+  aborted: boolean;
+};
+
 type CandidateEvaluation = {
   origin: RoutePlannerOrigin;
   radiusKm: number;
@@ -208,7 +215,10 @@ function candidateNodesForRadius(
         route: routeThroughPedestrianNetwork(
           graph,
           [accessPoint.point, candidate.point],
-          { topology: "open" },
+          {
+            topology: "open",
+            ...(reference.kind === "precise" ? { maxSnapDistanceM: 0 } : {}),
+          },
         ),
       }))
       .filter(({ route }) => route?.mode === "network")
@@ -263,27 +273,41 @@ function compareBestAttempt(left: CandidateEvaluation, right: CandidateEvaluatio
     left.origin.longitude - right.origin.longitude;
 }
 
+function isAborted(signal: AbortSignal | undefined): boolean {
+  return Boolean(signal?.aborted);
+}
+
 async function evaluateWithTimeout(
   evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal) => Promise<PlanEvaluation | null>,
   origin: RoutePlannerOrigin,
   timeoutMs: number,
-): Promise<{ result: PlanEvaluation | null; timedOut: boolean; failed: boolean }> {
+  parentSignal?: AbortSignal,
+): Promise<TimedEvaluation> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
+  if (parentSignal?.aborted) return { result: null, timedOut: false, failed: false, aborted: true };
+  const abortExternal = () => controller.abort();
+  parentSignal?.addEventListener("abort", abortExternal, { once: true });
   try {
     const evaluation = Promise.resolve()
       .then(() => evaluate(origin, controller.signal))
-      .then((result) => ({ result, timedOut: false, failed: false }))
-      .catch(() => ({ result: null, timedOut: false, failed: true }));
-    const timeout = new Promise<{ result: null; timedOut: true; failed: false }>((resolve) => {
+      .then((result) => ({ result, timedOut: false, failed: false, aborted: false }))
+      .catch(() => ({ result: null, timedOut: false, failed: !controller.signal.aborted, aborted: controller.signal.aborted }));
+    const timeout = new Promise<TimedEvaluation>((resolve) => {
         timeoutHandle = setTimeout(() => {
           controller.abort();
-          resolve({ result: null, timedOut: true, failed: false });
+          resolve({ result: null, timedOut: true, failed: false, aborted: false });
         }, timeoutMs);
       });
-    return await Promise.race([evaluation, timeout]);
+    const aborted = parentSignal
+      ? new Promise<TimedEvaluation>((resolve) => {
+          parentSignal.addEventListener("abort", () => resolve({ result: null, timedOut: false, failed: false, aborted: true }), { once: true });
+        })
+      : null;
+    return await Promise.race(aborted ? [evaluation, timeout, aborted] : [evaluation, timeout]);
   } finally {
     if (timeoutHandle) clearTimeout(timeoutHandle);
+    parentSignal?.removeEventListener("abort", abortExternal);
   }
 }
 
@@ -378,7 +402,17 @@ export async function findNearestRelevantRoute(input: {
   reference: RouteNearestRelevantReference;
   baseline: PlanEvaluation;
   evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal) => Promise<PlanEvaluation | null>;
+  estimateProviderCalls?: (origin: RoutePlannerOrigin) => number;
+  signal?: AbortSignal;
 }): Promise<RouteNearestRelevantSearchResult> {
+  if (isAborted(input.signal)) {
+    return {
+      selected: null,
+      search: emptySearch(input.reference, input.baseline, "no_admissible_route", "unavailable", {
+        limitations: ["La recherche a été annulée avant toute opération de routage."],
+      }),
+    };
+  }
   if (!input.graph || input.graph.edges.length === 0) {
     return { search: emptySearch(input.reference, input.baseline, "network_unavailable", "unavailable", {
       limitations: ["Le graphe piéton actif est indisponible ou ne couvre pas la recherche bornée."],
@@ -402,6 +436,7 @@ export async function findNearestRelevantRoute(input: {
   let failedAttempts = 0;
   let networkAccessFailures = 0;
   let searchTimedOut = false;
+  let searchAborted = isAborted(input.signal);
   for (const radiusKm of ROUTE_NEAREST_RELEVANT_RADII_KM) {
     triedRadiiKm.push(radiusKm);
     const candidateResult = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm, input.graph);
@@ -409,29 +444,40 @@ export async function findNearestRelevantRoute(input: {
     networkAccessFailures += candidateResult.considered - candidates.length;
     const successfulPlans: CandidateEvaluation[] = [];
     for (const candidate of candidates) {
-      if (attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS) break;
-      if (providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
-      const remainingMs = ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS - (Date.now() - startedAt);
-      if (remainingMs <= 0) {
-        searchTimedOut = true;
+      if (isAborted(input.signal)) {
+        searchAborted = true;
         break;
       }
+      if (attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS) break;
       const origin: RoutePlannerOrigin = {
         latitude: candidate.point[0],
         longitude: candidate.point[1],
         source: "planner",
       };
+      const reservedCalls = Math.max(1, Math.ceil(input.estimateProviderCalls?.(origin) ?? 2));
+      if (providerCalls + reservedCalls > ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
+      const remainingMs = ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS - (Date.now() - startedAt);
+      if (remainingMs <= 0) {
+        searchTimedOut = true;
+        break;
+      }
       const evaluation = await evaluateWithTimeout(
         input.evaluate,
         origin,
         Math.min(ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS, remainingMs),
+        input.signal,
       );
       attemptsEvaluated += 1;
-      // Reserve one provider operation before invoking the callback. This
-      // counts failures and timeouts, whose result cannot report a call count.
-      providerCalls += Math.max(1, evaluation.result?.providerCalls ?? 1);
+      providerCalls += reservedCalls;
+      const actualCalls = Math.max(1, evaluation.result?.providerCalls ?? reservedCalls);
+      if (actualCalls < reservedCalls && evaluation.result) providerCalls -= reservedCalls - actualCalls;
       if (evaluation.timedOut) timedOutAttempts += 1;
       if (evaluation.failed) failedAttempts += 1;
+      if (evaluation.aborted) {
+        searchAborted = true;
+        break;
+      }
+      if (actualCalls > reservedCalls) continue;
       if (!evaluation.result) continue;
       const candidateEvaluation: CandidateEvaluation = {
         origin,
@@ -471,7 +517,7 @@ export async function findNearestRelevantRoute(input: {
       };
     }
     previousRadiusKm = radiusKm;
-    if (searchTimedOut || attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS || providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
+    if (searchAborted || searchTimedOut || attemptsEvaluated >= ROUTE_NEAREST_RELEVANT_MAX_PLAN_EVALUATIONS || providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
   }
 
   const bestAttempt = [...evaluated]
@@ -522,6 +568,7 @@ export async function findNearestRelevantRoute(input: {
         ...(timedOutAttempts > 0 ? [`${timedOutAttempts} évaluation(s) ont expiré après ${ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS} ms.`] : []),
         ...(failedAttempts > 0 ? [`${failedAttempts} évaluation(s) fournisseur ont échoué et ont été comptées dans le quota.`] : []),
         ...(searchTimedOut ? [`Le budget global de ${ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS} ms a été atteint.`] : []),
+        ...(searchAborted ? ["La recherche a été annulée avant toute opération de routage ultérieure."] : []),
       ],
     },
   };

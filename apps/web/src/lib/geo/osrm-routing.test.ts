@@ -11,6 +11,20 @@ const stops: [number, number][] = [
 ];
 
 describe("OSRM routing capability", () => {
+  it("does not call the transport when the signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const transport = vi.fn(async () => new Response("unexpected", { status: 200 }));
+
+    const result = await routePolylineThroughStreetNetwork(stops, {
+      transport,
+      signal: controller.signal,
+    });
+
+    expect(transport).not.toHaveBeenCalled();
+    expect(result.mode).toBe("fallback");
+  });
+
   it("keeps the origin as the final provider waypoint for a closed route", async () => {
     const loop: [number, number][] = [stops[0]!, stops[1]!, stops[0]!];
     const transport = vi.fn(async (input: RequestInfo | URL) => {

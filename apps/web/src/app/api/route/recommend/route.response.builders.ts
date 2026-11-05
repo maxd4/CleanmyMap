@@ -298,7 +298,9 @@ function buildMultiRouteMetrics(
     balanceDuration: planning.groupPartition.metrics.balanceDuration,
     balanceTargetCount: planning.groupPartition.metrics.balanceTargetCount,
     balanceVolunteerCount: 0,
-    fallbackGroupCount: planning.routeGeometry.mode === "fallback" ? 1 : 0,
+    fallbackGroupCount: groupRoutes.length > 0
+      ? groupRoutes.filter(({ routeGeometry }) => routeGeometry.mode === "fallback").length
+      : planning.routeGeometry.mode === "fallback" ? 1 : 0,
     networkDistanceMeasured: false,
   };
   const operationalNetworkOverlap = planning.streetCleaningCorridors?.operationalPlan?.networkOverlap;
@@ -469,6 +471,9 @@ export function buildRouteProofContext(
   const predictionSummary = buildPredictionSummary(planning);
   const pollutionPotential = buildPlannerPollutionPotential(input);
   const pollutionRelevance = evaluateRoutePollutionRelevance(pollutionPotential);
+  const routeGeometryMode = planning.groupRoutes && planning.groupRoutes.length > 0
+    ? (planning.groupRoutes.every(({ routeGeometry }) => routeGeometry.mode === "network") ? "network" : "fallback")
+    : planning.routeGeometry.mode;
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
     prediction: {
@@ -476,7 +481,7 @@ export function buildRouteProofContext(
       selectedCount: predictionSummary.selected,
     },
     selectedCount: planning.plannedStops.length,
-    routeGeometryMode: planning.routeGeometry.mode,
+    routeGeometryMode,
   });
   const trace = buildRouteProofTrace(input, context, predictionSummary);
   const snapshotStops = buildRouteSnapshotStops(input, context);

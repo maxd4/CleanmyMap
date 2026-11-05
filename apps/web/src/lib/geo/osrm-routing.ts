@@ -426,6 +426,9 @@ export async function routePolylineThroughStreetNetwork(
   coordinates: [number, number][],
   options: RoutePolylineOptions = {},
 ): Promise<RouteGeometry> {
+  if (options.signal?.aborted) {
+    return createFallbackRouteGeometry(coordinates, options);
+  }
   if (coordinates.length < 2) {
     return createFallbackRouteGeometry(coordinates, options);
   }

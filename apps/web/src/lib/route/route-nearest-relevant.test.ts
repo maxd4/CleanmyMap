@@ -223,6 +223,25 @@ describe("route nearest relevant search", () => {
     expect(evaluateMock).not.toHaveBeenCalled();
   });
 
+  it("rejects a precise origin snapped thirty metres away without a verified connector", async () => {
+    const graph = graphAtDistances([0.1]);
+    const offset: [number, number] = [center.latitude + 30 / 111_320, center.longitude];
+    const access = graph.edges.find((edge) => edge.edgeKey === "edge-0-access")!;
+    access.coordinates = [offset, access.coordinates[1]!];
+    const evaluateMock = vi.fn(async () => evaluate(80));
+
+    const result = await findNearestRelevantRoute({
+      graph,
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: evaluateMock,
+    });
+
+    expect(result.selected).toBeNull();
+    expect(result.search.reason).toBe("network_unavailable");
+    expect(evaluateMock).not.toHaveBeenCalled();
+  });
+
   it("reports network unavailability when a zone access component cannot reach its candidates", async () => {
     const zone = zoneReference({ latitude: 48.855, longitude: 2.3522 }, 0.3);
     const disconnected = graphAtDistances([0.4]);
@@ -266,6 +285,36 @@ describe("route nearest relevant search", () => {
       reference: reference(),
       baseline: { ...evaluate(48), providerCalls: 4 },
       evaluate: evaluateMock,
+    });
+
+    expect(result.selected).toBeNull();
+    expect(evaluateMock).not.toHaveBeenCalled();
+  });
+
+  it("does not start a two-call evaluation when only one provider call remains", async () => {
+    const evaluateMock = vi.fn(async () => ({ ...evaluate(80), providerCalls: 2 }));
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: reference(),
+      baseline: { ...evaluate(48), providerCalls: 3 },
+      estimateProviderCalls: () => 2,
+      evaluate: evaluateMock,
+    });
+
+    expect(result.selected).toBeNull();
+    expect(evaluateMock).not.toHaveBeenCalled();
+  });
+
+  it("does not invoke routing when the search signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const evaluateMock = vi.fn(async () => evaluate(80));
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: evaluateMock,
+      signal: controller.signal,
     });
 
     expect(result.selected).toBeNull();

@@ -42,6 +42,12 @@ import {
 
 export const runtime = "nodejs";
 
+function hasNetworkGeometry(planning: { routeGeometry: { mode: "network" | "fallback" }; groupRoutes?: readonly { routeGeometry: { mode: "network" | "fallback" } }[] }): boolean {
+  return planning.groupRoutes && planning.groupRoutes.length > 0
+    ? planning.groupRoutes.every(({ routeGeometry }) => routeGeometry.mode === "network")
+    : planning.routeGeometry.mode === "network";
+}
+
 export async function POST(request: Request) {
   const session = await getSafeAuthSession();
   const userId = session.userId;
@@ -271,7 +277,7 @@ export async function POST(request: Request) {
           relevance: initialRelevance,
           withinBudget: initialPlanning.routeGeometry.durationMinutes <= effectiveTravelBudgetMinutes,
           loopVerified: initialPlanning.routeGeometry.isLoop,
-          routingStatus: initialPlanning.routeGeometry.mode === "network" ? "network" : "fallback",
+          routingStatus: hasNetworkGeometry(initialPlanning) ? "network" : "fallback",
           providerCalls: initialPlanning.finalRoutingReconciliation?.providerCalls ?? 0,
         },
         evaluate: async (candidateOrigin, signal) => {
@@ -288,10 +294,12 @@ export async function POST(request: Request) {
               : candidatePlanning.routeGeometry.durationMinutes <= effectiveTravelBudgetMinutes,
             loopVerified: candidatePlanning.routeGeometry.isLoop &&
               candidateGroupRoutes.every((group) => group.routeGeometry.isLoop),
-            routingStatus: candidatePlanning.routeGeometry.mode === "network" ? "network" : "fallback",
+            routingStatus: hasNetworkGeometry(candidatePlanning) ? "network" : "fallback",
             providerCalls: candidatePlanning.finalRoutingReconciliation?.providerCalls ?? 0,
           };
         },
+        estimateProviderCalls: () => 2,
+        signal: request.signal,
       });
       if (nearestSearch.selected) {
         const selectedKey = `${nearestSearch.selected.origin.latitude.toFixed(7)}:${nearestSearch.selected.origin.longitude.toFixed(7)}`;

@@ -207,6 +207,9 @@ async function routeMultiGroups(input: {
   pedestrianNetwork?: PedestrianNetworkGraph | null;
   signal?: AbortSignal;
 }): Promise<RouteGroupRoutingResult[]> {
+  const throwIfAborted = () => {
+    if (input.signal?.aborted) throw new DOMException("Route search aborted", "AbortError");
+  };
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
   const guided = input.partition.audit.planningMode === "territorial-guided";
@@ -214,14 +217,19 @@ async function routeMultiGroups(input: {
     new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
   let previousRequestStartedAt: number | null = null;
   for (const group of [...input.partition.groups].sort((left, right) => left.groupIndex - right.groupIndex)) {
+    throwIfAborted();
     if (guided && previousRequestStartedAt !== null) {
       const elapsed = Date.now() - previousRequestStartedAt;
       const waitMilliseconds = Math.min(
         FOSSGIS_QUOTA_INTERVAL_MS,
         Math.max(0, FOSSGIS_QUOTA_INTERVAL_MS - elapsed),
       );
-      if (waitMilliseconds > 0) await waitForQuotaInterval(waitMilliseconds);
+      if (waitMilliseconds > 0) {
+        await waitForQuotaInterval(waitMilliseconds);
+        throwIfAborted();
+      }
     }
+    throwIfAborted();
     previousRequestStartedAt = Date.now();
     routedGroups.push(await routeGroupWithinBudget(
       input.origin,
