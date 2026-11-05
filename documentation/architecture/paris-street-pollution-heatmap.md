@@ -553,10 +553,13 @@ des lots avec `SKIP LOCKED`, puis délègue le calcul et la publication à
 `refresh_pedestrian_observation_cache`. La RPC calcule les lignes en base,
 construit explicitement le transport `projectionSegmentId`, `observationIds`,
 `observedCount`, `latestObservedAt`, et publie sans transférer un corpus qui
-pourrait être plafonné par PostgREST. Le verrou d'advisory, l'identité du
-worker et le bail courant sont vérifiés par la publication et l'échec ; un
-worker expiré ou remplacé ne peut donc pas clore ni remettre en attente le lot
-d'un autre worker. `p_replace_segment_ids` conserve l'actualisation locale,
+pourrait être plafonné par PostgREST. Le verrou d'advisory, l'identité immuable
+de chaque acquisition (`lease_token`), le propriétaire et l'expiration persistée
+(`lease_expires_at`) sont vérifiés sur chaque événement, avant la mutation puis
+juste avant la clôture ; l'horloge réelle `clock_timestamp()` refuse un bail
+expiré pendant une reconstruction. Un worker expiré, réattribué ou réutilisant
+le même `worker_id` ne peut donc pas clore ni remettre en attente le lot d'un
+autre worker. `p_replace_segment_ids` conserve l'actualisation locale,
 les événements terminés et les lignes du cache sont publiés dans la même
 transaction, et le dernier snapshot actif reste lisible tant qu'une publication
 ne réussit pas.

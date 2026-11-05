@@ -20,19 +20,21 @@ async function checkedRpc(client, name, args) {
   return data ?? [];
 }
 
-export function buildObservationCacheRefreshRequest(projectionVersionId, eventIds, workerId) {
+export function buildObservationCacheRefreshRequest(projectionVersionId, eventIds, workerId, leaseToken) {
   return {
     p_projection_version_id: projectionVersionId,
     p_event_ids: eventIds,
     p_worker_id: workerId,
+    p_lease_token: leaseToken,
   };
 }
 
-export function buildObservationCacheFailureRequest(eventIds, error, workerId) {
+export function buildObservationCacheFailureRequest(eventIds, error, workerId, leaseToken) {
   return {
     p_event_ids: eventIds,
     p_error: error,
     p_worker_id: workerId,
+    p_lease_token: leaseToken,
   };
 }
 
@@ -60,6 +62,11 @@ export async function refreshPedestrianObservationCache() {
   if (claimed.length === 0) return { claimed: 0, refreshedSegments: 0, published: false };
 
   const eventIds = claimed.map((event) => event.id);
+  const leaseTokens = new Set(claimed.map((event) => event.lease_token));
+  if (leaseTokens.size !== 1 || claimed.some((event) => !event.lease_token)) {
+    throw new Error("Les événements réclamés ne partagent pas une acquisition valide.");
+  }
+  const leaseToken = claimed[0].lease_token;
   try {
     const { data: projection, error: projectionError } = await client
       .from("pedestrian_risk_projection_versions")
@@ -72,7 +79,7 @@ export async function refreshPedestrianObservationCache() {
     if (!projection?.id) throw new Error("Aucune projection piétonne active.");
 
     const published = await checkedRpc(client, "refresh_pedestrian_observation_cache",
-      buildObservationCacheRefreshRequest(projection.id, eventIds, workerId));
+      buildObservationCacheRefreshRequest(projection.id, eventIds, workerId, leaseToken));
     return { claimed: claimed.length, published: true, cacheVersionId: published };
   } catch (error) {
     await checkedRpc(client, "fail_pedestrian_observation_invalidation_events",
@@ -80,6 +87,7 @@ export async function refreshPedestrianObservationCache() {
         eventIds,
         error instanceof Error ? error.message : String(error),
         workerId,
+        leaseToken,
       ));
     throw error;
   }
