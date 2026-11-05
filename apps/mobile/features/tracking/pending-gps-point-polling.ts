@@ -4,7 +4,8 @@ export const PENDING_GPS_POINT_POLL_INTERVAL_MS = 5_000
 
 type PendingGpsPointPollerOptions = {
   readCount: () => Promise<number>
-  onCount: (count: number) => void
+  onCount: (count: number, ownerId?: string | null) => void
+  getOwnerId?: () => string | null
   intervalMs?: number
 }
 
@@ -20,6 +21,7 @@ export type PendingGpsPointPoller = {
 export function createPendingGpsPointPoller({
   readCount,
   onCount,
+  getOwnerId,
   intervalMs = PENDING_GPS_POINT_POLL_INTERVAL_MS,
 }: PendingGpsPointPollerOptions): PendingGpsPointPoller {
   let interval: ReturnType<typeof setInterval> | null = null
@@ -37,10 +39,12 @@ export function createPendingGpsPointPoller({
     if (disposed) return
 
     const requestGeneration = ++generation
+    const requestOwnerId = getOwnerId?.() ?? null
     try {
       const count = await currentReadCount()
       if (disposed || requestGeneration !== generation) return
-      onCount(count)
+      if (getOwnerId) onCount(count, requestOwnerId)
+      else onCount(count)
     } catch {
       // The storage reader already fails closed. A rejected custom reader must
       // not create an unhandled rejection or disturb the active GPS session.
@@ -90,10 +94,12 @@ export function usePendingGpsPointCountPolling({
   isVisible,
   readCount,
   onCount,
+  getOwnerId,
 }: {
   isVisible: boolean
   readCount: () => Promise<number>
-  onCount: (count: number) => void
+  onCount: (count: number, ownerId?: string | null) => void
+  getOwnerId?: () => string | null
 }): () => Promise<void> {
   const pollerRef = useRef<PendingGpsPointPoller | null>(null)
 
@@ -101,6 +107,7 @@ export function usePendingGpsPointCountPolling({
     pollerRef.current = createPendingGpsPointPoller({
       readCount,
       onCount,
+      getOwnerId,
     })
   }
 

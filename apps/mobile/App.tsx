@@ -119,7 +119,7 @@ function MissionActiveScreen({
       <StatusBar style="light" />
       <MissionActiveMap
         missionId={mission.id}
-        ownerId={ownerId ?? mission.volunteer_id ?? ''}
+        ownerId={ownerId ?? ''}
         missionLabel={mission.label}
         duration={duration}
         pendingGpsPointCount={pendingGpsPointCount}

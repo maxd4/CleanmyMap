@@ -431,7 +431,7 @@ describe('mobile native shell runtime', () => {
     expect(appState.startHostedAuth).not.toHaveBeenCalled()
   })
 
-  it('passes the current owner to a valid tracking mission and uses the mission owner fallback', async () => {
+  it('passes only the verified current owner to a valid tracking mission', async () => {
     const current = mission()
     appState.controller = controller({ phase: 'tracking', mission: current, userId: 'user-current' })
     const renderer = await renderApp('pk_test_mobile')
@@ -443,7 +443,7 @@ describe('mobile native shell runtime', () => {
 
     appState.controller = controller({ phase: 'tracking', mission: mission({ volunteer_id: 'mission-owner-fallback' }), userId: null })
     const fallbackRenderer = await renderApp('pk_test_mobile')
-    expect(fallbackRenderer.root.findByType('MissionActiveMap' as unknown as React.ElementType).props.ownerId).toBe('mission-owner-fallback')
+    expect(fallbackRenderer.root.findByType('MissionActiveMap' as unknown as React.ElementType).props.ownerId).toBe('')
   })
 
   it('never displays a mission when tracking has no valid mission contract', async () => {

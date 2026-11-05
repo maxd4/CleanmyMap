@@ -121,6 +121,12 @@ seulement si son contexte local correspond à la mission et à l'owner courant.
 Une vérification indisponible, un refus de reprise ou un changement d'identité
 pendant l'opération expose l'état interrompu avec une reprise explicite ; une
 opération obsolète ne peut pas arrêter la tâche d'une opération plus récente.
+Le contrôleur associe aussi la mission, la durée, le compteur de points en
+attente, l'étape de finalisation et le bilan à l'`ownerId` Clerk vérifié. Leur
+projection est masquée dès le rendu où l'identité change, et les résultats
+tardifs du démarrage, de la restauration ou de la finalisation sont ignorés.
+`missions.volunteer_id` n'est jamais utilisé pour remplacer une identité Clerk
+courante absente ou non vérifiée.
 
 La suppression de compte reste une demande RGPD, pas une suppression
 automatique. `Compte` appelle `/api/mobile/account/deletion-request`, qui

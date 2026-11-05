@@ -1,5 +1,5 @@
 import { useAuth, useClerk } from '@clerk/expo'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Alert, AppState } from 'react-native'
 import {
   getMission,
@@ -12,6 +12,12 @@ import { clearStoredForegroundTrack, flushBuffer, getPendingGpsPointCount } from
 import { reconcilePendingLinkedMissions } from './linked-mission-service'
 import { usePendingGpsPointCountPolling } from './pending-gps-point-polling'
 import type { Mission, MissionFinalizationStage, TrackingPhase } from './mission'
+
+type OwnedState<T> = { ownerId: string | null; value: T }
+
+function owned<T>(ownerId: string | null, value: T): OwnedState<T> {
+  return { ownerId, value }
+}
 
 function formatDuration(startedAt: string): string {
   const seconds = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
@@ -35,17 +41,21 @@ function useRestoreActiveMission({
   setErrorMsg,
   restoreAttempt,
   userId,
+  beginOperation,
+  isCurrentOperation,
 }: {
   isLoaded: boolean
   isSignedIn: boolean
-  setMission: React.Dispatch<React.SetStateAction<Mission | null>>
-  setPhase: React.Dispatch<React.SetStateAction<TrackingPhase>>
-  startDurationTimer: (startedAt: string) => void
+  setMission: React.Dispatch<React.SetStateAction<OwnedState<Mission> | null>>
+  setPhase: React.Dispatch<React.SetStateAction<OwnedState<TrackingPhase> | null>>
+  startDurationTimer: (ownerId: string, startedAt: string) => void
   stopDurationTimer: () => void
   refreshPendingGpsPointCount: () => Promise<void>
-  setErrorMsg: React.Dispatch<React.SetStateAction<string | null>>
+  setErrorMsg: React.Dispatch<React.SetStateAction<OwnedState<string> | null>>
   restoreAttempt: number
   userId: string | null
+  beginOperation: (ownerId: string) => number
+  isCurrentOperation: (ownerId: string, operationId: number) => boolean
 }) {
   const restoreGenerationRef = useRef(0)
 
@@ -53,58 +63,61 @@ function useRestoreActiveMission({
     restoreGenerationRef.current += 1
     stopDurationTimer()
     setMission(null)
-    setPhase('idle')
+    setPhase(null)
     setErrorMsg(null)
     if (!isLoaded || !isSignedIn) return
 
     let cancelled = false
-    const isCurrentRestore = (restoreGeneration: number) =>
-      !cancelled && restoreGenerationRef.current === restoreGeneration
-    const setRestoreFailure = (restoreGeneration: number, message: string) => {
-      if (!isCurrentRestore(restoreGeneration)) return
+    const isCurrentRestore = (restoreGeneration: number, operationId: number) =>
+      !cancelled && restoreGenerationRef.current === restoreGeneration &&
+      userId !== null && isCurrentOperation(userId, operationId)
+    const setRestoreFailure = (restoreGeneration: number, operationId: number, message: string) => {
+      if (!isCurrentRestore(restoreGeneration, operationId) || !userId) return
       stopDurationTimer()
       setMission(null)
-      setErrorMsg(message)
-      setPhase('error')
+      setErrorMsg(owned(userId, message))
+      setPhase(owned(userId, 'error'))
     }
-    const handleRestoreError = (restoreGeneration: number, error: unknown) => {
+    const handleRestoreError = (restoreGeneration: number, operationId: number, error: unknown) => {
       setRestoreFailure(
         restoreGeneration,
+        operationId,
         `Impossible de restaurer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
       )
     }
-    async function restoreMission(restoreGeneration: number) {
+    async function restoreMission(restoreGeneration: number, operationId: number) {
       if (!userId) return
       void reconcilePendingLinkedMissions(userId).catch(() => undefined)
       const flushPromise = flushBuffer(userId).catch(() => null)
       const id = await restoreActiveTracking(userId)
-      if (!id || !isCurrentRestore(restoreGeneration)) return
+      if (!id || !isCurrentRestore(restoreGeneration, operationId)) return
 
       const result = await getMission(id)
-      if (!isCurrentRestore(restoreGeneration)) return
+      if (!isCurrentRestore(restoreGeneration, operationId)) return
       if (!result.ok) {
-        setRestoreFailure(restoreGeneration, result.error)
+        setRestoreFailure(restoreGeneration, operationId, result.error)
         return
       }
       if (result.data.status !== 'tracking') return
 
       const nativeResult = await ensureNativeTracking(id, userId, result.data)
-      if (!isCurrentRestore(restoreGeneration)) return
+      if (!isCurrentRestore(restoreGeneration, operationId)) return
       if (!nativeResult.ok) {
-        setRestoreFailure(restoreGeneration, nativeResult.error)
+        setRestoreFailure(restoreGeneration, operationId, nativeResult.error)
         return
       }
 
-      setMission(nativeResult.data)
-      setPhase('tracking')
-      startDurationTimer(nativeResult.data.started_at ?? new Date().toISOString())
+      setMission(owned(userId, nativeResult.data))
+      setPhase(owned(userId, 'tracking'))
+      startDurationTimer(userId, nativeResult.data.started_at ?? new Date().toISOString())
       await flushPromise
-      if (isCurrentRestore(restoreGeneration)) await refreshPendingGpsPointCount()
+      if (isCurrentRestore(restoreGeneration, operationId)) await refreshPendingGpsPointCount()
     }
 
     const launchRestore = () => {
       const restoreGeneration = ++restoreGenerationRef.current
-      void restoreMission(restoreGeneration).catch((error) => handleRestoreError(restoreGeneration, error))
+      const operationId = userId ? beginOperation(userId) : 0
+      void restoreMission(restoreGeneration, operationId).catch((error) => handleRestoreError(restoreGeneration, operationId, error))
     }
 
     launchRestore()
@@ -117,21 +130,46 @@ function useRestoreActiveMission({
       appStateSubscription.remove()
       stopDurationTimer()
     }
-  }, [isLoaded, isSignedIn, refreshPendingGpsPointCount, restoreAttempt, setErrorMsg, setMission, setPhase, startDurationTimer, stopDurationTimer, userId])
+  }, [beginOperation, isCurrentOperation, isLoaded, isSignedIn, refreshPendingGpsPointCount, restoreAttempt, setErrorMsg, setMission, setPhase, startDurationTimer, stopDurationTimer, userId])
 }
 
 export function useCompanionMissionController() {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const { signOut } = useClerk()
-  const [phase, setPhase] = useState<TrackingPhase>('idle')
-  const [mission, setMission] = useState<Mission | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [duration, setDuration] = useState('')
-  const [pendingGpsPointCount, setPendingGpsPointCount] = useState(0)
-  const [finalizationStage, setFinalizationStage] = useState<MissionFinalizationStage | null>(null)
-  const [completionSummary, setCompletionSummary] = useState<Mission | null>(null)
+  const currentOwnerId = userId ?? null
+  const identityRef = useRef<string | null>(null)
+  const operationRef = useRef(0)
+  useLayoutEffect(() => {
+    if (identityRef.current !== currentOwnerId) {
+      identityRef.current = currentOwnerId
+      operationRef.current += 1
+    }
+  }, [currentOwnerId])
+
+  const [phaseState, setPhase] = useState<OwnedState<TrackingPhase> | null>(null)
+  const [missionState, setMission] = useState<OwnedState<Mission> | null>(null)
+  const [errorState, setErrorMsg] = useState<OwnedState<string> | null>(null)
+  const [durationState, setDuration] = useState<OwnedState<string> | null>(null)
+  const [pendingGpsPointCountState, setPendingGpsPointCount] = useState<OwnedState<number> | null>(null)
+  const [finalizationStageState, setFinalizationStage] = useState<OwnedState<MissionFinalizationStage> | null>(null)
+  const [completionSummaryState, setCompletionSummary] = useState<OwnedState<Mission> | null>(null)
   const [restoreAttempt, setRestoreAttempt] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const beginOperation = useCallback((ownerId: string) => {
+    if (identityRef.current !== ownerId) return -1
+    return ++operationRef.current
+  }, [])
+  const isCurrentOperation = useCallback((ownerId: string, operationId: number) =>
+    identityRef.current === ownerId && operationRef.current === operationId, [])
+
+  const mission = missionState?.ownerId === currentOwnerId ? missionState.value : null
+  const phase = phaseState?.ownerId === currentOwnerId ? phaseState.value : 'idle'
+  const errorMsg = errorState?.ownerId === currentOwnerId ? errorState.value : null
+  const duration = durationState?.ownerId === currentOwnerId ? durationState.value : ''
+  const pendingGpsPointCount = pendingGpsPointCountState?.ownerId === currentOwnerId ? pendingGpsPointCountState.value : 0
+  const finalizationStage = finalizationStageState?.ownerId === currentOwnerId ? finalizationStageState.value : null
+  const completionSummary = completionSummaryState?.ownerId === currentOwnerId ? completionSummaryState.value : null
 
   const readPendingGpsPointCount = useCallback(
     () => userId ? getPendingGpsPointCount(userId) : Promise.resolve(0),
@@ -143,16 +181,21 @@ export function useCompanionMissionController() {
     timerRef.current = null
   }, [])
 
-  const startDurationTimer = useCallback((startedAt: string) => {
+  const startDurationTimer = useCallback((ownerId: string, startedAt: string) => {
     stopDurationTimer()
-    setDuration(formatDuration(startedAt))
-    timerRef.current = setInterval(() => setDuration(formatDuration(startedAt)), 1000)
+    setDuration(owned(ownerId, formatDuration(startedAt)))
+    timerRef.current = setInterval(() => {
+      if (identityRef.current === ownerId) setDuration(owned(ownerId, formatDuration(startedAt)))
+    }, 1000)
   }, [stopDurationTimer])
 
   const refreshPendingGpsPointCount = usePendingGpsPointCountPolling({
     isVisible: phase === 'tracking' && mission !== null,
     readCount: readPendingGpsPointCount,
-    onCount: setPendingGpsPointCount,
+    getOwnerId: () => identityRef.current,
+    onCount: (count, ownerId) => {
+      if (ownerId && identityRef.current === ownerId) setPendingGpsPointCount(owned(ownerId, count))
+    },
   })
 
   useRestoreActiveMission({
@@ -166,72 +209,93 @@ export function useCompanionMissionController() {
     setErrorMsg,
     restoreAttempt,
     userId: userId ?? null,
+    beginOperation,
+    isCurrentOperation,
   })
 
   useEffect(() => {
     setCompletionSummary(null)
     setFinalizationStage(null)
-    setPhase('idle')
-  }, [isLoaded, isSignedIn])
+    setPhase(null)
+    setMission(null)
+    setErrorMsg(null)
+    setDuration(null)
+    setPendingGpsPointCount(null)
+  }, [isLoaded, isSignedIn, userId])
 
   const handleStartMobileMission = useCallback(async (actionId?: string, label = 'Action bénévole mobile') => {
+    const ownerId = userId
+    const operationId = ownerId ? beginOperation(ownerId) : 0
     setErrorMsg(null)
     setCompletionSummary(null)
 
-    if (!userId) {
+    if (!ownerId) {
       const error = 'Connexion Clerk requise pour démarrer une mission.'
-      setErrorMsg(error)
+      setErrorMsg(owned(null, error))
       Alert.alert('Connexion requise', error)
       return
     }
 
-    setPhase('requesting')
-    const trackingResult = await startMobileMission(userId, label, actionId)
+    setPhase(owned(ownerId, 'requesting'))
+    const trackingResult = await startMobileMission(ownerId, label, actionId)
+    if (!isCurrentOperation(ownerId, operationId)) return
     if (!trackingResult.ok) {
-      setErrorMsg(trackingResult.error)
-      setPhase('idle')
+      setErrorMsg(owned(ownerId, trackingResult.error))
+      setPhase(null)
       Alert.alert('Suivi GPS impossible', trackingResult.error)
       return
     }
 
-    setMission(trackingResult.data)
-    setPhase('tracking')
-    startDurationTimer(trackingResult.data.started_at ?? new Date().toISOString())
-  }, [startDurationTimer, userId])
+    setMission(owned(ownerId, trackingResult.data))
+    setPhase(owned(ownerId, 'tracking'))
+    startDurationTimer(ownerId, trackingResult.data.started_at ?? new Date().toISOString())
+  }, [beginOperation, isCurrentOperation, startDurationTimer, userId])
 
   const handleSessionExpired = useCallback(async () => {
-    setErrorMsg('Votre session Clerk a expiré. Connectez-vous à nouveau pour continuer.')
+    const ownerId = userId ?? null
+    operationRef.current += 1
+    setErrorMsg(owned(ownerId, 'Votre session Clerk a expiré. Connectez-vous à nouveau pour continuer.'))
     await signOut().catch(() => null)
-  }, [signOut])
+  }, [signOut, userId])
 
   const handleRetryMission = useCallback(() => {
+    if (!userId) return
+    beginOperation(userId)
     setErrorMsg(null)
-    setPhase('requesting')
+    setPhase(owned(userId, 'requesting'))
     setRestoreAttempt((attempt) => attempt + 1)
-  }, [])
+  }, [beginOperation, userId])
 
   const finalizeMission = useCallback(async (activeMission: Mission) => {
+    const ownerId = userId
+    if (!ownerId) return
+    const operationId = beginOperation(ownerId)
     setErrorMsg(null)
-    setFinalizationStage('synchronizing')
-    setPhase('stopping')
+    setFinalizationStage(owned(ownerId, 'synchronizing'))
+    setPhase(owned(ownerId, 'stopping'))
     stopDurationTimer()
 
-    const result = await stopTracking(activeMission.id, setFinalizationStage, userId ?? undefined)
+    const result = await stopTracking(activeMission.id, (stage) => {
+      if (isCurrentOperation(ownerId, operationId)) setFinalizationStage(owned(ownerId, stage))
+    }, ownerId)
+    if (!isCurrentOperation(ownerId, operationId)) return
     await refreshPendingGpsPointCount()
+    if (!isCurrentOperation(ownerId, operationId)) return
     if (!result.ok) {
-      setErrorMsg(result.error)
+      setErrorMsg(owned(ownerId, result.error))
       setFinalizationStage(null)
-      setPhase('tracking')
+      setPhase(owned(ownerId, 'tracking'))
       Alert.alert('Mission conservée', result.error)
       return
     }
 
-    if (userId) await clearStoredForegroundTrack(userId, activeMission.id)
+    await clearStoredForegroundTrack(ownerId, activeMission.id)
+    if (!isCurrentOperation(ownerId, operationId)) return
     setMission(null)
-    setCompletionSummary(result.data)
+    setCompletionSummary(owned(ownerId, result.data))
     setFinalizationStage(null)
-    setPhase('idle')
-  }, [refreshPendingGpsPointCount, stopDurationTimer, userId])
+    setPhase(null)
+  }, [beginOperation, isCurrentOperation, refreshPendingGpsPointCount, stopDurationTimer, userId])
 
   const handleStop = useCallback(() => {
     if (!mission) return
@@ -246,10 +310,11 @@ export function useCompanionMissionController() {
   }, [finalizeMission, mission])
 
   const handleReturnHome = useCallback(() => {
+    operationRef.current += 1
     setCompletionSummary(null)
     setErrorMsg(null)
     setMission(null)
-    setPhase('idle')
+    setPhase(null)
   }, [])
 
   return {

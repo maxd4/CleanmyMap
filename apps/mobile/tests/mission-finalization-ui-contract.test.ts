@@ -11,7 +11,7 @@ describe('mobile mission finalization UI contract', () => {
   it('confirms before stopping and exposes the ordered finalization states', () => {
     expect(controllerSource).toContain("Alert.alert(")
     expect(controllerSource).toContain("'Terminer la mission ?'")
-    expect(controllerSource).toContain("setFinalizationStage('synchronizing')")
+    expect(controllerSource).toContain("setFinalizationStage(owned(ownerId, 'synchronizing'))")
     expect(appSource).toContain('MissionFinalizationScreen')
     expect(screenSource).toContain('ENVOI DES POINTS...')
     expect(screenSource).toContain('ENREGISTREMENT...')

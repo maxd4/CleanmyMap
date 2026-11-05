@@ -300,6 +300,69 @@ describe('mobile companion mission controller runtime', () => {
     expect(state.alert).toHaveBeenCalledWith('Suivi GPS impossible', 'Permission GPS refusée.')
   })
 
+  it('hides A data on the first render under B and ignores a late start from A', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    let resolveStart!: (value: { ok: true; data: Mission }) => void
+    state.startMobileMission.mockReturnValueOnce(new Promise((resolve) => { resolveStart = resolve }))
+    const { getController, update } = await renderController()
+
+    const startPromise = getController().handleStartMobileMission()
+    await act(async () => { await Promise.resolve() })
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await update()
+    expect(getController().mission).toBeNull()
+    expect(getController().pendingGpsPointCount).toBe(0)
+    expect(getController().completionSummary).toBeNull()
+
+    resolveStart({ ok: true, data: mission })
+    await act(async () => { await startPromise; await settle() })
+    expect(getController().mission).toBeNull()
+    expect(getController().errorMsg).toBeNull()
+  })
+
+  it('does not retain A completion or apply a late finalization after switching to B', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const finalization = deferred<{ ok: true; data: Mission }>()
+    state.stopTracking.mockReturnValueOnce(finalization.promise)
+    const { getController, update } = await renderController()
+    await act(async () => { await getController().handleStartMobileMission(); await settle() })
+
+    await act(async () => { getController().handleStop() })
+    const buttons = state.alert.mock.calls.at(-1)?.[2] as Array<{ text: string; onPress?: () => void }>
+    const finalizationPromise = buttons.find((button) => button.text === 'Terminer')?.onPress?.()
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await update()
+    expect(getController().mission).toBeNull()
+    expect(getController().completionSummary).toBeNull()
+    expect(getController().finalizationStage).toBeNull()
+
+    finalization.resolve({ ok: true, data: { ...mission, status: 'completed' } })
+    await act(async () => { await finalizationPromise; await settle() })
+    expect(getController().completionSummary).toBeNull()
+    expect(state.clearStoredForegroundTrack).not.toHaveBeenCalled()
+  })
+
+  it('restores the current B mission while an older A restoration resolves later', async () => {
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
+    const restoreA = deferred<string | null>()
+    const restoreB = deferred<string | null>()
+    state.restoreActiveTracking.mockReturnValueOnce(restoreA.promise).mockReturnValueOnce(restoreB.promise)
+    state.getMission.mockResolvedValue({ ok: true, data: { ...mission, volunteer_id: 'user-b' } })
+    const { getController, update } = await renderController()
+
+    state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-b' }
+    await update()
+    restoreB.resolve('mission-1')
+    await act(async () => { await restoreB.promise; await settle() })
+    expect(getController().mission?.volunteer_id).toBe('user-b')
+    expect(getController().phase).toBe('tracking')
+
+    restoreA.resolve('mission-1')
+    await act(async () => { await restoreA.promise; await settle() })
+    expect(getController().mission?.volunteer_id).toBe('user-b')
+    expect(getController().phase).toBe('tracking')
+  })
+
   it('retries restoration when the application becomes active again after a closed-app interruption', async () => {
     state.auth = { isLoaded: true, isSignedIn: true, userId: 'user-a' }
     state.restoreActiveTracking
