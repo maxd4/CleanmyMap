@@ -25,8 +25,11 @@ Une observation acceptée est ajoutée aux arrêts et la géométrie est recalcu
 avec `routeThroughPedestrianNetwork`; les points prédits sont projetés sur la
 géométrie théorique existante afin qu'un centre de sous-segment situé au milieu
 d'une arête ne rende pas le réseau indisponible. La géométrie enrichie doit
-conserver les arêtes prédictives dans leur ordre ; une reconstruction qui en
-perd une est rejetée. Un point observé hors nœud peut être ancré à un nœud
+conserver, dans leur ordre, les `edgeKey` des segments prédictifs effectivement
+sélectionnés par le planner ; les raccordements ordinaires ne sont pas figés et
+peuvent évoluer lors de l'ajout d'une observation. Une reconstruction qui perd
+un segment prédictif est rejetée. Un point observé hors nœud peut être ancré à
+un nœud
 vérifié dans la limite de 75 m propre à l'enrichissement, sans raccordement fictif. L'enrichissement ne
 modifie ni `wasteRisk`, ni `cigaretteButtRisk`, ni le classement des segments
 prédits. Les observations refusées conservent une raison d'audit

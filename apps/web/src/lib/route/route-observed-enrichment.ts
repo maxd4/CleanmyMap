@@ -66,6 +66,8 @@ type EnrichmentInput = {
   baseCandidates: readonly RoutePlannerCandidate[];
   observedCandidates: readonly RoutePlannerCandidate[];
   baseGeometry: RouteGeometry;
+  /** Ordered network edges selected as predictive targets; connectors are excluded. */
+  predictiveEdgeKeys: readonly string[];
   pedestrianNetwork: PedestrianNetworkGraph;
   travelBudgetMinutes: number;
   maxObserved?: number;
@@ -124,8 +126,10 @@ function networkEdgeReferences(geometry: RouteGeometry): string[] {
     .filter((reference): reference is string => Boolean(reference));
 }
 
-function preservesPredictiveRoute(baseGeometry: RouteGeometry, tentativeGeometry: RouteGeometry): boolean {
-  const required = networkEdgeReferences(baseGeometry);
+function preservesPredictiveRoute(
+  required: readonly string[],
+  tentativeGeometry: RouteGeometry,
+): boolean {
   if (required.length === 0) return true;
   let requiredIndex = 0;
   for (const reference of networkEdgeReferences(tentativeGeometry)) {
@@ -212,7 +216,7 @@ export function enrichTheoreticalRouteWithObservedCandidates(
       evaluations.push({ candidateId: candidate.id, accepted: false, distanceToCorridorKm, detourDistanceKm: null, detourMinutes: null, reason: "network_unreachable" });
       continue;
     }
-    if (!preservesPredictiveRoute(input.baseGeometry, tentativeGeometry)) {
+    if (!preservesPredictiveRoute(input.predictiveEdgeKeys, tentativeGeometry)) {
       increment(rejectedByReason, "predictive_route_not_preserved");
       evaluations.push({ candidateId: candidate.id, accepted: false, distanceToCorridorKm, detourDistanceKm: null, detourMinutes: null, reason: "predictive_route_not_preserved" });
       continue;

@@ -607,6 +607,7 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       baseCandidates: selected.map(({ candidate }) => candidate),
       observedCandidates: observedCandidates.filter((candidate) => !assignedObservedCandidateIds.has(candidate.id)),
       baseGeometry: finalBuilt.geometry,
+      predictiveEdgeKeys: finalBuilt.selectedEdges.map((edge) => edge.edgeKey),
       pedestrianNetwork: input.pedestrianNetwork,
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxObserved: Math.max(0, Math.min(MAX_SEGMENTS_PER_GROUP - selected.length, input.maxStops - selected.length)),

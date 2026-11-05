@@ -19,6 +19,24 @@ const graph: PedestrianNetworkGraph = {
   ],
 };
 
+const graphWithAlternativeConnectors: PedestrianNetworkGraph = {
+  ...graph,
+  edges: [
+    ...graph.edges,
+    { edgeKey: "ce", osmWayId: "ce", segmentIndex: 0, direction: "forward", fromNodeId: "c", toNodeId: "e", highway: "footway", name: "Rue E", accessStatus: "allowed", lengthM: 111, coordinates: [[48.001, 2.001], [48.0015, 2.001]], tags: {} },
+    { edgeKey: "ea", osmWayId: "ea", segmentIndex: 0, direction: "forward", fromNodeId: "e", toNodeId: "a", highway: "footway", name: "Rue F", accessStatus: "allowed", lengthM: 111, coordinates: [[48.0015, 2.001], [48, 2]], tags: {} },
+  ],
+};
+
+const graphWithoutPredictiveEdge: PedestrianNetworkGraph = {
+  ...graph,
+  edges: [
+    ...graph.edges.filter((edge) => edge.edgeKey !== "bc"),
+    { edgeKey: "be", osmWayId: "be", segmentIndex: 0, direction: "forward", fromNodeId: "b", toNodeId: "e", highway: "footway", name: "Rue E", accessStatus: "allowed", lengthM: 111, coordinates: [[48.001, 2], [48.0015, 2.001]], tags: {} },
+    { edgeKey: "ea", osmWayId: "ea", segmentIndex: 0, direction: "forward", fromNodeId: "e", toNodeId: "a", highway: "footway", name: "Rue F", accessStatus: "allowed", lengthM: 111, coordinates: [[48.0015, 2.001], [48, 2]], tags: {} },
+  ],
+};
+
 const predicted: RoutePlannerCandidate = {
   family: "predicted",
   id: "predicted-b",
@@ -67,6 +85,7 @@ describe("route observed enrichment", () => {
       baseCandidates: [predicted],
       observedCandidates: [observed("observed-c", 48.001, 2.001)],
       baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
       pedestrianNetwork: graph,
       travelBudgetMinutes: 20,
       maxObserved: 2,
@@ -87,6 +106,7 @@ describe("route observed enrichment", () => {
       baseCandidates: [predicted],
       observedCandidates: [observed("observed-mid-edge", 48.001, 2.0005)],
       baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
       pedestrianNetwork: graph,
       travelBudgetMinutes: 20,
       maxObserved: 2,
@@ -97,6 +117,24 @@ describe("route observed enrichment", () => {
     expect(result.routeGeometry.legs.flatMap((leg) => leg.steps ?? []).map((step) => step.segmentReference)).toEqual(["ab", "bc", "cd", "da"]);
   });
 
+  it("accepts alternative connectors when the selected predictive edge remains in order", () => {
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [observed("observed-e", 48.0015, 2.001)],
+      baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
+      pedestrianNetwork: graphWithAlternativeConnectors,
+      travelBudgetMinutes: 20,
+      maxObserved: 2,
+    });
+
+    expect(result.metrics.acceptedCandidateIds).toEqual(["observed-e"]);
+    expect(result.routeGeometry.legs.flatMap((leg) => leg.steps ?? []).map((step) => step.segmentReference))
+      .toEqual(["ab", "bc", "ce", "ea"]);
+  });
+
   it("rejects an observation whose network detour exceeds the remaining budget", () => {
     const result = enrichTheoreticalRouteWithObservedCandidates({
       origin,
@@ -104,6 +142,7 @@ describe("route observed enrichment", () => {
       baseCandidates: [predicted],
       observedCandidates: [observed("observed-c", 48.001, 2.001)],
       baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
       pedestrianNetwork: graph,
       travelBudgetMinutes: 3,
       maxObserved: 2,
@@ -124,6 +163,7 @@ describe("route observed enrichment", () => {
         observed("distant", 48.01, 2.01),
       ],
       baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
       pedestrianNetwork: graph,
       travelBudgetMinutes: 20,
       maxObserved: 2,
@@ -144,6 +184,7 @@ describe("route observed enrichment", () => {
         observed("observed-c", 48.0006, 2.001),
       ],
       baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
       pedestrianNetwork: graph,
       travelBudgetMinutes: 20,
       maxObserved: 2,
@@ -170,6 +211,7 @@ describe("route observed enrichment", () => {
       baseCandidates: [predicted],
       observedCandidates: [observed("observed-b", 48.001, 2.0004)],
       baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
       pedestrianNetwork: reducedGraph,
       travelBudgetMinutes: 20,
       maxObserved: 2,
@@ -177,5 +219,23 @@ describe("route observed enrichment", () => {
 
     expect(result.metrics.accepted).toBe(0);
     expect(result.metrics.rejectedByReason.network_unreachable ?? 0).toBeGreaterThan(0);
+  });
+
+  it("rejects an accessible reconstruction that removes the selected predictive edge", () => {
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [observed("observed-e", 48.0015, 2.001)],
+      baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
+      pedestrianNetwork: graphWithoutPredictiveEdge,
+      travelBudgetMinutes: 20,
+      maxObserved: 2,
+    });
+
+    expect(result.metrics.accepted).toBe(0);
+    expect(result.metrics.rejectedByReason.predictive_route_not_preserved).toBe(1);
+    expect(result.metrics.evaluations[0]?.reason).toBe("predictive_route_not_preserved");
   });
 });
