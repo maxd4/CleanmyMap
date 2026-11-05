@@ -45,7 +45,7 @@ describe("legacy table RLS contracts", () => {
   });
 
   it("keeps forms compatible with the server-side validation read path", () => {
-    const source = readFileSync(new URL("../gamification/progression-action-queries.ts", import.meta.url), "utf8");
+    const source = readFileSync(new URL("../gamification/progression/progression-action-queries.ts", import.meta.url), "utf8");
 
     expect(source).toMatch(/\.from\(["']forms["']\)/i);
     expect(source).toMatch(
