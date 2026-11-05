@@ -530,6 +530,19 @@ function finalizePredictedSegmentRouteRecommendation(
   const totalDistanceKm = groupDistances.reduce((total, distance) => total + distance, 0);
   const totalDurationMinutes = groupDurations.reduce((total, duration) => total + duration, 0);
   const sharedDistanceKm = measureSharedNetworkDistanceKm(groupRoutes);
+  const finalCandidateIds = new Set(groupRoutes.flatMap(({ candidateIds }) => candidateIds));
+  const groupPartition: RouteGroupPartitionResult = {
+    ...segmentRoutePlan.partition,
+    audit: {
+      ...segmentRoutePlan.partition.audit,
+      assignments: segmentRoutePlan.partition.audit.assignments.filter(({ candidateId }) => finalCandidateIds.has(candidateId)),
+      overlapCosts: {
+        ...segmentRoutePlan.partition.audit.overlapCosts,
+        networkSharedDistanceKm: sharedDistanceKm,
+        networkDistanceMeasured: sharedDistanceKm !== null,
+      },
+    },
+  };
   const sharedTargetIds = groupRoutes.flatMap(({ candidateIds }) => candidateIds);
   const sharedTargetRatio = sharedTargetIds.length === 0
     ? 0
@@ -581,7 +594,7 @@ function finalizePredictedSegmentRouteRecommendation(
       degraded: segmentRoutePlan.degraded,
       warning: segmentRoutePlan.warning,
     },
-    groupPartition: segmentRoutePlan.partition,
+    groupPartition,
     groupRoutes,
     multiRouteMetrics,
     operationalBudget: input.operationalBudget,

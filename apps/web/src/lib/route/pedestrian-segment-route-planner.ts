@@ -457,6 +457,9 @@ function buildGroupGeometry(
   for (const segment of candidates) {
     const connector = shortestPath(currentNodeId, segment.edge.fromNodeId, adjacency);
     if (!connector) continue;
+    if (topology === "loop" && !shortestPath(segment.edge.toNodeId, destinationNodeId, adjacency)) {
+      continue;
+    }
     connectorSegments += connector.edges.length;
     routeEdges.push(...connector.edges);
     routeEdges.push(segment.edge);
@@ -670,12 +673,17 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       balanceDuration: groupDurations.length > 0 ? Math.max(...groupDurations) - Math.min(...groupDurations) : 0,
       balanceTargetCount: groupRoutes.length > 0 ? Math.max(...groupRoutes.map(({ targetCount }) => targetCount)) - Math.min(...groupRoutes.map(({ targetCount }) => targetCount)) : 0,
     },
+    audit: {
+      ...partition.audit,
+      assignments: partition.audit.assignments.filter(({ candidateId }) => allSelectedIds.has(candidateId)),
+      excludedByPartitionBoundCandidateIds: [...new Set([
+        ...partition.audit.excludedByPartitionBoundCandidateIds,
+        ...excludedCandidateIds,
+      ])],
+    },
   };
   return {
-    plannerResult: {
-      ...plannerResult,
-      stops: plannedStops,
-    },
+    plannerResult,
     partition: partitionWithActualRoutes,
     plannedStops,
     groupRoutes,

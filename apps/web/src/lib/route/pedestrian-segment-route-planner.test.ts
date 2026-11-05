@@ -295,6 +295,59 @@ describe("pedestrian segment route planner", () => {
     expect(result!.degraded).toBe(true);
   });
 
+  it("skips a selected directed dead end and keeps an admissible loop", () => {
+    const deadEnd = edge("e-ax", "a", "x", [48, 2], [48.0015, 2.0005], "Rue Impasse");
+    const directedGraph: PedestrianNetworkGraph = {
+      ...graph,
+      edges: [...graph.edges, deadEnd],
+    };
+    const directedProjection = projection(["s-0", "s-1", "s-2", "s-3"]);
+    directedProjection.segments[0] = {
+      ...directedProjection.segments[0]!,
+      edgeKey: deadEnd.edgeKey,
+      fromNodeId: deadEnd.fromNodeId,
+      toNodeId: deadEnd.toNodeId,
+      coordinates: deadEnd.coordinates,
+    };
+    const result = plan([
+      candidate("dead-end", "s-0", 100, 100),
+      candidate("loop", "s-1", 60, 60),
+    ], "all", {
+      pedestrianNetwork: directedGraph,
+      projection: directedProjection,
+      maxStops: 2,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.plannerResult.stops.map(({ candidate: item }) => item.id)).toContain("dead-end");
+    expect(result!.plannedStops.map(({ candidate: item }) => item.id)).toEqual(["loop"]);
+    expect(result!.excludedCandidateIds).toEqual(["dead-end"]);
+    expect(result!.partition.audit.assignments.map(({ candidateId }) => candidateId)).toEqual(["loop"]);
+    expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
+  });
+
+  it("returns no segment plan when every selected candidate blocks loop closure", () => {
+    const deadEnd = edge("e-ax", "a", "x", [48, 2], [48.0015, 2.0005], "Rue Impasse");
+    const directedGraph: PedestrianNetworkGraph = {
+      ...graph,
+      edges: [...graph.edges, deadEnd],
+    };
+    const directedProjection = projection(["s-0", "s-1", "s-2", "s-3"]);
+    directedProjection.segments[0] = {
+      ...directedProjection.segments[0]!,
+      edgeKey: deadEnd.edgeKey,
+      fromNodeId: deadEnd.fromNodeId,
+      toNodeId: deadEnd.toNodeId,
+      coordinates: deadEnd.coordinates,
+    };
+
+    expect(plan([candidate("dead-end", "s-0", 100, 100)], "all", {
+      pedestrianNetwork: directedGraph,
+      projection: directedProjection,
+      maxStops: 1,
+    })).toBeNull();
+  });
+
   it("does not create a network route for an origin outside the graph", () => {
     const result = plan([candidate("candidate", "s-0", 90, 90)], "all", {
       origin: { ...origin, latitude: 48.005 },
