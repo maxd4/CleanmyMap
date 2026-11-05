@@ -2,12 +2,13 @@
 -- Never execute this fixture against the linked or production project.
 
 begin;
-select plan(14);
+select plan(19);
 
 set local role postgres;
 select ok(to_regprocedure('public.get_active_pedestrian_risk_projection_page(double precision,double precision,double precision,double precision,integer,integer)') is not null, 'paged projection RPC exists after replay');
 select ok(has_function_privilege('service_role', 'public.get_active_pedestrian_risk_projection_page(double precision,double precision,double precision,double precision,integer,integer)', 'EXECUTE'), 'service_role can read paged projections');
 select ok(not has_function_privilege('authenticated', 'public.get_active_pedestrian_risk_projection_page(double precision,double precision,double precision,double precision,integer,integer)', 'EXECUTE'), 'authenticated cannot read paged projections');
+select ok(not has_function_privilege('anon', 'public.get_active_pedestrian_risk_projection_page(double precision,double precision,double precision,double precision,integer,integer)', 'EXECUTE'), 'anon cannot read paged projections');
 
 insert into public.pedestrian_network_versions (
   id, network_key, importer_version, source_sha256, source_retrieved_at,
@@ -97,6 +98,32 @@ select is(
   (select min(generated_at) from public.get_active_pedestrian_risk_projection_page(48.8, 2.3, 48.9, 2.5, 900, 0)),
   '2026-11-04T09:00:00Z'::timestamptz,
   'page rows expose persisted projection generation time'
+);
+select is(
+  (select count(distinct publication_revision)::integer from public.get_active_pedestrian_risk_projection_page(48.8, 2.3, 48.9, 2.5, 900, 0)),
+  1,
+  'page rows expose one publication revision'
+);
+select is(
+  (select count(distinct publication_revision)::integer from public.get_active_pedestrian_risk_projection_page(48.8, 2.3, 48.9, 2.5, 900, 900)),
+  1,
+  'continuation page keeps the same publication revision'
+);
+create temporary table projection_publication_before_update as
+select distinct publication_revision
+from public.get_active_pedestrian_risk_projection_page(48.8, 2.3, 48.9, 2.5, 900, 0);
+update public.pedestrian_risk_projection_versions
+set generated_at = generated_at
+where id = '22222222-2222-4222-8222-222222222222';
+select ok(
+  (select publication_revision from public.get_active_pedestrian_risk_projection_versions where id = '22222222-2222-4222-8222-222222222222')
+    <> (select publication_revision from projection_publication_before_update),
+  'a same-metadata republication receives a new publication revision'
+);
+select is(
+  (select count(*)::integer from public.get_active_pedestrian_risk_projection_page(48.8, 2.3, 48.9, 2.5, 900, 900)),
+  101,
+  'a changed publication remains readable only as a complete new page set'
 );
 select is(
   (select count(*)::integer from public.get_active_pedestrian_risk_projection_page(48.8, 2.3, 48.9, 2.5, 900, 900) where risk_status = 'unavailable' and waste_risk is null and cigarette_butt_risk is null and mixed_risk is null),

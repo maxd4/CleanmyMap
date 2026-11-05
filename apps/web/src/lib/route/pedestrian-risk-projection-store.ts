@@ -16,6 +16,7 @@ type ProjectionRow = {
   policy_version: string;
   network_version_id: string | null;
   generated_at: string;
+  publication_revision: number;
   source_versions: PedestrianRiskProjectionSourceVersions;
   projection_segment_id: string;
   edge_key: string;
@@ -49,12 +50,17 @@ type ProjectionRow = {
 const PROJECTION_PAGE_SIZE = 900;
 
 function sameProjectionIdentity(left: ProjectionRow, right: ProjectionRow): boolean {
-  return left.projection_version_id === right.projection_version_id &&
+  return Number.isSafeInteger(left.publication_revision) &&
+    left.publication_revision > 0 &&
+    Number.isSafeInteger(right.publication_revision) &&
+    right.publication_revision > 0 &&
+    left.projection_version_id === right.projection_version_id &&
     left.projection_key === right.projection_key &&
     left.schema_version === right.schema_version &&
     left.policy_version === right.policy_version &&
     left.network_version_id === right.network_version_id &&
-    left.generated_at === right.generated_at;
+    left.generated_at === right.generated_at &&
+    left.publication_revision === right.publication_revision;
 }
 
 function coordinatesFromGeoJson(value: unknown): Coordinate[] | null {

@@ -51,10 +51,13 @@ projection active correspond exactement à `versionId` du graphe actif. La RPC
 de lecture joint ces identités versionnées ; une absence ou une incompatibilité
 ne fabrique pas de correspondance et déclenche le repli explicite prévu. Les
 segments sont lus par pages ordonnées et bornées (`get_active_pedestrian_risk_projection_page`)
-avec une ligne de continuation ; le lecteur exige une identité de projection,
-de graphe et une date `generated_at` constantes sur toutes les pages. Une page
-interrompue ou une identité modifiée rend la projection indisponible au lieu de
-présenter un corpus tronqué comme complet. Les dates de génération de la
+avec une ligne de continuation ; le lecteur exige une identité de publication,
+de projection, de graphe et une date `generated_at` constantes sur toutes les
+pages. La révision de publication est renouvelée atomiquement lors de chaque
+remplacement des segments, même si les identifiants scientifiques et la date
+restent inchangés. Une page interrompue ou une identité modifiée rend la
+projection indisponible au lieu de présenter un corpus tronqué comme complet.
+Les dates de génération de la
 projection et des snapshots sources restent distinctes. Les
 origines, arrivées et candidats doivent être rattachés à des points du graphe
 vérifiés : une demande située à proximité peut être résolue vers le nœud vérifié

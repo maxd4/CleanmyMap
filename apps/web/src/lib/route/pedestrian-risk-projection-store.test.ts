@@ -29,6 +29,7 @@ function row(index: number, overrides: Record<string, unknown> = {}) {
     policy_version: "segment-zonal-neutral-v1",
     network_version_id: "network-v1",
     generated_at: "2026-11-04T09:00:00.000Z",
+    publication_revision: 1,
     source_versions: sourceVersions,
     projection_segment_id: `segment-${index}`,
     edge_key: `edge-${String(index).padStart(5, "0")}`,
@@ -88,6 +89,20 @@ describe("loadActivePedestrianRiskProjection", () => {
     const firstPage = Array.from({ length: 901 }, (_, index) => row(index));
     const changed = row(900, { network_version_id: "network-v2" });
     const supabase = clientForPages([firstPage, [changed]]);
+
+    await expect(loadActivePedestrianRiskProjection(supabase, points)).resolves.toBeNull();
+  });
+
+  it("fails closed when a republication changes only the publication revision", async () => {
+    const firstPage = Array.from({ length: 901 }, (_, index) => row(index));
+    const changed = row(900, { publication_revision: 2 });
+    const supabase = clientForPages([firstPage, [changed]]);
+
+    await expect(loadActivePedestrianRiskProjection(supabase, points)).resolves.toBeNull();
+  });
+
+  it("fails closed when the publication revision is absent", async () => {
+    const supabase = clientForPages([[row(0, { publication_revision: undefined })]]);
 
     await expect(loadActivePedestrianRiskProjection(supabase, points)).resolves.toBeNull();
   });
