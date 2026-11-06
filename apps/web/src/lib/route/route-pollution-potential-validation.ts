@@ -20,6 +20,10 @@ function validNullableNumber(value: unknown): value is number | null {
   return value === null || (typeof value === "number" && Number.isFinite(value));
 }
 
+function validNullableIndex(value: unknown): value is number | null {
+  return validNullableNumber(value) && (value === null || (value >= 0 && value <= 100));
+}
+
 function validStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
@@ -66,7 +70,7 @@ function sameConfidence(left: unknown, right: unknown): boolean {
 }
 
 function validCategoryResult(value: unknown): value is RoutePollutionPotentialCategoryResult {
-  if (!isRecord(value) || !validNullableNumber(value.value) || !validNullableNumber(value.rawProjectionIndex) || !validStatus(value.status)) return false;
+  if (!isRecord(value) || !validNullableIndex(value.value) || !validNullableIndex(value.rawProjectionIndex) || !validStatus(value.status)) return false;
   const uniqueSegmentCount = value.uniqueSegmentCount;
   const availableSegmentCount = value.availableSegmentCount;
   const coverageRatio = value.coverageRatio;
@@ -77,11 +81,11 @@ function validCategoryResult(value: unknown): value is RoutePollutionPotentialCa
   if (value.value === null) {
     return value.status === "unavailable" && (value.rawProjectionIndex !== null || value.confidence.score === null);
   }
-  return value.status === (coverageRatio !== null && coverageRatio < 1 ? "partial" : "available");
+  return value.status === (coverageRatio !== null && coverageRatio < 1 || value.missingReasons.length > 0 ? "partial" : "available");
 }
 
 function validIndex(value: unknown): value is RoutePollutionPotentialIndex {
-  if (!isRecord(value) || !validStatus(value.status) || !validNullableNumber(value.value)) return false;
+  if (!isRecord(value) || !validStatus(value.status) || !validNullableIndex(value.value)) return false;
   const uniqueSegmentCount = value.uniqueSegmentCount;
   if (typeof uniqueSegmentCount !== "number" || !Number.isInteger(uniqueSegmentCount) || uniqueSegmentCount < 0 || !validCoverage(value.collectionLengthM, value.coveredLengthM, value.coverageRatio)) return false;
   if (!validConfidenceRecord(value.confidence) || !validStringArray(value.limitations) || !isRecord(value.categories)) return false;
@@ -106,9 +110,11 @@ function validReferenceComparison(value: unknown): value is RoutePollutionRefere
 function validReference(value: unknown): boolean {
   if (value === null) return true;
   if (!isRecord(value)) return false;
+  const validKindAndScore = value.kind === "historical_action_score_100"
+    ? value.historicalScore === 100
+    : value.kind === "theoretical_network" && value.historicalScore === null;
   return typeof value.id === "string" && value.id.length > 0 && typeof value.label === "string" &&
-    (value.kind === "historical_action_score_100" || value.kind === "theoretical_network") &&
-    (value.historicalScore === null || value.historicalScore === 100) && validReferenceComparison(value.comparison) && validStringArray(value.provenance);
+    validKindAndScore && validReferenceComparison(value.comparison) && validStringArray(value.provenance);
 }
 
 function validVersion(value: unknown): boolean {

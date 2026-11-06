@@ -211,7 +211,7 @@ type SegmentStats = {
   confidenceScore: Record<Category, number | null>;
 };
 
-const ROUTE_REFERENCE_LENGTH_TOLERANCE = 0.25;
+const ROUTE_REFERENCE_LENGTH_TOLERANCE = 0.25, ROUTE_REFERENCE_COORDINATE_TOLERANCE = 1e-6;
 const ROUTE_REFERENCE_BUDGET_TOLERANCE_MINUTES = 5;
 
 function clamp(value: number, min = 0, max = 100): number {
@@ -419,25 +419,24 @@ function networkPathIsDirectedAndContinuous(
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
 ): boolean {
   if (geometry.edgeKeys.length === 0) return false;
-  const edges = geometry.edgeKeys.map((edgeKey) => [...segments.values()].find((candidate) => candidate.edgeKey === edgeKey));
+  let previousToNodeId: string | null = null;
+  const edges = geometry.edgeKeys.map((edgeKey) => { const edge = [...segments.values()].find((candidate) => candidate.edgeKey === edgeKey && (previousToNodeId === null || candidate.fromNodeId === previousToNodeId)); if (edge) previousToNodeId = edge.toNodeId; return edge; });
   if (edges.some((edge) => !edge || edge.riskStatus !== "predicted" || !finitePositive(edge.lengthM))) return false;
-  return edges.every((edge, index) => index === 0 || edges[index - 1]!.toNodeId === edge!.fromNodeId);
+  return edges.length > 0;
 }
 function geometryFollowsEdgeSequence(
   geometry: ReferenceGeometryInput,
   segments: ReadonlyMap<string, PedestrianRiskProjectionSegment>,
 ): boolean {
   const matches = (left: readonly number[], right: readonly number[]) =>
-    Math.abs(left[0] - right[0]) <= 1e-6 && Math.abs(left[1] - right[1]) <= 1e-6;
-  let cursor = 0;
-  for (const edgeKey of geometry.edgeKeys) {
-    const segment = [...segments.values()].find((candidate) => candidate.edgeKey === edgeKey);
-    if (!segment) return false;
-    const start = geometry.coordinates.findIndex((_, index) => index >= cursor && segment.coordinates.every((coordinate, offset) => matches(geometry.coordinates[index + offset] ?? [], coordinate)));
-    if (start < 0) return false;
-    cursor = start + segment.coordinates.length - 1;
-  }
-  return true;
+    Math.abs(left[0] - right[0]) <= ROUTE_REFERENCE_COORDINATE_TOLERANCE && Math.abs(left[1] - right[1]) <= ROUTE_REFERENCE_COORDINATE_TOLERANCE;
+  let previousToNodeId: string | null = null;
+  const orderedSegments = geometry.edgeKeys.map((edgeKey) => { const segment = [...segments.values()].find((candidate) => candidate.edgeKey === edgeKey && (previousToNodeId === null || candidate.fromNodeId === previousToNodeId)); if (segment) previousToNodeId = segment.toNodeId; return segment; });
+  if (orderedSegments.some((segment) => !segment)) return false;
+  const expectedWithJunctions = orderedSegments.flatMap((segment) => segment!.coordinates);
+  const expectedWithoutJunctions = orderedSegments.flatMap((segment, index) => index === 0 ? segment!.coordinates : segment!.coordinates.slice(1));
+  return [expectedWithJunctions, expectedWithoutJunctions].some((expected) =>
+    expected.length === geometry.coordinates.length && expected.every((coordinate, index) => matches(geometry.coordinates[index]!, coordinate)));
 }
 function selectedSegmentsFollowPath(
   geometry: ReferenceGeometryInput,

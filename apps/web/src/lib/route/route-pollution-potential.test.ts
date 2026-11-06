@@ -306,6 +306,10 @@ describe("route theoretical pollution potential", () => {
     expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, categories: { waste: {} } } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, confidence: { level: "high", score: null, source: "segment_projection" } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, comparison: {} } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, kind: "theoretical_network", historicalScore: 100 } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, kind: "historical_action_score_100", historicalScore: null } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, value: -1 } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, categories: { ...potential.global.categories, waste: { ...potential.global.categories.waste, rawProjectionIndex: 101 } } } })).toBe(false);
   });
 
   it.each([
@@ -345,6 +349,25 @@ describe("route theoretical pollution potential", () => {
     expect(fictitious.references).toHaveLength(0);
   });
 
+  it("refuse les coordonnées étrangères avant, entre ou après les arêtes attestées", () => {
+    const intercalated = catalog(projection(), [], {
+      coordinates: [[48.852, 2.35], [48.853, 2.35], [48.8535, 2.35], [48.854, 2.35]],
+      edgeKeys: ["edge-s-3", "edge-s-4"],
+    });
+    const prefixed = catalog(projection(), [], {
+      coordinates: [[48.851, 2.35], [48.852, 2.35], [48.853, 2.35], [48.854, 2.35]],
+      edgeKeys: ["edge-s-3", "edge-s-4"],
+    });
+    const suffixed = catalog(projection(), [], {
+      coordinates: [[48.852, 2.35], [48.853, 2.35], [48.854, 2.35], [48.855, 2.35]],
+      edgeKeys: ["edge-s-3", "edge-s-4"],
+    });
+
+    expect(intercalated.references).toHaveLength(0);
+    expect(prefixed.references).toHaveLength(0);
+    expect(suffixed.references).toHaveLength(0);
+  });
+
   it("marks a missing category explicitly while averaging the available category for mixed", () => {
     const current = projection({ missingCigaretteButts: true });
     for (const segment of current.segments) {
@@ -358,6 +381,7 @@ describe("route theoretical pollution potential", () => {
     expect(potential.global.categories.mixed.confidence.source).toBe("segment_projection");
     expect(potential.global.missingCategories).toContain("cigaretteButts");
     expect(potential.global.categories.mixed.missingReasons).toContain("cigarette_butts_category_missing");
+    expect(isRoutePollutionPotential(potential)).toBe(true);
   });
 
   it("prefers a homogeneous score-100 historical reference without converting its measurements", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildRoutePlannerSnapshot } from "./route-calibration";
 import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
-import { createOperationalRouteFromRecommendation } from "./route-operational";
+import { createOperationalRouteFromRecommendation, isOperationalRoute } from "./route-operational";
 import {
   buildActionRouteVersionCalculation,
   buildActionRouteVersioning,
@@ -9,6 +9,7 @@ import {
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
 import { buildRoutePollutionPotential } from "./route-pollution-potential";
 import { evaluateRoutePollutionRelevance } from "./route-pollution-relevance";
+import { isRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 
 describe("action route active version contract", () => {
   it("keeps audit metadata without copying the planner datasets", () => {
@@ -87,6 +88,37 @@ describe("action route active version contract", () => {
     });
     expect(calculation.stops).toEqual([]);
     expect(calculation.explanation).toBeNull();
+  });
+
+  it("rejects an out-of-domain potential in both snapshot and operational consumers", () => {
+    const pollutionPotential = buildRoutePollutionPotential({
+      projection: null,
+      candidates: [],
+      groups: [],
+      pickupPreference: "balanced",
+      routeTopology: "loop",
+      travelBudgetMinutes: 60,
+      referenceCatalog: null,
+    });
+    const invalidPotential = {
+      ...pollutionPotential,
+      global: { ...pollutionPotential.global, value: 101 },
+    };
+    const snapshot = buildRoutePlannerSnapshot({
+      ...createRoutePlannerSnapshotInput(2),
+      pollutionPotential: invalidPotential,
+    });
+    const operationalRoute = createOperationalRouteFromRecommendation({
+      generatedAt: snapshot.generatedAt,
+      groupCount: snapshot.parameters.groupCount,
+      routeGeometry: snapshot.geometry,
+      stops: snapshot.selectedStops,
+      groupRoutes: [],
+      pollutionPotential: invalidPotential,
+    });
+
+    expect(isRoutePlannerSnapshot(snapshot)).toBe(false);
+    expect(isOperationalRoute(operationalRoute)).toBe(false);
   });
 
   it("initializes the active version at publication without replacing existing history", () => {
