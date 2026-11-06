@@ -134,4 +134,48 @@ describe("persisted cigarette-butt source integrity", () => {
     });
     expect(extractActionMetadataFromNotes(nextNotes).cigaretteButtsMeasurements).toBeNull();
   });
+
+  it("persists a new mass source when a PATCH clears the counted source", () => {
+    const measurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsCountProvenance: "counted",
+      cigaretteButtsMassProvenance: "weight_converted",
+      cigaretteButtsInputSource: "count",
+    });
+    const notes = buildPersistedNotes({ notes: "Action count", cigaretteButtsMeasurements: measurements }, {
+      resolvedCigaretteButtsMeasurements: measurements,
+    });
+
+    const body = {
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsCondition: "propre",
+        cigaretteButtsInputSource: "mass_kg",
+      },
+    };
+    const result = updateMeasurements(buildCurrent(notes), body);
+
+    expect(result.nextCigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsCount: expect.any(Number),
+      cigaretteButtsCountProvenance: "weight_converted",
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsInputSource: "mass_kg",
+    });
+
+    const nextNotes = buildActionUpdateNotes({
+      body: body as never,
+      currentMetadata: extractActionMetadataFromNotes(notes),
+      hasButtsMeasurementUpdate: result.hasButtsMeasurementUpdate,
+      nextCigaretteButtsMeasurements: result.nextCigaretteButtsMeasurements,
+      nextVolunteerParticipation: result.nextVolunteerParticipation,
+    });
+    expect(extractActionMetadataFromNotes(nextNotes).cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsInputSource: "mass_kg",
+      cigaretteButtsMassProvenance: "measured",
+    });
+  });
 });

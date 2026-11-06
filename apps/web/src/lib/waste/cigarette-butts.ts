@@ -443,6 +443,9 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     explicitNullFields?: Array<
       "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"
     >;
+    explicitMeasurementFields?: Array<
+      "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"
+    >;
     /** Persisted server metadata used to protect historical provenance. */
     existingMeasurements?: ActionCigaretteButtsMeasurements | null;
   } = {},
@@ -456,15 +459,22 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
   const existingMeasurements = options.existingMeasurements;
   const effectiveInput = mergeExistingMeasurementInput(input, existingMeasurements);
   const clearFlags = readMeasurementClearFlags(input, existingMeasurements);
+  const explicitMeasurementFields = options.explicitMeasurementFields ??
+    inferExplicitMeasurementFields(input);
+  const inputSource = resolveUserInputSource(
+    effectiveInput,
+    existingMeasurements,
+    explicitMeasurementFields,
+  );
   const cleared = normalizeClearedCigaretteButtsMeasurements(
     effectiveInput,
     existingMeasurements,
     clearFlags,
     normalizeCigaretteButtsMeasurements,
     inferCigaretteButtsInputSource,
+    inputSource,
   );
   if (cleared) return cleared;
-  const inputSource = resolveUserInputSource(effectiveInput, existingMeasurements);
   const explicitInputSource = hasExplicitInputSource(effectiveInput, existingMeasurements);
   const scalarSource = isScalarInputSource(inputSource) ? toLotSource(inputSource) : null;
   const scalarValue = scalarSource === "count"
@@ -626,6 +636,7 @@ function sameCountAndMass(
 function resolveUserInputSource(
   input: RawCigaretteButtsMeasurementInput,
   existingMeasurements: ActionCigaretteButtsMeasurements | null | undefined,
+  explicitMeasurementFields: readonly string[] = [],
 ): CigaretteButtsInputSource {
   if (!existingMeasurements) {
     return input.cigaretteButtsInputSource ?? "unknown";
@@ -658,7 +669,31 @@ function resolveUserInputSource(
         ? massChanged
         : volumeChanged;
     const canonicalPersistedSource = canonicalInputSource(persistedSource);
-    if (sourceValueChanged || canonicalPersistedSource === canonicalInputSource(explicitSource)) {
+    const sourceField = scalarMeasurementField(explicitSource);
+    const sourceWasSubmitted = sourceField !== null && explicitMeasurementFields.includes(sourceField);
+    const persistedField = scalarMeasurementField(persistedSource);
+    const persistedSourceWasCleared = persistedField !== null && (
+      persistedField === "cigaretteButtsCount"
+        ? input.cigaretteButtsCount === null
+        : persistedField === "cigaretteButtsMassKg"
+          ? input.cigaretteButtsMassKg === null
+          : input.cigaretteButtsVolumeLiters === null
+    );
+    const sourceValue = sourceField === "cigaretteButtsCount"
+      ? normalizeCount(input.cigaretteButtsCount)
+      : sourceField === "cigaretteButtsMassKg"
+        ? normalizeNullableNonNegative(input.cigaretteButtsMassKg)
+        : sourceField === "cigaretteButtsVolumeLiters"
+          ? normalizeNullableNonNegative(input.cigaretteButtsVolumeLiters)
+          : null;
+    if (
+      sourceValue !== null &&
+      (
+        sourceValueChanged ||
+        canonicalPersistedSource === canonicalInputSource(explicitSource) ||
+        (sourceWasSubmitted && persistedSourceWasCleared && persistedField !== sourceField)
+      )
+    ) {
       return explicitSource;
     }
   }
@@ -675,6 +710,28 @@ function resolveUserInputSource(
   // A condition-only edit must follow the persisted source. An ambiguous
   // historical pair stays ambiguous, regardless of a forged payload hint.
   return persistedSource;
+}
+
+function inferExplicitMeasurementFields(
+  input: RawCigaretteButtsMeasurementInput,
+): Array<"cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"> {
+  const fields = [
+    "cigaretteButtsCount",
+    "cigaretteButtsMassKg",
+    "cigaretteButtsVolumeLiters",
+  ] as const;
+  return fields.filter((field): field is typeof fields[number] =>
+    Object.prototype.hasOwnProperty.call(input, field),
+  );
+}
+
+function scalarMeasurementField(
+  source: CigaretteButtsInputSource,
+): "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters" | null {
+  if (source === "count") return "cigaretteButtsCount";
+  if (source === "mass" || source === "mass_kg") return "cigaretteButtsMassKg";
+  if (source === "volume_l") return "cigaretteButtsVolumeLiters";
+  return null;
 }
 
 function resolveSingleChangedInputSource(

@@ -99,10 +99,12 @@ function resolveLegacyMass(body: ActionUpdateInput, current: number | null) {
 }
 
 function buildButtsOptions(body: ActionUpdateInput) {
+  const explicitMeasurementFields = readExplicitMeasurementFields(body);
   if (body.cigaretteButtsMeasurements !== undefined) {
-    return { preserveExplicitNulls: true };
+    return { preserveExplicitNulls: true, explicitMeasurementFields };
   }
   return {
+    explicitMeasurementFields,
     explicitNullFields: [
       ...(body.cigaretteButtsCount === null || body.cigaretteButts === null
         ? ["cigaretteButtsCount" as const]
@@ -115,6 +117,33 @@ function buildButtsOptions(body: ActionUpdateInput) {
         : []),
     ],
   };
+}
+
+function readExplicitMeasurementFields(body: ActionUpdateInput): Array<
+  "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"
+> {
+  const submitted = body.cigaretteButtsMeasurements;
+  if (submitted && typeof submitted === "object") {
+    const fields = [
+      "cigaretteButtsCount",
+      "cigaretteButtsMassKg",
+      "cigaretteButtsVolumeLiters",
+    ] as const;
+    return fields.filter((field): field is typeof fields[number] =>
+      Object.prototype.hasOwnProperty.call(submitted, field),
+    );
+  }
+  return [
+    ...(body.cigaretteButtsCount !== undefined || body.cigaretteButts !== undefined
+      ? ["cigaretteButtsCount" as const]
+      : []),
+    ...(body.cigaretteButtsMassKg !== undefined || body.cigaretteButtsKg !== undefined
+      ? ["cigaretteButtsMassKg" as const]
+      : []),
+    ...(body.cigaretteButtsVolumeLiters !== undefined
+      ? ["cigaretteButtsVolumeLiters" as const]
+      : []),
+  ];
 }
 
 function buildButtsMeasurementUpdate(params: {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION_V1,
+  calculateCigaretteButtsMeasurementFromSource,
   normalizeCigaretteButtsMeasurementsFromUserInput,
   type ActionCigaretteButtsMeasurements,
 } from "./cigarette-butts";
@@ -71,6 +72,151 @@ describe("cigarette-butt source integrity", () => {
       cigaretteButtsVolumeLiters: null,
       cigaretteButtsInputSource: null,
       cigaretteButtsVolumeProvenance: "unknown",
+    });
+  });
+
+  it.each([
+    {
+      name: "count to mass",
+      existingInput: {
+        cigaretteButtsCount: 1_750,
+        cigaretteButtsCondition: "propre" as const,
+        cigaretteButtsInputSource: "count" as const,
+      },
+      replacementInput: {
+        cigaretteButtsCount: null,
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsInputSource: "mass_kg" as const,
+      },
+      source: "mass_kg" as const,
+      value: 1,
+      condition: "propre" as const,
+    },
+    {
+      name: "count to volume",
+      existingInput: {
+        cigaretteButtsCount: 1_750,
+        cigaretteButtsCondition: "propre" as const,
+        cigaretteButtsInputSource: "count" as const,
+      },
+      replacementInput: {
+        cigaretteButtsCount: null,
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsInputSource: "volume_l" as const,
+      },
+      source: "volume_l" as const,
+      value: 2.5,
+      condition: "propre" as const,
+    },
+    {
+      name: "mass to count",
+      existingInput: {
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsCondition: "humide" as const,
+        cigaretteButtsInputSource: "mass_kg" as const,
+      },
+      replacementInput: {
+        cigaretteButtsCount: 1_750,
+        cigaretteButtsMassKg: null,
+        cigaretteButtsInputSource: "count" as const,
+      },
+      source: "count" as const,
+      value: 1_750,
+      condition: "humide" as const,
+    },
+    {
+      name: "volume to count",
+      existingInput: {
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsCondition: "propre" as const,
+        cigaretteButtsInputSource: "volume_l" as const,
+      },
+      replacementInput: {
+        cigaretteButtsCount: 1_800,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsInputSource: "count" as const,
+      },
+      source: "count" as const,
+      value: 1_800,
+      condition: "propre" as const,
+    },
+    {
+      name: "volume to mass",
+      existingInput: {
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsCondition: "propre" as const,
+        cigaretteButtsInputSource: "volume_l" as const,
+      },
+      replacementInput: {
+        cigaretteButtsMassKg: 1,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsInputSource: "mass_kg" as const,
+      },
+      source: "mass_kg" as const,
+      value: 1,
+      condition: "propre" as const,
+    },
+  ] as const)("preserves a new $name source while clearing the old source", ({
+    existingInput,
+    replacementInput,
+    source,
+    value,
+    condition,
+  }) => {
+    const existing = normalizeCigaretteButtsMeasurementsFromUserInput(existingInput);
+    const expected = calculateCigaretteButtsMeasurementFromSource({ source, value, condition });
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      ...replacementInput,
+      cigaretteButtsCondition: condition,
+    }, { existingMeasurements: existing });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: expected.cigaretteButtsCount,
+      cigaretteButtsMassKg: expected.cigaretteButtsMassKg,
+      cigaretteButtsVolumeLiters: expected.cigaretteButtsVolumeLiters,
+      cigaretteButtsInputSource: source,
+      cigaretteButtsCountProvenance: expected.cigaretteButtsCountProvenance,
+      cigaretteButtsMassProvenance: expected.cigaretteButtsMassProvenance,
+      cigaretteButtsVolumeProvenance: expected.cigaretteButtsVolumeProvenance,
+    });
+  });
+
+  it("does not invent a replacement source when the remaining value only equals an old estimate", () => {
+    const existing = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsInputSource: "count",
+    });
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: existing.cigaretteButtsMassKg,
+      cigaretteButtsCondition: "propre",
+    }, { existingMeasurements: existing });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsInputSource: null,
+    });
+  });
+
+  it("recognizes an explicitly submitted replacement even when it equals the old estimate", () => {
+    const existing = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsInputSource: "count",
+    });
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: existing.cigaretteButtsMassKg,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsInputSource: "mass_kg",
+    }, { existingMeasurements: existing });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsMassKg: existing.cigaretteButtsMassKg,
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsInputSource: "mass_kg",
     });
   });
 });

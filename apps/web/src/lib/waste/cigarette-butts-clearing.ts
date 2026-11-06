@@ -21,16 +21,22 @@ type InferInputSource = (
   measurements: ActionCigaretteButtsMeasurements | null | undefined,
 ) => CigaretteButtsInputSource;
 
+type MeasurementSource = CigaretteButtsInputSource | undefined;
+
 export function normalizeClearedCigaretteButtsMeasurements(
   effectiveInput: RawCigaretteButtsMeasurementInput,
   existing: ActionCigaretteButtsMeasurements | null | undefined,
   flags: MeasurementClearFlags,
   normalizeMeasurements: NormalizeMeasurements,
   inferInputSource: InferInputSource,
+  resolvedInputSource?: MeasurementSource,
 ): ActionCigaretteButtsMeasurements | null {
   if (!existing) return null;
   const persistedSource = inferInputSource(existing);
   if (!hasClearedMeasurement(flags)) return null;
+  if (isSourceReplacement(persistedSource, resolvedInputSource, effectiveInput, flags)) {
+    return null;
+  }
   if (flags.volumeExplicitlyCleared && !flags.countExplicitlyCleared && !flags.massExplicitlyCleared) {
     return normalizeVolumeClearedMeasurements(
       effectiveInput,
@@ -72,6 +78,35 @@ export function normalizeClearedCigaretteButtsMeasurements(
     normalizeMeasurements,
     inferInputSource,
   );
+}
+
+function isSourceReplacement(
+  persistedSource: CigaretteButtsInputSource,
+  resolvedInputSource: MeasurementSource,
+  input: RawCigaretteButtsMeasurementInput,
+  flags: MeasurementClearFlags,
+): boolean {
+  if (!resolvedInputSource || !isScalarSource(resolvedInputSource)) return false;
+  const persistedField = sourceMeasurementField(persistedSource);
+  const replacementField = sourceMeasurementField(resolvedInputSource);
+  if (!persistedField || !replacementField || persistedField === replacementField) return false;
+  return flags[persistedField] && !flags[replacementField] && hasSourceValue(input, replacementField);
+}
+
+function hasSourceValue(
+  input: RawCigaretteButtsMeasurementInput,
+  field: MeasurementField,
+): boolean {
+  const value = field === "countExplicitlyCleared"
+    ? input.cigaretteButtsCount
+    : field === "massExplicitlyCleared"
+      ? input.cigaretteButtsMassKg
+      : input.cigaretteButtsVolumeLiters;
+  return value !== null && value !== undefined && Number.isFinite(value) && value >= 0;
+}
+
+function isScalarSource(source: CigaretteButtsInputSource): boolean {
+  return source === "count" || isMassSource(source) || source === "volume_l";
 }
 
 function hasClearedMeasurement(flags: MeasurementClearFlags): boolean {
