@@ -25,6 +25,7 @@ import {
   runPollutionScoreReferencesJob,
 } from "@/lib/actions/pollution/pollution-score-reference-snapshot";
 import { runActionRemindersJob } from "./action-reminders-job";
+import { runActionRetentionJob } from "./action-retention-job";
 import { readLatestPublicSurfaceSnapshot } from "@/lib/public-surface-snapshots";
 import { getUtcDayStart, getUtcMonthStart, getUtcWeekStart } from "./periodic-job-calendar";
 import { runTerritorialLegendDailyReconciliation } from "@/lib/gamification/territorial-legends/daily-reconciliation-job";
@@ -38,6 +39,7 @@ import { runActionCollectionContextReferenceJob } from "./action-collection-cont
 export const MAINTENANCE_JOB_IDS = [
   "territorial-legends",
   "action-reminders",
+  "action-retention",
   "impact-terrain",
   "platform-usage",
   "map-pollution-references",
@@ -179,6 +181,15 @@ export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
     // duplicates and date-change re-emission.
     isProduced: async () => false,
     run: async (now) => runActionRemindersJob({ now }),
+  },
+  {
+    id: "action-retention",
+    cadence: "daily",
+    getPeriod: getUtcDayStart,
+    // The RPC performs a dry-run inventory and then revalidates that explicit
+    // candidate list before each physical deletion. Retry is intentional.
+    isProduced: async () => false,
+    run: async (now) => runActionRetentionJob({ now }),
   },
   {
     id: "impact-terrain",

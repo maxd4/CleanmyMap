@@ -31,6 +31,7 @@ function makeJobs(params: {
   ]> = [
     ["territorial-legends", "daily", getUtcDayStart],
     ["action-reminders", "daily", getUtcDayStart],
+    ["action-retention", "daily", getUtcDayStart],
     ["impact-terrain", "monthly", getUtcMonthStart],
     ["platform-usage", "weekly", getUtcWeekStart],
     ["map-pollution-references", "weekly", getUtcWeekStart],
@@ -42,7 +43,7 @@ function makeJobs(params: {
     id,
     cadence,
     getPeriod,
-    isProduced: async (period: string) => !["action-reminders", "territorial-legends"].includes(id) && produced.has(`${id}:${period}`),
+    isProduced: async (period: string) => !["action-reminders", "action-retention", "territorial-legends"].includes(id) && produced.has(`${id}:${period}`),
     run: async (now: Date) => {
       const period = getPeriod(now);
       calls.set(id, (calls.get(id) ?? 0) + 1);
@@ -115,11 +116,12 @@ describe("maintenance job registry", () => {
     ).toBe(true);
   });
 
-  it("déclare exactement les sept jobs et leurs cadences", () => {
+  it("déclare exactement les huit jobs et leurs cadences", () => {
     expect(MAINTENANCE_JOB_REGISTRY.map((job) => job.id)).toEqual([
       ...MAINTENANCE_JOB_IDS,
     ]);
     expect(MAINTENANCE_JOB_REGISTRY.map((job) => job.cadence)).toEqual([
+      "daily",
       "daily",
       "daily",
       "monthly",
@@ -154,6 +156,11 @@ describe("maintenance job registry", () => {
         status: "executed",
       }),
       expect.objectContaining({
+        job: "action-retention",
+        period: "2026-09-07",
+        status: "executed",
+      }),
+      expect.objectContaining({
         job: "impact-terrain",
         period: "2026-09-01",
         status: "skipped",
@@ -182,6 +189,7 @@ describe("maintenance job registry", () => {
       }),
     ]);
     expect(calls.get("action-reminders")).toBe(1);
+    expect(calls.get("action-retention")).toBe(1);
     expect(calls.get("territorial-legends")).toBe(1);
     expect(calls.get("platform-usage")).toBe(1);
     expect(calls.get("map-pollution-references")).toBe(1);
@@ -216,6 +224,7 @@ describe("maintenance job registry", () => {
     expect(result.jobs.filter((job) => job.status === "executed").map((job) => job.job)).toEqual([
       "territorial-legends",
       "action-reminders",
+      "action-retention",
       "impact-terrain",
       "action-collection-context-references",
       "governance-report",
@@ -233,10 +242,12 @@ describe("maintenance job registry", () => {
 
     expect(first.jobs.every((job) => job.status === "executed")).toBe(true);
     expect(second.jobs.find((job) => job.job === "action-reminders")).toMatchObject({ status: "executed" });
-    expect(second.jobs.filter((job) => !["action-reminders", "territorial-legends"].includes(job.job)).every((job) => job.status === "skipped" && job.reason === "reused")).toBe(true);
+    expect(second.jobs.find((job) => job.job === "action-retention")).toMatchObject({ status: "executed" });
+    expect(second.jobs.filter((job) => !["action-reminders", "action-retention", "territorial-legends"].includes(job.job)).every((job) => job.status === "skipped" && job.reason === "reused")).toBe(true);
     expect(state.calls.get("action-reminders")).toBe(2);
+    expect(state.calls.get("action-retention")).toBe(2);
     expect(state.calls.get("territorial-legends")).toBe(2);
-    expect([...state.calls.entries()].filter(([id]) => !["action-reminders", "territorial-legends"].includes(id)).map(([, count]) => count)).toEqual([1, 1, 1, 1, 1]);
+    expect([...state.calls.entries()].filter(([id]) => !["action-reminders", "action-retention", "territorial-legends"].includes(id)).map(([, count]) => count)).toEqual([1, 1, 1, 1, 1]);
   });
 
   it("rattrape un échec du lundi lors de l'appel quotidien suivant", async () => {
@@ -270,6 +281,7 @@ describe("maintenance job registry", () => {
     expect(result.jobs.filter((job) => job.status === "executed").map((job) => job.job)).toEqual([
       "territorial-legends",
       "action-reminders",
+      "action-retention",
       "impact-terrain",
       "map-pollution-references",
       "action-collection-context-references",

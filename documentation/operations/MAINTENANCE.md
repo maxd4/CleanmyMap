@@ -1,5 +1,38 @@
 # Maintenance — commandes et frontières réelles
 
+## Rétention des brouillons et actions en attente
+
+Le cron unique `/api/cron/maintenance` (`20 3 * * *`, UTC) exécute chaque jour
+le job `action-retention` enregistré dans
+`apps/web/src/lib/periodic/maintenance-job-registry.ts`. Aucun scheduler
+secondaire n'est créé.
+
+Le job appelle `purge_inactive_action_records` par lots bornés. Il commence par
+un inventaire `dry_run`; la suppression physique ne reçoit que la liste
+d'identifiants issue de cet inventaire. La fonction recalcule ensuite
+l'éligibilité et la dernière activité persistée sous `FOR UPDATE SKIP LOCKED`,
+avec une fenêtre d'un mois calendaire (`as_of - 1 month`). Une mise à jour
+concurrente, une clé étrangère, une référence de notification/message, un
+objet Storage ou toute autre dépendance non résolue bloque la ligne sans
+interrompre le lot.
+
+Les enregistrements `approved`, publiés, futurs publiés, en modération active
+ou possédant une dépendance métier ne sont jamais candidats. Les résultats sont
+journalisés uniquement sous forme agrégée dans
+`maintenance_action_retention_runs`; les erreurs et conflits sont retentés au
+passage quotidien suivant. Aucune purge rétroactive distante n'a été exécutée
+par ce lot.
+
+Les valeurs utilisées par les indicateurs publics sont séparées de la ligne
+mutable : `action_statistical_versions` conserve la dernière version approuvée
+et publiée. Les cinq actions historiques approuvées observées le 06/11/2026
+avec `published_at = NULL` restent inchangées; aucune date de publication ni
+composition de participants n'est inventée. Leur snapshot porte la
+qualification `legacy_approved_unpublished`; les `forms` vides restent vides et
+inchangés. Les fixtures de test restent
+exclues par la provenance serveur et ne sont pas des preuves PostgreSQL
+distantes.
+
 **Statut : CURRENT pour l'orientation des outils.** Le runtime applicatif vit dans `apps/web/` et `apps/mobile/` ; les scripts Python historiques vivent dans `maintenance/python/`. La documentation et les dépendances Python sont propriétaires de [maintenance/python/README.md](../../maintenance/python/README.md).
 
 | Opération | Chemin réel |

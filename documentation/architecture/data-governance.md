@@ -247,6 +247,25 @@ est bornée par la provenance. Les tests SQL qui mutent des lignes utilisent
 uniquement la lane Supabase éphémère explicitement autorisée ; jamais la base
 liée ou la production.
 
+`action_statistical_versions` est la source canonique des quantités et
+effectifs utilisés par les références de collecte et les projections d'impact.
+Une ligne est capturée atomiquement lors du passage approuvé et publié d'une
+action, puis reste la version courante tant qu'une nouvelle publication
+effective n'a pas eu lieu. Un brouillon ou une modification en attente reste
+dans `actions` mais ne peut pas remplacer cette version. Les cinq actions
+historiques approuvées dont `published_at` est `NULL` sont préservées sans date
+ni composition inventée (leurs `forms` vides restent inchangés) et sont portées par un snapshot
+`legacy_approved_unpublished`, afin de conserver leur contexte historique sans
+assimiler `approved` à une preuve d'authenticité terrain.
+
+La rétention quotidienne passe par le registre de maintenance existant. Seuls
+les brouillons ou `pending` inactifs depuis plus d'un mois calendaire, sans
+version statistique ni dépendance, sont supprimables. La fonction de purge
+inspecte les clés étrangères, les inscriptions et participations, les messages,
+les notifications et Storage; une dépendance non résolue bloque l'enregistrement.
+Le dry-run fournit la liste explicite nécessaire à une suppression bornée,
+transactionnelle et rejouable; les journaux de maintenance restent agrégés.
+
 Toute ingestion externe passe par `apps/web/src/lib/actions/unified-source.ts`
 avant la persistance canonique. Un acteur d'import est une provenance
 technique, pas un organisateur métier par défaut. Le backup

@@ -14,15 +14,16 @@ insert into public.actions (
   status,
   action_phase,
   moderation_visibility,
+  published_at,
   waste_kg,
   cigarette_butts,
   volunteers_count
 ) values
-  ('collection-reference-fixture', current_date - 1, 'Reference eligible 01', 'approved', 'post_action_complete', 'visible', null, 3750, 15),
-  ('collection-reference-fixture', current_date - 1, 'Reference eligible 02', 'approved', 'post_action_complete', 'visible', null, 750, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference eligible 03', 'approved', 'post_action_complete', 'visible', 20, 6250, 20),
-  ('collection-reference-fixture', current_date - 1, 'Reference eligible 04', 'approved', 'post_action_complete', 'visible', null, 1875, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference eligible 05', 'approved', 'post_action_complete', 'visible', 20, 1250, 10);
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 01', 'approved', 'post_action_complete', 'visible', timezone('utc', now()), null, 3750, 15),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 02', 'approved', 'post_action_complete', 'visible', timezone('utc', now()), null, 750, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 03', 'approved', 'post_action_complete', 'visible', timezone('utc', now()), 20, 6250, 20),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 04', 'approved', 'post_action_complete', 'visible', timezone('utc', now()), null, 1875, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 05', 'approved', 'post_action_complete', 'visible', timezone('utc', now()), 20, 1250, 10);
 
 select is(
   (select waste_per_volunteer from public.action_collection_reference_averages_v1()),
@@ -183,12 +184,13 @@ insert into public.actions (
   status,
   action_phase,
   moderation_visibility,
+  published_at,
   waste_kg,
   cigarette_butts,
   volunteers_count
 ) values (
   'collection-reference-fixture', current_date - 1, 'Reference explicit zero',
-  'approved', 'post_action_complete', 'visible', 0, 0, 10
+  'approved', 'post_action_complete', 'visible', timezone('utc', now()), 0, 0, 10
 );
 
 select is(
