@@ -346,7 +346,7 @@ export function HarvestMegotsSection({
             deltaPercent={megotsDeltaPercent ?? null}
             benchmarkSourceCount={megotsBenchmarkSourceCount ?? 0}
             testId="butts-comparison-trend"
-            unitLabel="par unité opérationnelle"
+            unitLabel="par participant"
           />
           {megotsLots !== null ? <p className="text-xs text-blue-900/70">Total des lots : modifiez les contributions dans la zone ci-dessous.</p> : null}
         </div>

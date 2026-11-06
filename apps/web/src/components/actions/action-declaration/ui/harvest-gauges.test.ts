@@ -210,7 +210,10 @@ describe("DropletGauge", () => {
 describe("HarvestComparisonTrend", () => {
   it.each([
     [12, "up", "+12%"],
+    [5.1, "up", "+5%"],
     [5, "neutral", "+5%"],
+    [1, "neutral", "+1%"],
+    [-1, "neutral", "-1%"],
     [-5, "neutral", "-5%"],
     [-5.1, "down", "-5%"],
     [-25, "down", "-25%"],
@@ -222,12 +225,14 @@ describe("HarvestComparisonTrend", () => {
       deltaPercent: delta,
       benchmarkSourceCount: 12,
       testId: "harvest-trend",
-      unitLabel: "par unité opérationnelle",
+      unitLabel: "par participant",
     }));
 
     expect(markup).toContain('data-testid="harvest-trend"');
     expect(markup).toContain(`data-trend="${direction}"`);
     expect(markup).toContain(label);
+    expect(markup).toContain("par rapport à la moyenne par participant");
+    expect(markup).not.toContain("unité opérationnelle");
     expect(markup).not.toContain("rounded-2xl border");
   });
 
@@ -238,7 +243,7 @@ describe("HarvestComparisonTrend", () => {
       deltaPercent: null,
       benchmarkSourceCount: 0,
       testId: "harvest-trend",
-      unitLabel: "par unité opérationnelle",
+      unitLabel: "par participant",
     }))).toBe("");
   });
 });
@@ -292,7 +297,7 @@ describe("WasteComparisonVisual", () => {
     expect(aboveMarkup).toContain("+50%");
     expect(aboveMarkup).toContain("text-emerald-600");
     expect(zeroMarkup).toContain('data-trend="down"');
-    expect(zeroMarkup).toContain("0,00 kg / unité opérationnelle");
+    expect(zeroMarkup).toContain("0,00 kg / participant");
   });
 
   it("does not render a comparison for missing or invalid reference data", () => {
@@ -318,7 +323,7 @@ describe("ButtsComparisonVisual", () => {
     expect(markup).not.toContain('data-testid="butts-comparison-visual-icon"');
     expect(markup).toContain('data-trend="down"');
     expect(markup).toContain("-25%");
-    expect(markup).toContain("3 000 mégots / unité opérationnelle");
+    expect(markup).toContain("3 000 mégots / participant");
   });
 
   it("does not render when the observed reference is unavailable", () => {

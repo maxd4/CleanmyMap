@@ -137,6 +137,8 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain(">Masse</span>");
     expect(markup).toContain('id="harvest-megots-volume"');
     expect(markup).toContain('data-testid="butts-comparison-trend"');
+    expect(markup).toContain("par rapport à la moyenne par participant");
+    expect(markup).not.toContain("unité opérationnelle");
     expect(markup).toContain("source · mesure saisie");
     expect(markup).toContain("estimé");
     expect(markup).toContain("appearance-none");

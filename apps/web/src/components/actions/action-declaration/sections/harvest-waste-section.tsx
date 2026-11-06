@@ -181,7 +181,7 @@ export function HarvestWasteSection({
             deltaPercent={wasteDeltaPercent ?? null}
             benchmarkSourceCount={wasteBenchmarkSourceCount ?? 0}
             testId="waste-comparison-trend"
-            unitLabel="par unité opérationnelle"
+            unitLabel="par participant"
           />
         </div>
       </div>

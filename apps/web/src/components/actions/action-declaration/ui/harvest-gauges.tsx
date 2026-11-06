@@ -414,9 +414,9 @@ export function WasteComparisonVisual({
       deltaPercent={deltaPercent}
       comparisonTone={comparisonTone}
       title="Comparaison visuelle"
-      contextLabel={`Moyenne par unité opérationnelle estimée · ${benchmarkSourceCount} action(s)`}
-      currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / unité opérationnelle`}
-      benchmarkLabel={`moyenne : ${formatKg(benchmarkPerVolunteer ?? 0)} kg / unité`}
+      contextLabel={`Moyenne par participant estimée · ${benchmarkSourceCount} action(s)`}
+      currentLabel={`${formatKg(currentPerVolunteer ?? 0)} kg / participant`}
+      benchmarkLabel={`moyenne : ${formatKg(benchmarkPerVolunteer ?? 0)} kg / participant`}
       benchmarkSourceCount={benchmarkSourceCount}
       testId="waste-comparison-visual"
     />
@@ -437,9 +437,9 @@ export function ButtsComparisonVisual({
       deltaPercent={deltaPercent}
       comparisonTone={comparisonTone}
       title="Comparaison visuelle des mégots"
-      contextLabel={`Moyenne par unité opérationnelle estimée · ${benchmarkSourceCount} action(s)`}
-      currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / unité opérationnelle`}
-      benchmarkLabel={`moyenne : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots / unité`}
+      contextLabel={`Moyenne par participant estimée · ${benchmarkSourceCount} action(s)`}
+      currentLabel={`${formatCount(currentPerVolunteer ?? 0)} mégots / participant`}
+      benchmarkLabel={`moyenne : ${formatCount(benchmarkPerVolunteer ?? 0)} mégots / participant`}
       benchmarkSourceCount={benchmarkSourceCount}
       testId="butts-comparison-visual"
     />
