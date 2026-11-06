@@ -727,6 +727,67 @@ describe("route recommendation response trace contract", () => {
     expect(payload.status).toBe(payload.dataLayers.recommendation);
   });
 
+  it("returns a complete response for an observed stop added after predictive selection", async () => {
+    installDefaultMocks();
+    const observed = candidate("observed");
+    const response = buildRouteRecommendationResponse(responseInput({
+      candidateData: {
+        candidates: [observed],
+        spatialCandidates: [observed],
+        actionableCandidates: [observed],
+        parisPressureSnapshot: null,
+        contracts: [{}],
+        dataStatus: "complete",
+        isTruncated: false,
+        sourceHealth: completeSourceHealth,
+      },
+      planning: {
+        plannedStops: [plannedStop(observed)],
+        routeGeometry: routeGeometry(),
+        plannerResult: plannerResult(),
+        predictionSummary: predictionSummary(),
+        effectiveRiskFocus: "all",
+        eventCenteredContext: null,
+        budgetPrefixApplied: false,
+        observedEnrichment: {
+          source: "validated_trash_spotter_spots",
+          predictedCandidatesRetained: 0,
+          considered: 1,
+          accepted: 1,
+          rejected: 0,
+          rejectedByReason: {},
+          acceptedCandidateIds: [observed.id],
+          evaluations: [{
+            candidateId: observed.id,
+            accepted: true,
+            distanceToCorridorKm: 0.1,
+            detourDistanceKm: 0.2,
+            detourMinutes: 1,
+            reason: "accepted",
+          }],
+          totalDetourDistanceKm: 0.2,
+          totalDetourMinutes: 1,
+          routeBudgetMinutes: 60,
+          routeDurationBeforeMinutes: 5,
+          routeDurationAfterMinutes: 6,
+          observedDoesNotReplacePrediction: true,
+        },
+      },
+    }));
+    const payload = await readRouteResponse(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.stops.map(({ id }) => id)).toEqual([observed.id]);
+    expect(payload.trace.selectedStops[0]).toMatchObject({
+      id: observed.id,
+      selectionSource: "observed_enrichment",
+      combinedScore: null,
+      enrichmentEvaluation: { accepted: true, reason: "accepted" },
+      evidence: observed.evidence,
+    });
+    expect(payload.plannerProof?.snapshotHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
   it("publishes real guided loops without turning planned waypoints into scientific stops", async () => {
     installDefaultMocks();
     const response = buildRouteRecommendationResponse(responseInput({

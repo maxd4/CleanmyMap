@@ -24,7 +24,7 @@ function AdditionalityDetail({
   const frequency = additionality?.municipalCleaning.documentedFrequency;
   const hasKnownCoverage = documentedCoverage?.available || frequency?.normalized !== null;
   const finalPlannerContribution = selection.finalPlannerContribution == null
-    ? selection.combinedScore * 100
+    ? selection.combinedScore == null ? null : selection.combinedScore * 100
     : selection.finalPlannerContribution;
   const labels = [
     selection.volunteerAdditionality != null && selection.volunteerAdditionality >= 60
@@ -44,7 +44,7 @@ function AdditionalityDetail({
     <section className="mt-3 rounded-xl border border-fuchsia-300/20 bg-fuchsia-500/10 p-3 text-xs text-fuchsia-50" data-route-additionality-details>
       <p className="font-black text-white">Valeur complémentaire de l’action bénévole</p>
       <p className="mt-1 leading-relaxed text-fuchsia-100/85">
-        Pollution probable : {formatScorePercent(selection.pollutionPriority ?? 0)} · additionnalité : {selection.volunteerAdditionality == null ? "indisponible" : formatScorePercent(selection.volunteerAdditionality)} · contribution planner : {formatScorePercent(finalPlannerContribution)}.
+        Pollution probable : {formatScorePercent(selection.pollutionPriority ?? 0)} · additionnalité : {selection.volunteerAdditionality == null ? "indisponible" : formatScorePercent(selection.volunteerAdditionality)} · contribution planner : {finalPlannerContribution == null ? "non calculée" : formatScorePercent(finalPlannerContribution)}.
       </p>
       {labels.length > 0 ? (
         <ul className="mt-2 flex flex-wrap gap-2">
@@ -111,10 +111,15 @@ export function SelectionDetail({
           Étape {selection.step} · {stopLabel(selection.id, data, originLabel)}
         </h5>
         <span className="text-xs font-semibold text-slate-300">
-          Score final {formatNumber(selection.combinedScore, 3)}
+          Score final {selection.combinedScore == null ? "non calculé" : formatNumber(selection.combinedScore, 3)}
         </span>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-300">{selection.reason}</p>
+      {selection.selectionSource === "observed_enrichment" ? (
+        <p className="mt-2 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
+          Stop ajouté par enrichissement : preuve observée validée et évaluation d’enrichissement conservées ; aucun score de sélection prédictive n’est inventé.
+        </p>
+      ) : null}
       {selection.parisPressure ? (
         <p className="mt-2 text-xs leading-relaxed text-sky-100/80">
           Zone IRIS {selection.parisPressure.zoneId} : pression humaine structurelle {formatNumber(selection.parisPressure.humanPressure ?? 0, 3)} ; {selection.parisPressure.matchMethod === "point-in-polygon" ? "point rattaché au polygone IRIS" : `approximation par centroïde à ${formatDistance(selection.parisPressure.distanceToCentroidKm)}`}. {selection.parisPressure.approximationWarning ? `${selection.parisPressure.approximationWarning} ` : ""}Ce signal est un prior de contexte, pas une mesure de fréquentation en temps réel.
@@ -136,13 +141,13 @@ export function SelectionDetail({
         <div>
           <dt className="text-slate-500">Priorité normalisée</dt>
           <dd className="font-semibold text-white">
-            {formatNumber(selection.normalizedScoreComponents.priority, 3)}
+            {selection.normalizedScoreComponents.priority == null ? "non calculée" : formatNumber(selection.normalizedScoreComponents.priority, 3)}
           </dd>
         </div>
         <div>
           <dt className="text-slate-500">Déplacement normalisé</dt>
           <dd className="font-semibold text-white">
-            {formatNumber(selection.normalizedScoreComponents.travel, 3)}
+            {selection.normalizedScoreComponents.travel == null ? "non calculé" : formatNumber(selection.normalizedScoreComponents.travel, 3)}
           </dd>
         </div>
       </dl>

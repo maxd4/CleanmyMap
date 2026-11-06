@@ -419,6 +419,7 @@ function buildRouteProofTrace(
     predictionSummary,
     effectiveRiskFocus: planning.effectiveRiskFocus,
     finalRoutingReconciliation: planning.finalRoutingReconciliation,
+    observedEnrichment: planning.observedEnrichment,
     volunteers: input.volunteers,
     groupCount: input.groupCount,
     pickupPreference: input.pickupPreference,

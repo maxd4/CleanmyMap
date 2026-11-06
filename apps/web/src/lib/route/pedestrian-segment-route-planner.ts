@@ -26,6 +26,7 @@ import {
   partitionRouteCandidates,
   type RouteGroupPartitionResult,
 } from "./route-group-partition";
+import { plannerValue } from "./route-group-partition-helpers";
 
 export const PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION =
   "pedestrian-segment-route-planner-v1" as const;
@@ -659,6 +660,15 @@ export function planPredictedPedestrianSegmentRoutes(input: {
   const uniqueSelectedProjectionSegmentIds = new Set(
     builtGroups.flatMap(({ routedCandidates }) => routedCandidates.map(({ projectionSegmentId }) => projectionSegmentId)),
   );
+  const finalCoverageGain = groupRoutes.reduce(
+    (total, route) => total + route.candidateIds.reduce(
+      (routeTotal, candidateId) => routeTotal + (candidatesById.has(candidateId)
+        ? plannerValue(candidatesById.get(candidateId)!) / 100
+        : 0),
+      0,
+    ),
+    0,
+  );
   const partitionWithActualRoutes: RouteGroupPartitionResult = {
     ...partition,
     groups: groupRoutes.map((route) => ({
@@ -670,6 +680,7 @@ export function planPredictedPedestrianSegmentRoutes(input: {
     })),
     metrics: {
       ...partition.metrics,
+      coverageGain: Number(finalCoverageGain.toFixed(3)),
       balanceDistance: groupDistances.length > 0 ? Math.max(...groupDistances) - Math.min(...groupDistances) : 0,
       balanceDuration: groupDurations.length > 0 ? Math.max(...groupDurations) - Math.min(...groupDurations) : 0,
       balanceTargetCount: groupRoutes.length > 0 ? Math.max(...groupRoutes.map(({ targetCount }) => targetCount)) - Math.min(...groupRoutes.map(({ targetCount }) => targetCount)) : 0,

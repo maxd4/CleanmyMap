@@ -45,6 +45,10 @@ import {
 import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteStartSelection } from "./route-response-contract";
+import type {
+  RouteObservedEnrichmentEvaluation,
+  RouteObservedEnrichmentMetrics,
+} from "./route-observed-enrichment";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -65,30 +69,32 @@ export type RouteTraceCandidateSummary = {
 export type RouteTraceSelectedStop = {
   step: number;
   id: string;
-  criteriaUsed: ["priority_score", "incremental_travel_cost", "return_travel_cost" | "arrival_travel_cost"];
+  selectionSource: "planner_selection" | "observed_enrichment";
+  enrichmentEvaluation?: RouteObservedEnrichmentEvaluation;
+  criteriaUsed: Array<"priority_score" | "incremental_travel_cost" | "return_travel_cost" | "arrival_travel_cost">;
   normalizedScoreComponents: {
-    priority: number;
-    travel: number;
+    priority: number | null;
+    travel: number | null;
   };
-  combinedScore: number;
+  combinedScore: number | null;
   pollutionPriority?: number;
   volunteerAdditionality?: number | null;
-  finalPlannerContribution?: number;
+  finalPlannerContribution?: number | null;
   volunteerAdditionalityConfidence?: number | null;
   additionalityWeight?: number;
   additionality?: VolunteerAdditionalityResult;
-  incrementalDistanceKm: number;
-  incrementalTravelMinutes: number;
-  cumulativeTravelMinutes: number;
-  returnDistanceKm: number;
-  returnTravelMinutes: number;
-  loopDistanceKm: number;
-  loopTravelMinutes: number;
+  incrementalDistanceKm: number | null;
+  incrementalTravelMinutes: number | null;
+  cumulativeTravelMinutes: number | null;
+  returnDistanceKm: number | null;
+  returnTravelMinutes: number | null;
+  loopDistanceKm: number | null;
+  loopTravelMinutes: number | null;
   loopOperationalMinutes?: number | null;
   operationalBudget?: RouteOperationalBudget | null;
-  budgetAfterReturnMinutes: number;
-  budgetBeforeMinutes: number;
-  budgetAfterMinutes: number;
+  budgetAfterReturnMinutes: number | null;
+  budgetBeforeMinutes: number | null;
+  budgetAfterMinutes: number | null;
   reason: string;
   eventContributions: RouteEventPressureContribution[];
   eventScoreContribution: number;
@@ -268,6 +274,7 @@ export type BuildRouteRecommendationTraceInput = {
   sourceHealth: UnifiedSourceHealth;
   eventSignalContext?: RouteEventSignalContext;
   eventCenteredContext?: RouteEventCenteredContext | null;
+  observedEnrichment?: RouteObservedEnrichmentMetrics;
   spatialPrior?: RouteRecommendationTrace["spatialPrior"];
   predictionSummary?: RoutePredictionSummary | null;
   finalRoutingReconciliation?: RouteFinalRoutingReconciliation;
@@ -413,17 +420,58 @@ function buildSegments(
   return outboundSegments;
 }
 
+type RoutePlannerSelectionEvidence = NonNullable<NonNullable<RoutePlannerResult["audit"]>["selections"]>[number];
+
+function buildSelectionDetails(
+  stop: PlannedRouteStop,
+  selection: RoutePlannerSelectionEvidence | undefined,
+  routeTopology: RouteTopology,
+) {
+  const isObservedEnrichment = !selection;
+  return {
+    selectionSource: isObservedEnrichment ? "observed_enrichment" as const : "planner_selection" as const,
+    criteriaUsed: isObservedEnrichment
+      ? []
+      : ["priority_score", "incremental_travel_cost", routeTopology === "loop" ? "return_travel_cost" : "arrival_travel_cost"] as Array<"priority_score" | "incremental_travel_cost" | "return_travel_cost" | "arrival_travel_cost">,
+    normalizedScoreComponents: {
+      priority: selection?.normalizedPriority ?? null,
+      travel: selection?.normalizedTravel ?? null,
+    },
+    combinedScore: selection?.combinedScore ?? null,
+    pollutionPriority: selection?.pollutionPriority ?? stop.candidate.pollutionPriority ?? stop.candidate.score,
+    volunteerAdditionality: selection?.volunteerAdditionality ?? stop.candidate.volunteerAdditionality ?? null,
+    finalPlannerContribution: selection?.finalPlannerContribution ?? stop.candidate.finalPlannerContribution ?? null,
+    incrementalDistanceKm: selection?.incrementalDistanceKm ?? stop.incrementalDistanceKm ?? null,
+    incrementalTravelMinutes: selection?.incrementalTravelMinutes ?? stop.incrementalTravelMinutes ?? null,
+    cumulativeTravelMinutes: selection?.cumulativeTravelMinutes ?? stop.cumulativeTravelMinutes ?? null,
+    returnDistanceKm: selection?.returnDistanceKm ?? stop.returnDistanceKm ?? null,
+    returnTravelMinutes: selection?.returnTravelMinutes ?? stop.returnTravelMinutes ?? null,
+    loopDistanceKm: selection?.loopDistanceKm ?? stop.loopDistanceKm ?? null,
+    loopTravelMinutes: selection?.loopTravelMinutes ?? stop.loopTravelMinutes ?? null,
+    loopOperationalMinutes: selection?.loopOperationalMinutes ?? null,
+    operationalBudget: selection?.operationalBudget ?? null,
+    budgetAfterReturnMinutes: selection?.budgetAfterReturnMinutes ?? null,
+    budgetBeforeMinutes: selection?.budgetBeforeMinutes ?? null,
+    budgetAfterMinutes: selection?.budgetAfterMinutes ?? null,
+    reason: selection?.selectionReason ?? stop.candidate.reason,
+  };
+}
+
 function selectionForStop(
   stop: PlannedRouteStop,
   step: number,
   plannerResult: RoutePlannerResult,
   eventSignalContext: RouteEventSignalContext,
   routeTopology: RouteTopology,
+  observedEnrichment?: RouteObservedEnrichmentMetrics,
 ): RouteTraceSelectedStop {
   const selection = plannerResult.audit?.selections.find(
-    (item) => item.candidateId === stop.candidate.id && item.step === step,
+    (item) => item.candidateId === stop.candidate.id,
   );
-  if (!selection) {
+  const enrichmentEvaluation = observedEnrichment?.evaluations.find(
+    (evaluation) => evaluation.candidateId === stop.candidate.id && evaluation.accepted,
+  );
+  if (!selection && (!enrichmentEvaluation || stop.candidate.family !== "observed")) {
     throw new Error(
       `Route planner did not provide selection evidence for ${stop.candidate.id}`,
     );
@@ -431,31 +479,11 @@ function selectionForStop(
   return {
     step,
     id: stop.candidate.id,
-    criteriaUsed: ["priority_score", "incremental_travel_cost", routeTopology === "loop" ? "return_travel_cost" : "arrival_travel_cost"],
-    normalizedScoreComponents: {
-      priority: selection.normalizedPriority,
-      travel: selection.normalizedTravel,
-    },
-    combinedScore: selection.combinedScore,
-    pollutionPriority: selection.pollutionPriority ?? stop.candidate.pollutionPriority ?? stop.candidate.score,
-    volunteerAdditionality: selection.volunteerAdditionality ?? stop.candidate.volunteerAdditionality ?? null,
-    finalPlannerContribution: selection.finalPlannerContribution ?? stop.candidate.finalPlannerContribution ?? stop.candidate.score,
+    ...buildSelectionDetails(stop, selection, routeTopology),
+    ...(enrichmentEvaluation ? { enrichmentEvaluation } : {}),
     volunteerAdditionalityConfidence: stop.candidate.volunteerAdditionalityConfidence ?? null,
     additionalityWeight: stop.candidate.additionalityWeight ?? 0,
     additionality: stop.candidate.additionality,
-    incrementalDistanceKm: selection.incrementalDistanceKm,
-    incrementalTravelMinutes: selection.incrementalTravelMinutes,
-    cumulativeTravelMinutes: selection.cumulativeTravelMinutes,
-    returnDistanceKm: selection.returnDistanceKm,
-    returnTravelMinutes: selection.returnTravelMinutes,
-    loopDistanceKm: selection.loopDistanceKm,
-    loopTravelMinutes: selection.loopTravelMinutes,
-    loopOperationalMinutes: selection.loopOperationalMinutes,
-    operationalBudget: selection.operationalBudget,
-    budgetAfterReturnMinutes: selection.budgetAfterReturnMinutes,
-    budgetBeforeMinutes: selection.budgetBeforeMinutes,
-    budgetAfterMinutes: selection.budgetAfterMinutes,
-    reason: selection.selectionReason,
     eventContributions:
       eventSignalContext.candidatePressureById.get(stop.candidate.id)
         ?.contributions ?? [],
@@ -494,6 +522,7 @@ export function buildRouteRecommendationTrace(
       input.plannerResult,
       eventSignalContext,
       routeTopology,
+      input.observedEnrichment,
     ),
   );
   const fallbacks: string[] = [];

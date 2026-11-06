@@ -323,6 +323,7 @@ describe("pedestrian segment route planner", () => {
     expect(result!.plannedStops.map(({ candidate: item }) => item.id)).toEqual(["loop"]);
     expect(result!.excludedCandidateIds).toEqual(["dead-end"]);
     expect(result!.partition.audit.assignments.map(({ candidateId }) => candidateId)).toEqual(["loop"]);
+    expect(result!.partition.metrics.coverageGain).toBe(0.6);
     expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
   });
 

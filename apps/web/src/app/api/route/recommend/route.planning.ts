@@ -54,6 +54,7 @@ import {
   partitionRouteCandidates,
   type RouteGroupPartitionResult,
 } from "@/lib/route/route-group-partition";
+import { plannerValue } from "@/lib/route/route-group-partition-helpers";
 import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
 import type { RouteObservedEnrichmentMetrics } from "@/lib/route/route-observed-enrichment";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
@@ -557,7 +558,7 @@ function finalizePredictedSegmentRouteRecommendation(
     coverageGain: Number(groupRoutes.reduce((total, route) =>
       total + route.candidateIds.reduce((sum, id) => {
         const candidate = preparation.candidatePool.candidates.find(({ id: candidateId }) => candidateId === id);
-        return sum + (candidate?.score ?? 0) / 100;
+        return sum + (candidate ? plannerValue(candidate) / 100 : 0);
       }, 0), 0).toFixed(2)),
     sharedTargetRatio,
     sharedDistanceKm,

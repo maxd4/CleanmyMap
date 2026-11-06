@@ -212,6 +212,91 @@ describe("route recommendation trace", () => {
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("fallback") }).segments[0]?.streetSteps).toEqual([]);
   });
 
+  it("matches retained predictive stops by stable identity after an earlier stop is excluded", () => {
+    const trace = buildRouteRecommendationTrace({
+      engineVersion: "route-planner-v2",
+      origin,
+      travelBudgetMinutes: 60,
+      maxStops: 2,
+      priorityVsTravel: 65,
+      candidateSummary: { loaded: 2, admissible: 2, excluded: 1, excludedByReason: { travel_budget: 1 } },
+      plannerResult: plannerResult(["excluded", "retained"]),
+      selectedStops: [stop("retained")],
+      routeGeometry: geometry(),
+      consumedTravelMinutes: 5,
+      budgetPrefixApplied: false,
+      sourceHealth,
+      finalRoutingReconciliation: {
+        stopsBefore: 2,
+        stopsAfter: 1,
+        excludedCandidateIds: ["excluded"],
+        providerCalls: 1,
+        firstProviderMode: "network",
+        finalGeometryMode: "fallback",
+        degraded: true,
+        warning: "first stop excluded",
+      },
+    });
+
+    expect(trace.selectedStops).toHaveLength(1);
+    expect(trace.selectedStops[0]).toMatchObject({
+      id: "retained",
+      step: 1,
+      selectionSource: "planner_selection",
+      combinedScore: 0.75,
+    });
+  });
+
+  it("uses validated enrichment evidence without inventing a planner selection", () => {
+    const observed = stop("observed-enriched");
+    const trace = buildRouteRecommendationTrace({
+      engineVersion: "route-planner-v2",
+      origin,
+      travelBudgetMinutes: 60,
+      maxStops: 2,
+      priorityVsTravel: 65,
+      candidateSummary: { loaded: 1, admissible: 1, excluded: 0, excludedByReason: {} },
+      plannerResult: plannerResult([]),
+      selectedStops: [observed],
+      routeGeometry: geometry(),
+      consumedTravelMinutes: 5,
+      budgetPrefixApplied: false,
+      sourceHealth,
+      observedEnrichment: {
+        source: "validated_trash_spotter_spots",
+        predictedCandidatesRetained: 0,
+        considered: 1,
+        accepted: 1,
+        rejected: 0,
+        rejectedByReason: {},
+        acceptedCandidateIds: [observed.candidate.id],
+        evaluations: [{
+          candidateId: observed.candidate.id,
+          accepted: true,
+          distanceToCorridorKm: 0.1,
+          detourDistanceKm: 0.2,
+          detourMinutes: 1,
+          reason: "accepted",
+        }],
+        totalDetourDistanceKm: 0.2,
+        totalDetourMinutes: 1,
+        routeBudgetMinutes: 60,
+        routeDurationBeforeMinutes: 5,
+        routeDurationAfterMinutes: 6,
+        observedDoesNotReplacePrediction: true,
+      },
+    });
+
+    expect(trace.selectedStops[0]).toMatchObject({
+      id: observed.candidate.id,
+      selectionSource: "observed_enrichment",
+      combinedScore: null,
+      normalizedScoreComponents: { priority: null, travel: null },
+      enrichmentEvaluation: { accepted: true, reason: "accepted" },
+      evidence: observed.candidate.evidence,
+    });
+  });
+
   it("traces an open route without adding a synthetic return segment", () => {
     const selectedStops = [stop("final-1")];
     const trace = buildRouteRecommendationTrace({

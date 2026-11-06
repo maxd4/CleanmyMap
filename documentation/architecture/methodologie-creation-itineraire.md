@@ -557,6 +557,10 @@ La trace d’itinéraire doit permettre de relier la proposition à ses données
 - la version du moteur et le mode de planification ;
 - l’origine, les paramètres demandés et les candidats considérés ;
 - les arrêts retenus et leur ordre ;
+- la distinction entre les sélections historiques du planner et les arrêts
+  réellement routés après exclusion, budget ou réconciliation ; les arrêts
+  observés ajoutés par enrichissement restent reliés à leur preuve validée et
+  à l'audit d'enrichissement, sans sélection prédictive inventée ;
 - les évaluations, le coût de déplacement et le budget consommé ou restant ;
 - les exclusions et les candidats incompatibles avec les contraintes ;
 - les risques déchets et mégots, leurs composantes, leur confiance, leur
@@ -570,6 +574,10 @@ La trace d’itinéraire doit permettre de relier la proposition à ses données
   sécurité explicite n’est pas admise comme cible bénévole ;
 - la distance au corridor, le détour et la contribution à l’admission d’une
   zone prédite ;
+- `coverageGain` et les métriques `multiRoute` finales décrivent uniquement les
+  candidats effectivement routés et utilisent `finalPlannerContribution`
+  lorsqu'elle existe ; les métriques historiques de sélection restent
+  distinctes ;
 - le fournisseur de routage, le mode `network` ou `fallback`, les estimations,
   les avertissements et les approximations.
 
