@@ -30,9 +30,15 @@ const CARDBOARD_FOOD_CONTAMINATION_KEYWORDS = [
   "graisseux",
   "greasy",
   "sauce",
-  "restes",
-  "leftovers",
   "food residue",
+  "huile alimentaire",
+  "huile de cuisson",
+  "huile d'olive",
+  "huile de friture",
+  "cooking oil",
+  "olive oil",
+  "food oil",
+  "frying oil",
 ];
 
 const CARDBOARD_GENERIC_CONTAMINATION_KEYWORDS = [
@@ -42,6 +48,12 @@ const CARDBOARD_GENERIC_CONTAMINATION_KEYWORDS = [
   "soiled",
   "contaminated",
   "contamine",
+  "reste de",
+  "restes de",
+  "leftover",
+  "leftovers",
+  "colle",
+  "glue",
 ];
 
 const CARDBOARD_HAZARDOUS_CONTAMINATION_KEYWORDS = [
@@ -49,8 +61,11 @@ const CARDBOARD_HAZARDOUS_CONTAMINATION_KEYWORDS = [
   "paint",
   "solvant",
   "solvent",
-  "huile",
-  "oil",
+  "huile moteur",
+  "motor oil",
+  "engine oil",
+  "huile minerale",
+  "mineral oil",
   "aerosol",
   "aérosol",
   "produit chimique",
@@ -81,11 +96,11 @@ const CARDBOARD_FOOD_REMAINS_KEYWORDS = [
   "food inside",
   "still has food",
   "still contains food",
-  "avec des restes",
-  "with leftovers",
   "leftovers inside",
   "restes alimentaires",
   "restes de nourriture",
+  "food leftovers",
+  "food remains",
 ];
 
 const CARDBOARD_MATERIAL_KEYWORDS = ["carton", "cardboard"];

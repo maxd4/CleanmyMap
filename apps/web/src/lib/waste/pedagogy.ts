@@ -109,7 +109,7 @@ function hazardPriority(level: WasteHazardLevel): number {
     caution: 1,
     high: 2,
     critical: 3,
-    unknown: 4,
+    unknown: -1,
   }[level];
 }
 

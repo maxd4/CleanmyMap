@@ -120,7 +120,12 @@ export const WASTE_CATEGORY_DEFINITIONS: Readonly<Record<WasteCategorySlug, Wast
     family: "packaging",
     labels: text("Papier et carton", "Paper and cardboard"),
     examples: [text("Journal ou carton", "Newspaper or cardboard"), text("Gobelet, emballage ou brique composite", "Cup, packaging or composite carton")],
-    aliases: [text("carton", "cardboard"), text("papier", "paper")],
+    aliases: [
+      text("carton", "cardboard"),
+      text("papier", "paper"),
+      text("emballage en carton", "cardboard packaging"),
+      text("emballage carton", "cardboard box"),
+    ],
     hazardLevel: "low",
     pickupPolicy: "basic_ppe_ok",
     disposalRoute: "municipal_recycling",

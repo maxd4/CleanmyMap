@@ -193,4 +193,68 @@ describe("recycling assistant waste convergence", () => {
     expect(answer.kind).not.toBe("packaging");
     expect(answerText(question, locale)).toContain(projection.instructions[0].toLowerCase());
   });
+
+  it.each([
+    ["seringue et lame", "sharps", "fr"],
+    ["syringe and blade", "sharps", "en"],
+  ] as const)("returns the complete critical-category response for %s", (question, slug, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+    const projection = getWastePedagogicalProjection(slug, locale);
+
+    expect(findWasteCategorySlug(question)).toBe(slug);
+    expect(answer.kind).toBe("specific");
+    expect(answer.badge).toBe(projection.label);
+    expect(answer.title).toMatch(/seringue|aiguille|syringe|needle/i);
+    expect(answer.summary).toContain(projection.disposalLabel);
+    expect(answer.bullets.join(" ")).toContain(projection.instructions[0]);
+    expect(answer.nextStep).toContain(projection.disposalLabel);
+    expect(response).not.toMatch(/autre déchet|other waste/i);
+  });
+
+  it.each([
+    ["carton de pizza avec une trace d'huile d'olive", "fr"],
+    ["pizza box with a trace of olive oil", "en"],
+  ] as const)("keeps confirmed food oil on the cardboard route for %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(answer.kind).toBe("packaging");
+    expect(answer.title).toMatch(/carton|cardboard/i);
+    expect(answer.summary).toMatch(/graisse|grease|carton|cardboard/i);
+    expect(answer.bullets.join(" ")).toMatch(/papier-carton|paper-and-cardboard stream/i);
+    expect(answer.nextStep).toMatch(/carton|cardboard/i);
+    expect(response).not.toMatch(/déchets dangereux|hazardous waste|déchets chimiques|chemical/i);
+  });
+
+  it.each([
+    ["carton avec de l'huile moteur", "fr"],
+    ["cardboard with motor oil", "en"],
+  ] as const)("keeps confirmed chemical contamination out of ordinary recycling for %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(answer.kind).toBe("decheterie");
+    expect(answer.title).toMatch(/produit|product|filière|route/i);
+    expect(answer.summary).not.toMatch(/papier-carton|paper-and-cardboard stream|ordinary recycling/i);
+    expect(answer.bullets.join(" ")).toMatch(/huiles|chemicals|chemical/i);
+    expect(answer.nextStep).toMatch(/déchets dangereux|hazardous waste|recycling center|déchèterie/i);
+    expect(response).not.toMatch(/papier-carton.*trie|paper-and-cardboard.*recycl/i);
+  });
+
+  it.each([
+    ["emballage en carton avec des restes de colle", "fr"],
+    ["cardboard packaging with glue leftovers", "en"],
+  ] as const)("does not treat unspecified leftovers as food contamination for %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(findWasteCategorySlug(question)).toBe("paper_cardboard");
+    expect(answer.kind).toBe("unknown");
+    expect(answer.title).toMatch(/nature|contamination|item|carton/i);
+    expect(answer.summary).not.toMatch(/se trie|recycl|sorting|recycling/i);
+    expect(answer.bullets.join(" ")).toMatch(/nature|contamination|item|material/i);
+    expect(answer.nextStep).toMatch(/précise|specify|identify/i);
+    expect(response).not.toMatch(/papier-carton.*filière|paper-and-cardboard stream.*belongs/i);
+  });
 });

@@ -104,6 +104,15 @@ describe("global waste category contract", () => {
     expect(instructions).toMatch(/ne pas ramasser.*signaler.*service local.*habilité/i);
   });
 
+  it.each([
+    ["seringue et lame", "sharps"],
+    ["syringe and blade", "sharps"],
+    ["une lame", "other"],
+    ["a blade", "other"],
+  ] as const)("prioritizes explicit hazardous terms without classifying an isolated blade as a syringe: %s", (value, slug) => {
+    expect(findWasteCategorySlug(value)).toBe(slug);
+  });
+
   it("maps historical action and recycling slugs without changing their payload values", () => {
     expect(LEGACY_WASTE_CATEGORY_TO_SLUG).toMatchObject({
       megots: "cigarette_butt",
