@@ -79,6 +79,8 @@ describe("recycling assistant waste convergence", () => {
   it.each([
     ["boîte à pizza contenant encore des aliments", "fr"],
     ["pizza box containing food", "en"],
+    ["carton de pizza avec des restes alimentaires", "fr"],
+    ["pizza box with food leftovers", "en"],
   ] as const)("asks to remove food leftovers before sorting %s", (question, locale) => {
     const response = answerText(question, locale);
 
@@ -275,6 +277,7 @@ describe("recycling assistant waste convergence", () => {
   it.each([
     ["emballage en carton avec des restes", "fr"],
     ["cardboard packaging with leftovers", "en"],
+    ["cardboard packaging with leftovers inside", "en"],
   ] as const)("treats unqualified leftovers as unknown contamination: %s", (question, locale) => {
     const answer = buildAnswer(question, locale);
     const response = answerText(question, locale);
@@ -284,6 +287,36 @@ describe("recycling assistant waste convergence", () => {
     expect(answer.summary).not.toMatch(/se trie|recycl|sorting|recycling/i);
     expect(answer.nextStep).toMatch(/précise|specify|identify/i);
     expect(response).not.toMatch(/papier-carton.*filière|paper-and-cardboard stream.*belongs/i);
+  });
+
+  it.each([
+    ["emballage en carton avec des restes de colle et de l'huile d'olive", "fr"],
+    ["cardboard packaging with glue leftovers and olive oil", "en"],
+    ["carton de pizza avec des restes de colle et de la graisse", "fr"],
+    ["pizza box with glue leftovers and grease", "en"],
+  ] as const)("does not recycle cardboard with mixed ambiguous contamination: %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(answer.kind).toBe("unknown");
+    expect(answer.title).toMatch(/contamination|contamin|item|carton/i);
+    expect(answer.summary).not.toMatch(/se trie|recycl|sorting|recycling/i);
+    expect(answer.bullets.join(" ")).toMatch(/contamination|colle|glue|identify|nature/i);
+    expect(answer.nextStep).toMatch(/précise|specify|identify/i);
+    expect(response).not.toMatch(/papier-carton.*trie|paper-and-cardboard.*belongs/i);
+  });
+
+  it("keeps chemical priority when food and motor oils are mixed", () => {
+    for (const [question, locale] of [
+      ["carton de pizza avec de l'huile d'olive et de l'huile moteur", "fr"],
+      ["pizza box with olive oil and motor oil", "en"],
+    ] as const) {
+      const answer = buildAnswer(question, locale);
+
+      expect(answer.kind).toBe("decheterie");
+      expect(answer.summary).not.toMatch(/papier-carton|paper-and-cardboard stream|ordinary recycling/i);
+      expect(answer.nextStep).toMatch(/déchets dangereux|hazardous waste|recycling center|déchèterie/i);
+    }
   });
 
   it.each([

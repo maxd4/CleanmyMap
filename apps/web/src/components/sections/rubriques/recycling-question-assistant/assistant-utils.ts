@@ -29,6 +29,7 @@ const CARDBOARD_FOOD_CONTAMINATION_KEYWORDS = [
   "graisse",
   "graisseux",
   "greasy",
+  "grease",
   "sauce",
   "food residue",
   "huile alimentaire",
@@ -106,12 +107,20 @@ const CARDBOARD_FOOD_REMAINS_KEYWORDS = [
   "food inside",
   "still has food",
   "still contains food",
-  "leftovers inside",
   "restes alimentaires",
   "restes de nourriture",
   "food leftovers",
   "food remains",
 ];
+
+const CARDBOARD_UNQUALIFIED_REMAINS_KEYWORDS = [
+  "reste",
+  "restes",
+  "leftover",
+  "leftovers",
+];
+
+const CARDBOARD_NON_FOOD_CONTAMINATION_KEYWORDS = ["colle", "glue"];
 
 const CARDBOARD_MATERIAL_KEYWORDS = ["carton", "cardboard"];
 
@@ -453,10 +462,13 @@ export function buildAnswer(question: string, locale: Locale): Answer {
   const hasFoodContamination = includesAny(text, CARDBOARD_FOOD_CONTAMINATION_KEYWORDS);
   const hasGenericContamination = includesAny(text, CARDBOARD_GENERIC_CONTAMINATION_KEYWORDS);
   const hasHazardousContamination = includesAny(text, CARDBOARD_HAZARDOUS_CONTAMINATION_KEYWORDS);
+  const hasUnqualifiedRemains =
+    includesAny(text, CARDBOARD_UNQUALIFIED_REMAINS_KEYWORDS) && !hasFoodRemains;
+  const hasNonFoodContamination = includesAny(text, CARDBOARD_NON_FOOD_CONTAMINATION_KEYWORDS);
   const isPaperCardboardCanonical = !canonicalSlug || canonicalSlug === "paper_cardboard";
 
   if (
-    isCardboardMaterial &&
+    (isCardboardMaterial || isConfirmedCardboardPackaging) &&
     isPaperCardboardCanonical &&
     (hasHazardousContamination || isCompositeCardboard)
   ) {
@@ -465,14 +477,20 @@ export function buildAnswer(question: string, locale: Locale): Answer {
 
   if (
     (hasFoodContamination || hasFoodRemains) &&
-    isPaperCardboardCanonical
+    isPaperCardboardCanonical &&
+    !hasUnqualifiedRemains &&
+    !hasNonFoodContamination
   ) {
     return isConfirmedCardboardPackaging
       ? buildGreasyCardboardAnswer(locale, publicSpaceReportNote, hasFoodRemains)
       : buildAmbiguousCardboardAnswer(locale, "material");
   }
 
-  if (hasGenericContamination && isCardboardMaterial && isPaperCardboardCanonical) {
+  if (
+    hasGenericContamination &&
+    (isCardboardMaterial || isConfirmedCardboardPackaging) &&
+    isPaperCardboardCanonical
+  ) {
     return buildAmbiguousCardboardAnswer(locale, "contamination");
   }
 
