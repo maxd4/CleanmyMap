@@ -145,6 +145,7 @@ function HarvestStepContent({
     wasteDeltaPercent,
     wasteOperationalUnits,
     wasteReferenceUnitLabel,
+    wasteReferenceLabel,
     megotsCount,
     megotsCurrentPerVolunteer,
     megotsBenchmarkPerVolunteer,
@@ -153,6 +154,7 @@ function HarvestStepContent({
     megotsDeltaPercent,
     megotsOperationalUnits,
     megotsReferenceUnitLabel,
+    megotsReferenceLabel,
     cigaretteButtsCountProvenance,
     cigaretteButtsMassProvenance,
     cigaretteButtsVolumeProvenance,
@@ -224,6 +226,7 @@ function HarvestStepContent({
             wasteDeltaPercent={wasteDeltaPercent}
             wasteOperationalUnits={wasteOperationalUnits}
             wasteReferenceUnitLabel={wasteReferenceUnitLabel}
+            wasteReferenceLabel={wasteReferenceLabel}
             validationIssues={validationIssues}
           />
           <HarvestMegotsSection
@@ -239,6 +242,7 @@ function HarvestStepContent({
             megotsDeltaPercent={megotsDeltaPercent}
             megotsOperationalUnits={megotsOperationalUnits}
             megotsReferenceUnitLabel={megotsReferenceUnitLabel}
+            megotsReferenceLabel={megotsReferenceLabel}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
             cigaretteButtsVolumeProvenance={cigaretteButtsVolumeProvenance}

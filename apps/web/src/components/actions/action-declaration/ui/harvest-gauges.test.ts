@@ -261,6 +261,7 @@ describe("DropletGauge", () => {
         currentTotal: 2_500,
         currentUnitDenominator: 5,
         referenceUnitLabel: "unité opérationnelle",
+        referenceLabel: "Moyenne contextuelle pondérée",
       }));
     });
 
@@ -274,6 +275,7 @@ describe("DropletGauge", () => {
     expect(button?.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector('[role="note"]')).not.toBeNull();
     expect(container.querySelector<HTMLAnchorElement>('a[href="/methodologie#methodologie-collecte"]')).not.toBeNull();
+    expect(container.textContent).toContain("Moyenne contextuelle pondérée : 2 500 mégots / unité opérationnelle");
     expect(container.textContent).toContain("5 action(s) source");
     expect(container.textContent).toContain("Dénominateur de cette action : 5 unité opérationnelle.");
     expect(container.textContent).toContain("Calcul : 2 500 mégots / 5 = 500 mégots ; 500 mégots / (2 × 2 500 mégots) = 10 %.");
@@ -333,6 +335,22 @@ describe("HarvestComparisonTrend", () => {
     expect(markup).toContain("vs moyenne");
     expect(markup).toContain("par rapport à la moyenne par unité opérationnelle");
     expect(markup).not.toContain("par participant");
+  });
+
+  it("identifies the historical participant fallback in the gauge explanation", () => {
+    const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 15,
+      currentPerVolunteer: 1.5,
+      benchmarkPerVolunteer: 1.5,
+      benchmarkSourceCount: 2,
+      currentTotal: 15,
+      currentUnitDenominator: 10,
+      referenceUnitLabel: "participant",
+      referenceLabel: "Moyenne historique par participant",
+    }));
+
+    expect(markup).toContain("Moyenne historique par participant");
+    expect(markup).toContain("aria-label=\"Expliquer Moyenne historique par participant\"");
   });
 
   it("does not render when the comparison is not valid", () => {

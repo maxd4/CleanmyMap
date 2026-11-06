@@ -278,6 +278,19 @@ petit échantillon et ne constitue pas une calibration scientifique. Cette
 lecture descriptive ne modifie ni le score cartographique, ni les mesures
 brutes, ni la RPC globale historique.
 
+Dans l'étape de déclaration, chaque indicateur choisit sa référence sans
+mélanger les dénominateurs. Lorsque la référence contextuelle pondérée et ses
+sources sont disponibles, le courant est divisé par les unités opérationnelles
+du contexte. Sinon, le formulaire peut utiliser `collectionReferences`, la
+moyenne historique brute `Moyenne historique par participant`, et divise alors
+le courant par `volunteersCount`. Si la référence globale est elle aussi
+indisponible, aucune jauge ni tendance n'est calculée. Les deux indicateurs
+peuvent donc utiliser des modes différents dans une même action. La référence
+globale chargée par le provider est la moyenne dynamique `CURRENT` de la RPC ;
+elle ne constitue pas une publication mensuelle figée. Une future référence
+mensuelle snapshot devra rester identifiée par son propre contrat et ne peut
+pas être déduite de cette interface.
+
 #### Observation historique de la référence globale — 06/11/2026
 
 Une vérification Supabase du 06/11/2026 comptait 8 actions, dont 5 approuvées,
