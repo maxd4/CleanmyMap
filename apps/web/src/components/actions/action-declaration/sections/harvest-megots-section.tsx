@@ -4,7 +4,7 @@ import { Cigarette, Droplet, Droplets } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
-import { DropletGauge } from "../ui/harvest-gauges";
+import { DropletGauge, HarvestComparisonTrend } from "../ui/harvest-gauges";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 import {
   calculateCigaretteButtsLot,
@@ -24,17 +24,13 @@ function formatProvenance(provenance: string): string {
   }
 }
 
-function MegotsHeader({
-  megotsCount,
-  provenance,
-}: { megotsCount: number | null; provenance: string }) {
+function MegotsHeader() {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center gap-2">
       <div className="flex items-center gap-2">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100"><Cigarette size={18} className="text-blue-700" /></div>
         <div><h3 className="text-base font-black tracking-tight text-slate-950">Mégots collectés</h3><p className="text-xs text-slate-500">Nombre, masse et volume</p></div>
       </div>
-      {megotsCount !== null ? <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800">{provenance === "counted" ? "" : "≈ "}{formatCount(megotsCount)} mégots</span> : null}
     </div>
   );
 }
@@ -47,10 +43,10 @@ type HarvestMegotsSectionProps = {
   megotsCount: number | null;
   megotsCurrentPerVolunteer: number | null;
   megotsBenchmarkPerVolunteer: number | null;
-  /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
-  megotsKg?: number | null;
   megotsBenchmarkSourceCount?: number;
   megotsDeltaPercent?: number | null;
+  /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
+  megotsKg?: number | null;
   megotsComparisonTone?: "emerald" | "orange" | "slate";
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
@@ -128,13 +124,6 @@ function MegotsConditionSelector({
   );
 }
 
-function sourceLabel(source: string | null | undefined): string {
-  if (source === "count") return "nombre";
-  if (source === "mass" || source === "mass_kg") return "masse";
-  if (source === "volume_l") return "volume";
-  return "non déterminée";
-}
-
 function MegotsScalarInput({
   id,
   label,
@@ -164,12 +153,9 @@ function MegotsScalarInput({
 }) {
   const statusId = `${id}-status`;
   return (
-    <label className="block min-w-0 space-y-1.5">
-      <span className="flex items-center justify-between gap-2 text-xs font-bold text-blue-950">
-        <span>{label}</span>
-        <span className="font-medium text-blue-700/70">{isSource ? "source" : formatProvenance(provenance)}</span>
-      </span>
-      <span className="flex items-center rounded-xl border border-blue-200 bg-white px-3 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/15">
+    <label className="grid min-w-0 grid-cols-[minmax(4rem,auto)_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+      <span className="min-w-0 text-sm font-bold text-blue-950">{label}</span>
+      <span className="flex min-w-0 items-center rounded-xl border border-blue-200 bg-white px-3 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
         <input
           id={id}
           type="number"
@@ -182,12 +168,12 @@ function MegotsScalarInput({
           aria-readonly={readOnly || undefined}
           aria-describedby={statusId}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent py-3 text-xl font-black text-blue-950 outline-none sm:text-2xl"
+          className="min-w-0 flex-1 appearance-none !bg-white py-2.5 text-lg font-black !text-blue-950 outline-none sm:text-xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
-        <span className="shrink-0 text-sm font-bold text-blue-800">{unit}</span>
+        <span className="ml-2 shrink-0 text-sm font-bold text-blue-800">{unit}</span>
       </span>
-      <span id={statusId} className="block text-xs leading-4 text-slate-500">
-        {isSource ? "mesure saisie" : formatProvenance(provenance)}
+      <span id={statusId} className="col-start-2 block min-w-0 text-xs leading-4 text-slate-500">
+        {isSource ? "source · mesure saisie" : formatProvenance(provenance)}
       </span>
     </label>
   );
@@ -255,6 +241,8 @@ export function HarvestMegotsSection({
   megotsCount,
   megotsCurrentPerVolunteer,
   megotsBenchmarkPerVolunteer,
+  megotsBenchmarkSourceCount = 0,
+  megotsDeltaPercent = null,
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
   cigaretteButtsVolumeProvenance,
@@ -277,20 +265,17 @@ export function HarvestMegotsSection({
   const scalarFieldsReadOnly = hidePrimaryMeasurements || megotsLots !== null;
 
   return (
-    <section className="min-w-0 space-y-4 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(37,99,235,0.55)] sm:p-5">
-      <MegotsHeader megotsCount={megotsCount} provenance={cigaretteButtsCountProvenance} />
-      <div className="grid items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50/35 p-3 sm:p-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)]">
+    <section className="flex h-full min-w-0 flex-col space-y-4 rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(37,99,235,0.55)] sm:p-5">
+      <MegotsHeader />
+      <div className="grid items-center gap-4 sm:grid-cols-2">
         <DropletGauge
           value={megotsCount}
           currentPerVolunteer={megotsCurrentPerVolunteer}
           benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
         />
-        <div className="min-w-0 space-y-3">
-          <p className="rounded-full bg-blue-100/80 px-3 py-1.5 text-center text-xs font-semibold text-blue-900">
-            Dernière mesure saisie : <span className="font-black">{sourceLabel(cigaretteButtsInputSource)}</span>
-          </p>
+        <div className="min-w-0 space-y-2">
           {!hidePrimaryMeasurements || megotsLots !== null ? (
-            <div className="grid min-w-0 gap-3 sm:grid-cols-3">
+            <div className="min-w-0 space-y-2">
               <MegotsScalarInput
                 id="harvest-megots-count"
                 label="Nombre"
@@ -350,6 +335,14 @@ export function HarvestMegotsSection({
               readOnly
             />
           )}
+          <HarvestComparisonTrend
+            currentPerVolunteer={megotsCurrentPerVolunteer}
+            benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+            deltaPercent={megotsDeltaPercent ?? null}
+            benchmarkSourceCount={megotsBenchmarkSourceCount ?? 0}
+            testId="butts-comparison-trend"
+            unitLabel="par unité opérationnelle"
+          />
           {megotsLots !== null ? <p className="text-xs text-blue-900/70">Total des lots : modifiez les contributions dans la zone ci-dessous.</p> : null}
         </div>
       </div>

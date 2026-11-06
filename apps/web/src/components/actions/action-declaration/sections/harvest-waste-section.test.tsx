@@ -424,6 +424,8 @@ describe("HarvestWasteSection comparison", () => {
     expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(1);
     expect(markup).toContain('data-fill-percent="50"');
     expect(markup).toContain("Moyenne / bénévole");
+    expect(markup).toContain('data-testid="waste-comparison-trend"');
+    expect(markup).toContain("sm:grid-cols-2");
   });
 
   it("hides the comparison without a valid benchmark while preserving the input", () => {
@@ -459,7 +461,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(absentMarkup).toContain('value=""');
     expect(absentMarkup).toContain('data-testid="waste-measurement-visual"');
     expect(absentMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
-    expect(absentMarkup).toContain("Moyenne indisponible");
+    expect(absentMarkup).toContain("Mesure à saisir pour comparer");
   });
 
   it("keeps a historical mass directly editable without a presentation ceiling", () => {

@@ -1,8 +1,20 @@
-import * as React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
 
-import { ButtsComparisonVisual, DropletGauge, TrashBinGauge, WasteComparisonVisual } from "./harvest-gauges";
+import * as React from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { ButtsComparisonVisual, DropletGauge, HarvestComparisonTrend, TrashBinGauge, WasteComparisonVisual } from "./harvest-gauges";
+
+let mountedRoot: ReturnType<typeof createRoot> | null = null;
+
+afterEach(() => {
+  act(() => mountedRoot?.unmount());
+  mountedRoot = null;
+  document.body.replaceChildren();
+});
 
 describe("TrashBinGauge", () => {
   it("keeps one outlined bin and disables comparison before any declaration", () => {
@@ -28,6 +40,23 @@ describe("TrashBinGauge", () => {
     expect(markup).toContain('aria-label="Quantité de déchets hors mégots : 0,00 kg.');
     expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(markup).not.toContain("Non renseigné");
+  });
+
+  it("distinguishes an absent reference from missing participants", () => {
+    const absentReference = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 8,
+      currentPerVolunteer: 8,
+      benchmarkPerVolunteer: null,
+    }));
+    const missingParticipants = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 8,
+      currentPerVolunteer: null,
+      benchmarkPerVolunteer: 8,
+    }));
+
+    expect(absentReference).toContain("Moyenne indisponible");
+    expect(missingParticipants).toContain("Participants manquants");
+    expect(missingParticipants).not.toContain("Moyenne indisponible");
   });
 
   it("fills progressively from the declared mass and resets to explicit zero", () => {
@@ -107,19 +136,73 @@ describe("DropletGauge", () => {
     expect(markup).toContain("Moyenne / bénévole");
   });
 
-  it("keeps the retained mass as a secondary KPI without changing the quantity gauge", () => {
+  it("keeps the gauge focused on the quantity without lateral secondary KPIs", () => {
     const markup = renderToStaticMarkup(
       React.createElement(DropletGauge, {
         value: 1_000,
-        secondaryLabel: "Masse estimée",
-        secondaryValue: "0,22 kg",
       }),
     );
 
     expect(markup).toContain("1 000 mégots");
-    expect(markup).toContain("Masse estimée");
-    expect(markup).toContain("0,22 kg");
-    expect(markup).toContain("Masse estimée : 0,22 kg");
+    expect(markup).not.toContain("Masse estimée");
+    expect(markup).not.toContain("0,22 kg");
+  });
+
+  it("opens the benchmark explanation from an accessible button", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    act(() => {
+      mountedRoot = createRoot(container);
+      mountedRoot.render(React.createElement(DropletGauge, {
+        value: 2_500,
+        currentPerVolunteer: 2_500,
+        benchmarkPerVolunteer: 2_500,
+      }));
+    });
+
+    const button = container.querySelector<HTMLButtonElement>("button[aria-controls]");
+    expect(button).not.toBeNull();
+    expect(button?.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector('[role="note"]')).toBeNull();
+
+    act(() => button?.click());
+
+    expect(button?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector('[role="note"]')).not.toBeNull();
+    expect(container.querySelector<HTMLAnchorElement>('a[href="/methodologie"]')).not.toBeNull();
+  });
+});
+
+describe("HarvestComparisonTrend", () => {
+  it.each([
+    [12, "up", "+12%"],
+    [-25, "down", "-25%"],
+    [0, "neutral", "0%"],
+  ] as const)("renders the signed %s trend", (delta, direction, label) => {
+    const markup = renderToStaticMarkup(React.createElement(HarvestComparisonTrend, {
+      currentPerVolunteer: delta === -25 ? 6 : 12,
+      benchmarkPerVolunteer: 8,
+      deltaPercent: delta,
+      benchmarkSourceCount: 12,
+      testId: "harvest-trend",
+      unitLabel: "par unité opérationnelle",
+    }));
+
+    expect(markup).toContain('data-testid="harvest-trend"');
+    expect(markup).toContain(`data-trend="${direction}"`);
+    expect(markup).toContain(label);
+    expect(markup).not.toContain("rounded-2xl border");
+  });
+
+  it("does not render when the comparison is not valid", () => {
+    expect(renderToStaticMarkup(React.createElement(HarvestComparisonTrend, {
+      currentPerVolunteer: 8,
+      benchmarkPerVolunteer: null,
+      deltaPercent: null,
+      benchmarkSourceCount: 0,
+      testId: "harvest-trend",
+      unitLabel: "par unité opérationnelle",
+    }))).toBe("");
   });
 });
 

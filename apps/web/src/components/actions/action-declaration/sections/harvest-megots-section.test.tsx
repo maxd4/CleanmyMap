@@ -133,8 +133,15 @@ describe("HarvestMegotsSection", () => {
     expect(markup).not.toContain('id="harvest-megots-count-slider"');
     expect(markup).toContain('data-testid="butts-measurement-visual"');
     expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(1);
-    expect(markup).toContain("Dernière mesure saisie");
-    expect(markup).toContain("masse</span>");
+    expect(markup).not.toContain("Dernière mesure saisie");
+    expect(markup).toContain(">Masse</span>");
+    expect(markup).toContain('id="harvest-megots-volume"');
+    expect(markup).toContain('data-testid="butts-comparison-trend"');
+    expect(markup).toContain("source · mesure saisie");
+    expect(markup).toContain("estimé");
+    expect(markup).toContain("appearance-none");
+    expect(markup).toContain("sm:grid-cols-2");
+    expect(markup).toContain("minmax(4rem,auto)");
     expect(markup).not.toContain('data-testid="butts-comparison-visual"');
     expect(markup.indexOf('data-testid="butts-measurement-visual"')).toBeLessThan(markup.indexOf(">Nombre</span>"));
     expect(markup.indexOf(">Nombre</span>")).toBeLessThan(markup.indexOf("État des mégots"));

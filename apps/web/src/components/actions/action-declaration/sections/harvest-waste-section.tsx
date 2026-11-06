@@ -15,7 +15,7 @@ import {
   compareWasteBreakdownToTotal,
   type ActionWasteMeasurementMethod,
 } from "@/lib/waste";
-import { TrashBinGauge } from "../ui/harvest-gauges";
+import { HarvestComparisonTrend, TrashBinGauge } from "../ui/harvest-gauges";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -44,7 +44,7 @@ type HarvestWasteSectionProps = {
   validationIssues: ValidationIssue[];
 };
 
-const triInputCls = "w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15";
+const triInputCls = "w-full h-10 appearance-none rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 const useDisclosureLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function HarvestWasteHeader() {
@@ -73,7 +73,7 @@ function WastePrimaryMeasurement({
 }: { value: string; hidden: boolean; onChange: (value: string) => void }) {
   if (hidden) return null;
   return (
-    <label className="block min-w-0 space-y-2 rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm sm:p-5">
+    <label className="block min-w-0 space-y-2 px-1 py-2 sm:px-3">
       <span className="block text-sm font-bold text-emerald-950">Masse collectée (exacte)</span>
       <div className="flex items-center rounded-xl border border-emerald-300 bg-white px-3 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/15">
         <input
@@ -87,7 +87,7 @@ function WastePrimaryMeasurement({
           onChange={(event) => onChange(event.target.value)}
           aria-label="Masse collectée exacte en kilogrammes"
           placeholder="0"
-          className="min-w-0 flex-1 bg-transparent py-4 text-3xl font-black tracking-tight text-emerald-950 outline-none sm:text-4xl"
+          className="min-w-0 flex-1 appearance-none !bg-white py-3 text-3xl font-black tracking-tight !text-emerald-950 outline-none sm:text-4xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <span className="text-lg font-bold text-emerald-800">kg</span>
       </div>
@@ -131,6 +131,8 @@ export function HarvestWasteSection({
   hidePrimaryMeasurement = false,
   wasteCurrentPerVolunteer,
   wasteBenchmarkPerVolunteer,
+  wasteBenchmarkSourceCount = 0,
+  wasteDeltaPercent = null,
   validationIssues,
 }: HarvestWasteSectionProps) {
   const [legacyTriOpen, setLegacyTriOpen] = useState(false);
@@ -158,15 +160,25 @@ export function HarvestWasteSection({
     otherWasteKg: parseKg(wasteOtherKg),
   });
   return (
-    <section className="min-w-0 space-y-4 rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(5,150,105,0.55)] sm:p-5">
+    <section className="flex h-full min-w-0 flex-col space-y-4 rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(5,150,105,0.55)] sm:p-5">
       <HarvestWasteHeader />
-      <div className="grid items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/35 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)]">
+      <div className="grid items-center gap-4 sm:grid-cols-2">
         <TrashBinGauge
           value={parseKg(wasteKg)}
           currentPerVolunteer={wasteCurrentPerVolunteer}
           benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
         />
-        <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
+        <div className="min-w-0">
+          <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
+          <HarvestComparisonTrend
+            currentPerVolunteer={wasteCurrentPerVolunteer}
+            benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+            deltaPercent={wasteDeltaPercent ?? null}
+            benchmarkSourceCount={wasteBenchmarkSourceCount ?? 0}
+            testId="waste-comparison-trend"
+            unitLabel="par unité opérationnelle"
+          />
+        </div>
       </div>
       <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
 

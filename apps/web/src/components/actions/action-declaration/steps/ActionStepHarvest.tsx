@@ -140,9 +140,13 @@ function HarvestStepContent({
   const {
     wasteCurrentPerVolunteer,
     wasteBenchmarkPerVolunteer,
+    wasteBenchmarkSourceCount,
+    wasteDeltaPercent,
     megotsCount,
     megotsCurrentPerVolunteer,
     megotsBenchmarkPerVolunteer,
+    megotsBenchmarkSourceCount,
+    megotsDeltaPercent,
     cigaretteButtsCountProvenance,
     cigaretteButtsMassProvenance,
     cigaretteButtsVolumeProvenance,
@@ -209,6 +213,8 @@ function HarvestStepContent({
             hidePrimaryMeasurement={mode === "collection" || mode === "details"}
             wasteCurrentPerVolunteer={wasteCurrentPerVolunteer}
             wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+            wasteBenchmarkSourceCount={wasteBenchmarkSourceCount}
+            wasteDeltaPercent={wasteDeltaPercent}
             validationIssues={validationIssues}
           />
           <HarvestMegotsSection
@@ -219,6 +225,8 @@ function HarvestStepContent({
             megotsCount={megotsCount}
             megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
             megotsBenchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+            megotsBenchmarkSourceCount={megotsBenchmarkSourceCount}
+            megotsDeltaPercent={megotsDeltaPercent}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
             cigaretteButtsVolumeProvenance={cigaretteButtsVolumeProvenance}

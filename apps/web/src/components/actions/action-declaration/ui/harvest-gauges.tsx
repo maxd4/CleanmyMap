@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { Droplet, Minus, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -23,9 +25,7 @@ type QuantityGaugeVisualProps = {
   valueLabel: string;
   testId: string;
   tone: "emerald" | "blue";
-  secondaryLabel?: string;
-  secondaryValue?: string;
-  showValue?: boolean;
+  measurementAvailable: boolean;
 };
 
 function QuantityGaugeVisual({
@@ -38,85 +38,87 @@ function QuantityGaugeVisual({
   valueLabel,
   testId,
   tone,
-  secondaryLabel,
-  secondaryValue,
-  showValue = true,
+  measurementAvailable,
 }: QuantityGaugeVisualProps) {
-  const hasBenchmark = benchmarkPerVolunteer !== null &&
+  const [benchmarkHelpOpen, setBenchmarkHelpOpen] = useState(false);
+  const hasReference = benchmarkPerVolunteer !== null &&
     Number.isFinite(benchmarkPerVolunteer) &&
-    benchmarkPerVolunteer > 0 &&
-    currentPerVolunteer !== null &&
+    benchmarkPerVolunteer > 0;
+  const hasCurrent = currentPerVolunteer !== null &&
     Number.isFinite(currentPerVolunteer) &&
     currentPerVolunteer >= 0;
+  const hasBenchmark = hasReference && hasCurrent;
   const normalized = hasBenchmark
     ? clamp(currentPerVolunteer! / (2 * benchmarkPerVolunteer!), 0, 1)
     : 0;
   const surfaceClass = tone === "emerald"
     ? "border-emerald-100 bg-emerald-50/65"
     : "border-blue-100 bg-blue-50/65";
-  const valueClass = tone === "emerald" ? "text-emerald-800" : "text-blue-800";
   const dividerClass = tone === "emerald" ? "bg-emerald-300/60" : "bg-blue-300/60";
-  const accessibleValueLabel = secondaryLabel && secondaryValue
-    ? `${valueLabel}. ${secondaryLabel} : ${secondaryValue}`
-    : valueLabel;
-  const hasRightContent = showValue || secondaryLabel || !hasBenchmark;
+  const statusLabel = !hasReference
+    ? "Moyenne indisponible."
+    : !hasCurrent
+      ? measurementAvailable
+        ? "Participants manquants pour comparer."
+        : "Mesure à saisir pour comparer."
+      : "";
+  const helpId = `${testId}-benchmark-help`;
 
   return (
-    <div
-      className={cn("flex min-h-[236px] items-center rounded-2xl border px-4 py-5 sm:px-6 max-[520px]:flex-col", surfaceClass)}
+    <figure
+      className={cn("flex min-h-[244px] min-w-0 flex-col items-center justify-center rounded-2xl border px-3 py-4 sm:px-5", surfaceClass)}
       data-testid={testId}
-      role="img"
-      aria-label={`${label} : ${accessibleValueLabel}. ${hasBenchmark && benchmarkLabel ? `Moyenne par bénévole : ${benchmarkLabel}.` : "Moyenne indisponible."}`}
+      aria-label={`${label} : ${valueLabel}. ${hasBenchmark && benchmarkLabel ? `Moyenne par bénévole : ${benchmarkLabel}.` : statusLabel}`}
     >
-      <div className="flex min-w-0 flex-1 items-center justify-center">
+      <div
+        className="relative h-44 w-44 shrink-0 sm:h-52 sm:w-52"
+        data-testid={`${testId}-icon`}
+        data-fill-percent={Math.round(normalized * 100)}
+      >
+        <GaugeIcon size={208} strokeWidth={1.35} className="absolute inset-0 h-full w-full text-slate-300/80" aria-hidden="true" />
         <div
-          className="relative h-44 w-44 shrink-0 sm:h-52 sm:w-52"
-          data-testid={`${testId}-icon`}
-          data-fill-percent={Math.round(normalized * 100)}
+          className="absolute inset-0 overflow-hidden transition-[clip-path] duration-500 ease-out motion-reduce:transition-none"
+          style={{ clipPath: `inset(${100 - normalized * 100}% 0 0 0)` }}
+          aria-hidden="true"
         >
-          <GaugeIcon size={208} strokeWidth={1.35} className="absolute inset-0 h-full w-full text-slate-300/80" aria-hidden="true" />
-          <div
-            className="absolute inset-0 overflow-hidden transition-[clip-path] duration-500 ease-out motion-reduce:transition-none"
-            style={{ clipPath: `inset(${100 - normalized * 100}% 0 0 0)` }}
-            aria-hidden="true"
-          >
-            <GaugeIcon size={208} strokeWidth={1.35} className={cn(colorClass, "h-full w-full fill-current")} />
-          </div>
-          {hasBenchmark ? (
-            <div className="absolute inset-x-1 top-1/2 -translate-y-1/2" aria-hidden="true">
-              <div className="h-1 rounded-full bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.22)]" />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-800 shadow-sm">
-                Moyenne / bénévole
-              </span>
-              <span className={cn("absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-black text-white", tone === "emerald" ? "bg-emerald-800" : "bg-blue-700")}>
-                {benchmarkLabel}
-              </span>
-            </div>
-          ) : null}
+          <GaugeIcon size={208} strokeWidth={1.35} className={cn(colorClass, "h-full w-full fill-current")} />
         </div>
-      </div>
-      {hasRightContent ? (
-        <>
-          <div className={cn("mx-5 h-28 w-px shrink-0 max-[520px]:mx-auto max-[520px]:my-3 max-[520px]:h-px max-[520px]:w-40", dividerClass)} aria-hidden="true" />
-          <div className={cn("min-w-0 shrink-0", secondaryLabel ? "grid grid-cols-2 gap-4 max-[520px]:grid-cols-1" : "text-right")}>
-            {showValue ? (
-              <div className={secondaryLabel ? "min-w-0" : undefined}>
-                <p className="sr-only">{label}</p>
-                <span className={cn("block whitespace-nowrap text-2xl font-black tracking-tight sm:text-3xl", valueClass)}>{valueLabel}</span>
-              </div>
-            ) : null}
-            {secondaryLabel ? (
-              <div className={cn("min-w-0", showValue && "border-l border-slate-300/70 pl-4")}>
-                <p className="text-xs font-semibold text-slate-700">{secondaryLabel}</p>
-                <span className="mt-1 block whitespace-nowrap text-xl font-black tracking-tight text-blue-700 sm:text-2xl">{secondaryValue ?? "Non renseigné"}</span>
-              </div>
-            ) : null}
-            {!hasBenchmark ? <p className="max-w-40 text-sm font-semibold leading-5 text-slate-600">Moyenne indisponible</p> : null}
+        {hasReference ? (
+          <div className="absolute inset-x-1 top-1/2 -translate-y-1/2">
+            <div className={cn("h-1 rounded-full bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.22)]", dividerClass)} aria-hidden="true" />
+            <button
+              type="button"
+              aria-expanded={benchmarkHelpOpen}
+              aria-controls={helpId}
+              aria-label="Expliquer le repère de moyenne par bénévole"
+              onClick={() => setBenchmarkHelpOpen((open) => !open)}
+              className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-800 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+            >
+              Moyenne / bénévole
+            </button>
+            <span className={cn("absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-black text-white", tone === "emerald" ? "bg-emerald-800" : "bg-blue-700")}>
+              {benchmarkLabel}
+            </span>
           </div>
-        </>
-      ) : null}
-      <p className="sr-only">Repère visuel uniquement · le remplissage correspond à la valeur par bénévole rapportée à deux fois la moyenne et ne constitue ni une validation ni un plafond.</p>
-    </div>
+        ) : null}
+      </div>
+      {hasReference ? (
+        <div className="mt-3 max-w-full text-center">
+          {benchmarkHelpOpen ? (
+            <div id={helpId} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs leading-4 text-slate-600 shadow-sm" role="note">
+              Remplissage indicatif : valeur par bénévole rapportée à deux fois la moyenne. Il ne s’agit ni d’une validation ni d’un plafond. <Link href="/methodologie" className="ml-1 inline-flex items-center font-bold text-blue-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">i · Méthodologie</Link>
+            </div>
+          ) : (
+            <p className="text-xs font-semibold text-slate-500">Repère : moyenne par bénévole</p>
+          )}
+        </div>
+      ) : (
+        <p data-testid={`${testId}-reference-status`} className="mt-3 text-center text-xs font-semibold text-slate-600">
+          {statusLabel}
+        </p>
+      )}
+      <figcaption className="sr-only">Repère visuel uniquement · le remplissage correspond à la valeur par bénévole rapportée à deux fois la moyenne et ne constitue ni une validation ni un plafond.</figcaption>
+    </figure>
   );
 }
 
@@ -134,13 +136,13 @@ export function TrashBinGauge({
       currentPerVolunteer={currentPerVolunteer}
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       benchmarkLabel={benchmarkPerVolunteer === null || benchmarkPerVolunteer === undefined ? undefined : `${formatKg(benchmarkPerVolunteer)} kg`}
-      showValue={false}
       icon={Trash2}
       colorClass="text-emerald-400"
       label="Quantité de déchets hors mégots"
       valueLabel={value === null ? "Non renseigné" : `${formatKg(value)} kg`}
       testId="waste-measurement-visual"
       tone="emerald"
+      measurementAvailable={value !== null}
     />
   );
 }
@@ -150,31 +152,76 @@ export function DropletGauge({
   currentPerVolunteer,
   benchmarkPerVolunteer,
   benchmarkLabel,
-  secondaryLabel,
-  secondaryValue,
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
   benchmarkPerVolunteer?: number | null;
   benchmarkLabel?: string;
-  secondaryLabel?: string;
-  secondaryValue?: string;
 }) {
   return (
     <QuantityGaugeVisual
       currentPerVolunteer={currentPerVolunteer}
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       benchmarkLabel={benchmarkLabel ?? (benchmarkPerVolunteer === null || benchmarkPerVolunteer === undefined ? undefined : `${formatCount(benchmarkPerVolunteer)} mégots`)}
-      showValue={false}
       icon={Droplet}
       colorClass="text-blue-400"
       label="Quantité de mégots retenue"
       valueLabel={value === null ? "Non renseigné" : `${formatCount(value)} mégots`}
       testId="butts-measurement-visual"
       tone="blue"
-      secondaryLabel={secondaryLabel}
-      secondaryValue={secondaryValue}
+      measurementAvailable={value !== null}
     />
+  );
+}
+
+export function HarvestComparisonTrend({
+  currentPerVolunteer,
+  benchmarkPerVolunteer,
+  deltaPercent,
+  benchmarkSourceCount,
+  testId,
+  unitLabel,
+}: {
+  currentPerVolunteer: number | null;
+  benchmarkPerVolunteer: number | null;
+  deltaPercent: number | null;
+  benchmarkSourceCount: number;
+  testId: string;
+  unitLabel: string;
+}) {
+  if (
+    benchmarkSourceCount < 2 ||
+    currentPerVolunteer === null ||
+    benchmarkPerVolunteer === null ||
+    deltaPercent === null ||
+    !Number.isFinite(currentPerVolunteer) ||
+    !Number.isFinite(benchmarkPerVolunteer) ||
+    !Number.isFinite(deltaPercent) ||
+    currentPerVolunteer < 0 ||
+    benchmarkPerVolunteer <= 0
+  ) {
+    return null;
+  }
+
+  const TrendIcon = deltaPercent > 0 ? TrendingUp : deltaPercent < 0 ? TrendingDown : Minus;
+  const toneClass = deltaPercent > 0
+    ? "text-emerald-700"
+    : deltaPercent < 0
+      ? "text-rose-700"
+      : "text-slate-600";
+  const direction = deltaPercent > 0 ? "montante" : deltaPercent < 0 ? "descendante" : "neutre";
+
+  return (
+    <p
+      className={cn("flex items-center justify-center gap-1.5 text-xs font-bold", toneClass)}
+      data-testid={testId}
+      data-trend={deltaPercent > 0 ? "up" : deltaPercent < 0 ? "down" : "neutral"}
+      aria-label={`Tendance ${direction} : ${formatSignedPercent(deltaPercent)} par rapport à la moyenne ${unitLabel}`}
+    >
+      <TrendIcon size={15} aria-hidden="true" />
+      <span>{formatSignedPercent(deltaPercent)}</span>
+      <span className="sr-only">par rapport à la moyenne {unitLabel}</span>
+    </p>
   );
 }
 
