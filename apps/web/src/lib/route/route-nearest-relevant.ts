@@ -12,6 +12,7 @@ import {
 import parisPressureSnapshot from "../../../data/geospatial/paris-pressure-snapshot.json";
 import { pointInParisPressureGeometry } from "@/lib/geo/paris-pressure-geometry-core.mjs";
 import type { ParisPressureGeometry } from "@/lib/geo/paris-pressure-spatial-types";
+import { createRouteRoutingOperationBudget, type RouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 export const ROUTE_NEAREST_RELEVANT_POLICY_VERSION =
   "route-nearest-relevant-v1" as const;
@@ -289,10 +290,11 @@ function isAborted(signal: AbortSignal | undefined): boolean {
 }
 
 async function evaluateWithTimeout(
-  evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal) => Promise<PlanEvaluation | null>,
+  evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal, budget: RouteRoutingOperationBudget) => Promise<PlanEvaluation | null>,
   origin: RoutePlannerOrigin,
   timeoutMs: number,
   parentSignal?: AbortSignal,
+  routingBudget?: RouteRoutingOperationBudget,
 ): Promise<TimedEvaluation> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
@@ -301,7 +303,7 @@ async function evaluateWithTimeout(
   parentSignal?.addEventListener("abort", abortExternal, { once: true });
   try {
     const evaluation = Promise.resolve()
-      .then(() => evaluate(origin, controller.signal))
+      .then(() => evaluate(origin, controller.signal, routingBudget!))
       .then((result) => ({ result, timedOut: false, failed: false, aborted: false }))
       .catch(() => ({ result: null, timedOut: false, failed: !controller.signal.aborted, aborted: controller.signal.aborted }));
     const timeout = new Promise<TimedEvaluation>((resolve) => {
@@ -435,8 +437,7 @@ export async function findNearestRelevantRoute(input: {
   graph: PedestrianNetworkGraph | null;
   reference: RouteNearestRelevantReference;
   baseline: PlanEvaluation;
-  evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal) => Promise<PlanEvaluation | null>;
-  estimateProviderCalls?: (origin: RoutePlannerOrigin) => number;
+  evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal, budget: RouteRoutingOperationBudget) => Promise<PlanEvaluation | null>;
   signal?: AbortSignal;
 }): Promise<RouteNearestRelevantSearchResult> {
   if (isAborted(input.signal)) {
@@ -463,7 +464,11 @@ export async function findNearestRelevantRoute(input: {
   const evaluated: CandidateEvaluation[] = [];
   const triedRadiiKm: number[] = [];
   let attemptsEvaluated = 0;
-  let providerCalls = Math.max(0, input.baseline.providerCalls ?? 0);
+  const routingBudget = createRouteRoutingOperationBudget({
+    limit: ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS,
+    consumed: input.baseline.providerCalls ?? 0,
+  });
+  let providerCalls = routingBudget.consumed;
   let previousRadiusKm = 0;
   const startedAt = Date.now();
   let timedOutAttempts = 0;
@@ -496,8 +501,7 @@ export async function findNearestRelevantRoute(input: {
         longitude: candidate.point[1],
         source: "planner",
       };
-      const reservedCalls = Math.max(1, Math.ceil(input.estimateProviderCalls?.(origin) ?? 2));
-      if (providerCalls + reservedCalls > ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) {
+      if (routingBudget.remaining() < 1) {
         quotaExhausted = true;
         break;
       }
@@ -511,22 +515,24 @@ export async function findNearestRelevantRoute(input: {
         origin,
         Math.min(ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS, remainingMs),
         input.signal,
+        routingBudget,
       );
       attemptsEvaluated += 1;
-      const actualCalls = Math.max(1, evaluation.result?.providerCalls ?? reservedCalls);
-      // The reservation is only an admission check. Account for the work that
-      // actually occurred before considering another candidate; otherwise two
-      // evaluations that each used three calls could pass as two-call plans
-      // and consume six calls under a four-call ceiling.
-      providerCalls += actualCalls;
-      if (actualCalls > reservedCalls) quotaExhausted = true;
+      const observedCalls = routingBudget.consumed - providerCalls;
+      const reportedCalls = Math.max(0, evaluation.result?.providerCalls ?? 0);
+      const missingCalls = Math.max(0, reportedCalls - observedCalls) || (observedCalls === 0 ? 1 : 0);
+      if (missingCalls > 0 && !routingBudget.tryConsume(missingCalls)) {
+        quotaExhausted = true;
+        continue;
+      }
+      providerCalls = routingBudget.consumed;
+      if (routingBudget.remaining() === 0) quotaExhausted = true;
       if (evaluation.timedOut) timedOutAttempts += 1;
       if (evaluation.failed) failedAttempts += 1;
       if (evaluation.aborted) {
         searchAborted = true;
         break;
       }
-      if (actualCalls > reservedCalls) continue;
       if (!evaluation.result) continue;
       const candidateEvaluation: CandidateEvaluation = {
         origin,
@@ -540,7 +546,7 @@ export async function findNearestRelevantRoute(input: {
         candidateEvaluation.result.withinBudget && candidateEvaluation.result.loopVerified) {
         successfulPlans.push(candidateEvaluation);
       }
-      if (providerCalls >= ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
+      if (routingBudget.remaining() === 0) break;
     }
     if (successfulPlans.length > 0) {
       const selected = [...successfulPlans].sort(compareAcceptable)[0]!;

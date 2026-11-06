@@ -10,6 +10,7 @@ import {
   routeThroughPedestrianNetwork,
   type PedestrianNetworkGraph,
 } from "@/lib/route/pedestrian-network";
+import type { RouteRoutingOperationBudget } from "@/lib/route/route-routing-operation-budget";
 
 export function fallbackGeometryForPrefix(
   origin: RoutePlannerOrigin,
@@ -119,6 +120,7 @@ async function reconcileNetworkRoute(
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
   signal?: AbortSignal,
+  routingBudget?: RouteRoutingOperationBudget,
 ): Promise<NetworkReconciliation> {
   let plannedStops = initialStops;
   let routeGeometry = initialGeometry;
@@ -131,6 +133,7 @@ async function reconcileNetworkRoute(
   while (retainedStops.length > 0) {
     retainedStops = retainedStops.slice(0, -1);
     if (retainedStops.length === 0) break;
+    if (routingBudget && !routingBudget.tryConsume()) break;
     providerCalls += 1;
     const attempt = await tryReconcileRetainedStops(
       origin,
@@ -209,6 +212,7 @@ export async function reconcileSingleRouteGeometry(
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
   signal?: AbortSignal,
+  routingBudget?: RouteRoutingOperationBudget,
 ): Promise<RouteGeometryReconciliation> {
   let plannedStops = initialStops;
   let routeGeometry = fallbackGeometryForPrefix(origin, [], topology, arrival);
@@ -231,13 +235,19 @@ export async function reconcileSingleRouteGeometry(
           ? [[arrival.latitude, arrival.longitude] as [number, number]]
           : []),
     ];
-    routeGeometry = await routeWithAvailableNetwork(routeCoordinates, topology, pedestrianNetwork, signal);
-    providerCalls += 1; firstProviderMode = routeGeometry.mode;
+    if (routingBudget && !routingBudget.tryConsume()) {
+      routeGeometry = fallbackGeometryForPrefix(origin, [], topology, arrival);
+      finalRoutingDegraded = true;
+      finalRoutingWarning = "Le quota de routage nearest_relevant est épuisé ; une géométrie locale dégradée est utilisée.";
+    } else {
+      routeGeometry = await routeWithAvailableNetwork(routeCoordinates, topology, pedestrianNetwork, signal);
+      providerCalls += 1; firstProviderMode = routeGeometry.mode;
+    }
 
     if (routeGeometry.durationMinutes > travelBudgetMinutes) {
       budgetPrefixApplied = true;
       const network = routeGeometry.mode === "network"
-        ? await reconcileNetworkRoute(origin, travelBudgetMinutes, routeGeometry, plannedStops, topology, arrival, pedestrianNetwork, signal)
+        ? await reconcileNetworkRoute(origin, travelBudgetMinutes, routeGeometry, plannedStops, topology, arrival, pedestrianNetwork, signal, routingBudget)
         : null;
       if (network) {
         plannedStops = network.plannedStops;

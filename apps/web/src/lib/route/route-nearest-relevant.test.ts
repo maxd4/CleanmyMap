@@ -292,19 +292,37 @@ describe("route nearest relevant search", () => {
     expect(result.search.reason).toBe("quota_exhausted");
   });
 
-  it("does not start a two-call evaluation when only one provider call remains", async () => {
-    const evaluateMock = vi.fn(async () => ({ ...evaluate(80), providerCalls: 2 }));
+  it("does not accept a two-call evaluation when only one provider call remains", async () => {
+    const evaluateMock = vi.fn(async (_origin, _signal, budget) => {
+      if (!budget.tryConsume(2)) return null;
+      return { ...evaluate(80), providerCalls: 2 };
+    });
     const result = await findNearestRelevantRoute({
       graph: graphAtDistances([0.1]),
       reference: reference(),
       baseline: { ...evaluate(48), providerCalls: 3 },
-      estimateProviderCalls: () => 2,
       evaluate: evaluateMock,
     });
 
     expect(result.selected).toBeNull();
-    expect(evaluateMock).not.toHaveBeenCalled();
+    expect(evaluateMock).toHaveBeenCalledTimes(1);
     expect(result.search.reason).toBe("quota_exhausted");
+  });
+
+  it("admits an alternative whose two operations fit after a one-operation baseline", async () => {
+    const evaluateMock = vi.fn(async (_origin, _signal, budget) => {
+      expect(budget.tryConsume(2)).toBe(true);
+      return { ...evaluate(80), providerCalls: 2 };
+    });
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: reference(),
+      baseline: { ...evaluate(48), providerCalls: 1 },
+      evaluate: evaluateMock,
+    });
+
+    expect(result.selected).not.toBeNull();
+    expect(result.search.plansEvaluated).toBe(1);
   });
 
   it("does not invoke routing when the search signal is already aborted", async () => {
@@ -404,21 +422,23 @@ describe("route nearest relevant search", () => {
   });
 
   it("accounts for actual provider calls before admitting another evaluation", async () => {
-    const planWithThreeCalls = vi.fn(async () => ({
-      ...evaluate(80),
-      providerCalls: 3,
-    }));
+    let startedOperations = 0;
+    const planWithThreeCalls = vi.fn(async (_origin, _signal, budget) => {
+      if (!budget.tryConsume(3)) return null;
+      startedOperations += 3;
+      return { ...evaluate(80), providerCalls: 3 };
+    });
     const result = await findNearestRelevantRoute({
       graph: graphAtDistances([0.1, 0.2, 0.3]),
       reference: reference(),
       baseline: evaluate(48),
-      estimateProviderCalls: () => 2,
       evaluate: planWithThreeCalls,
     });
 
-    expect(planWithThreeCalls).toHaveBeenCalledTimes(1);
-    expect(result.search.plansEvaluated).toBe(1);
-    expect(result.search.reason).toBe("quota_exhausted");
+    expect(planWithThreeCalls).toHaveBeenCalledTimes(2);
+    expect(result.search.plansEvaluated).toBe(2);
+    expect(startedOperations).toBe(3);
+    expect(startedOperations).toBeLessThanOrEqual(4);
   });
 
   it("counts expired attempts and stops at the global search budget", async () => {

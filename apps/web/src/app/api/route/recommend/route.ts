@@ -204,6 +204,7 @@ export async function POST(request: Request) {
       candidateArrival: typeof options.arrival,
       candidateTopology: typeof options.routeTopology,
       signal?: AbortSignal,
+      routingBudget?: import("@/lib/route/route-routing-operation-budget").RouteRoutingOperationBudget,
     ) => planRouteRecommendation({
       origin: candidateOrigin,
       arrival: candidateArrival,
@@ -228,6 +229,7 @@ export async function POST(request: Request) {
       weatherContext,
       pedestrianNetwork,
       signal,
+      routingBudget,
     });
 
     const initialPlanning = await buildPlanning(origin, options.arrival, options.routeTopology);
@@ -280,9 +282,9 @@ export async function POST(request: Request) {
           routingStatus: hasNetworkGeometry(initialPlanning) ? "network" : "fallback",
           providerCalls: initialPlanning.finalRoutingReconciliation?.providerCalls ?? 0,
         },
-        evaluate: async (candidateOrigin, signal) => {
+        evaluate: async (candidateOrigin, signal, routingBudget) => {
           if (signal.aborted) return null;
-          const candidatePlanning = await buildPlanning(candidateOrigin, undefined, "loop", signal);
+          const candidatePlanning = await buildPlanning(candidateOrigin, undefined, "loop", signal, routingBudget);
           if (signal.aborted) return null;
           const candidateInput = buildResponseInput(candidateOrigin, undefined, "loop", candidatePlanning);
           alternativePlans.set(`${candidateOrigin.latitude.toFixed(7)}:${candidateOrigin.longitude.toFixed(7)}`, candidatePlanning);
@@ -298,10 +300,6 @@ export async function POST(request: Request) {
             providerCalls: candidatePlanning.finalRoutingReconciliation?.providerCalls ?? 0,
           };
         },
-        // A candidate planning run may perform the initial route plus several
-        // budget-reduction routings. Reserve the complete nearest-search
-        // ceiling so no candidate can start with an under-sized reservation.
-        estimateProviderCalls: () => 4,
         signal: request.signal,
       });
       if (nearestSearch.selected) {

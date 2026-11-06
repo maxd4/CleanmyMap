@@ -56,6 +56,7 @@ import {
 } from "@/lib/route/route-group-partition";
 import { plannerValue } from "@/lib/route/route-group-partition-helpers";
 import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
+import type { RouteRoutingOperationBudget } from "@/lib/route/route-routing-operation-budget";
 import type { RouteObservedEnrichmentMetrics } from "@/lib/route/route-observed-enrichment";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import {
@@ -141,6 +142,7 @@ type RouteRecommendationInput = {
   weatherContext?: PlannerWeatherContext;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
   signal?: AbortSignal;
+  routingBudget?: RouteRoutingOperationBudget;
 };
 
 export function getRoutePlannerCandidatePoolLimit(input: Pick<
@@ -379,6 +381,7 @@ async function buildMultiGroupRoutingState(
     weatherContext: input.weatherContext,
     pedestrianNetwork: input.pedestrianNetwork,
     signal: input.signal,
+    routingBudget: input.routingBudget,
   });
   return {
     plannedStops: multiRouteResult.plannedStops,
@@ -436,6 +439,7 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
           input.arrival,
           input.pedestrianNetwork,
           input.signal,
+          input.routingBudget,
         ),
       )
     : await buildMultiGroupRoutingState(input, preparation);

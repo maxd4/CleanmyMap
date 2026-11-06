@@ -103,7 +103,10 @@ candidat, l’absence de chemin, le quota épuisé, l’échec d’évaluation e
 indisponible ; un score indisponible suppose qu’une évaluation a effectivement
 été exécutée. Une géométrie fallback ne peut jamais
 être qualifiée de réseau vérifié. Le quota global de quatre opérations
-de routage inclut le baseline, les erreurs et les expirations ; le signal
+de routage inclut le baseline, les erreurs et les expirations. Il est partagé
+par toute la recherche et débité avant chaque tentative réelle, y compris les
+réductions de parcours et les groupes successifs ; aucune réservation
+forfaitaire par candidat ne peut bloquer un solde encore disponible. Le signal
 d’annulation de la recherche est transmis au transport fournisseur et interrompt
 les groupes suivants après une attente de quota. Une alternative multigroupe
 n’est qualifiée de réseau que si chaque groupe possède une géométrie réseau

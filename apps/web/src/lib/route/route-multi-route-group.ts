@@ -31,6 +31,7 @@ import {
 import { buildCleanupWorkload } from "./route-cleanup-workload";
 import { collectionCoordinatesForSectorAudit } from "./route-guided-geometry-audit";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import type { RouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 type Coordinate = [number, number];
 type RoutePoint = { latitude: number; longitude: number };
@@ -331,6 +332,7 @@ async function reduceNetworkCandidates(params: {
   arrival?: RoutePlannerOrigin;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
   signal?: AbortSignal;
+  routingBudget?: RouteRoutingOperationBudget;
 }): Promise<NetworkReduction> {
   let candidates = [...params.candidates];
   let geometry = params.geometry;
@@ -339,6 +341,7 @@ async function reduceNetworkCandidates(params: {
   while (candidates.length > 0) {
     candidates = candidates.slice(0, -1);
     if (candidates.length === 0) break;
+    if (params.routingBudget && !params.routingBudget.tryConsume()) break;
     providerCalls += 1;
     const attempt = await (async () => {
       try {
@@ -452,6 +455,7 @@ async function adjustRouteToBudget(params: {
   arrival?: RoutePlannerOrigin;
   pedestrianNetwork?: PedestrianNetworkGraph | null;
   signal?: AbortSignal;
+  routingBudget?: RouteRoutingOperationBudget;
 }): Promise<{ candidates: RoutePlannerCandidate[]; geometry: RouteGeometry; providerCalls: number; degraded: boolean; warning: string | null; budgetPrefixApplied: boolean }> {
   if (params.fitsBudget(params.candidates, params.geometry)) return { ...params, budgetPrefixApplied: false };
   let candidates = params.candidates;
@@ -460,7 +464,7 @@ async function adjustRouteToBudget(params: {
   let degraded = params.degraded;
   let warning = params.warning;
   if (geometry.mode === "network") {
-    const reduction = await reduceNetworkCandidates({ origin: params.origin, candidates, geometry, fitsBudget: params.fitsBudget, topology: params.topology, arrival: params.arrival, pedestrianNetwork: params.pedestrianNetwork, signal: params.signal });
+    const reduction = await reduceNetworkCandidates({ origin: params.origin, candidates, geometry, fitsBudget: params.fitsBudget, topology: params.topology, arrival: params.arrival, pedestrianNetwork: params.pedestrianNetwork, signal: params.signal, routingBudget: params.routingBudget });
     candidates = reduction.candidates;
     geometry = reduction.geometry;
     providerCalls += reduction.providerCalls;
@@ -477,8 +481,11 @@ async function adjustRouteToBudget(params: {
   return { candidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied: true };
 }
 
-async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[], topology: RouteTopology, arrival?: RoutePlannerOrigin, pedestrianNetwork?: PedestrianNetworkGraph | null, signal?: AbortSignal): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
+async function loadInitialRouteGeometry(origin: RoutePlannerOrigin, points: readonly RoutePoint[], topology: RouteTopology, arrival?: RoutePlannerOrigin, pedestrianNetwork?: PedestrianNetworkGraph | null, signal?: AbortSignal, routingBudget?: RouteRoutingOperationBudget): Promise<{ geometry: RouteGeometry; providerCalls: number; firstProviderMode: RouteGeometry["mode"]; degraded: boolean; warning: string | null }> {
   const coordinates = routeCoordinates(origin, points, topology, arrival);
+  if (routingBudget && !routingBudget.tryConsume()) {
+    return { geometry: fallbackGeometry(origin, points, topology, arrival), providerCalls: 0, firstProviderMode: "fallback", degraded: true, warning: "Le quota de routage nearest_relevant est épuisé ; une géométrie locale dégradée est utilisée." };
+  }
   if (pedestrianNetwork) {
     const geometry = routeThroughPedestrianNetwork(pedestrianNetwork, coordinates, { topology }) ?? fallbackGeometry(origin, points, topology, arrival);
     return {
@@ -532,6 +539,7 @@ export async function routeGroupWithinBudget(
   arrival?: RoutePlannerOrigin,
   pedestrianNetwork?: PedestrianNetworkGraph | null,
   signal?: AbortSignal,
+  routingBudget?: RouteRoutingOperationBudget,
 ): Promise<RouteGroupRoutingResult> {
   const initialCandidates = resolveGroupCandidates(group, candidatesById);
   const plannedWaypoints = group.plannedWaypoints ?? [];
@@ -545,7 +553,7 @@ export async function routeGroupWithinBudget(
   if (initialCandidates.length === 0 && plannedWaypoints.length === 0 && !arrival) return emptyRouteGroupResult(origin, group, topology, arrival);
   let retainedCandidates = [...initialCandidates];
   const routePoints = plannedWaypoints.length > 0 ? plannedWaypoints : retainedCandidates;
-  const initialRoute = await loadInitialRouteGeometry(origin, routePoints, topology, arrival, pedestrianNetwork, signal);
+  const initialRoute = await loadInitialRouteGeometry(origin, routePoints, topology, arrival, pedestrianNetwork, signal, routingBudget);
   let geometry = initialRoute.geometry;
   providerCalls += initialRoute.providerCalls;
   firstProviderMode = initialRoute.firstProviderMode;
@@ -554,7 +562,7 @@ export async function routeGroupWithinBudget(
   let guidedSegments: RouteGuidedSegment[] | undefined;
   let guidedRouting: RouteGuidedRoutingAudit | undefined;
   if (plannedWaypoints.length === 0) {
-    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget, topology, arrival, pedestrianNetwork, signal }));
+    ({ candidates: retainedCandidates, geometry, providerCalls, degraded, warning, budgetPrefixApplied } = await adjustRouteToBudget({ origin, initialCandidates, candidates: retainedCandidates, geometry, providerCalls, degraded, warning, fitsBudget, topology, arrival, pedestrianNetwork, signal, routingBudget }));
   }
   if (plannedWaypoints.length > 0 && guidedBudget) {
     if (!geometryMatchesGuidedPlan(origin, plannedWaypoints, geometry, topology, arrival)) {

@@ -6,6 +6,7 @@ import { type RoutePlannerCandidate, type RoutePlannerOrigin } from "./route-pla
 import { partitionRouteCandidates } from "./route-group-partition";
 import { measureSharedNetworkDistanceKm, routePartitionedGroups } from "./route-multi-route";
 import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
+import { createRouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 const routeProviderMock = vi.hoisted(() => vi.fn());
 
@@ -621,6 +622,27 @@ describe("coordinated multi-route routing", () => {
 
     const measured = await measuredSharedDistance(left, right);
     expect(measured).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("nearest-relevant shared routing budget", () => {
+  it("shares the ceiling across successive groups", async () => {
+    vi.clearAllMocks();
+    routeProviderMock.mockImplementation(async (coordinates: [number, number][]) => ({
+      ...createFallbackRouteGeometry(coordinates),
+      mode: "network" as const,
+      provider: "fossgis-osrm" as const,
+      profile: "foot" as const,
+      estimated: false,
+    }));
+    const candidates = [candidate("north", 48.87, 2.36, 90), candidate("south", 48.84, 2.34, 85)];
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 4, consumed: 3 });
+    const result = await routePartitionedGroups({ origin, candidates, partition: partition(candidates), travelBudgetMinutes: 60, routingBudget });
+
+    expect(routeProviderMock).toHaveBeenCalledTimes(1);
+    expect(routingBudget.consumed).toBe(4);
+    expect(result.providerCalls).toBe(1);
+    expect(result.groupRoutes[1]?.routeGeometry.mode).toBe("fallback");
   });
 });
 
