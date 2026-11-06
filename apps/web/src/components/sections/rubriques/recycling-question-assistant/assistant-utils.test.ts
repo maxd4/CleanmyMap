@@ -228,6 +228,20 @@ describe("recycling assistant waste convergence", () => {
   });
 
   it.each([
+    ["une lame en métal", "fr"],
+    ["metal blade", "en"],
+    ["sharp object", "en"],
+  ] as const)("keeps generic cutting objects out of ordinary collection: %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(findWasteCategorySlug(question)).toBe("other");
+    expect(answer.kind).toBe("specific");
+    expect(response).toMatch(locale === "fr" ? /ne pas ramasser|signaler|consigne locale/ : /do not pick up|report|local guidance/);
+    expect(response).not.toMatch(locale === "fr" ? /collecte possible avec EPI de base/ : /collection is possible with basic PPE/);
+  });
+
+  it.each([
     ["carton avec de l'huile moteur", "fr"],
     ["cardboard with motor oil", "en"],
   ] as const)("keeps confirmed chemical contamination out of ordinary recycling for %s", (question, locale) => {
@@ -256,5 +270,37 @@ describe("recycling assistant waste convergence", () => {
     expect(answer.bullets.join(" ")).toMatch(/nature|contamination|item|material/i);
     expect(answer.nextStep).toMatch(/précise|specify|identify/i);
     expect(response).not.toMatch(/papier-carton.*filière|paper-and-cardboard stream.*belongs/i);
+  });
+
+  it.each([
+    ["emballage en carton avec des restes", "fr"],
+    ["cardboard packaging with leftovers", "en"],
+  ] as const)("treats unqualified leftovers as unknown contamination: %s", (question, locale) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(answer.kind).toBe("unknown");
+    expect(answer.title).toMatch(/contamination/i);
+    expect(answer.summary).not.toMatch(/se trie|recycl|sorting|recycling/i);
+    expect(answer.nextStep).toMatch(/précise|specify|identify/i);
+    expect(response).not.toMatch(/papier-carton.*filière|paper-and-cardboard stream.*belongs/i);
+  });
+
+  it.each([
+    ["carton de pizza avec des huiles alimentaires", "fr", "packaging"],
+    ["pizza box with cooking oils", "en", "packaging"],
+    ["carton avec des huiles minérales", "fr", "decheterie"],
+    ["cardboard with motor oils", "en", "decheterie"],
+  ] as const)("keeps plural oil contamination on its distinct route: %s", (question, locale, kind) => {
+    const answer = buildAnswer(question, locale);
+    const response = answerText(question, locale);
+
+    expect(answer.kind).toBe(kind);
+    if (kind === "packaging") {
+      expect(response).toMatch(/papier-carton|paper-and-cardboard stream/);
+      expect(response).not.toMatch(/chemical|chimique|hazardous|dangereux/);
+    } else {
+      expect(response).not.toMatch(/papier-carton.*trie|paper-and-cardboard.*recycl/);
+    }
   });
 });

@@ -113,9 +113,37 @@ function hazardPriority(level: WasteHazardLevel): number {
   }[level];
 }
 
+const GENERIC_CUTTING_OBJECT_TERMS = [
+  "lame",
+  "blade",
+  "cutter",
+  "objet coupant",
+  "sharp object",
+  "objet piquant",
+  "pointed object",
+];
+
+const EXPLICIT_MEDICAL_SHARPS_TERMS = [
+  "seringue",
+  "syringe",
+  "aiguille",
+  "needle",
+];
+
 export function findWasteCategorySlug(value: string): WasteCategorySlug | null {
   const normalized = normalizeSearchText(value);
   if (!normalized) return null;
+
+  // Material is not evidence of medical sharps. Keep generic blades and
+  // cutting objects in the conservative `other` category; an explicit syringe
+  // or needle still reaches the critical `sharps` category below.
+  const genericCuttingObject = GENERIC_CUTTING_OBJECT_TERMS.some((term) =>
+    normalized.includes(normalizeSearchText(term)),
+  );
+  const explicitMedicalSharps = EXPLICIT_MEDICAL_SHARPS_TERMS.some((term) =>
+    normalized.includes(normalizeSearchText(term)),
+  );
+  if (genericCuttingObject && !explicitMedicalSharps) return "other";
 
   const matches = WASTE_CATEGORY_SLUGS.flatMap((slug) =>
     getSearchTerms(getWasteCategory(slug))

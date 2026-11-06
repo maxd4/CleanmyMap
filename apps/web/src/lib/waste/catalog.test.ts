@@ -109,6 +109,9 @@ describe("global waste category contract", () => {
     ["syringe and blade", "sharps"],
     ["une lame", "other"],
     ["a blade", "other"],
+    ["une lame en métal", "other"],
+    ["metal blade", "other"],
+    ["sharp object", "other"],
   ] as const)("prioritizes explicit hazardous terms without classifying an isolated blade as a syringe: %s", (value, slug) => {
     expect(findWasteCategorySlug(value)).toBe(slug);
   });
