@@ -21,6 +21,7 @@ type ActionEvidenceRow = {
   action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
   published_at: string | null;
   moderation_visibility?: "visible" | "hidden" | null;
+  data_provenance: "unknown" | "real" | "test";
 };
 
 const SPECIALIZATION_BY_ROLE_CODE = new Map<string, TerrainSpecializationDefinition>(
@@ -64,7 +65,7 @@ export async function loadTerrainSpecializationEvidence(
   const [actionsResult, participantsResult] = await Promise.all([
     supabase
       .from("actions")
-      .select("id, action_date, created_at, status, action_phase, published_at, moderation_visibility")
+      .select("id, action_date, created_at, status, action_phase, published_at, moderation_visibility, data_provenance")
       .in("id", actionIds),
     supabase
       .from("action_participants")
@@ -85,7 +86,7 @@ export async function loadTerrainSpecializationEvidence(
   return eligibleAttestations.flatMap((attestation) => {
     const action = actions.get(attestation.action_id);
     const definition = SPECIALIZATION_BY_ROLE_CODE.get(attestation.role_code);
-    if (!action || !definition || !confirmedActionIds.has(action.id) || !isActionFinalizedForRoleAttestation({
+    if (!action || action.data_provenance === "test" || !definition || !confirmedActionIds.has(action.id) || !isActionFinalizedForRoleAttestation({
       ...action,
       moderation_visibility: action.moderation_visibility ?? undefined,
     })) return [];

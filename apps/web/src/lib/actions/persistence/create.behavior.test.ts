@@ -72,7 +72,11 @@ describe("createAction behavioral persistence orchestration", () => {
     expect(fixture.rpc).toHaveBeenCalledWith("create_action_with_relations", expect.objectContaining({
       p_creator_id: "user-1",
       p_client_request_id: "request-1",
-      p_action: expect.objectContaining({ action_phase: "post_action_complete", department_code: "75" }),
+      p_action: expect.objectContaining({
+        action_phase: "post_action_complete",
+        department_code: "75",
+        data_provenance: "real",
+      }),
     }));
     expect(recordCreateActionTrainingExampleMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ actionId: "action-1" }));
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();

@@ -277,6 +277,7 @@ type RawActionRow = {
   id: string;
   action_date: string;
   territorial_legend_attribution: unknown;
+  data_provenance: "unknown" | "real" | "test";
 };
 
 type RawParticipantRow = { action_id: string; user_id: string; joined_at: string };
@@ -296,6 +297,7 @@ function asActionRow(value: unknown): RawActionRow | null {
         id: row.id,
         action_date: row.action_date,
         territorial_legend_attribution: row.territorial_legend_attribution,
+        data_provenance: row.data_provenance ?? "unknown",
       }
     : null;
 }
@@ -327,12 +329,13 @@ export async function loadTerritorialLegendFacts(
     loadPage: async (from, to) => {
       const result = await supabase
         .from("actions")
-        .select("id, action_date, territorial_legend_attribution")
+        .select("id, action_date, territorial_legend_attribution, data_provenance")
         .eq("status", "approved")
         .eq("action_phase", "post_action_complete")
         .not("published_at", "is", null)
         .eq("moderation_visibility", "visible")
         .eq("access_mode", "public")
+        .or("data_provenance.is.null,data_provenance.neq.test")
         .or("review_state.is.null,review_state.in.(not_required,approved)")
         .gte("action_date", start)
         .lte("action_date", parisDate(now))

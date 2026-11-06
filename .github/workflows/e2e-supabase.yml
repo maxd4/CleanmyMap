@@ -216,6 +216,8 @@ jobs:
       - name: Execute and attest all existing PostgreSQL proofs
         env:
           CMM_SUPABASE_CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
+          CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
         run: node scripts/ci/run-supabase-sql-proof.mjs
 
       - name: Synchronize PostgREST schema after PostgreSQL proof

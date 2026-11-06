@@ -15,6 +15,7 @@ type CandidateRow = {
   derived_geometry_geojson: string | null;
   department_code: string | null;
   department_name: string | null;
+  data_provenance: "unknown" | "real" | "test";
 };
 
 function parisDate(value: Date): string {
@@ -61,12 +62,13 @@ export async function refreshMissingTerritorialLegendAttributions(
     loadPage: async (from, to) => {
       const result = await supabase
         .from("actions")
-        .select("id, updated_at, action_date, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, department_code, department_name")
+        .select("id, updated_at, action_date, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, department_code, department_name, data_provenance")
         .eq("status", "approved")
         .eq("action_phase", "post_action_complete")
         .not("published_at", "is", null)
         .eq("moderation_visibility", "visible")
         .eq("access_mode", "public")
+        .or("data_provenance.is.null,data_provenance.neq.test")
         .or("review_state.is.null,review_state.in.(not_required,approved)")
         .gte("action_date", windowStart(now))
         .lte("action_date", parisDate(now))

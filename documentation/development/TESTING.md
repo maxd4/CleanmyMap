@@ -95,6 +95,15 @@ conserve `verificationMode` (`tap-detailed` ou `pg-prove-summary`) et ne
 fabrique jamais de lignes `ok` à partir d'un résumé. Un résultat absent,
 contradictoire, incomplet, échoué ou multi-fichiers reste un échec de preuve.
 
+Le runner bloque toute preuve SQL destructive tant que les deux marqueurs
+d'autorisation explicite de l'environnement éphémère ne sont pas présents :
+`CMM_SUPABASE_TEST_ENVIRONMENT=ephemeral` et
+`CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION=I_UNDERSTAND_EPHEMERAL_ONLY`.
+Lorsqu'une URL est fournie, elle doit être locale (`localhost` ou `127.0.0.1`).
+Une URL Supabase liée ou de production, même accompagnée d'identifiants
+disponibles, est refusée ; un test local de calcul ou de conversion doit rester
+unitaire, mocké ou fixture et ne devient pas une écriture métier réelle.
+
 Le rapport porte le SHA exact du checkout CI et distingue
 `INTEGRATION_PROOF` (exécution PostgreSQL observée), `NOT_RUN` (preuve non
 atteinte ou volontairement non déclenchée) et `DB_SEMANTICS_NOT_EXECUTED`

@@ -219,6 +219,34 @@ table métier parallèle. `duration_minutes` décrit l'action de dépollution,
 tandis que `event_start_time`/`event_end_time` décrivent le créneau global ;
 leurs dérivés restent indisponibles si les heures sont absentes ou incohérentes.
 
+### Provenance des actions et éligibilité publique
+
+`actions.data_provenance` est le marqueur technique canonique, non éditable par
+le navigateur : `real` est posé par la RPC de création appelée depuis la
+frontière serveur authentifiée, `test` est réservé aux fixtures d'une instance
+Supabase éphémère ou aux simulations locales, et `unknown` conserve sans
+reclassement les actions historiques dont la provenance n'est pas démontrée.
+Le statut `approved` reste une décision de publication/modération ; il ne
+constitue pas, à lui seul, une preuve d'authenticité terrain.
+
+Les brouillons `pre_action` et `post_action_draft`, les actions futures,
+refusées ou annulées, et les lignes `test` sont hors population des indicateurs
+historiques. Une action terminée est admissible aux agrégats publics seulement
+si elle est approuvée, publique, visible, datée au plus tard à la date de
+référence et non marquée `test`. Les valeurs `NULL` restent absentes ; un zéro
+explicitement mesuré reste une mesure valide. La fonction SQL
+`is_public_real_completed_action(...)` porte ce prédicat pour les deux RPC de
+référence de collecte et les projections d'impact.
+
+La carte conserve sa règle distincte de visibilité des actions futures, mais
+les lecteurs publics sont protégés par une policy restrictive qui exclut les
+fixtures `test`. Les lecteurs de gamification et de classement appliquent la
+même exclusion. Les formules historiques, la pondération contextuelle et les
+géométries existantes ne sont pas réécrites : seule leur population éligible
+est bornée par la provenance. Les tests SQL qui mutent des lignes utilisent
+uniquement la lane Supabase éphémère explicitement autorisée ; jamais la base
+liée ou la production.
+
 Toute ingestion externe passe par `apps/web/src/lib/actions/unified-source.ts`
 avant la persistance canonique. Un acteur d'import est une provenance
 technique, pas un organisateur métier par défaut. Le backup

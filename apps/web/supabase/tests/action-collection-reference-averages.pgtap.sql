@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(20);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-reference-test"}', true);
@@ -53,6 +53,34 @@ select is(
   (select count(*)::integer from public.actions where created_by_clerk_id = 'collection-reference-fixture'),
   5,
   'the base fixture contains the five eligible rows before exclusions are added'
+);
+
+-- Test data is explicitly marked at the fixture boundary. Its approved status,
+-- public visibility and historical date must not make it statistical evidence.
+insert into public.actions (
+  created_by_clerk_id, action_date, location_label, status, action_phase,
+  moderation_visibility, access_mode, data_provenance, waste_kg,
+  cigarette_butts, volunteers_count
+) values
+  ('collection-reference-fixture', current_date - 1, 'Codex approved test fixture',
+   'approved', 'post_action_complete', 'visible', 'public', 'test', 999, 999, 1),
+  ('collection-reference-fixture', current_date - 1, 'User draft fixture',
+   'pending', 'post_action_draft', 'visible', 'public', 'unknown', 999, 999, 1);
+
+select is(
+  (select eligible_action_count from public.action_collection_reference_averages_v1()),
+  5,
+  'approved test data and a user draft remain excluded from statistics'
+);
+select is(
+  (select waste_per_volunteer from public.action_collection_reference_averages_v1()),
+  1.5::numeric,
+  'an approved test fixture cannot alter the historical waste average'
+);
+select is(
+  (select butts_per_volunteer from public.action_collection_reference_averages_v1()),
+  190::numeric,
+  'an approved test fixture cannot alter the historical cigarette-butt average'
 );
 select is(
   (select waste_per_volunteer from public.action_collection_reference_averages_v1()),

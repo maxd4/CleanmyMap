@@ -145,6 +145,9 @@ export async function persistActionWithRelations(
   const action = {
     ...params.baseInsert,
     client_request_id: params.clientRequestId ?? null,
+    // This value is assigned at the authenticated server boundary. It is not
+    // accepted from the browser payload and the SQL wrapper enforces it again.
+    data_provenance: "real" as const,
   };
   const fingerprint = params.clientRequestId
     ? buildCreationFingerprint({

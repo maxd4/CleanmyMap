@@ -288,6 +288,28 @@ function baseRecord(path, category) {
   return { path, category, status: "NOT_RUN", outcome: "NOT_RUN" };
 }
 
+export function assertEphemeralSupabaseTestEnvironment(env = process.env) {
+  if (env.CMM_SUPABASE_TEST_ENVIRONMENT !== "ephemeral" ||
+      env.CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION !== "I_UNDERSTAND_EPHEMERAL_ONLY") {
+    throw new Error(
+      "Destructive Supabase proofs require explicit ephemeral authorization; linked and production environments are never accepted.",
+    );
+  }
+  const configuredUrl = String(env.SUPABASE_URL ?? env.SUPABASE_DB_URL ?? "").trim();
+  if (configuredUrl) {
+    let hostname;
+    try {
+      hostname = new URL(configuredUrl).hostname;
+    } catch {
+      throw new Error("Destructive Supabase proofs require a valid local ephemeral URL when a URL is configured.");
+    }
+    if (hostname !== "127.0.0.1" && hostname !== "localhost") {
+      throw new Error("Destructive Supabase proofs refuse non-local Supabase URLs.");
+    }
+  }
+  return true;
+}
+
 export function attestProofResult(record, result, validate) {
   if (result.code !== 0) {
     record.status = "INTEGRATION_PROOF";
@@ -355,6 +377,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
     writeReportImpl(report);
     return report;
   }
+  if (commandRunner === runCommand) assertEphemeralSupabaseTestEnvironment();
   if (inventory.unregistered.length > 0) {
     report.outcome = "FAIL";
     writeReportImpl(report);

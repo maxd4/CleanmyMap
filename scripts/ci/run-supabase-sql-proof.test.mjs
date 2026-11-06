@@ -9,6 +9,7 @@ import {
   parsePgTapOutput,
   reportMainRejection,
   runSupabaseSqlProof,
+  assertEphemeralSupabaseTestEnvironment,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
@@ -18,6 +19,8 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
   assert.equal(inventory.unregistered.length, 0);
   assert.deepEqual(inventory.pgtap, [
     "apps/web/supabase/tests/action-buddy-contract.pgtap.sql",
+    "apps/web/supabase/tests/action-collection-context-reference-rpc.pgtap.sql",
+    "apps/web/supabase/tests/action-collection-reference-averages.pgtap.sql",
     "apps/web/supabase/tests/action-field-roles-server-boundary.pgtap.sql",
     "apps/web/supabase/tests/action-need-offers-contract.pgtap.sql",
     "apps/web/supabase/tests/action-needs-contract.pgtap.sql",
@@ -399,4 +402,24 @@ test("SQL completion markers cannot precede a later assertion", () => {
     () => validateSqlContractMarkerPlacement("NOTICE_MARKER\nraise exception 'failure';", "NOTICE_MARKER"),
     /precedes a later assertion/,
   );
+});
+
+test("destructive Supabase proofs require explicit local ephemeral authorization", () => {
+  assert.throws(
+    () => assertEphemeralSupabaseTestEnvironment({}),
+    /explicit ephemeral authorization/,
+  );
+  assert.throws(
+    () => assertEphemeralSupabaseTestEnvironment({
+      CMM_SUPABASE_TEST_ENVIRONMENT: "ephemeral",
+      CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: "I_UNDERSTAND_EPHEMERAL_ONLY",
+      SUPABASE_URL: "https://production.supabase.co",
+    }),
+    /refuse non-local/,
+  );
+  assert.equal(assertEphemeralSupabaseTestEnvironment({
+    CMM_SUPABASE_TEST_ENVIRONMENT: "ephemeral",
+    CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: "I_UNDERSTAND_EPHEMERAL_ONLY",
+    SUPABASE_URL: "http://127.0.0.1:54321",
+  }), true);
 });
