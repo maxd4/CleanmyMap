@@ -17,18 +17,23 @@ export function formatCount(value: number): string {
 }
 
 export function formatSignedPercent(value: number): string {
-  const absoluteValue = Math.abs(value);
-  const isNearComparisonThreshold = absoluteValue > 5 && absoluteValue < 5.5;
-  const fractionDigits = isNearComparisonThreshold
-    ? absoluteValue < 5.05 ? 2 : 1
-    : 0;
   const rounded = Math.abs(value) < 0.05 ? 0 : value;
+  const absoluteValue = Math.abs(rounded);
+  const distanceFromThreshold = absoluteValue - 5;
+  const fractionDigits = distanceFromThreshold > 0 && distanceFromThreshold < 0.5
+    ? Math.min(6, Math.max(1, Math.ceil(-Math.log10(distanceFromThreshold)) + 1))
+    : 0;
+  const roundedMagnitude = Number(absoluteValue.toFixed(fractionDigits));
+  const displayMagnitude = absoluteValue > 5 && roundedMagnitude <= 5
+    ? 5 + 10 ** -fractionDigits
+    : absoluteValue;
+  const displayValue = rounded < 0 ? -displayMagnitude : displayMagnitude;
   const formatted = new Intl.NumberFormat("fr-FR", {
-    minimumFractionDigits: fractionDigits,
+    minimumFractionDigits: 0,
     maximumFractionDigits: fractionDigits,
-  }).format(rounded);
+  }).format(displayValue);
 
-  return `${rounded > 0 ? "+" : ""}${formatted}%`;
+  return `${displayValue > 0 ? "+" : ""}${formatted}%`;
 }
 
 export function deriveGaugeMax(

@@ -126,6 +126,18 @@ describe("TrashBinGauge", () => {
     expect(markup).toContain('data-testid="waste-measurement-visual-comparison-status"');
   });
 
+  it("shows the zero-reference status even when the current measure is absent", () => {
+    const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: null,
+      currentPerVolunteer: null,
+      benchmarkPerVolunteer: 0,
+      benchmarkSourceCount: 2,
+    }));
+
+    expect(markup).toContain("Ratio indisponible lorsque la moyenne vaut zéro.");
+    expect(markup).not.toContain("Mesure à saisir pour comparer.");
+  });
+
   it("shows the measure-required status while keeping the benchmark marker", () => {
     const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
       value: null,
@@ -148,6 +160,37 @@ describe("TrashBinGauge", () => {
 
     expect(markup).toContain("Participants insuffisamment renseignés.");
     expect(markup).not.toContain("Moyenne indisponible");
+  });
+
+  it.each([
+    [
+      { value: null, currentPerVolunteer: null, benchmarkPerVolunteer: 8 },
+      "Mesure à saisir pour comparer.",
+    ],
+    [
+      { value: 8, currentPerVolunteer: null, benchmarkPerVolunteer: 8 },
+      "Participants insuffisamment renseignés.",
+    ],
+    [
+      { value: null, currentPerVolunteer: null, benchmarkPerVolunteer: 0 },
+      "Ratio indisponible lorsque la moyenne vaut zéro.",
+    ],
+  ] as const)("renders %s as visible content, not only as an accessible name", (props, expectedStatus) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    act(() => {
+      mountedRoot = createRoot(container);
+      mountedRoot.render(React.createElement(TrashBinGauge, {
+        ...props,
+        benchmarkSourceCount: 2,
+      }));
+    });
+
+    const status = container.querySelector<HTMLElement>('[data-testid="waste-measurement-visual-comparison-status"]');
+    expect(status).not.toBeNull();
+    expect(status?.textContent).toBe(expectedStatus);
+    expect(status?.getAttribute("aria-hidden")).toBeNull();
+    expect(status?.className).not.toContain("sr-only");
   });
 });
 
@@ -235,12 +278,15 @@ describe("DropletGauge", () => {
 describe("HarvestComparisonTrend", () => {
   it.each([
     [12, "up", "+12%"],
+    [5.0000001, "up", "+5,000001%"],
+    [5.001, "up", "+5,001%"],
     [5.01, "up", "+5,01%"],
     [5.1, "up", "+5,1%"],
     [5, "neutral", "+5%"],
     [1, "neutral", "+1%"],
     [-1, "neutral", "-1%"],
     [-5, "neutral", "-5%"],
+    [-5.001, "down", "-5,001%"],
     [-5.01, "down", "-5,01%"],
     [-5.1, "down", "-5,1%"],
     [-25, "down", "-25%"],
@@ -259,6 +305,10 @@ describe("HarvestComparisonTrend", () => {
     expect(markup).toContain(`data-trend="${direction}"`);
     expect(markup).toContain(label);
     expect(markup).toContain("par rapport à la moyenne par participant");
+    expect(markup).toContain(
+      direction === "up" ? "text-emerald-700" : direction === "down" ? "text-rose-700" : "text-slate-600",
+    );
+    expect(markup).toContain(`aria-label="Tendance ${direction === "up" ? "montante" : direction === "down" ? "descendante" : "neutre"} : ${label} par rapport à la moyenne par participant"`);
     expect(markup).not.toContain("unité opérationnelle");
     expect(markup).not.toContain("rounded-2xl border");
   });

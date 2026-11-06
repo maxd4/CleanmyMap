@@ -11,9 +11,12 @@ describe("signed comparison percentages", () => {
   it.each([
     [12, "+12%"],
     [5, "+5%"],
+    [5.0000001, "+5,000001%"],
+    [5.001, "+5,001%"],
     [5.1, "+5,1%"],
     [5.01, "+5,01%"],
     [-5, "-5%"],
+    [-5.001, "-5,001%"],
     [-5.1, "-5,1%"],
     [0, "0%"],
   ])("keeps the displayed percentage consistent with the threshold (%s)", (value, expected) => {

@@ -70,13 +70,16 @@ function QuantityGaugeVisual({
       ? "Référence insuffisante."
       : referenceStatus === "unavailable"
         ? "Moyenne indisponible."
-    : !hasCurrent
-      ? measurementAvailable
-        ? "Participants insuffisamment renseignés."
-        : "Mesure à saisir pour comparer."
-      : hasReference && !hasPositiveReference
-        ? "Ratio indisponible lorsque la moyenne vaut zéro."
-        : "";
+        : !hasReference
+          ? "Moyenne indisponible."
+          : !hasPositiveReference
+            ? "Ratio indisponible lorsque la moyenne vaut zéro."
+            : !hasCurrent
+              ? measurementAvailable
+                ? "Participants insuffisamment renseignés."
+                : "Mesure à saisir pour comparer."
+              : "";
+  const hasComparisonStatus = statusLabel.length > 0 && !hasBenchmark;
   const helpId = `${testId}-benchmark-help`;
   const currentReferenceLabel = currentPerVolunteer === null
     ? "mesure absente"
@@ -141,10 +144,12 @@ function QuantityGaugeVisual({
           ) : (
             <p className="text-xs font-semibold text-slate-500">Repère : moyenne par bénévole</p>
           )}
-          {hasReference && !hasBenchmark ? (
+          {hasComparisonStatus ? (
             <p
               data-testid={`${testId}-comparison-status`}
               className="mt-1 text-xs font-semibold text-slate-600"
+              role="status"
+              aria-live="polite"
             >
               {statusLabel}
             </p>
