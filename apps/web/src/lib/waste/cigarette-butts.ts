@@ -34,6 +34,7 @@ import {
   type ActionCigaretteButtsMeasurements,
   type CigaretteButtsInputSource,
   type CigaretteButtsLotInput,
+  type CigaretteButtsLotSource,
   type CigaretteButtsMeasurementInput,
   type CigaretteButtsProvenance,
   type CigaretteButtsRecalculationStatus,
@@ -96,6 +97,56 @@ function normalizeCount(value: number | null | undefined): number | null {
   return normalized === null ? null : Math.trunc(normalized);
 }
 
+function canonicalInputSource(
+  source: CigaretteButtsInputSource | undefined,
+): CigaretteButtsInputSource | undefined {
+  return source === "mass" ? "mass_kg" : source;
+}
+
+function isScalarInputSource(
+  source: CigaretteButtsInputSource | null | undefined,
+): source is "count" | "mass" | "mass_kg" | "volume_l" {
+  return source === "count" || source === "mass" || source === "mass_kg" || source === "volume_l";
+}
+
+function toLotSource(source: CigaretteButtsInputSource): CigaretteButtsLotSource {
+  return source === "mass" ? "mass_kg" : source as CigaretteButtsLotSource;
+}
+
+/**
+ * Calculates all scalar equivalents from the one source the user entered.
+ * The lot engine remains the sole owner of mass/count conversions; volume is
+ * the inverse of the same versioned volume proxy used by volume lots.
+ */
+export function calculateCigaretteButtsMeasurementFromSource(input: {
+  source: CigaretteButtsLotSource;
+  value: number;
+  condition: ActionMegotsCondition;
+}): ActionCigaretteButtsMeasurements {
+  const result = calculateCigaretteButtsLot({
+    id: "scalar-cigarette-butts",
+    source: input.source,
+    value: input.value,
+    condition: input.condition,
+  });
+  const volumeLiters = input.source === "volume_l"
+    ? input.value
+    : result.count / getCigaretteButtsVolumeFactor();
+  return {
+    cigaretteButtsCount: result.count,
+    cigaretteButtsMassKg: result.massKg,
+    cigaretteButtsVolumeLiters: volumeLiters,
+    cigaretteButtsCondition: input.condition,
+    cigaretteButtsCountProvenance: result.countProvenance,
+    cigaretteButtsMassProvenance: result.massProvenance,
+    cigaretteButtsVolumeProvenance: input.source === "volume_l" ? "measured" : "volume_converted",
+    cigaretteButtsConversionFormulaVersion: result.massConversionFormulaVersion,
+    cigaretteButtsInputSource: input.source,
+    cigaretteButtsVolumeConversionFormulaVersion: result.volumeConversionFormulaVersion ?? CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+    cigaretteButtsRecalculationStatus: "recalculable",
+  };
+}
+
 function resolveProvenance(
   value: CigaretteButtsProvenance | undefined,
   fallback: CigaretteButtsProvenance,
@@ -155,6 +206,7 @@ export function normalizeCigaretteButtsMeasurements(
     }
   }
 
+  const canonicalSource = canonicalInputSource(input.cigaretteButtsInputSource);
   return {
     cigaretteButtsCount: count,
     cigaretteButtsMassKg: massKg,
@@ -164,6 +216,10 @@ export function normalizeCigaretteButtsMeasurements(
     cigaretteButtsMassProvenance: massProvenance,
     cigaretteButtsVolumeProvenance: volumeProvenance,
     cigaretteButtsConversionFormulaVersion: conversionFormulaVersion,
+    ...(canonicalSource !== undefined ? { cigaretteButtsInputSource: canonicalSource } : {}),
+    ...(input.cigaretteButtsVolumeConversionFormulaVersion !== undefined
+      ? { cigaretteButtsVolumeConversionFormulaVersion: input.cigaretteButtsVolumeConversionFormulaVersion }
+      : {}),
     cigaretteButtsRecalculationStatus: resolveLegacyRecalculationStatus({
       count,
       massKg,
@@ -393,6 +449,38 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
   if (cleared) return cleared;
   const inputSource = resolveUserInputSource(effectiveInput, existingMeasurements);
   const explicitInputSource = hasExplicitInputSource(effectiveInput, existingMeasurements);
+  const scalarSource = isScalarInputSource(inputSource) ? toLotSource(inputSource) : null;
+  const scalarValue = scalarSource === "count"
+    ? normalizeCount(effectiveInput.cigaretteButtsCount)
+    : scalarSource === "mass_kg"
+      ? normalizeNullableNonNegative(effectiveInput.cigaretteButtsMassKg)
+      : scalarSource === "volume_l"
+        ? normalizeNullableNonNegative(effectiveInput.cigaretteButtsVolumeLiters)
+        : null;
+  const scalarCondition = resolveCondition(effectiveInput.cigaretteButtsCondition);
+  const existingScalarSource = isScalarInputSource(inferCigaretteButtsInputSource(existingMeasurements))
+    ? toLotSource(inferCigaretteButtsInputSource(existingMeasurements))
+    : null;
+  const sameScalarValuesAsExisting = existingMeasurements !== null && existingMeasurements !== undefined &&
+    sameMeasurementValue(normalizeCount(effectiveInput.cigaretteButtsCount), existingMeasurements.cigaretteButtsCount) &&
+    sameMeasurementValue(normalizeNullableNonNegative(effectiveInput.cigaretteButtsMassKg), existingMeasurements.cigaretteButtsMassKg) &&
+    sameMeasurementValue(normalizeNullableNonNegative(effectiveInput.cigaretteButtsVolumeLiters), existingMeasurements.cigaretteButtsVolumeLiters);
+  if (
+    existingMeasurements &&
+    scalarSource &&
+    scalarCondition === existingMeasurements.cigaretteButtsCondition &&
+    sameScalarValuesAsExisting &&
+    existingScalarSource === scalarSource
+  ) {
+    return existingMeasurements;
+  }
+  if (scalarSource && scalarValue !== null && scalarCondition) {
+    return calculateCigaretteButtsMeasurementFromSource({
+      source: scalarSource,
+      value: scalarValue,
+      condition: scalarCondition,
+    });
+  }
   const sourceSpecificInput = buildSourceSpecificInput(effectiveInput, inputSource, explicitInputSource);
   const normalized = normalizeCigaretteButtsMeasurements({
     cigaretteButtsCount: sourceSpecificInput.cigaretteButtsCount,
@@ -519,7 +607,7 @@ function buildSourceSpecificInput(
   explicit: boolean,
 ): RawCigaretteButtsMeasurementInput & { deriveMissingFromMassOrCount: boolean } {
   if (!explicit) return { ...input, deriveMissingFromMassOrCount: true };
-  if (source === "mass") return { ...input, cigaretteButtsCount: null, deriveMissingFromMassOrCount: true };
+  if (source === "mass" || source === "mass_kg") return { ...input, cigaretteButtsCount: null, deriveMissingFromMassOrCount: true };
   if (source === "count") return { ...input, cigaretteButtsMassKg: null, deriveMissingFromMassOrCount: true };
   return { ...input, deriveMissingFromMassOrCount: false };
 }
@@ -596,14 +684,33 @@ function resolveUserInputSource(
       normalizeNullableNonNegative(input.cigaretteButtsMassKg),
       existingMeasurements.cigaretteButtsMassKg,
     );
+  const volumeChanged =
+    input.cigaretteButtsVolumeLiters !== undefined &&
+    !sameMeasurementValue(
+      normalizeNullableNonNegative(input.cigaretteButtsVolumeLiters),
+      existingMeasurements.cigaretteButtsVolumeLiters,
+    );
+  const explicitSource = input.cigaretteButtsInputSource;
+  if (isScalarInputSource(explicitSource)) {
+    const sourceValueChanged = explicitSource === "count"
+      ? countChanged
+      : explicitSource === "mass" || explicitSource === "mass_kg"
+        ? massChanged
+        : volumeChanged;
+    const canonicalPersistedSource = canonicalInputSource(persistedSource);
+    if (sourceValueChanged || canonicalPersistedSource === canonicalInputSource(explicitSource)) {
+      return explicitSource;
+    }
+  }
   const singleFieldSource = resolveSingleChangedInputSource(
     countChanged,
     massChanged,
-    persistedSource,
-    input.cigaretteButtsInputSource,
+    volumeChanged,
   );
   if (singleFieldSource) return singleFieldSource;
-  if (countChanged && massChanged) return resolveBothChangedInputSource(input.cigaretteButtsInputSource, persistedSource);
+  if (countChanged || massChanged || volumeChanged) {
+    return resolveBothChangedInputSource(input.cigaretteButtsInputSource, persistedSource);
+  }
 
   // A condition-only edit must follow the persisted source. An ambiguous
   // historical pair stays ambiguous, regardless of a forged payload hint.
@@ -613,11 +720,11 @@ function resolveUserInputSource(
 function resolveSingleChangedInputSource(
   countChanged: boolean,
   massChanged: boolean,
-  persistedSource: CigaretteButtsInputSource,
-  inputSource: CigaretteButtsInputSource | undefined,
+  volumeChanged: boolean,
 ): CigaretteButtsInputSource | null {
-  if (countChanged && !massChanged) return persistedSource === "mass" && inputSource !== "count" ? "mass" : "count";
-  if (massChanged && !countChanged) return persistedSource === "count" && inputSource !== "mass" ? "count" : "mass";
+  if (countChanged && !massChanged && !volumeChanged) return "count";
+  if (massChanged && !countChanged && !volumeChanged) return "mass_kg";
+  if (volumeChanged && !countChanged && !massChanged) return "volume_l";
   return null;
 }
 
@@ -625,7 +732,7 @@ function resolveBothChangedInputSource(
   inputSource: CigaretteButtsInputSource | undefined,
   persistedSource: CigaretteButtsInputSource,
 ): CigaretteButtsInputSource {
-  if (inputSource === "count" || inputSource === "mass") return inputSource;
+  if (inputSource === "count" || inputSource === "mass" || inputSource === "mass_kg" || inputSource === "volume_l") return inputSource;
   return persistedSource;
 }
 
@@ -644,9 +751,22 @@ export function inferCigaretteButtsInputSource(
   if (!measurements) return null;
   if (measurements.cigaretteButtsLots !== undefined) return null;
 
+  if (measurements.cigaretteButtsInputSource !== undefined && measurements.cigaretteButtsInputSource !== null) {
+    return canonicalInputSource(measurements.cigaretteButtsInputSource) ?? null;
+  }
+
   const hasCount = measurements.cigaretteButtsCount !== null;
   const hasMass = measurements.cigaretteButtsMassKg !== null;
-  if (!hasCount && !hasMass) return null;
+  const hasVolume = measurements.cigaretteButtsVolumeLiters !== null;
+  if (!hasCount && !hasMass && !hasVolume) return null;
+
+  if (
+    hasVolume &&
+    measurements.cigaretteButtsVolumeProvenance === "measured" &&
+    measurements.cigaretteButtsCountProvenance === "volume_converted"
+  ) {
+    return "volume_l";
+  }
 
   if (
     hasCount &&

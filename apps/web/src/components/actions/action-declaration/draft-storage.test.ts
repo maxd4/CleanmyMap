@@ -156,7 +156,7 @@ describe("action declaration draft storage", () => {
     const draft = createInitialFormState("Alice");
     draft.wasteMegotsKg = "1";
     draft.cigaretteButtsCount = "1750";
-    draft.cigaretteButtsInputSource = "mass";
+    draft.cigaretteButtsInputSource = "mass_kg";
     draft.cigaretteButtsCountProvenance = "weight_converted";
     draft.cigaretteButtsMassProvenance = "measured";
     draft.cigaretteButtsVolumeProvenance = "unknown";
@@ -167,7 +167,7 @@ describe("action declaration draft storage", () => {
     saveDraft(draft, "2026-05-13T10:45:00.000Z");
 
     const restored = loadDraftSnapshot(createInitialFormState("Fallback"))?.form;
-    expect(restored?.cigaretteButtsInputSource).toBe("mass");
+    expect(restored?.cigaretteButtsInputSource).toBe("mass_kg");
     expect(restored?.wasteMegotsKg).toBe("1");
     expect(restored?.cigaretteButtsCount).toBe("1750");
     expect(restored?.cigaretteButtsCountProvenance).toBe("weight_converted");

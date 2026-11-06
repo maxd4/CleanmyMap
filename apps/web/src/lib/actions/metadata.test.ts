@@ -5,7 +5,10 @@ import {
   setActionGroupJoinEnabledInNotes,
 } from "./metadata";
 import { buildMetadataPayload, hasActionMetadata } from "./metadata-payload";
-import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  normalizeCigaretteButtsMeasurements,
+  normalizeCigaretteButtsMeasurementsFromUserInput,
+} from "@/lib/waste/cigarette-butts";
 
 describe("action metadata notes", () => {
   it("appends and extracts submission mode and waste breakdown", () => {
@@ -138,6 +141,25 @@ describe("action metadata notes", () => {
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters).toBe(2);
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBeNull();
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCount).toBeNull();
+  });
+
+  it("round-trips the latest scalar source and its volume conversion version", () => {
+    const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCondition: "humide",
+      cigaretteButtsInputSource: "volume_l",
+    });
+    const notes = appendActionMetadataToNotes(undefined, { cigaretteButtsMeasurements });
+    const parsed = extractActionMetadataFromNotes(notes);
+
+    expect(parsed.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsMassKg: 0.875,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsInputSource: "volume_l",
+      cigaretteButtsVolumeProvenance: "measured",
+      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v2",
+    });
   });
 
   it("round-trips volunteer sources and derived values without changing legacy notes", () => {

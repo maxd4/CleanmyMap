@@ -577,6 +577,13 @@ est inconnue reste indisponible pour la masse : elle ne devient pas une masse
 estimée nulle. Le nombre connu est conservé, et la provenance `unknown` reste
 distincte d'un `mass_kg = 0` explicitement mesuré.
 
+Pour une saisie scalaire récente, `cigaretteButtsInputSource` conserve la dernière
+unité effectivement saisie (`count`, `mass_kg` ou `volume_l`). Les deux autres
+équivalences sont recalculées à partir de cette source et des versions canoniques
+du moteur, sans qu'une valeur dérivée puisse devenir une nouvelle mesure
+observée. Les anciennes déclarations sans cette provenance explicite restent
+interprétées selon leurs provenances disponibles et ne sont pas réécrites.
+
 La même règle s'applique aux attributions individuelles post-action : seuls
 les comptes `action_participants` confirmés sont concernés. Un participant peut
 avoir plusieurs lots mixtes (`count`, `mass_kg`, `volume_l`) ; le moteur LOT 1

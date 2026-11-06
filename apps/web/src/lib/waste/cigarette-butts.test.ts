@@ -140,6 +140,27 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBeNull();
   });
 
+  it("recalculates every scalar equivalence from an explicit volume source", () => {
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 1_700,
+      cigaretteButtsMassKg: 1,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsInputSource: "volume_l",
+    });
+
+    expect(measurement).toMatchObject({
+      cigaretteButtsCount: 1_750,
+      cigaretteButtsMassKg: 0.385,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCountProvenance: "volume_converted",
+      cigaretteButtsMassProvenance: "weight_converted",
+      cigaretteButtsVolumeProvenance: "measured",
+      cigaretteButtsInputSource: "volume_l",
+      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v2",
+    });
+  });
+
   it("treats the mass as the sole observed source when the form says mass", () => {
     const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
       cigaretteButtsCount: 1_750,
@@ -195,6 +216,30 @@ describe("cigarette-butt raw and derived measurements", () => {
     expect(measurement.cigaretteButtsCountProvenance).toBe("unknown");
     expect(measurement.cigaretteButtsMassProvenance).toBe("unknown");
     expect(measurement.cigaretteButtsConversionFormulaVersion).toBeNull();
+  });
+
+  it("does not reproject an unchanged historical volume source", () => {
+    const existing = buildExistingMeasurements({
+      cigaretteButtsCount: 600,
+      cigaretteButtsMassKg: 0.132,
+      cigaretteButtsVolumeLiters: 1,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsCountProvenance: "volume_converted",
+      cigaretteButtsMassProvenance: "weight_converted",
+      cigaretteButtsVolumeProvenance: "measured",
+      cigaretteButtsInputSource: "volume_l",
+      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v1",
+    });
+
+    const measurement = normalizeCigaretteButtsMeasurementsFromUserInput({
+      cigaretteButtsCount: 600,
+      cigaretteButtsMassKg: 0.132,
+      cigaretteButtsVolumeLiters: 1,
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsInputSource: "volume_l",
+    }, { existingMeasurements: existing });
+
+    expect(measurement).toEqual(existing);
   });
 
   it("preserves the independent mass when only an unknown count is cleared", () => {
@@ -278,7 +323,7 @@ describe("cigarette-butt raw and derived measurements", () => {
     ["unknown", "count edit", { cigaretteButtsCount: 2_000 }],
     ["volume_converted", "mass edit", { cigaretteButtsMassKg: 1.2 }],
     ["measured", "condition edit", { cigaretteButtsCondition: "propre" }],
-  ] as const)("preserves %s volume provenance after a %s", (provenance, _label, patch) => {
+  ] as const)("keeps %s volume provenance after a %s", (provenance, _label, patch) => {
     const existing = buildExistingMeasurements({
       cigaretteButtsVolumeLiters: 2.5,
       cigaretteButtsVolumeProvenance: provenance,
@@ -294,8 +339,16 @@ describe("cigarette-butt raw and derived measurements", () => {
       ...patch,
     }, { existingMeasurements: existing });
 
-    expect(measurement.cigaretteButtsVolumeLiters).toBe(2.5);
-    expect(measurement.cigaretteButtsVolumeProvenance).toBe(provenance);
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(
+      "cigaretteButtsCount" in patch
+        ? 2_000 / 700
+        : "cigaretteButtsMassKg" in patch
+          ? 2_400 / 700
+          : 2.5,
+    );
+    expect(measurement.cigaretteButtsVolumeProvenance).toBe(
+      "cigaretteButtsCondition" in patch ? provenance : "volume_converted",
+    );
   });
 
   it("preserves volume provenance when a partial patch omits the volume", () => {
@@ -308,7 +361,7 @@ describe("cigarette-butt raw and derived measurements", () => {
       cigaretteButtsCount: 1_800,
     }, { existingMeasurements: existing });
 
-    expect(measurement.cigaretteButtsVolumeLiters).toBe(2.5);
+    expect(measurement.cigaretteButtsVolumeLiters).toBe(1_800 / 700);
     expect(measurement.cigaretteButtsVolumeProvenance).toBe("volume_converted");
   });
 

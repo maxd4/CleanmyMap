@@ -179,6 +179,32 @@ describe("action declaration hydration model", () => {
     expect(result.routeTargetDistanceKm).toBe("1");
   });
 
+  it("rehydrates the persisted volume source without promoting a derived field", () => {
+    const result = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({
+        cigaretteButts: 1_750,
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: 1_750,
+          cigaretteButtsMassKg: 0.875,
+          cigaretteButtsVolumeLiters: 2.5,
+          cigaretteButtsCondition: "humide",
+          cigaretteButtsCountProvenance: "volume_converted",
+          cigaretteButtsMassProvenance: "weight_converted",
+          cigaretteButtsVolumeProvenance: "measured",
+          cigaretteButtsInputSource: "volume_l",
+          cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v2",
+        } as ActionEditorRecord["cigaretteButtsMeasurements"],
+      }),
+    );
+
+    expect(result.cigaretteButtsInputSource).toBe("volume_l");
+    expect(result.cigaretteButtsVolumeLiters).toBe("2.5");
+    expect(result.cigaretteButtsCount).toBe("1750");
+    expect(result.wasteMegotsKg).toBe("0.875");
+    expect(result.cigaretteButtsVolumeProvenance).toBe("measured");
+  });
+
   it("keeps explicit zero, positive durations, historical compatibility and manual targets", () => {
     const explicitZero = buildActionEditorFormState(
       createInitialFormState("Alex", "action"),

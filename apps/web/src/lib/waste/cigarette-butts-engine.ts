@@ -106,7 +106,8 @@ export type CigaretteButtsRecalculationStatus =
  * Identifies which field was manually observed in the form. `unknown` is
  * reserved for historical pairs whose original source cannot be reconstructed.
  */
-export type CigaretteButtsInputSource = "count" | "mass" | "unknown" | null;
+/** Legacy `mass` remains accepted when reading old form payloads. */
+export type CigaretteButtsInputSource = CigaretteButtsLotSource | "mass" | "unknown" | null;
 
 export const CIGARETTE_BUTTS_LOT_SOURCES = [
   "count",
@@ -170,6 +171,10 @@ export type ActionCigaretteButtsMeasurements = {
   cigaretteButtsMassProvenance: CigaretteButtsProvenance;
   cigaretteButtsVolumeProvenance: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion: string | null;
+  /** Last scalar source explicitly entered by the user, when known. */
+  cigaretteButtsInputSource?: CigaretteButtsInputSource;
+  /** Volume proxy version used for a scalar derived volume. */
+  cigaretteButtsVolumeConversionFormulaVersion?: string | null;
   /** Whether a derived value can be recomputed from a retained source. */
   cigaretteButtsRecalculationStatus?: CigaretteButtsRecalculationStatus;
   /** Present only for the explicit multi-lot contract. */
@@ -188,11 +193,12 @@ export type CigaretteButtsMeasurementInput = {
   cigaretteButtsMassProvenance?: CigaretteButtsProvenance;
   cigaretteButtsVolumeProvenance?: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion?: string | null;
+  cigaretteButtsInputSource?: CigaretteButtsInputSource;
+  cigaretteButtsVolumeConversionFormulaVersion?: string | null;
   cigaretteButtsLots?: CigaretteButtsLotInput[] | null;
   /** Persisted calculation snapshot; never accepted from raw HTTP input. */
   cigaretteButtsLotResults?: CigaretteButtsLotResult[];
   cigaretteButtsLotsSummary?: CigaretteButtsLotsSummary;
-  cigaretteButtsInputSource?: CigaretteButtsInputSource;
   deriveMissingFromMassOrCount?: boolean;
 };
 

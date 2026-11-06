@@ -277,12 +277,12 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
     const reread = extractActionMetadataFromNotes(nextNotes).cigaretteButtsMeasurements;
 
     expect(result.nextCigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsVolumeLiters: 2.5,
-      cigaretteButtsVolumeProvenance: "unknown",
+      cigaretteButtsVolumeLiters: 1_800 / 700,
+      cigaretteButtsVolumeProvenance: "volume_converted",
     });
     expect(reread).toMatchObject({
-      cigaretteButtsVolumeLiters: 2.5,
-      cigaretteButtsVolumeProvenance: "unknown",
+      cigaretteButtsVolumeLiters: 1_800 / 700,
+      cigaretteButtsVolumeProvenance: "volume_converted",
     });
   });
 
