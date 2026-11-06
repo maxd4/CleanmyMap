@@ -370,6 +370,57 @@ describe("route nearest relevant search", () => {
     expect(result.inaccessibleTargetNodeIds).toEqual(new Set());
   });
 
+  it("admits a precise origin in the middle of a directed edge without snapping", () => {
+    const edge = graphAtDistances([0.1]).edges.find(({ edgeKey }) => edgeKey === "edge-0-access")!;
+    const midpoint: [number, number] = [
+      (edge.coordinates[0]![0] + edge.coordinates[1]![0]) / 2,
+      edge.coordinates[0]![1],
+    ];
+    const result = shortestPedestrianAccessFromSources(
+      { ...graphAtDistances([0.1]), edges: [edge] },
+      [midpoint],
+      [edge.coordinates[1]!],
+      { maxSnapDistanceM: 0 },
+    );
+
+    expect(result.finalizedTargetNodeIds).toEqual(new Set([edge.toNodeId]));
+    expect(result.distancesM.get(edge.toNodeId)).toBeGreaterThan(0);
+    expect(result.distancesM.get(edge.toNodeId)).toBeLessThan(edge.lengthM);
+  });
+
+  it("does not publish a provisional target when the settled-node ceiling interrupts Dijkstra", () => {
+    const graph = graphAtDistances([0.1]);
+    const target = graph.edges.find(({ edgeKey }) => edgeKey === "edge-0-tail")!.coordinates.at(-1)!;
+    const result = shortestPedestrianAccessFromSources(
+      graph,
+      [[center.latitude, center.longitude]],
+      [target],
+      { maxSettledNodes: 0 },
+    );
+
+    expect(result.timedOut).toBe(true);
+    expect(result.finalizedTargetNodeIds).toEqual(new Set());
+    expect(result.inaccessibleTargetNodeIds).toEqual(new Set(["node-0-end"]));
+  });
+
+  it("accounts for actual provider calls before admitting another evaluation", async () => {
+    const planWithThreeCalls = vi.fn(async () => ({
+      ...evaluate(80),
+      providerCalls: 3,
+    }));
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1, 0.2, 0.3]),
+      reference: reference(),
+      baseline: evaluate(48),
+      estimateProviderCalls: () => 2,
+      evaluate: planWithThreeCalls,
+    });
+
+    expect(planWithThreeCalls).toHaveBeenCalledTimes(1);
+    expect(result.search.plansEvaluated).toBe(1);
+    expect(result.search.reason).toBe("quota_exhausted");
+  });
+
   it("counts expired attempts and stops at the global search budget", async () => {
     vi.useFakeTimers();
     const resultPromise = findNearestRelevantRoute({

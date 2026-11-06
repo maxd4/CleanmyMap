@@ -58,6 +58,7 @@ export const MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M = 50;
 export type PedestrianNetworkMultiSourceAccess = {
   distancesM: Map<string, number>;
   resolvedTargetNodeIds: Set<string>;
+  finalizedTargetNodeIds: Set<string>;
   inaccessibleTargetNodeIds: Set<string>;
   aborted: boolean;
   timedOut: boolean;
@@ -463,6 +464,42 @@ export function resolvePedestrianNetworkPoint(
   return nearest && nearest.distanceM <= maxSnapDistanceM ? nearest : null;
 }
 
+const EXACT_EDGE_MATCH_TOLERANCE_M = 0.05;
+
+function resolveExactDirectedEdgePoint(
+  point: Coordinate,
+  edges: readonly PedestrianNetworkEdge[],
+): { nodeId: string; distanceM: number } | null {
+  let best: { nodeId: string; distanceM: number; errorM: number; edgeKey: string } | null = null;
+  for (const edge of edges) {
+    let travelledM = 0;
+    for (let index = 0; index < edge.coordinates.length - 1; index += 1) {
+      const start = edge.coordinates[index]!;
+      const end = edge.coordinates[index + 1]!;
+      const latitudeScale = 111_320;
+      const longitudeScale = latitudeScale * Math.cos((point[0] * Math.PI) / 180);
+      const dx = (end[1] - start[1]) * longitudeScale;
+      const dy = (end[0] - start[0]) * latitudeScale;
+      const px = (point[1] - start[1]) * longitudeScale;
+      const py = (point[0] - start[0]) * latitudeScale;
+      const lengthSquared = dx * dx + dy * dy;
+      const fraction = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, (px * dx + py * dy) / lengthSquared));
+      const projected: Coordinate = [start[0] + ((end[0] - start[0]) * fraction), start[1] + ((end[1] - start[1]) * fraction)];
+      const errorM = haversineMeters(point, projected);
+      const segmentLengthM = haversineMeters(start, end);
+      if (errorM <= EXACT_EDGE_MATCH_TOLERANCE_M) {
+        const distanceM = travelledM + ((1 - fraction) * segmentLengthM);
+        const candidate = { nodeId: edge.toNodeId, distanceM, errorM, edgeKey: edge.edgeKey };
+        if (!best || errorM < best.errorM || (errorM === best.errorM && edge.edgeKey.localeCompare(best.edgeKey) < 0)) {
+          best = candidate;
+        }
+      }
+      travelledM += segmentLengthM;
+    }
+  }
+  return best ? { nodeId: best.nodeId, distanceM: best.distanceM } : null;
+}
+
 function routeBetweenNodes(
   fromNodeId: string,
   toNodeId: string,
@@ -512,19 +549,20 @@ export function shortestPedestrianAccessFromSources(
 ): PedestrianNetworkMultiSourceAccess {
   const distancesM = new Map<string, number>();
   const resolvedTargetNodeIds = new Set<string>();
+  const finalizedTargetNodeIds = new Set<string>();
   const inaccessibleTargetNodeIds = new Set<string>();
   const deadlineMs = options.deadlineMs ?? Number.POSITIVE_INFINITY;
   const maxSettledNodes = options.maxSettledNodes ?? Number.POSITIVE_INFINITY;
   const interrupted = () => options.signal?.aborted === true || Date.now() >= deadlineMs;
   if (interrupted()) {
-    return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+    return { distancesM, resolvedTargetNodeIds, finalizedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
   }
 
   const nodes = new Map<string, Coordinate>();
   const adjacency = new Map<string, PedestrianNetworkEdge[]>();
   for (const [index, edge] of graph.edges.entries()) {
     if (index % 128 === 0 && interrupted()) {
-      return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+      return { distancesM, resolvedTargetNodeIds, finalizedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
     }
     const first = edge.coordinates[0];
     const last = edge.coordinates.at(-1);
@@ -539,33 +577,41 @@ export function shortestPedestrianAccessFromSources(
   const maxSnapDistanceM = options.maxSnapDistanceM ?? MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M;
   const sources = options.sourceNodeIds
     ? options.sourceNodeIds.map((nodeId) => nodes.has(nodeId) ? { nodeId, coordinate: nodes.get(nodeId)!, distanceM: 0, resolution: "exact_node" as const } : null)
-    : sourceCoordinates.map((point) => resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM));
+    : sourceCoordinates.map((point) => {
+      const exactNode = resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM);
+      if (exactNode) return { ...exactNode, distanceM: 0 };
+      if (maxSnapDistanceM === 0) {
+        const exactEdge = resolveExactDirectedEdgePoint(point, graph.edges);
+        return exactEdge ? { ...exactEdge, coordinate: point, resolution: "exact_node" as const } : null;
+      }
+      return null;
+    });
   const targets = targetCoordinates.map((point) => resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM));
   targets.forEach((target) => {
     if (target) resolvedTargetNodeIds.add(target.nodeId);
   });
   if (sources.some((source) => source === null) || interrupted()) {
-    return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+    return { distancesM, resolvedTargetNodeIds, finalizedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
   }
 
   const pending = new Set<string>();
   for (const source of sources) {
     if (!source) continue;
-    if (!distancesM.has(source.nodeId)) {
-      distancesM.set(source.nodeId, 0);
+    if (source.distanceM < (distancesM.get(source.nodeId) ?? Number.POSITIVE_INFINITY)) {
+      distancesM.set(source.nodeId, source.distanceM);
       pending.add(source.nodeId);
     }
   }
   let settledNodes = 0;
+  let interruptedByBudget = false;
   while (pending.size > 0 && settledNodes < maxSettledNodes) {
-    if (interrupted()) {
-      return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
-    }
+    if (interrupted()) { interruptedByBudget = true; break; }
     const current = [...pending].sort((left, right) =>
       (distancesM.get(left) ?? Number.POSITIVE_INFINITY) - (distancesM.get(right) ?? Number.POSITIVE_INFINITY) || left.localeCompare(right),
     )[0]!;
     pending.delete(current);
     settledNodes += 1;
+    if (resolvedTargetNodeIds.has(current)) finalizedTargetNodeIds.add(current);
     for (const edge of adjacency.get(current) ?? []) {
       const candidateDistance = (distancesM.get(current) ?? Number.POSITIVE_INFINITY) + edge.lengthM;
       if (candidateDistance < (distancesM.get(edge.toNodeId) ?? Number.POSITIVE_INFINITY)) {
@@ -575,14 +621,17 @@ export function shortestPedestrianAccessFromSources(
     }
   }
   for (const target of targets) {
-    if (target && !distancesM.has(target.nodeId)) inaccessibleTargetNodeIds.add(target.nodeId);
+    if (target && !finalizedTargetNodeIds.has(target.nodeId)) inaccessibleTargetNodeIds.add(target.nodeId);
   }
+  const timedOut = interruptedByBudget || Date.now() >= deadlineMs ||
+    (maxSettledNodes !== Number.POSITIVE_INFINITY && settledNodes >= maxSettledNodes);
   return {
     distancesM,
     resolvedTargetNodeIds,
+    finalizedTargetNodeIds,
     inaccessibleTargetNodeIds,
     aborted: options.signal?.aborted === true,
-    timedOut: Date.now() >= deadlineMs || settledNodes >= maxSettledNodes,
+    timedOut,
   };
 }
 

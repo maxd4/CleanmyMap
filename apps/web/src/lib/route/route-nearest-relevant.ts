@@ -233,6 +233,7 @@ function candidateNodesForRadius(
     },
   );
   const routedCandidates = boundedCandidates.flatMap((candidate) => {
+    if (!access.finalizedTargetNodeIds.has(candidate.id)) return [];
     const distanceM = access.distancesM.get(candidate.id);
     return distanceM === undefined ? [] : [{ id: candidate.id, point: candidate.point, accessDistanceKm: distanceM / 1000 }];
   });
@@ -512,9 +513,13 @@ export async function findNearestRelevantRoute(input: {
         input.signal,
       );
       attemptsEvaluated += 1;
-      providerCalls += reservedCalls;
       const actualCalls = Math.max(1, evaluation.result?.providerCalls ?? reservedCalls);
-      if (actualCalls < reservedCalls && evaluation.result) providerCalls -= reservedCalls - actualCalls;
+      // The reservation is only an admission check. Account for the work that
+      // actually occurred before considering another candidate; otherwise two
+      // evaluations that each used three calls could pass as two-call plans
+      // and consume six calls under a four-call ceiling.
+      providerCalls += actualCalls;
+      if (actualCalls > reservedCalls) quotaExhausted = true;
       if (evaluation.timedOut) timedOutAttempts += 1;
       if (evaluation.failed) failedAttempts += 1;
       if (evaluation.aborted) {

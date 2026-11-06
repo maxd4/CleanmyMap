@@ -298,7 +298,10 @@ export async function POST(request: Request) {
             providerCalls: candidatePlanning.finalRoutingReconciliation?.providerCalls ?? 0,
           };
         },
-        estimateProviderCalls: () => 2,
+        // A candidate planning run may perform the initial route plus several
+        // budget-reduction routings. Reserve the complete nearest-search
+        // ceiling so no candidate can start with an under-sized reservation.
+        estimateProviderCalls: () => 4,
         signal: request.signal,
       });
       if (nearestSearch.selected) {
