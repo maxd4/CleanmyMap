@@ -44,6 +44,7 @@ type HarvestWasteSectionProps = {
   wasteDeltaPercent?: number | null;
   wasteOperationalUnits?: number | null;
   wasteReferenceUnitLabel?: string;
+  wasteReferenceLabel?: string;
   comparisonTone?: "emerald" | "orange" | "slate";
   validationIssues: ValidationIssue[];
 };
@@ -137,6 +138,7 @@ export function HarvestWasteSection({
   wasteDeltaPercent = null,
   wasteOperationalUnits = null,
   wasteReferenceUnitLabel = "participant",
+  wasteReferenceLabel = "Moyenne historique par participant",
   validationIssues,
 }: HarvestWasteSectionProps) {
   const [legacyTriOpen, setLegacyTriOpen] = useState(false);
@@ -176,6 +178,7 @@ export function HarvestWasteSection({
           currentTotal={parseKg(wasteKg)}
           currentUnitDenominator={wasteOperationalUnits}
           referenceUnitLabel={wasteReferenceUnitLabel}
+          referenceLabel={wasteReferenceLabel}
         />
         <div className="min-w-0">
           <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
@@ -186,6 +189,9 @@ export function HarvestWasteSection({
             benchmarkSourceCount={wasteBenchmarkSourceCount ?? 0}
             testId="waste-comparison-trend"
             unitLabel={`par ${wasteReferenceUnitLabel}`}
+            comparisonLabel={wasteReferenceLabel === "Moyenne contextuelle pondérée"
+              ? "moyenne contextuelle pondérée"
+              : "moyenne"}
           />
         </div>
       </div>

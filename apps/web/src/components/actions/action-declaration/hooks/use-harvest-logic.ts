@@ -39,27 +39,94 @@ function resolveReferenceStatus(
   return isLoading ? "loading" : "unavailable";
 }
 
+type HarvestReferenceMetric = {
+  benchmark: number | null;
+  sourceCount: number;
+  unitLabel: "unité opérationnelle" | "participant";
+  referenceLabel: "Moyenne contextuelle pondérée" | "Moyenne historique par participant";
+  usesContextualUnits: boolean;
+};
+
+type ResolvedHarvestReference = {
+  waste: HarvestReferenceMetric;
+  butts: HarvestReferenceMetric;
+};
+
+function isUsableReference(value: number | null | undefined, sourceCount: number): boolean {
+  return value !== null && value !== undefined &&
+    Number.isFinite(value) && value >= 0 && sourceCount >= 2;
+}
+
 function resolveHarvestReference(
   actionContext: FormState["actionContext"],
   globalReference: ReturnType<typeof useActionPollutionScoreReferences>["collectionReferences"],
   contextualReferences: ReturnType<typeof useActionPollutionScoreReferences>["contextualCollectionReferences"],
-) {
-  if (actionContext === "citizen" || actionContext === "company" || actionContext === "school") {
-    const contextual = contextualReferences[actionContext];
+) : ResolvedHarvestReference {
+  const contextual = actionContext === "citizen" || actionContext === "company" || actionContext === "school"
+    ? contextualReferences[actionContext]
+    : undefined;
+
+  function resolveMetric(
+    contextualValue: number | null | undefined,
+    contextualSourceCount: number,
+    globalValue: number | null | undefined,
+    globalSourceCount: number,
+  ): HarvestReferenceMetric {
+    if (isUsableReference(contextualValue, contextualSourceCount)) {
+      return {
+        benchmark: contextualValue!,
+        sourceCount: contextualSourceCount,
+        unitLabel: "unité opérationnelle",
+        referenceLabel: "Moyenne contextuelle pondérée",
+        usesContextualUnits: true,
+      };
+    }
+
+    if (isUsableReference(globalValue, globalSourceCount)) {
+      return {
+        benchmark: globalValue!,
+        sourceCount: globalSourceCount,
+        unitLabel: "participant",
+        referenceLabel: "Moyenne historique par participant",
+        usesContextualUnits: false,
+      };
+    }
+
+    // Keep the most specific available reference for an explicit insufficient
+    // or unavailable status. It is not used for a ratio until its source count
+    // satisfies the canonical minimum in deriveWasteComparison().
+    if (contextual && (contextualValue !== null && contextualValue !== undefined || contextualSourceCount > 0)) {
+      return {
+        benchmark: contextualValue ?? null,
+        sourceCount: contextualSourceCount,
+        unitLabel: "unité opérationnelle",
+        referenceLabel: "Moyenne contextuelle pondérée",
+        usesContextualUnits: true,
+      };
+    }
+
     return {
-      wastePerVolunteer: contextual?.wastePerEffectiveUnit ?? null,
-      buttsPerVolunteer: contextual?.buttsPerEffectiveUnit ?? null,
-      wasteSourceCount: contextual?.wasteSourceCount ?? 0,
-      buttsSourceCount: contextual?.buttsSourceCount ?? 0,
-      unitLabel: "unité opérationnelle",
+      benchmark: globalValue ?? null,
+      sourceCount: globalSourceCount,
+      unitLabel: "participant",
+      referenceLabel: "Moyenne historique par participant",
+      usesContextualUnits: false,
     };
   }
+
   return {
-    wastePerVolunteer: globalReference?.wastePerVolunteer ?? null,
-    buttsPerVolunteer: globalReference?.buttsPerVolunteer ?? null,
-    wasteSourceCount: globalReference?.wasteSourceCount ?? 0,
-    buttsSourceCount: globalReference?.buttsSourceCount ?? 0,
-    unitLabel: "participant",
+    waste: resolveMetric(
+      contextual?.wastePerEffectiveUnit,
+      contextual?.wasteSourceCount ?? 0,
+      globalReference?.wastePerVolunteer,
+      globalReference?.wasteSourceCount ?? 0,
+    ),
+    butts: resolveMetric(
+      contextual?.buttsPerEffectiveUnit,
+      contextual?.buttsSourceCount ?? 0,
+      globalReference?.buttsPerVolunteer,
+      globalReference?.buttsSourceCount ?? 0,
+    ),
   };
 }
 
@@ -215,6 +282,7 @@ export type UseHarvestLogicResult = {
   wasteDeltaPercent: number | null;
   wasteOperationalUnits: number | null;
   wasteReferenceUnitLabel: string;
+  wasteReferenceLabel: string;
   comparisonTone: WasteComparisonTone;
   megotsKg: number | null;
   megotsCount: number | null;
@@ -225,6 +293,7 @@ export type UseHarvestLogicResult = {
   megotsDeltaPercent: number | null;
   megotsOperationalUnits: number | null;
   megotsReferenceUnitLabel: string;
+  megotsReferenceLabel: string;
   megotsComparisonTone: WasteComparisonTone;
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
@@ -302,11 +371,17 @@ function deriveHarvestMetrics(
           })
         : { wasteUnits: null, buttsUnits: null }
       : { wasteUnits: volunteersCount, buttsUnits: volunteersCount };
+  const wasteOperationalUnits = harvestReference.waste.usesContextualUnits
+    ? contextualUnits.wasteUnits
+    : volunteersCount;
+  const megotsOperationalUnits = harvestReference.butts.usesContextualUnits
+    ? contextualUnits.buttsUnits
+    : volunteersCount;
   const wasteComparison = deriveWasteComparison({
     wasteKg,
-    operationalUnits: contextualUnits.wasteUnits,
-    benchmarkPerVolunteer: harvestReference.wastePerVolunteer,
-    benchmarkSourceCount: harvestReference.wasteSourceCount,
+    operationalUnits: harvestReference.waste.benchmark === null ? null : wasteOperationalUnits,
+    benchmarkPerVolunteer: harvestReference.waste.benchmark,
+    benchmarkSourceCount: harvestReference.waste.sourceCount,
   });
   const cigaretteButtsMeasurements =
     form.cigaretteButtsLots !== null
@@ -343,36 +418,38 @@ function deriveHarvestMetrics(
         );
   const megotsComparison = deriveWasteComparison({
     wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
-    operationalUnits: contextualUnits.buttsUnits,
-    benchmarkPerVolunteer: harvestReference.buttsPerVolunteer,
-    benchmarkSourceCount: harvestReference.buttsSourceCount,
+    operationalUnits: harvestReference.butts.benchmark === null ? null : megotsOperationalUnits,
+    benchmarkPerVolunteer: harvestReference.butts.benchmark,
+    benchmarkSourceCount: harvestReference.butts.sourceCount,
   });
   return {
     wasteCurrentPerVolunteer: wasteComparison.currentPerVolunteer,
     wasteBenchmarkPerVolunteer: wasteComparison.benchmarkPerVolunteer,
-    wasteBenchmarkSourceCount: harvestReference.wasteSourceCount,
+    wasteBenchmarkSourceCount: harvestReference.waste.sourceCount,
     wasteReferenceStatus: resolveReferenceStatus(
-      harvestReference.wastePerVolunteer,
-      harvestReference.wasteSourceCount,
+      harvestReference.waste.benchmark,
+      harvestReference.waste.sourceCount,
       referencesLoading,
     ),
     wasteDeltaPercent: wasteComparison.deltaPercent,
-    wasteOperationalUnits: contextualUnits.wasteUnits,
-    wasteReferenceUnitLabel: harvestReference.unitLabel,
+    wasteOperationalUnits,
+    wasteReferenceUnitLabel: harvestReference.waste.unitLabel,
+    wasteReferenceLabel: harvestReference.waste.referenceLabel,
     comparisonTone: wasteComparison.tone,
     megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
     megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
     megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer,
     megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer,
-    megotsBenchmarkSourceCount: harvestReference.buttsSourceCount,
+    megotsBenchmarkSourceCount: harvestReference.butts.sourceCount,
     megotsReferenceStatus: resolveReferenceStatus(
-      harvestReference.buttsPerVolunteer,
-      harvestReference.buttsSourceCount,
+      harvestReference.butts.benchmark,
+      harvestReference.butts.sourceCount,
       referencesLoading,
     ),
     megotsDeltaPercent: megotsComparison.deltaPercent,
-    megotsOperationalUnits: contextualUnits.buttsUnits,
-    megotsReferenceUnitLabel: harvestReference.unitLabel,
+    megotsOperationalUnits,
+    megotsReferenceUnitLabel: harvestReference.butts.unitLabel,
+    megotsReferenceLabel: harvestReference.butts.referenceLabel,
     megotsComparisonTone: megotsComparison.tone,
     cigaretteButtsCountProvenance:
       cigaretteButtsMeasurements.cigaretteButtsCountProvenance,

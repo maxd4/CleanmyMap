@@ -315,6 +315,127 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     mockReferences.mockReturnValue({ collectionReferences: null });
   });
 
+  it("falls back to the historical participant reference when the contextual reference is unavailable", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: {
+        wastePerVolunteer: 1.5,
+        wasteSourceCount: 2,
+        buttsPerVolunteer: 190,
+        buttsSourceCount: 5,
+        eligibleActionCount: 5,
+        formulaVersion: "action-collection-reference-averages-v1",
+        updatedAt: "2026-11-06T00:00:00.000Z",
+      },
+      contextualCollectionReferences: {},
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "school",
+      volunteersCount: "10",
+      childrenCount: "10",
+      retiredCount: "0",
+      wasteKg: "15",
+      cigaretteButtsCount: "1900",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(10);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(10);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(1.5);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(190);
+    expect(harness.latest.logic.wasteBenchmarkPerVolunteer).toBe(1.5);
+    expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(190);
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("participant");
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("participant");
+    expect(harness.latest.logic.wasteReferenceLabel).toBe("Moyenne historique par participant");
+    expect(harness.latest.logic.megotsReferenceLabel).toBe("Moyenne historique par participant");
+    expect(harness.latest.logic.wasteDeltaPercent).toBe(0);
+    expect(harness.latest.logic.megotsDeltaPercent).toBe(0);
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("does not mix denominators when only one contextual indicator is available", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: {
+        wastePerVolunteer: 1.5,
+        wasteSourceCount: 2,
+        buttsPerVolunteer: 190,
+        buttsSourceCount: 5,
+        eligibleActionCount: 5,
+        formulaVersion: "action-collection-reference-averages-v1",
+        updatedAt: "2026-11-06T00:00:00.000Z",
+      },
+      contextualCollectionReferences: {
+        school: {
+          actionContext: "school",
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: null,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "school",
+      volunteersCount: "12",
+      childrenCount: "10",
+      retiredCount: "0",
+      wasteKg: "13",
+      cigaretteButtsCount: "2280",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(6.5);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
+    expect(harness.latest.logic.wasteBenchmarkPerVolunteer).toBe(2);
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("unité opérationnelle");
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(12);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(190);
+    expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(190);
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("participant");
+    expect(harness.latest.logic.wasteDeltaPercent).toBe(0);
+    expect(harness.latest.logic.megotsDeltaPercent).toBe(0);
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("keeps loaded references while leaving comparisons unavailable for absent measurements", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: {
+        wastePerVolunteer: 1.5,
+        wasteSourceCount: 2,
+        buttsPerVolunteer: 190,
+        buttsSourceCount: 5,
+        eligibleActionCount: 5,
+        formulaVersion: "action-collection-reference-averages-v1",
+        updatedAt: "2026-11-06T00:00:00.000Z",
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      volunteersCount: "10",
+      wasteKg: "",
+      cigaretteButtsCount: "",
+    });
+
+    expect(harness.latest.logic.wasteBenchmarkPerVolunteer).toBe(1.5);
+    expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(190);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBeNull();
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBeNull();
+    expect(harness.latest.logic.wasteDeltaPercent).toBeNull();
+    expect(harness.latest.logic.megotsDeltaPercent).toBeNull();
+    expect(harness.latest.logic.wasteReferenceStatus).toBe("available");
+    expect(harness.latest.logic.megotsReferenceStatus).toBe("available");
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
   it("keeps the global reference and participant denominator for legacy contexts", () => {
     mockReferences.mockReturnValue({
       collectionReferences: {

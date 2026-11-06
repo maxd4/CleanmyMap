@@ -33,6 +33,7 @@ type QuantityGaugeVisualProps = {
   benchmarkSourceCount: number;
   referenceStatus: HarvestReferenceStatus;
   referenceUnitLabel: string;
+  referenceLabel: string;
 };
 
 function QuantityGaugeVisual({
@@ -51,6 +52,7 @@ function QuantityGaugeVisual({
   benchmarkSourceCount,
   referenceStatus,
   referenceUnitLabel,
+  referenceLabel,
 }: QuantityGaugeVisualProps) {
   const [benchmarkHelpOpen, setBenchmarkHelpOpen] = useState(false);
   const hasReference = referenceStatus === "available" &&
@@ -108,7 +110,7 @@ function QuantityGaugeVisual({
     <figure
       className={cn("flex min-h-[244px] min-w-0 flex-col items-center justify-center rounded-2xl border px-3 py-4 sm:px-5", surfaceClass)}
       data-testid={testId}
-      aria-label={`${label} : ${valueLabel}. ${hasBenchmark && benchmarkLabel ? `Moyenne ${referenceUnitLabel} : ${benchmarkLabel}.` : statusLabel}`}
+      aria-label={`${label} : ${valueLabel}. ${hasBenchmark && benchmarkLabel ? `${referenceLabel} : ${benchmarkLabel} / ${referenceUnitLabel}.` : statusLabel}`}
     >
       <div
         className="relative size-[clamp(9rem,18vw,13rem)] max-w-full shrink-0"
@@ -130,7 +132,7 @@ function QuantityGaugeVisual({
               type="button"
               aria-expanded={benchmarkHelpOpen}
               aria-controls={helpId}
-              aria-label={`Expliquer le repère de moyenne par ${referenceUnitLabel}`}
+              aria-label={`Expliquer ${referenceLabel}`}
               onClick={() => setBenchmarkHelpOpen((open) => !open)}
               className="absolute left-1/2 top-1/2 flex max-w-[96%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white px-2 py-1 text-xs font-black leading-3 text-slate-800 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
             >
@@ -143,7 +145,7 @@ function QuantityGaugeVisual({
         <div className="mt-3 max-w-full text-center">
           {benchmarkHelpOpen ? (
             <div id={helpId} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-4 text-slate-600 shadow-sm" role="note">
-              <p className="font-bold text-slate-800">Référence mensuelle : {benchmarkLabel} / {referenceUnitLabel}</p>
+              <p className="font-bold text-slate-800">{referenceLabel} : {benchmarkLabel} / {referenceUnitLabel}</p>
               <p>{sourceLabel}.</p>
               <p>Dénominateur de cette action : {denominatorLabel} {referenceUnitLabel}.</p>
               <p className="mt-1">{hasBenchmark
@@ -184,6 +186,7 @@ export function TrashBinGauge({
   currentTotal,
   currentUnitDenominator,
   referenceUnitLabel = "participant",
+  referenceLabel = "Moyenne historique par participant",
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
@@ -193,6 +196,7 @@ export function TrashBinGauge({
   currentTotal?: number | null;
   currentUnitDenominator?: number | null;
   referenceUnitLabel?: string;
+  referenceLabel?: string;
 }) {
   const resolvedReferenceStatus = referenceStatus ?? (
     benchmarkPerVolunteer !== null && benchmarkPerVolunteer !== undefined ? "available" : "unavailable"
@@ -214,6 +218,7 @@ export function TrashBinGauge({
       benchmarkSourceCount={benchmarkSourceCount}
       referenceStatus={resolvedReferenceStatus}
       referenceUnitLabel={referenceUnitLabel}
+      referenceLabel={referenceLabel}
     />
   );
 }
@@ -228,6 +233,7 @@ export function DropletGauge({
   currentTotal,
   currentUnitDenominator,
   referenceUnitLabel = "participant",
+  referenceLabel = "Moyenne historique par participant",
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
@@ -238,6 +244,7 @@ export function DropletGauge({
   currentTotal?: number | null;
   currentUnitDenominator?: number | null;
   referenceUnitLabel?: string;
+  referenceLabel?: string;
 }) {
   const resolvedReferenceStatus = referenceStatus ?? (
     benchmarkPerVolunteer !== null && benchmarkPerVolunteer !== undefined ? "available" : "unavailable"
@@ -259,6 +266,7 @@ export function DropletGauge({
       benchmarkSourceCount={benchmarkSourceCount}
       referenceStatus={resolvedReferenceStatus}
       referenceUnitLabel={referenceUnitLabel}
+      referenceLabel={referenceLabel}
     />
   );
 }
@@ -270,6 +278,7 @@ export function HarvestComparisonTrend({
   benchmarkSourceCount,
   testId,
   unitLabel,
+  comparisonLabel = "moyenne",
 }: {
   currentPerVolunteer: number | null;
   benchmarkPerVolunteer: number | null;
@@ -277,6 +286,7 @@ export function HarvestComparisonTrend({
   benchmarkSourceCount: number;
   testId: string;
   unitLabel: string;
+  comparisonLabel?: string;
 }) {
   if (
     benchmarkSourceCount < 2 ||
@@ -304,15 +314,15 @@ export function HarvestComparisonTrend({
 
   return (
     <p
-      className={cn("flex items-center justify-center gap-1.5 text-xs font-bold", toneClass)}
+      className={cn("flex flex-wrap items-center justify-center gap-1.5 text-center text-xs font-bold", toneClass)}
       data-testid={testId}
       data-trend={isAboveThreshold ? "up" : isBelowThreshold ? "down" : "neutral"}
-      aria-label={`Tendance ${direction} : ${formatSignedPercent(deltaPercent)} par rapport à la moyenne ${unitLabel}`}
+      aria-label={`Tendance ${direction} : ${formatSignedPercent(deltaPercent)} par rapport à la ${comparisonLabel} ${unitLabel}`}
     >
       <TrendIcon size={15} aria-hidden="true" />
       <span>{formatSignedPercent(deltaPercent)}</span>
-      <span className="text-slate-500">vs moyenne</span>
-      <span className="sr-only">par rapport à la moyenne {unitLabel}</span>
+      <span className="text-slate-500">vs {comparisonLabel}</span>
+      <span className="sr-only">par rapport à la {comparisonLabel} {unitLabel}</span>
     </p>
   );
 }

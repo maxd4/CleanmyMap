@@ -49,6 +49,7 @@ type HarvestMegotsSectionProps = {
   megotsDeltaPercent?: number | null;
   megotsOperationalUnits?: number | null;
   megotsReferenceUnitLabel?: string;
+  megotsReferenceLabel?: string;
   /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
   megotsKg?: number | null;
   megotsComparisonTone?: "emerald" | "orange" | "slate";
@@ -250,6 +251,7 @@ export function HarvestMegotsSection({
   megotsDeltaPercent = null,
   megotsOperationalUnits = null,
   megotsReferenceUnitLabel = "participant",
+  megotsReferenceLabel = "Moyenne historique par participant",
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
   cigaretteButtsVolumeProvenance,
@@ -284,6 +286,7 @@ export function HarvestMegotsSection({
           currentTotal={megotsCount}
           currentUnitDenominator={megotsOperationalUnits}
           referenceUnitLabel={megotsReferenceUnitLabel}
+          referenceLabel={megotsReferenceLabel}
         />
         <div className="min-w-0 space-y-2">
           {!hidePrimaryMeasurements || megotsLots !== null ? (
@@ -354,6 +357,9 @@ export function HarvestMegotsSection({
             benchmarkSourceCount={megotsBenchmarkSourceCount ?? 0}
             testId="butts-comparison-trend"
             unitLabel={`par ${megotsReferenceUnitLabel}`}
+            comparisonLabel={megotsReferenceLabel === "Moyenne contextuelle pondérée"
+              ? "moyenne contextuelle pondérée"
+              : "moyenne"}
           />
           {megotsLots !== null ? <p className="text-xs text-blue-900/70">Total des lots : modifiez les contributions dans la zone ci-dessous.</p> : null}
         </div>
