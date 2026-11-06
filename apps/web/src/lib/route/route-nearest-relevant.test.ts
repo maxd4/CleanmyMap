@@ -329,7 +329,8 @@ describe("route nearest relevant search", () => {
     expect(result.selected).not.toBeNull();
   });
 
-  it("does not accept a two-call evaluation when only one provider call remains", async () => {
+  it("does not consume a fictitious operation when an evaluation starts no routing", async () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 4, consumed: 3 });
     const evaluateMock = vi.fn(async (_origin, _signal, budget) => {
       if (!budget.tryConsume(2)) return null;
       return { ...evaluate(80), providerCalls: 2 };
@@ -339,11 +340,13 @@ describe("route nearest relevant search", () => {
       reference: reference(),
       baseline: { ...evaluate(48), providerCalls: 3 },
       evaluate: evaluateMock,
+      routingBudget,
     });
 
     expect(result.selected).toBeNull();
     expect(evaluateMock).toHaveBeenCalledTimes(1);
-    expect(result.search.reason).toBe("quota_exhausted");
+    expect(routingBudget.consumed).toBe(3);
+    expect(result.search.reason).toBe("confidence_insufficient");
   });
 
   it("admits an alternative whose two operations fit after a one-operation baseline", async () => {
@@ -458,7 +461,7 @@ describe("route nearest relevant search", () => {
     expect(result.inaccessibleTargetNodeIds).toEqual(new Set(["node-0-end"]));
   });
 
-  it("accounts for actual provider calls before admitting another evaluation", async () => {
+  it("accounts only actual provider calls before continuing with alternatives", async () => {
     let startedOperations = 0;
     const planWithThreeCalls = vi.fn(async (_origin, _signal, budget) => {
       if (!budget.tryConsume(3)) return null;
@@ -472,8 +475,8 @@ describe("route nearest relevant search", () => {
       evaluate: planWithThreeCalls,
     });
 
-    expect(planWithThreeCalls).toHaveBeenCalledTimes(2);
-    expect(result.search.plansEvaluated).toBe(2);
+    expect(planWithThreeCalls).toHaveBeenCalledTimes(3);
+    expect(result.search.plansEvaluated).toBe(3);
     expect(startedOperations).toBe(3);
     expect(startedOperations).toBeLessThanOrEqual(4);
   });

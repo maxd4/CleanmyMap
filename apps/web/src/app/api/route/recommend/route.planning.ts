@@ -401,6 +401,7 @@ async function buildMultiGroupRoutingState(
 
 export async function planRouteRecommendation(input: RouteRecommendationInput): Promise<RoutePlanningResult> {
   const preparation = prepareRouteRecommendation(input);
+  const routingBudgetConsumedBeforeSegmentPlan = input.routingBudget?.consumed ?? 0;
   const segmentRoutePlan = input.pedestrianNetwork && input.pedestrianRiskProjection &&
     input.planningMode.type === "free"
     ? planPredictedPedestrianSegmentRoutes({
@@ -416,10 +417,16 @@ export async function planRouteRecommendation(input: RouteRecommendationInput): 
         volunteers: input.volunteers,
         groupCount: input.groupCount,
         effectiveRiskFocus: input.effectiveRiskFocus,
+        routingBudget: input.routingBudget,
       })
     : null;
   if (segmentRoutePlan) {
-    return finalizePredictedSegmentRouteRecommendation(input, preparation, segmentRoutePlan);
+    return finalizePredictedSegmentRouteRecommendation(
+      input,
+      preparation,
+      segmentRoutePlan,
+      Math.max(0, (input.routingBudget?.consumed ?? 0) - routingBudgetConsumedBeforeSegmentPlan),
+    );
   }
   const {
     effectiveRiskFocus,
@@ -515,6 +522,7 @@ function finalizePredictedSegmentRouteRecommendation(
   input: RouteRecommendationInput,
   preparation: ReturnType<typeof prepareRouteRecommendation>,
   segmentRoutePlan: PedestrianSegmentRoutePlan,
+  providerCalls: number,
 ): RoutePlanningResult {
   let predictionSummary = applyRoutePredictionPlannerBudgetAudit(
     preparation.predictionSummary,
@@ -593,7 +601,7 @@ function finalizePredictedSegmentRouteRecommendation(
       stopsBefore: segmentRoutePlan.plannerResult.stops.length,
       stopsAfter: segmentRoutePlan.plannedStops.length,
       excludedCandidateIds: segmentRoutePlan.excludedCandidateIds,
-      providerCalls: 0,
+      providerCalls,
       firstProviderMode: routeGeometry.mode,
       finalGeometryMode: routeGeometry.mode,
       degraded: segmentRoutePlan.degraded,

@@ -5,6 +5,7 @@ import type { RoutePlannerCandidate, RoutePlannerOrigin } from "./route-planner"
 import {
   planPredictedPedestrianSegmentRoutes,
 } from "./pedestrian-segment-route-planner";
+import { createRouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 const origin: RoutePlannerOrigin = {
   latitude: 48,
@@ -219,6 +220,46 @@ describe("pedestrian segment route planner", () => {
     expect(result!.routeGeometry.coordinates[0]).toEqual(result!.routeGeometry.coordinates.at(-1));
     expect(result!.routeGeometry.durationMinutes).toBeLessThanOrEqual(8);
     expect(result!.metrics.safetyStatus).toBe("network_access_allowed_safety_unknown");
+  });
+
+  it("keeps successive segment group constructions within four shared operations", () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 4 });
+    const result = plan([
+      candidate("first", "s-0", 90, 90),
+      candidate("second", "s-1", 80, 80),
+    ], "all", {
+      groupCount: 2,
+      volunteers: 2,
+      maxStops: 1,
+      travelBudgetMinutes: 20,
+      routingBudget,
+    });
+
+    expect(result).not.toBeNull();
+    expect(routingBudget.consumed).toBeLessThanOrEqual(4);
+    expect(result!.groupRoutes).toHaveLength(2);
+  });
+
+  it("degrades remaining groups before starting an over-budget segment operation", () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 2 });
+    const result = plan([
+      candidate("first", "s-0", 90, 90),
+      candidate("second", "s-1", 80, 80),
+      candidate("third", "s-2", 70, 70),
+    ], "all", {
+      groupCount: 3,
+      volunteers: 3,
+      maxStops: 1,
+      routingBudget,
+    });
+
+    expect(result).not.toBeNull();
+    expect(routingBudget.consumed).toBe(2);
+    expect(routingBudget.consumed).toBeLessThanOrEqual(4);
+    expect(result!.groupRoutes).toHaveLength(3);
+    expect(result!.groupRoutes.some(({ routeGeometry }) => routeGeometry.mode === "fallback")).toBe(true);
+    expect(result!.degraded).toBe(true);
+    expect(result!.warning).toContain("quota de routage");
   });
 
   it("resolves a nearby requested origin to a verified network node without inventing a connector", () => {

@@ -11,6 +11,7 @@ import {
   type PedestrianNetworkGraph,
 } from "./pedestrian-network";
 import type { RouteGeometry, RouteTopology } from "./route-contract";
+import type { RouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 /** Reuses the existing group-corridor tolerance; it is not a pollution model. */
 export const OBSERVED_ROUTE_CORRIDOR_RADIUS_KM = 0.35;
@@ -25,7 +26,8 @@ export type RouteObservedEnrichmentRejectionReason =
   | "network_unreachable"
   | "predictive_route_not_preserved"
   | "detour_over_budget"
-  | "opportunity_cap";
+  | "opportunity_cap"
+  | "routing_quota_exhausted";
 
 export type RouteObservedEnrichmentEvaluation = {
   candidateId: string;
@@ -59,6 +61,38 @@ export type RouteObservedEnrichmentResult = {
   metrics: RouteObservedEnrichmentMetrics;
 };
 
+export function mergeRouteObservedEnrichmentMetrics(
+  metrics: readonly RouteObservedEnrichmentMetrics[],
+  travelBudgetMinutes: number,
+): RouteObservedEnrichmentMetrics {
+  const evaluations = metrics.flatMap((item) => item.evaluations);
+  const acceptedCandidateIds = [...new Set(metrics.flatMap((item) => item.acceptedCandidateIds))];
+  const rejectedByReason: RouteObservedEnrichmentMetrics["rejectedByReason"] = {};
+  for (const item of metrics) {
+    for (const [reason, count] of Object.entries(item.rejectedByReason)) {
+      if (count === undefined) continue;
+      const key = reason as keyof RouteObservedEnrichmentMetrics["rejectedByReason"];
+      rejectedByReason[key] = (rejectedByReason[key] ?? 0) + count;
+    }
+  }
+  return {
+    source: "validated_trash_spotter_spots",
+    predictedCandidatesRetained: metrics.reduce((total, item) => total + item.predictedCandidatesRetained, 0),
+    considered: metrics.reduce((total, item) => total + item.considered, 0),
+    accepted: acceptedCandidateIds.length,
+    rejected: evaluations.length - acceptedCandidateIds.length,
+    rejectedByReason,
+    acceptedCandidateIds,
+    evaluations,
+    totalDetourDistanceKm: Number(metrics.reduce((total, item) => total + item.totalDetourDistanceKm, 0).toFixed(2)),
+    totalDetourMinutes: metrics.reduce((total, item) => total + item.totalDetourMinutes, 0),
+    routeBudgetMinutes: travelBudgetMinutes,
+    routeDurationBeforeMinutes: metrics.reduce((total, item) => total + item.routeDurationBeforeMinutes, 0),
+    routeDurationAfterMinutes: metrics.reduce((total, item) => total + item.routeDurationAfterMinutes, 0),
+    observedDoesNotReplacePrediction: true,
+  };
+}
+
 type EnrichmentInput = {
   origin: RoutePlannerOrigin;
   arrival?: RoutePlannerOrigin;
@@ -71,6 +105,7 @@ type EnrichmentInput = {
   pedestrianNetwork: PedestrianNetworkGraph;
   travelBudgetMinutes: number;
   maxObserved?: number;
+  routingBudget?: RouteRoutingOperationBudget;
 };
 
 function increment(
@@ -210,6 +245,11 @@ export function enrichTheoreticalRouteWithObservedCandidates(
     }
 
     const tentativeCandidates = [...input.baseCandidates, ...acceptedCandidates, candidate];
+    if (input.routingBudget && !input.routingBudget.tryConsume()) {
+      increment(rejectedByReason, "routing_quota_exhausted");
+      evaluations.push({ candidateId: candidate.id, accepted: false, distanceToCorridorKm, detourDistanceKm: null, detourMinutes: null, reason: "routing_quota_exhausted" });
+      continue;
+    }
     const tentativeGeometry = routeWithCandidates(input, tentativeCandidates);
     if (!tentativeGeometry) {
       increment(rejectedByReason, "network_unreachable");

@@ -519,13 +519,6 @@ export async function findNearestRelevantRoute(input: {
         routingBudget,
       );
       attemptsEvaluated += 1;
-      const observedCalls = routingBudget.consumed - providerCalls;
-      const reportedCalls = Math.max(0, evaluation.result?.providerCalls ?? 0);
-      const missingCalls = Math.max(0, reportedCalls - observedCalls) || (observedCalls === 0 ? 1 : 0);
-      if (missingCalls > 0 && !routingBudget.tryConsume(missingCalls)) {
-        quotaExhausted = true;
-        continue;
-      }
       providerCalls = routingBudget.consumed;
       if (routingBudget.remaining() === 0) quotaExhausted = true;
       if (evaluation.timedOut) timedOutAttempts += 1;

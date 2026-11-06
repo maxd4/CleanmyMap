@@ -20,6 +20,7 @@ import {
 import type { RouteGroupRoute } from "./route-response-contract";
 import {
   enrichTheoreticalRouteWithObservedCandidates,
+  mergeRouteObservedEnrichmentMetrics,
   type RouteObservedEnrichmentMetrics,
 } from "./route-observed-enrichment";
 import {
@@ -27,6 +28,7 @@ import {
   type RouteGroupPartitionResult,
 } from "./route-group-partition";
 import { plannerValue } from "./route-group-partition-helpers";
+import type { RouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 export const PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION =
   "pedestrian-segment-route-planner-v1" as const;
@@ -89,9 +91,14 @@ type GroupRouteBuild = {
   selectedEdges: PedestrianNetworkEdge[];
   routedCandidates: SegmentCandidate[];
   connectorSegments: number;
-  originResolution: PedestrianNetworkPointResolution;
+  originResolution: PedestrianNetworkPointResolution | null;
   arrivalResolution: PedestrianNetworkPointResolution | null;
 };
+
+type GroupGeometryBuild = Pick<
+  GroupRouteBuild,
+  "geometry" | "selectedEdges" | "routedCandidates" | "connectorSegments" | "originResolution" | "arrivalResolution"
+>;
 
 export function isPedestrianRiskProjectionCompatible(
   graph: PedestrianNetworkGraph,
@@ -484,40 +491,23 @@ function buildGroupGeometry(
   };
 }
 
-function candidateIdsFromGroups(groups: readonly { candidateIds: string[] }[]): Set<string> {
-  return new Set(groups.flatMap(({ candidateIds }) => candidateIds));
+function fallbackGroupBuild(
+  group: { origin: RoutePlannerOrigin },
+  topology: RouteTopology,
+  arrival: RoutePlannerOrigin | undefined,
+): GroupGeometryBuild {
+  return {
+    geometry: fallbackGeometry(group.origin, topology, arrival),
+    selectedEdges: [],
+    routedCandidates: [],
+    connectorSegments: 0,
+    originResolution: null,
+    arrivalResolution: null,
+  };
 }
 
-function mergeObservedEnrichmentMetrics(
-  metrics: readonly RouteObservedEnrichmentMetrics[],
-  travelBudgetMinutes: number,
-): RouteObservedEnrichmentMetrics {
-  const evaluations = metrics.flatMap((item) => item.evaluations);
-  const acceptedCandidateIds = [...new Set(metrics.flatMap((item) => item.acceptedCandidateIds))];
-  const rejectedByReason: RouteObservedEnrichmentMetrics["rejectedByReason"] = {};
-  for (const item of metrics) {
-    for (const [reason, count] of Object.entries(item.rejectedByReason)) {
-      if (count === undefined) continue;
-      const key = reason as keyof RouteObservedEnrichmentMetrics["rejectedByReason"];
-      rejectedByReason[key] = (rejectedByReason[key] ?? 0) + count;
-    }
-  }
-  return {
-    source: "validated_trash_spotter_spots",
-    predictedCandidatesRetained: metrics.reduce((total, item) => total + item.predictedCandidatesRetained, 0),
-    considered: metrics.reduce((total, item) => total + item.considered, 0),
-    accepted: acceptedCandidateIds.length,
-    rejected: evaluations.length - acceptedCandidateIds.length,
-    rejectedByReason,
-    acceptedCandidateIds,
-    evaluations,
-    totalDetourDistanceKm: Number(metrics.reduce((total, item) => total + item.totalDetourDistanceKm, 0).toFixed(2)),
-    totalDetourMinutes: metrics.reduce((total, item) => total + item.totalDetourMinutes, 0),
-    routeBudgetMinutes: travelBudgetMinutes,
-    routeDurationBeforeMinutes: metrics.reduce((total, item) => total + item.routeDurationBeforeMinutes, 0),
-    routeDurationAfterMinutes: metrics.reduce((total, item) => total + item.routeDurationAfterMinutes, 0),
-    observedDoesNotReplacePrediction: true,
-  };
+function candidateIdsFromGroups(groups: readonly { candidateIds: string[] }[]): Set<string> {
+  return new Set(groups.flatMap(({ candidateIds }) => candidateIds));
 }
 
 export function planPredictedPedestrianSegmentRoutes(input: {
@@ -533,6 +523,7 @@ export function planPredictedPedestrianSegmentRoutes(input: {
   volunteers: number;
   groupCount: number;
   effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
+  routingBudget?: RouteRoutingOperationBudget;
 }): PedestrianSegmentRoutePlan | null {
   if (!isPedestrianRiskProjectionCompatible(input.pedestrianNetwork, input.projection)) return null;
   const segmentData = buildSegmentCandidates(
@@ -577,12 +568,29 @@ export function planPredictedPedestrianSegmentRoutes(input: {
   const assignedObservedCandidateIds = new Set<string>();
   const excludedCandidateIds = new Set<string>();
   const observedCandidates = input.candidates.filter((candidate) => candidate.family === "observed");
+  const warnings = new Set<string>();
+  let routingQuotaExhausted = false;
+  let degraded = false;
   for (const group of partition.groups) {
     let selected = group.candidateIds
       .map((id) => segmentByCandidateId.get(id))
       .filter((segment): segment is SegmentCandidate => Boolean(segment));
     const requestedCandidateIds = new Set(selected.map(({ candidate }) => candidate.id));
-    let built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
+    const quotaBlocked: boolean = routingQuotaExhausted || Boolean(input.routingBudget && !input.routingBudget.tryConsume());
+    let built: GroupGeometryBuild | null = quotaBlocked
+      ? null
+      : buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
+    if (!built) {
+      if (!input.routingBudget && !quotaBlocked) return null;
+      routingQuotaExhausted ||= quotaBlocked;
+      degraded = true;
+      warnings.add(quotaBlocked
+        ? "Le quota de routage nearest_relevant est épuisé ; les groupes restants utilisent une géométrie locale dégradée."
+        : "Une construction de géométrie réseau a échoué ; une géométrie locale dégradée est utilisée.");
+      requestedCandidateIds.forEach((candidateId) => excludedCandidateIds.add(candidateId));
+      built = fallbackGroupBuild(group, input.routeTopology, input.arrival);
+      selected = [];
+    }
     if (!built) return null;
     const initialBuilt = built;
     requestedCandidateIds.forEach((candidateId) => {
@@ -591,16 +599,32 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       }
     });
     selected = initialBuilt.routedCandidates;
-    while (selected.length > 0 && built.geometry.durationMinutes > input.travelBudgetMinutes) {
+    while (!routingQuotaExhausted && selected.length > 0 && built.geometry.durationMinutes > input.travelBudgetMinutes) {
       selected = built.routedCandidates.slice(0, -1);
       const retainedCandidateIds = new Set(selected.map(({ candidate }) => candidate.id));
       requestedCandidateIds.forEach((candidateId) => {
         if (!retainedCandidateIds.has(candidateId)) excludedCandidateIds.add(candidateId);
       });
-      built = buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
-      if (!built) return null;
+      const quotaBlocked = Boolean(input.routingBudget && !input.routingBudget.tryConsume());
+      const rebuilt = quotaBlocked
+        ? null
+        : buildGroupGeometry(input.origin, input.arrival, input.routeTopology, selected, input.pedestrianNetwork);
+      if (!rebuilt) {
+        if (!input.routingBudget && !quotaBlocked) return null;
+        routingQuotaExhausted ||= quotaBlocked;
+        degraded = true;
+        warnings.add(quotaBlocked
+          ? "Le quota de routage nearest_relevant est épuisé ; la réduction du groupe utilise une géométrie locale dégradée."
+          : "Une reconstruction de géométrie réseau a échoué ; une géométrie locale dégradée est utilisée.");
+        requestedCandidateIds.forEach((candidateId) => excludedCandidateIds.add(candidateId));
+        built = fallbackGroupBuild(group, input.routeTopology, input.arrival);
+        selected = [];
+        break;
+      }
+      built = rebuilt;
     }
     const finalBuilt = built;
+    if (!finalBuilt) return null;
     const enrichment = enrichTheoreticalRouteWithObservedCandidates({
       origin: group.origin,
       arrival: input.arrival,
@@ -612,7 +636,12 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       pedestrianNetwork: input.pedestrianNetwork,
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxObserved: Math.max(0, Math.min(MAX_SEGMENTS_PER_GROUP - selected.length, input.maxStops - selected.length)),
+      routingBudget: input.routingBudget,
     });
+    if ((enrichment.metrics.rejectedByReason.routing_quota_exhausted ?? 0) > 0) {
+      degraded = true;
+      warnings.add("Le quota de routage nearest_relevant est épuisé ; les enrichissements observés restants sont conservés hors parcours.");
+    }
     enrichment.metrics.acceptedCandidateIds.forEach((id) => assignedObservedCandidateIds.add(id));
     observedEnrichmentMetrics.push(enrichment.metrics);
     const groupWithActualCandidates = {
@@ -637,7 +666,7 @@ export function planPredictedPedestrianSegmentRoutes(input: {
     candidateIds: builtGroup.candidates.map(({ id }) => id),
   }));
   const allSelectedIds = candidateIdsFromGroups(effectiveGroups);
-  if (allSelectedIds.size === 0) return null;
+  if (allSelectedIds.size === 0 && !routingQuotaExhausted) return null;
   const groupRoutes = builtGroups.map((group, index) => {
     const route = buildGroupRoute(
       effectiveGroups[index]!,
@@ -712,7 +741,7 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       unavailableSegmentsSkipped: segmentData.unavailableSegmentsSkipped,
       connectorSegments: builtGroups.reduce((total, group) => total + group.connectorSegments, 0),
       groupCount: input.groupCount,
-      routeMode: "network",
+      routeMode: groupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? "network" : "fallback",
       safetyStatus: "network_access_allowed_safety_unknown",
       originResolution: builtGroups[0]?.originResolution?.resolution ?? "exact_node",
       originSnapDistanceM: round(builtGroups[0]?.originResolution?.distanceM ?? 0, 1),
@@ -720,11 +749,14 @@ export function planPredictedPedestrianSegmentRoutes(input: {
         (input.routeTopology === "loop" ? "not_applicable" : "exact_node"),
       arrivalSnapDistanceM: round(builtGroups[0]?.arrivalResolution?.distanceM ?? 0, 1),
     },
-    warning: excludedCandidateIds.size > 0
-      ? "Certains segments prédictifs n’ont pas pu être reliés au graphe piéton ou respecter le budget ; ils ont été exclus du parcours final."
-      : null,
-    degraded: excludedCandidateIds.size > 0,
+    warning: [
+      excludedCandidateIds.size > 0
+        ? "Certains segments prédictifs n’ont pas pu être reliés au graphe piéton ou respecter le budget ; ils ont été exclus du parcours final."
+        : null,
+      ...warnings,
+    ].filter((warning): warning is string => warning !== null).join(" ") || null,
+    degraded: degraded || excludedCandidateIds.size > 0,
     excludedCandidateIds: [...excludedCandidateIds].sort(),
-    observedEnrichment: mergeObservedEnrichmentMetrics(observedEnrichmentMetrics, input.travelBudgetMinutes),
+    observedEnrichment: mergeRouteObservedEnrichmentMetrics(observedEnrichmentMetrics, input.travelBudgetMinutes),
   };
 }

@@ -3,6 +3,7 @@ import type { PedestrianNetworkGraph } from "./pedestrian-network";
 import { routeThroughPedestrianNetwork } from "./pedestrian-network";
 import type { RoutePlannerCandidate, RoutePlannerOrigin } from "./route-planner";
 import { enrichTheoreticalRouteWithObservedCandidates } from "./route-observed-enrichment";
+import { createRouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 const origin: RoutePlannerOrigin = { latitude: 48, longitude: 2, source: "planner" };
 
@@ -201,6 +202,52 @@ describe("route observed enrichment", () => {
     expect(result.metrics.totalDetourMinutes).toBe(
       Math.max(0, result.routeGeometry.durationMinutes - baseGeometry().durationMinutes),
     );
+  });
+
+  it("stops observed reconstructions at the shared routing quota", () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 2 });
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [
+        observed("observed-1", 48.001, 2.001),
+        observed("observed-2", 48.001, 2.001),
+        observed("observed-3", 48.001, 2.001),
+      ],
+      baseGeometry: baseGeometry(),
+      predictiveEdgeKeys: ["bc"],
+      pedestrianNetwork: graph,
+      travelBudgetMinutes: 20,
+      maxObserved: 3,
+      routingBudget,
+    });
+
+    expect(routingBudget.consumed).toBe(2);
+    expect(result.metrics.acceptedCandidateIds).toHaveLength(2);
+    expect(result.metrics.rejectedByReason.routing_quota_exhausted).toBe(1);
+    expect(result.metrics.evaluations.at(-1)?.reason).toBe("routing_quota_exhausted");
+  });
+
+  it("does not consume the shared budget when the first observed reconstruction is blocked", () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 1, consumed: 1 });
+    const base = baseGeometry();
+    const result = enrichTheoreticalRouteWithObservedCandidates({
+      origin,
+      routeTopology: "loop",
+      baseCandidates: [predicted],
+      observedCandidates: [observed("blocked", 48.001, 2.001)],
+      baseGeometry: base,
+      predictiveEdgeKeys: ["bc"],
+      pedestrianNetwork: graph,
+      travelBudgetMinutes: 20,
+      maxObserved: 1,
+      routingBudget,
+    });
+
+    expect(routingBudget.consumed).toBe(1);
+    expect(result.routeGeometry).toBe(base);
+    expect(result.metrics.rejectedByReason.routing_quota_exhausted).toBe(1);
   });
 
   it("rejects a candidate whose reconstructed route would drop a predictive edge", () => {
