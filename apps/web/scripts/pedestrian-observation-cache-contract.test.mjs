@@ -7,6 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const migration = fs.readFileSync(path.join(here, "../supabase/migrations/20261104000006_pedestrian_observation_cache.sql"), "utf8");
 const leaseMigration = fs.readFileSync(path.join(here, "../supabase/migrations/20261104000011_pedestrian_observation_cache_worker_lease.sql"), "utf8");
 const forwardMigration = fs.readFileSync(path.join(here, "../supabase/migrations/20261105000016_pedestrian_observation_cache_lease_atomicity.sql"), "utf8");
+const consistencyMigration = fs.readFileSync(path.join(here, "../supabase/migrations/20261106000001_pedestrian_observation_cache_lease_consistency.sql"), "utf8");
 
 assert.match(migration, /old_geom extensions\.geometry/);
 assert.match(migration, /new_geom extensions\.geometry/);
@@ -33,5 +34,12 @@ assert.doesNotMatch(worker, /get_active_pedestrian_observation_cache/);
 assert.doesNotMatch(worker, /compute_pedestrian_observation_cache_rows/);
 assert.match(worker, /p_lease_token/);
 assert.match(worker, /leaseTokens/);
+assert.match(consistencyMigration, /v_lease_token uuid := gen_random_uuid\(\)/);
+assert.match(consistencyMigration, /lease_token = v_lease_token/);
+assert.match(consistencyMigration, /v_event\.lease_expires_at <= v_now/);
+assert.match(consistencyMigration, /event\.lease_expires_at > v_now/);
+assert.match(consistencyMigration, /v_owned_events <> cardinality\(p_event_ids\)/);
+assert.match(consistencyMigration, /invalidation lease changed during failure release/);
+assert.doesNotMatch(consistencyMigration, /20261105000016/);
 
 console.log("pedestrian observation cache contract: PASS");

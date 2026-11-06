@@ -18,3 +18,13 @@ test("worker failure requests retain the lease identity", () => {
     { p_event_ids: [11], p_error: "database failure", p_worker_id: "worker-a", p_lease_token: "lease-a" },
   );
 });
+
+test("worker can carry one lease identity for a multi-event batch", () => {
+  const request = buildObservationCacheRefreshRequest("projection-1", [11, 12, 13], "worker-a", "lease-batch");
+  assert.deepEqual(request.p_event_ids, [11, 12, 13]);
+  assert.equal(request.p_lease_token, "lease-batch");
+  assert.deepEqual(
+    buildObservationCacheFailureRequest(request.p_event_ids, "batch failure", request.p_worker_id, request.p_lease_token),
+    { p_event_ids: [11, 12, 13], p_error: "batch failure", p_worker_id: "worker-a", p_lease_token: "lease-batch" },
+  );
+});

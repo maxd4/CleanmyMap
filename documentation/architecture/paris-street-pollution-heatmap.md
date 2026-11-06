@@ -554,7 +554,7 @@ des lots avec `SKIP LOCKED`, puis délègue le calcul et la publication à
 construit explicitement le transport `projectionSegmentId`, `observationIds`,
 `observedCount`, `latestObservedAt`, et publie sans transférer un corpus qui
 pourrait être plafonné par PostgREST. Le verrou d'advisory, l'identité immuable
-de chaque acquisition (`lease_token`), le propriétaire et l'expiration persistée
+de chaque acquisition de lot (`lease_token` commun à tous ses événements), le propriétaire et l'expiration persistée
 (`lease_expires_at`) sont vérifiés sur chaque événement, avant la mutation puis
 juste avant la clôture ; l'horloge réelle `clock_timestamp()` refuse un bail
 expiré pendant une reconstruction. Un worker expiré, réattribué ou réutilisant
