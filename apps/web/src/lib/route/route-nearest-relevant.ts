@@ -1,6 +1,6 @@
 import {
   haversineMeters,
-  routeThroughPedestrianNetwork,
+  shortestPedestrianAccessFromSources,
   type Coordinate,
   type PedestrianNetworkGraph,
 } from "./pedestrian-network";
@@ -59,7 +59,10 @@ export type RouteNearestRelevantSearch = {
     | "group_below_threshold"
     | "confidence_insufficient"
     | "score_unavailable"
-    | "network_unavailable";
+    | "network_unavailable"
+    | "no_candidate"
+    | "quota_exhausted"
+    | "evaluation_failed";
   requestedOrigin: {
     kind: "precise" | "zone";
     center: { latitude: number; longitude: number };
@@ -113,6 +116,14 @@ type CandidateEvaluation = {
   radiusKm: number;
   accessDistanceKm: number;
   result: PlanEvaluation;
+};
+
+type CandidateNodesResult = {
+  candidates: Array<{ id: string; point: Coordinate; accessDistanceKm: number }>;
+  considered: number;
+  networkAccessFailures: number;
+  aborted: boolean;
+  timedOut: boolean;
 };
 
 export type RouteNearestRelevantSearchResult = {
@@ -189,7 +200,8 @@ function candidateNodesForRadius(
   previousRadiusKm: number,
   radiusKm: number,
   graph: PedestrianNetworkGraph,
-): { candidates: Array<{ id: string; point: Coordinate; accessDistanceKm: number }>; considered: number } {
+  options: { signal?: AbortSignal; deadlineMs: number },
+): CandidateNodesResult {
   const candidates = nodes
     .map((node) => ({
       ...node,
@@ -208,31 +220,29 @@ function candidateNodesForRadius(
   const accessPoints = reference.kind === "zone"
     ? nodes.filter(({ point }) => pointInReferenceZone(reference, point))
     : [{ id: "precise-origin", point: reference.center }];
+  const access = shortestPedestrianAccessFromSources(
+    graph,
+    accessPoints.map(({ point }) => point),
+    boundedCandidates.map(({ point }) => point),
+    {
+      sourceNodeIds: reference.kind === "zone" ? accessPoints.map(({ id }) => id) : undefined,
+      maxSnapDistanceM: reference.kind === "precise" ? 0 : undefined,
+      signal: options.signal,
+      deadlineMs: options.deadlineMs,
+      maxSettledNodes: 20_000,
+    },
+  );
   const routedCandidates = boundedCandidates.flatMap((candidate) => {
-    const accessOptions = accessPoints
-      .map((accessPoint) => ({
-        accessPoint,
-        route: routeThroughPedestrianNetwork(
-          graph,
-          [accessPoint.point, candidate.point],
-          {
-            topology: "open",
-            ...(reference.kind === "precise" ? { maxSnapDistanceM: 0 } : {}),
-          },
-        ),
-      }))
-      .filter(({ route }) => route?.mode === "network")
-      .sort((left, right) =>
-        (left.route?.distanceKm ?? Number.POSITIVE_INFINITY) -
-          (right.route?.distanceKm ?? Number.POSITIVE_INFINITY) ||
-        left.accessPoint.id.localeCompare(right.accessPoint.id),
-      );
-    const access = accessOptions[0]?.route;
-    return access?.mode === "network"
-      ? [{ id: candidate.id, point: candidate.point, accessDistanceKm: access.distanceKm }]
-      : [];
+    const distanceM = access.distancesM.get(candidate.id);
+    return distanceM === undefined ? [] : [{ id: candidate.id, point: candidate.point, accessDistanceKm: distanceM / 1000 }];
   });
-  return { candidates: routedCandidates, considered: boundedCandidates.length };
+  return {
+    candidates: routedCandidates,
+    considered: boundedCandidates.length,
+    networkAccessFailures: boundedCandidates.length - routedCandidates.length,
+    aborted: access.aborted,
+    timedOut: access.timedOut,
+  };
 }
 
 function assessmentIsSufficient(assessment: RoutePollutionRelevanceAssessment): boolean {
@@ -354,6 +364,29 @@ function emptySearch(
   };
 }
 
+function deriveSearchFailureReason(input: {
+  candidateCount: number;
+  evaluatedCount: number;
+  networkAccessFailures: number;
+  failedAttempts: number;
+  quotaExhausted: boolean;
+  hasScore: boolean;
+  hasConfidence: boolean;
+  bestAttempt: CandidateEvaluation | null;
+}): RouteNearestRelevantSearch["reason"] {
+  if (input.candidateCount === 0) return "no_candidate";
+  if (input.quotaExhausted && input.evaluatedCount === 0) return "quota_exhausted";
+  if (input.failedAttempts > 0 && input.evaluatedCount === 0) return "evaluation_failed";
+  if (input.evaluatedCount === 0 && input.networkAccessFailures > 0) return "network_unavailable";
+  if (input.evaluatedCount > 0 && !input.hasScore) return "score_unavailable";
+  if (!input.hasConfidence) return "confidence_insufficient";
+  if (input.bestAttempt?.result.relevance.groups.some((group) =>
+    group.score === null || group.score < 65 || group.warning !== "none",
+  )) return "group_below_threshold";
+  if (input.bestAttempt && (input.bestAttempt.result.relevance.score ?? 0) < 65) return "score_below_threshold";
+  return "no_admissible_route";
+}
+
 export function buildRouteNearestRelevantProbePoints(reference: RouteNearestRelevantReference): Array<{ latitude: number; longitude: number }> {
   const maximumDistanceKm = referenceRadiusKm(reference) + ROUTE_NEAREST_RELEVANT_RADII_KM.at(-1)!;
   const latitudeDelta = maximumDistanceKm / 111.32;
@@ -435,13 +468,21 @@ export async function findNearestRelevantRoute(input: {
   let timedOutAttempts = 0;
   let failedAttempts = 0;
   let networkAccessFailures = 0;
+  let candidateCount = 0;
+  let quotaExhausted = false;
   let searchTimedOut = false;
   let searchAborted = isAborted(input.signal);
   for (const radiusKm of ROUTE_NEAREST_RELEVANT_RADII_KM) {
     triedRadiiKm.push(radiusKm);
-    const candidateResult = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm, input.graph);
+    const candidateResult = candidateNodesForRadius(nodes, input.reference, previousRadiusKm, radiusKm, input.graph, {
+      signal: input.signal,
+      deadlineMs: startedAt + ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS,
+    });
     const candidates = candidateResult.candidates;
-    networkAccessFailures += candidateResult.considered - candidates.length;
+    candidateCount += candidateResult.considered;
+    networkAccessFailures += candidateResult.networkAccessFailures;
+    if (candidateResult.timedOut) searchTimedOut = true;
+    if (candidateResult.aborted) searchAborted = true;
     const successfulPlans: CandidateEvaluation[] = [];
     for (const candidate of candidates) {
       if (isAborted(input.signal)) {
@@ -455,7 +496,10 @@ export async function findNearestRelevantRoute(input: {
         source: "planner",
       };
       const reservedCalls = Math.max(1, Math.ceil(input.estimateProviderCalls?.(origin) ?? 2));
-      if (providerCalls + reservedCalls > ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) break;
+      if (providerCalls + reservedCalls > ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS) {
+        quotaExhausted = true;
+        break;
+      }
       const remainingMs = ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS - (Date.now() - startedAt);
       if (remainingMs <= 0) {
         searchTimedOut = true;
@@ -525,19 +569,16 @@ export async function findNearestRelevantRoute(input: {
     .sort(compareBestAttempt)[0] ?? null;
   const hasScore = evaluated.some(({ result }) => result.relevance.score !== null);
   const hasConfidence = evaluated.some(({ result }) => result.relevance.confidence.score !== null);
-  const reason: RouteNearestRelevantSearch["reason"] = !hasScore && networkAccessFailures > 0
-    ? "network_unavailable"
-    : !hasScore
-    ? "score_unavailable"
-    : !hasConfidence
-      ? "confidence_insufficient"
-      : bestAttempt?.result.relevance.groups.some((group) =>
-          group.score === null || group.score < 65 || group.warning !== "none",
-        )
-        ? "group_below_threshold"
-      : bestAttempt && (bestAttempt.result.relevance.score ?? 0) < 65
-        ? "score_below_threshold"
-        : "no_admissible_route";
+  const reason = deriveSearchFailureReason({
+    candidateCount,
+    evaluatedCount: evaluated.length,
+    networkAccessFailures,
+    failedAttempts,
+    quotaExhausted,
+    hasScore,
+    hasConfidence,
+    bestAttempt,
+  });
   return {
     selected: null,
     search: {
@@ -545,7 +586,7 @@ export async function findNearestRelevantRoute(input: {
         input.reference,
         input.baseline,
         reason,
-        reason === "network_unavailable" && evaluated.length === 0 ? "unavailable" : "not_found",
+        (reason === "network_unavailable" || reason === "no_candidate") && evaluated.length === 0 ? "unavailable" : "not_found",
       ),
       triedRadiiKm,
       candidatesEvaluated: attemptsEvaluated,
@@ -565,6 +606,9 @@ export async function findNearestRelevantRoute(input: {
       limitations: [
         "Aucune boucle ne respecte simultanément le seuil de pertinence, la confiance, la sécurité et les budgets dans les rayons explorés.",
         ...(reason === "network_unavailable" ? ["Aucun chemin piéton dirigé vérifiable ne relie les candidats à un point d’accès admissible de la zone ou au départ précis."] : []),
+        ...(reason === "no_candidate" ? ["Aucun rendez-vous admissible n’a été trouvé dans les rayons explorés."] : []),
+        ...(reason === "quota_exhausted" ? ["Le quota fournisseur était épuisé avant une première évaluation."] : []),
+        ...(reason === "evaluation_failed" ? ["Les évaluations disponibles ont échoué avant de produire un score."] : []),
         ...(timedOutAttempts > 0 ? [`${timedOutAttempts} évaluation(s) ont expiré après ${ROUTE_NEAREST_RELEVANT_PLAN_TIMEOUT_MS} ms.`] : []),
         ...(failedAttempts > 0 ? [`${failedAttempts} évaluation(s) fournisseur ont échoué et ont été comptées dans le quota.`] : []),
         ...(searchTimedOut ? [`Le budget global de ${ROUTE_NEAREST_RELEVANT_SEARCH_TIMEOUT_MS} ms a été atteint.`] : []),

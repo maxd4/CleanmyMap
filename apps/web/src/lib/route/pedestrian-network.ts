@@ -55,6 +55,14 @@ export type PedestrianNetworkPointResolution = {
 
 export const MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M = 50;
 
+export type PedestrianNetworkMultiSourceAccess = {
+  distancesM: Map<string, number>;
+  resolvedTargetNodeIds: Set<string>;
+  inaccessibleTargetNodeIds: Set<string>;
+  aborted: boolean;
+  timedOut: boolean;
+};
+
 export type PedestrianNetworkConnection = {
   fromNodeId: string;
   toNodeId: string;
@@ -488,6 +496,94 @@ function routeBetweenNodes(
     current = step.nodeId;
   }
   return { edges: routeEdges, distanceM: distances.get(toNodeId) ?? 0 };
+}
+
+export function shortestPedestrianAccessFromSources(
+  graph: PedestrianNetworkGraph,
+  sourceCoordinates: readonly Coordinate[],
+  targetCoordinates: readonly Coordinate[],
+  options: {
+    maxSnapDistanceM?: number;
+    sourceNodeIds?: readonly string[];
+    signal?: AbortSignal;
+    deadlineMs?: number;
+    maxSettledNodes?: number;
+  } = {},
+): PedestrianNetworkMultiSourceAccess {
+  const distancesM = new Map<string, number>();
+  const resolvedTargetNodeIds = new Set<string>();
+  const inaccessibleTargetNodeIds = new Set<string>();
+  const deadlineMs = options.deadlineMs ?? Number.POSITIVE_INFINITY;
+  const maxSettledNodes = options.maxSettledNodes ?? Number.POSITIVE_INFINITY;
+  const interrupted = () => options.signal?.aborted === true || Date.now() >= deadlineMs;
+  if (interrupted()) {
+    return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+  }
+
+  const nodes = new Map<string, Coordinate>();
+  const adjacency = new Map<string, PedestrianNetworkEdge[]>();
+  for (const [index, edge] of graph.edges.entries()) {
+    if (index % 128 === 0 && interrupted()) {
+      return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+    }
+    const first = edge.coordinates[0];
+    const last = edge.coordinates.at(-1);
+    if (!first || !last) continue;
+    nodes.set(edge.fromNodeId, first);
+    nodes.set(edge.toNodeId, last);
+    const outgoing = adjacency.get(edge.fromNodeId) ?? [];
+    outgoing.push(edge);
+    adjacency.set(edge.fromNodeId, outgoing);
+  }
+
+  const maxSnapDistanceM = options.maxSnapDistanceM ?? MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M;
+  const sources = options.sourceNodeIds
+    ? options.sourceNodeIds.map((nodeId) => nodes.has(nodeId) ? { nodeId, coordinate: nodes.get(nodeId)!, distanceM: 0, resolution: "exact_node" as const } : null)
+    : sourceCoordinates.map((point) => resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM));
+  const targets = targetCoordinates.map((point) => resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM));
+  targets.forEach((target) => {
+    if (target) resolvedTargetNodeIds.add(target.nodeId);
+  });
+  if (sources.some((source) => source === null) || interrupted()) {
+    return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+  }
+
+  const pending = new Set<string>();
+  for (const source of sources) {
+    if (!source) continue;
+    if (!distancesM.has(source.nodeId)) {
+      distancesM.set(source.nodeId, 0);
+      pending.add(source.nodeId);
+    }
+  }
+  let settledNodes = 0;
+  while (pending.size > 0 && settledNodes < maxSettledNodes) {
+    if (interrupted()) {
+      return { distancesM, resolvedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
+    }
+    const current = [...pending].sort((left, right) =>
+      (distancesM.get(left) ?? Number.POSITIVE_INFINITY) - (distancesM.get(right) ?? Number.POSITIVE_INFINITY) || left.localeCompare(right),
+    )[0]!;
+    pending.delete(current);
+    settledNodes += 1;
+    for (const edge of adjacency.get(current) ?? []) {
+      const candidateDistance = (distancesM.get(current) ?? Number.POSITIVE_INFINITY) + edge.lengthM;
+      if (candidateDistance < (distancesM.get(edge.toNodeId) ?? Number.POSITIVE_INFINITY)) {
+        distancesM.set(edge.toNodeId, candidateDistance);
+        pending.add(edge.toNodeId);
+      }
+    }
+  }
+  for (const target of targets) {
+    if (target && !distancesM.has(target.nodeId)) inaccessibleTargetNodeIds.add(target.nodeId);
+  }
+  return {
+    distancesM,
+    resolvedTargetNodeIds,
+    inaccessibleTargetNodeIds,
+    aborted: options.signal?.aborted === true,
+    timedOut: Date.now() >= deadlineMs || settledNodes >= maxSettledNodes,
+  };
 }
 
 export function routeThroughPedestrianNetwork(

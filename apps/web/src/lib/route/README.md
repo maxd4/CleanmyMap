@@ -88,14 +88,20 @@ pas un résultat du fournisseur de routage; une estimation ou un fallback est
 identifié comme tel.
 
 La recherche `nearest_relevant` est bornée : elle inspecte au plus huit nœuds
-par rayon et n’est donc jamais présentée comme exhaustive. Pour un départ précis,
+par rayon et n’est donc jamais présentée comme exhaustive. L’accès zoné est
+calculé par une recherche multi-source dirigée, partagée pour les candidats du
+rayon, avec un plafond de nœuds explorés et les contrôles de délai/annulation
+actifs ; il ne lance pas un routage par couple point d’accès/rendez-vous. Pour un départ précis,
 la distance d’accès au rendez-vous est calculée par chemin dirigé sur le graphe
 piéton couvrant réellement l’origine précise et le rendez-vous ; un simple
 ancrage à moins de 50 m sans raccordement vérifié reste inconnu. Pour une zone, elle est calculée depuis un
 point d’accès du graphe vérifié à l’intérieur de l’emprise ; le centroïde de la
 zone n’est jamais utilisé comme origine physique. Un composant déconnecté, une
 barrière, l’absence de point d’accès admissible ou un graphe absent rend
-l’accès inconnu et exclut le candidat. Une géométrie fallback ne peut jamais
+l’accès inconnu et exclut le candidat. La réponse distingue l’absence de
+candidat, l’absence de chemin, le quota épuisé, l’échec d’évaluation et le score
+indisponible ; un score indisponible suppose qu’une évaluation a effectivement
+été exécutée. Une géométrie fallback ne peut jamais
 être qualifiée de réseau vérifié. Le quota global de quatre opérations
 de routage inclut le baseline, les erreurs et les expirations ; le signal
 d’annulation de la recherche est transmis au transport fournisseur et interrompt

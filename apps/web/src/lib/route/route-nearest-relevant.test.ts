@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PedestrianNetworkGraph } from "./pedestrian-network";
+import { shortestPedestrianAccessFromSources, type PedestrianNetworkGraph } from "./pedestrian-network";
 import {
   buildRouteNearestRelevantProbePoints,
   createRouteNearestRelevantReference,
@@ -289,6 +289,7 @@ describe("route nearest relevant search", () => {
 
     expect(result.selected).toBeNull();
     expect(evaluateMock).not.toHaveBeenCalled();
+    expect(result.search.reason).toBe("quota_exhausted");
   });
 
   it("does not start a two-call evaluation when only one provider call remains", async () => {
@@ -303,6 +304,7 @@ describe("route nearest relevant search", () => {
 
     expect(result.selected).toBeNull();
     expect(evaluateMock).not.toHaveBeenCalled();
+    expect(result.search.reason).toBe("quota_exhausted");
   });
 
   it("does not invoke routing when the search signal is already aborted", async () => {
@@ -334,7 +336,38 @@ describe("route nearest relevant search", () => {
     expect(result.selected).toBeNull();
     expect(result.search.status).toBe("not_found");
     expect(result.search.plansEvaluated).toBe(2);
+    expect(result.search.reason).toBe("evaluation_failed");
     expect(result.search.limitations.some((limitation) => limitation.includes("ont échoué"))).toBe(true);
+  });
+
+  it("reports no candidate separately from an unavailable score", async () => {
+    const noCandidate = await findNearestRelevantRoute({
+      graph: graphAtDistances([6]),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: vi.fn(async () => evaluate(80)),
+    });
+    expect(noCandidate.search.reason).toBe("no_candidate");
+
+    const missingScore = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1, 0.2]),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: async () => evaluate(null),
+    });
+    expect(missingScore.search.reason).toBe("score_unavailable");
+  });
+
+  it("computes one directed multi-source access search for many zone access nodes", () => {
+    const graph = graphAtDistances(Array.from({ length: 24 }, (_, index) => 0.05 + index * 0.02));
+    const result = shortestPedestrianAccessFromSources(
+      graph,
+      graph.edges.filter((edge) => edge.edgeKey.endsWith("-access")).map((edge) => edge.coordinates.at(-1)!),
+      [graph.edges.find((edge) => edge.edgeKey === "edge-20-tail")!.coordinates.at(-1)!],
+      { sourceNodeIds: graph.edges.filter((edge) => edge.edgeKey.endsWith("-access")).map((edge) => edge.toNodeId) },
+    );
+    expect(result.distancesM.get("node-20-end")).toBe(80);
+    expect(result.inaccessibleTargetNodeIds).toEqual(new Set());
   });
 
   it("counts expired attempts and stops at the global search budget", async () => {
