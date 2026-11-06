@@ -140,19 +140,13 @@ function HarvestStepContent({
   const {
     wasteCurrentPerVolunteer,
     wasteBenchmarkPerVolunteer,
-    wasteBenchmarkSourceCount,
-    wasteDeltaPercent,
-    comparisonTone,
-    megotsKg,
     megotsCount,
     megotsCurrentPerVolunteer,
     megotsBenchmarkPerVolunteer,
-    megotsBenchmarkSourceCount,
-    megotsDeltaPercent,
-    megotsComparisonTone,
     cigaretteButtsCountProvenance,
     cigaretteButtsMassProvenance,
     cigaretteButtsVolumeProvenance,
+    cigaretteButtsInputSource,
     cigaretteButtsConversionFormulaVersion,
     megotsCounted,
     megotsEstimated,
@@ -197,7 +191,7 @@ function HarvestStepContent({
       {isCleanPlaceMode ? (
         <HarvestCleanPlaceSection />
       ) : (
-        <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <HarvestWasteSection
             wasteKg={form.wasteKg}
             onWasteKgChange={(value) => updateField("wasteKg", value)}
@@ -215,9 +209,6 @@ function HarvestStepContent({
             hidePrimaryMeasurement={mode === "collection" || mode === "details"}
             wasteCurrentPerVolunteer={wasteCurrentPerVolunteer}
             wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-            wasteBenchmarkSourceCount={wasteBenchmarkSourceCount}
-            wasteDeltaPercent={wasteDeltaPercent}
-            comparisonTone={comparisonTone}
             validationIssues={validationIssues}
           />
           <HarvestMegotsSection
@@ -225,16 +216,13 @@ function HarvestStepContent({
             cigaretteButtsVolumeLiters={form.cigaretteButtsVolumeLiters}
             wasteMegotsCondition={form.wasteMegotsCondition}
             cigaretteButtsCount={form.cigaretteButtsCount}
-            megotsKg={megotsKg}
             megotsCount={megotsCount}
             megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
             megotsBenchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
-            megotsBenchmarkSourceCount={megotsBenchmarkSourceCount}
-            megotsDeltaPercent={megotsDeltaPercent}
-            megotsComparisonTone={megotsComparisonTone}
             cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
             cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
             cigaretteButtsVolumeProvenance={cigaretteButtsVolumeProvenance}
+            cigaretteButtsInputSource={cigaretteButtsInputSource}
             cigaretteButtsConversionFormulaVersion={cigaretteButtsConversionFormulaVersion}
             megotsLots={form.cigaretteButtsLots}
             megotsCounted={megotsCounted}

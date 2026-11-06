@@ -1,9 +1,20 @@
 import React, { useState } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createInitialFormState } from "../payload";
 import type { FormState } from "../model";
 import { useHarvestLogic, type UseHarvestLogicResult } from "./use-harvest-logic";
+import type { ActionCollectionReferenceAverages } from "@/lib/actions/action-collection-reference-averages";
+
+type ReferenceContextMock = { collectionReferences: ActionCollectionReferenceAverages | null };
+
+const { mockReferences } = vi.hoisted(() => ({
+  mockReferences: vi.fn<() => ReferenceContextMock>(() => ({ collectionReferences: null })),
+}));
+
+vi.mock("../../map/scores/action-pollution-score-references-context", () => ({
+  useActionPollutionScoreReferences: mockReferences,
+}));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -47,6 +58,36 @@ function mountLogic(initialForm: FormState) {
 }
 
 describe("useHarvestLogic cigarette-butt synchronization", () => {
+  it("uses the canonical per-volunteer references for both gauges", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: {
+        wastePerVolunteer: 8,
+        wasteSourceCount: 2,
+        buttsPerVolunteer: 100,
+        buttsSourceCount: 2,
+        eligibleActionCount: 2,
+        formulaVersion: "test",
+        updatedAt: null,
+      },
+    });
+    const form = {
+      ...createInitialFormState("Test"),
+      actionContext: "school" as const,
+      volunteersCount: "2",
+      wasteKg: "16",
+      cigaretteButtsCount: "200",
+    };
+    const harness = mountLogic(form);
+
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(8);
+    expect(harness.latest.logic.wasteBenchmarkPerVolunteer).toBe(8);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(100);
+    expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(100);
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
   it("calculates mixed explicit lots once and keeps counted and estimated parts", () => {
     const harness = mountLogic({
       ...createInitialFormState("Test"),

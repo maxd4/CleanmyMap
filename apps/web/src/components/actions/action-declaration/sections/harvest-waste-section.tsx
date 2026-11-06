@@ -15,13 +15,7 @@ import {
   compareWasteBreakdownToTotal,
   type ActionWasteMeasurementMethod,
 } from "@/lib/waste";
-import { TrashBinGauge, WasteComparisonVisual } from "../ui/harvest-gauges";
-import { HarvestMeasurementSlider } from "../ui/harvest-measurement-slider";
-import {
-  HARVEST_WASTE_SLIDER_EXTENSION_KG,
-  HARVEST_WASTE_SLIDER_INITIAL_MAX_KG,
-  formatKg,
-} from "../utils/harvest-utils";
+import { TrashBinGauge } from "../ui/harvest-gauges";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -43,9 +37,10 @@ type HarvestWasteSectionProps = {
   hidePrimaryMeasurement?: boolean;
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
-  wasteBenchmarkSourceCount: number;
-  wasteDeltaPercent: number | null;
-  comparisonTone: "emerald" | "orange" | "slate";
+  /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
+  wasteBenchmarkSourceCount?: number;
+  wasteDeltaPercent?: number | null;
+  comparisonTone?: "emerald" | "orange" | "slate";
   validationIssues: ValidationIssue[];
 };
 
@@ -78,22 +73,25 @@ function WastePrimaryMeasurement({
 }: { value: string; hidden: boolean; onChange: (value: string) => void }) {
   if (hidden) return null;
   return (
-    <HarvestMeasurementSlider
-      id="harvest-waste-kg"
-      exactInputId="harvest-waste-kg-exact"
-      exactInputLabel="Saisie exacte (kg)"
-      exactInputMode="decimal"
-      label="Masse collectée"
-      value={value}
-      initialMax={HARVEST_WASTE_SLIDER_INITIAL_MAX_KG}
-      extension={HARVEST_WASTE_SLIDER_EXTENSION_KG}
-      absoluteMax={ACTION_MEASUREMENT_MAX_KG}
-      step={ACTION_WASTE_MASS_RESOLUTION_KG}
-      unit="kg"
-      accent="emerald"
-      formatValue={formatKg}
-      onChange={onChange}
-    />
+    <label className="block min-w-0 space-y-2 rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm sm:p-5">
+      <span className="block text-sm font-bold text-emerald-950">Masse collectée (exacte)</span>
+      <div className="flex items-center rounded-xl border border-emerald-300 bg-white px-3 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/15">
+        <input
+          id="harvest-waste-kg"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          max={ACTION_MEASUREMENT_MAX_KG}
+          step={ACTION_WASTE_MASS_RESOLUTION_KG}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          aria-label="Masse collectée exacte en kilogrammes"
+          placeholder="0"
+          className="min-w-0 flex-1 bg-transparent py-4 text-3xl font-black tracking-tight text-emerald-950 outline-none sm:text-4xl"
+        />
+        <span className="text-lg font-bold text-emerald-800">kg</span>
+      </div>
+    </label>
   );
 }
 
@@ -133,9 +131,6 @@ export function HarvestWasteSection({
   hidePrimaryMeasurement = false,
   wasteCurrentPerVolunteer,
   wasteBenchmarkPerVolunteer,
-  wasteBenchmarkSourceCount,
-  wasteDeltaPercent,
-  comparisonTone,
   validationIssues,
 }: HarvestWasteSectionProps) {
   const [legacyTriOpen, setLegacyTriOpen] = useState(false);
@@ -165,15 +160,14 @@ export function HarvestWasteSection({
   return (
     <section className="min-w-0 space-y-4 rounded-3xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50/30 p-4 shadow-[0_12px_32px_-24px_rgba(5,150,105,0.55)] sm:p-5">
       <HarvestWasteHeader />
-      <TrashBinGauge value={parseKg(wasteKg)} />
-      <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
-      <WasteComparisonVisual
-        currentPerVolunteer={wasteCurrentPerVolunteer}
-        benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
-        benchmarkSourceCount={wasteBenchmarkSourceCount}
-        deltaPercent={wasteDeltaPercent}
-        comparisonTone={comparisonTone}
-      />
+      <div className="grid items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/35 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)]">
+        <TrashBinGauge
+          value={parseKg(wasteKg)}
+          currentPerVolunteer={wasteCurrentPerVolunteer}
+          benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+        />
+        <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
+      </div>
       <WasteMeasurementMethod value={wasteMeasurementMethod} onChange={onMeasurementMethodChange} />
 
       <WasteCharacterizationSelector

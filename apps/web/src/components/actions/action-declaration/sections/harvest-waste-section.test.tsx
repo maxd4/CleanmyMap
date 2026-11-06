@@ -40,14 +40,14 @@ function renderWasteSection(overrides: Partial<React.ComponentProps<typeof Harve
 }
 
 describe("HarvestWasteSection visual order", () => {
-  it("places the gauge, slider, comparison and method in the shared card order", () => {
+  it("places the unique gauge, direct input and method in the shared card order", () => {
     const markup = renderWasteSection();
 
-    expect(markup.indexOf('data-testid="waste-measurement-visual"')).toBeLessThan(markup.indexOf('data-testid="harvest-waste-kg-slider-panel"'));
-    expect(markup.indexOf('data-testid="harvest-waste-kg-slider-panel"')).toBeLessThan(markup.indexOf('data-testid="waste-comparison-visual"'));
-    expect(markup.indexOf('data-testid="waste-comparison-visual"')).toBeLessThan(markup.indexOf("Méthode de mesure"));
-    expect(markup).toContain('id="harvest-waste-kg-exact"');
-    expect(markup).toContain('Saisie exacte (kg)');
+    expect(markup.indexOf('data-testid="waste-measurement-visual"')).toBeLessThan(markup.indexOf('id="harvest-waste-kg"'));
+    expect(markup.indexOf('id="harvest-waste-kg"')).toBeLessThan(markup.indexOf("Méthode de mesure"));
+    expect(markup).not.toContain('data-testid="harvest-waste-kg-slider-panel"');
+    expect(markup).not.toContain('data-testid="waste-comparison-visual"');
+    expect(markup).toContain("Masse collectée (exacte)");
   });
 });
 
@@ -416,15 +416,14 @@ describe("HarvestWasteSection comparison", () => {
     });
   });
 
-  it("keeps the waste input and renders the compact visual comparison", () => {
+  it("keeps the waste input and renders one average-based gauge", () => {
     const markup = renderWasteSection();
 
     expect(markup).toContain('id="harvest-waste-kg"');
     expect(markup).toContain('data-testid="waste-measurement-visual"');
-    expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(3);
-    expect(markup).toContain('data-testid="waste-comparison-visual"');
-    expect(markup).toContain("Comparaison visuelle");
-    expect(markup).not.toContain('data-testid="waste-comparison-visual-icon"');
+    expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(1);
+    expect(markup).toContain('data-fill-percent="50"');
+    expect(markup).toContain("Moyenne / bénévole");
   });
 
   it("hides the comparison without a valid benchmark while preserving the input", () => {
@@ -455,15 +454,15 @@ describe("HarvestWasteSection comparison", () => {
 
     expect(zeroMarkup).toContain('value="0"');
     expect(zeroMarkup).toContain('data-testid="waste-measurement-visual"');
-    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
-    expect(zeroMarkup).toContain('data-testid="waste-comparison-visual"');
+    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
+    expect(zeroMarkup).toContain("Moyenne / bénévole");
     expect(absentMarkup).toContain('value=""');
     expect(absentMarkup).toContain('data-testid="waste-measurement-visual"');
-    expect(absentMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
-    expect(absentMarkup).not.toContain('data-testid="waste-comparison-visual"');
+    expect(absentMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
+    expect(absentMarkup).toContain("Moyenne indisponible");
   });
 
-  it("extends the presentation range so a historical mass remains reachable", () => {
+  it("keeps a historical mass directly editable without a presentation ceiling", () => {
     const markup = renderWasteSection({
       wasteKg: "150",
       wasteCurrentPerVolunteer: 150,
@@ -472,7 +471,7 @@ describe("HarvestWasteSection comparison", () => {
     });
 
     expect(markup).toContain('value="150"');
-    expect(markup).toContain('max="160"');
-    expect(markup).toContain('data-testid="waste-comparison-visual"');
+    expect(markup).toContain('max="100000"');
+    expect(markup).toContain('data-fill-percent="75"');
   });
 });

@@ -23,6 +23,7 @@ const DEFAULT_MEGOTS_PROPS: React.ComponentProps<typeof HarvestMegotsSection> = 
   cigaretteButtsCountProvenance: "weight_converted",
   cigaretteButtsMassProvenance: "measured",
   cigaretteButtsVolumeProvenance: "unknown",
+  cigaretteButtsInputSource: "mass",
   cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
   onMegotsWeightChange: () => undefined,
   onMegotsVolumeChange: () => undefined,
@@ -124,20 +125,19 @@ describe("HarvestMegotsSection", () => {
 
     expect(markup).toContain('id="harvest-megots-count"');
     expect(markup).toContain('value=""');
-    expect(markup).toContain("Statut : estimé");
-    expect(markup).toContain("Masse : mesuré");
+    expect(markup).toContain("estimé");
+    expect(markup).toContain("mesure saisie");
     expect(markup).not.toContain("Formule :");
     expect(markup).toContain('id="harvest-megots-condition"');
     expect(markup).toContain('type="radio"');
-    expect(markup).toContain('id="harvest-megots-count-slider"');
+    expect(markup).not.toContain('id="harvest-megots-count-slider"');
     expect(markup).toContain('data-testid="butts-measurement-visual"');
-    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
-    expect(markup).toContain('data-testid="butts-comparison-visual"');
-    expect(markup).not.toContain('data-testid="butts-comparison-visual-icon"');
-    expect(markup.indexOf('data-testid="butts-measurement-visual"')).toBeLessThan(markup.indexOf("Nombre de mégots"));
-    expect(markup.indexOf("Nombre de mégots")).toBeLessThan(markup.indexOf("Comparaison visuelle des mégots"));
-    expect(markup.indexOf("Comparaison visuelle des mégots")).toBeLessThan(markup.indexOf("État des mégots"));
-    expect(markup.indexOf("État des mégots")).toBeLessThan(markup.indexOf("Masse de mégots"));
+    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(1);
+    expect(markup).toContain("Dernière mesure saisie");
+    expect(markup).toContain("masse</span>");
+    expect(markup).not.toContain('data-testid="butts-comparison-visual"');
+    expect(markup.indexOf('data-testid="butts-measurement-visual"')).toBeLessThan(markup.indexOf(">Nombre</span>"));
+    expect(markup.indexOf(">Nombre</span>")).toBeLessThan(markup.indexOf("État des mégots"));
     expect(markup).not.toContain("Référence moyenne");
   });
   it("does not present an unqualified historical value as measured", () => {
@@ -147,8 +147,8 @@ describe("HarvestMegotsSection", () => {
       cigaretteButtsVolumeProvenance: "unknown",
     });
 
-    expect(markup).toContain("Statut : non qualifié");
-    expect(markup).not.toContain("Statut : mesuré");
+    expect(markup).toContain("non qualifié");
+    expect(markup).not.toContain("mesuré");
   });
 
   it("shows an explicit zero but does not manufacture one for an absent value", () => {
@@ -168,7 +168,8 @@ describe("HarvestMegotsSection", () => {
     });
 
     expect(zeroMarkup).toContain("0 mégots");
-    expect(zeroMarkup).toContain("0 kg");
+    expect(zeroMarkup).toContain('id="harvest-megots-kg"');
+    expect(zeroMarkup).toContain('value="0"');
     expect(zeroMarkup).not.toContain("Non renseigné");
   });
 
@@ -183,7 +184,7 @@ describe("HarvestMegotsSection", () => {
     });
 
     expect(markup).toContain('data-testid="butts-measurement-visual"');
-    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(markup).not.toContain('data-testid="butts-comparison-visual"');
     expect(markup).not.toContain("Référence insuffisante");
   });
@@ -210,8 +211,8 @@ describe("HarvestMegotsSection", () => {
     expect(markup).not.toContain("mégots/L");
     expect(markup).toContain('data-testid="megots-lot-counted"');
     expect(markup).toContain('data-testid="megots-lot-volume"');
-    expect(markup).toContain('id="harvest-megots-count-slider"');
-    expect(markup).toContain('disabled=""');
-    expect(markup).toContain("modifiez les valeurs dans chaque lot");
+    expect(markup).not.toContain('id="harvest-megots-count-slider"');
+    expect(markup).toContain('readOnly=""');
+    expect(markup).toContain("modifiez les contributions dans la zone ci-dessous");
   });
 });

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ButtsComparisonVisual, DropletGauge, TrashBinGauge, WasteComparisonVisual } from "./harvest-gauges";
 
 describe("TrashBinGauge", () => {
-  it("keeps three outlined bins visible before any declaration", () => {
+  it("keeps one outlined bin and disables comparison before any declaration", () => {
     const markup = renderToStaticMarkup(
       React.createElement(TrashBinGauge, {
         value: null,
@@ -13,8 +13,8 @@ describe("TrashBinGauge", () => {
     );
 
     expect(markup).toContain('data-testid="waste-measurement-visual"');
-    expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(3);
-    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(1);
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(markup).toContain("Non renseigné");
     expect(markup).toContain('aria-label="Quantité de déchets hors mégots : Non renseigné.');
     expect(markup).not.toContain("0,00 kg");
@@ -26,7 +26,7 @@ describe("TrashBinGauge", () => {
 
     expect(markup).toContain("0,00 kg");
     expect(markup).toContain('aria-label="Quantité de déchets hors mégots : 0,00 kg.');
-    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(markup).not.toContain("Non renseigné");
   });
 
@@ -34,27 +34,45 @@ describe("TrashBinGauge", () => {
     const markup = renderToStaticMarkup(
       React.createElement(TrashBinGauge, {
         value: 5,
+        currentPerVolunteer: 10,
+        benchmarkPerVolunteer: 5,
       }),
     );
 
+    expect(markup).toContain("Moyenne / bénévole");
     expect(markup).toContain("5,0 kg");
     expect(markup).toContain('data-fill-percent="100"');
-    expect(markup).toContain('data-fill-percent="50"');
-    expect(markup).toContain('data-fill-percent="0"');
+    expect(markup).not.toContain('data-fill-percent="50"');
 
     const resetMarkup = renderToStaticMarkup(React.createElement(TrashBinGauge, { value: 0 }));
-    expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(resetMarkup).toContain("0,00 kg");
+  });
+
+  it("clamps the fill to two times the canonical average", () => {
+    const halfMarkup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 5,
+      currentPerVolunteer: 5,
+      benchmarkPerVolunteer: 5,
+    }));
+    const overMarkup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 15,
+      currentPerVolunteer: 15,
+      benchmarkPerVolunteer: 5,
+    }));
+
+    expect(halfMarkup).toContain('data-fill-percent="50"');
+    expect(overMarkup).toContain('data-fill-percent="100"');
   });
 });
 
 describe("DropletGauge", () => {
-  it("keeps three outlined drops and labels an absent quantity as unknown", () => {
+  it("keeps one outlined drop and labels an absent quantity as unknown", () => {
     const markup = renderToStaticMarkup(React.createElement(DropletGauge, { value: null }));
 
     expect(markup).toContain('data-testid="butts-measurement-visual"');
-    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
-    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(1);
+    expect(markup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(markup).toContain("Non renseigné");
     expect(markup).toContain('aria-label="Quantité de mégots retenue : Non renseigné.');
     expect(markup).not.toContain("0 mégots");
@@ -65,25 +83,28 @@ describe("DropletGauge", () => {
 
     expect(zeroMarkup).toContain("0 mégots");
     expect(zeroMarkup).toContain('aria-label="Quantité de mégots retenue : 0 mégots.');
-    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(zeroMarkup).not.toContain("Non renseigné");
 
     const positiveMarkup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 2_500 }));
     expect(positiveMarkup).toContain("2 500 mégots");
     const resetMarkup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 0 }));
-    expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(3);
+    expect(resetMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
     expect(resetMarkup).toContain("0 mégots");
   });
 
   it("uses the retained butt quantity independently of comparisons", () => {
-    const markup = renderToStaticMarkup(React.createElement(DropletGauge, { value: 2_500 }));
+    const markup = renderToStaticMarkup(React.createElement(DropletGauge, {
+      value: 2_500,
+      currentPerVolunteer: 2_500,
+      benchmarkPerVolunteer: 2_500,
+    }));
 
     expect(markup).toContain('data-testid="butts-measurement-visual"');
-    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(3);
+    expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(1);
     expect(markup).toContain("2 500 mégots");
-    expect(markup.match(/data-fill-percent="100"/g)).toHaveLength(1);
     expect(markup).toContain('data-fill-percent="50"');
-    expect(markup).toContain('data-fill-percent="0"');
+    expect(markup).toContain("Moyenne / bénévole");
   });
 
   it("keeps the retained mass as a secondary KPI without changing the quantity gauge", () => {
