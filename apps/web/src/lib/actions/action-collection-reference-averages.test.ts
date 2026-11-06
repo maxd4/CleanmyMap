@@ -46,6 +46,23 @@ describe("action collection reference averages", () => {
     expect(deriveContextualCollectionUnits({ actionContext: "school", childrenCount: 25, adultCount: 3, retiredCount: 1 })).toEqual({ wasteUnits: null, buttsUnits: null });
   });
 
+  it("rejects a complete composition when it does not reconcile with volunteersCount", () => {
+    expect(deriveContextualCollectionUnits({
+      actionContext: "school",
+      childrenCount: 10,
+      adultCount: 2,
+      retiredCount: 0,
+      volunteersCount: 11,
+    })).toEqual({ wasteUnits: null, buttsUnits: null });
+    expect(deriveContextualCollectionUnits({
+      actionContext: "school",
+      childrenCount: 10,
+      adultCount: 2,
+      retiredCount: 0,
+      volunteersCount: 12,
+    })).toEqual({ wasteUnits: 6.5, buttsUnits: 2 });
+  });
+
   it("rejects malformed context rows and keeps zero values valid", () => {
     expect(normalizeActionCollectionContextReferenceRow({
       action_context: "school",

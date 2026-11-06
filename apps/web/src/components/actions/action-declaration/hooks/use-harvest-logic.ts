@@ -47,7 +47,7 @@ function resolveHarvestReference(
       buttsPerVolunteer: contextual?.buttsPerEffectiveUnit ?? null,
       wasteSourceCount: contextual?.wasteSourceCount ?? 0,
       buttsSourceCount: contextual?.buttsSourceCount ?? 0,
-      unitLabel: "unité opérationnelle pondérée",
+      unitLabel: "unité opérationnelle",
     };
   }
   return {
@@ -280,6 +280,7 @@ function deriveHarvestMetrics(
           childrenCount: readParticipantCount(form.childrenCount),
           adultCount: readParticipantCount(form.adultCount),
           retiredCount: readParticipantCount(form.retiredCount),
+          volunteersCount,
         })
       : { wasteUnits: volunteersCount, buttsUnits: volunteersCount };
   const wasteComparison = deriveWasteComparison({

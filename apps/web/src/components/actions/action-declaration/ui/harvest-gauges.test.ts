@@ -260,7 +260,7 @@ describe("DropletGauge", () => {
         benchmarkSourceCount: 5,
         currentTotal: 2_500,
         currentUnitDenominator: 5,
-        referenceUnitLabel: "unité opérationnelle pondérée",
+        referenceUnitLabel: "unité opérationnelle",
       }));
     });
 
@@ -275,7 +275,7 @@ describe("DropletGauge", () => {
     expect(container.querySelector('[role="note"]')).not.toBeNull();
     expect(container.querySelector<HTMLAnchorElement>('a[href="/methodologie#methodologie-collecte"]')).not.toBeNull();
     expect(container.textContent).toContain("5 action(s) source");
-    expect(container.textContent).toContain("Dénominateur de cette action : 5 unité opérationnelle pondérée.");
+    expect(container.textContent).toContain("Dénominateur de cette action : 5 unité opérationnelle.");
     expect(container.textContent).toContain("Calcul : 2 500 mégots / 5 = 500 mégots ; 500 mégots / (2 × 2 500 mégots) = 10 %.");
   });
 });
@@ -318,6 +318,21 @@ describe("HarvestComparisonTrend", () => {
     expect(markup).toContain(`aria-label="Tendance ${direction === "up" ? "montante" : direction === "down" ? "descendante" : "neutre"} : ${label} par rapport à la moyenne par participant"`);
     expect(markup).not.toContain("unité opérationnelle");
     expect(markup).not.toContain("rounded-2xl border");
+  });
+
+  it("keeps the contextual denominator in the visible and accessible label", () => {
+    const markup = renderToStaticMarkup(React.createElement(HarvestComparisonTrend, {
+      currentPerVolunteer: 10,
+      benchmarkPerVolunteer: 8,
+      deltaPercent: 25,
+      benchmarkSourceCount: 2,
+      testId: "harvest-trend",
+      unitLabel: "par unité opérationnelle",
+    }));
+
+    expect(markup).toContain("vs moyenne");
+    expect(markup).toContain("par rapport à la moyenne par unité opérationnelle");
+    expect(markup).not.toContain("par participant");
   });
 
   it("does not render when the comparison is not valid", () => {

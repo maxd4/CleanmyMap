@@ -143,7 +143,164 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsOperationalUnits).toBe(4);
     expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
     expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(100);
-    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("unité opérationnelle pondérée");
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("unité opérationnelle");
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it.each([
+    ["citizen", { childrenCount: "10", adultCount: "2", retiredCount: "0", volunteersCount: "12", wasteKg: "14", cigaretteButtsCount: "1400" }],
+    ["company", { childrenCount: "10", adultCount: "2", retiredCount: "0", volunteersCount: "12", wasteKg: "14", cigaretteButtsCount: "1400" }],
+  ] as const)("uses the contextual denominator for %s comparisons", (actionContext, values) => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        [actionContext]: {
+          actionContext,
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 200,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext,
+      ...values,
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(7);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(7);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(200);
+    expect(harness.latest.logic.wasteDeltaPercent).toBe(0);
+    expect(harness.latest.logic.megotsDeltaPercent).toBe(0);
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("unité opérationnelle");
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("unité opérationnelle");
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("uses distinct school denominators for waste and cigarette butts", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        school: {
+          actionContext: "school",
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 200,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "school",
+      volunteersCount: "12",
+      childrenCount: "10",
+      adultCount: "2",
+      retiredCount: "0",
+      wasteKg: "13",
+      cigaretteButtsCount: "400",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(6.5);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(2);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(200);
+    expect(harness.latest.logic.wasteDeltaPercent).toBe(0);
+    expect(harness.latest.logic.megotsDeltaPercent).toBe(0);
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("does not fall back to raw participants for an incomplete contextual composition", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        school: {
+          actionContext: "school",
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 200,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "school",
+      volunteersCount: "12",
+      childrenCount: "",
+      adultCount: "2",
+      retiredCount: "0",
+      wasteKg: "13",
+      cigaretteButtsCount: "400",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBeNull();
+    expect(harness.latest.logic.megotsOperationalUnits).toBeNull();
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBeNull();
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBeNull();
+    expect(harness.latest.logic.wasteDeltaPercent).toBeNull();
+    expect(harness.latest.logic.megotsDeltaPercent).toBeNull();
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("keeps the global reference and participant denominator for legacy contexts", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: {
+        wastePerVolunteer: 2,
+        wasteSourceCount: 2,
+        buttsPerVolunteer: 200,
+        buttsSourceCount: 2,
+        eligibleActionCount: 2,
+        formulaVersion: "test",
+        updatedAt: null,
+      },
+      contextualCollectionReferences: {
+        school: {
+          actionContext: "school",
+          wastePerEffectiveUnit: 99,
+          buttsPerEffectiveUnit: 999,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "",
+      volunteersCount: "12",
+      wasteKg: "24",
+      cigaretteButtsCount: "2400",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(12);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(12);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(200);
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("participant");
+    expect(harness.latest.logic.megotsReferenceUnitLabel).toBe("participant");
 
     harness.renderer.unmount();
     mockReferences.mockReturnValue({ collectionReferences: null });
