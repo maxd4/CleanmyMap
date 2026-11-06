@@ -134,6 +134,21 @@ test("pedestrian publication revision proof uses the canonical table and replay-
   assert.doesNotMatch(contract, /get_active_pedestrian_risk_projection_versions/);
 });
 
+test("pedestrian lease failure validates expiry after locking and at mutation", () => {
+  const migration = readFileSync(new URL("../../apps/web/supabase/migrations/20261106000002_pedestrian_observation_cache_lease_expiry_after_lock.sql", import.meta.url), "utf8");
+  const contract = readFileSync(new URL("../../apps/web/supabase/tests/pedestrian-observation-cache-lease-atomicity.pgtap.sql", import.meta.url), "utf8");
+  const firstLock = migration.indexOf("for v_event in");
+  const firstLockEnd = migration.indexOf("end loop;", firstLock);
+  const postLockClock = migration.indexOf("v_now := clock_timestamp();", firstLockEnd);
+  assert.ok(firstLock > -1 && firstLockEnd > firstLock && postLockClock > firstLockEnd);
+  assert.match(migration, /event\.lease_expires_at > clock_timestamp\(\);/);
+  assert.match(migration, /invalidation lease changed during failure release/);
+  assert.match(contract, /select plan\(24\);/);
+  assert.match(contract, /one expired event rejects the complete failure batch/);
+  assert.match(contract, /an expired batch leaves every event unreleased/);
+  assert.match(contract, /failure release rejects duplicated event identifiers/);
+});
+
 test("pgTAP parser accepts an exact complete plan", () => {
   assert.equal(extractPlan("begin; select plan(2);"), 2);
   assert.deepEqual(parsePgTapOutput("ok 1 - first\nok 2 - second\n1..2\n", 2), {
