@@ -47,9 +47,9 @@ export type SegmentRouteSelectionMetrics = {
   groupCount: number;
   routeMode: "network" | "fallback";
   safetyStatus: "network_access_allowed_safety_unknown";
-  originResolution: "exact_node" | "nearest_verified_node";
+  originResolution: "exact_node" | "exact_edge" | "nearest_verified_node";
   originSnapDistanceM: number;
-  arrivalResolution: "exact_node" | "nearest_verified_node" | "not_applicable";
+  arrivalResolution: "exact_node" | "exact_edge" | "nearest_verified_node" | "not_applicable";
   arrivalSnapDistanceM: number;
 };
 

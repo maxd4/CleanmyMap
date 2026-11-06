@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildPedestrianNetwork,
   routeThroughPedestrianNetwork,
+  shortestPedestrianAccessFromSources,
   type OsmNodeInput,
   type OsmWayInput,
 } from "./pedestrian-network";
@@ -118,6 +119,60 @@ describe("pedestrian network importer and graph", () => {
     expect(route?.provider).toBe("stored-network");
     expect(route?.origin).toEqual([48.84, 2.34]);
     expect(route?.coordinates).toEqual([[48.84, 2.34], [48.841, 2.34]]);
+  });
+
+  it("keeps both directed exits from an exact point inside a bidirectional edge", () => {
+    const result = build([way(
+      "44-bidirectional",
+      { highway: "footway" },
+      node("44-a", 48.84, 2.34),
+      node("44-b", 48.840898, 2.34),
+    )]);
+    const graph = {
+      versionId: "pilot-v1",
+      networkKey: result.networkKey,
+      sourceRetrievedAt: result.sourceRetrievedAt,
+      bounds: result.bounds,
+      edges: result.edges,
+    };
+    const midpoint: [number, number] = [48.840449, 2.34];
+    const access = shortestPedestrianAccessFromSources(
+      graph,
+      [midpoint],
+      [[48.84, 2.34], [48.840898, 2.34]],
+      { maxSnapDistanceM: 0 },
+    );
+
+    expect(access.finalizedTargetNodeIds).toEqual(new Set(["44-a", "44-b"]));
+    expect(access.distancesM.get("44-a")).toBeCloseTo(50, 0);
+    expect(access.distancesM.get("44-b")).toBeCloseTo(50, 0);
+  });
+
+  it("uses the remaining directed length after a multi-vertex exact match", () => {
+    const result = build([way(
+      "45-multi-vertex",
+      { highway: "footway", oneway: "yes" },
+      node("45-a", 48.84, 2.34),
+      node("45-mid", 48.84045, 2.34),
+      node("45-b", 48.8409, 2.34),
+    )]);
+    const graph = {
+      versionId: "pilot-v1",
+      networkKey: result.networkKey,
+      sourceRetrievedAt: result.sourceRetrievedAt,
+      bounds: result.bounds,
+      edges: result.edges,
+    };
+    const source: [number, number] = [48.840675, 2.34];
+    const access = shortestPedestrianAccessFromSources(
+      graph,
+      [source],
+      [[48.8409, 2.34]],
+      { maxSnapDistanceM: 0 },
+    );
+
+    expect(access.finalizedTargetNodeIds).toEqual(new Set(["45-b"]));
+    expect(access.distancesM.get("45-b")).toBeCloseTo(25, 0);
   });
 
   it("keeps a same-node leg network-verified with zero distance", () => {

@@ -50,7 +50,7 @@ export type PedestrianNetworkPointResolution = {
   nodeId: string;
   coordinate: Coordinate;
   distanceM: number;
-  resolution: "exact_node" | "nearest_verified_node";
+  resolution: "exact_node" | "exact_edge" | "nearest_verified_node";
 };
 
 export const MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M = 50;
@@ -466,13 +466,14 @@ export function resolvePedestrianNetworkPoint(
 
 const EXACT_EDGE_MATCH_TOLERANCE_M = 0.05;
 
-function resolveExactDirectedEdgePoint(
+function resolveExactDirectedEdgePoints(
   point: Coordinate,
   edges: readonly PedestrianNetworkEdge[],
-): { nodeId: string; distanceM: number } | null {
-  let best: { nodeId: string; distanceM: number; errorM: number; edgeKey: string } | null = null;
+): Array<{ nodeId: string; distanceM: number; errorM: number; edgeKey: string }> {
+  const matches = new Map<string, { nodeId: string; distanceM: number; errorM: number; edgeKey: string }>();
   for (const edge of edges) {
     let travelledM = 0;
+    let edgeMatch: { nodeId: string; distanceM: number; errorM: number; edgeKey: string } | null = null;
     for (let index = 0; index < edge.coordinates.length - 1; index += 1) {
       const start = edge.coordinates[index]!;
       const end = edge.coordinates[index + 1]!;
@@ -488,16 +489,23 @@ function resolveExactDirectedEdgePoint(
       const errorM = haversineMeters(point, projected);
       const segmentLengthM = haversineMeters(start, end);
       if (errorM <= EXACT_EDGE_MATCH_TOLERANCE_M) {
-        const distanceM = travelledM + ((1 - fraction) * segmentLengthM);
+        const distanceM = Math.max(
+          0,
+          edge.lengthM - travelledM - (fraction * segmentLengthM),
+        );
         const candidate = { nodeId: edge.toNodeId, distanceM, errorM, edgeKey: edge.edgeKey };
-        if (!best || errorM < best.errorM || (errorM === best.errorM && edge.edgeKey.localeCompare(best.edgeKey) < 0)) {
-          best = candidate;
+        if (!edgeMatch || errorM < edgeMatch.errorM ||
+          (errorM === edgeMatch.errorM && distanceM < edgeMatch.distanceM)) {
+          edgeMatch = candidate;
         }
       }
       travelledM += segmentLengthM;
     }
+    if (edgeMatch) matches.set(edge.edgeKey, edgeMatch);
   }
-  return best ? { nodeId: best.nodeId, distanceM: best.distanceM } : null;
+  return [...matches.values()].sort((left, right) =>
+    left.distanceM - right.distanceM || left.edgeKey.localeCompare(right.edgeKey),
+  );
 }
 
 function routeBetweenNodes(
@@ -575,22 +583,29 @@ export function shortestPedestrianAccessFromSources(
   }
 
   const maxSnapDistanceM = options.maxSnapDistanceM ?? MAX_PEDESTRIAN_NETWORK_SNAP_DISTANCE_M;
-  const sources = options.sourceNodeIds
-    ? options.sourceNodeIds.map((nodeId) => nodes.has(nodeId) ? { nodeId, coordinate: nodes.get(nodeId)!, distanceM: 0, resolution: "exact_node" as const } : null)
+  const sourceGroups = options.sourceNodeIds
+    ? options.sourceNodeIds.map((nodeId) => nodes.has(nodeId)
+      ? [{ nodeId, coordinate: nodes.get(nodeId)!, distanceM: 0, resolution: "exact_node" as const }]
+      : [])
     : sourceCoordinates.map((point) => {
       const exactNode = resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM);
-      if (exactNode) return { ...exactNode, distanceM: 0 };
+      if (exactNode) return [{ ...exactNode, distanceM: 0 }];
       if (maxSnapDistanceM === 0) {
-        const exactEdge = resolveExactDirectedEdgePoint(point, graph.edges);
-        return exactEdge ? { ...exactEdge, coordinate: point, resolution: "exact_node" as const } : null;
+        return resolveExactDirectedEdgePoints(point, graph.edges).map((exactEdge) => ({
+          nodeId: exactEdge.nodeId,
+          coordinate: point,
+          distanceM: exactEdge.distanceM,
+          resolution: "exact_edge" as const,
+        }));
       }
-      return null;
+      return [];
     });
+  const sources = sourceGroups.flat();
   const targets = targetCoordinates.map((point) => resolvePedestrianNetworkPoint(point, nodes, maxSnapDistanceM));
   targets.forEach((target) => {
     if (target) resolvedTargetNodeIds.add(target.nodeId);
   });
-  if (sources.some((source) => source === null) || interrupted()) {
+  if (sourceGroups.some((sourceGroup) => sourceGroup.length === 0) || interrupted()) {
     return { distancesM, resolvedTargetNodeIds, finalizedTargetNodeIds, inaccessibleTargetNodeIds, aborted: options.signal?.aborted === true, timedOut: Date.now() >= deadlineMs };
   }
 
