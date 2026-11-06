@@ -12,7 +12,7 @@ function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
     "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\nPlusieurs writers Codex peuvent travailler dans le checkout canonique ; ils ne doivent jamais écraser silencieusement les changements d’un autre writer.\nLes modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.\nmain publié = référence versionnée ;\nune candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;\ntout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.\nWorkflow de chaque exécution de lot : validation → commit isolé → push main → vérification de convergence\nLe mode de développement rapide ne supprime pas l’exigence de commit et push ; une interdiction explicite de l'utilisateur autorise un commit local sans push\n\n### LEGACY / COMPATIBILITY\nMAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
-    "CHATGPT.md": "MAIN-ONLY / MULTI-WRITER COORDONNÉ\nChatGPT est autorisé à modifier GitHub, committer et pousser sur main pour un lot demandé\nPour chaque exécution de travail qui produit un lot : validation → commit isolé → push main → vérification de convergence\nLe mode de développement rapide ne supprime pas cette publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+    "CHATGPT.md": "MAIN-ONLY / MULTI-WRITER COORDONNÉ\nChatGPT est limité à la lecture et à la revue de GitHub. Codex est responsable de l'intégration locale, du commit isolé et de la publication fast-forward, conformément à AGENTS.md et scripts/AGENTS.md.\nPour chaque exécution de travail qui produit un lot : validation → commit isolé → push main → vérification de convergence\nLe mode de développement rapide ne supprime pas cette publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
@@ -108,14 +108,14 @@ describe("AGENTS hierarchy governance", () => {
     fs.writeFileSync(
       chatgptPath,
       fs.readFileSync(chatgptPath, "utf8").replace(
+        "ChatGPT est limité à la lecture et à la revue de GitHub",
         "ChatGPT est autorisé à modifier GitHub, committer et pousser sur main",
-        "ChatGPT utilise la lecture et vérification uniquement",
       ),
     );
     try {
       const findings = validateAgentGovernance(fixture);
       assert.ok(findings.some((finding) => finding.includes("global local-over-GitHub priority")));
-      assert.ok(findings.some((finding) => finding.includes("must authorize ChatGPT")));
+      assert.ok(findings.some((finding) => finding.includes("current policy must limit ChatGPT to GitHub reading and review")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
