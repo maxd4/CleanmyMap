@@ -42,6 +42,8 @@ import {
 } from "./cigarette-butts-engine";
 import {
   normalizeClearedCigaretteButtsMeasurements,
+  resolveFallbackCigaretteButtsInputSource,
+  resolveUnambiguousCigaretteButtsSourceReplacement,
   type MeasurementClearFlags,
 } from "./cigarette-butts-clearing";
 
@@ -661,6 +663,14 @@ function resolveUserInputSource(
       normalizeNullableNonNegative(input.cigaretteButtsVolumeLiters),
       existingMeasurements.cigaretteButtsVolumeLiters,
     );
+  const replacementCandidates = resolveUnambiguousCigaretteButtsSourceReplacement(
+    persistedSource,
+    input,
+    explicitMeasurementFields,
+    countChanged,
+    massChanged,
+    volumeChanged,
+  );
   const explicitSource = input.cigaretteButtsInputSource;
   if (isScalarInputSource(explicitSource)) {
     const sourceValueChanged = explicitSource === "count"
@@ -692,19 +702,23 @@ function resolveUserInputSource(
         sourceValueChanged ||
         canonicalPersistedSource === canonicalInputSource(explicitSource) ||
         (sourceWasSubmitted && persistedSourceWasCleared && persistedField !== sourceField)
-      )
+      ) &&
+      (replacementCandidates.length === 0 ||
+        replacementCandidates.length === 1 && replacementCandidates[0] === canonicalInputSource(explicitSource))
     ) {
       return explicitSource;
     }
   }
-  const singleFieldSource = resolveSingleChangedInputSource(
-    countChanged,
-    massChanged,
-    volumeChanged,
-  );
-  if (singleFieldSource) return singleFieldSource;
+  if (replacementCandidates.length === 1) return replacementCandidates[0];
+  if (replacementCandidates.length > 1) return persistedSource;
   if (countChanged || massChanged || volumeChanged) {
-    return resolveBothChangedInputSource(input.cigaretteButtsInputSource, persistedSource);
+    return resolveFallbackCigaretteButtsInputSource(
+      input.cigaretteButtsInputSource,
+      persistedSource,
+      countChanged,
+      massChanged,
+      volumeChanged,
+    );
   }
 
   // A condition-only edit must follow the persisted source. An ambiguous
@@ -732,25 +746,6 @@ function scalarMeasurementField(
   if (source === "mass" || source === "mass_kg") return "cigaretteButtsMassKg";
   if (source === "volume_l") return "cigaretteButtsVolumeLiters";
   return null;
-}
-
-function resolveSingleChangedInputSource(
-  countChanged: boolean,
-  massChanged: boolean,
-  volumeChanged: boolean,
-): CigaretteButtsInputSource | null {
-  if (countChanged && !massChanged && !volumeChanged) return "count";
-  if (massChanged && !countChanged && !volumeChanged) return "mass_kg";
-  if (volumeChanged && !countChanged && !massChanged) return "volume_l";
-  return null;
-}
-
-function resolveBothChangedInputSource(
-  inputSource: CigaretteButtsInputSource | undefined,
-  persistedSource: CigaretteButtsInputSource,
-): CigaretteButtsInputSource {
-  if (inputSource === "count" || inputSource === "mass" || inputSource === "mass_kg" || inputSource === "volume_l") return inputSource;
-  return persistedSource;
 }
 
 export function hasCigaretteButtsMeasurement(

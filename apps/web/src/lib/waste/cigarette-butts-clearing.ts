@@ -23,6 +23,51 @@ type InferInputSource = (
 
 type MeasurementSource = CigaretteButtsInputSource | undefined;
 
+export function resolveUnambiguousCigaretteButtsSourceReplacement(
+  persistedSource: CigaretteButtsInputSource,
+  input: RawCigaretteButtsMeasurementInput,
+  explicitMeasurementFields: readonly string[],
+  countChanged: boolean,
+  massChanged: boolean,
+  volumeChanged: boolean,
+): Array<"count" | "mass_kg" | "volume_l"> {
+  const persistedField = sourceValueField(persistedSource);
+  if (!persistedField || input[persistedField] !== null || !explicitMeasurementFields.includes(persistedField)) {
+    return [];
+  }
+
+  const candidates: Array<"count" | "mass_kg" | "volume_l"> = [];
+  const candidateFields = [
+    ["count", "cigaretteButtsCount", "countExplicitlyCleared", countChanged],
+    ["mass_kg", "cigaretteButtsMassKg", "massExplicitlyCleared", massChanged],
+    ["volume_l", "cigaretteButtsVolumeLiters", "volumeExplicitlyCleared", volumeChanged],
+  ] as const;
+  for (const [source, field, clearField, changed] of candidateFields) {
+    if (
+      field !== persistedField &&
+      explicitMeasurementFields.includes(field) &&
+      changed &&
+      hasSourceValue(input, clearField)
+    ) {
+      candidates.push(source);
+    }
+  }
+  return candidates;
+}
+
+export function resolveFallbackCigaretteButtsInputSource(
+  inputSource: CigaretteButtsInputSource | undefined,
+  persistedSource: CigaretteButtsInputSource,
+  countChanged: boolean,
+  massChanged: boolean,
+  volumeChanged: boolean,
+): CigaretteButtsInputSource {
+  if (countChanged && !massChanged && !volumeChanged) return "count";
+  if (massChanged && !countChanged && !volumeChanged) return "mass_kg";
+  if (volumeChanged && !countChanged && !massChanged) return "volume_l";
+  return inputSource && isScalarSource(inputSource) ? inputSource : persistedSource;
+}
+
 export function normalizeClearedCigaretteButtsMeasurements(
   effectiveInput: RawCigaretteButtsMeasurementInput,
   existing: ActionCigaretteButtsMeasurements | null | undefined,
@@ -179,6 +224,15 @@ function sourceMeasurementField(
   if (source === "count") return "countExplicitlyCleared";
   if (isMassSource(source)) return "massExplicitlyCleared";
   if (source === "volume_l") return "volumeExplicitlyCleared";
+  return null;
+}
+
+function sourceValueField(
+  source: CigaretteButtsInputSource,
+): "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters" | null {
+  if (source === "count") return "cigaretteButtsCount";
+  if (isMassSource(source)) return "cigaretteButtsMassKg";
+  if (source === "volume_l") return "cigaretteButtsVolumeLiters";
   return null;
 }
 
