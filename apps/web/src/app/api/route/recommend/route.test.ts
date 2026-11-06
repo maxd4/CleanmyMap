@@ -447,6 +447,37 @@ describe("POST /api/route/recommend", () => {
     });
   });
 
+  it("applies the nearest-relevant ceiling before a five-group guided baseline", async () => {
+    const groups = Array.from({ length: 5 }, (_, index) => ({
+      label: `Groupe ${index + 1}`,
+      volunteerCount: 1,
+      sector: { center: { latitude: 48.85 + index * 0.001, longitude: 2.35 }, radiusKm: 1 },
+      waypoints: [{ id: `waypoint-${index + 1}`, label: `Point ${index + 1}`, latitude: 48.85 + index * 0.001, longitude: 2.35 }],
+    }));
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      searchMode: "nearest_relevant",
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      volunteers: 5,
+      groupCount: 5,
+      planningMode: {
+        type: "territorial-guided",
+        version: "route-territorial-guided-v2",
+        groups,
+        budget: {
+          totalMinutes: 90,
+          organizationMarginMinutes: 15,
+          minimumCollectionMinutes: 45,
+          travelMaxMinutes: 30,
+        },
+      },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(4);
+    expect(routePolylineThroughFossgisFootMock.mock.calls.length).toBeLessThanOrEqual(4);
+  }, 20_000);
+
   it("propagates the effective predictive focus to the response and trace", async () => {
     const summary = {
       status: "unavailable" as const,

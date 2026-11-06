@@ -33,7 +33,9 @@ import {
   buildRouteNearestRelevantProbePoints,
   createRouteNearestRelevantReference,
   findNearestRelevantRoute,
+  ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS,
 } from "@/lib/route/route-nearest-relevant";
+import { createRouteRoutingOperationBudget } from "@/lib/route/route-routing-operation-budget";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -232,7 +234,16 @@ export async function POST(request: Request) {
       routingBudget,
     });
 
-    const initialPlanning = await buildPlanning(origin, options.arrival, options.routeTopology);
+    const nearestRelevantRoutingBudget = searchMode === "nearest_relevant"
+      ? createRouteRoutingOperationBudget({ limit: ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS })
+      : undefined;
+    const initialPlanning = await buildPlanning(
+      origin,
+      options.arrival,
+      options.routeTopology,
+      undefined,
+      nearestRelevantRoutingBudget,
+    );
     const buildResponseInput = (
       candidateOrigin: typeof origin,
       candidateArrival: typeof options.arrival,
@@ -301,6 +312,7 @@ export async function POST(request: Request) {
           };
         },
         signal: request.signal,
+        routingBudget: nearestRelevantRoutingBudget,
       });
       if (nearestSearch.selected) {
         const selectedKey = `${nearestSearch.selected.origin.latitude.toFixed(7)}:${nearestSearch.selected.origin.longitude.toFixed(7)}`;

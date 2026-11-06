@@ -7,6 +7,7 @@ import {
   ROUTE_NEAREST_RELEVANT_RADII_KM,
 } from "./route-nearest-relevant";
 import type { RoutePollutionRelevanceAssessment } from "./route-pollution-relevance";
+import { createRouteRoutingOperationBudget } from "./route-routing-operation-budget";
 
 const center = { latitude: 48.8566, longitude: 2.3522 };
 
@@ -290,6 +291,42 @@ describe("route nearest relevant search", () => {
     expect(result.selected).toBeNull();
     expect(evaluateMock).not.toHaveBeenCalled();
     expect(result.search.reason).toBe("quota_exhausted");
+  });
+
+  it("uses the supplied baseline budget without recreating or double-counting it", async () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 4, consumed: 4 });
+    const evaluateMock = vi.fn(async () => evaluate(80));
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: evaluateMock,
+      routingBudget,
+    });
+
+    expect(evaluateMock).not.toHaveBeenCalled();
+    expect(routingBudget.consumed).toBe(4);
+    expect(result.search.reason).toBe("quota_exhausted");
+  });
+
+  it("keeps the remaining operations available to an alternative", async () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 4, consumed: 1 });
+    const evaluateMock = vi.fn(async (_origin, _signal, budget) => {
+      expect(budget).toBe(routingBudget);
+      expect(budget.tryConsume(2)).toBe(true);
+      return { ...evaluate(80), providerCalls: 2 };
+    });
+    const result = await findNearestRelevantRoute({
+      graph: graphAtDistances([0.1]),
+      reference: reference(),
+      baseline: evaluate(48),
+      evaluate: evaluateMock,
+      routingBudget,
+    });
+
+    expect(evaluateMock).toHaveBeenCalledOnce();
+    expect(routingBudget.consumed).toBe(3);
+    expect(result.selected).not.toBeNull();
   });
 
   it("does not accept a two-call evaluation when only one provider call remains", async () => {

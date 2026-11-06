@@ -439,6 +439,7 @@ export async function findNearestRelevantRoute(input: {
   baseline: PlanEvaluation;
   evaluate: (origin: RoutePlannerOrigin, signal: AbortSignal, budget: RouteRoutingOperationBudget) => Promise<PlanEvaluation | null>;
   signal?: AbortSignal;
+  routingBudget?: RouteRoutingOperationBudget;
 }): Promise<RouteNearestRelevantSearchResult> {
   if (isAborted(input.signal)) {
     return {
@@ -464,7 +465,7 @@ export async function findNearestRelevantRoute(input: {
   const evaluated: CandidateEvaluation[] = [];
   const triedRadiiKm: number[] = [];
   let attemptsEvaluated = 0;
-  const routingBudget = createRouteRoutingOperationBudget({
+  const routingBudget = input.routingBudget ?? createRouteRoutingOperationBudget({
     limit: ROUTE_NEAREST_RELEVANT_MAX_PROVIDER_CALLS,
     consumed: input.baseline.providerCalls ?? 0,
   });
