@@ -123,6 +123,31 @@ describe("TrashBinGauge", () => {
 
     expect(markup).toContain("0,00 kg");
     expect(markup).toContain("Ratio indisponible lorsque la moyenne vaut zéro");
+    expect(markup).toContain('data-testid="waste-measurement-visual-comparison-status"');
+  });
+
+  it("shows the measure-required status while keeping the benchmark marker", () => {
+    const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: null,
+      currentPerVolunteer: null,
+      benchmarkPerVolunteer: 8,
+      benchmarkSourceCount: 2,
+    }));
+
+    expect(markup).toContain("Repère : moyenne par bénévole");
+    expect(markup).toContain("Mesure à saisir pour comparer.");
+  });
+
+  it("shows missing participants separately when a declared measure exists", () => {
+    const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 8,
+      currentPerVolunteer: null,
+      benchmarkPerVolunteer: 8,
+      benchmarkSourceCount: 2,
+    }));
+
+    expect(markup).toContain("Participants insuffisamment renseignés.");
+    expect(markup).not.toContain("Moyenne indisponible");
   });
 });
 
@@ -210,12 +235,14 @@ describe("DropletGauge", () => {
 describe("HarvestComparisonTrend", () => {
   it.each([
     [12, "up", "+12%"],
-    [5.1, "up", "+5%"],
+    [5.01, "up", "+5,01%"],
+    [5.1, "up", "+5,1%"],
     [5, "neutral", "+5%"],
     [1, "neutral", "+1%"],
     [-1, "neutral", "-1%"],
     [-5, "neutral", "-5%"],
-    [-5.1, "down", "-5%"],
+    [-5.01, "down", "-5,01%"],
+    [-5.1, "down", "-5,1%"],
     [-25, "down", "-25%"],
     [0, "neutral", "0%"],
   ] as const)("renders the signed %s trend", (delta, direction, label) => {

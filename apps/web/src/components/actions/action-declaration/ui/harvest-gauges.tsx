@@ -141,6 +141,14 @@ function QuantityGaugeVisual({
           ) : (
             <p className="text-xs font-semibold text-slate-500">Repère : moyenne par bénévole</p>
           )}
+          {hasReference && !hasBenchmark ? (
+            <p
+              data-testid={`${testId}-comparison-status`}
+              className="mt-1 text-xs font-semibold text-slate-600"
+            >
+              {statusLabel}
+            </p>
+          ) : null}
         </div>
       ) : (
         <p data-testid={`${testId}-reference-status`} className="mt-3 text-center text-xs font-semibold text-slate-600" role={referenceStatus === "loading" ? "status" : undefined}>

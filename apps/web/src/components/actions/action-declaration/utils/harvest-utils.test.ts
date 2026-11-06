@@ -3,8 +3,23 @@ import { describe, expect, it } from "vitest";
 import {
   deriveWasteComparison,
   extendHarvestSliderMax,
+  formatSignedPercent,
   resolveHarvestSliderMax,
 } from "./harvest-utils";
+
+describe("signed comparison percentages", () => {
+  it.each([
+    [12, "+12%"],
+    [5, "+5%"],
+    [5.1, "+5,1%"],
+    [5.01, "+5,01%"],
+    [-5, "-5%"],
+    [-5.1, "-5,1%"],
+    [0, "0%"],
+  ])("keeps the displayed percentage consistent with the threshold (%s)", (value, expected) => {
+    expect(formatSignedPercent(value)).toBe(expected);
+  });
+});
 
 describe("harvest measurement slider ranges", () => {
   it.each([
