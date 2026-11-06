@@ -149,7 +149,128 @@ function predictionFor(riskFocus: "all" | "waste" | "cigaretteButts") {
   };
 }
 
+function multiGroupData(): RouteExplanationData {
+  const data = dataFor("network");
+  const baseSelection = data.trace.selectedStops[0]!;
+  const plannerSelection = {
+    ...baseSelection,
+    id: "spot-1",
+    reason: "Groupe 1 : sélection prédictive conservée.",
+    selectionSource: "planner_selection" as const,
+    eventContributions: [],
+  };
+  const observedSelection = {
+    ...baseSelection,
+    id: "spot-2",
+    reason: "Groupe 2 : observation validée ajoutée après enrichissement.",
+    selectionSource: "observed_enrichment" as const,
+    combinedScore: null,
+    normalizedScoreComponents: { priority: null, travel: null },
+    eventContributions: [{
+      eventId: "event-2",
+      title: "Événement groupe 2",
+      eventDate: "2026-08-20",
+      locationLabel: "Place groupe 2",
+      latitude: 48.861,
+      longitude: 2.351,
+      ageDays: 2,
+      distanceKm: 0.4,
+      recencyFactor: 0.8,
+      proximityFactor: 0.9,
+      attendanceFactor: 1,
+      attendanceEvidence: { yes: 1, maybe: 0, capacityTarget: null, known: true },
+      pressure: 0.4,
+      scoreContribution: 0.2,
+    }],
+  };
+  const secondPlannerSelection = {
+    ...baseSelection,
+    id: "spot-3",
+    reason: "Groupe 2 : seconde sélection finale.",
+    selectionSource: "planner_selection" as const,
+    step: 2,
+    eventContributions: [],
+  };
+
+  data.stops = [
+    ...data.stops,
+    { ...data.stops[0]!, id: "spot-2", label: "Observation enrichie", latitude: 48.861, longitude: 2.351 },
+    { ...data.stops[0]!, id: "spot-3", label: "Second arrêt", latitude: 48.862, longitude: 2.352 },
+  ];
+  data.trace.selectedStops = [];
+  Reflect.set(data.trace, "multiRoute", {
+    groupCount: 2,
+    volunteers: 3,
+    groups: [
+      { groupIndex: 1, volunteerCount: 1, candidateIds: ["spot-1"], reservedCandidateIds: [], distanceKm: 1, durationMinutes: 10, targetCount: 1, selectedStops: [plannerSelection], routeMode: "network", withinBudget: true },
+      { groupIndex: 2, volunteerCount: 2, candidateIds: ["spot-2", "spot-3"], reservedCandidateIds: [], distanceKm: 2, durationMinutes: 20, targetCount: 2, selectedStops: [observedSelection, secondPlannerSelection], routeMode: "network", withinBudget: true },
+    ],
+    metrics: { coverageGain: 3, sharedTargetRatio: 0, sharedDistanceKm: 0, sharedDistanceRatio: 0, balanceDistance: 1, balanceDuration: 1, balanceTargetCount: 1, balanceVolunteerCount: 1, networkDistanceMeasured: true },
+    constraints: [],
+  });
+  Reflect.set(data, "multiRoute", {
+    totalDistanceKm: 3,
+    coverageGain: 3,
+    sharedTargetRatio: 0,
+    sharedDistanceRatio: 0,
+    balanceDistance: 1,
+    balanceDuration: 1,
+    balanceTargetCount: 1,
+  });
+  return data;
+}
+
 describe("RouteExplanation", () => {
+  it("renders final stops and provenance from each multi-route group", () => {
+    const markup = renderToStaticMarkup(<RouteExplanation data={multiGroupData()} fr />);
+
+    expect(markup).toContain("Stops retenus");
+    expect(markup).toContain(">3</dd>");
+    expect(markup).toContain("Groupe 1 · arrêts finaux routés");
+    expect(markup).toContain("Groupe 2 · arrêts finaux routés");
+    expect(markup).toContain("Observation enrichie");
+    expect(markup).toContain("Stop ajouté par enrichissement");
+    expect(markup).toContain("Score final non calculé");
+    expect(markup).toContain("Événement groupe 2");
+    expect(markup).not.toContain("Aucun stop n’a été sélectionné par le moteur.");
+  });
+
+  it("does not turn guided-only multi-route passages into selected stops", () => {
+    const data = multiGroupData();
+    const traceMultiRoute = data.trace.multiRoute!;
+    traceMultiRoute.groups.forEach((group) => {
+      group.selectedStops = [];
+      group.plannedWaypoints = [{ id: "guided-only", label: "Passage guidé", latitude: 48.86, longitude: 2.35, order: 1 }];
+    });
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain(">0</dd>");
+    expect(markup).toContain("Aucun stop n’a été sélectionné par le moteur.");
+    expect(markup).not.toContain("Passage guidé");
+  });
+
+  it("uses the global trace as an explicit compatibility fallback", () => {
+    const data = dataFor("network");
+    Reflect.set(data.trace, "multiRoute", {
+      groupCount: 2,
+      groups: [{ groupIndex: 1, candidateIds: ["spot-1"], reservedCandidateIds: [], targetCount: 1 }],
+      constraints: [],
+    });
+    Reflect.set(data, "multiRoute", {
+      totalDistanceKm: 1,
+      coverageGain: 1,
+      sharedTargetRatio: 0,
+      sharedDistanceRatio: 0,
+      balanceDistance: 0,
+      balanceDuration: 0,
+      balanceTargetCount: 0,
+    });
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Étape 1: sélection dans le budget.");
+    expect(markup).not.toContain("Aucun stop n’a été sélectionné par le moteur.");
+  });
+
   it("exposes trace-backed selection and network street details", () => {
     const markup = renderToStaticMarkup(<RouteExplanation data={dataFor("network")} fr />);
 

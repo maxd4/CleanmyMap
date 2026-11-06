@@ -3,6 +3,7 @@ import {
   formatDistance,
   formatDuration,
   formatNumber,
+  getDisplayedRouteSelections,
   routeEventStatusLabel,
   stopLabel,
   type RouteExplanationData,
@@ -63,9 +64,22 @@ export function EventExplanation({
     );
   }
 
-  return trace.selectedStops.some((selection) => selection.eventContributions.length > 0) ? (
-    <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-50">
+  const eventContributions = getDisplayedRouteSelections(trace)
+    .flatMap(({ selection }) => selection.eventContributions)
+    .filter((contribution, index, contributions) =>
+      contributions.findIndex((candidate) => candidate.eventId === contribution.eventId) === index,
+    );
+
+  return eventContributions.length > 0 ? (
+    <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-50">
       Un ou plusieurs événements récents ont influencé la priorité d’un itinéraire libre. Leur pression reste un signal prédictif, distinct d’une observation terrain.
-    </p>
+      <ul className="mt-2 space-y-1 text-xs text-amber-100/80">
+        {eventContributions.map((contribution) => (
+          <li key={contribution.eventId}>
+            {contribution.title} : contribution {formatNumber(contribution.scoreContribution, 2)} points.
+          </li>
+        ))}
+      </ul>
+    </div>
   ) : null;
 }

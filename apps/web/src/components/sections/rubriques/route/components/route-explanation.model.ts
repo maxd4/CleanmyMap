@@ -1,5 +1,6 @@
 import type {
   RouteTraceExclusionReason,
+  RouteRecommendationTrace,
   RouteTraceSelectedStop,
 } from "@/lib/route/route-trace";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
@@ -11,6 +12,29 @@ export type RouteExplanationProps = {
   data: RouteExplanationData;
   fr: boolean;
 };
+
+export type DisplayedRouteSelection = {
+  selection: RouteTraceSelectedStop;
+  groupIndex: number | null;
+};
+
+/**
+ * Uses final per-group stops when the multi-route trace carries them, while
+ * keeping the global trace as the compatibility source for older responses.
+ * Guided waypoints and candidate IDs are deliberately not selections.
+ */
+export function getDisplayedRouteSelections(
+  trace: RouteRecommendationTrace,
+): DisplayedRouteSelection[] {
+  const groups = trace.multiRoute?.groups;
+  if (groups && groups.length > 0 && groups.every((group) => Array.isArray(group.selectedStops))) {
+    return groups.flatMap((group) =>
+      group.selectedStops.map((selection) => ({ selection, groupIndex: group.groupIndex })),
+    );
+  }
+
+  return trace.selectedStops.map((selection) => ({ selection, groupIndex: null }));
+}
 
 export const exclusionLabels: Record<RouteTraceExclusionReason, string> = {
   not_admissible: "non admissible",

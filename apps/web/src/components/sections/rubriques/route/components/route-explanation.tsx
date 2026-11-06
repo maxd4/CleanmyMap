@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment } from "react";
+
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import type { RouteTraceExclusionReason } from "@/lib/route/route-trace";
@@ -10,6 +12,7 @@ import {
   formatDistance,
   formatDuration,
   formatNumber,
+  getDisplayedRouteSelections,
   stopLabel,
   type RouteExplanationProps,
 } from "./route-explanation.model";
@@ -39,6 +42,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
   const exclusions = Object.entries(trace.candidates.excludedByReason) as Array<
     [RouteTraceExclusionReason, number]
   >;
+  const displayedSelections = getDisplayedRouteSelections(trace);
 
   return (
     <CmmDisclosure
@@ -72,7 +76,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
             </div>
             <div>
               <dt className="text-slate-500">Stops retenus</dt>
-              <dd className="font-semibold text-white">{trace.selectedStops.length}</dd>
+              <dd className="font-semibold text-white">{displayedSelections.length}</dd>
             </div>
             <div>
               <dt className="text-slate-500">Temps réseau utilisé / restant</dt>
@@ -138,7 +142,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
             <strong className="text-white">Mode : </strong>
             {trace.planningMode.type === "event-centered"
               ? "Itinéraire construit autour de cet événement"
-              : trace.selectedStops.some((selection) => selection.eventContributions.length > 0)
+              : displayedSelections.some(({ selection }) => selection.eventContributions.length > 0)
                 ? "Événement ayant influencé un itinéraire libre"
                 : "Itinéraire libre"}
           </div>
@@ -240,10 +244,15 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
                 La priorité pollution reste la base ; une additionnalité bénévole disponible et suffisamment confiante peut modifier la contribution finale avec un poids borné, puis le coût de déplacement est arbitré dans le budget. Départage déterministe par score combiné, priorité, déplacement incrémental et identifiant.
               </p>
             </div>
-            {trace.selectedStops.length > 0 ? (
+            {displayedSelections.length > 0 ? (
               <ol className="space-y-3" aria-label={fr ? "Justifications des stops sélectionnés" : "Selected stop justifications"}>
-                {trace.selectedStops.map((selection) => (
-                  <SelectionDetail key={`${selection.step}-${selection.id}`} selection={selection} data={data} originLabel={originLabel} />
+                {displayedSelections.map(({ selection, groupIndex }, index) => (
+                  <Fragment key={`${groupIndex ?? "single"}-${selection.step}-${selection.id}`}>
+                    {groupIndex !== null && (index === 0 || displayedSelections[index - 1]?.groupIndex !== groupIndex) ? (
+                      <h4 className="mb-2 text-sm font-bold text-emerald-100">Groupe {groupIndex} · arrêts finaux routés</h4>
+                    ) : null}
+                    <SelectionDetail selection={selection} data={data} originLabel={originLabel} />
+                  </Fragment>
                 ))}
               </ol>
             ) : (
@@ -277,10 +286,10 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               Version du moteur : <span className="font-semibold text-slate-200">{trace.engineVersion}</span>. Les valeurs ci-dessous proviennent des étapes enregistrées par le planner.
             </p>
             <ol className="space-y-3" aria-label={fr ? "Étapes du planner" : "Planner steps"}>
-              {trace.selectedStops.map((selection) => (
-                <li key={`${selection.step}-${selection.id}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300">
+              {displayedSelections.map(({ selection, groupIndex }) => (
+                <li key={`${groupIndex ?? "single"}-${selection.step}-${selection.id}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <strong className="text-white">Étape {selection.step} · {stopLabel(selection.id, data, originLabel)}</strong>
+                    <strong className="text-white">{groupIndex === null ? "" : `Groupe ${groupIndex} · `}Étape {selection.step} · {stopLabel(selection.id, data, originLabel)}</strong>
                     <span>{formatDuration(selection.budgetBeforeMinutes)} → {formatDuration(selection.budgetAfterMinutes)}</span>
                   </div>
                   <p className="mt-2 text-xs text-slate-400">
