@@ -18,6 +18,13 @@ export type DisplayedRouteSelection = {
   groupIndex: number | null;
 };
 
+export type DisplayedRouteSelectionGroup = {
+  groupIndex: number | null;
+  selections: DisplayedRouteSelection[];
+};
+
+export type RouteMetricProvenance = "network" | "mixed" | "fallback";
+
 /**
  * Uses final per-group stops when the multi-route trace carries them, while
  * keeping the global trace as the compatibility source for older responses.
@@ -34,6 +41,57 @@ export function getDisplayedRouteSelections(
   }
 
   return trace.selectedStops.map((selection) => ({ selection, groupIndex: null }));
+}
+
+export function getDisplayedRouteSelectionGroups(
+  selections: DisplayedRouteSelection[],
+): DisplayedRouteSelectionGroup[] {
+  const groups: DisplayedRouteSelectionGroup[] = [];
+  for (const displayedSelection of selections) {
+    const existing = groups.find(({ groupIndex }) => groupIndex === displayedSelection.groupIndex);
+    if (existing) {
+      existing.selections.push(displayedSelection);
+      continue;
+    }
+    groups.push({
+      groupIndex: displayedSelection.groupIndex,
+      selections: [displayedSelection],
+    });
+  }
+  return groups;
+}
+
+export function getRouteMetricProvenance(
+  data: RouteExplanationData,
+): RouteMetricProvenance {
+  const traceGroupModes = data.trace.multiRoute?.groups
+    .map((group) => group.routeMode)
+    .filter((mode): mode is "network" | "fallback" => mode === "network" || mode === "fallback");
+  const responseGroupRoutes = Array.isArray(data.groupRoutes) ? data.groupRoutes : [];
+  const groupModes = traceGroupModes && traceGroupModes.length > 0
+    ? traceGroupModes
+    : responseGroupRoutes.map((group) => group.routeGeometry.mode);
+  const modes = groupModes.length > 0 ? groupModes : [data.trace.routing.mode];
+  const hasNetwork = modes.includes("network");
+  const hasFallback = modes.includes("fallback");
+  return hasNetwork && hasFallback ? "mixed" : hasNetwork ? "network" : "fallback";
+}
+
+export function routeMetricProvenanceLabel(
+  provenance: RouteMetricProvenance,
+  fr: boolean,
+): string {
+  if (provenance === "network") return fr ? "Réseau intégral" : "Full network routing";
+  if (provenance === "mixed") return fr ? "Routage mixte : réseau + estimation" : "Mixed routing: network + estimate";
+  return fr ? "Estimation / fallback" : "Estimate / fallback";
+}
+
+export function routeMetricMeasurementLabel(
+  provenance: RouteMetricProvenance,
+): string {
+  if (provenance === "network") return "mesure réseau";
+  if (provenance === "mixed") return "mesure partielle";
+  return "estimé";
 }
 
 export const exclusionLabels: Record<RouteTraceExclusionReason, string> = {

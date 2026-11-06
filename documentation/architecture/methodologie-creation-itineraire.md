@@ -581,6 +581,12 @@ La trace d’itinéraire doit permettre de relier la proposition à ses données
 - le fournisseur de routage, le mode `network` ou `fallback`, les estimations,
   les avertissements et les approximations.
 
+Pour un itinéraire multigroupe, la surface agrège la provenance de chaque
+groupe : `network` pour un routage réseau intégral, `fallback` pour une
+estimation intégrale, et un état mixte lorsque les groupes combinent les deux.
+Les distances et durées cumulées ne sont jamais qualifiées de mesure réseau
+intégrale lorsque l’un des groupes est en fallback.
+
 Les libellés d’interface doivent respecter les statuts suivants :
 
 - `observed` ou **observé** : preuve terrain disponible ;

@@ -71,10 +71,12 @@ export function MetricValue({
   value,
   kind,
   measured = false,
+  measurementLabel,
 }: {
   value: number | null;
   kind: "distance" | "duration";
   measured?: boolean;
+  measurementLabel?: string;
 }) {
   const formatted = kind === "distance" ? formatDistance(value) : formatDuration(value);
   return (
@@ -89,7 +91,7 @@ export function MetricValue({
               : "bg-amber-400/15 text-amber-200"
         }`}
       >
-        {measured ? "mesure réseau" : value === null ? "inconnu" : "estimé"}
+        {value === null ? "inconnu" : measurementLabel ?? (measured ? "mesure réseau" : "estimé")}
       </span>
     </span>
   );

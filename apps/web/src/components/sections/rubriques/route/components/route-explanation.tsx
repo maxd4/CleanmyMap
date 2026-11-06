@@ -1,7 +1,5 @@
 "use client";
 
-import { Fragment } from "react";
-
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import type { RouteTraceExclusionReason } from "@/lib/route/route-trace";
@@ -12,7 +10,11 @@ import {
   formatDistance,
   formatDuration,
   formatNumber,
+  getDisplayedRouteSelectionGroups,
   getDisplayedRouteSelections,
+  getRouteMetricProvenance,
+  routeMetricMeasurementLabel,
+  routeMetricProvenanceLabel,
   stopLabel,
   type RouteExplanationProps,
 } from "./route-explanation.model";
@@ -43,6 +45,10 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
     [RouteTraceExclusionReason, number]
   >;
   const displayedSelections = getDisplayedRouteSelections(trace);
+  const metricProvenance = getRouteMetricProvenance(data);
+  const metricMeasurementLabel = routeMetricMeasurementLabel(metricProvenance);
+  const metricIsNetworkMeasured = metricProvenance === "network";
+  const displayedSelectionGroups = getDisplayedRouteSelectionGroups(displayedSelections);
 
   return (
     <CmmDisclosure
@@ -65,13 +71,13 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
             <div>
               <dt className="text-slate-500">Distance totale</dt>
               <dd className="font-semibold text-white">
-                <MetricValue value={data.travelDistanceKm} kind="distance" measured={trace.routing.mode === "network"} />
+                <MetricValue value={data.travelDistanceKm} kind="distance" measured={metricIsNetworkMeasured} measurementLabel={metricMeasurementLabel} />
               </dd>
             </div>
             <div>
               <dt className="text-slate-500">Durée de déplacement</dt>
               <dd className="font-semibold text-white">
-                <MetricValue value={data.travelMinutes} kind="duration" measured={trace.routing.mode === "network"} />
+                <MetricValue value={data.travelMinutes} kind="duration" measured={metricIsNetworkMeasured} measurementLabel={metricMeasurementLabel} />
               </dd>
             </div>
             <div>
@@ -88,19 +94,21 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               <dt className="text-slate-500">{isLoop ? "Retour à l’origine" : "Arrivée"}</dt>
               <dd className="font-semibold text-white">
                 {isLoop
-                  ? <><MetricValue value={data.loop.returnDistanceKm} kind="distance" measured={trace.routing.mode === "network"} /> · {formatDuration(data.loop.returnMinutes)}</>
+                  ? <><MetricValue value={data.loop.returnDistanceKm} kind="distance" measured={metricIsNetworkMeasured} measurementLabel={metricMeasurementLabel} /> · {formatDuration(data.loop.returnMinutes)}</>
                   : arrivalLabel}
               </dd>
             </div>
             <div>
               <dt className="text-slate-500">Routage</dt>
               <dd className="font-semibold text-white">
-                {trace.routing.mode === "network" ? "Réseau" : "Estimation / fallback"} · {providerLabel} · profil {profileLabel}
+                {routeMetricProvenanceLabel(metricProvenance, fr)} · {providerLabel} · profil {profileLabel}
               </dd>
             </div>
           </dl>
           <p className="mt-3 text-xs text-slate-400">
-            {trace.duration.serviceMinutes === null && trace.duration.estimatedMinutes === null
+            {metricProvenance === "mixed"
+              ? `Déplacement mixte : ${formatDuration(data.travelMinutes)} ; les groupes combinent des mesures réseau et des estimations.`
+              : trace.duration.serviceMinutes === null && trace.duration.estimatedMinutes === null
               ? "Durée d’action complète non fournie : aucune durée n’est inventée."
               : trace.duration.estimatedMinutes !== null
                 ? `Déplacement estimé : ${formatDuration(trace.duration.estimatedMinutes)}.`
@@ -246,14 +254,16 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
             </div>
             {displayedSelections.length > 0 ? (
               <ol className="space-y-3" aria-label={fr ? "Justifications des stops sélectionnés" : "Selected stop justifications"}>
-                {displayedSelections.map(({ selection, groupIndex }, index) => (
-                  <Fragment key={`${groupIndex ?? "single"}-${selection.step}-${selection.id}`}>
-                    {groupIndex !== null && (index === 0 || displayedSelections[index - 1]?.groupIndex !== groupIndex) ? (
-                      <h4 className="mb-2 text-sm font-bold text-emerald-100">Groupe {groupIndex} · arrêts finaux routés</h4>
-                    ) : null}
-                    <SelectionDetail selection={selection} data={data} originLabel={originLabel} />
-                  </Fragment>
-                ))}
+                {displayedSelectionGroups.some(({ groupIndex }) => groupIndex !== null)
+                  ? displayedSelectionGroups.map(({ groupIndex, selections }) => (
+                    <li key={`group-${groupIndex ?? "single"}`}>
+                      {groupIndex === null ? null : <h4 className="mb-2 text-sm font-bold text-emerald-100">Groupe {groupIndex} · arrêts finaux routés</h4>}
+                      <ol className="space-y-3" aria-label={groupIndex === null ? undefined : `Arrêts finaux du groupe ${groupIndex}`}>
+                        {selections.map(({ selection }) => <SelectionDetail key={`${groupIndex ?? "single"}-${selection.step}-${selection.id}`} selection={selection} data={data} originLabel={originLabel} />)}
+                      </ol>
+                    </li>
+                  ))
+                  : displayedSelections.map(({ selection }) => <SelectionDetail key={`single-${selection.step}-${selection.id}`} selection={selection} data={data} originLabel={originLabel} />)}
               </ol>
             ) : (
               <p className="rounded-xl border border-dashed border-white/10 p-3 text-sm text-slate-400">

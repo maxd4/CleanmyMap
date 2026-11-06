@@ -149,7 +149,9 @@ function predictionFor(riskFocus: "all" | "waste" | "cigaretteButts") {
   };
 }
 
-function multiGroupData(): RouteExplanationData {
+function multiGroupData(
+  routeModes: readonly ["network" | "fallback", "network" | "fallback"] = ["network", "network"],
+): RouteExplanationData {
   const data = dataFor("network");
   const baseSelection = data.trace.selectedStops[0]!;
   const plannerSelection = {
@@ -202,8 +204,8 @@ function multiGroupData(): RouteExplanationData {
     groupCount: 2,
     volunteers: 3,
     groups: [
-      { groupIndex: 1, volunteerCount: 1, candidateIds: ["spot-1"], reservedCandidateIds: [], distanceKm: 1, durationMinutes: 10, targetCount: 1, selectedStops: [plannerSelection], routeMode: "network", withinBudget: true },
-      { groupIndex: 2, volunteerCount: 2, candidateIds: ["spot-2", "spot-3"], reservedCandidateIds: [], distanceKm: 2, durationMinutes: 20, targetCount: 2, selectedStops: [observedSelection, secondPlannerSelection], routeMode: "network", withinBudget: true },
+      { groupIndex: 1, volunteerCount: 1, candidateIds: ["spot-1"], reservedCandidateIds: [], distanceKm: 1, durationMinutes: 10, targetCount: 1, selectedStops: [plannerSelection], routeMode: routeModes[0], withinBudget: true },
+      { groupIndex: 2, volunteerCount: 2, candidateIds: ["spot-2", "spot-3"], reservedCandidateIds: [], distanceKm: 2, durationMinutes: 20, targetCount: 2, selectedStops: [observedSelection, secondPlannerSelection], routeMode: routeModes[1], withinBudget: true },
     ],
     metrics: { coverageGain: 3, sharedTargetRatio: 0, sharedDistanceKm: 0, sharedDistanceRatio: 0, balanceDistance: 1, balanceDuration: 1, balanceTargetCount: 1, balanceVolunteerCount: 1, networkDistanceMeasured: true },
     constraints: [],
@@ -233,6 +235,45 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Score final non calculé");
     expect(markup).toContain("Événement groupe 2");
     expect(markup).not.toContain("Aucun stop n’a été sélectionné par le moteur.");
+  });
+
+  it("keeps every event contribution attached to its routed stop and group", () => {
+    const data = multiGroupData();
+    const firstStop = data.trace.multiRoute!.groups[0]!.selectedStops[0]!;
+    const secondStop = data.trace.multiRoute!.groups[1]!.selectedStops[0]!;
+    const sharedContribution = secondStop.eventContributions[0]!;
+    firstStop.eventContributions = [{ ...sharedContribution, distanceKm: 0.1, scoreContribution: 4.5 }];
+    secondStop.eventContributions = [
+      { ...sharedContribution, distanceKm: 0.8, scoreContribution: 1.25 },
+      { ...sharedContribution, eventId: "event-3", title: "Second événement", scoreContribution: 2.75 },
+    ];
+
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup.match(/Événement groupe 2/g)).toHaveLength(2);
+    expect(markup).toContain("Groupe 1 · Arrêt Place de test · Événement groupe 2 : contribution 4,5 points.");
+    expect(markup).toContain("Groupe 2 · Arrêt Observation enrichie · Événement groupe 2 : contribution 1,25 points.");
+    expect(markup).toContain("Second événement : contribution 2,75 points.");
+    expect(markup).not.toContain("contribution 5,75 points");
+  });
+
+  it("renders grouped stops with valid nested ordered lists", () => {
+    const markup = renderToStaticMarkup(<RouteExplanation data={multiGroupData()} fr />);
+
+    expect(markup).toMatch(/<ol[^>]*><li[^>]*><h4[^>]*>Groupe 1 · arrêts finaux routés<\/h4><ol/);
+    expect(markup).not.toMatch(/<ol[^>]*><h4[^>]*>Groupe/);
+  });
+
+  it.each([
+    [["network", "network"], "Réseau intégral", "mesure réseau"],
+    [["network", "fallback"], "Routage mixte : réseau + estimation", "mesure partielle"],
+    [["fallback", "fallback"], "Estimation / fallback", "estimé"],
+  ] as const)("qualifies aggregated metrics for %s group routing", (routeModes, routingLabel, metricLabel) => {
+    const markup = renderToStaticMarkup(<RouteExplanation data={multiGroupData(routeModes)} fr />);
+    const totalDistanceSummary = markup.match(/Distance totale<\/dt><dd[^>]*>(.*?)<\/dd>/)?.[1] ?? "";
+
+    expect(markup).toContain(routingLabel);
+    expect(totalDistanceSummary).toContain(metricLabel);
   });
 
   it("does not turn guided-only multi-route passages into selected stops", () => {

@@ -64,19 +64,24 @@ export function EventExplanation({
     );
   }
 
-  const eventContributions = getDisplayedRouteSelections(trace)
-    .flatMap(({ selection }) => selection.eventContributions)
-    .filter((contribution, index, contributions) =>
-      contributions.findIndex((candidate) => candidate.eventId === contribution.eventId) === index,
-    );
+  const eventContributions = getDisplayedRouteSelections(trace).flatMap(({ selection, groupIndex }) =>
+    selection.eventContributions.map((contribution, contributionIndex) => ({
+      contribution,
+      contributionIndex,
+      groupIndex,
+      stopLabel: stopLabel(selection.id, data, originLabel),
+      stopId: selection.id,
+      step: selection.step,
+    })),
+  );
 
   return eventContributions.length > 0 ? (
     <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-50">
       Un ou plusieurs événements récents ont influencé la priorité d’un itinéraire libre. Leur pression reste un signal prédictif, distinct d’une observation terrain.
       <ul className="mt-2 space-y-1 text-xs text-amber-100/80">
-        {eventContributions.map((contribution) => (
-          <li key={contribution.eventId}>
-            {contribution.title} : contribution {formatNumber(contribution.scoreContribution, 2)} points.
+        {eventContributions.map(({ contribution, contributionIndex, groupIndex, stopId, stopLabel: selectedStopLabel, step }) => (
+          <li key={`${groupIndex ?? "single"}-${stopId}-${step}-${contribution.eventId}-${contributionIndex}`}>
+            {groupIndex === null ? "" : `Groupe ${groupIndex} · `}Arrêt {selectedStopLabel} · {contribution.title} : contribution {formatNumber(contribution.scoreContribution, 2)} points.
           </li>
         ))}
       </ul>
