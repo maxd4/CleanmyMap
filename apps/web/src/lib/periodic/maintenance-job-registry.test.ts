@@ -9,6 +9,9 @@ import {
   type MaintenanceJobDefinition,
 } from "./maintenance-job-registry";
 import { getUtcDayStart, getUtcMonthStart, getUtcWeekStart } from "./periodic-job-calendar";
+import {
+  ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_VERSION,
+} from "@/lib/actions/action-collection-reference-averages";
 
 function makeJobs(params: {
   produced?: string[];
@@ -31,6 +34,7 @@ function makeJobs(params: {
     ["impact-terrain", "monthly", getUtcMonthStart],
     ["platform-usage", "weekly", getUtcWeekStart],
     ["map-pollution-references", "weekly", getUtcWeekStart],
+    ["action-collection-context-references", "monthly", getUtcMonthStart],
     ["governance-report", "monthly", getUtcMonthStart],
   ];
 
@@ -111,7 +115,7 @@ describe("maintenance job registry", () => {
     ).toBe(true);
   });
 
-  it("déclare exactement les six jobs et leurs cadences", () => {
+  it("déclare exactement les sept jobs et leurs cadences", () => {
     expect(MAINTENANCE_JOB_REGISTRY.map((job) => job.id)).toEqual([
       ...MAINTENANCE_JOB_IDS,
     ]);
@@ -121,6 +125,7 @@ describe("maintenance job registry", () => {
       "monthly",
       "weekly",
       "weekly",
+      "monthly",
       "monthly",
     ]);
   });
@@ -165,6 +170,11 @@ describe("maintenance job registry", () => {
         status: "executed",
       }),
       expect.objectContaining({
+        job: "action-collection-context-references",
+        period: "2026-09-01",
+        status: "executed",
+      }),
+      expect.objectContaining({
         job: "governance-report",
         period: "2026-09-01",
         status: "skipped",
@@ -175,6 +185,21 @@ describe("maintenance job registry", () => {
     expect(calls.get("territorial-legends")).toBe(1);
     expect(calls.get("platform-usage")).toBe(1);
     expect(calls.get("map-pollution-references")).toBe(1);
+    expect(calls.get("action-collection-context-references")).toBe(1);
+  });
+
+  it("garde la référence contextuelle mensuelle réutilisable par version et période", async () => {
+    const state = makeJobs({
+      produced: ["action-collection-context-references:2026-09-01"],
+    });
+    const result = await runMaintenanceJobs({
+      now: new Date("2026-09-08T03:20:00.000Z"),
+      jobs: state.jobs,
+    });
+
+    expect(result.jobs.find((job) => job.job === "action-collection-context-references"))
+      .toMatchObject({ status: "skipped", reason: "reused", period: "2026-09-01" });
+    expect(ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_VERSION).toContain("2026.11");
   });
 
   it("exécute les mensuels le premier jour même si ce n'est pas un lundi", async () => {
@@ -192,6 +217,7 @@ describe("maintenance job registry", () => {
       "territorial-legends",
       "action-reminders",
       "impact-terrain",
+      "action-collection-context-references",
       "governance-report",
     ]);
     expect(calls.get("impact-terrain")).toBe(1);
@@ -210,7 +236,7 @@ describe("maintenance job registry", () => {
     expect(second.jobs.filter((job) => !["action-reminders", "territorial-legends"].includes(job.job)).every((job) => job.status === "skipped" && job.reason === "reused")).toBe(true);
     expect(state.calls.get("action-reminders")).toBe(2);
     expect(state.calls.get("territorial-legends")).toBe(2);
-    expect([...state.calls.entries()].filter(([id]) => !["action-reminders", "territorial-legends"].includes(id)).map(([, count]) => count)).toEqual([1, 1, 1, 1]);
+    expect([...state.calls.entries()].filter(([id]) => !["action-reminders", "territorial-legends"].includes(id)).map(([, count]) => count)).toEqual([1, 1, 1, 1, 1]);
   });
 
   it("rattrape un échec du lundi lors de l'appel quotidien suivant", async () => {
@@ -246,6 +272,7 @@ describe("maintenance job registry", () => {
       "action-reminders",
       "impact-terrain",
       "map-pollution-references",
+      "action-collection-context-references",
       "governance-report",
     ]);
   });

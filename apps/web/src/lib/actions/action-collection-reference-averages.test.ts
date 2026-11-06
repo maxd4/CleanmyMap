@@ -9,6 +9,9 @@ import {
   fetchActionCollectionReferenceAverages,
   invalidateActionCollectionReferenceAveragesCache,
   normalizeActionCollectionReferenceAverageRow,
+  normalizeActionCollectionContextReferenceSnapshotPayload,
+  referencesFromActionCollectionContextSnapshot,
+  fetchActionCollectionContextReferenceAverages,
 } from "./action-collection-reference-averages";
 
 describe("action collection reference averages", () => {
@@ -133,5 +136,59 @@ describe("action collection reference averages", () => {
     });
 
     await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toBeNull();
+  });
+
+  it("normalizes a monthly contextual snapshot without exposing action rows", () => {
+    const payload = normalizeActionCollectionContextReferenceSnapshotPayload({
+      period: "2026-11-01",
+      generatedAt: "2026-11-01T03:20:00.000Z",
+      formulaVersion: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+      source: "action_collection_context_reference_averages_v1",
+      references: Object.fromEntries([
+        ["citizen", 10],
+        ["company", 8],
+        ["school", 6],
+      ].map(([actionContext, value]) => [actionContext, {
+        actionContext,
+        waste: { value, sourceCount: 2, period: "2026-11-01", generatedAt: "2026-11-01T03:20:00.000Z" },
+        butts: { value: 190, sourceCount: 2, period: "2026-11-01", generatedAt: "2026-11-01T03:20:00.000Z" },
+        eligibleActionCount: 2,
+        formulaVersion: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+      }])),
+    });
+
+    expect(payload).not.toBeNull();
+    const references = referencesFromActionCollectionContextSnapshot(payload!);
+    expect(references.citizen).toMatchObject({
+      wastePerEffectiveUnit: 10,
+      wasteSourceCount: 2,
+      wasteReferencePeriod: "2026-11-01",
+    });
+    expect(JSON.stringify(references)).not.toContain("actionId");
+  });
+
+  it("passes the monthly as-of boundary to the dated RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        action_context: "citizen",
+        waste_per_effective_unit: 10,
+        butts_per_effective_unit: 190,
+        waste_source_count: 2,
+        butts_source_count: 2,
+        eligible_action_count: 2,
+        formula_version: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+        updated_at: "2026-10-31T23:00:00.000Z",
+      }],
+      error: null,
+    });
+
+    await fetchActionCollectionContextReferenceAverages({ rpc } as never, {
+      asOfDate: "2026-10-31",
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      "action_collection_context_reference_averages_v1",
+      { p_as_of_date: "2026-10-31" },
+    );
   });
 });

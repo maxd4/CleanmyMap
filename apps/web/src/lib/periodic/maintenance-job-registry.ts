@@ -28,6 +28,12 @@ import { runActionRemindersJob } from "./action-reminders-job";
 import { readLatestPublicSurfaceSnapshot } from "@/lib/public-surface-snapshots";
 import { getUtcDayStart, getUtcMonthStart, getUtcWeekStart } from "./periodic-job-calendar";
 import { runTerritorialLegendDailyReconciliation } from "@/lib/gamification/territorial-legends/daily-reconciliation-job";
+import {
+  ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_KEY,
+  ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_VERSION,
+  normalizeActionCollectionContextReferenceSnapshotPayload,
+} from "@/lib/actions/action-collection-reference-averages";
+import { runActionCollectionContextReferenceJob } from "./action-collection-context-reference-job";
 
 export const MAINTENANCE_JOB_IDS = [
   "territorial-legends",
@@ -35,6 +41,7 @@ export const MAINTENANCE_JOB_IDS = [
   "impact-terrain",
   "platform-usage",
   "map-pollution-references",
+  "action-collection-context-references",
   "governance-report",
 ] as const;
 
@@ -130,6 +137,23 @@ async function hasGovernanceReport(period: string): Promise<boolean> {
   return Boolean(report && report.version === GOVERNANCE_MONTHLY_JOB_VERSION);
 }
 
+async function hasActionCollectionContextReferenceSnapshot(period: string): Promise<boolean> {
+  const snapshot = await readLatestPublicSurfaceSnapshot(
+    ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_KEY,
+  );
+  const payload = normalizeActionCollectionContextReferenceSnapshotPayload(snapshot?.payload);
+  return Boolean(
+    snapshot &&
+      snapshot.snapshotDate === period &&
+      snapshot.version === ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_VERSION &&
+      payload &&
+      Object.values(payload.references).some((reference) =>
+        (reference.waste.value !== null && reference.waste.sourceCount >= 2) ||
+        (reference.butts.value !== null && reference.butts.sourceCount >= 2),
+      ),
+  );
+}
+
 export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
   {
     id: "territorial-legends",
@@ -177,6 +201,13 @@ export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
     getPeriod: getUtcWeekStart,
     isProduced: hasMapPollutionReferenceSnapshot,
     run: async (now) => runPollutionScoreReferencesJob({ now }),
+  },
+  {
+    id: "action-collection-context-references",
+    cadence: "monthly",
+    getPeriod: getUtcMonthStart,
+    isProduced: hasActionCollectionContextReferenceSnapshot,
+    run: async (now) => runActionCollectionContextReferenceJob({ now }),
   },
   {
     id: "governance-report",

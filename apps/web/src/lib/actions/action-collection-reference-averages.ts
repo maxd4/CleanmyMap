@@ -1,10 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { readLatestPublicSurfaceSnapshot } from "@/lib/public-surface-snapshots";
 import {
   ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
   ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
 } from "@/lib/impact/scientific-projection-versions";
 import type { ActionContext } from "./action-context";
+
+export { ACTION_COLLECTION_CONTEXT_FORMULA_VERSION };
 
 export type ActionCollectionReferenceAverages = {
   wastePerVolunteer: number | null;
@@ -25,6 +28,10 @@ export type ActionCollectionContextReference = {
   eligibleActionCount: number;
   formulaVersion: string;
   updatedAt: string | null;
+  wasteReferencePeriod?: string | null;
+  buttsReferencePeriod?: string | null;
+  wasteReferenceGeneratedAt?: string | null;
+  buttsReferenceGeneratedAt?: string | null;
 };
 
 export type ActionCollectionContextReferences = Partial<
@@ -207,10 +214,15 @@ export function normalizeActionCollectionContextReferenceRow(
   };
 }
 
-async function fetchActionCollectionContextReferenceAverages(
+export async function fetchActionCollectionContextReferenceAverages(
   supabase: SupabaseClient,
+  params: { asOfDate?: string } = {},
 ): Promise<ActionCollectionContextReferences> {
-  const result = await supabase.rpc("action_collection_context_reference_averages_v1");
+  const result = params.asOfDate
+    ? await supabase.rpc("action_collection_context_reference_averages_v1", {
+        p_as_of_date: params.asOfDate,
+      })
+    : await supabase.rpc("action_collection_context_reference_averages_v1");
   if (result.error) throw result.error;
   const references: ActionCollectionContextReferences = {};
   for (const row of Array.isArray(result.data) ? result.data : []) {
@@ -220,6 +232,128 @@ async function fetchActionCollectionContextReferenceAverages(
     if (normalized) references[normalized.actionContext] = normalized;
   }
   return references;
+}
+
+export type ActionCollectionContextReferenceSnapshotMetric = {
+  value: number | null;
+  sourceCount: number;
+  period: string | null;
+  generatedAt: string | null;
+};
+
+export type ActionCollectionContextReferenceSnapshotItem = {
+  actionContext: ActionContext;
+  waste: ActionCollectionContextReferenceSnapshotMetric;
+  butts: ActionCollectionContextReferenceSnapshotMetric;
+  eligibleActionCount: number;
+  formulaVersion: string;
+};
+
+export type ActionCollectionContextReferenceSnapshotPayload = {
+  period: string;
+  generatedAt: string;
+  formulaVersion: typeof ACTION_COLLECTION_CONTEXT_FORMULA_VERSION;
+  source: "action_collection_context_reference_averages_v1";
+  references: Record<ActionContext, ActionCollectionContextReferenceSnapshotItem>;
+};
+
+export const ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_KEY =
+  "action-collection-context-references-monthly";
+export const ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_VERSION =
+  "action-collection-context-references-2026.11-v1";
+
+function normalizeSnapshotMetric(
+  metric: ActionCollectionContextReferenceSnapshotMetric | null | undefined,
+): ActionCollectionContextReferenceSnapshotMetric | null {
+  if (!metric || !Number.isInteger(metric.sourceCount) || metric.sourceCount < 0) {
+    return null;
+  }
+  const value = metric.value === null
+    ? null
+    : toNonNegativeNumber(metric.value);
+  if (metric.value !== null && value === null) return null;
+  const period = metric.period === null || typeof metric.period === "string"
+    ? metric.period
+    : null;
+  const generatedAt = metric.generatedAt === null || typeof metric.generatedAt === "string"
+    ? metric.generatedAt
+    : null;
+  return { value, sourceCount: metric.sourceCount, period, generatedAt };
+}
+
+export function normalizeActionCollectionContextReferenceSnapshotPayload(
+  payload: unknown,
+): ActionCollectionContextReferenceSnapshotPayload | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const candidate = payload as Partial<ActionCollectionContextReferenceSnapshotPayload>;
+  if (
+    typeof candidate.period !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(candidate.period) ||
+    typeof candidate.generatedAt !== "string" ||
+    candidate.formulaVersion !== ACTION_COLLECTION_CONTEXT_FORMULA_VERSION ||
+    candidate.source !== "action_collection_context_reference_averages_v1" ||
+    !candidate.references ||
+    typeof candidate.references !== "object" ||
+    Array.isArray(candidate.references)
+  ) return null;
+
+  const references = {} as Record<ActionContext, ActionCollectionContextReferenceSnapshotItem>;
+  for (const actionContext of ["citizen", "company", "school"] as const) {
+    const raw = candidate.references[actionContext] as
+      | Partial<ActionCollectionContextReferenceSnapshotItem>
+      | undefined;
+    const waste = normalizeSnapshotMetric(raw?.waste);
+    const butts = normalizeSnapshotMetric(raw?.butts);
+    const eligibleActionCount = raw?.eligibleActionCount;
+    if (
+      !raw ||
+      !waste ||
+      !butts ||
+      typeof eligibleActionCount !== "number" ||
+      !Number.isInteger(eligibleActionCount) ||
+      eligibleActionCount < 0 ||
+      raw.formulaVersion !== ACTION_COLLECTION_CONTEXT_FORMULA_VERSION
+    ) return null;
+    references[actionContext] = {
+      actionContext,
+      waste,
+      butts,
+      eligibleActionCount,
+      formulaVersion: raw.formulaVersion,
+    };
+  }
+
+  return { ...candidate, references } as ActionCollectionContextReferenceSnapshotPayload;
+}
+
+function flattenSnapshotReference(
+  item: ActionCollectionContextReferenceSnapshotItem,
+): ActionCollectionContextReference {
+  return {
+    actionContext: item.actionContext,
+    wastePerEffectiveUnit: item.waste.value,
+    buttsPerEffectiveUnit: item.butts.value,
+    wasteSourceCount: item.waste.sourceCount,
+    buttsSourceCount: item.butts.sourceCount,
+    eligibleActionCount: item.eligibleActionCount,
+    formulaVersion: item.formulaVersion,
+    updatedAt: item.waste.generatedAt ?? item.butts.generatedAt,
+    wasteReferencePeriod: item.waste.period,
+    buttsReferencePeriod: item.butts.period,
+    wasteReferenceGeneratedAt: item.waste.generatedAt,
+    buttsReferenceGeneratedAt: item.butts.generatedAt,
+  };
+}
+
+export function referencesFromActionCollectionContextSnapshot(
+  payload: ActionCollectionContextReferenceSnapshotPayload,
+): ActionCollectionContextReferences {
+  return Object.fromEntries(
+    Object.entries(payload.references).map(([actionContext, reference]) => [
+      actionContext,
+      flattenSnapshotReference(reference),
+    ]),
+  ) as ActionCollectionContextReferences;
 }
 
 let contextServerCache:
@@ -238,14 +372,17 @@ export async function loadActionCollectionContextReferenceAverages(): Promise<Ac
     ) as ActionCollectionContextReferences;
   }
   if (contextServerFetchInFlight) return contextServerFetchInFlight;
-  contextServerFetchInFlight = fetchActionCollectionContextReferenceAverages(getSupabaseServerClient(true))
-    .then((references) => {
-      const current = Object.fromEntries(
-        Object.entries(references).filter(
-          ([, reference]) =>
-            reference.formulaVersion === ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
-        ),
-      ) as ActionCollectionContextReferences;
+  contextServerFetchInFlight = readLatestPublicSurfaceSnapshot<ActionCollectionContextReferenceSnapshotPayload>(
+    ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_KEY,
+  )
+    .then((snapshot) => {
+      const payload = snapshot?.version === ACTION_COLLECTION_CONTEXT_REFERENCES_SNAPSHOT_VERSION &&
+        snapshot.snapshotDate === getSnapshotPayloadPeriod(snapshot.payload)
+        ? normalizeActionCollectionContextReferenceSnapshotPayload(snapshot.payload)
+        : null;
+      const current = payload
+        ? referencesFromActionCollectionContextSnapshot(payload)
+        : {};
       contextServerCache = { references: current, expiresAt: Date.now() + SERVER_CACHE_TTL_MS };
       return current;
     })
@@ -253,6 +390,12 @@ export async function loadActionCollectionContextReferenceAverages(): Promise<Ac
       contextServerFetchInFlight = null;
     });
   return contextServerFetchInFlight;
+}
+
+function getSnapshotPayloadPeriod(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const period = (payload as { period?: unknown }).period;
+  return typeof period === "string" ? period : null;
 }
 
 export function invalidateActionCollectionReferenceAveragesCache(): void {

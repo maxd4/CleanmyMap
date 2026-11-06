@@ -317,6 +317,19 @@ ils peuvent être relus comme historiques, mais ne sont jamais réécrits avec l
 méthode courante. Les écritures de reconstruction sont transactionnelles,
 protégées par le verrou d'état public et rejouables après échec.
 
+Les références contextualisées du formulaire sont capturées le premier jour de
+chaque mois dans le snapshot public `action-collection-context-references-monthly`.
+La capture appelle `action_collection_context_reference_averages_v1()` avec la
+borne du dernier jour du mois précédent : une action devenue admissible pendant
+le mois courant n'influence donc que la publication suivante. Le snapshot porte
+la période, la date de génération, la version `contextual-effective-units-v1`
+et, pour chaque contexte et indicateur, le nombre de sources. Les écritures sont
+atomiques et idempotentes via le registre de maintenance existant ; une métrique
+nouvellement indisponible ne remplace pas sa dernière référence valide, et une
+première publication sans source suffisante reste indisponible. Seuls ces
+agrégats publics sont exposés : aucune ligne d'action ni composition individuelle
+n'est incluse dans le payload.
+
 #### Procédure CURRENT de changement de proxy scientifique
 
 Le changement d'un facteur suit le même ordre pour les lots collectifs et

@@ -342,6 +342,18 @@ une preuve de représentativité. Cette règle ne modifie ni le score
 cartographique, ni la collecte brute, ni la RPC globale historique
 `action_collection_reference_averages_v1()`.
 
+La référence utilisée par le formulaire est figée mensuellement dans le snapshot
+public `action-collection-context-references-monthly`, publié par le registre de
+maintenance le premier jour du mois. La RPC contextuelle reçoit la date de fin du
+mois précédent : les actions admissibles ajoutées ou corrigées pendant la période
+en cours attendent la publication suivante. Le snapshot conserve la période, la
+version de formule, la date de génération et les comptes de sources séparés pour
+chaque contexte et indicateur. La capture est atomique et rejouable ; si un
+indicateur n'atteint plus le minimum de deux sources, sa dernière référence
+valide est conservée plutôt que remplacée par `NA`. En l'absence de référence
+valide antérieure, l'indicateur reste `NA`. Le payload ne contient que des
+agrégats publics et aucune donnée individuelle.
+
 La composition connue est stockée dans `children_count`, `adult_count` et
 `retired_count`, avec cohérence atomique avec `volunteers_count`. Ces colonnes
 typées sont la source canonique de lecture lorsqu'elles sont complètes et

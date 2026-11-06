@@ -4,10 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 import { createInitialFormState } from "../payload";
 import type { FormState } from "../model";
 import { useHarvestLogic, type UseHarvestLogicResult } from "./use-harvest-logic";
-import type { ActionCollectionReferenceAverages } from "@/lib/actions/action-collection-reference-averages";
+import type {
+  ActionCollectionContextReferences,
+  ActionCollectionReferenceAverages,
+} from "@/lib/actions/action-collection-reference-averages";
 
 type ReferenceContextMock = {
   collectionReferences: ActionCollectionReferenceAverages | null;
+  contextualCollectionReferences?: ActionCollectionContextReferences;
   isLoading?: boolean;
 };
 
@@ -71,6 +75,18 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
         eligibleActionCount: 2,
         formulaVersion: "test",
         updatedAt: null,
+      },
+      contextualCollectionReferences: {
+        school: {
+          actionContext: "school",
+          wastePerEffectiveUnit: 8,
+          buttsPerEffectiveUnit: 100,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
       },
     });
     const form = {

@@ -34,6 +34,28 @@ function resolveReferenceStatus(
   return isLoading ? "loading" : "unavailable";
 }
 
+function resolveHarvestReference(
+  actionContext: FormState["actionContext"],
+  globalReference: ReturnType<typeof useActionPollutionScoreReferences>["collectionReferences"],
+  contextualReferences: ReturnType<typeof useActionPollutionScoreReferences>["contextualCollectionReferences"],
+) {
+  if (actionContext === "citizen" || actionContext === "company" || actionContext === "school") {
+    const contextual = contextualReferences[actionContext];
+    return {
+      wastePerVolunteer: contextual?.wastePerEffectiveUnit ?? null,
+      buttsPerVolunteer: contextual?.buttsPerEffectiveUnit ?? null,
+      wasteSourceCount: contextual?.wasteSourceCount ?? 0,
+      buttsSourceCount: contextual?.buttsSourceCount ?? 0,
+    };
+  }
+  return {
+    wastePerVolunteer: globalReference?.wastePerVolunteer ?? null,
+    buttsPerVolunteer: globalReference?.buttsPerVolunteer ?? null,
+    wasteSourceCount: globalReference?.wasteSourceCount ?? 0,
+    buttsSourceCount: globalReference?.buttsSourceCount ?? 0,
+  };
+}
+
 function readValidComparisonNumber(
   rawValue: string,
   min: number,
@@ -226,15 +248,23 @@ function deriveHarvestMetrics(
   collectionReferences: ReturnType<
     typeof useActionPollutionScoreReferences
   >["collectionReferences"],
+  contextualCollectionReferences: ReturnType<
+    typeof useActionPollutionScoreReferences
+  >["contextualCollectionReferences"],
   referencesLoading: boolean,
 ): DerivedHarvestMetrics {
+  const harvestReference = resolveHarvestReference(
+    form.actionContext,
+    collectionReferences,
+    contextualCollectionReferences,
+  );
   const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
   const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 500);
   const wasteComparison = deriveWasteComparison({
     wasteKg,
     volunteersCount,
-    benchmarkPerVolunteer: collectionReferences?.wastePerVolunteer ?? null,
-    benchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
+    benchmarkPerVolunteer: harvestReference.wastePerVolunteer,
+    benchmarkSourceCount: harvestReference.wasteSourceCount,
   });
   const cigaretteButtsMeasurements =
     form.cigaretteButtsLots !== null
@@ -272,16 +302,16 @@ function deriveHarvestMetrics(
   const megotsComparison = deriveWasteComparison({
     wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
     volunteersCount,
-    benchmarkPerVolunteer: collectionReferences?.buttsPerVolunteer ?? null,
-    benchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
+    benchmarkPerVolunteer: harvestReference.buttsPerVolunteer,
+    benchmarkSourceCount: harvestReference.buttsSourceCount,
   });
   return {
     wasteCurrentPerVolunteer: wasteComparison.currentPerVolunteer,
     wasteBenchmarkPerVolunteer: wasteComparison.benchmarkPerVolunteer,
-    wasteBenchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
+    wasteBenchmarkSourceCount: harvestReference.wasteSourceCount,
     wasteReferenceStatus: resolveReferenceStatus(
-      collectionReferences?.wastePerVolunteer,
-      collectionReferences?.wasteSourceCount ?? 0,
+      harvestReference.wastePerVolunteer,
+      harvestReference.wasteSourceCount,
       referencesLoading,
     ),
     wasteDeltaPercent: wasteComparison.deltaPercent,
@@ -290,10 +320,10 @@ function deriveHarvestMetrics(
     megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
     megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer,
     megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer,
-    megotsBenchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
+    megotsBenchmarkSourceCount: harvestReference.buttsSourceCount,
     megotsReferenceStatus: resolveReferenceStatus(
-      collectionReferences?.buttsPerVolunteer,
-      collectionReferences?.buttsSourceCount ?? 0,
+      harvestReference.buttsPerVolunteer,
+      harvestReference.buttsSourceCount,
       referencesLoading,
     ),
     megotsDeltaPercent: megotsComparison.deltaPercent,
@@ -323,11 +353,20 @@ export function useHarvestLogic({
   form,
   updateFields,
 }: UseHarvestLogicParams): UseHarvestLogicResult {
-  const { collectionReferences = null, isLoading = false } = useActionPollutionScoreReferences();
+  const {
+    collectionReferences = null,
+    contextualCollectionReferences = {},
+    isLoading = false,
+  } = useActionPollutionScoreReferences();
 
   const derived = useMemo(
-    () => deriveHarvestMetrics(form, collectionReferences, isLoading),
-    [form, collectionReferences, isLoading],
+    () => deriveHarvestMetrics(
+      form,
+      collectionReferences,
+      contextualCollectionReferences,
+      isLoading,
+    ),
+    [form, collectionReferences, contextualCollectionReferences, isLoading],
   );
 
   const addMegotsLot = useCallback(() => {
