@@ -69,7 +69,7 @@ function sameConfidence(left: unknown, right: unknown): boolean {
   return isRecord(left) && isRecord(right) && left.level === right.level && sameNullableNumber(left.score, right.score) && left.source === right.source;
 }
 
-function validCategoryResult(value: unknown): value is RoutePollutionPotentialCategoryResult {
+function validCategoryResult(value: unknown, allowAvailabilityPartial = false): value is RoutePollutionPotentialCategoryResult {
   if (!isRecord(value) || !validNullableIndex(value.value) || !validNullableIndex(value.rawProjectionIndex) || !validStatus(value.status)) return false;
   const uniqueSegmentCount = value.uniqueSegmentCount;
   const availableSegmentCount = value.availableSegmentCount;
@@ -81,7 +81,7 @@ function validCategoryResult(value: unknown): value is RoutePollutionPotentialCa
   if (value.value === null) {
     return value.status === "unavailable" && (value.rawProjectionIndex !== null || value.confidence.score === null);
   }
-  return value.status === (coverageRatio !== null && coverageRatio < 1 || value.missingReasons.length > 0 ? "partial" : "available");
+  return value.status === (coverageRatio !== null && coverageRatio < 1 || allowAvailabilityPartial && value.missingReasons.length > 0 ? "partial" : "available");
 }
 
 function validIndex(value: unknown): value is RoutePollutionPotentialIndex {
@@ -89,8 +89,17 @@ function validIndex(value: unknown): value is RoutePollutionPotentialIndex {
   const uniqueSegmentCount = value.uniqueSegmentCount;
   if (typeof uniqueSegmentCount !== "number" || !Number.isInteger(uniqueSegmentCount) || uniqueSegmentCount < 0 || !validCoverage(value.collectionLengthM, value.coveredLengthM, value.coverageRatio)) return false;
   if (!validConfidenceRecord(value.confidence) || !validStringArray(value.limitations) || !isRecord(value.categories)) return false;
-  const categories = [value.categories.waste, value.categories.cigaretteButts, value.categories.mixed];
-  if (!categories.every(validCategoryResult)) return false;
+  const waste = value.categories.waste;
+  const cigaretteButts = value.categories.cigaretteButts;
+  const mixed = value.categories.mixed;
+  if (!validCategoryResult(waste) || !validCategoryResult(cigaretteButts) || !validCategoryResult(mixed, true)) return false;
+  const categories = [waste, cigaretteButts, mixed];
+  const expectedMixedStatus = waste.value === null && cigaretteButts.value === null
+    ? "unavailable"
+    : waste.status === "partial" || cigaretteButts.status === "partial" || waste.status === "unavailable" || cigaretteButts.status === "unavailable"
+      ? "partial"
+      : "available";
+  if (mixed.status !== expectedMixedStatus) return false;
   if (categories.some((category) => category.uniqueSegmentCount !== uniqueSegmentCount || category.collectionLengthM !== value.collectionLengthM)) return false;
   if (value.coveredLengthM !== Math.max(...categories.map((category) => category.coveredLengthM))) return false;
   const expectedMissing = categories.flatMap((category, index) => category.value === null ? (["waste", "cigaretteButts", "mixed"] as const).slice(index, index + 1) : []);

@@ -310,6 +310,7 @@ describe("route theoretical pollution potential", () => {
     expect(isRoutePollutionPotential({ ...potential, reference: { ...potential.reference!, kind: "historical_action_score_100", historicalScore: null } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, value: -1 } })).toBe(false);
     expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, categories: { ...potential.global.categories, waste: { ...potential.global.categories.waste, rawProjectionIndex: 101 } } } })).toBe(false);
+    expect(isRoutePollutionPotential({ ...potential, global: { ...potential.global, categories: { ...potential.global.categories, mixed: { ...potential.global.categories.mixed, status: "partial" } } } })).toBe(false);
   });
 
   it.each([
@@ -369,19 +370,21 @@ describe("route theoretical pollution potential", () => {
   });
 
   it("marks a missing category explicitly while averaging the available category for mixed", () => {
-    const current = projection({ missingCigaretteButts: true });
-    for (const segment of current.segments) {
-      segment.wasteConfidence = { level: "high", score: 0.8 } as never;
-    }
-    const potential = buildRoutePollutionPotential(routeInput({ projection: current, referenceCatalog: catalog(current) }));
+    for (const pickupPreference of ["balanced", "waste"] as const) {
+      const current = projection({ missingCigaretteButts: true });
+      for (const segment of current.segments) {
+        segment.wasteConfidence = { level: "high", score: 0.8 } as never;
+      }
+      const potential = buildRoutePollutionPotential(routeInput({ projection: current, pickupPreference, referenceCatalog: catalog(current) }));
 
-    expect(potential.global.categories.waste.value).toBe(65);
-    expect(potential.global.categories.cigaretteButts.value).toBeNull();
-    expect(potential.global.categories.mixed.status).toBe("partial");
-    expect(potential.global.categories.mixed.confidence.source).toBe("segment_projection");
-    expect(potential.global.missingCategories).toContain("cigaretteButts");
-    expect(potential.global.categories.mixed.missingReasons).toContain("cigarette_butts_category_missing");
-    expect(isRoutePollutionPotential(potential)).toBe(true);
+      expect(potential.global.categories.waste.value).toBe(65);
+      expect(potential.global.categories.cigaretteButts.value).toBeNull();
+      expect(potential.global.categories.mixed.status).toBe("partial");
+      expect(potential.global.categories.mixed.confidence.source).toBe("segment_projection");
+      expect(potential.global.missingCategories).toContain("cigaretteButts");
+      expect(potential.global.categories.mixed.missingReasons).toContain("cigarette_butts_category_missing");
+      expect(isRoutePollutionPotential(potential)).toBe(true);
+    }
   });
 
   it("prefers a homogeneous score-100 historical reference without converting its measurements", () => {
