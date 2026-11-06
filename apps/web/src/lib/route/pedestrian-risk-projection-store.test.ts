@@ -117,6 +117,14 @@ describe("loadActivePedestrianRiskProjection", () => {
     await expect(loadActivePedestrianRiskProjection(supabase, points)).resolves.toBeNull();
   });
 
+  it("fails closed when a continuation page disappears after a full first page", async () => {
+    const firstPage = Array.from({ length: 901 }, (_, index) => row(index));
+    const supabase = clientForPages([firstPage, []]);
+
+    await expect(loadActivePedestrianRiskProjection(supabase, points)).resolves.toBeNull();
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps unavailable segments and uses persisted generation time", async () => {
     const unavailable = row(0, {
       zone_id: null,

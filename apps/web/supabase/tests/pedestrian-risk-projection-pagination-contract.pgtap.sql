@@ -116,7 +116,7 @@ update public.pedestrian_risk_projection_versions
 set generated_at = generated_at
 where id = '22222222-2222-4222-8222-222222222222';
 select ok(
-  (select publication_revision from public.get_active_pedestrian_risk_projection_versions where id = '22222222-2222-4222-8222-222222222222')
+  (select publication_revision from public.pedestrian_risk_projection_versions where id = '22222222-2222-4222-8222-222222222222')
     <> (select publication_revision from projection_publication_before_update),
   'a same-metadata republication receives a new publication revision'
 );

@@ -50,6 +50,7 @@ const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
   ["20261103000004_territorial_legend_rewards_contract.sql", new Set(["fffc07baed3480eacddd41309af6a9992040fa55734ff34e3f4f6e5555f5f4a1"])],
   ["20261104000001_territorial_legend_annual_campaigns.sql", new Set(["612a934ecf7c6c791cc6e8ba25c13d1ddd4674c4668f75ee60ec0990887d35da"])],
   ["20261104000007_territorial_legend_annual_integrity.sql", new Set(["91fdbcc048b60296fa32262543c5081e92d909d959ec40e481c059e839c9122d"])],
+  ["20261105000015_pedestrian_risk_projection_publication_revision.sql", new Set(["af7e5dd0f3464de70445cc30fe5cb55b04bcf3bcdec7c16d861b5a6d257da48a"])],
 ]);
 
 function normalizeMigrationContent(content) {

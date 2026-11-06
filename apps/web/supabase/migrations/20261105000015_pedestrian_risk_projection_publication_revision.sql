@@ -20,7 +20,7 @@ where publication_revision is null;
 
 select setval(
   'public.pedestrian_risk_projection_publication_revision_seq',
-  coalesce((select max(publication_revision) from public.pedestrian_risk_projection_versions), 0),
+  greatest(1, coalesce((select max(publication_revision) from public.pedestrian_risk_projection_versions), 0)),
   true
 );
 

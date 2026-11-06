@@ -102,6 +102,14 @@ test("territorial pgTAP purges every current fixture before the 2025 campaign", 
   assert.match(source.slice(periodPurge, historicalCampaign), /delete from public\.territorial_legend_hold_periods[\s\S]*where user_id = 'legend-consent-contract';/);
 });
 
+test("pedestrian publication revision proof uses the canonical table and replay-safe sequence floor", () => {
+  const migration = readFileSync(new URL("../../apps/web/supabase/migrations/20261105000015_pedestrian_risk_projection_publication_revision.sql", import.meta.url), "utf8");
+  const contract = readFileSync(new URL("../../apps/web/supabase/tests/pedestrian-risk-projection-pagination-contract.pgtap.sql", import.meta.url), "utf8");
+  assert.match(migration, /greatest\(1, coalesce\(\(select max\(publication_revision\) from public\.pedestrian_risk_projection_versions\), 0\)\)/);
+  assert.match(contract, /from public\.pedestrian_risk_projection_versions where id = '22222222-2222-4222-8222-222222222222'/);
+  assert.doesNotMatch(contract, /get_active_pedestrian_risk_projection_versions/);
+});
+
 test("pgTAP parser accepts an exact complete plan", () => {
   assert.equal(extractPlan("begin; select plan(2);"), 2);
   assert.deepEqual(parsePgTapOutput("ok 1 - first\nok 2 - second\n1..2\n", 2), {

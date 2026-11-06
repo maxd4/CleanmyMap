@@ -177,6 +177,13 @@ it("approves only the bounded pre-application territorial rewards repair", () =>
   assert.doesNotMatch(source, /c69e9b3b6592fe3271ae5f297205fc675094f82385d5b1aeb33587620800709b/);
 });
 
+it("approves only the bounded pre-application projection revision repair", () => {
+  const source = readFileSync(auditScript, "utf8");
+  assert.match(source, /20261105000015_pedestrian_risk_projection_publication_revision\.sql/);
+  assert.match(source, /af7e5dd0f3464de70445cc30fe5cb55b04bcf3bcdec7c16d861b5a6d257da48a/);
+  assert.doesNotMatch(source, /dd7675f2808232612bb84987145729d94bb44b31802e9c20dfe9de233a9edeb9/);
+});
+
 it("normalizes Buffer and UTF-8 string contents before comparing migrations", () => {
   const name = "20260101000000_published.sql";
   assert.deepEqual(

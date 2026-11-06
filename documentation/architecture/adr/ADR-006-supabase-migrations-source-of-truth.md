@@ -450,6 +450,28 @@ Le rollback du changement de dépôt consiste à restaurer le commit de ce lot.
 Cela ne remplace pas une vérification de l'historique de migrations d'une base
 distante avant déploiement.
 
+## Exception de replay bornée — `20261105000015`
+
+La migration `20261105000015_pedestrian_risk_projection_publication_revision.sql`
+était publiée dans Git mais absente de l'historique du projet Supabase lié au
+moment du lot. Son initialisation de séquence appelait `setval(..., 0, true)`
+lorsque la table des versions était vide, ce qui bloque le replay PostgreSQL
+avant l'installation du contrat de publication. La correction est limitée à
+borner cette valeur à `1` ; une table non vide conserve son maximum et le
+prochain `nextval` reste strictement supérieur à toute révision existante.
+
+Cette exception pré-application ne constitue ni une réécriture d'une migration
+déjà appliquée, ni une permission de `migration repair`, de DDL manuelle ou de
+mutation distante. Le replay complet sur base vide et la mise à niveau depuis
+un historique existant doivent être validés séparément dans la lane Supabase
+éphémère ; ils restent `DB_SEMANTICS_NOT_EXECUTED` tant que cette lane n'est
+pas opérationnelle.
+
+```text
+20261105000015_BEFORE_HASH: DD7675F2808232612BB84987145729D94BB44B31802E9C20DFE9DE233A9EDEB9
+20261105000015_AFTER_HASH:  AF7E5DD0F3464DE70445CC30FE5CB55B04BCF3BCDEC7C16D861B5A6D257DA48A
+```
+
 ## Interdiction
 
 Ne pas maintenir indéfiniment deux copies manuelles sans contrôle de synchronisation.

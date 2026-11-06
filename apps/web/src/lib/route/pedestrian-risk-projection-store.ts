@@ -101,6 +101,7 @@ export async function loadActivePedestrianRiskProjection(
   const rows: ProjectionRow[] = [];
   let offset = 0;
   let first: ProjectionRow | null = null;
+  let continuationExpected = false;
   for (;;) {
     const { data, error } = await supabase.rpc("get_active_pedestrian_risk_projection_page", {
       p_south: bounds.south,
@@ -113,10 +114,12 @@ export async function loadActivePedestrianRiskProjection(
     if (error || !Array.isArray(data) || data.length > PROJECTION_PAGE_SIZE + 1) return null;
     const pageRows = data as ProjectionRow[];
     if (pageRows.length === 0 && rows.length === 0) return null;
+    if (continuationExpected && pageRows.length === 0) return null;
     if (!first && pageRows.length > 0) first = pageRows[0]!;
     if (first && pageRows.some((row) => !sameProjectionIdentity(first!, row))) return null;
     rows.push(...pageRows.slice(0, PROJECTION_PAGE_SIZE));
-    if (pageRows.length <= PROJECTION_PAGE_SIZE) break;
+    continuationExpected = pageRows.length > PROJECTION_PAGE_SIZE;
+    if (!continuationExpected) break;
     offset += PROJECTION_PAGE_SIZE;
   }
   if (!first || rows.length === 0 || first.network_version_id === null) return null;
