@@ -12,6 +12,7 @@ import {
   formatCount,
   formatKg,
   formatSignedPercent,
+  HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT,
   type HarvestReferenceStatus,
   type WasteComparisonTone,
 } from "../utils/harvest-utils";
@@ -291,8 +292,8 @@ export function HarvestComparisonTrend({
     return null;
   }
 
-  const isAboveThreshold = deltaPercent > 5;
-  const isBelowThreshold = deltaPercent < -5;
+  const isAboveThreshold = deltaPercent > HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT;
+  const isBelowThreshold = deltaPercent < -HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT;
   const TrendIcon = isAboveThreshold ? TrendingUp : isBelowThreshold ? TrendingDown : Minus;
   const toneClass = isAboveThreshold
     ? "text-emerald-700"
@@ -330,7 +331,7 @@ type ComparisonVisualProps = {
 };
 
 function getWasteComparisonColors(deltaPercent: number) {
-  if (deltaPercent > 5) {
+  if (deltaPercent > HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT) {
     return {
       accent: "text-emerald-600",
       soft: "bg-emerald-100 text-emerald-700",
@@ -338,7 +339,7 @@ function getWasteComparisonColors(deltaPercent: number) {
       bar: "bg-emerald-400",
     };
   }
-  if (deltaPercent < -5) {
+  if (deltaPercent < -HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT) {
     return {
       accent: "text-rose-600",
       soft: "bg-rose-100 text-rose-700",
@@ -391,18 +392,22 @@ function ComparisonVisual({
   const currentBarWidth = `${clamp((currentPerVolunteer / maxValue) * 100, 0, 100)}%`;
   const benchmarkMarkerLeft = `${clamp((benchmarkPerVolunteer / maxValue) * 100, 0, 100)}%`;
   const TrendIcon =
-    deltaPercent > 5 ? TrendingUp : deltaPercent < -5 ? TrendingDown : Minus;
+    deltaPercent > HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT
+      ? TrendingUp
+      : deltaPercent < -HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT
+        ? TrendingDown
+        : Minus;
   const trendLabel =
-    deltaPercent > 5
+    deltaPercent > HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT
       ? "Au-dessus de la moyenne"
-      : deltaPercent < -5
+      : deltaPercent < -HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT
         ? "En dessous de la moyenne"
         : "Proche de la moyenne";
 
   return (
     <div
       className="rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-3"
-      data-trend={deltaPercent > 5 ? "up" : deltaPercent < -5 ? "down" : "neutral"}
+      data-trend={deltaPercent > HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT ? "up" : deltaPercent < -HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT ? "down" : "neutral"}
       data-testid={testId}
     >
       <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">

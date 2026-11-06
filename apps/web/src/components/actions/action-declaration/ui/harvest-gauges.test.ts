@@ -283,17 +283,19 @@ describe("DropletGauge", () => {
 describe("HarvestComparisonTrend", () => {
   it.each([
     [12, "up", "+12%"],
-    [5.0000001, "up", "+5,000001%"],
-    [5.001, "up", "+5,001%"],
-    [5.01, "up", "+5,01%"],
-    [5.1, "up", "+5,1%"],
+    [10.0000001, "up", "+10,000001%"],
+    [10.001, "up", "+10,001%"],
+    [10.01, "up", "+10,01%"],
+    [10.1, "up", "+10,1%"],
+    [10, "neutral", "+10%"],
     [5, "neutral", "+5%"],
     [1, "neutral", "+1%"],
     [-1, "neutral", "-1%"],
+    [-10, "neutral", "-10%"],
     [-5, "neutral", "-5%"],
-    [-5.001, "down", "-5,001%"],
-    [-5.01, "down", "-5,01%"],
-    [-5.1, "down", "-5,1%"],
+    [-10.001, "down", "-10,001%"],
+    [-10.01, "down", "-10,01%"],
+    [-10.1, "down", "-10,1%"],
     [-25, "down", "-25%"],
     [0, "neutral", "0%"],
   ] as const)("renders the signed %s trend", (delta, direction, label) => {
@@ -342,9 +344,9 @@ describe("WasteComparisonVisual", () => {
         benchmarkPerVolunteer,
         deltaPercent,
         benchmarkSourceCount: 12,
-        comparisonTone: deltaPercent !== null && deltaPercent > 5
+        comparisonTone: deltaPercent !== null && deltaPercent > 10
           ? "orange"
-          : deltaPercent !== null && deltaPercent < -5
+          : deltaPercent !== null && deltaPercent < -10
             ? "emerald"
             : "slate",
       }),

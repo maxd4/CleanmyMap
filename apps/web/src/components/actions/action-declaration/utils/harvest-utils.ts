@@ -16,16 +16,21 @@ export function formatCount(value: number): string {
   return new Intl.NumberFormat("fr-FR").format(Math.max(0, Math.trunc(value)));
 }
 
+export const HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT = 10;
+
 export function formatSignedPercent(value: number): string {
   const rounded = Math.abs(value) < 0.05 ? 0 : value;
   const absoluteValue = Math.abs(rounded);
-  const distanceFromThreshold = absoluteValue - 5;
+  const distanceFromThreshold =
+    absoluteValue - HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT;
   const fractionDigits = distanceFromThreshold > 0 && distanceFromThreshold < 0.5
     ? Math.min(6, Math.max(1, Math.ceil(-Math.log10(distanceFromThreshold)) + 1))
     : 0;
   const roundedMagnitude = Number(absoluteValue.toFixed(fractionDigits));
-  const displayMagnitude = absoluteValue > 5 && roundedMagnitude <= 5
-    ? 5 + 10 ** -fractionDigits
+  const displayMagnitude =
+    absoluteValue > HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT &&
+    roundedMagnitude <= HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT
+    ? HARVEST_COMPARISON_NEUTRAL_THRESHOLD_PERCENT + 10 ** -fractionDigits
     : absoluteValue;
   const displayValue = rounded < 0 ? -displayMagnitude : displayMagnitude;
   const formatted = new Intl.NumberFormat("fr-FR", {
