@@ -722,9 +722,37 @@ describe('tracking-service coverage edges', () => {
 
     state.constants.appOwnership = 'standalone'
     state.stopError = null
+    state.storedMissionId = 'mission-1'
     state.client = createClient({ updateData: { ...mission, status: 'completed' as const, action_id: 'action-1' } })
     state.reconcileResult = { ok: false, error: 'handoff terminal', terminal: true }
     await expect(stopTracking('mission-1')).resolves.toMatchObject({ ok: true })
+  })
+
+  it('does not stop a replacement session when finalization A resumes after TaskManager verification', async () => {
+    state.storedOwnerId = 'user_123'
+    state.storedMissionId = 'mission-1'
+    state.activeMissionOwnerId = 'user_123'
+    state.taskRegistered = true
+    state.client = createClient()
+    let releaseTaskCheck!: () => void
+    state.taskGate = new Promise((resolve) => { releaseTaskCheck = resolve })
+    state.taskGateUsesRemaining = 1
+
+    const finalizationA = stopTracking('mission-1')
+    await vi.waitFor(() => expect(state.taskGateUsesRemaining).toBe(0))
+
+    state.currentUserId = 'user_456'
+    state.storedOwnerId = 'user_456'
+    state.storedMissionId = 'mission-2'
+    state.activeMissionOwnerId = 'user_456'
+    const missionB = { ...mission, id: 'mission-2', volunteer_id: 'user_456' }
+    const startB = startTracking('mission-2', 'user_456', missionB)
+    releaseTaskCheck()
+
+    await expect(finalizationA).resolves.toMatchObject({ ok: false })
+    await expect(startB).resolves.toEqual({ ok: true, data: missionB })
+    expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled()
+    expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
   })
 
   it('buffers points offline, rejects changed identities, and preserves stable point writes', async () => {

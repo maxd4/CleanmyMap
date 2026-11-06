@@ -39,6 +39,7 @@ export function createSupabaseMock(getClient: () => unknown) {
 
 type TrackingStorageOptions = {
   getStoredMissionId?: (ownerId: string) => unknown
+  getStoredActiveMissionContext?: () => unknown
   getStoredMissionOwnerId?: (missionId: string) => unknown
   setStoredMissionId?: (ownerId: string, id: string) => unknown
   clearStoredMissionId?: (ownerId: string) => unknown
@@ -53,6 +54,10 @@ type TrackingStorageOptions = {
 export function createTrackingStorageMock(options: TrackingStorageOptions = {}) {
   return {
     getStoredMissionId: vi.fn(async (ownerId: string) => options.getStoredMissionId?.(ownerId) ?? null),
+    getStoredActiveMissionContext: vi.fn(async () => options.getStoredActiveMissionContext?.() ?? (() => {
+      const missionId = options.getStoredMissionId?.('user_123')
+      return missionId ? { ownerId: 'user_123', missionId } : null
+    })()),
     getStoredMissionOwnerId: vi.fn(async (missionId: string) => options.getStoredMissionOwnerId?.(missionId) ?? 'user_123'),
     setStoredMissionId: vi.fn(async (ownerId: string, id: string) => options.setStoredMissionId?.(ownerId, id)),
     clearStoredMissionId: vi.fn(async (ownerId: string) => options.clearStoredMissionId?.(ownerId)),

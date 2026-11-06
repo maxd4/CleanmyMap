@@ -61,6 +61,9 @@ vi.mock('../features/tracking/gps-permission-rationale', createPermissionRationa
 
 async function readStoredMissionId() { return state.storedMissionId }
 async function readStoredMissionOwnerId() { return 'user_123' }
+async function readStoredActiveMissionContext() {
+  return state.storedMissionId ? { ownerId: 'user_123', missionId: state.storedMissionId } : null
+}
 async function setStoredMissionId(...args: [string, string]) { state.storedMissionId = args[1] }
 async function clearStoredMissionId() { state.storedMissionId = null }
 async function getOrCreateMissionStartRequestId(_ownerId: string, scope: string) { return `mission-start-${scope}` }
@@ -73,6 +76,7 @@ function recordFlush() { state.sequence.push('flush') }
 
 function createStorageMissionMock() { return {
   getStoredMissionId: readStoredMissionId,
+  getStoredActiveMissionContext: readStoredActiveMissionContext,
   getStoredMissionOwnerId: readStoredMissionOwnerId,
   setStoredMissionId,
   clearStoredMissionId,
@@ -322,6 +326,7 @@ it('flushes the GPS buffer before completing and never writes derived metrics', 
     const completedMission = { ...activeMission, status: 'completed' as const, distance_m: 321, duration_s: 600 }
     const client = missionClient({ data: completedMission })
     state.client = client
+    state.storedMissionId = 'mission-1'
     state.taskRegistered = true
 
     const result = await stopTracking('mission-1')

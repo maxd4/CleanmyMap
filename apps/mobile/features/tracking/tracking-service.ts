@@ -46,6 +46,7 @@ export const GPS_TRACKING_INTERRUPTED_ERROR =
 
 type TrackingOperationToken = {
   ownerId: string;
+  missionId: string;
   operationId: number;
   identityChanged: boolean;
   removeIdentityListener: (() => void) | null;
@@ -73,19 +74,50 @@ function backgroundLocationOptions() {
   };
 }
 
-async function restartBackgroundTracking(): Promise<ServiceResult> {
+function staleNativeTrackingError(): string {
+  return `${CLERK_SESSION_REQUIRED_ERROR} Le suivi GPS appartient à une autre session.`;
+}
+
+async function restartBackgroundTracking(ownerId: string, missionId: string): Promise<ServiceResult> {
   const trackingWarning = getBackgroundTrackingWarning();
   if (trackingWarning) return { ok: false, error: trackingWarning };
 
-  try {
-    await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
-    return { ok: true, data: undefined };
-  } catch (error) {
-    return {
-      ok: false,
-      error: `Impossible de reprendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+  return withNativeStartLock(async () => {
+    if (await getClerkUserId() !== ownerId) return { ok: false, error: staleNativeTrackingError() };
+    const activeContext = await getStoredActiveMissionContext();
+    if (activeContext?.ownerId !== ownerId || activeContext.missionId !== missionId) {
+      return { ok: false, error: staleNativeTrackingError() };
+    }
+    if (nativeTrackingOperation && latestTrackingOperation?.operationId === nativeTrackingOperation.operationId &&
+      (nativeTrackingOperation.ownerId !== ownerId || nativeTrackingOperation.missionId !== missionId)) {
+      return { ok: false, error: staleNativeTrackingError() };
+    }
+    if (await getClerkUserId() !== ownerId) return { ok: false, error: staleNativeTrackingError() };
+
+    const operation: TrackingOperationToken = {
+      ownerId,
+      missionId,
+      operationId: ++nextTrackingOperationId,
+      identityChanged: false,
+      removeIdentityListener: null,
     };
-  }
+    nativeTrackingOperation = operation;
+    try {
+      await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
+      if (await getClerkUserId() !== ownerId) {
+        await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
+        nativeTrackingOperation = null;
+        return { ok: false, error: staleNativeTrackingError() };
+      }
+      return { ok: true, data: undefined };
+    } catch (error) {
+      if (nativeTrackingOperation?.operationId === operation.operationId) nativeTrackingOperation = null;
+      return {
+        ok: false,
+        error: `Impossible de reprendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+      };
+    }
+  });
 }
 
 export function getBackgroundTrackingWarning(): string | null {
@@ -165,12 +197,13 @@ async function observeTrackingOwner(): Promise<string | null> {
   return getClerkUserId();
 }
 
-async function beginTrackingOperation(ownerId: string): Promise<TrackingOperationToken | null> {
+async function beginTrackingOperation(ownerId: string, missionId: string): Promise<TrackingOperationToken | null> {
   if ((await observeTrackingOwner()) !== ownerId) return null;
   if (latestTrackingOperation) latestTrackingOperation.identityChanged = true;
   nextTrackingOperationId += 1;
   const operation: TrackingOperationToken = {
     ownerId,
+    missionId,
     operationId: nextTrackingOperationId,
     identityChanged: false,
     removeIdentityListener: null,
@@ -423,7 +456,7 @@ export async function startTracking(
   knownMission?: Mission,
 ): Promise<ServiceResult<Mission>> {
   const expectedOwnerId = ownerId.trim();
-  const operation = await beginTrackingOperation(expectedOwnerId);
+  const operation = await beginTrackingOperation(expectedOwnerId, missionId);
   if (!operation) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
@@ -440,7 +473,7 @@ export async function ensureNativeTracking(
   knownMission?: Mission,
 ): Promise<ServiceResult<Mission>> {
   const expectedOwnerId = ownerId.trim();
-  const operation = expectedOwnerId ? await beginTrackingOperation(expectedOwnerId) : null;
+  const operation = expectedOwnerId ? await beginTrackingOperation(expectedOwnerId, missionId) : null;
   if (!operation) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
@@ -616,21 +649,21 @@ export async function stopTracking(
     return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.` };
   }
 
-  const stopError = await stopRegisteredTracking();
-  if (stopError) return resumeAfterFailure(stopError);
+  const stopError = await stopRegisteredTracking(resolvedOwnerId, missionId);
+  if (stopError) return resumeAfterFailure(stopError, resolvedOwnerId, missionId);
 
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
-    return resumeAfterFailure(CLERK_SESSION_REQUIRED_ERROR);
+    return resumeAfterFailure(CLERK_SESSION_REQUIRED_ERROR, resolvedOwnerId, missionId);
   }
 
   onStageChange?.('synchronizing');
   const flushResult = await flushBuffer(resolvedOwnerId);
   if (flushResult && !flushResult.ok) {
-    return resumeAfterFailure(flushResult.error);
+    return resumeAfterFailure(flushResult.error, resolvedOwnerId, missionId);
   }
   if (await getClerkUserId() !== resolvedOwnerId) {
-    return resumeAfterFailure(`${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.`);
+    return resumeAfterFailure(`${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.`, resolvedOwnerId, missionId);
   }
 
   onStageChange?.('finalizing');
@@ -647,7 +680,7 @@ export async function stopTracking(
     'Erreur lors de la finalisation',
   );
   if (!missionResult.ok) {
-    return resumeAfterFailure(missionResult.error);
+    return resumeAfterFailure(missionResult.error, resolvedOwnerId, missionId);
   }
 
   await clearStoredMissionId(resolvedOwnerId);
@@ -656,19 +689,35 @@ export async function stopTracking(
   return missionResult;
 }
 
-async function stopRegisteredTracking(): Promise<string | null> {
-  try {
-    if (await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME)) {
+async function stopRegisteredTracking(ownerId: string, missionId: string): Promise<string | null> {
+  return withNativeStartLock(async () => {
+    if (await getClerkUserId() !== ownerId) return staleNativeTrackingError();
+    try {
+      const taskRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
+      if (!taskRegistered) return null;
+      if (await getClerkUserId() !== ownerId) return staleNativeTrackingError();
+      const activeContext = await getStoredActiveMissionContext();
+      if (activeContext?.ownerId !== ownerId || activeContext.missionId !== missionId) {
+        return staleNativeTrackingError();
+      }
+      if (nativeTrackingOperation && latestTrackingOperation?.operationId === nativeTrackingOperation.operationId &&
+        (nativeTrackingOperation.ownerId !== ownerId || nativeTrackingOperation.missionId !== missionId)) {
+        return staleNativeTrackingError();
+      }
+      if (await getClerkUserId() !== ownerId) return staleNativeTrackingError();
       await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
+      if (nativeTrackingOperation?.ownerId === ownerId && nativeTrackingOperation.missionId === missionId) {
+        nativeTrackingOperation = null;
+      }
+      return null;
+    } catch (error) {
+      return `Impossible de suspendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`;
     }
-    return null;
-  } catch (error) {
-    return `Impossible de suspendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`;
-  }
+  });
 }
 
-async function resumeAfterFailure(message: string): Promise<ServiceResult<never>> {
-  const resumeResult = await restartBackgroundTracking();
+async function resumeAfterFailure(message: string, ownerId: string, missionId: string): Promise<ServiceResult<never>> {
+  const resumeResult = await restartBackgroundTracking(ownerId, missionId);
   const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
   const normalizedMessage = /[.!?]$/.test(message) ? message : `${message}.`;
   return { ok: false, error: `${normalizedMessage}${resumeSuffix}` };
