@@ -5,6 +5,7 @@ import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { formatCount, formatKg } from "../utils/harvest-utils";
 import { DropletGauge, HarvestComparisonTrend } from "../ui/harvest-gauges";
+import type { HarvestReferenceStatus } from "../utils/harvest-utils";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
 import {
   calculateCigaretteButtsLot,
@@ -44,6 +45,7 @@ type HarvestMegotsSectionProps = {
   megotsCurrentPerVolunteer: number | null;
   megotsBenchmarkPerVolunteer: number | null;
   megotsBenchmarkSourceCount?: number;
+  megotsReferenceStatus?: HarvestReferenceStatus;
   megotsDeltaPercent?: number | null;
   /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
   megotsKg?: number | null;
@@ -168,7 +170,7 @@ function MegotsScalarInput({
           aria-readonly={readOnly || undefined}
           aria-describedby={statusId}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 appearance-none !bg-white py-2.5 text-lg font-black !text-blue-950 outline-none sm:text-xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="min-w-0 flex-1 appearance-none !bg-white py-2.5 text-base font-black !text-blue-950 outline-none sm:text-xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <span className="ml-2 shrink-0 text-sm font-bold text-blue-800">{unit}</span>
       </span>
@@ -242,6 +244,7 @@ export function HarvestMegotsSection({
   megotsCurrentPerVolunteer,
   megotsBenchmarkPerVolunteer,
   megotsBenchmarkSourceCount = 0,
+  megotsReferenceStatus = megotsBenchmarkPerVolunteer === null || megotsBenchmarkPerVolunteer === undefined ? "unavailable" : "available",
   megotsDeltaPercent = null,
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
@@ -272,6 +275,8 @@ export function HarvestMegotsSection({
           value={megotsCount}
           currentPerVolunteer={megotsCurrentPerVolunteer}
           benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
+          benchmarkSourceCount={megotsBenchmarkSourceCount}
+          referenceStatus={megotsReferenceStatus}
         />
         <div className="min-w-0 space-y-2">
           {!hidePrimaryMeasurements || megotsLots !== null ? (

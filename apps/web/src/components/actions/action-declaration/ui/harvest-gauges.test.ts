@@ -55,8 +55,26 @@ describe("TrashBinGauge", () => {
     }));
 
     expect(absentReference).toContain("Moyenne indisponible");
-    expect(missingParticipants).toContain("Participants manquants");
+    expect(missingParticipants).toContain("Participants insuffisamment renseignés");
     expect(missingParticipants).not.toContain("Moyenne indisponible");
+  });
+
+  it("distinguishes loading and insufficient reference states", () => {
+    const loading = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 8,
+      currentPerVolunteer: null,
+      benchmarkPerVolunteer: null,
+      referenceStatus: "loading",
+    }));
+    const insufficient = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 8,
+      currentPerVolunteer: null,
+      benchmarkPerVolunteer: null,
+      referenceStatus: "insufficient",
+    }));
+
+    expect(loading).toContain("Chargement de la moyenne");
+    expect(insufficient).toContain("Référence insuffisante");
   });
 
   it("fills progressively from the declared mass and resets to explicit zero", () => {
@@ -65,6 +83,7 @@ describe("TrashBinGauge", () => {
         value: 5,
         currentPerVolunteer: 10,
         benchmarkPerVolunteer: 5,
+        benchmarkSourceCount: 2,
       }),
     );
 
@@ -92,6 +111,18 @@ describe("TrashBinGauge", () => {
 
     expect(halfMarkup).toContain('data-fill-percent="50"');
     expect(overMarkup).toContain('data-fill-percent="100"');
+  });
+
+  it("keeps a valid zero reference visible without inventing a ratio", () => {
+    const markup = renderToStaticMarkup(React.createElement(TrashBinGauge, {
+      value: 0,
+      currentPerVolunteer: 0,
+      benchmarkPerVolunteer: 0,
+      benchmarkSourceCount: 2,
+    }));
+
+    expect(markup).toContain("0,00 kg");
+    expect(markup).toContain("Ratio indisponible lorsque la moyenne vaut zéro");
   });
 });
 
@@ -157,6 +188,7 @@ describe("DropletGauge", () => {
         value: 2_500,
         currentPerVolunteer: 2_500,
         benchmarkPerVolunteer: 2_500,
+        benchmarkSourceCount: 5,
       }));
     });
 
@@ -170,12 +202,17 @@ describe("DropletGauge", () => {
     expect(button?.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector('[role="note"]')).not.toBeNull();
     expect(container.querySelector<HTMLAnchorElement>('a[href="/methodologie"]')).not.toBeNull();
+    expect(container.textContent).toContain("5 action(s) source");
+    expect(container.textContent).toContain("Ratio : 2 500 mégots / (2 × 2 500 mégots) = 50 %.");
   });
 });
 
 describe("HarvestComparisonTrend", () => {
   it.each([
     [12, "up", "+12%"],
+    [5, "neutral", "+5%"],
+    [-5, "neutral", "-5%"],
+    [-5.1, "down", "-5%"],
     [-25, "down", "-25%"],
     [0, "neutral", "0%"],
   ] as const)("renders the signed %s trend", (delta, direction, label) => {

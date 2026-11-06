@@ -423,7 +423,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(markup).toContain('data-testid="waste-measurement-visual"');
     expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(1);
     expect(markup).toContain('data-fill-percent="50"');
-    expect(markup).toContain("Moyenne / bénévole");
+    expect(markup).toContain("Moyenne par bénévole");
     expect(markup).toContain('data-testid="waste-comparison-trend"');
     expect(markup).toContain("sm:grid-cols-2");
   });

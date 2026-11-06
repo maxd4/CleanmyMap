@@ -71,6 +71,8 @@ export function extendHarvestSliderMax(
 
 export type WasteComparisonTone = "emerald" | "orange" | "slate";
 
+export type HarvestReferenceStatus = "loading" | "available" | "insufficient" | "unavailable";
+
 export type WasteComparison = {
   currentPerVolunteer: number | null;
   benchmarkPerVolunteer: number | null;

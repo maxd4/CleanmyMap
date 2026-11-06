@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Droplet, Minus, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { Droplet, Info, Minus, Trash2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ import {
   formatCount,
   formatKg,
   formatSignedPercent,
+  type HarvestReferenceStatus,
   type WasteComparisonTone,
 } from "../utils/harvest-utils";
 
@@ -26,6 +27,9 @@ type QuantityGaugeVisualProps = {
   testId: string;
   tone: "emerald" | "blue";
   measurementAvailable: boolean;
+  benchmarkSourceCount: number;
+  referenceStatus: HarvestReferenceStatus;
+  referenceUnitLabel: string;
 };
 
 function QuantityGaugeVisual({
@@ -39,15 +43,20 @@ function QuantityGaugeVisual({
   testId,
   tone,
   measurementAvailable,
+  benchmarkSourceCount,
+  referenceStatus,
+  referenceUnitLabel,
 }: QuantityGaugeVisualProps) {
   const [benchmarkHelpOpen, setBenchmarkHelpOpen] = useState(false);
-  const hasReference = benchmarkPerVolunteer !== null &&
+  const hasReference = referenceStatus === "available" &&
+    benchmarkPerVolunteer !== null &&
     Number.isFinite(benchmarkPerVolunteer) &&
-    benchmarkPerVolunteer > 0;
+    benchmarkPerVolunteer >= 0;
   const hasCurrent = currentPerVolunteer !== null &&
     Number.isFinite(currentPerVolunteer) &&
     currentPerVolunteer >= 0;
-  const hasBenchmark = hasReference && hasCurrent;
+  const hasPositiveReference = hasReference && benchmarkPerVolunteer! > 0;
+  const hasBenchmark = hasPositiveReference && hasCurrent;
   const normalized = hasBenchmark
     ? clamp(currentPerVolunteer! / (2 * benchmarkPerVolunteer!), 0, 1)
     : 0;
@@ -55,14 +64,28 @@ function QuantityGaugeVisual({
     ? "border-emerald-100 bg-emerald-50/65"
     : "border-blue-100 bg-blue-50/65";
   const dividerClass = tone === "emerald" ? "bg-emerald-300/60" : "bg-blue-300/60";
-  const statusLabel = !hasReference
-    ? "Moyenne indisponible."
+  const statusLabel = referenceStatus === "loading"
+    ? "Chargement de la moyenne…"
+    : referenceStatus === "insufficient"
+      ? "Référence insuffisante."
+      : referenceStatus === "unavailable"
+        ? "Moyenne indisponible."
     : !hasCurrent
       ? measurementAvailable
-        ? "Participants manquants pour comparer."
+        ? "Participants insuffisamment renseignés."
         : "Mesure à saisir pour comparer."
-      : "";
+      : hasReference && !hasPositiveReference
+        ? "Ratio indisponible lorsque la moyenne vaut zéro."
+        : "";
   const helpId = `${testId}-benchmark-help`;
+  const currentReferenceLabel = currentPerVolunteer === null
+    ? "mesure absente"
+    : tone === "emerald"
+      ? `${formatKg(currentPerVolunteer)} kg`
+      : `${formatCount(currentPerVolunteer)} mégots`;
+  const sourceLabel = benchmarkSourceCount > 0
+    ? `${benchmarkSourceCount} action(s) source`
+    : "effectif source non renseigné";
 
   return (
     <figure
@@ -71,7 +94,7 @@ function QuantityGaugeVisual({
       aria-label={`${label} : ${valueLabel}. ${hasBenchmark && benchmarkLabel ? `Moyenne par bénévole : ${benchmarkLabel}.` : statusLabel}`}
     >
       <div
-        className="relative h-44 w-44 shrink-0 sm:h-52 sm:w-52"
+        className="relative h-[min(13rem,100%)] w-[min(13rem,100%)] max-w-full shrink-0"
         data-testid={`${testId}-icon`}
         data-fill-percent={Math.round(normalized * 100)}
       >
@@ -90,7 +113,7 @@ function QuantityGaugeVisual({
               type="button"
               aria-expanded={benchmarkHelpOpen}
               aria-controls={helpId}
-              aria-label="Expliquer le repère de moyenne par bénévole"
+              aria-label="Expliquer le repère de moyenne par participant"
               onClick={() => setBenchmarkHelpOpen((open) => !open)}
               className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-800 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
             >
@@ -105,15 +128,22 @@ function QuantityGaugeVisual({
       {hasReference ? (
         <div className="mt-3 max-w-full text-center">
           {benchmarkHelpOpen ? (
-            <div id={helpId} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs leading-4 text-slate-600 shadow-sm" role="note">
-              Remplissage indicatif : valeur par bénévole rapportée à deux fois la moyenne. Il ne s’agit ni d’une validation ni d’un plafond. <Link href="/methodologie" className="ml-1 inline-flex items-center font-bold text-blue-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">i · Méthodologie</Link>
+            <div id={helpId} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-4 text-slate-600 shadow-sm" role="note">
+              <p className="font-bold text-slate-800">{benchmarkLabel} / {referenceUnitLabel}</p>
+              <p>{sourceLabel}.</p>
+              <p className="mt-1">{hasBenchmark
+                ? `Ratio : ${currentReferenceLabel} / (2 × ${benchmarkLabel}) = ${Math.round(normalized * 100)} %.`
+                : hasReference && !hasPositiveReference
+                  ? "Ratio non calculé : la moyenne de référence vaut zéro."
+                  : "Ratio calculé dès qu’une mesure et un dénominateur valides sont disponibles."}</p>
+              <Link href="/methodologie" aria-label="Ouvrir la méthodologie des références" className="mt-1 inline-flex items-center gap-1 font-bold text-blue-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><Info size={13} aria-hidden="true" />Méthodologie</Link>
             </div>
           ) : (
             <p className="text-xs font-semibold text-slate-500">Repère : moyenne par bénévole</p>
           )}
         </div>
       ) : (
-        <p data-testid={`${testId}-reference-status`} className="mt-3 text-center text-xs font-semibold text-slate-600">
+        <p data-testid={`${testId}-reference-status`} className="mt-3 text-center text-xs font-semibold text-slate-600" role={referenceStatus === "loading" ? "status" : undefined}>
           {statusLabel}
         </p>
       )}
@@ -126,11 +156,18 @@ export function TrashBinGauge({
   value,
   currentPerVolunteer,
   benchmarkPerVolunteer,
+  benchmarkSourceCount = 0,
+  referenceStatus,
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
   benchmarkPerVolunteer?: number | null;
+  benchmarkSourceCount?: number;
+  referenceStatus?: HarvestReferenceStatus;
 }) {
+  const resolvedReferenceStatus = referenceStatus ?? (
+    benchmarkPerVolunteer !== null && benchmarkPerVolunteer !== undefined ? "available" : "unavailable"
+  );
   return (
     <QuantityGaugeVisual
       currentPerVolunteer={currentPerVolunteer}
@@ -143,6 +180,9 @@ export function TrashBinGauge({
       testId="waste-measurement-visual"
       tone="emerald"
       measurementAvailable={value !== null}
+      benchmarkSourceCount={benchmarkSourceCount}
+      referenceStatus={resolvedReferenceStatus}
+      referenceUnitLabel="participant"
     />
   );
 }
@@ -152,12 +192,19 @@ export function DropletGauge({
   currentPerVolunteer,
   benchmarkPerVolunteer,
   benchmarkLabel,
+  benchmarkSourceCount = 0,
+  referenceStatus,
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
   benchmarkPerVolunteer?: number | null;
   benchmarkLabel?: string;
+  benchmarkSourceCount?: number;
+  referenceStatus?: HarvestReferenceStatus;
 }) {
+  const resolvedReferenceStatus = referenceStatus ?? (
+    benchmarkPerVolunteer !== null && benchmarkPerVolunteer !== undefined ? "available" : "unavailable"
+  );
   return (
     <QuantityGaugeVisual
       currentPerVolunteer={currentPerVolunteer}
@@ -170,6 +217,9 @@ export function DropletGauge({
       testId="butts-measurement-visual"
       tone="blue"
       measurementAvailable={value !== null}
+      benchmarkSourceCount={benchmarkSourceCount}
+      referenceStatus={resolvedReferenceStatus}
+      referenceUnitLabel="participant"
     />
   );
 }
@@ -203,19 +253,21 @@ export function HarvestComparisonTrend({
     return null;
   }
 
-  const TrendIcon = deltaPercent > 0 ? TrendingUp : deltaPercent < 0 ? TrendingDown : Minus;
-  const toneClass = deltaPercent > 0
+  const isAboveThreshold = deltaPercent > 5;
+  const isBelowThreshold = deltaPercent < -5;
+  const TrendIcon = isAboveThreshold ? TrendingUp : isBelowThreshold ? TrendingDown : Minus;
+  const toneClass = isAboveThreshold
     ? "text-emerald-700"
-    : deltaPercent < 0
+    : isBelowThreshold
       ? "text-rose-700"
       : "text-slate-600";
-  const direction = deltaPercent > 0 ? "montante" : deltaPercent < 0 ? "descendante" : "neutre";
+  const direction = isAboveThreshold ? "montante" : isBelowThreshold ? "descendante" : "neutre";
 
   return (
     <p
       className={cn("flex items-center justify-center gap-1.5 text-xs font-bold", toneClass)}
       data-testid={testId}
-      data-trend={deltaPercent > 0 ? "up" : deltaPercent < 0 ? "down" : "neutral"}
+      data-trend={isAboveThreshold ? "up" : isBelowThreshold ? "down" : "neutral"}
       aria-label={`Tendance ${direction} : ${formatSignedPercent(deltaPercent)} par rapport à la moyenne ${unitLabel}`}
     >
       <TrendIcon size={15} aria-hidden="true" />

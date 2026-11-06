@@ -6,7 +6,10 @@ import type { FormState } from "../model";
 import { useHarvestLogic, type UseHarvestLogicResult } from "./use-harvest-logic";
 import type { ActionCollectionReferenceAverages } from "@/lib/actions/action-collection-reference-averages";
 
-type ReferenceContextMock = { collectionReferences: ActionCollectionReferenceAverages | null };
+type ReferenceContextMock = {
+  collectionReferences: ActionCollectionReferenceAverages | null;
+  isLoading?: boolean;
+};
 
 const { mockReferences } = vi.hoisted(() => ({
   mockReferences: vi.fn<() => ReferenceContextMock>(() => ({ collectionReferences: null })),
@@ -85,6 +88,43 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(100);
 
     harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("keeps loading, unavailable and insufficient references distinct from participant validity", () => {
+    mockReferences.mockReturnValue({ collectionReferences: null, isLoading: true });
+    const loadingHarness = mountLogic({
+      ...createInitialFormState("Test"),
+      volunteersCount: "2",
+      wasteKg: "8",
+    });
+    expect(loadingHarness.latest.logic.wasteReferenceStatus).toBe("loading");
+    expect(loadingHarness.latest.logic.megotsReferenceStatus).toBe("loading");
+    loadingHarness.renderer.unmount();
+
+    mockReferences.mockReturnValue({ collectionReferences: null, isLoading: false });
+    const unavailableHarness = mountLogic(createInitialFormState("Test"));
+    expect(unavailableHarness.latest.logic.wasteReferenceStatus).toBe("unavailable");
+    expect(unavailableHarness.latest.logic.megotsReferenceStatus).toBe("unavailable");
+    unavailableHarness.renderer.unmount();
+
+    mockReferences.mockReturnValue({
+      collectionReferences: {
+        wastePerVolunteer: 8,
+        wasteSourceCount: 1,
+        buttsPerVolunteer: 100,
+        buttsSourceCount: 1,
+        eligibleActionCount: 1,
+        formulaVersion: "test",
+        updatedAt: null,
+      },
+      isLoading: false,
+    });
+    const insufficientHarness = mountLogic(createInitialFormState("Test"));
+    expect(insufficientHarness.latest.logic.wasteReferenceStatus).toBe("insufficient");
+    expect(insufficientHarness.latest.logic.megotsReferenceStatus).toBe("insufficient");
+    insufficientHarness.renderer.unmount();
+
     mockReferences.mockReturnValue({ collectionReferences: null });
   });
 

@@ -140,6 +140,7 @@ describe("HarvestMegotsSection", () => {
     expect(markup).toContain("source · mesure saisie");
     expect(markup).toContain("estimé");
     expect(markup).toContain("appearance-none");
+    expect(markup).toContain("text-base");
     expect(markup).toContain("sm:grid-cols-2");
     expect(markup).toContain("minmax(4rem,auto)");
     expect(markup).not.toContain('data-testid="butts-comparison-visual"');

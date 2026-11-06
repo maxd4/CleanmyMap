@@ -16,6 +16,7 @@ import {
   type ActionWasteMeasurementMethod,
 } from "@/lib/waste";
 import { HarvestComparisonTrend, TrashBinGauge } from "../ui/harvest-gauges";
+import type { HarvestReferenceStatus } from "../utils/harvest-utils";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -39,6 +40,7 @@ type HarvestWasteSectionProps = {
   wasteBenchmarkPerVolunteer: number | null;
   /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
   wasteBenchmarkSourceCount?: number;
+  wasteReferenceStatus?: HarvestReferenceStatus;
   wasteDeltaPercent?: number | null;
   comparisonTone?: "emerald" | "orange" | "slate";
   validationIssues: ValidationIssue[];
@@ -132,6 +134,7 @@ export function HarvestWasteSection({
   wasteCurrentPerVolunteer,
   wasteBenchmarkPerVolunteer,
   wasteBenchmarkSourceCount = 0,
+  wasteReferenceStatus = wasteBenchmarkPerVolunteer === null || wasteBenchmarkPerVolunteer === undefined ? "unavailable" : "available",
   wasteDeltaPercent = null,
   validationIssues,
 }: HarvestWasteSectionProps) {
@@ -167,6 +170,8 @@ export function HarvestWasteSection({
           value={parseKg(wasteKg)}
           currentPerVolunteer={wasteCurrentPerVolunteer}
           benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
+          benchmarkSourceCount={wasteBenchmarkSourceCount}
+          referenceStatus={wasteReferenceStatus}
         />
         <div className="min-w-0">
           <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />

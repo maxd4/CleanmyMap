@@ -7,7 +7,11 @@ import {
   type CigaretteButtsLotResult,
   type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
-import { deriveWasteComparison, type WasteComparisonTone } from "../utils/harvest-utils";
+import {
+  deriveWasteComparison,
+  type HarvestReferenceStatus,
+  type WasteComparisonTone,
+} from "../utils/harvest-utils";
 import { useCallback, useMemo } from "react";
 import { useActionPollutionScoreReferences } from "../../map/scores/action-pollution-score-references-context";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
@@ -17,6 +21,18 @@ type UseHarvestLogicParams = {
   form: FormState;
   updateFields: (updates: Partial<FormState>) => void;
 };
+
+function resolveReferenceStatus(
+  benchmark: number | null | undefined,
+  sourceCount: number,
+  isLoading: boolean,
+): HarvestReferenceStatus {
+  const hasRawReference = benchmark !== null && benchmark !== undefined &&
+    Number.isFinite(benchmark) && benchmark >= 0;
+  if (hasRawReference && sourceCount >= 2) return "available";
+  if (hasRawReference) return "insufficient";
+  return isLoading ? "loading" : "unavailable";
+}
 
 function readValidComparisonNumber(
   rawValue: string,
@@ -160,6 +176,7 @@ export type UseHarvestLogicResult = {
   wasteCurrentPerVolunteer: number | null;
   wasteBenchmarkPerVolunteer: number | null;
   wasteBenchmarkSourceCount: number;
+  wasteReferenceStatus: HarvestReferenceStatus;
   wasteDeltaPercent: number | null;
   comparisonTone: WasteComparisonTone;
   megotsKg: number | null;
@@ -167,6 +184,7 @@ export type UseHarvestLogicResult = {
   megotsCurrentPerVolunteer: number | null;
   megotsBenchmarkPerVolunteer: number | null;
   megotsBenchmarkSourceCount: number;
+  megotsReferenceStatus: HarvestReferenceStatus;
   megotsDeltaPercent: number | null;
   megotsComparisonTone: WasteComparisonTone;
   cigaretteButtsCountProvenance: string;
@@ -208,6 +226,7 @@ function deriveHarvestMetrics(
   collectionReferences: ReturnType<
     typeof useActionPollutionScoreReferences
   >["collectionReferences"],
+  referencesLoading: boolean,
 ): DerivedHarvestMetrics {
   const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
   const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 500);
@@ -260,6 +279,11 @@ function deriveHarvestMetrics(
     wasteCurrentPerVolunteer: wasteComparison.currentPerVolunteer,
     wasteBenchmarkPerVolunteer: wasteComparison.benchmarkPerVolunteer,
     wasteBenchmarkSourceCount: collectionReferences?.wasteSourceCount ?? 0,
+    wasteReferenceStatus: resolveReferenceStatus(
+      collectionReferences?.wastePerVolunteer,
+      collectionReferences?.wasteSourceCount ?? 0,
+      referencesLoading,
+    ),
     wasteDeltaPercent: wasteComparison.deltaPercent,
     comparisonTone: wasteComparison.tone,
     megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
@@ -267,6 +291,11 @@ function deriveHarvestMetrics(
     megotsCurrentPerVolunteer: megotsComparison.currentPerVolunteer,
     megotsBenchmarkPerVolunteer: megotsComparison.benchmarkPerVolunteer,
     megotsBenchmarkSourceCount: collectionReferences?.buttsSourceCount ?? 0,
+    megotsReferenceStatus: resolveReferenceStatus(
+      collectionReferences?.buttsPerVolunteer,
+      collectionReferences?.buttsSourceCount ?? 0,
+      referencesLoading,
+    ),
     megotsDeltaPercent: megotsComparison.deltaPercent,
     megotsComparisonTone: megotsComparison.tone,
     cigaretteButtsCountProvenance:
@@ -294,9 +323,12 @@ export function useHarvestLogic({
   form,
   updateFields,
 }: UseHarvestLogicParams): UseHarvestLogicResult {
-  const { collectionReferences = null } = useActionPollutionScoreReferences();
+  const { collectionReferences = null, isLoading = false } = useActionPollutionScoreReferences();
 
-  const derived = useMemo(() => deriveHarvestMetrics(form, collectionReferences), [form, collectionReferences]);
+  const derived = useMemo(
+    () => deriveHarvestMetrics(form, collectionReferences, isLoading),
+    [form, collectionReferences, isLoading],
+  );
 
   const addMegotsLot = useCallback(() => {
     const currentLots = form.cigaretteButtsLots ?? buildLegacyLotDraft(form);
