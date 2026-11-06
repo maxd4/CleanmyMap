@@ -28,6 +28,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 type HarnessSnapshot = {
   form: FormState;
   logic: UseHarvestLogicResult;
+  updateForm: (updates: Partial<FormState>) => void;
 };
 
 function Harness({
@@ -43,7 +44,11 @@ function Harness({
     updateFields: (updates) => setForm((current) => ({ ...current, ...updates })),
   });
 
-  onSnapshot({ form, logic });
+  onSnapshot({
+    form,
+    logic,
+    updateForm: (updates) => setForm((current) => ({ ...current, ...updates })),
+  });
   return null;
 }
 
@@ -93,7 +98,6 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "school" as const,
       volunteersCount: "2",
-      adultCount: "2",
       childrenCount: "0",
       retiredCount: "0",
       wasteKg: "16",
@@ -132,7 +136,6 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "citizen",
       volunteersCount: "6",
-      adultCount: "2",
       childrenCount: "2",
       retiredCount: "2",
       wasteKg: "8",
@@ -150,8 +153,8 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
   });
 
   it.each([
-    ["citizen", { childrenCount: "10", adultCount: "2", retiredCount: "0", volunteersCount: "12", wasteKg: "14", cigaretteButtsCount: "1400" }],
-    ["company", { childrenCount: "10", adultCount: "2", retiredCount: "0", volunteersCount: "12", wasteKg: "14", cigaretteButtsCount: "1400" }],
+    ["citizen", { childrenCount: "10", retiredCount: "0", volunteersCount: "12", wasteKg: "14", cigaretteButtsCount: "1400" }],
+    ["company", { childrenCount: "10", retiredCount: "0", volunteersCount: "12", wasteKg: "14", cigaretteButtsCount: "1400" }],
   ] as const)("uses the contextual denominator for %s comparisons", (actionContext, values) => {
     mockReferences.mockReturnValue({
       collectionReferences: null,
@@ -187,6 +190,56 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     mockReferences.mockReturnValue({ collectionReferences: null });
   });
 
+  it.each(["citizen", "company"] as const)("recalculates the contextual denominator after composition changes without adultCount for %s", (actionContext) => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        [actionContext]: {
+          actionContext,
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 100,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext,
+      volunteersCount: "6",
+      childrenCount: "2",
+      retiredCount: "2",
+      wasteKg: "8",
+      cigaretteButtsCount: "400",
+    });
+
+    expect(harness.latest.form.adultCount).toBe("");
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(4);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(4);
+
+    act(() => {
+      harness.latest.updateForm({
+        volunteersCount: "8",
+        childrenCount: "4",
+        retiredCount: "2",
+        wasteKg: "10",
+        cigaretteButtsCount: "500",
+      });
+    });
+
+    expect(harness.latest.form.adultCount).toBe("");
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(5);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(5);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(100);
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
   it("uses distinct school denominators for waste and cigarette butts", () => {
     mockReferences.mockReturnValue({
       collectionReferences: null,
@@ -208,7 +261,6 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       actionContext: "school",
       volunteersCount: "12",
       childrenCount: "10",
-      adultCount: "2",
       retiredCount: "0",
       wasteKg: "13",
       cigaretteButtsCount: "400",
@@ -326,7 +378,45 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "company",
       volunteersCount: "4",
+      childrenCount: "",
       wasteKg: "8",
+      cigaretteButtsCount: "400",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBeNull();
+    expect(harness.latest.logic.megotsOperationalUnits).toBeNull();
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBeNull();
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBeNull();
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it.each([
+    ["missing total", { volunteersCount: "", childrenCount: "0", retiredCount: "0" }],
+    ["categories above total", { volunteersCount: "12", childrenCount: "10", retiredCount: "3" }],
+    ["category over bound", { volunteersCount: "500", childrenCount: "501", retiredCount: "0" }],
+  ] as const)("keeps the %s composition neutral", (_label, values) => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        school: {
+          actionContext: "school",
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 200,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "school",
+      ...values,
+      wasteKg: "13",
       cigaretteButtsCount: "400",
     });
 

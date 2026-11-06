@@ -13,6 +13,10 @@ import {
   type WasteComparisonTone,
 } from "../utils/harvest-utils";
 import { deriveContextualCollectionUnits } from "@/lib/actions/action-collection-reference-averages-shared";
+import {
+  deriveAdultCountFromTotal,
+  getVolunteerActionCompositionValidationMessage,
+} from "@/lib/actions/volunteer-participation";
 import { useCallback, useMemo } from "react";
 import { useActionPollutionScoreReferences } from "../../map/scores/action-pollution-score-references-context";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
@@ -273,15 +277,30 @@ function deriveHarvestMetrics(
   );
   const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
   const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 500);
+  const childrenCount = readParticipantCount(form.childrenCount);
+  const retiredCount = readParticipantCount(form.retiredCount);
+  const adultCount = deriveAdultCountFromTotal({
+    volunteersCount,
+    childrenCount,
+    retiredCount,
+  });
+  const hasValidContextualComposition =
+    getVolunteerActionCompositionValidationMessage({
+      volunteersCount,
+      childrenCount,
+      retiredCount,
+    }) === null;
   const contextualUnits =
     form.actionContext === "citizen" || form.actionContext === "company" || form.actionContext === "school"
-      ? deriveContextualCollectionUnits({
-          actionContext: form.actionContext,
-          childrenCount: readParticipantCount(form.childrenCount),
-          adultCount: readParticipantCount(form.adultCount),
-          retiredCount: readParticipantCount(form.retiredCount),
-          volunteersCount,
-        })
+      ? hasValidContextualComposition
+        ? deriveContextualCollectionUnits({
+            actionContext: form.actionContext,
+            childrenCount,
+            adultCount,
+            retiredCount,
+            volunteersCount,
+          })
+        : { wasteUnits: null, buttsUnits: null }
       : { wasteUnits: volunteersCount, buttsUnits: volunteersCount };
   const wasteComparison = deriveWasteComparison({
     wasteKg,
