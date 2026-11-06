@@ -35,6 +35,8 @@ const state = vi.hoisted(() => ({
   backgroundError: null as unknown,
   startError: null as unknown,
   stopError: null as unknown,
+  stopGate: null as Promise<void> | null,
+  stopGateUsesRemaining: 0,
   taskRegistered: false,
   taskError: null as unknown,
   taskGate: null as Promise<void> | null,
@@ -43,6 +45,8 @@ const state = vi.hoisted(() => ({
   clerkAfterTaskGate: null as Promise<void> | null,
   clerkAfterTaskGateUsesRemaining: 0,
   setStoredError: null as unknown,
+  updateGate: null as Promise<void> | null,
+  updateGateUsesRemaining: 0,
   setStoredGate: null as Promise<void> | null,
   setStoredGateUsesRemaining: 0,
   setStoredWritesBeforeGate: false,
@@ -73,6 +77,10 @@ vi.mock('expo-location', () => ({
     if (state.startError) throw state.startError
   }),
   stopLocationUpdatesAsync: vi.fn(async () => {
+    if (state.stopGate && state.stopGateUsesRemaining > 0) {
+      state.stopGateUsesRemaining -= 1
+      await state.stopGate
+    }
     if (state.stopError) throw state.stopError
   }),
 }))
@@ -203,7 +211,11 @@ function createClient(options: ClientOptions = {}) {
   })
   const optionOrDefault = <T>(key: keyof ClientOptions, fallback: T) =>
     Object.prototype.hasOwnProperty.call(options, key) ? options[key] as T : fallback
-  const single = (data: unknown, error: Error | null, thrown: unknown) => vi.fn(async () => {
+  const single = (data: unknown, error: Error | null, thrown: unknown, gated = false) => vi.fn(async () => {
+    if (gated && state.updateGate && state.updateGateUsesRemaining > 0) {
+      state.updateGateUsesRemaining -= 1
+      await state.updateGate
+    }
     if (thrown) throw thrown
     return result(data, error)
   })
@@ -213,7 +225,7 @@ function createClient(options: ClientOptions = {}) {
     return {
       eq: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: single(optionOrDefault('updateData', mission), options.updateError ?? null, null),
+          single: single(optionOrDefault('updateData', mission), options.updateError ?? null, null, true),
         })),
       })),
     }
@@ -282,6 +294,8 @@ function resetState() {
   state.backgroundError = null
   state.startError = null
   state.stopError = null
+  state.stopGate = null
+  state.stopGateUsesRemaining = 0
   state.taskRegistered = false
   state.taskError = null
   state.taskGate = null
@@ -290,6 +304,8 @@ function resetState() {
   state.clerkAfterTaskGate = null
   state.clerkAfterTaskGateUsesRemaining = 0
   state.setStoredError = null
+  state.updateGate = null
+  state.updateGateUsesRemaining = 0
   state.setStoredGate = null
   state.setStoredGateUsesRemaining = 0
   state.setStoredWritesBeforeGate = false
@@ -753,6 +769,71 @@ describe('tracking-service coverage edges', () => {
     await expect(startB).resolves.toEqual({ ok: true, data: missionB })
     expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled()
     expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled()
+  })
+
+  it('waits for failed activation cleanup A before starting native tracking B', async () => {
+    const stopGate = deferred()
+    state.stopGate = stopGate.promise
+    state.stopGateUsesRemaining = 1
+    state.client = createClient({
+      selectData: { ...mission, status: 'pending' as const, started_at: null },
+      updateError: new Error('activation refused'),
+    })
+
+    const startA = startTracking('mission-1', 'user_123')
+    await vi.waitFor(() => expect(Location.stopLocationUpdatesAsync).toHaveBeenCalledOnce())
+
+    state.currentUserId = 'user_456'
+    state.storedOwnerId = 'user_456'
+    state.storedMissionId = 'mission-2'
+    state.activeMissionOwnerId = 'user_456'
+    const missionB = { ...mission, id: 'mission-2', volunteer_id: 'user_456' }
+    state.client = createClient({ selectData: missionB })
+    const startB = startTracking('mission-2', 'user_456', missionB)
+
+    await Promise.resolve()
+    expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce()
+
+    stopGate.resolve()
+    await expect(startA).resolves.toEqual({ ok: false, error: 'Impossible de démarrer la mission : activation refused' })
+    await expect(startB).resolves.toEqual({ ok: true, data: missionB })
+    expect(Location.stopLocationUpdatesAsync).toHaveBeenCalledOnce()
+    expect(Location.startLocationUpdatesAsync).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not let queued cleanup A stop native tracking already owned by B', async () => {
+    const activationGate = deferred()
+    const taskGate = deferred()
+    state.updateGate = activationGate.promise
+    state.updateGateUsesRemaining = 1
+    state.client = createClient({
+      selectData: { ...mission, status: 'pending' as const, started_at: null },
+      updateError: new Error('activation refused'),
+    })
+
+    const startA = startTracking('mission-1', 'user_123')
+    await vi.waitFor(() => expect(Location.startLocationUpdatesAsync).toHaveBeenCalledOnce())
+
+    state.taskGate = taskGate.promise
+    state.taskGateUsesRemaining = 1
+
+    state.currentUserId = 'user_456'
+    state.storedOwnerId = 'user_456'
+    state.storedMissionId = 'mission-2'
+    state.activeMissionOwnerId = 'user_456'
+    const missionB = { ...mission, id: 'mission-2', volunteer_id: 'user_456' }
+    state.client = createClient({ selectData: missionB })
+    const startB = startTracking('mission-2', 'user_456', missionB)
+    await vi.waitFor(() => expect(state.taskGateUsesRemaining).toBe(0))
+
+    activationGate.resolve()
+    await vi.waitFor(() => expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled())
+    taskGate.resolve()
+
+    await expect(startA).resolves.toEqual({ ok: false, error: 'Impossible de démarrer la mission : activation refused' })
+    await expect(startB).resolves.toEqual({ ok: true, data: missionB })
+    expect(Location.stopLocationUpdatesAsync).not.toHaveBeenCalled()
+    expect(Location.startLocationUpdatesAsync).toHaveBeenCalledTimes(2)
   })
 
   it('buffers points offline, rejects changed identities, and preserves stable point writes', async () => {

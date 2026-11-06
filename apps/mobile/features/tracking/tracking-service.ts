@@ -245,8 +245,11 @@ function finishTrackingOperation(operation: TrackingOperationToken): void {
   if (latestTrackingOperation?.operationId === operation.operationId) latestTrackingOperation = null;
 }
 
-async function stopStartedTracking(operation: TrackingOperationToken): Promise<void> {
-  if (nativeTrackingOperation?.operationId !== operation.operationId) return;
+async function stopStartedTrackingLocked(operation: TrackingOperationToken): Promise<void> {
+  const activeOperation = nativeTrackingOperation;
+  if (activeOperation?.operationId !== operation.operationId ||
+    activeOperation.ownerId !== operation.ownerId ||
+    activeOperation.missionId !== operation.missionId) return;
   try {
     await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
   } catch (error) {
@@ -255,8 +258,16 @@ async function stopStartedTracking(operation: TrackingOperationToken): Promise<v
       error instanceof Error ? error.message : error,
     );
   } finally {
-    if (nativeTrackingOperation?.operationId === operation.operationId) nativeTrackingOperation = null;
+    if (nativeTrackingOperation?.operationId === operation.operationId &&
+      nativeTrackingOperation.ownerId === operation.ownerId &&
+      nativeTrackingOperation.missionId === operation.missionId) {
+      nativeTrackingOperation = null;
+    }
   }
+}
+
+async function stopStartedTracking(operation: TrackingOperationToken): Promise<void> {
+  await withNativeStartLock(() => stopStartedTrackingLocked(operation));
 }
 
 async function withNativeStartLock<T>(work: () => Promise<T>): Promise<T> {
@@ -320,7 +331,7 @@ async function startOrReuseNativeTracking(
       nativeTrackingOperation = operation;
       await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
       if (!await isCurrentTrackingOperation(operation)) {
-        await stopStartedTracking(operation);
+        await stopStartedTrackingLocked(operation);
         return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
       }
       return { ok: true, data: true };
