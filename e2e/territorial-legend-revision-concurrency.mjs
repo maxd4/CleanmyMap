@@ -6,7 +6,6 @@ const execFileAsync = promisify(execFile);
 const root = process.cwd();
 const supabaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const actionId = "00000000-0000-4000-8000-000000000014";
-const advisoryKeys = { stale: 918273646014n, fresh: 918273646015n };
 
 async function runQuery(sql, { timeoutMs = 30_000 } = {}) {
   const controller = new AbortController();
@@ -78,22 +77,17 @@ values ('${actionId}'::uuid, 'territorial-revision-participant');
 commit;
 `;
 
-const staleSessionSql = `
+const readOldRevisionSql = `
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"territorial-revision-stale"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
-create temp table territorial_revision_stale_state (revision timestamptz) on commit drop;
-insert into territorial_revision_stale_state select public.get_territorial_legend_fact_revision();
-select pg_advisory_lock(${advisoryKeys.stale});
-select pg_advisory_lock(${advisoryKeys.fresh});
-select pg_advisory_unlock(${advisoryKeys.fresh});
-select public.reconcile_territorial_legend_snapshot(
-  current_date - 10,
-  ${winner("legend-revision-stale", "stale-before-delete")},
-  (select revision from territorial_revision_stale_state)
-);
-select pg_advisory_unlock(${advisoryKeys.stale});
+do $$
+begin
+  raise notice 'TERRITORIAL_OLD_REVISION=%', public.get_territorial_legend_fact_revision();
+  raise notice 'TERRITORIAL_SESSION=stale-read pid=%', pg_backend_pid();
+end;
+$$;
 commit;
 `;
 
@@ -101,66 +95,107 @@ const freshSessionSql = `
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"territorial-revision-fresh"}', true);
-select pg_advisory_lock(${advisoryKeys.fresh});
+select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 declare
-  v_attempt integer;
+  v_result jsonb;
 begin
-  for v_attempt in 1..100 loop
-    if not pg_try_advisory_lock(${advisoryKeys.stale}) then
-      exit;
-    end if;
-    perform pg_advisory_unlock(${advisoryKeys.stale});
-    perform pg_sleep(0.05);
-  end loop;
+  raise notice 'TERRITORIAL_SESSION=fresh pid=%', pg_backend_pid();
+delete from public.action_participants where action_id = '${actionId}'::uuid;
+  v_result := public.reconcile_territorial_legend_snapshot(
+    current_date - 10,
+    ${winner("legend-revision-fresh", "fresh-after-delete")},
+    public.get_territorial_legend_fact_revision()
+  );
+  raise notice 'TERRITORIAL_FRESH_RESULT=%', v_result::text;
 end;
 $$;
-delete from public.action_participants where action_id = '${actionId}'::uuid;
-select public.reconcile_territorial_legend_snapshot(
-  current_date - 10,
-  ${winner("legend-revision-fresh", "fresh-after-delete")},
-  public.get_territorial_legend_fact_revision()
-);
 commit;
-select pg_advisory_unlock(${advisoryKeys.fresh});
 `;
+
+function staleSessionSql(oldRevision) {
+  return `
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"territorial-revision-stale"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
+do $$
+begin
+  raise notice 'TERRITORIAL_SESSION=stale-publish pid=%', pg_backend_pid();
+  perform public.reconcile_territorial_legend_snapshot(
+    current_date - 10,
+    ${winner("legend-revision-stale", "stale-before-delete")},
+    '${oldRevision}'::timestamptz
+  );
+  raise exception 'stale territorial publication unexpectedly succeeded';
+exception
+  when sqlstate 'P0001' then
+    if sqlerrm <> 'territorial legend snapshot was calculated from an older fact revision' then
+      raise;
+    end if;
+    raise notice 'TERRITORIAL_STALE_REJECTED=%', sqlerrm;
+end;
+$$;
+commit;
+`;
+}
 
 function output(result) {
   return `${result.value?.stdout ?? ""}\n${result.value?.stderr ?? ""}`;
 }
 
+let ephemeralDestinationVerified = false;
+
 async function main() {
   await assertEphemeralDestination();
+  ephemeralDestinationVerified = true;
   await runQuery(cleanupSql);
   await runQuery(setupSql);
-  const results = await Promise.allSettled([
-    runQuery(staleSessionSql),
-    runQuery(freshSessionSql),
-  ]);
-  const [staleResult, freshResult] = results;
-  assert.equal(freshResult.status, "fulfilled", freshResult.status === "rejected" ? freshResult.reason?.message : "fresh reconciliation failed");
-  assert.equal(staleResult.status, "rejected", "stale reconciliation must be rejected after the deletion");
-  assert.match(staleResult.reason?.message ?? "", /older fact revision/);
-  assert.match(output(freshResult), /fresh-after-delete/);
-  assert.match(output(freshResult), /applied/);
+  const oldRevisionResult = await runQuery(readOldRevisionSql);
+  const oldOutput = output({ value: oldRevisionResult });
+  const oldRevisionMatch = oldOutput.match(/TERRITORIAL_OLD_REVISION=([^\s]+)/);
+  assert.ok(oldRevisionMatch, "the stale session must publish only the revision it actually read");
+  const oldRevision = oldRevisionMatch[1];
+  const freshResult = await runQuery(freshSessionSql);
+  const freshOutput = output({ value: freshResult });
+  const freshResultMatch = freshOutput.match(/TERRITORIAL_FRESH_RESULT=(\{.*\})/);
+  assert.ok(freshResultMatch, "fresh publication must expose the RPC JSON response");
+  const freshRpcResult = JSON.parse(freshResultMatch[1]);
+  assert.equal(freshRpcResult.status, "applied");
+  assert.equal(typeof freshRpcResult.campaignYear, "number");
+  assert.ok(freshRpcResult.affectedUserIds.includes("legend-revision-fresh"));
+  assert.equal(typeof freshRpcResult.insertedProofs, "number");
+  assert.equal(typeof freshRpcResult.extendedPeriods, "number");
+  assert.equal(typeof freshRpcResult.closedPeriods, "number");
+
+  const staleResult = await runQuery(staleSessionSql(oldRevision));
+  const staleOutput = output({ value: staleResult });
+  assert.match(staleOutput, /TERRITORIAL_STALE_REJECTED=territorial legend snapshot was calculated from an older fact revision/);
+  const sessionPids = [oldOutput, freshOutput, staleOutput].map((value) => value.match(/TERRITORIAL_SESSION=[^ ]+ pid=(\d+)/)?.[1]);
+  assert.equal(sessionPids.every(Boolean), true, "all proof phases must report their PostgreSQL backend");
+  assert.equal(new Set(sessionPids).size, 3, "revision read, fresh publication and stale publication must use distinct PostgreSQL sessions");
 
   const finalState = await runQuery(`
 select json_build_object(
   'fresh', (select count(*) from public.territorial_legend_hold_periods where user_id = 'legend-revision-fresh' and validity_status = 'active'),
-  'stale', (select count(*) from public.territorial_legend_hold_periods where user_id = 'legend-revision-stale' and validity_status = 'active')
+  'stale', (select count(*) from public.territorial_legend_hold_periods where user_id = 'legend-revision-stale'),
+  'freshFingerprints', (select array_agg(distinct source_fingerprint order by source_fingerprint) from public.territorial_legend_hold_periods where user_id = 'legend-revision-fresh')
 ) as result;
 `);
   assert.match(finalState.stdout, /"fresh"\s*:\s*1/);
   assert.match(finalState.stdout, /"stale"\s*:\s*0/);
+  assert.match(finalState.stdout, /fresh-after-delete/);
   await runQuery(cleanupSql);
   console.log("EXECUTED_DB_CONTRACT: Territorial legend monotone fact revision and stale same-day reconciliation concurrency passed.");
 }
 
 main().catch(async (error) => {
-  try {
-    await runQuery(cleanupSql);
-  } catch (cleanupError) {
-    console.error(cleanupError);
+  if (ephemeralDestinationVerified) {
+    try {
+      await runQuery(cleanupSql);
+    } catch (cleanupError) {
+      console.error(cleanupError);
+    }
   }
   console.error(error);
   process.exitCode = 1;

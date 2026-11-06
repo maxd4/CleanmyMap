@@ -70,6 +70,20 @@ test("Knip declares the PostgreSQL multi-session scripts as explicit entrypoints
   }
 });
 
+test("territorial revision proof uses explicit session barriers and the RPC contract", () => {
+  const source = readFileSync(new URL("../../e2e/territorial-legend-revision-concurrency.mjs", import.meta.url), "utf8");
+  assert.match(source, /set_config\('request\.jwt\.claim\.role', 'service_role', true\)/g);
+  assert.match(source, /const oldRevisionResult = await runQuery\(readOldRevisionSql\)/);
+  assert.match(source, /const freshResult = await runQuery\(freshSessionSql\)/);
+  assert.match(source, /const staleResult = await runQuery\(staleSessionSql\(oldRevision\)\)/);
+  assert.match(source, /TERRITORIAL_FRESH_RESULT=/);
+  assert.match(source, /freshRpcResult\.status, "applied"/);
+  assert.match(source, /freshRpcResult\.affectedUserIds\.includes\("legend-revision-fresh"\)/);
+  assert.match(source, /TERRITORIAL_STALE_REJECTED=/);
+  assert.doesNotMatch(source, /assert\.match\(output\(freshResult\), \/fresh-after-delete\//);
+  assert.match(source, /'freshFingerprints'/);
+});
+
 test("pgTAP parser accepts an exact complete plan", () => {
   assert.equal(extractPlan("begin; select plan(2);"), 2);
   assert.deepEqual(parsePgTapOutput("ok 1 - first\nok 2 - second\n1..2\n", 2), {
