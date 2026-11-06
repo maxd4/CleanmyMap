@@ -84,6 +84,24 @@ test("territorial revision proof uses explicit session barriers and the RPC cont
   assert.match(source, /'freshFingerprints'/);
 });
 
+test("territorial pgTAP purges every current fixture before the 2025 campaign", () => {
+  const source = readFileSync(new URL("../../apps/web/supabase/tests/territorial-legend-rewards-contract.pgtap.sql", import.meta.url), "utf8");
+  assert.match(source, /select plan\(78\);/);
+  const reactivation = source.indexOf("reactivation creates a new non-retroactive watermark");
+  const historicalPurge = source.indexOf("-- Isolate the historical campaign");
+  const historicalCampaign = source.indexOf("date '2025-07-05'");
+  const proofPurge = source.indexOf("delete from public.territorial_legend_award_proofs", historicalPurge);
+  const periodPurge = source.indexOf("delete from public.territorial_legend_hold_periods", proofPurge);
+  const consentPeriodPurge = source.indexOf("where user_id = 'legend-consent-contract';", periodPurge);
+  const consentPurge = source.indexOf("delete from public.territorial_legend_consents", historicalPurge);
+  assert.ok(reactivation > -1 && historicalPurge > reactivation && historicalCampaign > historicalPurge);
+  assert.ok(proofPurge > -1 && periodPurge > proofPurge);
+  assert.ok(consentPeriodPurge > periodPurge && consentPeriodPurge < historicalCampaign);
+  assert.ok(consentPurge > consentPeriodPurge && consentPurge < historicalCampaign);
+  assert.match(source.slice(proofPurge, historicalCampaign), /where user_id like 'legend-contract-%';/g);
+  assert.match(source.slice(periodPurge, historicalCampaign), /delete from public\.territorial_legend_hold_periods[\s\S]*where user_id = 'legend-consent-contract';/);
+});
+
 test("pgTAP parser accepts an exact complete plan", () => {
   assert.equal(extractPlan("begin; select plan(2);"), 2);
   assert.deepEqual(parsePgTapOutput("ok 1 - first\nok 2 - second\n1..2\n", 2), {

@@ -271,6 +271,8 @@ delete from public.territorial_legend_award_proofs
  where user_id like 'legend-contract-%';
 delete from public.territorial_legend_hold_periods
  where user_id like 'legend-contract-%';
+delete from public.territorial_legend_hold_periods
+ where user_id = 'legend-consent-contract';
 delete from public.territorial_legend_consents
  where user_id = 'legend-consent-contract';
 
