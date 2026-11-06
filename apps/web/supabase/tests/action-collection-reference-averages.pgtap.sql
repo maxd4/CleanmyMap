@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(17);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-reference-test"}', true);
@@ -22,12 +22,7 @@ insert into public.actions (
   ('collection-reference-fixture', current_date - 1, 'Reference eligible 02', 'approved', 'post_action_complete', 'visible', null, 750, 10),
   ('collection-reference-fixture', current_date - 1, 'Reference eligible 03', 'approved', 'post_action_complete', 'visible', 20, 6250, 20),
   ('collection-reference-fixture', current_date - 1, 'Reference eligible 04', 'approved', 'post_action_complete', 'visible', null, 1875, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference eligible 05', 'approved', 'post_action_complete', 'visible', 20, 1250, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference pending', 'pending', 'post_action_complete', 'visible', 20, 100, 10),
-  ('collection-reference-fixture', current_date + 1, 'Reference future', 'approved', 'post_action_complete', 'visible', 20, 100, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference private', 'approved', 'post_action_complete', 'hidden', 20, 100, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference rejected', 'rejected', 'post_action_complete', 'visible', 20, 100, 10),
-  ('collection-reference-fixture', current_date - 1, 'Reference without measurements', 'approved', 'post_action_complete', 'visible', null, null, 10);
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 05', 'approved', 'post_action_complete', 'visible', 20, 1250, 10);
 
 select is(
   (select waste_per_volunteer from public.action_collection_reference_averages_v1()),
@@ -56,8 +51,8 @@ select is(
 );
 select is(
   (select count(*)::integer from public.actions where created_by_clerk_id = 'collection-reference-fixture'),
-  10,
-  'the anonymized fixture contains five eligible and five exclusion rows'
+  5,
+  'the base fixture contains the five eligible rows before exclusions are added'
 );
 select is(
   (select waste_per_volunteer from public.action_collection_reference_averages_v1()),
@@ -78,6 +73,79 @@ select ok(
   (select (13875::numeric / 65) <> butts_per_volunteer
      from public.action_collection_reference_averages_v1()),
   'the cigarette-butt ratio of source totals differs from the RPC average'
+);
+
+-- A finalized invite-link action remains private even when it is visible to its
+-- invited audience. It must not enter the public aggregate population.
+insert into public.actions (
+  created_by_clerk_id,
+  action_date,
+  location_label,
+  status,
+  action_phase,
+  moderation_visibility,
+  access_mode,
+  waste_kg,
+  cigarette_butts,
+  volunteers_count
+) values (
+  'collection-reference-fixture', current_date - 1, 'Reference invite-link private',
+  'approved', 'post_action_complete', 'visible', 'invite_link', 20, 100, 10
+);
+
+select is(
+  (select eligible_action_count from public.action_collection_reference_averages_v1()),
+  5,
+  'invite-link actions are excluded independently of moderation visibility'
+);
+
+insert into public.actions (
+  created_by_clerk_id,
+  action_date,
+  location_label,
+  status,
+  action_phase,
+  moderation_visibility,
+  waste_kg,
+  cigarette_butts,
+  volunteers_count
+) values (
+  'collection-reference-fixture', current_date - 1, 'Reference public hidden',
+  'approved', 'post_action_complete', 'hidden', 20, 100, 10
+);
+
+select is(
+  (select eligible_action_count from public.action_collection_reference_averages_v1()),
+  5,
+  'public actions hidden by moderation remain excluded'
+);
+
+insert into public.actions (
+  created_by_clerk_id,
+  action_date,
+  location_label,
+  status,
+  action_phase,
+  moderation_visibility,
+  waste_kg,
+  cigarette_butts,
+  volunteers_count
+) values
+  ('collection-reference-fixture', current_date - 1, 'Reference pending', 'pending', 'post_action_complete', 'visible', 20, 100, 10),
+  ('collection-reference-fixture', current_date + 1, 'Reference future', 'approved', 'post_action_complete', 'visible', 20, 100, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference rejected', 'rejected', 'post_action_complete', 'visible', 20, 100, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference without measurements', 'approved', 'post_action_complete', 'visible', null, null, 10);
+
+select is(
+  (select eligible_action_count from public.action_collection_reference_averages_v1()),
+  5,
+  'pending, future, rejected and measurement-less actions remain excluded'
+);
+
+select is(
+  (select count(*)::integer from public.actions where created_by_clerk_id = 'collection-reference-fixture'),
+  11,
+  'the fixture contains five eligible and six excluded rows'
 );
 
 insert into public.actions (

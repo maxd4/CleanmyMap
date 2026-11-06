@@ -107,6 +107,77 @@ describe("action collection reference averages", () => {
     });
   });
 
+  it("preserves NULL metrics and zero source counts without fabricating a reference", () => {
+    expect(normalizeActionCollectionReferenceAverageRow({
+      waste_per_volunteer: null,
+      butts_per_volunteer: "0",
+      waste_source_count: 0,
+      butts_source_count: "2",
+      eligible_action_count: 2,
+      formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+      updated_at: null,
+    })).toEqual({
+      wastePerVolunteer: null,
+      buttsPerVolunteer: 0,
+      wasteSourceCount: 0,
+      buttsSourceCount: 2,
+      eligibleActionCount: 2,
+      formulaVersion: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+      updatedAt: null,
+    });
+
+    expect(normalizeActionCollectionReferenceAverageRow({
+      waste_per_volunteer: null,
+      butts_per_volunteer: null,
+      waste_source_count: null,
+      butts_source_count: 0,
+      eligible_action_count: 0,
+      formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+    })).toBeNull();
+  });
+
+  it.each([null, undefined, "", "NaN", -1, 1.5] as const)(
+    "rejects an invalid or absent source count: %s",
+    (sourceCount) => {
+      expect(normalizeActionCollectionReferenceAverageRow({
+        waste_per_volunteer: null,
+        butts_per_volunteer: 0,
+        waste_source_count: sourceCount,
+        butts_source_count: 2,
+        eligible_action_count: 2,
+        formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+      })).toBeNull();
+    },
+  );
+
+  it("preserves NULL metrics in contextual references while keeping explicit zeros", () => {
+    expect(normalizeActionCollectionContextReferenceRow({
+      action_context: "school",
+      waste_per_effective_unit: null,
+      butts_per_effective_unit: "0",
+      waste_source_count: 0,
+      butts_source_count: 2,
+      eligible_action_count: 2,
+      formula_version: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+      updated_at: null,
+    })).toMatchObject({
+      wastePerEffectiveUnit: null,
+      buttsPerEffectiveUnit: 0,
+      wasteSourceCount: 0,
+      buttsSourceCount: 2,
+    });
+
+    expect(normalizeActionCollectionContextReferenceRow({
+      action_context: "school",
+      waste_per_effective_unit: null,
+      butts_per_effective_unit: null,
+      waste_source_count: undefined,
+      butts_source_count: 0,
+      eligible_action_count: 0,
+      formula_version: ACTION_COLLECTION_CONTEXT_FORMULA_VERSION,
+    })).toBeNull();
+  });
+
   it("proves the historical per-action averages and keeps them distinct from totals", async () => {
     const wasteRows = HISTORICAL_COLLECTION_REFERENCE_FIXTURE.filter(
       (row) => row.wasteKg !== null,
@@ -180,6 +251,31 @@ describe("action collection reference averages", () => {
       buttsSourceCount: 3,
     });
     expect(rpc).toHaveBeenCalledWith("action_collection_reference_averages_v1");
+  });
+
+  it("returns a fetched NULL metric as NULL instead of zero", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        waste_per_volunteer: null,
+        butts_per_volunteer: "0",
+        waste_source_count: 0,
+        butts_source_count: 2,
+        eligible_action_count: 2,
+        formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+        updated_at: null,
+      }],
+      error: null,
+    });
+
+    await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toEqual({
+      wastePerVolunteer: null,
+      buttsPerVolunteer: 0,
+      wasteSourceCount: 0,
+      buttsSourceCount: 2,
+      eligibleActionCount: 2,
+      formulaVersion: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+      updatedAt: null,
+    });
   });
 
   it("rejects malformed counts instead of fabricating a reference", () => {

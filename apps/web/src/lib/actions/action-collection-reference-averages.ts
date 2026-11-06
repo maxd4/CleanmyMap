@@ -74,11 +74,27 @@ export function isCurrentActionCollectionReferenceAverage(
 }
 
 function toNonNegativeInteger(value: number | string | null | undefined): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim() === "") ||
+    (typeof value !== "number" && typeof value !== "string")
+  ) {
+    return null;
+  }
   const candidate = Number(value);
   return Number.isInteger(candidate) && candidate >= 0 ? candidate : null;
 }
 
 function toNonNegativeNumber(value: number | string | null | undefined): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim() === "") ||
+    (typeof value !== "number" && typeof value !== "string")
+  ) {
+    return null;
+  }
   const candidate = Number(value);
   return Number.isFinite(candidate) && candidate >= 0 ? candidate : null;
 }
