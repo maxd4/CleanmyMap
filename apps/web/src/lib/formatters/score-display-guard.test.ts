@@ -20,25 +20,25 @@ const AUTHORIZED_THEORETICAL_INDEX = [
   },
   {
     file: THEORETICAL_RELEVANCE_CARD,
-    pattern: /toFixed\(2\).*\/\s*100(?!\d)/,
+    pattern: /Number\.isInteger\(score\) \? score : score\.toFixed\(2\)\} \/ 100/,
   },
   {
     file: THEORETICAL_RELEVANCE_CARD,
-    pattern: /bestAttempt\.score.*\/\s*100(?!\d)/,
+    pattern: /bestAttempt\.score \?\? "—"\} \/ 100 · \{fr \? "insuffisant" : "insufficient"\}/,
   },
   {
     file: resolve(
       __dirname,
       "../../components/sections/rubriques/route/components/route-alternative-comparison.tsx",
     ),
-    pattern: /toFixed\(1\).*\/\s*100(?!\d)/,
+    pattern: /Number\.isInteger\(score\) \? score : score\.toFixed\(1\)\} \/ 100/,
   },
   {
     file: resolve(
       __dirname,
       "../../components/sections/rubriques/route/components/route-map.tsx",
     ),
-    pattern: /(?:Math\.min\(100, value\).*\/\s*100|Math\.round\(value\).*\/\s*100)/,
+    pattern: /(?:opacity: 0\.3 \+ \(Math\.max\(0, Math\.min\(100, value\)\) \/ 100\) \* 0\.55|heatmapCategoryLabel\(category, fr\).*Math\.round\(value\).*\/\s*100)/,
   },
 ];
 
@@ -101,6 +101,36 @@ describe("score display guard", () => {
       isAuthorizedTheoreticalIndex(
         join(__dirname, "unrelated-component.tsx"),
         "Indice conservé pour audit : 20 / 100",
+      ),
+    ).toBe(false);
+    expect(
+      isAuthorizedTheoreticalIndex(
+        THEORETICAL_RELEVANCE_CARD,
+        "Score historique : ${score.toFixed(2)} / 100",
+      ),
+    ).toBe(false);
+    expect(
+      isAuthorizedTheoreticalIndex(
+        THEORETICAL_RELEVANCE_CARD,
+        "Score historique : ${nearestRelevantSearch.bestAttempt.score} / 100",
+      ),
+    ).toBe(false);
+    expect(
+      isAuthorizedTheoreticalIndex(
+        THEORETICAL_RELEVANCE_CARD,
+        "Score historique : ${Math.round(score)} / 100",
+      ),
+    ).toBe(false);
+    expect(
+      isAuthorizedTheoreticalIndex(
+        resolve(__dirname, "../../components/sections/rubriques/route/components/route-alternative-comparison.tsx"),
+        "Score historique : ${score.toFixed(1)} / 100",
+      ),
+    ).toBe(false);
+    expect(
+      isAuthorizedTheoreticalIndex(
+        resolve(__dirname, "../../components/sections/rubriques/route/components/route-map.tsx"),
+        "Score historique : ${Math.round(value)} / 100",
       ),
     ).toBe(false);
   });
