@@ -40,6 +40,10 @@ import {
   type CigaretteButtsRecalculationStatus,
   type RawCigaretteButtsMeasurementInput,
 } from "./cigarette-butts-engine";
+import {
+  normalizeClearedCigaretteButtsMeasurements,
+  type MeasurementClearFlags,
+} from "./cigarette-butts-clearing";
 
 export {
   aggregateCigaretteButtsLots,
@@ -122,16 +126,23 @@ export function calculateCigaretteButtsMeasurementFromSource(input: {
   source: CigaretteButtsLotSource;
   value: number;
   condition: ActionMegotsCondition;
+  volumeConversionVersion?: string | null;
+  massConversionVersion?: string | null;
 }): ActionCigaretteButtsMeasurements {
   const result = calculateCigaretteButtsLot({
     id: "scalar-cigarette-butts",
     source: input.source,
     value: input.value,
     condition: input.condition,
+  }, {
+    volumeConversionVersion: input.volumeConversionVersion,
+    massConversionVersion: input.massConversionVersion,
   });
+  const volumeConversionVersion = input.volumeConversionVersion ??
+    result.volumeConversionFormulaVersion ?? CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION;
   const volumeLiters = input.source === "volume_l"
     ? input.value
-    : result.count / getCigaretteButtsVolumeFactor();
+    : result.count / getCigaretteButtsVolumeFactor(volumeConversionVersion);
   return {
     cigaretteButtsCount: result.count,
     cigaretteButtsMassKg: result.massKg,
@@ -142,7 +153,7 @@ export function calculateCigaretteButtsMeasurementFromSource(input: {
     cigaretteButtsVolumeProvenance: input.source === "volume_l" ? "measured" : "volume_converted",
     cigaretteButtsConversionFormulaVersion: result.massConversionFormulaVersion,
     cigaretteButtsInputSource: input.source,
-    cigaretteButtsVolumeConversionFormulaVersion: result.volumeConversionFormulaVersion ?? CIGARETTE_BUTTS_VOLUME_CONVERSION_VERSION,
+    cigaretteButtsVolumeConversionFormulaVersion: volumeConversionVersion,
     cigaretteButtsRecalculationStatus: "recalculable",
   };
 }
@@ -445,7 +456,13 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
   const existingMeasurements = options.existingMeasurements;
   const effectiveInput = mergeExistingMeasurementInput(input, existingMeasurements);
   const clearFlags = readMeasurementClearFlags(input, existingMeasurements);
-  const cleared = normalizeClearedMeasurements(effectiveInput, existingMeasurements, clearFlags);
+  const cleared = normalizeClearedCigaretteButtsMeasurements(
+    effectiveInput,
+    existingMeasurements,
+    clearFlags,
+    normalizeCigaretteButtsMeasurements,
+    inferCigaretteButtsInputSource,
+  );
   if (cleared) return cleared;
   const inputSource = resolveUserInputSource(effectiveInput, existingMeasurements);
   const explicitInputSource = hasExplicitInputSource(effectiveInput, existingMeasurements);
@@ -475,10 +492,20 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
     return existingMeasurements;
   }
   if (scalarSource && scalarValue !== null && scalarCondition) {
+    const reuseHistoricalVersions = existingMeasurements !== null &&
+      existingMeasurements !== undefined &&
+      sameScalarValuesAsExisting &&
+      existingScalarSource === scalarSource;
     return calculateCigaretteButtsMeasurementFromSource({
       source: scalarSource,
       value: scalarValue,
       condition: scalarCondition,
+      volumeConversionVersion: reuseHistoricalVersions
+        ? existingMeasurements.cigaretteButtsVolumeConversionFormulaVersion
+        : undefined,
+      massConversionVersion: reuseHistoricalVersions
+        ? existingMeasurements.cigaretteButtsConversionFormulaVersion
+        : undefined,
     });
   }
   const sourceSpecificInput = buildSourceSpecificInput(effectiveInput, inputSource, explicitInputSource);
@@ -498,13 +525,6 @@ export function normalizeCigaretteButtsMeasurementsFromUserInput(
   );
   return applyExplicitMeasurementNulls(normalized, input, options);
 }
-
-type MeasurementClearFlags = {
-  countExplicitlyCleared: boolean;
-  massExplicitlyCleared: boolean;
-  volumeExplicitlyCleared: boolean;
-  volumeClearRequested: boolean;
-};
 
 function mergeExistingMeasurementInput(
   input: RawCigaretteButtsMeasurementInput,
@@ -530,68 +550,6 @@ function readMeasurementClearFlags(
     volumeExplicitlyCleared: Boolean(existing && input.cigaretteButtsVolumeLiters === null && existing.cigaretteButtsVolumeLiters !== null),
     volumeClearRequested: Boolean(existing && input.cigaretteButtsVolumeLiters === null),
   };
-}
-
-function normalizeClearedMeasurements(
-  effectiveInput: RawCigaretteButtsMeasurementInput,
-  existing: ActionCigaretteButtsMeasurements | null | undefined,
-  flags: MeasurementClearFlags,
-): ActionCigaretteButtsMeasurements | null {
-  if (!existing) return null;
-  if (flags.volumeExplicitlyCleared && !flags.countExplicitlyCleared && !flags.massExplicitlyCleared) {
-    return normalizeVolumeClearedMeasurements(effectiveInput, existing);
-  }
-  if (!flags.countExplicitlyCleared && !flags.massExplicitlyCleared) return null;
-  const persistedSource = inferCigaretteButtsInputSource(existing);
-  const orphanedCount = flags.massExplicitlyCleared && persistedSource === "mass" && effectiveInput.cigaretteButtsCount === existing.cigaretteButtsCount;
-  const orphanedMass = flags.countExplicitlyCleared && persistedSource === "count" && effectiveInput.cigaretteButtsMassKg === existing.cigaretteButtsMassKg;
-  return normalizePartiallyClearedMeasurements(
-    effectiveInput,
-    existing,
-    flags,
-    orphanedCount,
-    orphanedMass,
-  );
-}
-
-function normalizeVolumeClearedMeasurements(
-  input: RawCigaretteButtsMeasurementInput,
-  existing: ActionCigaretteButtsMeasurements,
-): ActionCigaretteButtsMeasurements {
-  const result = normalizeCigaretteButtsMeasurements({ ...input, deriveMissingFromMassOrCount: false });
-  if (result.cigaretteButtsCount === existing.cigaretteButtsCount) result.cigaretteButtsCountProvenance = existing.cigaretteButtsCountProvenance;
-  if (result.cigaretteButtsMassKg === existing.cigaretteButtsMassKg) result.cigaretteButtsMassProvenance = existing.cigaretteButtsMassProvenance;
-  result.cigaretteButtsVolumeProvenance = "unknown";
-  result.cigaretteButtsConversionFormulaVersion = existing.cigaretteButtsConversionFormulaVersion;
-  return result;
-}
-
-function normalizePartiallyClearedMeasurements(
-  input: RawCigaretteButtsMeasurementInput,
-  existing: ActionCigaretteButtsMeasurements,
-  flags: MeasurementClearFlags,
-  orphanedCount: boolean,
-  orphanedMass: boolean,
-): ActionCigaretteButtsMeasurements {
-  const result = normalizeCigaretteButtsMeasurements({
-    ...input,
-    cigaretteButtsCount: orphanedCount ? null : input.cigaretteButtsCount,
-    cigaretteButtsMassKg: orphanedMass ? null : input.cigaretteButtsMassKg,
-    deriveMissingFromMassOrCount: false,
-  });
-  preserveUnclearedMeasurementProvenance(result, existing, flags);
-  result.cigaretteButtsConversionFormulaVersion = null;
-  return result;
-}
-
-function preserveUnclearedMeasurementProvenance(
-  result: ActionCigaretteButtsMeasurements,
-  existing: ActionCigaretteButtsMeasurements,
-  flags: MeasurementClearFlags,
-): void {
-  if (!flags.countExplicitlyCleared && result.cigaretteButtsCount === existing.cigaretteButtsCount) result.cigaretteButtsCountProvenance = existing.cigaretteButtsCountProvenance;
-  if (!flags.massExplicitlyCleared && result.cigaretteButtsMassKg === existing.cigaretteButtsMassKg) result.cigaretteButtsMassProvenance = existing.cigaretteButtsMassProvenance;
-  if (!flags.volumeExplicitlyCleared && result.cigaretteButtsVolumeLiters === existing.cigaretteButtsVolumeLiters) result.cigaretteButtsVolumeProvenance = existing.cigaretteButtsVolumeProvenance;
 }
 
 function hasExplicitInputSource(
@@ -621,6 +579,8 @@ function preserveHistoricalMeasurementProvenance(
 ): void {
   if (existing && !flags.volumeClearRequested && normalized.cigaretteButtsVolumeLiters === existing.cigaretteButtsVolumeLiters) {
     normalized.cigaretteButtsVolumeProvenance = existing.cigaretteButtsVolumeProvenance;
+    normalized.cigaretteButtsVolumeConversionFormulaVersion =
+      existing.cigaretteButtsVolumeConversionFormulaVersion;
   }
   if (existing && inputSource === "unknown" && sameCountAndMass(normalized, existing)) {
     normalized.cigaretteButtsCountProvenance = existing.cigaretteButtsCountProvenance;

@@ -534,7 +534,7 @@ describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
       cigaretteButtsCount: null,
       cigaretteButtsMassKg: 1,
       cigaretteButtsMassProvenance: "measured",
-      cigaretteButtsConversionFormulaVersion: null,
+      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v2",
     });
   });
 });

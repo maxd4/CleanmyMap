@@ -239,6 +239,33 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     harness.renderer.unmount();
   });
 
+  it("keeps a hydrated historical volume version across a condition change", () => {
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      cigaretteButtsCount: "600",
+      wasteMegotsKg: "0.132",
+      cigaretteButtsVolumeLiters: "1",
+      wasteMegotsCondition: "propre",
+      cigaretteButtsCondition: "propre",
+      cigaretteButtsInputSource: "volume_l",
+      cigaretteButtsCountProvenance: "volume_converted",
+      cigaretteButtsMassProvenance: "weight_converted",
+      cigaretteButtsVolumeProvenance: "measured",
+      cigaretteButtsConversionFormulaVersion: "impact-terrain-2026-butts-mass-v1",
+      cigaretteButtsVolumeConversionFormulaVersion: "cleanmymap-butts-volume-v1",
+    });
+
+    act(() => harness.latest.logic.syncMegotsCondition("humide"));
+
+    expect(harness.latest.form.cigaretteButtsCount).toBe("600");
+    expect(harness.latest.form.cigaretteButtsVolumeLiters).toBe("1");
+    expect(harness.latest.form.cigaretteButtsVolumeConversionFormulaVersion).toBe(
+      "cleanmymap-butts-volume-v1",
+    );
+
+    harness.renderer.unmount();
+  });
+
   it("preserves an explicit zero and clears both measurements when the source is erased", () => {
     const harness = mountLogic({
       ...createInitialFormState("Test"),
@@ -286,7 +313,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
     });
 
     expect(harness.latest.form.wasteMegotsKg).toBe("1");
-    expect(harness.latest.form.cigaretteButtsCount).toBe("4545");
+    expect(harness.latest.form.cigaretteButtsCount).toBe("2500");
     expect(harness.latest.form.cigaretteButtsInputSource).toBe("mass_kg");
     expect(harness.latest.form.cigaretteButtsCondition).toBe("propre");
 
@@ -440,7 +467,7 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
 
     expect(harness.latest.form.cigaretteButtsVolumeLiters).toBe("");
     expect(harness.latest.logic.cigaretteButtsVolumeProvenance).toBe("unknown");
-    expect(harness.latest.logic.megotsCount).toBe(0);
+    expect(harness.latest.logic.megotsCount).toBeNull();
 
     harness.renderer.unmount();
   });

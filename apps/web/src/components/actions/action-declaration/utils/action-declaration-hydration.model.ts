@@ -52,6 +52,7 @@ function clearPostActionMeasurements(form: FormState): void {
   form.cigaretteButtsMassProvenance = "unknown";
   form.cigaretteButtsVolumeProvenance = "unknown";
   form.cigaretteButtsConversionFormulaVersion = null;
+  form.cigaretteButtsVolumeConversionFormulaVersion = null;
   form.cigaretteButtsVolumeLiters = "";
   form.wasteMegotsKg = "";
   form.wastePlastiqueKg = "";
@@ -174,6 +175,8 @@ function buildCigaretteMeasurementFields(
     cigaretteButtsMassProvenance: measurements?.cigaretteButtsMassProvenance ?? "unknown",
     cigaretteButtsVolumeProvenance: measurements?.cigaretteButtsVolumeProvenance ?? "unknown",
     cigaretteButtsConversionFormulaVersion: measurements?.cigaretteButtsConversionFormulaVersion ?? null,
+    cigaretteButtsVolumeConversionFormulaVersion:
+      measurements?.cigaretteButtsVolumeConversionFormulaVersion ?? null,
     cigaretteButtsCondition: measurements?.cigaretteButtsCondition ?? preparedForm.cigaretteButtsCondition,
     cigaretteButtsVolumeLiters: toFormNumber(measurements?.cigaretteButtsVolumeLiters),
     cigaretteButtsLots: hydrateCigaretteButtsLots(measurements),

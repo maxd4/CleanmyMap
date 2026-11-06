@@ -203,6 +203,9 @@ describe("action declaration hydration model", () => {
     expect(result.cigaretteButtsCount).toBe("1750");
     expect(result.wasteMegotsKg).toBe("0.875");
     expect(result.cigaretteButtsVolumeProvenance).toBe("measured");
+    expect(result.cigaretteButtsVolumeConversionFormulaVersion).toBe(
+      "cleanmymap-butts-volume-v2",
+    );
   });
 
   it("keeps explicit zero, positive durations, historical compatibility and manual targets", () => {

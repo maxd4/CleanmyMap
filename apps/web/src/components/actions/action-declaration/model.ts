@@ -99,6 +99,7 @@ export type FormState = {
   cigaretteButtsMassProvenance: CigaretteButtsProvenance;
   cigaretteButtsVolumeProvenance: CigaretteButtsProvenance;
   cigaretteButtsConversionFormulaVersion: string | null;
+  cigaretteButtsVolumeConversionFormulaVersion: string | null;
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
  cigaretteButtsVolumeLiters: string;
   /** null keeps the legacy single-measurement path; [] explicitly clears lots. */
@@ -153,6 +154,7 @@ export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
   cigaretteButtsMassProvenance: "unknown",
   cigaretteButtsVolumeProvenance: "unknown",
   cigaretteButtsConversionFormulaVersion: null,
+  cigaretteButtsVolumeConversionFormulaVersion: null,
  cigaretteButtsCondition: "propre",
  cigaretteButtsVolumeLiters: "",
   cigaretteButtsLots: null,

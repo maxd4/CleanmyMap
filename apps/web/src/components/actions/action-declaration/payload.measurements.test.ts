@@ -30,6 +30,12 @@ describe("action declaration payload mesures", () => {
 
     expect(blankPayload.wasteKg).toBeNull();
     expect(blankPayload.cigaretteButts).toBeNull();
+    expect(blankPayload.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: null,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsVolumeLiters: null,
+      cigaretteButtsInputSource: null,
+    });
 
     const zeroForm = createInitialFormState("Alice");
     zeroForm.wasteKg = "0";

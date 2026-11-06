@@ -74,7 +74,8 @@ function buildExistingMeasurements(form: FormState): ActionCigaretteButtsMeasure
     form.cigaretteButtsCountProvenance !== "unknown" ||
     form.cigaretteButtsMassProvenance !== "unknown" ||
     form.cigaretteButtsVolumeProvenance !== "unknown" ||
-    form.cigaretteButtsConversionFormulaVersion !== null;
+    form.cigaretteButtsConversionFormulaVersion !== null ||
+    form.cigaretteButtsVolumeConversionFormulaVersion !== null;
 
   return hasContext
     ? {
@@ -87,6 +88,8 @@ function buildExistingMeasurements(form: FormState): ActionCigaretteButtsMeasure
         cigaretteButtsVolumeProvenance: form.cigaretteButtsVolumeProvenance,
         cigaretteButtsConversionFormulaVersion:
           form.cigaretteButtsConversionFormulaVersion,
+        cigaretteButtsVolumeConversionFormulaVersion:
+          form.cigaretteButtsVolumeConversionFormulaVersion,
         cigaretteButtsInputSource: form.cigaretteButtsInputSource,
       }
     : null;
@@ -101,6 +104,8 @@ function buildMeasurementContextUpdates(
     cigaretteButtsVolumeProvenance: measurements.cigaretteButtsVolumeProvenance,
     cigaretteButtsConversionFormulaVersion:
       measurements.cigaretteButtsConversionFormulaVersion,
+    cigaretteButtsVolumeConversionFormulaVersion:
+      measurements.cigaretteButtsVolumeConversionFormulaVersion ?? null,
     ...(measurements.cigaretteButtsInputSource !== undefined
       ? { cigaretteButtsInputSource: measurements.cigaretteButtsInputSource }
       : {}),
@@ -169,6 +174,7 @@ export type UseHarvestLogicResult = {
   cigaretteButtsVolumeProvenance: string;
   cigaretteButtsInputSource: string | null;
   cigaretteButtsConversionFormulaVersion: string | null;
+  cigaretteButtsVolumeConversionFormulaVersion: string | null;
   megotsCounted: number;
   megotsEstimated: number;
   megotsMeasuredMassKg: number;
@@ -228,6 +234,8 @@ function deriveHarvestMetrics(
             cigaretteButtsMassProvenance: form.cigaretteButtsMassProvenance,
             cigaretteButtsVolumeProvenance: form.cigaretteButtsVolumeProvenance,
             cigaretteButtsConversionFormulaVersion: form.cigaretteButtsConversionFormulaVersion,
+            cigaretteButtsVolumeConversionFormulaVersion:
+              form.cigaretteButtsVolumeConversionFormulaVersion,
             cigaretteButtsInputSource: "unknown",
           })
       : normalizeCigaretteButtsMeasurementsFromUserInput(
@@ -271,6 +279,8 @@ function deriveHarvestMetrics(
       cigaretteButtsMeasurements.cigaretteButtsInputSource ?? null,
     cigaretteButtsConversionFormulaVersion:
       cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion,
+    cigaretteButtsVolumeConversionFormulaVersion:
+      cigaretteButtsMeasurements.cigaretteButtsVolumeConversionFormulaVersion ?? null,
     megotsCounted: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.countedCount ?? 0,
     megotsEstimated: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.estimatedCount ?? 0,
     megotsMeasuredMassKg: cigaretteButtsMeasurements.cigaretteButtsLotsSummary?.measuredMassKg ?? 0,
@@ -338,7 +348,9 @@ export function useHarvestLogic({
       });
       updateFields({
         wasteMegotsKg: rawValue,
-        cigaretteButtsInputSource: rawValue.trim() === "" ? null : normalized.cigaretteButtsInputSource ?? "mass_kg",
+        cigaretteButtsInputSource: rawValue.trim() === ""
+          ? normalized.cigaretteButtsInputSource ?? null
+          : normalized.cigaretteButtsInputSource ?? "mass_kg",
         cigaretteButtsCount: normalized.cigaretteButtsCount === null
           ? ""
           : String(normalized.cigaretteButtsCount),
@@ -363,7 +375,9 @@ export function useHarvestLogic({
       });
       updateFields({
         cigaretteButtsCount: rawValue,
-        cigaretteButtsInputSource: rawValue.trim() === "" ? null : normalized.cigaretteButtsInputSource ?? "count",
+        cigaretteButtsInputSource: rawValue.trim() === ""
+          ? normalized.cigaretteButtsInputSource ?? null
+          : normalized.cigaretteButtsInputSource ?? "count",
         wasteMegotsKg: normalized.cigaretteButtsMassKg === null
           ? ""
           : formatDerivedNumber(normalized.cigaretteButtsMassKg),
@@ -387,7 +401,9 @@ export function useHarvestLogic({
       });
       updateFields({
         cigaretteButtsVolumeLiters: rawValue,
-        cigaretteButtsInputSource: rawValue.trim() === "" ? null : normalized.cigaretteButtsInputSource ?? "volume_l",
+        cigaretteButtsInputSource: rawValue.trim() === ""
+          ? normalized.cigaretteButtsInputSource ?? null
+          : normalized.cigaretteButtsInputSource ?? "volume_l",
         cigaretteButtsCount: normalized.cigaretteButtsCount === null
           ? ""
           : String(normalized.cigaretteButtsCount),

@@ -161,6 +161,7 @@ describe("action declaration draft storage", () => {
     draft.cigaretteButtsMassProvenance = "measured";
     draft.cigaretteButtsVolumeProvenance = "unknown";
     draft.cigaretteButtsConversionFormulaVersion = "impact-terrain-2026-butts-mass-v1";
+    draft.cigaretteButtsVolumeConversionFormulaVersion = "cleanmymap-butts-volume-v1";
     draft.wasteMegotsCondition = "humide";
     draft.cigaretteButtsCondition = "humide";
 
@@ -175,6 +176,9 @@ describe("action declaration draft storage", () => {
     expect(restored?.cigaretteButtsVolumeProvenance).toBe("unknown");
     expect(restored?.cigaretteButtsConversionFormulaVersion).toBe(
       "impact-terrain-2026-butts-mass-v1",
+    );
+    expect(restored?.cigaretteButtsVolumeConversionFormulaVersion).toBe(
+      "cleanmymap-butts-volume-v1",
     );
   });
 
