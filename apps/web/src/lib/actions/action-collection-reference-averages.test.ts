@@ -13,6 +13,7 @@ import {
   referencesFromActionCollectionContextSnapshot,
   fetchActionCollectionContextReferenceAverages,
 } from "./action-collection-reference-averages";
+import { HISTORICAL_COLLECTION_REFERENCE_FIXTURE } from "./action-collection-reference-averages.test-fixtures";
 
 describe("action collection reference averages", () => {
   it.each([
@@ -103,6 +104,58 @@ describe("action collection reference averages", () => {
       eligibleActionCount: 4,
       formulaVersion: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
       updatedAt: "2026-10-29T03:00:00.000Z",
+    });
+  });
+
+  it("proves the historical per-action averages and keeps them distinct from totals", async () => {
+    const wasteRows = HISTORICAL_COLLECTION_REFERENCE_FIXTURE.filter(
+      (row) => row.wasteKg !== null,
+    );
+    const buttsRows = HISTORICAL_COLLECTION_REFERENCE_FIXTURE.filter(
+      (row) => row.cigaretteButts !== null,
+    );
+    const wasteAverage = wasteRows.reduce(
+      (sum, row) => sum + row.wasteKg! / row.participants,
+      0,
+    ) / wasteRows.length;
+    const buttsAverage = buttsRows.reduce(
+      (sum, row) => sum + row.cigaretteButts! / row.participants,
+      0,
+    ) / buttsRows.length;
+    const wasteRatioOfTotals = wasteRows.reduce((sum, row) => sum + row.wasteKg!, 0) /
+      wasteRows.reduce((sum, row) => sum + row.participants, 0);
+    const buttsRatioOfTotals = buttsRows.reduce((sum, row) => sum + row.cigaretteButts!, 0) /
+      buttsRows.reduce((sum, row) => sum + row.participants, 0);
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        waste_per_volunteer: wasteAverage,
+        butts_per_volunteer: buttsAverage,
+        waste_source_count: wasteRows.length,
+        butts_source_count: buttsRows.length,
+        eligible_action_count: HISTORICAL_COLLECTION_REFERENCE_FIXTURE.length,
+        formula_version: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+        updated_at: "2026-11-06T00:00:00.000Z",
+      }],
+      error: null,
+    });
+
+    expect(wasteRows.length).toBe(2);
+    expect(buttsRows.length).toBe(5);
+    expect(wasteAverage).toBe(1.5);
+    expect(buttsAverage).toBe(190);
+    expect(wasteRatioOfTotals).toBeCloseTo(4 / 3, 10);
+    expect(buttsRatioOfTotals).toBeCloseTo(213.4615384615, 10);
+    expect(wasteAverage).not.toBeCloseTo(wasteRatioOfTotals, 3);
+    expect(buttsAverage).not.toBeCloseTo(buttsRatioOfTotals, 3);
+
+    await expect(fetchActionCollectionReferenceAverages({ rpc } as never)).resolves.toEqual({
+      wastePerVolunteer: 1.5,
+      buttsPerVolunteer: 190,
+      wasteSourceCount: 2,
+      buttsSourceCount: 5,
+      eligibleActionCount: 5,
+      formulaVersion: ACTION_COLLECTION_REFERENCE_FORMULA_VERSION,
+      updatedAt: "2026-11-06T00:00:00.000Z",
     });
   });
 

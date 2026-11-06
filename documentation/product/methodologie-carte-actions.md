@@ -278,6 +278,48 @@ petit échantillon et ne constitue pas une calibration scientifique. Cette
 lecture descriptive ne modifie ni le score cartographique, ni les mesures
 brutes, ni la RPC globale historique.
 
+#### Observation historique de la référence globale — 06/11/2026
+
+Une vérification Supabase du 06/11/2026 comptait 8 actions, dont 5 approuvées,
+publiques, visibles, terminées et exploitables par
+`action_collection_reference_averages_v1()`. Les cinq lignes anonymisées
+retenues étaient :
+
+| Participants | Déchets (kg) | Mégots |
+| ---: | ---: | ---: |
+| 15 | `NULL` | 3 750 |
+| 10 | `NULL` | 750 |
+| 20 | 20 | 6 250 |
+| 10 | `NULL` | 1 875 |
+| 10 | 20 | 1 250 |
+
+La RPC calcule la moyenne arithmétique des ratios par action, indépendamment
+pour chaque indicateur :
+
+- déchets : `((20 / 20) + (20 / 10)) / 2 = 1,50 kg/participant`, avec 2 sources ;
+- mégots :
+  `((3 750 / 15) + (750 / 10) + (6 250 / 20) + (1 875 / 10) + (1 250 / 10)) / 5`
+  `= 190 mégots/participant`, avec 5 sources.
+
+Les totaux correspondants sont 40 kg, 13 875 mégots et 65 participations. Ils
+ne doivent pas être utilisés pour reconstruire la référence : le ratio des
+totaux sur les seuls participants des actions possédant la mesure vaut environ
+`1,3333 kg/participant` pour les déchets (`40 / 30`) et `213,4615`
+mégots/participant (`13 875 / 65`). Cette différence documente le choix de la
+moyenne arithmétique par action ; elle ne constitue ni une nouvelle formule ni
+une pondération contextuelle.
+
+Cette observation est une référence historique brute, datée et non pondérée.
+Elle n'est ni une constante de production, ni une moyenne mensuelle figée, ni
+une référence contextuelle `citizen`/`company`/`school`. Les actions en attente,
+futures, privées, masquées, non approuvées ou sans mesure exploitable sont
+exclues par la RPC. Une valeur `NULL` est absente et n'est pas transformée en
+zéro ; un zéro explicitement déclaré reste une source valide. La fixture de
+régression anonymisée et les preuves de parité se trouvent dans
+`apps/web/src/lib/actions/action-collection-reference-averages.test-fixtures.ts`,
+`action-collection-reference-averages.test.ts` et
+`apps/web/supabase/tests/action-collection-reference-averages.pgtap.sql`.
+
 ### Identité des projections et convergence
 
 Les références et agrégats dérivés portent l'identité de la méthode qui les a

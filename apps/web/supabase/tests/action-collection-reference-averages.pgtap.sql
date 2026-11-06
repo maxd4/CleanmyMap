@@ -1,0 +1,115 @@
+begin;
+
+select plan(13);
+
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"collection-reference-test"}', true);
+
+-- Five eligible rows reproduce the anonymized Supabase observation from
+-- 2026-11-06. The following rows exercise the canonical exclusions.
+insert into public.actions (
+  created_by_clerk_id,
+  action_date,
+  location_label,
+  status,
+  action_phase,
+  moderation_visibility,
+  waste_kg,
+  cigarette_butts,
+  volunteers_count
+) values
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 01', 'approved', 'post_action_complete', 'visible', null, 3750, 15),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 02', 'approved', 'post_action_complete', 'visible', null, 750, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 03', 'approved', 'post_action_complete', 'visible', 20, 6250, 20),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 04', 'approved', 'post_action_complete', 'visible', null, 1875, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference eligible 05', 'approved', 'post_action_complete', 'visible', 20, 1250, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference pending', 'pending', 'post_action_complete', 'visible', 20, 100, 10),
+  ('collection-reference-fixture', current_date + 1, 'Reference future', 'approved', 'post_action_complete', 'visible', 20, 100, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference private', 'approved', 'post_action_complete', 'hidden', 20, 100, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference rejected', 'rejected', 'post_action_complete', 'visible', 20, 100, 10),
+  ('collection-reference-fixture', current_date - 1, 'Reference without measurements', 'approved', 'post_action_complete', 'visible', null, null, 10);
+
+select is(
+  (select waste_per_volunteer from public.action_collection_reference_averages_v1()),
+  1.5::numeric,
+  'RPC computes the arithmetic mean of the two waste ratios'
+);
+select is(
+  (select butts_per_volunteer from public.action_collection_reference_averages_v1()),
+  190::numeric,
+  'RPC computes the arithmetic mean of the five cigarette-butt ratios'
+);
+select is(
+  (select waste_source_count from public.action_collection_reference_averages_v1()),
+  2,
+  'RPC keeps the waste source count independent'
+);
+select is(
+  (select butts_source_count from public.action_collection_reference_averages_v1()),
+  5,
+  'RPC keeps the cigarette-butt source count independent'
+);
+select is(
+  (select eligible_action_count from public.action_collection_reference_averages_v1()),
+  5,
+  'RPC excludes pending, future, private, rejected and measurement-less actions'
+);
+select is(
+  (select count(*)::integer from public.actions where created_by_clerk_id = 'collection-reference-fixture'),
+  10,
+  'the anonymized fixture contains five eligible and five exclusion rows'
+);
+select is(
+  (select waste_per_volunteer from public.action_collection_reference_averages_v1()),
+  (20::numeric / 20 + 20::numeric / 10) / 2,
+  'waste uses a per-action average rather than a ratio of totals'
+);
+select is(
+  (select butts_per_volunteer from public.action_collection_reference_averages_v1()),
+  (3750::numeric / 15 + 750::numeric / 10 + 6250::numeric / 20 + 1875::numeric / 10 + 1250::numeric / 10) / 5,
+  'cigarette butts use a per-action average rather than a ratio of totals'
+);
+select ok(
+  (select (40::numeric / 30) <> waste_per_volunteer
+     from public.action_collection_reference_averages_v1()),
+  'the waste ratio of source totals differs from the RPC average'
+);
+select ok(
+  (select (13875::numeric / 65) <> butts_per_volunteer
+     from public.action_collection_reference_averages_v1()),
+  'the cigarette-butt ratio of source totals differs from the RPC average'
+);
+
+insert into public.actions (
+  created_by_clerk_id,
+  action_date,
+  location_label,
+  status,
+  action_phase,
+  moderation_visibility,
+  waste_kg,
+  cigarette_butts,
+  volunteers_count
+) values (
+  'collection-reference-fixture', current_date - 1, 'Reference explicit zero',
+  'approved', 'post_action_complete', 'visible', 0, 0, 10
+);
+
+select is(
+  (select waste_source_count from public.action_collection_reference_averages_v1()),
+  3,
+  'an explicit zero remains a valid waste source'
+);
+select is(
+  (select butts_source_count from public.action_collection_reference_averages_v1()),
+  6,
+  'an explicit zero remains a valid cigarette-butt source'
+);
+select is(
+  (select eligible_action_count from public.action_collection_reference_averages_v1()),
+  6,
+  'the explicit zero action is eligible without changing the NULL exclusion'
+);
+
+select * from finish();
+rollback;
