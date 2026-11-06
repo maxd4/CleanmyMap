@@ -432,7 +432,14 @@ describe("route recommendation response trace contract", () => {
     const response = await readRouteResponse(buildRouteRecommendationResponse(responseInput({
       pedestrianRiskProjection: responseProjection(),
       planning: {
-        segmentSelection: { selectedSegments: 1 },
+        segmentSelection: {
+          selectedSegments: 1,
+          originResolution: "not_executed",
+          originSnapDistanceM: null,
+          arrivalResolution: "not_applicable",
+          arrivalSnapDistanceM: null,
+          safetyStatus: "network_access_not_executed_safety_unknown",
+        },
       },
     })));
 
@@ -446,6 +453,13 @@ describe("route recommendation response trace contract", () => {
       source: "materialized_pedestrian_risk_projection",
       projectionVersionId: "projection-response-test",
       selectedSegments: 1,
+    });
+    expect(response.segmentSelection).toMatchObject({
+      originResolution: "not_executed",
+      originSnapDistanceM: null,
+      arrivalResolution: "not_applicable",
+      arrivalSnapDistanceM: null,
+      safetyStatus: "network_access_not_executed_safety_unknown",
     });
     expect(response.pollutionPotential).toMatchObject({
       schemaVersion: "route-pollution-potential-v1",

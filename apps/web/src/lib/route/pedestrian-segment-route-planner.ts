@@ -35,6 +35,13 @@ export const PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION =
 export const MAX_SEGMENT_ROUTE_CANDIDATES = 600;
 const MAX_SEGMENTS_PER_GROUP = 32;
 
+type SegmentRouteResolution =
+  | "exact_node"
+  | "exact_edge"
+  | "nearest_verified_node"
+  | "unavailable"
+  | "not_executed";
+
 export type SegmentRouteSelectionMetrics = {
   plannerVersion: typeof PEDESTRIAN_SEGMENT_ROUTE_PLANNER_VERSION;
   source: "materialized_pedestrian_risk_projection";
@@ -48,11 +55,11 @@ export type SegmentRouteSelectionMetrics = {
   connectorSegments: number;
   groupCount: number;
   routeMode: "network" | "fallback";
-  safetyStatus: "network_access_allowed_safety_unknown";
-  originResolution: "exact_node" | "exact_edge" | "nearest_verified_node";
-  originSnapDistanceM: number;
-  arrivalResolution: "exact_node" | "exact_edge" | "nearest_verified_node" | "not_applicable";
-  arrivalSnapDistanceM: number;
+  safetyStatus: "network_access_allowed_safety_unknown" | "network_access_not_executed_safety_unknown";
+  originResolution: SegmentRouteResolution;
+  originSnapDistanceM: number | null;
+  arrivalResolution: SegmentRouteResolution | "not_applicable";
+  arrivalSnapDistanceM: number | null;
 };
 
 export type PedestrianSegmentRoutePlan = {
@@ -723,6 +730,18 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       ])],
     },
   };
+  const firstResolvedGroup = builtGroups.find(({ originResolution }) => originResolution !== null);
+  const unresolvedResolution: SegmentRouteResolution = routingQuotaExhausted ? "not_executed" : "unavailable";
+  const originResolution = firstResolvedGroup?.originResolution?.resolution ?? unresolvedResolution;
+  const originSnapDistanceM = firstResolvedGroup?.originResolution
+    ? round(firstResolvedGroup.originResolution.distanceM, 1)
+    : null;
+  const arrivalResolution = input.routeTopology === "loop"
+    ? firstResolvedGroup?.arrivalResolution?.resolution ?? "not_applicable"
+    : firstResolvedGroup?.arrivalResolution?.resolution ?? (input.arrival ? unresolvedResolution : "not_applicable");
+  const arrivalSnapDistanceM = firstResolvedGroup?.arrivalResolution
+    ? round(firstResolvedGroup.arrivalResolution.distanceM, 1)
+    : null;
   return {
     plannerResult,
     partition: partitionWithActualRoutes,
@@ -742,12 +761,13 @@ export function planPredictedPedestrianSegmentRoutes(input: {
       connectorSegments: builtGroups.reduce((total, group) => total + group.connectorSegments, 0),
       groupCount: input.groupCount,
       routeMode: groupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? "network" : "fallback",
-      safetyStatus: "network_access_allowed_safety_unknown",
-      originResolution: builtGroups[0]?.originResolution?.resolution ?? "exact_node",
-      originSnapDistanceM: round(builtGroups[0]?.originResolution?.distanceM ?? 0, 1),
-      arrivalResolution: builtGroups[0]?.arrivalResolution?.resolution ??
-        (input.routeTopology === "loop" ? "not_applicable" : "exact_node"),
-      arrivalSnapDistanceM: round(builtGroups[0]?.arrivalResolution?.distanceM ?? 0, 1),
+      safetyStatus: firstResolvedGroup || !routingQuotaExhausted
+        ? "network_access_allowed_safety_unknown"
+        : "network_access_not_executed_safety_unknown",
+      originResolution,
+      originSnapDistanceM,
+      arrivalResolution,
+      arrivalSnapDistanceM,
     },
     warning: [
       excludedCandidateIds.size > 0

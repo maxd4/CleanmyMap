@@ -69,6 +69,13 @@ présentée comme un chemin piéton ni valorisée pour la collecte. Au-delà de 
 limite, ou lorsqu'aucun chemin dirigé ne relie les nœuds, le planner utilise le
 repli explicite. La résolution et la distance de snap sont exposées dans les
 métriques afin de distinguer départ demandé, point vérifié et parcours réseau.
+Une résolution publiée est toujours mesurée par une opération réseau exécutée :
+`unavailable` indique qu'une tentative n'a pas pu résoudre le point, tandis que
+`not_executed` indique qu'aucune tentative n'a été lancée (notamment après
+épuisement du budget partagé). Dans ces états, la distance de snap reste
+`null`, et la sécurité porte le statut `network_access_not_executed_safety_unknown`
+si aucun routage réseau n'a été effectué ; aucun `exact_node` ni `0 m` n'est
+fabriqué par le fallback.
 Lorsqu'un segment sélectionné est inaccessible dans le graphe dirigé, il est
 écarté avant la construction finale ; les arrêts, distances, durées, budgets,
 indices théoriques et statuts de dégradation sont alors recalculés à partir des

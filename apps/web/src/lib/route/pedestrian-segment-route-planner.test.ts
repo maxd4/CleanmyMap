@@ -260,6 +260,35 @@ describe("pedestrian segment route planner", () => {
     expect(result!.groupRoutes.some(({ routeGeometry }) => routeGeometry.mode === "fallback")).toBe(true);
     expect(result!.degraded).toBe(true);
     expect(result!.warning).toContain("quota de routage");
+    expect(result!.metrics.originResolution).toBe("exact_node");
+    expect(result!.metrics.originSnapDistanceM).toBe(0);
+  });
+
+  it("does not invent network resolution when the budget is exhausted before the first group", () => {
+    const routingBudget = createRouteRoutingOperationBudget({ limit: 0 });
+    const result = plan([
+      candidate("blocked-1", "s-0", 90, 90),
+      candidate("blocked-2", "s-1", 80, 80),
+      candidate("blocked-3", "s-2", 70, 70),
+    ], "all", {
+      routeTopology: "open",
+      arrival: { latitude: 48.001, longitude: 2.001, source: "planner" },
+      groupCount: 3,
+      volunteers: 3,
+      routingBudget,
+      maxStops: 1,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.routeGeometry.mode).toBe("fallback");
+    expect(result!.groupRoutes).toHaveLength(3);
+    expect(result!.groupRoutes.every(({ routeGeometry }) => routeGeometry.mode === "fallback")).toBe(true);
+    expect(result!.metrics.originResolution).toBe("not_executed");
+    expect(result!.metrics.originSnapDistanceM).toBeNull();
+    expect(result!.metrics.arrivalResolution).toBe("not_executed");
+    expect(result!.metrics.arrivalSnapDistanceM).toBeNull();
+    expect(result!.metrics.safetyStatus).toBe("network_access_not_executed_safety_unknown");
+    expect(routingBudget.consumed).toBe(0);
   });
 
   it("resolves a nearby requested origin to a verified network node without inventing a connector", () => {
