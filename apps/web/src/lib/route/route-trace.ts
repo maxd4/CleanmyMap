@@ -49,6 +49,7 @@ import type {
   RouteObservedEnrichmentEvaluation,
   RouteObservedEnrichmentMetrics,
 } from "./route-observed-enrichment";
+import type { RoutePartitionAssignmentAudit } from "./route-group-partition";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -71,6 +72,7 @@ export type RouteTraceSelectedStop = {
   id: string;
   selectionSource: "planner_selection" | "observed_enrichment";
   enrichmentEvaluation?: RouteObservedEnrichmentEvaluation;
+  partitionAssignment?: RoutePartitionAssignmentAudit;
   criteriaUsed: Array<"priority_score" | "incremental_travel_cost" | "return_travel_cost" | "arrival_travel_cost">;
   normalizedScoreComponents: {
     priority: number | null;
@@ -136,6 +138,7 @@ export type RouteMultiRouteTrace = {
     distanceKm: number;
     durationMinutes: number;
     targetCount: number;
+    selectedStops: RouteTraceSelectedStop[];
     routeMode: RouteGeometry["mode"];
     withinBudget: boolean;
     operationalBudget?: RouteOperationalBudget;
@@ -426,11 +429,12 @@ function buildSelectionDetails(
   stop: PlannedRouteStop,
   selection: RoutePlannerSelectionEvidence | undefined,
   routeTopology: RouteTopology,
+  selectionSource: RouteTraceSelectedStop["selectionSource"],
 ) {
-  const isObservedEnrichment = !selection;
+  const hasPlannerSelection = selectionSource === "planner_selection";
   return {
-    selectionSource: isObservedEnrichment ? "observed_enrichment" as const : "planner_selection" as const,
-    criteriaUsed: isObservedEnrichment
+    selectionSource,
+    criteriaUsed: !selection
       ? []
       : ["priority_score", "incremental_travel_cost", routeTopology === "loop" ? "return_travel_cost" : "arrival_travel_cost"] as Array<"priority_score" | "incremental_travel_cost" | "return_travel_cost" | "arrival_travel_cost">,
     normalizedScoreComponents: {
@@ -438,22 +442,22 @@ function buildSelectionDetails(
       travel: selection?.normalizedTravel ?? null,
     },
     combinedScore: selection?.combinedScore ?? null,
-    pollutionPriority: selection?.pollutionPriority ?? stop.candidate.pollutionPriority ?? stop.candidate.score,
-    volunteerAdditionality: selection?.volunteerAdditionality ?? stop.candidate.volunteerAdditionality ?? null,
-    finalPlannerContribution: selection?.finalPlannerContribution ?? stop.candidate.finalPlannerContribution ?? null,
-    incrementalDistanceKm: selection?.incrementalDistanceKm ?? stop.incrementalDistanceKm ?? null,
-    incrementalTravelMinutes: selection?.incrementalTravelMinutes ?? stop.incrementalTravelMinutes ?? null,
-    cumulativeTravelMinutes: selection?.cumulativeTravelMinutes ?? stop.cumulativeTravelMinutes ?? null,
-    returnDistanceKm: selection?.returnDistanceKm ?? stop.returnDistanceKm ?? null,
-    returnTravelMinutes: selection?.returnTravelMinutes ?? stop.returnTravelMinutes ?? null,
-    loopDistanceKm: selection?.loopDistanceKm ?? stop.loopDistanceKm ?? null,
-    loopTravelMinutes: selection?.loopTravelMinutes ?? stop.loopTravelMinutes ?? null,
+    ...(hasPlannerSelection ? { pollutionPriority: selection?.pollutionPriority ?? stop.candidate.pollutionPriority ?? stop.candidate.score } : {}),
+    volunteerAdditionality: selection?.volunteerAdditionality ?? (hasPlannerSelection ? stop.candidate.volunteerAdditionality ?? null : null),
+    finalPlannerContribution: selection?.finalPlannerContribution ?? (hasPlannerSelection ? stop.candidate.finalPlannerContribution ?? null : null),
+    incrementalDistanceKm: selection?.incrementalDistanceKm ?? (hasPlannerSelection ? stop.incrementalDistanceKm : null),
+    incrementalTravelMinutes: selection?.incrementalTravelMinutes ?? (hasPlannerSelection ? stop.incrementalTravelMinutes : null),
+    cumulativeTravelMinutes: selection?.cumulativeTravelMinutes ?? (hasPlannerSelection ? stop.cumulativeTravelMinutes : null),
+    returnDistanceKm: selection?.returnDistanceKm ?? (hasPlannerSelection ? stop.returnDistanceKm : null),
+    returnTravelMinutes: selection?.returnTravelMinutes ?? (hasPlannerSelection ? stop.returnTravelMinutes : null),
+    loopDistanceKm: selection?.loopDistanceKm ?? (hasPlannerSelection ? stop.loopDistanceKm : null),
+    loopTravelMinutes: selection?.loopTravelMinutes ?? (hasPlannerSelection ? stop.loopTravelMinutes : null),
     loopOperationalMinutes: selection?.loopOperationalMinutes ?? null,
     operationalBudget: selection?.operationalBudget ?? null,
     budgetAfterReturnMinutes: selection?.budgetAfterReturnMinutes ?? null,
     budgetBeforeMinutes: selection?.budgetBeforeMinutes ?? null,
     budgetAfterMinutes: selection?.budgetAfterMinutes ?? null,
-    reason: selection?.selectionReason ?? stop.candidate.reason,
+    reason: selection?.selectionReason ?? (hasPlannerSelection ? stop.candidate.reason : "Ajouté par enrichissement observé validé."),
   };
 }
 
@@ -464,6 +468,7 @@ function selectionForStop(
   eventSignalContext: RouteEventSignalContext,
   routeTopology: RouteTopology,
   observedEnrichment?: RouteObservedEnrichmentMetrics,
+  partitionAssignments?: ReadonlyMap<string, RoutePartitionAssignmentAudit>,
 ): RouteTraceSelectedStop {
   const selection = plannerResult.audit?.selections.find(
     (item) => item.candidateId === stop.candidate.id,
@@ -471,7 +476,11 @@ function selectionForStop(
   const enrichmentEvaluation = observedEnrichment?.evaluations.find(
     (evaluation) => evaluation.candidateId === stop.candidate.id && evaluation.accepted,
   );
-  if (!selection && (!enrichmentEvaluation || stop.candidate.family !== "observed")) {
+  const partitionAssignment = partitionAssignments?.get(stop.candidate.id);
+  const selectionSource = selection || partitionAssignment
+    ? "planner_selection" as const
+    : "observed_enrichment" as const;
+  if (!selection && !partitionAssignment && (!enrichmentEvaluation || stop.candidate.family !== "observed")) {
     throw new Error(
       `Route planner did not provide selection evidence for ${stop.candidate.id}`,
     );
@@ -479,7 +488,8 @@ function selectionForStop(
   return {
     step,
     id: stop.candidate.id,
-    ...buildSelectionDetails(stop, selection, routeTopology),
+    ...buildSelectionDetails(stop, selection, routeTopology, selectionSource),
+    ...(partitionAssignment ? { partitionAssignment } : {}),
     ...(enrichmentEvaluation ? { enrichmentEvaluation } : {}),
     volunteerAdditionalityConfidence: stop.candidate.volunteerAdditionalityConfidence ?? null,
     additionalityWeight: stop.candidate.additionalityWeight ?? 0,
@@ -503,6 +513,27 @@ function selectionForStop(
   };
 }
 
+export function buildRouteTraceSelectedStops(input: {
+  plannerResult: RoutePlannerResult;
+  selectedStops: PlannedRouteStop[];
+  eventSignalContext?: RouteEventSignalContext;
+  routeTopology: RouteTopology;
+  observedEnrichment?: RouteObservedEnrichmentMetrics;
+  partitionAssignments?: ReadonlyMap<string, RoutePartitionAssignmentAudit>;
+}): RouteTraceSelectedStop[] {
+  return input.selectedStops.map((stop, index) =>
+    selectionForStop(
+      stop,
+      index + 1,
+      input.plannerResult,
+      input.eventSignalContext ?? EMPTY_EVENT_SIGNAL_CONTEXT,
+      input.routeTopology,
+      input.observedEnrichment,
+      input.partitionAssignments,
+    ),
+  );
+}
+
 export function buildRouteRecommendationTrace(
   input: BuildRouteRecommendationTraceInput,
 ): RouteRecommendationTrace {
@@ -515,16 +546,13 @@ export function buildRouteRecommendationTrace(
     "incremental_travel_asc",
     "id_lexicographic",
   ];
-  const selectedStops = input.selectedStops.map((stop, index) =>
-    selectionForStop(
-      stop,
-      index + 1,
-      input.plannerResult,
-      eventSignalContext,
-      routeTopology,
-      input.observedEnrichment,
-    ),
-  );
+  const selectedStops = buildRouteTraceSelectedStops({
+    plannerResult: input.plannerResult,
+    selectedStops: input.selectedStops,
+    eventSignalContext,
+    routeTopology,
+    observedEnrichment: input.observedEnrichment,
+  });
   const fallbacks: string[] = [];
   const approximations: string[] = [];
   const warnings = [

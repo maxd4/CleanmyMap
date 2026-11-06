@@ -7,6 +7,7 @@ import type { RoutePlannerOrigin } from "@/lib/route/route-planner";
 import type { RouteGroupRoute, RouteMultiRouteMetrics, RoutePickupPreference } from "@/lib/route/route-response-contract";
 import {
   buildRouteRecommendationTrace,
+  buildRouteTraceSelectedStops,
   type RouteMultiRouteTrace,
   type RouteTraceCandidateSummary,
 } from "@/lib/route/route-trace";
@@ -150,41 +151,77 @@ function buildMultiRouteTrace(
   groupRoutes: RouteGroupRoute[],
   metrics: RouteMultiRouteMetrics,
   routeTopology: RouteTopology,
+  planning: RoutePlanningResult,
+  eventSignalContext: RouteCandidateData["routeEventSignalContext"],
 ): RouteMultiRouteTrace {
+  const plannedStopsById = new Map(
+    planning.plannedStops.map((stop) => [stop.candidate.id, stop]),
+  );
   return {
     groupCount: metrics.groupCount,
     volunteers: metrics.volunteers,
-    groups: groupRoutes.map((group) => ({
-      groupIndex: group.groupIndex,
-      ...(group.label ? { label: group.label } : {}),
-      volunteerCount: group.volunteerCount,
-      candidateIds: [...group.candidateIds],
-      reservedCandidateIds: [...group.reservedCandidateIds],
-      distanceKm: group.travelDistanceKm,
-      durationMinutes: group.travelMinutes,
-      targetCount: group.targetCount,
-      routeMode: group.routeGeometry.mode,
-      withinBudget: group.withinBudget,
-      operationalBudget: group.operationalBudget,
-      ...(group.guidedBudget ? { guidedBudget: { ...group.guidedBudget } } : {}),
-      ...(group.guidedSegments ? { guidedSegments: group.guidedSegments.map((segment) => ({ ...segment })) } : {}),
-      ...(group.guidedRouting ? {
-        guidedRouting: {
-          ...group.guidedRouting,
-          waypointIds: [...group.guidedRouting.waypointIds],
-          budget: { ...group.guidedRouting.budget },
-        },
-      } : {}),
-      ...(group.plannedWaypoints ? {
-        plannedWaypoints: group.plannedWaypoints.map((waypoint) => ({ ...waypoint })),
-      } : {}),
-      ...(group.plannedSector ? {
-        plannedSector: {
-          ...group.plannedSector,
-          center: { ...group.plannedSector.center },
-        },
-      } : {}),
-    })),
+    groups: groupRoutes.map((group) => {
+      const assignmentByCandidateId = new Map(
+        planning.groupPartition.audit.assignments
+          .filter(({ groupIndex }) => groupIndex === group.groupIndex)
+          .map((assignment) => [assignment.candidateId, assignment]),
+      );
+      const groupPlannedStops = group.stops.map(({ id }) => {
+        const plannedStop = plannedStopsById.get(id);
+        if (!plannedStop) {
+          throw new Error(`Missing planned stop for multi-route group ${group.groupIndex}: ${id}`);
+        }
+        return plannedStop;
+      });
+      const selectedStops = buildRouteTraceSelectedStops({
+        plannerResult: planning.plannerResult,
+        selectedStops: groupPlannedStops,
+        eventSignalContext,
+        routeTopology,
+        observedEnrichment: planning.observedEnrichment,
+        partitionAssignments: assignmentByCandidateId,
+      });
+      if (selectedStops.some((stop) =>
+        stop.selectionSource === "planner_selection" && !stop.partitionAssignment,
+      )) {
+        const missingAssignment = selectedStops.find((stop) =>
+          stop.selectionSource === "planner_selection" && !stop.partitionAssignment,
+        )!;
+        throw new Error(`Missing partition assignment for multi-route stop ${missingAssignment.id}`);
+      }
+      return {
+        groupIndex: group.groupIndex,
+        ...(group.label ? { label: group.label } : {}),
+        volunteerCount: group.volunteerCount,
+        candidateIds: [...group.candidateIds],
+        reservedCandidateIds: [...group.reservedCandidateIds],
+        distanceKm: group.travelDistanceKm,
+        durationMinutes: group.travelMinutes,
+        targetCount: group.targetCount,
+        selectedStops,
+        routeMode: group.routeGeometry.mode,
+        withinBudget: group.withinBudget,
+        operationalBudget: group.operationalBudget,
+        ...(group.guidedBudget ? { guidedBudget: { ...group.guidedBudget } } : {}),
+        ...(group.guidedSegments ? { guidedSegments: group.guidedSegments.map((segment) => ({ ...segment })) } : {}),
+        ...(group.guidedRouting ? {
+          guidedRouting: {
+            ...group.guidedRouting,
+            waypointIds: [...group.guidedRouting.waypointIds],
+            budget: { ...group.guidedRouting.budget },
+          },
+        } : {}),
+        ...(group.plannedWaypoints ? {
+          plannedWaypoints: group.plannedWaypoints.map((waypoint) => ({ ...waypoint })),
+        } : {}),
+        ...(group.plannedSector ? {
+          plannedSector: {
+            ...group.plannedSector,
+            center: { ...group.plannedSector.center },
+          },
+        } : {}),
+      };
+    }),
     metrics: {
       coverageGain: metrics.coverageGain,
       sharedTargetRatio: metrics.sharedTargetRatio,
@@ -374,7 +411,13 @@ export function buildRouteOperationalContext(
     groupRoutes,
     multiRoute,
     multiRouteTrace: groupRoutes.length > 1
-      ? buildMultiRouteTrace(groupRoutes, multiRoute, routeTopology)
+      ? buildMultiRouteTrace(
+          groupRoutes,
+          multiRoute,
+          routeTopology,
+          input.planning,
+          input.candidateData.routeEventSignalContext,
+        )
       : null,
   };
 }

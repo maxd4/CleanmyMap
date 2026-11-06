@@ -788,6 +788,141 @@ describe("route recommendation response trace contract", () => {
     expect(payload.plannerProof?.snapshotHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it("keeps per-group provenance for predictive and enriched stops", async () => {
+    installDefaultMocks();
+    const predictedOne = { ...candidate("predicted"), id: "predicted-1" };
+    const predictedTwo = { ...candidate("predicted"), id: "predicted-2" };
+    const excluded = { ...candidate("predicted"), id: "predicted-excluded" };
+    const observed = candidate("observed");
+    const firstPlanned = plannedStop(predictedOne);
+    const secondPlanned = plannedStop(predictedTwo);
+    const observedPlanned = plannedStop(observed);
+    const basePlannerResult = plannerResult(predictedOne.id);
+    const firstSelection = basePlannerResult.audit.selections[0]!;
+    basePlannerResult.audit.selections.push({
+      ...firstSelection,
+      candidateId: predictedTwo.id,
+      step: 2,
+    });
+    basePlannerResult.audit.selections.push({
+      ...firstSelection,
+      candidateId: excluded.id,
+      step: 3,
+    });
+    const toRouteStop = (value: ReturnType<typeof candidate>) => ({
+      id: value.id,
+      label: value.label,
+      latitude: value.latitude,
+      longitude: value.longitude,
+      segmentKm: 1,
+      estimatedMinutes: 5,
+      priorityReason: value.reason,
+      score: value.score,
+      evidence: value.evidence,
+    });
+    const groupOne = {
+      ...guidedGroupRoute(1, 4, 20, true),
+      candidateIds: [predictedOne.id],
+      targetCount: 1,
+      stops: [toRouteStop(predictedOne)],
+    };
+    const groupTwo = {
+      ...guidedGroupRoute(2, 5, 25, true),
+      candidateIds: [predictedTwo.id, observed.id],
+      targetCount: 2,
+      stops: [toRouteStop(predictedTwo), toRouteStop(observed)],
+    };
+    const assignment = (candidateId: string, groupIndex: number) => ({
+      candidateId,
+      groupIndex,
+      plannerValue: 82,
+      estimatedLoopDistanceKm: 2,
+      estimatedLoopDurationMinutes: 10,
+      overlapCost: 0,
+      sameTargetCost: 0,
+      samePredictiveZoneCost: 0,
+      nearbyCorridorCost: 0,
+      balancePenalty: 0,
+    });
+    const response = buildRouteRecommendationResponse(responseInput({
+      groupCount: 2,
+      volunteers: 2,
+      candidateData: {
+        candidates: [predictedOne, predictedTwo, excluded, observed],
+        spatialCandidates: [predictedOne, predictedTwo, excluded, observed],
+        actionableCandidates: [predictedOne, predictedTwo, excluded, observed],
+        parisPressureSnapshot: null,
+        contracts: [{}, {}, {}, {}],
+        dataStatus: "complete",
+        isTruncated: false,
+        sourceHealth: completeSourceHealth,
+      },
+      planning: {
+        plannedStops: [firstPlanned, secondPlanned, observedPlanned],
+        plannerResult: basePlannerResult,
+        groupRoutes: [groupOne, groupTwo],
+        groupPartition: {
+          ...groupPartition(),
+          groupCount: 2,
+          groups: [groupOne, groupTwo],
+          audit: {
+            ...groupPartition().audit,
+            mode: "coordinated-multi-group",
+            assignments: [assignment(predictedOne.id, 1), assignment(predictedTwo.id, 2)],
+          },
+        },
+        routeGeometry: routeGeometry(),
+        predictionSummary: predictionSummary("available"),
+        effectiveRiskFocus: "all",
+        eventCenteredContext: null,
+        budgetPrefixApplied: false,
+        observedEnrichment: {
+          source: "validated_trash_spotter_spots",
+          predictedCandidatesRetained: 2,
+          considered: 1,
+          accepted: 1,
+          rejected: 0,
+          rejectedByReason: {},
+          acceptedCandidateIds: [observed.id],
+          evaluations: [{
+            candidateId: observed.id,
+            accepted: true,
+            distanceToCorridorKm: 0.1,
+            detourDistanceKm: 0.2,
+            detourMinutes: 1,
+            reason: "accepted",
+          }],
+          totalDetourDistanceKm: 0.2,
+          totalDetourMinutes: 1,
+          routeBudgetMinutes: 60,
+          routeDurationBeforeMinutes: 5,
+          routeDurationAfterMinutes: 6,
+          observedDoesNotReplacePrediction: true,
+        },
+      },
+    }));
+    const payload = await readRouteResponse(response);
+    const groups = payload.trace.multiRoute?.groups ?? [];
+
+    expect(payload.trace.selectedStops).toEqual([]);
+    expect(groups[0]?.selectedStops.map(({ id, selectionSource }) => ({ id, selectionSource }))).toEqual([
+      { id: predictedOne.id, selectionSource: "planner_selection" },
+    ]);
+    expect(groups[1]?.selectedStops.map(({ id, selectionSource }) => ({ id, selectionSource }))).toEqual([
+      { id: predictedTwo.id, selectionSource: "planner_selection" },
+      { id: observed.id, selectionSource: "observed_enrichment" },
+    ]);
+    expect(groups[0]?.selectedStops[0]?.partitionAssignment?.groupIndex).toBe(1);
+    expect(groups[1]?.selectedStops[0]?.partitionAssignment?.groupIndex).toBe(2);
+    expect(groups[1]?.selectedStops[1]).toMatchObject({
+      enrichmentEvaluation: { accepted: true, reason: "accepted" },
+      combinedScore: null,
+      normalizedScoreComponents: { priority: null, travel: null },
+    });
+    expect(groups[1]?.selectedStops[1]?.partitionAssignment).toBeUndefined();
+    expect(groups.flatMap(({ selectedStops }) => selectedStops.map(({ id }) => id))).not.toContain(excluded.id);
+  });
+
   it("publishes real guided loops without turning planned waypoints into scientific stops", async () => {
     installDefaultMocks();
     const response = buildRouteRecommendationResponse(responseInput({

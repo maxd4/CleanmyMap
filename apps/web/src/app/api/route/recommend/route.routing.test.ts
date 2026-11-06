@@ -148,6 +148,17 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     if (!payload.multiRoute || !payload.trace.multiRoute) throw new Error("La réponse multi-route est incomplète.");
     expect(payload.multiRoute.groupCount).toBe(2);
     expect(payload.trace.multiRoute.groups).toHaveLength(2);
+    expect(payload.trace.multiRoute.groups.map(({ selectedStops }) =>
+      selectedStops.map(({ id, selectionSource, partitionAssignment, combinedScore }) => ({
+        id,
+        selectionSource,
+        groupIndex: partitionAssignment?.groupIndex,
+        combinedScore,
+      })),
+    )).toEqual([
+      [{ id: "spot-1", selectionSource: "planner_selection", groupIndex: 1, combinedScore: 0.8 }],
+      [{ id: "spot-2", selectionSource: "planner_selection", groupIndex: 2, combinedScore: null }],
+    ]);
     expect(new Set(payload.groupRoutes.flatMap((group: { candidateIds: string[] }) => group.candidateIds)).size).toBe(2);
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(2);
   });

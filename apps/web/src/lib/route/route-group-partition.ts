@@ -93,7 +93,7 @@ export type RoutePartitionMetrics = {
   balanceTargetCount: number;
 };
 
-type RoutePartitionAssignmentAudit = {
+export type RoutePartitionAssignmentAudit = {
   candidateId: string;
   groupIndex: number;
   plannerValue: number;
