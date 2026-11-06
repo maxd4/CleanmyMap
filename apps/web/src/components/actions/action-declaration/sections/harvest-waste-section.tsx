@@ -42,6 +42,8 @@ type HarvestWasteSectionProps = {
   wasteBenchmarkSourceCount?: number;
   wasteReferenceStatus?: HarvestReferenceStatus;
   wasteDeltaPercent?: number | null;
+  wasteOperationalUnits?: number | null;
+  wasteReferenceUnitLabel?: string;
   comparisonTone?: "emerald" | "orange" | "slate";
   validationIssues: ValidationIssue[];
 };
@@ -51,7 +53,7 @@ const useDisclosureLayoutEffect = typeof window === "undefined" ? useEffect : us
 
 function HarvestWasteHeader() {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center gap-2">
       <div className="flex items-center gap-2">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100">
           <Trash2 size={18} className="text-emerald-700" />
@@ -61,9 +63,6 @@ function HarvestWasteHeader() {
           <p className="text-xs text-slate-500">Masse totale hors mégots</p>
         </div>
       </div>
-      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
-        Mesure déclarée
-      </span>
     </div>
   );
 }
@@ -136,6 +135,8 @@ export function HarvestWasteSection({
   wasteBenchmarkSourceCount = 0,
   wasteReferenceStatus = wasteBenchmarkPerVolunteer === null || wasteBenchmarkPerVolunteer === undefined ? "unavailable" : "available",
   wasteDeltaPercent = null,
+  wasteOperationalUnits = null,
+  wasteReferenceUnitLabel = "participant",
   validationIssues,
 }: HarvestWasteSectionProps) {
   const [legacyTriOpen, setLegacyTriOpen] = useState(false);
@@ -172,6 +173,9 @@ export function HarvestWasteSection({
           benchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
           benchmarkSourceCount={wasteBenchmarkSourceCount}
           referenceStatus={wasteReferenceStatus}
+          currentTotal={parseKg(wasteKg)}
+          currentUnitDenominator={wasteOperationalUnits}
+          referenceUnitLabel={wasteReferenceUnitLabel}
         />
         <div className="min-w-0">
           <WastePrimaryMeasurement value={wasteKg} hidden={hidePrimaryMeasurement} onChange={onWasteKgChange} />
@@ -181,7 +185,7 @@ export function HarvestWasteSection({
             deltaPercent={wasteDeltaPercent ?? null}
             benchmarkSourceCount={wasteBenchmarkSourceCount ?? 0}
             testId="waste-comparison-trend"
-            unitLabel="par participant"
+            unitLabel={`par ${wasteReferenceUnitLabel}`}
           />
         </div>
       </div>

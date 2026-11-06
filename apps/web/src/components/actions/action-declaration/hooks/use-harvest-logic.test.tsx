@@ -93,15 +93,90 @@ describe("useHarvestLogic cigarette-butt synchronization", () => {
       ...createInitialFormState("Test"),
       actionContext: "school" as const,
       volunteersCount: "2",
+      adultCount: "2",
+      childrenCount: "0",
+      retiredCount: "0",
       wasteKg: "16",
       cigaretteButtsCount: "200",
     };
     const harness = mountLogic(form);
 
     expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(8);
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(2);
     expect(harness.latest.logic.wasteBenchmarkPerVolunteer).toBe(8);
     expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(100);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(2);
     expect(harness.latest.logic.megotsBenchmarkPerVolunteer).toBe(100);
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("uses the context weighting rather than the raw participant total", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        citizen: {
+          actionContext: "citizen",
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 100,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "citizen",
+      volunteersCount: "6",
+      adultCount: "2",
+      childrenCount: "2",
+      retiredCount: "2",
+      wasteKg: "8",
+      cigaretteButtsCount: "400",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBe(4);
+    expect(harness.latest.logic.megotsOperationalUnits).toBe(4);
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBe(2);
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBe(100);
+    expect(harness.latest.logic.wasteReferenceUnitLabel).toBe("unité opérationnelle pondérée");
+
+    harness.renderer.unmount();
+    mockReferences.mockReturnValue({ collectionReferences: null });
+  });
+
+  it("keeps the comparison neutral when a known context has no valid denominator", () => {
+    mockReferences.mockReturnValue({
+      collectionReferences: null,
+      contextualCollectionReferences: {
+        company: {
+          actionContext: "company",
+          wastePerEffectiveUnit: 2,
+          buttsPerEffectiveUnit: 100,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+          eligibleActionCount: 2,
+          formulaVersion: "test",
+          updatedAt: null,
+        },
+      },
+    });
+    const harness = mountLogic({
+      ...createInitialFormState("Test"),
+      actionContext: "company",
+      volunteersCount: "4",
+      wasteKg: "8",
+      cigaretteButtsCount: "400",
+    });
+
+    expect(harness.latest.logic.wasteOperationalUnits).toBeNull();
+    expect(harness.latest.logic.megotsOperationalUnits).toBeNull();
+    expect(harness.latest.logic.wasteCurrentPerVolunteer).toBeNull();
+    expect(harness.latest.logic.megotsCurrentPerVolunteer).toBeNull();
 
     harness.renderer.unmount();
     mockReferences.mockReturnValue({ collectionReferences: null });

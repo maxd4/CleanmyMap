@@ -24,6 +24,8 @@ type QuantityGaugeVisualProps = {
   colorClass: string;
   label: string;
   valueLabel: string;
+  currentTotal?: number | null;
+  currentUnitDenominator?: number | null;
   testId: string;
   tone: "emerald" | "blue";
   measurementAvailable: boolean;
@@ -40,6 +42,8 @@ function QuantityGaugeVisual({
   colorClass,
   label,
   valueLabel,
+  currentTotal = null,
+  currentUnitDenominator = null,
   testId,
   tone,
   measurementAvailable,
@@ -89,15 +93,24 @@ function QuantityGaugeVisual({
   const sourceLabel = benchmarkSourceCount > 0
     ? `${benchmarkSourceCount} action(s) source`
     : "effectif source non renseigné";
+  const denominatorLabel = currentUnitDenominator !== null &&
+    Number.isFinite(currentUnitDenominator) && currentUnitDenominator > 0
+    ? new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(currentUnitDenominator)
+    : "non renseigné";
+  const currentTotalLabel = currentTotal === null
+    ? "mesure absente"
+    : tone === "emerald"
+      ? `${formatKg(currentTotal)} kg`
+      : `${formatCount(currentTotal)} mégots`;
 
   return (
     <figure
       className={cn("flex min-h-[244px] min-w-0 flex-col items-center justify-center rounded-2xl border px-3 py-4 sm:px-5", surfaceClass)}
       data-testid={testId}
-      aria-label={`${label} : ${valueLabel}. ${hasBenchmark && benchmarkLabel ? `Moyenne par bénévole : ${benchmarkLabel}.` : statusLabel}`}
+      aria-label={`${label} : ${valueLabel}. ${hasBenchmark && benchmarkLabel ? `Moyenne ${referenceUnitLabel} : ${benchmarkLabel}.` : statusLabel}`}
     >
       <div
-        className="relative h-[min(13rem,100%)] w-[min(13rem,100%)] max-w-full shrink-0"
+        className="relative size-[clamp(9rem,18vw,13rem)] max-w-full shrink-0"
         data-testid={`${testId}-icon`}
         data-fill-percent={Math.round(normalized * 100)}
       >
@@ -116,15 +129,12 @@ function QuantityGaugeVisual({
               type="button"
               aria-expanded={benchmarkHelpOpen}
               aria-controls={helpId}
-              aria-label="Expliquer le repère de moyenne par participant"
+              aria-label={`Expliquer le repère de moyenne par ${referenceUnitLabel}`}
               onClick={() => setBenchmarkHelpOpen((open) => !open)}
-              className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-800 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+              className="absolute left-1/2 top-1/2 flex max-w-[96%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white px-2 py-1 text-xs font-black leading-3 text-slate-800 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
             >
-              Moyenne / bénévole
+              Moyenne · {benchmarkLabel}
             </button>
-            <span className={cn("absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-black text-white", tone === "emerald" ? "bg-emerald-800" : "bg-blue-700")}>
-              {benchmarkLabel}
-            </span>
           </div>
         ) : null}
       </div>
@@ -132,18 +142,17 @@ function QuantityGaugeVisual({
         <div className="mt-3 max-w-full text-center">
           {benchmarkHelpOpen ? (
             <div id={helpId} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-4 text-slate-600 shadow-sm" role="note">
-              <p className="font-bold text-slate-800">{benchmarkLabel} / {referenceUnitLabel}</p>
+              <p className="font-bold text-slate-800">Référence mensuelle : {benchmarkLabel} / {referenceUnitLabel}</p>
               <p>{sourceLabel}.</p>
+              <p>Dénominateur de cette action : {denominatorLabel} {referenceUnitLabel}.</p>
               <p className="mt-1">{hasBenchmark
-                ? `Ratio : ${currentReferenceLabel} / (2 × ${benchmarkLabel}) = ${Math.round(normalized * 100)} %.`
+                ? `Calcul : ${currentTotal !== null && currentUnitDenominator !== null ? `${currentTotalLabel} / ${denominatorLabel} = ${currentReferenceLabel}` : currentReferenceLabel} ; ${currentReferenceLabel} / (2 × ${benchmarkLabel}) = ${Math.round(normalized * 100)} %.`
                 : hasReference && !hasPositiveReference
                   ? "Ratio non calculé : la moyenne de référence vaut zéro."
                   : "Ratio calculé dès qu’une mesure et un dénominateur valides sont disponibles."}</p>
-              <Link href="/methodologie" aria-label="Ouvrir la méthodologie des références" className="mt-1 inline-flex items-center gap-1 font-bold text-blue-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><Info size={13} aria-hidden="true" />Méthodologie</Link>
+              <Link href="/methodologie#methodologie-collecte" aria-label="Ouvrir la méthodologie des références de collecte" className="mt-1 inline-flex items-center gap-1 font-bold text-blue-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><Info size={13} aria-hidden="true" />Méthodologie</Link>
             </div>
-          ) : (
-            <p className="text-xs font-semibold text-slate-500">Repère : moyenne par bénévole</p>
-          )}
+          ) : null}
           {hasComparisonStatus ? (
             <p
               data-testid={`${testId}-comparison-status`}
@@ -160,7 +169,7 @@ function QuantityGaugeVisual({
           {statusLabel}
         </p>
       )}
-      <figcaption className="sr-only">Repère visuel uniquement · le remplissage correspond à la valeur par bénévole rapportée à deux fois la moyenne et ne constitue ni une validation ni un plafond.</figcaption>
+      <figcaption className="sr-only">Jauge comparative de collecte, informative uniquement : elle ne constitue ni une validation scientifique ni un plafond de saisie.</figcaption>
     </figure>
   );
 }
@@ -171,12 +180,18 @@ export function TrashBinGauge({
   benchmarkPerVolunteer,
   benchmarkSourceCount = 0,
   referenceStatus,
+  currentTotal,
+  currentUnitDenominator,
+  referenceUnitLabel = "participant",
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
   benchmarkPerVolunteer?: number | null;
   benchmarkSourceCount?: number;
   referenceStatus?: HarvestReferenceStatus;
+  currentTotal?: number | null;
+  currentUnitDenominator?: number | null;
+  referenceUnitLabel?: string;
 }) {
   const resolvedReferenceStatus = referenceStatus ?? (
     benchmarkPerVolunteer !== null && benchmarkPerVolunteer !== undefined ? "available" : "unavailable"
@@ -186,6 +201,8 @@ export function TrashBinGauge({
       currentPerVolunteer={currentPerVolunteer}
       benchmarkPerVolunteer={benchmarkPerVolunteer}
       benchmarkLabel={benchmarkPerVolunteer === null || benchmarkPerVolunteer === undefined ? undefined : `${formatKg(benchmarkPerVolunteer)} kg`}
+      currentTotal={currentTotal ?? value}
+      currentUnitDenominator={currentUnitDenominator}
       icon={Trash2}
       colorClass="text-emerald-400"
       label="Quantité de déchets hors mégots"
@@ -195,7 +212,7 @@ export function TrashBinGauge({
       measurementAvailable={value !== null}
       benchmarkSourceCount={benchmarkSourceCount}
       referenceStatus={resolvedReferenceStatus}
-      referenceUnitLabel="participant"
+      referenceUnitLabel={referenceUnitLabel}
     />
   );
 }
@@ -207,6 +224,9 @@ export function DropletGauge({
   benchmarkLabel,
   benchmarkSourceCount = 0,
   referenceStatus,
+  currentTotal,
+  currentUnitDenominator,
+  referenceUnitLabel = "participant",
 }: {
   value: number | null;
   currentPerVolunteer?: number | null;
@@ -214,6 +234,9 @@ export function DropletGauge({
   benchmarkLabel?: string;
   benchmarkSourceCount?: number;
   referenceStatus?: HarvestReferenceStatus;
+  currentTotal?: number | null;
+  currentUnitDenominator?: number | null;
+  referenceUnitLabel?: string;
 }) {
   const resolvedReferenceStatus = referenceStatus ?? (
     benchmarkPerVolunteer !== null && benchmarkPerVolunteer !== undefined ? "available" : "unavailable"
@@ -227,12 +250,14 @@ export function DropletGauge({
       colorClass="text-blue-400"
       label="Quantité de mégots retenue"
       valueLabel={value === null ? "Non renseigné" : `${formatCount(value)} mégots`}
+      currentTotal={currentTotal ?? value}
+      currentUnitDenominator={currentUnitDenominator}
       testId="butts-measurement-visual"
       tone="blue"
       measurementAvailable={value !== null}
       benchmarkSourceCount={benchmarkSourceCount}
       referenceStatus={resolvedReferenceStatus}
-      referenceUnitLabel="participant"
+      referenceUnitLabel={referenceUnitLabel}
     />
   );
 }
@@ -285,6 +310,7 @@ export function HarvestComparisonTrend({
     >
       <TrendIcon size={15} aria-hidden="true" />
       <span>{formatSignedPercent(deltaPercent)}</span>
+      <span className="text-slate-500">vs moyenne</span>
       <span className="sr-only">par rapport à la moyenne {unitLabel}</span>
     </p>
   );

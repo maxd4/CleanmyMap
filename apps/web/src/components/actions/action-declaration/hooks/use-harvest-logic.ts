@@ -12,6 +12,7 @@ import {
   type HarvestReferenceStatus,
   type WasteComparisonTone,
 } from "../utils/harvest-utils";
+import { deriveContextualCollectionUnits } from "@/lib/actions/action-collection-reference-averages-shared";
 import { useCallback, useMemo } from "react";
 import { useActionPollutionScoreReferences } from "../../map/scores/action-pollution-score-references-context";
 import { ACTION_MEASUREMENT_MAX_KG } from "@/lib/waste";
@@ -46,6 +47,7 @@ function resolveHarvestReference(
       buttsPerVolunteer: contextual?.buttsPerEffectiveUnit ?? null,
       wasteSourceCount: contextual?.wasteSourceCount ?? 0,
       buttsSourceCount: contextual?.buttsSourceCount ?? 0,
+      unitLabel: "unité opérationnelle pondérée",
     };
   }
   return {
@@ -53,7 +55,14 @@ function resolveHarvestReference(
     buttsPerVolunteer: globalReference?.buttsPerVolunteer ?? null,
     wasteSourceCount: globalReference?.wasteSourceCount ?? 0,
     buttsSourceCount: globalReference?.buttsSourceCount ?? 0,
+    unitLabel: "participant",
   };
+}
+
+function readParticipantCount(rawValue: string): number | null {
+  if (rawValue.trim() === "") return null;
+  const value = Number(rawValue);
+  return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function readValidComparisonNumber(
@@ -200,6 +209,8 @@ export type UseHarvestLogicResult = {
   wasteBenchmarkSourceCount: number;
   wasteReferenceStatus: HarvestReferenceStatus;
   wasteDeltaPercent: number | null;
+  wasteOperationalUnits: number | null;
+  wasteReferenceUnitLabel: string;
   comparisonTone: WasteComparisonTone;
   megotsKg: number | null;
   megotsCount: number | null;
@@ -208,6 +219,8 @@ export type UseHarvestLogicResult = {
   megotsBenchmarkSourceCount: number;
   megotsReferenceStatus: HarvestReferenceStatus;
   megotsDeltaPercent: number | null;
+  megotsOperationalUnits: number | null;
+  megotsReferenceUnitLabel: string;
   megotsComparisonTone: WasteComparisonTone;
   cigaretteButtsCountProvenance: string;
   cigaretteButtsMassProvenance: string;
@@ -260,9 +273,18 @@ function deriveHarvestMetrics(
   );
   const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
   const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 500);
+  const contextualUnits =
+    form.actionContext === "citizen" || form.actionContext === "company" || form.actionContext === "school"
+      ? deriveContextualCollectionUnits({
+          actionContext: form.actionContext,
+          childrenCount: readParticipantCount(form.childrenCount),
+          adultCount: readParticipantCount(form.adultCount),
+          retiredCount: readParticipantCount(form.retiredCount),
+        })
+      : { wasteUnits: volunteersCount, buttsUnits: volunteersCount };
   const wasteComparison = deriveWasteComparison({
     wasteKg,
-    volunteersCount,
+    operationalUnits: contextualUnits.wasteUnits,
     benchmarkPerVolunteer: harvestReference.wastePerVolunteer,
     benchmarkSourceCount: harvestReference.wasteSourceCount,
   });
@@ -301,7 +323,7 @@ function deriveHarvestMetrics(
         );
   const megotsComparison = deriveWasteComparison({
     wasteKg: cigaretteButtsMeasurements.cigaretteButtsCount,
-    volunteersCount,
+    operationalUnits: contextualUnits.buttsUnits,
     benchmarkPerVolunteer: harvestReference.buttsPerVolunteer,
     benchmarkSourceCount: harvestReference.buttsSourceCount,
   });
@@ -315,6 +337,8 @@ function deriveHarvestMetrics(
       referencesLoading,
     ),
     wasteDeltaPercent: wasteComparison.deltaPercent,
+    wasteOperationalUnits: contextualUnits.wasteUnits,
+    wasteReferenceUnitLabel: harvestReference.unitLabel,
     comparisonTone: wasteComparison.tone,
     megotsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
     megotsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
@@ -327,6 +351,8 @@ function deriveHarvestMetrics(
       referencesLoading,
     ),
     megotsDeltaPercent: megotsComparison.deltaPercent,
+    megotsOperationalUnits: contextualUnits.buttsUnits,
+    megotsReferenceUnitLabel: harvestReference.unitLabel,
     megotsComparisonTone: megotsComparison.tone,
     cigaretteButtsCountProvenance:
       cigaretteButtsMeasurements.cigaretteButtsCountProvenance,

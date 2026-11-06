@@ -173,6 +173,10 @@ describe("ActionMapMethodologySection", () => {
     const markup = renderMethodologyPage();
 
     expect(markup).toContain("Méthode de calcul");
+    expect(markup).toContain('id="methodologie-collecte"');
+    expect(markup).toContain("Références mensuelles et jauges de collecte");
+    expect(markup).toContain("unités opérationnelles pondérées");
+    expect(markup).toContain("remplissage = clamp");
     expect(markup).toContain('id="indicateurs-impact-terrain"');
     expect(markup).toContain("Les 6 KPI Impact terrain 2026");
     expect(markup.indexOf('id="methodologie-carte-actions"')).toBeLessThan(

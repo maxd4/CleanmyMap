@@ -120,6 +120,55 @@ export function MethodologieCalculationSection({ isFrench, methodology }: Pick<B
   );
 }
 
+export function MethodologieCollectionReferenceSection({ isFrench }: Pick<BaseProps, "isFrench">) {
+  return (
+    <section
+      id="methodologie-collecte"
+      aria-labelledby="methodologie-collecte-title"
+      className="scroll-mt-28 space-y-6 rounded-[2rem] border border-blue-100 bg-blue-50/35 p-6 text-slate-950 shadow-[0_18px_46px_-34px_rgba(37,99,235,0.24)] sm:p-8 lg:p-10"
+    >
+      <div className="space-y-2">
+        <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-blue-700">
+          {isFrench ? "Collecte · comparaison descriptive" : "Collection · descriptive comparison"}
+        </p>
+        <h2 id="methodologie-collecte-title" className="text-2xl font-black tracking-tight sm:text-3xl">
+          {isFrench ? "Références mensuelles et jauges de collecte" : "Monthly collection references and gauges"}
+        </h2>
+      </div>
+
+      {isFrench ? (
+        <div className="cmm-text-body grid gap-5 leading-6 text-slate-900 lg:grid-cols-2">
+          <div className="space-y-3">
+            <p>
+              Les références affichées dans le formulaire sont des instantanés mensuels publiés pour chaque contexte ({"citizen"}, {"company"}, {"school"}). Elles utilisent uniquement les actions approuvées, publiques, visibles et terminées qui disposent d’une composition de participants exploitable. Au moins deux actions admissibles sont nécessaires pour chaque indicateur ; sinon la référence reste indisponible.
+            </p>
+            <p>
+              Chaque action contribue par une moyenne arithmétique de son ratio. Le dénominateur est pondéré par le contexte : citoyens et entreprises utilisent <code className="rounded bg-white px-1 py-0.5 font-semibold text-blue-900">adultes + 0,50 enfants + 0,50 retraités</code> ; les écoles utilisent <code className="rounded bg-white px-1 py-0.5 font-semibold text-blue-900">adultes + 0,45 enfants</code> pour les déchets et les adultes pour les mégots.
+            </p>
+            <p>
+              Une référence publiée reste stable pendant le mois. Les actions validées ensuite sont prises en compte lors de la publication mensuelle suivante, avec la période, la version de formule, la date de génération et le nombre de sources conservés dans l’agrégat public.
+            </p>
+          </div>
+          <div className="space-y-3 rounded-2xl border border-blue-100 bg-white/85 p-5">
+            <p className="font-bold text-slate-950">Calcul affiché</p>
+            <p><code className="rounded bg-blue-50 px-1 py-0.5 font-semibold text-blue-900">quantité par unité = quantité totale / unités opérationnelles pondérées</code></p>
+            <p><code className="rounded bg-blue-50 px-1 py-0.5 font-semibold text-blue-900">remplissage = clamp((quantité par unité) / (2 × moyenne mensuelle), 0, 1)</code></p>
+            <p><code className="rounded bg-blue-50 px-1 py-0.5 font-semibold text-blue-900">écart = 100 × (quantité par unité / moyenne mensuelle − 1)</code></p>
+            <p>La ligne à 50 % correspond à la moyenne mensuelle. Elle explique le dénominateur et le calcul sur activation ; la jauge et les tendances sont descriptives et ne valident pas une qualité écologique, ne fixent pas de plafond et ne remplacent pas une mesure.</p>
+            <p>Si la référence, le dénominateur ou la moyenne positive sont indisponibles, l’interface reste neutre et n’invente ni ratio ni pourcentage.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="cmm-text-body space-y-3 leading-6 text-slate-900">
+          <p>Monthly snapshots are published per context from approved, public, visible, completed actions with usable participant composition. At least two eligible actions are required for each indicator.</p>
+          <p>Context-weighted units use adults + 0.50 children + 0.50 retired people for citizens and companies; schools use adults + 0.45 children for waste and adults for cigarette butts.</p>
+          <p><code className="rounded bg-white px-1 py-0.5 font-semibold text-blue-900">fill = clamp((total quantity / weighted operational units) / (2 × monthly average), 0, 1)</code>. The marker is explanatory only; unavailable references or denominators produce a neutral state.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 type QuotaProps = BaseProps & {
   freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[];
   impactTotals: {

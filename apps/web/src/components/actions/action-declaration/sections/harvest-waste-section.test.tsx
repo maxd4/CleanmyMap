@@ -423,7 +423,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(markup).toContain('data-testid="waste-measurement-visual"');
     expect(markup.match(/data-testid="waste-measurement-visual-icon"/g)).toHaveLength(1);
     expect(markup).toContain('data-fill-percent="50"');
-    expect(markup).toContain("Moyenne par bénévole");
+    expect(markup).toContain("Moyenne · 8,0 kg");
     expect(markup).toContain('data-testid="waste-comparison-trend"');
     expect(markup).toContain("par rapport à la moyenne par participant");
     expect(markup).not.toContain("unité opérationnelle");
@@ -459,7 +459,7 @@ describe("HarvestWasteSection comparison", () => {
     expect(zeroMarkup).toContain('value="0"');
     expect(zeroMarkup).toContain('data-testid="waste-measurement-visual"');
     expect(zeroMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);
-    expect(zeroMarkup).toContain("Moyenne / bénévole");
+    expect(zeroMarkup).toContain("Moyenne · 8,0 kg");
     expect(absentMarkup).toContain('value=""');
     expect(absentMarkup).toContain('data-testid="waste-measurement-visual"');
     expect(absentMarkup.match(/data-fill-percent="0"/g)).toHaveLength(1);

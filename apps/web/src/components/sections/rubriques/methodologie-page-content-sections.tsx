@@ -4,7 +4,7 @@ import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import { ImpactTerrain2026MethodologySection } from "./impact-terrain-2026-methodology-section";
 import { RouteMethodologySection } from "./route-methodology-section";
-import { MethodologieCalculationSection, MethodologieDisplayModesSection, MethodologieQuotaSection } from "./methodologie-page-transverse-sections";
+import { MethodologieCalculationSection, MethodologieCollectionReferenceSection, MethodologieDisplayModesSection, MethodologieQuotaSection } from "./methodologie-page-transverse-sections";
 import { MethodologieFieldLimitsSection, MethodologieReportCards, MethodologieReportStepsSection } from "./methodologie-page-report-sections";
 import { MethodologieTechnicalImpactSection } from "./methodologie-page-technical-impact";
 import type { OpenSourceDoc } from "./action-map-methodology-section";
@@ -59,6 +59,7 @@ export function MethodologieTransverseSections({ includeTransverseContent, ...pr
     <>
       <MethodologieDisplayModesSection isFrench={props.isFrench} locale={props.locale} />
       <MethodologieCalculationSection isFrench={props.isFrench} methodology={props.methodology} />
+      <MethodologieCollectionReferenceSection isFrench={props.isFrench} />
       <MethodologieQuotaSection {...props} />
     </>
   );

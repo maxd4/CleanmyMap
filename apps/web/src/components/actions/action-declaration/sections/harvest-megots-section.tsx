@@ -47,6 +47,8 @@ type HarvestMegotsSectionProps = {
   megotsBenchmarkSourceCount?: number;
   megotsReferenceStatus?: HarvestReferenceStatus;
   megotsDeltaPercent?: number | null;
+  megotsOperationalUnits?: number | null;
+  megotsReferenceUnitLabel?: string;
   /** Kept for typed compatibility with historical callers; the gauge uses the canonical average above. */
   megotsKg?: number | null;
   megotsComparisonTone?: "emerald" | "orange" | "slate";
@@ -246,6 +248,8 @@ export function HarvestMegotsSection({
   megotsBenchmarkSourceCount = 0,
   megotsReferenceStatus = megotsBenchmarkPerVolunteer === null || megotsBenchmarkPerVolunteer === undefined ? "unavailable" : "available",
   megotsDeltaPercent = null,
+  megotsOperationalUnits = null,
+  megotsReferenceUnitLabel = "participant",
   cigaretteButtsCountProvenance,
   cigaretteButtsMassProvenance,
   cigaretteButtsVolumeProvenance,
@@ -277,6 +281,9 @@ export function HarvestMegotsSection({
           benchmarkPerVolunteer={megotsBenchmarkPerVolunteer}
           benchmarkSourceCount={megotsBenchmarkSourceCount}
           referenceStatus={megotsReferenceStatus}
+          currentTotal={megotsCount}
+          currentUnitDenominator={megotsOperationalUnits}
+          referenceUnitLabel={megotsReferenceUnitLabel}
         />
         <div className="min-w-0 space-y-2">
           {!hidePrimaryMeasurements || megotsLots !== null ? (
@@ -346,7 +353,7 @@ export function HarvestMegotsSection({
             deltaPercent={megotsDeltaPercent ?? null}
             benchmarkSourceCount={megotsBenchmarkSourceCount ?? 0}
             testId="butts-comparison-trend"
-            unitLabel="par participant"
+            unitLabel={`par ${megotsReferenceUnitLabel}`}
           />
           {megotsLots !== null ? <p className="text-xs text-blue-900/70">Total des lots : modifiez les contributions dans la zone ci-dessous.</p> : null}
         </div>

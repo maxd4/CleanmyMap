@@ -30,7 +30,7 @@ describe("TrashBinGauge", () => {
     expect(markup).toContain("Non renseigné");
     expect(markup).toContain('aria-label="Quantité de déchets hors mégots : Non renseigné.');
     expect(markup).not.toContain("0,00 kg");
-    expect(markup).toContain("Repère visuel uniquement");
+    expect(markup).toContain("Jauge comparative de collecte");
   });
 
   it("keeps an explicit zero distinct from an absent mass", () => {
@@ -87,7 +87,8 @@ describe("TrashBinGauge", () => {
       }),
     );
 
-    expect(markup).toContain("Moyenne / bénévole");
+    expect(markup).toContain("Moyenne · 5,0 kg");
+    expect(markup).not.toContain("2 ×");
     expect(markup).toContain("5,0 kg");
     expect(markup).toContain('data-fill-percent="100"');
     expect(markup).not.toContain('data-fill-percent="50"');
@@ -146,7 +147,7 @@ describe("TrashBinGauge", () => {
       benchmarkSourceCount: 2,
     }));
 
-    expect(markup).toContain("Repère : moyenne par bénévole");
+    expect(markup).toContain("Moyenne · 8,0 kg");
     expect(markup).toContain("Mesure à saisir pour comparer.");
   });
 
@@ -232,7 +233,7 @@ describe("DropletGauge", () => {
     expect(markup.match(/data-testid="butts-measurement-visual-icon"/g)).toHaveLength(1);
     expect(markup).toContain("2 500 mégots");
     expect(markup).toContain('data-fill-percent="50"');
-    expect(markup).toContain("Moyenne / bénévole");
+    expect(markup).toContain("Moyenne · 2 500 mégots");
   });
 
   it("keeps the gauge focused on the quantity without lateral secondary KPIs", () => {
@@ -254,9 +255,12 @@ describe("DropletGauge", () => {
       mountedRoot = createRoot(container);
       mountedRoot.render(React.createElement(DropletGauge, {
         value: 2_500,
-        currentPerVolunteer: 2_500,
+        currentPerVolunteer: 500,
         benchmarkPerVolunteer: 2_500,
         benchmarkSourceCount: 5,
+        currentTotal: 2_500,
+        currentUnitDenominator: 5,
+        referenceUnitLabel: "unité opérationnelle pondérée",
       }));
     });
 
@@ -269,9 +273,10 @@ describe("DropletGauge", () => {
 
     expect(button?.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector('[role="note"]')).not.toBeNull();
-    expect(container.querySelector<HTMLAnchorElement>('a[href="/methodologie"]')).not.toBeNull();
+    expect(container.querySelector<HTMLAnchorElement>('a[href="/methodologie#methodologie-collecte"]')).not.toBeNull();
     expect(container.textContent).toContain("5 action(s) source");
-    expect(container.textContent).toContain("Ratio : 2 500 mégots / (2 × 2 500 mégots) = 50 %.");
+    expect(container.textContent).toContain("Dénominateur de cette action : 5 unité opérationnelle pondérée.");
+    expect(container.textContent).toContain("Calcul : 2 500 mégots / 5 = 500 mégots ; 500 mégots / (2 × 2 500 mégots) = 10 %.");
   });
 });
 
