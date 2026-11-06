@@ -35,6 +35,8 @@ export type TerritorialLegendConsent = {
   userId: string;
   enabled: boolean;
   ageBand?: "under_15" | "15_or_over" | "unknown";
+  /** Age band read from Clerk during the current fact load, when verified. */
+  verifiedAgeBand?: "under_15" | "15_or_over" | "unknown";
   activatedAt: string | null;
   revokedAt?: string | null;
   /** Current Clerk age eligibility, checked before public projection. */

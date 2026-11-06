@@ -78,14 +78,21 @@ describe("territorial legend snapshot reconciliation", () => {
       .mockResolvedValueOnce({
         actions: [],
         participations: [],
-        consents: [{ userId: "user-1", enabled: true, ageBand: "under_15", activatedAt: "2026-09-01T00:00:00.000Z", ageEligible: false }],
+        consents: [{ userId: "user-1", enabled: true, ageBand: "under_15", verifiedAgeBand: "15_or_over", activatedAt: "2026-09-01T00:00:00.000Z", ageEligible: false }],
         profiles: [],
         clerkEligibilityUnavailableUserIds: [],
       })
       .mockResolvedValueOnce({
         actions: [],
         participations: [],
-        consents: [{ userId: "user-1", enabled: true, ageBand: "under_15", activatedAt: "2026-09-01T00:00:00.000Z", ageEligible: false }],
+        consents: [{ userId: "user-1", enabled: true, ageBand: "under_15", verifiedAgeBand: "15_or_over", activatedAt: "2026-09-01T00:00:00.000Z", ageEligible: false }],
+        profiles: [],
+        clerkEligibilityUnavailableUserIds: [],
+      })
+      .mockResolvedValueOnce({
+        actions: [],
+        participations: [],
+        consents: [{ userId: "user-1", enabled: false, ageBand: "15_or_over", activatedAt: "2026-09-01T00:00:00.000Z", revokedAt: "2026-11-03T12:00:00.000Z", ageEligible: false }],
         profiles: [],
         clerkEligibilityUnavailableUserIds: [],
       });
@@ -96,10 +103,72 @@ describe("territorial legend snapshot reconciliation", () => {
     expect(fixture.calls[0]).toMatchObject({
       p_user_id: "user-1",
       p_enabled: false,
-      p_age_band: "under_15",
+      p_age_band: "15_or_over",
     });
     expect(fixture.calls[1]).toMatchObject({ p_winners: expect.any(Array) });
     expect(winnersMock).toHaveBeenCalledTimes(1);
+    expect(winnersMock).toHaveBeenCalledWith(expect.objectContaining({
+      consents: [expect.objectContaining({ enabled: false, ageBand: "15_or_over" })],
+    }));
+  });
+
+  it("reloads canonical facts after revocation and aborts on a newly ineligible user", async () => {
+    const ineligible = (userId: string) => ({ userId, enabled: true, ageBand: "15_or_over" as const, verifiedAgeBand: "under_15" as const, activatedAt: "2026-09-01T00:00:00.000Z", ageEligible: false });
+    loadFactsMock
+      .mockResolvedValueOnce({ actions: [], participations: [], consents: [ineligible("user-1")], profiles: [], clerkEligibilityUnavailableUserIds: [] })
+      .mockResolvedValueOnce({ actions: [], participations: [], consents: [ineligible("user-1")], profiles: [], clerkEligibilityUnavailableUserIds: [] })
+      .mockResolvedValueOnce({
+        actions: [],
+        participations: [],
+        consents: [
+          { userId: "user-1", enabled: false, ageBand: "under_15", ageEligible: false, activatedAt: "2026-09-01T00:00:00.000Z" },
+          ineligible("user-2"),
+        ],
+        profiles: [],
+        clerkEligibilityUnavailableUserIds: [],
+      });
+    const fixture = supabase();
+
+    await expect(reconcileTerritorialLegendSnapshot(fixture.client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false }))
+      .rejects.toThrow("nouvelle perte d’éligibilité");
+    expect(fixture.calls).toHaveLength(1);
+    expect(winnersMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a concurrent mutation detected during the complete reload", async () => {
+    loadFactsMock
+      .mockResolvedValueOnce({ actions: [], participations: [], consents: [{ userId: "user-1", enabled: true, ageEligible: false }], profiles: [], clerkEligibilityUnavailableUserIds: [] })
+      .mockResolvedValueOnce({ actions: [], participations: [], consents: [{ userId: "user-1", enabled: true, ageEligible: false }], profiles: [], clerkEligibilityUnavailableUserIds: [] })
+      .mockResolvedValueOnce({ actions: [], participations: [], consents: [{ userId: "user-1", enabled: false, ageEligible: false }], profiles: [], clerkEligibilityUnavailableUserIds: [] });
+    let revisionReads = 0;
+    const client = {
+      rpc: vi.fn(async (name: string) => {
+        if (name === "get_territorial_legend_fact_revision") {
+          revisionReads += 1;
+          return { data: revisionReads < 3 ? "revision-1" : "revision-2", error: null };
+        }
+        return { data: { status: "applied" }, error: null };
+      }),
+    } as unknown as SupabaseClient;
+
+    await expect(reconcileTerritorialLegendSnapshot(client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false }))
+      .rejects.toThrow("modification concurrente");
+    expect(client.rpc).toHaveBeenCalledTimes(4);
+    expect(winnersMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when Clerk becomes unavailable during the complete reload", async () => {
+    const facts = { actions: [], participations: [], consents: [{ userId: "user-1", enabled: true, ageEligible: false }], profiles: [], clerkEligibilityUnavailableUserIds: [] };
+    loadFactsMock
+      .mockResolvedValueOnce(facts)
+      .mockResolvedValueOnce(facts)
+      .mockResolvedValueOnce({ ...facts, clerkEligibilityUnavailableUserIds: ["user-1"] });
+    const fixture = supabase();
+
+    await expect(reconcileTerritorialLegendSnapshot(fixture.client, new Date("2026-11-03T12:00:00.000Z"), { refreshMissingAttributions: false }))
+      .rejects.toThrow("éligibilité Clerk est indisponible");
+    expect(fixture.calls).toHaveLength(1);
+    expect(winnersMock).not.toHaveBeenCalled();
   });
 
   it("does not revoke a holding when the eligibility recheck becomes unavailable", async () => {

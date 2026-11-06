@@ -421,6 +421,7 @@ export async function loadTerritorialLegendFacts(
     return {
       userId: consent.userId,
       available: eligibility.status === "verified",
+      ageBand: eligibility.ageBand,
       ageEligible: eligibility.status === "verified" && isOptionalConsentTreatmentAllowed(eligibility),
     };
   }));
@@ -438,6 +439,7 @@ export async function loadTerritorialLegendFacts(
   for (const consent of consentResult) {
     if (consent.enabled) {
       const currentEligibility = clerkEligibility.find((entry) => entry.userId === consent.userId);
+      consent.verifiedAgeBand = currentEligibility?.available ? currentEligibility.ageBand : undefined;
       consent.ageEligible = currentEligibility?.available
         ? publicConsentIds.has(consent.userId)
         : false;

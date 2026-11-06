@@ -77,20 +77,36 @@ export async function reconcileTerritorialLegendSnapshot(
       const sync = await supabase.rpc("set_territorial_legend_consent", {
         p_user_id: consent.userId,
         p_enabled: false,
-        p_age_band: consent.ageBand ?? "unknown",
+        // A stored age band is historical projection data, not evidence for
+        // this revocation. Missing verified data remains unknown and never
+        // falls back to the stale Supabase value.
+        p_age_band: consent.verifiedAgeBand ?? "unknown",
         p_now: now.toISOString(),
       });
       if (sync.error) throw new Error(sync.error.message);
     }
     if (revokedByEligibility.length > 0) {
       const revokedUserIds = new Set(revokedByEligibility.map((consent) => consent.userId));
-      facts = {
-        ...facts,
-        consents: facts.consents.map((consent) => revokedUserIds.has(consent.userId)
-          ? { ...consent, enabled: false, revokedAt: now.toISOString(), ageEligible: false }
-          : consent),
-      };
-      revisionBefore = await readFactRevision(supabase);
+      const reloadRevisionBefore = await readFactRevision(supabase);
+      const reloadedFacts = await loadTerritorialLegendFacts(supabase, { now });
+      if (reloadedFacts.clerkEligibilityUnavailableUserIds?.length) {
+        throw new Error("La réconciliation territoriale est interrompue : l’éligibilité Clerk est indisponible.");
+      }
+      const reloadRevisionAfter = await readFactRevision(supabase);
+      if (reloadRevisionBefore !== reloadRevisionAfter) {
+        throw new Error("La réconciliation territoriale a été invalidée par une modification concurrente pendant la relecture des faits.");
+      }
+      const newlyIneligible = reloadedFacts.consents.filter((consent) =>
+        consent.enabled && consent.ageEligible === false && !revokedUserIds.has(consent.userId),
+      );
+      if (newlyIneligible.length > 0) {
+        throw new Error("La réconciliation territoriale est interrompue : une nouvelle perte d’éligibilité a été détectée.");
+      }
+      if (reloadedFacts.consents.some((consent) => consent.enabled && revokedUserIds.has(consent.userId))) {
+        throw new Error("La réconciliation territoriale est interrompue : une révocation vérifiée n’est pas reflétée par les faits relus.");
+      }
+      facts = reloadedFacts;
+      revisionBefore = reloadRevisionBefore;
     }
   }
   const winners = buildTerritorialLegendWinnerSnapshots({ ...facts, now });
