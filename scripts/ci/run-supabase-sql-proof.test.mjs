@@ -11,6 +11,7 @@ import {
   runSupabaseSqlProof,
   validateSqlContractMarkerPlacement,
 } from "./run-supabase-sql-proof.mjs";
+import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
 
 test("inventory includes all current pgTAP, SQL contract and multi-session proof files", () => {
   const inventory = inventorySqlProofs();
@@ -82,6 +83,29 @@ test("territorial revision proof uses explicit session barriers and the RPC cont
   assert.match(source, /TERRITORIAL_STALE_REJECTED=/);
   assert.doesNotMatch(source, /assert\.match\(output\(freshResult\), \/fresh-after-delete\//);
   assert.match(source, /'freshFingerprints'/);
+  assert.match(source, /to_char\(public\.get_territorial_legend_fact_revision\(\), 'YYYY-MM-DD"T"HH24:MI:SS\.USOF'\)/);
+  assert.match(source, /parseTerritorialRevisionNotice\(oldOutput\)/);
+  assert.match(source, /'\$\{oldRevision\}'::timestamptz/);
+  assert.doesNotMatch(source, /TERRITORIAL_OLD_REVISION=\(\[\^\\s\]\+\)/);
+});
+
+test("territorial revision parser preserves a complete PostgreSQL timestamp", () => {
+  const revision = parseTerritorialRevisionNotice([
+    "NOTICE: TERRITORIAL_OLD_REVISION=2026-11-06T14:29:51.123456+00:00",
+  ].join("\n"));
+  assert.equal(revision, "2026-11-06T14:29:51.123456+00:00");
+});
+
+test("territorial revision parser rejects truncation, malformed values and missing notices", () => {
+  for (const output of [
+    "NOTICE: TERRITORIAL_OLD_REVISION=2026-11-06",
+    "NOTICE: TERRITORIAL_OLD_REVISION=2026-11-06T14:29:51.12345+00:00",
+    "NOTICE: TERRITORIAL_OLD_REVISION=2026-11-06T14:29:51.123456",
+    "NOTICE: TERRITORIAL_OLD_REVISION=not-a-timestamp",
+    "NOTICE: another notice",
+  ]) {
+    assert.throws(() => parseTerritorialRevisionNotice(output));
+  }
 });
 
 test("territorial pgTAP purges every current fixture before the 2025 campaign", () => {

@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { resolve } from "node:path";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
 const supabaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const actionId = "00000000-0000-4000-8000-000000000014";
+const TERRITORIAL_REVISION_PATTERN = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}[+-]\d{2}:\d{2})$/;
+
+export function parseTerritorialRevisionNotice(output) {
+  const matches = [...output.matchAll(/TERRITORIAL_OLD_REVISION=([^\r\n]+)/g)];
+  assert.equal(matches.length, 1, "the stale session must emit exactly one fact revision");
+  const revision = matches[0][1];
+  assert.match(revision, TERRITORIAL_REVISION_PATTERN, "the fact revision must be a complete ISO-8601 timestamp with microseconds and timezone");
+  assert.equal(Number.isNaN(Date.parse(revision)), false, "the fact revision must be a valid timestamp");
+  return revision;
+}
 
 async function runQuery(sql, { timeoutMs = 30_000 } = {}) {
   const controller = new AbortController();
@@ -84,7 +96,7 @@ select set_config('request.jwt.claims', '{"role":"service_role","sub":"territori
 select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 begin
-  raise notice 'TERRITORIAL_OLD_REVISION=%', public.get_territorial_legend_fact_revision();
+  raise notice 'TERRITORIAL_OLD_REVISION=%', to_char(public.get_territorial_legend_fact_revision(), 'YYYY-MM-DD"T"HH24:MI:SS.USOF');
   raise notice 'TERRITORIAL_SESSION=stale-read pid=%', pg_backend_pid();
 end;
 $$;
@@ -153,9 +165,7 @@ async function main() {
   await runQuery(setupSql);
   const oldRevisionResult = await runQuery(readOldRevisionSql);
   const oldOutput = output({ value: oldRevisionResult });
-  const oldRevisionMatch = oldOutput.match(/TERRITORIAL_OLD_REVISION=([^\s]+)/);
-  assert.ok(oldRevisionMatch, "the stale session must publish only the revision it actually read");
-  const oldRevision = oldRevisionMatch[1];
+  const oldRevision = parseTerritorialRevisionNotice(oldOutput);
   const freshResult = await runQuery(freshSessionSql);
   const freshOutput = output({ value: freshResult });
   const freshResultMatch = freshOutput.match(/TERRITORIAL_FRESH_RESULT=(\{.*\})/);
@@ -189,14 +199,16 @@ select json_build_object(
   console.log("EXECUTED_DB_CONTRACT: Territorial legend monotone fact revision and stale same-day reconciliation concurrency passed.");
 }
 
-main().catch(async (error) => {
-  if (ephemeralDestinationVerified) {
-    try {
-      await runQuery(cleanupSql);
-    } catch (cleanupError) {
-      console.error(cleanupError);
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  main().catch(async (error) => {
+    if (ephemeralDestinationVerified) {
+      try {
+        await runQuery(cleanupSql);
+      } catch (cleanupError) {
+        console.error(cleanupError);
+      }
     }
-  }
-  console.error(error);
-  process.exitCode = 1;
-});
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
