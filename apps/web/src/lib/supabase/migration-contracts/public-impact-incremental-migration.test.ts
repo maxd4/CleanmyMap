@@ -36,6 +36,13 @@ const wasteCoverageProof = readFileSync(
   ),
   "utf8",
 );
+const temporalEligibilityMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261107000001_public_impact_temporal_eligibility.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("incremental public Impact state migration", () => {
   it("defines the per-action projection and decrementable aggregate counters", () => {
@@ -109,6 +116,34 @@ describe("incremental public Impact state migration", () => {
     expect(wasteCoverageMassMigration).not.toContain("a.notes");
     expect(wasteCoverageMassMigration).toContain(
       "grant execute on function public.load_public_landing_action_summary_incremental() to service_role;",
+    );
+  });
+
+  it("separates permanent eligibility from the current temporal window", () => {
+    expect(temporalEligibilityMigration).toContain("eligible_temporal boolean not null default false");
+    expect(temporalEligibilityMigration).toContain(
+      "is_action_statistical_version_permanently_admissible",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "v_contribution.eligible_non_temporal := v_eligible;",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "v_contribution.eligible_temporal := false;",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "p_contribution.action_date > current_date",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "if p_sign = 1 and p_contribution.eligible_temporal then",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "where eligible_temporal",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "where eligible_non_temporal\n      and not eligible_temporal",
+    );
+    expect(temporalEligibilityMigration).toContain(
+      "public_impact_adjust_contribution_historical",
     );
   });
 

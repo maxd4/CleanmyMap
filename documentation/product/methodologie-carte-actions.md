@@ -355,6 +355,16 @@ produits. Les propriétaires actuels sont distincts :
   masse sans source identifiable reste inconnue, y compris dans les agrégats
   mensuels de l'impact public.
 
+Pour l'état incrémental public, l'éligibilité permanente d'une contribution
+(`status`, phase, visibilité, accès public et provenance) est distincte de son
+appartenance temporelle à la fenêtre. Une action future admissible peut donc
+être conservée dans la projection avec `eligible_non_temporal = true` mais
+`eligible_temporal = false` ; l'avance quotidienne l'active exactement lorsque
+sa date est atteinte, sans mutation de l'action ni reconstruction complète.
+L'avance protégée par le verrou d'état expire les contributions sous le
+plancher et reste idempotente. Les RPC de référence historiques conservent,
+elles, leur prédicat date-aware et continuent d'exclure les actions futures.
+
 Ces identités ne sont pas interchangeables : une moyenne contextualisée n'est
 pas le maximum de référence du score cartographique, et aucune de ces
 projections ne remplace une observation brute. Lorsqu'une version publique
