@@ -61,6 +61,22 @@ describe("SPOGOMI closure route", () => {
     expect(mocks.loadAuthorizedSpogomiEvent).not.toHaveBeenCalled();
   });
 
+  it("does not mutate when the organizer authorization rejects the event", async () => {
+    mocks.loadAuthorizedSpogomiEvent.mockResolvedValueOnce({ supabase: {}, authorized: { response: new Response("Forbidden", { status: 403 }) } });
+    const response = await route.POST(jsonRequest({
+      action: "decide",
+      divisionId: "11111111-1111-4111-8111-111111111111",
+      teamId: "22222222-2222-4222-8222-222222222222",
+      status: "absent",
+      sportEligible: false,
+      environmentalEligibility: "excluded",
+      reason: "Absence constatée.",
+      decisionVersion: 1,
+    }), context);
+    expect(response.status).toBe(403);
+    expect(mocks.setSpogomiTeamClosureDecision).not.toHaveBeenCalled();
+  });
+
   it("records a scoped decision without granting any implicit certification", async () => {
     const decision = {
       action: "decide",

@@ -215,7 +215,13 @@ publication d'un classement capture le même état par division via le garde-fou
 
 Le cockpit organisateur expose une synthèse séparée des phases terrain,
 arbitrage, classements, consolidation, action CleanMyMap et demandes
-individuelles. L'action CleanMyMap reste soumise à son propre cycle de
+individuelles. Il expose également, par division et par équipe, la soumission
+certifiée et sa version, la décision courante et sa version, puis réutilise
+`POST /api/spogomi/events/[eventId]/closure` pour enregistrer une décision
+explicitement motivée. Le formulaire sépare les éligibilités sportive et
+environnementale et détaille les blocages de clôture restants ; une correction
+propose la version suivante et le serveur conserve le contrôle de concurrence.
+L'action CleanMyMap reste soumise à son propre cycle de
 modération : aucune certification sportive ne vaut publication automatique de
 l'action. Les demandes individuelles persistées de l'édition sont comptées
 séparément ; une demande `pending` maintient explicitement la phase en attente

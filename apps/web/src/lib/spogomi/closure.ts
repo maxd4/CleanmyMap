@@ -23,8 +23,21 @@ export type SpogomiTeamClosureDecision = {
 export type SpogomiClosureTeamInput = {
   teamId: string;
   divisionId: string;
+  teamNumber?: number | null;
+  publicName?: string;
   certifiedSubmission: boolean;
+  certifiedSubmissionVersion?: number | null;
   decision?: SpogomiTeamClosureDecision | null;
+};
+
+export type SpogomiClosureTeamSummary = {
+  teamId: string;
+  divisionId: string;
+  teamNumber: number | null;
+  publicName: string;
+  certifiedSubmission: boolean;
+  certifiedSubmissionVersion: number | null;
+  decision: SpogomiTeamClosureDecision | null;
 };
 
 export type SpogomiClosureDivisionInput = {
@@ -52,6 +65,7 @@ export type SpogomiClosureSummary = {
     certifiedTeams: number;
     officialRankingCount: number;
     blockers: string[];
+    teams: SpogomiClosureTeamSummary[];
   }>;
 };
 
@@ -105,6 +119,15 @@ export function deriveSpogomiClosureSummary(input: {
       certifiedTeams: division.teams.filter((team) => team.certifiedSubmission).length,
       officialRankingCount: division.officialRankingCount,
       blockers: divisionBlockers,
+      teams: division.teams.map((team) => ({
+        teamId: team.teamId,
+        divisionId: team.divisionId,
+        teamNumber: team.teamNumber ?? null,
+        publicName: team.publicName?.trim() || "Équipe sans nom",
+        certifiedSubmission: team.certifiedSubmission,
+        certifiedSubmissionVersion: team.certifiedSubmissionVersion ?? null,
+        decision: team.decision ?? null,
+      })),
     };
   });
 

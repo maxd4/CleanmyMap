@@ -33,8 +33,8 @@ export async function loadSpogomiClosureSummary(params: { supabase: SupabaseClie
   if (!eventResult.data) return null;
   const [divisions, teams, submissions, decisions, rankings, consolidation, action, pendingRequests] = await Promise.all([
     readAllSpogomiPages("closure divisions", (from, to) => params.supabase.from("spogomi_divisions").select("id, division_type, regulation_status").eq("event_id", params.eventId).order("division_type").range(from, to)),
-    readAllSpogomiPages("closure teams", (from, to) => params.supabase.from("spogomi_teams").select("id, division_id, certified_submission_id").eq("event_id", params.eventId).order("division_id").order("team_number").range(from, to)),
-    readAllSpogomiPages("closure submissions", (from, to) => params.supabase.from("spogomi_result_submissions").select("id, status").eq("event_id", params.eventId).range(from, to)),
+    readAllSpogomiPages("closure teams", (from, to) => params.supabase.from("spogomi_teams").select("id, division_id, team_number, public_name, certified_submission_id").eq("event_id", params.eventId).order("division_id").order("team_number").range(from, to)),
+    readAllSpogomiPages("closure submissions", (from, to) => params.supabase.from("spogomi_result_submissions").select("id, status, version").eq("event_id", params.eventId).range(from, to)),
     readAllSpogomiPages("closure decisions", (from, to) => params.supabase.from("spogomi_team_closure_decisions").select("id, team_id, division_id, status, sport_eligible, environmental_eligibility, decision_version, reason").eq("event_id", params.eventId).eq("is_current", true).range(from, to)),
     readAllSpogomiPages("closure official rankings", (from, to) => params.supabase.from("spogomi_official_rankings").select("division_id, status").eq("event_id", params.eventId).eq("status", "certified").range(from, to)),
     params.supabase.from("spogomi_action_consolidations").select("status").eq("event_id", params.eventId).eq("is_current", true).eq("status", "published").maybeSingle(),
@@ -42,7 +42,7 @@ export async function loadSpogomiClosureSummary(params: { supabase: SupabaseClie
     readAllSpogomiPages("closure pending individual requests", (from, to) => params.supabase.from("spogomi_team_join_requests").select("id").eq("event_id", params.eventId).eq("status", "pending").range(from, to)),
   ]);
   for (const result of [consolidation, action]) if (result.error) throw result.error;
-  const submissionStatus = new Map((submissions as Array<Record<string, unknown>>).map((row) => [String(row.id), String(row.status)]));
+  const submissionsById = new Map((submissions as Array<Record<string, unknown>>).map((row) => [String(row.id), { status: String(row.status), version: Number(row.version) }]));
   const decisionByTeam = new Map((decisions as unknown as ClosureDecisionRow[]).map((row) => [String(row.team_id), toDecision(row)]));
   const rankingCountByDivision = new Map<string, number>();
   for (const row of rankings as Array<Record<string, unknown>>) {
@@ -61,12 +61,18 @@ export async function loadSpogomiClosureSummary(params: { supabase: SupabaseClie
       type: division.division_type as "casual" | "world_cup",
       regulationComplete: division.regulation_status === "complete",
       officialRankingCount: rankingCountByDivision.get(String(division.id)) ?? 0,
-      teams: (teams as Array<Record<string, unknown>>).filter((team) => String(team.division_id) === String(division.id)).map((team) => ({
-        teamId: String(team.id),
-        divisionId: String(division.id),
-        certifiedSubmission: submissionStatus.get(String(team.certified_submission_id)) === "certified",
-        decision: decisionByTeam.get(String(team.id)) ?? null,
-      })),
+      teams: (teams as Array<Record<string, unknown>>).filter((team) => String(team.division_id) === String(division.id)).map((team) => {
+        const submission = submissionsById.get(String(team.certified_submission_id));
+        return {
+          teamId: String(team.id),
+          divisionId: String(division.id),
+          teamNumber: Number.isInteger(Number(team.team_number)) ? Number(team.team_number) : null,
+          publicName: String(team.public_name ?? "Équipe sans nom"),
+          certifiedSubmission: submission?.status === "certified",
+          certifiedSubmissionVersion: submission?.status === "certified" && Number.isInteger(submission.version) ? submission.version : null,
+          decision: decisionByTeam.get(String(team.id)) ?? null,
+        };
+      }),
     })),
   });
 }

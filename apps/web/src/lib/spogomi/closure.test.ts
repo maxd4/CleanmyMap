@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { deriveSpogomiClosureSummary, effectiveSpogomiTeamClosureDecision } from "./closure";
-import { setSpogomiTeamClosureDecision } from "./closure-service";
+import { loadSpogomiClosureSummary, setSpogomiTeamClosureDecision } from "./closure-service";
 
 describe("SPOGOMI closure decisions", () => {
   it.each([
@@ -107,6 +107,45 @@ describe("SPOGOMI closure decisions", () => {
     expect(summary.arbitration).toBe("ongoing");
     expect(summary.environmental).toBe("blocked");
     expect(summary.blockers).toEqual(expect.arrayContaining(["casual:certification_remaining", "casual:contested_result"]));
+  });
+
+  it("keeps team identity, certified submission version and current decision in the cockpit summary", () => {
+    const decision = { teamId: "team-1", divisionId: "casual", status: "present_measured" as const, sportEligible: true, environmentalEligibility: "eligible" as const, decisionVersion: 3, reason: "Présence mesurée." };
+    const summary = deriveSpogomiClosureSummary({
+      eventState: "judging",
+      publicResultsVisibility: "hidden",
+      actionStatus: null,
+      actionPublishedAt: null,
+      environmentalConsolidated: false,
+      pendingIndividualRequests: 0,
+      divisions: [{ id: "casual", type: "casual", regulationComplete: true, officialRankingCount: 0, teams: [{ teamId: "team-1", divisionId: "casual", teamNumber: 1, publicName: "Les nettoyeurs", certifiedSubmission: true, certifiedSubmissionVersion: 7, decision }] }],
+    });
+    expect(summary.divisions[0]?.teams[0]).toEqual({ teamId: "team-1", divisionId: "casual", teamNumber: 1, publicName: "Les nettoyeurs", certifiedSubmission: true, certifiedSubmissionVersion: 7, decision });
+  });
+
+  it("loads all team closure metadata from the existing private summary queries", async () => {
+    const rows: Record<string, unknown> = {
+      spogomi_divisions: [{ id: "division-1", division_type: "casual", regulation_status: "complete" }],
+      spogomi_teams: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Les nettoyeurs", certified_submission_id: "submission-1" }],
+      spogomi_result_submissions: [{ id: "submission-1", status: "certified", version: 6 }],
+      spogomi_team_closure_decisions: [{ id: "decision-1", team_id: "team-1", division_id: "division-1", status: "forfeit", sport_eligible: false, environmental_eligibility: "excluded", decision_version: 2, reason: "Forfait confirmé." }],
+      spogomi_official_rankings: [],
+      spogomi_team_join_requests: [],
+    };
+    const supabase = {
+      from(table: string) {
+        const chain = {
+          select: () => chain,
+          eq: () => chain,
+          order: () => chain,
+          range: async () => ({ data: rows[table] ?? [], error: null }),
+          maybeSingle: async () => ({ data: table === "spogomi_events" ? { id: "event-1", state: "judging", public_results_visibility: "hidden", action_id: "action-1" } : table === "spogomi_action_consolidations" ? null : { status: "draft", published_at: null }, error: null }),
+        };
+        return chain;
+      },
+    };
+    const summary = await loadSpogomiClosureSummary({ supabase: supabase as never, eventId: "event-1" });
+    expect(summary?.divisions[0]?.teams[0]).toMatchObject({ teamNumber: 1, publicName: "Les nettoyeurs", certifiedSubmission: true, certifiedSubmissionVersion: 6, decision: expect.objectContaining({ status: "forfeit", decisionVersion: 2 }) });
   });
 
   it("sends a trimmed decision reason to the canonical RPC", async () => {

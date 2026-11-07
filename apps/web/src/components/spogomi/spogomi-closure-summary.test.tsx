@@ -8,6 +8,9 @@ function textOf(renderer: ReactTestRenderer) {
   return JSON.stringify(renderer.toJSON());
 }
 
+const teams = [{ teamId: "team-1", divisionId: "division-1", teamNumber: 1, publicName: "Les nettoyeurs", certifiedSubmission: true, certifiedSubmissionVersion: 3, decision: null }];
+const division = { id: "division-1", type: "casual", regulationComplete: true, sportEligibleTeams: 1, certifiedTeams: 1, officialRankingCount: 0, blockers: [], teams };
+
 describe("SpogomiClosureSummary", () => {
   beforeEach(() => vi.restoreAllMocks());
 
@@ -20,8 +23,9 @@ describe("SpogomiClosureSummary", () => {
         environmental: "ready",
         action: "pending",
         individualRequests: "2 à traiter",
-        blockers: ["arbitrage"],
+        blockers: ["division-1:contested_result"],
         certificationsRemaining: 2,
+        divisions: [{ ...division, blockers: ["contested_result"] }],
       },
     }), { status: 200 }));
     let renderer!: ReactTestRenderer;
@@ -32,6 +36,7 @@ describe("SpogomiClosureSummary", () => {
     const rendered = textOf(renderer);
     expect(rendered).toContain("Récapitulatif de clôture");
     expect(rendered).toContain("Clôture bloquée : 1 point(s) à traiter.");
+    expect(rendered).toContain("résultat contesté");
     expect(rendered).toContain("Certifications restantes");
     expect(rendered).toContain('"Certifications restantes : ","2"');
     expect(rendered).toContain("Les décisions sportives, environnementales et de publication restent indépendantes.");
@@ -42,6 +47,7 @@ describe("SpogomiClosureSummary", () => {
       summary: {
         fieldCompetition: "finished", arbitration: "approved", rankings: "published", environmental: "validated",
         action: "linked", individualRequests: "none", blockers: [], certificationsRemaining: 0,
+        divisions: [division],
       },
     }), { status: 200 }));
     let renderer!: ReactTestRenderer;
@@ -70,7 +76,7 @@ describe("SpogomiClosureSummary", () => {
     act(() => { renderer.unmount(); });
 
     await act(async () => {
-      resolveFetch(new Response(JSON.stringify({ summary: { blockers: [], certificationsRemaining: 0 } }), { status: 200 }));
+      resolveFetch(new Response(JSON.stringify({ summary: { fieldCompetition: "not_started", arbitration: "complete", rankings: "blocked", environmental: "pending", action: "pending", individualRequests: "complete", blockers: [], certificationsRemaining: 0, divisions: [] } }), { status: 200 }));
       await Promise.resolve();
     });
 
