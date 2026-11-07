@@ -95,6 +95,7 @@ export function buildSpogomiEventSpaceHref(
   journey: SpogomiCatalogJourney,
   requestedFocus?: SpogomiCatalogFocus | null,
 ): string | null {
+  if (journey === "volunteers") return null;
   if (!event.links.space) return null;
   const focus = requestedFocus && canOpenRequestedFocus(event, journey, requestedFocus)
     ? requestedFocus

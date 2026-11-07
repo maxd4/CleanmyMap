@@ -82,6 +82,7 @@ function AccessIcon({ relation }: { relation: SpogomiPersonalRelation }) {
 
 function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEvent; journey: SpogomiCatalogJourney | null; focus: SpogomiCatalogFocus | null }) {
   const spaceHref = journey ? buildSpogomiEventSpaceHref(event, journey, focus) : event.links.space;
+  const volunteerPrivateAccessExplanation = (journey === null || journey === "volunteers") && event.relations.includes("participant") && !event.links.public;
   return (
     <CmmCard as="article" tone="emerald" variant="glass" className="space-y-4 p-5" data-testid={`spogomi-personal-event-${event.id}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -117,7 +118,8 @@ function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEv
       <div className="flex flex-wrap gap-3">
         {spaceHref ? <CmmButton href={spaceHref} tone="primary" size="sm">Ouvrir l’espace <ArrowRight size={15} /></CmmButton> : null}
         {event.links.public ? <CmmButton href={event.links.public} tone="secondary" size="sm">Voir la fiche publique</CmmButton> : null}
-        {!event.links.space && !event.links.public ? <p className="text-sm font-semibold text-slate-700">Les contrôles serveur conservent cet accès sans exposer de route supplémentaire.</p> : null}
+        {volunteerPrivateAccessExplanation ? <p className="cmm-text-body max-w-2xl font-semibold text-slate-900">Cette édition privée n’a pas de fiche publique. Pour consulter les éléments personnels autorisés, utilisez le lien privé contextualisé remis par l’organisateur ; il est nécessaire pour l’accès à cette édition et ne donne aucun accès de gestion.</p> : null}
+        {!spaceHref && !event.links.public && !volunteerPrivateAccessExplanation ? <p className="text-sm font-semibold text-slate-700">Les contrôles serveur conservent cet accès sans exposer de route supplémentaire.</p> : null}
       </div>
     </CmmCard>
   );

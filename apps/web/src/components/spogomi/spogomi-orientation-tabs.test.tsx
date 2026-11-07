@@ -29,6 +29,16 @@ describe("SpogomiOrientationTabs", () => {
     ]);
     expect(renderer.root.findAllByProps({ role: "tabpanel" })[0]?.findAllByType("article")).toHaveLength(10);
     expect(links(renderer).some((link) => link.props.href === "#spogomi-events")).toBe(true);
+    for (const panel of renderer.root.findAllByProps({ role: "tabpanel" })) {
+      expect(panel.props.id).toBeTruthy();
+      expect(panel.props["aria-labelledby"]).toBeTruthy();
+      expect(panel.findAllByProps({ role: "tab" })).toHaveLength(0);
+    }
+    for (const tab of findTabs(renderer)) {
+      expect(renderer.root.findAllByProps({ id: tab.props["aria-controls"] })).toHaveLength(1);
+    }
+    expect(links(renderer).some((link) => link.props.href === "/spogomi#spogomi-registration")).toBe(true);
+    expect(links(renderer).some((link) => link.props.href === "/spogomi#spogomi-assistance")).toBe(true);
     expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dvolunteers")).toBe(true);
   });
 

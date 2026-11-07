@@ -84,6 +84,10 @@ describe("SPOGOMI consumer pages", () => {
   it("passes private assistance parameters and protects organizer dashboard", async () => {
     const markup = renderToStaticMarkup(await SpogomiIdentityAssistancePage({ searchParams: Promise.resolve({ eventId: "event-1", token: "secret-token" }) }));
     expect(markup).toContain("event-1:secret-token");
+    const missingContext = renderToStaticMarkup(await SpogomiIdentityAssistancePage({ searchParams: Promise.resolve({}) }));
+    expect(missingContext).toContain("lien privé et contextualisé");
+    expect(missingContext).toContain("/spogomi#spogomi-assistance");
+    expect(missingContext).not.toContain("event-1:secret-token");
     mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: false });
     await expect(SpogomiOrganizerDashboardPage()).rejects.toThrow("redirect:/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements");
     mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: true, userId: "organizer-1" });

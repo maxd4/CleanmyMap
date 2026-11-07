@@ -58,14 +58,14 @@ function buildOrientations(): Orientation[] {
       summary: "Découvrez une édition, participez avec votre équipe et retrouvez vos contributions certifiées.",
       actions: [
         publicAction("Découvrir les compétitions", "Parcourir les éditions publiées et ouvrir leur fiche publique.", Users, "#spogomi-events"),
-        publicAction("S’inscrire", "Demander à intégrer une édition depuis sa fiche, avec la division choisie.", ClipboardCheck, "#spogomi-events"),
-        publicAction("Rejoindre une équipe", "Utiliser une invitation ou le bouton de rattachement de la fiche publique.", Users, "#spogomi-events"),
-        publicAction("Rattacher mon compte par code", "Saisir le code individuel remis par l’organisation, sans exposer le roster.", KeyRound, "#spogomi-events"),
-        publicAction("Demander de l’assistance", "Ouvrir l’assistance avec le lien privé remis par l’organisation.", HandHelping, "/spogomi/assistance"),
+        publicAction("S’inscrire", "Choisir une compétition publiée puis utiliser sa demande d’inscription si le règlement l’autorise.", ClipboardCheck, "/spogomi#spogomi-registration"),
+        publicAction("Rejoindre une équipe", "Depuis une fiche publique, demander une équipe ou utiliser l’invitation remise par l’organisation.", Users, "/spogomi#spogomi-team"),
+        publicAction("Rattacher mon compte par code", "Saisir sur la fiche publiée le code individuel remis directement par l’organisation.", KeyRound, "/spogomi#spogomi-identity"),
+        publicAction("Demander de l’assistance", "Obtenir d’abord le lien privé contextualisé remis par l’organisation ; aucune demande n’est envoyée sans lui.", HandHelping, "/spogomi#spogomi-assistance"),
         privateAction("Retrouver ma participation", "Après connexion, choisir une édition liée à votre compte vérifié.", Recycle, buildSpogomiCatalogHref("volunteers")),
-        publicAction("Voir les résultats", "Consulter uniquement les résultats explicitement publiés.", Trophy, "#spogomi-events"),
-        publicAction("Mes contributions", "Retrouver les missions certifiées depuis la fiche de l’édition.", BadgeCheck, "#spogomi-events"),
-        publicAction("Télécharger mes attestations", "Générer une attestation lorsque la mission est certifiée et disponible.", Download, "#spogomi-events"),
+        publicAction("Voir les résultats", "Ouvrir une fiche publiée lorsque ses résultats ont été rendus visibles.", Trophy, "/spogomi#spogomi-results"),
+        publicAction("Mes contributions", "Consulter les missions enregistrées et certifiées depuis la surface de l’édition.", BadgeCheck, "/spogomi#spogomi-contributions"),
+        publicAction("Télécharger mes attestations", "Télécharger une attestation depuis la section personnelle après certification.", Download, "/spogomi#spogomi-attestations"),
         publicAction("Discuter", "Rejoindre le salon communautaire SPOGOMI.", Send, PUBLIC_DISCUSSIONS_HREF),
       ],
     },
@@ -108,7 +108,6 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
   const [activeOrientation, setActiveOrientation] = useState<OrientationId>("volunteers");
   const baseId = useId();
   const orientations = buildOrientations();
-  const activePanel = orientations.find((orientation) => orientation.id === activeOrientation) ?? orientations[0];
 
   function handleTabKeyDown(index: number, event: KeyboardEvent<HTMLButtonElement>) {
     let nextIndex: number | null = null;
@@ -122,10 +121,6 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
     setActiveOrientation(nextOrientation.id);
     document.getElementById(`${baseId}-tab-${nextOrientation.id}`)?.focus();
   }
-
-  const activeIndex = orientations.findIndex((orientation) => orientation.id === activePanel.id);
-  const tabId = `${baseId}-tab-${activePanel.id}`;
-  const panelId = `${baseId}-panel-${activePanel.id}`;
 
   return (
     <section aria-labelledby="spogomi-orientation-title" className="space-y-4">
@@ -159,41 +154,52 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
         })}
       </div>
 
-      <CmmCard tone="emerald" variant="glass" className="space-y-5 p-5 md:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">Parcours {activeIndex + 1} sur {orientations.length}</p>
-            <h3 className="mt-1 text-xl font-black text-emerald-950">{activePanel.label}</h3>
-            <p className="cmm-text-body mt-1 max-w-3xl text-slate-900">{activePanel.summary}</p>
-          </div>
-          {activePanel.id === "referees" ? <ShieldCheck className="h-7 w-7 shrink-0 text-emerald-700" aria-hidden="true" /> : null}
-        </div>
-
-        <div role="tabpanel" id={panelId} aria-labelledby={tabId} tabIndex={0} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {activePanel.actions.map((action, index) => {
-            const href = action.requiresAuthentication && !isAuthenticated
-              ? `/sign-in?redirect_url=${encodeURIComponent(action.href)}`
-              : action.href;
-            return (
-              <CmmCard key={action.label} as="article" tone="slate" variant="glass" className="flex h-full flex-col gap-3 p-4">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
-                    <CmmIcon icon={action.icon} label={action.label} />
-                  </span>
+      <div className="space-y-5">
+        {orientations.map((orientation, orientationIndex) => {
+          const isActive = orientation.id === activeOrientation;
+          const orientationTabId = `${baseId}-tab-${orientation.id}`;
+          const orientationPanelId = `${baseId}-panel-${orientation.id}`;
+          return (
+            <div key={orientation.id} role="tabpanel" id={orientationPanelId} aria-labelledby={orientationTabId} tabIndex={0} hidden={!isActive}>
+              <CmmCard tone="emerald" variant="glass" className="space-y-5 p-5 md:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">{String(index + 1).padStart(2, "0")}</p>
-                    <p className="font-black text-slate-950">{action.label}</p>
+                    <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">Parcours {orientationIndex + 1} sur {orientations.length}</p>
+                    <h3 className="mt-1 text-xl font-black text-emerald-950">{orientation.label}</h3>
+                    <p className="cmm-text-body mt-1 max-w-3xl text-slate-900">{orientation.summary}</p>
                   </div>
+                  {orientation.id === "referees" ? <ShieldCheck className="h-7 w-7 shrink-0 text-emerald-700" aria-hidden="true" /> : null}
                 </div>
-                <p className="cmm-text-body text-slate-900">{action.description}</p>
-                <CmmButton href={href} ariaLabel={`Ouvrir : ${action.label}`} tone={index === 0 ? "primary" : "secondary"} size="sm" className="mt-auto self-start">Ouvrir</CmmButton>
-              </CmmCard>
-            );
-          })}
-        </div>
 
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm font-semibold leading-6 text-emerald-950">Les entrées privées conservent votre intention après connexion, puis le catalogue ne propose que les éditions et sections réellement autorisées par le serveur.</p>
-      </CmmCard>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {orientation.actions.map((action, index) => {
+                    const href = action.requiresAuthentication && !isAuthenticated
+                      ? `/sign-in?redirect_url=${encodeURIComponent(action.href)}`
+                      : action.href;
+                    return (
+                      <CmmCard key={action.label} as="article" tone="slate" variant="glass" className="flex h-full flex-col gap-3 p-4">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
+                            <CmmIcon icon={action.icon} label={action.label} />
+                          </span>
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">{String(index + 1).padStart(2, "0")}</p>
+                            <p className="font-black text-slate-950">{action.label}</p>
+                          </div>
+                        </div>
+                        <p className="cmm-text-body text-slate-900">{action.description}</p>
+                        <CmmButton href={href} ariaLabel={`Ouvrir : ${action.label}`} tone={index === 0 ? "primary" : "secondary"} size="sm" className="mt-auto self-start">Ouvrir</CmmButton>
+                      </CmmCard>
+                    );
+                  })}
+                </div>
+
+                <p className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm font-semibold leading-6 text-emerald-950">Les entrées privées conservent votre intention après connexion, puis le catalogue ne propose que les éditions et sections réellement autorisées par le serveur.</p>
+              </CmmCard>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }

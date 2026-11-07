@@ -64,4 +64,11 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).not.toContain("Bilan");
     expect(markup).not.toContain("Paramètres");
   });
+
+  it("describes a field capability when the event role is null", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role={null} capabilities={[]} fieldCapabilities={["weighing"]} />);
+    expect(markup).toContain("Habilitation terrain : pesée");
+    expect(markup).not.toContain("Observateur habilité");
+    expect(markup).toContain('href="#operations"');
+  });
 });

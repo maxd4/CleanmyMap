@@ -60,6 +60,25 @@ function modeLabel(value: string): string {
   return "Casual";
 }
 
+const fieldCapabilityLabels: Record<SpogomiFieldOperationsCapability, string> = {
+  timing: "chronométrage",
+  arrival: "accueil et arrivée",
+  weighing: "pesée",
+  measurement_entry: "saisie des mesures",
+  arbitration: "arbitrage",
+  certification: "certification",
+};
+
+function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: readonly SpogomiFieldOperationsCapability[]): string {
+  if (role === "organizer") return "Organisateur";
+  if (role === "referee") return "Arbitre habilité";
+  if (role === "checkin") return "Accueil habilité";
+  if (role === "observer") return "Observateur habilité";
+  if (fieldCapabilities.length) return `Habilitation terrain : ${fieldCapabilities.map((capability) => fieldCapabilityLabels[capability]).join(", ")}`;
+  if (role === "participant") return "Participant lié";
+  return "Accès événementiel limité";
+}
+
 function buildCockpitSections(organizer: boolean, referee: boolean, observer: boolean, checkin: boolean, hasFieldOperations: boolean): CockpitSection[] {
   const next: CockpitSection[] = ["presentation"];
   if (organizer) next.push("teams", "attendance", "operations", "results", "arbitration", "bilan", "settings");
@@ -121,7 +140,7 @@ export function SpogomiEventCockpit({ event, role, capabilities, fieldCapabiliti
   return <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 px-4 py-10">
     <div className="cmm-page-width space-y-6">
       <PageHeader tone="stone" title={event.name} subtitle={`${modeLabel(event.mode)} · ${event.publicVisibility === "published" ? "publication publique" : "édition privée"}`} />
-      <CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700"><CalendarDays size={17} aria-hidden="true" />{dateLabel(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${dateLabel(event.endsAt, event.officialTimezone)}` : " · durée ouverte"}<span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-800">{role === "organizer" ? "Organisateur" : role === "referee" ? "Arbitre habilité" : role === "checkin" ? "Accueil habilité" : "Observateur habilité"}</span></div><p className="text-sm text-slate-700">Cet espace adapte ses vues aux habilitations vérifiées de cet événement. Chaque lecture et chaque action restent contrôlées par le serveur.</p></CmmCard>
+      <CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700"><CalendarDays size={17} aria-hidden="true" />{dateLabel(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${dateLabel(event.endsAt, event.officialTimezone)}` : " · durée ouverte"}<span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-800">{accessLabel(role, fieldCapabilities)}</span></div><p className="text-sm text-slate-700">Cet espace adapte ses vues aux habilitations vérifiées de cet événement. Chaque lecture et chaque action restent contrôlées par le serveur.</p></CmmCard>
       <CockpitNavigation sections={sections} activeSection={activeSection} setActiveSection={setActiveSection} />
       <CockpitSections sections={sections} activeSection={activeSection} event={event} organizer={organizer} referee={referee} showAdminTeamJoinRequests={showAdminTeamJoinRequests} fieldCapabilities={fieldCapabilities} />
     </div>

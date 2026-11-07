@@ -29,6 +29,7 @@ describe("SPOGOMI navigation intent", () => {
     expect(buildSpogomiEventSpaceHref(space(["checkin"]), "referees", "arbitration")).toBe("/spogomi/edition/espace#attendance");
     expect(buildSpogomiEventSpaceHref(space(["field_operator"]), "referees", "operations")).toBe("/spogomi/edition/espace#operations");
     expect(buildSpogomiEventSpaceHref(space(["organizer"]), "organizers", "bilan")).toBe("/spogomi/edition/espace#bilan");
-    expect(buildSpogomiEventSpaceHref({ ...space(["participant"]), links: { public: "/spogomi/edition", space: null } }, "volunteers")).toBeNull();
+    expect(buildSpogomiEventSpaceHref({ ...space(["participant"]), links: { public: "/spogomi/edition", space: "/spogomi/edition/espace" } }, "volunteers")).toBeNull();
+    expect(buildSpogomiEventSpaceHref({ ...space(["organizer", "participant"]) }, "volunteers")).toBeNull();
   });
 });

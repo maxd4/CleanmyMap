@@ -70,11 +70,19 @@ describe("SpogomiPersonalEventsList", () => {
     expect(renderer.root.findAll((node) => node.type === "article" && node.props["data-testid"] === "spogomi-personal-event-participant")).toHaveLength(0);
   });
 
-  it("does not invent a private participant route", () => {
+  it("explains the invitation required for a private participant without opening management", () => {
     const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("participant", ["participant"])]} />);
     expect(markup).not.toContain("/spogomi/participant-slug/espace");
-    expect(markup).toContain("Les contrôles serveur conservent cet accès");
+    expect(markup).toContain("Cette édition privée n’a pas de fiche publique");
+    expect(markup).toContain("lien privé contextualisé remis par l’organisateur");
     expect(markup).toContain("Parcours personnel");
+  });
+
+  it("keeps a participant and organizer in the volunteer journey instead of opening the cockpit", () => {
+    const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("both", ["organizer", "participant"])]} journey="volunteers" />);
+    expect(markup).not.toContain("/spogomi/both-slug/espace");
+    expect(markup).toContain("Cette édition privée n’a pas de fiche publique");
+    expect(markup).not.toContain("Créer une compétition");
   });
 
   it("filters the selected journey and opens its validated cockpit focus", () => {
