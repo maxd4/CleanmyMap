@@ -8,6 +8,7 @@ import {
   buildActionDeclarationShareText,
   getActionDeclarationExportTargets,
 } from "@/lib/actions/exports/export-form-media";
+import { normalizeActionDeclarationExportForm } from "@/lib/actions/exports/export-form-contract";
 import {
   createActionDeclarationExportHistoryEntry,
   mergeActionDeclarationExportHistory,
@@ -83,6 +84,56 @@ describe("ActionDeclarationExportPicker", () => {
     const dataUrl = buildActionDeclarationExportPreviewDataUrl(initialState, "Bénévole", "png");
     expect(dataUrl).toMatch(/^data:image\/svg\+xml;charset=utf-8,/);
     expect(decodeURIComponent(dataUrl.split(",", 2)[1] ?? "")).toContain('width="1080" height="1080"');
+  });
+
+  it("derives the current export total from the three categories and clears incomplete totals", () => {
+    const form = {
+      ...initialState,
+      volunteersCount: "8",
+      adultCount: "2",
+      retiredCount: "1",
+      childrenCount: "1",
+    };
+    const normalized = normalizeActionDeclarationExportForm(form);
+    expect(normalized.volunteersCount).toBe("4");
+
+    const incomplete = normalizeActionDeclarationExportForm({
+      ...form,
+      adultCount: "",
+      volunteersCount: "8",
+    });
+    expect(incomplete.volunteersCount).toBe("");
+
+    const historyEntry = createActionDeclarationExportHistoryEntry({
+      filename: "current.png",
+      label: "PNG",
+      sourceLabel: "Réseaux sociaux",
+      targetId: "png",
+      actorName: "Alex",
+      form,
+    });
+    expect(historyEntry.form.volunteersCount).toBe("4");
+  });
+
+  it("uses the canonical total in the export preview instead of the stale form total", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionDeclarationExportPicker, {
+        isOpen: true,
+        onClose: () => undefined,
+        form: {
+          ...initialState,
+          actionDate: "2026-05-20",
+          volunteersCount: "8",
+          adultCount: "2",
+          retiredCount: "1",
+          childrenCount: "1",
+        },
+        actorName: "Alex",
+      }),
+    );
+
+    expect(markup).toContain(">4</dd>");
+    expect(markup).not.toContain(">8</dd>");
   });
 
   it("builds a useful share caption", () => {

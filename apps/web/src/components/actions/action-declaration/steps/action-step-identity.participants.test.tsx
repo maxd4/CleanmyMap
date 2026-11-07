@@ -1,11 +1,51 @@
+/** @vitest-environment jsdom */
+
+import { act, useState } from "react";
+import { afterEach, describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { createRoot, type Root } from "react-dom/client";
 import { createInitialFormState } from "../payload";
+import type { FormState } from "../model";
 import { ActionParticipantSection } from "./action-step-identity.participants";
+
+function ControlledParticipantFields({ hasAttemptedSubmit = false }: { hasAttemptedSubmit?: boolean }) {
+  const [form, setForm] = useState(() => createInitialFormState("Alice", "action"));
+  const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+  };
+
+  return (
+    <ActionParticipantSection
+      form={form}
+      updateField={updateField}
+      userId="user-1"
+      variant="counts"
+      isActionMode
+      hasAttemptedSubmit={hasAttemptedSubmit}
+    />
+  );
+}
+
+function setControlValue(element: HTMLInputElement, value: string): void {
+  const prototype = Object.getPrototypeOf(element) as object;
+  const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+  setter?.call(element, value);
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function renderParticipantFields(hasAttemptedSubmit = false): { container: HTMLDivElement; root: Root } {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => {
+    root.render(<ControlledParticipantFields hasAttemptedSubmit={hasAttemptedSubmit} />);
+  });
+  return { container, root };
+}
 
 describe("final participant composition fields", () => {
   it("renders the three editable categories without a second total field", () => {
-    const form = createInitialFormState("Alice");
+    const form = createInitialFormState("Alice", "action");
     form.adultCount = "2";
     form.retiredCount = "0";
     form.childrenCount = "1";
@@ -13,7 +53,7 @@ describe("final participant composition fields", () => {
     const markup = renderToStaticMarkup(
       <ActionParticipantSection
         form={form}
-        updateField={vi.fn()}
+        updateField={() => undefined}
         userId="user-1"
         variant="counts"
         isActionMode
@@ -27,7 +67,49 @@ describe("final participant composition fields", () => {
     expect(markup).toContain('id="action-children-count"');
     expect(markup).toContain('placeholder="Enfants"');
     expect(markup).not.toContain('id="action-volunteers-count"');
-    expect(markup).toContain("Total dérivé : 3 participants");
+    expect(markup).not.toContain("Total dérivé");
     expect((markup.match(/aria-hidden="true"/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
+
+  it("does not show the composition error before interaction or submit", () => {
+    const { container, root } = renderParticipantFields();
+
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(container.querySelector("#action-adult-count")?.getAttribute("aria-invalid")).toBe("false");
+
+    root.unmount();
+  });
+
+  it("shows the accessible error after a relevant edit and clears it for a valid composition", () => {
+    const { container, root } = renderParticipantFields();
+    const adult = container.querySelector("#action-adult-count") as HTMLInputElement;
+    const retired = container.querySelector("#action-retired-count") as HTMLInputElement;
+    const children = container.querySelector("#action-children-count") as HTMLInputElement;
+
+    act(() => setControlValue(adult, "2"));
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Renseignez");
+    expect(adult.getAttribute("aria-invalid")).toBe("true");
+
+    act(() => {
+      setControlValue(retired, "1");
+      setControlValue(children, "1");
+    });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(adult.getAttribute("aria-invalid")).toBe("false");
+
+    root.unmount();
+  });
+
+  it("shows the same error after a submit attempt without interaction", () => {
+    const { container, root } = renderParticipantFields(true);
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Renseignez");
+    expect(container.querySelector("#action-adult-count")?.getAttribute("aria-invalid")).toBe("true");
+
+    root.unmount();
+  });
+});
+
+afterEach(() => {
+  document.body.replaceChildren();
 });

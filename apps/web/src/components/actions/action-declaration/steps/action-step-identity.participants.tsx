@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
   deriveAdultCountFromTotal,
@@ -30,6 +31,7 @@ type ParticipantSectionProps = {
   userId: string;
   variant: "compact" | "supporting" | "counts";
   isActionMode: boolean;
+  hasAttemptedSubmit?: boolean;
   supportingFull?: boolean;
   showOrganizerAccounts?: boolean;
   showParticipantAccounts?: boolean;
@@ -107,16 +109,21 @@ function ParticipantContextControl({
 function FinalParticipantCountInputs({
   form,
   updateField,
+  hasAttemptedSubmit,
 }: {
   form: FormState;
   updateField: UpdateField;
+  hasAttemptedSubmit: boolean;
 }) {
+  const [hasInteracted, setHasInteracted] = useState(false);
   const compositionInput = {
     adultCount: form.adultCount,
     retiredCount: form.retiredCount,
     childrenCount: form.childrenCount,
   };
-  const compositionMessage = getFinalVolunteerCompositionValidationMessage(compositionInput);
+  const compositionMessage = hasInteracted || hasAttemptedSubmit
+    ? getFinalVolunteerCompositionValidationMessage(compositionInput)
+    : null;
   const volunteersCount = deriveVolunteerCountFromForm(compositionInput);
   const fields = [
     ["action-adult-count", "Adultes", "adultCount"],
@@ -144,7 +151,10 @@ function FinalParticipantCountInputs({
                 aria-describedby={compositionMessage ? "action-volunteer-composition-error" : undefined}
                 className={`${compactInputCls} min-w-0 bg-[#EAF7F0] placeholder:text-emerald-800/65`}
                 value={form[key]}
-                onChange={(event) => updateField(key, event.target.value)}
+                onChange={(event) => {
+                  setHasInteracted(true);
+                  updateField(key, event.target.value);
+                }}
               />
             </label>
             {index < fields.length - 1 ? (
@@ -156,11 +166,6 @@ function FinalParticipantCountInputs({
       {compositionMessage ? (
         <p id="action-volunteer-composition-error" className="text-xs font-medium text-rose-700" role="alert">
           {compositionMessage}
-        </p>
-      ) : null}
-      {volunteersCount !== null ? (
-        <p className="text-xs font-semibold text-emerald-900/70" aria-live="polite">
-          Total dérivé : {volunteersCount} participant{volunteersCount > 1 ? "s" : ""}
         </p>
       ) : null}
       <ParticipantContextControl
@@ -182,6 +187,7 @@ function ParticipantCountInputs({
   updateField,
   compact,
   finalComposition,
+  hasAttemptedSubmit,
   adultCount,
   participation,
   compositionMessage,
@@ -193,6 +199,7 @@ function ParticipantCountInputs({
   updateField: UpdateField;
   compact: boolean;
   finalComposition: boolean;
+  hasAttemptedSubmit: boolean;
   adultCount: number | null;
   participation: ReturnType<typeof normalizeVolunteerParticipation>;
   compositionMessage: string | null;
@@ -201,7 +208,7 @@ function ParticipantCountInputs({
   retiredCount: number | null;
 }) {
   if (finalComposition) {
-    return <FinalParticipantCountInputs form={form} updateField={updateField} />;
+    return <FinalParticipantCountInputs form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} />;
   }
 
   const inputClassName = compact ? compactInputCls : inputCls;
@@ -315,7 +322,7 @@ function ParticipantCountInputs({
   );
 }
 
-function ParticipantCounts({ form, updateField, compact }: { form: FormState; updateField: UpdateField; compact: boolean }) {
+function ParticipantCounts({ form, updateField, compact, hasAttemptedSubmit = false }: { form: FormState; updateField: UpdateField; compact: boolean; hasAttemptedSubmit?: boolean }) {
   const volunteersCount = form.volunteersCount.trim() === "" ? null : Number(form.volunteersCount);
   const childrenCount = form.childrenCount.trim() === "" ? null : Number(form.childrenCount);
   const retiredCount = form.retiredCount.trim() === "" ? null : Number(form.retiredCount);
@@ -328,7 +335,8 @@ function ParticipantCounts({ form, updateField, compact }: { form: FormState; up
       form={form}
       updateField={updateField}
       compact={compact}
-        finalComposition={!compact}
+      finalComposition={!compact}
+      hasAttemptedSubmit={hasAttemptedSubmit}
       adultCount={adultCount}
       participation={participation}
       compositionMessage={compositionMessage}
@@ -410,6 +418,7 @@ export function ActionParticipantSection({
   userId,
   variant,
   isActionMode,
+  hasAttemptedSubmit = false,
   supportingFull,
   showOrganizerAccounts = true,
   showParticipantAccounts = true,
@@ -426,7 +435,7 @@ export function ActionParticipantSection({
   }
 
   if (variant === "counts") {
-    return <ParticipantCounts form={form} updateField={updateField} compact={false} />;
+    return <ParticipantCounts form={form} updateField={updateField} compact={false} hasAttemptedSubmit={hasAttemptedSubmit} />;
   }
 
   return (

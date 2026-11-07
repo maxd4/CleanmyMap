@@ -300,6 +300,7 @@ export function ActionDeclarationFormSections({
             userId={identity.userMetadata.userId}
             variant="counts"
             isActionMode
+            hasAttemptedSubmit={hasAttemptedSubmit}
           />
           <ActionParticipantSection
             form={identity.form}

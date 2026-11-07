@@ -1,4 +1,5 @@
 import type { ActionRecordType } from "@/lib/actions/types";
+import { deriveVolunteerCountFromForm } from "@/lib/actions/volunteer-participation";
 
 /**
  * The export domain's narrow view of the declaration form.
@@ -19,6 +20,22 @@ export type ExportForm = {
   placeType: string;
   recordType: ActionRecordType;
   volunteersCount: string;
+  childrenCount?: string;
+  adultCount?: string;
+  retiredCount?: string;
   wasteKg: string;
   wasteMegotsKg: string;
 };
+
+export function normalizeActionDeclarationExportForm(form: ExportForm): ExportForm {
+  const volunteersCount = deriveVolunteerCountFromForm({
+    childrenCount: form.childrenCount ?? "",
+    adultCount: form.adultCount ?? "",
+    retiredCount: form.retiredCount ?? "",
+  });
+
+  return {
+    ...form,
+    volunteersCount: volunteersCount === null ? "" : String(volunteersCount),
+  };
+}

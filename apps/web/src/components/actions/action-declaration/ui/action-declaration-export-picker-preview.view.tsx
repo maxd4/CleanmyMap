@@ -1,12 +1,12 @@
 import { buildActionDeclarationExportLabel } from "@/lib/actions/exports/export-form-media";
-import type { FormState } from "../model";
+import type { ExportForm } from "@/lib/actions/exports/export-form-contract";
 import {
   getSelectedTargetLabel,
 } from "./action-declaration-export-picker.model";
 import type { ActionDeclarationExportTarget } from "@/lib/actions/exports/export-form-media";
 
 type ActionDeclarationExportPickerPreviewProps = {
-  form: FormState;
+  form: ExportForm;
   selectedTarget: ActionDeclarationExportTarget | undefined;
   previewSrc: string;
 };
@@ -72,7 +72,7 @@ export function ActionDeclarationExportPickerPreview({
               </div>
               <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
                 <dt className="font-semibold text-slate-500">Bénévoles</dt>
-                <dd className="font-bold text-slate-900">{form.volunteersCount || "1"}</dd>
+                <dd className="font-bold text-slate-900">{form.volunteersCount || "Non renseigné"}</dd>
               </div>
             </dl>
           </div>

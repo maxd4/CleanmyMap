@@ -1,4 +1,4 @@
-import type { ExportForm } from "./export-form-contract";
+import { normalizeActionDeclarationExportForm, type ExportForm } from "./export-form-contract";
 import type { ActionDeclarationExportBundleId, ActionDeclarationExportPresetId } from "@/lib/actions/exports/export-form-media";
 import { createClientIdentifier } from "@/lib/client-identifier";
 
@@ -101,7 +101,7 @@ export function createActionDeclarationExportHistoryEntry(params: {
     sourceLabel: params.sourceLabel,
     targetId: params.targetId,
     actorName: params.actorName,
-    form: params.form,
+    form: normalizeActionDeclarationExportForm(params.form),
     bundleId: params.bundleId,
   };
 }

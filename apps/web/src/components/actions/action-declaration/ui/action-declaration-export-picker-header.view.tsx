@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import { buildActionDeclarationExportLabel } from "@/lib/actions/exports/export-form-media";
-import type { FormState } from "../model";
+import type { ExportForm } from "@/lib/actions/exports/export-form-contract";
 
 type ActionDeclarationExportPickerHeaderProps = {
-  form: FormState;
+  form: ExportForm;
   onClose: () => void;
 };
 

@@ -22,7 +22,7 @@ import {
   writeActionDeclarationExportHistory,
   type ActionDeclarationExportHistoryEntry,
 } from "@/lib/actions/exports/export-form-history";
-import type { FormState } from "../model";
+import type { ExportForm } from "@/lib/actions/exports/export-form-contract";
 import {
   getDefaultBundleId,
   getDefaultTargetId,
@@ -34,7 +34,7 @@ import {
 export type ActionDeclarationExportPickerControllerProps = {
   isOpen: boolean;
   onClose: () => void;
-  form: FormState;
+  form: ExportForm;
   actorName: string;
 };
 

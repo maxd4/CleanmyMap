@@ -1,5 +1,5 @@
 import { CmmDialog } from "@/components/ui/cmm-dialog";
-import type { FormState } from "../model";
+import type { ExportForm } from "@/lib/actions/exports/export-form-contract";
 import type { ActionDeclarationExportPickerController } from "./action-declaration-export-picker.controller";
 import { ActionDeclarationExportPickerBundleSelection } from "./action-declaration-export-picker-bundle-selection.view";
 import { ActionDeclarationExportPickerFooter } from "./action-declaration-export-picker-footer.view";
@@ -12,7 +12,7 @@ import { ActionDeclarationExportPickerTargets } from "./action-declaration-expor
 export type ActionDeclarationExportPickerViewProps = {
   isOpen: boolean;
   onClose: () => void;
-  form: FormState;
+  form: ExportForm;
   controller: ActionDeclarationExportPickerController;
 };
 
