@@ -98,6 +98,23 @@ peut pas rendre silencieusement une certification obsolète. Une valeur calculé
 avant certification reste une `prévisualisation`; seul l'état `certified` porte
 un score officiel.
 
+Depuis les paramètres privés du cockpit, l'organisateur autorisé peut compléter
+la division active sans SQL : bornes Casual, version et référence de source,
+catégories, unités, coefficients, arrondi, pénalités, éligibilité, ordre des
+départages et correspondances environnementales. La saisie est enregistrée par
+la surcharge server-only de `spogomi_update_division_regulation`, avec la
+révision `composition_revision` attendue. L'écriture des catégories, des
+correspondances et de la configuration de division est atomique ; une révision
+concurrente, un événement déjà verrouillé ou une soumission existante bloque la
+mutation. La référence saisie par l'organisateur est une provenance déclarée,
+jamais une preuve que le barème est officiel.
+
+Le formulaire affiche les blocages de certification (source, paramètres,
+catégories incomplètes, coefficient non confirmé ou correspondance non décidée)
+et autorise explicitement l'état `incomplete`. L'état `complete` n'est accepté
+que lorsque le contrôle serveur et le prédicat PostgreSQL de complétude sont
+cohérents ; il ne remplace pas la décision de certification d'une soumission.
+
 Les lectures serveur des résultats, participants, soumissions, items et
 projections de consolidation sont paginées par clé et ordre déterministes.
 Toute page en erreur fait échouer la lecture complète plutôt que de publier un

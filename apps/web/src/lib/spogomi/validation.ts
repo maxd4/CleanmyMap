@@ -51,7 +51,7 @@ function validateEligibility(regulation: SpogomiRegulation): SpogomiValidationRe
 
 function validateTiebreakers(regulation: SpogomiRegulation): SpogomiValidationResult {
   if (regulation.tiebreakers) {
-    if (regulation.tiebreakers.length === 0) return invalid("tiebreakers_required");
+    if (regulation.tiebreakers.length === 0) return { ok: true };
     if (new Set(regulation.tiebreakers).size !== regulation.tiebreakers.length) return invalid("tiebreakers_must_be_unique");
     if (regulation.tiebreakers.some((tiebreaker) => !["sporting_score", "mass_grams", "counted_objects"].includes(tiebreaker))) return invalid("tiebreaker_invalid");
   }
@@ -65,27 +65,54 @@ function validatePenalties(regulation: SpogomiRegulation): SpogomiValidationResu
   return { ok: true };
 }
 
-function validateRegulation(regulation: SpogomiRegulation): SpogomiValidationResult {
+function validateTeamSizeConfig(regulation: SpogomiRegulation): SpogomiValidationResult {
+  const { minMembers, maxMembers } = regulation.teamSize.casual;
+  if (minMembers !== null && (!Number.isInteger(minMembers) || minMembers < 1)) return invalid("casual_min_members_invalid");
+  if (maxMembers !== null && (!Number.isInteger(maxMembers) || maxMembers < 1)) return invalid("casual_max_members_invalid");
+  if (minMembers !== null && maxMembers !== null && minMembers > maxMembers) return invalid("casual_team_bounds_invalid");
+  return { ok: true };
+}
+
+function validateEnvironmentMappings(regulation: SpogomiRegulation): SpogomiValidationResult {
+  if (!regulation.environmentMappings) return { ok: true };
+  const categoryCodes = new Set(regulation.categories.map((category) => category.code));
+  const seen = new Set<string>();
+  for (const mapping of regulation.environmentMappings) {
+    if (!categoryCodes.has(mapping.categoryCode)) return invalid("mapping_category_unknown");
+    if (seen.has(mapping.categoryCode)) return invalid("mapping_category_must_be_unique");
+    seen.add(mapping.categoryCode);
+    if (!mapping.sourceUnit.trim()) return invalid("mapping_source_unit_required");
+    if (mapping.mappingStatus === "mapped" && (!mapping.environmentalCategorySlug?.trim() || !mapping.sourceField || !mapping.targetUnit || mapping.unitFactorToTarget === null || !Number.isFinite(mapping.unitFactorToTarget) || mapping.unitFactorToTarget <= 0)) return invalid("mapped_environment_mapping_incomplete");
+    if (mapping.mappingStatus !== "mapped" && !mapping.exclusionReason?.trim()) return invalid("unmapped_environment_mapping_requires_reason");
+  }
+  return { ok: true };
+}
+
+export function validateSpogomiRegulation(regulation: SpogomiRegulation): SpogomiValidationResult {
   if (!regulation.version.trim()) return invalid("regulation_version_required");
-  if (regulation.categories.length === 0) return invalid("categories_required");
+  if (regulation.status === "complete" && regulation.categories.length === 0) return invalid("categories_required");
   for (const result of [
+    validateTeamSizeConfig(regulation),
     validateCategories(regulation.categories),
     validateRounding(regulation),
     validateEligibility(regulation),
     validateTiebreakers(regulation),
     validatePenalties(regulation),
+    validateEnvironmentMappings(regulation),
   ]) {
     if (!result.ok) return result;
   }
   return { ok: true };
 }
 
+export const validateRegulation = validateSpogomiRegulation;
+
 export function isRegulationReadyForCertification(
   regulation: SpogomiRegulation,
 ): boolean {
   return (
     regulation.status === "complete" &&
-    validateRegulation(regulation).ok &&
+    validateSpogomiRegulation(regulation).ok &&
     Boolean(regulation.sourceReference?.trim()) &&
     Boolean(regulation.rounding) &&
     Boolean(regulation.eligibility) &&

@@ -40,7 +40,7 @@ export async function loadSpogomiManagementProjection(params: {
     teamsQuery = teamsQuery.eq("division_id", divisionId);
   }
 
-  const [participants, teams, route, eventAccess, categoryRules] = await Promise.all([
+  const [participants, teams, route, eventAccess, categoryRules, environmentMappings] = await Promise.all([
     participantsQuery,
     teamsQuery,
     supabase
@@ -54,15 +54,20 @@ export async function loadSpogomiManagementProjection(params: {
       .eq("event_id", event.id),
     supabase
       .from("spogomi_category_rules")
-      .select("division_id, label, measurement_kind, unit, is_complete")
+      .select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete")
       .eq("event_id", event.id)
       .order("display_order", { ascending: true }),
+    supabase
+      .from("spogomi_environment_category_mappings")
+      .select("id, event_id, division_id, mapping_version, category_rule_id, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason")
+      .eq("event_id", event.id),
   ]);
   if (participants.error) throw participants.error;
   if (teams.error) throw teams.error;
   if (route.error) throw route.error;
   if (eventAccess.error) throw eventAccess.error;
   if (categoryRules.error) throw categoryRules.error;
+  if (environmentMappings.error) throw environmentMappings.error;
 
   return {
     event,
@@ -72,5 +77,6 @@ export async function loadSpogomiManagementProjection(params: {
     route: route.data ?? null,
     eventAccess: eventAccess.data ?? [],
     categoryRules: categoryRules.data ?? [],
+    environmentMappings: environmentMappings.data ?? [],
   };
 }

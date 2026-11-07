@@ -1,4 +1,4 @@
-import type { SpogomiCategoryRule, SpogomiRegulation } from "./types";
+import type { SpogomiCategoryRule, SpogomiEnvironmentCategoryMapping, SpogomiRegulation } from "./types";
 
 export type SpogomiEventRegulationRow = {
   id: string;
@@ -29,6 +29,12 @@ export type SpogomiCategoryRegulationRow = {
   is_complete: boolean;
 };
 
+export type SpogomiEnvironmentMappingRow = SpogomiEnvironmentCategoryMapping & {
+  event_id: string;
+  division_id: string;
+  mapping_version: string;
+};
+
 function asConfig(value: unknown): Pick<SpogomiRegulation, "rounding" | "penalties" | "eligibility" | "tiebreakers"> {
   return value && typeof value === "object" ? value as Pick<SpogomiRegulation, "rounding" | "penalties" | "eligibility" | "tiebreakers"> : {};
 }
@@ -38,7 +44,7 @@ function asTeamSize(value: unknown): SpogomiRegulation["teamSize"] {
   return { casual: { minMembers: typeof raw.casual?.minMembers === "number" ? raw.casual.minMembers : null, maxMembers: typeof raw.casual?.maxMembers === "number" ? raw.casual.maxMembers : null } };
 }
 
-export function buildSpogomiRegulation(event: SpogomiEventRegulationRow, categoryRows: SpogomiCategoryRegulationRow[]): SpogomiRegulation {
+export function buildSpogomiRegulation(event: SpogomiEventRegulationRow, categoryRows: SpogomiCategoryRegulationRow[], mappingRows: SpogomiEnvironmentMappingRow[] = []): SpogomiRegulation {
   const config = asConfig(event.regulation_config);
   return {
     ...(event.division_id ? { divisionId: event.division_id } : {}),
@@ -50,6 +56,7 @@ export function buildSpogomiRegulation(event: SpogomiEventRegulationRow, categor
     penalties: config.penalties,
     eligibility: config.eligibility,
     tiebreakers: config.tiebreakers,
+    environmentMappings: mappingRows.map((mapping) => ({ ...mapping })),
     categories: categoryRows.slice().sort((left, right) => left.display_order - right.display_order).map((category) => ({
       code: String(category.code), label: String(category.label), measurementKind: category.measurement_kind, unit: String(category.unit),
       coefficient: category.coefficient === null ? null : Number(category.coefficient), coefficientStatus: category.coefficient_status,

@@ -82,6 +82,21 @@ type SpogomiEligibilityRule = {
 
 type SpogomiTiebreaker = "sporting_score" | "mass_grams" | "counted_objects";
 
+export type SpogomiEnvironmentCategoryMapping = {
+  id?: string | null;
+  categoryRuleId?: string | null;
+  categoryCode: string;
+  environmentalCategorySlug: string | null;
+  sourceField: "mass_grams" | "object_count" | "quantity" | null;
+  sourceUnit: string;
+  targetUnit: "grams" | "count" | "quantity" | null;
+  unitFactorToTarget: number | null;
+  countsTowardTotal: boolean;
+  isMegots: boolean;
+  mappingStatus: "mapped" | "excluded" | "unmapped";
+  exclusionReason: string | null;
+};
+
 export type SpogomiRegulation = {
   divisionId?: string;
   version: string;
@@ -93,6 +108,7 @@ export type SpogomiRegulation = {
   penalties?: SpogomiPenalty[];
   eligibility?: SpogomiEligibilityRule;
   tiebreakers?: SpogomiTiebreaker[];
+  environmentMappings?: SpogomiEnvironmentCategoryMapping[];
 };
 
 export type SpogomiResultItemInput = {

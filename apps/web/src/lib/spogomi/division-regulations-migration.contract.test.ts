@@ -13,6 +13,10 @@ const rankingRepairMigration = readFileSync(
   new URL("../../../supabase/migrations/20261015000014_spogomi_division_ranking_snapshot_validation.sql", import.meta.url),
   "utf8",
 );
+const configurationMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261107000007_spogomi_division_regulation_configuration.sql", import.meta.url),
+  "utf8",
+);
 
 describe("SPOGOMI division-owned operations migration STATIC_CONTRACT", () => {
   it("keeps regulation state and team bounds on the stable division", () => {
@@ -71,5 +75,17 @@ describe("SPOGOMI division-owned operations migration STATIC_CONTRACT", () => {
     expect(rankingRepairMigration).toContain("captured.value ->> 'divisionId' = p_division_id::text");
     expect(rankingRepairMigration).toContain("spogomi_official_ranking_history");
     expect(rankingRepairMigration).toContain("'reinstated'");
+  });
+
+  it("keeps organizer regulation configuration atomic, revisioned and protected", () => {
+    expect(configurationMigration).toContain("p_categories jsonb");
+    expect(configurationMigration).toContain("p_environment_mappings jsonb");
+    expect(configurationMigration).toContain("p_expected_revision");
+    expect(configurationMigration).toContain("spogomi_result_submissions");
+    expect(configurationMigration).toContain("composition_revision + 1");
+    expect(configurationMigration).toContain("for update");
+    expect(configurationMigration).toContain("grant execute on function public.spogomi_update_division_regulation");
+    expect(configurationMigration).toContain("environmental_mapping_version");
+    expect(configurationMigration).toContain("certification");
   });
 });

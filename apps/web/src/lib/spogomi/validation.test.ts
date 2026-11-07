@@ -4,6 +4,7 @@ import {
   isRegulationReadyForCertification,
   validateParticipantState,
   validateResultItem,
+  validateSpogomiRegulation,
   validateSubmissionCertification,
   validateTeamComposition,
 } from "./validation";
@@ -160,6 +161,13 @@ describe("SPOGOMI domain invariants", () => {
     })).toBe(false);
     expect(isRegulationReadyForCertification({ ...ready, tiebreakers: ["mass_grams", "mass_grams"] })).toBe(false);
     expect(isRegulationReadyForCertification({ ...ready, rounding: undefined })).toBe(false);
+  });
+
+  it("validates Casual bounds and environmental decisions without inventing an official scale", () => {
+    expect(validateSpogomiRegulation({ ...incompleteRegulation, status: "incomplete", categories: [] })).toEqual({ ok: true });
+    expect(validateSpogomiRegulation({ ...incompleteRegulation, teamSize: { casual: { minMembers: 4, maxMembers: 2 } } })).toEqual({ ok: false, reason: "casual_team_bounds_invalid" });
+    expect(validateSpogomiRegulation({ ...incompleteRegulation, environmentMappings: [{ categoryCode: "unknown", environmentalCategorySlug: null, sourceField: null, sourceUnit: "g", targetUnit: null, unitFactorToTarget: null, countsTowardTotal: true, isMegots: false, mappingStatus: "unmapped", exclusionReason: "À documenter" }] })).toEqual({ ok: false, reason: "mapping_category_unknown" });
+    expect(validateSpogomiRegulation({ ...incompleteRegulation, environmentMappings: [{ categoryCode: "waste", environmentalCategorySlug: null, sourceField: null, sourceUnit: "g", targetUnit: null, unitFactorToTarget: null, countsTowardTotal: true, isMegots: false, mappingStatus: "unmapped", exclusionReason: null }] })).toEqual({ ok: false, reason: "unmapped_environment_mapping_requires_reason" });
   });
 
   it("keeps submission states distinct and requires an authorized certification decision", () => {

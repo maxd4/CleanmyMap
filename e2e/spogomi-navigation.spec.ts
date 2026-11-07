@@ -74,6 +74,25 @@ test.describe("SPOGOMI public navigation", () => {
     await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers%26section%3Dteams/);
   });
 
+  test("keeps the private division regulation mutation behind authentication", async ({ page }) => {
+    const response = await page.request.patch("/api/spogomi/events/event-that-does-not-exist/divisions/division-1/regulation", {
+      data: {
+        expectedRevision: 0,
+        regulationVersion: "synthetic-v1",
+        regulationStatus: "incomplete",
+        regulationSourceReference: null,
+        teamSize: { casual: { minMembers: null, maxMembers: null } },
+        rounding: null,
+        penalties: [],
+        eligibility: null,
+        tiebreakers: [],
+        categories: [],
+        environmentMappings: [],
+      },
+    });
+    expect(response.status()).toBe(401);
+  });
+
   test("keeps secondary content accessible and compact", async ({ page }) => {
     const response = await page.goto("/spogomi");
     expect(response?.status()).toBe(200);

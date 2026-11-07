@@ -105,6 +105,15 @@ uniquement par `service_role` après contrôle de session équipe ou d'AuthZ
 organisateur côté serveur. La migration locale n'est pas une preuve de son
 application sur Supabase distant.
 
+La configuration d'une division est désormais saisissable depuis Paramètres du
+cockpit par l'organisateur de l'édition. La mutation atomique reprend la
+version/source, les catégories et unités, les coefficients avec leur statut,
+les règles d'arrondi, l'éligibilité, les départages et les correspondances
+environnementales ; elle exige la révision attendue et refuse toute soumission
+existante. `complete` signifie que les prérequis de configuration sont cohérents
+et vérifiés par le prédicat PostgreSQL ; cela ne transforme jamais un barème
+saisi en règlement officiel ni une soumission en certification.
+
 ## 17 ter. Lot 5 livré — CURRENT — consolidation vers l’action canonique
 
 Le cockpit organisateur expose un aperçu puis une publication explicite du

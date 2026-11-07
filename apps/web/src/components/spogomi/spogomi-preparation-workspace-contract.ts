@@ -57,11 +57,36 @@ export type WorkspaceData = {
     geometry_geojson: { coordinates: [number, number][] };
   } | null;
   categoryRules: Array<{
+    id: string;
+    event_id: string;
     division_id: string;
+    regulation_version: string;
+    code: string;
     label: string;
     measurement_kind: string;
     unit: string;
+    coefficient: number | string | null;
+    coefficient_status: "unknown" | "confirmed" | "not_applicable";
+    environmental_category_slug: string | null;
+    display_order: number;
     is_complete: boolean;
+  }>;
+  environmentMappings: Array<{
+    id: string;
+    event_id: string;
+    division_id: string;
+    mapping_version: string;
+    category_rule_id: string;
+    category_code: string;
+    environmental_category_slug: string | null;
+    source_field: "mass_grams" | "object_count" | "quantity" | null;
+    source_unit: string;
+    target_unit: "grams" | "count" | "quantity" | null;
+    unit_factor_to_target: number | string | null;
+    counts_toward_total: boolean;
+    is_megots: boolean;
+    mapping_status: "mapped" | "excluded" | "unmapped";
+    exclusion_reason: string | null;
   }>;
   eventAccess: Array<{ role: string; revoked_at: string | null }>;
 };
