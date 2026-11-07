@@ -251,12 +251,27 @@ liée ou la production.
 effectifs utilisés par les références de collecte et les projections d'impact.
 Une ligne est capturée atomiquement lors du passage approuvé et publié d'une
 action, puis reste la version courante tant qu'une nouvelle publication
-effective n'a pas eu lieu. Un brouillon ou une modification en attente reste
-dans `actions` mais ne peut pas remplacer cette version. Les cinq actions
+effective n'a pas eu lieu. Une modification directe d'une action déjà publiée
+est comparée au snapshot courant ; si une donnée scientifique ou de contexte
+change, l'ancienne version est désactivée et la nouvelle devient courante dans
+la même transaction que la projection d'impact. Un brouillon ou une
+modification en attente reste dans `actions` mais ne peut pas remplacer cette
+version. Les cinq actions
 historiques approuvées dont `published_at` est `NULL` sont préservées sans date
 ni composition inventée (leurs `forms` vides restent inchangés) et sont portées par un snapshot
 `legacy_approved_unpublished`, afin de conserver leur contexte historique sans
 assimiler `approved` à une preuve d'authenticité terrain.
+
+Chaque application de projection est tracée dans
+`public_impact_action_contribution_applications`, avec la version source, la
+version précédente et les champs modifiés (participants, composition,
+quantités, durée, contexte, attribution et publication). La clé `(action_id,
+source_version_id)` rend le rejeu idempotent : un échec transactionnel ne
+publie ni snapshot partiel ni delta incomplet, et une reconstruction peut
+rejouer la version sans double comptage. Les RPC de références et les
+indicateurs cartographiques lisent les snapshots admissibles ; les inscriptions,
+`action_participants`, les brouillons et les estimations restent des contrats
+distincts et ne deviennent jamais une source de quantité ou d'effectif.
 
 La rétention quotidienne passe par le registre de maintenance existant. Seuls
 les brouillons ou `pending` inactifs depuis plus d'un mois calendaire, sans

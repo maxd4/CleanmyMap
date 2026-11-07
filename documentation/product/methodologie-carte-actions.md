@@ -278,6 +278,25 @@ petit échantillon et ne constitue pas une calibration scientifique. Cette
 lecture descriptive ne modifie ni le score cartographique, ni les mesures
 brutes, ni la RPC globale historique.
 
+### Version statistique publiée et propagation
+
+Les indicateurs ne lisent pas les champs statistiques d'un brouillon, d'une
+correction en attente, d'une inscription ou de `action_participants`.
+`action_statistical_versions` conserve la dernière version approuvée et
+publiée du formulaire, avec les participants déclarés, leur composition, les
+quantités, la durée et le contexte. Une publication modifiée compare le
+snapshot précédent au nouveau formulaire complet ; la contribution précédente
+est retirée et la nouvelle appliquée dans la même transaction. Les ratios sont
+recalculés depuis les valeurs complètes, jamais par addition de ratios.
+
+Chaque application est enregistrée par version dans
+`public_impact_action_contribution_applications`, ce qui rend les rejeux
+idempotents et permet une reconstruction sans double comptage. Les actions
+historiques dont la date de publication ou la composition sont inconnues sont
+conservées comme telles ; `approved` ne constitue pas à lui seul une preuve de
+terrain. Cette séparation ne modifie pas les contrats indépendants de
+participation confirmée et de gamification.
+
 Dans l'étape de déclaration, chaque indicateur choisit sa référence sans
 mélanger les dénominateurs. Lorsque la référence contextuelle pondérée et ses
 sources sont disponibles, le courant est divisé par les unités opérationnelles
