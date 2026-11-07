@@ -57,6 +57,7 @@ describe("useActionDeclarationForm public facade", () => {
       routeTopology: "loop",
       volunteersCount: "1",
       childrenCount: "0",
+      adultCount: "1",
       retiredCount: "0",
       wasteKg: "1",
       durationMinutes: "60",

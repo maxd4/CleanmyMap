@@ -97,6 +97,7 @@ function buildValidationForm(participantOnly = false): FormState {
     departureLocationLabel: "Quai nord",
     volunteersCount: "1",
     childrenCount: "0",
+    adultCount: "1",
     retiredCount: "0",
     durationMinutes: "60",
     wasteKg: "8",

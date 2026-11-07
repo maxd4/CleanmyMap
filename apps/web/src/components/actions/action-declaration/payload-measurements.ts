@@ -1,6 +1,6 @@
 import type { CreateActionPayload } from "../../../lib/actions/types";
 import {
-  deriveVolunteerParticipationFromTotal,
+  buildVolunteerParticipationFromForm as buildVolunteerParticipationFromCategories,
   normalizeVolunteerParticipation,
   type VolunteerParticipationInput,
 } from "../../../lib/actions/volunteer-participation";
@@ -60,10 +60,10 @@ export function buildVolunteerParticipationFromForm(
 export function buildActionVolunteerParticipationFromForm(
   form: FormState,
 ): VolunteerParticipationInput {
-  return deriveVolunteerParticipationFromTotal({
-    volunteersCount: toOptionalNumber(form.volunteersCount) ?? null,
-    childrenCount: toOptionalNumber(form.childrenCount) ?? null,
-    retiredCount: toOptionalNumber(form.retiredCount) ?? null,
+  return buildVolunteerParticipationFromCategories({
+    childrenCount: form.childrenCount,
+    adultCount: form.adultCount,
+    retiredCount: form.retiredCount,
   });
 }
 
@@ -119,8 +119,13 @@ export function resolveCreateActionMeasurementParts(
 export function buildCreateActionPayloadMeasurementFields(
   form: FormState,
   parts: CreateActionPayloadParts,
+  declarationMode: DeclarationMode,
 ): Partial<CreateActionPayload> {
   const { enteredMegotsKg, enteredButtsCount, enteredVolumeLiters, cigaretteButtsCondition } = parts;
+  const derivedVolunteersCount =
+    declarationMode === "complete"
+      ? parts.volunteerParticipation.participantsCount
+      : toOptionalNumber(form.volunteersCount) ?? parts.volunteerParticipation.participantsCount ?? 1;
   return {
     wasteKg: toOptionalNumber(form.wasteKg) ?? null,
     cigaretteButtsMeasurements: parts.rawCigaretteButtsMeasurements,
@@ -132,10 +137,9 @@ export function buildCreateActionPayloadMeasurementFields(
     cigaretteButts: enteredButtsCount,
     cigaretteButtsCount: enteredButtsCount,
     volunteerParticipation: parts.volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
-    volunteersCount:
-      toOptionalNumber(form.volunteersCount) ??
-      parts.volunteerParticipation.participantsCount ??
-      1,
+    ...(derivedVolunteersCount === null || derivedVolunteersCount === undefined
+      ? {}
+      : { volunteersCount: derivedVolunteersCount }),
     durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
     eventStartTime: form.eventStartTime.trim() || null,
     eventEndTime: form.eventEndTime.trim() || null,

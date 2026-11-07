@@ -29,7 +29,7 @@ describe("action declaration payload identity and organisation", () => {
     form.childrenCount = "2";
     form.retiredCount = "2";
     form.volunteersCount = "8";
-    form.adultCount = "999";
+    form.adultCount = "4";
 
     const payload = buildPayload(form);
 
@@ -48,7 +48,7 @@ describe("action declaration payload identity and organisation", () => {
     });
   });
 
-  it("accepts an explicit total without manufacturing a category split", () => {
+  it("does not use an old total when final category sources are absent", () => {
     const form = buildBaseForm();
     form.volunteersCount = "7";
     form.childrenCount = "";
@@ -57,7 +57,7 @@ describe("action declaration payload identity and organisation", () => {
 
     const payload = buildPayload(form);
 
-    expect(payload.volunteersCount).toBe(7);
+    expect(payload.volunteersCount).toBeUndefined();
     expect(payload.volunteerParticipation).toEqual({
       childrenCount: null,
       adultCount: null,
@@ -65,12 +65,12 @@ describe("action declaration payload identity and organisation", () => {
     });
   });
 
-  it("derives adults from the total, children and retirees in preparation data", () => {
+  it("uses the submitted adult category without trusting a stale total", () => {
     const form = buildBaseForm();
-    form.volunteersCount = "12";
+    form.volunteersCount = "99";
     form.childrenCount = "1";
     form.retiredCount = "0";
-    form.adultCount = "1";
+    form.adultCount = "11";
 
     const payload = buildPayload(form);
 
@@ -79,6 +79,7 @@ describe("action declaration payload identity and organisation", () => {
       adultCount: 11,
       retiredCount: 0,
     });
+    expect(payload.volunteersCount).toBe(12);
     expect(payload.preparationData?.volunteerParticipation).toEqual({
       childrenCount: 1,
       adultCount: 11,

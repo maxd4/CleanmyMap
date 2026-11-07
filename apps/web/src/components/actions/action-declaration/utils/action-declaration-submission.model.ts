@@ -14,7 +14,10 @@ import {
 } from "../payload";
 import type { FormState, ValidationIssue } from "../model";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
-import { getVolunteerActionCompositionValidationMessage } from "@/lib/actions/volunteer-participation";
+import {
+  deriveVolunteerCountFromForm,
+  getFinalVolunteerCompositionValidationMessage,
+} from "@/lib/actions/volunteer-participation";
 import { toOptionalNumber } from "../payload-numbers";
 import {
   calculateCigaretteButtsLotsTotalCount,
@@ -202,13 +205,18 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
 
 function getParticipantIssues(form: FormState): ValidationIssue[] {
   if (form.recordType !== "action") return [];
-  const totalInput = form.volunteersCount.trim();
-  const total = Number(totalInput);
-  if (!totalInput || !Number.isInteger(total) || total < 1 || total > 500) {
-    return [{ field: "volunteersCount", message: "Renseignez le nombre total de participants présents (un entier de 1 à 500)." }];
+  const compositionInput = {
+    adultCount: form.adultCount,
+    retiredCount: form.retiredCount,
+    childrenCount: form.childrenCount,
+  };
+  const compositionMessage = getFinalVolunteerCompositionValidationMessage(compositionInput);
+  if (compositionMessage) {
+    return [{ field: "volunteerParticipation", message: compositionMessage }];
   }
-  const compositionMessage = getVolunteerActionCompositionValidationMessage({ volunteersCount: total, childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount), retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount) });
-  return compositionMessage ? [{ field: "volunteerParticipation", message: compositionMessage }] : [];
+  return deriveVolunteerCountFromForm(compositionInput) === null
+    ? [{ field: "volunteerParticipation", message: "La composition des participants est incomplète." }]
+    : [];
 }
 
 function getGeometryIssues(params: Pick<SubmissionValidationParams, "form" | "payload" | "declarationMode" | "hasValidDrawing" | "hasServerRouteInput" | "isCleanPlaceMode" | "gpxImport" | "manualDrawingSource">): ValidationIssue[] {

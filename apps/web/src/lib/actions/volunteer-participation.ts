@@ -41,6 +41,52 @@ export type VolunteerParticipationFormInput = {
   retiredCount: string;
 };
 
+export function parseVolunteerCategoryInput(rawValue: string): number | null {
+  if (rawValue.trim() === "") return null;
+  const value = Number(rawValue);
+  return Number.isInteger(value) && value >= 0 && value <= 500 ? value : null;
+}
+
+export function deriveVolunteerCountFromForm(
+  input: VolunteerParticipationFormInput,
+): number | null {
+  const childrenCount = parseVolunteerCategoryInput(input.childrenCount);
+  const adultCount = parseVolunteerCategoryInput(input.adultCount);
+  const retiredCount = parseVolunteerCategoryInput(input.retiredCount);
+  if (childrenCount === null || adultCount === null || retiredCount === null) {
+    return null;
+  }
+
+  const total = childrenCount + adultCount + retiredCount;
+  return total >= 1 && total <= 500 ? total : null;
+}
+
+export function buildVolunteerParticipationFromForm(
+  input: VolunteerParticipationFormInput,
+): VolunteerParticipationInput {
+  return {
+    childrenCount: parseVolunteerCategoryInput(input.childrenCount),
+    adultCount: parseVolunteerCategoryInput(input.adultCount),
+    retiredCount: parseVolunteerCategoryInput(input.retiredCount),
+  };
+}
+
+export function getFinalVolunteerCompositionValidationMessage(
+  input: VolunteerParticipationFormInput,
+): string | null {
+  const values = [input.adultCount, input.retiredCount, input.childrenCount];
+  if (values.some((value) => value.trim() === "")) {
+    return "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents.";
+  }
+  if (values.some((value) => parseVolunteerCategoryInput(value) === null)) {
+    return "Les nombres d’adultes, de retraités et d’enfants doivent être des entiers compris entre 0 et 500.";
+  }
+  if (deriveVolunteerCountFromForm(input) === null) {
+    return "La somme des adultes, retraités et enfants doit être comprise entre 1 et 500.";
+  }
+  return null;
+}
+
 export type PersistedVolunteerComposition = {
   children_count: number | null;
   adult_count: number | null;
@@ -315,12 +361,7 @@ export function normalizeVolunteerParticipation(
 function normalizeVolunteerParticipationFromForm(
   input: VolunteerParticipationFormInput,
 ): ActionVolunteerParticipation {
-  const toCount = (value: string) => value.trim() === "" ? null : Number(value);
-  return normalizeVolunteerParticipation({
-    childrenCount: toCount(input.childrenCount),
-    adultCount: toCount(input.adultCount),
-    retiredCount: toCount(input.retiredCount),
-  });
+  return normalizeVolunteerParticipation(buildVolunteerParticipationFromForm(input));
 }
 
 export function getVolunteerParticipationDisclosureDetail(

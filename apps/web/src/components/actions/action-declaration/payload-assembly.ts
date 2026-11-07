@@ -27,7 +27,7 @@ function buildCreateActionPayloadResult(
 ): CreateActionPayload {
   return {
     ...buildCreateActionPayloadIdentityFields(params, parts),
-    ...buildCreateActionPayloadMeasurementFields(params.form, parts),
+    ...buildCreateActionPayloadMeasurementFields(params.form, parts, params.declarationMode),
     ...buildCreateActionPayloadGeometryFields(params, parts, buildPreparationDataFromForm),
     photos: params.photos ?? [],
     visionEstimate: params.visionEstimate ?? null,

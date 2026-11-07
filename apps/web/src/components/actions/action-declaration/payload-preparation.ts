@@ -108,12 +108,15 @@ function buildPreparationParticipationFields(
   form: FormState,
   volunteerParticipationInput: ReturnType<typeof buildVolunteerParticipationFromForm>,
   volunteerParticipation: ReturnType<typeof normalizeVolunteerParticipation>,
+  declarationMode: DeclarationMode,
 ) {
   return {
     volunteersExpected:
-      toOptionalNumber(form.volunteersCount) ??
-      volunteerParticipation.participantsCount ??
-      undefined,
+      declarationMode === "complete"
+        ? volunteerParticipation.participantsCount ?? undefined
+        : toOptionalNumber(form.volunteersCount) ??
+          volunteerParticipation.participantsCount ??
+          undefined,
     volunteerParticipation:
       volunteerParticipationInput as ActionPreparationData["volunteerParticipation"],
     actionContextSelection: form.actionContext || null,
@@ -224,6 +227,7 @@ export function buildPreparationDataFromForm(
       form,
       context.volunteerParticipationInput,
       context.volunteerParticipation,
+      declarationMode,
     ),
   };
 }

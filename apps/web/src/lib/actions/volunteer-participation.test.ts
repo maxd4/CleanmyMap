@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   deriveAdultCountFromTotal,
+  deriveVolunteerCountFromForm,
   deriveVolunteerParticipationFromTotal,
   EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
   getVolunteerActionCompositionValidationMessage,
+  getFinalVolunteerCompositionValidationMessage,
   getVolunteerParticipationDisclosureDetail,
   normalizeActionVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
@@ -13,6 +15,22 @@ import {
 } from "./volunteer-participation";
 
 describe("volunteer participation contract", () => {
+  it.each([
+    [{ adultCount: "", retiredCount: "0", childrenCount: "0" }, null],
+    [{ adultCount: "0", retiredCount: "0", childrenCount: "0" }, null],
+    [{ adultCount: "2", retiredCount: "1", childrenCount: "3" }, 6],
+  ] as const)("derives the final total only from complete categories", (input, expected) => {
+    expect(deriveVolunteerCountFromForm(input)).toBe(expected);
+  });
+
+  it.each([
+    ["missing", { adultCount: "", retiredCount: "0", childrenCount: "0" }, "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents."],
+    ["fractional", { adultCount: "1.5", retiredCount: "0", childrenCount: "0" }, "Les nombres d’adultes, de retraités et d’enfants doivent être des entiers compris entre 0 et 500."],
+    ["over maximum", { adultCount: "500", retiredCount: "1", childrenCount: "0" }, "La somme des adultes, retraités et enfants doit être comprise entre 1 et 500."],
+  ] as const)("validates final category sources: %s", (_label, input, expected) => {
+    expect(getFinalVolunteerCompositionValidationMessage(input)).toBe(expected);
+  });
+
   it.each([
     { total: 12, children: 0, retired: 0, adult: 12, units: 12 },
     { total: 12, children: 1, retired: 0, adult: 11, units: 11.5 },

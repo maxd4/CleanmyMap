@@ -19,6 +19,7 @@ function buildValidCompleteDeclaration() {
     departureLocationLabel: "Quai nord",
     volunteersCount: "1",
     childrenCount: "0",
+    adultCount: "1",
     retiredCount: "0",
     wasteKg: "1",
     durationMinutes: "60",
@@ -124,7 +125,7 @@ describe("action declaration submission model", () => {
       "associationName",
       "actionDate",
       "arrivalLocationLabel",
-      "volunteersCount",
+      "volunteerParticipation",
       "wasteKg",
       "manualDrawing",
     ]));
@@ -204,7 +205,7 @@ describe("action declaration submission model", () => {
     expect(issues).toEqual(expect.arrayContaining([expect.objectContaining({ field })]));
   });
 
-  it("requires an explicit total for a post-action declaration", () => {
+  it("requires all three categories for a post-action declaration", () => {
     const form = createInitialFormState("Alex", "action");
     form.organizerType = "spontaneous";
     form.organizerAccounts = "user-organizer";
@@ -236,12 +237,15 @@ describe("action declaration submission model", () => {
 
     expect(issues).toEqual([
       {
-        field: "volunteersCount",
-        message: "Renseignez le nombre total de participants présents (un entier de 1 à 500).",
+        field: "volunteerParticipation",
+        message: "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents.",
       },
     ]);
 
     form.volunteersCount = "12";
+    form.adultCount = "12";
+    form.childrenCount = "0";
+    form.retiredCount = "0";
     expect(getActionDeclarationSubmissionIssues({
       form,
       payload: buildCreateActionPayload({
@@ -282,7 +286,7 @@ describe("action declaration submission model", () => {
     })).toEqual([
       {
         field: "volunteerParticipation",
-        message: "Renseignez les nombres entiers d’enfants et de retraités présents.",
+        message: "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents.",
       },
     ]);
   });

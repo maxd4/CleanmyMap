@@ -14,7 +14,7 @@ import {
 } from "../utils/harvest-utils";
 import { deriveContextualCollectionUnits } from "@/lib/actions/action-collection-reference-averages-shared";
 import {
-  deriveAdultCountFromTotal,
+  deriveVolunteerCountFromForm,
   getVolunteerActionCompositionValidationMessage,
 } from "@/lib/actions/volunteer-participation";
 import { useCallback, useMemo } from "react";
@@ -345,13 +345,13 @@ function deriveHarvestMetrics(
     contextualCollectionReferences,
   );
   const wasteKg = readValidComparisonNumber(form.wasteKg, 0, ACTION_MEASUREMENT_MAX_KG);
-  const volunteersCount = readValidComparisonNumber(form.volunteersCount, 1, 500);
   const childrenCount = readParticipantCount(form.childrenCount);
+  const adultCount = readParticipantCount(form.adultCount);
   const retiredCount = readParticipantCount(form.retiredCount);
-  const adultCount = deriveAdultCountFromTotal({
-    volunteersCount,
-    childrenCount,
-    retiredCount,
+  const volunteersCount = deriveVolunteerCountFromForm({
+    childrenCount: form.childrenCount,
+    adultCount: form.adultCount,
+    retiredCount: form.retiredCount,
   });
   const hasValidContextualComposition =
     getVolunteerActionCompositionValidationMessage({

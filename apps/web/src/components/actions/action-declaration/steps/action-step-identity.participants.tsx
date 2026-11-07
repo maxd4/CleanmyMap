@@ -2,6 +2,8 @@ import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
   deriveAdultCountFromTotal,
   deriveVolunteerParticipationFromTotal,
+  deriveVolunteerCountFromForm,
+  getFinalVolunteerCompositionValidationMessage,
   getVolunteerActionCompositionValidationMessage,
   normalizeVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
@@ -102,10 +104,84 @@ function ParticipantContextControl({
   );
 }
 
+function FinalParticipantCountInputs({
+  form,
+  updateField,
+}: {
+  form: FormState;
+  updateField: UpdateField;
+}) {
+  const compositionInput = {
+    adultCount: form.adultCount,
+    retiredCount: form.retiredCount,
+    childrenCount: form.childrenCount,
+  };
+  const compositionMessage = getFinalVolunteerCompositionValidationMessage(compositionInput);
+  const volunteersCount = deriveVolunteerCountFromForm(compositionInput);
+  const fields = [
+    ["action-adult-count", "Adultes", "adultCount"],
+    ["action-retired-count", "Retraités", "retiredCount"],
+    ["action-children-count", "Enfants", "childrenCount"],
+  ] as const;
+
+  return (
+    <fieldset className="min-w-0 space-y-3">
+      <legend className="sr-only">Composition des participants présents</legend>
+      <div className="grid min-w-0 grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
+        {fields.map(([id, label, key], index) => (
+          <div key={id} className="contents">
+            <label htmlFor={id} className="min-w-0">
+              <span className="sr-only">{label}</span>
+              <input
+                id={id}
+                type="number"
+                min="0"
+                max="500"
+                step="1"
+                inputMode="numeric"
+                placeholder={label}
+                aria-invalid={Boolean(compositionMessage)}
+                aria-describedby={compositionMessage ? "action-volunteer-composition-error" : undefined}
+                className={`${compactInputCls} min-w-0 bg-[#EAF7F0] placeholder:text-emerald-800/65`}
+                value={form[key]}
+                onChange={(event) => updateField(key, event.target.value)}
+              />
+            </label>
+            {index < fields.length - 1 ? (
+              <span aria-hidden="true" className="hidden px-1 text-lg font-bold text-emerald-700 sm:inline">+</span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      {compositionMessage ? (
+        <p id="action-volunteer-composition-error" className="text-xs font-medium text-rose-700" role="alert">
+          {compositionMessage}
+        </p>
+      ) : null}
+      {volunteersCount !== null ? (
+        <p className="text-xs font-semibold text-emerald-900/70" aria-live="polite">
+          Total dérivé : {volunteersCount} participant{volunteersCount > 1 ? "s" : ""}
+        </p>
+      ) : null}
+      <ParticipantContextControl
+        form={form}
+        updateField={updateField}
+        inputClassName={compactInputCls}
+        contextSuggestion={suggestPreActionContext({
+          volunteersCount,
+          childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
+          retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
+        })}
+      />
+    </fieldset>
+  );
+}
+
 function ParticipantCountInputs({
   form,
   updateField,
   compact,
+  finalComposition,
   adultCount,
   participation,
   compositionMessage,
@@ -116,6 +192,7 @@ function ParticipantCountInputs({
   form: FormState;
   updateField: UpdateField;
   compact: boolean;
+  finalComposition: boolean;
   adultCount: number | null;
   participation: ReturnType<typeof normalizeVolunteerParticipation>;
   compositionMessage: string | null;
@@ -123,6 +200,10 @@ function ParticipantCountInputs({
   childrenCount: number | null;
   retiredCount: number | null;
 }) {
+  if (finalComposition) {
+    return <FinalParticipantCountInputs form={form} updateField={updateField} />;
+  }
+
   const inputClassName = compact ? compactInputCls : inputCls;
   const contextSuggestion = suggestPreActionContext({
     volunteersCount,
@@ -243,10 +324,11 @@ function ParticipantCounts({ form, updateField, compact }: { form: FormState; up
   const hasParticipantEntry = form.volunteersCount.trim() !== "" || form.childrenCount.trim() !== "0" || form.retiredCount.trim() !== "0";
   const compositionMessage = hasParticipantEntry ? getVolunteerActionCompositionValidationMessage({ volunteersCount, childrenCount, retiredCount }) : null;
   return (
-    <ParticipantCountInputs
+      <ParticipantCountInputs
       form={form}
       updateField={updateField}
       compact={compact}
+        finalComposition={!compact}
       adultCount={adultCount}
       participation={participation}
       compositionMessage={compositionMessage}

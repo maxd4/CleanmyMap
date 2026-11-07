@@ -23,10 +23,10 @@ vi.mock("./steps/action-step-identity.collection", () => ({
   ActionCollectionSection: () => <div>environment fields</div>,
 }));
 vi.mock("./steps/action-step-identity.organizer", () => ({
-  ActionOrganizerSection: () => <div>organizer fields</div>,
+  ActionOrganizerSection: ({ variant }: { variant?: string }) => <div>{`organizer ${variant ?? ""}`}</div>,
 }));
 vi.mock("./steps/action-step-identity.participants", () => ({
-  ActionParticipantSection: () => <div>participant fields</div>,
+  ActionParticipantSection: ({ variant, showParticipantAccounts }: { variant?: string; showParticipantAccounts?: boolean }) => <div>{`participant ${variant ?? ""} ${showParticipantAccounts === false ? "organizers" : "accounts"}`}</div>,
 }));
 vi.mock("./steps/action-step-identity.time", () => ({
   ActionTimeSection: () => <div>time fields</div>,
@@ -101,10 +101,12 @@ describe("ActionDeclarationValidationSummary", () => {
     expect(markup).toContain("Identifier l’action");
     expect(markup).toContain("05");
     expect(markup).toContain("Vérifier et transmettre");
-    expect(markup).toContain("Participants prévus");
-    expect(markup).toContain("Participants présents le jour J");
-    expect(markup).toContain("action-declaration-planned-participants-title");
-    expect(markup).toContain("action-declaration-present-participants-title");
+    expect(markup).not.toContain("Participants prévus");
+    expect(markup).not.toContain("Comptes identifiés pour la présence");
+    expect(markup).not.toContain("Présences confirmées");
+    expect(markup.match(/participant supporting accounts/g)).toHaveLength(1);
+    expect(markup.indexOf("organizer identity-association")).toBeGreaterThan(markup.indexOf('id="action-declaration-participants"'));
+    expect(markup.indexOf("organizer identity-association")).toBeLessThan(markup.indexOf('id="action-declaration-results"'));
   });
 });
 
@@ -118,6 +120,7 @@ function buildValidReviewForm() {
   form.departureLocationLabel = "Quai de test";
   form.volunteersCount = "1";
   form.childrenCount = "0";
+  form.adultCount = "1";
   form.retiredCount = "0";
   form.wasteKg = "1";
   form.durationMinutes = "60";

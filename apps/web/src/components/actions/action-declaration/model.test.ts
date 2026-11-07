@@ -25,13 +25,13 @@ describe("action declaration model", () => {
     expect(second.preparationChecklist[0].checked).toBe(false);
   });
 
-  it("starts a new action with an empty total and zero category defaults", () => {
+  it("starts a new action with an empty total and unknown categories", () => {
     const form = createInitialFormState("Alice");
 
     expect(form.volunteersCount).toBe("");
-    expect(form.childrenCount).toBe("0");
+    expect(form.childrenCount).toBe("");
     expect(form.adultCount).toBe("");
-    expect(form.retiredCount).toBe("0");
+    expect(form.retiredCount).toBe("");
     expect(form.cigaretteButtsInputSource).toBeNull();
   });
 });

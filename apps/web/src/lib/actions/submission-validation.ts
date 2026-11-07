@@ -158,11 +158,13 @@ export function getVolunteerActionValidationIssues(
   const hasCompleteCategoryData = participation
     ? hasCompleteVolunteerCategoryData(participation)
     : false;
-  const compositionMessage = getVolunteerActionCompositionValidationMessage({
-    volunteersCount: payload.volunteersCount,
-    childrenCount: participation?.childrenCount ?? null,
-    retiredCount: participation?.retiredCount ?? null,
-  });
+  const compositionMessage = !hasCompleteCategoryData && payload.volunteersCount === undefined
+    ? "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents."
+    : getVolunteerActionCompositionValidationMessage({
+        volunteersCount: payload.volunteersCount,
+        childrenCount: participation?.childrenCount ?? null,
+        retiredCount: participation?.retiredCount ?? null,
+      });
   if (compositionMessage) {
     issues.push({
       field: "volunteerParticipation",

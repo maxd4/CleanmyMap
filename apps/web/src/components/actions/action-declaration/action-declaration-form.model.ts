@@ -17,7 +17,7 @@ export const ACTION_VALIDATION_FIELD_IDS: Record<string, string> = {
   cigaretteButtsCount: "harvest-megots-count",
   cigaretteButtsVolumeLiters: "harvest-megots-volume",
   volunteersCount: "action-volunteers-count",
-  volunteerParticipation: "action-children-count",
+  volunteerParticipation: "action-adult-count",
   durationMinutes: "action-duration-minutes",
   eventStartTime: "action-event-start",
   eventEndTime: "action-event-end",

@@ -9,6 +9,9 @@ export function buildBaseForm() {
   form.wasteMegotsKg = "1.5";
   form.wasteMegotsCondition = "propre";
   form.volunteersCount = "5";
+  form.childrenCount = "0";
+  form.adultCount = "5";
+  form.retiredCount = "0";
   form.durationMinutes = "75";
   form.notes = "Collecte de test";
   form.routeAdjustmentMessage = "Éviter l'avenue principale";

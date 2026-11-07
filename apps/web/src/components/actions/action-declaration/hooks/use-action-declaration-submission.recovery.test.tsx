@@ -203,7 +203,7 @@ describe("action declaration draft recovery", () => {
     expect(latest.validationIssues.map((issue) => issue.field)).toEqual(expect.arrayContaining([
       "organizerType",
       "actionDate",
-      "volunteersCount",
+      "volunteerParticipation",
       "wasteKg",
       "manualDrawing",
     ]));
@@ -219,6 +219,7 @@ describe("action declaration draft recovery", () => {
     form.departureLocationLabel = "Quai de test";
     form.volunteersCount = "1";
     form.childrenCount = "0";
+    form.adultCount = "1";
     form.retiredCount = "0";
     form.wasteKg = "1";
     form.durationMinutes = "60";
@@ -297,6 +298,7 @@ describe("action declaration draft recovery", () => {
     form.departureLocationLabel = "Quai de test";
     form.volunteersCount = "1";
     form.childrenCount = "0";
+    form.adultCount = "1";
     form.retiredCount = "0";
     form.wasteKg = "1";
     form.durationMinutes = "60";

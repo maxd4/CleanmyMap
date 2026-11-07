@@ -41,6 +41,9 @@ describe("action declaration payload mesures", () => {
     zeroForm.wasteKg = "0";
     zeroForm.cigaretteButtsCount = "0";
     zeroForm.volunteersCount = "1";
+    zeroForm.childrenCount = "0";
+    zeroForm.adultCount = "1";
+    zeroForm.retiredCount = "0";
     const zeroPayload = buildCreateActionPayload({
       form: zeroForm,
       declarationMode: "complete",
