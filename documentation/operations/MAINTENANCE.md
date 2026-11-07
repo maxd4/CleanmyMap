@@ -31,6 +31,9 @@ contribution active ou toute dépendance métier non résolue bloque la purge.
 Les RPC de références relisent toujours l'état d'éligibilité de `actions` au
 moment du calcul : une révocation est immédiate et une réhabilitation reprend
 la version statistique conservée sans nouvelle capture.
+Les vues techniques utilisées par la carte et les références pollution ne sont
+pas des endpoints publics : les rôles navigateur n'ont aucun `SELECT` direct et
+passent uniquement par les RPC filtrées, sans accès aux snapshots bruts.
 
 Les valeurs utilisées par les indicateurs publics sont séparées de la ligne
 mutable : `action_statistical_versions` conserve la dernière version approuvée

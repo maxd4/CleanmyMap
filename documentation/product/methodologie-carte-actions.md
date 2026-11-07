@@ -303,6 +303,11 @@ marquée `test` est exclue immédiatement, même si son snapshot demeure conserv
 pour l'historique. Une réhabilitation admissible réutilise ce snapshot sans
 inventer de nouvelle publication ni doubler la source.
 
+Les vues techniques de population des références pollution et de source
+statistique cartographique ne sont pas lisibles directement par `anon` ou
+`authenticated`. Les RPC filtrées restent les seules surfaces publiques ; elles
+conservent les formules, les `NULL`, les zéros et les dénominateurs existants.
+
 Dans l'étape de déclaration, chaque indicateur choisit sa référence sans
 mélanger les dénominateurs. Lorsque la référence contextuelle pondérée et ses
 sources sont disponibles, le courant est divisé par les unités opérationnelles

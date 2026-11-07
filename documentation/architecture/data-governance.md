@@ -268,8 +268,15 @@ version précédente et les champs modifiés (participants, composition,
 quantités, durée, contexte, attribution et publication). La clé `(action_id,
 source_version_id)` rend le rejeu idempotent : un échec transactionnel ne
 publie ni snapshot partiel ni delta incomplet, et une reconstruction peut
-rejouer la version sans double comptage. Les RPC de références et les
-indicateurs cartographiques lisent les snapshots admissibles ; les inscriptions,
+rejouer la version sans double comptage. Les vues
+`action_map_statistical_source` et
+`action_pollution_score_reference_population` sont des projections techniques,
+pas des surfaces de lecture navigateur : `anon` et `authenticated` n'ont aucun
+`SELECT` direct. Les RPC publiques de la carte et des références sont les seuls
+contrats autorisés ; ils relisent l'éligibilité courante de `actions` avant de
+lire les mesures du snapshot. Une révocation devient donc immédiate sans
+supprimer l'historique, tandis qu'une réhabilitation réutilise la version
+validée. Les inscriptions,
 `action_participants`, les brouillons et les estimations restent des contrats
 distincts et ne deviennent jamais une source de quantité ou d'effectif.
 

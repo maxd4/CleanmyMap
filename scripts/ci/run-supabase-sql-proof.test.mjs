@@ -29,6 +29,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/action-rides-contract.pgtap.sql",
     "apps/web/supabase/tests/action-rides-transactions-contract.pgtap.sql",
     "apps/web/supabase/tests/action-server-boundary.pgtap.sql",
+    "apps/web/supabase/tests/action-statistical-public-views.pgtap.sql",
     "apps/web/supabase/tests/action-statistical-revocation-and-retention.pgtap.sql",
     "apps/web/supabase/tests/action-statistical-version-propagation.pgtap.sql",
     "apps/web/supabase/tests/association-action-announcement-retry.pgtap.sql",
