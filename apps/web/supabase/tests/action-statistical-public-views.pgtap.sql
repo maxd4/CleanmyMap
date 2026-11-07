@@ -25,6 +25,9 @@ select ok(
 create temp table pollution_reference_before as
 select scope, waste_source_count, butts_source_count, eligible_action_count
 from public.action_pollution_score_references_v2();
+-- The baseline is aggregate test data only. Grant its temporary table to the
+-- simulated browser roles; never grant them access to the source tables/views.
+grant select on pollution_reference_before to anon, authenticated;
 
 insert into public.actions (
   id, created_by_clerk_id, action_date, location_label, department_code,
@@ -191,13 +194,14 @@ set status = 'pending', action_phase = 'post_action_draft', review_state = 'draf
     retired_count = null, duration_minutes = 999,
     moderation_visibility = 'visible', access_mode = 'public'
 where id = '00000000-0000-0000-0000-000000000705';
-set local role anon;
+set local role service_role;
 select is(
   (select waste_kg from public.action_statistical_versions
    where action_id = '00000000-0000-0000-0000-000000000705' and is_current),
   20::numeric,
   'a pending edit leaves the published snapshot quantity unchanged'
 );
+set local role anon;
 select is(
   (select eligible_action_count from public.action_pollution_score_references_v2()
    where scope = 'global'),
@@ -255,6 +259,7 @@ select is(
   (select eligible_action_count from pollution_reference_before where scope = 'global'),
   'test provenance is excluded from pollution references'
 );
+set local role service_role;
 select is(
   (select count(*) from public.action_statistical_versions
    where action_id = '00000000-0000-0000-0000-000000000705'),

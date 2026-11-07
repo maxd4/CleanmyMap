@@ -50,4 +50,22 @@ describe("secure public statistical views migration", () => {
     expect(contract).toContain("data_provenance = 'test'");
     expect(contract).toContain("rehabilitation with the same published payload");
   });
+
+  it("keeps direct snapshot reads privileged while sharing only an aggregate baseline", () => {
+    expect(contract).toMatch(/grant select on pollution_reference_before\s+to anon, authenticated/i);
+
+    let currentRole = "unknown";
+    const directSnapshotReadRoles: string[] = [];
+    for (const line of contract.split(/\r?\n/u)) {
+      const roleMatch = line.match(/^set local role (\w+);$/u);
+      if (roleMatch) currentRole = roleMatch[1];
+      if (line.trimStart().startsWith("(select") && line.includes("from public.action_statistical_versions")) {
+        directSnapshotReadRoles.push(currentRole);
+      }
+    }
+
+    expect(directSnapshotReadRoles).toEqual(["service_role", "service_role", "service_role", "service_role"]);
+    expect(contract).toContain("anon cannot read raw statistical snapshots");
+    expect(contract).toContain("authenticated cannot read raw statistical snapshots");
+  });
 });
