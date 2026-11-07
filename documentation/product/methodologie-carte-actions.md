@@ -297,6 +297,12 @@ conservées comme telles ; `approved` ne constitue pas à lui seul une preuve de
 terrain. Cette séparation ne modifie pas les contrats indépendants de
 participation confirmée et de gamification.
 
+La population d'une référence est également revalidée sur l'action courante au
+moment de la lecture : une action devenue privée, masquée, rejetée, annulée ou
+marquée `test` est exclue immédiatement, même si son snapshot demeure conservé
+pour l'historique. Une réhabilitation admissible réutilise ce snapshot sans
+inventer de nouvelle publication ni doubler la source.
+
 Dans l'étape de déclaration, chaque indicateur choisit sa référence sans
 mélanger les dénominateurs. Lorsque la référence contextuelle pondérée et ses
 sources sont disponibles, le courant est divisé par les unités opérationnelles

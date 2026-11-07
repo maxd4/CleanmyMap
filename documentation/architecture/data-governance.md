@@ -278,6 +278,14 @@ les brouillons ou `pending` inactifs depuis plus d'un mois calendaire, sans
 version statistique ni dépendance, sont supprimables. La fonction de purge
 inspecte les clés étrangères, les inscriptions et participations, les messages,
 les notifications et Storage; une dépendance non résolue bloque l'enregistrement.
+Une ligne technique de `public_impact_action_contributions` dont les marqueurs
+`eligible_non_temporal` et `eligible_temporal` sont faux n'est pas une
+dépendance métier : son trigger de suppression la réconcilie sans retirer de
+compteur. Toute contribution éligible et toute autre référence restent
+bloquantes. Les RPC de référence réévaluent en outre l'éligibilité de la ligne
+`actions` courante avant de lire les mesures du snapshot ; une révocation de
+visibilité, d'accès, de statut ou de provenance prend donc effet sans réécrire
+le snapshot, et une réhabilitation réutilise la même version.
 Le dry-run fournit la liste explicite nécessaire à une suppression bornée,
 transactionnelle et rejouable; les journaux de maintenance restent agrégés.
 

@@ -23,6 +23,15 @@ journalisés uniquement sous forme agrégée dans
 passage quotidien suivant. Aucune purge rétroactive distante n'a été exécutée
 par ce lot.
 
+Une contribution `public_impact_action_contributions` purement dérivée et
+non-éligible (`eligible_non_temporal = false` et
+`eligible_temporal = false`) est réconciliable lors de la suppression ; elle ne
+bloque pas un brouillon abandonné et son trigger ne retire aucun agrégat. Toute
+contribution active ou toute dépendance métier non résolue bloque la purge.
+Les RPC de références relisent toujours l'état d'éligibilité de `actions` au
+moment du calcul : une révocation est immédiate et une réhabilitation reprend
+la version statistique conservée sans nouvelle capture.
+
 Les valeurs utilisées par les indicateurs publics sont séparées de la ligne
 mutable : `action_statistical_versions` conserve la dernière version approuvée
 et publiée. Les cinq actions historiques approuvées observées le 06/11/2026
