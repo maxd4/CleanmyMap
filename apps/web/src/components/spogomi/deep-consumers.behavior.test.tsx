@@ -47,6 +47,8 @@ type ButtonProps = { children?: React.ReactNode; disabled?: boolean; onClick: ()
 type TextareaProps = { value?: string };
 type LinkProps = { href?: string };
 type StatusProps = { children?: React.ReactNode };
+type InputProps = { value?: string; disabled?: boolean; onChange?: (event: { target: { value: string } }) => unknown };
+type FormProps = { onSubmit: (event: { preventDefault: () => void }) => unknown };
 type FetchCall = [RequestInfo | URL, RequestInit?];
 
 function propsOf<Props>(node: ReactTestInstance): Props {
@@ -98,6 +100,50 @@ describe("SPOGOMI deep consumer states", () => {
     const mutationCall = fetchCalls().reverse().find((call) => call[1]?.method === "POST");
     const payload = jsonBody(mutationCall);
     expect(payload).toEqual(expect.objectContaining({ action: "phase", divisionId: "division-1", phase: "collection" }));
+    renderer.unmount();
+  });
+
+  it("prefills only persisted division schedules and submits the canonical configure action", async () => {
+    const persistedDashboard = {
+      ...dashboard,
+      operations: [{ division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v2", phase: "planned", official_start_at: "2026-11-08T08:00:00.000Z", collection_limit_at: null, sorting_limit_at: "2026-11-08T12:00:00.000Z", weighing_start_at: "2026-11-08T13:00:00.000Z", weighing_end_at: null, collection_end_at: null }],
+    };
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValueOnce(response(persistedDashboard)).mockResolvedValueOnce(response(persistedDashboard)).mockResolvedValueOnce(response({ configured: true })).mockResolvedValueOnce(response(persistedDashboard));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
+    await settle();
+
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "timezoneName" })).value).toBe("Europe/Paris");
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "regulationVersion" })).value).toBe("rules-v2");
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "officialStartAt" })).value).toBe("2026-11-08T09:00");
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "collectionLimitAt" })).value).toBe("");
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "sortingLimitAt" })).value).toBe("2026-11-08T13:00");
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "weighingEndAt" })).value).toBe("");
+    expect(renderer.root.findAllByProps({ className: "grid gap-3 sm:grid-cols-2" }).length).toBeGreaterThan(0);
+
+    const change = (name: string, value: string) => propsOf<InputProps>(renderer.root.findByProps({ name })).onChange?.({ target: { value } });
+    await act(async () => {
+      change("timezoneName", "Europe/Paris");
+      change("reason", "Horaires validés pour l’édition de test");
+      change("provenance", "planning organisateur");
+      change("weighingEndAt", "2026-11-08T14:00");
+    });
+    await act(async () => { propsOf<FormProps>(renderer.root.findByType("form")).onSubmit({ preventDefault: vi.fn() }); await Promise.resolve(); });
+    await settle();
+
+    const mutationCall = fetchCalls().find((call) => call[1]?.method === "POST");
+    expect(jsonBody(mutationCall)).toEqual(expect.objectContaining({ action: "configure", divisionId: "division-1", timezoneName: "Europe/Paris", regulationVersion: "rules-v2", officialStartAt: "2026-11-08T08:00:00.000Z", collectionLimitAt: null, sortingLimitAt: "2026-11-08T12:00:00.000Z", weighingStartAt: "2026-11-08T13:00:00.000Z", weighingEndAt: "2026-11-08T13:00:00.000Z", reason: "Horaires validés pour l’édition de test", provenance: "planning organisateur" }));
+    renderer.unmount();
+  });
+
+  it("keeps schedule controls read-only without the timing capability", async () => {
+    fetchMock.mockResolvedValueOnce(response({ ...dashboard, operations: [{ division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v1", official_start_at: null, collection_limit_at: null, sorting_limit_at: null, weighing_start_at: null, weighing_end_at: null, phase: "planned" }] }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["arrival"]} />); });
+    await settle();
+    expect(propsOf<{ disabled?: boolean }>(renderer.root.findByType("fieldset")).disabled).toBe(true);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "note" })).children).toContain("timing");
     renderer.unmount();
   });
 
