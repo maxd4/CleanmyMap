@@ -8,11 +8,11 @@
 - **Type fonctionnel** : cockpit privé de préparation
 - **Famille / bloc fonctionnel** : Agir
 - **Statut** : CURRENT — lot 5, prolongement des services des lots 2 à 4
-- **Accès / SEO** : `protected` ; session puis relation organisateur canonique vérifiée côté serveur ; `NOINDEX`, `INTERNAL_ONLY`, `NONE`
-- **Entrée** : `/spogomi/mes-evenements` liste les événements réellement gérables par l'identité courante et renvoie vers ce cockpit ; la route canonique revalide ensuite l'autorisation côté serveur
+- **Accès / SEO** : `protected` ; session puis relation événementielle active (organisateur, arbitre, accueil, opérations terrain ou observation) vérifiée côté serveur ; `NOINDEX`, `INTERNAL_ONLY`, `NONE`
+- **Entrée** : `/spogomi/mes-evenements` liste les événements réellement accessibles par l'identité courante et renvoie vers la section compatible avec la capacité choisie ; la route canonique revalide ensuite l'autorisation côté serveur
 - **Parcours réutilisés** : consultation/publication de l'événement, visibilité publique des résultats, import CSV/XLSX, composition et verrouillage des équipes, édition auditée des pseudonymes publics (`spogomi_teams.public_name`) sans changement d'effectif, génération volontaire puis ouverture directe du lien temporaire de saisie équipe, révocation, revue et certification des versions, publication des classements officiels, consultation et rattachement du GPX officiel, aperçu et publication explicite du bilan environnemental dans l'action cible, export XLSX authentifié
 - **Confidentialité** : roster et opérations restent dans les routes API protégées ; aucun rôle global ni paramètre client ne suffit
-- **Export** : `GET /api/spogomi/events/[eventId]/export.xlsx` est réservé à l'organisateur habilité. Le classeur contient `Synthèse`, `Équipes`, `Catégories` et `Traçabilité`; les valeurs brutes non certifiées sont exclues des données exportées.
+- **Export** : `GET /api/spogomi/events/[eventId]/export.xlsx` reste réservé à l'organisateur habilité. Le classeur contient `Synthèse`, `Équipes`, `Catégories` et `Traçabilité`; les valeurs brutes non certifiées sont exclues des données exportées.
 - **Limites** : aucune création d'action par équipe, aucun transfert vers `public.forms` ou la gamification, aucune publication automatique de l'action ; l'aperçu bloque les catégories ou mesures sans correspondance et les règles sportives restent bloquées tant que le règlement n'est pas complet
 
 La route serveur `GET|POST /api/spogomi/events/[eventId]/consolidation` est

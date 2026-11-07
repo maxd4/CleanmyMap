@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiPersonalEventsList } from "@/components/spogomi/spogomi-personal-events-list";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { listSpogomiEventsForCurrentUser } from "@/lib/spogomi/personal-events-service";
+import { buildSpogomiCatalogHref, parseSpogomiCatalogIntent } from "@/lib/spogomi/navigation-intent";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
@@ -12,9 +13,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true },
 };
 
-export default async function SpogomiPersonalEventsPage() {
+type Props = { searchParams?: Promise<{ parcours?: string | string[]; section?: string | string[] }> };
+
+export default async function SpogomiPersonalEventsPage({ searchParams }: Props = {}) {
+  const intent = parseSpogomiCatalogIntent(await searchParams);
+  const catalogPath = intent.journey ? buildSpogomiCatalogHref(intent.journey, intent.focus ?? undefined) : "/spogomi/mes-evenements";
   const access = await requireAuthenticatedAccess();
-  if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent("/spogomi/mes-evenements")}`);
+  if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent(catalogPath)}`);
   const events = await listSpogomiEventsForCurrentUser(access.userId);
 
   return (
@@ -23,10 +28,10 @@ export default async function SpogomiPersonalEventsPage() {
         <PageHeader
           family={resolvePageFamily("/spogomi/mes-evenements")}
           tone="emerald"
-          title="Mes événements SPOGOMI"
-          subtitle="Retrouvez les compétitions auxquelles une relation vérifiée vous donne accès."
+          title={intent.journey === "volunteers" ? "Mes participations SPOGOMI" : intent.journey === "referees" ? "Mes habilitations SPOGOMI" : "Mes événements SPOGOMI"}
+          subtitle={intent.journey === "referees" ? "Choisissez une édition habilitée pour ouvrir la section correspondant à votre capacité active." : "Retrouvez les compétitions auxquelles une relation vérifiée vous donne accès."}
         />
-        <SpogomiPersonalEventsList events={events} />
+        <SpogomiPersonalEventsList events={events} journey={intent.journey} focus={intent.focus} />
       </div>
     </main>
   );

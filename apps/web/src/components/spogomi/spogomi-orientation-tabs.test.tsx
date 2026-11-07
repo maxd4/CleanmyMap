@@ -10,30 +10,32 @@ function findTabs(renderer: ReactTestRenderer) {
   return renderer.root.findAll((node) => node.type === "button" && node.props.role === "tab");
 }
 
+function links(renderer: ReactTestRenderer) {
+  return renderer.root.findAll((node) => node.type === "a");
+}
+
 describe("SpogomiOrientationTabs", () => {
-  it("renders the accessible volunteer journey by default", () => {
+  it("renders all volunteer actions publicly and keeps the private catalog intent", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
-      renderer = create(<SpogomiOrientationTabs canAccessOrganizerDashboard={false} />);
+      renderer = create(<SpogomiOrientationTabs isAuthenticated={false} />);
     });
-    const tabs = findTabs(renderer);
 
-    expect(tabs).toHaveLength(3);
-    expect(tabs.map((tab) => tab.props.children)).toEqual([
+    expect(findTabs(renderer)).toHaveLength(3);
+    expect(findTabs(renderer).map((tab) => tab.props.children)).toEqual([
       "Bénévoles",
       "Arbitres & modération",
       "Organisateurs",
     ]);
-    expect(tabs[0]?.props["aria-selected"]).toBe(true);
-    expect(tabs[1]?.props["aria-selected"]).toBe(false);
-    expect(renderer.root.findByProps({ role: "tabpanel" }).props.children).toBeTruthy();
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/mes-evenements")).toHaveLength(0);
+    expect(renderer.root.findAllByProps({ role: "tabpanel" })[0]?.findAllByType("article")).toHaveLength(10);
+    expect(links(renderer).some((link) => link.props.href === "#spogomi-events")).toBe(true);
+    expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dvolunteers")).toBe(true);
   });
 
-  it("changes the explanatory journey without granting referee access", () => {
+  it("exposes referee actions before authentication without granting a global access", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
-      renderer = create(<SpogomiOrientationTabs canAccessOrganizerDashboard={true} />);
+      renderer = create(<SpogomiOrientationTabs isAuthenticated={false} />);
     });
 
     const tabs = findTabs(renderer);
@@ -42,21 +44,32 @@ describe("SpogomiOrientationTabs", () => {
     });
 
     expect(renderer.root.findAllByType("h3").map((node) => node.props.children)).toContain("Arbitres & modération");
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/mes-evenements")).toHaveLength(0);
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi")).toHaveLength(0);
+    expect(renderer.root.findAllByType("p").some((node) => node.props.children === "Événements habilités")).toBe(true);
+    expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dreferees%26section%3Darbitration")).toBe(true);
+    expect(links(renderer).some((link) => link.props.href === "/spogomi")).toBe(false);
   });
 
-  it("exposes the existing organizer dashboard only in the organizer journey", () => {
-    let renderer!: ReactTestRenderer;
+  it("keeps organizer actions discoverable anonymously and opens them directly when authenticated", () => {
+    let anonymous!: ReactTestRenderer;
     act(() => {
-      renderer = create(<SpogomiOrientationTabs canAccessOrganizerDashboard={true} />);
+      anonymous = create(<SpogomiOrientationTabs isAuthenticated={false} />);
     });
-
-    const tabs = findTabs(renderer);
+    const anonymousTabs = findTabs(anonymous);
     act(() => {
-      tabs[2]?.props.onClick({} as MouseEvent<HTMLButtonElement>);
+      anonymousTabs[2]?.props.onClick({} as MouseEvent<HTMLButtonElement>);
     });
+    expect(links(anonymous).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fnouveau")).toBe(true);
+    expect(links(anonymous).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers%26section%3Dteams")).toBe(true);
 
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/mes-evenements")).toHaveLength(1);
+    let authenticated!: ReactTestRenderer;
+    act(() => {
+      authenticated = create(<SpogomiOrientationTabs isAuthenticated />);
+    });
+    const authenticatedTabs = findTabs(authenticated);
+    act(() => {
+      authenticatedTabs[2]?.props.onClick({} as MouseEvent<HTMLButtonElement>);
+    });
+    expect(links(authenticated).some((link) => link.props.href === "/spogomi/nouveau")).toBe(true);
+    expect(links(authenticated).some((link) => link.props.href === "/spogomi/mes-evenements?parcours=organizers&section=teams")).toBe(true);
   });
 });

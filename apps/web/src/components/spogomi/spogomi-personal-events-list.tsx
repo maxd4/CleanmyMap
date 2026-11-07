@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, CalendarDays, ClipboardCheck, Eye, Gavel, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowRight, CalendarDays, ClipboardCheck, Eye, Gavel, ShieldCheck, UserRound, Weight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type {
@@ -9,6 +9,7 @@ import type {
   SpogomiPersonalRelation,
 } from "@/lib/spogomi/personal-events-service";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
+import { buildSpogomiEventSpaceHref, isSpogomiEventInJourney, type SpogomiCatalogFocus, type SpogomiCatalogJourney } from "@/lib/spogomi/navigation-intent";
 
 type FilterKey = "all" | SpogomiPersonalRelation;
 
@@ -18,6 +19,7 @@ const FILTERS: readonly { key: FilterKey; label: string; relation?: SpogomiPerso
   { key: "referee", label: "J’arbitre", relation: "referee" },
   { key: "checkin", label: "J’accueille", relation: "checkin" },
   { key: "observer", label: "J’observe", relation: "observer" },
+  { key: "field_operator", label: "Opérations terrain", relation: "field_operator" },
   { key: "participant", label: "Je participe", relation: "participant" },
 ];
 
@@ -26,6 +28,7 @@ const RELATION_LABELS: Record<SpogomiPersonalRelation, string> = {
   referee: "Arbitre",
   checkin: "Accueil et présences",
   observer: "Observateur",
+  field_operator: "Opérations terrain",
   participant: "Participant lié",
 };
 
@@ -34,6 +37,7 @@ const ACCESS_LABELS = {
   arbitrate: "Arbitrage",
   checkin: "Pointage",
   observe: "Lecture opérationnelle",
+  operate: "Opérations terrain",
   participate: "Parcours personnel",
 } as const;
 
@@ -71,11 +75,13 @@ function AccessIcon({ relation }: { relation: SpogomiPersonalRelation }) {
   if (relation === "organizer") return <ShieldCheck size={14} aria-hidden="true" />;
   if (relation === "referee") return <Gavel size={14} aria-hidden="true" />;
   if (relation === "checkin") return <ClipboardCheck size={14} aria-hidden="true" />;
+  if (relation === "field_operator") return <Weight size={14} aria-hidden="true" />;
   if (relation === "observer") return <Eye size={14} aria-hidden="true" />;
   return <UserRound size={14} aria-hidden="true" />;
 }
 
-function PersonalEventCard({ event }: { event: SpogomiPersonalEvent }) {
+function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEvent; journey: SpogomiCatalogJourney | null; focus: SpogomiCatalogFocus | null }) {
+  const spaceHref = journey ? buildSpogomiEventSpaceHref(event, journey, focus) : event.links.space;
   return (
     <CmmCard as="article" tone="emerald" variant="glass" className="space-y-4 p-5" data-testid={`spogomi-personal-event-${event.id}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -109,7 +115,7 @@ function PersonalEventCard({ event }: { event: SpogomiPersonalEvent }) {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {event.links.space ? <CmmButton href={event.links.space} tone="primary" size="sm">Ouvrir l’espace <ArrowRight size={15} /></CmmButton> : null}
+        {spaceHref ? <CmmButton href={spaceHref} tone="primary" size="sm">Ouvrir l’espace <ArrowRight size={15} /></CmmButton> : null}
         {event.links.public ? <CmmButton href={event.links.public} tone="secondary" size="sm">Voir la fiche publique</CmmButton> : null}
         {!event.links.space && !event.links.public ? <p className="text-sm font-semibold text-slate-700">Les contrôles serveur conservent cet accès sans exposer de route supplémentaire.</p> : null}
       </div>
@@ -117,21 +123,24 @@ function PersonalEventCard({ event }: { event: SpogomiPersonalEvent }) {
   );
 }
 
-export function SpogomiPersonalEventsList({ events }: { events: SpogomiPersonalEvent[] }) {
+export function SpogomiPersonalEventsList({ events, journey = null, focus = null }: { events: SpogomiPersonalEvent[]; journey?: SpogomiCatalogJourney | null; focus?: SpogomiCatalogFocus | null }) {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
-  const visibleFilters = FILTERS.filter((filter) => filter.key === "all" || events.some((event) => event.relations.includes(filter.relation!)));
+  const journeyEvents = journey ? events.filter((event) => isSpogomiEventInJourney(event, journey)) : events;
+  const visibleFilters = FILTERS.filter((filter) => filter.key === "all" || journeyEvents.some((event) => event.relations.includes(filter.relation!)));
   const filteredEvents = activeFilter === "all"
-    ? events
-    : events.filter((event) => event.relations.includes(activeFilter));
+    ? journeyEvents
+    : journeyEvents.filter((event) => event.relations.includes(activeFilter));
+  const heading = journey === "volunteers" ? "Mes participations" : journey === "referees" ? "Mes événements habilités" : journey === "organizers" ? "Mes événements à organiser" : "Compétitions accessibles";
+  const description = journey === "volunteers" ? "Les éditions liées à votre compte vérifié restent séparées des accès de gestion." : journey === "referees" ? "Une habilitation active est nécessaire pour apparaître dans cette liste ; elle reste limitée à chaque édition." : journey === "organizers" ? "Les événements ci-dessous proviennent de vos relations organisateur vérifiées." : "Une relation vérifiée est nécessaire pour apparaître dans cette liste.";
 
   return (
     <section className="space-y-5" aria-labelledby="spogomi-personal-events-title" data-testid="spogomi-personal-events-list">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="spogomi-personal-events-title" className="text-2xl font-black text-slate-950">Compétitions accessibles</h2>
-          <p className="cmm-text-body mt-1 text-slate-900">Une relation vérifiée est nécessaire pour apparaître dans cette liste.</p>
+          <h2 id="spogomi-personal-events-title" className="text-2xl font-black text-slate-950">{heading}</h2>
+          <p className="cmm-text-body mt-1 text-slate-900">{description}</p>
         </div>
-        <CmmButton href="/spogomi/nouveau" tone="primary" size="sm">Créer une compétition</CmmButton>
+        {journey !== "volunteers" && journey !== "referees" ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm">Créer une compétition</CmmButton> : null}
       </div>
 
       {visibleFilters.length > 1 ? (
@@ -152,13 +161,13 @@ export function SpogomiPersonalEventsList({ events }: { events: SpogomiPersonalE
 
       {filteredEvents.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredEvents.map((event) => <PersonalEventCard key={event.id} event={event} />)}
+          {filteredEvents.map((event) => <PersonalEventCard key={event.id} event={event} journey={journey} focus={focus} />)}
         </div>
       ) : (
         <CmmCard tone="slate" variant="glass" className="border-dashed p-6" data-testid="spogomi-personal-events-empty">
-          <p className="font-bold text-slate-900">Aucune compétition ne correspond à ce filtre.</p>
-          <p className="mt-2 text-sm text-slate-700">Les brouillons et les habilitations révoquées ne sont pas ajoutés ici.</p>
-          <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition</CmmButton>
+          <p className="font-bold text-slate-900">{journey === "volunteers" ? "Aucune participation liée à ce compte." : journey === "referees" ? "Aucune habilitation SPOGOMI active pour ce compte." : "Aucune compétition ne correspond à ce filtre."}</p>
+          <p className="mt-2 text-sm text-slate-700">Les brouillons, relations révoquées et accès non vérifiés ne sont pas ajoutés ici.</p>
+          {journey !== "volunteers" && journey !== "referees" ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition</CmmButton> : null}
         </CmmCard>
       )}
     </section>

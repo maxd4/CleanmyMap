@@ -24,11 +24,11 @@ vi.mock("@/components/ui/cmm-feedback", () => ({
     React.createElement("div", { role: tone === "error" ? "alert" : "status", "data-feedback-tone": tone }, title, children),
 }));
 vi.mock("@/components/spogomi/spogomi-orientation-tabs", () => ({
-  SpogomiOrientationTabs: ({ canAccessOrganizerDashboard }: { canAccessOrganizerDashboard: boolean }) =>
+  SpogomiOrientationTabs: ({ isAuthenticated }: { isAuthenticated: boolean }) =>
     React.createElement(
       "div",
       { "data-testid": "orientation-tabs" },
-      canAccessOrganizerDashboard ? React.createElement("a", { href: "/spogomi/mes-evenements" }, "Ouvrir mes événements") : null,
+      React.createElement("a", { href: isAuthenticated ? "/spogomi/mes-evenements?parcours=organizers" : "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers" }, "Ouvrir mes événements"),
     ),
 }));
 vi.mock("@/components/spogomi/spogomi-international-content", () => ({ SpogomiInternationalContent: () => React.createElement("div", { "data-testid": "international" }) }));
@@ -56,7 +56,7 @@ describe("/spogomi public and private navigation", () => {
     expect(markup).not.toContain("<main");
     expect(markup.indexOf("spogomi-events")).toBeLessThan(markup.indexOf("understanding.title"));
     expect(markup.indexOf("understanding.title")).toBeLessThan(markup.indexOf("international"));
-    expect(markup).not.toContain('href="/spogomi/mes-evenements"');
+    expect(markup).toContain('href="/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers"');
     expect(mocks.listPublishedSpogomiEvents).toHaveBeenCalledTimes(1);
   });
 
@@ -64,7 +64,7 @@ describe("/spogomi public and private navigation", () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
     expect(markup).toContain("orientation-tabs");
-    expect(markup).toContain('href="/spogomi/mes-evenements"');
+    expect(markup).toContain('href="/spogomi/mes-evenements?parcours=organizers"');
   });
 
   it("keeps a loading failure distinct from an empty published-events state", async () => {

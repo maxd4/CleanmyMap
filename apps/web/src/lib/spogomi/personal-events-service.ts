@@ -25,7 +25,8 @@ type PersonalEventRow = {
 };
 
 type OrganizerActionRow = { action_id: string };
-type ReviewerRow = { event_id: string; role: "observer" | "referee" | "checkin" };
+type SpogomiReviewerRole = "observer" | "referee" | "checkin" | "timekeeper" | "weigher" | "data_entry" | "arbiter" | "certifier";
+type ReviewerRow = { event_id: string; role: SpogomiReviewerRole };
 type ParticipantRow = { event_id: string; account_link_status: "verified" };
 
 export type SpogomiPersonalRelation =
@@ -33,6 +34,7 @@ export type SpogomiPersonalRelation =
   | "referee"
   | "observer"
   | "checkin"
+  | "field_operator"
   | "participant";
 
 type SpogomiPersonalAccess =
@@ -40,6 +42,7 @@ type SpogomiPersonalAccess =
   | "arbitrate"
   | "checkin"
   | "observe"
+  | "operate"
   | "participate";
 
 export type SpogomiPersonalEvent = {
@@ -63,6 +66,11 @@ export type SpogomiPersonalEvent = {
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+function reviewerRelation(role: SpogomiReviewerRole): Exclude<SpogomiPersonalRelation, "organizer" | "participant"> {
+  if (role === "timekeeper" || role === "weigher" || role === "data_entry" || role === "arbiter" || role === "certifier") return "field_operator";
+  return role;
 }
 
 async function readCreatedEvents(
@@ -191,7 +199,7 @@ function relationMap(
   for (const event of createdEvents) add(String(event.id), "organizer");
   for (const event of organizerEvents) add(String(event.id), "organizer");
   for (const row of reviewerRows) {
-    add(String(row.event_id), row.role);
+    add(String(row.event_id), reviewerRelation(row.role));
   }
   for (const row of participantRows) add(String(row.event_id), "participant");
   return relations;
@@ -201,13 +209,14 @@ function toPersonalEvent(
   event: PersonalEventRow,
   relations: Set<SpogomiPersonalRelation>,
 ): SpogomiPersonalEvent {
-  const orderedRelations = (["organizer", "referee", "checkin", "observer", "participant"] as const)
+  const orderedRelations = (["organizer", "referee", "checkin", "observer", "field_operator", "participant"] as const)
     .filter((relation) => relations.has(relation));
   const accesses: SpogomiPersonalAccess[] = [];
   if (relations.has("organizer")) accesses.push("manage");
   if (relations.has("referee")) accesses.push("arbitrate");
   if (relations.has("checkin")) accesses.push("checkin");
   if (relations.has("observer")) accesses.push("observe");
+  if (relations.has("field_operator")) accesses.push("operate");
   if (relations.has("participant")) accesses.push("participate");
 
   return {
@@ -229,7 +238,7 @@ function toPersonalEvent(
           ? `/spogomi/${encodeURIComponent(event.event_slug)}`
           : null,
       space:
-        (relations.has("organizer") || relations.has("referee") || relations.has("observer") || relations.has("checkin")) && event.event_slug
+        (relations.has("organizer") || relations.has("referee") || relations.has("observer") || relations.has("checkin") || relations.has("field_operator")) && event.event_slug
           ? `/spogomi/${encodeURIComponent(event.event_slug)}/espace`
           : null,
     },

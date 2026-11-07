@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiInternationalSection, SpogomiPublicEvents, SpogomiUnderstanding } from "@/components/spogomi/spogomi-index-sections";
@@ -20,5 +19,5 @@ export default async function SpogomiIndexPage() {
   let events: Awaited<ReturnType<typeof listPublishedSpogomiEvents>> = [];
   let loadError = false;
   try { events = await listPublishedSpogomiEvents(); } catch { loadError = true; }
-  return <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10"><div className="cmm-page-width space-y-8"><PageHeader family={resolvePageFamily("/spogomi")} tone="emerald" title="SPOGOMI" subtitle="Trouvez votre rôle et rejoignez une compétition publiée." action={<CmmButtonGroup><CmmButton href="#spogomi-events" tone="primary">Voir les compétitions</CmmButton><CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary">Ouvrir le salon SPOGOMI</CmmButton></CmmButtonGroup>} /><SpogomiOrientationTabs canAccessOrganizerDashboard={Boolean(userId)} />{userId ? <nav className="flex flex-wrap gap-4" aria-label="Navigation privée SPOGOMI"><Link href="/spogomi/mes-evenements" className="font-bold text-emerald-800 hover:underline">Mes événements</Link><Link href="/spogomi/nouveau" className="font-bold text-emerald-800 hover:underline">Nouvelle compétition</Link></nav> : null}<SpogomiPublicEvents events={events} loadError={loadError} /><SpogomiUnderstanding t={t} /><SpogomiInternationalSection locale={locale} t={t} /></div></div>;
+  return <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10"><div className="cmm-page-width space-y-8"><PageHeader family={resolvePageFamily("/spogomi")} tone="emerald" title="SPOGOMI" subtitle="Trouvez votre rôle et rejoignez une compétition publiée." action={<CmmButtonGroup><CmmButton href="#spogomi-events" tone="primary">Voir les compétitions</CmmButton><CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary">Ouvrir le salon SPOGOMI</CmmButton></CmmButtonGroup>} /><SpogomiOrientationTabs isAuthenticated={Boolean(userId)} /><SpogomiPublicEvents events={events} loadError={loadError} /><SpogomiUnderstanding t={t} /><SpogomiInternationalSection locale={locale} t={t} /></div></div>;
 }

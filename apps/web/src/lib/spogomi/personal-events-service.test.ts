@@ -111,6 +111,20 @@ describe("listSpogomiEventsForUser", () => {
     });
   });
 
+  it("includes active field-operation assignments without turning them into organizer access", async () => {
+    const supabase = createSupabaseFixture({
+      events: [event("event-a", "action-a")],
+      organizers: [],
+      reviewers: [{ event_id: "event-a", clerk_id: "user-1", role: "weigher", revoked_at: null }],
+      participants: [],
+    });
+
+    const [result] = await listSpogomiEventsForUser(supabase as never, "user-1");
+
+    expect(result).toMatchObject({ relations: ["field_operator"], accesses: ["operate"], links: { space: "/spogomi/event-a-slug/espace" } });
+    expect(result?.accesses).not.toContain("manage");
+  });
+
   it("keeps relations found after the first 1,000-row page", async () => {
     const events = Array.from({ length: 1001 }, (_, index) => event(`event-${index}`, `action-${index}`));
     const supabase = createSupabaseFixture({

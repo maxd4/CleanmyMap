@@ -3,8 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 async function dismissCookies(page: Page): Promise<void> {
   const rejectCookies = page.getByRole("button", { name: "Tout refuser" });
   if (await rejectCookies.isVisible().catch(() => false)) {
-    await rejectCookies.click();
-    await expect(rejectCookies).toHaveCount(0);
+    await rejectCookies.click({ force: true });
+    await expect(rejectCookies).toBeHidden();
   }
 }
 
@@ -20,17 +20,22 @@ test.describe("SPOGOMI public navigation", () => {
       "/sections/messagerie?tab=discussions&channel=community&topicId=spogomi",
     );
     await expect(page.getByRole("tab", { name: "Bénévoles" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText("Rejoindre", { exact: true })).toBeVisible();
-    await dismissCookies(page);
-
+    await expect(page.getByText("Découvrir les compétitions", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ouvrir : Rattacher mon compte par code" })).toHaveAttribute("href", "#spogomi-events");
     await page.getByRole("tab", { name: "Arbitres & modération" }).click();
-    await expect(page.getByText("Certifier", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ouvrir l’espace organisateur" })).toHaveCount(0);
-    await expect(page.getByText("Aucun accès arbitre générique", { exact: false })).toBeVisible();
+    await expect(page.getByText("Événements habilités", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ouvrir : Événements habilités" })).toHaveAttribute(
+      "href",
+      "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dreferees",
+    );
+    await expect(page.getByText("Aucun accès arbitre générique", { exact: false })).toHaveCount(0);
 
     await page.getByRole("tab", { name: "Organisateurs" }).click();
-    await expect(page.getByText("Créer", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ouvrir l’espace organisateur" })).toHaveCount(0);
+    await expect(page.getByText("Créer une compétition", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ouvrir : Créer une compétition" })).toHaveAttribute(
+      "href",
+      "/sign-in?redirect_url=%2Fspogomi%2Fnouveau",
+    );
   });
 
   test("reaches the public index from future actions", async ({ page }) => {
@@ -55,7 +60,7 @@ test.describe("SPOGOMI public navigation", () => {
     expect(publicText).not.toContain("resolutionnote");
   });
 
-  test("keeps private creation and personal-event entry points behind authentication", async ({ page }) => {
+  test("keeps private creation and personal-event entry points behind authentication while exposing their intent", async ({ page }) => {
     const creationResponse = await page.goto("/spogomi/nouveau");
     expect(creationResponse?.status()).toBe(200);
     await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fspogomi%2Fnouveau/);
@@ -63,6 +68,10 @@ test.describe("SPOGOMI public navigation", () => {
     const eventsResponse = await page.goto("/spogomi/mes-evenements");
     expect(eventsResponse?.status()).toBe(200);
     await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fspogomi%2Fmes-evenements/);
+
+    const organizerIntent = await page.goto("/spogomi/mes-evenements?parcours=organizers&section=teams");
+    expect(organizerIntent?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers%26section%3Dteams/);
   });
 
   test("keeps secondary content accessible and compact", async ({ page }) => {
@@ -110,5 +119,25 @@ test.describe("SPOGOMI public navigation", () => {
     await expect(page.getByLabel("Année")).toBeVisible();
     await page.getByLabel("Année").selectOption("2027");
     await expect(events).toContainText("SPOGOMI World Cup 2027");
+  });
+
+  test("keeps the page header visible above the role navigation at reference widths", async ({ page }) => {
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const response = await page.goto("/spogomi");
+      expect(response?.status()).toBe(200);
+      await dismissCookies(page);
+
+      const pageHeading = page.getByRole("heading", { name: "SPOGOMI", exact: true });
+      const orientation = page.locator('section[aria-labelledby="spogomi-orientation-title"]');
+      await expect(pageHeading).toBeVisible();
+      await expect(orientation).toBeVisible();
+      const [headingBox, orientationBox] = await Promise.all([pageHeading.boundingBox(), orientation.boundingBox()]);
+      expect(headingBox).not.toBeNull();
+      expect(orientationBox).not.toBeNull();
+      expect(headingBox!.y).toBeGreaterThanOrEqual(0);
+      expect(headingBox!.y + headingBox!.height).toBeLessThanOrEqual(orientationBox!.y + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+    }
   });
 });

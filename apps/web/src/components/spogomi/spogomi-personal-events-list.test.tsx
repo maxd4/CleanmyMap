@@ -25,8 +25,10 @@ function event(id: string, relations: SpogomiPersonalEvent["relations"]): Spogom
         ? ["checkin"]
       : relations.includes("observer")
         ? ["observe"]
+      : relations.includes("field_operator")
+        ? ["operate"]
         : ["participate"],
-    links: { public: null, space: relations.some((relation) => ["organizer", "referee", "observer", "checkin"].includes(relation)) ? `/spogomi/${id}-slug/espace` : null },
+    links: { public: null, space: relations.some((relation) => ["organizer", "referee", "observer", "checkin", "field_operator"].includes(relation)) ? `/spogomi/${id}-slug/espace` : null },
   };
 }
 
@@ -73,5 +75,28 @@ describe("SpogomiPersonalEventsList", () => {
     expect(markup).not.toContain("/spogomi/participant-slug/espace");
     expect(markup).toContain("Les contrôles serveur conservent cet accès");
     expect(markup).toContain("Parcours personnel");
+  });
+
+  it("filters the selected journey and opens its validated cockpit focus", () => {
+    const markup = renderToStaticMarkup(
+      <SpogomiPersonalEventsList
+        events={[event("organizer", ["organizer"]), event("referee", ["referee"]), event("participant", ["participant"])]}
+        journey="referees"
+        focus="arbitration"
+      />,
+    );
+    expect(markup).toContain("Mes événements habilités");
+    expect(markup).toContain("Édition referee");
+    expect(markup).not.toContain("Édition organizer");
+    expect(markup).not.toContain("Édition participant");
+    expect(markup).toContain('/spogomi/referee-slug/espace#arbitration');
+  });
+
+  it("keeps field-operation assignments visible in the referee journey", () => {
+    const markup = renderToStaticMarkup(
+      <SpogomiPersonalEventsList events={[event("weigher", ["field_operator"])]} journey="referees" focus="operations" />,
+    );
+    expect(markup).toContain("Opérations terrain");
+    expect(markup).toContain('/spogomi/weigher-slug/espace#operations');
   });
 });

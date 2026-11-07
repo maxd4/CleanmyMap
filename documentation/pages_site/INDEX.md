@@ -234,7 +234,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 
 | `/spogomi` | [Découverte SPOGOMI](./routes/02-agir/spogomi/spogomi-README.md) | `public-visible` ; événements explicitement publiés | agir | `apps/web/src/app/(app)/spogomi/page.tsx` |
 | `/spogomi/[eventSlug]` | [Événement SPOGOMI](./routes/02-agir/spogomi-event/spogomi-event-README.md) | `public-visible` ; projection publiée bornée | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx` |
-| `/spogomi/mes-evenements` | [Mes événements SPOGOMI](./routes/02-agir/spogomi-events/spogomi-events-README.md) | `protected` ; événements filtrés par l'autorisation organisateur | agir | `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` |
+| `/spogomi/mes-evenements` | [Mes événements SPOGOMI](./routes/02-agir/spogomi-events/spogomi-events-README.md) | `protected` ; événements filtrés par les relations événementielles vérifiées et un parcours strictement validé | agir | `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` |
 | `/spogomi/nouveau` | [Nouvelle compétition SPOGOMI](./routes/02-agir/spogomi-new/spogomi-new-README.md) | `protected` ; création privée | agir | `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` |
 | `/spogomi/[eventSlug]/espace` | [Gestion SPOGOMI](./routes/02-agir/spogomi-gestion/spogomi-gestion-README.md) | `protected` ; organisateur habilité pour l'événement | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/espace/page.tsx` |
 | `/spogomi/[eventSlug]/gestion` | — | `redirect` vers `/spogomi/[eventSlug]/espace` | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/gestion/page.tsx` |
