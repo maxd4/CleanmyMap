@@ -47,4 +47,17 @@ describe("SPOGOMI division regulation service", () => {
     await expect(updateSpogomiDivisionRegulation({ supabase: { rpc } as never, eventId: "event-1", divisionId: "division-1", userId: "user-1", input: baseInput })).rejects.toThrow(/révision/);
     expect(rpc).toHaveBeenCalledWith("spogomi_update_division_regulation", expect.objectContaining({ p_categories: baseInput.categories, p_environment_mappings: baseInput.environmentMappings, p_expected_revision: 4 }));
   });
+
+  it("rejects an unconfirmed coefficient before reaching the mutation RPC", async () => {
+    vi.mocked(loadSpogomiEventForOrganizer).mockResolvedValueOnce({ id: "event-1" } as never);
+    const rpc = vi.fn();
+    await expect(updateSpogomiDivisionRegulation({
+      supabase: { rpc } as never,
+      eventId: "event-1",
+      divisionId: "division-1",
+      userId: "user-1",
+      input: { ...baseInput, categories: [{ ...baseInput.categories[0], coefficient: null, coefficientStatus: "unknown" }] },
+    })).rejects.toThrow(/complete_categories_require_confirmed_coefficients/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });

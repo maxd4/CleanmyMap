@@ -17,6 +17,10 @@ const configurationMigration = readFileSync(
   new URL("../../../supabase/migrations/20261107000007_spogomi_division_regulation_configuration.sql", import.meta.url),
   "utf8",
 );
+const certificationGuardMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261107000008_spogomi_division_regulation_certification_guard.sql", import.meta.url),
+  "utf8",
+);
 
 describe("SPOGOMI division-owned operations migration STATIC_CONTRACT", () => {
   it("keeps regulation state and team bounds on the stable division", () => {
@@ -87,5 +91,14 @@ describe("SPOGOMI division-owned operations migration STATIC_CONTRACT", () => {
     expect(configurationMigration).toContain("grant execute on function public.spogomi_update_division_regulation");
     expect(configurationMigration).toContain("environmental_mapping_version");
     expect(configurationMigration).toContain("certification");
+  });
+
+  it("fails closed for complete certification snapshots without changing the applied migration", () => {
+    expect(certificationGuardMigration).toContain("create or replace function public.spogomi_division_regulation_is_complete");
+    expect(certificationGuardMigration).toContain("coefficient_status is distinct from 'confirmed'");
+    expect(certificationGuardMigration).toContain("environmental_category_slug");
+    expect(certificationGuardMigration).toContain("m.mapping_status is distinct from 'mapped'");
+    expect(certificationGuardMigration).toContain("unit_factor_to_target::text = 'NaN'");
+    expect(certificationGuardMigration).not.toContain("alter table");
   });
 });

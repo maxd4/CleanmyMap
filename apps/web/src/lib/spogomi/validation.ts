@@ -88,6 +88,30 @@ function validateEnvironmentMappings(regulation: SpogomiRegulation): SpogomiVali
   return { ok: true };
 }
 
+function validateCompleteRegulation(regulation: SpogomiRegulation): SpogomiValidationResult {
+  if (!regulation.sourceReference?.trim()) return invalid("complete_source_reference_required");
+  if (!regulation.rounding) return invalid("complete_rounding_required");
+  if (!regulation.eligibility) return invalid("complete_eligibility_required");
+  if (!regulation.tiebreakers?.length) return invalid("complete_tiebreakers_required");
+  if (regulation.categories.some((category) =>
+    !category.isComplete ||
+    category.coefficientStatus !== "confirmed" ||
+    category.coefficient === null ||
+    !Number.isFinite(category.coefficient) ||
+    !category.environmentalCategorySlug?.trim(),
+  )) {
+    return invalid("complete_categories_require_confirmed_coefficients_and_environment_mapping");
+  }
+  if (!regulation.environmentMappings || regulation.environmentMappings.length !== regulation.categories.length) {
+    return invalid("complete_environment_mappings_required");
+  }
+  const mappingByCode = new Map(regulation.environmentMappings.map((mapping) => [mapping.categoryCode, mapping]));
+  if (regulation.categories.some((category) => mappingByCode.get(category.code)?.mappingStatus !== "mapped")) {
+    return invalid("complete_environment_mappings_must_be_mapped");
+  }
+  return { ok: true };
+}
+
 export function validateSpogomiRegulation(regulation: SpogomiRegulation): SpogomiValidationResult {
   if (!regulation.version.trim()) return invalid("regulation_version_required");
   if (regulation.status === "complete" && regulation.categories.length === 0) return invalid("categories_required");
@@ -102,6 +126,10 @@ export function validateSpogomiRegulation(regulation: SpogomiRegulation): Spogom
   ]) {
     if (!result.ok) return result;
   }
+  if (regulation.status === "complete") {
+    const completeValidation = validateCompleteRegulation(regulation);
+    if (!completeValidation.ok) return completeValidation;
+  }
   return { ok: true };
 }
 
@@ -110,20 +138,7 @@ export const validateRegulation = validateSpogomiRegulation;
 export function isRegulationReadyForCertification(
   regulation: SpogomiRegulation,
 ): boolean {
-  return (
-    regulation.status === "complete" &&
-    validateSpogomiRegulation(regulation).ok &&
-    Boolean(regulation.sourceReference?.trim()) &&
-    Boolean(regulation.rounding) &&
-    Boolean(regulation.eligibility) &&
-    Boolean(regulation.tiebreakers?.length) &&
-    regulation.categories.every((category) =>
-      category.isComplete &&
-      category.coefficientStatus === "confirmed" &&
-      category.coefficient !== null &&
-      Number.isFinite(category.coefficient),
-    )
-  );
+  return regulation.status === "complete" && validateSpogomiRegulation(regulation).ok;
 }
 
 export function validateTeamComposition(

@@ -66,7 +66,7 @@ type Props = {
   editingTeamId: string | null;
   teamNameDraft: string;
   action: (url: string, init?: RequestInit) => Promise<Record<string, unknown> | null>;
-  saveDivisionRegulation: (input: DivisionRegulationInput) => Promise<void>;
+  saveDivisionRegulation: (input: DivisionRegulationInput) => Promise<WorkspaceData | null>;
   setActiveDivisionId: (value: string) => void;
   setTeamPreview: Dispatch<SetStateAction<SpogomiTeamCompositionPreview | null>>;
   setAcceptedRowNumbers: Dispatch<SetStateAction<number[]>>;

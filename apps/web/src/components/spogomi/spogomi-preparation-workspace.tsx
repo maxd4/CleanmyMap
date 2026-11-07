@@ -112,9 +112,16 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
       return isCurrentRequest(request) ? body : null;
     }, "Opération refusée.");
   }
-  async function saveDivisionRegulation(input: DivisionRegulationInput) {
-    if (!activeDivisionId) return;
-    await action(`/api/spogomi/events/${eventId}/divisions/${activeDivisionId}/regulation`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+  async function saveDivisionRegulation(input: DivisionRegulationInput): Promise<WorkspaceData | null> {
+    if (!activeDivisionId) return null;
+    const request = beginRequest();
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    return runWorkspaceRequest(request, () => requestWorkspaceAction(activeDivisionId, `/api/spogomi/events/${eventId}/divisions/${activeDivisionId}/regulation`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }), async () => {
+      setMessage("Opération enregistrée.");
+      return refresh(request);
+    }, "Opération refusée.");
   }
   async function issueIdentityCode(participantId: string) { const body = await action(`/api/spogomi/events/${eventId}/participants/${participantId}/identity-code`, { method: "POST" }); const code = body?.code; if (typeof code === "string") setIdentityCodes((current) => ({ ...current, [participantId]: code })); }
   async function previewRoster(file: File, options?: RosterPreviewOptions) {

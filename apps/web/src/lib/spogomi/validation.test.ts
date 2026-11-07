@@ -153,6 +153,18 @@ describe("SPOGOMI domain invariants", () => {
         coefficientStatus: "confirmed",
         isComplete: true,
       }],
+      environmentMappings: [{
+        categoryCode: "waste",
+        environmentalCategorySlug: "other_waste",
+        sourceField: "mass_grams",
+        sourceUnit: "g",
+        targetUnit: "grams",
+        unitFactorToTarget: 1,
+        countsTowardTotal: true,
+        isMegots: false,
+        mappingStatus: "mapped",
+        exclusionReason: null,
+      }],
     };
     expect(isRegulationReadyForCertification(ready)).toBe(true);
     expect(isRegulationReadyForCertification({
@@ -161,6 +173,33 @@ describe("SPOGOMI domain invariants", () => {
     })).toBe(false);
     expect(isRegulationReadyForCertification({ ...ready, tiebreakers: ["mass_grams", "mass_grams"] })).toBe(false);
     expect(isRegulationReadyForCertification({ ...ready, rounding: undefined })).toBe(false);
+    expect(isRegulationReadyForCertification({ ...ready, environmentMappings: [{ ...ready.environmentMappings![0], mappingStatus: "excluded", exclusionReason: "Non applicable" }] })).toBe(false);
+  });
+
+  it("rejects unknown or non-applicable coefficients when a regulation is declared complete", () => {
+    const complete = {
+      ...incompleteRegulation,
+      status: "complete" as const,
+      sourceReference: "synthetic://spogomi/test-regulation-v1",
+      rounding: { decimals: 0, mode: "half_up" as const },
+      eligibility: { minimumPresentParticipants: 1, requiresAllCategories: true },
+      tiebreakers: ["sporting_score" as const],
+      categories: [{ ...incompleteRegulation.categories[0], coefficient: null, coefficientStatus: "unknown" as const, isComplete: true }],
+      environmentMappings: [{
+        categoryCode: "waste",
+        environmentalCategorySlug: "other_waste",
+        sourceField: "mass_grams" as const,
+        sourceUnit: "g",
+        targetUnit: "grams" as const,
+        unitFactorToTarget: 1,
+        countsTowardTotal: true,
+        isMegots: false,
+        mappingStatus: "mapped" as const,
+        exclusionReason: null,
+      }],
+    };
+    expect(validateSpogomiRegulation(complete)).toEqual({ ok: false, reason: "complete_categories_require_confirmed_coefficients_and_environment_mapping" });
+    expect(validateSpogomiRegulation({ ...complete, categories: [{ ...complete.categories[0], coefficientStatus: "not_applicable", coefficient: null }] })).toEqual({ ok: false, reason: "complete_categories_require_confirmed_coefficients_and_environment_mapping" });
   });
 
   it("validates Casual bounds and environmental decisions without inventing an official scale", () => {
@@ -179,6 +218,18 @@ describe("SPOGOMI domain invariants", () => {
       eligibility: { minimumPresentParticipants: 1, requiresAllCategories: true },
       tiebreakers: ["sporting_score"],
       categories: [{ ...incompleteRegulation.categories[0], coefficient: 1, coefficientStatus: "confirmed", isComplete: true }],
+      environmentMappings: [{
+        categoryCode: "waste",
+        environmentalCategorySlug: "other_waste",
+        sourceField: "mass_grams",
+        sourceUnit: "g",
+        targetUnit: "grams",
+        unitFactorToTarget: 1,
+        countsTowardTotal: true,
+        isMegots: false,
+        mappingStatus: "mapped",
+        exclusionReason: null,
+      }],
     };
 
     for (const status of ["draft", "submitted", "rejected", "superseded"] as const) {

@@ -111,8 +111,13 @@ version/source, les catégories et unités, les coefficients avec leur statut,
 les règles d'arrondi, l'éligibilité, les départages et les correspondances
 environnementales ; elle exige la révision attendue et refuse toute soumission
 existante. `complete` signifie que les prérequis de configuration sont cohérents
-et vérifiés par le prédicat PostgreSQL ; cela ne transforme jamais un barème
-saisi en règlement officiel ni une soumission en certification.
+et vérifiés par le service et le prédicat PostgreSQL : coefficients confirmés,
+catégories complètes et correspondance environnementale mappée pour chaque
+catégorie. Les états `unknown` et `not_applicable` restent possibles en
+`incomplete`, mais ne peuvent pas être enregistrés comme `complete`. Cela ne
+transforme jamais un barème saisi en règlement officiel ni une soumission en
+certification ; le formulaire reprend en outre la révision du snapshot serveur
+après sauvegarde.
 
 ## 17 ter. Lot 5 livré — CURRENT — consolidation vers l’action canonique
 

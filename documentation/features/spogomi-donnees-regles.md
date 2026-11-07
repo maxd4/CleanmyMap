@@ -112,8 +112,11 @@ jamais une preuve que le barème est officiel.
 Le formulaire affiche les blocages de certification (source, paramètres,
 catégories incomplètes, coefficient non confirmé ou correspondance non décidée)
 et autorise explicitement l'état `incomplete`. L'état `complete` n'est accepté
-que lorsque le contrôle serveur et le prédicat PostgreSQL de complétude sont
-cohérents ; il ne remplace pas la décision de certification d'une soumission.
+que lorsque chaque catégorie possède un coefficient confirmé, est complète et
+est reliée par une correspondance environnementale mappée, avec le contrôle
+serveur et le prédicat PostgreSQL de complétude cohérents ; `unknown` et
+`not_applicable` restent conservés en `incomplete`. Il ne remplace pas la
+décision de certification d'une soumission.
 
 Les lectures serveur des résultats, participants, soumissions, items et
 projections de consolidation sont paginées par clé et ordre déterministes.
