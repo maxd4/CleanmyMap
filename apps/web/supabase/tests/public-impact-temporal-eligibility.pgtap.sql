@@ -1,9 +1,103 @@
 begin;
 
-select plan(21);
+select plan(32);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"public-impact-temporal-test"}', true);
+
+-- Reproduce the upgrade state: the five historical contributions already
+-- represented in the aggregate have the new temporal marker at its default.
+create temp table public_impact_temporal_state_before_reconciliation as
+select visible_actions, waste_kg, cigarette_butts, participants_total,
+  total_duration_minutes,
+  (select count(*)::bigint
+   from public.public_impact_action_contributions c
+   where c.eligible_non_temporal
+     and c.action_date >= s.floor_date
+     and c.action_date <= current_date) as active_contribution_count
+from public.public_impact_action_aggregate_state s
+where state_id = true;
+
+update public.public_impact_action_contributions
+set eligible_temporal = false
+where eligible_non_temporal;
+
+select lives_ok(
+  $$select public.rebuild_public_impact_action_state(
+    (select floor_date from public.public_impact_action_aggregate_state where state_id = true),
+    public.current_public_impact_projection_version()
+  )$$,
+  'reconciliation rebuilds an already-aggregated temporal state'
+);
+select is(
+  (select count(*)::bigint from public.public_impact_action_contributions
+   where eligible_non_temporal and eligible_temporal),
+  (select active_contribution_count from public_impact_temporal_state_before_reconciliation),
+  'reconciliation activates every already-counted contribution exactly once'
+);
+select is(
+  (select waste_source_count from public.load_public_landing_action_summary_incremental()),
+  (select count(*)::bigint
+   from public.public_impact_action_contributions c
+   join public.action_statistical_versions v
+     on v.action_id = c.action_id and v.is_current
+   cross join public.public_impact_action_aggregate_state s
+   where c.eligible_temporal
+     and c.action_date >= s.floor_date
+     and c.action_date <= current_date
+     and v.waste_kg is not null and v.waste_kg >= 0),
+  'reconciliation restores the measured waste source count'
+);
+select is(
+  (select count(*)::bigint from (
+    select visible_actions, waste_kg, cigarette_butts, participants_total,
+      total_duration_minutes from public_impact_temporal_state_before_reconciliation
+    except
+    select visible_actions, waste_kg, cigarette_butts, participants_total,
+      total_duration_minutes from public.public_impact_action_aggregate_state
+    where state_id = true
+  ) differences),
+  0::bigint,
+  'reconciliation preserves the already-aggregated counters'
+);
+select lives_ok(
+  $$select public.advance_public_impact_action_state(
+    (select floor_date from public.public_impact_action_aggregate_state where state_id = true),
+    public.current_public_impact_projection_version()
+  )$$,
+  'advancing after reconciliation is executable'
+);
+select is(
+  (select count(*)::bigint from (
+    select visible_actions, waste_kg, cigarette_butts, participants_total,
+      total_duration_minutes from public_impact_temporal_state_before_reconciliation
+    except
+    select visible_actions, waste_kg, cigarette_butts, participants_total,
+      total_duration_minutes from public.public_impact_action_aggregate_state
+    where state_id = true
+  ) differences),
+  0::bigint,
+  'the first advance after reconciliation does not double-count'
+);
+select lives_ok(
+  $$select public.advance_public_impact_action_state(
+    (select floor_date from public.public_impact_action_aggregate_state where state_id = true),
+    public.current_public_impact_projection_version()
+  )$$,
+  'repeating the post-reconciliation advance is executable'
+);
+select is(
+  (select count(*)::bigint from (
+    select visible_actions, waste_kg, cigarette_butts, participants_total,
+      total_duration_minutes from public_impact_temporal_state_before_reconciliation
+    except
+    select visible_actions, waste_kg, cigarette_butts, participants_total,
+      total_duration_minutes from public.public_impact_action_aggregate_state
+    where state_id = true
+  ) differences),
+  0::bigint,
+  'repeating the post-reconciliation advance remains idempotent'
+);
 
 create temp table public_impact_temporal_state_before as
 select visible_actions, waste_kg, cigarette_butts, participants_total,
@@ -132,6 +226,43 @@ insert into public.actions (
     'Temporal test provenance', 3, 30, 1, 10, 'approved', 'post_action_complete',
     'visible', timezone('utc', now()), 'test', 'public'
   );
+
+insert into public.actions (
+  id, created_by_clerk_id, action_date, location_label, waste_kg,
+  cigarette_butts, volunteers_count, duration_minutes, status,
+  action_phase, moderation_visibility, published_at, data_provenance
+) values (
+  '00000000-0000-0000-0000-000000000208', 'pgtap-temporal', current_date,
+  'Temporal revocable', 6, 60, 2, 12, 'approved', 'post_action_complete',
+  'visible', timezone('utc', now()), 'real'
+);
+
+create temp table public_impact_temporal_state_before_revocation as
+select visible_actions, waste_kg, cigarette_butts, participants_total,
+  total_duration_minutes
+from public.public_impact_action_aggregate_state
+where state_id = true;
+
+update public.actions
+set moderation_visibility = 'hidden'
+where id = '00000000-0000-0000-0000-000000000208';
+
+select is(
+  (select eligible_non_temporal from public.public_impact_action_contributions
+   where action_id = '00000000-0000-0000-0000-000000000208'),
+  false,
+  'revocation makes the contribution permanently ineligible'
+);
+select is(
+  (select visible_actions from public.public_impact_action_aggregate_state where state_id = true),
+  (select visible_actions from public_impact_temporal_state_before_revocation) - 1,
+  'revocation decrements the old contribution exactly once'
+);
+select is(
+  (select waste_kg from public.public_impact_action_aggregate_state where state_id = true),
+  (select waste_kg from public_impact_temporal_state_before_revocation) - 6,
+  'revocation removes the old waste contribution without residue'
+);
 
 select lives_ok(
   $$select public.rebuild_public_impact_action_state(

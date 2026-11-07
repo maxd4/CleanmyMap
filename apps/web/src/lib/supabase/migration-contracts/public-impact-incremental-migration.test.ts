@@ -43,6 +43,20 @@ const temporalEligibilityMigration = readFileSync(
   ),
   "utf8",
 );
+const temporalReconciliationMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20261107000002_reconcile_public_impact_temporal_state.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const temporalEligibilityProof = readFileSync(
+  new URL(
+    "../../../../supabase/tests/public-impact-temporal-eligibility.pgtap.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("incremental public Impact state migration", () => {
   it("defines the per-action projection and decrementable aggregate counters", () => {
@@ -144,6 +158,28 @@ describe("incremental public Impact state migration", () => {
     );
     expect(temporalEligibilityMigration).toContain(
       "public_impact_adjust_contribution_historical",
+    );
+  });
+
+  it("reconciles pre-existing aggregates through one locked reconstruction", () => {
+    expect(temporalReconciliationMigration).toContain(
+      "hashtextextended('cleanmymap.public-impact-action-state', 0)",
+    );
+    expect(temporalReconciliationMigration).toContain("where state_id = true\n  for update");
+    expect(temporalReconciliationMigration).toContain(
+      "public.rebuild_public_impact_action_state(",
+    );
+    expect(temporalReconciliationMigration).toContain(
+      "derived state, not an incremental",
+    );
+    expect(temporalReconciliationMigration).not.toMatch(
+      /(?:update|delete)\s+from\s+public\.actions/i,
+    );
+    expect(temporalEligibilityProof).toContain(
+      "reconciliation rebuilds an already-aggregated temporal state",
+    );
+    expect(temporalEligibilityProof).toContain(
+      "the first advance after reconciliation does not double-count",
     );
   });
 

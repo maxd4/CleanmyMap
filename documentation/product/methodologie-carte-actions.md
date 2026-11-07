@@ -364,6 +364,11 @@ sa date est atteinte, sans mutation de l'action ni reconstruction complète.
 L'avance protégée par le verrou d'état expire les contributions sous le
 plancher et reste idempotente. Les RPC de référence historiques conservent,
 elles, leur prédicat date-aware et continuent d'exclure les actions futures.
+Lors de l'introduction de cette séparation, une migration forward-only peut
+reconstruire une seule fois les projections dérivées déjà agrégées sous le
+verrou d'état : elle remet en correspondance les marqueurs temporels et les
+compteurs sans addition incrémentale, et ne modifie ni les actions ni leurs
+snapshots canoniques.
 
 Ces identités ne sont pas interchangeables : une moyenne contextualisée n'est
 pas le maximum de référence du score cartographique, et aucune de ces
