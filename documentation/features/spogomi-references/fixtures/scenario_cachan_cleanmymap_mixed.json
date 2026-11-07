@@ -1,0 +1,120 @@
+{
+  "scenario_name": "SPOGOMI Cachan, démonstration CleanMyMap",
+  "scenario_ref": "SCENARIO-CACHAN-CLEANMYMAP-MIXED",
+  "mode": "mixed",
+  "status": "fictional_simulation_only",
+  "official": false,
+  "certification_status": "not_official",
+  "parent_action_ref": "ACTION-CACHAN-CLEANMYMAP-DEMO",
+  "places_source_fixture": "./cachan_2026_places_SYNTHETIQUES.csv",
+  "place_reference_policy": "Référencer PLACE-001..037 depuis le fixture source ; ne pas recopier les lignes de places dans ce scénario.",
+  "privacy": {
+    "personal_data": false,
+    "identities": "unknown",
+    "contact_data": "absent",
+    "location_data": "absent"
+  },
+  "measurement_semantics": {
+    "unit": "g",
+    "unmeasured_mass_grams": null,
+    "explicit_zero_mass_grams": 0,
+    "missing_measurement_state": "no_initial_measurement"
+  },
+  "divisions": [
+    {
+      "division_ref": "DIV-WORLD-CUP",
+      "division_type": "world_cup",
+      "regulation_ref": "FICTIONAL-WC-CACHAN-DEMO-V1",
+      "regulation_status": "fictional_simulation",
+      "official": false,
+      "team_size": { "min_members": 3, "max_members": 3, "exact_members": 3 },
+      "rounding": { "mode": "half_up", "decimals": 2 },
+      "eligibility": { "all_categories_required": true, "tiebreaker": "mass_grams" },
+      "categories": [
+        { "code": "recyclable", "label": "Recyclable", "points_per_kg": 250, "unit": "g", "required": true },
+        { "code": "non_recyclable", "label": "Non recyclable", "points_per_kg": 100, "unit": "g", "required": true },
+        { "code": "glass", "label": "Verre", "points_per_kg": 120, "unit": "g", "required": true },
+        { "code": "aluminum_steel", "label": "Alu/acier", "points_per_kg": 250, "unit": "g", "required": true },
+        { "code": "cigarette_butts", "label": "Mégots", "points_per_kg": 3000, "unit": "g", "required": true }
+      ]
+    },
+    {
+      "division_ref": "DIV-CASUAL",
+      "division_type": "casual",
+      "regulation_ref": "FICTIONAL-CASUAL-CACHAN-DEMO-V1",
+      "regulation_status": "fictional_simulation",
+      "official": false,
+      "team_size": { "min_members": 3, "max_members": 4 },
+      "rounding": { "mode": "half_up", "decimals": 2 },
+      "eligibility": { "all_categories_required": true, "tiebreaker": "mass_grams" },
+      "categories": [
+        { "code": "household_waste", "label": "Ordures ménagères", "points_per_kg": 100, "unit": "g", "required": true },
+        { "code": "batteries", "label": "Piles/batteries", "points_per_kg": 100, "unit": "g", "required": true },
+        { "code": "packaging", "label": "Emballages", "points_per_kg": 250, "unit": "g", "required": true },
+        { "code": "glass", "label": "Verre", "points_per_kg": 120, "unit": "g", "required": true },
+        { "code": "cigarette_butts", "label": "Mégots", "points_per_kg": 3000, "unit": "g", "required": true }
+      ]
+    }
+  ],
+  "teams": [
+    { "division_ref": "DIV-WORLD-CUP", "team_ref": "WC-01", "place_ids": ["PLACE-004", "PLACE-005", "PLACE-006"], "composition_status": "proposed", "initial_measurement_state": "measured", "expected_score": 372 },
+    { "division_ref": "DIV-WORLD-CUP", "team_ref": "WC-02", "place_ids": ["PLACE-007", "PLACE-008", "PLACE-009"], "composition_status": "proposed", "initial_measurement_state": "measured", "expected_score": 744 },
+    { "division_ref": "DIV-WORLD-CUP", "team_ref": "WC-03", "place_ids": ["PLACE-001", "PLACE-002", "PLACE-003"], "composition_status": "proposed", "initial_measurement_state": "explicit_zero", "expected_score": 0 },
+    { "division_ref": "DIV-WORLD-CUP", "team_ref": "WC-04", "place_ids": ["PLACE-014", "PLACE-015", "PLACE-016"], "composition_status": "proposed", "initial_measurement_state": "no_initial_measurement", "expected_score": null },
+    { "division_ref": "DIV-WORLD-CUP", "team_ref": "WC-05", "place_ids": ["PLACE-030", "PLACE-031", "PLACE-032"], "composition_status": "proposed", "initial_measurement_state": "no_initial_measurement", "expected_score": null },
+    { "division_ref": "DIV-WORLD-CUP", "team_ref": "WC-06", "place_ids": ["PLACE-033", "PLACE-034", "PLACE-035"], "composition_status": "proposed", "initial_measurement_state": "no_initial_measurement", "expected_score": null },
+    { "division_ref": "DIV-CASUAL", "team_ref": "CAS-01", "place_ids": ["PLACE-010", "PLACE-011", "PLACE-012", "PLACE-013"], "composition_status": "proposed", "initial_measurement_state": "measured", "source_row": 4, "expected_score": 2421.5 },
+    { "division_ref": "DIV-CASUAL", "team_ref": "CAS-02", "place_ids": ["PLACE-017", "PLACE-018", "PLACE-019", "PLACE-020"], "composition_status": "proposed", "initial_measurement_state": "measured", "source_row": 5, "expected_score": 1702.1 },
+    { "division_ref": "DIV-CASUAL", "team_ref": "CAS-03", "place_ids": ["PLACE-022", "PLACE-023", "PLACE-024", "PLACE-025"], "composition_status": "proposed", "initial_measurement_state": "measured", "source_row": 9, "expected_score": 1019.9 },
+    { "division_ref": "DIV-CASUAL", "team_ref": "CAS-04", "place_ids": ["PLACE-026", "PLACE-027", "PLACE-028", "PLACE-029"], "composition_status": "proposed", "initial_measurement_state": "measured", "source_row": 16, "expected_score": 438.7 },
+    { "division_ref": "DIV-CASUAL", "team_ref": "CAS-05", "place_ids": ["PLACE-021", "PLACE-036", "PLACE-037"], "composition_status": "proposed", "initial_measurement_state": "measured", "source_row": 17, "expected_score": 380.4 }
+  ],
+  "measurements": [
+    { "team_ref": "WC-01", "category_code": "recyclable", "mass_grams": 100, "provenance_ref": "scenario:WC-01" },
+    { "team_ref": "WC-01", "category_code": "non_recyclable", "mass_grams": 100, "provenance_ref": "scenario:WC-01" },
+    { "team_ref": "WC-01", "category_code": "glass", "mass_grams": 100, "provenance_ref": "scenario:WC-01" },
+    { "team_ref": "WC-01", "category_code": "aluminum_steel", "mass_grams": 100, "provenance_ref": "scenario:WC-01" },
+    { "team_ref": "WC-01", "category_code": "cigarette_butts", "mass_grams": 100, "provenance_ref": "scenario:WC-01" },
+    { "team_ref": "WC-02", "category_code": "recyclable", "mass_grams": 200, "provenance_ref": "scenario:WC-02" },
+    { "team_ref": "WC-02", "category_code": "non_recyclable", "mass_grams": 200, "provenance_ref": "scenario:WC-02" },
+    { "team_ref": "WC-02", "category_code": "glass", "mass_grams": 200, "provenance_ref": "scenario:WC-02" },
+    { "team_ref": "WC-02", "category_code": "aluminum_steel", "mass_grams": 200, "provenance_ref": "scenario:WC-02" },
+    { "team_ref": "WC-02", "category_code": "cigarette_butts", "mass_grams": 200, "provenance_ref": "scenario:WC-02" },
+    { "team_ref": "WC-03", "category_code": "recyclable", "mass_grams": 0, "provenance_ref": "scenario:WC-03" },
+    { "team_ref": "WC-03", "category_code": "non_recyclable", "mass_grams": 0, "provenance_ref": "scenario:WC-03" },
+    { "team_ref": "WC-03", "category_code": "glass", "mass_grams": 0, "provenance_ref": "scenario:WC-03" },
+    { "team_ref": "WC-03", "category_code": "aluminum_steel", "mass_grams": 0, "provenance_ref": "scenario:WC-03" },
+    { "team_ref": "WC-03", "category_code": "cigarette_butts", "mass_grams": 0, "provenance_ref": "scenario:WC-03" },
+    { "team_ref": "CAS-01", "category_code": "household_waste", "mass_grams": 0, "source_row": 4, "provenance_ref": "classeur_casual_2026:line-4" },
+    { "team_ref": "CAS-01", "category_code": "batteries", "mass_grams": 0, "source_row": 4, "provenance_ref": "classeur_casual_2026:line-4" },
+    { "team_ref": "CAS-01", "category_code": "packaging", "mass_grams": 86, "source_row": 4, "provenance_ref": "classeur_casual_2026:line-4" },
+    { "team_ref": "CAS-01", "category_code": "glass", "mass_grams": 0, "source_row": 4, "provenance_ref": "classeur_casual_2026:line-4" },
+    { "team_ref": "CAS-01", "category_code": "cigarette_butts", "mass_grams": 800, "source_row": 4, "provenance_ref": "classeur_casual_2026:line-4" },
+    { "team_ref": "CAS-02", "category_code": "household_waste", "mass_grams": 1, "source_row": 5, "provenance_ref": "classeur_casual_2026:line-5" },
+    { "team_ref": "CAS-02", "category_code": "batteries", "mass_grams": 0, "source_row": 5, "provenance_ref": "classeur_casual_2026:line-5" },
+    { "team_ref": "CAS-02", "category_code": "packaging", "mass_grams": 808, "source_row": 5, "provenance_ref": "classeur_casual_2026:line-5" },
+    { "team_ref": "CAS-02", "category_code": "glass", "mass_grams": 0, "source_row": 5, "provenance_ref": "classeur_casual_2026:line-5" },
+    { "team_ref": "CAS-02", "category_code": "cigarette_butts", "mass_grams": 500, "source_row": 5, "provenance_ref": "classeur_casual_2026:line-5" },
+    { "team_ref": "CAS-03", "category_code": "household_waste", "mass_grams": 2, "source_row": 9, "provenance_ref": "classeur_casual_2026:line-9" },
+    { "team_ref": "CAS-03", "category_code": "batteries", "mass_grams": 0, "source_row": 9, "provenance_ref": "classeur_casual_2026:line-9" },
+    { "team_ref": "CAS-03", "category_code": "packaging", "mass_grams": 474, "source_row": 9, "provenance_ref": "classeur_casual_2026:line-9" },
+    { "team_ref": "CAS-03", "category_code": "glass", "mass_grams": 10, "source_row": 9, "provenance_ref": "classeur_casual_2026:line-9" },
+    { "team_ref": "CAS-03", "category_code": "cigarette_butts", "mass_grams": 300, "source_row": 9, "provenance_ref": "classeur_casual_2026:line-9" },
+    { "team_ref": "CAS-04", "category_code": "household_waste", "mass_grams": 2, "source_row": 16, "provenance_ref": "classeur_casual_2026:line-16" },
+    { "team_ref": "CAS-04", "category_code": "batteries", "mass_grams": 0, "source_row": 16, "provenance_ref": "classeur_casual_2026:line-16" },
+    { "team_ref": "CAS-04", "category_code": "packaging", "mass_grams": 554, "source_row": 16, "provenance_ref": "classeur_casual_2026:line-16" },
+    { "team_ref": "CAS-04", "category_code": "glass", "mass_grams": 0, "source_row": 16, "provenance_ref": "classeur_casual_2026:line-16" },
+    { "team_ref": "CAS-04", "category_code": "cigarette_butts", "mass_grams": 100, "source_row": 16, "provenance_ref": "classeur_casual_2026:line-16" },
+    { "team_ref": "CAS-05", "category_code": "household_waste", "mass_grams": 2, "source_row": 17, "provenance_ref": "classeur_casual_2026:line-17" },
+    { "team_ref": "CAS-05", "category_code": "batteries", "mass_grams": 0, "source_row": 17, "provenance_ref": "classeur_casual_2026:line-17" },
+    { "team_ref": "CAS-05", "category_code": "packaging", "mass_grams": 316, "source_row": 17, "provenance_ref": "classeur_casual_2026:line-17" },
+    { "team_ref": "CAS-05", "category_code": "glass", "mass_grams": 10, "source_row": 17, "provenance_ref": "classeur_casual_2026:line-17" },
+    { "team_ref": "CAS-05", "category_code": "cigarette_butts", "mass_grams": 100, "source_row": 17, "provenance_ref": "classeur_casual_2026:line-17" }
+  ],
+  "historical_divergences": {
+    "participant_counts": [37, 47, 50],
+    "point_totals": [13925.3, 14000.3, 14001, 14002],
+    "status": "documented_unresolved",
+    "note": "Ces variantes historiques ne sont pas réconciliées avec ce scénario et ne modifient aucune place, équipe ou note attendue."
+  }
+}

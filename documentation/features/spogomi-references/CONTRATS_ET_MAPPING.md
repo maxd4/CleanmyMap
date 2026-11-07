@@ -58,6 +58,14 @@ Distribution issue des effectifs anonymisés (pas des identités) : `1×6 + 4×4
 
 Ce sont des **propositions algorithmiques** reproductibles, pas la composition officielle de Cachan.
 
+Le scénario déterministe mixed de démonstration est séparé de ces propositions
+historiques : voir
+[`fixtures/scenario_cachan_cleanmymap_mixed.json`](./fixtures/scenario_cachan_cleanmymap_mixed.json).
+Il réutilise les 37 références de places existantes dans une seule action parent,
+avec six trios World Cup et cinq équipes Casual (4, 4, 4, 4, 3). Ses règlements
+et scores sont explicitement fictifs et non officiels ; ils ne remplacent ni les
+compositions historiques ci-dessus ni le règlement runtime.
+
 ## 5. Pesée numérique — une mesure = une catégorie d'une version
 
 - Le formulaire lit les catégories actuelles du règlement de l'événement ; les trois nomenclatures du kit sont **observées, non fusionnées**.
