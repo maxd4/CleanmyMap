@@ -101,10 +101,15 @@ export function ActionDurationSlider({
   const maxMinutes = extendActionDurationSliderMax(persistedMax, numericValue ?? -1);
 
   const hasDeclaredDuration = value.trim() !== "";
-  const durationParts = getEditableDurationParts(numericValue);
-  const sliderValue = durationParts?.totalMinutes ?? 0;
+  const durationParts = getDurationParts(numericValue);
+  const hasHistoricalNonAlignedDuration = Boolean(durationParts && !durationParts.isStepAligned);
+  const sliderValue = durationParts
+    ? hasHistoricalNonAlignedDuration
+      ? snapDurationToStep(durationParts.totalMinutes)
+      : durationParts.totalMinutes
+    : 0;
   const displayValue = durationParts
-    ? `${durationParts.hours} h ${String(durationParts.minutes).padStart(2, "0")} min`
+    ? `${durationParts.hours} h ${String(durationParts.minutes).padStart(2, "0")} min${hasHistoricalNonAlignedDuration ? " · valeur historique non alignée" : ""}`
     : "Durée non renseignée";
 
   function handleChange(nextValue: string) {
@@ -114,10 +119,20 @@ export function ActionDurationSlider({
   }
 
   const errorId = `${id}-error`;
+  const historicalDurationId = `${id}-historical`;
   const hoursId = `${id}-hours`;
   const minutesId = `${id}-minutes`;
   const selectedHours = durationParts?.hours ?? 0;
   const selectedMinutes = durationParts?.minutes ?? 0;
+  const descriptionIds = [
+    hasHistoricalNonAlignedDuration ? historicalDurationId : null,
+    error ? errorId : null,
+  ].filter(Boolean).join(" ") || undefined;
+  const historicalDurationText = durationParts
+    ? durationParts.hours === 0
+      ? `${durationParts.minutes} min`
+      : `${durationParts.hours} h ${String(durationParts.minutes).padStart(2, "0")} min`
+    : "";
 
   function handleHoursChange(nextValue: string) {
     if (nextValue.trim() === "") {
@@ -125,7 +140,10 @@ export function ActionDurationSlider({
       return;
     }
     const hours = Number(nextValue);
-    const nextMinutes = hours * 60 + selectedMinutes;
+    const editableMinutes = ACTION_DURATION_MINUTE_OPTIONS.some((option) => option === selectedMinutes)
+      ? selectedMinutes
+      : 0;
+    const nextMinutes = hours * 60 + editableMinutes;
     if (!Number.isInteger(hours) || hours < 0 || nextMinutes < 0 || nextMinutes > ACTION_DURATION_MAX_MINUTES || nextMinutes % ACTION_DURATION_STEP_MINUTES !== 0) return;
     onChange(String(nextMinutes));
   }
@@ -152,7 +170,8 @@ export function ActionDurationSlider({
           value={sliderValue}
           onChange={(event) => handleChange(event.target.value)}
           aria-valuetext={displayValue}
-          aria-describedby={error ? errorId : undefined}
+          aria-describedby={descriptionIds}
+          disabled={hasHistoricalNonAlignedDuration}
           className="w-full accent-emerald-600"
         />
         <div className="flex items-center justify-between gap-3 text-xs text-emerald-900/65">
@@ -169,7 +188,7 @@ export function ActionDurationSlider({
               value={durationParts ? String(durationParts.hours) : ""}
               onChange={(event) => handleHoursChange(event.target.value)}
               aria-label="Heures"
-              aria-describedby={error ? errorId : undefined}
+              aria-describedby={descriptionIds}
               className="h-7 w-12 rounded-md border border-emerald-300/70 bg-[#EAF7F0] px-1.5 text-center text-sm font-black text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/25"
             />
             <span aria-hidden="true">h</span>
@@ -179,9 +198,14 @@ export function ActionDurationSlider({
               value={String(selectedMinutes)}
               onChange={(event) => handleMinutesChange(event.target.value)}
               aria-label="Minutes"
-              aria-describedby={error ? errorId : undefined}
+              aria-describedby={descriptionIds}
               className="h-7 rounded-md border border-emerald-300/70 bg-[#EAF7F0] px-1.5 text-center text-sm font-black text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/25"
             >
+              {hasHistoricalNonAlignedDuration ? (
+                <option value={selectedMinutes} disabled>
+                  {String(selectedMinutes).padStart(2, "0")} · historique
+                </option>
+              ) : null}
               {ACTION_DURATION_MINUTE_OPTIONS.map((minutes) => (
                 <option key={minutes} value={minutes} disabled={selectedHours * 60 + minutes > ACTION_DURATION_MAX_MINUTES}>
                   {String(minutes).padStart(2, "0")}
@@ -192,6 +216,11 @@ export function ActionDurationSlider({
           </div>
           <span>{maxMinutes} min</span>
         </div>
+        {hasHistoricalNonAlignedDuration ? (
+          <p id={historicalDurationId} className="text-xs leading-5 text-emerald-900/75">
+            {historicalDurationText} : valeur historique conservée. Choisissez un quart d’heure pour la modifier.
+          </p>
+        ) : null}
         {hasDeclaredDuration ? (
           <CmmButton type="button" tone="tertiary" variant="ghost" size="sm" onClick={() => onChange("")}>
             Ne pas renseigner cette durée
@@ -207,13 +236,21 @@ export function ActionDurationSlider({
   );
 }
 
-function getEditableDurationParts(value: number | undefined): { totalMinutes: number; hours: number; minutes: number } | undefined {
-  if (value === undefined || !Number.isInteger(value) || value < 0 || value > ACTION_DURATION_MAX_MINUTES || value % ACTION_DURATION_STEP_MINUTES !== 0) return undefined;
+function getDurationParts(value: number | undefined): { totalMinutes: number; hours: number; minutes: number; isStepAligned: boolean } | undefined {
+  if (value === undefined || !Number.isInteger(value) || value < 0 || value > ACTION_DURATION_MAX_MINUTES) return undefined;
   return {
     totalMinutes: value,
     hours: Math.floor(value / 60),
     minutes: value % 60,
+    isStepAligned: value % ACTION_DURATION_STEP_MINUTES === 0,
   };
+}
+
+function snapDurationToStep(value: number): number {
+  return Math.min(
+    ACTION_DURATION_MAX_MINUTES,
+    Math.max(0, Math.round(value / ACTION_DURATION_STEP_MINUTES) * ACTION_DURATION_STEP_MINUTES),
+  );
 }
 
 export function resolveActionDurationSliderMax(value: number | undefined): number {

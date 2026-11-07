@@ -82,6 +82,25 @@ describe("action duration declaration behavior", () => {
   });
 
   it.each([
+    ["", "Durée non renseignée", false],
+    ["0", "0 h 00 min", false],
+    ["50", "0 h 50 min", true],
+    ["135", "2 h 15 min", false],
+    ["1440", "24 h 00 min", false],
+  ])("represents persisted duration %s without confusing absence and zero", (value, expectedText, historical) => {
+    const markup = renderToStaticMarkup(
+      <ActionDurationSlider id="action-duration-minutes" value={value} onChange={() => undefined} />,
+    );
+
+    expect(markup).toContain(`aria-valuetext="${expectedText}${historical ? " · valeur historique non alignée" : ""}"`);
+    if (historical) {
+      expect(markup).toContain("50 min : valeur historique conservée");
+      expect(markup).toContain('value="50" disabled=""');
+      expect(markup).not.toContain("Durée non renseignée");
+    }
+  });
+
+  it.each([
     [false, "complete"],
     [true, "pre-action"],
   ])("supports blank → explicit zero → blank in the %s form", (beforeForm) => {
@@ -119,6 +138,27 @@ describe("action duration declaration behavior", () => {
       findControl(renderer, "action-duration-minutes-minutes").props.onChange({ target: { value: "45" } });
     });
     expect(findControl(renderer, "action-duration-minutes").props.value).toBe(165);
+    renderer.unmount();
+  });
+
+  it.each([false, true])("preserves a historical non-quarter duration until an explicit edit in the %s form", (beforeForm) => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<ControlledDurationSection beforeForm={beforeForm} initialDurationMinutes="50" />);
+    });
+
+    const durationId = beforeForm ? "before-duration-minutes" : "action-duration-minutes";
+    expect(findControl(renderer, durationId).props.value).toBe(45);
+    expect(findControl(renderer, durationId).props.disabled).toBe(true);
+    expect(findControl(renderer, `${durationId}-hours`).props.value).toBe("0");
+    expect(findControl(renderer, `${durationId}-minutes`).props.value).toBe("50");
+
+    act(() => {
+      findControl(renderer, `${durationId}-minutes`).props.onChange({ target: { value: "45" } });
+    });
+
+    expect(findControl(renderer, durationId).props.value).toBe(45);
+    expect(findControl(renderer, durationId).props.disabled).toBe(false);
     renderer.unmount();
   });
 
