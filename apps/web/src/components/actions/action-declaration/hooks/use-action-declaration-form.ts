@@ -70,8 +70,10 @@ function buildResetForm(params: {
   setGpxError: (value: null) => void;
   clearPhotos: () => void;
   resetSubmission: () => void;
+  onFormIdentityChange: () => void;
 }) {
   return () => {
+    params.onFormIdentityChange();
     params.setForm(createInitialFormState(params.resolvedDefaultActorName, params.initialRecordType));
     params.setManualDrawingState(null);
     params.setManualDrawingSource(null);
@@ -147,6 +149,7 @@ export function useActionDeclarationForm({
     setManualDrawingSource,
     setGpxError,
     resolvedDefaultActorName,
+    markFormIdentityChange,
   } = lifecycle;
   const isCleanPlaceMode = form.recordType === "clean_place";
   const media = useActionDeclarationFormMedia({ onPhotoMutation: invalidateValidation });
@@ -179,6 +182,7 @@ export function useActionDeclarationForm({
     setGpxError,
     clearPhotos: media.clearPhotos,
     resetSubmission: execution.submission.resetSubmission,
+    onFormIdentityChange: markFormIdentityChange,
   });
   return buildActionDeclarationFormResult({ lifecycle, media, geometry, execution, isCleanPlaceMode, resetForm });
 }

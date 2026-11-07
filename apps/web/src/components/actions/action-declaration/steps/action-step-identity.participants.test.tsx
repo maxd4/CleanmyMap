@@ -26,6 +26,37 @@ function ControlledParticipantFields({ hasAttemptedSubmit = false }: { hasAttemp
   );
 }
 
+function ParticipantLifecycleHarness() {
+  const [form, setForm] = useState(() => createInitialFormState("Alice", "action"));
+  const [formIdentityKey, setFormIdentityKey] = useState(0);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const resetForm = () => {
+    setForm(createInitialFormState("Alice", "action"));
+    setFormIdentityKey((current) => current + 1);
+    setHasAttemptedSubmit(false);
+  };
+  const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+  };
+
+  return (
+    <>
+      <button type="button" data-testid="new-declaration" onClick={resetForm}>Nouvelle déclaration</button>
+      <button type="button" data-testid="ignore-draft" onClick={resetForm}>Ignorer le brouillon</button>
+      <button type="button" data-testid="submit" onClick={() => setHasAttemptedSubmit(true)}>Envoyer</button>
+      <ActionParticipantSection
+        form={form}
+        updateField={updateField}
+        userId="user-1"
+        variant="counts"
+        isActionMode
+        hasAttemptedSubmit={hasAttemptedSubmit}
+        formIdentityKey={formIdentityKey}
+      />
+    </>
+  );
+}
+
 function setControlValue(element: HTMLInputElement, value: string): void {
   const prototype = Object.getPrototypeOf(element) as object;
   const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
@@ -108,7 +139,59 @@ describe("final participant composition fields", () => {
 
     root.unmount();
   });
+
+  it("resets validation when a new declaration replaces the form on the same mount", () => {
+    const { container, root } = renderParticipantLifecycleFields();
+    const adult = container.querySelector("#action-adult-count") as HTMLInputElement;
+
+    act(() => setControlValue(adult, "2"));
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+
+    act(() => (container.querySelector('[data-testid="new-declaration"]') as HTMLButtonElement).click());
+    expect(adult.value).toBe("");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(container.querySelector("#action-adult-count")?.getAttribute("aria-invalid")).toBe("false");
+
+    act(() => setControlValue(container.querySelector("#action-adult-count") as HTMLInputElement, "2"));
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+
+    act(() => {
+      setControlValue(container.querySelector("#action-retired-count") as HTMLInputElement, "1");
+      setControlValue(container.querySelector("#action-children-count") as HTMLInputElement, "1");
+    });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+
+    root.unmount();
+  });
+
+  it("resets validation when a draft is ignored and allows a later submit error", () => {
+    const { container, root } = renderParticipantLifecycleFields();
+    const adult = container.querySelector("#action-adult-count") as HTMLInputElement;
+
+    act(() => setControlValue(adult, "2"));
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+
+    act(() => (container.querySelector('[data-testid="ignore-draft"]') as HTMLButtonElement).click());
+    expect((container.querySelector("#action-adult-count") as HTMLInputElement).value).toBe("");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(container.querySelector("#action-adult-count")?.getAttribute("aria-invalid")).toBe("false");
+
+    act(() => (container.querySelector('[data-testid="submit"]') as HTMLButtonElement).click());
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    expect(container.querySelector("#action-adult-count")?.getAttribute("aria-invalid")).toBe("true");
+
+    root.unmount();
+  });
 });
+
+function renderParticipantLifecycleFields(): { container: HTMLDivElement; root: Root } {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => {
+    root.render(<ParticipantLifecycleHarness />);
+  });
+  return { container, root };
+}
 
 afterEach(() => {
   document.body.replaceChildren();

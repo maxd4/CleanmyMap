@@ -45,7 +45,12 @@ export function useActionDeclarationFormLifecycle({
   const [confirmedParticipantAccounts, setConfirmedParticipantAccounts] = useState<string[]>([]);
   const [gpxError, setGpxError] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
+  const [formIdentityKey, setFormIdentityKey] = useState(0);
   const [manualDrawingEnabled] = useState<boolean>(true);
+
+  const markFormIdentityChange = useCallback(() => {
+    setFormIdentityKey((current) => current + 1);
+  }, []);
 
   const setManualDrawing = useCallback((
     drawing: ActionDrawing | null,
@@ -66,6 +71,7 @@ export function useActionDeclarationFormLifecycle({
     setManualInvitationStatuses,
     setRegistrationStatuses,
     setConfirmedParticipantAccounts,
+    onFormIdentityChange: markFormIdentityChange,
   });
   const draft = useActionDeclarationDraft({
     initialActionId,
@@ -75,6 +81,7 @@ export function useActionDeclarationFormLifecycle({
     setManualDrawingSource: setManualDrawingSourceState,
     setHasAttemptedSubmit,
     onBusinessDataChange,
+    onFormIdentityChange: markFormIdentityChange,
   });
 
   return {
@@ -101,6 +108,8 @@ export function useActionDeclarationFormLifecycle({
     setGpxError,
     hasAttemptedSubmit,
     setHasAttemptedSubmit,
+    formIdentityKey,
+    markFormIdentityChange,
     hydration,
     draft,
   };

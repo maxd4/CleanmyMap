@@ -30,6 +30,7 @@ type UseActionDeclarationDraftParams = {
   setManualDrawingSource: Dispatch<SetStateAction<ActionGeometrySource | null>>;
   setHasAttemptedSubmit: Dispatch<SetStateAction<boolean>>;
   onBusinessDataChange?: () => void;
+  onFormIdentityChange?: () => void;
 };
 
 const EMPTY_DRAFT_LOAD_RESULT = { snapshot: null, readError: false } as const;
@@ -42,6 +43,7 @@ export function useActionDeclarationDraft({
   setManualDrawingSource,
   setHasAttemptedSubmit,
   onBusinessDataChange,
+  onFormIdentityChange,
 }: UseActionDeclarationDraftParams) {
   const draftLoadResult = useSyncExternalStore(
     subscribeToDraftChanges,
@@ -72,9 +74,10 @@ export function useActionDeclarationDraft({
     if (!handoff) return;
     // The planner handoff is an external session-storage snapshot, so hydrate the
     // form once after the client-only boundary has been established.
+    onFormIdentityChange?.();
     setForm((current) => applyPlannerActionHandoffToForm(current, handoff));
     onBusinessDataChange?.();
-  }, [initialActionId, onBusinessDataChange, pendingDraft, setForm]);
+  }, [initialActionId, onBusinessDataChange, onFormIdentityChange, pendingDraft, setForm]);
 
   const handleResumeDraft = useCallback(() => {
     if (!pendingDraft) return;
@@ -82,6 +85,7 @@ export function useActionDeclarationDraft({
     if (pendingDraft.creationRequestId && pendingDraft.creationRequestId !== creationRequestId) {
       setCreationRequestId(pendingDraft.creationRequestId);
     }
+    onFormIdentityChange?.();
     setForm(pendingDraft.form);
     onBusinessDataChange?.();
     setManualDrawingState(pendingDraft.manualDrawing ?? null);
@@ -95,16 +99,18 @@ export function useActionDeclarationDraft({
     setHasAttemptedSubmit,
     setManualDrawingSource,
     setManualDrawingState,
+    onFormIdentityChange,
   ]);
 
   const handleIgnoreDraft = useCallback(() => {
     clearDraft();
     setIsDraftResumed(false);
     setCreationRequestId(createActionCreationRequestId());
+    onFormIdentityChange?.();
     setForm(createCleanForm());
     onBusinessDataChange?.();
     setHasAttemptedSubmit(false);
-  }, [createCleanForm, onBusinessDataChange, setForm, setHasAttemptedSubmit]);
+  }, [createCleanForm, onBusinessDataChange, onFormIdentityChange, setForm, setHasAttemptedSubmit]);
 
   const saveDraftIfAllowed = useCallback(
     (

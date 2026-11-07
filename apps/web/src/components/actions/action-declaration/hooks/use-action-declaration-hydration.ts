@@ -28,6 +28,7 @@ type UseActionDeclarationHydrationParams = {
   setManualInvitationStatuses: Dispatch<SetStateAction<ActionManualInvitationStatusRecord[]>>;
   setRegistrationStatuses: Dispatch<SetStateAction<ActionRegistrationProjectionRecord[]>>;
   setConfirmedParticipantAccounts: Dispatch<SetStateAction<string[]>>;
+  onFormIdentityChange?: () => void;
 };
 
 export function useActionDeclarationHydration({
@@ -41,6 +42,7 @@ export function useActionDeclarationHydration({
   setManualInvitationStatuses,
   setRegistrationStatuses,
   setConfirmedParticipantAccounts,
+  onFormIdentityChange,
 }: UseActionDeclarationHydrationParams) {
   const [loadedActionPhase, setLoadedActionPhase] =
     useState<LoadedActionPhase>(null);
@@ -66,6 +68,7 @@ export function useActionDeclarationHydration({
           createCleanForm(),
           action,
         );
+        onFormIdentityChange?.();
         setLoadedActionPhase(hydrated.loadedActionPhase);
         setForm(hydrated.form);
         setManualDrawingState(hydrated.geometry.manualDrawing);
@@ -103,6 +106,7 @@ export function useActionDeclarationHydration({
     setManualInvitationStatuses,
     setRegistrationStatuses,
     setConfirmedParticipantAccounts,
+    onFormIdentityChange,
   ]);
 
   return {

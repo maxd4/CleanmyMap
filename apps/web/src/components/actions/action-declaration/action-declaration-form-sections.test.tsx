@@ -80,6 +80,7 @@ describe("ActionDeclarationValidationSummary", () => {
         location={{} as never}
         showPreparationSummary
         hasAttemptedSubmit={false}
+        formIdentityKey={0}
         validationIssues={[]}
         submissionState="idle"
         validationStatus="not_attempted"
@@ -192,6 +193,7 @@ function ReviewSubmissionHarness({
       location={{} as never}
       showPreparationSummary={false}
       hasAttemptedSubmit={hasAttemptedSubmit}
+      formIdentityKey={0}
       validationIssues={submission.validationIssues}
       submissionState={submission.submissionState}
       validationStatus={submission.validationStatus}

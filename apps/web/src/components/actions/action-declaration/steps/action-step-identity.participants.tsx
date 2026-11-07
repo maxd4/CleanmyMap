@@ -32,6 +32,7 @@ type ParticipantSectionProps = {
   variant: "compact" | "supporting" | "counts";
   isActionMode: boolean;
   hasAttemptedSubmit?: boolean;
+  formIdentityKey?: number;
   supportingFull?: boolean;
   showOrganizerAccounts?: boolean;
   showParticipantAccounts?: boolean;
@@ -110,18 +111,25 @@ function FinalParticipantCountInputs({
   form,
   updateField,
   hasAttemptedSubmit,
+  formIdentityKey,
 }: {
   form: FormState;
   updateField: UpdateField;
   hasAttemptedSubmit: boolean;
+  formIdentityKey: number;
 }) {
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [interactionState, setInteractionState] = useState({
+    formIdentityKey,
+    hasInteracted: false,
+  });
+  const isCurrentForm = interactionState.formIdentityKey === formIdentityKey;
+
   const compositionInput = {
     adultCount: form.adultCount,
     retiredCount: form.retiredCount,
     childrenCount: form.childrenCount,
   };
-  const compositionMessage = hasInteracted || hasAttemptedSubmit
+  const compositionMessage = hasAttemptedSubmit || (isCurrentForm && interactionState.hasInteracted)
     ? getFinalVolunteerCompositionValidationMessage(compositionInput)
     : null;
   const volunteersCount = deriveVolunteerCountFromForm(compositionInput);
@@ -152,7 +160,7 @@ function FinalParticipantCountInputs({
                 className={`${compactInputCls} min-w-0 bg-[#EAF7F0] placeholder:text-emerald-800/65`}
                 value={form[key]}
                 onChange={(event) => {
-                  setHasInteracted(true);
+                  setInteractionState({ formIdentityKey, hasInteracted: true });
                   updateField(key, event.target.value);
                 }}
               />
@@ -188,6 +196,7 @@ function ParticipantCountInputs({
   compact,
   finalComposition,
   hasAttemptedSubmit,
+  formIdentityKey,
   adultCount,
   participation,
   compositionMessage,
@@ -200,6 +209,7 @@ function ParticipantCountInputs({
   compact: boolean;
   finalComposition: boolean;
   hasAttemptedSubmit: boolean;
+  formIdentityKey: number;
   adultCount: number | null;
   participation: ReturnType<typeof normalizeVolunteerParticipation>;
   compositionMessage: string | null;
@@ -208,7 +218,7 @@ function ParticipantCountInputs({
   retiredCount: number | null;
 }) {
   if (finalComposition) {
-    return <FinalParticipantCountInputs form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} />;
+    return <FinalParticipantCountInputs form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} formIdentityKey={formIdentityKey} />;
   }
 
   const inputClassName = compact ? compactInputCls : inputCls;
@@ -322,7 +332,7 @@ function ParticipantCountInputs({
   );
 }
 
-function ParticipantCounts({ form, updateField, compact, hasAttemptedSubmit = false }: { form: FormState; updateField: UpdateField; compact: boolean; hasAttemptedSubmit?: boolean }) {
+function ParticipantCounts({ form, updateField, compact, hasAttemptedSubmit = false, formIdentityKey = 0 }: { form: FormState; updateField: UpdateField; compact: boolean; hasAttemptedSubmit?: boolean; formIdentityKey?: number }) {
   const volunteersCount = form.volunteersCount.trim() === "" ? null : Number(form.volunteersCount);
   const childrenCount = form.childrenCount.trim() === "" ? null : Number(form.childrenCount);
   const retiredCount = form.retiredCount.trim() === "" ? null : Number(form.retiredCount);
@@ -337,6 +347,7 @@ function ParticipantCounts({ form, updateField, compact, hasAttemptedSubmit = fa
       compact={compact}
       finalComposition={!compact}
       hasAttemptedSubmit={hasAttemptedSubmit}
+      formIdentityKey={formIdentityKey}
       adultCount={adultCount}
       participation={participation}
       compositionMessage={compositionMessage}
@@ -419,6 +430,7 @@ export function ActionParticipantSection({
   variant,
   isActionMode,
   hasAttemptedSubmit = false,
+  formIdentityKey = 0,
   supportingFull,
   showOrganizerAccounts = true,
   showParticipantAccounts = true,
@@ -435,7 +447,7 @@ export function ActionParticipantSection({
   }
 
   if (variant === "counts") {
-    return <ParticipantCounts form={form} updateField={updateField} compact={false} hasAttemptedSubmit={hasAttemptedSubmit} />;
+    return <ParticipantCounts form={form} updateField={updateField} compact={false} hasAttemptedSubmit={hasAttemptedSubmit} formIdentityKey={formIdentityKey} />;
   }
 
   return (

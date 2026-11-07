@@ -202,6 +202,7 @@ export type ActionDeclarationFormSectionsProps = {
   location: LocationProps;
   showPreparationSummary: boolean;
   hasAttemptedSubmit: boolean;
+  formIdentityKey: number;
   validationIssues: ValidationIssue[];
   submissionState: "idle" | "pending" | "success" | "error";
   validationStatus: ActionDeclarationValidationStatus;
@@ -259,6 +260,7 @@ export function ActionDeclarationFormSections({
   location,
   showPreparationSummary,
   hasAttemptedSubmit,
+  formIdentityKey,
   validationIssues,
   submissionState,
   validationStatus,
@@ -301,6 +303,7 @@ export function ActionDeclarationFormSections({
             variant="counts"
             isActionMode
             hasAttemptedSubmit={hasAttemptedSubmit}
+            formIdentityKey={formIdentityKey}
           />
           <ActionParticipantSection
             form={identity.form}
