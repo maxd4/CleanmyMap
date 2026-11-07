@@ -57,6 +57,27 @@ points. Le test de contrat
 partition des places, les effectifs, les catégories, les coefficients, les
 scores attendus et l'absence de PII.
 
+### Intégration exécutable sur Supabase éphémère
+
+`e2e/spogomi-cachan-integration.mjs` exécute le scénario par les routes et
+services SPOGOMI réels : création idempotente de l'édition parent, règlements
+des deux divisions, import des 37 places, composition, présences, opérations
+terrain, sessions d'équipe, soumissions et correction auditée, arbitrage,
+clôture, consolidation, classements, export XLSX et projection publique. Le
+runner vérifie aussi les séparations de divisions, les scores de référence,
+`null` contre zéro, les masses contre les nombres de mégots, la révocation de
+session et le refus d'une capacité terrain absente.
+
+Cette intégration est volontairement exécutable uniquement dans le job GitHub
+Actions `e2e-supabase-ephemeral`. Elle exige
+`CMM_SUPABASE_TEST_ENVIRONMENT=ephemeral` et
+`CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION=I_UNDERSTAND_EPHEMERAL_ONLY`,
+refuse toute URL Supabase distante, démarre deux serveurs Next locaux avec des
+clés Clerk Development et ne crée aucun projet Supabase payant. La date
+opérationnelle est paramétrable avec `SPOGOMI_OPERATIONAL_DATE` ; sa valeur par
+défaut est `2030-06-01`. Une exécution réussie imprime un résultat par étape et
+le marqueur `EXECUTED_SPOGOMI_INTEGRATION`.
+
 ## Limites d’usage
 
 Les catégories, coefficients, arrondis, pénalités, compositions et résultats

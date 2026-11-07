@@ -14,6 +14,8 @@ on:
     paths:
       - "e2e/*.sql"
       - "e2e/*-concurrency.mjs"
+      - "e2e/spogomi-cachan-integration.mjs"
+      - "documentation/features/spogomi-references/fixtures/**"
       - "e2e/security-02-two-sessions.mjs"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
@@ -45,6 +47,8 @@ on:
       - "e2e/security-03-bug-report.sql"
       - "e2e/*.sql"
       - "e2e/*-concurrency.mjs"
+      - "e2e/spogomi-cachan-integration.mjs"
+      - "documentation/features/spogomi-references/fixtures/**"
       - "scripts/ci/diagnose-supabase-start.mjs"
       - "scripts/ci/diagnose-supabase-start.test.mjs"
       - "scripts/ci/run-supabase-sql-proof.mjs"
@@ -226,6 +230,14 @@ jobs:
 
       - name: Install Playwright browser
         run: ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run SPOGOMI Cachan mixed integration on ephemeral Supabase
+        env:
+          CMM_SUPABASE_TEST_ENVIRONMENT: ephemeral
+          CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: I_UNDERSTAND_EPHEMERAL_ONLY
+          CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
+          CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
+        run: node e2e/spogomi-cachan-integration.mjs
 
       - name: Run SPOGOMI business tests
         run: |
