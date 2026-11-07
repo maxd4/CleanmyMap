@@ -50,16 +50,16 @@ function GroupHeading({
 
 function ActionTitleField({ form, updateField }: Pick<IdentityProps, "form" | "updateField">) {
   return (
-    <label htmlFor="action-title" className="block space-y-1.5">
-      <span className="text-sm font-semibold text-emerald-950">Titre de l’action <span className="font-normal text-emerald-900/55">(facultatif)</span></span>
+    <label htmlFor="action-title" className="block min-w-0 space-y-1.5">
+      <span className="sr-only">Titre de l’action (facultatif)</span>
       <input
         id="action-title"
         type="text"
         maxLength={160}
-        className="min-h-12 w-full rounded-xl border border-emerald-200/70 bg-white px-3.5 text-sm font-medium text-emerald-950 outline-none transition placeholder:text-emerald-700/35 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+        className="min-h-12 w-full rounded-xl border border-emerald-200/70 bg-[#EAF7F0] px-3.5 text-sm font-medium text-emerald-950 outline-none transition placeholder:text-emerald-800/65 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
         value={form.actionTitle}
         onChange={(event) => updateField("actionTitle", event.target.value)}
-        placeholder="Ex. Nettoyage des quais"
+        placeholder="TITRE DE L’ACTION · Ex. Nettoyage des quais"
       />
     </label>
   );
@@ -260,27 +260,40 @@ export function ActionDeclarationFormSections({
 
       <section id="action-declaration-identify" aria-labelledby="action-declaration-identify-title" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-4 shadow-sm md:p-5">
         <GroupHeading id="action-declaration-identify-title" number="01" title="Identifier l’action" />
-        <ActionTitleField form={identity.form} updateField={identity.updateField} />
-        <ActionOrganizerSection
-          form={identity.form}
-          updateField={identity.updateField}
-          updateFields={identity.updateFields}
-          userMetadata={identity.userMetadata}
-          isActionMode={isActionMode}
-          hasAttemptedSubmit={identity.hasAttemptedSubmit}
-          variant="full"
-        />
-        {isActionMode ? (
-          <ActionParticipantSection
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ActionTitleField form={identity.form} updateField={identity.updateField} />
+          <ActionOrganizerSection
             form={identity.form}
             updateField={identity.updateField}
-            userId={identity.userMetadata.userId}
-            variant="supporting"
-            isActionMode
-            supportingFull
-            showParticipantAccounts={false}
+            updateFields={identity.updateFields}
+            userMetadata={identity.userMetadata}
+            isActionMode={isActionMode}
+            hasAttemptedSubmit={identity.hasAttemptedSubmit}
+            variant="identity-meta"
           />
-        ) : null}
+        </div>
+        <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+          <ActionOrganizerSection
+            form={identity.form}
+            updateField={identity.updateField}
+            updateFields={identity.updateFields}
+            userMetadata={identity.userMetadata}
+            isActionMode={isActionMode}
+            hasAttemptedSubmit={identity.hasAttemptedSubmit}
+            variant="identity-association"
+          />
+          {isActionMode ? (
+            <ActionParticipantSection
+              form={identity.form}
+              updateField={identity.updateField}
+              userId={identity.userMetadata.userId}
+              variant="supporting"
+              isActionMode
+              supportingFull
+              showParticipantAccounts={false}
+            />
+          ) : null}
+        </div>
         <ActionStepLocation {...location} mode="primary" />
         <ActionTimeSection form={identity.form} updateField={identity.updateField} variant="duration" />
       </section>

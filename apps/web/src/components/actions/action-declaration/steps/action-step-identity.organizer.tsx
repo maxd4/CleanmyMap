@@ -38,7 +38,7 @@ type OrganizerSectionProps = {
   isActionMode: boolean;
   hasAttemptedSubmit?: boolean;
   isExistingAction?: boolean;
-  variant: "compact" | "full";
+  variant: "compact" | "full" | "identity-meta" | "identity-association";
 };
 
 type OrganizerRenderProps = {
@@ -67,6 +67,7 @@ function OrganizerSelection({
   activeRole,
   currentUserId,
   isExistingAction,
+  compact = false,
   className,
   errorClassName,
 }: {
@@ -78,6 +79,7 @@ function OrganizerSelection({
   activeRole?: ActiveRole;
   currentUserId: string;
   isExistingAction: boolean;
+  compact?: boolean;
   className: string;
   errorClassName?: string;
 }) {
@@ -96,6 +98,7 @@ function OrganizerSelection({
         invalid={missingAssociation}
         describedBy={missingAssociation ? associationErrorId : undefined}
         isExistingAction={isExistingAction}
+        compact={compact}
       />
       {missingAssociation ? (
         <p
@@ -321,6 +324,88 @@ function FullOrganizerSection({
   );
 }
 
+function IdentityOrganizerMeta({
+  form,
+  updateField,
+  isActionMode,
+  missingDate,
+  missingOrganizerType,
+  organizerTypeErrorId,
+  dateErrorId,
+  onOrganizerTypeChange,
+}: OrganizerRenderProps) {
+  return (
+    <>
+      <div className="min-w-0 space-y-1.5">
+        <label htmlFor="action-organizer-type" className="sr-only">
+          Type de structure
+        </label>
+        <OrganizerTypeSelect
+          form={form}
+          isActionMode={isActionMode}
+          missingOrganizerType={missingOrganizerType}
+          organizerTypeErrorId={organizerTypeErrorId}
+          className={compactInputCls}
+          placeholder="TYPE DE STRUCTURE · Sélectionnez…"
+          onChange={onOrganizerTypeChange}
+        />
+        {missingOrganizerType ? (
+          <p id={organizerTypeErrorId} className="text-xs font-medium text-rose-700">
+            Sélectionnez un type de structure.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="min-w-0 space-y-1.5">
+        <label htmlFor="action-action-date" className="sr-only">
+          Date de l’action
+        </label>
+        <input
+          id="action-action-date"
+          type="date"
+          className={`${compactInputCls} ${missingDate ? inputErrCls : ""}`}
+          value={form.actionDate}
+          onChange={(event) => updateField("actionDate", event.target.value)}
+          aria-invalid={missingDate}
+          aria-describedby={missingDate ? dateErrorId : undefined}
+          required={isActionMode}
+        />
+        {missingDate ? (
+          <p id={dateErrorId} className="text-xs font-medium text-rose-700">
+            Indiquez la date de l’action.
+          </p>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
+function IdentityOrganizerAssociation({
+  form,
+  isActionMode,
+  missingAssociation,
+  associationErrorId,
+  onAssociationChange,
+  activeRole,
+  currentUserId,
+  isExistingAction,
+}: OrganizerRenderProps) {
+  return (
+    <OrganizerSelection
+      form={form}
+      isActionMode={isActionMode}
+      missingAssociation={missingAssociation}
+      associationErrorId={associationErrorId}
+      onChange={onAssociationChange}
+      activeRole={activeRole}
+      currentUserId={currentUserId}
+      isExistingAction={isExistingAction}
+      compact
+      className="min-w-0 space-y-1.5"
+    />
+  );
+}
+
 export function ActionOrganizerSection({
   form,
   updateField,
@@ -403,9 +488,8 @@ export function ActionOrganizerSection({
     isExistingAction,
   } satisfies OrganizerRenderProps;
 
-  return variant === "compact" ? (
-    <CompactOrganizerSection {...renderProps} />
-  ) : (
-    <FullOrganizerSection {...renderProps} />
-  );
+  if (variant === "compact") return <CompactOrganizerSection {...renderProps} />;
+  if (variant === "identity-meta") return <IdentityOrganizerMeta {...renderProps} />;
+  if (variant === "identity-association") return <IdentityOrganizerAssociation {...renderProps} />;
+  return <FullOrganizerSection {...renderProps} />;
 }

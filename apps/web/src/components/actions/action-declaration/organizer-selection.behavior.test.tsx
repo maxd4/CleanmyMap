@@ -1,5 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { ActionAccountSelector } from "@/components/actions/action-participant-picker";
 import type { ActionAccountOption } from "@/components/actions/action-participant-picker-model";
@@ -21,6 +22,25 @@ function findAccountSelector(renderer: ReactTestRenderer) {
 }
 
 describe("spontaneous organizer selection behavior", () => {
+  it("keeps identity metadata compact while retaining accessible labels", () => {
+    const form = createInitialFormState("Créateur", "action");
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionOrganizerSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        userMetadata: { userId: "user-creator" },
+        isActionMode: true,
+        variant: "identity-meta",
+      }),
+    );
+
+    expect(markup).toContain("TYPE DE STRUCTURE · Sélectionnez…");
+    expect(markup).toContain('id="action-action-date"');
+    expect(markup).toContain('class="sr-only"');
+    expect(markup).not.toContain("Cadre &amp; calendrier");
+  });
+
   it("prepends the selected account in the complete action form without dropping co-organizers", () => {
     const form = createInitialFormState("Créateur", "action");
     form.organizerType = "spontaneous";

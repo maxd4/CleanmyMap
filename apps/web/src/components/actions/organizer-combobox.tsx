@@ -24,6 +24,7 @@ type OrganizerComboboxProps = {
   invalid?: boolean;
   describedBy?: string;
   isExistingAction?: boolean;
+  compact?: boolean;
 };
 
 export type OrganizerComboboxKeyAction =
@@ -63,7 +64,8 @@ function SpontaneousOrganizerSelector({
   organizerAccountIds,
   onChange,
   isExistingAction,
-}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction">) {
+  compact,
+}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange" | "isExistingAction" | "compact">) {
   return (
     <div className="space-y-2">
       <ActionAccountSelector
@@ -82,6 +84,7 @@ function SpontaneousOrganizerSelector({
           name: SPONTANEOUS_PENDING_ORGANIZER_LABEL,
           accountIds: [],
         })}
+        compact={compact}
       />
       {isExistingAction && organizerAccountIds?.length ? (
         <p className="text-xs leading-5 text-emerald-900/70">
@@ -121,6 +124,7 @@ export function OrganizerCombobox({
   invalid = false,
   describedBy,
   isExistingAction = false,
+  compact = false,
 }: OrganizerComboboxProps) {
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -210,7 +214,7 @@ export function OrganizerCombobox({
 
   const spontaneous = organizerType === "spontaneous";
   if (spontaneous) {
-    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} />;
+    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} isExistingAction={isExistingAction} compact={compact} />;
   }
   const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
   return (
@@ -245,6 +249,7 @@ export function OrganizerCombobox({
       onNewOrganizerNameChange={setNewOrganizerName}
       onSubmitNewOrganizer={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submitNewOrganizer(); }}
       onCancelAddForm={cancelAddForm}
+      compact={compact}
     />
   );
 }
@@ -280,6 +285,7 @@ function OrganizerComboboxView({
   onNewOrganizerNameChange,
   onSubmitNewOrganizer,
   onCancelAddForm,
+  compact,
 }: {
   id: string;
   listboxId: string;
@@ -311,10 +317,11 @@ function OrganizerComboboxView({
   onNewOrganizerNameChange: (name: string) => void;
   onSubmitNewOrganizer: () => void;
   onCancelAddForm: () => void;
+  compact: boolean;
 }) {
   return (
     <div className="relative space-y-1.5">
-      <label htmlFor={id} className="block text-xs font-semibold text-emerald-900/75">
+      <label htmlFor={id} className={compact ? "sr-only" : "block text-xs font-semibold text-emerald-900/75"}>
         Organisateur <span aria-hidden="true">{required ? "*" : ""}</span>
       </label>
       <input
@@ -330,7 +337,9 @@ function OrganizerComboboxView({
         required={required}
         disabled={!organizerType}
         value={value}
-        placeholder={!organizerType ? "Choisissez d’abord un type" : spontaneous ? "Nom ou pseudo du référent" : "Rechercher ou saisir une structure"}
+        placeholder={compact
+          ? (!organizerType ? "ORGANISATEUR · Choisissez d’abord un type" : spontaneous ? "ORGANISATEUR · Nom ou pseudo du référent" : "ORGANISATEUR · Rechercher ou saisir une structure")
+          : (!organizerType ? "Choisissez d’abord un type" : spontaneous ? "Nom ou pseudo du référent" : "Rechercher ou saisir une structure")}
         onChange={(event) => onValueChange(event.target.value)}
         onFocus={onFocus}
         onBlur={onBlur}

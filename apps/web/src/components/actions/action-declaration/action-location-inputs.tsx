@@ -82,20 +82,21 @@ export function RouteTopologyFieldset({
   form,
   updateField,
   compact = false,
-}: Pick<ActionLocationInputProps, "form" | "updateField"> & { compact?: boolean }) {
+  minimal = false,
+}: Pick<ActionLocationInputProps, "form" | "updateField"> & { compact?: boolean; minimal?: boolean }) {
   return (
-    <fieldset className={cn("rounded-xl border border-sky-200/80 bg-white", compact ? "mt-2 p-3" : "mt-4 p-4")}>
-      <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-900/65">Type de parcours</legend>
-      <div className={cn(compact ? "mt-1.5 gap-1.5" : "mt-2 gap-2", "flex flex-wrap")}>
+    <fieldset className={cn(minimal ? "min-w-0" : "rounded-xl border border-sky-200/80 bg-white", compact ? "mt-2 p-3" : minimal ? "p-0" : "mt-4 p-4")}>
+      <legend className={minimal ? "sr-only" : "px-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-900/65"}>Type de parcours</legend>
+      <div className={cn(compact || minimal ? "mt-1.5 gap-1.5" : "mt-2 gap-2", "flex flex-wrap")}>
         {[
           { value: "loop" as const, title: "Boucle", description: "Retour explicite au point de départ." },
           { value: "point_to_point" as const, title: "Départ → arrivée", description: "Arrivée obligatoire, sans retour automatique." },
         ].map((option) => {
           const selected = form.routeTopology === option.value;
           return (
-            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex min-w-[min(100%,15rem)] flex-1 basis-[15rem] cursor-pointer items-start rounded-xl border transition focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-500/35", compact ? "gap-2 px-2.5 py-2" : "gap-2.5 px-3 py-2.5", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
+            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex min-w-0 flex-1 cursor-pointer items-center rounded-xl border transition focus-within:outline-none focus-within:ring-2 focus-within:ring-sky-500/35", minimal ? "gap-2 px-3 py-2" : "items-start", compact ? "gap-2 px-2.5 py-2" : !minimal ? "gap-2.5 px-3 py-2.5" : "", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
               <input id={`route-topology-${option.value}`} type="radio" name="route-topology" value={option.value} aria-label={option.title} checked={selected} onChange={() => updateField("routeTopology", option.value)} className="mt-1 accent-sky-600" />
-              <span><span className="block text-sm font-semibold text-sky-950">{option.title}</span><span className="mt-0.5 block text-xs text-sky-900/60">{option.description}</span></span>
+              <span><span className="block text-sm font-semibold text-sky-950">{option.title}</span>{!minimal ? <span className="mt-0.5 block text-xs text-sky-900/60">{option.description}</span> : null}</span>
             </label>
           );
         })}
@@ -195,7 +196,42 @@ export function ActionLocationInputs({
   );
 
   if (mode === "primary") {
-    return <div className="rounded-2xl border border-emerald-200/70 bg-white p-4 shadow-sm">{departureInput}</div>;
+    const pointToPoint = form.routeTopology === "point_to_point";
+    return (
+      <div className="grid min-w-0 gap-3 rounded-2xl border border-emerald-200/70 bg-white p-3 shadow-sm sm:p-4 xl:grid-cols-[minmax(11rem,0.35fr)_minmax(0,1fr)]">
+        <RouteTopologyFieldset form={form} updateField={updateField} minimal />
+        <div className={cn("grid min-w-0 gap-2", pointToPoint ? "sm:grid-cols-2" : "grid-cols-1")}>
+          <ActionAddressAutocomplete
+            id="departure"
+            icon={MapPin}
+            label={pointToPoint ? "Départ" : "Départ et arrivée"}
+            placeholder={pointToPoint ? "DÉPART · Ex. Rue de Rivoli, Paris" : "DÉPART ET ARRIVÉE · Ex. Rue de Rivoli, Paris"}
+            value={form.departureLocationLabel}
+            onChange={(value, coordinates) => {
+              updateFields({
+                departureLocationLabel: value,
+                latitude: coordinates ? String(coordinates.latitude) : "",
+                longitude: coordinates ? String(coordinates.longitude) : "",
+              });
+            }}
+            helperText={pointToPoint ? "Adresse exacte du départ" : "Adresse exacte du départ et de l’arrivée"}
+            hideLabel
+          />
+          {pointToPoint ? (
+            <ActionAddressAutocomplete
+              id="arrival"
+              icon={Navigation}
+              label="Arrivée"
+              placeholder="ARRIVÉE · Ex. Place de la République, Paris"
+              value={form.arrivalLocationLabel}
+              onChange={(value, coordinates) => updateFields({ arrivalLocationLabel: value, arrivalCoordinates: coordinates ?? null })}
+              helperText="Adresse exacte de l’arrivée"
+              hideLabel
+            />
+          ) : null}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -223,7 +259,7 @@ export function ActionLocationInputs({
           optional
           helperText="Zone intermédiaire de l'action"
         />
-        {(isCleanPlaceMode || form.routeTopology === "point_to_point") ? (
+        {(isCleanPlaceMode || (mode !== "details" && form.routeTopology === "point_to_point")) ? (
           <ActionAddressAutocomplete
             id="arrival"
             icon={Navigation}
@@ -242,7 +278,7 @@ export function ActionLocationInputs({
         ) : null}
       </div>
 
-      {!isCleanPlaceMode ? <RouteTopologyFieldset form={form} updateField={updateField} compact={compact} /> : null}
+      {!isCleanPlaceMode && mode !== "details" ? <RouteTopologyFieldset form={form} updateField={updateField} compact={compact} /> : null}
       {!isCleanPlaceMode ? <GeometryMethodFieldset form={form} updateField={updateField} manualDrawingSource={manualDrawingSource} routePreviewSource={routePreviewSource} gpxImport={gpxImport} compact={compact} /> : null}
 
       <div className={cn("grid grid-cols-1 sm:grid-cols-2", compact ? "mt-3 gap-2" : "mt-4 gap-3")}>

@@ -16,6 +16,7 @@ export type ActionAddressAutocompleteProps = {
   helperText: string;
   ariaInvalid?: boolean;
   ariaDescribedBy?: string;
+  hideLabel?: boolean;
 };
 
 export function ActionAddressAutocomplete({
@@ -29,12 +30,13 @@ export function ActionAddressAutocomplete({
   helperText,
   ariaInvalid,
   ariaDescribedBy,
+  hideLabel = false,
 }: ActionAddressAutocompleteProps) {
   const behavior = useActionAddressAutocomplete({ value, onChange });
 
   return (
     <label className="block space-y-1.5">
-      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-900/55">
+      <span className={hideLabel ? "sr-only" : "flex items-center gap-1.5 text-xs font-medium text-emerald-900/55"}>
         {label}
         {optional ? <span className="rounded-full bg-[#ECF8EF] px-1.5 py-0.5 cmm-text-caption text-emerald-900/45">optionnel</span> : null}
       </span>

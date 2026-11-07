@@ -55,6 +55,7 @@ export type ActionAccountSelectorProps = {
   endpoint?: string;
   placeholder?: string;
   id?: string;
+  compact?: boolean;
 };
 
 export function ActionAccountSelector({
@@ -68,6 +69,7 @@ export function ActionAccountSelector({
   endpoint = "/api/actions/account-options",
   placeholder = "Sélectionner un compte utilisateur",
   id = "action-organizer-account",
+  compact = false,
 }: ActionAccountSelectorProps) {
   const pickerRef = useRef<HTMLDivElement>(null);
   const model = useParticipantPickerModel({
@@ -115,7 +117,7 @@ export function ActionAccountSelector({
 
   return (
     <div ref={pickerRef} className="relative space-y-1.5">
-      <label htmlFor={id} className="block text-xs font-semibold text-emerald-900/75">
+      <label htmlFor={id} className={compact ? "sr-only" : "block text-xs font-semibold text-emerald-900/75"}>
         Organisateur
       </label>
       <input
@@ -127,7 +129,7 @@ export function ActionAccountSelector({
         aria-readonly="true"
         readOnly
         value={displayValue}
-        placeholder={placeholder}
+        placeholder={compact ? `ORGANISATEUR · ${placeholder}` : placeholder}
         onFocus={model.openMenu}
         onClick={model.openMenu}
         onKeyDown={openWithKeyboard}
