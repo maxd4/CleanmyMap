@@ -68,14 +68,22 @@ const fieldCapabilityLabels: Record<SpogomiFieldOperationsCapability, string> = 
   arbitration: "arbitrage",
   certification: "certification",
 };
+const eventRoleLabels: Record<SpogomiEventAccessRole, string> = {
+  organizer: "Organisateur",
+  referee: "Arbitre habilité",
+  checkin: "Accueil habilité",
+  observer: "Observateur habilité",
+  participant: "Participant lié",
+};
 
 function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: readonly SpogomiFieldOperationsCapability[]): string {
-  if (role === "organizer") return "Organisateur";
-  if (role === "referee") return "Arbitre habilité";
-  if (role === "checkin") return "Accueil habilité";
-  if (role === "observer") return "Observateur habilité";
-  if (fieldCapabilities.length) return `Habilitation terrain : ${fieldCapabilities.map((capability) => fieldCapabilityLabels[capability]).join(", ")}`;
-  if (role === "participant") return "Participant lié";
+  const roleLabel = role ? eventRoleLabels[role] : null;
+  const fieldLabel = fieldCapabilities.length
+    ? `Habilitation terrain : ${fieldCapabilities.map((capability) => fieldCapabilityLabels[capability]).join(", ")}`
+    : null;
+  if (roleLabel && fieldLabel) return `${roleLabel} · ${fieldLabel}`;
+  if (roleLabel) return roleLabel;
+  if (fieldLabel) return fieldLabel;
   return "Accès événementiel limité";
 }
 

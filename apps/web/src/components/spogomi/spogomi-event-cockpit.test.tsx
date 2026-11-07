@@ -71,4 +71,34 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).not.toContain("Observateur habilité");
     expect(markup).toContain('href="#operations"');
   });
+
+  it("combines an observer role with verified weighing capability", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="observer" capabilities={["observe"]} fieldCapabilities={["weighing"]} />);
+    expect(markup).toContain("Observateur habilité · Habilitation terrain : pesée");
+    expect(markup).toContain('href="#operations"');
+  });
+
+  it("lists every verified referee capability without inventing another one", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="referee" capabilities={["observe", "arbitrate"]} fieldCapabilities={["timing", "measurement_entry"]} />);
+    expect(markup).toContain("Arbitre habilité · Habilitation terrain : chronométrage, saisie des mesures");
+    expect(markup).not.toContain("pesée");
+  });
+
+  it("combines an accueil role with its additional operational capability", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="checkin" capabilities={["checkin"]} fieldCapabilities={["arrival", "measurement_entry"]} />);
+    expect(markup).toContain("Accueil habilité · Habilitation terrain : accueil et arrivée, saisie des mesures");
+  });
+
+  it("keeps the terrain-only badge limited to the verified capabilities", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role={null} capabilities={[]} fieldCapabilities={["timing", "certification"]} />);
+    expect(markup).toContain("Habilitation terrain : chronométrage, certification");
+    expect(markup).not.toContain("pesée");
+    expect(markup).not.toContain("Arbitre habilité");
+  });
+
+  it("keeps the observer label unchanged without field capabilities", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="observer" capabilities={["observe"]} />);
+    expect(markup).toContain("Observateur habilité");
+    expect(markup).not.toContain("Habilitation terrain");
+  });
 });
