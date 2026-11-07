@@ -270,6 +270,10 @@ population publique exclut les actions privées ou non visibles ; une action
 en préparation ne peut donc pas alimenter cette moyenne. Chaque métrique
 exige au moins deux actions sources indépendantes : une source seule reste
 indisponible, tandis que deux zéros valides produisent une référence nulle.
+La surcharge publique sans argument délègue à la surcharge datée avec
+`current_date` dans une frontière `SECURITY DEFINER` à `search_path` fixé ; les
+deux signatures partagent ainsi exactement le prédicat d'éligibilité courante,
+les formules et le minimum de sources sans ouvrir l'accès aux snapshots.
 Avec une référence nulle, la valeur courante et la référence restent affichées
 mais aucun pourcentage ni sens de flèche n'est calculé. Le libellé d'unité est
 `Moyenne par unité opérationnelle estimée`; il ne s'agit ni de kg/personne ni

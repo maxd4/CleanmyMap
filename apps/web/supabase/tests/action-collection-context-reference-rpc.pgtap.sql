@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(16);
 
 select ok(
   has_function_privilege(
@@ -43,12 +43,37 @@ select ok(
   'service_role retains the dated RPC'
 );
 select ok(
-  not coalesce((select prosecdef from pg_proc where oid = 'public.action_collection_context_reference_averages_v1()'::regprocedure), true),
-  'the public RPC remains SECURITY INVOKER'
+  coalesce((select prosecdef from pg_proc where oid = 'public.action_collection_context_reference_averages_v1()'::regprocedure), false),
+  'the public compatibility wrapper is SECURITY DEFINER'
 );
 select ok(
   not coalesce((select prosecdef from pg_proc where oid = 'public.action_collection_context_reference_averages_v1(date)'::regprocedure), true),
   'the dated RPC remains SECURITY INVOKER'
+);
+select ok(
+  pg_get_functiondef('public.action_collection_context_reference_averages_v1()'::regprocedure)
+    like '%public.action_collection_context_reference_averages_v1(current_date)%',
+  'the public wrapper delegates to the dated implementation'
+);
+
+select ok(
+  not exists (
+    select 1
+    from public.action_collection_context_reference_averages_v1() reference
+    where (reference.waste_per_effective_unit is not null
+      and reference.waste_source_count < 2)
+      or (reference.butts_per_effective_unit is not null
+        and reference.butts_source_count < 2)
+  ),
+  'the public wrapper never exposes a metric with fewer than two sources'
+);
+
+select is(
+  (select coalesce(jsonb_agg(to_jsonb(reference) order by reference.action_context), '[]'::jsonb)
+   from public.action_collection_context_reference_averages_v1() reference),
+  (select coalesce(jsonb_agg(to_jsonb(reference) order by reference.action_context), '[]'::jsonb)
+   from public.action_collection_context_reference_averages_v1(current_date) reference),
+  'both overloads return the same current-date aggregate'
 );
 
 set local role anon;
