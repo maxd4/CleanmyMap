@@ -9,12 +9,18 @@ import {
   ACTION_DURATION_INITIAL_MAX_MINUTES,
   ACTION_DURATION_MAX_MINUTES,
   ACTION_DURATION_STEP_MINUTES,
-  formatBusinessDurationHoursMinutes,
   formatBusinessDurationMinutes,
   getTimeContractValidationIssues,
 } from "@/lib/actions/time-contract";
 import { hasValidationIssue, type BaseSectionProps } from "./section-contract";
 import { toOptionalNumber } from "../payload-numbers";
+
+const ACTION_DURATION_MINUTE_OPTIONS = [
+  0,
+  ACTION_DURATION_STEP_MINUTES,
+  ACTION_DURATION_STEP_MINUTES * 2,
+  ACTION_DURATION_STEP_MINUTES * 3,
+] as const;
 
 export function ScheduleFields({
   form,
@@ -95,9 +101,10 @@ export function ActionDurationSlider({
   const maxMinutes = extendActionDurationSliderMax(persistedMax, numericValue ?? -1);
 
   const hasDeclaredDuration = value.trim() !== "";
-  const sliderValue = numericValue ?? 0;
-  const displayValue = hasDeclaredDuration
-    ? formatBusinessDurationHoursMinutes(numericValue)
+  const durationParts = getEditableDurationParts(numericValue);
+  const sliderValue = durationParts?.totalMinutes ?? 0;
+  const displayValue = durationParts
+    ? `${durationParts.hours} h ${String(durationParts.minutes).padStart(2, "0")} min`
     : "Durée non renseignée";
 
   function handleChange(nextValue: string) {
@@ -106,8 +113,30 @@ export function ActionDurationSlider({
     onChange(String(nextMinutes));
   }
 
-  const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
+  const hoursId = `${id}-hours`;
+  const minutesId = `${id}-minutes`;
+  const selectedHours = durationParts?.hours ?? 0;
+  const selectedMinutes = durationParts?.minutes ?? 0;
+
+  function handleHoursChange(nextValue: string) {
+    if (nextValue.trim() === "") {
+      onChange("");
+      return;
+    }
+    const hours = Number(nextValue);
+    const nextMinutes = hours * 60 + selectedMinutes;
+    if (!Number.isInteger(hours) || hours < 0 || nextMinutes < 0 || nextMinutes > ACTION_DURATION_MAX_MINUTES || nextMinutes % ACTION_DURATION_STEP_MINUTES !== 0) return;
+    onChange(String(nextMinutes));
+  }
+
+  function handleMinutesChange(nextValue: string) {
+    const minutes = Number(nextValue);
+    const nextMinutes = selectedHours * 60 + minutes;
+    if (!ACTION_DURATION_MINUTE_OPTIONS.some((option) => option === minutes) || nextMinutes > ACTION_DURATION_MAX_MINUTES) return;
+    onChange(String(nextMinutes));
+  }
+
   return (
     <div className="cmm-field">
       <label className="cmm-field-label" htmlFor={id}>
@@ -123,12 +152,44 @@ export function ActionDurationSlider({
           value={sliderValue}
           onChange={(event) => handleChange(event.target.value)}
           aria-valuetext={displayValue}
-          aria-describedby={`${hintId}${error ? ` ${errorId}` : ""}`}
+          aria-describedby={error ? errorId : undefined}
           className="w-full accent-emerald-600"
         />
         <div className="flex items-center justify-between gap-3 text-xs text-emerald-900/65">
           <span>0 min</span>
-          <output htmlFor={id} className="font-black text-emerald-950">{displayValue}</output>
+          <div className="flex min-w-0 items-center gap-1.5 rounded-lg border border-emerald-200/70 bg-[#EAF7F0] px-2 py-1.5 text-sm font-black text-emerald-950">
+            <label htmlFor={hoursId} className="sr-only">Heures</label>
+            <input
+              id={hoursId}
+              type="number"
+              min="0"
+              max={Math.floor(ACTION_DURATION_MAX_MINUTES / 60)}
+              step="1"
+              inputMode="numeric"
+              value={durationParts ? String(durationParts.hours) : ""}
+              onChange={(event) => handleHoursChange(event.target.value)}
+              aria-label="Heures"
+              aria-describedby={error ? errorId : undefined}
+              className="h-7 w-12 rounded-md border border-emerald-300/70 bg-[#EAF7F0] px-1.5 text-center text-sm font-black text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/25"
+            />
+            <span aria-hidden="true">h</span>
+            <label htmlFor={minutesId} className="sr-only">Minutes</label>
+            <select
+              id={minutesId}
+              value={String(selectedMinutes)}
+              onChange={(event) => handleMinutesChange(event.target.value)}
+              aria-label="Minutes"
+              aria-describedby={error ? errorId : undefined}
+              className="h-7 rounded-md border border-emerald-300/70 bg-[#EAF7F0] px-1.5 text-center text-sm font-black text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/25"
+            >
+              {ACTION_DURATION_MINUTE_OPTIONS.map((minutes) => (
+                <option key={minutes} value={minutes} disabled={selectedHours * 60 + minutes > ACTION_DURATION_MAX_MINUTES}>
+                  {String(minutes).padStart(2, "0")}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden="true">min</span>
+          </div>
           <span>{maxMinutes} min</span>
         </div>
         {hasDeclaredDuration ? (
@@ -141,10 +202,18 @@ export function ActionDurationSlider({
           </CmmButton>
         )}
       </div>
-      <p className="cmm-field-hint" id={hintId}>{displayValue} · pas de {ACTION_DURATION_STEP_MINUTES} min</p>
       {error ? <p className="cmm-field-error" id={errorId} role="alert">{error}</p> : null}
     </div>
   );
+}
+
+function getEditableDurationParts(value: number | undefined): { totalMinutes: number; hours: number; minutes: number } | undefined {
+  if (value === undefined || !Number.isInteger(value) || value < 0 || value > ACTION_DURATION_MAX_MINUTES || value % ACTION_DURATION_STEP_MINUTES !== 0) return undefined;
+  return {
+    totalMinutes: value,
+    hours: Math.floor(value / 60),
+    minutes: value % 60,
+  };
 }
 
 export function resolveActionDurationSliderMax(value: number | undefined): number {
