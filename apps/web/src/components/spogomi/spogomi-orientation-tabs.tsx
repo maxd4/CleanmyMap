@@ -254,7 +254,7 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                       <p className="mt-2 text-sm font-bold text-emerald-950">Accès : {orientation.primaryAction.accessCondition}</p>
                     </div>
                   </div>
-                  <CmmButton href={actionHref(orientation.primaryAction)} ariaLabel={orientation.primaryAction.ctaLabel} tone="primary" size="lg" width="wide" className="shrink-0">{orientation.primaryAction.ctaLabel}</CmmButton>
+                  <CmmButton href={actionHref(orientation.primaryAction)} ariaLabel={orientation.primaryAction.ctaLabel} tone="primary" size="lg" className="w-full shrink-0 md:w-auto">{orientation.primaryAction.ctaLabel}</CmmButton>
                 </CmmCard>
 
                 {orientation.secondaryAction ? (
@@ -281,9 +281,9 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                               <p className="mt-1 text-sm leading-6 text-slate-900">{phase.description}</p>
                             </div>
                           </div>
-                          <div className="mt-4 divide-y divide-slate-200">
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
                             {phase.actions.map((action) => (
-                              <article key={action.label} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                              <CmmCard key={action.label} as="article" tone="slate" variant="outlined" className="flex h-full flex-col gap-3 p-4">
                                 <div className="flex min-w-0 items-start gap-3">
                                   <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><CmmIcon icon={action.icon} /></span>
                                   <div className="min-w-0">
@@ -292,8 +292,8 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                                     <p className="mt-2 text-xs font-bold leading-5 text-emerald-900">Accès : {action.accessCondition}</p>
                                   </div>
                                 </div>
-                                <CmmButton href={actionHref(action)} ariaLabel={action.ctaLabel} tone="secondary" variant="ghost" size="sm" className="shrink-0 self-start">{action.ctaLabel}</CmmButton>
-                              </article>
+                                <CmmButton href={actionHref(action)} ariaLabel={action.ctaLabel} tone="secondary" variant="ghost" size="sm" className="mt-auto self-start">{action.ctaLabel}</CmmButton>
+                              </CmmCard>
                             ))}
                           </div>
                         </CmmCard>

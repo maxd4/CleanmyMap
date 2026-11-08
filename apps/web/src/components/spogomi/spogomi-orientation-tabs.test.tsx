@@ -34,7 +34,9 @@ describe("SpogomiOrientationTabs", () => {
       "Pendant la compétition",
       "Après la compétition",
     ]);
-    expect(links(renderer).some((link) => link.props.href === "#spogomi-events" && link.props.children === "Voir les compétitions")).toBe(true);
+    const primaryLink = links(renderer).find((link) => link.props.href === "#spogomi-events" && link.props.children === "Voir les compétitions");
+    expect(primaryLink).toBeTruthy();
+    expect(primaryLink?.props["data-cmm-button-width"]).toBe("auto");
     for (const panel of renderer.root.findAllByProps({ role: "tabpanel" })) {
       expect(panel.props.id).toBeTruthy();
       expect(panel.props["aria-labelledby"]).toBeTruthy();
