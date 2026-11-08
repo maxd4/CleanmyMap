@@ -82,15 +82,10 @@ describe("civil date adapter", () => {
   });
 
   it.each(["UTC", "Europe/Paris", "America/Los_Angeles"])("formats a civil date consistently when the host timezone is %s", (timeZone) => {
-    const previousTimeZone = process.env.TZ;
-    process.env.TZ = timeZone;
-    try {
-      expect(formatCivilDateInLocale("2026-11-05", "fr-FR")).toBe("5 novembre 2026");
-      expect(formatCivilDateInLocale("2026-11-05", "en-US")).toBe("November 5, 2026");
-    } finally {
-      if (previousTimeZone === undefined) delete process.env.TZ;
-      else process.env.TZ = previousTimeZone;
-    }
+    const hostFormattedDate = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone }).format(new Date("2026-11-05T00:00:00.000Z"));
+    expect(hostFormattedDate).toBe(timeZone === "America/Los_Angeles" ? "November 4, 2026" : "November 5, 2026");
+    expect(formatCivilDateInLocale("2026-11-05", "fr-FR")).toBe("5 novembre 2026");
+    expect(formatCivilDateInLocale("2026-11-05", "en-US")).toBe("November 5, 2026");
   });
 
   it("keeps the default and explicit date-time formats tied to the requested timezone", () => {

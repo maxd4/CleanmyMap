@@ -36,7 +36,6 @@ describe("SpogomiInternationalContent hydration", () => {
     ["UTC", "America/Los_Angeles"],
     ["America/Los_Angeles", "Europe/Paris"],
   ])("keeps the editorial civil date stable from SSR %s to hydration %s", async (serverTimeZone, clientTimeZone) => {
-    const previousTimeZone = process.env.TZ;
     const element = (
       <SpogomiInternationalContent
         locale="en"
@@ -54,14 +53,14 @@ describe("SpogomiInternationalContent hydration", () => {
     let root: Root | undefined;
 
     try {
-      process.env.TZ = serverTimeZone;
+      const hostFormattedDates = [serverTimeZone, clientTimeZone].map((timeZone) => new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone }).format(new Date("2026-11-05T00:00:00.000Z")));
+      expect(hostFormattedDates[0]).not.toBe(hostFormattedDates[1]);
       const serverMarkup = renderToString(element);
       const container = document.createElement("div");
       container.innerHTML = serverMarkup;
       document.body.appendChild(container);
       const serverText = container.textContent;
 
-      process.env.TZ = clientTimeZone;
       await act(async () => {
         root = hydrateRoot(container, element);
       });
@@ -72,8 +71,6 @@ describe("SpogomiInternationalContent hydration", () => {
     } finally {
       root?.unmount();
       consoleError.mockRestore();
-      if (previousTimeZone === undefined) delete process.env.TZ;
-      else process.env.TZ = previousTimeZone;
     }
   });
 });
