@@ -165,6 +165,8 @@ describe("CmmDropdown", () => {
     expect(panel?.parentElement).toBe(document.body);
     expect(panel?.style.left).toBe("70px");
     expect(panel?.style.top).toBe("62px");
+    expect(panel?.style.maxHeight).toBe("calc(100vh - 1rem)");
+    expect(panel?.querySelector("[data-cmm-dropdown-scroll-region]")?.className).toContain("overflow-y-auto");
     expect(panel?.textContent).toContain("Interactive content");
 
     act(() => {

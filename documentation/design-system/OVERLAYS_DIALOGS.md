@@ -100,6 +100,9 @@ préserve la correspondance entre `getBoundingClientRect()` et `position: fixed`
 y compris lorsqu'un ancêtre de la carte utilise `backdrop-filter`. La fermeture
 extérieure et le pont de survol doivent donc considérer le wrapper du
 déclencheur et le panneau portalisé comme une même surface interactive.
+Le conteneur positionné reste visible pour la flèche et le pont ; son contenu
+est limité à la hauteur du viewport et défile dans une zone interne lorsque le
+panneau est plus haut que l'espace disponible.
 
 ## Dropdowns flottants
 

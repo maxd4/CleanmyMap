@@ -304,6 +304,7 @@ export function CmmDropdown({
     : undefined;
   const fixedPositionStyle: CSSProperties = {
     ...panelStyle,
+    maxHeight: panelStyle?.maxHeight ?? "calc(100vh - 1rem)",
     left: panelLeft,
     ...(horizontalShift ? { transform: `translateX(${horizontalShift})` } : {}),
     ...(triggerRect
@@ -322,7 +323,7 @@ export function CmmDropdown({
       role={panelRole}
       aria-label={ariaLabel}
       className={cn(
-        "fixed z-[70] max-w-[calc(100vw-1rem)] overflow-visible",
+        "fixed z-[70] flex max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] flex-col overflow-visible",
         panelAlignment === "center" && "-translate-x-1/2",
         panelClassName,
       )}
@@ -355,7 +356,12 @@ export function CmmDropdown({
           ...arrowStyle,
         }}
       />
-      {children}
+      <div
+        data-cmm-dropdown-scroll-region
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        {children}
+      </div>
     </div>
   ) : null;
 
