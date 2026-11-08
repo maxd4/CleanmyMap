@@ -41,6 +41,44 @@ const deploymentEnabled = {
   rootDirectory: "apps/web",
 };
 
+const deployBaseSha = "c".repeat(40);
+const deployTreeSha = "d".repeat(40);
+const deployChangedFiles = ["apps/web/src/app/page.tsx"];
+const deployRequiredChecks = ["deploy-candidate", "build"];
+const deployEvidence = {
+  version: 1,
+  mode: "DEPLOY",
+  profile: "deploy",
+  candidateSha: sha,
+  completionSha: sha,
+  candidateFingerprint: "deploy-fingerprint",
+  completionFingerprint: "deploy-fingerprint",
+  candidateTreeSha: deployTreeSha,
+  completionTreeSha: deployTreeSha,
+  candidateScope: "WORKTREE",
+  checkoutStable: true,
+  attestationStatus: "ATTESTED_CANDIDATE",
+  baseRef: "origin/main~1",
+  baseSha: deployBaseSha,
+  changedFiles: deployChangedFiles,
+  scopeEstablished: true,
+  plannedChecks: deployRequiredChecks,
+  verdict: "PASS",
+  releaseReady: true,
+  passed: deployRequiredChecks,
+  reused: [],
+  failed: [],
+  blocked: [],
+  notRun: [],
+  preexisting: [],
+};
+const deployScope = {
+  valid: true,
+  candidateTreeSha: deployTreeSha,
+  baseSha: deployBaseSha,
+  changedFiles: deployChangedFiles,
+};
+
 test("release gate requires exact SHA, clean worktree, and disabled main auto-deployment", () => {
   assert.equal(evaluateReleaseGate({
     evidence,
@@ -205,4 +243,55 @@ test("release gate rejects a FULL proof whose checkout changed before completion
 
   assert.equal(result.ready, false);
   assert.match(result.reasons.join("\n"), /FULL evidence does not match|FULL evidence is not green/);
+});
+
+test("release gate accepts a distinct DEPLOY attestation for the exact Web candidate", () => {
+  const result = evaluateReleaseGate({
+    evidence: deployEvidence,
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(result.ready, true);
+});
+
+test("DEPLOY rejects stale SHA, missing proof, failed build, target errors and empty diff", () => {
+  const cases = [
+    { name: "stale SHA", evidence: { ...deployEvidence, candidateSha: otherSha }, current: sha },
+    { name: "missing proof", evidence: null, current: sha },
+    { name: "build failed", evidence: { ...deployEvidence, verdict: "FAIL", releaseReady: false, failed: ["build"] } },
+    { name: "empty diff", evidence: { ...deployEvidence, changedFiles: [], scopeEstablished: false, plannedChecks: deployRequiredChecks }, deployScope: { valid: false, baseSha: deployBaseSha, changedFiles: [] } },
+    { name: "wrong target", evidence: deployEvidence, deploymentEnabled: { ...deploymentEnabled, actualTarget: "preview" } },
+  ];
+  for (const entry of cases) {
+    assert.equal(evaluateReleaseGate({
+      evidence: entry.evidence,
+      current: entry.current ?? sha,
+      clean: true,
+      deploymentEnabled: entry.deploymentEnabled ?? deploymentEnabled,
+      provenance,
+      profile: "deploy",
+      requiredChecks: deployRequiredChecks,
+      deployScope: entry.deployScope ?? deployScope,
+    }).ready, false, entry.name);
+  }
+});
+
+test("DEPLOY rejects an absent required control even when the attestation says PASS", () => {
+  const result = evaluateReleaseGate({
+    evidence: { ...deployEvidence, plannedChecks: ["deploy-candidate"] },
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(result.ready, false);
+  assert.match(result.reasons.join("\n"), /missing required checks|not green/);
 });

@@ -77,6 +77,7 @@ test("nested lockfiles preserve dead-code domain without changing FAST/FULL cont
     lockfileRelevant: true,
     dependencyGraphRelevant: true,
     deadCodeRelevant: true,
+    deploySmokeRelevant: false,
   });
   assert.deepEqual(ids(fast), [
     "diff-check",
@@ -145,6 +146,75 @@ test("FULL keeps canonical Web command and does not relaunch covered groups", ()
   assert.equal(ids(plan).includes("test:security"), false);
   assert.equal(ids(plan).includes("test:regression-gates"), false);
   assert.equal(new Set(ids(plan)).size, ids(plan).length);
+});
+
+test("DEPLOY selects only the Web release controls and keeps FULL global", () => {
+  const deploy = createModeValidationPlan({
+    mode: "DEPLOY",
+    candidateSha: "a".repeat(40),
+    baseRef: "origin/main",
+    changedFiles: ["apps/web/src/lib/chat/polls.ts"],
+  });
+  const deployIds = ids(deploy);
+  for (const id of [
+    "deploy-candidate",
+    "security-secrets",
+    "deploy-web-security",
+    "deploy-regression",
+    "vitest-targeted",
+    "typecheck",
+    "lint",
+    "build",
+    "audit:vercel-ci",
+    "vercel-deploy-preflight",
+  ]) {
+    assert.ok(deployIds.includes(id), `missing DEPLOY check ${id}`);
+  }
+  for (const id of [
+    "mobile:test",
+    "python-tests",
+    "test:coverage",
+    "quality:coverage",
+    "quality:mutation",
+    "quality:duplication",
+    "quality:complexity",
+    "quality:dead-code",
+    "quality:cycles",
+    "test:e2e",
+  ]) {
+    assert.equal(deployIds.includes(id), false, `${id} must not run in DEPLOY`);
+  }
+  assert.equal(deploy.budgetSeconds, 900);
+  assert.deepEqual(deploy.checks.find((check) => check.id === "deploy-candidate").command.args, [
+    "scripts/ci/check-deploy-candidate.mjs",
+    `--sha=${"a".repeat(40)}`,
+    "--base-ref=origin/main",
+  ]);
+  assert.ok(ids(createModeValidationPlan({ mode: "FULL", changedFiles: [] })).includes("quality:mutation"));
+});
+
+test("DEPLOY adds dependency, migration and smoke controls only for the affected scope", () => {
+  const plan = createModeValidationPlan({
+    mode: "DEPLOY",
+    changedFiles: [
+      "package-lock.json",
+      "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql",
+      "apps/web/src/app/api/actions/route.ts",
+    ],
+  });
+  const deployIds = ids(plan);
+  assert.ok(deployIds.includes("dependency-audit"));
+  assert.ok(deployIds.includes("supabase-migration-tree"));
+  assert.ok(deployIds.includes("deploy-smoke"));
+  assert.ok(deployIds.includes("action-registrations-contract"));
+  assert.ok(plan.checks
+    .filter((check) => !["diff-check", "file-naming", "deploy-candidate"].includes(check.id))
+    .every((check) => check.dependencies.includes("deploy-candidate")));
+});
+
+test("DEPLOY with no exploitable Web diff plans only the provenance gate", () => {
+  const plan = createModeValidationPlan({ mode: "DEPLOY", changedFiles: [] });
+  assert.deepEqual(ids(plan), ["diff-check", "file-naming", "deploy-candidate"]);
 });
 
 test("FULL runs the equivalent mobile suite once and keeps coverage status separate", () => {

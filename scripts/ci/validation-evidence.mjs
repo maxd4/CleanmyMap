@@ -21,6 +21,11 @@ const FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "validation",
   "full",
 );
+export const DEPLOY_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
+  "artifacts",
+  "validation",
+  "deploy",
+);
 const FULL_VALIDATION_LOCK_RELATIVE_PATH = path.join(
   FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT,
   "running.json",
@@ -174,7 +179,7 @@ function isCoveragePathForScope(file, scope) {
   return prefixes.some((prefix) => normalized === prefix || normalized.startsWith(prefix));
 }
 
-function gitTreeSha(repositoryRoot, candidateSha) {
+export function getCandidateTreeSha(repositoryRoot, candidateSha) {
   try {
     return execFileSync(gitExecutable(), ["rev-parse", `${candidateSha}^{tree}`], {
       cwd: repositoryRoot,
@@ -187,7 +192,7 @@ function gitTreeSha(repositoryRoot, candidateSha) {
 }
 
 export function getCoverageCandidateTreeSha(repositoryRoot = process.cwd(), candidateSha) {
-  return gitTreeSha(repositoryRoot, candidateSha);
+  return getCandidateTreeSha(repositoryRoot, candidateSha);
 }
 
 export function assertCoverageCandidateIdentity({
@@ -206,7 +211,7 @@ export function assertCoverageCandidateIdentity({
     throw new Error(`Coverage candidate identity has an unsupported candidate scope: ${candidateScope ?? "<missing>"}.`);
   }
   const currentSha = getCandidateSha(repositoryRoot);
-  const treeSha = gitTreeSha(repositoryRoot, candidateSha);
+  const treeSha = getCandidateTreeSha(repositoryRoot, candidateSha);
   if (!COMMIT_SHA_PATTERN.test(String(candidateSha ?? "")) || currentSha !== candidateSha || !/^[0-9a-f]{40}$/i.test(treeSha)) {
     throw new Error(`Coverage candidate identity is not attached to the declared Git SHA: ${candidateSha ?? "<missing>"}.`);
   }
@@ -323,6 +328,11 @@ function evidencePath(repositoryRoot, candidateFingerprint) {
 function fullEvidencePath(repositoryRoot, candidateSha) {
   if (!COMMIT_SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid validation evidence candidate SHA: ${candidateSha ?? "<missing>"}`);
   return resolvePathWithinRoot(repositoryRoot, `${FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT}/${candidateSha}.json`, { label: "full validation evidence" });
+}
+
+function deployEvidencePath(repositoryRoot, candidateSha) {
+  if (!COMMIT_SHA_PATTERN.test(String(candidateSha ?? ""))) throw new Error(`Invalid deploy validation candidate SHA: ${candidateSha ?? "<missing>"}`);
+  return resolvePathWithinRoot(repositoryRoot, `${DEPLOY_VALIDATION_EVIDENCE_RELATIVE_ROOT}/${candidateSha}.json`, { label: "deploy validation evidence" });
 }
 
 function fullValidationLockPath(repositoryRoot) {
@@ -483,6 +493,73 @@ export function writeFullValidationEvidence({
         && failed.length === 0
         && blocked.length === 0
         && notRun.length === 0,
+    }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+export function writeDeployValidationEvidence({
+  repositoryRoot = process.cwd(),
+  candidateSha,
+  completionSha,
+  candidateTreeSha,
+  completionTreeSha,
+  completionFingerprint,
+  candidateFingerprint,
+  plan,
+  baseRef,
+  baseSha,
+  changedFiles = [],
+  scopeEstablished = false,
+  passed = [],
+  failed = [],
+  blocked = [],
+  notRun = [],
+  reused = [],
+  preexisting = [],
+  verdict,
+} = {}) {
+  if (!candidateSha || candidateSha === "NO_GIT_HEAD") return;
+  const root = path.join(repositoryRoot, DEPLOY_VALIDATION_EVIDENCE_RELATIVE_ROOT);
+  fs.mkdirSync(root, { recursive: true });
+  const checkoutStable = completionSha === candidateSha
+    && completionTreeSha === candidateTreeSha
+    && completionFingerprint === candidateFingerprint;
+  const attested = checkoutStable && scopeEstablished;
+  fs.writeFileSync(
+    deployEvidencePath(repositoryRoot, candidateSha),
+    `${JSON.stringify({
+      version: 1,
+      mode: "DEPLOY",
+      profile: "deploy",
+      candidateSha,
+      completionSha,
+      candidateTreeSha,
+      completionTreeSha,
+      completionFingerprint,
+      candidateFingerprint,
+      checkoutStable,
+      attestationStatus: attested ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED",
+      generatedAt: new Date().toISOString(),
+      candidateScope: plan?.candidateScope,
+      baseRef,
+      baseSha,
+      changedFiles,
+      scopeEstablished,
+      plannedChecks: plan?.checks?.map((check) => check.id) ?? [],
+      passed,
+      failed,
+      blocked,
+      notRun,
+      reused,
+      preexisting,
+      verdict,
+      releaseReady: attested
+        && verdict === "PASS"
+        && failed.length === 0
+        && blocked.length === 0
+        && notRun.length === 0
+        && preexisting.length === 0,
     }, null, 2)}\n`,
     "utf8",
   );

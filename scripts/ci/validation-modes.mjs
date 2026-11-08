@@ -2,6 +2,7 @@
 
 import {
   getVitestFiles,
+  isDependencyAuditRelevantFile,
   isDependencyGraphRelevantFile,
   isBuildRelevantFile,
   isWebRelevantFile,
@@ -15,6 +16,7 @@ import fs from "node:fs";
 
 export const VALIDATION_MODE_BUDGETS = Object.freeze({
   FAST: 180,
+  DEPLOY: 900,
   FULL: null,
 });
 
@@ -132,6 +134,13 @@ function isLockfileRelevantFile(file) {
   return normalized === "package-lock.json" || normalized.endsWith("/package-lock.json");
 }
 
+function isDeploySmokeRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return normalized.startsWith("apps/web/src/app/api/")
+    || normalized === "apps/web/vercel.json"
+    || normalized === "apps/web/scripts/smoke-tests.mjs";
+}
+
 function isWebRuntimeRelevantFile(file) {
   const normalized = normalizePath(file);
   return isWebRelevantFile(normalized) && !normalized.startsWith("apps/web/supabase/");
@@ -166,6 +175,10 @@ const CHECK_POLICIES = Object.freeze({
   "vercel-deploy-preflight": { category: "External", resources: ["external-vercel"], parallelizable: false },
   "github-security-full": { category: "External", resources: ["external-github"], parallelizable: false },
   "supabase-full": { category: "External", resources: ["external-supabase"], parallelizable: false },
+  "deploy-candidate": { category: "Governance", resources: ["deploy-candidate"], parallelizable: false },
+  "deploy-web-security": { category: "Security", resources: ["web-runtime"], parallelizable: false },
+  "deploy-regression": { category: "Security", resources: ["web-runtime"], parallelizable: false },
+  "deploy-smoke": { category: "External", resources: ["external-web"], parallelizable: false },
   "python-tests": { category: "Python", resources: ["python-runtime"], parallelizable: false },
   "test:scripts": { category: "Governance", resources: ["script-tests"], parallelizable: false },
   "scripts-tests-targeted": { category: "Governance", resources: ["script-tests"], parallelizable: false },
@@ -316,6 +329,7 @@ function classifyChangedFiles(files) {
       || lockfileRelevant
       || files.includes("package.json")
       || files.includes("scripts/knip.json"),
+    deploySmokeRelevant: files.some(isDeploySmokeRelevantFile),
   };
 }
 
@@ -677,6 +691,149 @@ function addFastModeChecks(context) {
   addFastSafetyChecks(context);
 }
 
+function addDeployCheck(checks, check) {
+  addCheck(checks, {
+    critical: true,
+    ...check,
+    dependencies: ["deploy-candidate", ...(check.dependencies ?? [])],
+  });
+}
+
+function addDeployTargetedVitest(checks, files) {
+  const uniqueFiles = [...new Set(files.map(normalizePath))];
+  if (uniqueFiles.length === 0) return;
+  addDeployCheck(checks, {
+    id: "vitest-targeted",
+    label: "Vitest Web ciblé",
+    estimatedSeconds: 30,
+    command: npmCommand("test", ["-w", "apps/web", "--", ...uniqueFiles]),
+    testFiles: uniqueFiles,
+  });
+}
+
+function addDeployMigrationChecks({ checks, files, domains }) {
+  if (domains.supabaseRelevant) {
+    addDeployCheck(checks, {
+      id: "supabase-migration-tree",
+      label: "Arbre des migrations Supabase",
+      estimatedSeconds: 5,
+      command: npmCommand("audit:supabase-migration-trees"),
+    });
+  }
+  if (!domains.migrationRelevant) return;
+  const contracts = resolveMigrationContracts(files);
+  const migrationVitestTests = contracts.flatMap((entry) => entry.vitestTests);
+  for (const contract of contracts.flatMap((entry) => entry.scriptTests)) {
+    const contractName = contract.split("/").at(-1).replace(/\.test\.mjs$/, "");
+    addDeployCheck(checks, {
+      id: contractName,
+      label: `Contrat migration ${contractName}`,
+      estimatedSeconds: 10,
+      command: { executable: "node", args: ["--test", contract] },
+      contractTest: contract,
+    });
+  }
+  addDeployTargetedVitest(checks, migrationVitestTests);
+}
+
+function addDeployModeChecks({ checks, files, domains, candidateSha, baseRef }) {
+  addCheck(checks, {
+    id: "deploy-candidate",
+    label: "Provenance et intégrité du candidat DEPLOY",
+    estimatedSeconds: 5,
+    critical: true,
+    command: {
+      executable: process.execPath,
+      args: [
+        "scripts/ci/check-deploy-candidate.mjs",
+        `--sha=${candidateSha || "HEAD"}`,
+        `--base-ref=${baseRef || "origin/main"}`,
+      ],
+    },
+  });
+
+  if (!domains.webRelevant) return;
+
+  addDeployCheck(checks, {
+    id: "security-secrets",
+    label: "Audit des secrets",
+    estimatedSeconds: 5,
+    command: npmCommand("security:secrets"),
+  });
+  addDeployCheck(checks, {
+    id: "deploy-web-security",
+    label: "Sécurité Web ciblée",
+    estimatedSeconds: 45,
+    command: npmCommand("test:security"),
+  });
+  addDeployCheck(checks, {
+    id: "deploy-regression",
+    label: "Régressions Web ciblées",
+    estimatedSeconds: 45,
+    command: npmCommand("test:regression-gates"),
+  });
+  addDeployTargetedVitest(checks, resolveAssociatedWebTestFiles(files));
+  addDeployCheck(checks, {
+    id: "typecheck",
+    label: "Typecheck Web",
+    estimatedSeconds: 35,
+    command: npmCommand("typecheck"),
+  });
+  addDeployCheck(checks, {
+    id: "lint",
+    label: "ESLint Web",
+    estimatedSeconds: 45,
+    command: npmCommand("lint"),
+  });
+  addDeployCheck(checks, {
+    id: "build",
+    label: "Build production Web",
+    estimatedSeconds: 180,
+    command: npmCommand("build"),
+  });
+  addDeployCheck(checks, {
+    id: "audit:vercel-ci",
+    label: "Audit Vercel CI",
+    estimatedSeconds: 15,
+    command: npmCommand("audit:vercel:ci"),
+  });
+  addDeployCheck(checks, {
+    id: "vercel-deploy-preflight",
+    label: "Préflight Vercel",
+    estimatedSeconds: 15,
+    command: npmCommand("vercel:deploy:preflight"),
+  });
+  if (domains.dependencyGraphRelevant || files.some(isDependencyAuditRelevantFile)) {
+    addDeployCheck(checks, {
+      id: "dependency-audit",
+      label: "Audit des dépendances npm",
+      estimatedSeconds: 15,
+      command: npmCommand("security:dependencies"),
+    });
+  }
+  addDeployMigrationChecks({ checks, files, domains });
+  if (domains.deploySmokeRelevant) {
+    addDeployCheck(checks, {
+      id: "deploy-smoke",
+      label: "Smoke Web ciblé",
+      estimatedSeconds: 30,
+      command: { executable: process.execPath, args: ["scripts/ci/run-deploy-smoke.mjs"] },
+    });
+  }
+  if (domains.scriptsRelevant) {
+    const scriptTests = resolveAssociatedScriptTestFiles(files);
+    if (scriptTests.length > 0) {
+      addDeployCheck(checks, {
+        id: "scripts-tests-targeted",
+        label: "Tests ciblés des scripts",
+        estimatedSeconds: 30,
+        command: { executable: "node", args: ["--test", ...scriptTests] },
+        testFiles: scriptTests,
+      });
+    }
+  }
+}
+
 function finalizeModeValidationPlan({ normalizedMode, normalizedScope, files, domains, checks, deduplicated }) {
   const budgetSeconds = VALIDATION_MODE_BUDGETS[normalizedMode];
   const plannedSeconds = checks.reduce((total, check) => total + check.estimatedSeconds, 0);
@@ -699,6 +856,8 @@ export function createModeValidationPlan({
   mode = "FAST",
   candidateScope = "WORKTREE",
   changedFiles = [],
+  candidateSha = "",
+  baseRef = "origin/main",
 } = {}) {
   const input = normalizePlanInput({ mode, candidateScope, changedFiles });
   const domains = classifyChangedFiles(input.files);
@@ -711,6 +870,22 @@ export function createModeValidationPlan({
     return finalizeModeValidationPlan({
       ...input,
       domains: createFullDomains(domains),
+      checks,
+      deduplicated,
+    });
+  }
+
+  if (input.normalizedMode === "DEPLOY") {
+    addDeployModeChecks({
+      checks,
+      files: input.files,
+      domains,
+      candidateSha,
+      baseRef,
+    });
+    return finalizeModeValidationPlan({
+      ...input,
+      domains,
       checks,
       deduplicated,
     });

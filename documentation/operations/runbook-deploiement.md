@@ -29,6 +29,19 @@ que l'intégration Git et les autres déclencheurs automatiques sont désactivé
 et vérifiés. Aucun déploiement manuel, promotion, Deploy Hook ou appel d'API de
 déploiement n'est autorisé pendant cette période.
 
+Avant une demande de déploiement Web, la voie rapide autorisée est :
+
+```powershell
+npm run checks:deploy -- --base-ref=origin/main
+npm run release:check -- --sha=<sha-candidat> --target=production --profile=deploy
+```
+
+Cette preuve DEPLOY est distincte de FULL, ne couvre que la portée Web
+détectée depuis la référence Git vérifiée et ne déclenche aucun deployment.
+Elle ne remplace pas FULL lorsque le périmètre touche Mobile, Python, les
+workflows GitHub ou une autre surface non couverte ; dans ce cas elle échoue
+explicitement et la procédure appropriée doit être choisie.
+
 ## Flux normal
 
 1. Exécuter le préflight local :

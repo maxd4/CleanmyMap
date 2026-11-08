@@ -308,6 +308,39 @@ suite lourde. Les preuves Web sont téléchargées à la racine du checkout pour
 préserver les chemins canoniques consommés par `quality:coverage` ; une
 archive absente, mal placée ou incomplète échoue explicitement.
 
+### DEPLOY — validation Web rapide pour une demande Vercel
+
+Le profil DEPLOY est une attestation distincte de FULL :
+
+```bash
+npm run checks:deploy -- --base-ref=origin/main
+npm run release:check -- --sha=<sha-valide> --target=production --profile=deploy
+```
+
+Le plan calcule les changements par `git diff <base-ref>..<candidate-sha>` sur
+un candidat `main` propre, avec une référence Git vérifiée. Il refuse un SHA
+périmé, une base absente, un worktree dirty, une portée non-Web ou l'absence
+d'un diff exploitable ; il ne se rabat jamais silencieusement sur le contenu
+vide du worktree après publication.
+
+Pour une portée Web exploitable, DEPLOY vérifie l'intégrité du candidat,
+l'audit des secrets, les tests de sécurité et de régression Web, les tests
+co-localisés affectés, le typecheck, ESLint, le build production et le
+préflight Vercel. Les audits de dépendances, contrats de migrations et smoke
+Web sont ajoutés uniquement lorsque les fichiers affectés le nécessitent.
+Mobile, Python, mutation testing, couverture globale, audits structurels et
+E2E complets restent hors plan sans dépendance démontrée.
+
+L'attestation est conservée séparément sous
+`artifacts/validation/deploy/<sha>.json`, liée au SHA, à l'arbre candidat, à
+la base vérifiée et à la liste exacte des contrôles planifiés. Elle ne peut
+jamais être interprétée comme une preuve FULL. `release:check` n'autorise
+`RELEASE_READY: YES` que si tous les contrôles DEPLOY planifiés sont présents,
+réussis, non bloqués, non omis, et si la provenance `origin/main`, le projet
+Vercel `web`, `apps/web`, la cible `production` et
+`git.deploymentEnabled=false` sont vérifiés. Aucun déploiement n'est déclenché
+par ces commandes.
+
 ### RELEASE — publication contrôlée
 
 Après un FULL vert sur le SHA exact, vérifier :

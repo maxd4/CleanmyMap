@@ -150,6 +150,7 @@
     "checks:staged:quick": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -StagedOnly",
     "checks:changed:quick:build": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -IncludeBuild",
     "checks:fast": "node scripts/ci/run_validation_mode.mjs --mode FAST",
+    "checks:deploy": "node scripts/ci/run_validation_mode.mjs --mode DEPLOY",
     "checks:full": "node scripts/ci/run_validation_mode.mjs --mode FULL",
     "checks:changed": "npm run checks:fast",
     "checks:maintenance:changed": "powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope changed",

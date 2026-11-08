@@ -7,11 +7,14 @@ import {
   cleanupValidationEvidence,
   createCandidateFingerprint,
   createValidationEvidenceKey,
+  getCandidateTreeSha,
   getCandidateSha,
   readFastValidationEvidence,
   writeFullValidationEvidence,
+  writeDeployValidationEvidence,
   writeFastValidationEvidence,
 } from "./validation-evidence.mjs";
+import { resolveDeployCandidate } from "./deploy-validation.mjs";
 import {
   classifyValidationFailure,
   createModeValidationPlan,
@@ -23,7 +26,7 @@ import {
 } from "./validation-process.mjs";
 
 function parseArgs(argv) {
-  const options = { mode: "FAST", candidateScope: "WORKTREE", changedFiles: [], maxParallel: 2 };
+  const options = { mode: "FAST", candidateScope: "WORKTREE", changedFiles: [], maxParallel: 2, baseRef: "origin/main" };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const next = argv[index + 1];
@@ -41,6 +44,11 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg.startsWith("--max-parallel=")) {
       options.maxParallel = Number(arg.slice("--max-parallel=".length));
+    } else if (arg === "--base-ref" && next) {
+      options.baseRef = next;
+      index += 1;
+    } else if (arg.startsWith("--base-ref=")) {
+      options.baseRef = arg.slice("--base-ref=".length);
     }
   }
   return options;
@@ -368,10 +376,20 @@ export async function runValidationMode(
 ) {
   const repositoryRoot = runtime.repositoryRoot ?? process.cwd();
   const candidateSha = getCandidateSha(repositoryRoot);
+  const deployScope = options.mode === "DEPLOY"
+    ? resolveDeployCandidate({ repositoryRoot, candidateSha, baseRef: options.baseRef })
+    : null;
   const changedFiles = options.changedFiles.length > 0
     ? options.changedFiles
-    : getCandidateFiles(options.candidateScope, repositoryRoot);
-  const plan = createModeValidationPlan({ ...options, changedFiles });
+    : options.mode === "DEPLOY"
+      ? deployScope?.changedFiles ?? []
+      : getCandidateFiles(options.candidateScope, repositoryRoot);
+  const plan = createModeValidationPlan({
+    ...options,
+    candidateSha,
+    changedFiles,
+    baseRef: options.baseRef,
+  });
   const candidateFingerprint = createCandidateFingerprint({
     repositoryRoot,
     candidateScope: plan.candidateScope,
@@ -506,10 +524,15 @@ export async function runValidationMode(
 
     const elapsedSeconds = (performance.now() - startedAt) / 1000;
     const completionSha = getCandidateSha(repositoryRoot);
+    const completionDeployScope = plan.mode === "DEPLOY"
+      ? resolveDeployCandidate({ repositoryRoot, candidateSha: completionSha, baseRef: options.baseRef })
+      : null;
     const completionChangedFiles = plan.mode === "FULL"
       ? getCandidateFiles(plan.candidateScope, repositoryRoot)
-      : [];
-    const completionFingerprint = plan.mode === "FULL"
+      : plan.mode === "DEPLOY"
+        ? completionDeployScope?.changedFiles ?? []
+        : [];
+    const completionFingerprint = plan.mode === "FULL" || plan.mode === "DEPLOY"
       ? createCandidateFingerprint({
         repositoryRoot,
         candidateScope: plan.candidateScope,
@@ -517,8 +540,17 @@ export async function runValidationMode(
         candidateSha,
       })
       : undefined;
-    const checkoutStable = plan.mode !== "FULL"
-      || (completionSha === candidateSha && completionFingerprint === candidateFingerprint);
+    const checkoutStable = plan.mode === "FULL"
+      ? completionSha === candidateSha && completionFingerprint === candidateFingerprint
+      : plan.mode === "DEPLOY"
+        ? Boolean(
+          deployScope?.valid
+            && completionDeployScope?.valid
+            && completionDeployScope.baseSha === deployScope.baseSha
+            && completionSha === candidateSha
+            && completionFingerprint === candidateFingerprint,
+        )
+        : true;
     const verdict = printReport({
       plan,
       elapsedSeconds,
@@ -555,6 +587,31 @@ export async function runValidationMode(
       if (completionSha !== candidateSha) log(`HEAD_AT_COMPLETION: ${completionSha}`);
       if (completionFingerprint !== candidateFingerprint) log("CHECKOUT_AT_COMPLETION: CHANGED");
       log(`FULL_ATTESTATION: ${checkoutStable ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED"}`);
+      log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" && checkoutStable ? "YES" : "NO"}`);
+    } else if (plan.mode === "DEPLOY") {
+      writeDeployValidationEvidence({
+        repositoryRoot,
+        candidateSha,
+        completionSha,
+        candidateTreeSha: getCandidateTreeSha(repositoryRoot, candidateSha),
+        completionTreeSha: getCandidateTreeSha(repositoryRoot, completionSha),
+        completionFingerprint,
+        candidateFingerprint,
+        plan,
+        baseRef: deployScope?.baseRef ?? options.baseRef,
+        baseSha: deployScope?.baseSha ?? "",
+        changedFiles,
+        scopeEstablished: Boolean(deployScope?.valid),
+        passed,
+        failed,
+        blocked,
+        notRun,
+        reused,
+        preexisting,
+        verdict,
+      });
+      log(`CANDIDATE_SHA: ${candidateSha}`);
+      log(`DEPLOY_ATTESTATION: ${checkoutStable ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED"}`);
       log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" && checkoutStable ? "YES" : "NO"}`);
     }
     return verdict === "PASS" ? 0 : verdict === "INCOMPLETE" ? 2 : 1;
