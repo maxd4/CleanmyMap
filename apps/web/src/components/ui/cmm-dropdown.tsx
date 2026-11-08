@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -12,6 +13,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 import {
@@ -54,6 +56,18 @@ export type CmmDropdownProps = {
 
 const DEFAULT_HOVER_CLOSE_DELAY_MS = 160;
 
+function subscribeToDocumentBody() {
+  return () => undefined;
+}
+
+function getPortalTarget() {
+  return typeof document === "undefined" ? null : document.body;
+}
+
+function getServerPortalTarget() {
+  return null;
+}
+
 export function CmmDropdown({
   id,
   ariaLabel,
@@ -77,6 +91,7 @@ export function CmmDropdown({
   const isOpen = isControlled ? open : uncontrolledOpen;
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverOpenedMarkerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,6 +100,7 @@ export function CmmDropdown({
   const restoreFocusOnCloseRef = useRef(true);
   const wasOpenRef = useRef(isOpen);
   const [canHover, setCanHover] = useState(false);
+  const portalTarget = useSyncExternalStore(subscribeToDocumentBody, getPortalTarget, getServerPortalTarget);
   const placement = useDropdownPlacement({
     isOpen,
     triggerRef,
@@ -200,7 +216,7 @@ export function CmmDropdown({
 
     const closeOnOutsidePointer = (event: PointerEvent) => {
       const target = event.target as Node | null;
-      if (target && !wrapperRef.current?.contains(target)) {
+      if (target && !wrapperRef.current?.contains(target) && !panelRef.current?.contains(target)) {
         closeAndRestoreFocus();
       }
     };
@@ -276,12 +292,20 @@ export function CmmDropdown({
   const panelLeft = panelAlignment === "start" && triggerRect
     ? `${triggerRect.left / layoutScale}px`
     : triggerCenter;
+  const horizontalShift = panelAlignment === "start" && triggerRect && placement.viewportWidth > 0
+    ? `clamp(${(8 - triggerRect.left) / layoutScale}px, 0px, calc(${(placement.viewportWidth - 8 - triggerRect.left) / layoutScale}px - 100%))`
+    : undefined;
   const arrowStyle = panelAlignment === "start" && triggerRect
-    ? { left: `${triggerRect.width / (2 * layoutScale)}px` }
+    ? {
+        left: horizontalShift
+          ? `calc(${triggerRect.width / (2 * layoutScale)}px - ${horizontalShift})`
+          : `${triggerRect.width / (2 * layoutScale)}px`,
+      }
     : undefined;
   const fixedPositionStyle: CSSProperties = {
     ...panelStyle,
     left: panelLeft,
+    ...(horizontalShift ? { transform: `translateX(${horizontalShift})` } : {}),
     ...(triggerRect
       ? placement.openUp
         ? {
@@ -291,6 +315,50 @@ export function CmmDropdown({
       : {}),
   };
 
+  const panel = isOpen ? (
+    <div
+      ref={panelRef}
+      id={id}
+      role={panelRole}
+      aria-label={ariaLabel}
+      className={cn(
+        "fixed z-[70] max-w-[calc(100vw-1rem)] overflow-visible",
+        panelAlignment === "center" && "-translate-x-1/2",
+        panelClassName,
+      )}
+      style={fixedPositionStyle}
+      onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
+      onMouseLeave={openOnHover && canHover ? closeFromHover : undefined}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-auto absolute left-0 right-0"
+        style={
+          placement.openUp
+            ? { bottom: `-${verticalGap}px`, height: `${verticalGap}px` }
+            : { top: `-${verticalGap}px`, height: `${verticalGap}px` }
+        }
+        onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-black/35",
+          placement.openUp
+            ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0"
+            : "-top-2",
+        )}
+        style={{
+          backgroundColor: panelStyle?.backgroundColor,
+          backgroundImage: panelStyle?.backgroundImage,
+          borderColor: "rgba(15, 23, 42, 0.34)",
+          ...arrowStyle,
+        }}
+      />
+      {children}
+    </div>
+  ) : null;
+
   return (
     <div
       ref={wrapperRef}
@@ -299,48 +367,7 @@ export function CmmDropdown({
       onMouseLeave={openOnHover && canHover ? closeFromHover : undefined}
     >
       {renderTrigger(triggerProps)}
-      {isOpen ? (
-        <div
-          id={id}
-          role={panelRole}
-          aria-label={ariaLabel}
-          className={cn(
-            "fixed z-[70] max-w-[calc(100vw-1rem)] overflow-visible",
-            panelAlignment === "center" && "-translate-x-1/2",
-            panelClassName,
-          )}
-          style={fixedPositionStyle}
-          onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
-          onMouseLeave={openOnHover && canHover ? closeFromHover : undefined}
-        >
-          <span
-            aria-hidden="true"
-            className="pointer-events-auto absolute left-0 right-0"
-            style={
-              placement.openUp
-                ? { bottom: `-${verticalGap}px`, height: `${verticalGap}px` }
-                : { top: `-${verticalGap}px`, height: `${verticalGap}px` }
-            }
-            onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
-          />
-          <span
-            aria-hidden="true"
-            className={cn(
-              "pointer-events-none absolute left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-black/35",
-              placement.openUp
-                ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0"
-                : "-top-2",
-            )}
-            style={{
-              backgroundColor: panelStyle?.backgroundColor,
-              backgroundImage: panelStyle?.backgroundImage,
-              borderColor: "rgba(15, 23, 42, 0.34)",
-              ...arrowStyle,
-            }}
-          />
-          {children}
-        </div>
-      ) : null}
+      {portalTarget && panel ? createPortal(panel, portalTarget) : panel}
     </div>
   );
 }

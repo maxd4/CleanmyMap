@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type RefObject } from "react";
 type DropdownPlacement = {
   openUp: boolean;
   triggerRect: Pick<DOMRect, "top" | "bottom" | "left" | "width"> | null;
+  viewportWidth: number;
   viewportHeight: number;
   layoutScale: number;
 };
@@ -48,6 +49,7 @@ export function useDropdownPlacement({
   const [placement, setPlacement] = useState<DropdownPlacement>({
     openUp: false,
     triggerRect: null,
+    viewportWidth: 0,
     viewportHeight: 0,
     layoutScale: 1,
   });
@@ -69,6 +71,7 @@ export function useDropdownPlacement({
         left: rect.left,
         width: rect.width,
       },
+      viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
       layoutScale: resolveDropdownLayoutScale(trigger),
     });

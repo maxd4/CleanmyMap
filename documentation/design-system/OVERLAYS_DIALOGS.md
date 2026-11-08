@@ -94,6 +94,13 @@ contrat des menus/navigation flottants, tandis que `CmmPopover` porte le
 contenu riche non modal. `SiteTooltips` reste la primitive des aides
 contextuelles courtes et ne doit pas être remplacée par un popover.
 
+Les panneaux `CmmDropdown`/`CmmPopover` positionnés avec des coordonnées du
+viewport sont rendus dans un portail sous `document.body`. Cette frontière
+préserve la correspondance entre `getBoundingClientRect()` et `position: fixed`,
+y compris lorsqu'un ancêtre de la carte utilise `backdrop-filter`. La fermeture
+extérieure et le pont de survol doivent donc considérer le wrapper du
+déclencheur et le panneau portalisé comme une même surface interactive.
+
 ## Dropdowns flottants
 
 Tout menu déroulant flottant ouvert par un bouton, une icône ou un chip doit
