@@ -55,6 +55,14 @@ export type CmmDropdownProps = {
 };
 
 const DEFAULT_HOVER_CLOSE_DELAY_MS = 160;
+const PANEL_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex=\"-1\"])",
+].join(",");
 
 function subscribeToDocumentBody() {
   return () => undefined;
@@ -98,11 +106,13 @@ export function CmmDropdown({
   const hoverOpenedRef = useRef(false);
   const clickToggleOpenRef = useRef<boolean | null>(null);
   const restoreFocusOnCloseRef = useRef(true);
+  const focusPanelOnOpenRef = useRef(false);
   const wasOpenRef = useRef(isOpen);
   const [canHover, setCanHover] = useState(false);
   const portalTarget = useSyncExternalStore(subscribeToDocumentBody, getPortalTarget, getServerPortalTarget);
   const placement = useDropdownPlacement({
     isOpen,
+    panelRef,
     triggerRef,
     verticalGap,
   });
@@ -199,6 +209,10 @@ export function CmmDropdown({
   }, [openOnHover]);
 
   useEffect(() => {
+    if (isOpen && focusPanelOnOpenRef.current) {
+      focusPanelOnOpenRef.current = false;
+      panelRef.current?.querySelector<HTMLElement>(PANEL_FOCUSABLE_SELECTOR)?.focus();
+    }
     if (wasOpenRef.current && !isOpen && restoreFocusOnCloseRef.current) {
       triggerRef.current?.focus();
       window.setTimeout(() => triggerRef.current?.focus(), 0);
@@ -271,6 +285,9 @@ export function CmmDropdown({
     onKeyDown: (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        if (!isOpen) {
+          focusPanelOnOpenRef.current = true;
+        }
         toggle();
       } else if (event.key === "Escape") {
         event.preventDefault();
@@ -302,9 +319,20 @@ export function CmmDropdown({
           : `${triggerRect.width / (2 * layoutScale)}px`,
       }
     : undefined;
+  const availablePanelHeight = triggerRect && placement.viewportHeight > 0
+    ? Math.max(
+        0,
+        (placement.openUp
+          ? triggerRect.top - verticalGap
+          : placement.viewportHeight - triggerRect.bottom - verticalGap) / layoutScale - 1,
+      )
+    : null;
+  const maxPanelHeight = availablePanelHeight === null
+    ? panelStyle?.maxHeight ?? "calc(100vh - 1rem)"
+    : `min(${panelStyle?.maxHeight ?? "calc(100vh - 1rem)"}, ${availablePanelHeight}px)`;
   const fixedPositionStyle: CSSProperties = {
     ...panelStyle,
-    maxHeight: panelStyle?.maxHeight ?? "calc(100vh - 1rem)",
+    maxHeight: maxPanelHeight,
     left: panelLeft,
     ...(horizontalShift ? { transform: `translateX(${horizontalShift})` } : {}),
     ...(triggerRect

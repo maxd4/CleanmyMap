@@ -13,19 +13,29 @@ type DropdownPlacement = {
 type UseDropdownPlacementOptions = {
   isOpen: boolean;
   triggerRef: RefObject<HTMLElement | null>;
+  panelRef: RefObject<HTMLElement | null>;
   verticalGap?: number;
 };
 
 export const DEFAULT_DROPDOWN_VERTICAL_GAP_PX = 12;
+export const DEFAULT_DROPDOWN_PANEL_HEIGHT_PX = 260;
 
 export function resolveDropdownOpenUp(
   rect: Pick<DOMRect, "top" | "bottom">,
   viewportHeight: number,
   verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
+  panelHeight = DEFAULT_DROPDOWN_PANEL_HEIGHT_PX,
 ): boolean {
   const spaceAbove = rect.top - verticalGap;
   const spaceBelow = viewportHeight - rect.bottom - verticalGap;
-  return spaceBelow < 260 && spaceAbove > spaceBelow;
+  const requiredHeight = panelHeight > 0 ? panelHeight : DEFAULT_DROPDOWN_PANEL_HEIGHT_PX;
+  if (spaceBelow >= requiredHeight) {
+    return false;
+  }
+  if (spaceAbove >= requiredHeight) {
+    return true;
+  }
+  return spaceAbove > spaceBelow;
 }
 function resolveDropdownLayoutScale(element: HTMLElement): number {
   let scale = 1;
@@ -44,6 +54,7 @@ function resolveDropdownLayoutScale(element: HTMLElement): number {
 export function useDropdownPlacement({
   isOpen,
   triggerRef,
+  panelRef,
   verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
 }: UseDropdownPlacementOptions): DropdownPlacement {
   const [placement, setPlacement] = useState<DropdownPlacement>({
@@ -61,7 +72,8 @@ export function useDropdownPlacement({
     }
 
     const rect = trigger.getBoundingClientRect();
-    const openUp = resolveDropdownOpenUp(rect, window.innerHeight, verticalGap);
+    const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 0;
+    const openUp = resolveDropdownOpenUp(rect, window.innerHeight, verticalGap, panelHeight);
 
     setPlacement({
       openUp,
@@ -75,7 +87,7 @@ export function useDropdownPlacement({
       viewportHeight: window.innerHeight,
       layoutScale: resolveDropdownLayoutScale(trigger),
     });
-  }, [triggerRef, verticalGap]);
+  }, [panelRef, triggerRef, verticalGap]);
 
   useEffect(() => {
     if (!isOpen) {

@@ -10,4 +10,9 @@ describe("dropdown placement", () => {
   it("opens above when the space below is constrained", () => {
     expect(resolveDropdownOpenUp({ top: 720, bottom: 764 }, 800)).toBe(true);
   });
+
+  it("chooses the side with more room when the measured panel fits on neither side", () => {
+    expect(resolveDropdownOpenUp({ top: 297, bottom: 341 }, 640, 12, 296)).toBe(false);
+    expect(resolveDropdownOpenUp({ top: 297, bottom: 341 }, 640, 12, 280)).toBe(false);
+  });
 });

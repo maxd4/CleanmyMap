@@ -165,7 +165,7 @@ describe("CmmDropdown", () => {
     expect(panel?.parentElement).toBe(document.body);
     expect(panel?.style.left).toBe("70px");
     expect(panel?.style.top).toBe("62px");
-    expect(panel?.style.maxHeight).toBe("calc(100vh - 1rem)");
+    expect(panel?.style.maxHeight).toContain("calc(100vh - 1rem)");
     expect(panel?.querySelector("[data-cmm-dropdown-scroll-region]")?.className).toContain("overflow-y-auto");
     expect(panel?.textContent).toContain("Interactive content");
 
@@ -189,6 +189,126 @@ describe("CmmDropdown", () => {
       document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     });
     expect(document.body.querySelector("#interactive-dropdown")).toBeNull();
+  });
+
+  it("focuses the first portaled navigation action from the keyboard but not from hover", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root!: Root;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <CmmDropdown
+          id="keyboard-navigation-dropdown"
+          ariaLabel="Navigation"
+          renderTrigger={(triggerProps) => (
+            <button {...triggerProps} aria-label="Open navigation">
+              Navigation
+            </button>
+          )}
+        >
+          <nav aria-label="Navigation links">
+            <a href="/actions/new">Créer une action</a>
+            <a href="/map">Cartographie</a>
+          </nav>
+        </CmmDropdown>,
+      );
+    });
+    activeRoots.push({ host, root });
+
+    const trigger = host.querySelector<HTMLButtonElement>('button[aria-label="Open navigation"]');
+    expect(trigger).not.toBeNull();
+    vi.spyOn(trigger!, "getBoundingClientRect").mockReturnValue({
+      top: 10,
+      bottom: 50,
+      left: 20,
+      width: 100,
+    } as DOMRect);
+    trigger!.focus();
+
+    act(() => {
+      trigger!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    });
+    const firstLink = document.body.querySelector<HTMLAnchorElement>('#keyboard-navigation-dropdown a[href="/actions/new"]');
+    expect(firstLink).not.toBeNull();
+    expect(document.activeElement).toBe(firstLink);
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(document.activeElement).toBe(trigger);
+
+    trigger!.focus();
+    act(() => {
+      trigger!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      vi.advanceTimersByTime(0);
+    });
+    expect(document.body.querySelector("#keyboard-navigation-dropdown")).not.toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("constrains a measured panel to the available viewport space", () => {
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(640);
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root!: Root;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <CmmDropdown
+          id="measured-placement-dropdown"
+          ariaLabel="Measured placement"
+          panelAlignment="start"
+          renderTrigger={(triggerProps) => (
+            <button {...triggerProps} aria-label="Open measured placement">
+              Open
+            </button>
+          )}
+        >
+          <span>Long enough to require measured placement</span>
+        </CmmDropdown>,
+      );
+    });
+    activeRoots.push({ host, root });
+
+    const trigger = host.querySelector<HTMLButtonElement>('button[aria-label="Open measured placement"]');
+    expect(trigger).not.toBeNull();
+    vi.spyOn(trigger!, "getBoundingClientRect").mockReturnValue({
+      top: 297,
+      bottom: 341,
+      left: 285,
+      width: 44,
+    } as DOMRect);
+
+    act(() => {
+      trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const panel = document.body.querySelector<HTMLDivElement>("#measured-placement-dropdown");
+    expect(panel).not.toBeNull();
+    vi.spyOn(panel!, "getBoundingClientRect").mockReturnValue({
+      top: 353,
+      bottom: 649,
+      left: 8,
+      right: 382,
+      width: 374,
+      height: 296,
+    } as DOMRect);
+
+    act(() => {
+      window.dispatchEvent(new Event("resize"));
+    });
+
+    expect(panel?.style.top).toBe("353px");
+    expect(panel?.style.maxHeight).toContain("286px");
   });
 
   it("bounds a start-aligned portaled panel at the viewport edges", () => {
