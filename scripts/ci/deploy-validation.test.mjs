@@ -12,14 +12,14 @@ function git(root, args) {
   return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 }
 
-function makeRepository() {
+function makeRepository(marker = "baseline") {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-deploy-validation-"));
   git(root, ["init", "--initial-branch=main", "--quiet"]);
   git(root, ["config", "user.email", "validation@cleanmymap.local"]);
   git(root, ["config", "user.name", "CleanMyMap validation"]);
   git(root, ["remote", "add", "origin", "https://github.com/maxd4/CleanmyMap.git"]);
   fs.mkdirSync(path.join(root, "apps", "web", "src"), { recursive: true });
-  fs.writeFileSync(path.join(root, "README.md"), "baseline\n");
+  fs.writeFileSync(path.join(root, "README.md"), `${marker}\n`);
   git(root, ["add", "--", "."]);
   git(root, ["commit", "--quiet", "-m", "baseline"]);
   return root;
@@ -161,9 +161,10 @@ test("DEPLOY refuses an absent, non-ancestor, or unverifiable Production referen
     const absent = await resolveDeployCandidate({ repositoryRoot: root });
     assert.equal(absent.reason, "DEPLOY_PUBLICATION_REFERENCE_UNVERIFIED");
 
-    const foreignRoot = makeRepository();
+    const foreignRoot = makeRepository("foreign-publication");
     try {
       const foreignSha = git(foreignRoot, ["rev-parse", "HEAD"]);
+      assert.notEqual(foreignSha, productionSha);
       const nonAncestor = await resolveDeployCandidate({
         repositoryRoot: root,
         deploymentReference: { sha: foreignSha },

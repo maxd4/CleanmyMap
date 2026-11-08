@@ -50,6 +50,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "apps/web/supabase/tests/quiz-progression-rpc-boundary.pgtap.sql",
     "apps/web/supabase/tests/scientific-projection-volume-lot-reconciliation.pgtap.sql",
     "apps/web/supabase/tests/spogomi-division-regulation-configuration.pgtap.sql",
+    "apps/web/supabase/tests/spogomi-mapping-coherence.pgtap.sql",
     "apps/web/supabase/tests/territorial-legend-rewards-contract.pgtap.sql",
     "apps/web/supabase/tests/user-data-boundaries.pgtap.sql",
   ]);
