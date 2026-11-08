@@ -21,13 +21,10 @@ const copy = {
   externalEvent: "Références externes",
   source: "Source officielle",
   noExternalEvents: "Aucun événement externe vérifié pour ces filtres.",
-  newsDetails: "Voir les actualités vérifiées",
-  filtersDetails: "Voir les filtres et événements",
-  worldDetails: "Voir le rôle de CleanMyMap et les sources",
 };
 
 describe("SpogomiInternationalContent", () => {
-  it("keeps the international content in three compact disclosures without changing its data", () => {
+  it("keeps the international content in three compact blocks without changing its data", () => {
     const markup = renderToStaticMarkup(
       <SpogomiInternationalContent
         locale="fr"
@@ -38,10 +35,9 @@ describe("SpogomiInternationalContent", () => {
       />,
     );
 
-    expect(markup.match(/<div data-cmm-card-tone="indigo"/g)).toHaveLength(3);
-    expect(markup.match(/<details/g)).toHaveLength(3);
-    expect(markup.match(/<summary/g)).toHaveLength(3);
-    expect(markup).not.toContain(" open");
+    expect(markup.match(/<div data-cmm-card-tone="slate"/g)).toHaveLength(3);
+    expect(markup).not.toContain("<details");
+    expect(markup).not.toContain("<summary");
     expect(markup).toContain("https://spogomi.or.jp/");
     expect(markup).toContain("2026-11-08");
     expect(markup).toContain("Règles générales japonaises");
@@ -52,6 +48,8 @@ describe("SpogomiInternationalContent", () => {
     expect(markup).toContain('aria-label="Événements internationaux filters"');
     expect(markup).toContain("Toutes les années");
     expect(markup).toContain("Tous les pays connus");
+    expect(markup).toContain('aria-label="Année"');
+    expect(markup).toContain('aria-label="Pays"');
   });
 
   it("renders event years in numeric order for the business filter", () => {

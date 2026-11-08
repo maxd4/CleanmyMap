@@ -1,11 +1,11 @@
-import { ArrowRight, BookOpen, CalendarDays, ExternalLink, Globe2, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, MapPin } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmIcon } from "@/components/ui/cmm-icon";
 import { SpogomiActionInfo } from "./spogomi-action-info";
 import { SpogomiInternationalContent } from "./spogomi-international-content";
+import { SpogomiUnderstandingTabs } from "./spogomi-understanding-tabs";
 import { SPOGOMI_EXTERNAL_EVENTS, SPOGOMI_HISTORICAL_EXAMPLES, SPOGOMI_INTERNATIONAL_NEWS, SPOGOMI_INTERNATIONAL_SOURCES } from "@/lib/spogomi/international-content";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 import type { listPublishedSpogomiEvents } from "@/lib/spogomi/public-service";
@@ -31,7 +31,7 @@ export function SpogomiPublicEvents({ events, loadError }: { events: PublishedEv
 }
 
 export function SpogomiUnderstanding({ t }: { t: Translate }) {
-  return <section className="space-y-4" aria-labelledby="spogomi-understanding-title"><UnderstandingIntro t={t} /><CmmCard tone="emerald" variant="glass" className="space-y-3"><CasualDisclosure t={t} /><WorldCupDisclosure t={t} /><RulesDisclosure t={t} /></CmmCard></section>;
+  return <section className="space-y-4" aria-labelledby="spogomi-understanding-title"><UnderstandingIntro t={t} /><SpogomiUnderstandingTabs copy={{ presentationTab: t("understanding.presentationTab"), formatsTab: t("understanding.formatsTab"), rulesTab: t("understanding.rulesTab"), worldTab: t("understanding.worldTab"), presentationTitle: t("understanding.presentationTitle"), presentationDescription: t("international.worldDescription"), casualTitle: t("international.casualTitle"), casualDescription: t("international.casualDescription"), worldCupTitle: t("international.worldCupTitle"), worldCupDescription: t("international.worldCupDescription"), rulesDescription: t("understanding.rulesDescription"), rulesCasual: t("understanding.rulesCasual"), rulesWorldCup: t("understanding.rulesWorldCup"), rulesSafety: t("understanding.rulesSafety"), rulesSanctions: t("understanding.rulesSanctions"), rulesHistoricalExamplesTitle: t("understanding.rulesHistoricalExamplesTitle"), rulesPrivacyNote: t("understanding.rulesPrivacyNote"), examples: SPOGOMI_HISTORICAL_EXAMPLES.map((example) => ({ id: example.id, text: t(`understanding.${example.copyKey}`), sourceLabel: example.sourceLabel, sourceUrl: example.sourceUrl })), worldDescription: t("international.worldDescription"), cleanMyMapRole: t("international.cleanMyMapRole"), worldSectionLink: t("international.worldSectionLink") }} /></section>;
 }
 
 function UnderstandingIntro({ t }: { t: Translate }) {
@@ -41,34 +41,6 @@ function UnderstandingIntro({ t }: { t: Translate }) {
   </div>;
 }
 
-function CasualDisclosure({ t }: { t: Translate }) {
-  return <CmmDisclosure summary={<span className="flex items-center gap-3"><CmmIcon icon={BookOpen} className="text-emerald-700" /><span>{t("international.casualTitle")}</span></span>} tone="emerald" size="md">
-    <p className="cmm-text-body text-slate-950">{t("international.casualDescription")}</p>
-  </CmmDisclosure>;
-}
-
-function WorldCupDisclosure({ t }: { t: Translate }) {
-  return <CmmDisclosure summary={<span className="flex items-center gap-3"><CmmIcon icon={Globe2} className="text-amber-700" /><span>{t("international.worldCupTitle")}</span></span>} tone="amber" size="md">
-    <p className="cmm-text-body text-slate-950">{t("international.worldCupDescription")}</p>
-  </CmmDisclosure>;
-}
-
-function RulesDisclosure({ t }: { t: Translate }) {
-  return <CmmDisclosure summary={<span className="flex items-center gap-3"><CmmIcon icon={ShieldCheck} className="text-slate-700" /><span>{t("understanding.rulesTitle")}</span></span>} tone="slate" size="md">
-    <div className="space-y-3 text-slate-950">
-      <p className="cmm-text-body">{t("understanding.rulesDescription")}</p>
-      <ul className="list-disc space-y-2 pl-5 text-sm leading-6"><li>{t("understanding.rulesCasual")}</li><li>{t("understanding.rulesWorldCup")}</li><li>{t("understanding.rulesSafety")}</li><li>{t("understanding.rulesSanctions")}</li></ul>
-      <div className="space-y-2 rounded-2xl border border-slate-200 bg-white/60 p-4">
-        <h3 className="font-black">{t("understanding.rulesHistoricalExamplesTitle")}</h3>
-        <ul className="list-disc space-y-2 pl-5 text-sm leading-6">
-          {SPOGOMI_HISTORICAL_EXAMPLES.map((example) => <li key={example.id}><span>{t(`understanding.${example.copyKey}`)}</span>{" "}<a href={example.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-slate-800 underline hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500">{example.sourceLabel}<ExternalLink size={13} aria-hidden="true" /></a></li>)}
-        </ul>
-      </div>
-      <p className="text-sm leading-6 text-slate-800">{t("understanding.rulesPrivacyNote")}</p>
-    </div>
-  </CmmDisclosure>;
-}
-
 export function SpogomiInternationalSection({ locale, t }: { locale: Locale; t: Translate }) {
-  return <SpogomiInternationalContent locale={locale} sources={SPOGOMI_INTERNATIONAL_SOURCES} news={SPOGOMI_INTERNATIONAL_NEWS} externalEvents={SPOGOMI_EXTERNAL_EVENTS} copy={{ worldTitle: t("international.worldTitle"), worldDescription: t("international.worldDescription"), cleanMyMapRole: t("international.cleanMyMapRole"), officialSources: t("international.officialSources"), verifiedOn: t("international.verifiedOn"), newsTitle: t("international.newsTitle"), confirmed: t("international.confirmed"), planned: t("international.planned"), dateSet: t("international.dateSet"), internationalEvents: t("international.eventsTitle"), year: t("international.year"), country: t("international.country"), allYears: t("international.allYears"), allCountries: t("international.allCountries"), externalEvent: t("international.externalEvent"), source: t("international.source"), noExternalEvents: t("international.noExternalEvents"), newsDetails: t("international.newsDetails"), filtersDetails: t("international.filtersDetails"), worldDetails: t("international.worldDetails") }} />;
+  return <SpogomiInternationalContent locale={locale} sources={SPOGOMI_INTERNATIONAL_SOURCES} news={SPOGOMI_INTERNATIONAL_NEWS} externalEvents={SPOGOMI_EXTERNAL_EVENTS} copy={{ worldTitle: t("international.worldTitle"), worldDescription: t("international.worldDescription"), cleanMyMapRole: t("international.cleanMyMapRole"), officialSources: t("international.officialSources"), verifiedOn: t("international.verifiedOn"), newsTitle: t("international.newsTitle"), confirmed: t("international.confirmed"), planned: t("international.planned"), dateSet: t("international.dateSet"), internationalEvents: t("international.eventsTitle"), year: t("international.year"), country: t("international.country"), allYears: t("international.allYears"), allCountries: t("international.allCountries"), externalEvent: t("international.externalEvent"), source: t("international.source"), noExternalEvents: t("international.noExternalEvents") }} />;
 }

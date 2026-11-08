@@ -258,11 +258,17 @@
       "noExternalEvents": "Aucun événement externe vérifié pour ces filtres.",
       "newsDetails": "Voir les actualités vérifiées",
       "filtersDetails": "Voir les filtres et événements",
-      "worldDetails": "Voir le rôle de CleanMyMap et les sources"
+    "worldDetails": "Voir le rôle de CleanMyMap et les sources",
+    "worldSectionLink": "Voir les actualités, événements et sources"
     },
     "understanding": {
       "title": "Comprendre SPOGOMI",
       "description": "Formats des compétitions, règlement et sécurité.",
+    "presentationTab": "Présentation",
+    "formatsTab": "Formats & compétitions",
+    "rulesTab": "Règlement & sécurité",
+    "worldTab": "Le mouvement dans le monde",
+    "presentationTitle": "Qu’est-ce que SPOGOMI ?",
       "rulesTitle": "Règlement & sécurité",
       "rulesDescription": "Une épreuve se déroule dans une zone délimitée : les équipes se déplacent en marchant, collectent au sol, puis trient et font peser les déchets. Les catégories et quantités déterminent les points ; des pénalités ou une disqualification peuvent s’appliquer selon le règlement publié.",
       "rulesCasual": "Format général : équipes de 2 à 5, 40 min de collecte puis 20 min de tri ; les adaptations locales publiées pour l’édition prévalent.",

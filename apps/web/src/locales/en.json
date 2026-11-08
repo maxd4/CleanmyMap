@@ -258,11 +258,17 @@
       "noExternalEvents": "No verified external event matches these filters.",
       "newsDetails": "View verified updates",
       "filtersDetails": "View filters and events",
-      "worldDetails": "View CleanMyMap's role and sources"
+    "worldDetails": "View CleanMyMap's role and sources",
+    "worldSectionLink": "See updates, events and sources"
     },
     "understanding": {
       "title": "Understanding SPOGOMI",
       "description": "Competition formats, rules, and safety.",
+    "presentationTab": "Overview",
+    "formatsTab": "Formats & competitions",
+    "rulesTab": "Rules & safety",
+    "worldTab": "The movement worldwide",
+    "presentationTitle": "What is SPOGOMI?",
       "rulesTitle": "Rules & safety",
       "rulesDescription": "A competition takes place in a delimited area: teams move by walking, collect from the ground, then sort and weigh the waste. Categories and quantities determine the points; penalties or disqualification may apply under the published rules.",
       "rulesCasual": "General format: teams of 2 to 5, 40 minutes of collection followed by 20 minutes of sorting; local adaptations published for the edition prevail.",
