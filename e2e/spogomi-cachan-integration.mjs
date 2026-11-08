@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
 import * as XLSX from "xlsx";
+import { operationalInstantAt, teamSubmissionIdempotencyKey } from "./spogomi-cachan-inputs.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureRoot = path.join(root, "documentation", "features", "spogomi-references", "fixtures");
@@ -220,7 +221,7 @@ async function main() {
     let event;
     let management;
     await runStep("création-idempotente-une-action-parent", async () => {
-      const payload = { idempotencyKey: "cachan-cleanmymap-mixed-v1", name: `${fixture.scenario_name} — ${marker}`, locationLabel: "Cachan · fixture synthétique", mode: "mixed", startsAt: `${operationalDate}T09:00:00+02:00`, endsAt: `${operationalDate}T16:00:00+02:00` };
+      const payload = { idempotencyKey: "cachan-cleanmymap-mixed-v1", name: `${fixture.scenario_name} — ${marker}`, locationLabel: "Cachan · fixture synthétique", mode: "mixed", startsAt: operationalInstantAt(operationalDate, 9), endsAt: operationalInstantAt(operationalDate, 16) };
       const first = jsonBody((await api(appUrl, "/api/spogomi/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, [201])).body);
       const second = jsonBody((await api(appUrl, "/api/spogomi/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, [200, 201])).body);
       assert.equal(first.eventId, second.eventId);
@@ -314,7 +315,7 @@ async function main() {
       const participants = await supabase.from("spogomi_participants").select("id, division_id").eq("event_id", createdEventId);
       assert.ifError(participants.error);
       for (const participant of participants.data) await jsonApi(appUrl, `/api/spogomi/events/${createdEventId}/attendance`, { divisionId: participant.division_id, participantId: participant.id, status: "present", reason: "Fixture synthétique de validation", provenance: "fixture:scenario_cachan_cleanmymap_mixed" });
-      const at = (hour) => new Date(`${operationalDate}T${String(hour).padStart(2, "0")}:00:00+02:00`).toISOString();
+      const at = (hour) => operationalInstantAt(operationalDate, hour);
       for (const division of [wcDivision, casualDivision]) {
         for (const payload of [
           { action: "configure", divisionId: division.id, timezoneName: "Europe/Paris", regulationVersion: regulationFor(division).regulationVersion, officialStartAt: at(9), collectionLimitAt: at(11), sortingLimitAt: at(12), weighingStartAt: at(13), weighingEndAt: at(15), reason: "Configuration du scénario synthétique", provenance: "fixture:operational-date" },
@@ -366,10 +367,10 @@ async function main() {
             assert(measurement, `${teamRef}/${category.code}: mesure manquante`);
             return { categoryRuleId: category.id, measurementKind: "mass", unit: "g", quantity: measurement.mass_grams, massGrams: measurement.mass_grams, objectCount: null, measurementMethod: "balance-synthetic", provenance: measurement.provenance_ref, arbitrationComment: null };
           });
-          const first = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ submissionId: null, idempotencyKey: `cachan-${teamRef.toLowerCase()}-v1`, status: "submitted", correctionReason: null, items }) }, [200])).body);
+          const first = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ submissionId: null, idempotencyKey: teamSubmissionIdempotencyKey(teamRef), status: "submitted", correctionReason: null, items }) }, [200])).body);
           assert(first.submission?.id, `${teamRef}: soumission absente`);
           if (sourceTeam.team_ref === "CAS-01") {
-            const correction = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ submissionId: null, idempotencyKey: "cachan-cas-01-v2", status: "submitted", correctionReason: "Correction contrôlée du relevé synthétique", items }) }, [200])).body);
+            const correction = jsonBody((await api(appUrl, "/api/spogomi/team-form", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ submissionId: null, idempotencyKey: teamSubmissionIdempotencyKey(teamRef, 2), status: "submitted", correctionReason: "Correction contrôlée du relevé synthétique", items }) }, [200])).body);
             assert(Number(correction.submission?.version) > Number(first.submission.version));
             const audit = await supabase.from("spogomi_result_audit_events").select("action, details").eq("event_id", createdEventId).eq("team_id", team.id).order("created_at");
             assert.ifError(audit.error);
@@ -391,7 +392,7 @@ async function main() {
       assert.equal(noSession.response.status, 401);
       if (observerUrl) {
         await jsonApi(appUrl, `/api/spogomi/events/${createdEventId}/reviewers`, { clerkId: observerId, role: "observer" }, [201]);
-        const response = await api(observerUrl, `/api/spogomi/events/${createdEventId}/field-operations`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "configure", divisionId: casualDivision.id, timezoneName: "Europe/Paris", regulationVersion: regulationFor(casualDivision).regulationVersion, officialStartAt: new Date(`${operationalDate}T09:00:00+02:00`).toISOString(), collectionLimitAt: null, sortingLimitAt: null, weighingStartAt: null, weighingEndAt: null, reason: "negative capability check", provenance: "fixture:negative" }) }, [403]);
+        const response = await api(observerUrl, `/api/spogomi/events/${createdEventId}/field-operations`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "configure", divisionId: casualDivision.id, timezoneName: "Europe/Paris", regulationVersion: regulationFor(casualDivision).regulationVersion, officialStartAt: operationalInstantAt(operationalDate, 9), collectionLimitAt: null, sortingLimitAt: null, weighingStartAt: null, weighingEndAt: null, reason: "negative capability check", provenance: "fixture:negative" }) }, [403]);
         assert.equal(response.response.status, 403);
       }
     });
@@ -474,8 +475,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error("SPOGOMI_CACHAN_INTEGRATION_FAIL", error instanceof Error ? error.stack ?? error.message : String(error));
-  console.log(`SPOGOMI_CACHAN_SUMMARY ${JSON.stringify(steps)}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("SPOGOMI_CACHAN_INTEGRATION_FAIL", error instanceof Error ? error.stack ?? error.message : String(error));
+    console.log(`SPOGOMI_CACHAN_SUMMARY ${JSON.stringify(steps)}`);
+    process.exitCode = 1;
+  });
+}

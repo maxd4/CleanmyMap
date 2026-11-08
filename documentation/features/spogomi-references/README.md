@@ -75,8 +75,13 @@ Actions `e2e-supabase-ephemeral`. Elle exige
 refuse toute URL Supabase distante, démarre deux serveurs Next locaux avec des
 clés Clerk Development et ne crée aucun projet Supabase payant. La date
 opérationnelle est paramétrable avec `SPOGOMI_OPERATIONAL_DATE` ; sa valeur par
-défaut est `2030-06-01`. Une exécution réussie imprime un résultat par étape et
-le marqueur `EXECUTED_SPOGOMI_INTEGRATION`.
+défaut est `2030-06-01`. Le runner interprète les horaires annoncés dans
+`Europe/Paris` via les règles IANA, convertit les instants UTC envoyés aux
+routes et refuse une date civile invalide, une heure inexistante ou une heure
+ambiguë lors d'un changement d'heure. Les clés d'idempotence des soumissions
+sont déterministes, uniques par équipe et version, et respectent la longueur
+minimale de l'API. Une exécution réussie imprime un résultat par étape et le
+marqueur `EXECUTED_SPOGOMI_INTEGRATION`.
 
 ## Limites d’usage
 
