@@ -17,6 +17,14 @@ export type SpogomiInternationalNews = {
   state: "confirmed" | "planned";
 };
 
+export type SpogomiHistoricalExample = {
+  id: string;
+  copyKey: string;
+  sourceUrl: string;
+  sourceLabel: string;
+  verifiedAt: string;
+};
+
 export type SpogomiExternalEvent = {
   id: string;
   name: Record<Locale, string>;
@@ -24,14 +32,14 @@ export type SpogomiExternalEvent = {
   place: Record<Locale, string>;
   period: Record<Locale, string>;
   year: number;
-  state: "confirmed" | "planned";
+  state: "confirmed" | "planned" | "date_set";
   sourceUrl: string;
   sourceLabel: string;
   verifiedAt: string;
   cleanMyMapEventId: null;
 };
 
-const SPOGOMI_EDITORIAL_VERIFIED_AT = "2026-10-12";
+const SPOGOMI_EDITORIAL_VERIFIED_AT = "2026-11-08";
 
 export const SPOGOMI_INTERNATIONAL_SOURCES: SpogomiInternationalSource[] = [
   {
@@ -54,9 +62,74 @@ export const SPOGOMI_INTERNATIONAL_SOURCES: SpogomiInternationalSource[] = [
     href: "https://en.nf-spogomiwc.com/",
     verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
   },
+  {
+    id: "spogomi-japanese-rules",
+    label: { fr: "Règles générales japonaises", en: "General Japanese rules" },
+    description: {
+      fr: "Format général : équipes de 2 à 5, 40 minutes de collecte puis 20 minutes de tri ; des adaptations locales sont possibles.",
+      en: "General format: teams of 2 to 5, 40 minutes of collection followed by 20 minutes of sorting; local adaptations are possible.",
+    },
+    href: "https://spogomi.or.jp/rule/",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+  },
+  {
+    id: "spogomi-world-cup-terms",
+    label: { fr: "Conditions World Cup", en: "World Cup terms" },
+    description: {
+      fr: "Conditions publiées pour la World Cup : équipe de 3 et règles d'éligibilité, dont le consentement parental.",
+      en: "Published World Cup terms: teams of 3 and eligibility rules, including parental consent.",
+    },
+    href: "https://en.nf-spogomiwc.com/terms/",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+  },
+  {
+    id: "artema-rules",
+    label: { fr: "Règles ARTEMA", en: "ARTEMA rules" },
+    description: {
+      fr: "Règles publiées par ARTEMA sur la collecte, le tri, les points, les retards, les avertissements et la disqualification.",
+      en: "Rules published by ARTEMA for collection, sorting, scoring, late returns, warnings, and disqualification.",
+    },
+    href: "https://www.artema-network.com/participer-spogomi",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+  },
+];
+
+export const SPOGOMI_HISTORICAL_EXAMPLES: SpogomiHistoricalExample[] = [
+  {
+    id: "nice-2024",
+    copyKey: "rulesHistoricalExampleNice",
+    sourceUrl: "https://www.artema-network.com/spogomi-nice",
+    sourceLabel: "ARTEMA — SPOGOMI Nice",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+  },
+  {
+    id: "paris-2025-semifinal",
+    copyKey: "rulesHistoricalExampleParis",
+    sourceUrl: "https://www.artema-network.com/ja/about-1-1",
+    sourceLabel: "ARTEMA — demi-finale Paris",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+  },
+  {
+    id: "bobigny-2025-final",
+    copyKey: "rulesHistoricalExampleBobigny",
+    sourceUrl: "https://en.nf-spogomiwc.com/country/france/",
+    sourceLabel: "SPOGOMI World Cup — France",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+  },
 ];
 
 export const SPOGOMI_INTERNATIONAL_NEWS: SpogomiInternationalNews[] = [
+  {
+    id: "world-cup-2027-40-countries",
+    title: {
+      fr: "40 pays et régions annoncés pour la SPOGOMI World Cup 2027.",
+      en: "40 countries and regions announced for The Nippon Foundation SPOGOMI World Cup 2027.",
+    },
+    sourceLabel: "SPOGOMI World Cup",
+    publishedAt: "2026-11-05",
+    href: "https://en.nf-spogomiwc.com/wp-content/uploads/sites/2/2026/11/confirmed-in-40-countries-and-regions.pdf",
+    state: "confirmed",
+  },
   {
     id: "federation-2026-09-09",
     title: {
@@ -92,6 +165,19 @@ export const SPOGOMI_EXTERNAL_EVENTS: SpogomiExternalEvent[] = [
     state: "planned",
     sourceUrl: "https://en.nf-spogomiwc.com/",
     sourceLabel: "SPOGOMI World Cup",
+    verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
+    cleanMyMapEventId: null,
+  },
+  {
+    id: "world-cup-2027-france",
+    name: { fr: "Qualification française World Cup 2027", en: "World Cup 2027 France qualifier" },
+    country: { fr: "France", en: "France" },
+    place: { fr: "Lieu à confirmer", en: "Location to be confirmed" },
+    period: { fr: "5 juin 2027 — lieu à confirmer", en: "June 5, 2027 — location to be confirmed" },
+    year: 2027,
+    state: "date_set",
+    sourceUrl: "https://en.nf-spogomiwc.com/country/france/",
+    sourceLabel: "SPOGOMI World Cup — France",
     verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
     cleanMyMapEventId: null,
   },

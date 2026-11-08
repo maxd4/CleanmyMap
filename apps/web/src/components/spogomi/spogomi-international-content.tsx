@@ -22,6 +22,7 @@ type Props = {
     newsTitle: string;
     confirmed: string;
     planned: string;
+    dateSet: string;
     internationalEvents: string;
     year: string;
     country: string;
@@ -35,6 +36,12 @@ type Props = {
     worldDetails: string;
   };
 };
+
+function stateLabel(state: SpogomiExternalEvent["state"] | SpogomiInternationalNews["state"], copy: Props["copy"]) {
+  if (state === "planned") return copy.planned;
+  if (state === "date_set") return copy.dateSet;
+  return copy.confirmed;
+}
 
 function formatDate(value: string, locale: Locale) {
   return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", { dateStyle: "long" }).format(new Date(value));
@@ -88,7 +95,7 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
             {news.map((item) => (
               <article key={item.id} className="rounded-2xl border border-indigo-100 bg-white/70 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold uppercase tracking-[0.12em] text-indigo-700">
-                  <span>{item.state === "planned" ? copy.planned : copy.confirmed}</span>
+                  <span>{stateLabel(item.state, copy)}</span>
                   <time dateTime={item.publishedAt}>{formatDate(item.publishedAt, locale)}</time>
                 </div>
                 <h3 className="mt-2 font-black text-slate-950">{item.title[locale]}</h3>
@@ -135,7 +142,7 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
                 <article key={event.id} className="rounded-2xl border border-indigo-100 bg-white/70 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-black text-slate-950">{event.name[locale]}</h3>
-                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-800">{event.state === "planned" ? copy.planned : copy.confirmed}</span>
+                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-800">{stateLabel(event.state, copy)}</span>
                   </div>
                   <p className="mt-2 flex items-center gap-2 text-sm text-slate-800"><CalendarDays size={15} className="text-indigo-700" aria-hidden="true" />{event.period[locale]} · {event.place[locale]}</p>
                   <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-indigo-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">

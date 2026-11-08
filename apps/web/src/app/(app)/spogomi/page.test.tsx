@@ -62,6 +62,9 @@ describe("/spogomi public and private navigation", () => {
     expect(markup).toContain("understanding.title");
     expect(markup).toContain("international.casualTitle");
     expect(markup).toContain("understanding.rulesTitle");
+    expect(markup).toContain("understanding.rulesSanctions");
+    expect(markup).toContain("understanding.rulesHistoricalExamplesTitle");
+    expect(markup).toContain("understanding.rulesPrivacyNote");
     expect(markup).not.toContain("<main");
     expect(markup.indexOf("spogomi-events")).toBeLessThan(markup.indexOf("understanding.title"));
     expect(markup.indexOf("understanding.title")).toBeLessThan(markup.indexOf("international"));

@@ -12,6 +12,7 @@ const copy = {
   newsTitle: "Actualités officielles",
   confirmed: "Confirmé",
   planned: "Prévisionnel",
+  dateSet: "Date Set",
   internationalEvents: "Événements internationaux",
   year: "Année",
   country: "Pays",
@@ -42,7 +43,10 @@ describe("SpogomiInternationalContent", () => {
     expect(markup.match(/<summary/g)).toHaveLength(3);
     expect(markup).not.toContain(" open");
     expect(markup).toContain("https://spogomi.or.jp/");
-    expect(markup).toContain("2026-10-12");
+    expect(markup).toContain("2026-11-08");
+    expect(markup).toContain("Règles générales japonaises");
+    expect(markup).toContain("40 pays et régions annoncés");
+    expect(markup).toContain("Date Set");
     expect(markup).toContain("Prévisionnel");
     expect(markup).toContain("Octobre 2027 — date précise à confirmer");
     expect(markup).toContain('aria-label="Événements internationaux filters"');
