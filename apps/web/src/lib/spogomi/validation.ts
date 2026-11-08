@@ -75,14 +75,19 @@ function validateTeamSizeConfig(regulation: SpogomiRegulation): SpogomiValidatio
 
 function validateEnvironmentMappings(regulation: SpogomiRegulation): SpogomiValidationResult {
   if (!regulation.environmentMappings) return { ok: true };
-  const categoryCodes = new Set(regulation.categories.map((category) => category.code));
+  const categoriesByCode = new Map(regulation.categories.map((category) => [category.code, category]));
   const seen = new Set<string>();
   for (const mapping of regulation.environmentMappings) {
-    if (!categoryCodes.has(mapping.categoryCode)) return invalid("mapping_category_unknown");
+    const category = categoriesByCode.get(mapping.categoryCode);
+    if (!category) return invalid("mapping_category_unknown");
     if (seen.has(mapping.categoryCode)) return invalid("mapping_category_must_be_unique");
     seen.add(mapping.categoryCode);
     if (!mapping.sourceUnit.trim()) return invalid("mapping_source_unit_required");
-    if (mapping.mappingStatus === "mapped" && (!mapping.environmentalCategorySlug?.trim() || !mapping.sourceField || !mapping.targetUnit || mapping.unitFactorToTarget === null || !Number.isFinite(mapping.unitFactorToTarget) || mapping.unitFactorToTarget <= 0)) return invalid("mapped_environment_mapping_incomplete");
+    if (mapping.mappingStatus === "mapped") {
+      if (!mapping.environmentalCategorySlug?.trim() || !mapping.sourceField || !mapping.targetUnit || mapping.unitFactorToTarget === null || !Number.isFinite(mapping.unitFactorToTarget) || mapping.unitFactorToTarget <= 0) return invalid("mapped_environment_mapping_incomplete");
+      if (mapping.environmentalCategorySlug !== category.environmentalCategorySlug) return invalid("mapping_environmental_category_mismatch");
+      if (mapping.isMegots !== (mapping.environmentalCategorySlug === "cigarette_butt")) return invalid("mapping_megots_classification_mismatch");
+    }
     if (mapping.mappingStatus !== "mapped" && !mapping.exclusionReason?.trim()) return invalid("unmapped_environment_mapping_requires_reason");
   }
   return { ok: true };

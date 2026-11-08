@@ -176,6 +176,54 @@ describe("SPOGOMI domain invariants", () => {
     expect(isRegulationReadyForCertification({ ...ready, environmentMappings: [{ ...ready.environmentMappings![0], mappingStatus: "excluded", exclusionReason: "Non applicable" }] })).toBe(false);
   });
 
+  it("requires mappings to match the sporting environmental slug and canonical butt classification", () => {
+    const ready: SpogomiRegulation = {
+      ...incompleteRegulation,
+      divisionId: "division-casual",
+      sourceReference: "synthetic://spogomi/mapping-coherence",
+      status: "complete",
+      rounding: { decimals: 0, mode: "half_up" },
+      eligibility: { minimumPresentParticipants: 1, requiresAllCategories: true },
+      tiebreakers: ["sporting_score"],
+      categories: [
+        { ...incompleteRegulation.categories[0], code: "plastic", environmentalCategorySlug: "plastic", coefficient: 1, coefficientStatus: "confirmed", isComplete: true },
+        { ...incompleteRegulation.categories[0], code: "packaging", environmentalCategorySlug: "plastic", coefficient: 2, coefficientStatus: "confirmed", isComplete: true },
+      ],
+      environmentMappings: [
+        { categoryCode: "plastic", environmentalCategorySlug: "plastic", sourceField: "mass_grams", sourceUnit: "g", targetUnit: "grams", unitFactorToTarget: 1, countsTowardTotal: true, isMegots: false, mappingStatus: "mapped", exclusionReason: null },
+        { categoryCode: "packaging", environmentalCategorySlug: "plastic", sourceField: "mass_grams", sourceUnit: "g", targetUnit: "grams", unitFactorToTarget: 1, countsTowardTotal: true, isMegots: false, mappingStatus: "mapped", exclusionReason: null },
+      ],
+    };
+    expect(validateSpogomiRegulation(ready)).toEqual({ ok: true });
+    expect(validateSpogomiRegulation({
+      ...ready,
+      environmentMappings: ready.environmentMappings!.map((mapping) => mapping.categoryCode === "plastic" ? { ...mapping, environmentalCategorySlug: "cigarette_butt", isMegots: true } : mapping),
+    })).toEqual({ ok: false, reason: "mapping_environmental_category_mismatch" });
+    expect(validateSpogomiRegulation({
+      ...ready,
+      environmentMappings: ready.environmentMappings!.map((mapping) => mapping.categoryCode === "plastic" ? { ...mapping, isMegots: true } : mapping),
+    })).toEqual({ ok: false, reason: "mapping_megots_classification_mismatch" });
+    expect(validateSpogomiRegulation({ ...ready, environmentMappings: [ready.environmentMappings![0]] })).toEqual({ ok: false, reason: "complete_environment_mappings_required" });
+  });
+
+  it("keeps mixed division mapping decisions isolated", () => {
+    const baseComplete = {
+      ...incompleteRegulation,
+      sourceReference: "synthetic://spogomi/mixed-mapping-coherence",
+      status: "complete" as const,
+      rounding: { decimals: 0, mode: "half_up" as const },
+      eligibility: { minimumPresentParticipants: 1, requiresAllCategories: true },
+      tiebreakers: ["sporting_score" as const],
+      categories: [{ ...incompleteRegulation.categories[0], code: "material", coefficient: 1, coefficientStatus: "confirmed" as const, isComplete: true }],
+    };
+    const casual = { ...baseComplete, divisionId: "division-casual", categories: [{ ...baseComplete.categories[0], environmentalCategorySlug: "plastic" }], environmentMappings: [{ categoryCode: "material", environmentalCategorySlug: "plastic", sourceField: "mass_grams" as const, sourceUnit: "g", targetUnit: "grams" as const, unitFactorToTarget: 1, countsTowardTotal: true, isMegots: false, mappingStatus: "mapped" as const, exclusionReason: null }] };
+    const worldCup = { ...baseComplete, divisionId: "division-world-cup", categories: [{ ...baseComplete.categories[0], environmentalCategorySlug: "cigarette_butt" }], environmentMappings: [{ categoryCode: "material", environmentalCategorySlug: "cigarette_butt", sourceField: "object_count" as const, sourceUnit: "objet", targetUnit: "count" as const, unitFactorToTarget: 1, countsTowardTotal: true, isMegots: true, mappingStatus: "mapped" as const, exclusionReason: null }] };
+    expect(validateSpogomiRegulation(casual)).toEqual({ ok: true });
+    expect(validateSpogomiRegulation(worldCup)).toEqual({ ok: true });
+    expect(validateSpogomiRegulation({ ...worldCup, environmentMappings: [{ ...worldCup.environmentMappings[0], environmentalCategorySlug: "plastic", isMegots: false }] })).toEqual({ ok: false, reason: "mapping_environmental_category_mismatch" });
+    expect(validateSpogomiRegulation(casual)).toEqual({ ok: true });
+  });
+
   it("rejects unknown or non-applicable coefficients when a regulation is declared complete", () => {
     const complete = {
       ...incompleteRegulation,

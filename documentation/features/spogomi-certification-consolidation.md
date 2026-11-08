@@ -131,6 +131,13 @@ publication ; aucune valeur ne devient zéro par défaut.
 La correspondance catégorie SPOGOMI → catégorie environnementale est conservée
 dans `spogomi_environment_category_mappings` avec une version, une unité source,
 une unité cible, un facteur explicite, la provenance et le statut de mapping.
+Pour qu'un règlement soit `complete`, chaque mapping `mapped` doit reprendre le
+`environmental_category_slug` de la catégorie sportive associée ; son indicateur
+`is_megots` doit également être vrai exactement pour le slug canonique
+`cigarette_butt`. Plusieurs catégories sportives peuvent donc partager une même
+catégorie environnementale, mais aucune correspondance contradictoire ne peut
+être certifiée. Cette cohérence est vérifiée par la validation métier et par le
+prédicat PostgreSQL de complétude.
 Les masses sont agrégées en grammes avec une précision de trois décimales dans
 les colonnes SPOGOMI dédiées. Les mégots conservent séparément leur masse et
 leur comptage direct ; une masse n’est jamais convertie en nombre. Les

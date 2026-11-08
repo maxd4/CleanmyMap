@@ -21,6 +21,10 @@ const certificationGuardMigration = readFileSync(
   new URL("../../../supabase/migrations/20261107000008_spogomi_division_regulation_certification_guard.sql", import.meta.url),
   "utf8",
 );
+const mappingCoherenceMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261108000003_spogomi_mapping_coherence.sql", import.meta.url),
+  "utf8",
+);
 
 describe("SPOGOMI division-owned operations migration STATIC_CONTRACT", () => {
   it("keeps regulation state and team bounds on the stable division", () => {
@@ -100,5 +104,13 @@ describe("SPOGOMI division-owned operations migration STATIC_CONTRACT", () => {
     expect(certificationGuardMigration).toContain("m.mapping_status is distinct from 'mapped'");
     expect(certificationGuardMigration).toContain("unit_factor_to_target::text = 'NaN'");
     expect(certificationGuardMigration).not.toContain("alter table");
+  });
+
+  it("aligns category codes, environmental slugs and canonical butt classification in the forward-only repair", () => {
+    expect(mappingCoherenceMigration).toContain("m.category_code is distinct from c.code");
+    expect(mappingCoherenceMigration).toContain("m.environmental_category_slug is distinct from c.environmental_category_slug");
+    expect(mappingCoherenceMigration).toContain("m.is_megots is distinct from (btrim(m.environmental_category_slug) = 'cigarette_butt')");
+    expect(mappingCoherenceMigration).toContain("create or replace function public.spogomi_division_regulation_is_complete");
+    expect(mappingCoherenceMigration).not.toContain("alter table");
   });
 });

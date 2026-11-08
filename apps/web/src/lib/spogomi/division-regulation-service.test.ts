@@ -60,4 +60,30 @@ describe("SPOGOMI division regulation service", () => {
     })).rejects.toThrow(/complete_categories_require_confirmed_coefficients/);
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  it("rejects a mapping whose environmental slug contradicts its category before the RPC", async () => {
+    vi.mocked(loadSpogomiEventForOrganizer).mockResolvedValueOnce({ id: "event-1" } as never);
+    const rpc = vi.fn();
+    await expect(updateSpogomiDivisionRegulation({
+      supabase: { rpc } as never,
+      eventId: "event-1",
+      divisionId: "division-1",
+      userId: "user-1",
+      input: { ...baseInput, environmentMappings: [{ ...baseInput.environmentMappings[0], environmentalCategorySlug: "cigarette_butt", isMegots: true }] },
+    })).rejects.toThrow(/mapping_environmental_category_mismatch/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects a contradictory isMegots flag before the RPC", async () => {
+    vi.mocked(loadSpogomiEventForOrganizer).mockResolvedValueOnce({ id: "event-1" } as never);
+    const rpc = vi.fn();
+    await expect(updateSpogomiDivisionRegulation({
+      supabase: { rpc } as never,
+      eventId: "event-1",
+      divisionId: "division-1",
+      userId: "user-1",
+      input: { ...baseInput, environmentMappings: [{ ...baseInput.environmentMappings[0], isMegots: true }] },
+    })).rejects.toThrow(/mapping_megots_classification_mismatch/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });
