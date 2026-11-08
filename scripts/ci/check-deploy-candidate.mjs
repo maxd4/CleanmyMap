@@ -17,7 +17,7 @@ if (proofArgument) {
     process.exitCode = 1;
 }
 }
-const result = resolveDeployCandidate({
+const result = await resolveDeployCandidate({
   repositoryRoot: process.cwd(),
   baseRef: baseArgument?.slice("--base-ref=".length) || "",
   deploymentReference: deploymentArgument ? { sha: deploymentArgument.slice("--deployment-ref=".length) } : null,

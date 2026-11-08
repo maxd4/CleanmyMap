@@ -62,7 +62,19 @@ function isVerifiedPublicationReference(reference, validSha) {
       && reference.target === "production"
       && reference.verified === true
       && typeof reference.verificationMethod === "string"
-      && reference.verificationMethod.length > 0,
+      && reference.verificationMethod.length > 0
+      && reference.deploymentId
+      && reference.productionAlias
+      && reference.vercelInspection?.verified === true
+      && reference.vercelInspection.projectId === reference.projectId
+      && reference.vercelInspection.projectName === "web"
+      && reference.vercelInspection.rootDirectory === "apps/web"
+      && reference.vercelInspection.repository === CANONICAL_REPOSITORY
+      && reference.vercelInspection.deploymentId === reference.deploymentId
+      && reference.vercelInspection.target === "production"
+      && reference.vercelInspection.readyState === "READY"
+      && reference.vercelInspection.gitSha === reference.sha
+      && reference.vercelInspection.productionAlias === reference.productionAlias,
   );
 }
 
@@ -210,7 +222,7 @@ function readVercelPolicy(actualTarget) {
   };
 }
 
-function main() {
+async function main() {
   const { sha, target, profile } = parseArgs(process.argv.slice(2));
   if (!["full", "deploy"].includes(profile)) {
     console.error(`Unsupported release profile: ${profile}`);
@@ -233,7 +245,7 @@ function main() {
     })
     : null;
   const deployScope = profile === "deploy" && evidence
-    ? resolveDeployCandidate({
+    ? await resolveDeployCandidate({
       repositoryRoot,
       candidateSha: sha,
       baseRef: evidence.baseRef,
@@ -262,4 +274,4 @@ function main() {
   process.exitCode = result.ready ? 0 : 1;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();

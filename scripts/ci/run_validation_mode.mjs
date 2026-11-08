@@ -408,12 +408,13 @@ export async function runValidationMode(
     ? readDeploymentProof(options.deploymentProofPath)
     : null;
   const deployScope = options.mode === "DEPLOY"
-    ? resolveDeployCandidate({
+    ? await resolveDeployCandidate({
       repositoryRoot,
       candidateSha,
       baseRef: options.baseRef,
       deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
       deploymentProof,
+      vercelClient: runtime.vercelClient,
     })
     : null;
   const changedFiles = options.mode === "DEPLOY"
@@ -428,6 +429,7 @@ export async function runValidationMode(
     baseRef: deployScope?.baseRef ?? options.baseRef,
     publicationReference: deployScope?.publicationReference
       ?? (options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null),
+    publicationProofPath: options.deploymentProofPath,
     dependencyGraphChanged: deployScope?.dependencyGraphChanged,
   });
   const candidateFingerprint = createCandidateFingerprint({
@@ -565,12 +567,13 @@ export async function runValidationMode(
     const elapsedSeconds = (performance.now() - startedAt) / 1000;
     const completionSha = getCandidateSha(repositoryRoot);
     const completionDeployScope = plan.mode === "DEPLOY"
-      ? resolveDeployCandidate({
+      ? await resolveDeployCandidate({
         repositoryRoot,
         candidateSha: completionSha,
         baseRef: options.baseRef,
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
         deploymentProof,
+        vercelClient: runtime.vercelClient,
       })
       : null;
     const completionChangedFiles = plan.mode === "FULL"

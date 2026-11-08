@@ -190,6 +190,14 @@ test("DEPLOY selects only the Web release controls and keeps FULL global", () =>
     `--sha=${"a".repeat(40)}`,
     "--base-ref=origin/main",
   ]);
+  const proofPlan = createModeValidationPlan({
+    mode: "DEPLOY",
+    candidateSha: "a".repeat(40),
+    changedFiles: ["apps/web/src/lib/chat/polls.ts"],
+    publicationReference: { sha: "b".repeat(40) },
+    publicationProofPath: "artifacts/vercel-proof.json",
+  });
+  assert.ok(proofPlan.checks.find((check) => check.id === "deploy-candidate").command.args.includes("--deployment-proof=artifacts/vercel-proof.json"));
   assert.ok(ids(createModeValidationPlan({ mode: "FULL", changedFiles: [] })).includes("quality:mutation"));
 });
 

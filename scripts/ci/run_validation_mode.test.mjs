@@ -203,6 +203,59 @@ function withAmbientGitIdentityUnset(callback) {
   }
 }
 
+test("DEPLOY propagates the publication proof path through the runner to deploy-candidate", async () => {
+  const root = makeRepository();
+  try {
+    initializeGitFixture(root);
+    execFileSync("git", ["branch", "-M", "main"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["remote", "add", "origin", "https://github.com/maxd4/CleanmyMap.git"], { cwd: root, stdio: "ignore" });
+    const baseSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    fs.mkdirSync(path.join(root, "apps", "web", "src"), { recursive: true });
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default function Page() { return null; }\n");
+    execFileSync("git", ["add", "--", "."], { cwd: root, stdio: "ignore" });
+    withAmbientGitIdentityUnset(() => initializeGitFixture(root));
+    const proofPath = path.join(root, "vercel-proof.json");
+    fs.writeFileSync(proofPath, JSON.stringify({
+      version: 1,
+      commitSha: baseSha,
+      provider: "vercel",
+      projectName: "web",
+      rootDirectory: "apps/web",
+      target: "production",
+      projectId: "prj_test",
+      deploymentId: "dpl_test",
+      productionAlias: "cleanmymap.fr",
+      verified: true,
+      verificationMethod: "vercel-api-readonly",
+    }));
+    const checked = [];
+    const result = await runValidationMode({
+      mode: "DEPLOY",
+      deploymentReferenceSha: baseSha,
+      deploymentProofPath: proofPath,
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      interactive: false,
+      log: () => {},
+      vercelClient: async ({ proof: reference }) => ({ valid: true, inspection: {
+        verified: true, projectId: reference.projectId, projectName: "web", rootDirectory: "apps/web",
+        repository: "maxd4/CleanmyMap", deploymentId: reference.deploymentId, target: "production",
+        readyState: "READY", gitSha: reference.sha, productionAlias: reference.productionAlias,
+      } }),
+      runCheck: async (check) => {
+        checked.push(check);
+        return { status: "PASS", exitCode: 0, elapsedSeconds: 0.01 };
+      },
+    });
+    assert.equal(result, 0);
+    const deployCheck = checked.find((check) => check.id === "deploy-candidate");
+    assert.ok(deployCheck.command.args.includes(`--deployment-proof=${proofPath}`));
+  } finally {
+    removeFixture(root);
+  }
+});
+
 test("initializes a Git fixture without ambient identity configuration", () => {
   const root = makeRepository();
 

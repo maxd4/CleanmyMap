@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { gitExecutable } from "./git-executable.mjs";
 import {
   dependencyGraphSnapshotsEqual,
@@ -11,6 +13,7 @@ import {
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const CANONICAL_REPOSITORY = "maxd4/CleanmyMap";
 const DEPLOYMENT_REFERENCE_VERSION = 1;
+const VERCEL_API_BASE = "https://api.vercel.com";
 
 function git(repositoryRoot, args, { allowFailure = false } = {}) {
   try {
@@ -106,18 +109,104 @@ function normalizePublicationReference({ publicationReference, deploymentReferen
     projectName: proof.projectName ?? "",
     rootDirectory: proof.rootDirectory ?? "",
     target: proof.target ?? proof.environment ?? "",
+    projectId: proof.projectId ?? "",
+    deploymentId: proof.deploymentId ?? proof.deploymentUid ?? proof.uid ?? "",
+    productionAlias: proof.productionAlias ?? proof.alias ?? "",
     verified: proof.verified === true,
     verificationMethod: proof.verificationMethod ?? "",
+    vercelInspection: proof.vercelInspection ?? null,
   };
 }
 
-export function verifyPublicationReference({
+function readLinkedVercelProject(repositoryRoot) {
+  for (const candidate of [
+    path.join(repositoryRoot, "apps", "web", ".vercel", "project.json"),
+    path.join(repositoryRoot, ".vercel", "project.json"),
+  ]) {
+    try {
+      const project = JSON.parse(fs.readFileSync(candidate, "utf8"));
+      if (project?.projectId) return project;
+    } catch {
+      // The authenticated API remains the source of truth; a missing local link blocks DEPLOY.
+    }
+  }
+  return null;
+}
+
+function vercelQuery(teamId) {
+  return teamId ? `&teamId=${encodeURIComponent(teamId)}` : "";
+}
+
+async function fetchVercelJson(fetchImpl, url, token) {
+  const response = await fetchImpl(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`Vercel API ${response.status} ${response.statusText}`);
+  return response.json();
+}
+
+export async function inspectVercelProduction({
+  repositoryRoot,
+  proof,
+  fetchImpl = globalThis.fetch,
+  token = process.env.VERCEL_TOKEN?.trim() || "",
+  projectId = process.env.VERCEL_PROJECT_ID?.trim() || readLinkedVercelProject(repositoryRoot)?.projectId || "",
+  teamId = process.env.VERCEL_ORG_ID?.trim() || readLinkedVercelProject(repositoryRoot)?.orgId || "",
+} = {}) {
+  if (!token || typeof fetchImpl !== "function" || !projectId || !proof?.deploymentId || !proof?.productionAlias) {
+    return { valid: false, reason: "DEPLOY_VERCEL_AUTH_UNAVAILABLE" };
+  }
+  try {
+    const expectedSha = proof.sha ?? proof.commitSha ?? proof.gitCommitSha ?? "";
+    const query = vercelQuery(teamId);
+    const project = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v9/projects/${encodeURIComponent(projectId)}?${query.slice(1)}`, token);
+    const deployment = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v13/deployments/${encodeURIComponent(proof.deploymentId)}?${query.slice(1)}`, token);
+    const aliases = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v2/deployments/${encodeURIComponent(proof.deploymentId)}/aliases?${query.slice(1)}`, token);
+    const repository = project.link?.org && project.link?.repo ? `${project.link.org}/${project.link.repo}` : "";
+    const gitSha = deployment.gitSource?.sha ?? deployment.meta?.githubCommitSha ?? deployment.meta?.gitCommitSha ?? "";
+    const aliasNames = (Array.isArray(aliases) ? aliases : aliases.aliases ?? []).map((alias) => typeof alias === "string" ? alias : alias?.alias).filter(Boolean);
+    const inspection = {
+      verified: project.id === projectId
+        && project.name === "web"
+        && project.settings?.rootDirectory === "apps/web"
+        && repository === CANONICAL_REPOSITORY
+        && deployment.id === proof.deploymentId
+        && deployment.target === "production"
+        && deployment.readyState === "READY"
+        && gitSha === expectedSha
+        && aliasNames.includes(proof.productionAlias),
+      projectId: project.id ?? "",
+      projectName: project.name ?? "",
+      rootDirectory: project.settings?.rootDirectory ?? "",
+      repository,
+      deploymentId: deployment.id ?? deployment.uid ?? "",
+      target: deployment.target ?? "",
+      readyState: deployment.readyState ?? "",
+      gitSha,
+      productionAlias: proof.productionAlias,
+      aliases: aliasNames,
+      verificationMethod: "vercel-api-readonly",
+    };
+    return inspection.verified
+      ? { valid: true, inspection }
+      : { valid: false, inspection, reason: "DEPLOY_VERCEL_PROVENANCE_MISMATCH" };
+  } catch (error) {
+    return {
+      valid: false,
+      reason: "DEPLOY_VERCEL_VERIFICATION_UNAVAILABLE",
+      detail: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function verifyPublicationReference({
   repositoryRoot,
   candidateSha,
   baseRef,
   publicationReference,
   deploymentReference,
   deploymentProof,
+  vercelClient,
 } = {}) {
   const reference = normalizePublicationReference({ publicationReference, deploymentReference, deploymentProof });
   if (!reference || !SHA_PATTERN.test(reference.sha)) {
@@ -132,9 +221,18 @@ export function verifyPublicationReference({
     || reference.proofSha !== reference.sha
     || reference.verified !== true
     || !reference.verificationMethod
+    || !reference.deploymentId
+    || !reference.productionAlias
   ) {
     return { valid: false, reference, reason: "DEPLOY_PUBLICATION_PROOF_INVALID" };
   }
+  const vercel = vercelClient
+    ? await vercelClient({ repositoryRoot, proof: reference })
+    : await inspectVercelProduction({ repositoryRoot, proof: reference });
+  if (!vercel.valid) {
+    return { valid: false, reference, reason: vercel.reason ?? "DEPLOY_VERCEL_VERIFICATION_UNAVAILABLE" };
+  }
+  reference.vercelInspection = vercel.inspection;
   const resolvedBaseSha = git(repositoryRoot, ["rev-parse", "--verify", `${reference.sha}^{commit}`], { allowFailure: true });
   if (resolvedBaseSha !== reference.sha) {
     return { valid: false, reference, reason: "DEPLOY_PUBLICATION_SHA_UNVERIFIED" };
@@ -160,13 +258,14 @@ function isSmokeRelevantPath(file) {
     || normalized === "apps/web/scripts/smoke-tests.mjs";
 }
 
-export function resolveDeployCandidate({
+export async function resolveDeployCandidate({
   repositoryRoot,
   candidateSha,
   baseRef = "",
   publicationReference = null,
   deploymentReference = null,
   deploymentProof = null,
+  vercelClient,
 } = {}) {
   const currentSha = git(repositoryRoot, ["rev-parse", "HEAD"], { allowFailure: true });
   const requestedSha = candidateSha || currentSha;
@@ -227,14 +326,16 @@ export function resolveDeployCandidate({
     publicationReference,
     deploymentReference,
     deploymentProof,
+    vercelClient,
   });
-  result.publicationReference = publication.reference;
-  if (!publication.valid) {
-    result.reason = publication.reason;
+  const verifiedPublication = await publication;
+  result.publicationReference = verifiedPublication.reference;
+  if (!verifiedPublication.valid) {
+    result.reason = verifiedPublication.reason;
     return result;
   }
-  result.baseSha = publication.reference.sha;
-  result.baseRef = publication.reference.sha;
+  result.baseSha = verifiedPublication.reference.sha;
+  result.baseRef = verifiedPublication.reference.sha;
 
   result.changedFiles = listDiffFiles(repositoryRoot, result.baseSha, requestedSha);
   result.webChangedFiles = result.changedFiles.filter((file) => isWebRelevantFile(file) || isSharedWebContractPath(file));

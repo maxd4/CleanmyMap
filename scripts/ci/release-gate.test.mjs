@@ -53,8 +53,23 @@ const deployPublicationReference = {
   projectName: "web",
   rootDirectory: "apps/web",
   target: "production",
+  projectId: "prj_test",
+  deploymentId: "dpl_test",
+  productionAlias: "cleanmymap.fr",
   verified: true,
   verificationMethod: "vercel-inspection",
+  vercelInspection: {
+    verified: true,
+    projectId: "prj_test",
+    projectName: "web",
+    rootDirectory: "apps/web",
+    repository: "maxd4/CleanmyMap",
+    deploymentId: "dpl_test",
+    target: "production",
+    readyState: "READY",
+    gitSha: deployBaseSha,
+    productionAlias: "cleanmymap.fr",
+  },
 };
 const deployEvidence = {
   version: 1,
@@ -311,4 +326,21 @@ test("DEPLOY rejects an absent required control even when the attestation says P
   });
   assert.equal(result.ready, false);
   assert.match(result.reasons.join("\n"), /missing required checks|not green/);
+});
+
+test("DEPLOY never becomes release-ready from a local verified flag without Vercel inspection", () => {
+  const result = evaluateReleaseGate({
+    evidence: {
+      ...deployEvidence,
+      publicationReference: { ...deployPublicationReference, vercelInspection: null },
+    },
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(result.ready, false);
 });

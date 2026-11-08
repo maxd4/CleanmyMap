@@ -319,13 +319,19 @@ npm run release:check -- --sha=<sha-valide> --target=production --profile=deploy
 
 La preuve Vercel doit identifier le commit Git de la dernière Production
 effectivement vérifiée et contenir `provider=vercel`, `projectName=web`,
-`rootDirectory=apps/web`, `target=production`, `verified=true` et une
-`verificationMethod` explicite. Le plan calcule alors les changements par
-`git diff <sha-production-verifie>..<candidate-sha>` sur un candidat `main`
-propre. Une base `--base-ref` arbitraire, plus récente ou différente de cette
-référence est refusée ; une référence absente, non ancestrale ou sans preuve de
-provenance bloque également. Il ne se rabat jamais silencieusement sur le
-contenu vide du worktree après publication.
+`rootDirectory=apps/web`, `target=production`, `verified=true`, une
+`verificationMethod` explicite, l'identifiant du projet et du déploiement,
+ainsi que l'alias Production. DEPLOY vérifie ensuite ces données en lecture
+seule via l'API Vercel authentifiée : projet `web`, racine `apps/web`, dépôt
+`maxd4/CleanmyMap`, déploiement actif `production` en état `READY`, SHA Git
+cohérent et alias attaché à ce déploiement. `verified=true` dans le fichier
+local ne constitue jamais une preuve indépendante ; l'absence, l'illisibilité
+ou l'incohérence de la vérification Vercel bloque DEPLOY. Le plan calcule alors
+les changements par `git diff <sha-production-verifie>..<candidate-sha>` sur un
+candidat `main` propre. Une base `--base-ref` arbitraire, plus récente ou
+différente de cette référence est refusée ; une référence absente, non
+ancestrale ou sans preuve de provenance bloque également. Il ne se rabat
+jamais silencieusement sur le contenu vide du worktree après publication.
 
 Pour une portée Web exploitable, DEPLOY vérifie l'intégrité du candidat,
 l'audit des secrets, les tests de sécurité et de régression Web, les tests
