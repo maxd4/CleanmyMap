@@ -43,6 +43,28 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).toContain('id="arbitration"');
   });
 
+  it("cumulates check-in and referee sections from independently verified roles", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="referee" capabilities={["observe", "arbitrate", "checkin"]} reviewerRoles={["checkin", "referee"]} />);
+    expect(markup).toContain('href="#attendance"');
+    expect(markup).toContain('href="#results"');
+    expect(markup).toContain('href="#arbitration"');
+    expect(markup).toContain('id="attendance"');
+    expect(markup).toContain('id="results"');
+    expect(markup).toContain('id="arbitration"');
+    expect(markup).not.toContain('href="#bilan"');
+    expect(markup).not.toContain('href="#settings"');
+  });
+
+  it("cumulates check-in and observer sections without exposing arbitration", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="checkin" capabilities={["observe", "checkin"]} reviewerRoles={["checkin", "observer"]} />);
+    expect(markup).toContain('href="#attendance"');
+    expect(markup).toContain('href="#teams"');
+    expect(markup).toContain('href="#results"');
+    expect(markup).not.toContain('href="#arbitration"');
+    expect(markup).not.toContain('href="#bilan"');
+    expect(markup).not.toContain('href="#settings"');
+  });
+
   it("renders observer views without mutation affordances", () => {
     const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="observer" capabilities={["observe"]} />);
     expect(markup).toContain('href="#teams"');

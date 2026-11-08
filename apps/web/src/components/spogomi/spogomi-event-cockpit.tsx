@@ -16,6 +16,7 @@ import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
 import { SpogomiSyntheticDemoNotice } from "./spogomi-synthetic-demo-notice";
 
 type CockpitSection = "presentation" | "operations" | SpogomiPreparationWorkspaceSection;
+type SpogomiReviewerRole = "observer" | "referee" | "checkin";
 
 type CockpitEvent = {
   id: string;
@@ -89,12 +90,14 @@ function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: rea
   return "Accès événementiel limité";
 }
 
-function buildCockpitSections(organizer: boolean, referee: boolean, observer: boolean, checkin: boolean, hasFieldOperations: boolean): CockpitSection[] {
+function buildCockpitSections(organizer: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean): CockpitSection[] {
   const next: CockpitSection[] = ["presentation"];
   if (organizer) next.push("teams", "attendance", "operations", "results", "arbitration", "bilan", "settings");
-  else if (checkin) next.push("attendance");
-  else if (referee) next.push("results", "arbitration");
-  else if (observer) next.push("teams", "results");
+  else {
+    if (reviewerRoles.has("checkin")) next.push("attendance");
+    if (reviewerRoles.has("referee")) next.push("results", "arbitration");
+    else if (reviewerRoles.has("observer")) next.push("teams", "results");
+  }
   if (hasFieldOperations && !next.includes("operations")) next.push("operations");
   return next;
 }
@@ -126,16 +129,29 @@ function CockpitSections(props: Omit<Parameters<typeof CockpitSectionView>[0], "
   return <>{props.sections.map((section) => <CockpitSectionView key={section} {...props} section={section} />)}</>;
 }
 
-export function SpogomiEventCockpit({ event, role, capabilities, fieldCapabilities = [], activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; fieldCapabilities?: readonly SpogomiFieldOperationsCapability[]; activeRole?: string | null }) {
+export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, fieldCapabilities = [], activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; reviewerRoles?: readonly SpogomiReviewerRole[]; fieldCapabilities?: readonly SpogomiFieldOperationsCapability[]; activeRole?: string | null }) {
   const capabilitySet = useMemo(() => new Set(capabilities), [capabilities]);
   const organizer = capabilitySet.has("manage");
-  const referee = capabilitySet.has("arbitrate");
-  const observer = capabilitySet.has("observe");
-  const checkin = capabilitySet.has("checkin");
+  const verifiedReviewerRoles = useMemo(() => {
+    const candidateRoles = reviewerRoles
+      ? new Set(reviewerRoles)
+      : new Set<SpogomiReviewerRole>([
+          ...(role === "observer" || role === "referee" || role === "checkin" ? [role] : []),
+          ...(capabilitySet.has("arbitrate") ? ["referee" as const] : []),
+          ...(capabilitySet.has("checkin") ? ["checkin" as const] : []),
+          ...(role === "checkin" && capabilitySet.has("observe") ? ["observer" as const] : []),
+        ]);
+    return new Set<SpogomiReviewerRole>([
+      ...(candidateRoles.has("observer") && capabilitySet.has("observe") ? ["observer" as const] : []),
+      ...(candidateRoles.has("referee") && capabilitySet.has("arbitrate") ? ["referee" as const] : []),
+      ...(candidateRoles.has("checkin") && capabilitySet.has("checkin") ? ["checkin" as const] : []),
+    ]);
+  }, [capabilitySet, reviewerRoles, role]);
+  const referee = verifiedReviewerRoles.has("referee");
   const hasFieldOperations = fieldCapabilities.length > 0;
   const showAdminTeamJoinRequests = activeRole === "admin" || activeRole === "max";
   const [activeSection, setActiveSection] = useState<CockpitSection>("presentation");
-  const sections = useMemo(() => buildCockpitSections(organizer, referee, observer, checkin, hasFieldOperations), [checkin, hasFieldOperations, observer, organizer, referee]);
+  const sections = useMemo(() => buildCockpitSections(organizer, verifiedReviewerRoles, hasFieldOperations), [hasFieldOperations, organizer, verifiedReviewerRoles]);
 
   useEffect(() => {
     const syncFromHash = () => {

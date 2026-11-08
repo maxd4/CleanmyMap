@@ -56,6 +56,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
         }}
         role={eventAccess?.role ?? null}
         capabilities={eventAccess ? [...eventAccess.capabilities] : []}
+        reviewerRoles={eventAccess?.reviewerRoles ?? []}
         fieldCapabilities={fieldOperationsAccess ? [...fieldOperationsAccess.capabilities] : []}
         activeRole={activeRole}
       />

@@ -26,6 +26,8 @@ describe("SPOGOMI navigation intent", () => {
 
   it("opens a requested section only when the event relation supports it", () => {
     expect(buildSpogomiEventSpaceHref(space(["referee"]), "referees", "arbitration")).toBe("/spogomi/edition/espace#arbitration");
+    expect(buildSpogomiEventSpaceHref(space(["checkin", "referee"]), "referees", "arbitration")).toBe("/spogomi/edition/espace#arbitration");
+    expect(buildSpogomiEventSpaceHref(space(["checkin", "observer"]), "referees", "results")).toBe("/spogomi/edition/espace#results");
     expect(buildSpogomiEventSpaceHref(space(["checkin"]), "referees", "arbitration")).toBe("/spogomi/edition/espace#attendance");
     expect(buildSpogomiEventSpaceHref(space(["field_operator"]), "referees", "operations")).toBe("/spogomi/edition/espace#operations");
     expect(buildSpogomiEventSpaceHref(space(["organizer"]), "organizers", "bilan")).toBe("/spogomi/edition/espace#bilan");
