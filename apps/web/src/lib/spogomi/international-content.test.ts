@@ -25,6 +25,14 @@ describe("SPOGOMI international editorial contract", () => {
     expect(SPOGOMI_EXTERNAL_EVENTS.every((event) => event.cleanMyMapEventId === null)).toBe(true);
   });
 
+  it("keeps both Nice sources attached to the same historical example", () => {
+    const nice = SPOGOMI_HISTORICAL_EXAMPLES.find((example) => example.id === "nice-2024");
+    expect(nice).toMatchObject({ sourceUrl: "https://www.artema-network.com/spogomi-nice" });
+    expect(nice?.additionalSources).toEqual(expect.arrayContaining([
+      expect.objectContaining({ href: "https://www.artema-network.com/evenements-passes" }),
+    ]));
+  });
+
   it("labels the 2027 World Cup as planned without inventing an exact date", () => {
     const event = SPOGOMI_EXTERNAL_EVENTS[0];
     expect(event.state).toBe("planned");

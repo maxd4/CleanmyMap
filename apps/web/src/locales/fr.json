@@ -258,8 +258,7 @@
       "noExternalEvents": "Aucun événement externe vérifié pour ces filtres.",
       "newsDetails": "Voir les actualités vérifiées",
       "filtersDetails": "Voir les filtres et événements",
-    "worldDetails": "Voir le rôle de CleanMyMap et les sources",
-    "worldSectionLink": "Voir les actualités, événements et sources"
+    "worldDetails": "Voir le rôle de CleanMyMap et les sources"
     },
     "understanding": {
       "title": "Comprendre SPOGOMI",

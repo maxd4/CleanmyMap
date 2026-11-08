@@ -5,13 +5,15 @@ import { CalendarDays, ExternalLink, Globe2, Megaphone, SlidersHorizontal } from
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmIcon } from "@/components/ui/cmm-icon";
 import { filterSpogomiExternalEvents, type SpogomiExternalEvent, type SpogomiInternationalNews, type SpogomiInternationalSource } from "@/lib/spogomi/international-content";
+import { formatCivilDateInLocale } from "@/lib/time/civil-date";
 import type { Locale } from "@/lib/ui/preferences";
 
-type Props = {
+export type SpogomiInternationalContentProps = {
   locale: Locale;
   sources: SpogomiInternationalSource[];
   news: SpogomiInternationalNews[];
   externalEvents: SpogomiExternalEvent[];
+  visibleSections?: readonly ("world" | "news" | "events")[];
   copy: {
     worldTitle: string;
     worldDescription: string;
@@ -33,27 +35,28 @@ type Props = {
   };
 };
 
-function stateLabel(state: SpogomiExternalEvent["state"] | SpogomiInternationalNews["state"], copy: Props["copy"]) {
+function stateLabel(state: SpogomiExternalEvent["state"] | SpogomiInternationalNews["state"], copy: SpogomiInternationalContentProps["copy"]) {
   if (state === "planned") return copy.planned;
   if (state === "date_set") return copy.dateSet;
   return copy.confirmed;
 }
 
 function formatDate(value: string, locale: Locale) {
-  return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", { dateStyle: "long" }).format(new Date(value));
+  return formatCivilDateInLocale(value, locale === "fr" ? "fr-FR" : "en-US");
 }
 
-export function SpogomiInternationalContent({ locale, sources, news, externalEvents, copy }: Props) {
+export function SpogomiInternationalContent({ locale, sources, news, externalEvents, visibleSections = ["world", "news", "events"], copy }: SpogomiInternationalContentProps) {
   const [year, setYear] = useState<number | null>(null);
   const [country, setCountry] = useState<string | null>(null);
   const years = useMemo(() => [...new Set(externalEvents.map((event) => event.year))].sort((left, right) => left - right), [externalEvents]);
   const countries = useMemo(() => [...new Set(externalEvents.map((event) => event.country.fr))].sort((left, right) => left.localeCompare(right, locale)), [externalEvents, locale]);
   const filteredEvents = useMemo(() => filterSpogomiExternalEvents(externalEvents, { year, country }), [externalEvents, year, country]);
+  const gridClassName = visibleSections.length === 1 ? "grid items-start gap-4" : "grid items-start gap-4 lg:grid-cols-3";
 
   return (
     <section id="spogomi-international" className="space-y-4 scroll-mt-6" aria-label={copy.worldTitle}>
-      <div className="grid items-start gap-4 lg:grid-cols-3">
-        <CmmCard tone="slate" variant="glass" className="min-w-0 space-y-4 p-4 sm:p-5">
+      <div className={gridClassName}>
+        {visibleSections.includes("world") ? <CmmCard tone="slate" variant="glass" className="min-w-0 space-y-4 p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <CmmIcon icon={Globe2} className="mt-1 shrink-0 text-emerald-700" />
             <div className="min-w-0">
@@ -72,9 +75,9 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
               </li>
             ))}
           </ul>
-        </CmmCard>
+        </CmmCard> : null}
 
-        <CmmCard tone="slate" variant="glass" className="min-w-0 space-y-4 p-4 sm:p-5">
+        {visibleSections.includes("news") ? <CmmCard tone="slate" variant="glass" className="min-w-0 space-y-4 p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <CmmIcon icon={Megaphone} className="mt-1 shrink-0 text-emerald-700" />
             <div className="min-w-0">
@@ -96,9 +99,9 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
               </article>
             ))}
           </div>
-        </CmmCard>
+        </CmmCard> : null}
 
-        <CmmCard tone="slate" variant="glass" className="min-w-0 space-y-4 p-4 sm:p-5">
+        {visibleSections.includes("events") ? <CmmCard tone="slate" variant="glass" className="min-w-0 space-y-4 p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <CmmIcon icon={SlidersHorizontal} className="mt-1 shrink-0 text-emerald-700" />
             <div className="min-w-0">
@@ -140,7 +143,7 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
               ))}
             </div>
           )}
-        </CmmCard>
+        </CmmCard> : null}
       </div>
     </section>
   );

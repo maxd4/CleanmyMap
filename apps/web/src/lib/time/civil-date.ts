@@ -60,6 +60,13 @@ export function formatCivilDateInTimeZone(
   return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 }
 
+/** Formats a civil date for a locale without consulting the host timezone. */
+export function formatCivilDateInLocale(value: string, locale: string): string {
+  const date = parseCivilDateAsUtc(value);
+  if (!date) throw new RangeError("Invalid civil date.");
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(date);
+}
+
 /** Formats an instant for a user-facing surface without consulting the host timezone. */
 export function formatDateTimeInTimeZone(
   value: string | Date,

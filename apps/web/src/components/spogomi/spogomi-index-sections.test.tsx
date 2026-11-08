@@ -31,11 +31,10 @@ const copy: Record<string, string> = {
   "international.worldCupTitle": "World Cup",
   "international.worldCupDescription": "World Cup : équipes de 3.",
   "international.cleanMyMapRole": "Rôle local de CleanMyMap.",
-  "international.worldSectionLink": "Voir les actualités, événements et sources",
 };
 
 function renderUnderstanding() {
-  return <SpogomiUnderstanding t={(key) => copy[key] ?? key} />;
+  return <SpogomiUnderstanding locale="fr" t={(key) => copy[key] ?? key} />;
 }
 
 describe("SpogomiUnderstanding", () => {
@@ -51,6 +50,8 @@ describe("SpogomiUnderstanding", () => {
     expect(markup).toContain("Formats &amp; compétitions");
     expect(markup).toContain("Règlement &amp; sécurité");
     expect(markup).toContain("Le mouvement dans le monde");
+    expect(markup).toContain('id="spogomi-international"');
+    expect(markup.match(/data-cmm-card-tone="slate"/g)).toHaveLength(1);
     expect(markup).not.toContain('data-cmm-card-tone="indigo"');
   });
 
@@ -79,6 +80,8 @@ describe("SpogomiUnderstanding", () => {
       act(() => { tabs()[1]?.click(); });
       expect(tabs()[1]?.getAttribute("aria-selected")).toBe("true");
       expect(container.textContent).toContain("Format japonais général : équipes de 2 à 5.");
+      expect(container.querySelector("#spogomi-international")).not.toBeNull();
+      expect(container.textContent).toContain("Octobre 2027 — date précise à confirmer");
 
       act(() => {
         tabs()[1]?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
@@ -88,9 +91,13 @@ describe("SpogomiUnderstanding", () => {
       expect(container.textContent).toContain("Sanctions : pénalités et disqualification.");
       expect(container.textContent).toContain("Note confidentialité : les données nominatives restent privées.");
       expect(container.querySelector('a[href="https://www.artema-network.com/spogomi-nice"]')).not.toBeNull();
+      expect(container.querySelector('a[href="https://www.artema-network.com/evenements-passes"]')).not.toBeNull();
+      expect(container.querySelector("#spogomi-international")).toBeNull();
 
       act(() => { tabs()[3]?.click(); });
-      expect(container.querySelector('a[href="#spogomi-international"]')).not.toBeNull();
+      expect(container.querySelector("#spogomi-international")).not.toBeNull();
+      expect(container.querySelectorAll('[data-cmm-card-tone="slate"]')).toHaveLength(1);
+      expect(container.textContent).toContain("40 pays et régions annoncés");
     });
   });
 });

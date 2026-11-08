@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CmmPageLayout } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
-import { SpogomiInternationalSection, SpogomiPublicEvents, SpogomiUnderstanding } from "@/components/spogomi/spogomi-index-sections";
+import { SpogomiPublicEvents, SpogomiUnderstanding } from "@/components/spogomi/spogomi-index-sections";
 import { SpogomiOrientationTabs } from "@/components/spogomi/spogomi-orientation-tabs";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -35,8 +35,7 @@ export default async function SpogomiIndexPage() {
         />
         <SpogomiOrientationTabs isAuthenticated={Boolean(userId)} progress={orientationProgress} />
         <SpogomiPublicEvents events={events} loadError={loadError} />
-        <SpogomiUnderstanding t={t} />
-        <SpogomiInternationalSection locale={locale} t={t} />
+        <SpogomiUnderstanding locale={locale} t={t} />
       </CmmPageLayout>
     </div>
   );

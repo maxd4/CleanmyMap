@@ -17,11 +17,17 @@ export type SpogomiInternationalNews = {
   state: "confirmed" | "planned";
 };
 
+export type SpogomiHistoricalSource = {
+  href: string;
+  label: Record<Locale, string>;
+};
+
 export type SpogomiHistoricalExample = {
   id: string;
   copyKey: string;
   sourceUrl: string;
   sourceLabel: string;
+  additionalSources?: readonly SpogomiHistoricalSource[];
   verifiedAt: string;
 };
 
@@ -100,6 +106,12 @@ export const SPOGOMI_HISTORICAL_EXAMPLES: SpogomiHistoricalExample[] = [
     copyKey: "rulesHistoricalExampleNice",
     sourceUrl: "https://www.artema-network.com/spogomi-nice",
     sourceLabel: "ARTEMA — SPOGOMI Nice",
+    additionalSources: [
+      {
+        href: "https://www.artema-network.com/evenements-passes",
+        label: { fr: "ARTEMA — bilan des événements passés", en: "ARTEMA — past events report" },
+      },
+    ],
     verifiedAt: SPOGOMI_EDITORIAL_VERIFIED_AT,
   },
   {

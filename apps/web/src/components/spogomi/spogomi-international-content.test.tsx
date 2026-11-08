@@ -42,6 +42,7 @@ describe("SpogomiInternationalContent", () => {
     expect(markup).toContain("2026-11-08");
     expect(markup).toContain("Règles générales japonaises");
     expect(markup).toContain("40 pays et régions annoncés");
+    expect(markup).toContain("5 novembre 2026");
     expect(markup).toContain("Date Set");
     expect(markup).toContain("Prévisionnel");
     expect(markup).toContain("Octobre 2027 — date précise à confirmer");
@@ -50,6 +51,21 @@ describe("SpogomiInternationalContent", () => {
     expect(markup).toContain("Tous les pays connus");
     expect(markup).toContain('aria-label="Année"');
     expect(markup).toContain('aria-label="Pays"');
+  });
+
+  it("formats editorial dates in English without depending on the host timezone", () => {
+    const markup = renderToStaticMarkup(
+      <SpogomiInternationalContent
+        locale="en"
+        sources={[]}
+        news={SPOGOMI_INTERNATIONAL_NEWS}
+        externalEvents={[]}
+        visibleSections={["news"]}
+        copy={{ ...copy, newsTitle: "Official news" }}
+      />,
+    );
+
+    expect(markup).toContain("November 5, 2026");
   });
 
   it("renders event years in numeric order for the business filter", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, parseActionDateAsUtc, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
+import { formatCivilDateInLocale, formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, parseActionDateAsUtc, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
 
 describe("civil date adapter", () => {
   it.each(["America/Los_Angeles", "Europe/Paris"])(
@@ -79,6 +79,18 @@ describe("civil date adapter", () => {
   it("preserves the Paris civil day when the instant is near UTC midnight", () => {
     expect(formatCivilDateInTimeZone("2026-06-30T23:30:00.000Z")).toBe("2026-07-01");
     expect(formatCivilDateInTimeZone("2026-06-30T23:30:00.000Z", "UTC")).toBe("2026-06-30");
+  });
+
+  it.each(["UTC", "Europe/Paris", "America/Los_Angeles"])("formats a civil date consistently when the host timezone is %s", (timeZone) => {
+    const previousTimeZone = process.env.TZ;
+    process.env.TZ = timeZone;
+    try {
+      expect(formatCivilDateInLocale("2026-11-05", "fr-FR")).toBe("5 novembre 2026");
+      expect(formatCivilDateInLocale("2026-11-05", "en-US")).toBe("November 5, 2026");
+    } finally {
+      if (previousTimeZone === undefined) delete process.env.TZ;
+      else process.env.TZ = previousTimeZone;
+    }
   });
 
   it("keeps the default and explicit date-time formats tied to the requested timezone", () => {

@@ -258,8 +258,7 @@
       "noExternalEvents": "No verified external event matches these filters.",
       "newsDetails": "View verified updates",
       "filtersDetails": "View filters and events",
-    "worldDetails": "View CleanMyMap's role and sources",
-    "worldSectionLink": "See updates, events and sources"
+    "worldDetails": "View CleanMyMap's role and sources"
     },
     "understanding": {
       "title": "Understanding SPOGOMI",

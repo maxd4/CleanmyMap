@@ -5,13 +5,14 @@ import { BookOpen, Globe2, ShieldCheck, Trophy } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
-import { CmmIcon } from "@/components/ui/cmm-icon";
+import { SpogomiInternationalContent, type SpogomiInternationalContentProps } from "./spogomi-international-content";
 
 export type SpogomiUnderstandingExample = {
   id: string;
   text: string;
   sourceLabel: string;
   sourceUrl: string;
+  additionalSources?: readonly { href: string; label: string }[];
 };
 
 export type SpogomiUnderstandingCopy = {
@@ -33,9 +34,7 @@ export type SpogomiUnderstandingCopy = {
   rulesHistoricalExamplesTitle: string;
   rulesPrivacyNote: string;
   examples: SpogomiUnderstandingExample[];
-  worldDescription: string;
-  cleanMyMapRole: string;
-  worldSectionLink: string;
+  international: SpogomiInternationalContentProps;
 };
 
 type TabId = "presentation" | "formats" | "rules" | "world";
@@ -137,18 +136,22 @@ export function SpogomiUnderstandingTabs({ copy }: { copy: SpogomiUnderstandingC
 
 function PresentationPanel({ copy }: { copy: SpogomiUnderstandingCopy }) {
   return (
-    <div className="max-w-3xl space-y-2">
+    <div className="space-y-4">
       <h3 className="text-xl font-black text-slate-950">{copy.presentationTitle}</h3>
-      <p className="cmm-text-body text-slate-950">{copy.presentationDescription}</p>
+      <p className="cmm-text-body max-w-3xl text-slate-950">{copy.presentationDescription}</p>
+      <SpogomiInternationalContent {...copy.international} visibleSections={["world"]} />
     </div>
   );
 }
 
 function FormatsPanel({ copy }: { copy: SpogomiUnderstandingCopy }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <FormatBlock title={copy.casualTitle} description={copy.casualDescription} />
-      <FormatBlock title={copy.worldCupTitle} description={copy.worldCupDescription} />
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormatBlock title={copy.casualTitle} description={copy.casualDescription} />
+        <FormatBlock title={copy.worldCupTitle} description={copy.worldCupDescription} />
+      </div>
+      <SpogomiInternationalContent {...copy.international} visibleSections={["events"]} />
     </div>
   );
 }
@@ -185,6 +188,17 @@ function RulesPanel({ copy }: { copy: SpogomiUnderstandingCopy }) {
               >
                 {example.sourceLabel}
               </a>
+              {example.additionalSources?.map((source) => (
+                <a
+                  key={source.href}
+                  href={source.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-2 inline-flex items-center gap-1 font-bold text-slate-800 underline hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+                >
+                  {source.label}
+                </a>
+              ))}
             </li>
           ))}
         </ul>
@@ -195,19 +209,5 @@ function RulesPanel({ copy }: { copy: SpogomiUnderstandingCopy }) {
 }
 
 function WorldPanel({ copy }: { copy: SpogomiUnderstandingCopy }) {
-  return (
-    <div className="max-w-3xl space-y-3">
-      <div className="flex items-start gap-3">
-        <CmmIcon icon={Globe2} className="mt-1 shrink-0 text-emerald-700" />
-        <div className="space-y-2">
-          <h3 className="text-xl font-black text-slate-950">{copy.worldTab}</h3>
-          <p className="cmm-text-body text-slate-950">{copy.worldDescription}</p>
-          <p className="text-sm leading-6 text-slate-900">{copy.cleanMyMapRole}</p>
-          <CmmButton href="#spogomi-international" tone="secondary" variant="ghost" size="sm" className="px-0 text-left">
-            {copy.worldSectionLink}
-          </CmmButton>
-        </div>
-      </div>
-    </div>
-  );
+  return <SpogomiInternationalContent {...copy.international} visibleSections={["news"]} />;
 }
