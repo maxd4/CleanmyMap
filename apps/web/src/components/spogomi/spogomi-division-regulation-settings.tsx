@@ -100,6 +100,7 @@ export function SpogomiDivisionRegulationSettings(props: Props) {
   const { activeDivision, categories, mappings, expectedRevision } = props;
   const [input, setInput] = useState<DivisionRegulationInput>(() => draftFromProps({ activeDivision, categories, mappings, expectedRevision }));
   const hasLocalChanges = useRef(false);
+  const localChangeVersion = useRef(0);
   const serverDraft = useMemo(() => draftFromProps({ activeDivision, categories, mappings, expectedRevision }), [activeDivision, categories, mappings, expectedRevision]);
   useEffect(() => {
     if (!hasLocalChanges.current) setInput(serverDraft);
@@ -108,6 +109,7 @@ export function SpogomiDivisionRegulationSettings(props: Props) {
   if (!props.activeDivision) return <CmmCard tone="slate" variant="muted" className="p-5"><p className="text-sm text-slate-700">Aucune division sélectionnée.</p></CmmCard>;
   const update = <K extends keyof DivisionRegulationInput>(key: K, value: DivisionRegulationInput[K]) => {
     hasLocalChanges.current = true;
+    localChangeVersion.current += 1;
     setInput((current) => ({ ...current, [key]: value }));
   };
   const updateCategory = (index: number, patch: Partial<Category>) => {
@@ -122,17 +124,17 @@ export function SpogomiDivisionRegulationSettings(props: Props) {
   const addCategory = () => update("categories", [...input.categories, { ...EMPTY_CATEGORY, displayOrder: input.categories.length }]);
   const removeCategory = (index: number) => { const category = input.categories[index]; update("categories", input.categories.filter((_, currentIndex) => currentIndex !== index)); update("environmentMappings", input.environmentMappings.filter((mapping) => mapping.categoryCode !== category?.code)); };
   const save = async () => {
+    const saveVersion = localChangeVersion.current;
     const savedData = await props.onSave({ ...input, environmentMappings: input.categories.map((category) => mappingForCategory(category, input.environmentMappings)) });
     if (!savedData) return;
     const savedDivision = savedData.divisions.find((division) => division.id === props.activeDivision?.id) ?? props.activeDivision;
+    const savedRevision = savedData.event.composition_revision ?? input.expectedRevision;
+    if (localChangeVersion.current !== saveVersion) {
+      setInput((current) => ({ ...current, expectedRevision: savedRevision }));
+      return;
+    }
     hasLocalChanges.current = false;
-    setInput(draftFromProps({
-      ...props,
-      activeDivision: savedDivision,
-      categories: savedData.categoryRules,
-      mappings: savedData.environmentMappings ?? [],
-      expectedRevision: savedData.event.composition_revision ?? input.expectedRevision,
-    }));
+    setInput(draftFromProps({ ...props, activeDivision: savedDivision, categories: savedData.categoryRules, mappings: savedData.environmentMappings ?? [], expectedRevision: savedRevision }));
   };
   const displayedTiebreakers = orderedTiebreakers(input.tiebreakers);
   return <div className="space-y-4" aria-label="Configuration du règlement de division">

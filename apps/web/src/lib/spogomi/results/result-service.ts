@@ -265,10 +265,11 @@ export async function loadSpogomiEventResultReviews(params: {
   const divisionId = params.divisionId ?? null;
   const divisionResult = divisionId ? await params.supabase.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", divisionId).eq("event_id", params.eventId).maybeSingle() : { data: null, error: null };
   if (divisionResult.error) throw divisionResult.error;
-  const [eventResult, teams, categories, submissions, items, participants] = await Promise.all([
+  const [eventResult, teams, categories, mappings, submissions, items, participants] = await Promise.all([
     params.supabase.from("spogomi_events").select("id, name, event_slug, mode, state, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", params.eventId).single(),
     readAllSpogomiPages("review teams", (from, to) => { let q = params.supabase.from("spogomi_teams").select("id, division_id, team_number, public_name").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to); }),
     readAllSpogomiPages("review regulation categories", (from, to) => { let q = params.supabase.from("spogomi_category_rules").select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to); }),
+    readAllSpogomiPages("review environmental mappings", (from, to) => { let q = params.supabase.from("spogomi_environment_category_mappings").select("id, event_id, division_id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("category_code", { ascending: true }).order("id", { ascending: true }).range(from, to); }),
     readAllSpogomiPages("review submissions", (from, to) => { let q = params.supabase.from("spogomi_result_submissions").select("id, division_id, team_id, version, status, submitted_at").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("version", { ascending: false }).order("id", { ascending: true }).range(from, to); }),
     readAllSpogomiPages("review result items", (from, to) => { let q = params.supabase.from("spogomi_result_items").select("id, division_id, submission_id, category_rule_id, measurement_kind, unit, quantity, mass_grams, object_count, measurement_method, provenance, arbitration_comment").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to); }),
     readAllSpogomiPages("review participants", (from, to) => { let q = params.supabase.from("spogomi_participants").select("id, division_id, team_id, attendance_status, registration_status").eq("event_id", params.eventId); if (divisionId) q = q.eq("division_id", divisionId); return q.order("id", { ascending: true }).range(from, to); }),
@@ -278,7 +279,11 @@ export async function loadSpogomiEventResultReviews(params: {
   const eventData = eventResult.data as unknown as Record<string, unknown>;
   const eventRow = (divisionData ? { ...divisionData, mode: divisionData.division_type, division_id: divisionData.id, regulation_version: divisionData.regulation_version, regulation_status: divisionData.regulation_status, regulation_source_reference: divisionData.regulation_source_reference, regulation_config: divisionData.regulation_config, team_size_config: divisionData.team_size_config } : eventData) as EventRegulationRow;
   const categoryRows = categories as unknown as CategoryRow[];
-  const regulation = buildSpogomiRegulation(eventRow, categoryRows);
+  const regulation = buildSpogomiRegulation(
+    eventRow,
+    categoryRows,
+    (mappings as unknown as SpogomiPersistedEnvironmentMappingRow[]).map(toSpogomiEnvironmentMapping),
+  );
   const itemRows = items as Array<Record<string, unknown>>;
   const submissionRows = submissions as Array<{ id: string; team_id: string; version: number; status: string; submitted_at: string | null }>;
   const categoryCodes = new Map(categoryRows.map((category) => [category.id, category.code]));
