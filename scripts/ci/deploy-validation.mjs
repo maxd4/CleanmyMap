@@ -150,6 +150,19 @@ async function fetchVercelJson(fetchImpl, url, token) {
   return response.json();
 }
 
+function resolveVercelRepository(project, deployment) {
+  const projectRepository = project.link?.org && project.link?.repo
+    ? `${project.link.org}/${project.link.repo}`
+    : "";
+  const deploymentRepository = deployment.meta?.githubCommitOrg && deployment.meta?.githubCommitRepo
+    ? `${deployment.meta.githubCommitOrg}/${deployment.meta.githubCommitRepo}`
+    : deployment.gitSource?.org && deployment.gitSource?.repo
+      ? `${deployment.gitSource.org}/${deployment.gitSource.repo}`
+      : "";
+  if (projectRepository && deploymentRepository && projectRepository !== deploymentRepository) return "";
+  return projectRepository || deploymentRepository;
+}
+
 export async function inspectVercelProduction({
   repositoryRoot,
   proof,
@@ -168,7 +181,7 @@ export async function inspectVercelProduction({
     const deployment = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v13/deployments/${encodeURIComponent(proof.deploymentId)}${query}`, token);
     const aliases = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v2/deployments/${encodeURIComponent(proof.deploymentId)}/aliases${query}`, token);
     const alias = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v4/aliases/${encodeURIComponent(proof.productionAlias)}${query}`, token);
-    const repository = project.link?.org && project.link?.repo ? `${project.link.org}/${project.link.repo}` : "";
+    const repository = resolveVercelRepository(project, deployment);
     const gitSha = deployment.gitSource?.sha ?? deployment.meta?.githubCommitSha ?? deployment.meta?.gitCommitSha ?? "";
     const aliasNames = (Array.isArray(aliases) ? aliases : aliases.aliases ?? []).map((alias) => typeof alias === "string" ? alias : alias?.alias).filter(Boolean);
     const aliasDeploymentId = alias?.deploymentId ?? alias?.deployment?.id ?? "";

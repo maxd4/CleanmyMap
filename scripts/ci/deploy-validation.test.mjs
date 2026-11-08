@@ -220,6 +220,50 @@ test("authenticated Vercel inspection accepts the real project root and independ
   }
 });
 
+test("authenticated Vercel inspection accepts the real deployment Git metadata when project.link is absent", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const result = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, {
+        project: { link: undefined },
+        deployment: {
+          gitSource: undefined,
+          meta: { githubCommitOrg: "maxd4", githubCommitRepo: "CleanmyMap", githubCommitSha: productionSha },
+        },
+      }),
+    });
+    assert.equal(result.valid, true);
+    assert.equal(result.inspection.repository, "maxd4/CleanmyMap");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("authenticated Vercel inspection rejects contradictory project and deployment repositories", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const result = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, {
+        deployment: { meta: { githubCommitOrg: "foreign", githubCommitRepo: "repository" } },
+      }),
+    });
+    assert.equal(result.valid, false);
+    assert.equal(result.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("authenticated Vercel inspection rejects a project response without the real root field", async () => {
   const root = makeRepository();
   try {
