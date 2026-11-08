@@ -19,15 +19,16 @@ function volunteerEvent(overrides: Partial<{
   };
 }
 
-function personalEvent(overrides: Partial<{ id: string; name: string; relations: Array<"organizer" | "referee">; publicVisibility: "private" | "published"; publicResultsVisibility: "hidden" | "provisional" | "certified" }> = {}) {
+function personalEvent(overrides: Partial<{ id: string; name: string; eventSlug: string | null; state: string; relations: Array<"organizer" | "referee" | "field_operator">; publicVisibility: "private" | "published"; publicResultsVisibility: "hidden" | "provisional" | "certified" }> = {}) {
   return {
-    id: "event-1", name: "Paris", relations: ["organizer" as const], publicVisibility: "published" as const, publicResultsVisibility: "certified" as const, ...overrides,
+    id: "event-1", name: "Paris", eventSlug: "paris", state: "certified", relations: ["organizer" as const], publicVisibility: "published" as const, publicResultsVisibility: "certified" as const, ...overrides,
   };
 }
 
 describe("buildSpogomiOrientationProgress", () => {
   it("keeps certified proofs scoped to their event and ignores revoked missions", () => {
     const proofs = buildSpogomiOrientationProgress({
+      userId: "user-1",
       personalEvents: [],
       volunteerSummary: {
         chronology: [
@@ -36,24 +37,60 @@ describe("buildSpogomiOrientationProgress", () => {
         ],
         certificates: [{ eventId: "event-1", status: "active" } as never, { eventId: "event-2", status: "revoked" } as never],
       },
+      operationalCertifications: [],
     });
 
     expect(proofs).toEqual(expect.arrayContaining([
       { key: "volunteer.participation", eventId: "event-1", eventName: "Paris", evidence: "certified_participation" },
       { key: "volunteer.contributions", eventId: "event-1", eventName: "Paris", evidence: "certified_mission" },
       { key: "volunteer.attestations", eventId: "event-1", eventName: "Paris", evidence: "active_attestation" },
-      { key: "referee.certification", eventId: "event-1", eventName: "Paris", evidence: "certified_mission" },
     ]));
     expect(proofs.some((proof) => proof.eventId === "event-2")).toBe(false);
   });
 
-  it("requires the organizer relation before accepting publication proofs", () => {
+  it("keeps an identity-unverified certified mission neutral while preserving revoked-proof handling", () => {
     const proofs = buildSpogomiOrientationProgress({
+      userId: "user-1",
+      personalEvents: [],
+      volunteerSummary: {
+        chronology: [volunteerEvent({ identityVerified: false, missions: [{ kind: "collector", status: "certified", evidenceReference: "evidence-2" }] })],
+        certificates: [{ eventId: "event-1", status: "revoked" } as never],
+      },
+      operationalCertifications: [],
+    });
+
+    expect(proofs).toEqual([]);
+  });
+
+  it("requires a current operational certification attributed to the account and event", () => {
+    const proofs = buildSpogomiOrientationProgress({
+      userId: "user-1",
+      personalEvents: [personalEvent({ relations: ["field_operator"] })],
+      volunteerSummary: { chronology: [], certificates: [] },
+      operationalCertifications: [
+        { certificationId: "measurement-1", eventId: "event-1", certifiedByClerkId: "user-1", certifiedAt: "2026-11-09T10:00:00.000Z" },
+        { certificationId: "measurement-2", eventId: "event-2", certifiedByClerkId: "user-1", certifiedAt: "2026-11-09T10:00:00.000Z" },
+        { certificationId: "measurement-3", eventId: "event-1", certifiedByClerkId: "other-user", certifiedAt: "2026-11-09T10:00:00.000Z" },
+      ],
+    });
+
+    expect(proofs).toEqual([
+      { key: "referee.certification", eventId: "event-1", eventName: "Paris", evidence: "operational_certification" },
+    ]);
+  });
+
+  it("requires the organizer relation and effective public event visibility before accepting publication proofs", () => {
+    const proofs = buildSpogomiOrientationProgress({
+      userId: "user-1",
       personalEvents: [
         personalEvent(),
         personalEvent({ id: "event-2", name: "Lille", relations: ["referee"], publicVisibility: "published", publicResultsVisibility: "certified" }),
+        personalEvent({ id: "event-3", name: "Nice", relations: ["organizer"], publicVisibility: "private", publicResultsVisibility: "certified" }),
+        personalEvent({ id: "event-4", name: "Lyon", relations: ["organizer"], state: "cancelled", publicVisibility: "published", publicResultsVisibility: "certified" }),
+        personalEvent({ id: "event-5", name: "Nantes", relations: ["organizer"], eventSlug: null, publicVisibility: "published", publicResultsVisibility: "certified" }),
       ],
       volunteerSummary: { chronology: [], certificates: [] },
+      operationalCertifications: [],
     });
 
     expect(proofs).toEqual([

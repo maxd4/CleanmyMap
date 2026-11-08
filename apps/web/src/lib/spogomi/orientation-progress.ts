@@ -10,7 +10,7 @@ export type SpogomiOrientationProgressProof = {
   key: SpogomiOrientationProgressKey;
   eventId: string;
   eventName: string;
-  evidence: "certified_participation" | "certified_mission" | "active_attestation" | "event_published" | "results_published";
+  evidence: "certified_participation" | "certified_mission" | "active_attestation" | "operational_certification" | "event_published" | "results_published";
 };
 
 function pushUnique(target: SpogomiOrientationProgressProof[], proof: SpogomiOrientationProgressProof): void {
@@ -31,14 +31,25 @@ type VolunteerProgressCertificate = { eventId: string; status: "active" | "revok
 type PersonalProgressEvent = {
   id: string;
   name: string;
+  eventSlug: string | null;
+  state: string;
   relations: readonly string[];
   publicVisibility: "private" | "published";
   publicResultsVisibility: "hidden" | "provisional" | "certified";
 };
 
+type OperationalCertificationProgressProof = {
+  certificationId: string;
+  eventId: string;
+  certifiedByClerkId: string;
+  certifiedAt: string;
+};
+
 export function buildSpogomiOrientationProgress(input: {
+  userId: string;
   personalEvents: readonly PersonalProgressEvent[];
   volunteerSummary: { chronology: readonly VolunteerProgressEvent[]; certificates: readonly VolunteerProgressCertificate[] };
+  operationalCertifications: readonly OperationalCertificationProgressProof[];
 }): SpogomiOrientationProgressProof[] {
   const proofs: SpogomiOrientationProgressProof[] = [];
 
@@ -47,21 +58,25 @@ export function buildSpogomiOrientationProgress(input: {
       event.identityVerified &&
       event.attendanceStatus === "present" &&
       event.actionParticipationConfirmed;
-    const hasCertifiedMission = event.missions.some((mission) => mission.status === "certified" && mission.evidenceReference.trim().length > 0);
-    const hasCertifiedRefereeMission = event.missions.some((mission) => mission.kind === "referee" && mission.status === "certified" && mission.evidenceReference.trim().length > 0);
+    const hasCertifiedMission = event.identityVerified && event.missions.some((mission) => mission.status === "certified" && mission.evidenceReference.trim().length > 0);
     const hasActiveAttestation = input.volunteerSummary.certificates.some((certificate) => certificate.eventId === event.eventId && certificate.status === "active");
 
     if (hasCertifiedParticipation) pushUnique(proofs, { key: "volunteer.participation", eventId: event.eventId, eventName: event.eventName, evidence: "certified_participation" });
     if (hasCertifiedMission) pushUnique(proofs, { key: "volunteer.contributions", eventId: event.eventId, eventName: event.eventName, evidence: "certified_mission" });
     if (hasActiveAttestation) pushUnique(proofs, { key: "volunteer.attestations", eventId: event.eventId, eventName: event.eventName, evidence: "active_attestation" });
-    if (hasCertifiedRefereeMission) pushUnique(proofs, { key: "referee.certification", eventId: event.eventId, eventName: event.eventName, evidence: "certified_mission" });
   }
 
   for (const event of input.personalEvents) {
     const isOrganizer = event.relations.includes("organizer");
+    const isPubliclyAccessible = event.publicVisibility === "published" && event.state !== "cancelled" && Boolean(event.eventSlug?.trim());
+    const hasOperationalCertification = event.relations.includes("field_operator") && input.operationalCertifications.some((proof) =>
+      proof.eventId === event.id && proof.certifiedByClerkId === input.userId && proof.certificationId.trim().length > 0 && proof.certifiedAt.trim().length > 0,
+    );
+
+    if (hasOperationalCertification) pushUnique(proofs, { key: "referee.certification", eventId: event.id, eventName: event.name, evidence: "operational_certification" });
     if (!isOrganizer) continue;
-    if (event.publicVisibility === "published") pushUnique(proofs, { key: "organizer.event_publication", eventId: event.id, eventName: event.name, evidence: "event_published" });
-    if (event.publicResultsVisibility === "certified") pushUnique(proofs, { key: "organizer.results_publication", eventId: event.id, eventName: event.name, evidence: "results_published" });
+    if (isPubliclyAccessible) pushUnique(proofs, { key: "organizer.event_publication", eventId: event.id, eventName: event.name, evidence: "event_published" });
+    if (isPubliclyAccessible && event.publicResultsVisibility === "certified") pushUnique(proofs, { key: "organizer.results_publication", eventId: event.id, eventName: event.name, evidence: "results_published" });
   }
 
   return proofs.sort((left, right) => `${left.key}:${left.eventId}`.localeCompare(`${right.key}:${right.eventId}`));

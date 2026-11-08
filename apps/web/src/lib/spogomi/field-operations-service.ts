@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageEvent, loadSpogomiEventForOrganizer } from "./preparation/preparation-event-access";
+import { readAllSpogomiPages } from "./pagination";
 
 export type SpogomiFieldOperationsCapability =
   | "timing"
@@ -33,6 +34,20 @@ export type SpogomiFieldOperationsAccess = {
   capabilities: ReadonlySet<SpogomiFieldOperationsCapability>;
 };
 
+export type SpogomiOperationalCertificationProof = {
+  certificationId: string;
+  eventId: string;
+  certifiedByClerkId: string;
+  certifiedAt: string;
+};
+
+type OperationalCertificationRow = {
+  id: string;
+  event_id: string;
+  certified_by_clerk_id: string;
+  certified_at: string;
+};
+
 const EVENT_SELECT = "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
 const OPERATIONAL_ROLES = ["timekeeper", "weigher", "data_entry", "arbiter", "certifier"] as const;
 
@@ -47,6 +62,42 @@ export function spogomiFieldCapabilitiesForRoles(roles: string[], isOrganizer: b
   if (isOrganizer || roles.includes("arbiter") || roles.includes("referee")) capabilities.add("arbitration");
   if (isOrganizer || roles.includes("certifier")) capabilities.add("certification");
   return capabilities;
+}
+
+/**
+ * Reads only current operational measurements certified by this account for
+ * the supplied events. This is the source of truth for referee certification
+ * progress; volunteer mission attestations must not be promoted to it.
+ */
+export async function loadSpogomiOperationalCertificationProofsForUser(params: {
+  supabase: SupabaseClient;
+  userId: string;
+  eventIds: readonly string[];
+}): Promise<SpogomiOperationalCertificationProof[]> {
+  const userId = params.userId.trim();
+  const eventIds = [...new Set(params.eventIds.map((eventId) => eventId.trim()).filter(Boolean))];
+  if (!userId || !eventIds.length) return [];
+
+  const rows = await readAllSpogomiPages<OperationalCertificationRow>("personal operational certifications", (from, to) =>
+    params.supabase
+      .from("spogomi_operational_measurements")
+      .select("id, event_id, certified_by_clerk_id, certified_at", { count: "exact" })
+      .in("event_id", eventIds)
+      .eq("certified_by_clerk_id", userId)
+      .eq("status", "certified")
+      .not("certified_at", "is", null)
+      .order("event_id", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+    { requireExactCount: true },
+  );
+
+  return rows.map((row) => ({
+    certificationId: String(row.id),
+    eventId: String(row.event_id),
+    certifiedByClerkId: String(row.certified_by_clerk_id),
+    certifiedAt: String(row.certified_at),
+  }));
 }
 export async function loadSpogomiFieldOperationsAccess(params: {
   supabase: SupabaseClient;
