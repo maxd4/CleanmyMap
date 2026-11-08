@@ -13,6 +13,12 @@ export type SpogomiEventUpdateInput = {
   publicResultsVisibility?: "hidden" | "provisional" | "certified";
 };
 
+function validateCasualTeamSize(casualTeamSize: number | null | undefined): void {
+  if (casualTeamSize !== undefined && casualTeamSize !== null && (!Number.isInteger(casualTeamSize) || casualTeamSize < 1)) {
+    throw new Error("Validation: la taille d'équipe Casual doit être un entier positif ou non renseignée.");
+  }
+}
+
 function validateEventUpdate(event: EventRow, input: SpogomiEventUpdateInput, name: string, locationLabel: string, startsAt: string, endsAt: string | null): void {
   if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
   if (endsAt && Date.parse(endsAt) < Date.parse(startsAt)) throw new Error("Validation: la fin doit être postérieure au début.");
@@ -21,6 +27,7 @@ function validateEventUpdate(event: EventRow, input: SpogomiEventUpdateInput, na
 }
 
 function normalizeEventUpdate(event: EventRow, input: SpogomiEventUpdateInput) {
+  validateCasualTeamSize(input.casualTeamSize);
   const name = input.name?.trim() || event.name;
   const locationLabel = input.locationLabel?.trim() || event.location_label;
   const startsAt = input.startsAt ?? event.starts_at;

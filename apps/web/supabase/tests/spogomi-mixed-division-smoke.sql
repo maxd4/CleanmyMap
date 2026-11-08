@@ -16,6 +16,7 @@ declare
   v_team_casual uuid := gen_random_uuid();
   v_team_world_cup uuid := gen_random_uuid();
   v_participant_casual uuid := gen_random_uuid();
+  v_participant_casual_two uuid := gen_random_uuid();
   v_count integer;
   v_decision_id uuid;
   v_metadata jsonb;
@@ -53,6 +54,50 @@ begin
     raise exception 'an existing mixed edition did not preserve its mode during metadata update';
   end if;
 
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 0, 'spogomi-db-smoke', 'invalid casual zero', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":0,"maxMembers":4}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'mixed RPC accepted a zero Casual bound';
+  exception when others then
+    if position('casual team-size bounds' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 0, 'spogomi-db-smoke', 'invalid casual negative', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":-1,"maxMembers":4}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'mixed RPC accepted a negative Casual bound';
+  exception when others then
+    if position('casual team-size bounds' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 0, 'spogomi-db-smoke', 'invalid casual decimal', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":1.5,"maxMembers":4}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'mixed RPC accepted a fractional Casual bound';
+  exception when others then
+    if position('casual team-size bounds' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 0, 'spogomi-db-smoke', 'invalid casual order', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":4,"maxMembers":2}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'mixed RPC accepted incoherent Casual bounds';
+  exception when others then
+    if position('casual team-size bounds' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  select public.spogomi_update_event_metadata(
+    v_event_id, 0, 'spogomi-db-smoke', 'SPOGOMI mixed bounded', 'SPOGOMI smoke', now(), null,
+    'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'private', 'hidden'
+  ) into v_metadata;
+  if (v_metadata->>'composition_revision')::bigint <> 1 then
+    raise exception 'valid mixed Casual bounds did not advance the revision';
+  end if;
+
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count)
   values (v_conversion_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI conversion smoke', 1, 1, 1);
   insert into public.spogomi_events (
@@ -83,7 +128,17 @@ begin
     (v_team_world_cup, v_event_id, v_world_cup_id, 1, 'World Cup 1');
 
   insert into public.spogomi_participants (id, event_id, division_id, team_id, external_reference, registration_status, attendance_status)
-  values (v_participant_casual, v_event_id, v_casual_id, v_team_casual, 'smoke-participant', 'registered', 'present');
+  values
+    (v_participant_casual, v_event_id, v_casual_id, v_team_casual, 'smoke-participant', 'registered', 'present'),
+    (v_participant_casual_two, v_event_id, v_casual_id, v_team_casual, 'smoke-participant-two', 'registered', 'present');
+
+  select public.spogomi_update_event_metadata(
+    v_event_id, 1, 'spogomi-db-smoke', 'SPOGOMI mixed visible', 'SPOGOMI smoke', now(), null,
+    'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'published', 'hidden'
+  ) into v_metadata;
+  if v_metadata->>'mode' <> 'mixed' or v_metadata->>'public_visibility' <> 'published' then
+    raise exception 'mixed visibility update did not preserve mode';
+  end if;
 
   insert into public.spogomi_official_rankings (
     event_id, division_id, team_id, kind, rank, status, team_eligible,

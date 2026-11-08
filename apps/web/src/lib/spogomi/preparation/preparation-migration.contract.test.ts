@@ -17,6 +17,7 @@ const preparationConcurrencyMigration = readFileSync(new URL("../../../../supaba
 const postLockReconciliationMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000011_spogomi_ticket_reconciliation_post_lock_history.sql", import.meta.url), "utf8");
 const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000012_spogomi_team_public_name_uniqueness.sql", import.meta.url), "utf8");
 const mixedEventMetadataMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000001_spogomi_mixed_event_metadata_update.sql", import.meta.url), "utf8");
+const mixedCasualBoundsMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000002_spogomi_mixed_casual_bounds.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -163,6 +164,18 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(mixedEventMetadataMigration).toContain("composition_revision = composition_revision + case when v_rules_changed then 1 else 0 end");
     expect(mixedEventMetadataMigration).toMatch(/revoke all on function public\.spogomi_update_event_metadata[\s\S]+grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
     expect(mixedEventMetadataMigration).not.toMatch(/drop\s+(table|function)\s+public\.spogomi_/i);
+  });
+
+  it("validates mixed Casual bounds without contaminating the World Cup division", () => {
+    expect(mixedCasualBoundsMigration).toContain("p_mode in ('casual', 'mixed')");
+    expect(mixedCasualBoundsMigration).toContain("Casual team-size bounds must be positive integers or null");
+    expect(mixedCasualBoundsMigration).toContain("division.division_type = 'casual'");
+    expect(mixedCasualBoundsMigration).toContain("division.division_type = 'world_cup'");
+    expect(mixedCasualBoundsMigration).toContain("Converting an existing SPOGOMI event to mixed is not allowed");
+    expect(mixedCasualBoundsMigration).toContain("serialization_failure");
+    expect(mixedCasualBoundsMigration).toContain("for update");
+    expect(mixedCasualBoundsMigration).toMatch(/revoke all on function public\.spogomi_update_event_metadata[\s\S]+grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
+    expect(mixedCasualBoundsMigration).not.toContain("20261108000001");
   });
 
   it("keeps public team-name edits canonical, audited and outside composition revisions", () => {

@@ -41,6 +41,36 @@ describe("SPOGOMI event metadata updates", () => {
     }));
   });
 
+  it.each([0, -1, 1.5])("rejects an invalid Casual size %s before the RPC", async (casualTeamSize) => {
+    const rpc = vi.fn();
+    const supabase = { rpc } as unknown as Parameters<typeof updateSpogomiEvent>[0]["supabase"];
+
+    await expect(updateSpogomiEvent({
+      supabase,
+      event: spogomiPreparationEvent({ mode: "mixed" }),
+      actorClerkId: "organizer-1",
+      input: { casualTeamSize },
+    })).rejects.toThrow(/entier positif|positive integer/i);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it.each([1, null])("accepts a valid or explicitly unconfigured Casual size %s", async (casualTeamSize) => {
+    const rpc = vi.fn().mockResolvedValue({ data: spogomiPreparationEvent({ mode: "mixed" }), error: null });
+    const supabase = { rpc } as unknown as Parameters<typeof updateSpogomiEvent>[0]["supabase"];
+
+    await updateSpogomiEvent({
+      supabase,
+      event: spogomiPreparationEvent({ mode: "mixed" }),
+      actorClerkId: "organizer-1",
+      input: { casualTeamSize },
+    });
+
+    expect(rpc).toHaveBeenCalledWith("spogomi_update_event_metadata", expect.objectContaining({
+      p_mode: "mixed",
+      p_team_size_config: { casual: { minMembers: casualTeamSize, maxMembers: casualTeamSize } },
+    }));
+  });
+
   it("preserves an existing mixed mode when updating only publication metadata", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: spogomiPreparationEvent({ mode: "mixed", public_visibility: "published" }), error: null });
     const supabase = { rpc } as unknown as Parameters<typeof updateSpogomiEvent>[0]["supabase"];
