@@ -212,6 +212,11 @@ test("DEPLOY adds dependency, migration and smoke controls only for the affected
     .every((check) => check.dependencies.includes("deploy-candidate")));
 });
 
+test("DEPLOY does not audit dependencies for a scripts-only package manifest change", () => {
+  const plan = createModeValidationPlan({ mode: "DEPLOY", changedFiles: ["package.json"] });
+  assert.equal(ids(plan).includes("dependency-audit"), false);
+});
+
 test("DEPLOY with no exploitable Web diff plans only the provenance gate", () => {
   const plan = createModeValidationPlan({ mode: "DEPLOY", changedFiles: [] });
   assert.deepEqual(ids(plan), ["diff-check", "file-naming", "deploy-candidate"]);

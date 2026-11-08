@@ -803,7 +803,7 @@ function addDeployModeChecks({ checks, files, domains, candidateSha, baseRef }) 
     estimatedSeconds: 15,
     command: npmCommand("vercel:deploy:preflight"),
   });
-  if (domains.dependencyGraphRelevant || files.some(isDependencyAuditRelevantFile)) {
+  if (domains.lockfileRelevant || files.some(isDependencyAuditRelevantFile)) {
     addDeployCheck(checks, {
       id: "dependency-audit",
       label: "Audit des dépendances npm",
