@@ -188,7 +188,10 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       await expect(page.getByLabel("Heure de rendez-vous")).toBeVisible();
       await expect(page.getByLabel("Heure de départ")).toBeVisible();
       await expect(page.getByLabel("Durée estimée")).toBeVisible();
-      await expect(page.getByText("Durée non renseignée", { exact: true })).toBeVisible();
+      await expect(page.getByRole("slider", { name: "Durée estimée" })).toHaveAttribute(
+        "aria-valuetext",
+        "Durée non renseignée",
+      );
       await expect(page.getByText("Accueil des bénévoles au point de rendez-vous.", { exact: true })).toBeVisible();
       await expect(page.getByText("Départ effectif après le rendez-vous.", { exact: true })).toBeVisible();
       await expect(page.getByLabel("Commune ou secteur")).toBeVisible();

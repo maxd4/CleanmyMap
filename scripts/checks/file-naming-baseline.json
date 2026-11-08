@@ -15,7 +15,6 @@
     { "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "historical component filename retained without mass rename" },
     { "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "legacy PascalCase component retained for import compatibility" },
     { "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepReview.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "historical component filename retained without mass rename" },
-    { "path": "apps/web/src/components/actions/action-declaration/ui/VolumeSliderWidget.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "historical component filename retained without mass rename" },
     { "path": "apps/web/src/components/gamification/GamificationCelebrationHost.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "historical component filename retained without mass rename" },
     { "path": "apps/web/src/components/gamification/GamificationToast.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "historical component filename retained without mass rename" },
     { "path": "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx", "rule": "ts-tsx-kebab-case", "observedStyle": "PascalCase", "reason": "historical component filename retained without mass rename" },

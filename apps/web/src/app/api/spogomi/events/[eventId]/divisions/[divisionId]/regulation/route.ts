@@ -6,6 +6,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { divisionRegulationInputSchema, updateSpogomiDivisionRegulation } from "@/lib/spogomi/division-regulation-service";
 
 export const runtime = "nodejs";
+// Vercel audit: this authenticated event/division mutation must remain dynamic
+// so Clerk/AuthZ and the current regulation revision are evaluated per request.
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request, context: { params: Promise<{ eventId: string; divisionId: string }> }) {

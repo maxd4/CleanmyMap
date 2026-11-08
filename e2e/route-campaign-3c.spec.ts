@@ -142,7 +142,8 @@ async function openRoute(page: Page): Promise<void> {
   const response = await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
   expect(response?.status()).toBe(200);
   await dismissCookies(page);
-  await expect(page.locator("#route").getByRole("heading", { name: "Où agir", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/actions\/new\?panel=itineraire$/);
+  await expect(page.getByRole("heading", { name: "Organiser une action", exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Calculer la recommandation" }).or(
       page.getByRole("link", { name: "Se connecter pour calculer" }),

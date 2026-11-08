@@ -166,8 +166,8 @@
       "fingerprint": "cccddf216ecce787",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les deux formatages de date partagent l’amorce de normalisation, mais l’un sert l’affichage principal et l’autre la recherche avec une précision de jour différente.",
-      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.format.ts:1-8 et apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.utils.ts:92-99 ; les contrats d’affichage et de recherche ne sont pas identiques.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.format.ts:1-8 et apps/web/src/components/sections/rubriques/rejoindre-une-action/rejoindre-un-formulaire-section.utils.ts:92-99 ; les contrats d’affichage et de recherche ne sont pas identiques.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "runtime",
@@ -517,17 +517,17 @@
       "scope": "tests",
       "fingerprint": "99032d3e8d80906a",
       "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT lib/actions/participation/group-participation.test.ts:94-99 et lib/gamification/progression-data.complete-actions.test.ts:35-39 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "lib/actions/participation/group-participation.test.ts:94-99 et lib/gamification/progression-data.complete-actions.test.ts:35-39 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reason": "Les occurrences CURRENT lib/actions/participation/group-participation.test.ts:118-123 et lib/gamification/progression/progression-data.complete-actions.test.ts:35-39 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:118-123 et apps/web/src/lib/gamification/progression/progression-data.complete-actions.test.ts:35-39 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
       "fingerprint": "dbf62631dbfc6fe9",
       "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT lib/actions/participation/organizers.test.ts:30-37 et lib/gamification/progression-data.organizers.test.ts:66-72 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "lib/actions/participation/organizers.test.ts:30-37 et lib/gamification/progression-data.organizers.test.ts:66-72 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "reason": "Les occurrences CURRENT lib/actions/participation/organizers.test.ts:33-40 et lib/gamification/progression/progression-data.organizers.test.ts:66-72 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
+      "evidence": "apps/web/src/lib/actions/participation/organizers.test.ts:33-40 et apps/web/src/lib/gamification/progression/progression-data.organizers.test.ts:66-72 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
@@ -1486,8 +1486,8 @@
       "fingerprint": "f9e8b1b0978230da",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT lib/gamification/action-balance.test.ts:72-97 ; symboles: awards, completed, cycles, resets et lib/gamification/action-balance.test.ts:144-169 ; symboles: ignores, rejected, unvalidated, rows restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/gamification/action-balance.test.ts:72-97 et lib/gamification/action-balance.test.ts:144-169 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/gamification/progression/action-balance.test.ts:72-97 et apps/web/src/lib/gamification/progression/action-balance.test.ts:144-169 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
@@ -1518,16 +1518,16 @@
       "fingerprint": "a7ab33b35a76ec06",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les occurrences CURRENT lib/gamification/progression-data.action-validation.test.ts:153-167 et lib/gamification/progression-data.complete-actions.test.ts:44-58 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "lib/gamification/progression-data.action-validation.test.ts:153-167 et lib/gamification/progression-data.complete-actions.test.ts:44-58 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/gamification/progression/progression-data.action-validation.test.ts:153-167 et apps/web/src/lib/gamification/progression/progression-data.complete-actions.test.ts:44-58 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
       "fingerprint": "bd85a798c325a680",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT lib/gamification/progression-data.action-validation.test.ts:200-211 ; symboles: createActionsQuery, VALIDATION_ACTIONS, table, action_organizers et lib/gamification/progression-data.action-validation.test.ts:229-240 ; symboles: throw, table, should, queried restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "lib/gamification/progression-data.action-validation.test.ts:200-211 et lib/gamification/progression-data.action-validation.test.ts:229-240 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/gamification/progression/progression-data.action-validation.test.ts:200-211 et apps/web/src/lib/gamification/progression/progression-data.action-validation.test.ts:229-240 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
@@ -1931,22 +1931,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "09d1875fc16fbbe2",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les imports de contrats UI mobile sont identiques par nature, mais les suites restent les preuves indépendantes de deux écrans et ne partagent pas d'assertion métier.",
-      "evidence": "tests/emergency-contact-ui-contract.test.ts:1-7 et tests/mobile-navigation-ui-contract.test.ts:1-7 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "4eb4135b3bab9401",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux tests de restauration utilisent un setup de données voisin pour des garanties distinctes de finalisation et de reprise ; un harness partagé masquerait la preuve de chaque scénario.",
-      "evidence": "tests/mission-finalization.test.ts:38-43 et tests/mission-track-restoration.test.ts:16-21 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "31fdf8c6d9ae10a5",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les deux assertions du test de stockage couvrent des opérations différentes et doivent rester autonomes pour diagnostiquer chaque contrat.",
@@ -1975,14 +1959,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les tests mobile d'action par identifiant et de collection réutilisent le minimum de mock réseau nécessaire à deux handlers différents ; leurs preuves restent indépendantes.",
       "evidence": "apps/web/src/app/api/mobile/actions/[actionId]/route.test.ts:12-18 et apps/web/src/app/api/mobile/actions/route.test.ts:13-19 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "5ef72fa94fe747e1",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Le setup de réponse mobile est textuellement proche entre deux endpoints mais les contrats de collection et de détail sont distincts.",
-      "evidence": "apps/web/src/app/api/mobile/actions/[actionId]/route.test.ts:21-26 et apps/web/src/app/api/mobile/actions/route.test.ts:22-27 ; pair CURRENT relu.",
       "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
     },
     {
@@ -2046,32 +2022,32 @@
       "fingerprint": "4a970d973f79eab4",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les deux cas d'import testent des lignes candidates différentes ; conserver les assertions locales évite de confondre les règles de mapping.",
-      "evidence": "lib/spogomi/preparation-service.import.test.ts:342-348 et lib/spogomi/preparation-service.import.test.ts:356-362 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/spogomi/preparation/preparation-service.import.test.ts:342-348 et apps/web/src/lib/spogomi/preparation/preparation-service.import.test.ts:356-362 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
       "fingerprint": "10b8313ec6ef1f00",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les deux cas de mise à jour testent des transitions différentes du service de préparation ; le setup répété rend chaque invariant observable.",
-      "evidence": "lib/spogomi/preparation-service.update.test.ts:10-17 et lib/spogomi/preparation-service.update.test.ts:29-36 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/spogomi/preparation/preparation-service.update.test.ts:10-17 et apps/web/src/lib/spogomi/preparation/preparation-service.update.test.ts:29-36 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
       "fingerprint": "296cbdb40858b25b",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les fixtures de préparation couvrent deux politiques de composition ; leur répétition est une preuve indépendante des sorties attendues.",
-      "evidence": "lib/spogomi/preparation.test.ts:50-55 et lib/spogomi/preparation.test.ts:66-71 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/spogomi/preparation/preparation.test.ts:55-60 et apps/web/src/lib/spogomi/preparation/preparation.test.ts:71-76 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
       "fingerprint": "0bfd0ba9069f712b",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les projections de résultats testées correspondent à deux formes de classement et gardent leurs cas indépendants pour éviter un faux partage de fixture.",
-      "evidence": "lib/spogomi/results-projection.test.ts:76-82 et lib/spogomi/results-projection.test.ts:114-120 ; pair CURRENT relu.",
-      "reviewedRef": "4114b2d0313f9986825b0f00a8c8db24f272b5dc"
+      "evidence": "apps/web/src/lib/spogomi/results/results-projection.test.ts:246-252 et apps/web/src/lib/spogomi/results/results-projection.test.ts:284-290 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "tests",
@@ -2119,14 +2095,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les assertions de form.test restent attachées à des cas de parcours différents malgré une fixture de base similaire ; l'autonomie de diagnostic est intentionnelle.",
       "evidence": "components/actions/action-declaration/before/form.test.ts:125-136 et components/actions/action-declaration/before/form.test.ts:312-323 ; pair CURRENT relu.",
-      "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "8791cd83685635e4",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les cas de récupération before et de soumission active ont des contrats de reprise indépendants ; la répétition est nécessaire pour expliciter chaque owner.",
-      "evidence": "components/actions/action-declaration/before/use-before-action-recovery.test.tsx:15-21 et components/actions/action-declaration/hooks/use-action-declaration-submission.recovery.test.tsx:10-16 ; pair CURRENT relu.",
       "reviewedRef": "e89031d916ea01632dff387621847844c04a1f9a"
     },
     {
@@ -2550,16 +2518,16 @@
       "fingerprint": "06c6991eb1c5fe07",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les candidats de progression par type et par équilibre partagent une forme RPC mais portent des métriques, seuils, source tables et métadonnées de récompense distincts.",
-      "evidence": "lib/gamification/quiz-balance-progress.ts:57-69 et lib/gamification/quiz-progress.ts:68-80 ; pair CURRENT relu.",
-      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+      "evidence": "apps/web/src/lib/gamification/progression/quiz-balance-progress.ts:57-69 et apps/web/src/lib/gamification/progression/quiz-progress.ts:68-80 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "runtime",
       "fingerprint": "29b89dafdd135612",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les notifications de jalons par type et d’équilibre ont des événements, messages, icônes et clés de déduplication différents ; une extraction masquerait leurs contrats événementiels.",
-      "evidence": "lib/gamification/quiz-progress.ts:168-173 et lib/gamification/quiz-progress.ts:192-197 ; pair CURRENT relu.",
-      "reviewedRef": "c78d308848570f0b71cf627f1fffcc463436453d"
+      "evidence": "apps/web/src/lib/gamification/progression/quiz-progress.ts:168-173 et apps/web/src/lib/gamification/progression/quiz-progress.ts:192-197 ; pair CURRENT relu.",
+      "reviewedRef": "bbcba8ac831a3aadd2c92caf9e671a1e654afac0"
     },
     {
       "scope": "runtime",

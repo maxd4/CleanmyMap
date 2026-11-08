@@ -143,6 +143,13 @@
       "reviewedAt": "2026-10-15"
     },
     {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/divisions/[divisionId]/regulation/route.ts",
+      "introducedBy": "ff9a08173d4eeee5a39cb78903b9fc5dcefbe074",
+      "reason": "Mutation authentifiée de la configuration d'une division SPOGOMI, avec validation stricte, contrôle de révision et cohérence atomique du règlement et des catégories.",
+      "costContract": "PATCH borné par l'événement, la division et l'identité Clerk ; AuthZ organisateur, validation Zod et RPC service_role revalident la capacité, la révision et la protection des soumissions. La réponse reste privée et aucune configuration n'est présentée comme officielle.",
+      "reviewedAt": "2026-11-08"
+    },
+    {
       "route": "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/route.ts",
       "introducedBy": "2233f7b82e02bc5d211f7a6dbab229d11f073ede",
       "reason": "Cockpit serveur des opérations terrain SPOGOMI : phases, retours d'équipes, incidents, décisions et mesures restent séparés par événement et division, avec capacités opérationnelles vérifiées côté serveur.",
@@ -609,6 +616,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/closure/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/contributions/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/divisions/[divisionId]/regulation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/export.xlsx/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/import/confirm/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/import/preview/route.ts",

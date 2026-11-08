@@ -112,7 +112,7 @@ describe("form labels reported by Sonar S6853", () => {
       gpsStatus: "idle",
       gpsMessage: null,
       onAutofillGps: () => undefined,
-      mode: "details",
+      mode: "all",
     };
     const document = renderDom(renderToStaticMarkup(<ActionLocationInputs {...props} />));
     const loop = expectNamedControl(document, "#route-topology-loop", "Boucle").control as HTMLInputElement;
