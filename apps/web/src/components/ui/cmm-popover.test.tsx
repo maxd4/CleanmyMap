@@ -33,7 +33,7 @@ describe("CmmPopover", () => {
 
   it("delegates placement, dismissal and focus restoration to CmmDropdown", () => {
     expect(popoverSource).toContain("<CmmDropdown");
-    expect(popoverSource).toContain("openOnHover={false}");
+    expect(popoverSource).toContain("openOnHover={openOnHover}");
     expect(dropdownSource).toContain("useDropdownPlacement");
     expect(dropdownSource).toContain("onClick");
     expect(dropdownSource).toContain('event.key === "Enter"');
@@ -44,8 +44,9 @@ describe("CmmPopover", () => {
     expect(dropdownSource).toContain("triggerRef.current?.focus()");
   });
 
-  it("does not open from hover", () => {
-    expect(popoverSource).toContain("openOnHover={false}");
+  it("keeps hover opt-in for callers that need contextual help", () => {
+    expect(popoverSource).toContain("openOnHover = false");
+    expect(popoverSource).toContain("openOnHover={openOnHover}");
     expect(dropdownSource).toContain("openOnHover = true");
     expect(dropdownSource).toContain("openOnHover && canHover");
   });

@@ -170,7 +170,7 @@ export function CmmDropdown({
   }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, isOpen, setOpen]);
 
   useEffect(() => {
-    if (!openOnHover) {
+    if (!openOnHover || typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
 

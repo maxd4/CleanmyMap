@@ -2,6 +2,7 @@
 
 import { useId, useState, type KeyboardEvent } from "react";
 import {
+  ArrowRight,
   BadgeCheck,
   CalendarPlus,
   ClipboardCheck,
@@ -22,6 +23,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmIcon } from "@/components/ui/cmm-icon";
 import { buildSpogomiCatalogHref } from "@/lib/spogomi/navigation-intent";
 import { cn } from "@/lib/utils";
+import { SpogomiActionInfo } from "./spogomi-action-info";
 
 type OrientationId = "volunteers" | "referees" | "organizers";
 
@@ -60,6 +62,82 @@ function publicAction(label: string, description: string, accessCondition: strin
   return { label, description, accessCondition, ctaLabel, icon, href, requiresAuthentication: false };
 }
 
+function actionDestination(href: string): string {
+  if (href === "#spogomi-events") return "Le catalogue public des compétitions, puis la fiche de l’édition.";
+  if (href.includes("#spogomi-registration")) return "La fiche publique de l’édition, dans la section Inscription.";
+  if (href.includes("#spogomi-team")) return "La fiche publique de l’édition, dans la section Équipe.";
+  if (href.includes("#spogomi-identity")) return "La fiche publique de l’édition, dans la section de rattachement.";
+  if (href.includes("#spogomi-assistance")) return "La page d’assistance contextualisée de l’édition.";
+  if (href.includes("#spogomi-results")) return "La fiche publique de l’édition, lorsque ses résultats sont visibles.";
+  if (href.includes("#spogomi-contributions")) return "La fiche publique de l’édition, dans la surface des contributions.";
+  if (href.includes("#spogomi-attestations")) return "La fiche publique de l’édition, puis la section personnelle.";
+  if (href.startsWith("/sections/messagerie")) return "Le salon communautaire SPOGOMI.";
+  if (href === "/spogomi/nouveau") return "Le formulaire de création d’une édition SPOGOMI.";
+  if (href.startsWith("/spogomi/mes-evenements")) return "Le catalogue privé SPOGOMI, puis la section autorisée de l’édition.";
+  return "Le parcours SPOGOMI correspondant, après les contrôles serveur.";
+}
+
+function actionLimitation(action: Pick<OrientationAction, "label" | "requiresAuthentication">): string {
+  if (action.label === "Rejoindre une équipe") return "La demande ne crée ni équipe ni participant et ne révèle pas le roster.";
+  if (action.label === "Rattacher mon compte par code") return "Le code doit être remis par l’organisation ; aucune recherche nominative ne le remplace.";
+  if (action.label === "Demander de l’assistance") return "Aucune demande n’est envoyée sans invitation ou lien privé contextualisé.";
+  if (action.label === "Voir les résultats") return "Les résultats non publiés et les données privées restent masqués.";
+  if (action.label === "Mes contributions") return "Une présence ou une demande seule ne crée pas de crédit individuel.";
+  if (action.label === "Télécharger mes attestations") return "Une présence ou une demande seule ne suffit pas pour émettre une attestation.";
+  if (action.label === "Publier l’événement") return "Cette action ne publie pas les résultats et ne certifie aucune donnée.";
+  if (action.label === "Publier les résultats") return "Cette action ne certifie pas les résultats ; elle intervient après les contrôles requis.";
+  if (action.label === "Consolider le bilan") return "La consolidation ne modifie pas les classements sportifs ni les mesures sources.";
+  if (action.label === "Exporter les résultats") return "L’export reste privé et ne rend pas les données du roster publiques.";
+  if (action.requiresAuthentication) return "Le lien ne préaccorde aucune habilitation ; le serveur filtre les éditions et capacités réellement autorisées.";
+  return "Cette action n’accorde aucun droit supplémentaire et reste soumise aux contrôles du parcours concerné.";
+}
+
+export function buildSpogomiActionInfo(action: Pick<OrientationAction, "description" | "href" | "accessCondition" | "label" | "requiresAuthentication">) {
+  return {
+    purpose: action.description,
+    where: actionDestination(action.href),
+    access: action.accessCondition,
+    limitation: actionLimitation(action),
+  };
+}
+
+function ActionInfoContent({ action }: { action: OrientationAction }) {
+  return (
+    <div className="space-y-3 text-sm leading-6">
+      <div>
+        <p className="font-black text-slate-950">Ce que permet cette action</p>
+        <p>{buildSpogomiActionInfo(action).purpose}</p>
+      </div>
+      <p><span className="font-black text-slate-950">Où :</span> {buildSpogomiActionInfo(action).where}</p>
+      <p><span className="font-black text-slate-950">Accès :</span> {buildSpogomiActionInfo(action).access}</p>
+      <p><span className="font-black text-slate-950">Limite :</span> {buildSpogomiActionInfo(action).limitation}</p>
+    </div>
+  );
+}
+
+function ActionTitle({ action, href, infoId, heading: Heading, size }: { action: OrientationAction; href: string; infoId: string; heading: "h4" | "h5"; size: "md" | "lg" }) {
+  return (
+    <div className="flex items-start gap-2">
+      <Heading className="min-w-0 flex-1">
+        <CmmButton
+          href={href}
+          ariaLabel={action.label}
+          tone="secondary"
+          variant="ghost"
+          size={size}
+          className="min-w-0 w-full justify-start whitespace-normal px-0 text-left font-black text-emerald-950 hover:text-emerald-800"
+        >
+          {action.label}
+          <ArrowRight size={16} aria-hidden="true" />
+        </CmmButton>
+      </Heading>
+      <SpogomiActionInfo id={infoId} label={action.label}>
+        <ActionInfoContent action={action} />
+      </SpogomiActionInfo>
+    </div>
+  );
+}
+
 function buildOrientations(): Orientation[] {
   return [
     {
@@ -72,10 +150,10 @@ function buildOrientations(): Orientation[] {
           title: "Avant la compétition",
           description: "Trouver une édition, préparer son inscription et sécuriser son rattachement.",
           actions: [
-            publicAction("S’inscrire", "Choisir une compétition publiée puis utiliser sa demande d’inscription si le règlement l’autorise.", "Compétition publiée et inscriptions autorisées ; connexion requise pour envoyer la demande.", ClipboardCheck, "/spogomi#spogomi-registration"),
-            publicAction("Rejoindre une équipe", "Depuis une fiche publique, demander une équipe ou utiliser l’invitation remise par l’organisation.", "Compétition publiée et inscription autorisée ; code individuel ou invitation selon le parcours.", Users, "/spogomi#spogomi-team"),
-            publicAction("Rattacher mon compte par code", "Saisir sur la fiche publiée le code individuel remis directement par l’organisation.", "Code individuel nécessaire ; l’identité est vérifiée par le serveur.", KeyRound, "/spogomi#spogomi-identity"),
-            publicAction("Demander de l’assistance", "Obtenir d’abord le lien privé contextualisé remis par l’organisation ; aucune demande n’est envoyée sans lui.", "Invitation ou lien privé nécessaire ; aucune relation n’est accordée par cette page.", HandHelping, "/spogomi#spogomi-assistance"),
+            publicAction("S’inscrire", "Ouvrez une compétition publiée ci-dessus puis utilisez sa demande d’inscription lorsque l’état, la division et le règlement l’autorisent. Les éditions privées ne sont jamais énumérées ici.", "Compétition publiée et inscriptions autorisées ; connexion requise pour envoyer la demande.", ClipboardCheck, "/spogomi#spogomi-registration"),
+            publicAction("Rejoindre une équipe", "Depuis la fiche publique, demandez à rejoindre une équipe ou utilisez l’invitation remise par l’organisation. Cette demande ne crée ni équipe ni participant et ne révèle pas le roster.", "Compétition publiée et inscription autorisée ; code individuel ou invitation selon le parcours.", Users, "/spogomi#spogomi-team"),
+            publicAction("Rattacher mon compte par code", "Le code individuel est remis directement par l’organisation et se saisit sur la fiche de l’édition. Il ne doit pas être deviné, partagé ou remplacé par une recherche nominative.", "Code individuel nécessaire ; l’identité est vérifiée par le serveur.", KeyRound, "/spogomi#spogomi-identity"),
+            publicAction("Demander de l’assistance", "Si le code est perdu, demandez à l’organisation un lien privé contextualisé contenant l’événement et l’invitation. Cette page générale n’envoie aucune demande sans ce contexte.", "Invitation ou lien privé nécessaire ; aucune relation n’est accordée par cette page.", HandHelping, "/spogomi#spogomi-assistance"),
             publicAction("Discuter", "Rejoindre le salon communautaire SPOGOMI.", "Connexion requise pour participer au salon.", Send, PUBLIC_DISCUSSIONS_HREF),
           ],
         },
@@ -90,9 +168,9 @@ function buildOrientations(): Orientation[] {
           title: "Après la compétition",
           description: "Consulter les résultats et les preuves personnelles lorsqu’elles sont effectivement publiées ou certifiées.",
           actions: [
-            publicAction("Voir les résultats", "Ouvrir une fiche publique lorsque ses résultats ont été rendus visibles.", "Résultats publiés requis ; aucune donnée privée n’est déduite.", Trophy, "/spogomi#spogomi-results"),
-            publicAction("Mes contributions", "Consulter les missions enregistrées et certifiées depuis la surface de l’édition.", "Connexion requise ; mission certifiée ou relation personnelle vérifiée.", BadgeCheck, "/spogomi#spogomi-contributions"),
-            publicAction("Télécharger mes attestations", "Télécharger une attestation depuis la section personnelle après certification.", "Connexion requise ; mission certifiée et attestation disponible.", Download, "/spogomi#spogomi-attestations"),
+            publicAction("Voir les résultats", "Les résultats sont consultables depuis la fiche d’une compétition publiée, uniquement lorsque l’organisateur les a rendus visibles.", "Résultats publiés requis ; aucune donnée privée n’est déduite.", Trophy, "/spogomi#spogomi-results"),
+            publicAction("Mes contributions", "Les missions enregistrées et certifiées se consultent depuis la fiche publiée lorsque cette surface est disponible, après connexion au compte concerné.", "Connexion requise ; mission certifiée ou relation personnelle vérifiée.", BadgeCheck, "/spogomi#spogomi-contributions"),
+            publicAction("Télécharger mes attestations", "Télécharger une attestation depuis la section personnelle après certification. Une présence ou une demande seule ne suffit pas.", "Connexion requise ; mission certifiée et attestation disponible.", Download, "/spogomi#spogomi-attestations"),
           ],
         },
       ],
@@ -242,29 +320,21 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                   {orientation.id === "referees" ? <ShieldCheck className="h-7 w-7 shrink-0 text-emerald-700" aria-hidden="true" /> : null}
                 </div>
 
-                <CmmCard tone="emerald" variant="default" className="flex flex-col gap-4 border-emerald-300 bg-emerald-50/80 p-5 md:flex-row md:items-center md:justify-between">
+                <CmmCard tone="emerald" variant="default" className="border-emerald-300 bg-emerald-50/80 p-5">
                   <div className="flex min-w-0 items-start gap-3">
                     <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white">
                       <CmmIcon icon={orientation.primaryAction.icon} size="lg" />
                     </span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-800">Action principale</p>
-                      <h4 className="mt-1 text-lg font-black text-emerald-950">{orientation.primaryAction.label}</h4>
-                      <p className="cmm-text-body mt-1 text-slate-900">{orientation.primaryAction.description}</p>
-                      <p className="mt-2 text-sm font-bold text-emerald-950">Accès : {orientation.primaryAction.accessCondition}</p>
+                      <ActionTitle action={orientation.primaryAction} href={actionHref(orientation.primaryAction)} infoId={`${baseId}-info-${orientation.id}-primary`} heading="h4" size="lg" />
                     </div>
                   </div>
-                  <CmmButton href={actionHref(orientation.primaryAction)} ariaLabel={orientation.primaryAction.ctaLabel} tone="primary" size="lg" className="w-full shrink-0 md:w-auto">{orientation.primaryAction.ctaLabel}</CmmButton>
                 </CmmCard>
 
                 {orientation.secondaryAction ? (
-                  <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 p-4">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-black text-slate-950">{orientation.secondaryAction.label}</h4>
-                      <p className="cmm-text-body mt-1 text-slate-800">{orientation.secondaryAction.description}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">Accès : {orientation.secondaryAction.accessCondition}</p>
-                    </div>
-                    <CmmButton href={actionHref(orientation.secondaryAction)} ariaLabel={orientation.secondaryAction.ctaLabel} tone="secondary" size="md" className="shrink-0">{orientation.secondaryAction.ctaLabel}</CmmButton>
+                  <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+                    <ActionTitle action={orientation.secondaryAction} href={actionHref(orientation.secondaryAction)} infoId={`${baseId}-info-${orientation.id}-secondary`} heading="h4" size="md" />
                   </div>
                 ) : null}
 
@@ -282,17 +352,14 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                             </div>
                           </div>
                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            {phase.actions.map((action) => (
+                            {phase.actions.map((action, actionIndex) => (
                               <CmmCard key={action.label} as="article" tone="slate" variant="outlined" className="flex h-full flex-col gap-3 p-4">
                                 <div className="flex min-w-0 items-start gap-3">
                                   <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><CmmIcon icon={action.icon} /></span>
-                                  <div className="min-w-0">
-                                    <h5 className="font-black text-slate-950">{action.label}</h5>
-                                    <p className="mt-1 text-sm leading-6 text-slate-800">{action.description}</p>
-                                    <p className="mt-2 text-xs font-bold leading-5 text-emerald-900">Accès : {action.accessCondition}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <ActionTitle action={action} href={actionHref(action)} infoId={`${baseId}-info-${orientation.id}-${phaseIndex}-${actionIndex}`} heading="h5" size="md" />
                                   </div>
                                 </div>
-                                <CmmButton href={actionHref(action)} ariaLabel={action.ctaLabel} tone="secondary" variant="ghost" size="sm" className="mt-auto self-start">{action.ctaLabel}</CmmButton>
                               </CmmCard>
                             ))}
                           </div>
@@ -302,7 +369,6 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                   })}
                 </div>
 
-                <p className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm font-semibold leading-6 text-emerald-950">Les entrées privées conservent votre intention après connexion, puis le catalogue ne propose que les éditions et sections réellement autorisées par le serveur.</p>
               </CmmCard>
             </div>
           );

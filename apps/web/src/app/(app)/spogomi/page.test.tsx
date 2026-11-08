@@ -49,6 +49,9 @@ describe("/spogomi public and private navigation", () => {
     expect(markup).not.toContain("Mes événements SPOGOMI");
     expect(markup).toContain("Aucune compétition SPOGOMI publiée");
     expect(markup).toContain('href="#spogomi-events"');
+    expect(markup).toContain('id="spogomi-registration"');
+    expect(markup).toContain('id="spogomi-attestations"');
+    expect(markup).not.toContain("Accéder aux actions bénévoles");
     expect(markup).toContain('href="/sections/messagerie?tab=discussions&amp;channel=community&amp;topicId=spogomi"');
     expect(markup).toContain("understanding.title");
     expect(markup).toContain("international.casualTitle");

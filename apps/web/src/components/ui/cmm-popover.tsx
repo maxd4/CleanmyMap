@@ -26,6 +26,7 @@ export interface CmmPopoverProps {
   panelAlignment?: "center" | "start";
   wrapperClassName?: string;
   verticalGap?: number;
+  openOnHover?: boolean;
 }
 
 /**
@@ -45,6 +46,7 @@ export function CmmPopover({
   panelAlignment = "center",
   wrapperClassName,
   verticalGap,
+  openOnHover = false,
 }: CmmPopoverProps) {
   return (
     <CmmDropdown
@@ -61,7 +63,7 @@ export function CmmPopover({
       panelAlignment={panelAlignment}
       wrapperClassName={wrapperClassName}
       verticalGap={verticalGap}
-      openOnHover={false}
+      openOnHover={openOnHover}
     >
       {children}
     </CmmDropdown>
