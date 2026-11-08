@@ -1,6 +1,6 @@
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import type { MouseEvent } from "react";
-import { describe, expect, it } from "vitest";
+import type { KeyboardEvent, MouseEvent } from "react";
+import { describe, expect, it, vi } from "vitest";
 
 import { SpogomiOrientationTabs } from "./spogomi-orientation-tabs";
 
@@ -15,7 +15,7 @@ function links(renderer: ReactTestRenderer) {
 }
 
 describe("SpogomiOrientationTabs", () => {
-  it("renders all volunteer actions publicly and keeps the private catalog intent", () => {
+  it("renders the volunteer entry point, three phases and private catalog intent", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
       renderer = create(<SpogomiOrientationTabs isAuthenticated={false} />);
@@ -27,8 +27,14 @@ describe("SpogomiOrientationTabs", () => {
       "Arbitres & modération",
       "Organisateurs",
     ]);
-    expect(renderer.root.findAllByProps({ role: "tabpanel" })[0]?.findAllByType("article")).toHaveLength(10);
-    expect(links(renderer).some((link) => link.props.href === "#spogomi-events")).toBe(true);
+    const volunteerPanel = renderer.root.findAllByProps({ role: "tabpanel" })[0];
+    expect(volunteerPanel?.findAllByType("h4").map((heading) => heading.props.children)).toEqual([
+      "Voir les compétitions",
+      "Avant la compétition",
+      "Pendant la compétition",
+      "Après la compétition",
+    ]);
+    expect(links(renderer).some((link) => link.props.href === "#spogomi-events" && link.props.children === "Voir les compétitions")).toBe(true);
     for (const panel of renderer.root.findAllByProps({ role: "tabpanel" })) {
       expect(panel.props.id).toBeTruthy();
       expect(panel.props["aria-labelledby"]).toBeTruthy();
@@ -40,6 +46,8 @@ describe("SpogomiOrientationTabs", () => {
     expect(links(renderer).some((link) => link.props.href === "/spogomi#spogomi-registration")).toBe(true);
     expect(links(renderer).some((link) => link.props.href === "/spogomi#spogomi-assistance")).toBe(true);
     expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dvolunteers")).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Compétition publiée et inscriptions autorisées");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain(">Ouvrir<");
   });
 
   it("exposes referee actions before authentication without granting a global access", () => {
@@ -54,7 +62,10 @@ describe("SpogomiOrientationTabs", () => {
     });
 
     expect(renderer.root.findAllByType("h3").map((node) => node.props.children)).toContain("Arbitres & modération");
-    expect(renderer.root.findAllByType("p").some((node) => node.props.children === "Événements habilités")).toBe(true);
+    expect(renderer.root.findAllByType("h4").some((node) => node.props.children === "Mes événements habilités")).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Mes événements habilités");
+    expect(JSON.stringify(renderer.toJSON())).toContain("habilitation checkin");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Avant l’épreuve");
     expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dreferees%26section%3Darbitration")).toBe(true);
     expect(links(renderer).some((link) => link.props.href === "/spogomi")).toBe(false);
   });
@@ -81,5 +92,31 @@ describe("SpogomiOrientationTabs", () => {
     });
     expect(links(authenticated).some((link) => link.props.href === "/spogomi/nouveau")).toBe(true);
     expect(links(authenticated).some((link) => link.props.href === "/spogomi/mes-evenements?parcours=organizers&section=teams")).toBe(true);
+    expect(JSON.stringify(authenticated.toJSON())).toContain("Mes compétitions");
+    expect(JSON.stringify(authenticated.toJSON())).toContain("Publier l’événement");
+    expect(JSON.stringify(authenticated.toJSON())).toContain("Publier les résultats");
+    expect(JSON.stringify(authenticated.toJSON())).toContain("Consolider le bilan");
+    expect(JSON.stringify(authenticated.toJSON())).toContain("relation organisateur vérifiée");
+  });
+
+  it("keeps keyboard tab navigation and panel relationships accessible", () => {
+    vi.stubGlobal("document", { getElementById: vi.fn().mockReturnValue({ focus: vi.fn() }) });
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<SpogomiOrientationTabs isAuthenticated={false} />);
+    });
+
+    const tabs = findTabs(renderer);
+    const preventDefault = vi.fn();
+    act(() => {
+      tabs[0]?.props.onKeyDown({ key: "End", preventDefault } as unknown as KeyboardEvent<HTMLButtonElement>);
+    });
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(findTabs(renderer).map((tab) => tab.props["aria-selected"])).toEqual([false, false, true]);
+    for (const tab of findTabs(renderer)) {
+      expect(renderer.root.findAllByProps({ id: tab.props["aria-controls"] })).toHaveLength(1);
+    }
+    vi.unstubAllGlobals();
   });
 });
