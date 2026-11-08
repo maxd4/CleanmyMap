@@ -98,15 +98,30 @@ function DemoScenarioStatusCard({ data, activeDivision, divisionLabel }: Pick<Pr
   const divisionCategories = data.categoryRules.filter((rule) => !divisionId || rule.division_id === divisionId);
   const divisionTeams = data.teams.filter((team) => !divisionId || team.division_id === divisionId);
   const divisionParticipants = data.participants.filter((participant) => !divisionId || participant.division_id === divisionId);
-  const regulationStatus = activeDivision?.regulation_status === "complete" ? "complet" : "incomplet — certification bloquée";
+  const unassignedParticipants = divisionParticipants.filter((participant) => !participant.team_id).length;
+  const ineligibleParticipants = divisionParticipants.filter((participant) => participant.composition_eligible === false).length;
+  const compositionLocked = divisionTeams.length > 0
+    && divisionTeams.every((team) => ["locked", "verified"].includes(team.composition_state))
+    && divisionParticipants.length > 0
+    && unassignedParticipants === 0
+    && ineligibleParticipants === 0;
+  const preparationStatus = compositionLocked
+    ? "composition verrouillée — préparation constatée"
+    : divisionTeams.length || divisionParticipants.length
+      ? `composition partielle — préparation non établie${unassignedParticipants ? ` (${unassignedParticipants} place(s) non affectée(s))` : ""}`
+      : "aucune composition persistée — préparation non établie";
+  const regulationStatus = activeDivision?.regulation_status === "complete"
+    ? "configuration persistée complète — certification à vérifier par la clôture"
+    : "configuration incomplète — certification non établie";
   const resultStatus = data.event.public_results_visibility === "certified"
-    ? "certifiés"
+    ? "politique : certifiés uniquement — aucune certification constatée ici"
     : data.event.public_results_visibility === "provisional"
-      ? "provisoires — non certifiés"
-      : "non publiés — résultats non certifiés";
-  const publicationStatus = data.event.public_visibility === "published" ? "édition publiée" : "bloquée — édition privée";
-  const preparationStatus = divisionParticipants.length && divisionTeams.length ? "préparée" : "à préparer";
-  return <SpogomiSyntheticDemoNotice><div className="space-y-3"><p className="font-bold">Division active : {divisionLabel}. Les deux divisions sont traitées indépendamment par le cockpit.</p><dl className="grid gap-2 sm:grid-cols-2"><div><dt className="font-bold">Catégories</dt><dd>{divisionCategories.length ? `${divisionCategories.length} catégorie(s) persistée(s)` : "à configurer"}</dd></div><div><dt className="font-bold">Équipes et saisies</dt><dd>{divisionTeams.length ? `${divisionTeams.length} équipe(s), ${divisionParticipants.length} place(s)` : "à préparer"}</dd></div><div><dt className="font-bold">Préparation</dt><dd>{preparationStatus}</dd></div><div><dt className="font-bold">Règlement</dt><dd>{regulationStatus}</dd></div><div><dt className="font-bold">Résultats</dt><dd>{resultStatus}</dd></div><div><dt className="font-bold">Publication</dt><dd>{publicationStatus}</dd></div></dl><p>Les décisions, corrections, certifications et publications restent soumises aux contrôles serveur de cette édition ; aucun état de cette simulation ne devient officiel par son affichage.</p></div></SpogomiSyntheticDemoNotice>;
+      ? "politique : provisoires autorisés — certification non établie"
+      : "politique : résultats masqués — certification non établie";
+  const publicationStatus = data.event.public_visibility === "published"
+    ? "configuration : édition publiée"
+    : "configuration : édition privée — aucun blocage métier déduit";
+  return <SpogomiSyntheticDemoNotice><div className="space-y-3"><p className="font-bold">Division active : {divisionLabel}. Les deux divisions sont traitées indépendamment par le cockpit.</p><dl className="grid gap-2 sm:grid-cols-2"><div><dt className="font-bold">Catégories</dt><dd>{divisionCategories.length ? `${divisionCategories.length} catégorie(s) persistée(s)` : "configuration non renseignée"}</dd></div><div><dt className="font-bold">Équipes et saisies</dt><dd>{divisionTeams.length ? `${divisionTeams.length} équipe(s), ${divisionParticipants.length} place(s)` : "aucune équipe persistée"}</dd></div><div><dt className="font-bold">Préparation constatée</dt><dd>{preparationStatus}</dd></div><div><dt className="font-bold">Règlement configuré</dt><dd>{regulationStatus}</dd></div><div><dt className="font-bold">Politique de résultats</dt><dd>{resultStatus}</dd></div><div><dt className="font-bold">Visibilité</dt><dd>{publicationStatus}</dd></div></dl><p>Les décisions de clôture, soumissions certifiées, classements et blocages métier sont établis par les contrats serveur correspondants ; cette carte n’en déduit aucun depuis une simple politique de visibilité.</p></div></SpogomiSyntheticDemoNotice>;
 }
 
 function SettingsSection({ data, eventId, section, busy, showAdminTeamJoinRequests, action, activeDivision, saveDivisionRegulation, compositionRevision }: Pick<Props, "data" | "eventId" | "section" | "busy" | "showAdminTeamJoinRequests" | "action" | "activeDivision" | "saveDivisionRegulation" | "compositionRevision">) {

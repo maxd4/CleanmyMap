@@ -41,6 +41,56 @@ describe("SPOGOMI event metadata updates", () => {
     }));
   });
 
+  it("preserves an existing mixed mode when updating only publication metadata", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: spogomiPreparationEvent({ mode: "mixed", public_visibility: "published" }), error: null });
+    const supabase = { rpc } as unknown as Parameters<typeof updateSpogomiEvent>[0]["supabase"];
+
+    await updateSpogomiEvent({
+      supabase,
+      event: spogomiPreparationEvent({ mode: "mixed", composition_revision: 12 }),
+      actorClerkId: "organizer-1",
+      input: { publicVisibility: "published" },
+    });
+
+    expect(rpc).toHaveBeenCalledWith("spogomi_update_event_metadata", expect.objectContaining({
+      p_expected_revision: 12,
+      p_mode: "mixed",
+      p_public_visibility: "published",
+      p_public_results_visibility: "hidden",
+    }));
+  });
+
+  it("keeps a server refusal when a non-mixed event tries to convert to mixed", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "23514", message: "Converting an existing SPOGOMI event to mixed is not allowed" },
+    });
+    const supabase = { rpc } as unknown as Parameters<typeof updateSpogomiEvent>[0]["supabase"];
+
+    await expect(updateSpogomiEvent({
+      supabase,
+      event: spogomiPreparationEvent({ mode: "casual", composition_revision: 12 }),
+      actorClerkId: "organizer-1",
+      input: { mode: "mixed" },
+    })).rejects.toThrow(/convertir.*mixed|converting.*mixed/i);
+  });
+
+  it("keeps stale revision refusal fail-closed without retrying or mutating locally", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "40001", message: "SPOGOMI event changed since the page was loaded" },
+    });
+    const supabase = { rpc } as unknown as Parameters<typeof updateSpogomiEvent>[0]["supabase"];
+
+    await expect(updateSpogomiEvent({
+      supabase,
+      event: spogomiPreparationEvent({ mode: "mixed", composition_revision: 12 }),
+      actorClerkId: "organizer-1",
+      input: { publicResultsVisibility: "provisional" },
+    })).rejects.toThrow(/changed since the page was loaded/i);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it("does not hide the server refusal for a locked-rule update", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: null,

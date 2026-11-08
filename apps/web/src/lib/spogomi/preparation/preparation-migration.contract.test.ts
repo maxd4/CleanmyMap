@@ -16,6 +16,7 @@ const teamPublicNameMigration = readFileSync(new URL("../../../../supabase/migra
 const preparationConcurrencyMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000009_spogomi_preparation_concurrency.sql", import.meta.url), "utf8");
 const postLockReconciliationMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000011_spogomi_ticket_reconciliation_post_lock_history.sql", import.meta.url), "utf8");
 const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000012_spogomi_team_public_name_uniqueness.sql", import.meta.url), "utf8");
+const mixedEventMetadataMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000001_spogomi_mixed_event_metadata_update.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -150,6 +151,18 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(postLockMutationMigration).toContain("A Casual team is outside the event bounds");
     expect(postLockMutationMigration).toMatch(/grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
     expect(postLockMutationMigration).not.toMatch(/drop table public\.spogomi_/i);
+  });
+
+  it("preserves mixed metadata updates without enabling mixed creation or weakening guards", () => {
+    expect(mixedEventMetadataMigration).toContain("p_mode not in ('casual', 'world_cup', 'mixed')");
+    expect(mixedEventMetadataMigration).toContain("p_mode = 'mixed' and v_event.mode <> 'mixed'");
+    expect(mixedEventMetadataMigration).toContain("Converting an existing SPOGOMI event to mixed is not allowed");
+    expect(mixedEventMetadataMigration).toContain("coalesce(auth.role(), '') <> 'service_role'");
+    expect(mixedEventMetadataMigration).toContain("serialization_failure");
+    expect(mixedEventMetadataMigration).toContain("for update");
+    expect(mixedEventMetadataMigration).toContain("composition_revision = composition_revision + case when v_rules_changed then 1 else 0 end");
+    expect(mixedEventMetadataMigration).toMatch(/revoke all on function public\.spogomi_update_event_metadata[\s\S]+grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
+    expect(mixedEventMetadataMigration).not.toMatch(/drop\s+(table|function)\s+public\.spogomi_/i);
   });
 
   it("keeps public team-name edits canonical, audited and outside composition revisions", () => {

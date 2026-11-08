@@ -8,7 +8,9 @@ do $$
 declare
   v_action_id uuid := gen_random_uuid();
   v_independent_action_id uuid := gen_random_uuid();
+  v_conversion_action_id uuid := gen_random_uuid();
   v_event_id uuid := gen_random_uuid();
+  v_conversion_event_id uuid := gen_random_uuid();
   v_casual_id uuid := md5(v_event_id::text || ':casual')::uuid;
   v_world_cup_id uuid := md5(v_event_id::text || ':world_cup')::uuid;
   v_team_casual uuid := gen_random_uuid();
@@ -16,6 +18,7 @@ declare
   v_participant_casual uuid := gen_random_uuid();
   v_count integer;
   v_decision_id uuid;
+  v_metadata jsonb;
 begin
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, spogomi_total_mass_grams, spogomi_megots_mass_grams, spogomi_megots_count, spogomi_projection_source_hash, spogomi_projection_version, notes)
   values (v_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI smoke', 12.5, 42, 7, 12500, 10, 42, repeat('a', 64), 'smoke-v1', 'owned by SPOGOMI');
@@ -40,6 +43,38 @@ begin
   if (select count(*) from public.actions where id = v_action_id) <> 1 then raise exception 'mixed edition created a second action'; end if;
   if public.spogomi_division_regulation_is_complete(v_event_id, v_casual_id, 'pending') then
     raise exception 'an incomplete division regulation was reported as complete';
+  end if;
+
+  select public.spogomi_update_event_metadata(
+    v_event_id, 0, 'spogomi-db-smoke', 'SPOGOMI mixed smoke updated',
+    'SPOGOMI smoke', now(), null, 'mixed', '{}'::jsonb, 'private', 'hidden'
+  ) into v_metadata;
+  if v_metadata->>'mode' <> 'mixed' or v_metadata->>'name' <> 'SPOGOMI mixed smoke updated' then
+    raise exception 'an existing mixed edition did not preserve its mode during metadata update';
+  end if;
+
+  insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count)
+  values (v_conversion_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI conversion smoke', 1, 1, 1);
+  insert into public.spogomi_events (
+    id, action_id, created_by_clerk_id, name, location_label, mode,
+    starts_at, regulation_version, regulation_status, regulation_config,
+    team_size_config, creation_state, public_visibility
+  ) values (
+    v_conversion_event_id, v_conversion_action_id, 'spogomi-db-smoke', 'SPOGOMI casual conversion smoke',
+    'SPOGOMI smoke', 'casual', now(), 'pending', 'incomplete', '{}'::jsonb,
+    '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'event_pending', 'private'
+  );
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_conversion_event_id, 0, 'spogomi-db-smoke', 'SPOGOMI conversion smoke',
+      'SPOGOMI smoke', now(), null, 'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'a non-mixed edition was converted to mixed by the metadata RPC';
+  exception when others then
+    if position('converting an existing spogomi event to mixed is not allowed' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select mode from public.spogomi_events where id = v_conversion_event_id) <> 'casual' then
+    raise exception 'a refused mixed conversion mutated the source edition';
   end if;
 
   insert into public.spogomi_teams (id, event_id, division_id, team_number, public_name)

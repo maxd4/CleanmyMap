@@ -65,6 +65,58 @@ describe("SPOGOMI preparation workspace", () => {
     renderer.unmount();
   });
 
+  it("distinguishes persisted policy from certification and verified preparation state", async () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="settings" showHeader={false} />); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    const rendered = JSON.stringify(renderer.toJSON());
+    expect(rendered).toContain("politique : résultats masqués — certification non établie");
+    expect(rendered).toContain("configuration : édition privée — aucun blocage métier déduit");
+    expect(rendered).toContain("composition partielle — préparation non établie");
+    expect(rendered).not.toContain("bloquée — édition privée");
+    expect(rendered).not.toContain("Préparation</dt><dd>préparée");
+    renderer.unmount();
+  });
+
+  it("does not turn the certified-only visibility policy into a certification claim", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      ...body,
+      event: { ...body.event, public_results_visibility: "certified" },
+    }), { status: 200 })));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="settings" showHeader={false} />); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
+    const rendered = JSON.stringify(renderer.toJSON());
+    expect(rendered).toContain("politique : certifiés uniquement — aucune certification constatée ici");
+    expect(rendered).not.toContain("<dd>certifiés</dd>");
+    renderer.unmount();
+  });
+
+  it("keeps demo counters scoped to the selected division", async () => {
+    const worldBody = {
+      ...body,
+      participants: [
+        { ...body.participants[0], id: "world-place-1", division_id: "division-world", team_id: "world-team-1", composition_eligible: true },
+        { ...body.participants[0], id: "world-place-2", division_id: "division-world", team_id: "world-team-1", composition_eligible: true },
+      ],
+      teams: [{ ...body.teams[0], id: "world-team-1", division_id: "division-world", composition_state: "locked", public_name: "World 1" }],
+      categoryRules: [{ id: "world-rule", event_id: "event-1", division_id: "division-world", regulation_version: "rules-world", code: "glass", label: "Verre", measurement_kind: "mass", unit: "g", coefficient: 120, coefficient_status: "confirmed", environmental_category_slug: null, display_order: 1, is_complete: true }],
+    };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => String(input).includes("divisionId=division-world")
+      ? Promise.resolve(new Response(JSON.stringify(worldBody), { status: 200 }))
+      : Promise.resolve(new Response(JSON.stringify(body), { status: 200 })));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="settings" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const rendered = JSON.stringify(renderer.toJSON());
+    expect(rendered).toContain("1 équipe(s), 2 place(s)");
+    expect(rendered).not.toContain("1 équipe(s), 1 place(s)");
+    renderer.unmount();
+  });
+
 
   it("renders the results publication guard and sends only the scoped action", async () => {
     let renderer!: ReturnType<typeof create>;
