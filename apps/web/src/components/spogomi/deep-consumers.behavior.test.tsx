@@ -37,7 +37,7 @@ const attendanceRow = (attendanceStatus: "unknown" | "present" | "absent", updat
 const attendanceMutation = (status: "unknown" | "present" | "absent", previousStatus = "unknown", updatedAt = status === previousStatus ? "revision-1" : "revision-2") => ({ attendance: { changed: status !== previousStatus, eventId: "event-1", divisionId: "division-1", participantId: "participant-1", previousStatus, attendanceStatus: status, updatedAt } });
 
 const dashboard = {
-  divisions: [{ id: "division-1", division_type: "casual", regulation_version: "rules-v1" }],
+  divisions: [{ id: "division-1", division_type: "casual", regulation_version: "rules-v1" }, { id: "division-2", division_type: "world_cup", regulation_version: "rules-v2" }],
   teams: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha" }],
   categories: [{ id: "category-1", division_id: "division-1", label: "Plastique", measurement_kind: "mass", unit: "g" }],
   operations: [], returns: [], incidents: [], measurements: [],
@@ -48,6 +48,7 @@ type TextareaProps = { value?: string };
 type LinkProps = { href?: string };
 type StatusProps = { children?: React.ReactNode };
 type InputProps = { value?: string; disabled?: boolean; onChange?: (event: { target: { value: string } }) => unknown };
+type SelectProps = { value?: string; onChange?: (event: { target: { value: string } }) => unknown };
 type FormProps = { onSubmit: (event: { preventDefault: () => void }) => unknown };
 type FetchCall = [RequestInfo | URL, RequestInit?];
 
@@ -109,7 +110,7 @@ describe("SPOGOMI deep consumer states", () => {
       operations: [{ division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v2", phase: "planned", official_start_at: "2026-11-08T08:00:00.000Z", collection_limit_at: null, sorting_limit_at: "2026-11-08T12:00:00.000Z", weighing_start_at: "2026-11-08T13:00:00.000Z", weighing_end_at: null, collection_end_at: null }],
     };
     fetchMock.mockReset();
-    fetchMock.mockResolvedValueOnce(response(persistedDashboard)).mockResolvedValueOnce(response(persistedDashboard)).mockResolvedValueOnce(response({ configured: true })).mockResolvedValueOnce(response(persistedDashboard));
+    fetchMock.mockResolvedValueOnce(response(persistedDashboard)).mockResolvedValueOnce(response({ configured: true })).mockResolvedValueOnce(response(persistedDashboard));
     let renderer!: ReturnType<typeof create>;
     act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
     await settle();
@@ -137,6 +138,62 @@ describe("SPOGOMI deep consumer states", () => {
     renderer.unmount();
   });
 
+  it("keeps independent unsaved schedules when switching divisions and returning", async () => {
+    const persistedDashboard = {
+      ...dashboard,
+      operations: [
+        { division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v1", phase: "planned", official_start_at: "2026-11-08T08:00:00.000Z", collection_limit_at: null, sorting_limit_at: null, weighing_start_at: null, weighing_end_at: null, collection_end_at: null },
+        { division_id: "division-2", timezone_name: "UTC", regulation_version: "rules-v2", phase: "planned", official_start_at: "2026-11-09T08:00:00.000Z", collection_limit_at: null, sorting_limit_at: null, weighing_start_at: null, weighing_end_at: null, collection_end_at: null },
+      ],
+    };
+    fetchMock.mockImplementation(() => Promise.resolve(response(persistedDashboard)));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
+    await settle();
+
+    const divisionSelect = renderer.root.findAllByType("select")[0]!;
+    const changeDivision = (value: string) => propsOf<SelectProps>(divisionSelect).onChange?.({ target: { value } });
+    const change = (name: string, value: string) => propsOf<InputProps>(renderer.root.findByProps({ name })).onChange?.({ target: { value } });
+    await act(async () => { change("officialStartAt", "2026-11-08T11:00"); changeDivision("division-2"); });
+    await settle();
+    await act(async () => { change("officialStartAt", "2026-11-09T10:00"); changeDivision("division-1"); });
+    await settle();
+
+    expect(propsOf<InputProps>(renderer.root.findByProps({ name: "officialStartAt" })).value).toBe("2026-11-08T11:00");
+    renderer.unmount();
+  });
+
+  it("keeps a successful POST accepted when the follow-up GET fails and prevents a retry", async () => {
+    const persistedDashboard = {
+      ...dashboard,
+      divisions: [dashboard.divisions[0]],
+      operations: [{ division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v1", phase: "planned", official_start_at: "2026-11-08T08:00:00.000Z", collection_limit_at: null, sorting_limit_at: null, weighing_start_at: null, weighing_end_at: null, collection_end_at: null, updated_at: "2026-11-08T07:00:00.000Z" }],
+    };
+    let getCount = 0;
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return Promise.resolve(response({ configured: true }));
+      getCount += 1;
+      return getCount === 1 ? Promise.resolve(response(persistedDashboard)) : Promise.reject(new Error("GET indisponible"));
+    });
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
+    await settle();
+    const change = (name: string, value: string) => propsOf<InputProps>(renderer.root.findByProps({ name })).onChange?.({ target: { value } });
+    await act(async () => {
+      change("officialStartAt", "2026-11-08T11:00");
+      change("reason", "Horaires acceptés");
+      change("provenance", "registre terrain");
+      propsOf<FormProps>(renderer.root.findByType("form")).onSubmit({ preventDefault: vi.fn() });
+      await Promise.resolve();
+    });
+    await settle();
+
+    expect(fetchCalls().filter((call) => call[1]?.method === "POST")).toHaveLength(1);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Décision enregistrée, mais l’actualisation a échoué. Actualisez pour voir l’état courant.");
+    expect(renderer.root.findAllByType("button").map(buttonProps).some((button) => button.children === "Abandonner le brouillon")).toBe(false);
+    renderer.unmount();
+  });
+
   it("keeps schedule controls read-only without the timing capability", async () => {
     fetchMock.mockResolvedValueOnce(response({ ...dashboard, operations: [{ division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v1", official_start_at: null, collection_limit_at: null, sorting_limit_at: null, weighing_start_at: null, weighing_end_at: null, phase: "planned" }] }));
     let renderer!: ReturnType<typeof create>;
@@ -144,6 +201,22 @@ describe("SPOGOMI deep consumer states", () => {
     await settle();
     expect(propsOf<{ disabled?: boolean }>(renderer.root.findByType("fieldset")).disabled).toBe(true);
     expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "note" })).children).toContain("timing");
+    renderer.unmount();
+  });
+
+  it("rejects an invalid schedule timezone before issuing a mutation", async () => {
+    fetchMock.mockResolvedValueOnce(response({ ...dashboard, operations: [{ division_id: "division-1", timezone_name: "Europe/Paris", regulation_version: "rules-v1", official_start_at: "2026-11-08T08:00:00.000Z", collection_limit_at: null, sorting_limit_at: null, weighing_start_at: null, weighing_end_at: null, phase: "planned" }] }));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiFieldOperationsPanel eventId="event-1" capabilities={["timing"]} />); });
+    await settle();
+    const change = (name: string, value: string) => propsOf<InputProps>(renderer.root.findByProps({ name })).onChange?.({ target: { value } });
+    await act(async () => { change("timezoneName", "Invalid/Zone"); change("reason", "Contrôle du fuseau"); change("provenance", "fixture de test"); });
+    await settle();
+    await act(async () => { propsOf<FormProps>(renderer.root.findByType("form")).onSubmit({ preventDefault: vi.fn() }); await Promise.resolve(); });
+    await settle();
+
+    expect(fetchCalls().filter((call) => call[1]?.method === "POST")).toHaveLength(0);
+    expect(propsOf<StatusProps>(renderer.root.findByProps({ role: "status" })).children).toBe("Le fuseau horaire IANA est invalide.");
     renderer.unmount();
   });
 

@@ -120,6 +120,17 @@ describe("SPOGOMI field operations API boundary", () => {
     if (capability) expect(assertCapabilityMock).toHaveBeenCalledWith(expect.anything(), capability);
   });
 
+  it("forwards the persisted schedule revision to the configure RPC", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ action: "configure", divisionId, timezoneName: "Europe/Paris", regulationVersion: "v1", officialStartAt: null, collectionLimitAt: null, sortingLimitAt: null, weighingStartAt: null, weighingEndAt: null, expectedUpdatedAt: "2026-10-15T10:00:00.000Z", reason: "Configuration", provenance: "registre" }), context());
+
+    expect(response.status).toBe(201);
+    expect(firstMockArgument(callOperationMock)).toMatchObject({
+      rpc: "spogomi_configure_field_operation",
+      args: { p_expected_updated_at: "2026-10-15T10:00:00.000Z" },
+    });
+  });
+
   it("converts forbidden capabilities and provider failures to safe responses", async () => {
     assertCapabilityMock.mockImplementation(() => { throw new Error("SPOGOMI field operation is forbidden."); });
     const { POST } = await import("./route");

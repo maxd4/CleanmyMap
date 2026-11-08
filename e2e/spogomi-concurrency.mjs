@@ -366,6 +366,80 @@ async function concurrentOfficialGpxSync() {
   );
 }
 
+async function concurrentFieldOperationScheduleConfiguration() {
+  const actionId = await createAction(sessionA, { schedule: `${marker}-preserved` });
+  const event = await createEvent(sessionA, actionId, "casual");
+  await must(
+    await sessionA.rpc("spogomi_ensure_parent_divisions", { p_event_id: event.id, p_mode: "casual" }),
+    "create schedule concurrency divisions",
+  );
+  const division = await must(
+    await sessionA.from("spogomi_divisions").select("id").eq("event_id", event.id).single(),
+    "read schedule concurrency division",
+  );
+  const baseArgs = {
+    p_event_id: event.id,
+    p_division_id: division.id,
+    p_timezone_name: "Europe/Paris",
+    p_regulation_version: "synthetic-schedule-v1",
+    p_collection_limit_at: "2027-03-28T01:30:00.000Z",
+    p_sorting_limit_at: "2027-03-28T02:00:00.000Z",
+    p_weighing_start_at: "2027-03-28T02:15:00.000Z",
+    p_weighing_end_at: "2027-03-28T03:00:00.000Z",
+    p_reason: "Synthetic schedule concurrency proof",
+    p_provenance: "synthetic schedule fixture",
+  };
+  const initialResults = await Promise.all([
+    sessionA.rpc("spogomi_configure_field_operation", {
+      ...baseArgs,
+      p_official_start_at: "2027-03-28T01:00:00.000Z",
+      p_actor_clerk_id: `${marker}-schedule-A`,
+      p_expected_updated_at: null,
+    }),
+    sessionB.rpc("spogomi_configure_field_operation", {
+      ...baseArgs,
+      p_official_start_at: "2027-03-28T01:15:00.000Z",
+      p_actor_clerk_id: `${marker}-schedule-B`,
+      p_expected_updated_at: null,
+    }),
+  ]);
+  assert.equal(initialResults.filter((result) => !result.error).length, 1, "exactly one concurrent initial schedule configuration must commit");
+  assert.equal(initialResults.filter((result) => result.error?.code === "40001").length, 1, "the concurrent initial schedule configuration must be rejected as stale");
+
+  const persisted = await must(
+    await sessionA.from("spogomi_field_operations").select("updated_at, official_start_at").eq("event_id", event.id).eq("division_id", division.id).single(),
+    "read schedule concurrency snapshot",
+  );
+  const updateResults = await Promise.all([
+    sessionA.rpc("spogomi_configure_field_operation", {
+      ...baseArgs,
+      p_official_start_at: "2027-03-28T01:30:00.000Z",
+      p_actor_clerk_id: `${marker}-schedule-update-A`,
+      p_expected_updated_at: persisted.updated_at,
+    }),
+    sessionB.rpc("spogomi_configure_field_operation", {
+      ...baseArgs,
+      p_official_start_at: "2027-03-28T01:45:00.000Z",
+      p_actor_clerk_id: `${marker}-schedule-update-B`,
+      p_expected_updated_at: persisted.updated_at,
+    }),
+  ]);
+  assert.equal(updateResults.filter((result) => !result.error).length, 1, "exactly one concurrent schedule update must commit");
+  assert.equal(updateResults.filter((result) => result.error?.code === "40001").length, 1, "the stale schedule update must be rejected");
+
+  const finalOperation = await must(
+    await sessionA.from("spogomi_field_operations").select("official_start_at, updated_by_clerk_id").eq("event_id", event.id).eq("division_id", division.id).single(),
+    "read final schedule configuration",
+  );
+  assert.ok(["2027-03-28T01:30:00+00:00", "2027-03-28T01:45:00+00:00"].includes(finalOperation.official_start_at), "the final schedule must be one complete winning snapshot");
+  assert.match(finalOperation.updated_by_clerk_id, new RegExp(`${marker}-schedule-update-(A|B)`));
+  const history = await must(
+    await sessionA.from("spogomi_field_operation_history").select("action").eq("event_id", event.id).eq("division_id", division.id),
+    "read schedule configuration history",
+  );
+  assert.equal(history.length, 2, "rejected schedule configurations must not append history");
+}
+
 async function concurrentCertificateReissue() {
   const actionId = await createAction(sessionA);
   const event = await createEvent(sessionA, actionId);
@@ -671,6 +745,7 @@ async function main() {
     await teamPublicNameUniqueness();
     await concurrentMoveAndLock();
     await concurrentOfficialGpxSync();
+    await concurrentFieldOperationScheduleConfiguration();
     await concurrentCertificateReissue();
     await concurrentConsolidationPublication();
     await concurrentClosureCorrectionAndRankingPublication();

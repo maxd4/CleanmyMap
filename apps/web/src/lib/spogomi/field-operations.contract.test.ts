@@ -5,6 +5,7 @@ import { loadSpogomiOperationalCertificationProofsForUser, spogomiFieldCapabilit
 
 const migration = readFileSync(new URL("../../../supabase/migrations/20261015000024_spogomi_field_operations.sql", import.meta.url), "utf8");
 const importConfirmationMigration = readFileSync(new URL("../../../supabase/migrations/20261020000000_spogomi_measurement_import_atomic_confirmation.sql", import.meta.url), "utf8");
+const scheduleMigration = readFileSync(new URL("../../../supabase/migrations/20261109000001_spogomi_field_operation_schedule_concurrency.sql", import.meta.url), "utf8");
 
 function createCertificationFixture(rows: Array<Record<string, unknown>>) {
   return {
@@ -68,6 +69,17 @@ describe("SPOGOMI field operations contract", () => {
     expect(importConfirmationMigration).toContain("SPOGOMI measurement import contains conflicting duplicate rows");
     expect(importConfirmationMigration).toContain("grant execute on function public.spogomi_confirm_measurement_import");
     expect(importConfirmationMigration).toContain("revoke all on function public.spogomi_confirm_measurement_import");
+  });
+
+  it("validates schedule zones and rejects stale updates and concurrent creation", () => {
+    expect(scheduleMigration).toContain("drop function if exists public.spogomi_configure_field_operation");
+    expect(scheduleMigration).toContain("p_expected_updated_at timestamptz default null");
+    expect(scheduleMigration).toContain("pg_timezone_names");
+    expect(scheduleMigration).toContain("pg_advisory_xact_lock");
+    expect(scheduleMigration).toContain("SPOGOMI field operation conflict");
+    expect(scheduleMigration).toContain("on conflict (event_id, division_id) do nothing");
+    expect(scheduleMigration).toContain("spogomi_field_operation_history");
+    expect(scheduleMigration).toContain("grant execute on function public.spogomi_configure_field_operation");
   });
 
   it("loads only current operational certifications attributed to the requested account and events", async () => {
