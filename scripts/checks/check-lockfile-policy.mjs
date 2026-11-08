@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
+import { resolveDependencyGraphChange } from "../ci/deploy-validation.mjs";
 
 const ROOT = resolve(".");
+
+function option(name) {
+  const prefix = `--${name}=`;
+  return process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length) || "";
+}
 
 export function findLockfileViolations(view) {
   const tracked = view.listFiles();
@@ -35,6 +41,22 @@ function main() {
       console.error(` - ${lockfile}`);
     }
     process.exit(1);
+  }
+
+  const baseRef = option("base-ref");
+  const candidateRef = option("candidate-ref");
+  if (baseRef && candidateRef) {
+    const graph = resolveDependencyGraphChange({
+      repositoryRoot: ROOT,
+      baseSha: baseRef,
+      candidateSha: candidateRef,
+    });
+    if (graph.changedManifestFiles.length > 0 && !graph.lockfileChanged) {
+      console.error(
+        `[lockfile-policy] dependency graph changed in ${graph.changedManifestFiles.join(", ")} without a package-lock.json change`,
+      );
+      process.exit(1);
+    }
   }
 
   console.log(`[lockfile-policy] OK: root package-lock.json is the single source of truth${ref ? ` for ref ${ref}` : ""}.`);

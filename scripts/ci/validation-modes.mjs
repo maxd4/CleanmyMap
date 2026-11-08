@@ -747,7 +747,9 @@ function addDeployModeChecks({ checks, files, domains, candidateSha, baseRef }) 
       args: [
         "scripts/ci/check-deploy-candidate.mjs",
         `--sha=${candidateSha || "HEAD"}`,
-        `--base-ref=${baseRef || "origin/main"}`,
+        ...(baseRef ? [`--base-ref=${baseRef}`] : []),
+        ...(domains.publicationReferenceSha ? [`--deployment-ref=${domains.publicationReferenceSha}`] : []),
+        ...(domains.publicationProofPath ? [`--deployment-proof=${domains.publicationProofPath}`] : []),
       ],
     },
   });
@@ -803,7 +805,22 @@ function addDeployModeChecks({ checks, files, domains, candidateSha, baseRef }) 
     estimatedSeconds: 15,
     command: npmCommand("vercel:deploy:preflight"),
   });
-  if (domains.lockfileRelevant || files.some(isDependencyAuditRelevantFile)) {
+  if (domains.dependencyGraphChanged) {
+    addDeployCheck(checks, {
+      id: "lockfile-policy",
+      label: "Politique lockfile et cohérence du graphe npm",
+      estimatedSeconds: 5,
+      command: {
+        executable: process.execPath,
+        args: [
+          "scripts/checks/check-lockfile-policy.mjs",
+          `--base-ref=${domains.publicationReferenceSha || baseRef}`,
+          `--candidate-ref=${candidateSha}`,
+        ],
+      },
+    });
+  }
+  if (domains.dependencyGraphChanged || files.some(isDependencyAuditRelevantFile)) {
     addDeployCheck(checks, {
       id: "dependency-audit",
       label: "Audit des dépendances npm",
@@ -838,7 +855,12 @@ function finalizeModeValidationPlan({ normalizedMode, normalizedScope, files, do
   const budgetSeconds = VALIDATION_MODE_BUDGETS[normalizedMode];
   const plannedSeconds = checks.reduce((total, check) => total + check.estimatedSeconds, 0);
   const publicDomains = Object.fromEntries(
-    Object.entries(domains).filter(([key]) => key !== "architectureImportRelevant"),
+    Object.entries(domains).filter(([key]) => ![
+      "architectureImportRelevant",
+      "dependencyGraphChanged",
+      "publicationReferenceSha",
+      "publicationProofPath",
+    ].includes(key)),
   );
   return Object.freeze({
     mode: normalizedMode,
@@ -858,9 +880,17 @@ export function createModeValidationPlan({
   changedFiles = [],
   candidateSha = "",
   baseRef = "origin/main",
+  publicationReference = null,
+  dependencyGraphChanged,
+  publicationProofPath = "",
 } = {}) {
   const input = normalizePlanInput({ mode, candidateScope, changedFiles });
-  const domains = classifyChangedFiles(input.files);
+  const domains = {
+    ...classifyChangedFiles(input.files),
+    dependencyGraphChanged: dependencyGraphChanged ?? input.files.some(isLockfileRelevantFile),
+    publicationReferenceSha: publicationReference?.sha ?? "",
+    publicationProofPath,
+  };
   const checks = [];
   const deduplicated = [];
   addInitialChecks({ checks, normalizedScope: input.normalizedScope });

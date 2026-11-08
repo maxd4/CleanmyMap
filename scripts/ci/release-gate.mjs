@@ -50,6 +50,22 @@ function sameItems(left, right) {
   return leftSet.size === right.length && right.every((value) => leftSet.has(value));
 }
 
+function isVerifiedPublicationReference(reference, validSha) {
+  return Boolean(
+    reference
+      && reference.version === 1
+      && validSha(reference.sha)
+      && reference.proofSha === reference.sha
+      && reference.provider === "vercel"
+      && reference.projectName === "web"
+      && reference.rootDirectory === "apps/web"
+      && reference.target === "production"
+      && reference.verified === true
+      && typeof reference.verificationMethod === "string"
+      && reference.verificationMethod.length > 0,
+  );
+}
+
 function isClean() {
   return execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
     cwd: repositoryRoot,
@@ -109,6 +125,9 @@ export function evaluateReleaseGate({
     && validSha(evidence.completionTreeSha)
     && evidence.candidateTreeSha === evidence.completionTreeSha
     && evidence.scopeEstablished === true
+    && evidence.scopeComplete === true
+    && isVerifiedPublicationReference(evidence.publicationReference, validSha)
+    && evidence.publicationReference.sha === evidence.baseSha
     && sameItems(evidence.plannedChecks, requiredChecks)
     && Array.isArray(evidence.passed)
     && Array.isArray(evidence.reused)
@@ -209,10 +228,17 @@ function main() {
       candidateSha: sha,
       baseRef: evidence.baseRef,
       changedFiles: evidence.changedFiles,
+      publicationReference: evidence.publicationReference,
+      dependencyGraphChanged: evidence.dependencyGraphChanged === true,
     })
     : null;
   const deployScope = profile === "deploy" && evidence
-    ? resolveDeployCandidate({ repositoryRoot, candidateSha: sha, baseRef: evidence.baseRef })
+    ? resolveDeployCandidate({
+      repositoryRoot,
+      candidateSha: sha,
+      baseRef: evidence.baseRef,
+      publicationReference: evidence.publicationReference,
+    })
     : null;
   const result = evaluateReleaseGate({
     evidence,

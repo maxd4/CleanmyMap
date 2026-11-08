@@ -16,6 +16,13 @@ export const FULL_SUITE_INCLUDE_GLOBS = Object.freeze([
 
 export const WEB_VITEST_CONFIG_PATH = "apps/web/vitest.config.mts";
 
+export const DEPENDENCY_GRAPH_FIELDS = Object.freeze([
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+  "overrides",
+]);
+
 export const VITEST_GROUPS = Object.freeze({
   security: Object.freeze([
     "src/lib/security/validation.test.ts",
@@ -134,6 +141,35 @@ function isScriptRelevantFile(file) {
 
 export function isDependencyGraphRelevantFile(file) {
   return /(^|\/)package(?:-lock)?\.json$/.test(normalizePath(file));
+}
+
+function cloneDependencyGraphValue(value) {
+  if (Array.isArray(value)) return value.map(cloneDependencyGraphValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right, "en"))
+      .map(([key, nested]) => [key, cloneDependencyGraphValue(nested)]),
+  );
+}
+
+export function dependencyGraphSnapshot(manifestText) {
+  try {
+    const manifest = JSON.parse(String(manifestText));
+    return Object.fromEntries(DEPENDENCY_GRAPH_FIELDS.map((field) => [
+      field,
+      cloneDependencyGraphValue(manifest?.[field] ?? {}),
+    ]));
+  } catch {
+    return null;
+  }
+}
+
+export function dependencyGraphSnapshotsEqual(leftText, rightText) {
+  const left = dependencyGraphSnapshot(leftText);
+  const right = dependencyGraphSnapshot(rightText);
+  if (left === null || right === null) return false;
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 export function isDependencyAuditRelevantFile(file) {

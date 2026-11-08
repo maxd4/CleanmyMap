@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
 import process from "node:process";
 import {
   acquireFullValidationLock,
@@ -26,7 +27,15 @@ import {
 } from "./validation-process.mjs";
 
 function parseArgs(argv) {
-  const options = { mode: "FAST", candidateScope: "WORKTREE", changedFiles: [], maxParallel: 2, baseRef: "origin/main" };
+  const options = {
+    mode: "FAST",
+    candidateScope: "WORKTREE",
+    changedFiles: [],
+    maxParallel: 2,
+    baseRef: "",
+    deploymentReferenceSha: "",
+    deploymentProofPath: "",
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const next = argv[index + 1];
@@ -49,6 +58,16 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg.startsWith("--base-ref=")) {
       options.baseRef = arg.slice("--base-ref=".length);
+    } else if (arg === "--deployment-ref" && next) {
+      options.deploymentReferenceSha = next;
+      index += 1;
+    } else if (arg.startsWith("--deployment-ref=")) {
+      options.deploymentReferenceSha = arg.slice("--deployment-ref=".length);
+    } else if (arg === "--deployment-proof" && next) {
+      options.deploymentProofPath = next;
+      index += 1;
+    } else if (arg.startsWith("--deployment-proof=")) {
+      options.deploymentProofPath = arg.slice("--deployment-proof=".length);
     }
   }
   return options;
@@ -66,6 +85,15 @@ function readLines(executable, args, cwd = process.cwd()) {
       .filter(Boolean);
   } catch {
     return [];
+  }
+}
+
+function readDeploymentProof(proofPath) {
+  if (!proofPath) return null;
+  try {
+    return JSON.parse(fs.readFileSync(proofPath, "utf8"));
+  } catch (error) {
+    throw new Error(`DEPLOY publication proof could not be read: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -376,19 +404,31 @@ export async function runValidationMode(
 ) {
   const repositoryRoot = runtime.repositoryRoot ?? process.cwd();
   const candidateSha = getCandidateSha(repositoryRoot);
-  const deployScope = options.mode === "DEPLOY"
-    ? resolveDeployCandidate({ repositoryRoot, candidateSha, baseRef: options.baseRef })
+  const deploymentProof = options.mode === "DEPLOY"
+    ? readDeploymentProof(options.deploymentProofPath)
     : null;
-  const changedFiles = options.changedFiles.length > 0
-    ? options.changedFiles
-    : options.mode === "DEPLOY"
-      ? deployScope?.changedFiles ?? []
+  const deployScope = options.mode === "DEPLOY"
+    ? resolveDeployCandidate({
+      repositoryRoot,
+      candidateSha,
+      baseRef: options.baseRef,
+      deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
+      deploymentProof,
+    })
+    : null;
+  const changedFiles = options.mode === "DEPLOY"
+    ? deployScope?.changedFiles ?? []
+    : options.changedFiles.length > 0
+      ? options.changedFiles
       : getCandidateFiles(options.candidateScope, repositoryRoot);
   const plan = createModeValidationPlan({
     ...options,
     candidateSha,
     changedFiles,
-    baseRef: options.baseRef,
+    baseRef: deployScope?.baseRef ?? options.baseRef,
+    publicationReference: deployScope?.publicationReference
+      ?? (options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null),
+    dependencyGraphChanged: deployScope?.dependencyGraphChanged,
   });
   const candidateFingerprint = createCandidateFingerprint({
     repositoryRoot,
@@ -525,7 +565,13 @@ export async function runValidationMode(
     const elapsedSeconds = (performance.now() - startedAt) / 1000;
     const completionSha = getCandidateSha(repositoryRoot);
     const completionDeployScope = plan.mode === "DEPLOY"
-      ? resolveDeployCandidate({ repositoryRoot, candidateSha: completionSha, baseRef: options.baseRef })
+      ? resolveDeployCandidate({
+        repositoryRoot,
+        candidateSha: completionSha,
+        baseRef: options.baseRef,
+        deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
+        deploymentProof,
+      })
       : null;
     const completionChangedFiles = plan.mode === "FULL"
       ? getCandidateFiles(plan.candidateScope, repositoryRoot)
@@ -547,6 +593,7 @@ export async function runValidationMode(
           deployScope?.valid
             && completionDeployScope?.valid
             && completionDeployScope.baseSha === deployScope.baseSha
+            && completionDeployScope.publicationReference?.sha === deployScope.publicationReference?.sha
             && completionSha === candidateSha
             && completionFingerprint === candidateFingerprint,
         )
@@ -600,6 +647,8 @@ export async function runValidationMode(
         plan,
         baseRef: deployScope?.baseRef ?? options.baseRef,
         baseSha: deployScope?.baseSha ?? "",
+        publicationReference: deployScope?.publicationReference ?? null,
+        dependencyGraphChanged: Boolean(deployScope?.dependencyGraphChanged),
         changedFiles,
         scopeEstablished: Boolean(deployScope?.valid),
         passed,

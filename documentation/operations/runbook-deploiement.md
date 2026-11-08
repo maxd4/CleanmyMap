@@ -32,12 +32,17 @@ déploiement n'est autorisé pendant cette période.
 Avant une demande de déploiement Web, la voie rapide autorisée est :
 
 ```powershell
-npm run checks:deploy -- --base-ref=origin/main
+npm run checks:deploy -- --deployment-ref=<sha-production-verifie> --deployment-proof=<preuve-vercel.json>
 npm run release:check -- --sha=<sha-candidat> --target=production --profile=deploy
 ```
 
 Cette preuve DEPLOY est distincte de FULL, ne couvre que la portée Web
-détectée depuis la référence Git vérifiée et ne déclenche aucun deployment.
+détectée cumulativement depuis le SHA de Production Vercel effectivement
+vérifié. La preuve JSON doit confirmer le projet `web`, la racine `apps/web`,
+la cible `production`, le commit Git et la méthode de vérification. Une base
+Git arbitraire ou une référence Production non vérifiable bloque la campagne
+et ne peut pas produire `RELEASE_READY: YES`. Cette validation ne déclenche
+aucun deployment.
 Elle ne remplace pas FULL lorsque le périmètre touche Mobile, Python, les
 workflows GitHub ou une autre surface non couverte ; dans ce cas elle échoue
 explicitement et la procédure appropriée doit être choisie.

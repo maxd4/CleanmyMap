@@ -215,6 +215,23 @@ test("DEPLOY adds dependency, migration and smoke controls only for the affected
 test("DEPLOY does not audit dependencies for a scripts-only package manifest change", () => {
   const plan = createModeValidationPlan({ mode: "DEPLOY", changedFiles: ["package.json"] });
   assert.equal(ids(plan).includes("dependency-audit"), false);
+  assert.equal(ids(plan).includes("lockfile-policy"), false);
+});
+
+test("DEPLOY audits a real package dependency change and makes lockfile drift blocking", () => {
+  const plan = createModeValidationPlan({
+    mode: "DEPLOY",
+    candidateSha: "a".repeat(40),
+    baseRef: "b".repeat(40),
+    dependencyGraphChanged: true,
+    changedFiles: ["package.json"],
+  });
+  assert.equal(ids(plan).includes("dependency-audit"), true);
+  assert.equal(ids(plan).includes("lockfile-policy"), true);
+  assert.match(
+    plan.checks.find((check) => check.id === "lockfile-policy").command.args.join(" "),
+    /--base-ref=b{40}/,
+  );
 });
 
 test("DEPLOY with no exploitable Web diff plans only the provenance gate", () => {

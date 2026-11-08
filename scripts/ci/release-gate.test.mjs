@@ -45,6 +45,17 @@ const deployBaseSha = "c".repeat(40);
 const deployTreeSha = "d".repeat(40);
 const deployChangedFiles = ["apps/web/src/app/page.tsx"];
 const deployRequiredChecks = ["deploy-candidate", "build"];
+const deployPublicationReference = {
+  version: 1,
+  sha: deployBaseSha,
+  proofSha: deployBaseSha,
+  provider: "vercel",
+  projectName: "web",
+  rootDirectory: "apps/web",
+  target: "production",
+  verified: true,
+  verificationMethod: "vercel-inspection",
+};
 const deployEvidence = {
   version: 1,
   mode: "DEPLOY",
@@ -58,10 +69,13 @@ const deployEvidence = {
   candidateScope: "WORKTREE",
   checkoutStable: true,
   attestationStatus: "ATTESTED_CANDIDATE",
-  baseRef: "origin/main~1",
+  baseRef: deployBaseSha,
   baseSha: deployBaseSha,
+  publicationReference: deployPublicationReference,
+  dependencyGraphChanged: false,
   changedFiles: deployChangedFiles,
   scopeEstablished: true,
+  scopeComplete: true,
   plannedChecks: deployRequiredChecks,
   verdict: "PASS",
   releaseReady: true,
@@ -76,6 +90,7 @@ const deployScope = {
   valid: true,
   candidateTreeSha: deployTreeSha,
   baseSha: deployBaseSha,
+  publicationReference: deployPublicationReference,
   changedFiles: deployChangedFiles,
 };
 
@@ -265,6 +280,8 @@ test("DEPLOY rejects stale SHA, missing proof, failed build, target errors and e
     { name: "missing proof", evidence: null, current: sha },
     { name: "build failed", evidence: { ...deployEvidence, verdict: "FAIL", releaseReady: false, failed: ["build"] } },
     { name: "empty diff", evidence: { ...deployEvidence, changedFiles: [], scopeEstablished: false, plannedChecks: deployRequiredChecks }, deployScope: { valid: false, baseSha: deployBaseSha, changedFiles: [] } },
+    { name: "incomplete scope attestation", evidence: { ...deployEvidence, scopeComplete: false } },
+    { name: "missing Production reference", evidence: { ...deployEvidence, publicationReference: null } },
     { name: "wrong target", evidence: deployEvidence, deploymentEnabled: { ...deploymentEnabled, actualTarget: "preview" } },
   ];
   for (const entry of cases) {

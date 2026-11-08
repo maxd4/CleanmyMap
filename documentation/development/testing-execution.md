@@ -313,21 +313,29 @@ archive absente, mal placée ou incomplète échoue explicitement.
 Le profil DEPLOY est une attestation distincte de FULL :
 
 ```bash
-npm run checks:deploy -- --base-ref=origin/main
+npm run checks:deploy -- --deployment-ref=<sha-production-verifie> --deployment-proof=<preuve-vercel.json>
 npm run release:check -- --sha=<sha-valide> --target=production --profile=deploy
 ```
 
-Le plan calcule les changements par `git diff <base-ref>..<candidate-sha>` sur
-un candidat `main` propre, avec une référence Git vérifiée. Il refuse un SHA
-périmé, une base absente, un worktree dirty, une portée non-Web ou l'absence
-d'un diff exploitable ; il ne se rabat jamais silencieusement sur le contenu
-vide du worktree après publication.
+La preuve Vercel doit identifier le commit Git de la dernière Production
+effectivement vérifiée et contenir `provider=vercel`, `projectName=web`,
+`rootDirectory=apps/web`, `target=production`, `verified=true` et une
+`verificationMethod` explicite. Le plan calcule alors les changements par
+`git diff <sha-production-verifie>..<candidate-sha>` sur un candidat `main`
+propre. Une base `--base-ref` arbitraire, plus récente ou différente de cette
+référence est refusée ; une référence absente, non ancestrale ou sans preuve de
+provenance bloque également. Il ne se rabat jamais silencieusement sur le
+contenu vide du worktree après publication.
 
 Pour une portée Web exploitable, DEPLOY vérifie l'intégrité du candidat,
 l'audit des secrets, les tests de sécurité et de régression Web, les tests
 co-localisés affectés, le typecheck, ESLint, le build production et le
-préflight Vercel. Les audits de dépendances, contrats de migrations et smoke
-Web sont ajoutés uniquement lorsque les fichiers affectés le nécessitent.
+préflight Vercel. Les audits de dépendances, la cohérence lockfile, les
+contrats de migrations et le smoke Web sont ajoutés uniquement lorsque les
+fichiers affectés le nécessitent. Une modification limitée aux scripts de
+`package.json` ne lance pas l'audit npm ; une modification de `dependencies`,
+`devDependencies`, `optionalDependencies` ou `overrides` le déclenche et rend
+l'absence de mise à jour du lockfile bloquante.
 Mobile, Python, mutation testing, couverture globale, audits structurels et
 E2E complets restent hors plan sans dépendance démontrée.
 
