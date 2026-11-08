@@ -310,7 +310,7 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
           const orientationPanelId = `${baseId}-panel-${orientation.id}`;
           return (
             <div key={orientation.id} role="tabpanel" id={orientationPanelId} aria-labelledby={orientationTabId} tabIndex={0} hidden={!isActive}>
-              <CmmCard tone="emerald" variant="glass" className="space-y-5 p-5 md:p-6">
+              <CmmCard tone="emerald" variant="glass" className="space-y-5 overflow-visible p-5 md:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">Parcours {orientationIndex + 1} sur {orientations.length}</p>
@@ -320,7 +320,7 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                   {orientation.id === "referees" ? <ShieldCheck className="h-7 w-7 shrink-0 text-emerald-700" aria-hidden="true" /> : null}
                 </div>
 
-                <CmmCard tone="emerald" variant="default" className="border-emerald-300 bg-emerald-50/80 p-5">
+                <CmmCard tone="emerald" variant="default" className="overflow-visible border-emerald-300 bg-emerald-50/80 p-5">
                   <div className="flex min-w-0 items-start gap-3">
                     <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white">
                       <CmmIcon icon={orientation.primaryAction.icon} size="lg" />
@@ -343,7 +343,7 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                     const phaseHeadingId = `${baseId}-phase-${orientation.id}-${phaseIndex}`;
                     return (
                       <section key={phase.title} aria-labelledby={phaseHeadingId}>
-                        <CmmCard tone="slate" variant="glass" className="p-4">
+                        <CmmCard tone="slate" variant="glass" className="overflow-visible p-4">
                           <div className="flex items-start gap-3">
                             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-black text-slate-700">{String(phaseIndex + 1).padStart(2, "0")}</span>
                             <div>
@@ -353,7 +353,7 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                           </div>
                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
                             {phase.actions.map((action, actionIndex) => (
-                              <CmmCard key={action.label} as="article" tone="slate" variant="outlined" className="flex h-full flex-col gap-3 p-4">
+                              <CmmCard key={action.label} as="article" tone="slate" variant="outlined" className="flex h-full flex-col gap-3 overflow-visible p-4">
                                 <div className="flex min-w-0 items-start gap-3">
                                   <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><CmmIcon icon={action.icon} /></span>
                                   <div className="min-w-0 flex-1">
