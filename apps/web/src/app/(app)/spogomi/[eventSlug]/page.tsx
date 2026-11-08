@@ -16,6 +16,8 @@ import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 import { buildPageMetadata } from "@/lib/metadata";
+import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
+import { SpogomiSyntheticDemoNotice } from "@/components/spogomi/spogomi-synthetic-demo-notice";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -49,6 +51,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
       <div className="cmm-page-width space-y-6">
         <Link href="/spogomi" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-800 hover:underline"><ArrowLeft size={16} />Tous les événements SPOGOMI</Link>
         <PageHeader family={resolvePageFamily(`/spogomi/${event.slug}`)} tone="emerald" title={event.name} subtitle={`${modeLabel} · ${lifecycleLabel}`} />
+        {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Cette fiche publique éventuelle présente uniquement une simulation. Les résultats restent non officiels et la publication de chaque division dépend des contrôles de certification.</p></SpogomiSyntheticDemoNotice> : null}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <div className="space-y-6">
             <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">

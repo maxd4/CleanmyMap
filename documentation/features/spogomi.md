@@ -44,6 +44,16 @@ Une édition possède une division `casual`, une division `world_cup`, ou les de
 - Les verrous de composition, règlements, certifications et classements restent portés par les procédures serveur et s’appliquent dans le périmètre d’une division. Le rôle HTTP conserve l’AuthN/AuthZ ; Supabase RLS et les grants ne sont pas élargis aux écritures client.
 - L'API et la préparation savent porter le mode `mixed` comme une édition privée avec deux divisions déterministes et une seule action parent ; le choix `Casual & World Cup` reste masqué dans le formulaire tant que les preuves PostgreSQL et navigateur de la chaîne complète ne sont pas réunies. Les onglets de gestion et les projections gardent les équipes, mesures, arbitrages et classements dans leur division.
 
+### Déroulé UI de la démonstration Cachan
+
+Le scénario synthétique `SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL` n’est présent dans `/spogomi/mes-evenements?parcours=organizers` que si l’édition existe réellement dans le catalogue filtré par la relation organisateur du compte courant. Depuis `/spogomi`, l’onglet **Organisateurs** conserve cette intention puis le catalogue ouvre le cockpit canonique `/spogomi/[eventSlug]/espace#teams`. Aucun événement ou résultat de secours n’est fabriqué par l’interface.
+
+Dans le cockpit, le sélecteur de divisions permet de parcourir séparément Casual et World Cup ; les catégories, équipes, saisies, décisions et classements sont chargés par les sections existantes et restent bornés par `division_id`. La carte de démonstration expose l’état réellement persisté : préparation, catégories et équipes, règlement complet ou incomplet, résultats certifiés ou non certifiés et publication bloquée ou publiée. Un règlement fictif et un résultat synthétique ne deviennent jamais officiels par leur affichage.
+
+Le compte organisateur autorisé suffit pour parcourir la préparation, les équipes, les paramètres, l’arbitrage, le bilan et l’export lorsque les contrôles serveur les rendent disponibles. La saisie d’équipe exige une session d’équipe créée par le parcours existant ; la consultation personnelle exige un compte bénévole distinct ou une relation participant vérifiée. Les invitations, codes individuels et liens d’assistance restent contextuels et ne sont pas remplacés par le compte organisateur.
+
+Le formulaire général de création continue de masquer `mixed`. Tant que le scénario n’a pas obtenu ses preuves PostgreSQL éphémère et navigateur exigées par le contrat d’intégration, seule l’édition de validation préconfigurée peut porter ce mode ; elle n’est jamais créée, publiée ou certifiée depuis un CTA UI.
+
 **Frontières non négociables :**
 
 - Le formulaire SPOGOMI par équipe n'est ni le formulaire générique des bénévoles ni `public.forms` ; cette dernière table a déjà des consommateurs de gamification.

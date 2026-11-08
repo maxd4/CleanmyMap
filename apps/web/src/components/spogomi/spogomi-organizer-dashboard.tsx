@@ -120,6 +120,7 @@ export function SpogomiOrganizerDashboard({
           <div>
             <h2 className="text-xl font-black text-emerald-950">Créer une compétition</h2>
             <p className="cmm-text-body mt-1 text-slate-900">La date vient de votre saisie. Toute nouvelle compétition reste privée jusqu’à sa publication explicite.</p>
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">Le mode mixte reste masqué ici tant que les preuves PostgreSQL et navigateur exigées ne sont pas disponibles. Utilisez uniquement l’édition de validation préconfigurée lorsqu’elle apparaît dans vos événements autorisés.</p>
           </div>
         </div>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ createEvent(event); }}>

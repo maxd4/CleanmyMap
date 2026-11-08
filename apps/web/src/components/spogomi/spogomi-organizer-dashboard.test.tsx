@@ -1,4 +1,5 @@
 import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { act, create } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -121,5 +122,12 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     const select = renderer.root.findByProps({ name: "mode" });
     expect(select.props.children.map((option: React.ReactElement<{ value: string }>) => option.props.value)).toEqual(["casual", "world_cup"]);
     renderer.unmount();
+  });
+
+  it("keeps mixed creation gated until the external scenario proofs exist", () => {
+    const markup = renderToStaticMarkup(<SpogomiOrganizerDashboard initialEvents={[]} />);
+    expect(markup).toContain("Le mode mixte reste masqué ici");
+    expect(markup).toContain("preuves PostgreSQL et navigateur");
+    expect(markup).not.toContain('<option value="mixed">');
   });
 });

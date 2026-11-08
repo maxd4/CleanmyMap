@@ -101,4 +101,12 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).toContain("Observateur habilité");
     expect(markup).not.toContain("Habilitation terrain");
   });
+
+  it("marks the synthetic mixed edition without changing the existing cockpit route", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={{ ...event, name: "SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL", mode: "mixed" }} role="organizer" capabilities={["manage"]} />);
+    expect(markup).toContain("Démonstration fictive, données synthétiques, règlement non officiel");
+    expect(markup).toContain("Casual et World Cup restent séparées");
+    expect(markup).toContain('href="#teams"');
+    expect(markup).toContain('href="#results"');
+  });
 });

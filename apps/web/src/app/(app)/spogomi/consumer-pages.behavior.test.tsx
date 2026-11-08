@@ -72,6 +72,13 @@ describe("SPOGOMI consumer pages", () => {
     expect(markup).not.toContain("requesterClerkId");
   });
 
+  it("discloses the synthetic Cachan scenario when it is actually published", async () => {
+    mocks.loadPublishedSpogomiEventBySlug.mockResolvedValueOnce({ ...event, name: "SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL" });
+    const markup = renderToStaticMarkup(await SpogomiPublicEventPage({ params: Promise.resolve({ eventSlug: "cachan-demo" }) }));
+    expect(markup).toContain("Démonstration fictive, données synthétiques, règlement non officiel");
+    expect(markup).toContain("non officiels");
+  });
+
   it("fails closed for an unpublished event and differentiates team session absence", async () => {
     mocks.loadPublishedSpogomiEventBySlug.mockResolvedValueOnce(null);
     await expect(SpogomiPublicEventPage({ params: Promise.resolve({ eventSlug: "private" }) })).rejects.toThrow("not-found");

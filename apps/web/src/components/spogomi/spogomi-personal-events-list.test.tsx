@@ -6,10 +6,10 @@ import type { SpogomiPersonalEvent } from "@/lib/spogomi/personal-events-service
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
-function event(id: string, relations: SpogomiPersonalEvent["relations"]): SpogomiPersonalEvent {
+function event(id: string, relations: SpogomiPersonalEvent["relations"], name = `Édition ${id}`): SpogomiPersonalEvent {
   return {
     id,
-    name: `Édition ${id}`,
+    name,
     eventSlug: `${id}-slug`,
     mode: "casual",
     state: "draft",
@@ -106,5 +106,20 @@ describe("SpogomiPersonalEventsList", () => {
     );
     expect(markup).toContain("Opérations terrain");
     expect(markup).toContain('/spogomi/weigher-slug/espace#operations');
+  });
+
+  it("finds the marked Cachan validation edition and opens the existing organizer cockpit", () => {
+    const markup = renderToStaticMarkup(
+      <SpogomiPersonalEventsList
+        events={[event("cachan", ["organizer"], "SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL")]}
+        journey="organizers"
+        focus="teams"
+      />,
+    );
+    expect(markup).toContain("Démonstration fictive, données synthétiques, règlement non officiel");
+    expect(markup).toContain("Ouvrir le cockpit de validation");
+    expect(markup).toContain('/spogomi/cachan-slug/espace#teams');
+    expect(markup).toContain("Les événements ci-dessous proviennent de vos relations organisateur vérifiées.");
+    expect(markup).toContain("lg:grid-cols-2");
   });
 });

@@ -42,7 +42,7 @@ function jsonBody(call: FetchCall | undefined): Record<string, unknown> {
 import { SpogomiPreparationWorkspace } from "./spogomi-preparation-workspace";
 
 const body = {
-  event: { id: "event-1", event_slug: "paris-2026", public_visibility: "private", public_results_visibility: "hidden", name: "Paris", location_label: "Paris", mode: "mixed", state: "draft", starts_at: "2026-06-01", ends_at: null, composition_revision: 2, team_size_config: { casual: { minMembers: 2, maxMembers: 3 } } },
+  event: { id: "event-1", event_slug: "paris-2026", public_visibility: "private", public_results_visibility: "hidden", name: "SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL", location_label: "Paris", mode: "mixed", state: "draft", starts_at: "2026-06-01", ends_at: null, composition_revision: 2, team_size_config: { casual: { minMembers: 2, maxMembers: 3 } } },
   divisions: [{ id: "division-casual", event_id: "event-1", division_type: "casual", division_key: "casual", regulation_status: "incomplete", regulation_version: "rules-casual", regulation_source_reference: "fixture" }, { id: "division-world", event_id: "event-1", division_type: "world_cup", division_key: "world_cup", regulation_status: "incomplete", regulation_version: "rules-world" }],
   participants: [{ id: "participant-1", division_id: "division-casual", display_name: null, external_reference: "P-1", group_preference: null, team_id: null, attendance_status: "unknown", account_link_status: "unlinked", composition_eligible: false }],
   teams: [{ id: "team-1", division_id: "division-casual", team_number: 1, public_name: "Alpha", composition_state: "draft" }],
@@ -57,12 +57,14 @@ describe("SPOGOMI preparation workspace", () => {
     act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showAdminTeamJoinRequests />); });
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
     expect(renderer.root.findAll((node) => node.props.role === "tab")).toHaveLength(2);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Démonstration fictive, données synthétiques, règlement non officiel");
     expect(renderer.root.findAll((node) => node.props.children === "Billet annulé ou supprimé : affectation bloquée. Une résolution organisateur est requise.")).toHaveLength(1);
     expect(renderer.root.findAll((node) => node.props["data-child"] === "team-links")).toHaveLength(1);
     expect(renderer.root.findAll((node) => node.props["data-child"] === "join-requests")).toHaveLength(1);
     expect(renderer.root.findAll((node) => node.props["data-child"] === "admission-requests")).toHaveLength(1);
     renderer.unmount();
   });
+
 
   it("renders the results publication guard and sends only the scoped action", async () => {
     let renderer!: ReturnType<typeof create>;

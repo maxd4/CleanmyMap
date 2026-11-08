@@ -12,6 +12,8 @@ import { SpogomiAttendancePanel } from "./spogomi-attendance-panel";
 import { SpogomiFieldOperationsPanel } from "./spogomi-field-operations-panel";
 import { SpogomiClosureSummary } from "./spogomi-closure-summary";
 import type { SpogomiFieldOperationsCapability } from "@/lib/spogomi/field-operations-service";
+import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
+import { SpogomiSyntheticDemoNotice } from "./spogomi-synthetic-demo-notice";
 
 type CockpitSection = "presentation" | "operations" | SpogomiPreparationWorkspaceSection;
 
@@ -148,6 +150,7 @@ export function SpogomiEventCockpit({ event, role, capabilities, fieldCapabiliti
   return <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 px-4 py-10">
     <div className="cmm-page-width space-y-6">
       <PageHeader tone="stone" title={event.name} subtitle={`${modeLabel(event.mode)} · ${event.publicVisibility === "published" ? "publication publique" : "édition privée"}`} />
+      {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Les divisions Casual et World Cup restent séparées : leurs catégories, équipes, saisies et classements sont lus dans leur propre section du cockpit. Les données affichées restent synthétiques et ne valent ni règlement ni résultat officiel.</p></SpogomiSyntheticDemoNotice> : null}
       <CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700"><CalendarDays size={17} aria-hidden="true" />{dateLabel(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${dateLabel(event.endsAt, event.officialTimezone)}` : " · durée ouverte"}<span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-800">{accessLabel(role, fieldCapabilities)}</span></div><p className="text-sm text-slate-700">Cet espace adapte ses vues aux habilitations vérifiées de cet événement. Chaque lecture et chaque action restent contrôlées par le serveur.</p></CmmCard>
       <CockpitNavigation sections={sections} activeSection={activeSection} setActiveSection={setActiveSection} />
       <CockpitSections sections={sections} activeSection={activeSection} event={event} organizer={organizer} referee={referee} showAdminTeamJoinRequests={showAdminTeamJoinRequests} fieldCapabilities={fieldCapabilities} />

@@ -10,6 +10,8 @@ import type {
 } from "@/lib/spogomi/personal-events-service";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 import { buildSpogomiEventSpaceHref, isSpogomiEventInJourney, type SpogomiCatalogFocus, type SpogomiCatalogJourney } from "@/lib/spogomi/navigation-intent";
+import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
+import { SpogomiSyntheticDemoNotice } from "./spogomi-synthetic-demo-notice";
 
 type FilterKey = "all" | SpogomiPersonalRelation;
 
@@ -83,6 +85,7 @@ function AccessIcon({ relation }: { relation: SpogomiPersonalRelation }) {
 function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEvent; journey: SpogomiCatalogJourney | null; focus: SpogomiCatalogFocus | null }) {
   const spaceHref = journey ? buildSpogomiEventSpaceHref(event, journey, focus) : event.links.space;
   const volunteerPrivateAccessExplanation = (journey === null || journey === "volunteers") && event.relations.includes("participant") && !event.links.public;
+  const syntheticDemo = isSpogomiCachanDemoEvent(event);
   return (
     <CmmCard as="article" tone="emerald" variant="glass" className="space-y-4 p-5" data-testid={`spogomi-personal-event-${event.id}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -96,6 +99,8 @@ function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEv
         </div>
         <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">{modeLabel(event.mode)}</span>
       </div>
+
+      {syntheticDemo ? <SpogomiSyntheticDemoNotice><p>Cette édition de validation est proposée uniquement lorsqu’elle figure dans le catalogue autorisé de votre compte. Elle ne crée aucun accès si la relation organisateur n’est pas active.</p></SpogomiSyntheticDemoNotice> : null}
 
       <div className="space-y-2 text-sm text-slate-800">
         <p className="flex items-start gap-2"><CalendarDays size={16} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />{formatDateRange(event.startsAt, event.endsAt, event.officialTimezone)}</p>
@@ -116,7 +121,7 @@ function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEv
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {spaceHref ? <CmmButton href={spaceHref} tone="primary" size="sm">Ouvrir l’espace <ArrowRight size={15} /></CmmButton> : null}
+        {spaceHref ? <CmmButton href={spaceHref} tone="primary" size="sm">{syntheticDemo && journey === "organizers" ? "Ouvrir le cockpit de validation" : "Ouvrir l’espace"} <ArrowRight size={15} /></CmmButton> : null}
         {event.links.public ? <CmmButton href={event.links.public} tone="secondary" size="sm">Voir la fiche publique</CmmButton> : null}
         {volunteerPrivateAccessExplanation ? <p className="cmm-text-body max-w-2xl font-semibold text-slate-900">Cette édition privée n’a pas de fiche publique. Pour consulter les éléments personnels autorisés, utilisez le lien privé contextualisé remis par l’organisateur ; il est nécessaire pour l’accès à cette édition et ne donne aucun accès de gestion.</p> : null}
         {!spaceHref && !event.links.public && !volunteerPrivateAccessExplanation ? <p className="text-sm font-semibold text-slate-700">Les contrôles serveur conservent cet accès sans exposer de route supplémentaire.</p> : null}
