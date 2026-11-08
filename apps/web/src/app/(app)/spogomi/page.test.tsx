@@ -17,8 +17,8 @@ vi.mock("@/lib/spogomi/public-service", () => ({ listPublishedSpogomiEvents: moc
 vi.mock("@/lib/spogomi/orientation-progress-service", () => ({ loadSpogomiOrientationProgressForCurrentUser: mocks.loadSpogomiOrientationProgressForCurrentUser }));
 vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => ({ id: "agir" }) }));
 vi.mock("@/components/ui/page-header", () => ({
-  PageHeader: ({ title, action }: { title: React.ReactNode; action?: React.ReactNode }) =>
-    React.createElement("header", null, React.createElement("h1", null, title), action),
+  PageHeader: ({ title, subtitle, action }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode }) =>
+    React.createElement("header", null, React.createElement("h1", null, title), React.createElement("p", null, subtitle), action),
 }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children) }));
 vi.mock("@/components/ui/cmm-feedback", () => ({
@@ -49,13 +49,16 @@ describe("/spogomi public and private navigation", () => {
   it("keeps the public index free of organizer navigation for visitors", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
+    const headerMarkup = markup.match(/<header[\s\S]*?<\/header>/)?.[0] ?? "";
+    expect(headerMarkup).toContain("SPOGOMI");
+    expect(headerMarkup).toContain("Trouvez votre rôle et rejoignez une compétition publiée.");
+    expect(headerMarkup).not.toContain("Voir les compétitions");
+    expect(headerMarkup).not.toContain("Ouvrir le salon SPOGOMI");
     expect(markup).not.toContain("Mes événements SPOGOMI");
     expect(markup).toContain("Aucune compétition SPOGOMI publiée");
-    expect(markup).toContain('href="#spogomi-events"');
     expect(markup).toContain('id="spogomi-registration"');
     expect(markup).toContain('id="spogomi-attestations"');
     expect(markup).not.toContain("Accéder aux actions bénévoles");
-    expect(markup).toContain('href="/sections/messagerie?tab=discussions&amp;channel=community&amp;topicId=spogomi"');
     expect(markup).toContain("understanding.title");
     expect(markup).toContain("international.casualTitle");
     expect(markup).toContain("understanding.rulesTitle");

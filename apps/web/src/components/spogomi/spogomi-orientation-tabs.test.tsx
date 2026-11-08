@@ -44,6 +44,7 @@ describe("SpogomiOrientationTabs", () => {
     const primaryLink = links(renderer).find((link) => link.props.href === "#spogomi-events" && link.props["aria-label"] === "Voir les compétitions");
     expect(primaryLink).toBeTruthy();
     expect(primaryLink?.props["data-cmm-button-width"]).toBe("auto");
+    expect(links(renderer).some((link) => link.props.href === "/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" && link.props["aria-label"] === "Discuter")).toBe(true);
     expect(infoButtons(volunteerPanel)).toHaveLength(10);
     expect(infoButtons(volunteerPanel).every((button) => button.props["aria-expanded"] === false && button.props["aria-haspopup"] === "dialog" && button.props["aria-controls"] && typeof button.props.onKeyDown === "function" && typeof button.props.onMouseEnter === "function")).toBe(true);
     for (const panel of renderer.root.findAllByProps({ role: "tabpanel" })) {
