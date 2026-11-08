@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { SpogomiClosureSummary as SpogomiClosureSummaryData } from "@/lib/spogomi/closure";
 import { SpogomiClosureDecisionsPanel } from "./spogomi-closure-decisions-panel";
@@ -76,11 +76,37 @@ async function fetchClosureSummary(eventId: string): Promise<Summary> {
 export function SpogomiClosureSummary({ eventId }: { eventId: string }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const loadSummary = useCallback(async () => { setSummary(await fetchClosureSummary(eventId)); }, [eventId]);
+  const latestRequestRef = useRef(0);
+  const hasSummaryRef = useRef(false);
+  const loadSummary = useCallback(async (): Promise<void> => {
+    const requestId = latestRequestRef.current + 1;
+    latestRequestRef.current = requestId;
+    try {
+      const nextSummary = await fetchClosureSummary(eventId);
+      if (requestId !== latestRequestRef.current) return;
+      setSummary(nextSummary);
+      hasSummaryRef.current = true;
+      setError(null);
+    } catch (cause) {
+      if (requestId !== latestRequestRef.current) return;
+      if (!hasSummaryRef.current) setError(cause instanceof Error ? cause.message : "Récapitulatif de clôture indisponible.");
+      throw cause;
+    }
+  }, [eventId]);
   useEffect(() => {
-    let active = true;
-    void fetchClosureSummary(eventId).then((nextSummary) => { if (active) setSummary(nextSummary); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Récapitulatif de clôture indisponible."); });
-    return () => { active = false; };
+    hasSummaryRef.current = false;
+    const requestId = latestRequestRef.current + 1;
+    latestRequestRef.current = requestId;
+    void fetchClosureSummary(eventId).then((nextSummary) => {
+      if (requestId !== latestRequestRef.current) return;
+      setSummary(nextSummary);
+      hasSummaryRef.current = true;
+      setError(null);
+    }).catch((cause: unknown) => {
+      if (requestId !== latestRequestRef.current || hasSummaryRef.current) return;
+      setError(cause instanceof Error ? cause.message : "Récapitulatif de clôture indisponible.");
+    });
+    return () => { latestRequestRef.current += 1; };
   }, [eventId]);
   if (error) return <p role="alert" className="text-sm text-red-800">{error}</p>;
   if (!summary) return <p className="cmm-text-small">Chargement du récapitulatif de clôture…</p>;

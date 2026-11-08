@@ -34,9 +34,10 @@ function TeamDecisionCard({ eventId, team, onSaved }: { eventId: string; team: S
   const [sportEligible, setSportEligible] = useState(team.decision?.sportEligible ?? team.certifiedSubmission);
   const [environmentalEligibility, setEnvironmentalEligibility] = useState<SpogomiEnvironmentalEligibility>(team.decision?.environmentalEligibility ?? (team.certifiedSubmission ? "eligible" : "unknown"));
   const [reason, setReason] = useState(team.decision?.reason ?? "");
+  const [currentDecisionVersion, setCurrentDecisionVersion] = useState(team.decision?.decisionVersion ?? 0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const nextVersion = (team.decision?.decisionVersion ?? 0) + 1;
+  const nextVersion = currentDecisionVersion + 1;
   const teamLabel = team.teamNumber === null ? team.publicName : `Équipe ${team.teamNumber} · ${team.publicName}`;
 
   async function save() {
@@ -63,7 +64,13 @@ function TeamDecisionCard({ eventId, team, onSaved }: { eventId: string; team: S
       });
       const body: unknown = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(responseError(body, "La décision de clôture a été refusée."));
-      await onSaved();
+      setCurrentDecisionVersion(nextVersion);
+      try {
+        await onSaved();
+        setError(null);
+      } catch {
+        setError("Décision enregistrée, mais le récapitulatif n’a pas pu être actualisé. Vos valeurs restent conservées.");
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "La décision de clôture a été refusée.");
     } finally {
@@ -79,12 +86,14 @@ function TeamDecisionCard({ eventId, team, onSaved }: { eventId: string; team: S
       </div>
       <p className="text-sm font-bold text-slate-700">{team.decision ? `Décision courante · version ${team.decision.decisionVersion}` : "Aucune décision courante"}</p>
     </div>
-    <div className="grid gap-3 md:grid-cols-2">
-      <label className="text-sm font-bold text-slate-800">Décision<select className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 font-normal" value={status} onChange={(event) => setStatus(event.target.value as SpogomiTeamClosureStatus)} aria-label={`Décision de clôture pour ${teamLabel}`}>{(Object.keys(statusLabels) as SpogomiTeamClosureStatus[]).map((value) => <option key={value} value={value}>{statusLabels[value]}</option>)}</select></label>
-      <label className="text-sm font-bold text-slate-800">Éligibilité environnementale<select className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 font-normal" value={environmentalEligibility} onChange={(event) => setEnvironmentalEligibility(event.target.value as SpogomiEnvironmentalEligibility)}>{(Object.keys(environmentalLabels) as SpogomiEnvironmentalEligibility[]).map((value) => <option key={value} value={value}>{environmentalLabels[value]}</option>)}</select></label>
-    </div>
-    <label className="flex items-center gap-2 text-sm font-bold text-slate-800"><input type="checkbox" checked={sportEligible} onChange={(event) => setSportEligible(event.target.checked)} /> Éligible sportivement</label>
-    <label className="block text-sm font-bold text-slate-800">Motif obligatoire<textarea className="mt-1 min-h-24 w-full rounded-xl border border-slate-300 bg-white p-3 font-normal" required aria-required="true" maxLength={2000} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Expliquez la décision et sa source vérifiable." /></label>
+    <fieldset disabled={busy} className="contents">
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="text-sm font-bold text-slate-800">Décision<select disabled={busy} className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 font-normal" value={status} onChange={(event) => setStatus(event.target.value as SpogomiTeamClosureStatus)} aria-label={`Décision de clôture pour ${teamLabel}`}>{(Object.keys(statusLabels) as SpogomiTeamClosureStatus[]).map((value) => <option key={value} value={value}>{statusLabels[value]}</option>)}</select></label>
+        <label className="text-sm font-bold text-slate-800">Éligibilité environnementale<select disabled={busy} className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 font-normal" value={environmentalEligibility} onChange={(event) => setEnvironmentalEligibility(event.target.value as SpogomiEnvironmentalEligibility)}>{(Object.keys(environmentalLabels) as SpogomiEnvironmentalEligibility[]).map((value) => <option key={value} value={value}>{environmentalLabels[value]}</option>)}</select></label>
+      </div>
+      <label className="flex items-center gap-2 text-sm font-bold text-slate-800"><input disabled={busy} type="checkbox" checked={sportEligible} onChange={(event) => setSportEligible(event.target.checked)} /> Éligible sportivement</label>
+      <label className="block text-sm font-bold text-slate-800">Motif obligatoire<textarea disabled={busy} className="mt-1 min-h-24 w-full rounded-xl border border-slate-300 bg-white p-3 font-normal" required aria-required="true" maxLength={2000} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Expliquez la décision et sa source vérifiable." /></label>
+    </fieldset>
     <div className="flex flex-wrap items-center gap-3"><CmmButton type="button" tone="primary" disabled={busy || !reason.trim()} loading={busy} onClick={() => { void save(); }}>Enregistrer la décision · v{nextVersion}</CmmButton>{error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}</div>
   </CmmCard>;
 }

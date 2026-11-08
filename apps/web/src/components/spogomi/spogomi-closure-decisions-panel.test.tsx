@@ -39,6 +39,12 @@ function textOf(renderer: ReactTestRenderer) {
   return JSON.stringify(renderer.toJSON());
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => { resolve = nextResolve; });
+  return { promise, resolve };
+}
+
 describe("SpogomiClosureDecisionsPanel", () => {
   beforeEach(() => vi.restoreAllMocks());
 
@@ -71,6 +77,31 @@ describe("SpogomiClosureDecisionsPanel", () => {
     expect(onSaved).toHaveBeenCalledTimes(1);
   });
 
+  it("locks every decision field during the POST and re-enables them after reconciliation", async () => {
+    const post = deferred<Response>();
+    vi.spyOn(globalThis, "fetch").mockReturnValue(post.promise);
+    const onSaved = vi.fn().mockResolvedValue(undefined);
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<SpogomiClosureDecisionsPanel eventId="event-1" summary={baseSummary} onSaved={onSaved} />); });
+    const button = renderer.root.findByType("button");
+    const textarea = renderer.root.findByType("textarea");
+    act(() => { textarea.props.onChange({ target: { value: "Décision verrouillée pendant l’enregistrement." } }); });
+
+    await act(async () => { button.props.onClick(); await Promise.resolve(); });
+
+    expect(renderer.root.findAllByType("select").every((select) => select.props.disabled)).toBe(true);
+    expect(renderer.root.findByType("input").props.disabled).toBe(true);
+    expect(renderer.root.findByType("textarea").props.disabled).toBe(true);
+    expect(renderer.root.findByType("button").props.disabled).toBe(true);
+
+    await act(async () => { post.resolve(new Response(JSON.stringify({ status: "recorded" }), { status: 200 })); await Promise.resolve(); });
+
+    expect(renderer.root.findAllByType("select").every((select) => !select.props.disabled)).toBe(true);
+    expect(renderer.root.findByType("input").props.disabled).toBe(false);
+    expect(renderer.root.findByType("textarea").props.disabled).toBe(false);
+    expect(renderer.root.findByType("button").props.disabled).toBe(false);
+  });
+
   it("increments the decision version for a correction and keeps the current values editable", async () => {
     const currentSummary: SpogomiClosureSummary = {
       ...baseSummary,
@@ -96,9 +127,34 @@ describe("SpogomiClosureDecisionsPanel", () => {
     act(() => { renderer = create(<SpogomiClosureDecisionsPanel eventId="event-1" summary={baseSummary} onSaved={onSaved} />); });
     const textarea = renderer.root.findByType("textarea");
     act(() => { textarea.props.onChange({ target: { value: "Correction refusée." } }); });
+    act(() => { renderer.root.findAllByType("select")[0].props.onChange({ target: { value: "contested" } }); });
+    act(() => { renderer.root.findByType("input").props.onChange({ target: { checked: false } }); });
     await act(async () => { await renderer.root.findByType("button").props.onClick(); });
     expect(textOf(renderer)).toContain("Conflict: la décision de clôture a changé entre-temps.");
+    expect(renderer.root.findAllByType("select")[0].props.value).toBe("contested");
+    expect(renderer.root.findByType("input").props.checked).toBe(false);
+    expect(renderer.root.findByType("textarea").props.value).toBe("Correction refusée.");
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes an accepted POST from a failed refresh and uses its version for the next correction", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "recorded" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "recorded" }), { status: 200 }));
+    const onSaved = vi.fn().mockRejectedValueOnce(new Error("Récapitulatif indisponible.")).mockResolvedValueOnce(undefined);
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<SpogomiClosureDecisionsPanel eventId="event-1" summary={baseSummary} onSaved={onSaved} />); });
+    act(() => { renderer.root.findByType("textarea").props.onChange({ target: { value: "Décision acceptée côté serveur." } }); });
+
+    await act(async () => { await renderer.root.findByType("button").props.onClick(); });
+
+    expect(textOf(renderer)).toContain("Décision enregistrée, mais le récapitulatif n’a pas pu être actualisé.");
+    expect(textOf(renderer)).not.toContain("décision de clôture a été refusée");
+    expect(renderer.root.findByType("textarea").props.disabled).toBe(false);
+
+    await act(async () => { await renderer.root.findByType("button").props.onClick(); });
+
+    expect(fetchMock.mock.calls[1]?.[1]).toEqual(expect.objectContaining({ body: expect.stringContaining('"decisionVersion":2') }));
   });
 
   it("requires a reason before making a mutation request", async () => {

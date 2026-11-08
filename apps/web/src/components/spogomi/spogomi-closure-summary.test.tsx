@@ -11,6 +11,28 @@ function textOf(renderer: ReactTestRenderer) {
 const teams = [{ teamId: "team-1", divisionId: "division-1", teamNumber: 1, publicName: "Les nettoyeurs", certifiedSubmission: true, certifiedSubmissionVersion: 3, decision: null }];
 const division = { id: "division-1", type: "casual", regulationComplete: true, sportEligibleTeams: 1, certifiedTeams: 1, officialRankingCount: 0, blockers: [], teams };
 
+function summaryPayload(fieldCompetition: string, summaryTeams = teams) {
+  return {
+    summary: {
+      fieldCompetition,
+      arbitration: "approved",
+      rankings: "published",
+      environmental: "validated",
+      action: "linked",
+      individualRequests: "none",
+      blockers: [],
+      certificationsRemaining: 0,
+      divisions: [{ ...division, teams: summaryTeams }],
+    },
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => { resolve = nextResolve; });
+  return { promise, resolve };
+}
+
 describe("SpogomiClosureSummary", () => {
   beforeEach(() => vi.restoreAllMocks());
 
@@ -81,5 +103,46 @@ describe("SpogomiClosureSummary", () => {
     });
 
     expect(renderer.toJSON()).toBeNull();
+  });
+
+  it("keeps the newest snapshot when concurrent refreshes resolve in reverse order", async () => {
+    const initial = deferred<Response>();
+    const refreshes: Array<ReturnType<typeof deferred<Response>>> = [];
+    let initialPending = true;
+    vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => {
+      if (init?.method === "POST") return Promise.resolve(new Response(JSON.stringify({ status: "recorded" }), { status: 200 }));
+      if (initialPending) {
+        initialPending = false;
+        return initial.promise;
+      }
+      const refresh = deferred<Response>();
+      refreshes.push(refresh);
+      return refresh.promise;
+    });
+    const twoTeams = [
+      ...teams,
+      { teamId: "team-2", divisionId: "division-1", teamNumber: 2, publicName: "Les voisins", certifiedSubmission: true, certifiedSubmissionVersion: 4, decision: null },
+    ];
+    let renderer!: ReactTestRenderer;
+    act(() => { renderer = create(<SpogomiClosureSummary eventId="event-race" />); });
+    await act(async () => { initial.resolve(new Response(JSON.stringify(summaryPayload("initial snapshot", twoTeams)), { status: 200 })); await Promise.resolve(); await Promise.resolve(); });
+
+    const textareas = renderer.root.findAllByType("textarea");
+    const buttons = renderer.root.findAllByType("button");
+    act(() => { textareas[0].props.onChange({ target: { value: "Décision équipe 1." } }); });
+    act(() => { textareas[1].props.onChange({ target: { value: "Décision équipe 2." } }); });
+    await act(async () => {
+      buttons[0].props.onClick();
+      buttons[1].props.onClick();
+      for (let index = 0; index < 4; index += 1) await Promise.resolve();
+    });
+
+    expect(refreshes).toHaveLength(2);
+    await act(async () => { refreshes[1].resolve(new Response(JSON.stringify(summaryPayload("newest snapshot", twoTeams)), { status: 200 })); await Promise.resolve(); await Promise.resolve(); });
+    await act(async () => { refreshes[0].resolve(new Response(JSON.stringify(summaryPayload("obsolete snapshot", twoTeams)), { status: 200 })); await Promise.resolve(); await Promise.resolve(); });
+
+    const rendered = textOf(renderer);
+    expect(rendered).toContain("newest snapshot");
+    expect(rendered).not.toContain("obsolete snapshot");
   });
 });
