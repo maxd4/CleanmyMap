@@ -10,6 +10,8 @@ export type SpogomiPublicResultsVisibility = "hidden" | "provisional" | "certifi
 import type { SpogomiDivision, SpogomiDivisionType } from "../types";
 import { effectiveSpogomiTeamClosureDecision, type SpogomiTeamClosureStatus } from "../closure";
 import { buildRankingEntries, currentOfficialRankings } from "./results-projection-ranking";
+import type { SpogomiEnvironmentMappingRow } from "../regulation";
+import { isRegulationReadyForCertification } from "../validation";
 export { parseSpogomiPublicResults } from "./results-projection-parser";
 
 export type SpogomiResultsSource = {
@@ -59,6 +61,7 @@ export type SpogomiResultsSource = {
   items: Array<Record<string, unknown>>;
   participants: Array<{ id: string; division_id?: string; team_id: string | null; registration_status: string; attendance_status: string; updated_at?: string }>;
   officialRankings: Array<{ division_id?: string; team_id: string; kind: "points" | "butts"; rank: number; status: "certified" | "revoked"; team_eligible: boolean; decision_version: string; source_reference: string; source_snapshot?: SpogomiPublicationSourceSnapshot | null }>;
+  environmentMappings?: SpogomiEnvironmentMappingRow[];
   consolidation: { projection: Record<string, unknown>; published_at: string } | null;
   actionIsPublished: boolean;
 };
@@ -328,7 +331,7 @@ function buildMixedProjection(source: SpogomiResultsSource, divisionRows: NonNul
   const projections = divisionRows.map((division) => buildSpogomiResultsProjection({
     ...source,
     event: { ...source.event, mode: division.division_type, divisions: [division], ...(division.regulation_version ? { regulationVersion: division.regulation_version } : {}), ...(division.regulation_status ? { regulationStatus: division.regulation_status } : {}), ...(division.regulation_source_reference !== undefined ? { regulationSourceReference: division.regulation_source_reference } : {}), ...(division.regulation_config !== undefined ? { regulationConfig: division.regulation_config } : {}), ...(division.team_size_config !== undefined ? { teamSizeConfig: division.team_size_config } : {}) },
-    categories: source.categories.filter((row) => row.division_id === division.id), teams: source.teams.filter((row) => row.division_id === division.id), submissions: source.submissions.filter((row) => row.division_id === division.id), items: source.items.filter((row) => row.division_id === division.id), participants: source.participants.filter((row) => row.division_id === division.id), officialRankings: source.officialRankings.filter((row) => row.division_id === division.id),
+    categories: source.categories.filter((row) => row.division_id === division.id), teams: source.teams.filter((row) => row.division_id === division.id), submissions: source.submissions.filter((row) => row.division_id === division.id), items: source.items.filter((row) => row.division_id === division.id), participants: source.participants.filter((row) => row.division_id === division.id), officialRankings: source.officialRankings.filter((row) => row.division_id === division.id), environmentMappings: (source.environmentMappings ?? []).filter((row) => row.division_id === division.id),
   }, refreshedAt));
   const first = projections[0];
   if (!first) throw new Error("Validation: une édition mixte doit posséder deux divisions.");
@@ -346,9 +349,9 @@ function buildMixedProjection(source: SpogomiResultsSource, divisionRows: NonNul
 export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refreshedAt = new Date().toISOString()): SpogomiExportProjection {
   const divisionRows = source.event.divisions ?? [];
   if (source.event.mode === "mixed" && divisionRows.length === 2) return buildMixedProjection(source, divisionRows, refreshedAt);
-  const regulation = buildSpogomiRegulation(sourceEvent(source.event), source.categories);
+  const regulation = buildSpogomiRegulation(sourceEvent(source.event), source.categories, source.environmentMappings ?? []);
   const publicationSourceSnapshot = buildPublicationSourceSnapshot(source);
-  const regulationComplete = regulation.status === "complete" && regulation.categories.every((category) => category.isComplete);
+  const regulationComplete = isRegulationReadyForCertification(regulation);
   const computed = buildComputedTeams(source, regulation);
   const publicResults = buildPublicResults(source, computed, regulation, regulationComplete, refreshedAt, publicationSourceSnapshot);
   const officialSport = currentOfficialRankings(source, "points", publicationSourceSnapshot);

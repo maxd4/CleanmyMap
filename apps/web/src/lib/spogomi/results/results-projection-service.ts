@@ -7,6 +7,7 @@ import {
   type SpogomiResultsSource,
   type SpogomiExportProjection,
 } from "./results-projection";
+import { toSpogomiEnvironmentMapping, type SpogomiPersistedEnvironmentMappingRow } from "../regulation";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -125,7 +126,7 @@ export async function loadSpogomiResultsProjection(params: {
   if (!event) throw new Error("La projection de l’événement SPOGOMI est invalide.");
   if (params.publicOnly && (event.public_visibility !== "published" || event.state === "cancelled")) return null;
 
-  const [actionResult, divisions, categories, teams, submissions, items, participants, rankings, consolidation, closureDecisions] = await Promise.all([
+  const [actionResult, divisions, categories, teams, submissions, items, participants, rankings, mappings, consolidation, closureDecisions] = await Promise.all([
     params.supabase.from("actions").select("status, published_at, moderation_visibility").eq("id", event.action_id).maybeSingle(),
     readAllSpogomiPages("public SPOGOMI divisions", (from, to) => params.supabase.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("event_id", params.eventId).order("division_type", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI categories", (from, to) => params.supabase.from("spogomi_category_rules").select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete, updated_at").eq("event_id", params.eventId).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
@@ -134,6 +135,7 @@ export async function loadSpogomiResultsProjection(params: {
     readAllSpogomiPages("public SPOGOMI result items", (from, to) => params.supabase.from("spogomi_result_items").select("id, division_id, submission_id, category_rule_id, measurement_kind, unit, quantity, mass_grams, object_count, measurement_method, provenance, source_reference, updated_at").eq("event_id", params.eventId).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI participants", (from, to) => params.supabase.from("spogomi_participants").select("id, division_id, team_id, registration_status, attendance_status, updated_at").eq("event_id", params.eventId).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("public SPOGOMI official rankings", (from, to) => params.supabase.from("spogomi_official_rankings").select("division_id, team_id, kind, rank, status, team_eligible, decision_version, source_reference, source_snapshot").eq("event_id", params.eventId).order("kind", { ascending: true }).order("rank", { ascending: true }).order("team_id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI environment mappings", (from, to) => params.supabase.from("spogomi_environment_category_mappings").select("event_id, division_id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason").eq("event_id", params.eventId).order("division_id", { ascending: true }).order("category_code", { ascending: true }).range(from, to)),
     params.supabase.from("spogomi_action_consolidations").select("projection, published_at").eq("event_id", params.eventId).eq("is_current", true).eq("status", "published").maybeSingle(),
     readAllSpogomiPages("public SPOGOMI closure decisions", (from, to) => params.supabase.from("spogomi_team_closure_decisions").select("team_id, division_id, status, sport_eligible, environmental_eligibility, decision_version").eq("event_id", params.eventId).eq("is_current", true).order("team_id", { ascending: true }).range(from, to)),
   ]);
@@ -184,6 +186,7 @@ export async function loadSpogomiResultsProjection(params: {
     items: items as Array<Record<string, unknown>>,
     participants: participants as unknown as SpogomiResultsSource["participants"],
     officialRankings: rankings as unknown as SpogomiResultsSource["officialRankings"],
+    environmentMappings: (mappings as unknown as SpogomiPersistedEnvironmentMappingRow[]).map(toSpogomiEnvironmentMapping),
     consolidation: consolidationProjection,
     actionIsPublished: Boolean(actionResult.data && isPublishedAction(actionResult.data)),
   };

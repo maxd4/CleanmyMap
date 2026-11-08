@@ -19,7 +19,7 @@ const completeRegulation: SpogomiRegulation = {
       unit: "objet",
       coefficient: 3,
       coefficientStatus: "confirmed",
-      environmentalCategorySlug: null,
+      environmentalCategorySlug: "recyclable",
       isComplete: true,
     },
     {
@@ -39,9 +39,14 @@ const completeRegulation: SpogomiRegulation = {
       unit: "g",
       coefficient: 0.5,
       coefficientStatus: "confirmed",
-      environmentalCategorySlug: null,
+      environmentalCategorySlug: "mixed_residual",
       isComplete: true,
     },
+  ],
+  environmentMappings: [
+    { categoryCode: "bottles", environmentalCategorySlug: "recyclable", sourceField: "object_count", sourceUnit: "objet", targetUnit: "count", unitFactorToTarget: 1, countsTowardTotal: true, isMegots: false, mappingStatus: "mapped", exclusionReason: null },
+    { categoryCode: "butts", environmentalCategorySlug: "cigarette_butt", sourceField: "object_count", sourceUnit: "objet", targetUnit: "count", unitFactorToTarget: 1, countsTowardTotal: true, isMegots: true, mappingStatus: "mapped", exclusionReason: null },
+    { categoryCode: "mixed", environmentalCategorySlug: "mixed_residual", sourceField: "mass_grams", sourceUnit: "g", targetUnit: "grams", unitFactorToTarget: 1, countsTowardTotal: true, isMegots: false, mappingStatus: "mapped", exclusionReason: null },
   ],
 };
 

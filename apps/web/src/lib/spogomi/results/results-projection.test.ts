@@ -37,7 +37,12 @@ function source(): SpogomiResultsSource {
       { id: "p3", team_id: "team-2", registration_status: "registered", attendance_status: "present" },
       { id: "p4", team_id: "team-3", registration_status: "registered", attendance_status: "present" },
     ],
-    officialRankings: [], consolidation: null, actionIsPublished: false,
+    officialRankings: [],
+    environmentMappings: [
+      { event_id: "event-1", division_id: "division-casual", categoryRuleId: "cat-waste", mapping_version: "rules-v1", categoryCode: "waste", environmentalCategorySlug: "plastic", sourceField: "mass_grams", sourceUnit: "kg", targetUnit: "grams", unitFactorToTarget: 1000, countsTowardTotal: true, isMegots: false, mappingStatus: "mapped", exclusionReason: null },
+      { event_id: "event-1", division_id: "division-casual", categoryRuleId: "cat-butts", mapping_version: "rules-v1", categoryCode: "butts", environmentalCategorySlug: "cigarette_butt", sourceField: "object_count", sourceUnit: "unité", targetUnit: "count", unitFactorToTarget: 1, countsTowardTotal: true, isMegots: true, mappingStatus: "mapped", exclusionReason: null },
+    ],
+    consolidation: null, actionIsPublished: false,
   };
 }
 
@@ -141,6 +146,12 @@ describe("SPOGOMI public results projection", () => {
       { ...candidate.categories[0], id: "cat-world-waste", division_id: "division-world", regulation_version: "rules-world", coefficient: 2 },
       { ...candidate.categories[1], id: "cat-world-butts", division_id: "division-world", regulation_version: "rules-world", coefficient: 0 },
     ];
+    candidate.environmentMappings = candidate.categories.map((category) => ({
+      event_id: "event-1", division_id: category.division_id!, categoryRuleId: category.id, mapping_version: category.regulation_version,
+      categoryCode: category.code, environmentalCategorySlug: category.environmental_category_slug, sourceField: category.measurement_kind === "mass" ? "mass_grams" as const : "object_count" as const,
+      sourceUnit: category.unit, targetUnit: category.measurement_kind === "mass" ? "grams" as const : "count" as const, unitFactorToTarget: 1,
+      countsTowardTotal: true, isMegots: category.code.includes("butts"), mappingStatus: "mapped" as const, exclusionReason: null,
+    }));
     candidate.teams = [
       { ...candidate.teams[0], id: "team-casual-1", division_id: "division-casual", team_number: 1, certified_submission_id: "submission-casual" },
       { ...candidate.teams[1], id: "team-world-1", division_id: "division-world", team_number: 1, certified_submission_id: "submission-world" },

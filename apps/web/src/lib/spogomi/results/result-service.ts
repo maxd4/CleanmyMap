@@ -15,7 +15,7 @@ import { loadSpogomiEventForOrganizer } from "../preparation/preparation-service
 import { loadSpogomiTeamSession } from "../team-access";
 import { readAllSpogomiPages } from "../pagination";
 import { toSpogomiResultItemInput } from "./result-input";
-import { buildSpogomiRegulation } from "../regulation";
+import { buildSpogomiRegulation, toSpogomiEnvironmentMapping, type SpogomiPersistedEnvironmentMappingRow } from "../regulation";
 import { resolveSpogomiEventAccess } from "../authorization";
 
 export type SpogomiReviewerRole = "organizer" | "referee";
@@ -132,11 +132,12 @@ export async function loadSpogomiTeamResultForm(params: {
 }): Promise<SpogomiTeamResultForm | null> {
   const session = await loadSpogomiTeamSession(params.supabase, params.sessionToken);
   if (!session) return null;
-  const [eventResult, divisionResult, teamResult, categories, submissionResult, attendanceResult] = await Promise.all([
+  const [eventResult, divisionResult, teamResult, categories, mappings, submissionResult, attendanceResult] = await Promise.all([
     params.supabase.from("spogomi_events").select("id, name, event_slug, mode, state, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", session.eventId).maybeSingle(),
     params.supabase.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", session.divisionId).eq("event_id", session.eventId).maybeSingle(),
     params.supabase.from("spogomi_teams").select("id, division_id, team_number, public_name").eq("id", session.teamId).eq("event_id", session.eventId).eq("division_id", session.divisionId).maybeSingle(),
     readAllSpogomiPages("team regulation categories", (from, to) => params.supabase.from("spogomi_category_rules").select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete").eq("event_id", session.eventId).eq("division_id", session.divisionId).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("team environmental mappings", (from, to) => params.supabase.from("spogomi_environment_category_mappings").select("id, event_id, division_id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason").eq("event_id", session.eventId).eq("division_id", session.divisionId).order("category_code", { ascending: true }).range(from, to)),
     params.supabase.from("spogomi_result_submissions").select("id, division_id, version, status, correction_reason").eq("event_id", session.eventId).eq("team_id", session.teamId).eq("division_id", session.divisionId).order("version", { ascending: false }).limit(1).maybeSingle(),
     params.supabase.from("spogomi_participants").select("id", { count: "exact", head: true }).eq("event_id", session.eventId).eq("team_id", session.teamId).eq("division_id", session.divisionId).eq("registration_status", "registered").eq("attendance_status", "present"),
   ]);
@@ -152,7 +153,7 @@ export async function loadSpogomiTeamResultForm(params: {
   if (submission) {
     items = await readAllSpogomiPages("team result items", (from, to) => params.supabase.from("spogomi_result_items").select("id, division_id, category_rule_id, measurement_kind, unit, quantity, mass_grams, object_count, measurement_method, provenance, arbitration_comment, source_reference").eq("submission_id", submission.id).eq("division_id", session.divisionId).order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to)) as typeof items;
   }
-  const regulation = buildSpogomiRegulation(event, categoryRows);
+  const regulation = buildSpogomiRegulation(event, categoryRows, (mappings as unknown as SpogomiPersistedEnvironmentMappingRow[]).map(toSpogomiEnvironmentMapping));
   return {
     event,
     team: { id: String(teamData.id), teamNumber: Number(teamData.team_number), publicName: String(teamData.public_name) },
@@ -205,9 +206,10 @@ export async function saveSpogomiTeamSubmission(params: {
 }): Promise<unknown> {
   const session = await loadSpogomiTeamSession(params.supabase, params.sessionToken);
   if (!session) throw new Error("Team session is unauthorized.");
-  const [eventResult, categories, latestResult] = await Promise.all([
+  const [eventResult, categories, mappings, latestResult] = await Promise.all([
     params.supabase.from("spogomi_events").select("id, name, event_slug, mode, state, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("id", session.eventId).maybeSingle(),
     readAllSpogomiPages("submission regulation categories", (from, to) => params.supabase.from("spogomi_category_rules").select("id, event_id, division_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete").eq("event_id", session.eventId).eq("division_id", session.divisionId).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("submission environmental mappings", (from, to) => params.supabase.from("spogomi_environment_category_mappings").select("id, event_id, division_id, category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason").eq("event_id", session.eventId).eq("division_id", session.divisionId).order("category_code", { ascending: true }).range(from, to)),
     params.supabase.from("spogomi_result_submissions").select("id, division_id, status, version").eq("event_id", session.eventId).eq("team_id", session.teamId).eq("division_id", session.divisionId).order("version", { ascending: false }).limit(1).maybeSingle(),
   ]);
   for (const result of [eventResult, latestResult]) if (result.error) throw result.error;
@@ -218,7 +220,7 @@ export async function saveSpogomiTeamSubmission(params: {
   const eventData = eventResult.data as unknown as Record<string, unknown>;
   const divisionData = division.data as unknown as Record<string, unknown>;
   const regulationEvent = { ...eventData, mode: divisionData.division_type, division_id: session.divisionId, regulation_version: divisionData.regulation_version, regulation_status: divisionData.regulation_status, regulation_source_reference: divisionData.regulation_source_reference, regulation_config: divisionData.regulation_config, team_size_config: divisionData.team_size_config } as EventRegulationRow;
-  const regulation = buildSpogomiRegulation(regulationEvent, categoryRows);
+  const regulation = buildSpogomiRegulation(regulationEvent, categoryRows, (mappings as unknown as SpogomiPersistedEnvironmentMappingRow[]).map(toSpogomiEnvironmentMapping));
   const latest = latestResult.data as unknown as { id: string; status: string; version: number } | null;
   const replacesSubmissionId = validateSubmissionForSave(params.input, categoryRows, regulation, latest);
   const rpc = await params.supabase.rpc("spogomi_save_team_submission_for_division", {

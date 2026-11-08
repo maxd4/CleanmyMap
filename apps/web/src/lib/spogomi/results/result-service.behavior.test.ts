@@ -158,6 +158,7 @@ describe("SPOGOMI result review service", () => {
       spogomi_divisions: [{ id: "casual", division_type: "casual", regulation_version: "v1", regulation_status: "complete", regulation_source_reference: "rulebook", regulation_config: completeEvent.regulation_config, team_size_config: completeEvent.team_size_config }],
       spogomi_teams: [{ id: "team-1", division_id: "casual", team_number: 1, public_name: "Equipe 1" }],
       spogomi_category_rules: [category],
+      spogomi_environment_category_mappings: [{ id: "mapping-1", event_id: "event-1", division_id: "casual", category_rule_id: "category-1", mapping_version: "v1", category_code: "plastic", environmental_category_slug: "plastic", source_field: "mass_grams", source_unit: "g", target_unit: "grams", unit_factor_to_target: 1, counts_toward_total: true, is_megots: false, mapping_status: "mapped", exclusion_reason: null }],
       spogomi_result_submissions: [{ id: "submission-1", division_id: "casual", version: 2, status: "submitted", correction_reason: null }],
       spogomi_result_items: [{ category_rule_id: "category-1", quantity: null, mass_grams: 12, object_count: null, measurement_method: "balance", provenance: "photo", arbitration_comment: null }],
       spogomi_participants: [{}],

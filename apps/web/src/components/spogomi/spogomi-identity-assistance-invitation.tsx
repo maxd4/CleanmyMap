@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 function errorMessage(value: unknown, fallback: string): string {
   return typeof value === "object" && value !== null && "error" in value && typeof value.error === "string" ? value.error : fallback;
@@ -43,9 +45,7 @@ export function SpogomiIdentityAssistanceInvitation({ eventId, token, signInHref
           variant="glass"
           className="mx-auto max-w-2xl space-y-4 p-6"
         >
-          <h1 className="text-2xl font-black text-emerald-950">
-            Assistance de rattachement SPOGOMI
-          </h1>
+          <PageHeader family={resolvePageFamily("/spogomi/assistance")} tone="emerald" title="Assistance de rattachement SPOGOMI" subtitle="Demande contextualisée, vérifiée par l’organisation avant toute émission de code." />
           <p className="text-sm text-slate-800">
             Ce lien privé ne révèle pas le nom de la compétition ni son roster.
             Il sert uniquement à transmettre une demande à l’organisateur qui

@@ -21,7 +21,7 @@ test.describe("SPOGOMI public navigation", () => {
     );
     await expect(page.getByRole("tab", { name: "Bénévoles" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText("Découvrir les compétitions", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ouvrir : Rattacher mon compte par code" })).toHaveAttribute("href", "#spogomi-events");
+    await expect(page.getByRole("link", { name: "Ouvrir : Rattacher mon compte par code" })).toHaveAttribute("href", "/spogomi#spogomi-identity");
     await page.getByRole("tab", { name: "Arbitres & modération" }).click();
     await expect(page.getByText("Événements habilités", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Ouvrir : Événements habilités" })).toHaveAttribute(

@@ -35,6 +35,44 @@ export type SpogomiEnvironmentMappingRow = SpogomiEnvironmentCategoryMapping & {
   mapping_version: string;
 };
 
+export type SpogomiPersistedEnvironmentMappingRow = {
+  id?: string | null;
+  event_id: string;
+  division_id: string;
+  category_rule_id: string | null;
+  mapping_version: string;
+  category_code: string;
+  environmental_category_slug: string | null;
+  source_field: SpogomiEnvironmentCategoryMapping["sourceField"];
+  source_unit: string;
+  target_unit: SpogomiEnvironmentCategoryMapping["targetUnit"];
+  unit_factor_to_target: number | string | null;
+  counts_toward_total: boolean;
+  is_megots: boolean;
+  mapping_status: SpogomiEnvironmentCategoryMapping["mappingStatus"];
+  exclusion_reason: string | null;
+};
+
+export function toSpogomiEnvironmentMapping(row: SpogomiPersistedEnvironmentMappingRow): SpogomiEnvironmentMappingRow {
+  return {
+    ...(row.id ? { id: row.id } : {}),
+    event_id: row.event_id,
+    division_id: row.division_id,
+    mapping_version: row.mapping_version,
+    categoryRuleId: row.category_rule_id,
+    categoryCode: row.category_code,
+    environmentalCategorySlug: row.environmental_category_slug,
+    sourceField: row.source_field,
+    sourceUnit: row.source_unit,
+    targetUnit: row.target_unit,
+    unitFactorToTarget: row.unit_factor_to_target === null ? null : Number(row.unit_factor_to_target),
+    countsTowardTotal: row.counts_toward_total,
+    isMegots: row.is_megots,
+    mappingStatus: row.mapping_status,
+    exclusionReason: row.exclusion_reason,
+  };
+}
+
 function asConfig(value: unknown): Pick<SpogomiRegulation, "rounding" | "penalties" | "eligibility" | "tiebreakers"> {
   return value && typeof value === "object" ? value as Pick<SpogomiRegulation, "rounding" | "penalties" | "eligibility" | "tiebreakers"> : {};
 }
