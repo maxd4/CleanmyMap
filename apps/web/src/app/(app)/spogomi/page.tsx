@@ -7,6 +7,7 @@ import { getTranslation } from "@/lib/i18n/server-translation";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerLocale } from "@/lib/server-preferences";
 import { listPublishedSpogomiEvents } from "@/lib/spogomi/public-service";
+import { loadSpogomiOrientationProgressForCurrentUser } from "@/lib/spogomi/orientation-progress-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { buildPageMetadata } from "@/lib/metadata";
 
@@ -17,7 +18,11 @@ export default async function SpogomiIndexPage() {
   const { t } = getTranslation("spogomi", locale);
   const { userId } = await getSafeAuthSession();
   let events: Awaited<ReturnType<typeof listPublishedSpogomiEvents>> = [];
+  let orientationProgress: Awaited<ReturnType<typeof loadSpogomiOrientationProgressForCurrentUser>> = [];
   let loadError = false;
   try { events = await listPublishedSpogomiEvents(); } catch { loadError = true; }
-  return <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10"><div className="cmm-page-width space-y-8"><PageHeader family={resolvePageFamily("/spogomi")} tone="emerald" title="SPOGOMI" subtitle="Trouvez votre rôle et rejoignez une compétition publiée." action={<CmmButtonGroup><CmmButton href="#spogomi-events" tone="primary">Voir les compétitions</CmmButton><CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary">Ouvrir le salon SPOGOMI</CmmButton></CmmButtonGroup>} /><SpogomiOrientationTabs isAuthenticated={Boolean(userId)} /><SpogomiPublicEvents events={events} loadError={loadError} /><SpogomiUnderstanding t={t} /><SpogomiInternationalSection locale={locale} t={t} /></div></div>;
+  if (userId) {
+    try { orientationProgress = await loadSpogomiOrientationProgressForCurrentUser(userId); } catch { orientationProgress = []; }
+  }
+  return <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10"><div className="cmm-page-width space-y-8"><PageHeader family={resolvePageFamily("/spogomi")} tone="emerald" title="SPOGOMI" subtitle="Trouvez votre rôle et rejoignez une compétition publiée." action={<CmmButtonGroup><CmmButton href="#spogomi-events" tone="primary">Voir les compétitions</CmmButton><CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary">Ouvrir le salon SPOGOMI</CmmButton></CmmButtonGroup>} /><SpogomiOrientationTabs isAuthenticated={Boolean(userId)} progress={orientationProgress} /><SpogomiPublicEvents events={events} loadError={loadError} /><SpogomiUnderstanding t={t} /><SpogomiInternationalSection locale={locale} t={t} /></div></div>;
 }

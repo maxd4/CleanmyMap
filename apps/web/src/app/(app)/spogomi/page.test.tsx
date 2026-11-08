@@ -7,12 +7,14 @@ const mocks = vi.hoisted(() => ({
   getServerLocale: vi.fn(),
   getTranslation: vi.fn(),
   listPublishedSpogomiEvents: vi.fn(),
+  loadSpogomiOrientationProgressForCurrentUser: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({ getSafeAuthSession: mocks.getSafeAuthSession }));
 vi.mock("@/lib/server-preferences", () => ({ getServerLocale: mocks.getServerLocale }));
 vi.mock("@/lib/i18n/server-translation", () => ({ getTranslation: mocks.getTranslation }));
 vi.mock("@/lib/spogomi/public-service", () => ({ listPublishedSpogomiEvents: mocks.listPublishedSpogomiEvents }));
+vi.mock("@/lib/spogomi/orientation-progress-service", () => ({ loadSpogomiOrientationProgressForCurrentUser: mocks.loadSpogomiOrientationProgressForCurrentUser }));
 vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => ({ id: "agir" }) }));
 vi.mock("@/components/ui/page-header", () => ({
   PageHeader: ({ title, action }: { title: React.ReactNode; action?: React.ReactNode }) =>
@@ -41,6 +43,7 @@ describe("/spogomi public and private navigation", () => {
     mocks.getServerLocale.mockResolvedValue("fr");
     mocks.getTranslation.mockReturnValue({ t: (key: string) => key });
     mocks.listPublishedSpogomiEvents.mockResolvedValue([]);
+    mocks.loadSpogomiOrientationProgressForCurrentUser.mockResolvedValue([]);
   });
 
   it("keeps the public index free of organizer navigation for visitors", async () => {

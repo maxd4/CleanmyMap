@@ -20,7 +20,7 @@ function infoButtons(root: ReactTestRenderer | ReactTestInstance) {
 }
 
 describe("SpogomiOrientationTabs", () => {
-  it("renders the volunteer entry point, three phases and private catalog intent", () => {
+  it("renders the volunteer entry point, moves the single-action phase to the top row and keeps the two remaining phase columns", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
       renderer = create(<SpogomiOrientationTabs isAuthenticated={false} />);
@@ -35,9 +35,12 @@ describe("SpogomiOrientationTabs", () => {
     const volunteerPanel = renderer.root.findAllByProps({ role: "tabpanel" })[0];
     expect(volunteerPanel?.findAllByType("h4").map((heading) => heading.props.children).filter((children): children is string => typeof children === "string")).toEqual([
       "Avant la compétition",
-      "Pendant la compétition",
       "Après la compétition",
     ]);
+    expect(volunteerPanel?.findAllByProps({ "data-cmm-action-row": "top" })).toHaveLength(1);
+    expect(volunteerPanel?.findAllByProps({ "data-cmm-action-row": "phases" })).toHaveLength(1);
+    expect(volunteerPanel?.findAllByProps({ "data-testid": "spogomi-action-Retrouver ma participation" }).filter((node) => node.type === "article")).toHaveLength(1);
+    expect(volunteerPanel?.findAllByProps({ "data-cmm-phase-arrow": "true" }).length).toBe(6);
     const primaryLink = links(renderer).find((link) => link.props.href === "#spogomi-events" && link.props["aria-label"] === "Voir les compétitions");
     expect(primaryLink).toBeTruthy();
     expect(primaryLink?.props["data-cmm-button-width"]).toBe("auto");
@@ -79,6 +82,25 @@ describe("SpogomiOrientationTabs", () => {
     expect(attestationPanelText).toContain("Connexion requise ; mission certifiée et attestation disponible.");
     vi.unstubAllGlobals();
     expect(JSON.stringify(renderer.toJSON())).not.toContain(">Ouvrir<");
+    expect(volunteerPanel?.findAllByProps({ role: "status" })).toHaveLength(0);
+  });
+
+  it("shows only authenticated event-scoped proof statuses and keeps unsupported actions neutral", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<SpogomiOrientationTabs isAuthenticated progress={[
+        { key: "volunteer.contributions", eventId: "event-1", eventName: "Paris", evidence: "certified_mission" },
+        { key: "volunteer.contributions", eventId: "event-2", eventName: "Lille", evidence: "certified_mission" },
+      ]} />);
+    });
+    const volunteerPanel = renderer.root.findAllByProps({ role: "tabpanel" })[0];
+    const statuses = volunteerPanel?.findAllByProps({ role: "status" }) ?? [];
+    const statusText = statuses.map((status) => status.findAll((node) => node.type === "p").map((node) => node.children.filter((child): child is string => typeof child === "string").join(" ")).join(" ")).join(" ");
+    expect(statusText).toContain("Validée");
+    expect(statusText).toContain("Paris");
+    expect(statusText).toContain("Lille");
+    expect(statusText).toContain("Non démontrée par une preuve serveur.");
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("event-1:event-2");
   });
 
   it("exposes referee actions before authentication without granting a global access", () => {
@@ -99,6 +121,25 @@ describe("SpogomiOrientationTabs", () => {
     expect(JSON.stringify(renderer.toJSON())).toContain("Avant l’épreuve");
     expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dreferees%26section%3Darbitration")).toBe(true);
     expect(links(renderer).some((link) => link.props.href === "/spogomi")).toBe(false);
+  });
+
+  it("moves the single certification phase to the referee top row without duplicating it", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<SpogomiOrientationTabs isAuthenticated />);
+    });
+    const tabs = findTabs(renderer);
+    act(() => {
+      tabs[1]?.props.onClick({} as MouseEvent<HTMLButtonElement>);
+    });
+
+    const refereePanel = renderer.root.findAllByProps({ role: "tabpanel" })[1];
+    expect(refereePanel?.findAllByProps({ "data-testid": "spogomi-action-Certifier les résultats" }).filter((node) => node.type === "article")).toHaveLength(1);
+    expect(refereePanel?.findAllByType("h4").map((heading) => heading.props.children).filter((children): children is string => typeof children === "string")).toEqual([
+      "Avant l’épreuve",
+      "Pendant l’épreuve",
+    ]);
+    expect(refereePanel?.findAllByProps({ "data-cmm-phase-arrow": "true" }).length).toBe(3);
   });
 
   it("keeps organizer actions discoverable anonymously and opens them directly when authenticated", () => {
@@ -128,6 +169,10 @@ describe("SpogomiOrientationTabs", () => {
     expect(JSON.stringify(authenticated.toJSON())).toContain("Publier les résultats");
     expect(JSON.stringify(authenticated.toJSON())).toContain("Consolider le bilan");
     expect(infoButtons(authenticated).some((button) => button.props["aria-label"] === "Informations sur Mes compétitions")).toBe(true);
+    const organizerPanel = authenticated.root.findAllByProps({ role: "tabpanel" })[2];
+    expect(organizerPanel?.findAllByProps({ "data-cmm-action-row": "top" })).toHaveLength(1);
+    expect(organizerPanel?.findAllByProps({ "data-cmm-action-row": "phases" })).toHaveLength(1);
+    expect(organizerPanel?.findAllByProps({ "data-cmm-phase-arrow": "true" }).length).toBe(7);
   });
 
   it("keeps keyboard tab navigation and panel relationships accessible", () => {

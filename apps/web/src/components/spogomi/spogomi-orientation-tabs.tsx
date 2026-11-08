@@ -2,6 +2,7 @@
 
 import { useId, useState, type KeyboardEvent } from "react";
 import {
+  ArrowDown,
   ArrowRight,
   BadgeCheck,
   CalendarPlus,
@@ -24,6 +25,7 @@ import { CmmIcon } from "@/components/ui/cmm-icon";
 import { buildSpogomiCatalogHref } from "@/lib/spogomi/navigation-intent";
 import { cn } from "@/lib/utils";
 import { SpogomiActionInfo } from "./spogomi-action-info";
+import type { SpogomiOrientationProgressKey, SpogomiOrientationProgressProof } from "@/lib/spogomi/orientation-progress";
 
 type OrientationId = "volunteers" | "referees" | "organizers";
 
@@ -35,6 +37,7 @@ type OrientationAction = {
   icon: typeof Users;
   href: string;
   requiresAuthentication: boolean;
+  progressKey?: SpogomiOrientationProgressKey;
 };
 
 type OrientationPhase = {
@@ -54,12 +57,12 @@ type Orientation = {
 
 const PUBLIC_DISCUSSIONS_HREF = "/sections/messagerie?tab=discussions&channel=community&topicId=spogomi";
 
-function privateAction(label: string, description: string, accessCondition: string, icon: typeof Users, href: string, ctaLabel = label): OrientationAction {
-  return { label, description, accessCondition, ctaLabel, icon, href, requiresAuthentication: true };
+function privateAction(label: string, description: string, accessCondition: string, icon: typeof Users, href: string, ctaLabel = label, progressKey?: SpogomiOrientationProgressKey): OrientationAction {
+  return { label, description, accessCondition, ctaLabel, icon, href, requiresAuthentication: true, progressKey };
 }
 
-function publicAction(label: string, description: string, accessCondition: string, icon: typeof Users, href: string, ctaLabel = label): OrientationAction {
-  return { label, description, accessCondition, ctaLabel, icon, href, requiresAuthentication: false };
+function publicAction(label: string, description: string, accessCondition: string, icon: typeof Users, href: string, ctaLabel = label, progressKey?: SpogomiOrientationProgressKey): OrientationAction {
+  return { label, description, accessCondition, ctaLabel, icon, href, requiresAuthentication: false, progressKey };
 }
 
 function actionDestination(href: string): string {
@@ -138,6 +141,67 @@ function ActionTitle({ action, href, infoId, heading: Heading, size }: { action:
   );
 }
 
+function ActionValidation({ action, isAuthenticated, progress }: { action: OrientationAction; isAuthenticated: boolean; progress: readonly SpogomiOrientationProgressProof[] }) {
+  if (!isAuthenticated || !action.progressKey) return null;
+  const proofs = progress.filter((proof) => proof.key === action.progressKey);
+  if (!proofs.length) {
+    return <p role="status" className="text-xs font-bold text-slate-600">Non démontrée par une preuve serveur.</p>;
+  }
+  return (
+    <div role="status" className="space-y-1 text-xs font-bold text-emerald-800">
+      <p className="inline-flex items-center gap-1.5"><BadgeCheck size={15} aria-hidden="true" />Validée</p>
+      <p className="text-slate-700">{proofs.map((proof) => proof.eventName).join(" · ")}</p>
+    </div>
+  );
+}
+
+type ActionPlacement = { action: OrientationAction; phaseNumber?: number; phaseTitle?: string };
+
+function actionPlacements(orientation: Orientation): { top: ActionPlacement[]; remainingPhases: Array<OrientationPhase & { phaseNumber: number }> } {
+  const top: ActionPlacement[] = [
+    { action: orientation.primaryAction },
+    ...(orientation.secondaryAction ? [{ action: orientation.secondaryAction }] : []),
+  ];
+  const remainingPhases: Array<OrientationPhase & { phaseNumber: number }> = [];
+  orientation.phases.forEach((phase, index) => {
+    if (phase.actions.length === 1) {
+      top.push({ action: phase.actions[0]!, phaseNumber: index + 1, phaseTitle: phase.title });
+      return;
+    }
+    remainingPhases.push({ ...phase, phaseNumber: index + 1 });
+  });
+  return { top, remainingPhases };
+}
+
+function ActionCard({ placement, placementId, isPrimary = false, isAuthenticated, progress, actionHref }: {
+  placement: ActionPlacement;
+  placementId: string;
+  isPrimary?: boolean;
+  isAuthenticated: boolean;
+  progress: readonly SpogomiOrientationProgressProof[];
+  actionHref: (action: OrientationAction) => string;
+}) {
+  const { action, phaseNumber, phaseTitle } = placement;
+  return (
+    <CmmCard as="article" data-testid={`spogomi-action-${action.label}`} tone={isPrimary ? "emerald" : "slate"} variant="outlined" className={cn("flex min-w-0 flex-col gap-3 overflow-visible p-4", isPrimary && "border-emerald-300 bg-emerald-50/80")}>
+      {phaseNumber && phaseTitle ? (
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-emerald-700">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-900">{String(phaseNumber).padStart(2, "0")}</span>
+          <span>{phaseTitle}</span>
+        </div>
+      ) : null}
+      <div className="flex min-w-0 items-start gap-3">
+        <span className={cn("mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800", isPrimary && "h-12 w-12 rounded-2xl bg-emerald-700 text-white")}><CmmIcon icon={action.icon} size={isPrimary ? "lg" : "md"} /></span>
+        <div className="min-w-0 flex-1">
+          {isPrimary ? <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-800">Action principale</p> : null}
+          <ActionTitle action={action} href={actionHref(action)} infoId={placementId} heading={isPrimary ? "h4" : "h5"} size={isPrimary ? "lg" : "md"} />
+          <ActionValidation action={action} isAuthenticated={isAuthenticated} progress={progress} />
+        </div>
+      </div>
+    </CmmCard>
+  );
+}
+
 function buildOrientations(): Orientation[] {
   return [
     {
@@ -161,7 +225,7 @@ function buildOrientations(): Orientation[] {
           title: "Pendant la compétition",
           description: "Retrouver uniquement une participation déjà liée à votre compte.",
           actions: [
-            privateAction("Retrouver ma participation", "Après connexion, choisir une édition liée à votre compte vérifié.", "Connexion requise ; participation ou identité liée vérifiée pour l’édition.", Recycle, buildSpogomiCatalogHref("volunteers")),
+            privateAction("Retrouver ma participation", "Après connexion, choisir une édition liée à votre compte vérifié.", "Connexion requise ; participation ou identité liée vérifiée pour l’édition.", Recycle, buildSpogomiCatalogHref("volunteers"), "Retrouver ma participation", "volunteer.participation"),
           ],
         },
         {
@@ -169,8 +233,8 @@ function buildOrientations(): Orientation[] {
           description: "Consulter les résultats et les preuves personnelles lorsqu’elles sont effectivement publiées ou certifiées.",
           actions: [
             publicAction("Voir les résultats", "Les résultats sont consultables depuis la fiche d’une compétition publiée, uniquement lorsque l’organisateur les a rendus visibles.", "Résultats publiés requis ; aucune donnée privée n’est déduite.", Trophy, "/spogomi#spogomi-results"),
-            publicAction("Mes contributions", "Les missions enregistrées et certifiées se consultent depuis la fiche publiée lorsque cette surface est disponible, après connexion au compte concerné.", "Connexion requise ; mission certifiée ou relation personnelle vérifiée.", BadgeCheck, "/spogomi#spogomi-contributions"),
-            publicAction("Télécharger mes attestations", "Télécharger une attestation depuis la section personnelle après certification. Une présence ou une demande seule ne suffit pas.", "Connexion requise ; mission certifiée et attestation disponible.", Download, "/spogomi#spogomi-attestations"),
+            publicAction("Mes contributions", "Les missions enregistrées et certifiées se consultent depuis la fiche publiée lorsque cette surface est disponible, après connexion au compte concerné.", "Connexion requise ; mission certifiée ou relation personnelle vérifiée.", BadgeCheck, "/spogomi#spogomi-contributions", "Mes contributions", "volunteer.contributions"),
+            publicAction("Télécharger mes attestations", "Télécharger une attestation depuis la section personnelle après certification. Une présence ou une demande seule ne suffit pas.", "Connexion requise ; mission certifiée et attestation disponible.", Download, "/spogomi#spogomi-attestations", "Télécharger mes attestations", "volunteer.attestations"),
           ],
         },
       ],
@@ -202,7 +266,7 @@ function buildOrientations(): Orientation[] {
           title: "Après l’épreuve",
           description: "Finaliser les mesures et certifications lorsque la mission serveur le permet.",
           actions: [
-            privateAction("Certifier les résultats", "Certifier uniquement les opérations de terrain autorisées.", "Connexion requise ; habilitation certification vérifiée et données prêtes à certifier.", BadgeCheck, buildSpogomiCatalogHref("referees", "operations")),
+            privateAction("Certifier les résultats", "Certifier uniquement les opérations de terrain autorisées.", "Connexion requise ; habilitation certification vérifiée et données prêtes à certifier.", BadgeCheck, buildSpogomiCatalogHref("referees", "operations"), "Certifier les résultats", "referee.certification"),
           ],
         },
       ],
@@ -230,14 +294,14 @@ function buildOrientations(): Orientation[] {
           description: "Suivre le terrain et préparer la certification sans confondre publication de l’événement et publication des résultats.",
           actions: [
             privateAction("Contrôler les résultats", "Préparer et vérifier les résultats avant publication.", "Connexion requise ; relation organisateur vérifiée et données de l’édition disponibles.", Trophy, buildSpogomiCatalogHref("organizers", "results")),
-            privateAction("Publier l’événement", "Rendre la fiche de l’édition visible selon la politique de publication.", "Connexion requise ; relation organisateur vérifiée et contrôles de publication satisfaits.", Send, buildSpogomiCatalogHref("organizers", "settings")),
+            privateAction("Publier l’événement", "Rendre la fiche de l’édition visible selon la politique de publication.", "Connexion requise ; relation organisateur vérifiée et contrôles de publication satisfaits.", Send, buildSpogomiCatalogHref("organizers", "settings"), "Publier l’événement", "organizer.event_publication"),
           ],
         },
         {
           title: "Clôturer et diffuser",
           description: "Certifier, publier les résultats, consolider puis exporter les données autorisées.",
           actions: [
-            privateAction("Publier les résultats", "Rendre les classements visibles depuis le cockpit après les certifications requises.", "Connexion requise ; relation organisateur vérifiée, résultats certifiés et publication autorisée.", Trophy, buildSpogomiCatalogHref("organizers", "results")),
+            privateAction("Publier les résultats", "Rendre les classements visibles depuis le cockpit après les certifications requises.", "Connexion requise ; relation organisateur vérifiée, résultats certifiés et publication autorisée.", Trophy, buildSpogomiCatalogHref("organizers", "results"), "Publier les résultats", "organizer.results_publication"),
             privateAction("Consolider le bilan", "Préparer le bilan environnemental vers l’action CleanMyMap associée.", "Connexion requise ; relation organisateur vérifiée et sources certifiées prêtes pour la consolidation.", Recycle, buildSpogomiCatalogHref("organizers", "bilan")),
             privateAction("Exporter les résultats", "Télécharger le classeur traçable depuis l’espace autorisé.", "Connexion requise ; relation organisateur vérifiée et export autorisé par le serveur.", Download, buildSpogomiCatalogHref("organizers", "results")),
           ],
@@ -247,7 +311,7 @@ function buildOrientations(): Orientation[] {
   ];
 }
 
-export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function SpogomiOrientationTabs({ isAuthenticated, progress = [] }: { isAuthenticated: boolean; progress?: readonly SpogomiOrientationProgressProof[] }) {
   const [activeOrientation, setActiveOrientation] = useState<OrientationId>("volunteers");
   const baseId = useId();
   const orientations = buildOrientations();
@@ -308,6 +372,7 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
           const isActive = orientation.id === activeOrientation;
           const orientationTabId = `${baseId}-tab-${orientation.id}`;
           const orientationPanelId = `${baseId}-panel-${orientation.id}`;
+          const layout = actionPlacements(orientation);
           return (
             <div key={orientation.id} role="tabpanel" id={orientationPanelId} aria-labelledby={orientationTabId} tabIndex={0} hidden={!isActive}>
               <CmmCard tone="emerald" variant="glass" className="space-y-5 overflow-visible p-5 md:p-6">
@@ -320,54 +385,54 @@ export function SpogomiOrientationTabs({ isAuthenticated }: { isAuthenticated: b
                   {orientation.id === "referees" ? <ShieldCheck className="h-7 w-7 shrink-0 text-emerald-700" aria-hidden="true" /> : null}
                 </div>
 
-                <CmmCard tone="emerald" variant="default" className="overflow-visible border-emerald-300 bg-emerald-50/80 p-5">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white">
-                      <CmmIcon icon={orientation.primaryAction.icon} size="lg" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-800">Action principale</p>
-                      <ActionTitle action={orientation.primaryAction} href={actionHref(orientation.primaryAction)} infoId={`${baseId}-info-${orientation.id}-primary`} heading="h4" size="lg" />
-                    </div>
-                  </div>
-                </CmmCard>
+                <div data-cmm-action-row="top" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {layout.top.map((placement, placementIndex) => (
+                    <ActionCard
+                      key={`${placement.action.label}-${placement.phaseNumber ?? "primary"}`}
+                      placement={placement}
+                      placementId={`${baseId}-info-${orientation.id}-top-${placementIndex}`}
+                      isPrimary={placementIndex === 0}
+                      isAuthenticated={isAuthenticated}
+                      progress={progress}
+                      actionHref={actionHref}
+                    />
+                  ))}
+                </div>
 
-                {orientation.secondaryAction ? (
-                  <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
-                    <ActionTitle action={orientation.secondaryAction} href={actionHref(orientation.secondaryAction)} infoId={`${baseId}-info-${orientation.id}-secondary`} heading="h4" size="md" />
+                {layout.remainingPhases.length ? (
+                  <div data-cmm-action-row="phases" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {layout.remainingPhases.map((phase) => {
+                      const phaseHeadingId = `${baseId}-phase-${orientation.id}-${phase.phaseNumber}`;
+                      return (
+                        <section key={phase.title} aria-labelledby={phaseHeadingId}>
+                          <CmmCard tone="slate" variant="glass" className="overflow-visible p-4">
+                            <div className="flex items-start gap-3">
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-black text-slate-700">{String(phase.phaseNumber).padStart(2, "0")}</span>
+                              <div>
+                                <h4 id={phaseHeadingId} className="text-base font-black text-slate-950">{phase.title}</h4>
+                                <p className="mt-1 text-sm leading-6 text-slate-900">{phase.description}</p>
+                              </div>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                              {phase.actions.map((action, actionIndex) => (
+                                <div key={action.label}>
+                                  <ActionCard
+                                    placement={{ action }}
+                                    placementId={`${baseId}-info-${orientation.id}-${phase.phaseNumber}-${actionIndex}`}
+                                    isAuthenticated={isAuthenticated}
+                                    progress={progress}
+                                    actionHref={actionHref}
+                                  />
+                                  {actionIndex < phase.actions.length - 1 ? <div data-cmm-phase-arrow="true" className="flex h-5 items-center justify-center text-slate-400" aria-hidden="true"><ArrowDown size={16} strokeWidth={2} /></div> : null}
+                                </div>
+                              ))}
+                            </div>
+                          </CmmCard>
+                        </section>
+                      );
+                    })}
                   </div>
                 ) : null}
-
-                <div className="space-y-4">
-                  {orientation.phases.map((phase, phaseIndex) => {
-                    const phaseHeadingId = `${baseId}-phase-${orientation.id}-${phaseIndex}`;
-                    return (
-                      <section key={phase.title} aria-labelledby={phaseHeadingId}>
-                        <CmmCard tone="slate" variant="glass" className="overflow-visible p-4">
-                          <div className="flex items-start gap-3">
-                            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-black text-slate-700">{String(phaseIndex + 1).padStart(2, "0")}</span>
-                            <div>
-                              <h4 id={phaseHeadingId} className="text-base font-black text-slate-950">{phase.title}</h4>
-                              <p className="mt-1 text-sm leading-6 text-slate-900">{phase.description}</p>
-                            </div>
-                          </div>
-                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            {phase.actions.map((action, actionIndex) => (
-                              <CmmCard key={action.label} as="article" tone="slate" variant="outlined" className="flex h-full flex-col gap-3 overflow-visible p-4">
-                                <div className="flex min-w-0 items-start gap-3">
-                                  <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><CmmIcon icon={action.icon} /></span>
-                                  <div className="min-w-0 flex-1">
-                                    <ActionTitle action={action} href={actionHref(action)} infoId={`${baseId}-info-${orientation.id}-${phaseIndex}-${actionIndex}`} heading="h5" size="md" />
-                                  </div>
-                                </div>
-                              </CmmCard>
-                            ))}
-                          </div>
-                        </CmmCard>
-                      </section>
-                    );
-                  })}
-                </div>
 
               </CmmCard>
             </div>
