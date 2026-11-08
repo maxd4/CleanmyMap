@@ -65,10 +65,15 @@ const deployPublicationReference = {
     rootDirectory: "apps/web",
     repository: "maxd4/CleanmyMap",
     deploymentId: "dpl_test",
+    deploymentProjectId: "prj_test",
     target: "production",
     readyState: "READY",
     gitSha: deployBaseSha,
     productionAlias: "cleanmymap.fr",
+    alias: "cleanmymap.fr",
+    aliasDeploymentId: "dpl_test",
+    aliasProjectId: "prj_test",
+    aliasDeletedAt: null,
   },
 };
 const deployEvidence = {
@@ -343,4 +348,27 @@ test("DEPLOY never becomes release-ready from a local verified flag without Verc
     deployScope,
   });
   assert.equal(result.ready, false);
+});
+
+test("DEPLOY never becomes release-ready when alias or deployment project provenance is incomplete", () => {
+  for (const field of ["deploymentProjectId", "alias", "aliasDeploymentId", "aliasProjectId", "aliasDeletedAt"]) {
+    const inspection = { ...deployPublicationReference.vercelInspection };
+    if (field === "aliasDeletedAt") inspection[field] = "2026-11-08T00:00:00.000Z";
+    else if (field === "alias") inspection[field] = "moved.example";
+    else inspection[field] = "tampered";
+    const result = evaluateReleaseGate({
+      evidence: {
+        ...deployEvidence,
+        publicationReference: { ...deployPublicationReference, vercelInspection: inspection },
+      },
+      current: sha,
+      clean: true,
+      deploymentEnabled,
+      provenance,
+      profile: "deploy",
+      requiredChecks: deployRequiredChecks,
+      deployScope,
+    });
+    assert.equal(result.ready, false, field);
+  }
 });

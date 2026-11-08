@@ -137,6 +137,11 @@ function vercelQuery(teamId) {
   return teamId ? `&teamId=${encodeURIComponent(teamId)}` : "";
 }
 
+function vercelQueryString(teamId) {
+  const query = vercelQuery(teamId);
+  return query ? `?${query.slice(1)}` : "";
+}
+
 async function fetchVercelJson(fetchImpl, url, token) {
   const response = await fetchImpl(url, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
@@ -158,33 +163,48 @@ export async function inspectVercelProduction({
   }
   try {
     const expectedSha = proof.sha ?? proof.commitSha ?? proof.gitCommitSha ?? "";
-    const query = vercelQuery(teamId);
-    const project = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v9/projects/${encodeURIComponent(projectId)}?${query.slice(1)}`, token);
-    const deployment = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v13/deployments/${encodeURIComponent(proof.deploymentId)}?${query.slice(1)}`, token);
-    const aliases = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v2/deployments/${encodeURIComponent(proof.deploymentId)}/aliases?${query.slice(1)}`, token);
+    const query = vercelQueryString(teamId);
+    const project = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v9/projects/${encodeURIComponent(projectId)}${query}`, token);
+    const deployment = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v13/deployments/${encodeURIComponent(proof.deploymentId)}${query}`, token);
+    const aliases = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v2/deployments/${encodeURIComponent(proof.deploymentId)}/aliases${query}`, token);
+    const alias = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v4/aliases/${encodeURIComponent(proof.productionAlias)}${query}`, token);
     const repository = project.link?.org && project.link?.repo ? `${project.link.org}/${project.link.repo}` : "";
     const gitSha = deployment.gitSource?.sha ?? deployment.meta?.githubCommitSha ?? deployment.meta?.gitCommitSha ?? "";
     const aliasNames = (Array.isArray(aliases) ? aliases : aliases.aliases ?? []).map((alias) => typeof alias === "string" ? alias : alias?.alias).filter(Boolean);
+    const aliasDeploymentId = alias?.deploymentId ?? alias?.deployment?.id ?? "";
+    const aliasProjectId = alias?.projectId ?? "";
+    const aliasDeletedAt = alias?.deletedAt ?? null;
     const inspection = {
       verified: project.id === projectId
+        && proof.projectId === project.id
         && project.name === "web"
-        && project.settings?.rootDirectory === "apps/web"
+        && project.rootDirectory === "apps/web"
         && repository === CANONICAL_REPOSITORY
         && deployment.id === proof.deploymentId
+        && deployment.projectId === project.id
         && deployment.target === "production"
         && deployment.readyState === "READY"
         && gitSha === expectedSha
-        && aliasNames.includes(proof.productionAlias),
+        && aliasNames.includes(proof.productionAlias)
+        && alias?.alias === proof.productionAlias
+        && aliasDeploymentId === proof.deploymentId
+        && aliasProjectId === project.id
+        && aliasDeletedAt === null,
       projectId: project.id ?? "",
       projectName: project.name ?? "",
-      rootDirectory: project.settings?.rootDirectory ?? "",
+      rootDirectory: project.rootDirectory ?? "",
       repository,
       deploymentId: deployment.id ?? deployment.uid ?? "",
+      deploymentProjectId: deployment.projectId ?? "",
       target: deployment.target ?? "",
       readyState: deployment.readyState ?? "",
       gitSha,
       productionAlias: proof.productionAlias,
       aliases: aliasNames,
+      alias: alias?.alias ?? "",
+      aliasDeploymentId,
+      aliasProjectId,
+      aliasDeletedAt,
       verificationMethod: "vercel-api-readonly",
     };
     return inspection.verified
@@ -218,6 +238,7 @@ export async function verifyPublicationReference({
     || reference.projectName !== "web"
     || reference.rootDirectory !== "apps/web"
     || reference.target !== "production"
+    || !reference.projectId
     || reference.proofSha !== reference.sha
     || reference.verified !== true
     || !reference.verificationMethod

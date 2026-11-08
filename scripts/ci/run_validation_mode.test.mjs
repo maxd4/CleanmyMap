@@ -240,8 +240,10 @@ test("DEPLOY propagates the publication proof path through the runner to deploy-
       log: () => {},
       vercelClient: async ({ proof: reference }) => ({ valid: true, inspection: {
         verified: true, projectId: reference.projectId, projectName: "web", rootDirectory: "apps/web",
-        repository: "maxd4/CleanmyMap", deploymentId: reference.deploymentId, target: "production",
-        readyState: "READY", gitSha: reference.sha, productionAlias: reference.productionAlias,
+        repository: "maxd4/CleanmyMap", deploymentId: reference.deploymentId,
+        deploymentProjectId: reference.projectId, target: "production", readyState: "READY",
+        gitSha: reference.sha, productionAlias: reference.productionAlias, alias: reference.productionAlias,
+        aliasDeploymentId: reference.deploymentId, aliasProjectId: reference.projectId, aliasDeletedAt: null,
       } }),
       runCheck: async (check) => {
         checked.push(check);

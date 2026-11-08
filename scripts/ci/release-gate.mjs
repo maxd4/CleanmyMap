@@ -71,10 +71,15 @@ function isVerifiedPublicationReference(reference, validSha) {
       && reference.vercelInspection.rootDirectory === "apps/web"
       && reference.vercelInspection.repository === CANONICAL_REPOSITORY
       && reference.vercelInspection.deploymentId === reference.deploymentId
+      && reference.vercelInspection.deploymentProjectId === reference.projectId
       && reference.vercelInspection.target === "production"
       && reference.vercelInspection.readyState === "READY"
       && reference.vercelInspection.gitSha === reference.sha
-      && reference.vercelInspection.productionAlias === reference.productionAlias,
+      && reference.vercelInspection.productionAlias === reference.productionAlias
+      && reference.vercelInspection.alias === reference.productionAlias
+      && reference.vercelInspection.aliasDeploymentId === reference.deploymentId
+      && reference.vercelInspection.aliasProjectId === reference.projectId
+      && reference.vercelInspection.aliasDeletedAt === null,
   );
 }
 

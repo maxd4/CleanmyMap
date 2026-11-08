@@ -51,13 +51,53 @@ const authenticatedVercelClient = async ({ proof: reference }) => ({
     rootDirectory: "apps/web",
     repository: "maxd4/CleanmyMap",
     deploymentId: reference.deploymentId,
+    deploymentProjectId: reference.projectId,
     target: "production",
     readyState: "READY",
     gitSha: reference.sha,
     productionAlias: reference.productionAlias,
+    alias: reference.productionAlias,
+    aliasDeploymentId: reference.deploymentId,
+    aliasProjectId: reference.projectId,
+    aliasDeletedAt: null,
     verificationMethod: "vercel-api-readonly",
   },
 });
+function jsonResponse(payload) {
+  return { ok: true, json: async () => payload };
+}
+
+function makeVercelFetch(sha, overrides = {}) {
+  const project = {
+    id: "prj_test",
+    name: "web",
+    rootDirectory: "apps/web",
+    link: { org: "maxd4", repo: "CleanmyMap" },
+    ...overrides.project,
+  };
+  const deployment = {
+    id: "dpl_test",
+    projectId: "prj_test",
+    target: "production",
+    readyState: "READY",
+    gitSource: { sha },
+    ...overrides.deployment,
+  };
+  const alias = {
+    alias: "cleanmymap.fr",
+    deploymentId: "dpl_test",
+    projectId: "prj_test",
+    deletedAt: null,
+    ...overrides.alias,
+  };
+  return async (url) => {
+    if (url.includes("/v9/projects/")) return jsonResponse(project);
+    if (url.includes("/v13/deployments/")) return jsonResponse(deployment);
+    if (url.includes("/v4/aliases/")) return overrides.aliasResponse ?? jsonResponse(alias);
+    if (url.includes("/v2/deployments/") && url.includes("/aliases")) return jsonResponse({ aliases: [{ alias: "cleanmymap.fr" }] });
+    throw new Error(`Unexpected Vercel URL: ${url}`);
+  };
+}
 
 async function resolveDeployCandidate(options) {
   return resolveDeployCandidateRaw({ vercelClient: authenticatedVercelClient, ...options });
@@ -93,7 +133,6 @@ test("DEPLOY uses the verified Production SHA and includes the cumulative Web di
     removePathWithRetry(root, { recursive: true });
   }
 });
-
 test("DEPLOY refuses an arbitrary newer base that would omit an unpublished Web commit", async () => {
   const root = makeRepository();
   try {
@@ -161,28 +200,155 @@ test("DEPLOY refuses an absent, non-ancestor, or unverifiable Production referen
   }
 });
 
-test("authenticated Vercel inspection requires the active READY Production deployment and alias", async () => {
+test("authenticated Vercel inspection accepts the real project root and independently current alias schema", async () => {
   const root = makeRepository();
   try {
     const productionSha = git(root, ["rev-parse", "HEAD"]);
     const reference = proof(productionSha);
-    const fetchImpl = async (url) => {
-      if (url.includes("/v9/projects/")) return { ok: true, json: async () => ({ id: "prj_test", name: "web", settings: { rootDirectory: "apps/web" }, link: { org: "maxd4", repo: "CleanmyMap" } }) };
-      if (url.includes("/v13/deployments/")) return { ok: true, json: async () => ({ id: "dpl_test", target: "production", readyState: "READY", gitSource: { sha: productionSha } }) };
-      return { ok: true, json: async () => [{ alias: "cleanmymap.fr" }] };
-    };
+    const fetchImpl = makeVercelFetch(productionSha);
     const verified = await inspectVercelProduction({ repositoryRoot: root, proof: reference, token: "test-token", projectId: "prj_test", fetchImpl });
     assert.equal(verified.valid, true);
     assert.equal(verified.inspection.repository, "maxd4/CleanmyMap");
+    assert.equal(verified.inspection.rootDirectory, "apps/web");
+    assert.equal(verified.inspection.deploymentProjectId, "prj_test");
+    assert.equal(verified.inspection.aliasDeploymentId, "dpl_test");
+    assert.equal(verified.inspection.aliasProjectId, "prj_test");
+    assert.equal(verified.inspection.aliasDeletedAt, null);
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("authenticated Vercel inspection rejects a project response without the real root field", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const result = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, { project: { rootDirectory: undefined } }),
+    });
+    assert.equal(result.valid, false);
+    assert.equal(result.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("authenticated Vercel inspection rejects a deployment from another project", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const result = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { projectId: "prj_other" } }),
+    });
+    assert.equal(result.valid, false);
+    assert.equal(result.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
+
+    const proofMismatch = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha, { projectId: "prj_other" }),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha),
+    });
+    assert.equal(proofMismatch.valid, false);
+    assert.equal(proofMismatch.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("authenticated Vercel inspection rejects an alias moved, revoked, or absent", async () => {
+  const cases = [
+    { name: "moved to another deployment", overrides: { alias: { deploymentId: "dpl_old" } } },
+    { name: "assigned to another project", overrides: { alias: { projectId: "prj_other" } } },
+    { name: "revoked", overrides: { alias: { deletedAt: "2026-11-08T00:00:00.000Z" } } },
+    { name: "absent", overrides: { aliasResponse: { ok: false, status: 404, statusText: "Not Found", json: async () => ({}) } } },
+  ];
+  for (const entry of cases) {
+    const root = makeRepository();
+    try {
+      const productionSha = git(root, ["rev-parse", "HEAD"]);
+      const result = await inspectVercelProduction({
+        repositoryRoot: root,
+        proof: proof(productionSha),
+        token: "test-token",
+        projectId: "prj_test",
+        fetchImpl: makeVercelFetch(productionSha, entry.overrides),
+      });
+      assert.equal(result.valid, false, entry.name);
+      assert.match(result.reason, /^DEPLOY_VERCEL_(PROVENANCE_MISMATCH|VERIFICATION_UNAVAILABLE)$/i, entry.name);
+    } finally {
+      removePathWithRetry(root, { recursive: true });
+    }
+  }
+});
+
+test("authenticated Vercel inspection rejects an incorrect SHA, Preview, non-READY deployment, and API failure", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const incorrectSha = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { gitSource: { sha: "f".repeat(40) } } }),
+    });
+    assert.equal(incorrectSha.valid, false);
+
+    const preview = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { target: "preview" } }),
+    });
+    assert.equal(preview.valid, false);
+
+    const notReady = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { readyState: "BUILDING" } }),
+    });
+    assert.equal(notReady.valid, false);
+
+    const inaccessible = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: async () => { throw new Error("network unavailable"); },
+    });
+    assert.equal(inaccessible.valid, false);
+    assert.equal(inaccessible.reason, "DEPLOY_VERCEL_VERIFICATION_UNAVAILABLE");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("authenticated Vercel inspection keeps the active READY Production deployment and alias checks", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const reference = proof(productionSha);
+    const fetchImpl = makeVercelFetch(productionSha);
 
     const preview = await inspectVercelProduction({
       repositoryRoot: root,
       proof: reference,
       token: "test-token",
       projectId: "prj_test",
-      fetchImpl: async (url, options) => fetchImpl(url, options).then((response) => url.includes("/v13/deployments/")
-        ? { ok: true, json: async () => ({ id: "dpl_test", target: "preview", readyState: "READY", gitSource: { sha: productionSha } }) }
-        : response),
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { target: "preview" } }),
     });
     assert.equal(preview.valid, false);
     assert.equal(preview.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
@@ -192,9 +358,7 @@ test("authenticated Vercel inspection requires the active READY Production deplo
       proof: reference,
       token: "test-token",
       projectId: "prj_test",
-      fetchImpl: async (url, options) => fetchImpl(url, options).then((response) => url.includes("/v13/deployments/")
-        ? { ok: true, json: async () => ({ id: "dpl_old", target: "production", readyState: "READY", gitSource: { sha: productionSha } }) }
-        : response),
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { id: "dpl_old" } }),
     });
     assert.equal(stale.valid, false);
     assert.equal(stale.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
