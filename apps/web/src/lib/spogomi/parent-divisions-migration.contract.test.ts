@@ -21,6 +21,10 @@ const scopedLock = readFileSync(
   new URL("../../../supabase/migrations/20261015000010_spogomi_division_scoped_lock.sql", import.meta.url),
   "utf8",
 );
+const coherenceMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261109000002_spogomi_parent_mode_division_coherence.sql", import.meta.url),
+  "utf8",
+);
 const foundation = readFileSync(
   new URL("../../../supabase/migrations/20261012000001_spogomi_foundation.sql", import.meta.url),
   "utf8",
@@ -50,6 +54,14 @@ describe("SPOGOMI parent division contract", () => {
     expect(compositionUuidFix).toContain("(array_agg(id order by id))[1]");
     expect(lockCorrection).toContain("where event_id = p_event_id for update");
     expect(lockCorrection).toContain("participant.division_id = team.division_id");
+  });
+
+  it("keeps every single-mode parent aligned with its exact division type", () => {
+    expect(coherenceMigration).toContain("v_mode = 'casual' and (v_count <> 1 or v_casual <> 1 or v_world_cup <> 0)");
+    expect(coherenceMigration).toContain("v_mode = 'world_cup' and (v_count <> 1 or v_casual <> 0 or v_world_cup <> 1)");
+    expect(coherenceMigration).toContain("Existing SPOGOMI editions contain an incompatible parent/division state");
+    expect(coherenceMigration).toContain("create or replace function public.spogomi_assert_parent_divisions");
+    expect(coherenceMigration).not.toMatch(/alter\s+table\s+public\.spogomi_/i);
   });
 
   it("materializes divisions through the idempotent server RPC and exposes the three supported creation modes", () => {

@@ -18,6 +18,7 @@ const postLockReconciliationMigration = readFileSync(new URL("../../../../supaba
 const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../../supabase/migrations/20261013000012_spogomi_team_public_name_uniqueness.sql", import.meta.url), "utf8");
 const mixedEventMetadataMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000001_spogomi_mixed_event_metadata_update.sql", import.meta.url), "utf8");
 const mixedCasualBoundsMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000002_spogomi_mixed_casual_bounds.sql", import.meta.url), "utf8");
+const parentModeDivisionCoherenceMigration = readFileSync(new URL("../../../../supabase/migrations/20261109000002_spogomi_parent_mode_division_coherence.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -176,6 +177,14 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(mixedCasualBoundsMigration).toContain("for update");
     expect(mixedCasualBoundsMigration).toMatch(/revoke all on function public\.spogomi_update_event_metadata[\s\S]+grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
     expect(mixedCasualBoundsMigration).not.toContain("20261108000001");
+  });
+
+  it("keeps metadata modes immutable until an atomic conversion procedure exists", () => {
+    expect(parentModeDivisionCoherenceMigration).toContain("v_event.mode is distinct from p_mode");
+    expect(parentModeDivisionCoherenceMigration).toContain("Changing the mode of an existing SPOGOMI event is not allowed");
+    expect(parentModeDivisionCoherenceMigration).toContain("v_rules_changed := v_event.team_size_config is distinct from p_team_size_config");
+    expect(parentModeDivisionCoherenceMigration).toMatch(/revoke all on function public\.spogomi_update_event_metadata[\s\S]+grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
+    expect(parentModeDivisionCoherenceMigration).not.toMatch(/drop\s+(table|function)\s+public\.spogomi_/i);
   });
 
   it("keeps public team-name edits canonical, audited and outside composition revisions", () => {

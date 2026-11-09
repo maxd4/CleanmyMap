@@ -9,8 +9,10 @@ declare
   v_action_id uuid := gen_random_uuid();
   v_independent_action_id uuid := gen_random_uuid();
   v_conversion_action_id uuid := gen_random_uuid();
+  v_reverse_conversion_action_id uuid := gen_random_uuid();
   v_event_id uuid := gen_random_uuid();
   v_conversion_event_id uuid := gen_random_uuid();
+  v_reverse_conversion_event_id uuid := gen_random_uuid();
   v_casual_id uuid := md5(v_event_id::text || ':casual')::uuid;
   v_world_cup_id uuid := md5(v_event_id::text || ':world_cup')::uuid;
   v_team_casual uuid := gen_random_uuid();
@@ -122,6 +124,68 @@ begin
     raise exception 'a refused mixed conversion mutated the source edition';
   end if;
 
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_conversion_event_id, 0, 'spogomi-db-smoke', 'SPOGOMI Casual to World Cup',
+      'SPOGOMI smoke', now(), null, 'world_cup', '{}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'a Casual edition was converted to World Cup by the metadata RPC';
+  exception when others then
+    if position('changing the mode of an existing spogomi event is not allowed' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select mode from public.spogomi_events where id = v_conversion_event_id) <> 'casual' then
+    raise exception 'a refused Casual to World Cup conversion mutated the source edition';
+  end if;
+
+  perform public.spogomi_ensure_parent_divisions(v_conversion_event_id, 'casual');
+  begin
+    update public.spogomi_divisions
+       set division_type = 'world_cup', division_key = 'world_cup'
+     where event_id = v_conversion_event_id
+       and division_type = 'casual';
+    raise exception 'a Casual parent accepted a World Cup division';
+  exception when others then
+    if position('requires exactly one casual division' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select division_type from public.spogomi_divisions where event_id = v_conversion_event_id) <> 'casual' then
+    raise exception 'a rejected parent/division mismatch mutated the division';
+  end if;
+  begin
+    perform set_config('spogomi.composition_write_context', 'event_metadata_update', true);
+    update public.spogomi_events set mode = 'world_cup' where id = v_conversion_event_id;
+    raise exception 'a Casual parent accepted a direct World Cup mode update';
+  exception when others then
+    if position('requires exactly one world cup division' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select mode from public.spogomi_events where id = v_conversion_event_id) <> 'casual' then
+    raise exception 'a rejected direct mode update mutated the parent edition';
+  end if;
+
+  insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count)
+  values (v_reverse_conversion_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI reverse conversion smoke', 1, 1, 1);
+  insert into public.spogomi_events (
+    id, action_id, created_by_clerk_id, name, location_label, mode,
+    starts_at, regulation_version, regulation_status, regulation_config,
+    team_size_config, creation_state, public_visibility
+  ) values (
+    v_reverse_conversion_event_id, v_reverse_conversion_action_id, 'spogomi-db-smoke', 'SPOGOMI World Cup conversion smoke',
+    'SPOGOMI smoke', 'world_cup', now(), 'pending', 'incomplete', '{}'::jsonb,
+    '{}'::jsonb, 'event_pending', 'private'
+  );
+  perform public.spogomi_ensure_parent_divisions(v_reverse_conversion_event_id, 'world_cup');
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_reverse_conversion_event_id, 0, 'spogomi-db-smoke', 'SPOGOMI reverse conversion smoke',
+      'SPOGOMI smoke', now(), null, 'casual', '{}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'a World Cup edition was converted to Casual by the metadata RPC';
+  exception when others then
+    if position('changing the mode of an existing spogomi event is not allowed' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select mode from public.spogomi_events where id = v_reverse_conversion_event_id) <> 'world_cup' then
+    raise exception 'a refused reverse mode conversion mutated the source edition';
+  end if;
+
   insert into public.spogomi_teams (id, event_id, division_id, team_number, public_name)
   values
     (v_team_casual, v_event_id, v_casual_id, 1, 'Casual 1'),
@@ -136,8 +200,24 @@ begin
     v_event_id, 1, 'spogomi-db-smoke', 'SPOGOMI mixed visible', 'SPOGOMI smoke', now(), null,
     'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'published', 'hidden'
   ) into v_metadata;
-  if v_metadata->>'mode' <> 'mixed' or v_metadata->>'public_visibility' <> 'published' then
+  if v_metadata->>'mode' <> 'mixed' or v_metadata->>'public_visibility' <> 'published'
+     or (v_metadata->>'composition_revision')::bigint <> 1 then
     raise exception 'mixed visibility update did not preserve mode';
+  end if;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 1, 'spogomi-db-smoke', 'unauthorized metadata mutation', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'an authenticated caller updated SPOGOMI metadata';
+  exception when insufficient_privilege then
+    null;
+  end;
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  if (select name from public.spogomi_events where id = v_event_id) <> 'SPOGOMI mixed visible' then
+    raise exception 'an unauthorized metadata attempt mutated the event';
   end if;
 
   insert into public.spogomi_official_rankings (

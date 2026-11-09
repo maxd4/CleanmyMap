@@ -11,6 +11,11 @@ describe("SPOGOMI mixed-division PostgreSQL smoke STATIC_CONTRACT", () => {
     expect(smoke).toContain("begin;");
     expect(smoke).toContain("rollback;");
     expect(smoke).toContain("spogomi_ensure_parent_divisions(v_event_id, 'mixed')");
+    expect(smoke).toContain("a Casual parent accepted a World Cup division");
+    expect(smoke).toContain("a Casual edition was converted to World Cup by the metadata RPC");
+    expect(smoke).toContain("a World Cup edition was converted to Casual by the metadata RPC");
+    expect(smoke).toContain("changing the mode of an existing spogomi event is not allowed");
+    expect(smoke).toContain("an authenticated caller updated SPOGOMI metadata");
     expect(smoke).toContain("requires an explicit division_id");
     expect(smoke).toContain("division is forbidden");
     expect(smoke).toContain("spogomi_move_participant_to_team_for_division");
