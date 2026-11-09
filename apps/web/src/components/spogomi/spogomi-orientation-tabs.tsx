@@ -266,7 +266,7 @@ function buildOrientations(): Orientation[] {
           title: "Après l’épreuve",
           description: "Finaliser les mesures et certifications lorsque la mission serveur le permet.",
           actions: [
-            privateAction("Certifier les résultats", "Certifier uniquement les opérations de terrain autorisées.", "Connexion requise ; habilitation certification vérifiée et données prêtes à certifier.", BadgeCheck, buildSpogomiCatalogHref("referees", "operations"), "Certifier les résultats", "referee.certification"),
+            privateAction("Certifier les mesures de terrain", "Certifier les mesures opérationnelles de terrain autorisées ; cette action ne certifie pas les résultats sportifs.", "Connexion requise ; habilitation certification vérifiée et mesures de terrain prêtes à certifier.", BadgeCheck, buildSpogomiCatalogHref("referees", "operations"), "Certifier les mesures de terrain", "referee.certification"),
           ],
         },
       ],

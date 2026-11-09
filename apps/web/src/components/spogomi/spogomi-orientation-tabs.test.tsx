@@ -135,7 +135,15 @@ describe("SpogomiOrientationTabs", () => {
     });
 
     const refereePanel = renderer.root.findAllByProps({ role: "tabpanel" })[1];
-    expect(refereePanel?.findAllByProps({ "data-testid": "spogomi-action-Certifier les résultats" }).filter((node) => node.type === "article")).toHaveLength(1);
+    expect(refereePanel?.findAllByProps({ "data-testid": "spogomi-action-Certifier les mesures de terrain" }).filter((node) => node.type === "article")).toHaveLength(1);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Certifier les mesures de terrain");
+    expect(buildSpogomiActionInfo({
+      label: "Certifier les mesures de terrain",
+      description: "Certifier les mesures opérationnelles de terrain autorisées ; cette action ne certifie pas les résultats sportifs.",
+      accessCondition: "Connexion requise ; habilitation certification vérifiée et mesures de terrain prêtes à certifier.",
+      href: "/spogomi/mes-evenements?parcours=referees&section=operations",
+      requiresAuthentication: true,
+    }).purpose).toContain("cette action ne certifie pas les résultats sportifs");
     expect(refereePanel?.findAllByType("h4").map((heading) => heading.props.children).filter((children): children is string => typeof children === "string")).toEqual([
       "Avant l’épreuve",
       "Pendant l’épreuve",

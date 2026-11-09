@@ -10,7 +10,7 @@ export type SpogomiOrientationProgressProof = {
   key: SpogomiOrientationProgressKey;
   eventId: string;
   eventName: string;
-  evidence: "certified_participation" | "certified_mission" | "active_attestation" | "operational_certification" | "event_published" | "results_published";
+  evidence: "certified_participation" | "certified_mission" | "active_attestation" | "operational_measurement_certification" | "event_published" | "results_published";
 };
 
 function pushUnique(target: SpogomiOrientationProgressProof[], proof: SpogomiOrientationProgressProof): void {
@@ -45,13 +45,33 @@ type OperationalCertificationProgressProof = {
   certifiedAt: string;
 };
 
+export type SpogomiPublishedResultsProgressProof = {
+  eventId: string;
+  visibility: "hidden" | "provisional" | "certified";
+  sportStatus: "hidden" | "certified" | "provisional" | "unavailable";
+  divisionSportStatuses?: readonly ("hidden" | "certified" | "provisional" | "unavailable")[];
+};
+
+function hasEffectivelyPublishedResults(
+  event: PersonalProgressEvent,
+  publishedResults: readonly SpogomiPublishedResultsProgressProof[],
+): boolean {
+  if (event.publicVisibility !== "published" || event.state === "cancelled" || !event.eventSlug?.trim() || event.publicResultsVisibility !== "certified") return false;
+  const proof = publishedResults.find((candidate) => candidate.eventId === event.id);
+  if (!proof || proof.visibility !== "certified") return false;
+  const divisionStatuses = proof.divisionSportStatuses ?? [proof.sportStatus];
+  return divisionStatuses.length > 0 && divisionStatuses.every((status) => status === "certified");
+}
+
 export function buildSpogomiOrientationProgress(input: {
   userId: string;
   personalEvents: readonly PersonalProgressEvent[];
   volunteerSummary: { chronology: readonly VolunteerProgressEvent[]; certificates: readonly VolunteerProgressCertificate[] };
   operationalCertifications: readonly OperationalCertificationProgressProof[];
+  publishedResults?: readonly SpogomiPublishedResultsProgressProof[];
 }): SpogomiOrientationProgressProof[] {
   const proofs: SpogomiOrientationProgressProof[] = [];
+  const publishedResults = input.publishedResults ?? [];
 
   for (const event of input.volunteerSummary.chronology) {
     const hasCertifiedParticipation = event.eventState === "certified" &&
@@ -73,10 +93,10 @@ export function buildSpogomiOrientationProgress(input: {
       proof.eventId === event.id && proof.certifiedByClerkId === input.userId && proof.certificationId.trim().length > 0 && proof.certifiedAt.trim().length > 0,
     );
 
-    if (hasOperationalCertification) pushUnique(proofs, { key: "referee.certification", eventId: event.id, eventName: event.name, evidence: "operational_certification" });
+    if (hasOperationalCertification) pushUnique(proofs, { key: "referee.certification", eventId: event.id, eventName: event.name, evidence: "operational_measurement_certification" });
     if (!isOrganizer) continue;
     if (isPubliclyAccessible) pushUnique(proofs, { key: "organizer.event_publication", eventId: event.id, eventName: event.name, evidence: "event_published" });
-    if (isPubliclyAccessible && event.publicResultsVisibility === "certified") pushUnique(proofs, { key: "organizer.results_publication", eventId: event.id, eventName: event.name, evidence: "results_published" });
+    if (hasEffectivelyPublishedResults(event, publishedResults)) pushUnique(proofs, { key: "organizer.results_publication", eventId: event.id, eventName: event.name, evidence: "results_published" });
   }
 
   return proofs.sort((left, right) => `${left.key}:${left.eventId}`.localeCompare(`${right.key}:${right.eventId}`));
