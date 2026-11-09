@@ -366,6 +366,41 @@ async function concurrentOfficialGpxSync() {
   );
 }
 
+async function rejectChronologicallyIncoherentFieldOperationSchedule() {
+  const actionId = await createAction(sessionA, { schedule: `${marker}-chronology-negative` });
+  const event = await createEvent(sessionA, actionId, "casual");
+  await must(
+    await sessionA.rpc("spogomi_ensure_parent_divisions", { p_event_id: event.id, p_mode: "casual" }),
+    "create chronology negative-test divisions",
+  );
+  const division = await must(
+    await sessionA.from("spogomi_divisions").select("id").eq("event_id", event.id).single(),
+    "read chronology negative-test division",
+  );
+  const result = await sessionA.rpc("spogomi_configure_field_operation", {
+    p_event_id: event.id,
+    p_division_id: division.id,
+    p_timezone_name: "Europe/Paris",
+    p_regulation_version: "synthetic-schedule-negative-v1",
+    p_official_start_at: "2027-03-28T01:45:00.000Z",
+    p_collection_limit_at: "2027-03-28T01:30:00.000Z",
+    p_sorting_limit_at: "2027-03-28T02:00:00.000Z",
+    p_weighing_start_at: "2027-03-28T02:15:00.000Z",
+    p_weighing_end_at: "2027-03-28T03:00:00.000Z",
+    p_actor_clerk_id: `${marker}-chronology-negative`,
+    p_reason: "Synthetic chronology negative test",
+    p_provenance: "synthetic schedule chronology fixture",
+    p_expected_updated_at: null,
+  });
+  assert.equal(result.error?.code, "23514", "an incoherent schedule must fail on the PostgreSQL chronology constraint");
+  assert.equal(result.data, null, "an incoherent schedule must not return a configuration");
+  const history = await must(
+    await sessionA.from("spogomi_field_operation_history").select("id").eq("event_id", event.id).eq("division_id", division.id),
+    "read chronology negative-test history",
+  );
+  assert.equal(history.length, 0, "an incoherent schedule must not append history");
+}
+
 async function concurrentFieldOperationScheduleConfiguration() {
   const actionId = await createAction(sessionA, { schedule: `${marker}-preserved` });
   const event = await createEvent(sessionA, actionId, "casual");
@@ -389,55 +424,94 @@ async function concurrentFieldOperationScheduleConfiguration() {
     p_reason: "Synthetic schedule concurrency proof",
     p_provenance: "synthetic schedule fixture",
   };
-  const initialResults = await Promise.all([
-    sessionA.rpc("spogomi_configure_field_operation", {
+  const initialCandidates = [
+    {
+      client: sessionA,
+      officialStartAt: "2027-03-28T01:00:00.000Z",
+      actorClerkId: `${marker}-schedule-A`,
+    },
+    {
+      client: sessionB,
+      officialStartAt: "2027-03-28T01:15:00.000Z",
+      actorClerkId: `${marker}-schedule-B`,
+    },
+  ];
+  const initialResults = await Promise.all(initialCandidates.map(({ client, officialStartAt, actorClerkId }) =>
+    client.rpc("spogomi_configure_field_operation", {
       ...baseArgs,
-      p_official_start_at: "2027-03-28T01:00:00.000Z",
-      p_actor_clerk_id: `${marker}-schedule-A`,
+      p_official_start_at: officialStartAt,
+      p_actor_clerk_id: actorClerkId,
       p_expected_updated_at: null,
-    }),
-    sessionB.rpc("spogomi_configure_field_operation", {
-      ...baseArgs,
-      p_official_start_at: "2027-03-28T01:15:00.000Z",
-      p_actor_clerk_id: `${marker}-schedule-B`,
-      p_expected_updated_at: null,
-    }),
-  ]);
+    })));
   assert.equal(initialResults.filter((result) => !result.error).length, 1, "exactly one concurrent initial schedule configuration must commit");
   assert.equal(initialResults.filter((result) => result.error?.code === "40001").length, 1, "the concurrent initial schedule configuration must be rejected as stale");
+  assert.equal(initialResults.filter((result) => result.error && result.error.code !== "40001").length, 0, "the rejected initial schedule configuration must fail only on the version conflict");
+  const initialWinnerIndex = initialResults.findIndex((result) => !result.error);
 
   const persisted = await must(
     await sessionA.from("spogomi_field_operations").select("updated_at, official_start_at").eq("event_id", event.id).eq("division_id", division.id).single(),
     "read schedule concurrency snapshot",
   );
-  const updateResults = await Promise.all([
-    sessionA.rpc("spogomi_configure_field_operation", {
+  const updateCandidates = [
+    {
+      client: sessionA,
+      officialStartAt: "2027-03-28T01:20:00.000Z",
+      actorClerkId: `${marker}-schedule-update-A`,
+    },
+    {
+      client: sessionB,
+      officialStartAt: "2027-03-28T01:25:00.000Z",
+      actorClerkId: `${marker}-schedule-update-B`,
+    },
+  ];
+  const updateResults = await Promise.all(updateCandidates.map(({ client, officialStartAt, actorClerkId }) =>
+    client.rpc("spogomi_configure_field_operation", {
       ...baseArgs,
-      p_official_start_at: "2027-03-28T01:30:00.000Z",
-      p_actor_clerk_id: `${marker}-schedule-update-A`,
+      p_official_start_at: officialStartAt,
+      p_actor_clerk_id: actorClerkId,
       p_expected_updated_at: persisted.updated_at,
-    }),
-    sessionB.rpc("spogomi_configure_field_operation", {
-      ...baseArgs,
-      p_official_start_at: "2027-03-28T01:45:00.000Z",
-      p_actor_clerk_id: `${marker}-schedule-update-B`,
-      p_expected_updated_at: persisted.updated_at,
-    }),
-  ]);
+    })));
   assert.equal(updateResults.filter((result) => !result.error).length, 1, "exactly one concurrent schedule update must commit");
-  assert.equal(updateResults.filter((result) => result.error?.code === "40001").length, 1, "the stale schedule update must be rejected");
+  assert.equal(updateResults.filter((result) => result.error?.code === "40001").length, 1, "the stale schedule update must be rejected by optimistic version control");
+  assert.equal(updateResults.filter((result) => result.error && result.error.code !== "40001").length, 0, "the rejected schedule update must fail only on the version conflict, not chronology validation");
+  const updateWinnerIndex = updateResults.findIndex((result) => !result.error);
+  const winningUpdate = updateCandidates[updateWinnerIndex];
 
   const finalOperation = await must(
-    await sessionA.from("spogomi_field_operations").select("official_start_at, updated_by_clerk_id").eq("event_id", event.id).eq("division_id", division.id).single(),
+    await sessionA.from("spogomi_field_operations").select("timezone_name, regulation_version, official_start_at, collection_limit_at, sorting_limit_at, weighing_start_at, weighing_end_at, updated_by_clerk_id").eq("event_id", event.id).eq("division_id", division.id).single(),
     "read final schedule configuration",
   );
-  assert.ok(["2027-03-28T01:30:00+00:00", "2027-03-28T01:45:00+00:00"].includes(finalOperation.official_start_at), "the final schedule must be one complete winning snapshot");
-  assert.match(finalOperation.updated_by_clerk_id, new RegExp(`${marker}-schedule-update-(A|B)`));
+  const normalizeTimestamp = (value) => new Date(value).toISOString();
+  assert.deepEqual(
+    {
+      ...finalOperation,
+      official_start_at: normalizeTimestamp(finalOperation.official_start_at),
+      collection_limit_at: normalizeTimestamp(finalOperation.collection_limit_at),
+      sorting_limit_at: normalizeTimestamp(finalOperation.sorting_limit_at),
+      weighing_start_at: normalizeTimestamp(finalOperation.weighing_start_at),
+      weighing_end_at: normalizeTimestamp(finalOperation.weighing_end_at),
+    },
+    {
+      timezone_name: baseArgs.p_timezone_name,
+      regulation_version: baseArgs.p_regulation_version,
+      official_start_at: winningUpdate.officialStartAt,
+      collection_limit_at: baseArgs.p_collection_limit_at,
+      sorting_limit_at: baseArgs.p_sorting_limit_at,
+      weighing_start_at: baseArgs.p_weighing_start_at,
+      weighing_end_at: baseArgs.p_weighing_end_at,
+      updated_by_clerk_id: winningUpdate.actorClerkId,
+    },
+    "the final schedule must be exactly the complete winning snapshot",
+  );
   const history = await must(
-    await sessionA.from("spogomi_field_operation_history").select("action").eq("event_id", event.id).eq("division_id", division.id),
+    await sessionA.from("spogomi_field_operation_history").select("action, actor_clerk_id").eq("event_id", event.id).eq("division_id", division.id),
     "read schedule configuration history",
   );
   assert.equal(history.length, 2, "rejected schedule configurations must not append history");
+  assert.deepEqual(new Set(history.map((row) => row.actor_clerk_id)), new Set([
+    initialCandidates[initialWinnerIndex].actorClerkId,
+    winningUpdate.actorClerkId,
+  ]), "history must contain exactly the two accepted schedule writes");
 }
 
 async function concurrentCertificateReissue() {
@@ -745,6 +819,7 @@ async function main() {
     await teamPublicNameUniqueness();
     await concurrentMoveAndLock();
     await concurrentOfficialGpxSync();
+    await rejectChronologicallyIncoherentFieldOperationSchedule();
     await concurrentFieldOperationScheduleConfiguration();
     await concurrentCertificateReissue();
     await concurrentConsolidationPublication();
