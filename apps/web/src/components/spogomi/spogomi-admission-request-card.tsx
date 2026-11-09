@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { SpogomiRegistrationQuiz } from "./spogomi-registration-quiz";
 
 type RequestKind = "registration" | "presence_regularization";
 type RequestStatus = "pending" | "approved" | "rejected" | "cancelled";
@@ -46,6 +47,7 @@ export function SpogomiAdmissionRequestCard({
   const [context, setContext] = useState("");
   const [divisionId, setDivisionId] = useState(divisions[0]?.id ?? "");
   const [kind, setKind] = useState<RequestKind>(lifecycle === "in_progress" ? "presence_regularization" : "registration");
+  const [quizProofs, setQuizProofs] = useState<Record<string, string>>({});
 
   const endpoint = `/api/spogomi/events/${encodeURIComponent(eventId)}/admission-requests`;
   const loadRequests = useCallback(async () => {
@@ -66,6 +68,10 @@ export function SpogomiAdmissionRequestCard({
 
   async function submit() {
     if (!divisionId) return;
+    if (kind === "registration" && !quizProofs[divisionId]) {
+      setError("Validez le quiz obligatoire de cette division avant d’envoyer la demande d’inscription.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -108,7 +114,7 @@ export function SpogomiAdmissionRequestCard({
     <section className="space-y-3" aria-labelledby="spogomi-admission-request-title">
       <div><h2 id="spogomi-admission-request-title" className="font-black text-slate-900">Votre parcours SPOGOMI</h2><p className="mt-1 text-sm text-slate-700">Une demande est examinée par un rôle actif admin ou max. Elle ne réserve pas de place et ne modifie ni équipe ni résultat sans décision auditée.</p></div>
       {current ? <div className="space-y-2 rounded-xl border border-slate-200 bg-white/80 p-3" aria-live="polite"><p className="font-bold text-slate-900">{statusLabel(current)}</p><p className="text-sm text-slate-700">{current.requestKind === "presence_regularization" ? "La demande de présence n’ajoute pas automatiquement une personne au roster." : "L’admission ne crée pas de billet partenaire et l’affectation à une équipe reste une étape distincte."}</p>{current.decisionMessage ? <p className="rounded-lg bg-slate-50 p-2 text-sm text-slate-800">{current.decisionMessage}</p> : null}{current.status === "pending" ? <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ cancel(current); }}>Annuler la demande</CmmButton> : null}</div> : null}
-      {!current || current.status === "cancelled" || current.status === "rejected" ? <div className="space-y-3 rounded-xl border border-emerald-100 bg-white/70 p-3"><label className="block text-sm font-bold text-slate-800">Opération<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={kind} onChange={(event) => setKind(event.target.value as RequestKind)}><option value="registration" disabled={lifecycle !== "upcoming"}>Demander à intégrer l’équipe</option><option value="presence_regularization" disabled={lifecycle !== "in_progress"}>Signaler une présence à régulariser</option></select></label><label className="block text-sm font-bold text-slate-800">Division<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>{divisions.map((division) => <option key={division.id} value={division.id}>{division.type === "world_cup" ? "World Cup" : "Casual"}</option>)}</select></label><label className="block text-sm font-bold text-slate-800">Contexte facultatif<textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={3} maxLength={1200} value={context} onChange={(event) => setContext(event.target.value)} placeholder={`Contexte utile pour votre ${requestLabel(kind)}. N’écrivez pas de secret ni de donnée d’une autre personne.`} /></label><CmmButton type="button" tone="primary" disabled={busy || !divisionId} loading={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submit(); }}>{kind === "registration" ? "Demander à intégrer l’équipe" : "Envoyer la régularisation"}</CmmButton></div> : null}
+      {!current || current.status === "cancelled" || current.status === "rejected" ? <div className="space-y-3 rounded-xl border border-emerald-100 bg-white/70 p-3"><label className="block text-sm font-bold text-slate-800">Opération<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={kind} onChange={(event) => setKind(event.target.value as RequestKind)}><option value="registration" disabled={lifecycle !== "upcoming"}>Demander à intégrer l’équipe</option><option value="presence_regularization" disabled={lifecycle !== "in_progress"}>Signaler une présence à régulariser</option></select></label><label className="block text-sm font-bold text-slate-800">Division<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>{divisions.map((division) => <option key={division.id} value={division.id}>{division.type === "world_cup" ? "World Cup" : "Casual"}</option>)}</select></label>{kind === "registration" ? <SpogomiRegistrationQuiz eventId={eventId} divisionId={divisionId} divisionLabel={divisions.find((division) => division.id === divisionId)?.type === "world_cup" ? "World Cup" : "Casual"} onPassed={(quizVersion) => setQuizProofs((currentProofs) => ({ ...currentProofs, [divisionId]: quizVersion }))} /> : null}<label className="block text-sm font-bold text-slate-800">Contexte facultatif<textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" rows={3} maxLength={1200} value={context} onChange={(event) => setContext(event.target.value)} placeholder={`Contexte utile pour votre ${requestLabel(kind)}. N’écrivez pas de secret ni de donnée d’une autre personne.`} /></label><CmmButton type="button" tone="primary" disabled={busy || !divisionId || (kind === "registration" && !quizProofs[divisionId])} loading={busy} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ submit(); }}>{kind === "registration" ? "Demander à intégrer l’équipe" : "Envoyer la régularisation"}</CmmButton></div> : null}
       {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
     </section>
   );

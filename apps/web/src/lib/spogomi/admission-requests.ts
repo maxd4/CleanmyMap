@@ -60,6 +60,7 @@ function mapConflict(message: string): SpogomiAdmissionRequestError {
 }
 
 function mapForbidden(message: string): SpogomiAdmissionRequestError {
+  if (message.includes("registration_quiz_required")) return new SpogomiAdmissionRequestError("Validez le quiz pédagogique de cette division avant de vous inscrire.", "forbidden");
   if (message.includes("registration_readiness_incomplete")) return new SpogomiAdmissionRequestError("Les informations obligatoires de l’édition ne sont pas encore vérifiées par l’organisateur.", "forbidden");
   if (message.includes("external_ticketing")) return new SpogomiAdmissionRequestError("Cette édition doit être rejointe par la billetterie officielle.", "forbidden");
   if (message.includes("capacity")) return new SpogomiAdmissionRequestError("La capacité d’inscription de cette édition est atteinte.", "forbidden");

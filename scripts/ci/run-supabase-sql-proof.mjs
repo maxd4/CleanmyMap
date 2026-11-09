@@ -19,6 +19,7 @@ const CONTRACT_MARKERS = new Map([
   ["apps/web/supabase/tests/action-role-attestation-correction.sql", "EXECUTED_DB_CONTRACT: Action role attestation correction contract passed"],
   ["apps/web/supabase/tests/reports-persistent-contract.sql", "EXECUTED_DB_CONTRACT: Reports persistence, RLS, snapshots, quota, PDF artifacts, shares, publications and action_media contract passed"],
   ["apps/web/supabase/tests/spogomi-mixed-division-smoke.sql", "EXECUTED_DB_CONTRACT: SPOGOMI mixed-division closure and replay contract passed"],
+  ["apps/web/supabase/tests/spogomi-registration-quiz.sql", "EXECUTED_DB_CONTRACT: SPOGOMI registration quiz proof and admission gate passed"],
   ["apps/web/supabase/tests/spogomi-transactional-contract.sql", "EXECUTED_DB_CONTRACT: SPOGOMI RLS, lock triggers and atomic A-B-A consolidation contract passed"],
   ["e2e/profile-security.sql", "EXECUTED_DB_CONTRACT: SECURITY-01 profile and notification boundary contract passed"],
   ["e2e/security-02-projection-revocation.sql", "EXECUTED_DB_CONTRACT: SECURITY-02 projection revocation contract passed"],

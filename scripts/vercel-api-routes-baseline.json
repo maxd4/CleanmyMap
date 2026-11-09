@@ -122,6 +122,13 @@
       "reviewedAt": "2026-11-09"
     },
     {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/registration-quiz/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface authentifiée du quiz pédagogique contextualisé par édition, division et version de règlement avant une nouvelle inscription sportive.",
+      "costContract": "GET et POST bornés à un eventId/divisionId UUID et à l'identité Clerk courante, rate limités à 10 requêtes par minute ; la définition publique ne contient jamais les réponses correctes, le POST transmet uniquement des réponses et une expérience facultative, et la preuve persistée est liée au compte, à l'édition, à la division et à la version effective.",
+      "reviewedAt": "2026-11-09"
+    },
+    {
       "route": "apps/web/src/app/api/spogomi/public/events/[eventSlug]/route.ts",
       "introducedBy": "WORKTREE-CANDIDATE",
       "reason": "Projection publique bornée des résultats SPOGOMI publiés, sans roster privé ni métriques d'équipes indisponibles.",
@@ -641,6 +648,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/rankings/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/attestations/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/reconcile/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/registration-quiz/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/registration/open/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/results/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts",

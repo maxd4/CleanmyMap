@@ -132,6 +132,40 @@ complètes. La création directe d'une nouvelle demande recontrôle cette
 projection côté serveur ; les demandes existantes, les participations déjà
 enregistrées et les opérations administratives restent hors de ce verrou.
 
+### Quiz pédagogique obligatoire avant inscription
+
+Une nouvelle demande `registration` envoyée par CleanMyMap doit disposer d'une
+preuve serveur de réussite du quiz applicable à son `eventId`, sa division et
+sa version effective du règlement. `spogomi_registration_quiz` produit une
+projection contextualisée à partir des données publiées et vérifiées de
+l'édition : horaires et déroulement, sécurité/déplacements/déchets interdits,
+tri/pesée/catégories/barèmes, conditions réglementaires et mineurs, parcours
+CleanMyMap, contact et assistance. Une information absente ou non vérifiée est
+retournée dans `missing` ; aucune généralité japonaise ou ARTEMA ne remplace la
+source de l'édition.
+
+Le questionnaire exige toutes les réponses correctes aux questions critiques et
+80 % au minimum sur les autres. Les tentatives sont illimitées et les erreurs
+sont expliquées. La question sur l'expérience de cleanwalk et son commentaire
+sont facultatifs et n'entrent pas dans le score. La définition publique ne
+contient jamais les réponses correctes.
+
+`spogomi_submit_registration_quiz` vérifie les réponses côté serveur et
+enregistre uniquement une preuve minimale liée au compte Clerk, à l'édition,
+à la division et à `quiz_version`. Une modification substantielle des sources
+produit une nouvelle version et invalide les anciennes preuves pour les
+nouvelles demandes, sans modifier les inscriptions déjà acceptées.
+
+Le gate final vit dans `create_spogomi_admission_request` et ne s'applique qu'à
+`request_kind = registration`, après les contrôles d'authentification,
+division, capacité, état, consentement et parcours officiel existants. Le
+rattachement à une équipe importée (`team_join`) reste une opération de liaison
+d'un participant déjà présent et conserve ses contrôles propres ; il ne crée
+pas une nouvelle entrée sportive. Les consultations publiques, les demandes
+déjà rejouables, les régularisations de présence, les opérations administratives
+et les circuits externes non contrôlés par CleanMyMap ne sont pas verrouillés
+par ce quiz.
+
 ## Index des modules
 
 - [Données, import et règlements](./spogomi-donnees-regles.md)
