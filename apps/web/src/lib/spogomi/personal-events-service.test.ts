@@ -170,6 +170,28 @@ describe("listSpogomiEventsForUser", () => {
 
     await expect(listSpogomiEventsForUser(supabase as never, "user-1")).resolves.toEqual([]);
   });
+
+  it("includes pending and approved admission requests as change-only relations", async () => {
+    const supabase = createSupabaseFixture({
+      events: [event("pending", "action-pending"), event("approved", "action-approved"), event("rejected", "action-rejected")],
+      organizers: [],
+      reviewers: [],
+      participants: [],
+      requests: [
+        { event_id: "pending", requester_clerk_id: "user-1", status: "pending" },
+        { event_id: "approved", requester_clerk_id: "user-1", status: "approved" },
+        { event_id: "rejected", requester_clerk_id: "user-1", status: "rejected" },
+        { event_id: "pending", requester_clerk_id: "user-1", status: "approved" },
+        { event_id: "pending", requester_clerk_id: "other-user", status: "pending" },
+      ],
+    });
+
+    const result = await listSpogomiEventsForUser(supabase as never, "user-1");
+
+    expect(result.map((current) => current.id)).toEqual(["approved", "pending"]);
+    expect(result[0]).toMatchObject({ relations: ["applicant"], accesses: [], links: { space: null } });
+    expect(result[1]).toMatchObject({ relations: ["applicant"], accesses: [], links: { space: null } });
+  });
 });
 
 describe("listSpogomiEventChangesForUser", () => {

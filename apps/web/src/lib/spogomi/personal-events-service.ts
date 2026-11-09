@@ -52,7 +52,8 @@ export type SpogomiPersonalRelation =
   | "observer"
   | "checkin"
   | "field_operator"
-  | "participant";
+  | "participant"
+  | "applicant";
 
 type SpogomiPersonalAccess =
   | "manage"
@@ -283,6 +284,7 @@ function relationMap(
   organizerEvents: readonly PersonalEventRow[],
   reviewerRows: readonly ReviewerRow[],
   participantRows: readonly ParticipantRow[],
+  changeJoinRequestRows: readonly ChangeJoinRequestRow[],
 ): Map<string, Set<SpogomiPersonalRelation>> {
   const relations = new Map<string, Set<SpogomiPersonalRelation>>();
   const add = (eventId: string, relation: SpogomiPersonalRelation) => {
@@ -296,6 +298,7 @@ function relationMap(
     add(String(row.event_id), reviewerRelation(row.role));
   }
   for (const row of participantRows) add(String(row.event_id), "participant");
+  for (const row of changeJoinRequestRows) add(String(row.event_id), "applicant");
   return relations;
 }
 
@@ -303,7 +306,7 @@ function toPersonalEvent(
   event: PersonalEventRow,
   relations: Set<SpogomiPersonalRelation>,
 ): SpogomiPersonalEvent {
-  const orderedRelations = (["organizer", "referee", "checkin", "observer", "field_operator", "participant"] as const)
+  const orderedRelations = (["organizer", "referee", "checkin", "observer", "field_operator", "participant", "applicant"] as const)
     .filter((relation) => relations.has(relation));
   const accesses: SpogomiPersonalAccess[] = [];
   if (relations.has("organizer")) accesses.push("manage");
@@ -340,18 +343,20 @@ function toPersonalEvent(
 }
 
 /**
- * Returns only events reached through a verified event relation. Global roles
- * are intentionally not consulted: a role alone is not an event relation.
+ * Returns only events reached through a verified event relation or an active
+ * admission request that is also authorized to receive event changes. Global
+ * roles are intentionally not consulted: a role alone is not an event relation.
  */
 export async function listSpogomiEventsForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<SpogomiPersonalEvent[]> {
-  const [createdEvents, organizerRows, reviewerRows, participantRows] = await Promise.all([
+  const [createdEvents, organizerRows, reviewerRows, participantRows, changeJoinRequestRows] = await Promise.all([
     readCreatedEvents(supabase, userId),
     readOrganizerActions(supabase, userId),
     readReviewers(supabase, userId),
     readVerifiedParticipants(supabase, userId),
+    readChangeJoinRequests(supabase, userId),
   ]);
   const organizerEvents = await readEventsByActionIds(
     supabase,
@@ -362,13 +367,14 @@ export async function listSpogomiEventsForUser(
     unique([
       ...reviewerRows.map((row) => String(row.event_id)),
       ...participantRows.map((row) => String(row.event_id)),
+      ...changeJoinRequestRows.map((row) => String(row.event_id)),
     ]),
   );
   const allEvents = new Map<string, PersonalEventRow>();
   for (const event of [...createdEvents, ...organizerEvents, ...relatedEvents]) {
     allEvents.set(String(event.id), event);
   }
-  const relations = relationMap(createdEvents, organizerEvents, reviewerRows, participantRows);
+  const relations = relationMap(createdEvents, organizerEvents, reviewerRows, participantRows, changeJoinRequestRows);
 
   return [...allEvents.values()]
     .filter((event) => relations.has(String(event.id)))

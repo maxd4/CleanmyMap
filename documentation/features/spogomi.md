@@ -310,6 +310,9 @@ directes sans acteur applicatif.
 Dans le parcours authentifié `/spogomi/mes-evenements`, le compte connecté
 retrouve ces changements sous la fiche de l'édition lorsqu'il conserve une
 relation participant enregistrée ou une demande d'équipe `pending`/`approved`.
+Une demande active apparaît dans le catalogue général et dans le parcours
+volontaires comme une relation de demandeur distincte : elle n'ajoute aucun
+accès de gestion, d'arbitrage, d'opération ou de participation vérifiée.
 La projection affiche uniquement la révision, les champs modifiés, la date,
 l'obligation de confirmation et l'état de l'accusé ; les snapshots avant/après
 ne sont jamais sélectionnés ni transmis au navigateur. Le bouton de confirmation

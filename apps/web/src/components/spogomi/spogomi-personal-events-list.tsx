@@ -33,6 +33,7 @@ const RELATION_LABELS: Record<SpogomiPersonalRelation, string> = {
   observer: "Observateur",
   field_operator: "Opérations terrain",
   participant: "Participant lié",
+  applicant: "Demandeur actif",
 };
 
 const ACCESS_LABELS = {
@@ -107,7 +108,7 @@ function changeDateLabel(createdAt: string, timeZone: string): string {
 }
 
 function EventChangeReceipts({ event, changes }: { event: SpogomiPersonalEvent; changes: readonly SpogomiPersonalEventChange[] }) {
-  const [acknowledgedIds, setAcknowledgedIds] = useState(() => new Set(changes.filter((change) => change.acknowledgedAt).map((change) => change.id)));
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(() => new Set());
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
@@ -134,7 +135,7 @@ function EventChangeReceipts({ event, changes }: { event: SpogomiPersonalEvent; 
     <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4" aria-labelledby={`spogomi-event-changes-${event.id}`} data-testid={`spogomi-event-changes-${event.id}`}>
       <div>
         <h4 id={`spogomi-event-changes-${event.id}`} className="text-sm font-black text-amber-950">Changements de l’édition</h4>
-        <p className="mt-1 text-sm text-amber-950">Les changements concernés par votre inscription sont affichés sans exposer les instantanés internes.</p>
+        <p className="mt-1 text-sm text-amber-950">Les changements concernés par votre relation ou votre demande sont affichés sans exposer les instantanés internes.</p>
       </div>
       <ul className="space-y-3">
         {changes.map((change) => {
@@ -147,7 +148,7 @@ function EventChangeReceipts({ event, changes }: { event: SpogomiPersonalEvent; 
               </div>
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">Champs modifiés : {change.changedFields.map(changeFieldLabel).join(", ") || "Détails indisponibles"}</p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                {acknowledged ? <span className="font-bold text-emerald-800" role="status">Accusé le {changeDateLabel(change.acknowledgedAt ?? change.createdAt, event.officialTimezone)}</span> : change.requiresConfirmation ? <CmmButton tone="primary" size="sm" loading={pendingId === change.id} onClick={() => void acknowledge(change)}>Confirmer ce changement</CmmButton> : <span className="font-semibold text-slate-700">Information reçue</span>}
+                {change.acknowledgedAt ? <span className="font-bold text-emerald-800" role="status">Accusé le {changeDateLabel(change.acknowledgedAt, event.officialTimezone)}</span> : acknowledged ? <span className="font-bold text-emerald-800" role="status">Confirmation enregistrée</span> : change.requiresConfirmation ? <CmmButton tone="primary" size="sm" loading={pendingId === change.id} onClick={() => void acknowledge(change)}>Confirmer ce changement</CmmButton> : <span className="font-semibold text-slate-700">Information reçue</span>}
               </div>
             </li>
           );
@@ -180,7 +181,7 @@ function PersonalEventCard({ event, journey, focus, changes }: { event: SpogomiP
 
       <div className="space-y-2 text-sm text-slate-800">
         <p className="flex items-start gap-2"><CalendarDays size={16} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />{formatDateRange(event.startsAt, event.endsAt, event.officialTimezone)}</p>
-        <div className="flex flex-wrap gap-2" aria-label="Relations vérifiées">
+        <div className="flex flex-wrap gap-2" aria-label="Relations et demandes autorisées">
           {event.relations.map((relation) => (
             <span key={relation} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-900">
               <AccessIcon relation={relation} />{RELATION_LABELS[relation]}
@@ -216,7 +217,7 @@ export function SpogomiPersonalEventsList({ events, changes = [], journey = null
     ? journeyEvents
     : journeyEvents.filter((event) => event.relations.includes(activeFilter));
   const heading = journey === "volunteers" ? "Mes participations" : journey === "referees" ? "Mes événements habilités" : journey === "organizers" ? "Mes événements à organiser" : "Compétitions accessibles";
-  const description = journey === "volunteers" ? "Les éditions liées à votre compte vérifié restent séparées des accès de gestion." : journey === "referees" ? "Une habilitation active est nécessaire pour apparaître dans cette liste ; elle reste limitée à chaque édition." : journey === "organizers" ? "Les événements ci-dessous proviennent de vos relations organisateur vérifiées." : "Une relation vérifiée est nécessaire pour apparaître dans cette liste.";
+  const description = journey === "volunteers" ? "Les éditions liées à votre compte vérifié ou à une demande active restent séparées des accès de gestion." : journey === "referees" ? "Une habilitation active est nécessaire pour apparaître dans cette liste ; elle reste limitée à chaque édition." : journey === "organizers" ? "Les événements ci-dessous proviennent de vos relations organisateur vérifiées." : "Une relation vérifiée ou une demande active est nécessaire pour apparaître dans cette liste.";
   const changesByEventId = new Map<string, SpogomiPersonalEventChange[]>();
   for (const change of changes) {
     const eventChanges = changesByEventId.get(change.eventId) ?? [];

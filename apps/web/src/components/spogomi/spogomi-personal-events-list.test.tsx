@@ -101,6 +101,14 @@ describe("SpogomiPersonalEventsList", () => {
     expect(markup).not.toContain("Créer une compétition");
   });
 
+  it("shows an active admission requester in the volunteer journey without granting an event space", () => {
+    const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("applicant", ["applicant"])]} journey="volunteers" />);
+    expect(markup).toContain("Édition applicant");
+    expect(markup).toContain("Demandeur actif");
+    expect(markup).not.toContain("/spogomi/applicant-slug/espace");
+    expect(markup).not.toContain("Créer une compétition");
+  });
+
   it("filters the selected journey and opens its validated cockpit focus", () => {
     const markup = renderToStaticMarkup(
       <SpogomiPersonalEventsList
@@ -161,6 +169,26 @@ describe("SpogomiPersonalEventsList", () => {
       "/api/spogomi/events/participant/changes/change-participant/acknowledge",
       { method: "POST", headers: { Accept: "application/json" } },
     );
-    expect(renderer.root.findAll((node) => node.type === "span" && String(node.props.children).startsWith("Accusé le "))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "span" && node.props.children === "Confirmation enregistrée")).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "span" && String(node.props.children).startsWith("Accusé le "))).toHaveLength(0);
+  });
+
+  it("shows the server acknowledgement time and never derives one from the change time", () => {
+    const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("participant", ["participant"])]} changes={[change("participant", "2026-06-01T12:05:00.000Z")]} />);
+    expect(markup).toContain("Accusé le 1 juin 2026, 14:05");
+    expect(markup).not.toContain("Accusé le 1 juin 2026, 14:00");
+  });
+
+  it("keeps the confirmation available after an HTTP failure for a retry", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(null, { status: 500 }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<SpogomiPersonalEventsList events={[event("participant", ["participant"])]} changes={[change("participant")]} />);
+    });
+    const button = () => renderer.root.findAll((node) => node.type === "button" && node.props.children === "Confirmer ce changement")[0];
+    await act(async () => { await button()?.props.onClick(); });
+    expect(renderer.root.findAll((node) => node.type === "button" && node.props.children === "Confirmer ce changement")).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.props.role === "alert")).toHaveLength(1);
   });
 });

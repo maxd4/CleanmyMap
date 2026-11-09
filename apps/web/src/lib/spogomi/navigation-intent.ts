@@ -133,7 +133,7 @@ export function buildSpogomiCatalogHref(journey: SpogomiCatalogJourney, focus?: 
 
 export function isSpogomiEventInJourney(event: Pick<SpogomiPersonalEvent, "relations">, journey: SpogomiCatalogJourney): boolean {
   const relations = new Set<SpogomiPersonalRelation>(event.relations);
-  if (journey === "volunteers") return relations.has("participant");
+  if (journey === "volunteers") return relations.has("participant") || relations.has("applicant");
   if (journey === "organizers") return relations.has("organizer");
   return relations.has("referee") || relations.has("checkin") || relations.has("observer") || relations.has("field_operator");
 }
