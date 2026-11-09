@@ -20,6 +20,7 @@ function emptyInput(event: SpogomiPublicEvent, selectedDivisionId: string | null
     isAuthenticated: false,
     lifecycle: event.lifecycle,
     registrationStatus: division?.registrationStatus ?? event.registrationStatus,
+    directRegistrationAvailable: division?.directRegistrationAvailable === true,
     resultsStatus: event.resultsStatus,
     quizStatus: "unavailable",
     admissionStatus: "none",

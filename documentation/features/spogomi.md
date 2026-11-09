@@ -24,9 +24,10 @@ supplémentaire n'est persisté :
   jamais à le déduire ;
 - **inscriptions** : `not_open`, `open`, `closed`, `capacity_reached`, dérivées
   de `spogomi_events.state`, de `registrationPolicy.capacity` et du décompte
-  des participants `registered`. La politique de l’édition constitue la base,
-  puis les clés présentes dans la politique de la division la remplacent ; la
-  capacité et le décompte sont toujours évalués dans la division concernée.
+  des participants `registered`. La politique canonique de l’édition constitue
+  la base et prévaut lorsqu’une même clé est également fournie par une
+  division ; la capacité et le décompte sont toujours évalués dans la division
+  concernée.
   En mode `mixed`, chaque division conserve son propre état et l’édition expose
   leur agrégation sans effacer la distinction ; sa structure attendue doit être
   complète avant l’ouverture.
@@ -87,6 +88,13 @@ vers la liaison de compte puis l'équipe, tandis qu'une participation liée met
 en avant les informations pratiques. Après l'épreuve, les résultats, les
 contributions et les attestations ne sont proposés que selon leurs preuves
 respectives.
+
+La division sélectionnée est une seule projection contextualisée : le paramètre
+`division` de l'URL alimente le parcours serveur, les demandes affichées, le
+quiz et le formulaire. Une nouvelle inscription n'est proposée que lorsque la
+politique canonique autorise l'inscription directe, sans billetterie externe et,
+pour World Cup, avec l'autorisation dédiée. Une autre division ou une demande
+qui ne lui appartient pas ne peut donc ni masquer son état ni activer son CTA.
 
 Les autres étapes restent visibles sous forme de lignes compactes avec leur
 condition et leur destination. Les espaces organisateur et arbitre autorisés
@@ -194,8 +202,8 @@ vérification.
 La capacité est exprimée par un entier positif représentable par PostgreSQL
 (`1` à `2147483647`). Une chaîne décimale canonique telle que `"12"` est
 normalisée en nombre par la frontière serveur ; les chaînes à zéros initiaux,
-`0` et les valeurs hors plage sont refusées. La politique d'édition est la
-valeur héritée et la politique de division la valeur spécifique ; cette même
+`0` et les valeurs hors plage sont refusées. La politique d'édition est
+canonique lorsqu'une même clé est présente aux deux niveaux ; cette même
 projection et ce même comptage par division sont réutilisés par la checklist,
 les demandes, les approbations et la fiche publique.
 

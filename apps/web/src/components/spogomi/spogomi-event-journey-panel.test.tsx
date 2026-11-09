@@ -7,6 +7,7 @@ const baseInput = {
   isAuthenticated: true,
   lifecycle: "upcoming" as const,
   registrationStatus: "open" as const,
+  directRegistrationAvailable: true,
   resultsStatus: "unavailable" as const,
   quizStatus: "passed" as const,
   admissionStatus: "none" as const,

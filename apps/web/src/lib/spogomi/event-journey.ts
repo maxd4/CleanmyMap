@@ -36,6 +36,7 @@ export type SpogomiEventJourneyInput = {
   isAuthenticated: boolean;
   lifecycle: "upcoming" | "in_progress" | "finished" | "cancelled" | "postponed";
   registrationStatus: "not_open" | "open" | "closed" | "capacity_reached";
+  directRegistrationAvailable: boolean;
   resultsStatus: "unavailable" | "provisional" | "certified" | "published";
   quizStatus: "passed" | "missing" | "unavailable";
   admissionStatus: "pending" | "approved" | "rejected" | "cancelled" | "none" | "unavailable";
@@ -82,7 +83,7 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
         : input.admissionStatus === "approved" ? "validated"
         : input.quizStatus === "unavailable" ? "indeterminate"
           : input.quizStatus !== "passed" ? "later"
-            : input.registrationStatus === "open" ? "todo" : "later";
+            : input.registrationStatus === "open" && input.directRegistrationAvailable ? "todo" : "later";
   const identityStatus: SpogomiJourneyStatus = !input.isAuthenticated
     ? "access_required"
     : input.admissionStatus !== "approved" ? "later"
@@ -106,7 +107,7 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
       : input.hasActiveAttestation ? "todo" : "later";
 
   return [
-    { key: "quiz", title: "Valider le quiz obligatoire", description: "Lire le règlement applicable puis répondre au quiz de la division et à sa version en vigueur.", status: input.lifecycle === "in_progress" ? "later" : quizStatus, href: sportsHref(input, "quiz", "#spogomi-sports-registration") },
+    { key: "quiz", title: "Valider le quiz obligatoire", description: "Lire le règlement applicable puis répondre au quiz de la division et à sa version en vigueur.", status: input.lifecycle === "in_progress" ? "later" : quizStatus, href: input.lifecycle === "in_progress" ? null : sportsHref(input, "quiz", "#spogomi-sports-registration") },
     { key: "registration", title: input.lifecycle === "in_progress" ? "Signaler une présence à régulariser" : "Demander son inscription sportive", description: input.lifecycle === "in_progress" ? "Transmettre une régularisation de présence pendant l’épreuve." : "Envoyer une nouvelle demande uniquement après validation du quiz et si les inscriptions sont autorisées.", status: registrationStatus, href: sportsHref(input, "registration", "#spogomi-sports-registration") },
     { key: "admission", title: "Suivre sa demande d’admission", description: "La décision de l’organisation ne réserve pas de place et reste distincte du rattachement à une équipe.", status: admissionStatus, href: sportsHref(input, "admission", "#spogomi-sports-registration") },
     { key: "identity", title: "Rattacher son compte", description: "Saisir le code individuel remis par l’organisation lorsque l’admission est vérifiée.", status: identityStatus, href: sportsHref(input, "identity", "#spogomi-identity") },
@@ -127,10 +128,10 @@ function nextCompetitorStep(input: SpogomiEventJourneyInput, steps: readonly Spo
   if (input.admissionStatus === "pending") return byKey.get("admission")!;
   if (input.admissionStatus === "approved" && input.identityStatus === "identity_unlinked") return byKey.get("identity")!;
   if (input.admissionStatus === "approved" && !input.teamLinked) return byKey.get("team")!;
-  if (!input.isAuthenticated) return byKey.get("quiz")!;
   if (input.lifecycle === "in_progress") return byKey.get("registration")!;
+  if (!input.isAuthenticated) return byKey.get("quiz")!;
   if (input.quizStatus !== "passed") return byKey.get("quiz")!;
-  if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus === "open") return byKey.get("registration")!;
+  if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus === "open" && input.directRegistrationAvailable) return byKey.get("registration")!;
   if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus !== "open") return byKey.get("practical")!;
   return byKey.get("practical")!;
 }

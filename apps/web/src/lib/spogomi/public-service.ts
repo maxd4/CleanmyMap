@@ -41,6 +41,7 @@ type SpogomiPublicDivision = {
   registrationStatus: SpogomiRegistrationStatus;
   registeredCount: number;
   capacity: number | null;
+  directRegistrationAvailable?: boolean;
 };
 
 type SpogomiPublicRoute = {
@@ -128,15 +129,24 @@ function buildPublicRegistrationProjection(
 ): PublicRegistrationProjection {
   const eventPolicy = registrationPolicy(row.regulation_config);
   const projectedDivisions = divisions.map((division) => {
-    const policy = { ...eventPolicy, ...registrationPolicy(division.regulation_config) };
+    // Keep the same precedence as spogomi_registration_policy_for_division:
+    // edition policy is canonical when both scopes define the same key.
+    const policy = { ...registrationPolicy(division.regulation_config), ...eventPolicy };
     const registeredCount = participants.filter((participant) => String(participant.division_id) === String(division.id)).length;
     const capacity = capacityFromPolicy(policy);
+    const registrationStatus = classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity });
+    const directRegistrationAvailable = row.state === "registration_open"
+      && policy.directRegistrationOpen === true
+      && policy.externalTicketingRequired !== true
+      && (division.division_type !== "world_cup" || policy.worldCupDirectRegistrationAllowed === true)
+      && registrationStatus === "open";
     return {
       id: String(division.id),
       type: division.division_type,
-      registrationStatus: classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity }),
+      registrationStatus,
       registeredCount,
       capacity,
+      directRegistrationAvailable,
     } satisfies SpogomiPublicDivision;
   });
   if (projectedDivisions.length) return { status: combineRegistrationStatuses(projectedDivisions.map((division) => division.registrationStatus)), divisions: projectedDivisions };

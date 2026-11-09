@@ -6,6 +6,7 @@ function input(overrides: Partial<Parameters<typeof buildSpogomiEventJourney>[0]
     isAuthenticated: true,
     lifecycle: "upcoming" as const,
     registrationStatus: "open" as const,
+    directRegistrationAvailable: true,
     resultsStatus: "unavailable" as const,
     quizStatus: "missing" as const,
     admissionStatus: "none" as const,
@@ -91,5 +92,17 @@ describe("SPOGOMI event journey", () => {
 
   it("does not offer a new registration when the selected division is closed", () => {
     expect(buildSpogomiEventJourney(input({ quizStatus: "passed", admissionStatus: "rejected", registrationStatus: "closed" })).next).toMatchObject({ key: "practical" });
+  });
+
+  it("does not offer direct registration when the canonical policy forbids it", () => {
+    const journey = buildSpogomiEventJourney(input({ quizStatus: "passed", admissionStatus: "rejected", directRegistrationAvailable: false }));
+    expect(journey.next).toMatchObject({ key: "practical" });
+    expect(journey.steps.find((step) => step.key === "registration")).toMatchObject({ status: "later" });
+  });
+
+  it("keeps the in-progress regularization path for anonymous visitors and removes the quiz link", () => {
+    const journey = buildSpogomiEventJourney(input({ isAuthenticated: false, lifecycle: "in_progress", quizStatus: "missing" }));
+    expect(journey.next).toMatchObject({ key: "registration", title: "Signaler une présence à régulariser" });
+    expect(journey.steps.find((step) => step.key === "quiz")).toMatchObject({ status: "later", href: null });
   });
 });

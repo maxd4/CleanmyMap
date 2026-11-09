@@ -7,9 +7,11 @@ import type { SpogomiPublicGalleryPhoto } from "@/lib/spogomi/photo-gallery";
 
 const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false }));
 const fetchMock = vi.hoisted(() => vi.fn());
+const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
 
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => authState }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
+vi.mock("next/navigation", () => ({ useRouter: () => routerState, usePathname: () => "/spogomi/paris-2026", useSearchParams: () => new URLSearchParams() }));
 vi.mock("next/image", () => ({ default: (props: Record<string, unknown>) => React.createElement("img", props) }));
 vi.mock("next/dynamic", () => ({ default: () => function DynamicComponent(props: Record<string, unknown>) { return React.createElement("div", props); } }));
 vi.mock("lucide-react", () => ({
@@ -25,7 +27,7 @@ vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: R
 vi.mock("@/components/ui/cmm-field", () => ({ CmmField: ({ children, label }: React.PropsWithChildren<{ label: string }>) => React.createElement("label", null, label, children), CmmInput: (props: Record<string, unknown>) => React.createElement("input", props), CmmTextarea: (props: Record<string, unknown>) => React.createElement("textarea", props) }));
 
 vi.stubGlobal("fetch", fetchMock);
-vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn(), setTimeout, clearTimeout });
+vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn(), setTimeout, clearTimeout, location: { pathname: "/spogomi/paris-2026", search: "" } });
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 type ButtonProps = { onClick: () => void | Promise<void> };
@@ -123,6 +125,30 @@ describe("SPOGOMI consumer components", () => {
     authState.isLoaded = true;
     authState.isSignedIn = false;
     fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ accessUrl: "https://example.test/team-access", expiresAt: "2026-06-02T12:00:00.000Z" }), { status: 200, headers: { "content-type": "application/json" } })));
+  });
+
+  it("keeps a pending request isolated to its division and preserves the selected division in the URL", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValue(jsonResponse({ requests: [{
+      id: "casual-request", requestKind: "registration", divisionId: "casual", status: "pending",
+      providedContext: "", decisionMessage: null, createdAt: "2026-10-01T08:00:00Z",
+    }] }));
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" initialDivisionId="world" signInHref="/sign-in" divisions={[
+        { id: "casual", type: "casual", directRegistrationAvailable: true },
+        { id: "world", type: "world_cup", directRegistrationAvailable: true },
+      ]} />);
+      await flushEffects();
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Demande en attente de vérification"))).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(1);
+
+    const selects = renderer.root.findAllByType("select");
+    expect(selects).toHaveLength(2);
+    await act(async () => { propsOf<SelectProps>(selects[1]!).onChange({ target: { value: "casual" } }); });
+    expect(routerState.replace).toHaveBeenCalledWith("/spogomi/paris-2026?division=casual#spogomi-sports-registration");
+    renderer.unmount();
   });
 
   it("keeps countdown, empty and access states explicit", () => {
