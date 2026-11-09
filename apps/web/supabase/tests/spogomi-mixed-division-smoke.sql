@@ -143,6 +143,7 @@ begin
        set division_type = 'world_cup', division_key = 'world_cup'
      where event_id = v_conversion_event_id
        and division_type = 'casual';
+    set constraints spogomi_divisions_parent_integrity immediate;
     raise exception 'a Casual parent accepted a World Cup division';
   exception when others then
     if position('requires exactly one casual division' in lower(sqlerrm)) = 0 then raise; end if;
@@ -153,12 +154,30 @@ begin
   begin
     perform set_config('spogomi.composition_write_context', 'event_metadata_update', true);
     update public.spogomi_events set mode = 'world_cup' where id = v_conversion_event_id;
+    set constraints spogomi_events_parent_integrity immediate;
     raise exception 'a Casual parent accepted a direct World Cup mode update';
   exception when others then
-    if position('requires exactly one world cup division' in lower(sqlerrm)) = 0 then raise; end if;
+    if position('mode of an existing event is immutable' in lower(sqlerrm)) = 0 then raise; end if;
   end;
   if (select mode from public.spogomi_events where id = v_conversion_event_id) <> 'casual' then
     raise exception 'a rejected direct mode update mutated the parent edition';
+  end if;
+
+  begin
+    perform set_config('spogomi.composition_write_context', 'event_metadata_update', true);
+    update public.spogomi_events set mode = 'world_cup' where id = v_conversion_event_id;
+    update public.spogomi_divisions
+       set division_type = 'world_cup', division_key = 'world_cup'
+     where event_id = v_conversion_event_id
+       and division_type = 'casual';
+    set constraints spogomi_events_parent_integrity, spogomi_divisions_parent_integrity immediate;
+    raise exception 'a coordinated parent/division mode conversion was accepted';
+  exception when others then
+    if position('mode of an existing event is immutable' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select mode from public.spogomi_events where id = v_conversion_event_id) <> 'casual'
+     or (select division_type from public.spogomi_divisions where event_id = v_conversion_event_id) <> 'casual' then
+    raise exception 'a rejected coordinated conversion mutated the parent or division';
   end if;
 
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count)
@@ -196,6 +215,19 @@ begin
     (v_participant_casual, v_event_id, v_casual_id, v_team_casual, 'smoke-participant', 'registered', 'present'),
     (v_participant_casual_two, v_event_id, v_casual_id, v_team_casual, 'smoke-participant-two', 'registered', 'present');
 
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 1, 'spogomi-db-smoke', 'invalid bounded Casual', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":2,"maxMembers":1}}'::jsonb, 'private', 'hidden'
+    );
+    raise exception 'metadata RPC accepted a Casual bound smaller than an existing team';
+  exception when check_violation then
+    if position('casual team is outside the event bounds' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  if (select team_size_config #>> '{casual,maxMembers}' from public.spogomi_events where id = v_event_id) <> '4' then
+    raise exception 'a rejected Casual bound update mutated the event';
+  end if;
+
   select public.spogomi_update_event_metadata(
     v_event_id, 1, 'spogomi-db-smoke', 'SPOGOMI mixed visible', 'SPOGOMI smoke', now(), null,
     'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'published', 'hidden'
@@ -204,6 +236,29 @@ begin
      or (v_metadata->>'composition_revision')::bigint <> 1 then
     raise exception 'mixed visibility update did not preserve mode';
   end if;
+
+  begin
+    perform public.spogomi_update_event_metadata(
+      v_event_id, 0, 'spogomi-db-smoke', 'stale metadata revision', 'SPOGOMI smoke', now(), null,
+      'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'published', 'hidden'
+    );
+    raise exception 'an obsolete metadata revision was accepted';
+  exception when serialization_failure then
+    null;
+  end;
+
+  begin
+    update public.spogomi_events
+       set regulation_config = '{"changed":true}'::jsonb
+     where id = v_event_id;
+    raise exception 'an unversioned regulation change was accepted';
+  exception when check_violation then
+    if position('requires a new version' in lower(sqlerrm)) = 0 then raise; end if;
+  end;
+  update public.spogomi_events
+     set regulation_version = 'smoke-regulation-v2',
+         regulation_config = '{"changed":true}'::jsonb
+   where id = v_event_id;
 
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   begin
