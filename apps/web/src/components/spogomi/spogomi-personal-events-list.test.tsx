@@ -177,6 +177,8 @@ describe("SpogomiPersonalEventsList", () => {
     const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("participant", ["participant"])]} changes={[change("participant", "2026-06-01T12:05:00.000Z")]} />);
     expect(markup).toContain("Accusé le 1 juin 2026, 14:05");
     expect(markup).not.toContain("Accusé le 1 juin 2026, 14:00");
+    expect(markup).not.toContain("Confirmation requise");
+    expect(markup).not.toContain("Confirmer ce changement");
   });
 
   it("keeps the confirmation available after an HTTP failure for a retry", async () => {

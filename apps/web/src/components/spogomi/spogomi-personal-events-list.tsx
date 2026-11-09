@@ -139,7 +139,7 @@ function EventChangeReceipts({ event, changes }: { event: SpogomiPersonalEvent; 
       </div>
       <ul className="space-y-3">
         {changes.map((change) => {
-          const acknowledged = acknowledgedIds.has(change.id);
+          const acknowledged = Boolean(change.acknowledgedAt) || acknowledgedIds.has(change.id);
           return (
             <li key={change.id} className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm text-slate-900">
               <div className="flex flex-wrap items-center justify-between gap-2">
