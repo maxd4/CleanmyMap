@@ -30,11 +30,13 @@ describe("SPOGOMI lifecycle projection", () => {
     expect(classifySpogomiCalendarStatus({ startsAt: "2026-11-09T14:00:00+01:00", endsAt: null, state: "in_progress", now })).toBe("upcoming");
   });
 
-  it("keeps registration independent from the calendar and applies capacity first", () => {
+  it("keeps capacity reached inside the registration-open state", () => {
     expect(classifySpogomiRegistrationStatus({ state: "draft", registeredCount: 0, capacity: 10 })).toBe("not_open");
     expect(classifySpogomiRegistrationStatus({ state: "registration_open", registeredCount: 3, capacity: 10 })).toBe("open");
     expect(classifySpogomiRegistrationStatus({ state: "registration_open", registeredCount: 10, capacity: 10 })).toBe("capacity_reached");
     expect(classifySpogomiRegistrationStatus({ state: "in_progress", registeredCount: 3, capacity: 10 })).toBe("closed");
+    expect(classifySpogomiRegistrationStatus({ state: "cancelled", registeredCount: 10, capacity: 10 })).toBe("closed");
+    expect(classifySpogomiRegistrationStatus({ state: "archived", registeredCount: 10, capacity: 10 })).toBe("closed");
     expect(classifySpogomiRegistrationStatus({ state: "registration_open", registeredCount: 10, capacity: null })).toBe("open");
   });
 

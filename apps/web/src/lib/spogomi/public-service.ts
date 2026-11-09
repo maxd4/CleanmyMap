@@ -330,7 +330,7 @@ function mapEvent(
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     officialTimezone: row.official_timezone || "Europe/Paris",
-    actionHref: publishableActionIds.has(row.action_id)
+    actionHref: row.state !== "cancelled" && publishableActionIds.has(row.action_id)
       ? `/actions/map?actionId=${encodeURIComponent(row.action_id)}`
       : null,
     divisions: registration.divisions.length ? registration.divisions : divisions.map((division) => ({
@@ -348,14 +348,14 @@ function mapEvent(
   };
 }
 
-async function loadPublishedRows(supabase: SupabaseClient, slug?: string): Promise<PublicEventRow[]> {
+async function loadPublishedRows(supabase: SupabaseClient, options: { slug?: string; includeCancelled: boolean }): Promise<PublicEventRow[]> {
   let query = supabase
     .from("spogomi_events")
     .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, official_timezone, action_id, regulation_config, public_visibility, public_results_visibility")
     .eq("public_visibility", "published")
-    .neq("state", "cancelled")
     .not("event_slug", "is", null);
-  if (slug) query = query.eq("event_slug", slug);
+  if (!options.includeCancelled) query = query.neq("state", "cancelled");
+  if (options.slug) query = query.eq("event_slug", options.slug);
   const result = await query;
   if (result.error) throw result.error;
   return (result.data ?? []) as PublicEventRow[];
@@ -364,7 +364,7 @@ async function loadPublishedRows(supabase: SupabaseClient, slug?: string): Promi
 export async function listPublishedSpogomiEvents(
   supabase = getSupabaseServerClient(true),
 ): Promise<SpogomiPublicEvent[]> {
-  const rows = await loadPublishedRows(supabase);
+  const rows = await loadPublishedRows(supabase, { includeCancelled: false });
   const now = new Date();
   const actionIds = await loadPublicActionHrefs(supabase, rows.map((row) => row.action_id));
   const registrations = await loadPublicRegistrationProjections(supabase, rows);
@@ -400,13 +400,13 @@ export async function loadPublishedSpogomiEventBySlug(
   slug: string,
   supabase = getSupabaseServerClient(true),
 ): Promise<SpogomiPublicEvent | null> {
-  const rows = await loadPublishedRows(supabase, slug);
+  const rows = await loadPublishedRows(supabase, { slug, includeCancelled: true });
   const row = rows[0];
   if (!row) return null;
   const actionIds = await loadPublicActionHrefs(supabase, [row.action_id]);
   const [divisionsResult, teamsResult, routeResult, projection, actionPreparation, operationsResult] = await Promise.all([
     supabase.from("spogomi_divisions").select("id, division_type, regulation_config").eq("event_id", row.id).order("division_type"),
-    supabase
+    row.state === "cancelled" ? Promise.resolve({ data: [], error: null }) : supabase
       .from("spogomi_teams")
       .select("id, division_id, team_number, public_name, composition_state")
       .eq("event_id", row.id)
@@ -417,7 +417,7 @@ export async function loadPublishedSpogomiEventBySlug(
       .eq("event_id", row.id)
       .maybeSingle(),
     loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
-    loadPublicActionPreparation(supabase, row.action_id, actionIds),
+    row.state === "cancelled" ? Promise.resolve(null) : loadPublicActionPreparation(supabase, row.action_id, actionIds),
     supabase
       .from("spogomi_field_operations")
       .select("division_id, timezone_name, official_start_at, collection_limit_at, sorting_limit_at, weighing_start_at, weighing_end_at")

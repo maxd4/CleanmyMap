@@ -27,18 +27,24 @@ supplémentaire n'est persisté :
   des participants `registered`. En mode `mixed`, chaque division conserve son
   propre état et l'édition expose leur agrégation sans effacer la distinction ;
 - **résultats** : `unavailable`, `provisional`, `certified`, `published`.
-  `certified` nécessite une preuve de classement officiel courant dans
-  `spogomi_official_rankings` ; `published` exige en plus
+  `certified` nécessite une projection de classement réellement exposable :
+  toutes les équipes éligibles du classement concerné doivent être couvertes
+  par des décisions officielles certifiées correspondant au snapshot courant.
+  Les classements points et mégots restent indépendants, y compris en mode
+  `mixed`. `published` exige en plus
   `public_visibility = published` et `public_results_visibility = certified`.
-  Une politique de visibilité seule, une date de fin ou une soumission sans
-  classement officiel ne certifie ni ne publie un résultat.
+  Une politique de visibilité seule, un classement partiel, un snapshot
+  obsolète, une date de fin ou une soumission sans classement officiel ne
+  certifie ni ne publie un résultat ; `archived` ne constitue pas à lui seul
+  un ensemble officiel publiable.
 
 La projection non persistée est centralisée dans `public-service.ts` et la
 projection canonique des résultats ; elle filtre toujours les éditions
 privées, ne renvoie aucune donnée nominative et conserve les divisions Casual /
-World Cup. Les éditions annulées restent absentes du catalogue public, comme
-les brouillons et éditions privées ; la fiche publique conserve donc uniquement
-les éditions publiées non annulées.
+World Cup. Les éditions annulées restent absentes du catalogue public, mais une
+édition publiée déjà annulée reste adressable directement par son slug et
+affiche `cancelled` / `Annulée`, sans roster nominatif ni CTA d'inscription.
+Les brouillons et éditions privées restent inaccessibles.
 
 Le catalogue public `/spogomi` place les éditions à venir et en cours avant les
 éditions terminées ; ces dernières sont triées par `starts_at` décroissant. Les

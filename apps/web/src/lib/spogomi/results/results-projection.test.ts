@@ -78,7 +78,7 @@ describe("SPOGOMI public results projection", () => {
     expect(buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").results.lifecycleStatus).toBe("unavailable");
   });
 
-  it("marks results published only after a current certified official ranking exists", () => {
+  it("keeps a partial current official ranking unavailable", () => {
     const candidate = source();
     candidate.event.publicVisibility = "published";
     candidate.event.publicResultsVisibility = "certified";
@@ -97,7 +97,29 @@ describe("SPOGOMI public results projection", () => {
       source_snapshot: sourceSnapshot,
     }];
 
-    expect(buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").results.lifecycleStatus).toBe("published");
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    expect(projection.results.lifecycleStatus).toBe("unavailable");
+    expect(projection.results.sport.entries.every((entry) => entry.status === "unavailable")).toBe(true);
+  });
+
+  it("publishes a complete current ranking and does not treat archived as a published official set", () => {
+    const candidate = source();
+    candidate.event.publicVisibility = "published";
+    candidate.event.publicResultsVisibility = "certified";
+    candidate.event.state = "certified";
+    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, status: "certified" }));
+    const sourceSnapshot = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").publicationSourceSnapshot;
+    candidate.officialRankings = [1, 2, 3].map((teamNumber) => ({
+      division_id: "division-casual", team_id: `team-${teamNumber}`, kind: "points" as const, rank: teamNumber,
+      status: "certified" as const, team_eligible: true, decision_version: "decision-1", source_reference: "source-1", source_snapshot: sourceSnapshot,
+    }));
+
+    expect(buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").results).toMatchObject({ lifecycleStatus: "published", sport: { status: "certified" } });
+
+    candidate.event.state = "archived";
+    const archived = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    expect(archived.results.lifecycleStatus).toBe("unavailable");
+    expect(archived.results.sport.status).toBe("unavailable");
   });
 
   it("publishes only finite environmental measurements and preserves unavailable values", () => {

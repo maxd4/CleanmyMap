@@ -43,10 +43,10 @@ export function classifySpogomiRegistrationStatus(input: {
   registeredCount: number;
   capacity: number | null;
 }): SpogomiRegistrationStatus {
-  if (input.capacity !== null && input.registeredCount >= input.capacity) return "capacity_reached";
-  if (input.state === "registration_open") return "open";
   if (input.state === "draft") return "not_open";
-  return "closed";
+  if (input.state !== "registration_open") return "closed";
+  if (input.capacity !== null && input.registeredCount >= input.capacity) return "capacity_reached";
+  return "open";
 }
 
 export function classifySpogomiResultsStatus(input: {

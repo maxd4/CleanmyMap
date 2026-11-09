@@ -278,10 +278,10 @@ function buildRankingSection(source: SpogomiResultsSource, computed: TeamCompute
 }
 
 function buildPublicResults(source: SpogomiResultsSource, computed: TeamComputed[], regulation: SpogomiRegulation, regulationComplete: boolean, refreshedAt: string, publicationSourceSnapshot: SpogomiPublicationSourceSnapshot): SpogomiPublicResults {
-  const officialSport = currentOfficialRankings(source, "points", publicationSourceSnapshot);
-  const officialButts = currentOfficialRankings(source, "butts", publicationSourceSnapshot);
   const hasProvisionalResults = computed.some((entry) => entry.submission && ["submitted", "provisional", "certified"].includes(entry.submission.status));
-  const hasCertifiedResults = ["certified", "archived"].includes(source.event.state) && (officialSport.size > 0 || officialButts.size > 0);
+  const sport = buildRankingSection(source, computed, "points", regulationComplete, regulation, publicationSourceSnapshot);
+  const butts = buildRankingSection(source, computed, "butts", regulationComplete, regulation, publicationSourceSnapshot);
+  const hasCertifiedResults = sport.status === "certified" || butts.status === "certified";
   return {
     visibility: source.event.publicResultsVisibility,
     lifecycleStatus: classifySpogomiResultsStatus({
@@ -293,8 +293,8 @@ function buildPublicResults(source: SpogomiResultsSource, computed: TeamComputed
     regulationVersion: regulation.version,
     regulationComplete,
     refreshedAt,
-    sport: buildRankingSection(source, computed, "points", regulationComplete, regulation, publicationSourceSnapshot),
-    butts: buildRankingSection(source, computed, "butts", regulationComplete, regulation, publicationSourceSnapshot),
+    sport,
+    butts,
     environmental: buildEnvironmentalProjection(source),
   };
 }

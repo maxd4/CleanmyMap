@@ -41,9 +41,15 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
     };
     const rows = inputRows ?? [defaultRow];
     const excludedStates = new Set<string>();
+    let requestedSlug: string | null = null;
+    let requestedVisibility: string | null = null;
     const query = {
       select: vi.fn((value: string) => { selectValue = value; return query; }),
-      eq: vi.fn(() => query),
+      eq: vi.fn((column: string, value: unknown) => {
+        if (table === "spogomi_events" && column === "event_slug") requestedSlug = String(value);
+        if (table === "spogomi_events" && column === "public_visibility") requestedVisibility = String(value);
+        return query;
+      }),
       neq: vi.fn((column: string, value: unknown) => { if (table === "spogomi_events" && column === "state") excludedStates.add(String(value)); return query; }),
       not: vi.fn(() => query),
       in: vi.fn(() => query),
@@ -53,11 +59,11 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
         if (table === "spogomi_event_routes") {
           return { data: { source: "official_reference", file_name: "route.gpx", point_count: 3, reference_distance_km: 2.5, inferred_topology: "loop", geometry_geojson: { coordinates: [[2.3, 48.8], [2.4, 48.9]] } }, error: null };
         }
-        if (table === "spogomi_events") return { data: rows[0] ?? null, error: null };
+        if (table === "spogomi_events") return { data: rows.find((candidate) => (!requestedSlug || candidate.event_slug === requestedSlug) && (!requestedVisibility || candidate.public_visibility === requestedVisibility || candidate.public_visibility === undefined) && !excludedStates.has(String(candidate.state))) ?? null, error: null };
         return { data: null, error: null };
       }),
       then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
-        if (table === "spogomi_events") return Promise.resolve({ data: rows.filter((candidate) => !excludedStates.has(String(candidate.state))), error: null }).then(resolve, reject);
+        if (table === "spogomi_events") return Promise.resolve({ data: rows.filter((candidate) => (!requestedSlug || candidate.event_slug === requestedSlug) && (!requestedVisibility || candidate.public_visibility === requestedVisibility || candidate.public_visibility === undefined) && !excludedStates.has(String(candidate.state))), error: null }).then(resolve, reject);
         if (table === "actions") return Promise.resolve({ data: [{ id: "action-1", status: "approved", published_at: "2026-09-01", moderation_visibility: "public" }], error: null }).then(resolve, reject);
         if (table === "spogomi_teams") return Promise.resolve({ data: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha", composition_state: "locked" }], error: null }).then(resolve, reject);
         return Promise.resolve({ data: [], error: null }).then(resolve, reject);
@@ -114,7 +120,7 @@ describe("SPOGOMI public identity and lifecycle", () => {
     await expect(loadPublishedSpogomiEventForAction("action-1", supabase as never)).resolves.toEqual({ slug: "paris-2026", name: "SPOGOMI Paris" });
   });
 
-  it("keeps active editions first, sorts finished editions newest-first, and excludes cancellations", async () => {
+  it("keeps active editions first, sorts finished editions newest-first, and excludes cancellations from the catalogue", async () => {
     const rows = [
       { id: "in-progress", event_slug: "in-progress", name: "En cours", location_label: "Paris", mode: "casual", state: "active", starts_at: "2026-11-08T08:00:00.000Z", ends_at: "2026-11-10T12:00:00.000Z", action_id: "action-1", public_results_visibility: "hidden" },
       { id: "upcoming", event_slug: "upcoming", name: "À venir", location_label: "Lyon", mode: "world_cup", state: "draft", starts_at: "2026-12-01T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden" },
@@ -131,6 +137,25 @@ describe("SPOGOMI public identity and lifecycle", () => {
     expect(events.map((event) => event.slug)).toEqual(["in-progress", "upcoming", "finished-new", "finished-old"]);
     expect(events.every((event) => event.state !== "cancelled")).toBe(true);
     expect(serviceMocks.projection).not.toHaveBeenCalled();
+  });
+
+  it("keeps a published cancelled edition directly addressable without exposing its roster", async () => {
+    serviceMocks.organizer.mockResolvedValue(null);
+    serviceMocks.projection.mockResolvedValue({ results: { lifecycleStatus: "unavailable" } });
+    const event = await loadPublishedSpogomiEventBySlug("cancelled", makeSupabase([{
+      id: "cancelled", event_slug: "cancelled", name: "Annulée", location_label: "Lille", mode: "casual", state: "cancelled",
+      starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_visibility: "published", public_results_visibility: "hidden",
+    }]) as never);
+    expect(event).toMatchObject({ slug: "cancelled", lifecycle: "cancelled", state: "cancelled", teams: [], actionHref: null });
+  });
+
+  it("does not expose a private edition through either catalogue or direct slug lookup", async () => {
+    const supabase = makeSupabase([{
+      id: "private", event_slug: "private", name: "Privée", location_label: "Lille", mode: "casual", state: "draft",
+      starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_visibility: "private", public_results_visibility: "hidden",
+    }]);
+    await expect(listPublishedSpogomiEvents(supabase as never)).resolves.toEqual([]);
+    await expect(loadPublishedSpogomiEventBySlug("private", supabase as never)).resolves.toBeNull();
   });
 
   it("batches public registration and organizer reads across catalog editions", async () => {
