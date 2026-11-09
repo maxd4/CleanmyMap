@@ -47,8 +47,11 @@ coefficients, arrondis `half_up` à deux décimales, obligation de mesure de tou
 les catégories et départage par masse sont des paramètres de simulation du
 manifeste ; ils ne valident aucun barème réel. Les mesures restent en grammes,
 `null` représente une absence de mesure et `0` une mesure zéro explicitement
-constatée. Les références de provenance aux lignes Casual documentées sont
-conservées sans intégrer le classeur brut.
+constatée. Pour les mesures Casual, `source_row` conserve la ligne historique
+utile au rapprochement documentaire, tandis que `provenance_ref` vaut
+`scenario:CAS-xx` et décrit la provenance réelle du vecteur synthétique ; la
+ligne historique ne constitue donc pas une preuve des masses. Le classeur brut
+n'est pas intégré.
 
 Le manifeste conserve également, sans les résoudre, les divergences historiques
 de décompte `37/47/50` participants et de totaux `13925.3/14000.3/14001/14002`
@@ -64,7 +67,10 @@ services SPOGOMI réels : création idempotente de l'édition parent, règlement
 des deux divisions, import des 37 places, composition, présences, opérations
 terrain, sessions d'équipe, soumissions et correction auditée, arbitrage,
 clôture, consolidation, classements, export XLSX et projection publique. Le
-runner vérifie aussi les séparations de divisions, les scores de référence,
+runner construit la formation de confirmation à partir des équipes de ce
+manifeste et des UUID des places importées ; il ne confirme pas la proposition
+automatique telle quelle. Il vérifie ensuite chaque affectation persistée avant
+d'associer les mesures et scores. Il vérifie aussi les séparations de divisions, les scores de référence,
 `null` contre zéro, les masses contre les nombres de mégots, la révocation de
 session et le refus d'une capacité terrain absente.
 

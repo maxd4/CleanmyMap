@@ -71,6 +71,7 @@ compositions historiques ci-dessus ni le règlement runtime.
 - Le formulaire lit les catégories actuelles du règlement de l'événement ; les trois nomenclatures du kit sont **observées, non fusionnées**.
 - Saisir la masse en **grammes** (`mass_grams`), ne jamais convertir un poids de mégots en `direct_object_count`.
 - `mass_grams: null` signifie non mesuré, `0` signifie mesure zéro ; idem pour `direct_object_count`.
+- Dans le manifeste Cachan, `source_row` est uniquement la référence historique de rapprochement ; `provenance_ref` doit pointer vers le vecteur réellement utilisé (`scenario:TEAM-REF`) lorsque les masses sont synthétiques. Une référence de ligne de classeur ne doit jamais présenter ces masses comme extraites ou vérifiées.
 - Conserver méthode, provenance, auteur habilité, horodatage, commentaires, version et statut.
 - Après soumission, seule la certification par rôle autorisé transforme la mesure en résultat officiel ; conserver l'historique de correction.
 - Les pénalités sportives sont **séparées** des masses ; une disqualification n'efface pas les déchets réellement collectés.

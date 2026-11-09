@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
 import * as XLSX from "xlsx";
 import { operationalInstantAt, teamSubmissionIdempotencyKey } from "./spogomi-cachan-inputs.mjs";
+import { assertManifestFormation, buildManifestFormation } from "./spogomi-cachan-formation.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureRoot = path.join(root, "documentation", "features", "spogomi-references", "fixtures");
@@ -215,7 +216,15 @@ async function main() {
       assert.equal(new Set(allTeamPlaces).size, allTeamPlaces.length);
       assert.equal(fixture.teams.filter((team) => team.division_ref === "DIV-WORLD-CUP").flatMap((team) => team.place_ids).length, 18);
       assert.equal(fixture.teams.filter((team) => team.division_ref === "DIV-CASUAL").flatMap((team) => team.place_ids).length, 19);
-      for (const measurement of fixture.measurements) assert.match(measurement.provenance_ref, /^(scenario:|classeur_casual_2026:line-)/);
+      assert.match(fixture.measurement_provenance_policy.provenance_ref, /vecteur de masses synthétique/);
+      assert.match(fixture.measurement_provenance_policy.source_row, /Référence historique/);
+      for (const measurement of fixture.measurements) {
+        assert.match(measurement.provenance_ref, /^scenario:(?:WC|CAS)-\d+$/);
+        if (measurement.team_ref.startsWith("CAS-")) {
+          assert(Number.isInteger(measurement.source_row), `${measurement.team_ref}: source_row historique absente`);
+          assert.doesNotMatch(measurement.provenance_ref, /classeur_casual_2026/);
+        }
+      }
     });
 
     let event;
@@ -259,6 +268,7 @@ async function main() {
       assert(management.categoryRules.every((category) => category.coefficient_status === "confirmed" && category.is_complete));
     });
 
+    let importedParticipants = [];
     await runStep("import-37-inscriptions-sans-PII", async () => {
       const currentParticipants = await supabase.from("spogomi_participants").select("id", { count: "exact", head: true }).eq("event_id", createdEventId);
       assert.ifError(currentParticipants.error);
@@ -276,6 +286,7 @@ async function main() {
       }
       const rows = await supabase.from("spogomi_participants").select("id, division_id, external_reference, display_name").eq("event_id", createdEventId);
       assert.ifError(rows.error);
+      importedParticipants = rows.data;
       assert.equal(rows.data.length, 37);
       assert.equal(new Set(rows.data.map((row) => row.external_reference)).size, 37);
       assert.equal(rows.data.filter((row) => row.division_id === wcDivision.id).length, 18);
@@ -288,16 +299,24 @@ async function main() {
       for (const division of [wcDivision, casualDivision]) {
         const existing = await supabase.from("spogomi_teams").select("id, division_id, team_number, composition_state").eq("event_id", createdEventId).eq("division_id", division.id).order("team_number");
         assert.ifError(existing.error);
-        if (existing.data.length === 0) {
+        if (existing.data.length === 0 || existing.data.some((team) => !["locked", "verified"].includes(team.composition_state))) {
           const current = jsonBody((await api(appUrl, `/api/spogomi/events/${createdEventId}`)).body);
           const preview = jsonBody((await api(appUrl, `/api/spogomi/events/${createdEventId}/teams/auto`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ divisionId: division.id }) }, [200])).body);
-          await jsonApi(appUrl, `/api/spogomi/events/${createdEventId}/teams/auto`, { confirm: true, divisionId: division.id, expectedRevision: Number(current.event.composition_revision), proposalFingerprint: preview.proposalFingerprint, formation: preview.formation }, [200]);
+          const formation = buildManifestFormation({ manifest: fixture, division, participants: importedParticipants });
+          await jsonApi(appUrl, `/api/spogomi/events/${createdEventId}/teams/auto`, { confirm: true, divisionId: division.id, expectedRevision: Number(current.event.composition_revision), proposalFingerprint: preview.proposalFingerprint, formation }, [200]);
         }
         const after = await supabase.from("spogomi_teams").select("id, division_id, team_number, composition_state").eq("event_id", createdEventId).eq("division_id", division.id).order("team_number");
         assert.ifError(after.error);
         teamsByDivision.set(division.id, after.data);
         assert.equal(after.data.length, division.division_type === "world_cup" ? 6 : 5);
         assert(after.data.every((team) => ["locked", "verified"].includes(team.composition_state)) || after.data.every((team) => team.composition_state === "draft"));
+        const assigned = await supabase.from("spogomi_participants").select("id, division_id, external_reference, team_id").eq("event_id", createdEventId).eq("division_id", division.id);
+        assert.ifError(assigned.error);
+        const persistedFormation = {
+          teams: after.data.map((team) => ({ teamNumber: Number(team.team_number), participantIds: assigned.data.filter((participant) => participant.team_id === team.id).map((participant) => participant.id) })),
+          unassignedParticipantIds: assigned.data.filter((participant) => participant.team_id === null).map((participant) => participant.id),
+        };
+        assertManifestFormation({ manifest: fixture, division, participants: assigned.data, formation: persistedFormation });
       }
       for (const division of [wcDivision, casualDivision]) {
         const teamRows = teamsByDivision.get(division.id);
@@ -343,6 +362,7 @@ async function main() {
 
     const categoryRowsByDivision = new Map([wcDivision, casualDivision].map((division) => [division.id, management.categoryRules.filter((row) => row.division_id === division.id).sort((a, b) => a.display_order - b.display_order)]));
     const measuredTeamIds = new Map();
+    const latestSubmissionIds = new Map();
     await runStep("sessions-saisie-soumission-arbitrage-correction", async () => {
       for (const division of [wcDivision, casualDivision]) {
         const teamRows = teamsByDivision.get(division.id);
@@ -378,6 +398,7 @@ async function main() {
           }
           const latest = await supabase.from("spogomi_result_submissions").select("id, status").eq("event_id", createdEventId).eq("team_id", team.id).eq("division_id", division.id).order("version", { ascending: false }).limit(1).single();
           assert.ifError(latest.error);
+          latestSubmissionIds.set(teamRef, latest.data.id);
           const review = jsonBody((await jsonApi(appUrl, `/api/spogomi/events/${createdEventId}/results`, { teamId: team.id, submissionId: latest.data.id, divisionId: division.id, decision: "certified", reason: "Arbitrage synthétique" }, [200])).body);
           assert.equal(review.decision, "certified");
           await api(appUrl, `/api/spogomi/events/${createdEventId}/teams/${team.id}/access`, { method: "DELETE" }, [200]);
@@ -439,10 +460,10 @@ async function main() {
       assert(publicText.includes("Casual") || publicText.includes("casual"));
       assert(!publicText.includes("PLACE-"));
       assert(!publicText.includes("display_name"));
-      const dbItems = await supabase.from("spogomi_result_items").select("quantity, mass_grams, object_count, division_id, category_rule_id").eq("event_id", createdEventId);
+      const dbItems = await supabase.from("spogomi_result_items").select("submission_id, quantity, mass_grams, object_count, division_id, category_rule_id").eq("event_id", createdEventId);
       assert.ifError(dbItems.error);
-      assert(dbItems.data.some((item) => item.mass_grams === 0 && item.quantity === 0));
-      assert(dbItems.data.some((item) => item.mass_grams === 100 && item.object_count === null));
+      assert(dbItems.data.some((item) => Number(item.mass_grams) === 0 && Number(item.quantity) === 0));
+      assert(dbItems.data.some((item) => Number(item.mass_grams) === 100 && item.object_count === null));
       for (const team of fixture.teams.filter((candidate) => candidate.expected_score !== null)) {
         const expected = measurementsFor(team.team_ref).reduce((sum, item) => {
           const division = fixture.divisions.find((candidate) => candidate.division_ref === team.division_ref);
@@ -450,6 +471,14 @@ async function main() {
           return sum + item.mass_grams * category.points_per_kg / 1000;
         }, 0);
         assertNear(expected, team.expected_score, `${team.team_ref} score fixture`);
+        const submissionId = latestSubmissionIds.get(team.team_ref);
+        assert(submissionId, `${team.team_ref}: soumission courante absente`);
+        const persistedScore = dbItems.data.filter((item) => item.submission_id === submissionId).reduce((sum, item) => {
+          const category = management.categoryRules.find((candidate) => candidate.id === item.category_rule_id);
+          assert(category, `${team.team_ref}: catégorie persistée absente`);
+          return sum + Number(item.mass_grams) * Number(category.coefficient);
+        }, 0);
+        assertNear(persistedScore, team.expected_score, `${team.team_ref} score équipe persisté`);
       }
     });
 

@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 type Category = { code: string; points_per_kg: number; required: boolean };
 type Division = { division_ref: string; division_type: string; team_size: { min_members: number; max_members: number; exact_members?: number }; rounding: { mode: string; decimals: number }; eligibility: { all_categories_required: boolean; tiebreaker: string }; categories: Category[] };
 type Team = { division_ref: string; team_ref: string; place_ids: string[]; initial_measurement_state: string; source_row?: number; expected_score: number | null };
-type Measurement = { team_ref: string; category_code: string; mass_grams: number; source_row?: number };
-type Scenario = { scenario_name: string; mode: string; official: boolean; parent_action_ref: string; places_source_fixture: string; privacy: { personal_data: boolean; identities: string }; measurement_semantics: { unit: string; unmeasured_mass_grams: null; explicit_zero_mass_grams: number }; divisions: Division[]; teams: Team[]; measurements: Measurement[]; historical_divergences: { participant_counts: number[]; point_totals: number[]; status: string } };
+type Measurement = { team_ref: string; category_code: string; mass_grams: number; source_row?: number; provenance_ref: string };
+type Scenario = { scenario_name: string; mode: string; official: boolean; parent_action_ref: string; places_source_fixture: string; privacy: { personal_data: boolean; identities: string }; measurement_semantics: { unit: string; unmeasured_mass_grams: null; explicit_zero_mass_grams: number }; measurement_provenance_policy: { source_row: string; provenance_ref: string }; divisions: Division[]; teams: Team[]; measurements: Measurement[]; historical_divergences: { participant_counts: number[]; point_totals: number[]; status: string } };
 
 const scenario = JSON.parse(readFileSync(new URL("../../../../../documentation/features/spogomi-references/fixtures/scenario_cachan_cleanmymap_mixed.json", import.meta.url), "utf8")) as Scenario;
 const placesCsv = readFileSync(new URL("../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
@@ -66,6 +66,21 @@ describe("SPOGOMI mixed reference scenario", () => {
     expect(worldCup.every((team) => team.place_ids.length === 3)).toBe(true);
     expect(new Set(worldCup.flatMap((team) => team.place_ids))).toEqual(worldCupPlaces);
     expect(casual.map((team) => team.place_ids.length)).toEqual([4, 4, 4, 4, 3]);
+    expect(worldCup.map((team) => team.place_ids)).toEqual([
+      ["PLACE-004", "PLACE-005", "PLACE-006"],
+      ["PLACE-007", "PLACE-008", "PLACE-009"],
+      ["PLACE-001", "PLACE-002", "PLACE-003"],
+      ["PLACE-014", "PLACE-015", "PLACE-016"],
+      ["PLACE-030", "PLACE-031", "PLACE-032"],
+      ["PLACE-033", "PLACE-034", "PLACE-035"],
+    ]);
+    expect(casual.map((team) => team.place_ids)).toEqual([
+      ["PLACE-010", "PLACE-011", "PLACE-012", "PLACE-013"],
+      ["PLACE-017", "PLACE-018", "PLACE-019", "PLACE-020"],
+      ["PLACE-022", "PLACE-023", "PLACE-024", "PLACE-025"],
+      ["PLACE-026", "PLACE-027", "PLACE-028", "PLACE-029"],
+      ["PLACE-021", "PLACE-036", "PLACE-037"],
+    ]);
     expect(new Set(casual.flatMap((team) => team.place_ids))).toEqual(casualPlaces);
     expect(division("DIV-WORLD-CUP").team_size.exact_members).toBe(3);
     expect(division("DIV-CASUAL").team_size).toMatchObject({ min_members: 3, max_members: 4 });
@@ -89,6 +104,10 @@ describe("SPOGOMI mixed reference scenario", () => {
     }
     expect(scenario.measurements.every((measurement) => Number.isInteger(measurement.mass_grams) && measurement.mass_grams >= 0)).toBe(true);
     expect(scenario.measurement_semantics).toEqual({ unit: "g", unmeasured_mass_grams: null, explicit_zero_mass_grams: 0, missing_measurement_state: "no_initial_measurement" });
+    expect(scenario.measurement_provenance_policy.provenance_ref).toContain("vecteur de masses synthétique");
+    expect(scenario.measurement_provenance_policy.source_row).toContain("Référence historique");
+    expect(scenario.measurements.every((measurement) => measurement.provenance_ref === `scenario:${measurement.team_ref}`)).toBe(true);
+    expect(scenario.measurements.filter((measurement) => measurement.team_ref.startsWith("CAS-")).every((measurement) => Number.isInteger(measurement.source_row))).toBe(true);
     expect(scenario.measurements.filter((measurement) => measurement.team_ref === "WC-03").every((measurement) => measurement.mass_grams === 0)).toBe(true);
     expect(scenario.teams.filter((team) => team.initial_measurement_state === "no_initial_measurement").flatMap((team) => scenario.measurements.filter((measurement) => measurement.team_ref === team.team_ref))).toEqual([]);
   });
