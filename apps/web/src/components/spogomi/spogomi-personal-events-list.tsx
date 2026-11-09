@@ -5,6 +5,7 @@ import { ArrowRight, CalendarDays, ClipboardCheck, Eye, Gavel, ShieldCheck, User
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type {
+  SpogomiPersonalEventChange,
   SpogomiPersonalEvent,
   SpogomiPersonalRelation,
 } from "@/lib/spogomi/personal-events-service";
@@ -42,6 +43,17 @@ const ACCESS_LABELS = {
   operate: "Opérations terrain",
   participate: "Parcours personnel",
 } as const;
+
+const CHANGE_FIELD_LABELS: Record<string, string> = {
+  name: "Nom",
+  schedule: "Horaires",
+  location: "Lieu",
+  official_start_at: "Début officiel",
+  collection_limit_at: "Limite de collecte",
+  registration: "Inscriptions",
+  regulation: "Règlement",
+  team_size_config: "Composition des équipes",
+};
 
 function formatDateRange(startsAt: string, endsAt: string | null, timeZone: string): string {
   let startLabel: string;
@@ -82,7 +94,71 @@ function AccessIcon({ relation }: { relation: SpogomiPersonalRelation }) {
   return <UserRound size={14} aria-hidden="true" />;
 }
 
-function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEvent; journey: SpogomiCatalogJourney | null; focus: SpogomiCatalogFocus | null }) {
+function changeFieldLabel(field: string): string {
+  return CHANGE_FIELD_LABELS[field] ?? field.replaceAll("_", " ");
+}
+
+function changeDateLabel(createdAt: string, timeZone: string): string {
+  try {
+    return formatDateTimeInTimeZone(createdAt, timeZone, { dateStyle: "medium", timeStyle: "short" });
+  } catch {
+    return "Date indisponible";
+  }
+}
+
+function EventChangeReceipts({ event, changes }: { event: SpogomiPersonalEvent; changes: readonly SpogomiPersonalEventChange[] }) {
+  const [acknowledgedIds, setAcknowledgedIds] = useState(() => new Set(changes.filter((change) => change.acknowledgedAt).map((change) => change.id)));
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  if (!changes.length) return null;
+
+  const acknowledge = async (change: SpogomiPersonalEventChange) => {
+    setPendingId(change.id);
+    setError(false);
+    try {
+      const response = await fetch(`/api/spogomi/events/${encodeURIComponent(event.id)}/changes/${encodeURIComponent(change.id)}/acknowledge`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error("acknowledgement_failed");
+      setAcknowledgedIds((current) => new Set(current).add(change.id));
+    } catch {
+      setError(true);
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  return (
+    <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4" aria-labelledby={`spogomi-event-changes-${event.id}`} data-testid={`spogomi-event-changes-${event.id}`}>
+      <div>
+        <h4 id={`spogomi-event-changes-${event.id}`} className="text-sm font-black text-amber-950">Changements de l’édition</h4>
+        <p className="mt-1 text-sm text-amber-950">Les changements concernés par votre inscription sont affichés sans exposer les instantanés internes.</p>
+      </div>
+      <ul className="space-y-3">
+        {changes.map((change) => {
+          const acknowledged = acknowledgedIds.has(change.id);
+          return (
+            <li key={change.id} className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm text-slate-900">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-bold">Révision {change.revision} · {changeDateLabel(change.createdAt, event.officialTimezone)}</p>
+                {change.requiresConfirmation && !acknowledged ? <span className="rounded-full bg-amber-200 px-2 py-1 text-xs font-bold text-amber-950">Confirmation requise</span> : null}
+              </div>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">Champs modifiés : {change.changedFields.map(changeFieldLabel).join(", ") || "Détails indisponibles"}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {acknowledged ? <span className="font-bold text-emerald-800" role="status">Accusé le {changeDateLabel(change.acknowledgedAt ?? change.createdAt, event.officialTimezone)}</span> : change.requiresConfirmation ? <CmmButton tone="primary" size="sm" loading={pendingId === change.id} onClick={() => void acknowledge(change)}>Confirmer ce changement</CmmButton> : <span className="font-semibold text-slate-700">Information reçue</span>}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {error ? <p className="text-sm font-semibold text-rose-800" role="alert">La confirmation n’a pas pu être enregistrée. Réessayez.</p> : null}
+    </section>
+  );
+}
+
+function PersonalEventCard({ event, journey, focus, changes }: { event: SpogomiPersonalEvent; journey: SpogomiCatalogJourney | null; focus: SpogomiCatalogFocus | null; changes: readonly SpogomiPersonalEventChange[] }) {
   const spaceHref = journey ? buildSpogomiEventSpaceHref(event, journey, focus) : event.links.space;
   const volunteerPrivateAccessExplanation = (journey === null || journey === "volunteers") && event.relations.includes("participant") && !event.links.public;
   const syntheticDemo = isSpogomiCachanDemoEvent(event);
@@ -120,6 +196,8 @@ function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEv
         </div>
       </div>
 
+      <EventChangeReceipts event={event} changes={changes} />
+
       <div className="flex flex-wrap gap-3">
         {spaceHref ? <CmmButton href={spaceHref} tone="primary" size="sm">{syntheticDemo && journey === "organizers" ? "Ouvrir le cockpit de validation" : "Ouvrir l’espace"} <ArrowRight size={15} /></CmmButton> : null}
         {event.links.public ? <CmmButton href={event.links.public} tone="secondary" size="sm">Voir la fiche publique</CmmButton> : null}
@@ -130,7 +208,7 @@ function PersonalEventCard({ event, journey, focus }: { event: SpogomiPersonalEv
   );
 }
 
-export function SpogomiPersonalEventsList({ events, journey = null, focus = null }: { events: SpogomiPersonalEvent[]; journey?: SpogomiCatalogJourney | null; focus?: SpogomiCatalogFocus | null }) {
+export function SpogomiPersonalEventsList({ events, changes = [], journey = null, focus = null }: { events: SpogomiPersonalEvent[]; changes?: readonly SpogomiPersonalEventChange[]; journey?: SpogomiCatalogJourney | null; focus?: SpogomiCatalogFocus | null }) {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const journeyEvents = journey ? events.filter((event) => isSpogomiEventInJourney(event, journey)) : events;
   const visibleFilters = FILTERS.filter((filter) => filter.key === "all" || journeyEvents.some((event) => event.relations.includes(filter.relation!)));
@@ -139,6 +217,12 @@ export function SpogomiPersonalEventsList({ events, journey = null, focus = null
     : journeyEvents.filter((event) => event.relations.includes(activeFilter));
   const heading = journey === "volunteers" ? "Mes participations" : journey === "referees" ? "Mes événements habilités" : journey === "organizers" ? "Mes événements à organiser" : "Compétitions accessibles";
   const description = journey === "volunteers" ? "Les éditions liées à votre compte vérifié restent séparées des accès de gestion." : journey === "referees" ? "Une habilitation active est nécessaire pour apparaître dans cette liste ; elle reste limitée à chaque édition." : journey === "organizers" ? "Les événements ci-dessous proviennent de vos relations organisateur vérifiées." : "Une relation vérifiée est nécessaire pour apparaître dans cette liste.";
+  const changesByEventId = new Map<string, SpogomiPersonalEventChange[]>();
+  for (const change of changes) {
+    const eventChanges = changesByEventId.get(change.eventId) ?? [];
+    eventChanges.push(change);
+    changesByEventId.set(change.eventId, eventChanges);
+  }
 
   return (
     <section className="space-y-5" aria-labelledby="spogomi-personal-events-title" data-testid="spogomi-personal-events-list">
@@ -168,7 +252,7 @@ export function SpogomiPersonalEventsList({ events, journey = null, focus = null
 
       {filteredEvents.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredEvents.map((event) => <PersonalEventCard key={event.id} event={event} journey={journey} focus={focus} />)}
+          {filteredEvents.map((event) => <PersonalEventCard key={event.id} event={event} journey={journey} focus={focus} changes={changesByEventId.get(event.id) ?? []} />)}
         </div>
       ) : (
         <CmmCard tone="slate" variant="glass" className="border-dashed p-6" data-testid="spogomi-personal-events-empty">

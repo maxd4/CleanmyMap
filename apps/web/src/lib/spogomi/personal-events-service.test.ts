@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { listSpogomiEventsForUser } from "./personal-events-service";
+import { listSpogomiEventChangesForUser, listSpogomiEventsForUser } from "./personal-events-service";
 
 vi.mock("server-only", () => ({}));
 
@@ -10,6 +10,9 @@ function createSupabaseFixture(options: {
   organizers: TableRow[];
   reviewers: TableRow[];
   participants: TableRow[];
+  requests?: TableRow[];
+  changes?: TableRow[];
+  acknowledgements?: TableRow[];
 }) {
   return {
     from(table: string) {
@@ -37,7 +40,13 @@ function createSupabaseFixture(options: {
         ? options.organizers
         : query.table === "spogomi_event_reviewers"
           ? options.reviewers
-          : options.participants;
+          : query.table === "spogomi_participants"
+            ? options.participants
+            : query.table === "spogomi_team_join_requests"
+              ? options.requests ?? []
+              : query.table === "spogomi_event_change_history"
+                ? options.changes ?? []
+                : options.acknowledgements ?? [];
     return source.filter((row) => Object.entries(query.filters).every(([column, value]) => {
       if (Array.isArray(value)) return value.includes(row[column]);
       if (column === "revoked_at" && value === null) return row[column] === null;
@@ -160,5 +169,57 @@ describe("listSpogomiEventsForUser", () => {
     });
 
     await expect(listSpogomiEventsForUser(supabase as never, "user-1")).resolves.toEqual([]);
+  });
+});
+
+describe("listSpogomiEventChangesForUser", () => {
+  it("returns only the account-scoped receipt projection and never snapshots", async () => {
+    const supabase = createSupabaseFixture({
+      events: [], organizers: [], reviewers: [],
+      participants: [
+        { event_id: "event-a", clerk_id: "user-1", account_link_status: "verified", registration_status: "registered" },
+        { event_id: "event-b", clerk_id: "other-user", account_link_status: "verified", registration_status: "registered" },
+      ],
+      changes: [
+        { id: "change-a", event_id: "event-a", revision: 3, changed_fields: ["schedule", "location"], requires_confirmation: true, created_at: "2026-06-01T12:00:00.000Z", previous_snapshot: { secret: "never" }, current_snapshot: { secret: "never" } },
+        { id: "change-b", event_id: "event-b", revision: 4, changed_fields: ["name"], requires_confirmation: false, created_at: "2026-06-01T13:00:00.000Z", previous_snapshot: { secret: "never" }, current_snapshot: { secret: "never" } },
+      ],
+      acknowledgements: [{ change_id: "change-a", event_id: "event-a", clerk_id: "user-1", acknowledged_at: "2026-06-01T12:05:00.000Z" }],
+    });
+
+    await expect(listSpogomiEventChangesForUser(supabase as never, "user-1")).resolves.toEqual([{
+      id: "change-a",
+      eventId: "event-a",
+      revision: 3,
+      changedFields: ["schedule", "location"],
+      requiresConfirmation: true,
+      createdAt: "2026-06-01T12:00:00.000Z",
+      acknowledgedAt: "2026-06-01T12:05:00.000Z",
+    }]);
+    const result = await listSpogomiEventChangesForUser(supabase as never, "user-1");
+    expect(result[0]).not.toHaveProperty("previousSnapshot");
+    expect(result[0]).not.toHaveProperty("currentSnapshot");
+  });
+
+  it("accepts a pending request as a personal relation while excluding revoked or rejected relations", async () => {
+    const supabase = createSupabaseFixture({
+      events: [], organizers: [], reviewers: [],
+      participants: [
+        { event_id: "revoked", clerk_id: "user-1", account_link_status: "unlinked", registration_status: "registered" },
+        { event_id: "cancelled", clerk_id: "user-1", account_link_status: "verified", registration_status: "cancelled" },
+      ],
+      requests: [
+        { event_id: "pending", requester_clerk_id: "user-1", status: "pending" },
+        { event_id: "rejected", requester_clerk_id: "user-1", status: "rejected" },
+      ],
+      changes: [
+        { id: "pending-change", event_id: "pending", revision: 1, changed_fields: ["schedule"], requires_confirmation: true, created_at: "2026-06-01T12:00:00.000Z" },
+        { id: "revoked-change", event_id: "revoked", revision: 1, changed_fields: ["schedule"], requires_confirmation: true, created_at: "2026-06-01T12:00:00.000Z" },
+        { id: "rejected-change", event_id: "rejected", revision: 1, changed_fields: ["schedule"], requires_confirmation: true, created_at: "2026-06-01T12:00:00.000Z" },
+      ],
+      acknowledgements: [],
+    });
+
+    await expect(listSpogomiEventChangesForUser(supabase as never, "user-1")).resolves.toEqual([expect.objectContaining({ id: "pending-change", eventId: "pending" })]);
   });
 });

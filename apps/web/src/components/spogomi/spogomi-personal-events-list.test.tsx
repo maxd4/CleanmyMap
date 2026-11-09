@@ -1,10 +1,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SpogomiPersonalEventsList } from "./spogomi-personal-events-list";
-import type { SpogomiPersonalEvent } from "@/lib/spogomi/personal-events-service";
+import type { SpogomiPersonalEvent, SpogomiPersonalEventChange } from "@/lib/spogomi/personal-events-service";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function event(id: string, relations: SpogomiPersonalEvent["relations"], name = `Édition ${id}`): SpogomiPersonalEvent {
   return {
@@ -29,6 +33,18 @@ function event(id: string, relations: SpogomiPersonalEvent["relations"], name = 
         ? ["operate"]
         : ["participate"],
     links: { public: null, space: relations.some((relation) => ["organizer", "referee", "observer", "checkin", "field_operator"].includes(relation)) ? `/spogomi/${id}-slug/espace` : null },
+  };
+}
+
+function change(eventId: string, acknowledgedAt: string | null = null): SpogomiPersonalEventChange {
+  return {
+    id: `change-${eventId}`,
+    eventId,
+    revision: 2,
+    changedFields: ["schedule", "location"],
+    requiresConfirmation: true,
+    createdAt: "2026-06-01T12:00:00.000Z",
+    acknowledgedAt,
   };
 }
 
@@ -121,5 +137,30 @@ describe("SpogomiPersonalEventsList", () => {
     expect(markup).toContain('/spogomi/cachan-slug/espace#teams');
     expect(markup).toContain("Les événements ci-dessous proviennent de vos relations organisateur vérifiées.");
     expect(markup).toContain("lg:grid-cols-2");
+  });
+
+  it("shows only the public change receipt projection and allows an authenticated confirmation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<SpogomiPersonalEventsList events={[event("participant", ["participant"])]} changes={[change("participant")]} />);
+    });
+
+    expect(renderer.root.findByProps({ "data-testid": "spogomi-event-changes-participant" })).toBeTruthy();
+    expect(renderer.root.findAll((node) => node.type === "span").some((node) => node.props.children === "Confirmation requise")).toBe(true);
+    expect(renderer.root.findAll((node) => node.type === "p").some((node) => String(node.props.children).includes("Horaires, Lieu"))).toBe(true);
+    expect(renderer.root.findAll((node) => node.props.children === "previous_snapshot")).toHaveLength(0);
+
+    const acknowledgeButton = renderer.root.findAll((node) => node.type === "button" && node.props.children === "Confirmer ce changement")[0];
+    await act(async () => {
+      await acknowledgeButton?.props.onClick();
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/spogomi/events/participant/changes/change-participant/acknowledge",
+      { method: "POST", headers: { Accept: "application/json" } },
+    );
+    expect(renderer.root.findAll((node) => node.type === "span" && String(node.props.children).startsWith("Accusé le "))).toHaveLength(1);
   });
 });

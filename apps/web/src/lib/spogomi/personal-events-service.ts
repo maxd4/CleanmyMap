@@ -28,6 +28,23 @@ type OrganizerActionRow = { action_id: string };
 type SpogomiReviewerRole = "observer" | "referee" | "checkin" | "timekeeper" | "weigher" | "data_entry" | "arbiter" | "certifier";
 type ReviewerRow = { event_id: string; role: SpogomiReviewerRole };
 type ParticipantRow = { event_id: string; account_link_status: "verified" };
+type ChangeParticipantRow = { event_id: string };
+type ChangeJoinRequestRow = { event_id: string };
+type EventChangeRow = {
+  id: string;
+  event_id: string;
+  revision: number;
+  changed_fields: unknown;
+  requires_confirmation: boolean;
+  created_at: string;
+};
+type EventChangeAcknowledgementRow = {
+  change_id: string;
+  event_id: string;
+  acknowledged_at: string;
+};
+
+const PERSONAL_CHANGE_SELECT = "id, event_id, revision, changed_fields, requires_confirmation, created_at";
 
 export type SpogomiPersonalRelation =
   | "organizer"
@@ -62,6 +79,16 @@ export type SpogomiPersonalEvent = {
     public: string | null;
     space: string | null;
   };
+};
+
+export type SpogomiPersonalEventChange = {
+  id: string;
+  eventId: string;
+  revision: number;
+  changedFields: readonly string[];
+  requiresConfirmation: boolean;
+  createdAt: string;
+  acknowledgedAt: string | null;
 };
 
 function unique(values: readonly string[]): string[] {
@@ -131,6 +158,73 @@ async function readVerifiedParticipants(
       .eq("clerk_id", userId)
       .eq("account_link_status", "verified")
       .order("event_id", { ascending: true })
+      .range(from, to),
+    { requireExactCount: true },
+  );
+}
+
+async function readChangeParticipants(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ChangeParticipantRow[]> {
+  return readAllSpogomiPages<ChangeParticipantRow>("personal change participant relations", (from, to) =>
+    supabase
+      .from("spogomi_participants")
+      .select("event_id", { count: "exact" })
+      .eq("clerk_id", userId)
+      .eq("account_link_status", "verified")
+      .eq("registration_status", "registered")
+      .order("event_id", { ascending: true })
+      .range(from, to),
+    { requireExactCount: true },
+  );
+}
+
+async function readChangeJoinRequests(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ChangeJoinRequestRow[]> {
+  return readAllSpogomiPages<ChangeJoinRequestRow>("personal change join-request relations", (from, to) =>
+    supabase
+      .from("spogomi_team_join_requests")
+      .select("event_id", { count: "exact" })
+      .eq("requester_clerk_id", userId)
+      .in("status", ["pending", "approved"])
+      .order("event_id", { ascending: true })
+      .range(from, to),
+    { requireExactCount: true },
+  );
+}
+
+async function readPersonalEventChanges(
+  supabase: SupabaseClient,
+  eventIds: readonly string[],
+): Promise<EventChangeRow[]> {
+  return readAllSpogomiPages<EventChangeRow>("personal event changes", (from, to) =>
+    supabase
+      .from("spogomi_event_change_history")
+      .select(PERSONAL_CHANGE_SELECT, { count: "exact" })
+      .in("event_id", eventIds)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, to),
+    { requireExactCount: true },
+  );
+}
+
+async function readPersonalEventChangeAcknowledgements(
+  supabase: SupabaseClient,
+  userId: string,
+  eventIds: readonly string[],
+): Promise<EventChangeAcknowledgementRow[]> {
+  return readAllSpogomiPages<EventChangeAcknowledgementRow>("personal event change acknowledgements", (from, to) =>
+    supabase
+      .from("spogomi_event_change_acknowledgements")
+      .select("change_id, event_id, acknowledged_at", { count: "exact" })
+      .eq("clerk_id", userId)
+      .in("event_id", eventIds)
+      .order("acknowledged_at", { ascending: false })
+      .order("change_id", { ascending: true })
       .range(from, to),
     { requireExactCount: true },
   );
@@ -287,4 +381,46 @@ export async function listSpogomiEventsForUser(
 
 export async function listSpogomiEventsForCurrentUser(userId: string): Promise<SpogomiPersonalEvent[]> {
   return listSpogomiEventsForUser(getSupabaseServerClient(true), userId);
+}
+
+/**
+ * Returns the change receipt projection for the authenticated account only.
+ * Snapshots are deliberately not selected: the client receives fields and
+ * acknowledgement state, never the before/after event payloads.
+ */
+export async function listSpogomiEventChangesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<SpogomiPersonalEventChange[]> {
+  const [participants, joinRequests] = await Promise.all([
+    readChangeParticipants(supabase, userId),
+    readChangeJoinRequests(supabase, userId),
+  ]);
+  const eventIds = unique([
+    ...participants.map((row) => String(row.event_id)),
+    ...joinRequests.map((row) => String(row.event_id)),
+  ]);
+  if (!eventIds.length) return [];
+
+  const [changes, acknowledgements] = await Promise.all([
+    readPersonalEventChanges(supabase, eventIds),
+    readPersonalEventChangeAcknowledgements(supabase, userId, eventIds),
+  ]);
+  const acknowledgementByChangeId = new Map(
+    acknowledgements.map((row) => [String(row.change_id), String(row.acknowledged_at)]),
+  );
+
+  return changes.map((row) => ({
+    id: String(row.id),
+    eventId: String(row.event_id),
+    revision: Number(row.revision),
+    changedFields: Array.isArray(row.changed_fields) ? row.changed_fields.map(String) : [],
+    requiresConfirmation: Boolean(row.requires_confirmation),
+    createdAt: String(row.created_at),
+    acknowledgedAt: acknowledgementByChangeId.get(String(row.id)) ?? null,
+  }));
+}
+
+export async function listSpogomiEventChangesForCurrentUser(userId: string): Promise<SpogomiPersonalEventChange[]> {
+  return listSpogomiEventChangesForUser(getSupabaseServerClient(true), userId);
 }

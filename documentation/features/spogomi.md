@@ -287,6 +287,16 @@ transactionnel local avant l'écriture : l'historique conserve donc l'acteur
 réel, tandis que `system` reste réservé aux écritures effectivement
 systémiques ou aux mutations directes sans acteur applicatif.
 
+Dans le parcours authentifié `/spogomi/mes-evenements`, le compte connecté
+retrouve ces changements sous la fiche de l'édition lorsqu'il conserve une
+relation participant enregistrée ou une demande d'équipe `pending`/`approved`.
+La projection affiche uniquement la révision, les champs modifiés, la date,
+l'obligation de confirmation et l'état de l'accusé ; les snapshots avant/après
+ne sont jamais sélectionnés ni transmis au navigateur. Le bouton de confirmation
+passe par la frontière serveur authentifiée et réutilise cette RPC avec l'identité
+Clerk vérifiée ; une relation révoquée, un autre compte ou un autre événement ne
+peut ni lire ni acquitter le changement.
+
 ### Proposition d'aide à l'organisation
 
 La fiche publique d'une édition publiée et à venir propose, pour un compte
