@@ -3,7 +3,7 @@ import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer, updateSpogomiEvent } from "@/lib/spogomi/preparation-service";
+import { loadSpogomiEventForOrganizer, updateSpogomiEvent, updateSpogomiRegistrationPolicy } from "@/lib/spogomi/preparation-service";
 import { loadSpogomiManagementProjection } from "@/lib/spogomi/management-projection";
 
 export const runtime = "nodejs";
@@ -37,6 +37,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ event
     if (event === false) return forbiddenJsonResponse();
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
     const body = (await request.json()) as Record<string, unknown>;
+    if (body.registrationPolicy && typeof body.registrationPolicy === "object" && !Array.isArray(body.registrationPolicy)) {
+      const updatedPolicy = await updateSpogomiRegistrationPolicy({
+        supabase,
+        event,
+        actorClerkId: access.userId,
+        patch: body.registrationPolicy as Parameters<typeof updateSpogomiRegistrationPolicy>[0]["patch"],
+      });
+      return NextResponse.json({ event: updatedPolicy });
+    }
     const updated = await updateSpogomiEvent({
       supabase,
       event,

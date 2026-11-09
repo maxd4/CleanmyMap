@@ -1,4 +1,5 @@
 import type { SpogomiDivisionType } from "@/lib/spogomi/types";
+import type { SpogomiRegistrationReadiness } from "@/lib/spogomi/registration-readiness";
 
 export type WorkspaceData = {
   event: {
@@ -89,6 +90,7 @@ export type WorkspaceData = {
     exclusion_reason: string | null;
   }>;
   eventAccess: Array<{ role: string; revoked_at: string | null }>;
+  registrationReadiness?: SpogomiRegistrationReadiness;
 };
 
 export type SpogomiPreparationWorkspaceSection =

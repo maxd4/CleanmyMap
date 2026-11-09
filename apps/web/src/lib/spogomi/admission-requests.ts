@@ -60,6 +60,7 @@ function mapConflict(message: string): SpogomiAdmissionRequestError {
 }
 
 function mapForbidden(message: string): SpogomiAdmissionRequestError {
+  if (message.includes("registration_readiness_incomplete")) return new SpogomiAdmissionRequestError("Les informations obligatoires de l’édition ne sont pas encore vérifiées par l’organisateur.", "forbidden");
   if (message.includes("external_ticketing")) return new SpogomiAdmissionRequestError("Cette édition doit être rejointe par la billetterie officielle.", "forbidden");
   if (message.includes("capacity")) return new SpogomiAdmissionRequestError("La capacité d’inscription de cette édition est atteinte.", "forbidden");
   if (message.includes("world_cup")) return new SpogomiAdmissionRequestError("Cette division World Cup doit être rejointe par le parcours officiel.", "forbidden");

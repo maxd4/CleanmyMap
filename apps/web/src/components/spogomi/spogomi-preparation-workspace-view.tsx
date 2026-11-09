@@ -26,6 +26,8 @@ import {
 } from "./spogomi-preparation-workspace-contract";
 import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
 import { SpogomiSyntheticDemoNotice } from "./spogomi-synthetic-demo-notice";
+import { SpogomiRegistrationReadinessCard } from "./spogomi-registration-readiness-card";
+import type { SpogomiRegistrationReadiness } from "@/lib/spogomi/registration-readiness";
 
 const OfficialRouteMap = dynamic(() => import("./spogomi-official-route-map").then((module) => module.SpogomiOfficialRouteMap), { ssr: false });
 
@@ -125,12 +127,20 @@ function DemoScenarioStatusCard({ data, activeDivision, divisionLabel }: Pick<Pr
 }
 
 function SettingsSection({ data, eventId, section, busy, showAdminTeamJoinRequests, action, activeDivision, saveDivisionRegulation, compositionRevision }: Pick<Props, "data" | "eventId" | "section" | "busy" | "showAdminTeamJoinRequests" | "action" | "activeDivision" | "saveDivisionRegulation" | "compositionRevision">) {
+  const registrationReadiness: SpogomiRegistrationReadiness = data.registrationReadiness ?? {
+    eventId,
+    ready: false,
+    policy: {},
+    editionItems: [{ id: "registration_readiness", label: "Checklist de préparation", status: "incomplete", required: true, href: "#spogomi-registration-readiness" }],
+    divisions: data.divisions.map((division) => ({ divisionId: division.id, divisionType: division.division_type, ready: false, items: [{ id: "division_readiness", label: "Préparation de la division", status: "incomplete", required: true, href: "#spogomi-regulation-" + division.id }] })),
+  };
   return <>
+    <div hidden={section !== "settings"}><SpogomiRegistrationReadinessCard key={data.event.composition_revision ?? "initial"} eventId={eventId} state={data.event.state} publicVisibility={data.event.public_visibility} readiness={registrationReadiness} busy={busy} action={action} /></div>
     <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-black text-slate-900">Publication publique</h2><p className="text-sm text-slate-600">URL stable : {data.event.event_slug ? `/spogomi/${data.event.event_slug}` : "en attente"}. La publication n’expose jamais le roster.</p></div><CmmButton type="button" tone={data.event.public_visibility === "published" ? "secondary" : "primary"} disabled={busy || !data.event.event_slug} onClick={() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ action(`/api/spogomi/events/${eventId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ publicVisibility: data.event.public_visibility === "published" ? "private" : "published" }) }).catch(() => undefined); }}>{data.event.public_visibility === "published" ? "Rendre privé" : "Publier l’événement"}</CmmButton></div></CmmCard></div>
     <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiIdentityAssistancePanel eventId={eventId} participants={data.participants} /></CmmCard></div>
     {showAdminTeamJoinRequests ? <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiTeamJoinRequestsPanel eventId={eventId} participants={data.participants} teams={data.teams} /></CmmCard></div> : null}
     {showAdminTeamJoinRequests ? <div hidden={section !== "settings"}><CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiAdmissionRequestsPanel eventId={eventId} /></CmmCard></div> : null}
-    <div hidden={section !== "settings"}><SpogomiDivisionRegulationSettings key={activeDivision?.id ?? "no-division"} activeDivision={activeDivision} categories={data.categoryRules} mappings={data.environmentMappings ?? []} expectedRevision={compositionRevision().expectedRevision} busy={busy} onSave={saveDivisionRegulation} /></div>
+    <div id={"spogomi-regulation-" + (activeDivision?.id ?? "none")} hidden={section !== "settings"}><SpogomiDivisionRegulationSettings key={activeDivision?.id ?? "no-division"} activeDivision={activeDivision} categories={data.categoryRules} mappings={data.environmentMappings ?? []} expectedRevision={compositionRevision().expectedRevision} busy={busy} onSave={saveDivisionRegulation} /></div>
     <div hidden={section !== "settings"}><CmmCard tone="slate" variant="muted" className="space-y-3 p-5"><div><h2 className="font-black text-slate-900">Règlement</h2><p className="text-sm text-slate-600">Versions et sources actuellement enregistrées pour les divisions de cette édition.</p></div>{data.divisions.length ? <div className="grid gap-3 sm:grid-cols-2">{data.divisions.map((division) => <div key={division.id} className="rounded-xl border border-black/10 bg-white/75 p-3 text-sm"><p className="font-bold">{division.division_type === "world_cup" ? "World Cup" : "Casual"}</p><p className="mt-1 text-slate-700">Statut : {division.regulation_status ?? "non renseigné"}</p><p className="text-slate-700">Version : {division.regulation_version ?? "non renseignée"}</p>{division.regulation_source_reference ? <p className="text-slate-700">Source : {division.regulation_source_reference}</p> : null}</div>)}</div> : <p className="text-sm text-slate-700">Aucune division réglementaire distincte n’est exposée par cette édition historique.</p>}</CmmCard></div>
   </>;
 }

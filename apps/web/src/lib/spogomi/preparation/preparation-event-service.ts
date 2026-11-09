@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EventRow } from "./preparation-service";
 import type { SpogomiEventMode } from "../types";
+import type { SpogomiRegistrationPolicyPatch } from "./registration-readiness-service";
 
 export type SpogomiEventUpdateInput = {
   name?: string;
@@ -13,6 +14,8 @@ export type SpogomiEventUpdateInput = {
   publicResultsVisibility?: "hidden" | "provisional" | "certified";
 };
 
+export type { SpogomiRegistrationPolicyPatch };
+
 function validateCasualTeamSize(casualTeamSize: number | null | undefined): void {
   if (casualTeamSize !== undefined && casualTeamSize !== null && (!Number.isInteger(casualTeamSize) || casualTeamSize < 1)) {
     throw new Error("Validation: la taille d'équipe Casual doit être un entier positif ou non renseignée.");
@@ -23,7 +26,6 @@ function validateEventUpdate(event: EventRow, input: SpogomiEventUpdateInput, na
   if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
   if (endsAt && Date.parse(endsAt) < Date.parse(startsAt)) throw new Error("Validation: la fin doit être postérieure au début.");
   if (input.publicVisibility === "published" && (!event.event_slug || !startsAt)) throw new Error("Validation: un événement publié doit avoir un identifiant et une date.");
-  if (input.publicVisibility === "published" && event.state === "draft") throw new Error("Validation: un brouillon doit d'abord quitter l'état draft avant publication.");
 }
 
 function normalizeEventUpdate(event: EventRow, input: SpogomiEventUpdateInput) {

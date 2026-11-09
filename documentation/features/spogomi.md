@@ -107,6 +107,31 @@ Le formulaire général de création continue de masquer `mixed`. Tant que le sc
 - Les données détaillées de compétition ont leur propriétaire SPOGOMI ; la table `actions` reçoit une **projection** du bilan physique validé, pas une nouvelle saisie indépendante.
 - La projection doit pouvoir être reconstruite et sa provenance vérifiée. Un changement de résultat ne s'ajoute jamais au bilan existant : il le remplace après nouvelle validation.
 
+### Préparation à l'ouverture des inscriptions
+
+L'ouverture des inscriptions libre-service est une transition serveur
+revisionnée, distincte de la publication de la fiche. La fiche informative peut
+être publiée avant d'être complète ; elle ne permet pas pour autant de créer
+une nouvelle demande d'inscription.
+
+La RPC spogomi_registration_readiness centralise la checklist par édition et
+par division. Elle réutilise la version et l'état du règlement, les catégories
+et barèmes, les horaires de spogomi_field_operations, le parcours de
+spogomi_event_routes, le lieu de l'édition, la capacité de
+registrationPolicy et les conditions d'éligibilité existantes. Les seules
+informations complémentaires persistées dans registrationPolicy sont les
+consignes de sécurité, le contact d'organisation, la procédure d'assistance et
+la déclaration d'applicabilité des mineurs avec leurs indicateurs de
+vérification.
+
+Chaque élément est affiché comme « Complet », « Incomplet » ou « Non vérifié »,
+avec un lien vers la zone de préparation concernée.
+spogomi_open_registration refuse une transition depuis draft tant que toutes
+les conditions obligatoires de l'édition et de chaque division ne sont pas
+complètes. La création directe d'une nouvelle demande recontrôle cette
+projection côté serveur ; les demandes existantes, les participations déjà
+enregistrées et les opérations administratives restent hors de ce verrou.
+
 ## Index des modules
 
 - [Données, import et règlements](./spogomi-donnees-regles.md)

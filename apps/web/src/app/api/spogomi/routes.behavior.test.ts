@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => {
   const loadSpogomiEventForOrganizer = vi.fn();
   const createSpogomiEvent = vi.fn();
   const updateSpogomiEvent = vi.fn();
+  const loadSpogomiManagementProjection = vi.fn();
   const attachOfficialGpx = vi.fn();
   const autoComposeTeams = vi.fn();
   const lockSpogomiTeams = vi.fn();
@@ -120,6 +121,7 @@ const mocks = vi.hoisted(() => {
     loadSpogomiEventForOrganizer,
     createSpogomiEvent,
     updateSpogomiEvent,
+    loadSpogomiManagementProjection,
     attachOfficialGpx,
     autoComposeTeams,
     lockSpogomiTeams,
@@ -202,6 +204,9 @@ vi.mock("@/lib/spogomi/preparation-service", () => ({
   previewRosterImportChanges: mocks.previewRosterImportChanges,
   updateSpogomiEvent: mocks.updateSpogomiEvent,
   SpogomiCompositionProtectionError: mocks.SpogomiCompositionProtectionError,
+}));
+vi.mock("@/lib/spogomi/management-projection", () => ({
+  loadSpogomiManagementProjection: mocks.loadSpogomiManagementProjection,
 }));
 vi.mock("@/lib/spogomi/result-service", () => ({
   assignSpogomiObserver: mocks.assignSpogomiObserver,
@@ -292,6 +297,7 @@ describe("SPOGOMI persistence routes", () => {
     mocks.loadSpogomiEventForOrganizer.mockResolvedValue(mocks.event);
     mocks.createSpogomiEvent.mockResolvedValue({ event: mocks.event });
     mocks.updateSpogomiEvent.mockResolvedValue(mocks.event);
+    mocks.loadSpogomiManagementProjection.mockResolvedValue({ event: mocks.event, divisions: [], participants: [], teams: [], route: null, eventAccess: [], categoryRules: [], environmentMappings: [], registrationReadiness: { eventId: "event-1", ready: false, policy: {}, editionItems: [], divisions: [] } });
     mocks.attachOfficialGpx.mockResolvedValue({
       route: { source: "official_reference" },
       synchronization: {

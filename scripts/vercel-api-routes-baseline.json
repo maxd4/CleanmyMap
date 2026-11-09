@@ -115,6 +115,13 @@
       "reviewedAt": "2026-10-12"
     },
     {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/registration/open/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Transition organisateur explicite vers l'ouverture des inscriptions, après évaluation serveur de la préparation de chaque division et de la révision courante.",
+      "costContract": "Mutation POST authentifiée et réservée à l'organisateur ; RPC service_role atomique, verrouillée par composition_revision, sans accès aux rosters publics et sans invalidation des participations ou demandes existantes.",
+      "reviewedAt": "2026-11-09"
+    },
+    {
       "route": "apps/web/src/app/api/spogomi/public/events/[eventSlug]/route.ts",
       "introducedBy": "WORKTREE-CANDIDATE",
       "reason": "Projection publique bornée des résultats SPOGOMI publiés, sans roster privé ni métriques d'équipes indisponibles.",
@@ -634,6 +641,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/rankings/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/attestations/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/reconcile/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/registration/open/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/results/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/route-gpx/route.ts",

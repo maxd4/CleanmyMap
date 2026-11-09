@@ -42,7 +42,12 @@ function supabaseFor(tables: Record<string, unknown>, errors: Record<string, Row
     queries.set(table, [...(queries.get(table) ?? []), query]);
     return query;
   });
-  const client = { from, rpc: vi.fn() };
+  const client = {
+    from,
+    rpc: vi.fn(async (name: string) => name === "spogomi_registration_readiness"
+      ? { data: { eventId: "event-1", ready: false, policy: {}, editionItems: [], divisions: [] }, error: null }
+      : { data: null, error: null }),
+  };
   return { supabase: client as unknown as import("@supabase/supabase-js").SupabaseClient, client, from, queries };
 }
 

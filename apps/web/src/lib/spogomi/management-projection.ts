@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isCachanTicketCompositionEligible } from "./ticket-reconciliation";
 import type { EventRow } from "./preparation/preparation-service";
+import { loadSpogomiRegistrationReadiness } from "./preparation/registration-readiness-service";
 
 function mapManagementParticipants(participants: Array<Record<string, unknown>>) {
   return participants.map((participant) => ({ ...participant, composition_eligible: isCachanTicketCompositionEligible({ sourceSystem: participant.source_system as string | null, ticketStatus: participant.ticket_status as string | null, ticketDeleted: Boolean(participant.ticket_deleted), registrationStatus: String(participant.registration_status) }) }));
@@ -40,7 +41,7 @@ export async function loadSpogomiManagementProjection(params: {
     teamsQuery = teamsQuery.eq("division_id", divisionId);
   }
 
-  const [participants, teams, route, eventAccess, categoryRules, environmentMappings] = await Promise.all([
+  const [participants, teams, route, eventAccess, categoryRules, environmentMappings, registrationReadiness] = await Promise.all([
     participantsQuery,
     teamsQuery,
     supabase
@@ -61,6 +62,7 @@ export async function loadSpogomiManagementProjection(params: {
       .from("spogomi_environment_category_mappings")
       .select("id, event_id, division_id, mapping_version, category_rule_id, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason")
       .eq("event_id", event.id),
+    loadSpogomiRegistrationReadiness({ supabase, eventId: event.id }),
   ]);
   if (participants.error) throw participants.error;
   if (teams.error) throw teams.error;
@@ -78,5 +80,6 @@ export async function loadSpogomiManagementProjection(params: {
     eventAccess: eventAccess.data ?? [],
     categoryRules: categoryRules.data ?? [],
     environmentMappings: environmentMappings.data ?? [],
+    registrationReadiness,
   };
 }

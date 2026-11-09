@@ -191,6 +191,7 @@ describe("SPOGOMI admission requests", () => {
       [{ code: "42501", message: "external_ticketing" }, "forbidden", "Cette édition doit être rejointe par la billetterie officielle."],
       [{ code: "42501", message: "capacity" }, "forbidden", "La capacité d’inscription de cette édition est atteinte."],
       [{ code: "42501", message: "world_cup" }, "forbidden", "Cette division World Cup doit être rejointe par le parcours officiel."],
+      [{ code: "42501", message: "spogomi_registration_readiness_incomplete" }, "forbidden", "Les informations obligatoires de l’édition ne sont pas encore vérifiées par l’organisateur."],
       [{ code: "22023", message: "invalid" }, "validation", "La division ou les informations de la demande sont invalides."],
     ] as const;
 
