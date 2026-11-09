@@ -113,10 +113,10 @@ describe("direct AuthN/AuthZ guards", () => {
   });
 
   it("uses the explicit local bypass while keeping its canonical role restrictions", async () => {
-    mocks.getDevAuthBypassSession.mockResolvedValue({ userId: "owner", role: "max" });
+    mocks.getDevAuthBypassSession.mockResolvedValue({ userId: "dev-max", role: "max" });
 
-    await expect(requireAdminAccess()).resolves.toEqual({ ok: true, userId: "owner" });
-    await expect(requireCreatorAccess()).resolves.toEqual({ ok: true, userId: "owner" });
+    await expect(requireAdminAccess()).resolves.toEqual({ ok: true, userId: "dev-max" });
+    await expect(requireCreatorAccess()).resolves.toEqual({ ok: true, userId: "dev-max" });
     await expect(getCurrentUserActiveRole()).resolves.toBe("max");
     await expect(getCurrentUserEffectiveAccess()).resolves.toEqual({
       canAccessAdminPage: true,
@@ -125,17 +125,9 @@ describe("direct AuthN/AuthZ guards", () => {
     await expect(getCurrentUserRoleLabel()).resolves.toBe("max");
     expect(mocks.auth).not.toHaveBeenCalled();
 
-    mocks.getDevAuthBypassSession.mockResolvedValue({ userId: "other", role: "max" });
-    await expect(requireAdminAccess()).resolves.toEqual({
-      ok: false,
-      status: 403,
-      error: "Forbidden",
-    });
-    await expect(requireCreatorAccess()).resolves.toEqual({
-      ok: false,
-      status: 403,
-      error: "Forbidden",
-    });
+    mocks.getDevAuthBypassSession.mockResolvedValue({ userId: "dev-max", role: "coordinateur" });
+    await expect(requireAdminAccess()).resolves.toEqual({ ok: false, status: 403, error: "Forbidden" });
+    await expect(requireCreatorAccess()).resolves.toEqual({ ok: false, status: 403, error: "Forbidden" });
   });
 
   it("does not turn a non-privileged bypass role into admin or creator access", async () => {

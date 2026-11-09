@@ -3,6 +3,7 @@ import { env } from "./env";
 import {
   type AppRoleLabel,
   normalizeDisplayNameMode,
+  normalizeProfileRole,
   resolveAccountDisplayName,
 } from "./profiles";
 import {
@@ -43,10 +44,8 @@ export type AuthenticatedAccessResult =
   | { ok: false; status: 401; error: string };
 
 function resolveDevAuthBypassRole(userId: string, role: string): AppRoleLabel {
-  return resolveClerkRole({
-    user: { id: userId, publicMetadata: { role } },
-    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
-  });
+  void userId;
+  return normalizeProfileRole(role) ?? "benevole";
 }
 
 export async function requireAdminAccess(): Promise<AdminAccessResult> {

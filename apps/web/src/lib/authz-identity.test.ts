@@ -137,6 +137,22 @@ describe("server identity resolution", () => {
     expect(mocks.clerkClient).not.toHaveBeenCalled();
   });
 
+  it("keeps the explicit local max bypass as max without the production owner id", async () => {
+    mocks.shouldUseDevAuthBypass.mockReturnValue(true);
+    mocks.getDevAuthBypassRole.mockReturnValue("max");
+    mocks.getDevAuthBypassUserId.mockReturnValue("dev-max");
+    mocks.getDevAuthBypassDisplayName.mockReturnValue("Dev Max");
+    mocks.getDevAuthBypassUsername.mockReturnValue("dev-max");
+
+    await expect(getCurrentUserIdentity()).resolves.toMatchObject({
+      userId: "dev-max",
+      role: "max",
+      activeRole: "max",
+      activeProfile: "max",
+    });
+    expect(mocks.clerkClient).not.toHaveBeenCalled();
+  });
+
   it("uses the active-role projection path only when explicitly requested", async () => {
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.clerkClient.mockResolvedValue({

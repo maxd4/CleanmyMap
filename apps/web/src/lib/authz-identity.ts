@@ -6,7 +6,7 @@ import {
   type AppProfile,
   type DisplayNameMode,
 } from "./profiles";
-import type { ActiveRole, Role } from "@/lib/domain-language";
+import type { ActiveRole, GrantedRole, Role } from "@/lib/domain-language";
 import {
   extractBadgeIds,
   getProfileBadgeId,
@@ -165,17 +165,17 @@ export async function getDevAuthBypassSession() {
 
 async function buildDevBypassIdentity(devBypass: {
   userId: string;
-  role: string;
+  role: GrantedRole;
   displayName: string;
   username: string;
 }): Promise<UserIdentity> {
   const displayNameMode =
     (await getDisplayNameModeCookieOverride()) ??
     "full_name";
-  const role = resolveClerkRole({
-    user: { id: devBypass.userId, publicMetadata: { role: devBypass.role } },
-    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
-  });
+  // The launcher has already validated this synthetic role. Do not send it
+  // through the production Clerk owner check: dev-max is intentionally not
+  // the configured production IMU user.
+  const role = devBypass.role;
 
   return {
     userId: devBypass.userId,
