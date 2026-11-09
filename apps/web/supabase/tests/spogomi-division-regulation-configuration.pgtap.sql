@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(25);
 
 select has_function('public', 'spogomi_update_division_regulation', array['uuid','uuid','bigint','text','text','text','text','jsonb','jsonb','jsonb','jsonb'], 'organizer regulation configuration overload exists');
 select function_privs_are('public', 'spogomi_update_division_regulation', array['uuid','uuid','bigint','text','text','text','text','jsonb','jsonb','jsonb','jsonb'], 'service_role', array['EXECUTE'], 'service_role can execute the configuration RPC');
@@ -47,6 +47,11 @@ select lives_ok($$select * from public.spogomi_update_division_regulation(
   '[{"categoryCode":"mass","environmentalCategorySlug":null,"sourceField":null,"sourceUnit":"g","targetUnit":null,"unitFactorToTarget":null,"countsTowardTotal":true,"isMegots":false,"mappingStatus":"unmapped","exclusionReason":"À documenter"}]'::jsonb
 )$$, 'an incomplete regulation can retain unknown coefficients');
 select is((select composition_revision from public.spogomi_events where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'), 1::bigint, 'incomplete configuration advances the revision once');
+select is((select actor_clerk_id
+             from public.spogomi_event_change_history
+            where event_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+            order by created_at desc, id desc
+            limit 1), 'spogomi-regulation-pgtap', 'division configuration history keeps the verified organizer actor');
 
 select throws_ok($$select * from public.spogomi_update_division_regulation(
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1,

@@ -99,6 +99,13 @@ begin
   if (v_metadata->>'composition_revision')::bigint <> 1 then
     raise exception 'valid mixed Casual bounds did not advance the revision';
   end if;
+  if (select actor_clerk_id
+        from public.spogomi_event_change_history
+       where event_id = v_event_id
+       order by created_at desc, id desc
+       limit 1) <> 'spogomi-db-smoke' then
+    raise exception 'event metadata history lost the verified organizer actor';
+  end if;
 
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count)
   values (v_conversion_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI conversion smoke', 1, 1, 1);
@@ -255,10 +262,18 @@ begin
   exception when check_violation then
     if position('requires a new version' in lower(sqlerrm)) = 0 then raise; end if;
   end;
+  perform set_config('spogomi.change_actor', '', true);
   update public.spogomi_events
      set regulation_version = 'smoke-regulation-v2',
          regulation_config = '{"changed":true}'::jsonb
    where id = v_event_id;
+  if (select actor_clerk_id
+        from public.spogomi_event_change_history
+       where event_id = v_event_id
+       order by created_at desc, id desc
+       limit 1) <> 'system' then
+    raise exception 'a direct system regulation update was attributed to an organizer';
+  end if;
 
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   begin

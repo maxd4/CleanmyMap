@@ -190,6 +190,30 @@ begin
     raise exception 'admission cancellation replay duplicated the notification';
   end if;
   begin
+    update public.spogomi_team_join_requests
+       set decision_message = 'terminal tamper'
+     where id = v_cancel_request_id;
+    raise exception 'a cancelled admission accepted a decision rewrite';
+  exception when others then
+    if sqlstate <> '40001' or position('terminal_immutable' in sqlerrm) = 0 then
+      raise;
+    end if;
+  end;
+  if exists (
+    select 1 from public.spogomi_team_join_requests
+     where id = v_cancel_request_id
+       and decision_message = 'terminal tamper'
+  ) then
+    raise exception 'a rejected terminal rewrite mutated the cancelled request';
+  end if;
+  update public.spogomi_team_join_requests
+     set updated_at = timestamptz '1970-01-01 00:00:00+00'
+   where id = v_cancel_request_id;
+  if (select updated_at from public.spogomi_team_join_requests where id = v_cancel_request_id)
+     = timestamptz '1970-01-01 00:00:00+00' then
+    raise exception 'a terminal no-op replay changed updated_at';
+  end if;
+  begin
     perform public.transition_spogomi_admission_request(
       v_cancel_request_id, v_event_id, 'cancelled', 'requester', 'other-account', null,
       null, null, null, null
@@ -256,6 +280,23 @@ begin
   if v_action_participants_after <> v_action_participants_before then
     raise exception 'admission approval created a CleanMyMap participation';
   end if;
+  begin
+    update public.spogomi_team_join_requests
+       set decision_message = 'approved terminal tamper'
+     where id = v_registration_request_id;
+    raise exception 'an approved admission accepted a decision rewrite';
+  exception when others then
+    if sqlstate <> '40001' or position('terminal_immutable' in sqlerrm) = 0 then
+      raise;
+    end if;
+  end;
+  if exists (
+    select 1 from public.spogomi_team_join_requests
+     where id = v_registration_request_id
+       and decision_message <> 'Registration accepted'
+  ) then
+    raise exception 'a rejected terminal rewrite mutated the approved request';
+  end if;
 
   -- Self-approval must be rejected before any idempotent return.
   begin
@@ -297,6 +338,23 @@ begin
      and payload ->> 'requestId' = v_rejected_request_id::text;
   if v_notification_count <> 0 then
     raise exception 'disabled informational preference did not suppress admission notification';
+  end if;
+  begin
+    update public.spogomi_team_join_requests
+       set resolution_note = 'rejected terminal tamper'
+     where id = v_rejected_request_id;
+    raise exception 'a rejected admission accepted a resolution rewrite';
+  exception when others then
+    if sqlstate <> '40001' or position('terminal_immutable' in sqlerrm) = 0 then
+      raise;
+    end if;
+  end;
+  if exists (
+    select 1 from public.spogomi_team_join_requests
+     where id = v_rejected_request_id
+       and resolution_note = 'rejected terminal tamper'
+  ) then
+    raise exception 'a rejected terminal rewrite mutated the rejected request';
   end if;
   begin
     perform public.transition_spogomi_admission_request(

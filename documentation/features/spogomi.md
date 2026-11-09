@@ -253,7 +253,10 @@ par ce quiz.
 La matrice serveur `spogomi_admission_transition_allowed` est la référence des
 demandes : une demande `pending` peut devenir `approved`, `rejected` ou
 `cancelled`, puis son état terminal est immuable (un rejeu du même état reste
-idempotent). L'approbation `registration` crée ou réactive uniquement la ligne
+idempotent). Cette immutabilité est également contrôlée par le trigger SQL sur
+toute mise à jour de la demande : une note, une date de décision, un acteur ou
+un autre champ métier ne peut pas être réécrit après la décision ; une mise à
+jour réellement sans effet reste sans effet. L'approbation `registration` crée ou réactive uniquement la ligne
 du compte dans la division demandée ; l'approbation `team_join` vérifie et lie
 une ligne de roster existante ; `presence_regularization` ne crée aucun
 participant. Une nouvelle demande `registration` ne peut être créée qu'après
@@ -278,7 +281,11 @@ privée idempotente indiquant les champs concernés et si une confirmation est
 requise. La confirmation explicite est disponible par
 `acknowledge_spogomi_event_change` uniquement pour les comptes concernés ; elle
 ne transforme jamais une notification en admission et n'annule aucun droit
-existant.
+existant. Les RPC server-only de préparation reçoivent l'identité Clerk déjà
+vérifiée par la route organisateur et la posent uniquement dans un contexte
+transactionnel local avant l'écriture : l'historique conserve donc l'acteur
+réel, tandis que `system` reste réservé aux écritures effectivement
+systémiques ou aux mutations directes sans acteur applicatif.
 
 ### Proposition d'aide à l'organisation
 
