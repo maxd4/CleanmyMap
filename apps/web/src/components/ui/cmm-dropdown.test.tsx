@@ -389,6 +389,145 @@ describe("CmmDropdown", () => {
     expect(panel?.style.transform).toBe("none");
   });
 
+  it("aligns a centered arrow with the trigger after a right viewport collision", () => {
+    vi.spyOn(window, "innerWidth", "get").mockReturnValue(390);
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root!: Root;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <CmmDropdown
+          id="center-right-collision-dropdown"
+          ariaLabel="Right collision menu"
+          renderTrigger={(triggerProps) => <button {...triggerProps}>Open</button>}
+        >
+          <span>Right collision content</span>
+        </CmmDropdown>,
+      );
+    });
+    activeRoots.push({ host, root });
+
+    const trigger = host.querySelector<HTMLButtonElement>("button");
+    expect(trigger).not.toBeNull();
+    vi.spyOn(trigger!, "getBoundingClientRect").mockReturnValue({ top: 100, bottom: 144, left: 330, width: 44 } as DOMRect);
+    act(() => trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+
+    const panel = document.body.querySelector<HTMLDivElement>("#center-right-collision-dropdown");
+    expect(panel).not.toBeNull();
+    vi.spyOn(panel!, "getBoundingClientRect").mockReturnValue({ top: 156, bottom: 356, left: 182, right: 382, width: 200, height: 200 } as DOMRect);
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    const arrow = panel?.querySelectorAll<HTMLElement>('span[aria-hidden="true"]')[1];
+    expect(panel?.style.left).toBe("182px");
+    expect(arrow?.style.left).toBe("170px");
+  });
+
+  it("keeps a centered arrow inside the panel after a left viewport collision", () => {
+    vi.spyOn(window, "innerWidth", "get").mockReturnValue(390);
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root!: Root;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <CmmDropdown
+          id="center-left-collision-dropdown"
+          ariaLabel="Left collision menu"
+          renderTrigger={(triggerProps) => <button {...triggerProps}>Open</button>}
+        >
+          <span>Left collision content</span>
+        </CmmDropdown>,
+      );
+    });
+    activeRoots.push({ host, root });
+
+    const trigger = host.querySelector<HTMLButtonElement>("button");
+    expect(trigger).not.toBeNull();
+    vi.spyOn(trigger!, "getBoundingClientRect").mockReturnValue({ top: 100, bottom: 144, left: 10, width: 44 } as DOMRect);
+    act(() => trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+
+    const panel = document.body.querySelector<HTMLDivElement>("#center-left-collision-dropdown");
+    expect(panel).not.toBeNull();
+    vi.spyOn(panel!, "getBoundingClientRect").mockReturnValue({ top: 156, bottom: 356, left: 8, right: 208, width: 200, height: 200 } as DOMRect);
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    const arrow = panel?.querySelectorAll<HTMLElement>('span[aria-hidden="true"]')[1];
+    expect(panel?.style.left).toBe("8px");
+    expect(arrow?.style.left).toBe("24px");
+  });
+
+  it("opens upward when the lower viewport has insufficient space", () => {
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(640);
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root!: Root;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <CmmDropdown
+          id="upward-dropdown"
+          ariaLabel="Upward menu"
+          renderTrigger={(triggerProps) => <button {...triggerProps}>Open</button>}
+        >
+          <span>Upward content</span>
+        </CmmDropdown>,
+      );
+    });
+    activeRoots.push({ host, root });
+
+    const trigger = host.querySelector<HTMLButtonElement>("button");
+    expect(trigger).not.toBeNull();
+    vi.spyOn(trigger!, "getBoundingClientRect").mockReturnValue({ top: 500, bottom: 544, left: 100, width: 80 } as DOMRect);
+    act(() => trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+
+    const panel = document.body.querySelector<HTMLDivElement>("#upward-dropdown");
+    expect(panel).not.toBeNull();
+    vi.spyOn(panel!, "getBoundingClientRect").mockReturnValue({ top: 288, bottom: 488, left: 40, right: 240, width: 200, height: 200 } as DOMRect);
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    expect(panel?.style.bottom).toBe("152px");
+    expect(panel?.style.top).toBe("");
+  });
+
+  it("does not reclaim focus when an outside pointer targets a focusable field", async () => {
+    const host = document.createElement("div");
+    const input = document.createElement("input");
+    document.body.append(host, input);
+    let root!: Root;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <CmmDropdown
+          id="outside-focus-dropdown"
+          ariaLabel="Outside focus menu"
+          renderTrigger={(triggerProps) => <button {...triggerProps}>Open</button>}
+        >
+          <span>Outside focus content</span>
+        </CmmDropdown>,
+      );
+    });
+    activeRoots.push({ host, root });
+
+    const trigger = host.querySelector<HTMLButtonElement>("button");
+    expect(trigger).not.toBeNull();
+    vi.spyOn(trigger!, "getBoundingClientRect").mockReturnValue({ top: 10, bottom: 50, left: 20, width: 100 } as DOMRect);
+    act(() => trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(document.body.querySelector("#outside-focus-dropdown")).not.toBeNull();
+
+    await act(async () => {
+      input.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+      input.focus();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(document.body.querySelector("#outside-focus-dropdown")).toBeNull();
+    expect(document.activeElement).toBe(input);
+  });
+
   it("keeps a hover-open portal alive while crossing into the panel", () => {
     vi.useFakeTimers();
     vi.stubGlobal("matchMedia", () => ({

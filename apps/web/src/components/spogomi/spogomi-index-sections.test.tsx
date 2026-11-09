@@ -127,7 +127,7 @@ describe("SpogomiPublicEvents", () => {
       name: "SPOGOMI publiée",
       locationLabel: "Paris",
       mode: "casual",
-      state: "published",
+      state: "registration_open",
       lifecycle: "upcoming",
       calendarStatus: "upcoming",
       registrationStatus: "open",

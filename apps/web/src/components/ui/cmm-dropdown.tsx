@@ -65,6 +65,7 @@ const PANEL_FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex=\"-1\"])",
 ].join(",");
 const VIEWPORT_MARGIN_PX = 8;
+const ARROW_EDGE_MARGIN_PX = 16;
 
 function subscribeToDocumentBody() {
   return () => undefined;
@@ -188,6 +189,14 @@ export function CmmDropdown({
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, setOpen]);
 
+  const closeWithoutRestoringFocus = useCallback(() => {
+    clearHoverOpenTimer();
+    clearHoverOpenedMarker();
+    clearCloseTimer();
+    restoreFocusOnCloseRef.current = false;
+    setOpen(false);
+  }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, setOpen]);
+
   const toggle = useCallback(() => {
     clearHoverOpenTimer();
     clearHoverOpenedMarker();
@@ -234,7 +243,7 @@ export function CmmDropdown({
     const closeOnOutsidePointer = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (target && !wrapperRef.current?.contains(target) && !panelRef.current?.contains(target)) {
-        closeAndRestoreFocus();
+        closeWithoutRestoringFocus();
       }
     };
 
@@ -254,7 +263,7 @@ export function CmmDropdown({
       document.removeEventListener("pointerdown", closeOnOutsidePointer);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [closeAndRestoreFocus, isOpen, setOpen]);
+  }, [closeAndRestoreFocus, closeWithoutRestoringFocus, isOpen]);
 
   useEffect(
     () => () => {
@@ -326,12 +335,12 @@ export function CmmDropdown({
     ? panelAlignment === "start" && triggerRect ? `${Math.max(VIEWPORT_MARGIN_PX, triggerRect.left)}px` : "50%"
     : `${clampedPanelLeft}px`;
   const panelTransform = clampedPanelLeft === null && panelAlignment === "center" ? "translateX(-50%)" : "none";
-  const arrowStyle = panelAlignment === "start" && triggerRect
-    ? {
-        left: clampedPanelLeft === null || measuredPanelWidth === null
-          ? `${triggerRect.width / 2}px`
-          : `${Math.min(Math.max(triggerCenter! - clampedPanelLeft, 12), Math.max(12, measuredPanelWidth - 12))}px`,
-      }
+  const arrowEdgeMargin = Math.min(ARROW_EDGE_MARGIN_PX, panelWidthForPlacement / 2);
+  const arrowLeft = clampedPanelLeft === null || panelWidthForPlacement <= 0
+    ? panelAlignment === "start" && triggerRect ? `${triggerRect.width / 2}px` : undefined
+    : `${Math.min(Math.max(triggerCenter! - clampedPanelLeft, arrowEdgeMargin), Math.max(arrowEdgeMargin, panelWidthForPlacement - arrowEdgeMargin))}px`;
+  const arrowStyle = triggerRect
+    ? { left: arrowLeft }
     : undefined;
   const availablePanelHeight = triggerRect && placement.viewportHeight > 0
     ? Math.max(
