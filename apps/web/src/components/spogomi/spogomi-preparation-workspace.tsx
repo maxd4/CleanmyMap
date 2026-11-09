@@ -23,6 +23,7 @@ import { fetchWorkspaceData, requestRosterPreview, requestTeamPreview, requestWo
 import type { DivisionRegulationInput } from "@/lib/spogomi/division-regulation-service";
 
 type DivisionScopedPreview<T> = { divisionId: string; value: T };
+type DivisionScopedWorkspaceData = { eventId: string; divisionId: string | null; value: WorkspaceData };
 
 export {
   ROSTER_MAPPING_FIELDS,
@@ -46,14 +47,14 @@ export function buildSpogomiCompositionRevision(data: WorkspaceData): { expected
 }
 
 export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHeader = true, showAdminTeamJoinRequests = false }: { eventId: string; section?: SpogomiPreparationWorkspaceSection; showHeader?: boolean; showAdminTeamJoinRequests?: boolean }) {
-  const [data, setData] = useState<WorkspaceData | null>(null);
+  const [data, setData] = useState<DivisionScopedWorkspaceData | null>(null);
   const [activeDivisionId, setActiveDivisionId] = useState<string | null>(null);
   const [preview, setPreview] = useState<DivisionScopedPreview<SpogomiRosterPreview> | null>(null);
   const [teamPreview, setTeamPreview] = useState<DivisionScopedPreview<SpogomiTeamCompositionPreview> | null>(null);
   const [rosterFile, setRosterFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
   const [identityCodes, setIdentityCodes] = useState<Record<string, string>>({});
   const [acceptedRowNumbers, setAcceptedRowNumbers] = useState<number[]>([]);
   const [mappingSelection, setMappingSelection] = useState<Record<string, string>>({});
@@ -62,13 +63,15 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const [rosterPage, setRosterPage] = useState(0);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamNameDraft, setTeamNameDraft] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const activeDivisionIdRef = useRef<string | null>(null);
   const requestSequence = useRef(0);
   const beginRequest = () => ({ id: ++requestSequence.current });
   const isCurrentRequest = (request: { id: number }) => request.id === requestSequence.current;
   const refresh = async (request: { id: number }) => {
-    const nextData = await fetchWorkspaceData(eventId, activeDivisionId);
-    if (isCurrentRequest(request)) setData(nextData);
+    const divisionId = activeDivisionIdRef.current;
+    const nextData = await fetchWorkspaceData(eventId, divisionId);
+    if (isCurrentRequest(request)) setData({ eventId, divisionId, value: nextData });
     return isCurrentRequest(request) ? nextData : null;
   };
   async function runWorkspaceRequest<T, R>(request: { id: number }, operation: () => Promise<T>, onSuccess: (value: T) => Promise<R> | R, fallback: string, onFailure?: () => void): Promise<R | null> {
@@ -91,23 +94,26 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     const request = { id: ++requestSequence.current };
     void fetchWorkspaceData(eventId, activeDivisionId).then((nextData) => {
       if (!isCurrentRequest(request)) return;
-      setData(nextData);
+      setData({ eventId, divisionId: activeDivisionId, value: nextData });
       if (!activeDivisionId && nextData.divisions[0]?.id) setActiveDivisionId(nextData.divisions[0].id);
     }).catch((reason) => {
       if (isCurrentRequest(request)) setError(reason instanceof Error ? reason.message : "Événement indisponible.");
+    }).finally(() => {
+      if (isCurrentRequest(request)) setBusy(false);
     });
     return () => {
       requestSequence.current += 1;
-      setBusy(false);
     };
-  }, [eventId, activeDivisionId]);
-  const assignedCount = useMemo(() => countAssignedParticipants(data), [data]);
-  const compositionEditable = data ? ["draft", "registration_open"].includes(data.event.state) : false;
+  }, [eventId, activeDivisionId, loadAttempt]);
+  const currentData = data?.eventId === eventId && data.divisionId === activeDivisionId ? data.value : null;
+  const assignedCount = useMemo(() => countAssignedParticipants(currentData), [currentData]);
+  const compositionEditable = currentData ? ["draft", "registration_open"].includes(currentData.event.state) : false;
   const compositionLocked = !compositionEditable;
   const activeRosterPreview = preview?.divisionId === activeDivisionId ? preview.value : null;
   const activeTeamPreview = teamPreview?.divisionId === activeDivisionId ? teamPreview.value : null;
-  const teamPreviewError = useMemo(() => validateTeamPreview(data, activeDivisionId, activeTeamPreview), [activeDivisionId, activeTeamPreview, data]);
-  async function action(url: string, init?: RequestInit): Promise<Record<string, unknown> | null> {
+  const teamPreviewError = useMemo(() => validateTeamPreview(currentData, activeDivisionId, activeTeamPreview), [activeDivisionId, activeTeamPreview, currentData]);
+  async function action(url: string, init?: RequestInit, expectedDivisionId?: string | null): Promise<Record<string, unknown> | null> {
+    if (!currentData || (expectedDivisionId !== undefined && expectedDivisionId !== activeDivisionIdRef.current)) return null;
     const request = beginRequest();
     setBusy(true);
     setError(null);
@@ -119,7 +125,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     }, "Opération refusée.");
   }
   async function saveDivisionRegulation(input: DivisionRegulationInput): Promise<WorkspaceData | null> {
-    if (!activeDivisionId) return null;
+    if (!activeDivisionId || activeDivisionId !== activeDivisionIdRef.current) return null;
     const request = beginRequest();
     setBusy(true);
     setError(null);
@@ -129,7 +135,12 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
       return refresh(request);
     }, "Opération refusée.");
   }
-  async function issueIdentityCode(participantId: string) { const body = await action(`/api/spogomi/events/${eventId}/participants/${participantId}/identity-code`, { method: "POST" }); const code = body?.code; if (typeof code === "string") setIdentityCodes((current) => ({ ...current, [participantId]: code })); }
+  async function issueIdentityCode(participantId: string) {
+    if (!currentData?.participants.some((participant) => participant.id === participantId && participant.division_id === activeDivisionIdRef.current)) return;
+    const body = await action(`/api/spogomi/events/${eventId}/participants/${participantId}/identity-code`, { method: "POST" });
+    const code = body?.code;
+    if (typeof code === "string") setIdentityCodes((current) => ({ ...current, [participantId]: code }));
+  }
   async function previewRoster(file: File, options?: RosterPreviewOptions) {
     const divisionId = activeDivisionIdRef.current;
     if (!divisionId) return;
@@ -192,7 +203,8 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     if (nextDivisionId === activeDivisionIdRef.current) return;
     activeDivisionIdRef.current = nextDivisionId;
     requestSequence.current += 1;
-    setBusy(false);
+    setBusy(true);
+    setData(null);
     setMessage(null);
     setError(null);
     setPreview(null);
@@ -210,9 +222,21 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   }
   function beginTeamNameEdit(team: WorkspaceData["teams"][number]) { setEditingTeamId(team.id); setTeamNameDraft(team.public_name); setError(null); setMessage(null); }
   function cancelTeamNameEdit() { setEditingTeamId(null); setTeamNameDraft(""); }
-  async function saveTeamName(team: WorkspaceData["teams"][number]) { const result = await action(`/api/spogomi/events/${eventId}/teams/${team.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ expectedPublicName: team.public_name, publicName: teamNameDraft, divisionId: team.division_id }) }); if (result) cancelTeamNameEdit(); }
-  if (!data) return <main className="p-8">Chargement de l’événement…</main>;
-  const activeDivision = data.divisions.find((division) => division.id === activeDivisionId) ?? data.divisions[0] ?? null;
-  const divisionLabel = activeDivision ? (activeDivision.division_type === "world_cup" ? "World Cup" : "Casual") : spogomiModeLabel(data.event.mode);
-  return <SpogomiPreparationWorkspaceView eventId={eventId} section={section} showHeader={showHeader} showAdminTeamJoinRequests={showAdminTeamJoinRequests} data={data} activeDivisionId={activeDivisionId} activeDivision={activeDivision} divisionLabel={divisionLabel} busy={busy} message={message} error={error} compositionEditable={compositionEditable} compositionLocked={compositionLocked} publicTeamNameTemplate={SPOGOMI_PUBLIC_TEAM_NAME_TEMPLATE} compositionArbitrationMessage={SPOGOMI_COMPOSITION_ARBITRATION_MESSAGE} compositionEligibilityWarning={SPOGOMI_COMPOSITION_ELIGIBILITY_WARNING} compositionRevision={() => buildSpogomiCompositionRevision(data)} teamEditorLabels={SPOGOMI_TEAM_EDITOR_LABELS} teamNameInput={SpogomiTeamNameInput} assignedCount={assignedCount} preview={activeRosterPreview} rosterFile={activeRosterPreview ? rosterFile : null} acceptedRowNumbers={acceptedRowNumbers} mappingSelection={mappingSelection} sheetSelection={sheetSelection} headerRowSelection={headerRowSelection} rosterPage={rosterPage} validRosterRows={validRosterRows} visibleRosterRows={visibleRosterRows} rosterPageCount={rosterPageCount} selectedImportSummary={selectedImportSummary} teamPreview={activeTeamPreview} teamPreviewError={teamPreviewError} identityCodes={identityCodes} editingTeamId={editingTeamId} teamNameDraft={teamNameDraft} action={action} saveDivisionRegulation={saveDivisionRegulation} onDivisionChange={changeDivision} clearTeamPreview={() => setTeamPreview(null)} setAcceptedRowNumbers={setAcceptedRowNumbers} setMappingSelection={setMappingSelection} setSheetSelection={setSheetSelection} setRosterPage={setRosterPage} previewRoster={previewRoster} confirmRoster={confirmRoster} toggleAcceptedRow={toggleAcceptedRow} previewTeams={previewTeams} movePreviewParticipant={movePreviewParticipant} confirmTeams={confirmTeams} beginTeamNameEdit={beginTeamNameEdit} cancelTeamNameEdit={cancelTeamNameEdit} saveTeamName={saveTeamName} issueIdentityCode={issueIdentityCode} setTeamNameDraft={setTeamNameDraft} />;
+  async function saveTeamName(team: WorkspaceData["teams"][number]) {
+    if (team.division_id !== activeDivisionIdRef.current) {
+      setError("Cette équipe n’appartient plus à la division active.");
+      return;
+    }
+    const result = await action(`/api/spogomi/events/${eventId}/teams/${team.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ expectedPublicName: team.public_name, publicName: teamNameDraft, divisionId: team.division_id }) });
+    if (result) cancelTeamNameEdit();
+  }
+  function retryWorkspaceLoad() {
+    setBusy(true);
+    setError(null);
+    setLoadAttempt((attempt) => attempt + 1);
+  }
+  if (!currentData) return <main className="space-y-3 p-8"><p>{busy ? "Chargement de la division…" : "La division n’est pas disponible."}</p>{error ? <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p> : null}{!busy ? <button type="button" className="rounded-lg border border-black/10 bg-white px-4 py-2 font-bold" onClick={retryWorkspaceLoad}>Réessayer</button> : null}</main>;
+  const activeDivision = currentData.divisions.find((division) => division.id === activeDivisionId) ?? currentData.divisions[0] ?? null;
+  const divisionLabel = activeDivision ? (activeDivision.division_type === "world_cup" ? "World Cup" : "Casual") : spogomiModeLabel(currentData.event.mode);
+  return <SpogomiPreparationWorkspaceView eventId={eventId} section={section} showHeader={showHeader} showAdminTeamJoinRequests={showAdminTeamJoinRequests} data={currentData} activeDivisionId={activeDivisionId} activeDivision={activeDivision} divisionLabel={divisionLabel} busy={busy} message={message} error={error} compositionEditable={compositionEditable} compositionLocked={compositionLocked} publicTeamNameTemplate={SPOGOMI_PUBLIC_TEAM_NAME_TEMPLATE} compositionArbitrationMessage={SPOGOMI_COMPOSITION_ARBITRATION_MESSAGE} compositionEligibilityWarning={SPOGOMI_COMPOSITION_ELIGIBILITY_WARNING} compositionRevision={() => buildSpogomiCompositionRevision(currentData)} teamEditorLabels={SPOGOMI_TEAM_EDITOR_LABELS} teamNameInput={SpogomiTeamNameInput} assignedCount={assignedCount} preview={activeRosterPreview} rosterFile={activeRosterPreview ? rosterFile : null} acceptedRowNumbers={acceptedRowNumbers} mappingSelection={mappingSelection} sheetSelection={sheetSelection} headerRowSelection={headerRowSelection} rosterPage={rosterPage} validRosterRows={validRosterRows} visibleRosterRows={visibleRosterRows} rosterPageCount={rosterPageCount} selectedImportSummary={selectedImportSummary} teamPreview={activeTeamPreview} teamPreviewError={teamPreviewError} identityCodes={identityCodes} editingTeamId={editingTeamId} teamNameDraft={teamNameDraft} action={action} saveDivisionRegulation={saveDivisionRegulation} onDivisionChange={changeDivision} clearTeamPreview={() => setTeamPreview(null)} setAcceptedRowNumbers={setAcceptedRowNumbers} setMappingSelection={setMappingSelection} setSheetSelection={setSheetSelection} setRosterPage={setRosterPage} previewRoster={previewRoster} confirmRoster={confirmRoster} toggleAcceptedRow={toggleAcceptedRow} previewTeams={previewTeams} movePreviewParticipant={movePreviewParticipant} confirmTeams={confirmTeams} beginTeamNameEdit={beginTeamNameEdit} cancelTeamNameEdit={cancelTeamNameEdit} saveTeamName={saveTeamName} issueIdentityCode={issueIdentityCode} setTeamNameDraft={setTeamNameDraft} />;
 }

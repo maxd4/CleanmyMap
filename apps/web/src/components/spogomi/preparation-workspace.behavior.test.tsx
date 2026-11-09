@@ -50,7 +50,7 @@ const body = {
 };
 
 describe("SPOGOMI preparation workspace", () => {
-  beforeEach(() => { vi.clearAllMocks(); fetchMock.mockResolvedValue(new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } })); });
+  beforeEach(() => { vi.clearAllMocks(); fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } }))); });
 
   it("loads mixed divisions, keeps cancelled identities blocked and renders section-scoped children", async () => {
     let renderer!: ReturnType<typeof create>;
@@ -309,13 +309,17 @@ describe("SPOGOMI preparation workspace", () => {
   it("ignores a late projection response from a previous division selection", async () => {
     let resolveCasual!: (response: Response) => void;
     let resolveWorld!: (response: Response) => void;
+    let casualCalls = 0;
     const casualProjection = new Promise<Response>((resolve) => { resolveCasual = resolve; });
     const worldProjection = new Promise<Response>((resolve) => { resolveWorld = resolve; });
     const casualBody = { ...body, participants: [{ ...body.participants[0], display_name: "Casual tardif" }], teams: [{ ...body.teams[0], public_name: "Équipe casual tardive" }] };
     const worldBody = { ...body, participants: [{ ...body.participants[0], division_id: "division-world", display_name: "World courant", composition_eligible: true }], teams: [{ ...body.teams[0], division_id: "division-world", public_name: "Équipe World courante" }] };
     fetchMock.mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("divisionId=division-casual")) return casualProjection;
+      if (url.includes("divisionId=division-casual")) {
+        casualCalls += 1;
+        return casualCalls === 1 ? Promise.resolve(new Response(JSON.stringify(body), { status: 200 })) : casualProjection;
+      }
       if (url.includes("divisionId=division-world")) return worldProjection;
       return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
     });
@@ -396,6 +400,57 @@ describe("SPOGOMI preparation workspace", () => {
     expect(finalRendered).toContain("Composition World courante");
     expect(finalRendered).not.toContain("Composition casual tardive");
     expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Prévisualiser ou régénérer")?.props.disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("clears the previous division projection while a delayed division GET is pending", async () => {
+    let resolveWorld!: (response: Response) => void;
+    const worldProjection = new Promise<Response>((resolve) => { resolveWorld = resolve; });
+    const worldBody = { ...body, participants: [{ ...body.participants[0], id: "world-participant-loading", division_id: "division-world", display_name: "World courant", composition_eligible: true }], teams: [{ ...body.teams[0], id: "world-team-loading", division_id: "division-world", public_name: "Équipe World courante" }] };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => String(input).includes("divisionId=division-world") ? worldProjection : Promise.resolve(new Response(JSON.stringify(body), { status: 200 })));
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const edit = renderer.root.findAllByType("button").find((button) => button.props.children === "Modifier");
+    await act(async () => { await edit?.props.onClick?.(); await Promise.resolve(); });
+    const staleSave = renderer.root.findAllByType("button").find((button) => button.props.children === "Enregistrer")?.props.onClick as (() => void | Promise<void>) | undefined;
+
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Enregistrer")).toBeUndefined();
+    await act(async () => { await staleSave?.(); await Promise.resolve(); });
+    expect(fetchCalls().some(([input, init]) => String(input).includes("/teams/") && init?.method === "PATCH")).toBe(false);
+
+    await act(async () => { resolveWorld(new Response(JSON.stringify(worldBody), { status: 200 })); await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Équipe World courante");
+    renderer.unmount();
+  });
+
+  it("keeps the new division empty and recoverable when its GET fails", async () => {
+    let worldAttempt = 0;
+    const worldBody = { ...body, participants: [{ ...body.participants[0], id: "world-participant-error", division_id: "division-world", display_name: "World récupéré", composition_eligible: true }], teams: [{ ...body.teams[0], id: "world-team-error", division_id: "division-world", public_name: "Équipe World récupérée" }] };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes("divisionId=division-world")) {
+        worldAttempt += 1;
+        return worldAttempt === 1 ? Promise.reject(new Error("GET World indisponible")) : Promise.resolve(new Response(JSON.stringify(worldBody), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Alpha");
+    expect(renderer.root.findByProps({ role: "alert" })).toBeTruthy();
+    const retry = renderer.root.findAllByType("button").find((button) => button.props.children === "Réessayer");
+    expect(retry).toBeTruthy();
+    await act(async () => { await retry?.props.onClick?.(); await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Équipe World récupérée");
     renderer.unmount();
   });
 });
