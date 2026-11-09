@@ -1,5 +1,9 @@
+/** @vitest-environment jsdom */
+
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createRoot, type Root } from "react-dom/client";
+import { act as domAct } from "react";
 import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,16 +19,30 @@ vi.mock("lucide-react", () => ({ ArrowRight: () => null, CalendarDays: () => nul
 
 vi.stubGlobal("fetch", fetchMock);
 
+(globalThis as unknown as Record<string, boolean>).IS_REACT_ACT_ENVIRONMENT = true;
+const NativeBrowserFormData = window.FormData;
+
 type TestForm = {
   values: Record<string, string>;
   reset: ReturnType<typeof vi.fn>;
 };
 
 class TestFormData {
-  constructor(private readonly form: TestForm) {}
+  private readonly values: Record<string, string> | null;
+  private readonly nativeFormData: FormData | null;
+
+  constructor(form: TestForm | HTMLFormElement) {
+    if ("values" in form) {
+      this.values = form.values;
+      this.nativeFormData = null;
+    } else {
+      this.values = null;
+      this.nativeFormData = new NativeBrowserFormData(form);
+    }
+  }
 
   get(name: string) {
-    return this.form.values[name] ?? null;
+    return this.values ? this.values[name] ?? null : this.nativeFormData?.get(name) ?? null;
   }
 }
 
@@ -135,6 +153,65 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     expect(retryPayload).toEqual(firstPayload);
     expect(form.reset).toHaveBeenCalledTimes(1);
     renderer.unmount();
+  });
+
+  it("keeps field names independent from errors and announces one global summary", async () => {
+    let resolveFirst!: (response: Response) => void;
+    const firstResponse = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    fetchMock.mockReturnValueOnce(firstResponse);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root!: Root;
+
+    await domAct(async () => {
+      root = createRoot(container);
+      root.render(<SpogomiOrganizerDashboard initialEvents={[]} canCreate />);
+    });
+
+    const form = container.querySelector("form")!;
+    (container.querySelector('[name="name"]') as HTMLInputElement).value = validValues.name;
+    (container.querySelector('[name="locationLabel"]') as HTMLInputElement).value = validValues.locationLabel;
+    (container.querySelector('[name="startsAt"]') as HTMLInputElement).value = validValues.startsAt;
+    await domAct(async () => {
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+
+    resolveFirst(new Response(JSON.stringify({
+      error: "Certains champs doivent être corrigés avant de continuer.",
+      referenceCode: "VAL-DOM",
+      details: {
+        name: ["Le nom est déjà utilisé."],
+        startsAt: ["La date doit être dans le futur."],
+      },
+    }), { status: 422 }));
+    await domAct(async () => {
+      await firstResponse;
+      await Promise.resolve();
+    });
+
+    const labels = [...container.querySelectorAll("label")];
+    expect(labels).toHaveLength(5);
+    expect(labels.every((label) => !label.querySelector("ul"))).toBe(true);
+    for (const label of labels) {
+      const control = label.control;
+      expect(control).not.toBeNull();
+      expect(control?.getAttribute("aria-describedby")).toSatisfy((value: string | null) => value === null || value.endsWith("-error"));
+    }
+
+    const nameError = container.querySelector("#spogomi-create-name-error")!;
+    const startsAtError = container.querySelector("#spogomi-create-startsAt-error")!;
+    expect(nameError.closest("label")).toBeNull();
+    expect(startsAtError.closest("label")).toBeNull();
+    expect(container.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    const summary = container.querySelector("#spogomi-create-error-summary")!;
+    expect(summary.querySelectorAll('a[href^="#spogomi-create-"]').length).toBe(2);
+    expect(summary.textContent).toContain("VAL-DOM");
+    expect(container.querySelector("#spogomi-create-name")?.getAttribute("aria-invalid")).toBe("true");
+    expect(container.querySelector("#spogomi-create-startsAt")?.getAttribute("aria-describedby")).toBe("spogomi-create-startsAt-error");
+
+    await domAct(async () => root.unmount());
+    container.remove();
   });
 
   it("marks a client-side date validation error on the corresponding field", async () => {

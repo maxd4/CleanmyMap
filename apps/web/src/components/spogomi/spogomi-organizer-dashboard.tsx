@@ -175,15 +175,34 @@ export function SpogomiOrganizerDashboard({
             {Object.entries(fieldErrors).length ? <ul className="list-disc space-y-1 pl-5">{Object.entries(fieldErrors).map(([field, messages]) => <li key={field}><a className="font-bold underline" href={`#spogomi-create-${field}`}>{FIELD_LABELS[field as CreationField] ?? field} : {messages?.join(" ")}</a></li>)}</ul> : null}
             {referenceCode ? <p>Référence de suivi : <code className="font-bold">{referenceCode}</code></p> : null}
           </div> : null}
-          <label htmlFor="spogomi-create-name" className="space-y-1 text-sm font-bold text-slate-800">Nom<input id="spogomi-create-name" className={inputClassName()} name="name" required maxLength={160} aria-invalid={Boolean(fieldErrors.name?.length)} aria-describedby={fieldErrors.name?.length ? "spogomi-create-name-error" : undefined} /><FieldError field="name" messages={fieldErrors.name} /></label>
-          <label htmlFor="spogomi-create-locationLabel" className="space-y-1 text-sm font-bold text-slate-800">Lieu<input id="spogomi-create-locationLabel" className={inputClassName()} name="locationLabel" required maxLength={200} aria-invalid={Boolean(fieldErrors.locationLabel?.length)} aria-describedby={fieldErrors.locationLabel?.length ? "spogomi-create-locationLabel-error" : undefined} /><FieldError field="locationLabel" messages={fieldErrors.locationLabel} /></label>
-          <label htmlFor="spogomi-create-mode" className="space-y-1 text-sm font-bold text-slate-800">Mode<select id="spogomi-create-mode" className={inputClassName()} name="mode" defaultValue="casual" aria-invalid={Boolean(fieldErrors.mode?.length)} aria-describedby={fieldErrors.mode?.length ? "spogomi-create-mode-error" : undefined}><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select><FieldError field="mode" messages={fieldErrors.mode} /></label>
-          <label htmlFor="spogomi-create-startsAt" className="space-y-1 text-sm font-bold text-slate-800">Début<input id="spogomi-create-startsAt" className={inputClassName()} name="startsAt" type="datetime-local" required aria-invalid={Boolean(fieldErrors.startsAt?.length)} aria-describedby={fieldErrors.startsAt?.length ? "spogomi-create-startsAt-error" : undefined} /><FieldError field="startsAt" messages={fieldErrors.startsAt} /></label>
-          <label htmlFor="spogomi-create-endsAt" className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input id="spogomi-create-endsAt" className={inputClassName()} name="endsAt" type="datetime-local" aria-invalid={Boolean(fieldErrors.endsAt?.length)} aria-describedby={fieldErrors.endsAt?.length ? "spogomi-create-endsAt-error" : undefined} /><FieldError field="endsAt" messages={fieldErrors.endsAt} /></label>
+          <div className="space-y-1 text-sm font-bold text-slate-800">
+            <label htmlFor="spogomi-create-name">Nom</label>
+            <input id="spogomi-create-name" className={inputClassName()} name="name" required maxLength={160} aria-invalid={Boolean(fieldErrors.name?.length)} aria-describedby={fieldErrors.name?.length ? "spogomi-create-name-error" : undefined} />
+            <FieldError field="name" messages={fieldErrors.name} />
+          </div>
+          <div className="space-y-1 text-sm font-bold text-slate-800">
+            <label htmlFor="spogomi-create-locationLabel">Lieu</label>
+            <input id="spogomi-create-locationLabel" className={inputClassName()} name="locationLabel" required maxLength={200} aria-invalid={Boolean(fieldErrors.locationLabel?.length)} aria-describedby={fieldErrors.locationLabel?.length ? "spogomi-create-locationLabel-error" : undefined} />
+            <FieldError field="locationLabel" messages={fieldErrors.locationLabel} />
+          </div>
+          <div className="space-y-1 text-sm font-bold text-slate-800">
+            <label htmlFor="spogomi-create-mode">Mode</label>
+            <select id="spogomi-create-mode" className={inputClassName()} name="mode" defaultValue="casual" aria-invalid={Boolean(fieldErrors.mode?.length)} aria-describedby={fieldErrors.mode?.length ? "spogomi-create-mode-error" : undefined}><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select>
+            <FieldError field="mode" messages={fieldErrors.mode} />
+          </div>
+          <div className="space-y-1 text-sm font-bold text-slate-800">
+            <label htmlFor="spogomi-create-startsAt">Début</label>
+            <input id="spogomi-create-startsAt" className={inputClassName()} name="startsAt" type="datetime-local" required aria-invalid={Boolean(fieldErrors.startsAt?.length)} aria-describedby={fieldErrors.startsAt?.length ? "spogomi-create-startsAt-error" : undefined} />
+            <FieldError field="startsAt" messages={fieldErrors.startsAt} />
+          </div>
+          <div className="space-y-1 text-sm font-bold text-slate-800">
+            <label htmlFor="spogomi-create-endsAt">Fin (facultative)</label>
+            <input id="spogomi-create-endsAt" className={inputClassName()} name="endsAt" type="datetime-local" aria-invalid={Boolean(fieldErrors.endsAt?.length)} aria-describedby={fieldErrors.endsAt?.length ? "spogomi-create-endsAt-error" : undefined} />
+            <FieldError field="endsAt" messages={fieldErrors.endsAt} />
+          </div>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">
             <CmmButton type="submit" tone="primary" loading={pending}><Plus size={16} />Créer en privé</CmmButton>
             {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
-            {error ? <p role="alert" className="text-sm font-semibold text-red-700">{error}</p> : null}
           </div>
         </form>
       </CmmCard> : null}
