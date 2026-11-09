@@ -50,7 +50,7 @@ function change(eventId: string, acknowledgedAt: string | null = null): SpogomiP
 
 describe("SpogomiPersonalEventsList", () => {
   it("shows only filters backed by relations and exposes the creation path", () => {
-    const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("organizer", ["organizer"]), event("observer", ["observer"])]} />);
+    const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("organizer", ["organizer"]), event("observer", ["observer"])]} canCreate />);
     expect(markup).toContain("Tous");
     expect(markup).toContain("J’organise");
     expect(markup).toContain("J’observe");

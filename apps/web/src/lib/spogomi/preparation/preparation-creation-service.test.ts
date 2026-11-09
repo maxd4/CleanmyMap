@@ -215,7 +215,7 @@ function installActionFactory(store: CreationStore) {
 describe("SPOGOMI event creation contract", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getCurrentUserIdentity.mockResolvedValue({ userId: "user-1", displayName: "Alex", handle: "alex", role: null, activeRole: null });
+    mocks.getCurrentUserIdentity.mockResolvedValue({ userId: "user-1", displayName: "Alex", handle: "alex", role: null, activeRole: "admin" });
   });
 
   it.each([
@@ -231,6 +231,13 @@ describe("SPOGOMI event creation contract", () => {
     expect(result.eventId).toBe("event-1");
     expect(store.events[0]).toMatchObject({ starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(), public_visibility: "private" });
     expect(store.events[0]).not.toHaveProperty("team_size_config.casual");
+  });
+
+  it("refuses creation when the active role is insufficient, even if the identity is otherwise valid", async () => {
+    mocks.getCurrentUserIdentity.mockResolvedValue({ userId: "user-1", displayName: "Alex", handle: "alex", role: "admin", activeRole: "benevole" });
+    const store = new CreationStore();
+    await expect(createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input() })).rejects.toThrow("Forbidden");
+    expect(store.attempts).toHaveLength(0);
   });
 
   it.each([
@@ -317,7 +324,7 @@ describe("SPOGOMI event creation contract", () => {
     expect(store.attempts[0]).toMatchObject({ state: "failed_recoverable", action_id: "action-1" });
 
     const result = await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input() });
-    expect(result).toEqual({ eventId: "event-1", actionId: "action-1" });
+    expect(result).toMatchObject({ eventId: "event-1", actionId: "action-1", eventSlug: "compétition-test" });
     expect(store.actionInsertCount).toBe(1);
     expect(store.eventInsertCount).toBe(1);
     expect(store.attempts).toHaveLength(1);
@@ -363,7 +370,7 @@ describe("SPOGOMI event creation contract", () => {
 
     const result = await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: value });
 
-    expect(result).toEqual({ eventId: "event-1", actionId: "action-legacy" });
+    expect(result).toMatchObject({ eventId: "event-1", actionId: "action-legacy", eventSlug: "compétition-test" });
     expect(store.actionInsertCount).toBe(0);
     expect(store.eventInsertCount).toBe(1);
     expect(store.events[0]?.team_size_config).toEqual({ casual: { minMembers: casualTeamSize, maxMembers: casualTeamSize } });

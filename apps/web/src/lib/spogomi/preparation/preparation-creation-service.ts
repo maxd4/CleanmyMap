@@ -38,7 +38,15 @@ type CreationEvent = Record<string, unknown> & {
   action_id: string;
   created_by_clerk_id: string;
   idempotency_key: string | null;
+  event_slug: string | null;
 };
+
+export class SpogomiCreationValidationError extends Error {
+  constructor(message: string, readonly details: Record<string, string[]>) {
+    super(message);
+    this.name = "SpogomiCreationValidationError";
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -85,14 +93,15 @@ function parseCreationDate(value: string, label: "début" | "fin"): Date {
     const detail = error instanceof RangeError && /Ambiguous|Nonexistent/i.test(error.message)
       ? ` (${error.message === "Ambiguous local time in timezone." ? "heure locale ambiguë" : "heure locale inexistante"})`
       : "";
-    throw new Error(`Validation: date de ${label} d'événement invalide${detail}.`);
+    const field = label === "début" ? "startsAt" : "endsAt";
+    throw new SpogomiCreationValidationError(`Validation: date de ${label} d'événement invalide${detail}.`, { [field]: [`Date de ${label} invalide${detail}.`] });
   }
 }
 
 function canonicalCreationInput(input: CreationInput) {
   const startsAt = parseCreationDate(input.startsAt, "début");
   const endsAt = input.endsAt ? parseCreationDate(input.endsAt, "fin") : null;
-  if (endsAt && endsAt < startsAt) throw new Error("Validation: la fin doit être postérieure au début.");
+  if (endsAt && endsAt < startsAt) throw new SpogomiCreationValidationError("Validation: la fin doit être postérieure au début.", { endsAt: ["La date de fin doit être postérieure ou égale au début."] });
   return {
     name: input.name.trim(),
     locationLabel: input.locationLabel.trim(),
@@ -432,11 +441,15 @@ async function ensureEventForAction(params: {
 
 export async function createSpogomiEvent(params: { supabase: SupabaseClient; userId: string; input: CreationInput }) {
   const { supabase, userId, input } = params;
-  if (!/^[a-zA-Z0-9:_-]{8,128}$/.test(input.idempotencyKey)) throw new Error("Validation: clé d'idempotence invalide.");
+  if (!/^[a-zA-Z0-9:_-]{8,128}$/.test(input.idempotencyKey)) throw new SpogomiCreationValidationError("Validation: clé d'idempotence invalide.", { idempotencyKey: ["La clé d’idempotence doit contenir entre 8 et 128 caractères valides."] });
   const canonical = canonicalCreationInput(input);
-  if (!canonical.name || !canonical.locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
+  if (!canonical.name || !canonical.locationLabel) throw new SpogomiCreationValidationError("Validation: nom et lieu obligatoires.", {
+    ...(canonical.name ? {} : { name: ["Le nom est obligatoire."] }),
+    ...(canonical.locationLabel ? {} : { locationLabel: ["Le lieu est obligatoire."] }),
+  });
   const identity = await getCurrentUserIdentity();
   if (!identity || identity.userId !== userId) throw new Error("Unauthorized");
+  if (identity.activeRole !== "admin" && identity.activeRole !== "max") throw new Error("Forbidden");
   const fingerprint = creationFingerprint(input);
   const existing = await supabase.from("spogomi_event_creation_attempts").select("*").eq("idempotency_key", input.idempotencyKey).maybeSingle();
   if (existing.error) throw existing.error;
@@ -448,7 +461,7 @@ export async function createSpogomiEvent(params: { supabase: SupabaseClient; use
     if (!event) throw conflict("l'événement lié à la tentative est introuvable.");
     const proof = await ensureAttemptFingerprint(supabase, existingAttempt, input, userId, identity, fingerprint);
     await assertEventIntegrity(supabase, event, input, userId, event.action_id, identity, [proof]);
-    return { eventId: event.id, actionId: event.action_id };
+    return { eventId: event.id, eventSlug: event.event_slug, actionId: event.action_id };
   }
 
   const { attempt, token, proof } = await claimCreationAttempt(supabase, input, userId, fingerprint);
@@ -459,7 +472,7 @@ export async function createSpogomiEvent(params: { supabase: SupabaseClient; use
     const eventReady = await supabase.from("spogomi_events").update({ creation_state: "ready" }).eq("id", event.id).eq("action_id", action.actionId);
     if (eventReady.error) throw eventReady.error;
     await updateCreationAttempt(supabase, attempt.id, token, { event_id: event.id, action_id: action.actionId, state: "ready", last_error_code: null, processing_token: null, processing_started_at: null });
-    return { eventId: event.id, actionId: action.actionId };
+    return { eventId: event.id, eventSlug: event.event_slug, actionId: action.actionId };
   } catch (error) {
     await supabase.from("spogomi_event_creation_attempts").update({ state: "failed_recoverable", last_error_code: error instanceof Error ? error.name : "creation_failed", processing_token: null, processing_started_at: null }).eq("id", attempt.id).eq("processing_token", token);
     throw error;

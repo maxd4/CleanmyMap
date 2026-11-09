@@ -3,10 +3,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireAuthenticatedAccess: vi.fn(),
+  requireAdminAccess: vi.fn(),
 }));
 
-vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
+vi.mock("@/lib/authz", () => ({ requireAdminAccess: mocks.requireAdminAccess }));
 vi.mock("@/components/ui/page-header", () => ({ PageHeader: ({ title }: { title: React.ReactNode }) => React.createElement("h1", null, title) }));
 vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => ({ id: "agir" }) }));
 vi.mock("@/components/spogomi/spogomi-organizer-dashboard", () => ({
@@ -20,14 +20,14 @@ describe("/spogomi/nouveau", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("requires authentication before rendering the private creation form", async () => {
-    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: false, status: 401 });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 401 });
     await expect(NewSpogomiEventPage()).rejects.toMatchObject({
       digest: expect.stringContaining(encodeURIComponent("/spogomi/nouveau")),
     });
   });
 
   it("renders the reusable creation view without loading a private catalog", async () => {
-    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "user-1" });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: "user-1" });
     const markup = renderToStaticMarkup(await NewSpogomiEventPage());
     expect(markup).toContain("Nouvelle compétition SPOGOMI");
     expect(markup).toContain('data-event-count="0"');

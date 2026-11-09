@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuthenticatedAccess } from "@/lib/authz";
-import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { requireAdminAccess } from "@/lib/authz";
+import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { createSpogomiEvent } from "@/lib/spogomi/preparation-service";
+import { createSpogomiEvent, SpogomiCreationValidationError } from "@/lib/spogomi/preparation-service";
 import { isDateTimeLocalValue } from "@/lib/time/civil-date";
 
 export const runtime = "nodejs";
@@ -21,15 +21,16 @@ const createSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
+  const access = await requireAdminAccess();
+  if (!access.ok) return adminAccessErrorJsonResponse(access);
   const body: unknown = await request.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) return validationErrorResponse({ body: ["Paramètres d'événement invalides."] });
+  if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors as Record<string, string[]>);
   try {
     const result = await createSpogomiEvent({ supabase: getSupabaseServerClient(true), userId: access.userId, input: parsed.data });
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    if (error instanceof SpogomiCreationValidationError) return validationErrorResponse(error.details);
     return handleApiError(error, "spogomi.event.create");
   }
 }

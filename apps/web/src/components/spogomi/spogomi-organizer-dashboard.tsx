@@ -28,7 +28,14 @@ function inputClassName() {
 }
 
 function errorMessage(value: unknown, fallback: string): string {
-  return typeof value === "object" && value !== null && "error" in value && typeof value.error === "string" ? value.error : fallback;
+  if (typeof value !== "object" || value === null) return fallback;
+  const record = value as Record<string, unknown>;
+  if (typeof record.details === "object" && record.details !== null) {
+    const details = Object.entries(record.details as Record<string, unknown>)
+      .flatMap(([field, messages]) => Array.isArray(messages) ? messages.filter((message): message is string => typeof message === "string").map((message) => `${field}: ${message}`) : []);
+    if (details.length) return details.join("\n");
+  }
+  return typeof record.error === "string" ? record.error : fallback;
 }
 
 export type SpogomiOrganizerDashboardView = "all" | "events" | "create";
@@ -36,9 +43,11 @@ export type SpogomiOrganizerDashboardView = "all" | "events" | "create";
 export function SpogomiOrganizerDashboard({
   initialEvents,
   view = "all",
+  canCreate = false,
 }: {
   initialEvents: EventRow[];
   view?: SpogomiOrganizerDashboardView;
+  canCreate?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -97,10 +106,12 @@ export function SpogomiOrganizerDashboard({
       });
       const body: unknown = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(errorMessage(body, "La compétition n’a pas pu être créée."));
+      const eventSlug = typeof body === "object" && body !== null && "eventSlug" in body && typeof body.eventSlug === "string" ? body.eventSlug : null;
       creationAttemptRef.current = null;
       formElement.reset();
       setMessage("Compétition créée en privé. Vous pouvez maintenant ouvrir son espace de préparation.");
-      router.refresh();
+      if (eventSlug) router.push(`/spogomi/${encodeURIComponent(eventSlug)}/espace`);
+      else router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "La compétition n’a pas pu être créée.");
     } finally {
@@ -109,7 +120,7 @@ export function SpogomiOrganizerDashboard({
     }
   }
 
-  const showCreation = view !== "events";
+  const showCreation = view !== "events" && canCreate;
   const showEvents = view !== "create";
 
   return (
@@ -120,13 +131,12 @@ export function SpogomiOrganizerDashboard({
           <div>
             <h2 className="text-xl font-black text-emerald-950">Créer une compétition</h2>
             <p className="cmm-text-body mt-1 text-slate-900">La date vient de votre saisie. Toute nouvelle compétition reste privée jusqu’à sa publication explicite.</p>
-            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">Le mode mixte reste masqué ici tant que les preuves PostgreSQL et navigateur exigées ne sont pas disponibles. Utilisez uniquement l’édition de validation préconfigurée lorsqu’elle apparaît dans vos événements autorisés.</p>
           </div>
         </div>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ createEvent(event); }}>
           <label className="space-y-1 text-sm font-bold text-slate-800">Nom<input className={inputClassName()} name="name" required maxLength={160} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Lieu<input className={inputClassName()} name="locationLabel" required maxLength={200} /></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option></select></label>
+          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Début<input className={inputClassName()} name="startsAt" type="datetime-local" required /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input className={inputClassName()} name="endsAt" type="datetime-local" /></label>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">
@@ -146,7 +156,7 @@ export function SpogomiOrganizerDashboard({
           <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
             <p className="font-bold text-slate-900">Aucun événement gérable pour le moment.</p>
             <p className="mt-2 text-sm text-slate-600">Créez une compétition privée ou demandez à être ajouté comme organisateur.</p>
-            <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition <Plus size={15} /></CmmButton>
+            {canCreate ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition <Plus size={15} /></CmmButton> : null}
           </CmmCard>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -173,7 +183,7 @@ export function SpogomiOrganizerDashboard({
         )}
       </section> : null}
       <div className="flex flex-wrap gap-4">
-        {view === "events" ? <Link href="/spogomi/nouveau" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Créer une compétition <Plus size={16} /></Link> : null}
+        {view === "events" && canCreate ? <Link href="/spogomi/nouveau" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Créer une compétition <Plus size={16} /></Link> : null}
         {view === "create" ? <Link href="/spogomi/mes-evenements" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Voir mes événements <ArrowRight size={16} /></Link> : null}
         <Link href="/spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Retour à SPOGOMI <ArrowRight size={16} /></Link>
       </div>

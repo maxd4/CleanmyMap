@@ -46,7 +46,7 @@ describe("SpogomiOrientationTabs", () => {
     expect(primaryLink?.props["data-cmm-button-width"]).toBe("auto");
     expect(links(renderer).some((link) => link.props.href === "/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" && link.props["aria-label"] === "Discuter")).toBe(true);
     expect(infoButtons(volunteerPanel)).toHaveLength(10);
-    expect(infoButtons(renderer)).toHaveLength(29);
+    expect(infoButtons(renderer)).toHaveLength(28);
     expect(infoButtons(renderer).map((button) => button.props["aria-label"])).toEqual([
       "Informations sur Voir les compétitions",
       "Informations sur Retrouver ma participation",
@@ -66,7 +66,6 @@ describe("SpogomiOrientationTabs", () => {
       "Informations sur Pesée et mesures",
       "Informations sur Arbitrer les soumissions",
       "Informations sur Mes compétitions",
-      "Informations sur Créer une compétition",
       "Informations sur Importer les équipes",
       "Informations sur Gérer les équipes",
       "Informations sur Vérifier le règlement",
@@ -194,7 +193,7 @@ describe("SpogomiOrientationTabs", () => {
     expect(refereePanel?.findAllByProps({ "data-cmm-phase-arrow": "true" }).length).toBe(3);
   });
 
-  it("keeps organizer actions discoverable anonymously and opens them directly when authenticated", () => {
+  it("hides creation from unauthorized visitors and opens it for an authorized active role", () => {
     let anonymous!: ReactTestRenderer;
     act(() => {
       anonymous = create(<SpogomiOrientationTabs isAuthenticated={false} />);
@@ -203,12 +202,12 @@ describe("SpogomiOrientationTabs", () => {
     act(() => {
       anonymousTabs[2]?.props.onClick({} as MouseEvent<HTMLButtonElement>);
     });
-    expect(links(anonymous).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fnouveau")).toBe(true);
+    expect(links(anonymous).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fnouveau")).toBe(false);
     expect(links(anonymous).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers%26section%3Dteams")).toBe(true);
 
     let authenticated!: ReactTestRenderer;
     act(() => {
-      authenticated = create(<SpogomiOrientationTabs isAuthenticated />);
+      authenticated = create(<SpogomiOrientationTabs isAuthenticated canCreate />);
     });
     const authenticatedTabs = findTabs(authenticated);
     act(() => {

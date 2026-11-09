@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getSupabaseServerClient: vi.fn(),
   cookies: vi.fn(),
   requireAuthenticatedAccess: vi.fn(),
+  requireAdminAccess: vi.fn(),
   redirect: vi.fn((target: string) => { throw new Error(`redirect:${target}`); }),
   notFound: vi.fn(() => { throw new Error("not-found"); }),
   getSafeAuthSession: vi.fn(),
@@ -28,7 +29,7 @@ vi.mock("@/components/ui/cmm-icon", () => ({ CmmIcon: () => null }));
 vi.mock("@/components/ui/page-header", () => ({ PageHeader: ({ title, subtitle }: { title: string; subtitle: string }) => React.createElement("header", null, title, subtitle) }));
 vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => "spogomi" }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupabaseServerClient }));
-vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
+vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess, requireAdminAccess: mocks.requireAdminAccess }));
 vi.mock("@/lib/spogomi/public-service", () => ({ loadPublishedSpogomiEventBySlug: mocks.loadPublishedSpogomiEventBySlug }));
 vi.mock("@/lib/auth/safe-session", () => ({ getSafeAuthSession: mocks.getSafeAuthSession }));
 vi.mock("@/lib/spogomi/event-journey-service", () => ({ loadSpogomiEventJourney: mocks.loadSpogomiEventJourney }));
@@ -122,9 +123,9 @@ describe("SPOGOMI consumer pages", () => {
     expect(missingContext).toContain("lien privé et contextualisé");
     expect(missingContext).toContain("/spogomi#spogomi-assistance");
     expect(missingContext).not.toContain("event-1:secret-token");
-    mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: false });
+    mocks.requireAdminAccess.mockResolvedValueOnce({ ok: false, status: 401 });
     await expect(SpogomiOrganizerDashboardPage()).rejects.toThrow("redirect:/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements");
-    mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: true, userId: "organizer-1" });
+    mocks.requireAdminAccess.mockResolvedValueOnce({ ok: true, userId: "organizer-1" });
     await expect(SpogomiOrganizerDashboardPage()).rejects.toThrow("redirect:/spogomi/mes-evenements");
   });
 });

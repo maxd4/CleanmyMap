@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => {
     ends_at: null,
   };
   const requireAuthenticatedAccess = vi.fn();
+  const requireAdminAccess = vi.fn();
   const auth = vi.fn();
   const currentUser = vi.fn();
   const getSupabaseServerClient = vi.fn();
@@ -112,6 +113,7 @@ const mocks = vi.hoisted(() => {
     supabase,
     event,
     requireAuthenticatedAccess,
+    requireAdminAccess,
     auth,
     currentUser,
     getSupabaseServerClient,
@@ -175,7 +177,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
+vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess, requireAdminAccess: mocks.requireAdminAccess }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: mocks.auth, currentUser: mocks.currentUser }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupabaseServerClient }));
 vi.mock("@/lib/rate-limit/server", () => ({
@@ -185,6 +187,7 @@ vi.mock("@/lib/rate-limit/server", () => ({
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: () => new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
   forbiddenJsonResponse: () => new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }),
+  adminAccessErrorJsonResponse: (access: { status: number }) => new Response(JSON.stringify({ error: access.status === 401 ? "Unauthorized" : "Forbidden" }), { status: access.status }),
 }));
 vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: mocks.handleApiError,
@@ -288,6 +291,7 @@ describe("SPOGOMI persistence routes", () => {
     vi.clearAllMocks();
     mocks.event.state = "draft";
     mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "user-1" });
+    mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: "user-1" });
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.currentUser.mockResolvedValue({ firstName: "Alex", lastName: "Martin", username: "alex" });
     mocks.getSupabaseServerClient.mockReturnValue(mocks.supabase);

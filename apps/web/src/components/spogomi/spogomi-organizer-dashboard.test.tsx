@@ -6,7 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const refreshMock = vi.hoisted(() => vi.fn());
 const fetchMock = vi.hoisted(() => vi.fn());
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
+const pushMock = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock, push: pushMock }) }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
 vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("button", props, children) }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("div", props, children) }));
@@ -46,7 +47,7 @@ function buildForm() {
 function getFormSubmit() {
   let renderer!: ReturnType<typeof create>;
   act(() => {
-    renderer = create(<SpogomiOrganizerDashboard initialEvents={[]} />);
+    renderer = create(<SpogomiOrganizerDashboard initialEvents={[]} canCreate />);
   });
   return { renderer, submit: renderer.root.findByType("form").props.onSubmit as (event: unknown) => void };
 }
@@ -71,12 +72,12 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     expect(refreshMock).not.toHaveBeenCalled();
 
     await act(async () => {
-      resolveFetch(new Response(JSON.stringify({ eventId: "event-1" }), { status: 201 }));
+      resolveFetch(new Response(JSON.stringify({ eventId: "event-1", eventSlug: "event-1" }), { status: 201 }));
       await responsePromise;
     });
 
     expect(form.reset).toHaveBeenCalledTimes(1);
-    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).toHaveBeenCalledWith("/spogomi/event-1/espace");
     renderer.unmount();
   });
 
@@ -85,7 +86,7 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     let resolveFirst!: (response: Response) => void;
     const firstResponse = new Promise<Response>((resolve) => { resolveFirst = resolve; });
     fetchMock.mockReturnValueOnce(firstResponse).mockResolvedValueOnce(
-      new Response(JSON.stringify({ eventId: "event-1" }), { status: 201 }),
+      new Response(JSON.stringify({ eventId: "event-1", eventSlug: "event-1" }), { status: 201 }),
     );
     const { renderer, submit } = getFormSubmit();
     const event = { preventDefault: vi.fn(), currentTarget: form };
@@ -120,14 +121,13 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
   it("renders the three parent edition modes", () => {
     const { renderer } = getFormSubmit();
     const select = renderer.root.findByProps({ name: "mode" });
-    expect(select.props.children.map((option: React.ReactElement<{ value: string }>) => option.props.value)).toEqual(["casual", "world_cup"]);
+    expect(select.props.children.map((option: React.ReactElement<{ value: string }>) => option.props.value)).toEqual(["casual", "world_cup", "mixed"]);
     renderer.unmount();
   });
 
-  it("keeps mixed creation gated until the external scenario proofs exist", () => {
+  it("shows actionable field details and keeps creation hidden without permission", () => {
     const markup = renderToStaticMarkup(<SpogomiOrganizerDashboard initialEvents={[]} />);
-    expect(markup).toContain("Le mode mixte reste masqué ici");
-    expect(markup).toContain("preuves PostgreSQL et navigateur");
-    expect(markup).not.toContain('<option value="mixed">');
+    expect(markup).not.toContain("name=\"mode\"");
+    expect(markup).not.toContain("Créer une compétition");
   });
 });

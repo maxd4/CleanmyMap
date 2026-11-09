@@ -160,7 +160,7 @@ le volume public rend la projection complète mesurablement coûteuse.
 - Les éditions existantes sont conservées sans réinterprétation : chaque ancien `casual` ou `world_cup` reçoit une seule division de même type, avec un identifiant stable. Le mécanisme de compatibilité ne résout automatiquement une valeur absente que lorsqu’une seule division existe ; il échoue fermé pour une édition mixte.
 - `spogomi_ensure_parent_divisions` verrouille l’édition et effectue les insertions idempotentes dans une transaction. La clé d’idempotence existante continue de protéger la reprise de l’action et de l’édition ; aucune reprise ne crée une seconde action, division ou équipe.
 - Les verrous de composition, règlements, certifications et classements restent portés par les procédures serveur et s’appliquent dans le périmètre d’une division. Le rôle HTTP conserve l’AuthN/AuthZ ; Supabase RLS et les grants ne sont pas élargis aux écritures client.
-- L'API et la préparation savent porter le mode `mixed` comme une édition privée avec deux divisions déterministes et une seule action parent ; le choix `Casual & World Cup` reste masqué dans le formulaire tant que les preuves PostgreSQL et navigateur de la chaîne complète ne sont pas réunies. Les onglets de gestion et les projections gardent les équipes, mesures, arbitrages et classements dans leur division.
+- L'API, la préparation et le formulaire portent le mode `mixed` comme une édition privée avec deux divisions déterministes et une seule action parent. Le choix affiché est `Casual & World Cup`. Les onglets de gestion et les projections gardent les équipes, mesures, arbitrages et classements dans leur division.
 
 ### Déroulé UI de la démonstration Cachan
 
@@ -176,7 +176,7 @@ Depuis `/spogomi`, les trois onglets restent utilisables avant authentification 
 
 Le compte organisateur autorisé suffit pour parcourir la préparation, les équipes, les paramètres, l’arbitrage, le bilan et l’export lorsque les contrôles serveur les rendent disponibles. La saisie d’équipe exige une session d’équipe créée par le parcours existant ; la consultation personnelle exige un compte bénévole distinct ou une relation participant vérifiée. Les invitations, codes individuels et liens d’assistance restent contextuels et ne sont pas remplacés par le compte organisateur.
 
-Le formulaire général de création continue de masquer `mixed`. Tant que le scénario n’a pas obtenu ses preuves PostgreSQL éphémère et navigateur exigées par le contrat d’intégration, seule l’édition de validation préconfigurée peut porter ce mode ; elle n’est jamais créée, publiée ou certifiée depuis un CTA UI.
+Le formulaire général de création propose `Casual`, `World Cup` et `Casual & World Cup`. La création reste privée, idempotente et protégée par le rôle actif `admin` ou `max`; l'API et le service revalident ce rôle indépendamment du parcours UI. Une création réussie retourne le slug de l'édition et ouvre son espace de préparation. Les preuves PostgreSQL et navigateur de la chaîne complète restent une exigence de validation, pas une raison de masquer un contrat déjà implémenté.
 
 **Frontières non négociables :**
 

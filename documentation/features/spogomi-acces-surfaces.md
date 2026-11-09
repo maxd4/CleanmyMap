@@ -25,6 +25,33 @@ Surfaces à distinguer :
 
 Appliquer les règles API pour AuthN/AuthZ dans le handler, validation des inputs, garde d'abus, atomicité des mutations multiples et refus avant accès privilégié. Supabase `service_role` ne vaut jamais autorisation HTTP.
 
+### Création et matrice des actions
+
+La création d'une édition SPOGOMI est une capacité globale réservée au rôle
+actif `admin` ou `max`. La page `/spogomi/nouveau`, le tableau de bord de
+création, `POST /api/spogomi/events` et le service de création appliquent tous
+la même décision fondée sur `ACTIVE_ROLE` : absence de session `401`, rôle
+actif insuffisant `403`. `GRANTED_ROLE`, l'onglet choisi, un lien direct ou le
+client ne constituent jamais une preuve. Les comptes non autorisés ne voient
+pas le CTA de création dans l'index, le catalogue privé ni le cockpit.
+
+Les autres actions conservent leur propriétaire métier :
+
+| Famille | Preuve attendue | Surface serveur |
+| --- | --- | --- |
+| Consultation publique | visibilité effective de l'édition | projection publique |
+| Préparation/publication | capacité `manage` de l'édition | accès événementiel + RPC/RLS |
+| Habilitations | capacité `assign_event_access` | organisateur habilité + RPC/RLS |
+| Admissions et arbitrage des demandes | rôle actif `admin` ou `max` | garde admin + RPC/RLS |
+| Opérations terrain | capacité dédiée à l'événement et à la division | accès événementiel / field operations |
+| Bénévole, équipe, attestations, contributions | ownership et preuve relationnelle | session + service borné |
+| Observateur | capacité `observe` uniquement | lecture seule |
+| Téléchargement/export | accès exact à l'événement et capacité d'export | projection serveur + route protégée |
+
+Le serveur reste l'autorité pour les mutations, le cycle de vie, les scopes
+inter-événements et les révocations. Les CTA rendent l'action découvrable
+selon le rôle connu mais n'élargissent aucun droit.
+
 Pour les personnes mineures, ne pas afficher de nom ou de données individuelles en public par défaut. Pour les utilisateurs CleanMyMap, respecter le consentement public `profiles.leaderboard_public_opt_in` : un consentement à la gamification générale n'est **pas** un consentement automatique à une compétition SPOGOMI nominative, ni l'inverse.
 
 ## 11. Comptes bénévoles et gamification CleanMyMap

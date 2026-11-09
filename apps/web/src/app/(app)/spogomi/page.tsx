@@ -5,6 +5,7 @@ import { SpogomiPublicEvents, SpogomiUnderstanding } from "@/components/spogomi/
 import { SpogomiOrientationTabs } from "@/components/spogomi/spogomi-orientation-tabs";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getServerLocale } from "@/lib/server-preferences";
 import { listPublishedSpogomiEvents } from "@/lib/spogomi/public-service";
 import { loadSpogomiOrientationProgressForCurrentUser } from "@/lib/spogomi/orientation-progress-service";
@@ -20,8 +21,10 @@ export default async function SpogomiIndexPage() {
   let events: Awaited<ReturnType<typeof listPublishedSpogomiEvents>> = [];
   let orientationProgress: Awaited<ReturnType<typeof loadSpogomiOrientationProgressForCurrentUser>> = [];
   let loadError = false;
+  let canCreate = false;
   try { events = await listPublishedSpogomiEvents(); } catch { loadError = true; }
   if (userId) {
+    canCreate = ["admin", "max"].includes(await getCurrentUserActiveRole().catch(() => "anonymous"));
     try { orientationProgress = await loadSpogomiOrientationProgressForCurrentUser(userId); } catch { orientationProgress = []; }
   }
   return (
@@ -33,7 +36,7 @@ export default async function SpogomiIndexPage() {
           title="SPOGOMI"
           subtitle="Trouvez votre rôle et rejoignez une compétition publiée."
         />
-        <SpogomiOrientationTabs isAuthenticated={Boolean(userId)} progress={orientationProgress} />
+        <SpogomiOrientationTabs isAuthenticated={Boolean(userId)} canCreate={canCreate} progress={orientationProgress} />
         <SpogomiUnderstanding locale={locale} t={t} />
         <SpogomiPublicEvents events={events} loadError={loadError} />
       </CmmPageLayout>

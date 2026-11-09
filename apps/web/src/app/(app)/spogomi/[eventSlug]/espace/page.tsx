@@ -39,7 +39,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
     <>
       <nav className="cmm-page-width flex flex-wrap gap-3 px-4 pt-6" aria-label="Navigation SPOGOMI">
         <Link href="/spogomi/mes-evenements" className="font-bold text-emerald-800 hover:underline">Retour à mes événements</Link>
-        <Link href="/spogomi/nouveau" className="font-bold text-emerald-800 hover:underline">Nouvelle compétition</Link>
+        {activeRole === "admin" || activeRole === "max" ? <Link href="/spogomi/nouveau" className="font-bold text-emerald-800 hover:underline">Nouvelle compétition</Link> : null}
         <Link href="/spogomi" className="font-bold text-emerald-800 hover:underline">Index public SPOGOMI</Link>
       </nav>
       <SpogomiEventCockpit

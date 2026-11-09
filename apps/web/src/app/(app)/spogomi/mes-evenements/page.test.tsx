@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
+  getCurrentUserActiveRole: vi.fn(),
   listSpogomiEventsForCurrentUser: vi.fn(),
   listSpogomiEventChangesForCurrentUser: vi.fn(),
 }));
 
-vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
+vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess, getCurrentUserActiveRole: mocks.getCurrentUserActiveRole }));
 vi.mock("@/lib/spogomi/personal-events-service", () => ({ listSpogomiEventsForCurrentUser: mocks.listSpogomiEventsForCurrentUser, listSpogomiEventChangesForCurrentUser: mocks.listSpogomiEventChangesForCurrentUser }));
 vi.mock("@/components/ui/page-header", () => ({ PageHeader: ({ title }: { title: React.ReactNode }) => React.createElement("h1", null, title) }));
 vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => ({ id: "agir" }) }));
@@ -23,6 +24,7 @@ describe("/spogomi/mes-evenements", () => {
     vi.clearAllMocks();
     mocks.listSpogomiEventsForCurrentUser.mockResolvedValue([{ id: "event-1" }]);
     mocks.listSpogomiEventChangesForCurrentUser.mockResolvedValue([]);
+    mocks.getCurrentUserActiveRole.mockResolvedValue("admin");
   });
 
   it("requires authentication before loading the personal catalog", async () => {

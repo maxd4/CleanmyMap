@@ -204,7 +204,7 @@ function ActionCard({ placement, placementId, isPrimary = false, isAuthenticated
   );
 }
 
-function buildOrientations(): Orientation[] {
+function buildOrientations(canCreate: boolean): Orientation[] {
   return [
     {
       id: "volunteers",
@@ -278,7 +278,7 @@ function buildOrientations(): Orientation[] {
       label: "Organisateurs",
       summary: "Créez une édition privée, préparez ses données, puis publiez séparément l’événement, les résultats et la consolidation.",
       primaryAction: privateAction("Mes compétitions", "Choisir une édition que votre relation organisateur autorise à gérer.", "Connexion requise ; relation organisateur vérifiée pour l’édition.", Users, buildSpogomiCatalogHref("organizers")),
-      secondaryAction: privateAction("Créer une compétition", "Préparer une édition privée avec les contrôles existants.", "Connexion requise ; la relation organisateur sera vérifiée avant toute gestion.", CalendarPlus, "/spogomi/nouveau"),
+      secondaryAction: canCreate ? privateAction("Créer une compétition", "Préparer une édition privée avec les contrôles existants.", "Rôle actif admin ou max requis ; la relation organisateur sera vérifiée avant toute gestion.", CalendarPlus, "/spogomi/nouveau") : undefined,
       phases: [
         {
           title: "Préparer l’édition",
@@ -313,10 +313,10 @@ function buildOrientations(): Orientation[] {
   ];
 }
 
-export function SpogomiOrientationTabs({ isAuthenticated, progress = [] }: { isAuthenticated: boolean; progress?: readonly SpogomiOrientationProgressProof[] }) {
+export function SpogomiOrientationTabs({ isAuthenticated, canCreate = false, progress = [] }: { isAuthenticated: boolean; canCreate?: boolean; progress?: readonly SpogomiOrientationProgressProof[] }) {
   const [activeOrientation, setActiveOrientation] = useState<OrientationId>("volunteers");
   const baseId = useId();
-  const orientations = buildOrientations();
+  const orientations = buildOrientations(canCreate);
 
   function handleTabKeyDown(index: number, event: KeyboardEvent<HTMLButtonElement>) {
     let nextIndex: number | null = null;

@@ -209,7 +209,7 @@ function PersonalEventCard({ event, journey, focus, changes }: { event: SpogomiP
   );
 }
 
-export function SpogomiPersonalEventsList({ events, changes = [], journey = null, focus = null }: { events: SpogomiPersonalEvent[]; changes?: readonly SpogomiPersonalEventChange[]; journey?: SpogomiCatalogJourney | null; focus?: SpogomiCatalogFocus | null }) {
+export function SpogomiPersonalEventsList({ events, changes = [], journey = null, focus = null, canCreate = false }: { events: SpogomiPersonalEvent[]; changes?: readonly SpogomiPersonalEventChange[]; journey?: SpogomiCatalogJourney | null; focus?: SpogomiCatalogFocus | null; canCreate?: boolean }) {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const journeyEvents = journey ? events.filter((event) => isSpogomiEventInJourney(event, journey)) : events;
   const visibleFilters = FILTERS.filter((filter) => filter.key === "all" || journeyEvents.some((event) => event.relations.includes(filter.relation!)));
@@ -232,7 +232,7 @@ export function SpogomiPersonalEventsList({ events, changes = [], journey = null
           <h2 id="spogomi-personal-events-title" className="text-2xl font-black text-slate-950">{heading}</h2>
           <p className="cmm-text-body mt-1 text-slate-900">{description}</p>
         </div>
-        {journey !== "volunteers" && journey !== "referees" ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm">Créer une compétition</CmmButton> : null}
+        {canCreate && journey !== "volunteers" && journey !== "referees" ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm">Créer une compétition</CmmButton> : null}
       </div>
 
       {visibleFilters.length > 1 ? (
@@ -259,7 +259,7 @@ export function SpogomiPersonalEventsList({ events, changes = [], journey = null
         <CmmCard tone="slate" variant="glass" className="border-dashed p-6" data-testid="spogomi-personal-events-empty">
           <p className="font-bold text-slate-900">{journey === "volunteers" ? "Aucune participation liée à ce compte." : journey === "referees" ? "Aucune habilitation SPOGOMI active pour ce compte." : "Aucune compétition ne correspond à ce filtre."}</p>
           <p className="mt-2 text-sm text-slate-700">Les brouillons, relations révoquées et accès non vérifiés ne sont pas ajoutés ici.</p>
-          {journey !== "volunteers" && journey !== "referees" ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition</CmmButton> : null}
+          {canCreate && journey !== "volunteers" && journey !== "referees" ? <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition</CmmButton> : null}
         </CmmCard>
       )}
     </section>
