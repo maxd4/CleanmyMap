@@ -6,18 +6,62 @@ const mocks = vi.hoisted(() => ({
   getServerLocale: vi.fn(),
   getTranslation: vi.fn(),
   listPublishedSpogomiEvents: vi.fn(),
+  getCurrentUserActiveRole: vi.fn(),
 }));
 
-vi.mock("@/lib/server-preferences", () => ({ getServerLocale: mocks.getServerLocale }));
-vi.mock("@/lib/i18n/server-translation", () => ({ getTranslation: mocks.getTranslation }));
-vi.mock("@/lib/spogomi/public-service", () => ({ listPublishedSpogomiEvents: mocks.listPublishedSpogomiEvents }));
-vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => ({ id: "agir" }) }));
-vi.mock("@/components/ui/page-header", () => ({
-  PageHeader: ({ title, subtitle }: { title: React.ReactNode; subtitle?: React.ReactNode }) => React.createElement("header", null, React.createElement("h1", null, title), React.createElement("p", null, subtitle)),
+vi.mock("@/lib/server-preferences", () => ({
+  getServerLocale: mocks.getServerLocale,
 }));
-vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children) }));
+vi.mock("@/lib/i18n/server-translation", () => ({
+  getTranslation: mocks.getTranslation,
+}));
+vi.mock("@/lib/spogomi/public-service", () => ({
+  listPublishedSpogomiEvents: mocks.listPublishedSpogomiEvents,
+}));
+vi.mock("@/lib/authz", () => ({
+  getCurrentUserActiveRole: mocks.getCurrentUserActiveRole,
+}));
+vi.mock("@/lib/ui/page-families", () => ({
+  resolvePageFamily: () => ({ id: "agir" }),
+}));
+vi.mock("@/components/ui/page-header", () => ({
+  PageHeader: ({
+    title,
+    subtitle,
+  }: {
+    title: React.ReactNode;
+    subtitle?: React.ReactNode;
+  }) =>
+    React.createElement(
+      "header",
+      null,
+      React.createElement("h1", null, title),
+      React.createElement("p", null, subtitle),
+    ),
+}));
+vi.mock("@/components/ui/cmm-card", () => ({
+  CmmCard: ({ children }: { children: React.ReactNode }) =>
+    React.createElement("div", null, children),
+}));
 vi.mock("@/components/ui/cmm-feedback", () => ({
-  CmmFeedback: ({ title, children, tone }: { title?: React.ReactNode; children: React.ReactNode; tone?: string }) => React.createElement("div", { role: tone === "error" ? "alert" : "status", "data-feedback-tone": tone }, title, children),
+  CmmFeedback: ({
+    title,
+    children,
+    tone,
+  }: {
+    title?: React.ReactNode;
+    children: React.ReactNode;
+    tone?: string;
+  }) =>
+    React.createElement(
+      "div",
+      {
+        role: tone === "error" ? "alert" : "status",
+        "data-feedback-tone": tone,
+      },
+      title,
+      children,
+    ),
 }));
 
 import SpogomiIndexPage from "./page";
@@ -28,6 +72,7 @@ describe("/spogomi pedagogical index", () => {
     mocks.getServerLocale.mockResolvedValue("fr");
     mocks.getTranslation.mockReturnValue({ t: (key: string) => key });
     mocks.listPublishedSpogomiEvents.mockResolvedValue([]);
+    mocks.getCurrentUserActiveRole.mockResolvedValue("anonymous");
   });
 
   it("renders the four sections in order without a global parcours chooser", async () => {
@@ -59,7 +104,9 @@ describe("/spogomi pedagogical index", () => {
   });
 
   it("keeps a loading failure distinct from an empty published-events state", async () => {
-    mocks.listPublishedSpogomiEvents.mockRejectedValue(new Error("persistence unavailable"));
+    mocks.listPublishedSpogomiEvents.mockRejectedValue(
+      new Error("persistence unavailable"),
+    );
 
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
 
@@ -68,4 +115,25 @@ describe("/spogomi pedagogical index", () => {
     expect(markup).toContain("ne peuvent pas être chargées");
     expect(markup).not.toContain("Aucune compétition SPOGOMI publiée");
   });
+
+  it.each(["admin", "max"] as const)(
+    "shows the creation button for active role %s",
+    async (role) => {
+      mocks.getCurrentUserActiveRole.mockResolvedValue(role);
+      const markup = renderToStaticMarkup(await SpogomiIndexPage());
+      expect(markup).toContain('href="/spogomi/nouveau"');
+      expect(markup).toContain("Créer un événement");
+      expect(markup.indexOf("Créer un événement")).toBeLessThan(markup.indexOf("spogomi-world"));
+    },
+  );
+
+  it.each(["benevole", "anonymous"] as const)(
+    "hides the creation button for active role %s",
+    async (role) => {
+      mocks.getCurrentUserActiveRole.mockResolvedValue(role);
+      const markup = renderToStaticMarkup(await SpogomiIndexPage());
+      expect(markup).not.toContain("/spogomi/nouveau");
+      expect(markup).not.toContain("Créer un événement");
+    },
+  );
 });
