@@ -3,6 +3,14 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SpogomiEventMode, SpogomiEventState } from "./types";
+import { readAllSpogomiPages } from "./pagination";
+import {
+  classifySpogomiCalendarStatus,
+  classifySpogomiRegistrationStatus,
+  type SpogomiCalendarStatus,
+  type SpogomiRegistrationStatus,
+  type SpogomiResultsStatus,
+} from "./lifecycle";
 import { loadSpogomiResultsProjection } from "./results/results-projection-service";
 import type { SpogomiPublicResults } from "./results/results-projection";
 import { loadSpogomiOrganizerForAction } from "./partner-impact-service";
@@ -10,7 +18,7 @@ import type { SpogomiPublicOrganizer } from "./partner-impact";
 import { loadPublishedSpogomiGalleryForAction } from "./photo-gallery-service";
 import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
 
-export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
+export type SpogomiPublicLifecycle = SpogomiCalendarStatus;
 
 type SpogomiPublicTeam = {
   id: string;
@@ -24,6 +32,9 @@ type SpogomiPublicTeam = {
 type SpogomiPublicDivision = {
   id: string;
   type: "casual" | "world_cup";
+  registrationStatus: SpogomiRegistrationStatus;
+  registeredCount: number;
+  capacity: number | null;
 };
 
 type SpogomiPublicRoute = {
@@ -43,6 +54,9 @@ export type SpogomiPublicEvent = {
   mode: SpogomiEventMode;
   state: SpogomiEventState;
   lifecycle: SpogomiPublicLifecycle;
+  calendarStatus: SpogomiCalendarStatus;
+  registrationStatus: SpogomiRegistrationStatus;
+  resultsStatus: SpogomiResultsStatus;
   startsAt: string;
   endsAt: string | null;
   officialTimezone: string;
@@ -66,8 +80,49 @@ type PublicEventRow = {
   ends_at: string | null;
   official_timezone: string | null;
   action_id: string;
+  regulation_config: unknown;
+  public_visibility: "private" | "published";
   public_results_visibility: "hidden" | "provisional" | "certified";
 };
+
+type PublicDivisionRegistrationRow = {
+  id: string;
+  division_type: "casual" | "world_cup";
+  regulation_config: unknown;
+};
+
+type PublicParticipantRegistrationRow = {
+  division_id: string | null;
+  registration_status: string;
+};
+
+type PublicRegistrationProjection = {
+  status: SpogomiRegistrationStatus;
+  divisions: SpogomiPublicDivision[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function registrationPolicy(config: unknown): Record<string, unknown> {
+  if (!isRecord(config) || !isRecord(config.registrationPolicy)) return {};
+  return config.registrationPolicy;
+}
+
+function capacityFromPolicy(policy: Record<string, unknown>): number | null {
+  const value = policy.capacity;
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) return value;
+  if (typeof value === "string" && /^\d+$/.test(value)) return Number(value);
+  return null;
+}
+
+function combineRegistrationStatuses(statuses: readonly SpogomiRegistrationStatus[]): SpogomiRegistrationStatus {
+  if (!statuses.length || statuses.every((status) => status === "not_open")) return "not_open";
+  if (statuses.some((status) => status === "open")) return "open";
+  if (statuses.every((status) => status === "capacity_reached")) return "capacity_reached";
+  return "closed";
+}
 
 function normalizeSlugPart(value: string): string {
   const decomposed = value.normalize("NFKD").toLowerCase();
@@ -112,13 +167,52 @@ export function classifySpogomiPublicLifecycle(
   state: SpogomiEventState,
   now = new Date(),
 ): SpogomiPublicLifecycle {
-  const start = Date.parse(startsAt);
-  const end = endsAt ? Date.parse(endsAt) : Number.NaN;
-  if (state === "certified" || state === "archived" || (!Number.isNaN(end) && now.getTime() > end)) {
-    return "finished";
-  }
-  if (!Number.isNaN(start) && now.getTime() >= start) return "in_progress";
-  return "upcoming";
+  return classifySpogomiCalendarStatus({ startsAt, endsAt, state, now });
+}
+
+async function loadPublicRegistrationProjection(
+  supabase: SupabaseClient,
+  row: PublicEventRow,
+  providedDivisions?: PublicDivisionRegistrationRow[],
+): Promise<PublicRegistrationProjection> {
+  const divisionsResult = providedDivisions
+    ? { data: providedDivisions, error: null }
+    : await supabase
+      .from("spogomi_divisions")
+      .select("id, division_type, regulation_config")
+      .eq("event_id", row.id)
+      .order("division_type", { ascending: true });
+  if (divisionsResult.error) throw divisionsResult.error;
+  const divisions = (divisionsResult.data ?? []) as PublicDivisionRegistrationRow[];
+  const participants = await readAllSpogomiPages<PublicParticipantRegistrationRow>("public SPOGOMI registration counts", (from, to) =>
+    supabase
+      .from("spogomi_participants")
+      .select("division_id, registration_status", { count: "exact" })
+      .eq("event_id", row.id)
+      .eq("registration_status", "registered")
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+  const eventPolicy = registrationPolicy(row.regulation_config);
+  const projectedDivisions = divisions.map((division) => {
+    const policy = { ...eventPolicy, ...registrationPolicy(division.regulation_config) };
+    const registeredCount = participants.filter((participant) => String(participant.division_id) === String(division.id)).length;
+    const capacity = capacityFromPolicy(policy);
+    return {
+      id: String(division.id),
+      type: division.division_type,
+      registrationStatus: classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity }),
+      registeredCount,
+      capacity,
+    } satisfies SpogomiPublicDivision;
+  });
+  if (projectedDivisions.length) return { status: combineRegistrationStatuses(projectedDivisions.map((division) => division.registrationStatus)), divisions: projectedDivisions };
+  const registeredCount = participants.length;
+  const capacity = capacityFromPolicy(eventPolicy);
+  return {
+    status: classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity }),
+    divisions: [],
+  };
 }
 
 function isPublishableAction(row: { status: string | null; published_at: string | null; moderation_visibility: string | null }): boolean {
@@ -146,13 +240,16 @@ function mapEvent(
   row: PublicEventRow,
   publishableActionIds: Set<string>,
   teams: SpogomiPublicTeam[] = [],
-  divisions: SpogomiPublicDivision[] = [],
+  divisions: Array<Pick<SpogomiPublicDivision, "id" | "type">> = [],
   route: SpogomiPublicRoute | null = null,
   results: SpogomiPublicResults | null = null,
   organizer: SpogomiPublicOrganizer | null = null,
   gallery: SpogomiPublicGalleryPhoto[] = [],
+  registration: PublicRegistrationProjection = { status: "not_open", divisions: [] },
+  resultsStatus: SpogomiResultsStatus = results?.lifecycleStatus ?? "unavailable",
 ): SpogomiPublicEvent | null {
   if (!row.event_slug) return null;
+  const calendarStatus = classifySpogomiCalendarStatus({ startsAt: row.starts_at, endsAt: row.ends_at, state: row.state });
   return {
     id: row.id,
     slug: row.event_slug,
@@ -160,14 +257,22 @@ function mapEvent(
     locationLabel: row.location_label,
     mode: row.mode,
     state: row.state,
-    lifecycle: classifySpogomiPublicLifecycle(row.starts_at, row.ends_at, row.state),
+    lifecycle: calendarStatus,
+    calendarStatus,
+    registrationStatus: registration.status,
+    resultsStatus,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     officialTimezone: row.official_timezone || "Europe/Paris",
     actionHref: publishableActionIds.has(row.action_id)
       ? `/actions/map?actionId=${encodeURIComponent(row.action_id)}`
       : null,
-    divisions,
+    divisions: registration.divisions.length ? registration.divisions : divisions.map((division) => ({
+      ...division,
+      registrationStatus: "not_open" as const,
+      registeredCount: 0,
+      capacity: null,
+    })),
     teams,
     route,
     results,
@@ -179,9 +284,8 @@ function mapEvent(
 async function loadPublishedRows(supabase: SupabaseClient, slug?: string): Promise<PublicEventRow[]> {
   let query = supabase
     .from("spogomi_events")
-    .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, official_timezone, action_id, public_results_visibility")
+    .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, official_timezone, action_id, regulation_config, public_visibility, public_results_visibility")
     .eq("public_visibility", "published")
-    .neq("state", "cancelled")
     .not("event_slug", "is", null)
     .order("starts_at", { ascending: true });
   if (slug) query = query.eq("event_slug", slug);
@@ -195,15 +299,14 @@ export async function listPublishedSpogomiEvents(
 ): Promise<SpogomiPublicEvent[]> {
   const rows = await loadPublishedRows(supabase);
   const actionIds = await loadPublicActionHrefs(supabase, rows.map((row) => row.action_id));
-  const mapped = await Promise.all(rows.map(async (row) => mapEvent(
-    row,
-    actionIds,
-    [],
-    [],
-    null,
-    null,
-    await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
-  )));
+  const mapped = await Promise.all(rows.map(async (row) => {
+    const [registration, projection, organizer] = await Promise.all([
+      loadPublicRegistrationProjection(supabase, row),
+      loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
+      loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
+    ]);
+    return mapEvent(row, actionIds, [], [], null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable");
+  }));
   return mapped.filter((event): event is SpogomiPublicEvent => Boolean(event));
 }
 
@@ -215,8 +318,8 @@ export async function loadPublishedSpogomiEventBySlug(
   const row = rows[0];
   if (!row) return null;
   const actionIds = await loadPublicActionHrefs(supabase, [row.action_id]);
-  const [divisionsResult, teamsResult, routeResult] = await Promise.all([
-    supabase.from("spogomi_divisions").select("id, division_type").eq("event_id", row.id).order("division_type"),
+  const [divisionsResult, teamsResult, routeResult, projection] = await Promise.all([
+    supabase.from("spogomi_divisions").select("id, division_type, regulation_config").eq("event_id", row.id).order("division_type"),
     supabase
       .from("spogomi_teams")
       .select("id, division_id, team_number, public_name, composition_state")
@@ -227,6 +330,7 @@ export async function loadPublishedSpogomiEventBySlug(
       .select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson")
       .eq("event_id", row.id)
       .maybeSingle(),
+    loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
   ]);
   if (divisionsResult.error) throw divisionsResult.error;
   if (teamsResult.error) throw teamsResult.error;
@@ -265,13 +369,14 @@ export async function loadPublishedSpogomiEventBySlug(
       type: division.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
     })),
     route,
-    null,
+    projection?.results ?? null,
     await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
     await loadPublishedSpogomiGalleryForAction({ supabase, actionId: row.action_id }),
+    await loadPublicRegistrationProjection(supabase, row, (divisionsResult.data ?? []) as PublicDivisionRegistrationRow[]),
+    projection?.results.lifecycleStatus ?? "unavailable",
   );
   if (!mapped) return null;
-  const projection = await loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true });
-  return { ...mapped, results: projection?.results ?? null };
+  return mapped;
 }
 
 export async function loadPublishedSpogomiEventResultsBySlug(

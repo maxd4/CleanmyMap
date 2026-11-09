@@ -69,6 +69,37 @@ describe("SPOGOMI public results projection", () => {
     expect(projection.results.environmental).toMatchObject({ status: "unavailable" });
   });
 
+  it("keeps a certified visibility policy unavailable without official rankings", () => {
+    const candidate = source();
+    candidate.event.publicVisibility = "published";
+    candidate.event.publicResultsVisibility = "certified";
+    candidate.submissions = [];
+
+    expect(buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").results.lifecycleStatus).toBe("unavailable");
+  });
+
+  it("marks results published only after a current certified official ranking exists", () => {
+    const candidate = source();
+    candidate.event.publicVisibility = "published";
+    candidate.event.publicResultsVisibility = "certified";
+    candidate.event.state = "certified";
+    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, status: "certified" }));
+    const sourceSnapshot = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").publicationSourceSnapshot;
+    candidate.officialRankings = [{
+      division_id: "division-casual",
+      team_id: "team-1",
+      kind: "points",
+      rank: 1,
+      status: "certified",
+      team_eligible: true,
+      decision_version: "decision-1",
+      source_reference: "source-1",
+      source_snapshot: sourceSnapshot,
+    }];
+
+    expect(buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z").results.lifecycleStatus).toBe("published");
+  });
+
   it("publishes only finite environmental measurements and preserves unavailable values", () => {
     const candidate = source();
     candidate.actionIsPublished = true;

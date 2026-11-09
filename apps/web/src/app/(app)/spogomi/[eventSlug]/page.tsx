@@ -43,14 +43,16 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
   const event = await loadPublishedSpogomiEventBySlug(eventSlug).catch(() => null);
   if (!event) notFound();
 
-  const lifecycleLabel = event.lifecycle === "upcoming" ? "À venir" : event.lifecycle === "in_progress" ? "En cours" : "Terminé";
+  const lifecycleLabel = event.lifecycle === "upcoming" ? "À venir" : event.lifecycle === "in_progress" ? "En cours" : event.lifecycle === "cancelled" ? "Annulée" : event.lifecycle === "postponed" ? "Reportée" : "Terminée";
+  const registrationLabel = event.registrationStatus === "open" ? "Inscriptions ouvertes" : event.registrationStatus === "capacity_reached" ? "Capacité atteinte" : event.registrationStatus === "not_open" ? "Inscriptions non ouvertes" : "Inscriptions closes";
+  const resultsLabel = event.resultsStatus === "published" ? "Résultats publiés" : event.resultsStatus === "certified" ? "Résultats certifiés" : event.resultsStatus === "provisional" ? "Résultats provisoires" : "Résultats indisponibles";
   const modeLabel = event.mode === "mixed" ? "Casual & World Cup — deux classements séparés" : event.mode === "world_cup" ? "World Cup — équipes de trois" : "Casual — taille configurée pour l’événement";
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
       <div className="cmm-page-width space-y-6">
         <Link href="/spogomi" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-800 hover:underline"><ArrowLeft size={16} />Tous les événements SPOGOMI</Link>
-        <PageHeader family={resolvePageFamily(`/spogomi/${event.slug}`)} tone="emerald" title={event.name} subtitle={`${modeLabel} · ${lifecycleLabel}`} />
+        <PageHeader family={resolvePageFamily(`/spogomi/${event.slug}`)} tone="emerald" title={event.name} subtitle={`${modeLabel} · ${lifecycleLabel} · ${registrationLabel} · ${resultsLabel}`} />
         {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Cette fiche publique éventuelle présente uniquement une simulation. Les résultats restent non officiels et la publication de chaque division dépend des contrôles de certification.</p></SpogomiSyntheticDemoNotice> : null}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <div className="space-y-6">

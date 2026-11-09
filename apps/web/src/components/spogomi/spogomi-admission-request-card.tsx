@@ -35,7 +35,7 @@ export function SpogomiAdmissionRequestCard({
   signInHref,
 }: {
   eventId: string;
-  lifecycle: "upcoming" | "in_progress" | "finished";
+  lifecycle: "upcoming" | "in_progress" | "finished" | "cancelled" | "postponed";
   divisions: Division[];
   signInHref: string;
 }) {

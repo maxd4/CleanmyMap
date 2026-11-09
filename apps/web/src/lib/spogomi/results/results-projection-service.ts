@@ -154,6 +154,7 @@ export async function loadSpogomiResultsProjection(params: {
       regulationVersion: String(event.regulation_version), regulationStatus: event.regulation_status,
       regulationSourceReference: event.regulation_source_reference ? String(event.regulation_source_reference) : null,
       regulationConfig: event.regulation_config, teamSizeConfig: event.team_size_config,
+      publicVisibility: event.public_visibility,
       divisions: (divisions as Array<Record<string, unknown>>).map((division) => ({
         id: String(division.id), division_type: division.division_type as "casual" | "world_cup",
         regulation_version: String(division.regulation_version ?? event.regulation_version),

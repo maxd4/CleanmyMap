@@ -111,6 +111,7 @@ function parsePublicEnvironmental(value: unknown): SpogomiPublicResults["environ
 function parsePublicDivision(value: unknown): NonNullable<SpogomiPublicResults["divisions"]>[number] | null {
   if (!isRecord(value) || typeof value.id !== "string" ||
     (value.type !== "casual" && value.type !== "world_cup") ||
+    (value.lifecycleStatus !== undefined && value.lifecycleStatus !== "unavailable" && value.lifecycleStatus !== "provisional" && value.lifecycleStatus !== "certified" && value.lifecycleStatus !== "published") ||
     typeof value.regulationVersion !== "string" || typeof value.regulationComplete !== "boolean") return null;
   const sport = parsePublicRanking(value.sport);
   const butts = parsePublicRanking(value.butts);
@@ -120,6 +121,7 @@ function parsePublicDivision(value: unknown): NonNullable<SpogomiPublicResults["
         type: value.type,
         regulationVersion: value.regulationVersion,
         regulationComplete: value.regulationComplete,
+        ...(value.lifecycleStatus === undefined ? {} : { lifecycleStatus: value.lifecycleStatus }),
         sport,
         butts,
       }
@@ -140,6 +142,7 @@ function parsePublicDivisions(
 export function parseSpogomiPublicResults(value: unknown): SpogomiPublicResults | null {
   if (!isRecord(value) ||
     (value.visibility !== "hidden" && value.visibility !== "provisional" && value.visibility !== "certified") ||
+    (value.lifecycleStatus !== undefined && value.lifecycleStatus !== "unavailable" && value.lifecycleStatus !== "provisional" && value.lifecycleStatus !== "certified" && value.lifecycleStatus !== "published") ||
     typeof value.regulationVersion !== "string" || typeof value.regulationComplete !== "boolean" ||
     typeof value.refreshedAt !== "string") return null;
   const sport = parsePublicRanking(value.sport);
@@ -149,6 +152,7 @@ export function parseSpogomiPublicResults(value: unknown): SpogomiPublicResults 
   if (!sport || !butts || !environmental || divisions === null) return null;
   return {
     visibility: value.visibility,
+    ...(value.lifecycleStatus === undefined ? {} : { lifecycleStatus: value.lifecycleStatus }),
     regulationVersion: value.regulationVersion,
     regulationComplete: value.regulationComplete,
     refreshedAt: value.refreshedAt,

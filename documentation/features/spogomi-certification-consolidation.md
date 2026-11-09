@@ -8,8 +8,11 @@ Les trois routes canoniques sont intégrées dans la famille visuelle et documen
 **Agir** :
 
 - `/spogomi` présente les modes et ne charge que les événements dont
-  `public_visibility = published` ; les dates réelles servent uniquement à
-  distinguer à venir, en cours et terminé ;
+  `public_visibility = published` ; sa projection distingue indépendamment le
+  calendrier, les inscriptions et les résultats. Les dates réelles servent au
+  calendrier, `registrationPolicy.capacity` et les participants `registered`
+  aux inscriptions, et seuls les classements officiels courants peuvent établir
+  un résultat certifié ou publié ;
 - `/spogomi/[eventSlug]` expose une projection publique bornée de l'événement,
   sans roster nominatif, et conserve la provenance `official_reference` du GPX ;
 - `/spogomi/mes-evenements` est le catalogue personnel canonique après AuthN :
@@ -34,9 +37,11 @@ change ; une collision reçoit un suffixe dérivé de l'action canonique. Les
 segments réservés `nouveau` et `mes-evenements` ne sont jamais attribués à une
 nouvelle édition : les anciennes lignes éventuellement présentes restent
 inchangées et les nouvelles créations reçoivent un suffixe déterministe. La
-projection publique ne lit aucune table de roster et ne renvoie que les noms
-publics d'équipe, le parcours officiel et un lien vers l'action CleanMyMap
-réellement publiée.
+projection publique ne lit aucune donnée nominative de roster et ne renvoie que
+les noms publics d'équipe, le décompte d'inscriptions par division, le parcours
+officiel et un lien vers l'action CleanMyMap réellement publiée. Le décompte
+est utilisé uniquement pour dériver l'état de capacité et ne constitue pas une
+exposition du roster.
 
 Des liens contextuels conditionnels sont ajoutés depuis la communauté, la liste
 des actions rejoignables et le panneau de la carte. Ils ne créent ni quatrième

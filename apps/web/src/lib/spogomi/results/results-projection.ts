@@ -12,6 +12,7 @@ import { effectiveSpogomiTeamClosureDecision, type SpogomiTeamClosureStatus } fr
 import { buildRankingEntries, currentOfficialRankings } from "./results-projection-ranking";
 import type { SpogomiEnvironmentMappingRow } from "../regulation";
 import { isRegulationReadyForCertification } from "../validation";
+import { classifySpogomiResultsStatus, combineSpogomiResultsStatuses, type SpogomiResultsStatus } from "../lifecycle";
 export { parseSpogomiPublicResults } from "./results-projection-parser";
 
 export type SpogomiResultsSource = {
@@ -37,6 +38,7 @@ export type SpogomiResultsSource = {
     regulationSourceReference: string | null;
     regulationConfig: unknown;
     teamSizeConfig: unknown;
+    publicVisibility?: "private" | "published";
     publicResultsVisibility: SpogomiPublicResultsVisibility;
     updatedAt?: string;
   };
@@ -86,6 +88,7 @@ export type SpogomiPublicRankingEntry = {
 
 export type SpogomiPublicResults = {
   visibility: SpogomiPublicResultsVisibility;
+  lifecycleStatus?: SpogomiResultsStatus;
   regulationVersion: string;
   regulationComplete: boolean;
   refreshedAt: string;
@@ -115,6 +118,7 @@ export type SpogomiPublicResults = {
     regulationComplete: boolean;
     sport: SpogomiPublicResults["sport"];
     butts: SpogomiPublicResults["butts"];
+    lifecycleStatus?: SpogomiResultsStatus;
   }>;
 };
 
@@ -274,8 +278,18 @@ function buildRankingSection(source: SpogomiResultsSource, computed: TeamCompute
 }
 
 function buildPublicResults(source: SpogomiResultsSource, computed: TeamComputed[], regulation: SpogomiRegulation, regulationComplete: boolean, refreshedAt: string, publicationSourceSnapshot: SpogomiPublicationSourceSnapshot): SpogomiPublicResults {
+  const officialSport = currentOfficialRankings(source, "points", publicationSourceSnapshot);
+  const officialButts = currentOfficialRankings(source, "butts", publicationSourceSnapshot);
+  const hasProvisionalResults = computed.some((entry) => entry.submission && ["submitted", "provisional", "certified"].includes(entry.submission.status));
+  const hasCertifiedResults = ["certified", "archived"].includes(source.event.state) && (officialSport.size > 0 || officialButts.size > 0);
   return {
     visibility: source.event.publicResultsVisibility,
+    lifecycleStatus: classifySpogomiResultsStatus({
+      publicVisibility: source.event.publicVisibility ?? "private",
+      publicResultsVisibility: source.event.publicResultsVisibility,
+      hasProvisionalResults,
+      hasCertifiedResults,
+    }),
     regulationVersion: regulation.version,
     regulationComplete,
     refreshedAt,
@@ -340,7 +354,21 @@ function buildMixedProjection(source: SpogomiResultsSource, divisionRows: NonNul
     event: source.event,
     teams: projections.flatMap((projection, index) => projection.teams.map((team) => ({ ...team, division_id: divisionRows[index]?.id }))),
     sourceSubmissionIds: projections.flatMap((projection) => projection.sourceSubmissionIds),
-    results: { ...first.results, regulationComplete: projections.every((projection) => projection.results.regulationComplete), environmental: buildEnvironmentalProjection(source), divisions: projections.map((projection, index) => ({ id: divisionRows[index]!.id, type: divisionRows[index]!.division_type, regulationVersion: projection.results.regulationVersion, regulationComplete: projection.results.regulationComplete, sport: projection.results.sport, butts: projection.results.butts })) },
+    results: {
+      ...first.results,
+      lifecycleStatus: combineSpogomiResultsStatuses(projections.map((projection) => projection.results.lifecycleStatus ?? "unavailable")),
+      regulationComplete: projections.every((projection) => projection.results.regulationComplete),
+      environmental: buildEnvironmentalProjection(source),
+      divisions: projections.map((projection, index) => ({
+        id: divisionRows[index]!.id,
+        type: divisionRows[index]!.division_type,
+        regulationVersion: projection.results.regulationVersion,
+        regulationComplete: projection.results.regulationComplete,
+        lifecycleStatus: projection.results.lifecycleStatus,
+        sport: projection.results.sport,
+        butts: projection.results.butts,
+      })),
+    },
   };
   divisionProjectionStore.set(mixedProjection, projections);
   return mixedProjection;

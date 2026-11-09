@@ -43,6 +43,7 @@ function makeSupabase() {
       not: vi.fn(() => query),
       in: vi.fn(() => query),
       order: vi.fn(() => query),
+      range: vi.fn(() => query),
       maybeSingle: vi.fn(async () => {
         if (table === "spogomi_event_routes") {
           return { data: { source: "official_reference", file_name: "route.gpx", point_count: 3, reference_distance_km: 2.5, inferred_topology: "loop", geometry_geojson: { coordinates: [[2.3, 48.8], [2.4, 48.9]] } }, error: null };
@@ -82,7 +83,7 @@ describe("SPOGOMI public identity and lifecycle", () => {
     expect(classifySpogomiPublicLifecycle("2026-10-13T12:00:00.000Z", null, "draft", now)).toBe("upcoming");
     expect(classifySpogomiPublicLifecycle("2026-10-12T10:00:00.000Z", "2026-10-12T14:00:00.000Z", "in_progress", now)).toBe("in_progress");
     expect(classifySpogomiPublicLifecycle("2026-10-11T10:00:00.000Z", "2026-10-11T14:00:00.000Z", "in_progress", now)).toBe("finished");
-    expect(classifySpogomiPublicLifecycle("2026-10-13T10:00:00.000Z", null, "certified", now)).toBe("finished");
+    expect(classifySpogomiPublicLifecycle("2026-10-13T10:00:00.000Z", null, "certified", now)).toBe("upcoming");
   });
 
   it("loads the published event projections without exposing unpublished actions", async () => {

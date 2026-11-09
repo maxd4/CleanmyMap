@@ -11,6 +11,35 @@ Une édition parentale SPOGOMI possède des données sportives par équipe, mais
 
 Une édition possède une division `casual`, une division `world_cup`, ou les deux. Le mode parent `mixed` est valide uniquement avec exactement ces deux divisions distinctes. Les divisions portent un UUID stable, déterministe à partir de l’édition et de leur type ; une reprise identique réutilise les mêmes lignes.
 
+### Projection CURRENT du cycle de vie
+
+Le catalogue public et la fiche publique dérivent trois dimensions indépendantes
+depuis les colonnes et projections existantes ; aucun état de cycle de vie
+supplémentaire n'est persisté :
+
+- **calendrier** : `upcoming`, `in_progress`, `finished`, `cancelled` ; les
+  dates `timestamptz` sont comparées comme des instants et `cancelled` reste
+  prioritaire. `postponed` n'est rendu que lorsqu'une preuve canonique future
+  le permettra ; une date dépassée ou une politique de publication ne suffit
+  jamais à le déduire ;
+- **inscriptions** : `not_open`, `open`, `closed`, `capacity_reached`, dérivées
+  de `spogomi_events.state`, de `registrationPolicy.capacity` et du décompte
+  des participants `registered`. En mode `mixed`, chaque division conserve son
+  propre état et l'édition expose leur agrégation sans effacer la distinction ;
+- **résultats** : `unavailable`, `provisional`, `certified`, `published`.
+  `certified` nécessite une preuve de classement officiel courant dans
+  `spogomi_official_rankings` ; `published` exige en plus
+  `public_visibility = published` et `public_results_visibility = certified`.
+  Une politique de visibilité seule, une date de fin ou une soumission sans
+  classement officiel ne certifie ni ne publie un résultat.
+
+La projection non persistée est centralisée dans `public-service.ts` et la
+projection canonique des résultats ; elle filtre toujours les éditions
+privées, ne renvoie aucune donnée nominative et conserve les divisions Casual /
+World Cup. Une édition annulée explicitement publiée reste visible comme
+annulée, tandis que les brouillons et éditions privées restent absents du
+catalogue public.
+
 ```text
 Édition parente SPOGOMI (casual | world_cup | mixed)
   ├── Division(s) typée(s) (casual et/ou world_cup)
