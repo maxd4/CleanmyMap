@@ -176,6 +176,106 @@ describe("SPOGOMI preparation workspace", () => {
     renderer.unmount();
   });
 
+  it("invalidates a Casual roster preview before World Cup confirmation and accepts only a refreshed preview", async () => {
+    const makePreview = (name: string, fileName: string) => ({
+      sourceSystem: "cachan_ticketing", format: "csv", fileName, contentHash: `${fileName}-hash`, importKey: `${fileName}-import`, encoding: "utf-8", sheetName: null, headerRow: 1,
+      rowsRead: 1, headers: ["ticket", "name"], unknownHeaders: [],
+      rows: [{ rowNumber: 2, name, externalReference: `${fileName}-ticket`, groupPreference: null }],
+      errors: [], mapping: { ticketReference: "ticket", name: "name" }, sheetCandidates: [], columnDiagnostics: [], missingFields: [], ambiguousFields: [],
+      probableDuplicateRowNumbers: [], ignoredRowNumbers: [], cancelledRowNumbers: [], changedRowNumbers: [], conflictRowNumbers: [], rowEffects: { "2": "created" }, requiresExplicitSelection: false,
+    });
+    const casualPreview = makePreview("Occupant Casual", "casual-roster.csv");
+    const worldPreview = makePreview("Occupant World Cup", "world-roster.csv");
+    const worldBody = {
+      ...body,
+      participants: [{ ...body.participants[0], id: "world-participant-1", division_id: "division-world", display_name: "World courant", composition_eligible: true }],
+      teams: [{ ...body.teams[0], id: "world-team-1", division_id: "division-world", public_name: "World 1" }],
+    };
+    const confirmCalls: FetchCall[] = [];
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/imports/preview")) {
+        const divisionId = init?.body instanceof FormData ? init.body.get("divisionId") : null;
+        return Promise.resolve(new Response(JSON.stringify(divisionId === "division-world" ? worldPreview : casualPreview), { status: 200 }));
+      }
+      if (url.includes("/imports/confirm")) {
+        confirmCalls.push([input, init]);
+        return Promise.resolve(new Response(JSON.stringify({ imported: 1 }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(url.includes("divisionId=division-world") ? worldBody : body), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    const casualFile = new File(["ticket,name\nCAS-1,Occupant Casual"], "casual-roster.csv", { type: "text/csv" });
+    const fileInput = renderer.root.findAllByType("input").find((input) => input.props.type === "file");
+    await act(async () => { propsOf<FileInputProps>(fileInput!).onChange?.({ target: { files: [casualFile] } } as unknown as React.ChangeEvent<HTMLInputElement>); await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Occupant Casual");
+    const staleConfirm = renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection")?.props.onClick as (() => void | Promise<void>) | undefined;
+    expect(staleConfirm).toBeTruthy();
+
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Occupant Casual");
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection")).toBeUndefined();
+
+    await act(async () => { await staleConfirm?.(); await Promise.resolve(); });
+    expect(confirmCalls).toHaveLength(0);
+
+    const worldFile = new File(["ticket,name\nWORLD-1,Occupant World Cup"], "world-roster.csv", { type: "text/csv" });
+    const worldFileInput = renderer.root.findAllByType("input").find((input) => input.props.type === "file");
+    await act(async () => { propsOf<FileInputProps>(worldFileInput!).onChange?.({ target: { files: [worldFile] } } as unknown as React.ChangeEvent<HTMLInputElement>); await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Occupant World Cup");
+    const worldConfirm = renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection");
+    await act(async () => { await worldConfirm?.props.onClick?.(); await Promise.resolve(); await Promise.resolve(); });
+    expect(confirmCalls).toHaveLength(1);
+    expect(confirmCalls[0]?.[1]?.body).toBeInstanceOf(FormData);
+    expect((confirmCalls[0]?.[1]?.body as FormData).get("divisionId")).toBe("division-world");
+    expect((confirmCalls[0]?.[1]?.body as FormData).get("file")).toBe(worldFile);
+    renderer.unmount();
+  });
+
+  it("ignores a late roster preview response from the previous division", async () => {
+    let resolveCasualPreview!: (response: Response) => void;
+    const casualPreview = new Promise<Response>((resolve) => { resolveCasualPreview = resolve; });
+    const lateCasualPreview = {
+      sourceSystem: "cachan_ticketing", format: "csv", fileName: "late-casual.csv", contentHash: "late-hash", importKey: "late-import", encoding: "utf-8", sheetName: null, headerRow: 1,
+      rowsRead: 1, headers: ["ticket", "name"], unknownHeaders: [], rows: [{ rowNumber: 2, name: "Aperçu Casual tardif", externalReference: "CAS-LATE", groupPreference: null }],
+      errors: [], mapping: { ticketReference: "ticket", name: "name" }, sheetCandidates: [], columnDiagnostics: [], missingFields: [], ambiguousFields: [], probableDuplicateRowNumbers: [], ignoredRowNumbers: [], cancelledRowNumbers: [], changedRowNumbers: [], conflictRowNumbers: [], rowEffects: { "2": "created" }, requiresExplicitSelection: false,
+    };
+    const worldBody = {
+      ...body,
+      participants: [{ ...body.participants[0], id: "world-participant-2", division_id: "division-world", display_name: "World courant", composition_eligible: true }],
+      teams: [{ ...body.teams[0], id: "world-team-2", division_id: "division-world", public_name: "World 2" }],
+    };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/imports/preview")) return casualPreview;
+      return Promise.resolve(new Response(JSON.stringify(url.includes("divisionId=division-world") ? worldBody : body), { status: 200 }));
+    });
+
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const casualFile = new File(["ticket,name\nCAS-LATE,Aperçu Casual tardif"], "late-casual.csv", { type: "text/csv" });
+    const fileInput = renderer.root.findAllByType("input").find((input) => input.props.type === "file");
+    await act(async () => { propsOf<FileInputProps>(fileInput!).onChange?.({ target: { files: [casualFile] } } as unknown as React.ChangeEvent<HTMLInputElement>); await Promise.resolve(); });
+
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    await act(async () => { resolveCasualPreview(new Response(JSON.stringify(lateCasualPreview), { status: 200 })); await Promise.resolve(); });
+
+    const rendered = JSON.stringify(renderer.toJSON());
+    expect(rendered).toContain("World 2");
+    expect(rendered).not.toContain("Aperçu Casual tardif");
+    expect(renderer.root.findAllByType("button").find((button) => button.props.children === "Confirmer la sélection")).toBeUndefined();
+    renderer.unmount();
+  });
+
   it("keeps team preview and lock actions revision-scoped", async () => {
     const teamPreview = {
       expectedRevision: 2, proposalFingerprint: "proposal-a", explanation: ["Composition déterministe"],
