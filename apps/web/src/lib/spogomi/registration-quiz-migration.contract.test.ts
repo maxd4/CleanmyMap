@@ -6,6 +6,8 @@ const gateMigration = readFileSync(new URL("../../../supabase/migrations/2026110
 const fixMigration = readFileSync(new URL("../../../supabase/migrations/20261109143630_spogomi_registration_quiz_contract_fix.sql", import.meta.url), "utf8");
 const privacyMigration = readFileSync(new URL("../../../supabase/migrations/20261109170000_spogomi_registration_quiz_rotation_privacy.sql", import.meta.url), "utf8");
 const secretRotationMigration = readFileSync(new URL("../../../supabase/migrations/20261109210000_spogomi_registration_quiz_secret_rotation.sql", import.meta.url), "utf8");
+const hmacSchemaFixMigration = readFileSync(new URL("../../../supabase/migrations/20261109230000_spogomi_registration_quiz_hmac_schema_fix.sql", import.meta.url), "utf8");
+const quizSmoke = readFileSync(new URL("../../../supabase/tests/spogomi-registration-quiz.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI registration quiz migration contracts", () => {
   it("persists only a minimal account/event/division/version proof and revokes client RPC access", () => {
@@ -73,5 +75,26 @@ describe("SPOGOMI registration quiz migration contracts", () => {
     expect(secretRotationMigration).not.toContain("md5(concat_ws(':', p_event_id::text, p_division_id::text, v_question ->> 'id'))");
     expect(secretRotationMigration).toMatch(/revoke all on table public\.spogomi_registration_quiz_rotation_secrets[\s\S]+grant select on table public\.spogomi_registration_quiz_rotation_secrets[\s\S]+to service_role/i);
     expect(secretRotationMigration).toMatch(/revoke all on function public\.spogomi_registration_quiz_rotate_options[\s\S]+grant execute on function public\.spogomi_registration_quiz_rotate_options[\s\S]+to service_role/i);
+  });
+
+  it("resolves HMAC from the installed pgcrypto schema without touching the persisted key", () => {
+    expect(hmacSchemaFixMigration).toContain("create or replace function public.spogomi_registration_quiz_rotate_options");
+    expect(hmacSchemaFixMigration).toContain("extensions.hmac(");
+    expect(hmacSchemaFixMigration).not.toContain("public.hmac(");
+    expect(hmacSchemaFixMigration).not.toContain("gen_random_bytes");
+    expect(hmacSchemaFixMigration).not.toContain("insert into public.spogomi_registration_quiz_rotation_secrets");
+    expect(hmacSchemaFixMigration).toContain("security invoker");
+    expect(hmacSchemaFixMigration).toContain("set search_path = pg_catalog, public");
+    expect(hmacSchemaFixMigration).toMatch(/revoke all on function public\.spogomi_registration_quiz_rotate_options[\s\S]+grant execute on function public\.spogomi_registration_quiz_rotate_options[\s\S]+to service_role/i);
+  });
+
+  it("keeps the ephemeral quiz smoke assertions for execution, stability, projection and client denial", () => {
+    expect(quizSmoke).toContain("v_rotation_a := public.spogomi_registration_quiz_rotate_options");
+    expect(quizSmoke).toContain("quiz rotation changed between identical generations");
+    expect(quizSmoke).toContain("GET quiz options are not coherent with the server-owned definition");
+    expect(quizSmoke).toContain("quiz rotation key is readable by a client role");
+    expect(quizSmoke).toContain("quiz rotation helper is executable by a client role");
+    expect(quizSmoke).toContain("the public quiz projection exposed the answer key");
+    expect(quizSmoke).toContain("correct contextual quiz answers did not create a server proof");
   });
 });

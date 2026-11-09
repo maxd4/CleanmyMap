@@ -18,6 +18,7 @@ declare
   v_probe_options jsonb;
   v_rotation_a jsonb;
   v_rotation_b jsonb;
+  v_rotation_stable jsonb;
   v_attack_correct_label text;
   v_attack_incorrect_label text;
   v_correct_first_a boolean;
@@ -25,9 +26,19 @@ declare
   v_answers jsonb := '{}'::jsonb;
   v_submission jsonb;
   v_repeat_submission jsonb;
+  v_public_quiz jsonb;
   v_revision bigint;
   v_question jsonb;
 begin
+  if has_table_privilege('anon', 'public.spogomi_registration_quiz_rotation_secrets', 'select')
+     or has_table_privilege('authenticated', 'public.spogomi_registration_quiz_rotation_secrets', 'select') then
+    raise exception 'quiz rotation key is readable by a client role';
+  end if;
+  if has_function_privilege('anon', 'public.spogomi_registration_quiz_rotate_options(uuid, uuid, jsonb)', 'execute')
+     or has_function_privilege('authenticated', 'public.spogomi_registration_quiz_rotate_options(uuid, uuid, jsonb)', 'execute') then
+    raise exception 'quiz rotation helper is executable by a client role';
+  end if;
+
   insert into public.actions (id, created_by_clerk_id, action_date, location_label,
     waste_kg, cigarette_butts, volunteers_count)
   values (v_action_id, 'spogomi-quiz-db-owner', current_date,
@@ -118,6 +129,10 @@ begin
   if (select public.spogomi_registration_quiz(v_event_id, v_division_id) #> '{questions,0,correctOptionId}') is not null then
     raise exception 'the public quiz projection exposed the answer key';
   end if;
+  v_public_quiz := public.spogomi_registration_quiz(v_event_id, v_division_id);
+  if (v_public_quiz #> '{questions,0,options}') is distinct from (v_definition #> '{questions,0,options}') then
+    raise exception 'GET quiz options are not coherent with the server-owned definition';
+  end if;
 
   -- Regression proof: the former label-dependent seed let a client compare
   -- both hidden associations. The new seed must produce the same correction
@@ -143,6 +158,13 @@ begin
     v_event_id, v_division_id,
     jsonb_build_array(jsonb_build_object('id', 'rotation-probe', 'correctOptionId', 'choice_b', 'options', v_probe_options))
   );
+  v_rotation_stable := public.spogomi_registration_quiz_rotate_options(
+    v_event_id, v_division_id,
+    jsonb_build_array(jsonb_build_object('id', 'rotation-probe', 'correctOptionId', 'choice_a', 'options', v_probe_options))
+  );
+  if v_rotation_a is distinct from v_rotation_stable then
+    raise exception 'quiz rotation changed between identical generations';
+  end if;
   v_correct_first_a := (v_rotation_a #>> '{0,options,0,label}') = v_attack_correct_label;
   v_correct_first_b := (v_rotation_b #>> '{0,options,0,label}') = v_attack_incorrect_label;
   if v_correct_first_a is distinct from v_correct_first_b then
