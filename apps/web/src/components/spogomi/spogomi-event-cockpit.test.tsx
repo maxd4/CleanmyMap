@@ -24,6 +24,10 @@ const event = {
   publicVisibility: "private",
 };
 
+function navigationSections(markup: string): string[] {
+  return [...markup.matchAll(/href="#([^"]+)"/g)].map((match) => match[1]);
+}
+
 describe("SpogomiEventCockpit", () => {
   it("keeps a persistent direct-link navigation and exposes all organizer sections", () => {
     const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage", "observe", "arbitrate", "assign_event_access"]} />);
@@ -63,6 +67,34 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).not.toContain('href="#arbitration"');
     expect(markup).not.toContain('href="#bilan"');
     expect(markup).not.toContain('href="#settings"');
+  });
+
+  it("cumulates referee and observer sections without duplicating shared results", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="referee" capabilities={["observe", "arbitrate"]} reviewerRoles={["referee", "observer"]} />);
+    expect(navigationSections(markup)).toEqual(["presentation", "results", "arbitration", "teams"]);
+    expect(markup.match(/href="#results"/g)).toHaveLength(1);
+    expect(markup.match(/id="results"/g)).toHaveLength(1);
+    expect(markup).not.toContain('href="#attendance"');
+    expect(markup).not.toContain('href="#bilan"');
+    expect(markup).not.toContain('href="#settings"');
+  });
+
+  it("cumulates check-in, referee and observer sections with one navigation entry per section", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="referee" capabilities={["observe", "arbitrate", "checkin"]} reviewerRoles={["checkin", "referee", "observer"]} />);
+    expect(navigationSections(markup)).toEqual(["presentation", "attendance", "results", "arbitration", "teams"]);
+    for (const section of ["presentation", "attendance", "results", "arbitration", "teams"]) {
+      expect(markup.match(new RegExp(`href="#${section}"`, "g"))).toHaveLength(1);
+      expect(markup.match(new RegExp(`id="${section}"`, "g"))).toHaveLength(1);
+    }
+    expect(markup).not.toContain('href="#bilan"');
+    expect(markup).not.toContain('href="#settings"');
+  });
+
+  it("does not infer an observer role from the observe capability alone", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role={null} capabilities={["observe"]} />);
+    expect(navigationSections(markup)).toEqual(["presentation"]);
+    expect(markup).not.toContain('href="#teams"');
+    expect(markup).not.toContain('href="#results"');
   });
 
   it("renders observer views without mutation affordances", () => {

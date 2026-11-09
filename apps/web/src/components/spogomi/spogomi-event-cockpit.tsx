@@ -91,15 +91,23 @@ function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: rea
 }
 
 function buildCockpitSections(organizer: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean): CockpitSection[] {
-  const next: CockpitSection[] = ["presentation"];
-  if (organizer) next.push("teams", "attendance", "operations", "results", "arbitration", "bilan", "settings");
-  else {
-    if (reviewerRoles.has("checkin")) next.push("attendance");
-    if (reviewerRoles.has("referee")) next.push("results", "arbitration");
-    else if (reviewerRoles.has("observer")) next.push("teams", "results");
+  const next = new Set<CockpitSection>(["presentation"]);
+  if (organizer) {
+    for (const section of ["teams", "attendance", "operations", "results", "arbitration", "bilan", "settings"] as const) next.add(section);
   }
-  if (hasFieldOperations && !next.includes("operations")) next.push("operations");
-  return next;
+  else {
+    if (reviewerRoles.has("checkin")) next.add("attendance");
+    if (reviewerRoles.has("referee")) {
+      next.add("results");
+      next.add("arbitration");
+    }
+    if (reviewerRoles.has("observer")) {
+      next.add("teams");
+      next.add("results");
+    }
+  }
+  if (hasFieldOperations) next.add("operations");
+  return [...next];
 }
 
 function CockpitNavigation({ sections, activeSection, setActiveSection }: { sections: CockpitSection[]; activeSection: CockpitSection; setActiveSection: (section: CockpitSection) => void }) {
