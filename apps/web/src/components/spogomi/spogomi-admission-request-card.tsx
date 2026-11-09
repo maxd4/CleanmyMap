@@ -18,6 +18,7 @@ type Request = {
   decisionMessage: string | null;
   createdAt: string;
 };
+type RequestLoadState = "loading" | "loaded" | "error";
 
 const ACTIVE_REQUEST_STATUSES = new Set<RequestStatus>(["pending", "approved"]);
 
@@ -50,6 +51,7 @@ export function SpogomiAdmissionRequestCard({
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [requestLoadState, setRequestLoadState] = useState<RequestLoadState>("loading");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [context, setContext] = useState("");
@@ -60,14 +62,20 @@ export function SpogomiAdmissionRequestCard({
   const endpoint = `/api/spogomi/events/${encodeURIComponent(eventId)}/admission-requests`;
   const loadRequests = useCallback(async () => {
     if (!isLoaded || !isSignedIn) return;
+    setRequestLoadState("loading");
+    setError(null);
     const response = await fetch(endpoint, { cache: "no-store" });
     const body = (await response.json().catch(() => ({}))) as { requests?: Request[]; error?: string };
     if (!response.ok) throw new Error(body.error ?? "Le statut de vos demandes n’a pas pu être chargé.");
     setRequests(body.requests ?? []);
+    setRequestLoadState("loaded");
   }, [endpoint, isLoaded, isSignedIn]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadRequests()).catch((reason) => setError(reason instanceof Error ? reason.message : "Le statut de vos demandes n’a pas pu être chargé."));
+    void Promise.resolve().then(() => loadRequests()).catch((reason) => {
+      setRequestLoadState("error");
+      setError(reason instanceof Error ? reason.message : "Le statut de vos demandes n’a pas pu être chargé.");
+    });
   }, [loadRequests]);
 
   const selectedDivision = useMemo(() => divisions.find((division) => division.id === divisionId) ?? null, [divisionId, divisions]);
@@ -131,6 +139,9 @@ export function SpogomiAdmissionRequestCard({
   if (!canRequest) return <p className="text-sm text-slate-700">Après l’événement, utilisez « Retrouver mon équipe » avec le code individuel remis par l’organisation.</p>;
   if (!isLoaded) return <CmmButton type="button" size="sm" tone="secondary" disabled>Chargement du parcours…</CmmButton>;
   if (!isSignedIn) return <CmmButton href={signInHref} size="sm" tone="secondary">Se connecter pour demander</CmmButton>;
+  if (requestLoadState === "loading") return <p className="text-sm text-slate-700">Chargement de vos demandes d’inscription…</p>;
+  if (requestLoadState === "error") return <section className="space-y-3" aria-labelledby="spogomi-admission-request-title"><h2 id="spogomi-admission-request-title" className="font-black text-slate-900">Votre parcours SPOGOMI</h2><p role="alert" className="text-sm font-semibold text-rose-700">{error ?? "Le statut de vos demandes n’est pas disponible."}</p><CmmButton type="button" size="sm" tone="secondary" onClick={() => { void loadRequests().catch((reason) => { setRequestLoadState("error"); setError(reason instanceof Error ? reason.message : "Le statut de vos demandes n’a pas pu être chargé."); }); }}>Réessayer</CmmButton></section>;
+  if (activeRegistrationRequest && current && current.id !== activeRegistrationRequest.id) return <section className="space-y-3" aria-labelledby="spogomi-admission-request-title"><div><h2 id="spogomi-admission-request-title" className="font-black text-slate-900">Votre parcours SPOGOMI</h2><p className="mt-1 text-sm text-slate-700">Une demande d’inscription {activeRegistrationRequest.status === "approved" ? "acceptée" : "en attente"} existe dans l’autre division et bloque toute nouvelle inscription pour cette édition.</p></div><p className="rounded-xl border border-slate-200 bg-white/80 p-3 text-sm text-slate-700">Dans la division sélectionnée : <span className="font-bold">{statusLabel(current)}</span>. Cette demande terminale ne lève pas le blocage interdivision.</p><label className="block text-sm font-bold text-slate-800">Division<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={divisionId} onChange={(event) => selectDivision(event.target.value)}>{divisions.map((division) => <option key={division.id} value={division.id}>{division.type === "world_cup" ? "World Cup" : "Casual"}</option>)}</select></label></section>;
   if (activeRegistrationRequest) return <section className="space-y-3" aria-labelledby="spogomi-admission-request-title"><div><h2 id="spogomi-admission-request-title" className="font-black text-slate-900">Votre parcours SPOGOMI</h2><p className="mt-1 text-sm text-slate-700">Une demande d’inscription active bloque une nouvelle demande pour cette édition.</p></div>{current ? <div className="space-y-2 rounded-xl border border-slate-200 bg-white/80 p-3" aria-live="polite"><p className="font-bold text-slate-900">{statusLabel(current)}</p><p className="text-sm text-slate-700">L’admission ne crée pas de billet partenaire et l’affectation à une équipe reste une étape distincte.</p>{current.decisionMessage ? <p className="rounded-lg bg-slate-50 p-2 text-sm text-slate-800">{current.decisionMessage}</p> : null}{current.status === "pending" ? <CmmButton type="button" size="sm" tone="secondary" disabled={busy} onClick={() => { void cancel(current); }}>Annuler la demande</CmmButton> : null}</div> : <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">Une demande d’inscription {activeRegistrationRequest.status === "approved" ? "acceptée" : "en attente"} existe déjà dans l’autre division. Elle ne donne aucun droit dans la division sélectionnée.</p>}<label className="block text-sm font-bold text-slate-800">Opération<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={kind} onChange={(event) => setKind(event.target.value as RequestKind)}><option value="registration" disabled>Demander à intégrer l’équipe</option><option value="presence_regularization" disabled>Signaler une présence à régulariser</option></select></label><label className="block text-sm font-bold text-slate-800">Division<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={divisionId} onChange={(event) => selectDivision(event.target.value)}>{divisions.map((division) => <option key={division.id} value={division.id}>{division.type === "world_cup" ? "World Cup" : "Casual"}</option>)}</select></label>{error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}</section>;
   if (lifecycle === "upcoming" && !registrationReadinessReady) return <section className="space-y-3" aria-labelledby="spogomi-admission-request-title"><div><h2 id="spogomi-admission-request-title" className="font-black text-slate-900">Votre parcours SPOGOMI</h2><p className="mt-1 text-sm font-semibold text-slate-700">La readiness des inscriptions n’est pas disponible ou n’est pas complète. Aucune nouvelle inscription n’est proposée.</p></div><label className="block text-sm font-bold text-slate-800">Division<select className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white p-2 font-normal" value={divisionId} onChange={(event) => selectDivision(event.target.value)}>{divisions.map((division) => <option key={division.id} value={division.id}>{division.type === "world_cup" ? "World Cup" : "Casual"}</option>)}</select></label>{error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}</section>;
 

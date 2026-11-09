@@ -83,7 +83,9 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
       : input.admissionStatus === "pending" ? "pending"
         : input.admissionStatus === "approved" ? "validated"
         : input.quizStatus === "unavailable" ? "indeterminate"
-      : input.quizStatus !== "passed" ? "later"
+        : input.admissionStatus === "unavailable" ? "indeterminate"
+          : input.activeRegistrationRequest ? "later"
+            : input.quizStatus !== "passed" ? "later"
             : input.registrationStatus === "open" && input.directRegistrationAvailable && !input.activeRegistrationRequest ? "todo" : "later";
   const identityStatus: SpogomiJourneyStatus = !input.isAuthenticated
     ? "access_required"
@@ -126,6 +128,7 @@ function nextCompetitorStep(input: SpogomiEventJourneyInput, steps: readonly Spo
   if (input.lifecycle === "finished") {
     return (["results", "contributions", "attestations", "practical"] as const).map((key) => byKey.get(key)!).find((step) => step.status === "todo" || step.status === "indeterminate") ?? byKey.get("practical")!;
   }
+  if (input.lifecycle !== "in_progress" && (input.admissionStatus === "unavailable" || input.activeRegistrationRequest)) return byKey.get("admission")!;
   if (input.admissionStatus === "pending") return byKey.get("admission")!;
   if (input.admissionStatus === "approved" && input.identityStatus === "identity_unlinked") return byKey.get("identity")!;
   if (input.admissionStatus === "approved" && !input.teamLinked) return byKey.get("team")!;

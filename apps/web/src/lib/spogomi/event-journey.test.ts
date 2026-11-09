@@ -102,8 +102,15 @@ describe("SPOGOMI event journey", () => {
 
   it("does not offer a second registration for an active request in another division", () => {
     const journey = buildSpogomiEventJourney(input({ quizStatus: "passed", activeRegistrationRequest: true }));
-    expect(journey.next).toMatchObject({ key: "practical" });
+    expect(journey.next).toMatchObject({ key: "admission" });
     expect(journey.steps.find((step) => step.key === "registration")).toMatchObject({ status: "later" });
+  });
+
+  it("does not prioritize the quiz when admission state is blocked or unavailable", () => {
+    expect(buildSpogomiEventJourney(input({ quizStatus: "missing", activeRegistrationRequest: true })).next).toMatchObject({ key: "admission" });
+    const unavailable = buildSpogomiEventJourney(input({ quizStatus: "passed", admissionStatus: "unavailable" }));
+    expect(unavailable.next).toMatchObject({ key: "admission" });
+    expect(unavailable.steps.find((step) => step.key === "registration")).toMatchObject({ status: "indeterminate" });
   });
 
   it("keeps the in-progress regularization path for anonymous visitors and removes the quiz link", () => {

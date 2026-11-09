@@ -129,7 +129,7 @@ describe("SPOGOMI consumer components", () => {
 
   it("keeps a pending request isolated to its division and preserves the selected division in the URL", async () => {
     authState.isSignedIn = true;
-    fetchMock.mockResolvedValueOnce(jsonResponse({ quiz: { available: false, missing: [] } })).mockResolvedValueOnce(jsonResponse({ requests: [{
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [{
       id: "casual-request", requestKind: "registration", divisionId: "casual", status: "pending",
       providedContext: "", decisionMessage: null, createdAt: "2026-10-01T08:00:00Z",
     }] }));
@@ -165,6 +165,43 @@ describe("SPOGOMI consumer components", () => {
     });
     expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(0);
     expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Aucune nouvelle inscription n’est proposée"))).toHaveLength(1);
+    renderer.unmount();
+  });
+
+  it("keeps the form closed after a GET failure and retries without inventing an empty list", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockRejectedValueOnce(new Error("GET indisponible")).mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" signInHref="/sign-in" registrationReadinessReady divisions={[{ id: "casual", type: "casual", directRegistrationAvailable: true }]} />);
+      await flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("GET indisponible"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(0);
+    const retry = findButton(renderer, "Réessayer");
+    await act(async () => { retry.props.onClick(); await new Promise((resolve) => setTimeout(resolve, 100)); });
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Réessayer"))).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(1);
+    renderer.unmount();
+  });
+
+  it("prioritizes a blocking request from another division over a local terminal request", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [
+      { id: "local-rejected", requestKind: "registration", divisionId: "casual", status: "rejected", providedContext: "", decisionMessage: "Refusée", createdAt: "2026-10-01T08:00:00Z" },
+      { id: "world-pending", requestKind: "registration", divisionId: "world", status: "pending", providedContext: "", decisionMessage: null, createdAt: "2026-10-02T08:00:00Z" },
+    ] }));
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" initialDivisionId="casual" signInHref="/sign-in" registrationReadinessReady divisions={[{ id: "casual", type: "casual", directRegistrationAvailable: true }, { id: "world", type: "world_cup", directRegistrationAvailable: true }]} />);
+      await flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("dans l’autre division"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => nodeText(node).includes("Demande refusée"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(0);
+    expect(renderer.root.findAllByType("select")).toHaveLength(1);
     renderer.unmount();
   });
 
