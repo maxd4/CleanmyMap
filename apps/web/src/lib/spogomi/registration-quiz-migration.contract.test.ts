@@ -5,6 +5,7 @@ const quizMigration = readFileSync(new URL("../../../supabase/migrations/2026110
 const gateMigration = readFileSync(new URL("../../../supabase/migrations/20261109000006_spogomi_registration_quiz_admission_gate.sql", import.meta.url), "utf8");
 const fixMigration = readFileSync(new URL("../../../supabase/migrations/20261109143630_spogomi_registration_quiz_contract_fix.sql", import.meta.url), "utf8");
 const privacyMigration = readFileSync(new URL("../../../supabase/migrations/20261109170000_spogomi_registration_quiz_rotation_privacy.sql", import.meta.url), "utf8");
+const secretRotationMigration = readFileSync(new URL("../../../supabase/migrations/20261109210000_spogomi_registration_quiz_secret_rotation.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI registration quiz migration contracts", () => {
   it("persists only a minimal account/event/division/version proof and revokes client RPC access", () => {
@@ -53,5 +54,24 @@ describe("SPOGOMI registration quiz migration contracts", () => {
     expect(privacyMigration).toContain("v_seed := md5(concat_ws(':', p_event_id::text, p_division_id::text, v_question ->> 'id'));");
     expect(privacyMigration).not.toContain("v_question ->> 'id', v_correct_label, v_incorrect_label");
     expect(privacyMigration).toContain("public projection still strips the answer");
+  });
+
+  it("blocks reconstruction with the historical public MD5 parity attack", () => {
+    const publicParity = (eventId: string, divisionId: string, questionId: string) =>
+      `${eventId}:${divisionId}:${questionId}`;
+    const publicInputs = [
+      publicParity("event-1", "division-a", "schedule"),
+      publicParity("event-2", "division-b", "safety"),
+      publicParity("event-3", "division-a", "route"),
+    ];
+
+    expect(publicInputs).toHaveLength(3);
+    expect(secretRotationMigration).toContain("spogomi_registration_quiz_rotation_secrets");
+    expect(secretRotationMigration).toContain("gen_random_bytes(32)");
+    expect(secretRotationMigration).toContain("public.hmac(");
+    expect(secretRotationMigration).toContain("v_rotation_secret");
+    expect(secretRotationMigration).not.toContain("md5(concat_ws(':', p_event_id::text, p_division_id::text, v_question ->> 'id'))");
+    expect(secretRotationMigration).toMatch(/revoke all on table public\.spogomi_registration_quiz_rotation_secrets[\s\S]+grant select on table public\.spogomi_registration_quiz_rotation_secrets[\s\S]+to service_role/i);
+    expect(secretRotationMigration).toMatch(/revoke all on function public\.spogomi_registration_quiz_rotate_options[\s\S]+grant execute on function public\.spogomi_registration_quiz_rotate_options[\s\S]+to service_role/i);
   });
 });
