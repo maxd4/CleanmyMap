@@ -28,6 +28,22 @@ declare
   v_before_revision bigint;
   v_before_history_count bigint;
 begin
+  if not has_function_privilege('service_role', 'public.spogomi_update_event_metadata(uuid,bigint,text,text,text,timestamptz,timestamptz,text,jsonb,text,text)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.spogomi_update_event_metadata(uuid,bigint,text,text,text,timestamptz,timestamptz,text,jsonb,text,text)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.spogomi_update_event_metadata(uuid,bigint,text,text,text,timestamptz,timestamptz,text,jsonb,text,text)', 'EXECUTE') then
+    raise exception 'event metadata RPC ACL is not service-only';
+  end if;
+  if to_regprocedure('public.spogomi_update_event_metadata_apply(uuid,bigint,text,text,text,timestamptz,timestamptz,text,jsonb,text,text)') is not null then
+    raise exception 'private event metadata implementation remains callable';
+  end if;
+  if not has_function_privilege('service_role', 'public.spogomi_update_division_regulation(uuid,uuid,bigint,text,text,text,text,jsonb,jsonb)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.spogomi_update_division_regulation(uuid,uuid,bigint,text,text,text,text,jsonb,jsonb)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.spogomi_update_division_regulation(uuid,uuid,bigint,text,text,text,text,jsonb,jsonb)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.spogomi_update_division_regulation(uuid,uuid,bigint,text,text,text,text,jsonb,jsonb,jsonb,jsonb)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.spogomi_update_division_regulation(uuid,uuid,bigint,text,text,text,text,jsonb,jsonb,jsonb,jsonb)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.spogomi_update_division_regulation(uuid,uuid,bigint,text,text,text,text,jsonb,jsonb,jsonb,jsonb)', 'EXECUTE') then
+    raise exception 'division regulation RPC ACL is not service-only for both signatures';
+  end if;
   if has_function_privilege('anon', 'public.spogomi_registration_policy_for_division(uuid,uuid)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.spogomi_registration_policy_for_division(uuid,uuid)', 'EXECUTE')
      or not has_function_privilege('service_role', 'public.spogomi_registration_policy_for_division(uuid,uuid)', 'EXECUTE') then

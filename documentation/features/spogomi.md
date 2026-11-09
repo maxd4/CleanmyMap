@@ -301,9 +301,11 @@ requise. La confirmation explicite est disponible par
 ne transforme jamais une notification en admission et n'annule aucun droit
 existant. Les RPC server-only de préparation reçoivent l'identité Clerk déjà
 vérifiée par la route organisateur et la posent uniquement dans un contexte
-transactionnel local avant l'écriture : l'historique conserve donc l'acteur
-réel, tandis que `system` reste réservé aux écritures effectivement
-systémiques ou aux mutations directes sans acteur applicatif.
+transactionnel local avant l'écriture. La modification de métadonnées passe
+par une unique RPC `SECURITY INVOKER` ; aucune fonction privée déléguée ne reste
+appelable séparément. L'historique conserve donc l'acteur réel, tandis que
+`system` reste réservé aux écritures effectivement systémiques ou aux mutations
+directes sans acteur applicatif.
 
 Dans le parcours authentifié `/spogomi/mes-evenements`, le compte connecté
 retrouve ces changements sous la fiche de l'édition lorsqu'il conserve une
