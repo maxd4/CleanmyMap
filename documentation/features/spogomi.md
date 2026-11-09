@@ -24,8 +24,12 @@ supplémentaire n'est persisté :
   jamais à le déduire ;
 - **inscriptions** : `not_open`, `open`, `closed`, `capacity_reached`, dérivées
   de `spogomi_events.state`, de `registrationPolicy.capacity` et du décompte
-  des participants `registered`. En mode `mixed`, chaque division conserve son
-  propre état et l'édition expose leur agrégation sans effacer la distinction ;
+  des participants `registered`. La politique de l’édition constitue la base,
+  puis les clés présentes dans la politique de la division la remplacent ; la
+  capacité et le décompte sont toujours évalués dans la division concernée.
+  En mode `mixed`, chaque division conserve son propre état et l’édition expose
+  leur agrégation sans effacer la distinction ; sa structure attendue doit être
+  complète avant l’ouverture.
 - **résultats** : `unavailable`, `provisional`, `certified`, `published`.
   `certified` nécessite une projection de classement réellement exposable :
   toutes les équipes éligibles du classement concerné doivent être couvertes

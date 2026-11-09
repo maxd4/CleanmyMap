@@ -158,7 +158,7 @@ function registrationPolicy(config: unknown): Record<string, unknown> {
 
 function capacityFromPolicy(policy: Record<string, unknown>): number | null {
   const value = policy.capacity;
-  if (typeof value === "number" && Number.isInteger(value) && value >= 0) return value;
+  if (typeof value === "number" && Number.isInteger(value) && value >= 1) return value;
   if (typeof value === "string" && /^\d+$/.test(value)) return Number(value);
   return null;
 }

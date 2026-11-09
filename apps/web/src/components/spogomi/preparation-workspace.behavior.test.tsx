@@ -139,6 +139,19 @@ describe("SPOGOMI preparation workspace", () => {
     renderer.unmount();
   });
 
+  it("activates an inactive division from its checklist link before exposing its regulation target", async () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="settings" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const inactiveLink = renderer.root.findAllByType("a").find((link) => link.props.href === "#spogomi-regulation-division-world");
+    expect(inactiveLink).toBeTruthy();
+    act(() => { inactiveLink?.props.onClick?.({ preventDefault: vi.fn() }); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(fetchCalls().some(([url]) => String(url).includes("divisionId=division-world"))).toBe(true);
+    expect(renderer.root.findAll((node) => node.props.id === "spogomi-regulation-division-world")).toHaveLength(1);
+    renderer.unmount();
+  });
+
   it("previews a synthetic roster, exposes its anomaly, then confirms only the selected rows", async () => {
     const preview = {
       sourceSystem: "cachan_ticketing", format: "csv", fileName: "synthetic-roster.csv", contentHash: "hash-roster", importKey: "import-roster", encoding: "utf-8", sheetName: null, headerRow: 1,

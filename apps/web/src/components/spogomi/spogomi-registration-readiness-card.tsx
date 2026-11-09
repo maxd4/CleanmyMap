@@ -12,6 +12,7 @@ type Props = {
   readiness: SpogomiRegistrationReadiness;
   busy: boolean;
   action: (url: string, init?: RequestInit) => Promise<Record<string, unknown> | null>;
+  navigateChecklist?: (href: string, divisionId?: string) => void;
 };
 
 function itemTone(item: SpogomiRegistrationReadinessItem): string {
@@ -22,7 +23,7 @@ function itemLabel(item: SpogomiRegistrationReadinessItem): string {
   return item.status === "complete" ? "Complet" : readinessStatusLabel(item.status);
 }
 
-export function SpogomiRegistrationReadinessCard({ eventId, state, publicVisibility, readiness, busy, action }: Props) {
+export function SpogomiRegistrationReadinessCard({ eventId, state, publicVisibility, readiness, busy, action, navigateChecklist }: Props) {
   const [policy, setPolicy] = useState<SpogomiRegistrationPolicy>(readiness.policy);
   const setText = (key: keyof SpogomiRegistrationPolicy, value: string) => setPolicy((current) => ({ ...current, [key]: value }));
   const save = () => {
@@ -44,9 +45,10 @@ export function SpogomiRegistrationReadinessCard({ eventId, state, publicVisibil
     }).catch(() => undefined);
   };
   const readinessItems = [
-    ...readiness.editionItems,
+    ...readiness.editionItems.map((item) => ({ ...item, divisionId: undefined as string | undefined })),
     ...readiness.divisions.flatMap((division) => division.items.map((item) => ({
       ...item,
+      divisionId: division.divisionId,
       label: (division.divisionType === "world_cup" ? "World Cup" : "Casual") + " · " + item.label,
     }))),
   ];
@@ -61,7 +63,7 @@ export function SpogomiRegistrationReadinessCard({ eventId, state, publicVisibil
       </CmmButton>
     </div>
     <div className="grid gap-2 sm:grid-cols-2" aria-label="Checklist de préparation des inscriptions">
-      {readinessItems.map((item, index) => <a key={item.id + "-" + item.href + "-" + index} href={item.href} className={"rounded-lg p-3 text-sm font-bold " + itemTone(item)}><span className="block">{item.label}</span><span className="text-xs font-normal">{itemLabel(item)}{item.required ? " · obligatoire" : " · non applicable"}</span></a>)}
+      {readinessItems.map((item, index) => <a key={item.id + "-" + item.href + "-" + index} href={item.href} onClick={(event) => { if (!navigateChecklist) return; event.preventDefault(); navigateChecklist(item.href, item.divisionId); }} className={"rounded-lg p-3 text-sm font-bold " + itemTone(item)}><span className="block">{item.label}</span><span className="text-xs font-normal">{itemLabel(item)}{item.required ? " · obligatoire" : " · non applicable"}</span></a>)}
     </div>
     {readiness.divisions.map((division) => <div key={division.divisionId} className="rounded-xl border border-black/10 bg-white/70 p-3 text-sm"><p className="font-black">{division.divisionType === "world_cup" ? "World Cup" : "Casual"} · {division.ready ? "prête" : "à compléter"}</p><p className="mt-1 text-slate-600">Les éléments réglementaires, catégories, horaires, capacité et éligibilité sont évalués pour cette division uniquement.</p></div>)}
     <div id="spogomi-event-information" className="grid gap-3 md:grid-cols-2">
