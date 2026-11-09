@@ -16,14 +16,16 @@ describe("HomeFooter", () => {
     expect(html).toContain("logo-grand-sombre.png");
     expect(html).toContain("cmm-ribbon-frame");
     expect(html).toContain("cmm-ribbon-text");
-    expect(html).toContain('role="region"');
     expect(html).toContain('aria-label="Pied de page"');
+    expect(html).not.toContain('role="region"');
+    expect(html).not.toContain("cmm-footer-scroll");
+    expect(html).not.toContain("tabindex=");
   });
 
-  it("uses one desktop row while keeping the mobile composition available", () => {
+  it("uses a wrap-safe responsive layout without a horizontal scroll contract", () => {
     const html = renderToStaticMarkup(<HomeFooter />);
     const getFooterClass = (html: string) =>
-      html.match(/<footer class="([^"]+)"/)?.[1];
+      html.match(/<footer[^>]*class="([^"]+)"/)?.[1];
     const layoutCss = readFileSync(
       new URL("../../styles/layout.css", import.meta.url),
       "utf8",
@@ -32,7 +34,6 @@ describe("HomeFooter", () => {
     expect(getFooterClass(html)).toContain("cmm-ribbon-frame");
     expect(getFooterClass(html)).toContain("w-full");
     expect(getFooterClass(html)).toContain("min-w-0");
-    expect(html).toContain("cmm-footer-scroll");
     expect(html).toContain("cmm-footer-row");
     expect(html).toContain("cmm-footer-contact-actions");
     expect(html).toContain("cmm-footer-legal-links");
@@ -40,9 +41,13 @@ describe("HomeFooter", () => {
     expect(html.match(/cmm-footer-contact-link/g)).toHaveLength(3);
     expect(html).toContain('href="https://github.com/maxd4/CleanMyMap"');
     expect(layoutCss).toContain(".cmm-footer-row");
-    expect(layoutCss).toContain("min-width: max-content");
-    expect(layoutCss).toContain("overflow-x: auto");
-    expect(layoutCss).not.toContain("minmax(14rem, 1fr)");
+    expect(layoutCss).toContain("grid-template-columns: minmax(17rem");
+    expect(layoutCss).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    expect(layoutCss).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(layoutCss).toContain("flex-wrap: wrap");
+    expect(layoutCss).not.toContain("min-width: max-content");
+    expect(layoutCss).not.toContain("overflow-x: auto");
+    expect(layoutCss).not.toContain(".cmm-footer-scroll");
   });
 
   it("preserves the complete legal and contact navigation", () => {
