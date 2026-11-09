@@ -163,7 +163,18 @@ describe("CmmDropdown", () => {
     const panel = document.body.querySelector<HTMLDivElement>("#interactive-dropdown");
     expect(panel).not.toBeNull();
     expect(panel?.parentElement).toBe(document.body);
-    expect(panel?.style.left).toBe("70px");
+    vi.spyOn(panel!, "getBoundingClientRect").mockReturnValue({
+      top: 62,
+      bottom: 262,
+      left: 0,
+      right: 100,
+      width: 100,
+      height: 200,
+    } as DOMRect);
+    act(() => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(panel?.style.left).toBe("20px");
     expect(panel?.style.top).toBe("62px");
     expect(panel?.style.maxHeight).toContain("calc(100vh - 1rem)");
     expect(panel?.querySelector("[data-cmm-dropdown-scroll-region]")?.className).toContain("overflow-y-auto");
@@ -240,6 +251,17 @@ describe("CmmDropdown", () => {
     expect(firstLink).not.toBeNull();
     expect(document.activeElement).toBe(firstLink);
 
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(document.activeElement).toBe(trigger);
+
+    act(() => {
+      trigger!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const reopenedLink = document.body.querySelector<HTMLAnchorElement>('#keyboard-navigation-dropdown a[href="/actions/new"]');
+    expect(document.activeElement).toBe(reopenedLink);
     act(() => {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     });
@@ -352,9 +374,19 @@ describe("CmmDropdown", () => {
 
     const panel = document.body.querySelector<HTMLDivElement>("#bounded-dropdown");
     expect(panel?.parentElement).toBe(document.body);
-    expect(panel?.style.left).toBe("285px");
-    expect(panel?.style.transform).toContain("translateX(clamp(");
-    expect(panel?.style.transform).toContain("100%");
+    vi.spyOn(panel!, "getBoundingClientRect").mockReturnValue({
+      top: 476,
+      bottom: 700,
+      left: 8,
+      right: 382,
+      width: 374,
+      height: 224,
+    } as DOMRect);
+    act(() => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(panel?.style.left).toBe("8px");
+    expect(panel?.style.transform).toBe("none");
   });
 
   it("keeps a hover-open portal alive while crossing into the panel", () => {

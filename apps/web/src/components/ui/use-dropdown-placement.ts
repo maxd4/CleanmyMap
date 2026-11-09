@@ -7,7 +7,8 @@ type DropdownPlacement = {
   triggerRect: Pick<DOMRect, "top" | "bottom" | "left" | "width"> | null;
   viewportWidth: number;
   viewportHeight: number;
-  layoutScale: number;
+  panelWidth: number;
+  panelHeight: number;
 };
 
 type UseDropdownPlacementOptions = {
@@ -37,20 +38,6 @@ export function resolveDropdownOpenUp(
   }
   return spaceAbove > spaceBelow;
 }
-function resolveDropdownLayoutScale(element: HTMLElement): number {
-  let scale = 1;
-  let current: HTMLElement | null = element;
-  while (current) {
-    const zoom = Number.parseFloat(window.getComputedStyle(current).zoom);
-    if (Number.isFinite(zoom) && zoom > 0) {
-      scale *= zoom;
-    }
-    current = current.parentElement;
-  }
-
-  return Number.isFinite(scale) && scale > 0 ? scale : 1;
-}
-
 export function useDropdownPlacement({
   isOpen,
   triggerRef,
@@ -62,7 +49,8 @@ export function useDropdownPlacement({
     triggerRect: null,
     viewportWidth: 0,
     viewportHeight: 0,
-    layoutScale: 1,
+    panelWidth: 0,
+    panelHeight: 0,
   });
 
   const updatePlacement = useCallback(() => {
@@ -72,7 +60,8 @@ export function useDropdownPlacement({
     }
 
     const rect = trigger.getBoundingClientRect();
-    const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 0;
+    const panelRect = panelRef.current?.getBoundingClientRect();
+    const panelHeight = panelRect?.height ?? 0;
     const openUp = resolveDropdownOpenUp(rect, window.innerHeight, verticalGap, panelHeight);
 
     setPlacement({
@@ -85,7 +74,8 @@ export function useDropdownPlacement({
       },
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
-      layoutScale: resolveDropdownLayoutScale(trigger),
+      panelWidth: panelRect?.width ?? 0,
+      panelHeight,
     });
   }, [panelRef, triggerRef, verticalGap]);
 
@@ -104,6 +94,10 @@ export function useDropdownPlacement({
       }, () => undefined);
     }
     const settleTimer = window.setTimeout(updatePlacement, 600);
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updatePlacement);
+    if (resizeObserver && panelRef.current) {
+      resizeObserver.observe(panelRef.current);
+    }
 
     const onResize = () => updatePlacement();
     const onScroll = () => updatePlacement();
@@ -114,10 +108,11 @@ export function useDropdownPlacement({
     return () => {
       active = false;
       window.clearTimeout(settleTimer);
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [isOpen, updatePlacement]);
+  }, [isOpen, panelRef, updatePlacement]);
 
   return placement;
 }

@@ -16,6 +16,7 @@ export type CmmPopoverTriggerProps = CmmDropdownTriggerProps;
 export interface CmmPopoverProps {
   id: string;
   ariaLabel: string;
+  ariaLabelledBy?: string;
   children: ReactNode;
   renderTrigger: (props: CmmPopoverTriggerProps) => ReactElement;
   open?: boolean;
@@ -36,6 +37,7 @@ export interface CmmPopoverProps {
 export function CmmPopover({
   id,
   ariaLabel,
+  ariaLabelledBy,
   children,
   renderTrigger,
   open,
@@ -52,6 +54,7 @@ export function CmmPopover({
     <CmmDropdown
       id={id}
       ariaLabel={ariaLabel}
+      ariaLabelledBy={ariaLabelledBy}
       renderTrigger={renderTrigger}
       open={open}
       defaultOpen={defaultOpen}

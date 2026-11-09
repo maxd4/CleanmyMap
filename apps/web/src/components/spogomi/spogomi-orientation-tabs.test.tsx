@@ -46,7 +46,40 @@ describe("SpogomiOrientationTabs", () => {
     expect(primaryLink?.props["data-cmm-button-width"]).toBe("auto");
     expect(links(renderer).some((link) => link.props.href === "/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" && link.props["aria-label"] === "Discuter")).toBe(true);
     expect(infoButtons(volunteerPanel)).toHaveLength(10);
+    expect(infoButtons(renderer)).toHaveLength(29);
+    expect(infoButtons(renderer).map((button) => button.props["aria-label"])).toEqual([
+      "Informations sur Voir les compétitions",
+      "Informations sur Retrouver ma participation",
+      "Informations sur S’inscrire",
+      "Informations sur Rejoindre une équipe",
+      "Informations sur Rattacher mon compte par code",
+      "Informations sur Demander de l’assistance",
+      "Informations sur Discuter",
+      "Informations sur Voir les résultats",
+      "Informations sur Mes contributions",
+      "Informations sur Télécharger mes attestations",
+      "Informations sur Mes événements habilités",
+      "Informations sur Certifier les mesures de terrain",
+      "Informations sur Accueil et présences",
+      "Informations sur Modération autorisée",
+      "Informations sur Chronométrage et opérations terrain",
+      "Informations sur Pesée et mesures",
+      "Informations sur Arbitrer les soumissions",
+      "Informations sur Mes compétitions",
+      "Informations sur Créer une compétition",
+      "Informations sur Importer les équipes",
+      "Informations sur Gérer les équipes",
+      "Informations sur Vérifier le règlement",
+      "Informations sur Importer le GPX",
+      "Informations sur Gérer les accès",
+      "Informations sur Contrôler les résultats",
+      "Informations sur Publier l’événement",
+      "Informations sur Publier les résultats",
+      "Informations sur Consolider le bilan",
+      "Informations sur Exporter les résultats",
+    ]);
     expect(infoButtons(volunteerPanel).every((button) => button.props["aria-expanded"] === false && button.props["aria-haspopup"] === "dialog" && button.props["aria-controls"] && typeof button.props.onKeyDown === "function" && typeof button.props.onMouseEnter === "function")).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Certifier les résultats");
     for (const panel of renderer.root.findAllByProps({ role: "tabpanel" })) {
       expect(panel.props.id).toBeTruthy();
       expect(panel.props["aria-labelledby"]).toBeTruthy();
@@ -57,6 +90,16 @@ describe("SpogomiOrientationTabs", () => {
     }
     expect(links(renderer).some((link) => link.props.href === "/spogomi#spogomi-registration")).toBe(true);
     expect(links(renderer).some((link) => link.props.href === "/spogomi#spogomi-assistance")).toBe(true);
+    expect(buildSpogomiActionInfo({
+      label: "S’inscrire",
+      description: "Depuis la fiche d’une édition publiée, vérifier le règlement et le quiz applicables avant d’envoyer une demande.",
+      accessCondition: "Compétition publiée et inscriptions autorisées ; connexion requise pour envoyer la demande.",
+      href: "/spogomi#spogomi-registration",
+      requiresAuthentication: false,
+    })).toMatchObject({
+      where: expect.stringContaining("ancre d’inscription"),
+      limitation: expect.stringContaining("Quiz applicable"),
+    });
     expect(links(renderer).some((link) => link.props.href === "/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dvolunteers")).toBe(true);
     expect(buildSpogomiActionInfo({
       label: "Télécharger mes attestations",
@@ -66,7 +109,7 @@ describe("SpogomiOrientationTabs", () => {
       requiresAuthentication: false,
     })).toMatchObject({
       purpose: "Télécharger une attestation depuis la section personnelle après certification. Une présence ou une demande seule ne suffit pas.",
-      where: expect.stringContaining("section personnelle"),
+      where: expect.stringContaining("espace personnel"),
       access: "Connexion requise ; mission certifiée et attestation disponible.",
     });
     const attestationInfo = infoButtons(volunteerPanel).find((button) => button.props["aria-label"] === "Informations sur Télécharger mes attestations");

@@ -38,6 +38,7 @@ export type CmmDropdownTriggerProps = {
 export type CmmDropdownProps = {
   id: string;
   ariaLabel: string;
+  ariaLabelledBy?: string;
   children: ReactNode;
   renderTrigger: (props: CmmDropdownTriggerProps) => ReactElement;
   open?: boolean;
@@ -63,6 +64,7 @@ const PANEL_FOCUSABLE_SELECTOR = [
   "textarea:not([disabled])",
   "[tabindex]:not([tabindex=\"-1\"])",
 ].join(",");
+const VIEWPORT_MARGIN_PX = 8;
 
 function subscribeToDocumentBody() {
   return () => undefined;
@@ -79,6 +81,7 @@ function getServerPortalTarget() {
 export function CmmDropdown({
   id,
   ariaLabel,
+  ariaLabelledBy,
   children,
   renderTrigger,
   open,
@@ -276,6 +279,9 @@ export function CmmDropdown({
         return;
       }
       clickToggleOpenRef.current = isOpen;
+      if (!isOpen) {
+        focusPanelOnOpenRef.current = true;
+      }
     },
     onClick: (event) => {
       if (!event.defaultPrevented) {
@@ -302,21 +308,29 @@ export function CmmDropdown({
   };
 
   const triggerRect = placement.triggerRect;
-  const layoutScale = placement.layoutScale;
-  const triggerCenter = triggerRect
-    ? `${(triggerRect.left + triggerRect.width / 2) / layoutScale}px`
-    : "50%";
-  const panelLeft = panelAlignment === "start" && triggerRect
-    ? `${triggerRect.left / layoutScale}px`
-    : triggerCenter;
-  const horizontalShift = panelAlignment === "start" && triggerRect && placement.viewportWidth > 0
-    ? `clamp(${(8 - triggerRect.left) / layoutScale}px, 0px, calc(${(placement.viewportWidth - 8 - triggerRect.left) / layoutScale}px - 100%))`
-    : undefined;
+  const triggerCenter = triggerRect ? triggerRect.left + triggerRect.width / 2 : null;
+  const measuredPanelWidth = placement.panelWidth > 0 ? placement.panelWidth : null;
+  const panelWidthForPlacement = measuredPanelWidth === null
+    ? 0
+    : Math.min(measuredPanelWidth, Math.max(0, placement.viewportWidth - VIEWPORT_MARGIN_PX * 2));
+  const idealPanelLeft = triggerRect && measuredPanelWidth !== null
+    ? panelAlignment === "start"
+      ? triggerRect.left
+      : (triggerCenter ?? 0) - panelWidthForPlacement / 2
+    : null;
+  const maxPanelLeft = Math.max(VIEWPORT_MARGIN_PX, placement.viewportWidth - VIEWPORT_MARGIN_PX - panelWidthForPlacement);
+  const clampedPanelLeft = idealPanelLeft === null
+    ? null
+    : Math.min(maxPanelLeft, Math.max(VIEWPORT_MARGIN_PX, idealPanelLeft));
+  const panelLeft = clampedPanelLeft === null
+    ? panelAlignment === "start" && triggerRect ? `${Math.max(VIEWPORT_MARGIN_PX, triggerRect.left)}px` : "50%"
+    : `${clampedPanelLeft}px`;
+  const panelTransform = clampedPanelLeft === null && panelAlignment === "center" ? "translateX(-50%)" : "none";
   const arrowStyle = panelAlignment === "start" && triggerRect
     ? {
-        left: horizontalShift
-          ? `calc(${triggerRect.width / (2 * layoutScale)}px - ${horizontalShift})`
-          : `${triggerRect.width / (2 * layoutScale)}px`,
+        left: clampedPanelLeft === null || measuredPanelWidth === null
+          ? `${triggerRect.width / 2}px`
+          : `${Math.min(Math.max(triggerCenter! - clampedPanelLeft, 12), Math.max(12, measuredPanelWidth - 12))}px`,
       }
     : undefined;
   const availablePanelHeight = triggerRect && placement.viewportHeight > 0
@@ -324,7 +338,7 @@ export function CmmDropdown({
         0,
         (placement.openUp
           ? triggerRect.top - verticalGap
-          : placement.viewportHeight - triggerRect.bottom - verticalGap) / layoutScale - 1,
+          : placement.viewportHeight - triggerRect.bottom - verticalGap) - 1,
       )
     : null;
   const maxPanelHeight = availablePanelHeight === null
@@ -334,13 +348,13 @@ export function CmmDropdown({
     ...panelStyle,
     maxHeight: maxPanelHeight,
     left: panelLeft,
-    ...(horizontalShift ? { transform: `translateX(${horizontalShift})` } : {}),
+    transform: panelTransform,
     ...(triggerRect
       ? placement.openUp
         ? {
-            bottom: `${(placement.viewportHeight - triggerRect.top + verticalGap) / layoutScale}px`,
+            bottom: `${placement.viewportHeight - triggerRect.top + verticalGap}px`,
           }
-        : { top: `${(triggerRect.bottom + verticalGap) / layoutScale}px` }
+        : { top: `${triggerRect.bottom + verticalGap}px` }
       : {}),
   };
 
@@ -350,9 +364,9 @@ export function CmmDropdown({
       id={id}
       role={panelRole}
       aria-label={ariaLabel}
+      {...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {})}
       className={cn(
-        "fixed z-[70] flex max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] flex-col overflow-visible",
-        panelAlignment === "center" && "-translate-x-1/2",
+        "fixed z-[70] flex max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] flex-col overflow-visible",
         panelClassName,
       )}
       style={fixedPositionStyle}

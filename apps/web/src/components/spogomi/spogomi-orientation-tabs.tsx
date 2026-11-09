@@ -67,13 +67,13 @@ function publicAction(label: string, description: string, accessCondition: strin
 
 function actionDestination(href: string): string {
   if (href === "#spogomi-events") return "Le catalogue public des compétitions, puis la fiche de l’édition.";
-  if (href.includes("#spogomi-registration")) return "La fiche publique de l’édition, dans la section Inscription.";
-  if (href.includes("#spogomi-team")) return "La fiche publique de l’édition, dans la section Équipe.";
-  if (href.includes("#spogomi-identity")) return "La fiche publique de l’édition, dans la section de rattachement.";
-  if (href.includes("#spogomi-assistance")) return "La page d’assistance contextualisée de l’édition.";
-  if (href.includes("#spogomi-results")) return "La fiche publique de l’édition, lorsque ses résultats sont visibles.";
-  if (href.includes("#spogomi-contributions")) return "La fiche publique de l’édition, dans la surface des contributions.";
-  if (href.includes("#spogomi-attestations")) return "La fiche publique de l’édition, puis la section personnelle.";
+  if (href.includes("#spogomi-registration")) return "L’ancre d’inscription du catalogue, puis la fiche publique de l’édition choisie.";
+  if (href.includes("#spogomi-team")) return "L’ancre équipe du catalogue, puis la fiche publique de l’édition choisie.";
+  if (href.includes("#spogomi-identity")) return "L’ancre de rattachement du catalogue, puis la fiche de l’édition concernée.";
+  if (href.includes("#spogomi-assistance")) return "L’explication d’assistance du catalogue ; un lien privé contextualisé est ensuite nécessaire.";
+  if (href.includes("#spogomi-results")) return "Le catalogue, puis la fiche publique de l’édition lorsque ses résultats sont publiés.";
+  if (href.includes("#spogomi-contributions")) return "Le catalogue, puis la fiche publique de l’édition et sa surface de contributions.";
+  if (href.includes("#spogomi-attestations")) return "Le catalogue, puis la fiche de l’édition et l’espace personnel après connexion.";
   if (href.startsWith("/sections/messagerie")) return "Le salon communautaire SPOGOMI.";
   if (href === "/spogomi/nouveau") return "Le formulaire de création d’une édition SPOGOMI.";
   if (href.startsWith("/spogomi/mes-evenements")) return "Le catalogue privé SPOGOMI, puis la section autorisée de l’édition.";
@@ -81,6 +81,7 @@ function actionDestination(href: string): string {
 }
 
 function actionLimitation(action: Pick<OrientationAction, "label" | "requiresAuthentication">): string {
+  if (action.label === "S’inscrire") return "Quiz applicable, capacité, consentements et contrôles serveur restent obligatoires ; ce lien ne soumet aucune demande.";
   if (action.label === "Rejoindre une équipe") return "La demande ne crée ni équipe ni participant et ne révèle pas le roster.";
   if (action.label === "Rattacher mon compte par code") return "Le code doit être remis par l’organisation ; aucune recherche nominative ne le remplace.";
   if (action.label === "Demander de l’assistance") return "Aucune demande n’est envoyée sans invitation ou lien privé contextualisé.";
@@ -214,11 +215,11 @@ function buildOrientations(): Orientation[] {
           title: "Avant la compétition",
           description: "Trouver une édition, préparer son inscription et sécuriser son rattachement.",
           actions: [
-            publicAction("S’inscrire", "Ouvrez une compétition publiée ci-dessus puis utilisez sa demande d’inscription lorsque l’état, la division et le règlement l’autorisent. Les éditions privées ne sont jamais énumérées ici.", "Compétition publiée et inscriptions autorisées ; connexion requise pour envoyer la demande.", ClipboardCheck, "/spogomi#spogomi-registration"),
+            publicAction("S’inscrire", "Depuis la fiche d’une édition publiée, vérifier le règlement et le quiz applicables avant d’envoyer une demande.", "Compétition publiée et inscriptions autorisées ; connexion requise pour envoyer la demande.", ClipboardCheck, "/spogomi#spogomi-registration"),
             publicAction("Rejoindre une équipe", "Depuis la fiche publique, demandez à rejoindre une équipe ou utilisez l’invitation remise par l’organisation. Cette demande ne crée ni équipe ni participant et ne révèle pas le roster.", "Compétition publiée et inscription autorisée ; code individuel ou invitation selon le parcours.", Users, "/spogomi#spogomi-team"),
             publicAction("Rattacher mon compte par code", "Le code individuel est remis directement par l’organisation et se saisit sur la fiche de l’édition. Il ne doit pas être deviné, partagé ou remplacé par une recherche nominative.", "Code individuel nécessaire ; l’identité est vérifiée par le serveur.", KeyRound, "/spogomi#spogomi-identity"),
             publicAction("Demander de l’assistance", "Si le code est perdu, demandez à l’organisation un lien privé contextualisé contenant l’événement et l’invitation. Cette page générale n’envoie aucune demande sans ce contexte.", "Invitation ou lien privé nécessaire ; aucune relation n’est accordée par cette page.", HandHelping, "/spogomi#spogomi-assistance"),
-            publicAction("Discuter", "Rejoindre le salon communautaire SPOGOMI.", "Connexion requise pour participer au salon.", Send, PUBLIC_DISCUSSIONS_HREF),
+            publicAction("Discuter", "Ouvrir le salon communautaire SPOGOMI ; la connexion est nécessaire pour y participer.", "Lecture publique possible ; connexion requise pour participer au salon.", Send, PUBLIC_DISCUSSIONS_HREF),
           ],
         },
         {

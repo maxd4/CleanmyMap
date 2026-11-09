@@ -102,7 +102,9 @@ extérieure et le pont de survol doivent donc considérer le wrapper du
 déclencheur et le panneau portalisé comme une même surface interactive.
 Le conteneur positionné reste visible pour la flèche et le pont ; son contenu
 est limité à la hauteur du viewport et défile dans une zone interne lorsque le
-panneau est plus haut que l'espace disponible.
+panneau est plus haut que l'espace disponible. Le placement mesure la largeur
+rendue du panneau puis borne son rectangle à une marge viewport de 8 px ; il ne
+réutilise pas un repère calculé dans le contexte CSS d'une carte ou d'un zoom.
 
 ## Dropdowns flottants
 
