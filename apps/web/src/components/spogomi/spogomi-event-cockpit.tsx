@@ -93,11 +93,12 @@ function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: rea
   return "Accès événementiel limité";
 }
 
-function buildCockpitSections(organizer: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean): CockpitSection[] {
+function buildCockpitSections(organizer: boolean, proposalManager: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean): CockpitSection[] {
   const next = new Set<CockpitSection>(["presentation"]);
   if (organizer) {
-    for (const section of ["teams", "attendance", "operations", "help_proposals", "results", "arbitration", "bilan", "settings"] as const) next.add(section);
+    for (const section of ["teams", "attendance", "operations", "results", "arbitration", "bilan", "settings"] as const) next.add(section);
   }
+  if (proposalManager) next.add("help_proposals");
   else {
     if (reviewerRoles.has("checkin")) next.add("attendance");
     if (reviewerRoles.has("referee")) {
@@ -144,6 +145,7 @@ function CockpitSections(props: Omit<Parameters<typeof CockpitSectionView>[0], "
 export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, fieldCapabilities = [], activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; reviewerRoles?: readonly SpogomiReviewerRole[]; fieldCapabilities?: readonly SpogomiFieldOperationsCapability[]; activeRole?: string | null }) {
   const capabilitySet = useMemo(() => new Set(capabilities), [capabilities]);
   const organizer = capabilitySet.has("manage");
+  const proposalManager = capabilitySet.has("manage_help_proposals");
   const verifiedReviewerRoles = useMemo(() => {
     const candidateRoles = reviewerRoles
       ? new Set(reviewerRoles)
@@ -163,7 +165,7 @@ export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, 
   const hasFieldOperations = fieldCapabilities.length > 0;
   const showAdminTeamJoinRequests = activeRole === "admin" || activeRole === "max";
   const [activeSection, setActiveSection] = useState<CockpitSection>("presentation");
-  const sections = useMemo(() => buildCockpitSections(organizer, verifiedReviewerRoles, hasFieldOperations), [hasFieldOperations, organizer, verifiedReviewerRoles]);
+  const sections = useMemo(() => buildCockpitSections(organizer, proposalManager, verifiedReviewerRoles, hasFieldOperations), [hasFieldOperations, organizer, proposalManager, verifiedReviewerRoles]);
 
   useEffect(() => {
     const syncFromHash = () => {

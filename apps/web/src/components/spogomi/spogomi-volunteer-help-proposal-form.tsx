@@ -35,6 +35,7 @@ export function SpogomiVolunteerHelpProposalForm({ eventId, signInHref }: { even
   const [skills, setSkills] = useState("");
   const [experience, setExperience] = useState("");
   const [formStartedAt] = useState(() => Date.now());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => newIdempotencyKey());
 
   const load = useCallback(async () => {
     if (!isLoaded || !isSignedIn) return;
@@ -61,7 +62,7 @@ export function SpogomiVolunteerHelpProposalForm({ eventId, signInHref }: { even
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          idempotencyKey: newIdempotencyKey(),
+          idempotencyKey,
           contactFirstName: firstName,
           contactLastName: lastName,
           contactEmail: email,
@@ -78,6 +79,7 @@ export function SpogomiVolunteerHelpProposalForm({ eventId, signInHref }: { even
       if (!response.ok) throw new Error(body.error ?? "La proposition n’a pas pu être envoyée.");
       if (body.proposal) setProposals((current) => [body.proposal!, ...current.filter((item) => item.id !== body.proposal!.id)]);
       setFirstName(""); setLastName(""); setEmail(""); setPhone(""); setMotivation(""); setSkills(""); setExperience("");
+      setIdempotencyKey(newIdempotencyKey());
       setMessage("Votre proposition a été transmise à l’organisation habilitée. Elle ne vaut pas inscription sportive.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "La proposition n’a pas pu être envoyée.");

@@ -13,6 +13,7 @@ import {
 } from "@/lib/spogomi/volunteer-help-proposals";
 
 export const runtime = "nodejs";
+// Justification force-dynamic: this authenticated event-scoped review queue must never be statically shared.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ eventId: z.string().uuid() });
@@ -35,7 +36,7 @@ async function authorizeOrganizer(request: Request, eventId: string) {
   const rateLimited = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 30, window: 60 });
   if (rateLimited) return { response: rateLimited } as const;
   const eventAccess = await resolveSpogomiEventAccess({ supabase: getSupabaseServerClient(true), eventId, userId: access.userId });
-  if (!eventAccess || !hasSpogomiCapability(eventAccess, "manage")) return { response: forbiddenJsonResponse() } as const;
+  if (!eventAccess || !hasSpogomiCapability(eventAccess, "manage_help_proposals")) return { response: forbiddenJsonResponse() } as const;
   return { access } as const;
 }
 
@@ -46,6 +47,7 @@ export async function GET(request: Request, context: { params: Promise<{ eventId
   if ("response" in authentication) return authentication.response;
   try {
     const proposals = await listSpogomiVolunteerHelpProposalsForOrganizer(getSupabaseServerClient(true), parsed.data.eventId);
+    // Justification no-store: private volunteer coordinates and motivations must not enter a shared cache.
     return NextResponse.json({ status: "ok", proposals }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);
@@ -68,7 +70,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ event
       actorClerkId: authentication.access.userId,
       decisionNote: body.data.decisionNote,
     });
-    return NextResponse.json({ status: "ok", proposal });
+    // Justification no-store: the decision response contains private event-scoped proposal data.
+    return NextResponse.json({ status: "ok", proposal }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);
   }

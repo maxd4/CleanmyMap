@@ -14,6 +14,7 @@ import {
 } from "@/lib/spogomi/volunteer-help-proposals";
 
 export const runtime = "nodejs";
+// Justification force-dynamic: authenticated requester projections are private and user-scoped.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ eventId: z.string().uuid() });
@@ -65,6 +66,7 @@ export async function GET(request: Request, context: { params: Promise<{ eventId
   if (!parsed.success) return validationErrorResponse({ params: ["Événement invalide."] });
   try {
     const proposals = await listSpogomiVolunteerHelpProposalsForRequester(getSupabaseServerClient(true), { eventId: parsed.data.eventId, requesterClerkId: authentication.access.userId });
+    // Justification no-store: the requester projection is private account data.
     return NextResponse.json({ status: "ok", proposals }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);
@@ -96,7 +98,8 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       usefulSkills: body.data.usefulSkills,
       cleanwalkExperience: body.data.cleanwalkExperience,
     });
-    return NextResponse.json({ status: "ok", proposal }, { status: proposal.status === "pending" ? 201 : 200 });
+    // Justification no-store: contact details and motivations must not be cached by a shared intermediary.
+    return NextResponse.json({ status: "ok", proposal }, { status: proposal.status === "pending" ? 201 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);
   }
@@ -117,7 +120,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ even
       targetStatus: "withdrawn",
       actorClerkId: authentication.access.userId,
     });
-    return NextResponse.json({ status: "ok", proposal });
+    // Justification no-store: the withdrawal response is an account-owned private projection.
+    return NextResponse.json({ status: "ok", proposal }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);
   }

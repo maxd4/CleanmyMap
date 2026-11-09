@@ -6,6 +6,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Justification force-dynamic: acknowledgement state is authenticated and event-account scoped.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({
@@ -34,6 +35,7 @@ export async function POST(_request: Request, context: { params: Promise<{ event
       p_clerk_id: access.userId,
     });
     if (error) throw error;
+    // Justification no-store: acknowledgement data is private to the connected account.
     return NextResponse.json({ status: "ok", acknowledgement: data }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);

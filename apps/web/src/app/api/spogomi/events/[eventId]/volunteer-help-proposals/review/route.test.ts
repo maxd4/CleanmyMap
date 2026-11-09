@@ -26,17 +26,25 @@ describe("SPOGOMI volunteer help proposal organizer route", () => {
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "organizer-1" });
     enforceRateLimitMock.mockResolvedValue(null);
     getSupabaseServerClientMock.mockReturnValue({});
-    resolveAccessMock.mockResolvedValue({ capabilities: new Set(["manage"]) });
-    hasCapabilityMock.mockReturnValue(true);
+    resolveAccessMock.mockResolvedValue({ capabilities: new Set(["manage", "manage_help_proposals"]) });
+    hasCapabilityMock.mockImplementation((_access: unknown, capability: string) => capability === "manage_help_proposals");
     listOrganizerMock.mockResolvedValue([]);
     transitionMock.mockResolvedValue({ id: "proposal-1", status: "accepted" });
   });
 
-  it("requires the event-scoped manage capability", async () => {
+  it("requires the relation-scoped help proposal capability", async () => {
     const { GET } = await import("./route");
     hasCapabilityMock.mockReturnValueOnce(false);
     const response = requireResponse(await GET(request(), spogomiEventParams(eventId)));
     expect(response.status).toBe(403);
+    expect(listOrganizerMock).not.toHaveBeenCalled();
+  });
+
+  it("does not let a global manage capability expose the private queue", async () => {
+    const { GET } = await import("./route");
+    resolveAccessMock.mockResolvedValueOnce({ capabilities: new Set(["manage"]) });
+    hasCapabilityMock.mockReturnValueOnce(false);
+    expect(requireResponse(await GET(request(), spogomiEventParams(eventId))).status).toBe(403);
     expect(listOrganizerMock).not.toHaveBeenCalled();
   });
 

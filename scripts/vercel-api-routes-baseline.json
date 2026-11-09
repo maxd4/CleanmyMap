@@ -164,6 +164,27 @@
       "reviewedAt": "2026-11-08"
     },
     {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/route.ts",
+      "introducedBy": "6ea855543fea156ae76114067dc8b446543f0874",
+      "reason": "Surface authentifiée du demandeur pour déposer, relire et retirer sa proposition d’aide, distincte de l’inscription sportive.",
+      "costContract": "GET, POST et DELETE sont bornés à l’identité Clerk et à l’événement ; la RPC revalide l’ownership, l’idempotence et les transitions, avec réponse private/no-store sans projection publique.",
+      "reviewedAt": "2026-11-09"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/review/route.ts",
+      "introducedBy": "6ea855543fea156ae76114067dc8b446543f0874",
+      "reason": "File privée de traitement des propositions d’aide réservée au créateur ou coorganisateur effectivement relié à l’édition.",
+      "costContract": "GET et PATCH sont bornés par eventId, capability relationnelle et rate limit ; la RPC revalide l’organisateur, les décisions restent append-only et les réponses sont private/no-store.",
+      "reviewedAt": "2026-11-09"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/changes/[changeId]/acknowledge/route.ts",
+      "introducedBy": "35bb36c0c90cb12d09b4836abbecd17584b29c26",
+      "reason": "Frontière authentifiée d’accusé de changement pour le compte directement concerné par une édition SPOGOMI.",
+      "costContract": "POST borné à l’événement, au changement et à l’identité Clerk ; la RPC contrôle la relation, l’idempotence et la révocation, avec réponse private/no-store sans snapshot historique complet.",
+      "reviewedAt": "2026-11-09"
+    },
+    {
       "route": "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/route.ts",
       "introducedBy": "2233f7b82e02bc5d211f7a6dbab229d11f073ede",
       "reason": "Cockpit serveur des opérations terrain SPOGOMI : phases, retours d'équipes, incidents, décisions et mesures restent séparés par événement et division, avec capacités opérationnelles vérifiées côté serveur.",
@@ -627,6 +648,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/review/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/attendance/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/changes/[changeId]/acknowledge/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/closure/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/contributions/route.ts",
@@ -662,6 +684,8 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/teams/auto/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/teams/lock/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/review/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/route.ts",
     "apps/web/src/app/api/spogomi/events/route.ts",
     "apps/web/src/app/api/spogomi/public/by-action/[actionId]/route.ts",
     "apps/web/src/app/api/spogomi/public/events/[eventSlug]/route.ts",

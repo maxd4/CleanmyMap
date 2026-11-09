@@ -21,6 +21,9 @@ declare
   v_other_event_id uuid := gen_random_uuid();
   v_proposal_id uuid;
   v_replayed_id uuid;
+  v_withdrawn_id uuid;
+  v_withdrawn_projection jsonb;
+  v_unauthorized boolean := false;
 begin
   insert into public.actions (id, created_by_clerk_id, action_date, location_label)
   values (v_action_id, 'help-organizer', current_date, 'SPOGOMI help SQL contract');
@@ -60,6 +63,22 @@ begin
     raise exception 'help proposal created a sport participant';
   end if;
 
+  v_withdrawn_id := (public.create_spogomi_volunteer_help_proposal(
+    v_event_id, 'other-help-requester', 'proposal-key-other-0001', 'Grace', 'Hopper', 'grace' || '@example.test', null,
+    'Accueil', 'Je souhaite aussi aider.', 'Accueil.', ''
+  ) ->> 'id')::uuid;
+  perform public.transition_spogomi_volunteer_help_proposal(v_withdrawn_id, v_event_id, 'withdrawn', 'other-help-requester', null);
+  begin
+    perform public.transition_spogomi_volunteer_help_proposal(v_withdrawn_id, v_event_id, 'withdrawn', 'help-requester', null);
+  exception when insufficient_privilege then
+    v_unauthorized := true;
+  end;
+  if not v_unauthorized then raise exception 'withdrawn proposal replay bypassed requester authorization'; end if;
+  v_withdrawn_projection := public.transition_spogomi_volunteer_help_proposal(v_withdrawn_id, v_event_id, 'withdrawn', 'other-help-requester', null);
+  if v_withdrawn_projection ? 'motivation' or v_withdrawn_projection ? 'contact_email' then
+    raise exception 'withdrawal replay exposed private proposal fields';
+  end if;
+
   insert into public.actions (id, created_by_clerk_id, action_date, location_label)
   values (gen_random_uuid(), 'help-organizer', current_date, 'SPOGOMI second help SQL contract')
   returning id into v_action_id;
@@ -72,6 +91,6 @@ begin
 end;
 $$;
 
-select ok(true, 'idempotence, active duplicate, organizer transition, history and event isolation exercised');
+select ok(true, 'idempotence, active duplicate, organizer transition, authorized terminal replay, minimal withdrawal projection, history and event isolation exercised');
 select * from finish();
 rollback;

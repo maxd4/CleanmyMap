@@ -136,6 +136,14 @@ describe("vercel regression gates", () => {
         "apps/web/src/app/api/reports/shared/[token]/route.ts",
         "30fde7b0110d09ba6c2b7e8e044f96b80114c3b0",
       ],
+      [
+        "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/route.ts",
+        "6ea855543fea156ae76114067dc8b446543f0874",
+      ],
+      [
+        "apps/web/src/app/api/spogomi/events/[eventId]/volunteer-help-proposals/review/route.ts",
+        "6ea855543fea156ae76114067dc8b446543f0874",
+      ],
     ]);
     const justifications = new Map(
       (readBaseline().additionalChangeJustifications ?? [])

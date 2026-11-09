@@ -26,6 +26,8 @@ export type SpogomiVolunteerHelpProposalOrganizerView = SpogomiVolunteerHelpProp
   decidedByClerkId: string | null;
 };
 
+export type SpogomiVolunteerHelpProposalWithdrawalView = Pick<SpogomiVolunteerHelpProposal, "id" | "eventId" | "status" | "decisionNote" | "decidedAt" | "createdAt">;
+
 export class SpogomiVolunteerHelpProposalError extends Error {
   constructor(
     message: string,
@@ -96,6 +98,17 @@ function mapOrganizerProposal(row: Record<string, unknown>): SpogomiVolunteerHel
   };
 }
 
+function mapWithdrawalProposal(row: Record<string, unknown>): SpogomiVolunteerHelpProposalWithdrawalView {
+  return {
+    id: String(row.id ?? ""),
+    eventId: String(row.event_id ?? ""),
+    status: asStatus(row.status),
+    decisionNote: typeof row.decision_note === "string" ? row.decision_note : null,
+    decidedAt: typeof row.decided_at === "string" ? row.decided_at : null,
+    createdAt: String(row.created_at ?? ""),
+  };
+}
+
 function rpcRow(data: unknown): Record<string, unknown> {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new SpogomiVolunteerHelpProposalError("La proposition n’a pas pu être relue après son enregistrement.", "validation");
   return data as Record<string, unknown>;
@@ -151,7 +164,7 @@ export async function transitionSpogomiVolunteerHelpProposal(params: {
   targetStatus: "accepted" | "rejected" | "withdrawn";
   actorClerkId: string;
   decisionNote?: string | null;
-}): Promise<SpogomiVolunteerHelpProposalOrganizerView> {
+}): Promise<SpogomiVolunteerHelpProposalWithdrawalView | SpogomiVolunteerHelpProposalOrganizerView> {
   const result = await params.supabase.rpc("transition_spogomi_volunteer_help_proposal", {
     p_proposal_id: params.proposalId,
     p_event_id: params.eventId,
@@ -160,5 +173,6 @@ export async function transitionSpogomiVolunteerHelpProposal(params: {
     p_decision_note: params.decisionNote?.trim() || null,
   });
   if (result.error) throw mapError(result.error);
-  return mapOrganizerProposal(rpcRow(result.data));
+  const row = rpcRow(result.data);
+  return params.targetStatus === "withdrawn" ? mapWithdrawalProposal(row) : mapOrganizerProposal(row);
 }

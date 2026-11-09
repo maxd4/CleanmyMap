@@ -314,11 +314,19 @@ habilitation ou une inscription sportive ; aucun e-mail, message ou
 notification n'est déclenché.
 
 La lecture de suivi est limitée au compte demandeur. La file de traitement est
-une projection privée réservée à l'organisateur/coorganisateur réellement
-habilité de cette édition, recontrôlée par l'API et la RPC PostgreSQL ; elle
+une projection privée réservée au créateur de l'édition ou à un
+`action_organizers` effectivement relié à cette édition, recontrôlée par une
+capability relationnelle dédiée de l'API et par la RPC PostgreSQL ; un rôle
+global sans relation ne suffit pas. Elle
 contient les coordonnées, motivations, compétences et expérience nécessaires au
 traitement. Les événements, les données anonymes et les coordonnées ne sont
 jamais projetés publiquement.
+
+Le rejeu d'une demande de retrait conserve la même clé d'idempotence tant que
+la réponse de soumission n'est pas confirmée ; il renouvelle cette clé pour une
+nouvelle proposition uniquement après succès. La RPC vérifie toujours
+l'identité propriétaire avant tout rejeu terminal et renvoie au demandeur une
+projection minimale sans coordonnées ni motivations.
 
 La table et son historique sont service-only sous RLS. Les contrôles serveur
 refusent une édition non publiée, annulée, archivée ou dont la date de début est

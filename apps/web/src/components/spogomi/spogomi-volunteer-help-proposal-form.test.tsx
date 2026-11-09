@@ -47,4 +47,34 @@ describe("SpogomiVolunteerHelpProposalForm", () => {
     await act(async () => root.unmount());
     container.remove();
   });
+
+  it("reuses the same idempotency key after a lost response", async () => {
+    let postCount = 0;
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method !== "POST") return Promise.resolve(new Response(JSON.stringify({ proposals: [] }), { status: 200 }));
+      postCount += 1;
+      if (postCount === 1) return Promise.reject(new Error("network lost"));
+      return Promise.resolve(new Response(JSON.stringify({ proposal: { id: "proposal-1", status: "pending", decisionNote: null, createdAt: "2026-11-09T10:00:00.000Z" } }), { status: 201 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => { root.render(<SpogomiVolunteerHelpProposalForm eventId="event-1" signInHref="/sign-in" />); });
+    setValue(container.querySelectorAll("input")[0]!, "Ada");
+    setValue(container.querySelectorAll("input")[1]!, "Lovelace");
+    setValue(container.querySelectorAll("input")[2]!, testEmail);
+    const textareas = container.querySelectorAll("textarea");
+    setValue(textareas[0]!, "Je souhaite aider l’équipe locale.");
+    setValue(textareas[1]!, "Organisation.");
+    const form = container.querySelector("form") as HTMLFormElement;
+    await act(async () => { form.requestSubmit(); });
+    await act(async () => { form.requestSubmit(); });
+    const posts = fetchMock.mock.calls.filter((call) => (call[1] as RequestInit | undefined)?.method === "POST");
+    const first = JSON.parse(String((posts[0]![1] as RequestInit).body)) as { idempotencyKey: string };
+    const second = JSON.parse(String((posts[1]![1] as RequestInit).body)) as { idempotencyKey: string };
+    expect(second.idempotencyKey).toBe(first.idempotencyKey);
+    await act(async () => root.unmount());
+    container.remove();
+  });
 });

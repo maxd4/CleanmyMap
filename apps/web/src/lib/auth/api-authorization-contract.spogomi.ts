@@ -28,14 +28,14 @@ export const spogomiAuthorizationContract = {
     GET: {
       expected: "Event organizer reads private help proposals for the exact event",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + event-scoped resolveSpogomiEventAccess + manage capability before organizer projection",
+      actual: "requireAuthenticatedAccess + event-scoped resolveSpogomiEventAccess + relation-only manage_help_proposals capability before organizer projection",
       evidenceScope: "module",
       evidence: ["requireAuthenticatedAccess", "resolveSpogomiEventAccess", "hasSpogomiCapability", "listSpogomiVolunteerHelpProposalsForOrganizer"],
     },
     PATCH: {
       expected: "Event organizer accepts or rejects a help proposal for the exact event",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + event-scoped manage capability plus PostgreSQL organizer recheck before the transition RPC",
+      actual: "requireAuthenticatedAccess + event-scoped relation-only manage_help_proposals capability plus PostgreSQL organizer recheck before the transition RPC",
       evidenceScope: "module",
       evidence: ["requireAuthenticatedAccess", "resolveSpogomiEventAccess", "hasSpogomiCapability", "transitionSpogomiVolunteerHelpProposal"],
     },

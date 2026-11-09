@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageEvent } from "./preparation/preparation-event-access";
+import { canManageActionByRelation } from "@/lib/actions/permissions";
 import type { EventRow } from "./preparation/preparation-service";
 
 export type SpogomiCapability =
@@ -10,6 +11,7 @@ export type SpogomiCapability =
   | "observe"
   | "arbitrate"
   | "manage"
+  | "manage_help_proposals"
   | "assign_event_access"
   | "checkin";
 
@@ -112,7 +114,7 @@ async function loadSpogomiAccessRelations(params: { supabase: SupabaseClient; ev
   return { organizersResult, reviewersResult, participantResult };
 }
 
-function buildSpogomiCapabilities(isOrganizer: boolean, reviewerRoles: SpogomiAssignedAccessRole[], participantId: string | null): Set<SpogomiCapability> {
+function buildSpogomiCapabilities(isOrganizer: boolean, canManageHelpProposals: boolean, reviewerRoles: SpogomiAssignedAccessRole[], participantId: string | null): Set<SpogomiCapability> {
   const capabilities = new Set<SpogomiCapability>();
   if (participantId) capabilities.add("private_read");
   if (isOrganizer || reviewerRoles.includes("observer") || reviewerRoles.includes("referee")) capabilities.add("observe");
@@ -122,6 +124,7 @@ function buildSpogomiCapabilities(isOrganizer: boolean, reviewerRoles: SpogomiAs
     capabilities.add("manage");
     capabilities.add("assign_event_access");
   }
+  if (canManageHelpProposals) capabilities.add("manage_help_proposals");
   return capabilities;
 }
 
@@ -161,8 +164,9 @@ export async function resolveSpogomiEventAccess(params: {
     event,
     organizerIds,
   );
+  const canManageHelpProposals = canManageActionByRelation(identity, { createdByClerkId: event.created_by_clerk_id }, organizerIds);
   const participantId = participantResult.data?.id ? String(participantResult.data.id) : null;
-  const capabilities = buildSpogomiCapabilities(isOrganizer, reviewerRoles, participantId);
+  const capabilities = buildSpogomiCapabilities(isOrganizer, canManageHelpProposals, reviewerRoles, participantId);
   const role = resolveSpogomiRole(isOrganizer, reviewerRoles, participantId);
 
   return {

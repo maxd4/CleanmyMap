@@ -30,7 +30,7 @@ function navigationSections(markup: string): string[] {
 
 describe("SpogomiEventCockpit", () => {
   it("keeps a persistent direct-link navigation and exposes all organizer sections", () => {
-    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage", "observe", "arbitrate", "assign_event_access"]} />);
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage", "manage_help_proposals", "observe", "arbitrate", "assign_event_access"]} />);
     for (const section of ["presentation", "teams", "attendance", "results", "arbitration", "bilan", "settings", "help_proposals"]) {
       expect(markup).toContain(`href="#${section}"`);
       expect(markup).toContain(`id="${section}"`);
@@ -39,10 +39,12 @@ describe("SpogomiEventCockpit", () => {
   });
 
   it("keeps help proposals organizer-only and separate from sports admissions", () => {
-    const organizer = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage"]} />);
+    const organizer = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage", "manage_help_proposals"]} />);
+    const globalManager = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage"]} />);
     const referee = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="referee" capabilities={["observe", "arbitrate"]} reviewerRoles={["referee"]} />);
     expect(organizer).toContain('href="#help_proposals"');
     expect(organizer).toContain("Propositions d’aide");
+    expect(globalManager).not.toContain('href="#help_proposals"');
     expect(referee).not.toContain('href="#help_proposals"');
   });
 

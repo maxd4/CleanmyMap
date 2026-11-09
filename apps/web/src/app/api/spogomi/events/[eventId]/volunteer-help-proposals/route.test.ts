@@ -88,6 +88,15 @@ describe("SPOGOMI volunteer help proposal requester route", () => {
     expect(transitionRequesterMock).toHaveBeenCalledWith(expect.objectContaining({ eventId, proposalId: "22222222-2222-4222-8222-222222222222", actorClerkId: "requester-1", targetStatus: "withdrawn" }));
   });
 
+  it("does not expose private fields from the minimal withdrawal projection", async () => {
+    const { DELETE } = await import("./route");
+    transitionRequesterMock.mockResolvedValueOnce({ id: "proposal-1", eventId, status: "withdrawn", createdAt: "2026-11-09T10:00:00.000Z" });
+    const response = requireResponse(await DELETE(request("DELETE", { proposalId: "22222222-2222-4222-8222-222222222222" }), spogomiEventParams(eventId)));
+    const body = await response.json() as Record<string, unknown>;
+    expect(body.proposal).not.toHaveProperty("contactEmail");
+    expect(body.proposal).not.toHaveProperty("motivation");
+  });
+
   it("does not touch the private owner when anonymous or rate limited", async () => {
     const { POST } = await import("./route");
     requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false });
