@@ -37,6 +37,7 @@ export type SpogomiEventJourneyInput = {
   lifecycle: "upcoming" | "in_progress" | "finished" | "cancelled" | "postponed";
   registrationStatus: "not_open" | "open" | "closed" | "capacity_reached";
   directRegistrationAvailable: boolean;
+  activeRegistrationRequest?: boolean;
   resultsStatus: "unavailable" | "provisional" | "certified" | "published";
   quizStatus: "passed" | "missing" | "unavailable";
   admissionStatus: "pending" | "approved" | "rejected" | "cancelled" | "none" | "unavailable";
@@ -82,8 +83,8 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
       : input.admissionStatus === "pending" ? "pending"
         : input.admissionStatus === "approved" ? "validated"
         : input.quizStatus === "unavailable" ? "indeterminate"
-          : input.quizStatus !== "passed" ? "later"
-            : input.registrationStatus === "open" && input.directRegistrationAvailable ? "todo" : "later";
+      : input.quizStatus !== "passed" ? "later"
+            : input.registrationStatus === "open" && input.directRegistrationAvailable && !input.activeRegistrationRequest ? "todo" : "later";
   const identityStatus: SpogomiJourneyStatus = !input.isAuthenticated
     ? "access_required"
     : input.admissionStatus !== "approved" ? "later"
@@ -131,7 +132,7 @@ function nextCompetitorStep(input: SpogomiEventJourneyInput, steps: readonly Spo
   if (input.lifecycle === "in_progress") return byKey.get("registration")!;
   if (!input.isAuthenticated) return byKey.get("quiz")!;
   if (input.quizStatus !== "passed") return byKey.get("quiz")!;
-  if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus === "open" && input.directRegistrationAvailable) return byKey.get("registration")!;
+  if (!input.activeRegistrationRequest && ["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus === "open" && input.directRegistrationAvailable) return byKey.get("registration")!;
   if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus !== "open") return byKey.get("practical")!;
   return byKey.get("practical")!;
 }

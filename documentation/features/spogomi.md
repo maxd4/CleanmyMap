@@ -79,9 +79,11 @@ il ne vaut ni refus ni autorisation. Avant une demande d'inscription, le quiz
 et le règlement applicable de cette division sont prioritaires ; une preuve
 issue d'une autre division ou d'une ancienne révision du contrat ne valide pas
 la demande courante. Après un quiz réussi, la demande est prioritaire uniquement
-si les inscriptions de la division sont ouvertes. Une demande en attente ne
-réaffiche pas un CTA d'inscription ; une demande rejetée ou annulée peut ouvrir
-une nouvelle demande si cette division est encore ouverte. Pendant l'épreuve,
+si les inscriptions de la division sont ouvertes et que la readiness SQL
+canonique est complète. Une demande en attente ou approuvée dans l'une ou
+l'autre division ne réaffiche pas un CTA d'inscription ; une demande rejetée
+ou annulée peut ouvrir une nouvelle demande si la readiness de l'édition et la
+politique de la division sélectionnée l'autorisent. Pendant l'épreuve,
 le parcours propose uniquement la régularisation de présence disponible dans
 le formulaire, jamais un quiz d'inscription. Une admission approuvée oriente
 vers la liaison de compte puis l'équipe, tandis qu'une participation liée met
@@ -92,9 +94,11 @@ respectives.
 La division sélectionnée est une seule projection contextualisée : le paramètre
 `division` de l'URL alimente le parcours serveur, les demandes affichées, le
 quiz et le formulaire. Une nouvelle inscription n'est proposée que lorsque la
-politique canonique autorise l'inscription directe, sans billetterie externe et,
-pour World Cup, avec l'autorisation dédiée. Une autre division ou une demande
-qui ne lui appartient pas ne peut donc ni masquer son état ni activer son CTA.
+readiness SQL canonique et la politique autorisent l'inscription directe, sans
+billetterie externe et, pour World Cup, avec l'autorisation dédiée. La division
+sélectionnée reste consultable lorsqu'une demande active appartient à l'autre
+division ; cette demande bloque une nouvelle inscription pour l'édition, sans
+accorder de droit dans la division sélectionnée.
 
 Les autres étapes restent visibles sous forme de lignes compactes avec leur
 condition et leur destination. Les espaces organisateur et arbitre autorisés

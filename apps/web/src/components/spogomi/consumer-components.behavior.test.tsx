@@ -129,7 +129,7 @@ describe("SPOGOMI consumer components", () => {
 
   it("keeps a pending request isolated to its division and preserves the selected division in the URL", async () => {
     authState.isSignedIn = true;
-    fetchMock.mockResolvedValue(jsonResponse({ requests: [{
+    fetchMock.mockResolvedValueOnce(jsonResponse({ quiz: { available: false, missing: [] } })).mockResolvedValueOnce(jsonResponse({ requests: [{
       id: "casual-request", requestKind: "registration", divisionId: "casual", status: "pending",
       providedContext: "", decisionMessage: null, createdAt: "2026-10-01T08:00:00Z",
     }] }));
@@ -138,16 +138,33 @@ describe("SPOGOMI consumer components", () => {
       renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" initialDivisionId="world" signInHref="/sign-in" divisions={[
         { id: "casual", type: "casual", directRegistrationAvailable: true },
         { id: "world", type: "world_cup", directRegistrationAvailable: true },
-      ]} />);
+      ]} registrationReadinessReady />);
       await flushEffects();
+      await flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 100));
     });
     expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Demande en attente de vérification"))).toHaveLength(0);
-    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("bloque une nouvelle demande"))).toHaveLength(1);
 
     const selects = renderer.root.findAllByType("select");
     expect(selects).toHaveLength(2);
     await act(async () => { propsOf<SelectProps>(selects[1]!).onChange({ target: { value: "casual" } }); });
     expect(routerState.replace).toHaveBeenCalledWith("/spogomi/paris-2026?division=casual#spogomi-sports-registration");
+    renderer.unmount();
+  });
+
+  it("fails closed when registration readiness is unavailable", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" signInHref="/sign-in" registrationReadinessReady={false} divisions={[{ id: "casual", type: "casual", directRegistrationAvailable: true }]} />);
+      await flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    expect(renderer.root.findAll((node) => node.type === "button" && nodeText(node).includes("Demander à intégrer l’équipe"))).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Aucune nouvelle inscription n’est proposée"))).toHaveLength(1);
     renderer.unmount();
   });
 

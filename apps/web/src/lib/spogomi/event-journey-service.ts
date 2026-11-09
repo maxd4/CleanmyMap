@@ -8,6 +8,7 @@ import { resolveSpogomiEventAccessBySlug } from "./authorization";
 import { loadSpogomiFieldOperationsAccess } from "./field-operations-service";
 import { loadSpogomiIdentityState } from "./identity-link";
 import { loadSpogomiRegistrationQuiz, loadSpogomiRegistrationQuizProofsForUser, SpogomiRegistrationQuizError } from "./preparation/registration-quiz-service";
+import { loadSpogomiRegistrationReadiness } from "./preparation/registration-readiness-service";
 import { loadSpogomiVolunteerSummaryForUser } from "./volunteer";
 
 function selectedDivision(event: SpogomiPublicEvent, selectedDivisionId?: string | null) {
@@ -46,6 +47,10 @@ function admissionStatus(
   if (registrations.some((request) => request.status === "pending")) return "pending";
   if (registrations.some((request) => request.status === "approved")) return "approved";
   return registrations[0]?.status === "rejected" ? "rejected" : "cancelled";
+}
+
+function hasActiveRegistrationRequest(requests: readonly { requestKind: string; status: string }[]): boolean {
+  return requests.some((request) => request.requestKind === "registration" && (request.status === "pending" || request.status === "approved"));
 }
 
 async function loadRegistrationContractRevision(eventId: string, supabase: ReturnType<typeof getSupabaseServerClient>): Promise<number> {
@@ -88,14 +93,22 @@ export async function loadSpogomiEventJourney(params: {
   signInHrefByStep?: SpogomiEventJourneyInput["signInHrefByStep"];
 }) {
   const division = selectedDivision(params.event, params.selectedDivisionId);
-  const base = emptyInput(params.event, division?.id, params.signInHref, params.signInHrefByStep);
-  if (!params.userId) return buildSpogomiEventJourney(base);
-
   const supabase = getSupabaseServerClient(true);
+  let registrationReadinessReady = false;
+  try {
+    registrationReadinessReady = (await loadSpogomiRegistrationReadiness({ supabase, eventId: params.event.id })).ready;
+  } catch {
+    registrationReadinessReady = false;
+  }
+  const base = emptyInput(params.event, division?.id, params.signInHref, params.signInHrefByStep);
+  base.directRegistrationAvailable = base.directRegistrationAvailable && registrationReadinessReady;
+  if (!params.userId) return { ...buildSpogomiEventJourney(base), registrationReadinessReady };
+
   const input: SpogomiEventJourneyInput = { ...base, isAuthenticated: true, privateProofStatus: "available" };
   try {
     const requests = await listSpogomiAdmissionRequestsForRequester(supabase, { eventId: params.event.id, requesterClerkId: params.userId });
     input.admissionStatus = admissionStatus(requests, division?.id ?? null);
+    input.activeRegistrationRequest = hasActiveRegistrationRequest(requests);
   } catch {
     input.admissionStatus = "unavailable";
   }
@@ -130,5 +143,5 @@ export async function loadSpogomiEventJourney(params: {
     input.refereeSpaceHref = null;
     input.refereeCapabilities = [];
   }
-  return buildSpogomiEventJourney(input);
+  return { ...buildSpogomiEventJourney(input), registrationReadinessReady };
 }

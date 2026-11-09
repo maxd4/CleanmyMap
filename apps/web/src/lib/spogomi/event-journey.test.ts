@@ -100,6 +100,12 @@ describe("SPOGOMI event journey", () => {
     expect(journey.steps.find((step) => step.key === "registration")).toMatchObject({ status: "later" });
   });
 
+  it("does not offer a second registration for an active request in another division", () => {
+    const journey = buildSpogomiEventJourney(input({ quizStatus: "passed", activeRegistrationRequest: true }));
+    expect(journey.next).toMatchObject({ key: "practical" });
+    expect(journey.steps.find((step) => step.key === "registration")).toMatchObject({ status: "later" });
+  });
+
   it("keeps the in-progress regularization path for anonymous visitors and removes the quiz link", () => {
     const journey = buildSpogomiEventJourney(input({ isAuthenticated: false, lifecycle: "in_progress", quizStatus: "missing" }));
     expect(journey.next).toMatchObject({ key: "registration", title: "Signaler une présence à régulariser" });
