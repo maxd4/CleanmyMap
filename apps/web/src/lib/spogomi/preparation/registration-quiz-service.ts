@@ -67,3 +67,25 @@ export async function submitSpogomiRegistrationQuiz(params: {
   if (!evaluation) throw new SpogomiRegistrationQuizError("L’évaluation du quiz SPOGOMI est invalide.", "validation");
   return evaluation;
 }
+
+export async function loadSpogomiRegistrationQuizProofsForUser(params: {
+  supabase: SupabaseClient;
+  eventId: string;
+  userId: string;
+  quizVersions: ReadonlyMap<string, string>;
+}): Promise<Set<string>> {
+  const divisionIds = [...params.quizVersions.keys()];
+  if (!divisionIds.length) return new Set();
+  const result = await params.supabase
+    .from("spogomi_registration_quiz_proofs")
+    .select("division_id, quiz_version")
+    .eq("event_id", params.eventId)
+    .eq("clerk_id", params.userId)
+    .in("division_id", divisionIds);
+  if (result.error) throw result.error;
+  return new Set(
+    (result.data ?? [])
+      .filter((row) => params.quizVersions.get(String(row.division_id)) === String(row.quiz_version))
+      .map((row) => String(row.division_id)),
+  );
+}

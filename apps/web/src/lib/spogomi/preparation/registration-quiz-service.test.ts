@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadSpogomiRegistrationQuiz, submitSpogomiRegistrationQuiz } from "./registration-quiz-service";
+import { loadSpogomiRegistrationQuiz, loadSpogomiRegistrationQuizProofsForUser, submitSpogomiRegistrationQuiz } from "./registration-quiz-service";
 
 vi.mock("server-only", () => ({}));
 
@@ -25,5 +25,20 @@ describe("SPOGOMI registration quiz service", () => {
   it("fails closed when the server returns an invalid evaluation", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: { passed: true }, error: null });
     await expect(submitSpogomiRegistrationQuiz({ supabase: { rpc } as never, eventId: "event-1", divisionId: "division-1", userId: "user-1", quizVersion: "quiz-v1", answers: {} })).rejects.toThrow("évaluation du quiz");
+  });
+
+  it("matches persisted proofs to the current version without exposing another division", async () => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      in: vi.fn(() => query),
+      then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: [
+        { division_id: "division-1", quiz_version: "quiz-v1" },
+        { division_id: "division-2", quiz_version: "quiz-other" },
+      ], error: null }).then(resolve),
+    };
+    const supabase = { from: vi.fn(() => query) };
+    await expect(loadSpogomiRegistrationQuizProofsForUser({ supabase: supabase as never, eventId: "event-1", userId: "user-1", quizVersions: new Map([["division-1", "quiz-v1"], ["division-2", "quiz-v2"]]) })).resolves.toEqual(new Set(["division-1"]));
+    expect(supabase.from).toHaveBeenCalledWith("spogomi_registration_quiz_proofs");
   });
 });

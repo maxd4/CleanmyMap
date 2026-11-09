@@ -2,6 +2,8 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const mocks = vi.hoisted(() => ({
   loadPublishedSpogomiEventBySlug: vi.fn(),
   loadSpogomiTeamResultForm: vi.fn(),
@@ -10,12 +12,14 @@ const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
   redirect: vi.fn((target: string) => { throw new Error(`redirect:${target}`); }),
   notFound: vi.fn(() => { throw new Error("not-found"); }),
+  getSafeAuthSession: vi.fn(),
+  loadSpogomiEventJourney: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
 vi.mock("next/headers", () => ({ cookies: mocks.cookies }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
-vi.mock("lucide-react", () => ({ ArrowLeft: () => null, ArrowRight: () => null, BookOpen: () => null, CalendarDays: () => null, Clock3: () => null, Globe2: () => null, LifeBuoy: () => null, MapPin: () => null, Navigation: () => null, PackageCheck: () => null, Phone: () => null, ShieldCheck: () => null }));
+vi.mock("lucide-react", () => ({ ArrowLeft: () => null, ArrowRight: () => null, BadgeCheck: () => null, BookOpen: () => null, CalendarDays: () => null, CircleAlert: () => null, Clock3: () => null, Globe2: () => null, LifeBuoy: () => null, ListChecks: () => null, LockKeyhole: () => null, MapPin: () => null, Navigation: () => null, PackageCheck: () => null, Phone: () => null, ShieldCheck: () => null }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("div", props, children) }));
 vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ children, href, ...props }: React.PropsWithChildren<Record<string, unknown>>) => href ? React.createElement("a", { ...props, href }, children) : React.createElement("button", props, children), CmmButtonGroup: ({ children }: React.PropsWithChildren) => React.createElement("div", null, children) }));
 vi.mock("@/components/ui/cmm-disclosure", () => ({ CmmDisclosure: ({ children, summary }: React.PropsWithChildren<{ summary: React.ReactNode }>) => React.createElement("details", null, React.createElement("summary", null, summary), children) }));
@@ -26,6 +30,8 @@ vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => "spogomi" })
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupabaseServerClient }));
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
 vi.mock("@/lib/spogomi/public-service", () => ({ loadPublishedSpogomiEventBySlug: mocks.loadPublishedSpogomiEventBySlug }));
+vi.mock("@/lib/auth/safe-session", () => ({ getSafeAuthSession: mocks.getSafeAuthSession }));
+vi.mock("@/lib/spogomi/event-journey-service", () => ({ loadSpogomiEventJourney: mocks.loadSpogomiEventJourney }));
 vi.mock("@/lib/spogomi/result-service", () => ({ loadSpogomiTeamResultForm: mocks.loadSpogomiTeamResultForm }));
 vi.mock("@/lib/spogomi/team-access", () => ({ SPOGOMI_TEAM_SESSION_COOKIE: "spogomi_team_session" }));
 vi.mock("@/components/spogomi/spogomi-public-route-map", () => ({ SpogomiPublicRouteMap: () => React.createElement("div", { "data-testid": "route-map" }) }));
@@ -56,6 +62,8 @@ describe("SPOGOMI consumer pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getSupabaseServerClient.mockReturnValue({ server: true });
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: null });
+    mocks.loadSpogomiEventJourney.mockResolvedValue({ next: { key: "quiz", title: "Valider le quiz obligatoire", description: "Quiz.", status: "access_required", href: "/sign-in" }, steps: [], authorizedSpaces: [] });
     mocks.cookies.mockResolvedValue({ get: () => undefined });
     mocks.loadPublishedSpogomiEventBySlug.mockResolvedValue(event);
   });

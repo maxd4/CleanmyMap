@@ -50,6 +50,37 @@ résultats. La démonstration Cachan est une destination séparée,
 `scenario_cachan_cleanmymap_mixed.json` et marquée `DEMONSTRATION / NON
 OFFICIEL` ; elle ne rejoint aucune projection ou persistance SPOGOMI.
 
+### Hiérarchie des prochaines actions sur une fiche
+
+La fiche publique `/spogomi/[eventSlug]` conserve les cartes et destinations
+existantes, mais expose en tête une projection serveur « Votre prochaine étape ».
+Elle est reconstruite à chaque requête depuis les demandes d'admission, les
+preuves du quiz applicables à l'édition et à la division, la liaison de
+participation, les preuves privées de contribution/attestation et les
+habilitations événementielles du compte courant. Elle ne crée pas de table de
+progression parallèle et toutes les lectures privées restent bornées à
+`event_id` et au compte authentifié.
+
+Les états d'affichage sont `À faire`, `En attente`, `Validée`, `Plus tard`,
+`Accès requis` et `Indéterminé`. `Indéterminé` signale une preuve indisponible ;
+il ne vaut ni refus ni autorisation. Avant une demande d'inscription, le quiz
+et le règlement applicable sont prioritaires ; après un quiz réussi, la demande
+est prioritaire uniquement si les inscriptions sont ouvertes. Une demande en
+attente ne réaffiche pas un CTA d'inscription. Une admission approuvée oriente
+vers la liaison de compte puis l'équipe, tandis qu'une participation liée met
+en avant les informations pratiques. Après l'épreuve, les résultats, les
+contributions et les attestations ne sont proposés que selon leurs preuves
+respectives.
+
+Les autres étapes restent visibles sous forme de lignes compactes avec leur
+condition et leur destination. Les espaces organisateur et arbitre autorisés
+sont présentés dans un bloc séparé, selon les capacités effectivement renvoyées
+par les owners d'habilitation ; le cockpit existant n'est pas remplacé. La
+proposition d'aide à l'organisation demeure distincte de l'inscription sportive
+et ne participe pas à cette hiérarchie. Une session anonyme peut consulter la
+fiche et ses informations publiques ; les étapes nécessitant un compte indiquent
+`Accès requis` et redirigent vers la connexion sans divulguer d'état privé.
+
 ```text
 Édition parente SPOGOMI (casual | world_cup | mixed)
   ├── Division(s) typée(s) (casual et/ou world_cup)

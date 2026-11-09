@@ -19,6 +19,9 @@ import { buildPageMetadata } from "@/lib/metadata";
 import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
 import { SpogomiSyntheticDemoNotice } from "@/components/spogomi/spogomi-synthetic-demo-notice";
 import { SpogomiPracticalInformation } from "@/components/spogomi/spogomi-practical-information";
+import { SpogomiEventJourneyPanel } from "@/components/spogomi/spogomi-event-journey-panel";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { loadSpogomiEventJourney } from "@/lib/spogomi/event-journey-service";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -39,6 +42,9 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
   const { eventSlug } = await params;
   const event = await loadPublishedSpogomiEventBySlug(eventSlug).catch(() => null);
   if (!event) notFound();
+  const { userId } = await getSafeAuthSession();
+  const signInHref = `/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`;
+  const journey = await loadSpogomiEventJourney({ event, userId, signInHref });
 
   const lifecycleLabel = event.lifecycle === "upcoming" ? "À venir" : event.lifecycle === "in_progress" ? "En cours" : event.lifecycle === "cancelled" ? "Annulée" : event.lifecycle === "postponed" ? "Reportée" : "Terminée";
   const registrationLabel = event.registrationStatus === "open" ? "Inscriptions ouvertes" : event.registrationStatus === "capacity_reached" ? "Capacité atteinte" : event.registrationStatus === "not_open" ? "Inscriptions non ouvertes" : "Inscriptions closes";
@@ -51,6 +57,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
         <Link href="/spogomi" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-800 hover:underline"><ArrowLeft size={16} />Tous les événements SPOGOMI</Link>
         <PageHeader family={resolvePageFamily(`/spogomi/${event.slug}`)} tone="emerald" title={event.name} subtitle={`${modeLabel} · ${lifecycleLabel} · ${registrationLabel} · ${resultsLabel}`} />
         {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Cette fiche publique éventuelle présente uniquement une simulation. Les résultats restent non officiels et la publication de chaque division dépend des contrôles de certification.</p></SpogomiSyntheticDemoNotice> : null}
+        <SpogomiEventJourneyPanel journey={journey} />
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <div className="space-y-6">
             <SpogomiPracticalInformation startsAt={event.startsAt} endsAt={event.endsAt} officialTimezone={event.officialTimezone} locationLabel={event.locationLabel} lifecycleLabel={lifecycleLabel} registrationLabel={registrationLabel} resultsLabel={resultsLabel} practicalInformation={event.practicalInformation} />
@@ -74,19 +81,19 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
                 {event.organizer.partnerProfileHref ? <Link href={event.organizer.partnerProfileHref} className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline">Voir la fiche partenaire dans l’Annuaire</Link> : null}
               </CmmCard>
             ) : null}
-            <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
+            <div id="spogomi-teams"><CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
               <div><h2 className="text-xl font-black text-emerald-950">Équipes</h2><p className="cmm-text-body mt-1 text-slate-900">Seuls les noms publics d’équipe sont affichés. Le roster nominatif reste privé.</p></div>
               {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={`${team.divisionId}-${team.teamNumber}`} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="cmm-text-small font-black uppercase tracking-wide text-emerald-800">{team.divisionType === "world_cup" ? "World Cup" : "Casual"}</p><p className="font-bold text-slate-900">{team.publicName}</p><p className="cmm-text-small mt-1 text-slate-600">Équipe {team.teamNumber}</p><div className="mt-3"><SpogomiTeamJoinButton eventId={event.id} teamId={team.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></div></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}
-            </CmmCard>
+            </CmmCard></div>
             {event.route ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><h2 className="text-xl font-black text-amber-950">Parcours officiel de référence</h2><p className="cmm-text-body text-slate-900">{event.route.fileName} · {event.route.referenceDistanceKm} km calculés depuis le fichier. Cette géométrie ne constitue pas une trace réellement parcourue.</p><SpogomiPublicRouteMap coordinates={event.route.coordinates} /></CmmCard> : <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><p className="font-bold text-slate-900">Aucun parcours officiel publié.</p></CmmCard>}
-            <SpogomiPublicResults eventSlug={event.slug} initial={event.results} />
+            <div id="spogomi-public-results"><SpogomiPublicResults eventSlug={event.slug} initial={event.results} /></div>
             <SpogomiPhotoGallery photos={event.gallery} />
           </div>
           <aside className="space-y-4" aria-label="Participation et fonctionnalités">
-            <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5"><SpogomiAdmissionRequestCard eventId={event.id} lifecycle={event.lifecycle} divisions={event.divisions} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></CmmCard>
-            {!isSpogomiCachanDemoEvent(event) && event.lifecycle === "upcoming" ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><SpogomiVolunteerHelpProposalForm eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></CmmCard> : null}
-            <SpogomiIdentityLinkCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
-            <SpogomiVolunteerContributionsCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
+            <div id="spogomi-sports-registration"><CmmCard tone="emerald" variant="glass" className="space-y-3 p-5"><SpogomiAdmissionRequestCard eventId={event.id} lifecycle={event.lifecycle} divisions={event.divisions} signInHref={signInHref} /></CmmCard></div>
+            {!isSpogomiCachanDemoEvent(event) && event.lifecycle === "upcoming" ? <section aria-labelledby="spogomi-volunteer-help-title" className="space-y-2"><p className="cmm-text-caption px-1 font-black uppercase tracking-[0.14em] text-amber-800">Démarche distincte</p><CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><SpogomiVolunteerHelpProposalForm eventId={event.id} signInHref={signInHref} /></CmmCard></section> : null}
+            <div id="spogomi-identity"><SpogomiIdentityLinkCard eventId={event.id} signInHref={signInHref} /></div>
+            <div id="spogomi-contributions"><SpogomiVolunteerContributionsCard eventId={event.id} signInHref={signInHref} /></div>
             {["Classements indépendants|Les points sportifs et le ratio de mégots utilisent des projections séparées.", "Confidentialité|Seuls les noms publics d’équipe et les résultats publiés sont visibles.", "Participation|La liaison à un compte et la confirmation de participation restent séparées du classement."].map((entry) => {
               const [title, description] = entry.split("|");
               return <CmmCard key={title} tone="slate" variant="glass" className="space-y-2 p-4"><h2 className="font-black text-slate-900">{title}</h2><p className="cmm-text-body text-slate-900">{description}</p></CmmCard>;
