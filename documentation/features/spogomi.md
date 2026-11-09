@@ -330,9 +330,11 @@ l'expérience en cleanwalks. Le quiz sportif n'est pas requis.
 
 La proposition est persistée dans `spogomi_volunteer_help_proposals`, liée au
 `userId` Clerk et à `event_id`, avec les statuts `pending`, `accepted`,
-`rejected` et `withdrawn`. Une clé d'idempotence rejoue la même soumission et
-un verrou transactionnel empêche deux propositions actives du même compte pour
-une édition. Aucun statut ne crée une participation, une mission certifiée, une
+`rejected` et `withdrawn`. Une clé d'idempotence rejoue la même soumission,
+même après fermeture, annulation ou dépublication de l'édition ; si son contenu
+diffère, le serveur renvoie un conflit explicite sans remplacer la première
+proposition. Un verrou transactionnel empêche deux propositions actives du même
+compte pour une édition. Aucun statut ne crée une participation, une mission certifiée, une
 habilitation ou une inscription sportive ; aucun e-mail, message ou
 notification n'est déclenché.
 
@@ -345,9 +347,9 @@ contient les coordonnées, motivations, compétences et expérience nécessaires
 traitement. Les événements, les données anonymes et les coordonnées ne sont
 jamais projetés publiquement.
 
-Le rejeu d'une demande de retrait conserve la même clé d'idempotence tant que
-la réponse de soumission n'est pas confirmée ; il renouvelle cette clé pour une
-nouvelle proposition uniquement après succès. La RPC vérifie toujours
+Le formulaire conserve la même clé d'idempotence tant que la réponse de
+soumission n'est pas confirmée ; il renouvelle cette clé pour une nouvelle
+proposition uniquement après succès. La RPC vérifie toujours
 l'identité propriétaire avant tout rejeu terminal et renvoie au demandeur une
 projection minimale sans coordonnées ni motivations.
 

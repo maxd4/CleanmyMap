@@ -64,6 +64,24 @@ describe("SPOGOMI volunteer help proposal requester route", () => {
     expect(createRequesterMock).toHaveBeenCalledWith(expect.objectContaining({ eventId, requesterClerkId: "requester-1", contactEmail: testEmail, contactPhone: null }));
   });
 
+  it("returns a conflict when the persistence owner rejects a changed idempotent replay", async () => {
+    const { POST } = await import("./route");
+    createRequesterMock.mockRejectedValueOnce(new ProposalErrorMock("Cette clé de rejeu est déjà associée à un autre contenu. Utilisez une nouvelle proposition.", "conflict"));
+    const response = requireResponse(await POST(request("POST", {
+      idempotencyKey: "proposal-key-123456",
+      contactFirstName: "Ada",
+      contactLastName: "Lovelace",
+      contactEmail: testEmail,
+      contactPhone: "",
+      helpType: "Accueil",
+      motivation: "Un contenu différent pour la même clé.",
+      usefulSkills: "Organisation.",
+      cleanwalkExperience: "",
+    }), spogomiEventParams(eventId)));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toContain("clé de rejeu");
+  });
+
   it("rejects a missing or invalid contact before the persistence owner", async () => {
     const { POST } = await import("./route");
     const response = requireResponse(await POST(request("POST", {

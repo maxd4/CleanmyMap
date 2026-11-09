@@ -77,4 +77,27 @@ describe("SpogomiVolunteerHelpProposalForm", () => {
     await act(async () => root.unmount());
     container.remove();
   });
+
+  it("does not announce success when the server rejects a changed replay", async () => {
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method !== "POST") return Promise.resolve(new Response(JSON.stringify({ proposals: [] }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({ error: "Cette clé de rejeu est déjà associée à un autre contenu." }), { status: 409 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => { root.render(<SpogomiVolunteerHelpProposalForm eventId="event-1" signInHref="/sign-in" />); });
+    setValue(container.querySelectorAll("input")[0]!, "Ada");
+    setValue(container.querySelectorAll("input")[1]!, "Lovelace");
+    setValue(container.querySelectorAll("input")[2]!, testEmail);
+    const textareas = container.querySelectorAll("textarea");
+    setValue(textareas[0]!, "Je souhaite aider l’équipe locale.");
+    setValue(textareas[1]!, "Organisation.");
+    await act(async () => { (container.querySelector("form") as HTMLFormElement).requestSubmit(); });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("clé de rejeu");
+    expect(container.querySelector('[role="status"]')?.textContent ?? "").not.toContain("transmise");
+    await act(async () => root.unmount());
+    container.remove();
+  });
 });

@@ -56,6 +56,7 @@ function mapError(error: unknown): SpogomiVolunteerHelpProposalError {
   const code = errorCode(error);
   const message = errorMessage(error);
   if (code === "P0002") return new SpogomiVolunteerHelpProposalError("Cette édition n’est plus disponible pour une proposition d’aide.", "unavailable");
+  if (code === "22023" && message.includes("idempotency_conflict")) return new SpogomiVolunteerHelpProposalError("Cette clé de rejeu est déjà associée à un autre contenu. Utilisez une nouvelle proposition.", "conflict");
   if (code === "23505") return new SpogomiVolunteerHelpProposalError("Une proposition d’aide active existe déjà pour cette édition.", "conflict");
   if (code === "40001") return new SpogomiVolunteerHelpProposalError("Cette proposition a déjà été traitée.", "conflict");
   if (code === "42501") {

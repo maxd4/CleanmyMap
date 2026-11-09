@@ -23,7 +23,11 @@ declare
   v_replayed_id uuid;
   v_withdrawn_id uuid;
   v_withdrawn_projection jsonb;
+  v_other_requester_id uuid;
+  v_history_count integer;
+  v_proposal_count integer;
   v_unauthorized boolean := false;
+  v_idempotency_conflict boolean := false;
 begin
   insert into public.actions (id, created_by_clerk_id, action_date, location_label)
   values (v_action_id, 'help-organizer', current_date, 'SPOGOMI help SQL contract');
@@ -43,6 +47,45 @@ begin
     'Accueil', 'Je souhaite aider.', 'Organisation', 'Une cleanwalk.'
   ) ->> 'id')::uuid;
   if v_replayed_id <> v_proposal_id then raise exception 'idempotent replay created another proposal'; end if;
+
+  select count(*) into v_history_count
+    from public.spogomi_volunteer_help_proposal_events
+   where proposal_id = v_proposal_id;
+  update public.spogomi_events
+     set public_visibility = 'private', state = 'cancelled'
+   where id = v_event_id;
+  v_replayed_id := (public.create_spogomi_volunteer_help_proposal(
+    v_event_id, 'help-requester', 'proposal-key-000001', 'Ada', 'Lovelace', 'ada' || '@example.test', null,
+    'Accueil', 'Je souhaite aider.', 'Organisation', 'Une cleanwalk.'
+  ) ->> 'id')::uuid;
+  if v_replayed_id <> v_proposal_id then raise exception 'closed-event replay did not return the original proposal'; end if;
+  if (select count(*) from public.spogomi_volunteer_help_proposal_events where proposal_id = v_proposal_id) <> v_history_count then
+    raise exception 'closed-event replay appended history';
+  end if;
+  begin
+    perform public.create_spogomi_volunteer_help_proposal(
+      v_event_id, 'help-requester', 'proposal-key-000001', 'Ada', 'Lovelace', 'ada' || '@example.test', null,
+      'Accueil', 'Contenu modifié sous la même clé.', 'Organisation', 'Une cleanwalk.'
+    );
+  exception when check_violation then
+    v_idempotency_conflict := true;
+  end;
+  if not v_idempotency_conflict then raise exception 'changed idempotent replay was accepted'; end if;
+  select count(*) into v_proposal_count
+    from public.spogomi_volunteer_help_proposals
+   where event_id = v_event_id and requester_clerk_id = 'help-requester' and client_request_id = 'proposal-key-000001';
+  if v_proposal_count <> 1 or (select count(*) from public.spogomi_volunteer_help_proposal_events where proposal_id = v_proposal_id) <> v_history_count then
+    raise exception 'changed replay mutated proposal or history';
+  end if;
+  update public.spogomi_events
+     set public_visibility = 'published', state = 'draft'
+   where id = v_event_id;
+
+  v_other_requester_id := (public.create_spogomi_volunteer_help_proposal(
+    v_event_id, 'other-account', 'proposal-key-000001', 'Grace', 'Hopper', 'grace' || '@example.test', null,
+    'Accueil', 'Une autre proposition légitime.', 'Accueil.', ''
+  ) ->> 'id')::uuid;
+  if v_other_requester_id = v_proposal_id then raise exception 'requester idempotency scope leaked across accounts'; end if;
 
   begin
     perform public.create_spogomi_volunteer_help_proposal(

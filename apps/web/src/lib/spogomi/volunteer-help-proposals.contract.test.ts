@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261109000008_spogomi_volunteer_help_proposals.sql"), "utf8");
 const hardeningMigration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261109000009_spogomi_volunteer_help_authorization_hardening.sql"), "utf8");
+const replayMigration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261109200000_spogomi_volunteer_help_replay_integrity.sql"), "utf8");
 
 describe("SPOGOMI volunteer help proposal persistence contract", () => {
   it("keeps the proposal private, service-only, event-scoped and append-only", () => {
@@ -37,5 +38,18 @@ describe("SPOGOMI volunteer help proposal persistence contract", () => {
     expect(hardeningMigration).toContain("jsonb_build_object(");
     expect(hardeningMigration).toContain("'decision_note', v_proposal.decision_note");
     expect(hardeningMigration).toContain("insert into public.spogomi_volunteer_help_proposal_events");
+  });
+
+  it("resolves the request key before availability and rejects changed replays", () => {
+    const lookup = replayMigration.indexOf("select * into v_proposal");
+    const availability = replayMigration.indexOf("spogomi_volunteer_help_unavailable");
+    const insert = replayMigration.indexOf("insert into public.spogomi_volunteer_help_proposals");
+    expect(lookup).toBeGreaterThan(-1);
+    expect(lookup).toBeLessThan(availability);
+    expect(availability).toBeLessThan(insert);
+    expect(replayMigration).toContain("spogomi_volunteer_help_idempotency_conflict");
+    expect(replayMigration).toContain("for update");
+    expect(replayMigration).toContain("pg_advisory_xact_lock");
+    expect(replayMigration).toContain("grant execute on function public.create_spogomi_volunteer_help_proposal");
   });
 });
