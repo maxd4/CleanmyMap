@@ -152,6 +152,41 @@ test("release gate requires exact SHA, clean worktree, and disabled main auto-de
   }).ready, false);
 });
 
+test("pending publication accepts only a candidate descending from the exact remote base", () => {
+  const candidateSha = "e".repeat(40);
+  const pendingEvidence = { ...deployEvidence, candidateSha, completionSha: candidateSha };
+  const pendingDeployment = { ...deploymentEnabled, sha: candidateSha };
+  const pendingProvenance = {
+    ...provenance,
+    originMainSha: sha,
+    candidateDescendsFromOriginBase: true,
+  };
+
+  assert.equal(evaluateReleaseGate({
+    evidence: pendingEvidence,
+    current: candidateSha,
+    clean: true,
+    deploymentEnabled: pendingDeployment,
+    provenance: pendingProvenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+    pendingPublishBaseSha: sha,
+  }).ready, true);
+
+  assert.equal(evaluateReleaseGate({
+    evidence: pendingEvidence,
+    current: candidateSha,
+    clean: true,
+    deploymentEnabled: pendingDeployment,
+    provenance: { ...pendingProvenance, originMainSha: otherSha },
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+    pendingPublishBaseSha: sha,
+  }).ready, false);
+});
+
 test("release gate rejects incomplete, failed, stale, and out-of-procedure candidates", () => {
   const cases = [
     { name: "missing required check", evidence: { ...evidence, passed: [] } },

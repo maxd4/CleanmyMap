@@ -37,10 +37,13 @@ function parseArgs(argv = []) {
   const shaArgument = argv.find((arg) => arg.startsWith("--sha="));
   const targetArgument = argv.find((arg) => arg.startsWith("--target="));
   const profileArgument = argv.find((arg) => arg.startsWith("--profile="));
+  const baseShaArgument = argv.find((arg) => arg.startsWith("--base-sha="));
   return {
     sha: shaArgument?.slice("--sha=".length) || currentSha(),
     target: targetArgument?.slice("--target=".length) || "",
     profile: profileArgument?.slice("--profile=".length) || "full",
+    pendingPublish: argv.includes("--pending-publish"),
+    baseSha: baseShaArgument?.slice("--base-sha=".length) || "",
   };
 }
 
@@ -99,6 +102,7 @@ export function evaluateReleaseGate({
   requiredChecks = REQUIRED_FULL_CHECK_IDS,
   profile = "full",
   deployScope = null,
+  pendingPublishBaseSha = "",
 }) {
   const validSha = (value) => /^[0-9a-f]{40}$/i.test(value ?? "");
   const missingChecks = missingRequiredChecks(evidence, requiredChecks);
@@ -160,7 +164,12 @@ export function evaluateReleaseGate({
     provenance?.repository === CANONICAL_REPOSITORY
       && provenance.branch === "main"
       && provenance.originVerified === true
-      && provenance.originMainSha === current,
+      && (
+        pendingPublishBaseSha
+          ? provenance.originMainSha === pendingPublishBaseSha
+            && provenance.candidateDescendsFromOriginBase === true
+          : provenance.originMainSha === current
+      ),
   );
   const targetVerified = Boolean(
     deploymentEnabled?.main === false
@@ -196,13 +205,26 @@ function readCandidateProvenance(candidateSha) {
     const match = origin.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i);
     const repository = match?.[1] ?? "";
     const originMainSha = originMain.split(/\s+/)[0] ?? "";
+    let candidateDescendsFromOriginBase = false;
+    if (originMainSha) {
+      try {
+        execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", originMainSha, candidateSha], {
+          cwd: repositoryRoot,
+          stdio: "ignore",
+        });
+        candidateDescendsFromOriginBase = true;
+      } catch {
+        candidateDescendsFromOriginBase = false;
+      }
+    }
     return {
       branch,
       repository,
       originMainSha,
       originVerified: repository === CANONICAL_REPOSITORY
         && branch === "main"
-        && originMainSha === candidateSha,
+        && candidateDescendsFromOriginBase,
+      candidateDescendsFromOriginBase,
     };
   } catch {
     return { branch: "", repository: "", originMainSha: "", originVerified: false };
@@ -228,9 +250,14 @@ function readVercelPolicy(actualTarget) {
 }
 
 async function main() {
-  const { sha, target, profile } = parseArgs(process.argv.slice(2));
+  const { sha, target, profile, pendingPublish, baseSha } = parseArgs(process.argv.slice(2));
   if (!["full", "deploy"].includes(profile)) {
     console.error(`Unsupported release profile: ${profile}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (pendingPublish && !/^[0-9a-f]{40}$/i.test(baseSha)) {
+    console.error("Pending publication requires --base-sha=<40-hex SHA>.");
     process.exitCode = 1;
     return;
   }
@@ -257,15 +284,17 @@ async function main() {
       publicationReference: evidence.publicationReference,
     })
     : null;
+  const provenance = readCandidateProvenance(sha);
   const result = evaluateReleaseGate({
     evidence,
     current,
     clean: isClean(),
     deploymentEnabled: { ...vercelPolicy, sha },
-    provenance: readCandidateProvenance(sha),
+    provenance,
     profile,
     requiredChecks: deployPlan?.checks.map((check) => check.id),
     deployScope,
+    pendingPublishBaseSha: pendingPublish ? baseSha : "",
   });
 
   console.log(`RELEASE_PROFILE: ${profile}`);

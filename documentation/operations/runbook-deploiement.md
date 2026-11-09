@@ -36,6 +36,23 @@ npm run checks:deploy -- --deployment-ref=<sha-production-verifie> --deployment-
 npm run release:check -- --sha=<sha-candidat> --target=production --profile=deploy
 ```
 
+Pour une campagne DEPLOY autorisée à publier automatiquement, fournir en plus
+la liste complète des fichiers attribués au chantier :
+
+```powershell
+npm run checks:deploy -- --auto-publish `
+  --candidate-file=<chemin-1> --candidate-file=<chemin-2> `
+  --deployment-ref=<sha-production-verifie> `
+  --deployment-proof=<preuve-vercel.json>
+```
+
+Le runner capture staged, unstaged et non suivis non ignorés dans un index
+temporaire, refuse tout fichier étranger, secret ou artefact généré, valide
+l'arbre exact, puis commit et pousse uniquement l'allowlist attribuée après
+les guards et la release gate. Un changement concurrent, une preuve manquante,
+un contrôle non vert, une divergence distante ou un échec du push bloque la
+publication. Il vérifie enfin `HEAD = origin/main` et la divergence `0/0`.
+
 Cette preuve DEPLOY est distincte de FULL, ne couvre que la portée Web
 détectée cumulativement depuis le SHA de Production Vercel effectivement
 vérifié. La preuve JSON doit confirmer le projet `web`, la racine `apps/web`,
@@ -43,9 +60,12 @@ la cible `production`, le commit Git et la méthode de vérification. Une base
 Git arbitraire ou une référence Production non vérifiable bloque la campagne
 et ne peut pas produire `RELEASE_READY: YES`. Cette validation ne déclenche
 aucun deployment.
-Elle ne remplace pas FULL lorsque le périmètre touche Mobile, Python, les
-workflows GitHub ou une autre surface non couverte ; dans ce cas elle échoue
-explicitement et la procédure appropriée doit être choisie.
+Pour une candidate mixte Web/Mobile/E2E, le plan DEPLOY ajoute les contrôles
+correspondant aux chemins affectés ; un changement Web reste nécessaire pour
+qu'une publication DEPLOY soit exploitable. Les périmètres Python, workflows
+GitHub ou autres surfaces non couvertes restent bloquants et doivent suivre la
+procédure appropriée. Cette validation ne déclenche aucun deployment et ne
+modifie pas Supabase.
 
 ## Flux normal
 

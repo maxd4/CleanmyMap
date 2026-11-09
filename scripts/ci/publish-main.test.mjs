@@ -1,7 +1,28 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
-import { publishMain } from "./publish-main.mjs";
+import {
+  captureWorktreeCandidate,
+  commitCandidate,
+  publishMain,
+} from "./publish-main.mjs";
+import { removePathWithRetry } from "./validation-evidence.mjs";
+
+function fixtureRepository() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-publish-candidate-"));
+  execFileSync("git", ["init", "--initial-branch=main", "--quiet"], { cwd: root });
+  execFileSync("git", ["config", "user.name", "CleanMyMap fixture"], { cwd: root });
+  execFileSync("git", ["config", "user.email", "fixture@cleanmymap.local"], { cwd: root });
+  fs.mkdirSync(path.join(root, "apps", "web", "src"), { recursive: true });
+  fs.writeFileSync(path.join(root, "README.md"), "baseline\n");
+  execFileSync("git", ["add", "--", "."], { cwd: root });
+  execFileSync("git", ["commit", "--quiet", "-m", "baseline"], { cwd: root });
+  return root;
+}
 
 function fakeGit({
   pushResults = [{ status: 0, stdout: "", stderr: "" }],
@@ -225,4 +246,73 @@ test("does not retry a permission failure as a Git race", async () => {
     /permission denied/,
   );
   assert.equal(pushCalls(fake).length, 1);
+});
+
+test("captures staged, unstaged, and untracked attributed files in one exact tree", () => {
+  const root = fixtureRepository();
+  try {
+    fs.writeFileSync(path.join(root, "staged.txt"), "staged\n");
+    execFileSync("git", ["add", "--", "staged.txt"], { cwd: root });
+    fs.writeFileSync(path.join(root, "README.md"), "unstaged\n");
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default null;\n");
+    const candidate = captureWorktreeCandidate({
+      repositoryRoot: root,
+      candidateFiles: ["README.md", "staged.txt", "apps/web/src/page.tsx"],
+    });
+    assert.deepEqual(candidate.worktreeFiles, ["README.md", "apps/web/src/page.tsx", "staged.txt"].sort((left, right) => left.localeCompare(right, "en")));
+    const changed = execFileSync("git", ["diff", "--name-only", candidate.baseSha, candidate.candidateTreeSha], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim().split(/\r?\n/).filter(Boolean).sort((left, right) => left.localeCompare(right, "en"));
+    assert.deepEqual(changed, candidate.worktreeFiles);
+    candidate.cleanup();
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("blocks foreign and generated files before creating a publication candidate", () => {
+  const root = fixtureRepository();
+  try {
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default null;\n");
+    fs.writeFileSync(path.join(root, "foreign.txt"), "foreign\n");
+    assert.throws(
+      () => captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["apps/web/src/page.tsx"] }),
+      /SCOPE_UNRESOLVED.*foreign\.txt/,
+    );
+    fs.rmSync(path.join(root, "foreign.txt"));
+    fs.mkdirSync(path.join(root, "artifacts"), { recursive: true });
+    fs.writeFileSync(path.join(root, "artifacts", "report.json"), "{}\n");
+    assert.throws(
+      () => captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["apps/web/src/page.tsx", "artifacts/report.json"] }),
+      /GENERATED_ARTIFACT/,
+    );
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("commits exactly the validated tree and leaves no attributed file uncommitted", () => {
+  const root = fixtureRepository();
+  try {
+    const file = path.join(root, "apps", "web", "src", "page.tsx");
+    fs.writeFileSync(file, "export default null;\n");
+    const candidate = captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["apps/web/src/page.tsx"] });
+    const result = commitCandidate({ repositoryRoot: root, candidate, runPreCommit: false });
+    assert.equal(execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: root, encoding: "utf8" }).trim(), candidate.candidateTreeSha);
+    assert.equal(execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: root, encoding: "utf8" }).trim(), "");
+    assert.match(result.commitSha, /^[0-9a-f]{40}$/);
+    candidate.cleanup();
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("strict publication refuses a remote change before pushing", async () => {
+  const fake = fakeGit({ local: "candidate", remote: "other", parents: { candidate: "base", other: "base" } });
+  await assert.rejects(
+    publishMain({ runGitCommand: fake.runGitCommand, expectedRemoteSha: "base", sleep: async () => {} }),
+    /origin\/main changed during DEPLOY publication/,
+  );
+  assert.equal(pushCalls(fake).length, 0);
 });

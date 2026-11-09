@@ -141,6 +141,10 @@ function isDeploySmokeRelevantFile(file) {
     || normalized === "apps/web/scripts/smoke-tests.mjs";
 }
 
+function isE2eRelevantFile(file) {
+  return normalizePath(file).startsWith("e2e/");
+}
+
 function isWebRuntimeRelevantFile(file) {
   const normalized = normalizePath(file);
   return isWebRelevantFile(normalized) && !normalized.startsWith("apps/web/supabase/");
@@ -330,6 +334,7 @@ function classifyChangedFiles(files) {
       || files.includes("package.json")
       || files.includes("scripts/knip.json"),
     deploySmokeRelevant: files.some(isDeploySmokeRelevantFile),
+    e2eRelevant: files.some(isE2eRelevantFile),
   };
 }
 
@@ -750,10 +755,36 @@ function addDeployModeChecks({ checks, files, domains, candidateSha, baseRef }) 
         ...(baseRef ? [`--base-ref=${baseRef}`] : []),
         ...(domains.publicationReferenceSha ? [`--deployment-ref=${domains.publicationReferenceSha}`] : []),
         ...(domains.publicationProofPath ? [`--deployment-proof=${domains.publicationProofPath}`] : []),
+        ...(domains.candidateTreeSha ? [`--candidate-tree=${domains.candidateTreeSha}`] : []),
+        ...(domains.allowDirtyCandidate ? ["--allow-dirty-candidate"] : []),
       ],
     },
   });
 
+  if (domains.mobileRelevant) {
+    for (const [id, label, script, estimatedSeconds] of [
+      ["mobile:typecheck", "Typecheck mobile", "mobile:typecheck", 30],
+      ["mobile:test", "Tests mobile", "mobile:test", 60],
+      ["mobile:security", "Sécurité mobile", "mobile:security", 30],
+      ["mobile:lint", "ESLint mobile", "mobile:lint", 30],
+    ]) {
+      addDeployCheck(checks, { id, label, estimatedSeconds, command: npmCommand(script) });
+    }
+  }
+  if (domains.e2eRelevant) {
+    addDeployCheck(checks, {
+      id: "e2e-artifact-security",
+      label: "Sécurité des artefacts E2E",
+      estimatedSeconds: 10,
+      command: npmCommand("check:public-e2e-artifact"),
+    });
+    addDeployCheck(checks, {
+      id: "test:e2e",
+      label: "Campagne E2E",
+      estimatedSeconds: 240,
+      command: npmCommand("test:e2e"),
+    });
+  }
   if (!domains.webRelevant) return;
 
   addDeployCheck(checks, {
@@ -860,6 +891,9 @@ function finalizeModeValidationPlan({ normalizedMode, normalizedScope, files, do
       "dependencyGraphChanged",
       "publicationReferenceSha",
       "publicationProofPath",
+      "e2eRelevant",
+      "candidateTreeSha",
+      "allowDirtyCandidate",
     ].includes(key)),
   );
   return Object.freeze({
@@ -883,6 +917,8 @@ export function createModeValidationPlan({
   publicationReference = null,
   dependencyGraphChanged,
   publicationProofPath = "",
+  candidateTreeSha = "",
+  allowDirtyCandidate = false,
 } = {}) {
   const input = normalizePlanInput({ mode, candidateScope, changedFiles });
   const domains = {
@@ -890,6 +926,8 @@ export function createModeValidationPlan({
     dependencyGraphChanged: dependencyGraphChanged ?? input.files.some(isLockfileRelevantFile),
     publicationReferenceSha: publicationReference?.sha ?? "",
     publicationProofPath,
+    candidateTreeSha,
+    allowDirtyCandidate,
   };
   const checks = [];
   const deduplicated = [];

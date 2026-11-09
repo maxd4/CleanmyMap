@@ -220,6 +220,22 @@ test("DEPLOY adds dependency, migration and smoke controls only for the affected
     .every((check) => check.dependencies.includes("deploy-candidate")));
 });
 
+test("DEPLOY adds Mobile and E2E controls for a mixed candidate", () => {
+  const plan = createModeValidationPlan({
+    mode: "DEPLOY",
+    changedFiles: [
+      "apps/web/src/app/page.tsx",
+      "apps/mobile/App.tsx",
+      "e2e/homepage.spec.ts",
+    ],
+  });
+  const deployIds = ids(plan);
+  for (const id of ["mobile:typecheck", "mobile:test", "mobile:security", "mobile:lint", "e2e-artifact-security", "test:e2e"]) {
+    assert.ok(deployIds.includes(id), `missing mixed DEPLOY check ${id}`);
+  }
+  assert.equal(plan.domains.e2eRelevant, undefined);
+});
+
 test("DEPLOY does not audit dependencies for a scripts-only package manifest change", () => {
   const plan = createModeValidationPlan({ mode: "DEPLOY", changedFiles: ["package.json"] });
   assert.equal(ids(plan).includes("dependency-audit"), false);

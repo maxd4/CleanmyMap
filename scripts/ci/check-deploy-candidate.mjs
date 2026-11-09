@@ -7,6 +7,8 @@ const shaArgument = process.argv.find((arg) => arg.startsWith("--sha="));
 const baseArgument = process.argv.find((arg) => arg.startsWith("--base-ref="));
 const deploymentArgument = process.argv.find((arg) => arg.startsWith("--deployment-ref="));
 const proofArgument = process.argv.find((arg) => arg.startsWith("--deployment-proof="));
+const treeArgument = process.argv.find((arg) => arg.startsWith("--candidate-tree="));
+const allowDirtyCandidate = process.argv.includes("--allow-dirty-candidate");
 let deploymentProof = null;
 if (proofArgument) {
   try {
@@ -23,6 +25,9 @@ const result = await resolveDeployCandidate({
   deploymentReference: deploymentArgument ? { sha: deploymentArgument.slice("--deployment-ref=".length) } : null,
   deploymentProof,
   candidateSha: shaArgument?.slice("--sha=".length),
+  candidateTreeSha: treeArgument?.slice("--candidate-tree=".length) || "",
+  allowDirtyCandidate,
+  allowedDirtyFiles: proofArgument ? [proofArgument.slice("--deployment-proof=".length)] : [],
 });
 
 if (deploymentProof || !proofArgument) {

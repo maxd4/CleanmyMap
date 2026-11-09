@@ -317,6 +317,27 @@ npm run checks:deploy -- --deployment-ref=<sha-production-verifie> --deployment-
 npm run release:check -- --sha=<sha-valide> --target=production --profile=deploy
 ```
 
+Pour publier automatiquement la candidate validée sur `origin/main`, le
+workflow explicite ajoute une attribution complète des fichiers du chantier :
+
+```bash
+npm run checks:deploy -- --auto-publish \
+  --candidate-file=<chemin-1> --candidate-file=<chemin-2> \
+  --deployment-ref=<sha-production-verifie> \
+  --deployment-proof=<preuve-vercel.json> \
+  --commit-message="feat(scope): publish validated candidate"
+```
+
+`--auto-publish` est réservé à DEPLOY. Avant toute validation, le runner
+capture un index temporaire dérivé de `HEAD`, puis y matérialise explicitement
+les fichiers `--candidate-file`. Il compare cette liste à l'inventaire complet
+du worktree (staged, unstaged et fichiers non ignorés non suivis). Un fichier
+étranger, manquant, généré (`artifacts/`, `coverage/`, `.next/`, `dist/`,
+`build/`, rapports de test ou `.vercel/`) ou une opération Git en cours bloque
+la campagne ; aucun secret ou artefact ne peut être ajouté implicitement. Le
+fichier de preuve Vercel reste une entrée de validation, pas une partie de la
+candidate.
+
 La preuve Vercel doit identifier le commit Git de la dernière Production
 effectivement vérifiée et contenir `provider=vercel`, `projectName=web`,
 `rootDirectory=apps/web`, `target=production`, `verified=true`, une
@@ -342,8 +363,13 @@ fichiers affectés le nécessitent. Une modification limitée aux scripts de
 `package.json` ne lance pas l'audit npm ; une modification de `dependencies`,
 `devDependencies`, `optionalDependencies` ou `overrides` le déclenche et rend
 l'absence de mise à jour du lockfile bloquante.
-Mobile, Python, mutation testing, couverture globale, audits structurels et
-E2E complets restent hors plan sans dépendance démontrée.
+Pour une candidate mixte, les changements `apps/mobile/` ajoutent les
+contrôles Mobile (typecheck, tests, sécurité et lint), et les changements
+`e2e/` ajoutent la sécurité des artefacts et la campagne E2E. Un DEPLOY qui ne
+contient aucun changement Web exploitable reste bloqué ; ces contrôles
+supplémentaires ne transforment pas un DEPLOY Web incomplet en succès. Python,
+mutation testing, couverture globale et audits structurels restent hors plan
+sans dépendance démontrée.
 
 L'attestation est conservée séparément sous
 `artifacts/validation/deploy/<sha>.json`, liée au SHA, à l'arbre candidat, à
@@ -354,6 +380,23 @@ réussis, non bloqués, non omis, et si la provenance `origin/main`, le projet
 Vercel `web`, `apps/web`, la cible `production` et
 `git.deploymentEnabled=false` sont vérifiés. Aucun déploiement n'est déclenché
 par ces commandes.
+
+Lorsque `--auto-publish` atteint `PASS`, le runner vérifie une dernière fois
+l'empreinte du worktree et l'identité de `HEAD`, restaure l'index réel, puis
+stage uniquement l'allowlist attribuée. Il exige que l'arbre staged soit
+strictement égal à l'arbre validé, exécute `precommit:guard`, crée un commit
+isolé sur `main`, rejoue la release gate en mode publication différée et
+réutilise `publish-main.mjs` pour le push fast-forward avec le SHA distant de
+base attendu. Le hook `pre-push` reste applicable. Après le push, `HEAD` et
+`origin/main` doivent être identiques et la divergence doit être `0/0`.
+
+Une modification apparue après la validation, un SHA ou arbre différent, une
+validation absente ou bloquée, un fichier étranger, un secret, une divergence
+distante ou un échec de guard/push bloque la publication. Un échec après le
+commit peut laisser ce commit local, mais ne doit jamais être présenté comme
+publié ; il faut alors traiter explicitement ce commit avant toute nouvelle
+tentative. Ce cycle ne déclenche aucun déploiement Vercel et ne modifie pas
+Supabase.
 
 ### RELEASE — publication contrôlée
 

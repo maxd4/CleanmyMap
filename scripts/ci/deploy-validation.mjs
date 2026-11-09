@@ -32,8 +32,16 @@ function normalizePath(value) {
   return String(value).replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
-function listDiffFiles(repositoryRoot, baseSha, candidateSha) {
-  return git(repositoryRoot, ["diff", "--name-only", `${baseSha}..${candidateSha}`, "--"])
+function dirtyWorktreeFiles(repositoryRoot) {
+  return git(repositoryRoot, ["status", "--porcelain", "--untracked-files=all"], { allowFailure: true })
+    .split(/\r?\n/)
+    .map((line) => line.slice(3).trim())
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
+function listDiffFiles(repositoryRoot, baseSha, candidateTreeSha) {
+  return git(repositoryRoot, ["diff", "--name-only", baseSha, candidateTreeSha, "--"])
     .split(/\r?\n/)
     .map(normalizePath)
     .filter(Boolean)
@@ -57,13 +65,13 @@ function isWebDependencyManifest(file) {
   return normalized === "package.json" || normalized === "apps/web/package.json";
 }
 
-export function resolveDependencyGraphChange({ repositoryRoot, baseSha, candidateSha, changedFiles = null } = {}) {
-  const files = changedFiles ?? listDiffFiles(repositoryRoot, baseSha, candidateSha);
+export function resolveDependencyGraphChange({ repositoryRoot, baseSha, candidateSha, candidateTreeSha = candidateSha, changedFiles = null } = {}) {
+  const files = changedFiles ?? listDiffFiles(repositoryRoot, baseSha, candidateTreeSha);
   const manifestFiles = files.filter(isPackageManifest);
   const lockfileFiles = files.filter(isLockfile);
   const changedManifestFiles = manifestFiles.filter((file) => {
     const before = readGitFile(repositoryRoot, baseSha, file);
-    const after = readGitFile(repositoryRoot, candidateSha, file);
+    const after = readGitFile(repositoryRoot, candidateTreeSha, file);
     return !dependencyGraphSnapshotsEqual(before, after);
   });
   const graphChanged = lockfileFiles.length > 0 || changedManifestFiles.length > 0;
@@ -83,8 +91,7 @@ export function resolveDependencyGraphChange({ repositoryRoot, baseSha, candidat
 function isUnsupportedDeployPath(file) {
   const normalized = normalizePath(file);
   return normalized.startsWith("maintenance/python/")
-    || normalized.startsWith(".github/")
-    || normalized.startsWith("e2e/");
+    || normalized.startsWith(".github/");
 }
 
 function isSharedWebContractPath(file) {
@@ -300,6 +307,9 @@ export async function resolveDeployCandidate({
   deploymentReference = null,
   deploymentProof = null,
   vercelClient,
+  candidateTreeSha = "",
+  allowDirtyCandidate = false,
+  allowedDirtyFiles = [],
 } = {}) {
   const currentSha = git(repositoryRoot, ["rev-parse", "HEAD"], { allowFailure: true });
   const requestedSha = candidateSha || currentSha;
@@ -313,6 +323,7 @@ export async function resolveDeployCandidate({
     webChangedFiles: [],
     unsupportedFiles: [],
     mobileChangedFiles: [],
+    e2eChangedFiles: [],
     sharedChangedFiles: [],
     smokeRelevant: false,
     dependencyGraphChanged: false,
@@ -332,14 +343,17 @@ export async function resolveDeployCandidate({
     return result;
   }
 
-  result.candidateTreeSha = git(repositoryRoot, ["rev-parse", `${requestedSha}^{tree}`], { allowFailure: true });
+  result.candidateTreeSha = candidateTreeSha
+    || git(repositoryRoot, ["rev-parse", `${requestedSha}^{tree}`], { allowFailure: true });
   if (!SHA_PATTERN.test(result.candidateTreeSha)) {
     result.reason = "DEPLOY_CANDIDATE_TREE_UNVERIFIED";
     return result;
   }
 
-  result.worktreeClean = git(repositoryRoot, ["status", "--porcelain", "--untracked-files=all"], { allowFailure: true }) === "";
-  if (!result.worktreeClean) {
+  const allowedDirty = new Set(allowedDirtyFiles.map((file) => normalizePath(path.relative(repositoryRoot, path.resolve(repositoryRoot, file)))));
+  const dirtyFiles = dirtyWorktreeFiles(repositoryRoot).filter((file) => !allowedDirty.has(file));
+  result.worktreeClean = dirtyFiles.length === 0;
+  if (!result.worktreeClean && !allowDirtyCandidate) {
     result.reason = "DEPLOY_WORKTREE_NOT_CLEAN";
     return result;
   }
@@ -371,16 +385,18 @@ export async function resolveDeployCandidate({
   result.baseSha = verifiedPublication.reference.sha;
   result.baseRef = verifiedPublication.reference.sha;
 
-  result.changedFiles = listDiffFiles(repositoryRoot, result.baseSha, requestedSha);
+  result.changedFiles = listDiffFiles(repositoryRoot, result.baseSha, result.candidateTreeSha);
   result.webChangedFiles = result.changedFiles.filter((file) => isWebRelevantFile(file) || isSharedWebContractPath(file));
   result.unsupportedFiles = result.changedFiles.filter(isUnsupportedDeployPath);
   result.mobileChangedFiles = result.changedFiles.filter((file) => normalizePath(file).startsWith("apps/mobile/"));
+  result.e2eChangedFiles = result.changedFiles.filter((file) => normalizePath(file).startsWith("e2e/"));
   result.sharedChangedFiles = result.changedFiles.filter(isSharedWebContractPath);
   result.smokeRelevant = result.changedFiles.some(isSmokeRelevantPath);
   result.dependencyGraph = resolveDependencyGraphChange({
     repositoryRoot,
     baseSha: result.baseSha,
     candidateSha: requestedSha,
+    candidateTreeSha: result.candidateTreeSha,
     changedFiles: result.changedFiles,
   });
   result.dependencyGraphChanged = result.dependencyGraph.webGraphChanged;
