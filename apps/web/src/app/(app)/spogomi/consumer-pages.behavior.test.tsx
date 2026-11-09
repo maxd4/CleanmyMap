@@ -82,6 +82,10 @@ describe("SPOGOMI consumer pages", () => {
     expect(markup).toContain("Entrée nord");
     expect(markup).toContain("Contact public vérifié");
     expect(markup).toContain("Horaires officiels par division");
+    expect(markup).toContain("Choisir mon parcours");
+    expect(markup).toContain("Bénévoles");
+    expect(markup).toContain("Arbitres");
+    expect(markup).toContain("Organisateurs");
     expect(markup).not.toContain("external_reference");
     expect(markup).not.toContain("requesterClerkId");
   });
@@ -98,6 +102,13 @@ describe("SPOGOMI consumer pages", () => {
         registration: "/sign-in?redirect_url=%2Fspogomi%2Fparis-2026%3Ffocus%3Dregistration%26division%3Dworld_cup%23spogomi-sports-registration",
       }),
     }));
+    const markup = renderToStaticMarkup(await SpogomiPublicEventPage({
+      params: Promise.resolve({ eventSlug: "paris-2026" }),
+      searchParams: Promise.resolve({ division: "world_cup" }),
+    }));
+    expect(markup).toContain("division World Cup");
+    expect(markup).toContain("focus=quiz&amp;division=world_cup");
+    expect(markup).toContain("focus=registration&amp;division=world_cup");
   });
 
   it("discloses the synthetic Cachan scenario when it is actually published", async () => {

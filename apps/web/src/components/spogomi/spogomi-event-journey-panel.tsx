@@ -31,7 +31,7 @@ function StepRow({ step }: { step: SpogomiJourneyStep }) {
     : <div className="flex min-w-0 items-start gap-3 rounded-xl border border-black/10 bg-white/70 p-3">{content}</div>;
 }
 
-export function SpogomiEventJourneyPanel({ journey }: { journey: SpogomiEventJourney }) {
+export function SpogomiEventJourneyPanel({ journey, showAuthorizedSpaces = true }: { journey: SpogomiEventJourney; showAuthorizedSpaces?: boolean }) {
   return <section aria-labelledby="spogomi-event-journey-title" className="space-y-4">
     <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
       <div>
@@ -42,7 +42,7 @@ export function SpogomiEventJourneyPanel({ journey }: { journey: SpogomiEventJou
       <div className="flex flex-wrap items-center gap-3"><StatusBadge status={journey.next.status} />{journey.next.href ? <CmmButton href={journey.next.href} tone="primary" size="sm" variant="pill">Ouvrir cette étape</CmmButton> : null}</div>
       <div className="space-y-2" aria-label="Étapes du parcours compétiteur"><p className="cmm-text-small font-black uppercase tracking-[0.12em] text-slate-600">Autres étapes</p>{journey.steps.map((step) => <StepRow key={step.key} step={step} />)}</div>
     </CmmCard>
-    {journey.authorizedSpaces.length ? <CmmCard tone="slate" variant="glass" className="space-y-3 p-5" aria-labelledby="spogomi-authorized-spaces-title">
+    {showAuthorizedSpaces && journey.authorizedSpaces.length ? <CmmCard tone="slate" variant="glass" className="space-y-3 p-5" aria-labelledby="spogomi-authorized-spaces-title">
       <div><h2 id="spogomi-authorized-spaces-title" className="font-black text-slate-950">Espaces autorisés pour cette édition</h2><p className="cmm-text-body mt-1 text-slate-800">Ces accès correspondent aux habilitations actives pour votre compte et restent limités à cette compétition.</p></div>
       <div className="grid gap-2 sm:grid-cols-2">{journey.authorizedSpaces.map((space) => <a key={space.key} href={space.href} className="flex items-start gap-3 rounded-xl border border-black/10 bg-white/75 p-3 font-bold text-slate-950 hover:border-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"><span className="min-w-0 flex-1"><span className="block">{space.title}</span><span className="cmm-text-small mt-0.5 block font-normal text-slate-700">{space.description}</span></span><ArrowRight size={16} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" /></a>)}</div>
     </CmmCard> : null}

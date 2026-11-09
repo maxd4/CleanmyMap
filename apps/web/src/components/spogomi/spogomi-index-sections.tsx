@@ -1,10 +1,10 @@
-import { ArrowRight, BookOpen, CalendarDays, MapPin } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
-import { CmmIcon } from "@/components/ui/cmm-icon";
 import { SpogomiActionInfo } from "./spogomi-action-info";
-import { SpogomiUnderstandingTabs } from "./spogomi-understanding-tabs";
+import { SpogomiUnderstandingTabs, type SpogomiUnderstandingCopy } from "./spogomi-understanding-tabs";
+import { SpogomiInternationalContent, type SpogomiInternationalContentProps } from "./spogomi-international-content";
 import { SPOGOMI_CACHAN_DEMO_ROUTE } from "@/lib/spogomi/demo-scenario";
 import { SPOGOMI_EXTERNAL_EVENTS, SPOGOMI_HISTORICAL_EXAMPLES, SPOGOMI_INTERNATIONAL_NEWS, SPOGOMI_INTERNATIONAL_SOURCES } from "@/lib/spogomi/international-content";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
@@ -71,11 +71,11 @@ function EventGroup({ title, events }: { title: string; events: PublishedEvents 
 export function SpogomiPublicEvents({ events, loadError }: { events: PublishedEvents; loadError: boolean }) {
   const activeEvents = events.filter((event) => event.calendarStatus !== "finished");
   const finishedEvents = events.filter((event) => event.calendarStatus === "finished");
-  return <section id="spogomi-events" className="scroll-mt-6 space-y-5" aria-labelledby="spogomi-events-title"><div aria-hidden="true" className="sr-only"><span id="spogomi-registration" /><span id="spogomi-team" /><span id="spogomi-identity" /><span id="spogomi-assistance" /><span id="spogomi-results" /><span id="spogomi-contributions" /><span id="spogomi-attestations" /></div><div><h2 id="spogomi-events-title" className="text-2xl font-black text-slate-950">Compétitions publiques</h2><p className="cmm-text-body mt-1 text-slate-950">Les éditions publiées sont classées par calendrier ; les résultats et leur provenance restent affichés séparément.</p></div><DemoCatalogCard />{loadError ? <CmmFeedback tone="error" title="Compétitions indisponibles">Les compétitions publiées ne peuvent pas être chargées pour le moment. Réessayez plus tard.</CmmFeedback> : events.length === 0 ? <CmmCard tone="slate" variant="glass" className="border-dashed"><p className="font-bold text-slate-900">Aucune compétition SPOGOMI publiée pour le moment.</p><p className="mt-2 text-sm text-slate-950">Les brouillons, éditions privées et éditions annulées ne sont pas exposés dans ce catalogue.</p></CmmCard> : <div className="space-y-6"><EventGroup title="À venir et en cours" events={activeEvents} /><EventGroup title="Éditions terminées" events={finishedEvents} /></div>}</section>;
+  return <section id="spogomi-events" className="scroll-mt-6 space-y-5" aria-labelledby="spogomi-events-title"><div aria-hidden="true" className="sr-only"><span id="spogomi-registration" /><span id="spogomi-team" /><span id="spogomi-identity" /><span id="spogomi-assistance" /><span id="spogomi-results" /><span id="spogomi-contributions" /><span id="spogomi-attestations" /></div><div><p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">03</p><h2 id="spogomi-events-title" className="mt-1 text-2xl font-black text-slate-950">Compétitions disponibles</h2><p className="cmm-text-body mt-1 text-slate-950">Les éditions publiées sont classées par calendrier ; les résultats et leur provenance restent affichés séparément.</p></div><DemoCatalogCard />{loadError ? <CmmFeedback tone="error" title="Compétitions indisponibles">Les compétitions publiées ne peuvent pas être chargées pour le moment. Réessayez plus tard.</CmmFeedback> : events.length === 0 ? <CmmCard tone="slate" variant="glass" className="border-dashed"><p className="font-bold text-slate-900">Aucune compétition SPOGOMI publiée pour le moment.</p><p className="mt-2 text-sm text-slate-950">Les brouillons, éditions privées et éditions annulées ne sont pas exposés dans ce catalogue.</p></CmmCard> : <div className="space-y-6"><EventGroup title="À venir et en cours" events={activeEvents} /><EventGroup title="Éditions terminées" events={finishedEvents} /></div>}</section>;
 }
 
-export function SpogomiUnderstanding({ locale, t }: { locale: Locale; t: Translate }) {
-  const international = {
+function buildInternational(locale: Locale, t: Translate): SpogomiInternationalContentProps {
+  return {
     locale,
     sources: SPOGOMI_INTERNATIONAL_SOURCES,
     news: SPOGOMI_INTERNATIONAL_NEWS,
@@ -100,46 +100,69 @@ export function SpogomiUnderstanding({ locale, t }: { locale: Locale; t: Transla
       noExternalEvents: t("international.noExternalEvents"),
     },
   };
+}
 
+function buildUnderstandingCopy(locale: Locale, t: Translate): SpogomiUnderstandingCopy {
+  return {
+    howItWorksTitle: t("understanding.howItWorksTitle"),
+    howItWorksDescription: t("understanding.howItWorksDescription"),
+    stepTeamsTitle: t("understanding.stepTeamsTitle"),
+    stepTeamsDescription: t("understanding.stepTeamsDescription"),
+    stepCollectTitle: t("understanding.stepCollectTitle"),
+    stepCollectDescription: t("understanding.stepCollectDescription"),
+    stepReturnTitle: t("understanding.stepReturnTitle"),
+    stepReturnDescription: t("understanding.stepReturnDescription"),
+    stepSortTitle: t("understanding.stepSortTitle"),
+    stepSortDescription: t("understanding.stepSortDescription"),
+    stepPointsTitle: t("understanding.stepPointsTitle"),
+    stepPointsDescription: t("understanding.stepPointsDescription"),
+    formatsTitle: t("understanding.formatsTitle"),
+    formatsDescription: t("understanding.formatsDescription"),
+    compositionLabel: t("understanding.compositionLabel"),
+    processLabel: t("understanding.processLabel"),
+    pointsLabel: t("understanding.pointsLabel"),
+    casualTitle: t("international.casualTitle"),
+    casualDescription: t("international.casualDescription"),
+    casualComposition: t("understanding.casualComposition"),
+    casualProcess: t("understanding.casualProcess"),
+    casualPoints: t("understanding.casualPoints"),
+    worldCupTitle: t("international.worldCupTitle"),
+    worldCupDescription: t("international.worldCupDescription"),
+    worldCupComposition: t("understanding.worldCupComposition"),
+    worldCupProcess: t("understanding.worldCupProcess"),
+    worldCupPoints: t("understanding.worldCupPoints"),
+    commonRulesTitle: t("understanding.commonRulesTitle"),
+    rulesDescription: t("understanding.rulesDescription"),
+    rulesCasual: t("understanding.rulesCasual"),
+    rulesWorldCup: t("understanding.rulesWorldCup"),
+    rulesSafety: t("understanding.rulesSafety"),
+    rulesSanctions: t("understanding.rulesSanctions"),
+    rulesHistoricalExamplesTitle: t("understanding.rulesHistoricalExamplesTitle"),
+    rulesPrivacyNote: t("understanding.rulesPrivacyNote"),
+    examples: SPOGOMI_HISTORICAL_EXAMPLES.map((example) => ({
+      id: example.id,
+      text: t(`understanding.${example.copyKey}`),
+      sourceLabel: example.sourceLabel,
+      sourceUrl: example.sourceUrl,
+      additionalSources: example.additionalSources?.map((source) => ({ href: source.href, label: source.label[locale] })),
+    })),
+  };
+}
+
+export function SpogomiUnderstanding({ locale, t }: { locale: Locale; t: Translate }) {
   return (
-    <section className="space-y-4" aria-labelledby="spogomi-understanding-title">
-      <UnderstandingIntro t={t} />
-      <SpogomiUnderstandingTabs
-        copy={{
-          presentationTab: t("understanding.presentationTab"),
-          formatsTab: t("understanding.formatsTab"),
-          rulesTab: t("understanding.rulesTab"),
-          worldTab: t("understanding.worldTab"),
-          presentationTitle: t("understanding.presentationTitle"),
-          presentationDescription: t("international.worldDescription"),
-          casualTitle: t("international.casualTitle"),
-          casualDescription: t("international.casualDescription"),
-          worldCupTitle: t("international.worldCupTitle"),
-          worldCupDescription: t("international.worldCupDescription"),
-          rulesDescription: t("understanding.rulesDescription"),
-          rulesCasual: t("understanding.rulesCasual"),
-          rulesWorldCup: t("understanding.rulesWorldCup"),
-          rulesSafety: t("understanding.rulesSafety"),
-          rulesSanctions: t("understanding.rulesSanctions"),
-          rulesHistoricalExamplesTitle: t("understanding.rulesHistoricalExamplesTitle"),
-          rulesPrivacyNote: t("understanding.rulesPrivacyNote"),
-          examples: SPOGOMI_HISTORICAL_EXAMPLES.map((example) => ({
-            id: example.id,
-            text: t(`understanding.${example.copyKey}`),
-            sourceLabel: example.sourceLabel,
-            sourceUrl: example.sourceUrl,
-            additionalSources: example.additionalSources?.map((source) => ({ href: source.href, label: source.label[locale] })),
-          })),
-          international,
-        }}
-      />
-    </section>
+    <SpogomiUnderstandingTabs copy={buildUnderstandingCopy(locale, t)} />
   );
 }
 
-function UnderstandingIntro({ t }: { t: Translate }) {
-  return <div>
-    <h2 id="spogomi-understanding-title" className="flex items-center gap-2 text-2xl font-black text-slate-950"><CmmIcon icon={BookOpen} className="text-emerald-700" />{t("understanding.title")}</h2>
-    <p className="cmm-text-body mt-1 text-slate-950">{t("understanding.description")}</p>
-  </div>;
+export function SpogomiInternational({ locale, t }: { locale: Locale; t: Translate }) {
+  return (
+    <div id="spogomi-world" className="scroll-mt-6 space-y-3" data-testid="spogomi-world-section">
+      <div>
+        <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">04</p>
+        <h2 className="mt-1 text-2xl font-black text-slate-950">{t("international.worldTitle")}</h2>
+      </div>
+      <SpogomiInternationalContent {...buildInternational(locale, t)} visibleSections={["world", "news", "events"]} />
+    </div>
+  );
 }

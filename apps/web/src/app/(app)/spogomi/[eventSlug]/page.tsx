@@ -20,6 +20,7 @@ import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
 import { SpogomiSyntheticDemoNotice } from "@/components/spogomi/spogomi-synthetic-demo-notice";
 import { SpogomiPracticalInformation } from "@/components/spogomi/spogomi-practical-information";
 import { SpogomiEventJourneyPanel } from "@/components/spogomi/spogomi-event-journey-panel";
+import { SpogomiEventPathChooser } from "@/components/spogomi/spogomi-event-path-chooser";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadSpogomiEventJourney } from "@/lib/spogomi/event-journey-service";
 import { buildSpogomiEventSignInHref, parseSpogomiEventIntent, type SpogomiEventFocus } from "@/lib/spogomi/navigation-intent";
@@ -45,8 +46,8 @@ export default async function SpogomiPublicEventPage({ params, searchParams }: P
   if (!event) notFound();
   const intent = parseSpogomiEventIntent(await searchParams);
   const requestedDivision = event.divisions.find((division) => division.type === intent.division) ?? null;
-  const defaultDivisionType = requestedDivision?.type ?? event.divisions[0]?.type;
-  const signInHrefFor = (focus: SpogomiEventFocus) => buildSpogomiEventSignInHref(event.slug, { focus, division: defaultDivisionType });
+  const selectedDivisionType = requestedDivision?.type ?? event.divisions[0]?.type;
+  const signInHrefFor = (focus: SpogomiEventFocus) => buildSpogomiEventSignInHref(event.slug, { focus, division: selectedDivisionType });
   const { userId } = await getSafeAuthSession();
   const signInHref = signInHrefFor("quiz");
   const journey = await loadSpogomiEventJourney({
@@ -75,8 +76,9 @@ export default async function SpogomiPublicEventPage({ params, searchParams }: P
       <div className="cmm-page-width space-y-6">
         <Link href="/spogomi" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-800 hover:underline"><ArrowLeft size={16} />Tous les événements SPOGOMI</Link>
         <PageHeader family={resolvePageFamily(`/spogomi/${event.slug}`)} tone="emerald" title={event.name} subtitle={`${modeLabel} · ${lifecycleLabel} · ${registrationLabel} · ${resultsLabel}`} />
+        <SpogomiEventPathChooser eventSlug={event.slug} isAuthenticated={Boolean(userId)} selectedDivisionType={selectedDivisionType} journey={journey} />
         {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Cette fiche publique éventuelle présente uniquement une simulation. Les résultats restent non officiels et la publication de chaque division dépend des contrôles de certification.</p></SpogomiSyntheticDemoNotice> : null}
-        <SpogomiEventJourneyPanel journey={journey} />
+        <SpogomiEventJourneyPanel journey={journey} showAuthorizedSpaces={false} />
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <div className="space-y-6">
             <SpogomiPracticalInformation startsAt={event.startsAt} endsAt={event.endsAt} officialTimezone={event.officialTimezone} locationLabel={event.locationLabel} lifecycleLabel={lifecycleLabel} registrationLabel={registrationLabel} resultsLabel={resultsLabel} practicalInformation={event.practicalInformation} />

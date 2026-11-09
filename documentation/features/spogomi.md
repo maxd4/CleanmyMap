@@ -64,7 +64,10 @@ OFFICIEL` ; elle ne rejoint aucune projection ou persistance SPOGOMI.
 ### Hiérarchie des prochaines actions sur une fiche
 
 La fiche publique `/spogomi/[eventSlug]` conserve les cartes et destinations
-existantes, mais expose en tête une projection serveur « Votre prochaine étape ».
+existantes. Après l’en-tête, elle expose « Choisir mon parcours » avec les
+parcours Bénévoles, Arbitres et Organisateurs, tous contextualisés à l’édition
+et à la division sélectionnée. La projection serveur « Votre prochaine étape »
+reste unique et vient ensuite.
 Elle est reconstruite à chaque requête depuis les demandes d'admission, les
 preuves du quiz applicables à l'édition et à la division sélectionnée, la
 révision courante du contrat d'inscription et la liaison de
@@ -164,7 +167,7 @@ le volume public rend la projection complète mesurablement coûteuse.
 
 ### Déroulé UI de la démonstration Cachan
 
-Le scénario synthétique `SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL` reste une fixture documentaire et n’est jamais une édition CleanMyMap créée en base. Le catalogue public propose un accès séparé, en lecture seule, vers `/spogomi/demonstration/cachan` ; cette route lit la fixture canonique, affiche ses deux divisions et ses onze équipes, et ne fabrique ni événement, ni action, ni résultat officiel, ni statistique environnementale, ni progression. L’onglet **Organisateurs** conserve en parallèle son intention privée et n’est pas remplacé par cette démonstration.
+Le scénario synthétique `SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL` reste une fixture documentaire et n’est jamais une édition CleanMyMap créée en base. Le catalogue public propose un accès séparé, en lecture seule, vers `/spogomi/demonstration/cachan` ; cette route lit la fixture canonique, affiche ses deux divisions et ses onze équipes, et ne fabrique ni événement, ni action, ni résultat officiel, ni statistique environnementale, ni progression. Le parcours **Organisateurs** de la fiche publique conserve en parallèle son intention privée et n’est pas remplacé par cette démonstration.
 
 Dans le cockpit, le sélecteur de divisions permet de parcourir séparément Casual et World Cup ; les catégories, équipes, saisies, décisions et classements sont chargés par les sections existantes et restent bornés par `division_id`. La carte de démonstration distingue les configurations persistées (règlement, politique de visibilité des résultats, visibilité de l’édition) des états constatés (composition verrouillée, préparation observée) et renvoie aux contrats de clôture pour les certifications, classements et blocages métier. Une politique « certifiés uniquement » ne constitue donc pas une preuve de certification, et une édition privée n’est pas présentée comme bloquée par principe. Un règlement fictif et un résultat synthétique ne deviennent jamais officiels par leur affichage.
 
@@ -172,7 +175,14 @@ Les mises à jour de métadonnées d’une édition existante passent par `spogo
 
 Les projections de résultats publiques, le panneau d’arbitrage et le formulaire de saisie équipe relisent les correspondances environnementales persistées de la division, les convertissent vers le contrat métier unique et n’annoncent un score officiel que si le règlement complet, les coefficients confirmés et toutes les correspondances mappées satisfont la validation serveur. Une édition complète sans mapping confirmé reste donc explicitement indisponible à la certification, même si l’interface est consultable. La sauvegarde asynchrone du règlement conserve toute modification locale intervenue après son lancement et ne réconcilie entièrement le brouillon que lorsqu’aucune saisie plus récente n’existe ; la révision serveur reste contrôlée au prochain enregistrement.
 
-Depuis `/spogomi`, les trois onglets restent utilisables avant authentification : les actions publiques aboutissent à la découverte ou à une explication contextualisée, tandis que les actions privées conservent leur intention dans Clerk puis ouvrent `/spogomi/mes-evenements` et la section autorisée de l’espace événementiel. Un participant multirôle conserve le parcours bénévole lorsqu’il le choisit ; aucune entrée privée n’est remplacée par un cockpit organisateur.
+Depuis `/spogomi`, l’accueil présente directement le déroulé d’une compétition,
+les cartes Casual et World Cup, puis le catalogue et les informations
+internationales. Le choix du parcours n’apparaît qu’après ouverture d’une fiche
+d’édition. Les liens Bénévoles conservent la division sélectionnée ; les cartes
+Arbitres et Organisateurs n’ouvrent une destination privée que lorsque la
+projection serveur fournit une habilitation active pour cette édition. Un
+visiteur peut demander une connexion pour vérifier son accès, sans qu’un lien ou
+un parcours d’interface ne constitue une permission.
 
 Le compte organisateur autorisé suffit pour parcourir la préparation, les équipes, les paramètres, l’arbitrage, le bilan et l’export lorsque les contrôles serveur les rendent disponibles. La saisie d’équipe exige une session d’équipe créée par le parcours existant ; la consultation personnelle exige un compte bénévole distinct ou une relation participant vérifiée. Les invitations, codes individuels et liens d’assistance restent contextuels et ne sont pas remplacés par le compte organisateur.
 

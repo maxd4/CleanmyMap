@@ -3,102 +3,94 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { SpogomiPublicEvents, SpogomiUnderstanding } from "./spogomi-index-sections";
+import { describe, expect, it } from "vitest";
+import { SpogomiInternational, SpogomiPublicEvents, SpogomiUnderstanding } from "./spogomi-index-sections";
 
 const copy: Record<string, string> = {
-  "understanding.title": "Comprendre SPOGOMI",
-  "understanding.description": "Formats des compétitions, règlement et sécurité.",
-  "understanding.presentationTab": "Présentation",
-  "understanding.formatsTab": "Formats & compétitions",
-  "understanding.rulesTab": "Règlement & sécurité",
-  "understanding.worldTab": "Le mouvement dans le monde",
-  "understanding.presentationTitle": "Qu’est-ce que SPOGOMI ?",
-  "understanding.rulesTitle": "Règlement & sécurité",
-  "understanding.rulesDescription": "Une épreuve se déroule dans une zone délimitée.",
-  "understanding.rulesCasual": "Format général : équipes de 2 à 5.",
+  "understanding.howItWorksTitle": "Qu’est-ce qu’une compétition SPOGOMI ?",
+  "understanding.howItWorksDescription": "Le déroulé commun.",
+  "understanding.stepTeamsTitle": "Constituer les équipes",
+  "understanding.stepTeamsDescription": "Les équipes se forment.",
+  "understanding.stepCollectTitle": "Collecter les déchets",
+  "understanding.stepCollectDescription": "La collecte commence.",
+  "understanding.stepReturnTitle": "Retourner au point prévu",
+  "understanding.stepReturnDescription": "Le retour est effectué.",
+  "understanding.stepSortTitle": "Trier et peser",
+  "understanding.stepSortDescription": "Les déchets sont triés.",
+  "understanding.stepPointsTitle": "Calculer les points",
+  "understanding.stepPointsDescription": "Le score suit le règlement.",
+  "understanding.formatsTitle": "Formats et règlements",
+  "understanding.formatsDescription": "Les éditions précisent leurs paramètres.",
+  "understanding.compositionLabel": "Composition",
+  "understanding.processLabel": "Déroulement",
+  "understanding.pointsLabel": "Points et classement",
+  "understanding.casualComposition": "Casual, deux à cinq.",
+  "understanding.casualProcess": "Collecte puis tri.",
+  "understanding.casualPoints": "Points selon l’édition.",
+  "understanding.worldCupComposition": "World Cup, trois.",
+  "understanding.worldCupProcess": "Collecte puis tri compétitif.",
+  "understanding.worldCupPoints": "Points selon les catégories.",
+  "understanding.commonRulesTitle": "Règles communes et détails sourcés",
+  "understanding.rulesDescription": "Une épreuve est délimitée.",
+  "understanding.rulesCasual": "Casual : équipes de 2 à 5.",
   "understanding.rulesWorldCup": "World Cup : équipes de 3.",
   "understanding.rulesSafety": "Sécurité : marche obligatoire.",
-  "understanding.rulesSanctions": "Sanctions : pénalités et disqualification.",
+  "understanding.rulesSanctions": "Sanctions selon le règlement.",
   "understanding.rulesHistoricalExamplesTitle": "Exemples historiques sourcés",
-  "understanding.rulesHistoricalExampleNice": "Nice — 16/03/2024 : Casual, 80 participants et 203 kg.",
-  "understanding.rulesHistoricalExampleParis": "Paris — 26/04/2025 : collecte de 15 h à 16 h, puis tri et pesée.",
-  "understanding.rulesHistoricalExampleBobigny": "Bobigny — 24/05/2025 : 28 équipes, 349,7 kg, victoire de MML.",
-  "understanding.rulesPrivacyNote": "Note confidentialité : les données nominatives restent privées.",
-  "international.worldDescription": "Présentation du mouvement.",
+  "understanding.rulesHistoricalExampleNice": "Nice — exemple.",
+  "understanding.rulesHistoricalExampleParis": "Paris — exemple.",
+  "understanding.rulesHistoricalExampleBobigny": "Bobigny — exemple.",
+  "understanding.rulesPrivacyNote": "Les données nominatives restent privées.",
   "international.casualTitle": "Casual",
-  "international.casualDescription": "Format japonais général : équipes de 2 à 5.",
+  "international.casualDescription": "Format général Casual.",
   "international.worldCupTitle": "World Cup",
-  "international.worldCupDescription": "World Cup : équipes de 3.",
+  "international.worldCupDescription": "Format compétitif World Cup.",
+  "international.worldTitle": "SPOGOMI dans le monde",
+  "international.worldDescription": "Présentation du mouvement.",
   "international.cleanMyMapRole": "Rôle local de CleanMyMap.",
+  "international.officialSources": "Sources officielles.",
+  "international.verifiedOn": "Vérifié le",
+  "international.newsTitle": "Actualités officielles",
+  "international.confirmed": "Confirmé",
+  "international.planned": "Prévisionnel",
+  "international.dateSet": "Date fixée",
+  "international.eventsTitle": "Événements internationaux",
+  "international.year": "Année",
+  "international.country": "Pays",
+  "international.allYears": "Toutes les années",
+  "international.allCountries": "Tous les pays",
+  "international.externalEvent": "Références externes.",
+  "international.source": "Source",
+  "international.noExternalEvents": "Aucun événement.",
 };
 
-function renderUnderstanding() {
-  return <SpogomiUnderstanding locale="fr" t={(key) => copy[key] ?? key} />;
-}
+const t = (key: string) => copy[key] ?? key;
 
 describe("SpogomiUnderstanding", () => {
-  it("renders four compact accessible tabs and preserves the sourced content", () => {
-    const markup = renderToStaticMarkup(renderUnderstanding());
+  it("renders the process and both formats without tab systems", () => {
+    const markup = renderToStaticMarkup(<SpogomiUnderstanding locale="fr" t={t} />);
 
-    expect(markup.match(/role="tab"/g)).toHaveLength(4);
-    expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
-    expect(markup).toContain('role="tablist"');
-    expect(markup).toContain('role="tabpanel"');
-    expect(markup).toContain("Présentation du mouvement.");
-    expect(markup).toContain("Présentation");
-    expect(markup).toContain("Formats &amp; compétitions");
-    expect(markup).toContain("Règlement &amp; sécurité");
-    expect(markup).toContain("Le mouvement dans le monde");
-    expect(markup).toContain('id="spogomi-international"');
-    expect(markup.match(/data-cmm-card-tone="slate"/g)).toHaveLength(1);
-    expect(markup).not.toContain('data-cmm-card-tone="indigo"');
+    expect(markup).not.toContain('role="tablist"');
+    expect(markup).not.toContain('role="tab"');
+    expect(markup).toContain('id="spogomi-how-it-works"');
+    expect(markup).toContain('id="spogomi-formats-rules"');
+    expect(markup).toContain("Constituer les équipes");
+    expect(markup).toContain("Trier et peser");
+    expect(markup).toContain("Casual");
+    expect(markup).toContain("World Cup");
+    expect(markup).toContain("Règles communes et détails sourcés");
+    expect(markup.indexOf("spogomi-how-it-works")).toBeLessThan(markup.indexOf("spogomi-formats-rules"));
+    expect(markup.match(/data-cmm-card-tone="emerald"/g)).toHaveLength(2);
   });
 
-  describe("keyboard navigation", () => {
-    let container: HTMLDivElement;
-    let root: ReturnType<typeof createRoot>;
+  it("keeps the international content in its own secondary section", () => {
+    const markup = renderToStaticMarkup(<SpogomiInternational locale="fr" t={t} />);
 
-    beforeEach(() => {
-      container = document.createElement("div");
-      document.body.appendChild(container);
-      act(() => {
-        root = createRoot(container);
-        root.render(renderUnderstanding());
-      });
-    });
-
-    afterEach(() => {
-      act(() => root.unmount());
-      container.remove();
-    });
-
-    it("changes panels on click and moves through tabs with ArrowRight", () => {
-      const tabs = () => [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-      expect(tabs()[0]?.getAttribute("aria-selected")).toBe("true");
-
-      act(() => { tabs()[1]?.click(); });
-      expect(tabs()[1]?.getAttribute("aria-selected")).toBe("true");
-      expect(container.textContent).toContain("Format japonais général : équipes de 2 à 5.");
-      expect(container.querySelector("#spogomi-international")).not.toBeNull();
-      expect(container.textContent).toContain("Octobre 2027 — date précise à confirmer");
-
-      act(() => {
-        tabs()[1]?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-      });
-      expect(tabs()[2]?.getAttribute("aria-selected")).toBe("true");
-      expect(document.activeElement).toBe(tabs()[2]);
-      expect(container.textContent).toContain("Sanctions : pénalités et disqualification.");
-      expect(container.textContent).toContain("Note confidentialité : les données nominatives restent privées.");
-      expect(container.querySelector('a[href="https://www.artema-network.com/spogomi-nice"]')).not.toBeNull();
-      expect(container.querySelector('a[href="https://www.artema-network.com/evenements-passes"]')).not.toBeNull();
-      expect(container.querySelector("#spogomi-international")).toBeNull();
-
-      act(() => { tabs()[3]?.click(); });
-      expect(container.querySelector("#spogomi-international")).not.toBeNull();
-      expect(container.querySelectorAll('[data-cmm-card-tone="slate"]')).toHaveLength(1);
-      expect(container.textContent).toContain("40 pays et régions annoncés");
-    });
+    expect(markup).toContain('id="spogomi-world"');
+    expect(markup).toContain('id="spogomi-international"');
+    expect(markup).toContain("SPOGOMI dans le monde");
+    expect(markup).toContain("Actualités officielles");
+    expect(markup).toContain("Événements internationaux");
   });
 });
 
@@ -110,6 +102,8 @@ describe("SpogomiPublicEvents", () => {
     ] as Parameters<typeof SpogomiPublicEvents>[0]["events"];
     const markup = renderToStaticMarkup(<SpogomiPublicEvents events={events} loadError={false} />);
 
+    expect(markup).toContain("03");
+    expect(markup).toContain("Compétitions disponibles");
     expect(markup).toContain("À venir et en cours");
     expect(markup).toContain("Éditions terminées");
     expect(markup.indexOf("À venir et en cours")).toBeLessThan(markup.indexOf("Éditions terminées"));
@@ -122,55 +116,22 @@ describe("SpogomiPublicEvents", () => {
 
   it("opens the published competition card information panel through the shared portal", () => {
     const event = {
-      id: "published-card",
-      slug: "published-card",
-      name: "SPOGOMI publiée",
-      locationLabel: "Paris",
-      mode: "casual",
-      state: "registration_open",
-      lifecycle: "upcoming",
-      calendarStatus: "upcoming",
-      registrationStatus: "open",
-      resultsStatus: "unavailable",
-      provenance: "published_event",
-      startsAt: "2026-12-08T08:00:00.000Z",
-      endsAt: null,
-      officialTimezone: "Europe/Paris",
-      actionHref: "/spogomi/published-card",
-      divisions: [],
-      teams: [],
-      route: null,
-      results: null,
-      organizer: null,
-      gallery: [],
+      id: "published-card", slug: "published-card", name: "SPOGOMI publiée", locationLabel: "Paris", mode: "casual", state: "registration_open", lifecycle: "upcoming", calendarStatus: "upcoming", registrationStatus: "open", resultsStatus: "unavailable", provenance: "published_event", startsAt: "2026-12-08T08:00:00.000Z", endsAt: null, officialTimezone: "Europe/Paris", actionHref: "/spogomi/published-card", divisions: [], teams: [], route: null, results: null, organizer: null, gallery: [],
     } as Parameters<typeof SpogomiPublicEvents>[0]["events"][number];
     const container = document.createElement("div");
     document.body.appendChild(container);
     let root: ReturnType<typeof createRoot>;
 
-    act(() => {
-      root = createRoot(container);
-      root.render(<SpogomiPublicEvents events={[event]} loadError={false} />);
-    });
-
+    act(() => { root = createRoot(container); root.render(<SpogomiPublicEvents events={[event]} loadError={false} />); });
     const trigger = container.querySelector<HTMLButtonElement>('button[aria-label="Informations sur SPOGOMI publiée"]');
     expect(trigger).not.toBeNull();
-
-    act(() => {
-      trigger?.click();
-    });
-
+    act(() => { trigger?.click(); });
     const panel = document.body.querySelector<HTMLElement>('#spogomi-event-info-published-card');
     expect(panel?.parentElement).toBe(document.body);
     expect(panel?.getAttribute("role")).toBe("dialog");
-    expect(panel?.getAttribute("aria-labelledby")).toBe("spogomi-event-info-published-card-title");
     expect(panel?.textContent).toContain("Ouvrir la fiche publique de cette compétition");
-
-    act(() => {
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    });
-    expect(document.body.querySelector('#spogomi-event-info-published-card')).toBeNull();
-
+    act(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
+    expect(document.body.querySelector("#spogomi-event-info-published-card")).toBeNull();
     act(() => root.unmount());
     container.remove();
   });
