@@ -1,6 +1,6 @@
 # Transition de CleanMyMap vers une association loi 1901 relevant de l'ESS
 
-> **État : PLAN, non exécuté.** Référence vérifiée le 12 octobre 2026 pour une association dont le siège est situé hors Alsace-Moselle.
+> **État : PLAN, non exécuté.** Référence vérifiée le 10 novembre 2026 pour une association dont le siège est situé hors Alsace-Moselle ; toute application concrète reste `LEGAL_REVIEW_REQUIRED`.
 >
 > **Situation actuelle :** CleanMyMap est édité par une personne physique à titre non professionnel. Aucune association, société ou autre personne morale n'exploite encore le service. L'association, son RNA/SIRET, les conventions de transfert, les assurances et l'éventuelle qualité ESS **ne sont pas acquis**.
 >
@@ -16,6 +16,42 @@ La loi du 31 juillet 2014 relative à l'économie sociale et solidaire (ESS), ar
 
 Sources canoniques existantes : [état juridique](README.md), [vision / ESS cible](../product/vision-et-objectifs.md), [modèle économique non validé](../product/business-model.md), [méthodologie d'impact](../product/SCIENTIFIC_PROTOCOL.md). Elles continuent à faire foi pour leurs périmètres respectifs.
 
+### 1.1 Modèle hybride retenu (`PLAN / TARGET`)
+
+La trajectoire associative doit rester séparée de l'activité professionnelle
+personnelle du fondateur. L'association cible porte les dons, cotisations,
+subventions, appels à projets, mécénat et dépenses d'intérêt collectif liés à
+son objet : cleanwalks citoyennes, ateliers scolaires, événements bénévoles,
+sensibilisation et infrastructure associative. La microentreprise personnelle
+du fondateur porte, si elle est effectivement créée et déclarée, les prestations
+de développement, intégration, déploiement, maintenance, configuration et les
+adaptations commandées, notamment pour des événements ou partenaires SPOGOMI,
+ainsi que les cleanwalks, team buildings et ateliers commandés par des
+entreprises.
+
+Ces deux activités sont juridiquement et financièrement distinctes. Le
+cocontractant, le bénéficiaire économique, l'objet financé et les obligations
+réelles qualifient chaque flux ; l'identité du financeur ou l'utilisation du nom
+CleanMyMap ne suffit pas. Comptes, budgets, comptabilité, contrats, factures,
+recettes, dépenses, assurances et responsabilités doivent être séparés. Aucun
+financement associatif n'est présumé transférable vers l'activité commerciale,
+et les heures de développement passées ne constituent pas automatiquement une
+dette de l'association envers le fondateur.
+
+Une prestation de la microentreprise à l'association peut être étudiée si un
+besoin réel le justifie, avec prix justifié, contrat écrit, décision indépendante,
+conflit d'intérêts déclaré, abstention du fondateur et preuve du service rendu.
+La convention et son traitement juridique, fiscal et comptable sont
+`LEGAL_REVIEW_REQUIRED` avant signature ou paiement ; aucune exonération n'est
+présumée.
+
+La convention d'exploitation doit distinguer code sous AGPL-3.0-only,
+contributions tierces, marque et logos, domaine, hébergement, comptes
+fournisseurs, documentation et données personnelles. Elle encadre les droits
+d'usage et les responsabilités sans transférer automatiquement les actifs. Pour
+SPOGOMI, elle ne peut pas être remplacée par une affirmation de partenariat,
+de licence officielle ou de revenu acquis.
+
 ## 2. Décisions à prendre avant la déclaration (bloquantes)
 
 | Sujet | Choix à arbitrer | Preuve de clôture |
@@ -27,6 +63,8 @@ Sources canoniques existantes : [état juridique](README.md), [vision / ESS cibl
 | Gouvernance | Qui vote, qui représente et engage l'association, gestion des conflits d'intérêts et des dépenses | Statuts et règles de décision proposés |
 | Patrimoine et logiciel | Distinguer droits d'auteur, marque, domaine, données, comptes cloud et matériel | Inventaire des titulaires et des conventions envisagées |
 | Argent | Cotisations, dons, subventions, mécénat, éventuelles prestations, budget initial et frais réels | Budget de première année, même avec montants encore estimatifs |
+| Portage des activités | Circuit associatif non lucratif et activité professionnelle personnelle ; flux, bénéficiaire et cocontractant de chaque offre | Carte des flux et avis juridique/fiscal ciblé |
+| Convention fondateur / association | Besoin réel, prix, actifs concernés, droits d'exploitation, responsabilités et durée | Projet de convention, décision indépendante et registre du déport |
 | Activité terrain | Assurance RC, sécurité, autorisations éventuelles, photos, mineurs, gestion des déchets | Responsable désigné et procédure de vérification |
 | Calendrier | Date de constitution, date de dépôt, besoins SIRET et délais des appels ciblés | Planning réaliste, sans antidater les actes |
 
@@ -128,6 +166,22 @@ Le [modèle économique](../product/business-model.md) est un **PLAN** : aucune 
 - [ ] Vérifier les règles du paiement par prestataire, de la collecte externe et le titulaire légal des fonds avant tout changement sur OnParticipe ou Stripe.
 - [ ] Prévoir une séparation comptable par convention/projet lorsque les financeurs l'exigent.
 
+### 6.1 Activité professionnelle personnelle (`PLAN / TARGET`)
+
+Avant toute prestation rémunérée portée par le fondateur :
+
+- [ ] Confirmer la forme et le régime réellement retenus, puis effectuer les formalités d'activité avant la première opération ; ne pas présenter une microentreprise comme créée avant preuve officielle.
+- [ ] Vérifier l'activité déclarée, les obligations de facturation, les cotisations, la fiscalité, la TVA éventuelle, l'assurance et le compte ou suivi financier adapté.
+- [ ] Émettre les devis et factures au nom de la structure professionnelle réelle, conserver les charges et recettes de cette activité séparément, et ne pas utiliser le compte ou le budget associatif comme caisse commerciale.
+- [ ] Pour une commande SPOGOMI, documenter le besoin, le périmètre de développement/configuration/assistance, le cocontractant et le prix ; aucun partenariat, licence officielle ou revenu n'est acquis sans contrat signé.
+
+Les règles concrètes dépendent des faits, de l'activité et du régime choisi :
+`LEGAL_REVIEW_REQUIRED` avant le premier devis engageant ou toute convention
+entre les deux portages. Références de cadrage à revalider : [Service-Public,
+cumul d'activités du micro-entrepreneur](https://entreprendre.service-public.fr/vosdroits/F33339),
+[Urssaf, démarrer une activité d'auto-entrepreneur](https://www.urssaf.fr/accueil/actualites/autoentrepreneur-debut-activite.html)
+et [Associations.gouv.fr, rémunération des dirigeants](https://associations.gouv.fr/faq/thematiques/dirigeants/remuneration).
+
 ## 7. Transition des actifs et de l'exploitation de CleanMyMap
 
 **Choix recommandé pour commencer : une convention écrite entre le créateur et l'association**, définissant une autorisation d'exploitation du service et les responsabilités respectives, sans cession globale implicite.
@@ -217,6 +271,9 @@ Prévoir des emplacements séparés et à accès limité pour : version signée 
 - [Service-Public : téléservice e-création](https://www.service-public.fr/particuliers/vosdroits/R1757).
 - [Service-Public : SIRET pour une association (fiche vérifiée le 14 août 2026)](https://www.service-public.fr/particuliers/vosdroits/F34727).
 - [Service-Public : gestion désintéressée](https://www.service-public.fr/particuliers/vosdroits/F31839).
+- [Service-Public : cumul d'activités du micro-entrepreneur](https://entreprendre.service-public.fr/vosdroits/F33339).
+- [Urssaf : démarrer une activité d'auto-entrepreneur](https://www.urssaf.fr/accueil/actualites/autoentrepreneur-debut-activite.html).
+- [Associations.gouv.fr : rémunération des dirigeants](https://associations.gouv.fr/faq/thematiques/dirigeants/remuneration) et [guide sur les conflits d'intérêts](https://associations.gouv.fr/sites/default/files/2025-10/Investir-2.pdf).
 - [CNIL : transparence et information des personnes](https://www.cnil.fr/fr/conformite-rgpd-information-des-personnes-et-transparence).
 - [Service-Public : manifestations sur la voie publique](https://www.service-public.fr/particuliers/vosdroits/F21899).
 - [Service-Public : régime fiscal des dons](https://www.service-public.fr/particuliers/vosdroits/F426).

@@ -12,7 +12,7 @@ Le projet dispose déjà d'un périmètre fonctionnel vaste. Le plan privilégie
 flowchart LR
   A[Fiabilité parcours terrain P0] --> B[Rapports d'impact reproductibles P0]
   B --> C[Prestations pilotes P0 commercial]
-  S[Structuration associative et juridique P0 parallèle] --> C
+  S[Structuration associative + activité professionnelle P0 parallèle] --> C
   C --> D[Programmes partenaires P1]
   D --> E[Extensions P2 conditionnel]
   Q[Qualité, AuthZ, données, coûts] -. transverse .-> A
@@ -32,7 +32,7 @@ Le web est la surface complète. La V1 mobile est en développement actif mais *
 | I-02b | P0/P1 | Partage contrôlé du PDF historique déjà intégré au code | Expiration, révocation, owner-scoped et téléchargement bearer testés ; état migration/déploiement vérifié séparément |
 | I-03 | P0 transverse | Accès et intégrité des données | AuthN/AuthZ/RLS validées aux frontières réelles, aucun accès inter-utilisateur indu |
 | I-04 | P0 commercial | Preuve de valeur d'un livrable | Usage avec acteur réel documenté, sans présumer vente ou partenariat |
-| I-05 | P0 parallèle | Cadre structurel et opérations | Choix juridiques, contrats et assurances traités selon décisions réellement prises |
+| I-05 | P0 parallèle | Cadre associatif + activité professionnelle et opérations | Deux circuits financiers et contractuels séparés ; choix juridiques, contrats et assurances traités selon décisions réellement prises |
 | I-06 | P1 | Optimiser les requêtes coûteuses prouvées | Gain mesuré, parité des agrégats, aucune fuite ou troncature |
 | I-07 | P1 | Prévisibilité des opérations d'export/sauvegarde | Pagination exhaustive, sauvegarde cohérente, restore inchangé |
 | I-08 | P1 | Cohérence scientifique offline | Mesures manquantes non converties en observations nulles ; tests Pandas |
@@ -152,6 +152,26 @@ runtime. Tant qu'aucune structure n'est effectivement constituée et qu'aucun
 transfert n'est décidé, CleanMyMap reste porté par la personne physique
 actuelle ; ne pas anticiper dans le site, les documents juridiques ou les
 données un transfert d'actifs, de responsabilités ou de contrats.
+
+Le modèle cible distingue :
+
+- l'association loi 1901 `PLAN / TARGET`, destinée aux financements et dépenses
+  d'intérêt collectif, aux actions citoyennes, aux ateliers scolaires, aux
+  événements bénévoles et au développement gratuit au service de son objet ;
+- la microentreprise personnelle du fondateur `PLAN / TARGET`, destinée, si elle
+  est effectivement créée et déclarée, aux prestations de développement,
+  intégration, déploiement, maintenance, configuration et adaptations commandées,
+  notamment pour SPOGOMI, ainsi qu'aux cleanwalks, team buildings et ateliers
+  commandés par des entreprises.
+
+Chaque offre doit d'abord qualifier le cocontractant, le bénéficiaire
+économique, le flux, les coûts, l'assurance et les responsabilités. Une
+prestation entre les deux portages exige besoin réel, prix justifié, contrat
+écrit, décision indépendante, conflit déclaré et abstention du fondateur ;
+`LEGAL_REVIEW_REQUIRED` avant signature ou paiement. Aucun financement
+associatif, actif, contrat ou droit d'exploitation n'est transféré par défaut.
+La validation commerciale de SPOGOMI reste un test conditionnel, sans
+partenariat, licence officielle ou revenu acquis présumé.
 
 ### P1 — Territoires, communauté, messagerie et administration
 

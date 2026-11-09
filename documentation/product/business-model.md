@@ -4,6 +4,8 @@
 >
 > **Référence de cadrage : 17 octobre 2026.** Les fourchettes, tarifs pilotes, scénarios et priorités commerciales ci-dessous sont des propositions de travail, **pas** des prix acceptés par des clients, des contrats conclus, des recettes observées ou une promesse de financement.
 >
+> **Mise à jour du modèle hybride : 10 novembre 2026.** La séparation association / activité professionnelle reste `PLAN / TARGET` et ne modifie pas les hypothèses chiffrées sans nouvelle preuve.
+>
 > **Source canonique économique :** ce document. **Source des priorités produit :** [`roadmap-priorisee.md`](./roadmap-priorisee.md). Les comportements effectivement livrés relèvent du code sur `main` et des fiches `CURRENT` des pages. La doctrine juridique et fiscale relève de [`../legal/README.md`](../legal/README.md) et du [plan de transition associative](../legal/association-ess-transition-plan.md). Ne pas dupliquer ces contrats ici.
 
 ## 1. Objectif et principes
@@ -51,6 +53,37 @@ Selon les sources canoniques du dépôt consultées pour ce cadrage :
 **Point de vigilance vérifié dans `apps/web/src/app/(app)/sponsor-portal/page.tsx` au cadrage :** plusieurs `deltaPercent` sont littéralement codés (`+12%`, `+8%`, `+24%`, `+15%`), et le bouton « Exporter le bilan certifié » n'est pas raccordé à un export probant. Ces éléments **ne peuvent pas servir de support contractuel ni de preuve RSE certifiée**. Toute correction fait l'objet d'un lot technique distinct ; le présent document ne prescrit aucune mutation runtime.
 
 Les indicateurs dérivés de CleanMyMap restent des **proxys méthodologiques**. Notamment, la masse collectée et le nombre de mégots ne permettent pas d'affirmer une quantité mesurée de CO2 évitée ou d'eau dépolluée. Voir [`SCIENTIFIC_PROTOCOL.md`](./SCIENTIFIC_PROTOCOL.md).
+
+### 2.3 Modèle cible à deux portages (`PLAN / TARGET`)
+
+La décision stratégique retenue est un modèle hybride, sans création juridique
+accomplie à ce stade :
+
+| Portage cible | Mission et ressources | Dépenses et responsabilités à isoler |
+| --- | --- | --- |
+| **Association loi 1901 CleanMyMap** | Dons, cotisations, subventions, appels à projets, mécénat et autres financements d'intérêt collectif pour les cleanwalks citoyennes, les ateliers scolaires, les événements bénévoles, la sensibilisation et l'infrastructure au service de l'objet associatif | Budget, comptabilité, banque, contrats, assurances, décisions de gouvernance et responsabilités propres ; excédents affectés à l'objet et non distribués aux membres |
+| **Microentreprise personnelle du fondateur** | Développement informatique, intégration, déploiement, maintenance, configuration et adaptations commandées ; cleanwalks, team buildings et ateliers de sensibilisation commandés par des entreprises | Relations clients, devis, facturation, recettes, charges, assurances et obligations fiscales/sociales propres à l'activité professionnelle |
+
+Le portage d'un flux dépend de son **contrat réel, de son bénéficiaire économique,
+de l'objet financé et de la structure qui s'engage**. L'identité du financeur,
+la présence du nom CleanMyMap ou l'utilisation du même logiciel ne suffisent pas
+à attribuer automatiquement une recette à l'association ou à la microentreprise.
+Les financements associatifs ne sont pas librement transférables vers l'activité
+commerciale ; les dépenses doivent rester rattachées au projet, au contrat et à
+la structure qui les porte.
+
+Une prestation de la microentreprise à l'association n'est qu'une possibilité
+`PLAN / TARGET`, jamais une dette née des heures de développement passées. Elle
+exige au minimum un besoin réel, un prix justifié, un contrat écrit, une décision
+indépendante, la déclaration du conflit d'intérêts et l'abstention du fondateur
+pour la décision qui le concerne. La qualification fiscale et la conformité de
+l'opération restent `LEGAL_REVIEW_REQUIRED`.
+
+Les droits doivent être distingués avant toute convention : code sous
+AGPL-3.0-only, contributions tierces, marque et logos, domaine, hébergement,
+comptes fournisseurs, documentation et données personnelles. Une convention
+peut encadrer les droits d'exploitation et les responsabilités sans transférer
+automatiquement la titularité d'un actif.
 
 ## 3. Segments, acheteurs et mécanismes de financement
 
@@ -229,12 +262,15 @@ Ne pas déplacer les P0 fiables du parcours bénévole ou des rapports au profit
 ### Gouvernance et conformité avant encaissement
 
 - Vérifier statuts, gouvernance désintéressée, capacité à facturer, compte bancaire au bon nom, assurance RC et modalités de sécurité terrain.
+- Séparer les circuits de l'association et de la microentreprise : compte, budget, comptabilité, contrats, factures, recettes et dépenses ne doivent pas être confondus. Pour chaque flux mixte, conserver le cocontractant réel, le bénéficiaire économique et la justification de l'affectation.
+- Si la microentreprise fournit une prestation à l'association, documenter le besoin, le prix, le contrat, la décision indépendante, le déport du fondateur et la preuve du service rendu. `LEGAL_REVIEW_REQUIRED` avant signature ou paiement.
 - Examiner activité lucrative, impôts commerciaux et TVA. Le montant d'une prestation n'établit pas à lui seul le traitement fiscal.
 - Séparer mécénat, parrainage, subvention, prestations et cotisations dans les conventions et la comptabilité. Aucun reçu fiscal sans éligibilité légalement établie ; rescrit si pertinent.
 - Clarifier la titularité de la marque, la licence du logiciel, les conventions d'exploitation, les fournisseurs et les responsabilités RGPD avant transfert vers une future association.
+- Pour SPOGOMI, tester seulement la possibilité d'un contrat professionnel de développement, de configuration ou d'assistance événementielle ; ne pas présenter de partenariat signé, de licence officielle ou de revenu acquis.
 - Éviter de déclarer un statut ESS, ESUS, partenaire officiel SPOGOMI, programme certifié ou autorisation territoriale non acquis.
 
-Sources internes : [`../legal/association-ess-transition-plan.md`](../legal/association-ess-transition-plan.md), [`../legal/README.md`](../legal/README.md), [`../architecture/data-governance.md`](../architecture/data-governance.md), [`../security/authz-authn-regles.md`](../security/authz-authn-regles.md), [`SCIENTIFIC_PROTOCOL.md`](./SCIENTIFIC_PROTOCOL.md).
+Sources internes : [`../legal/association-ess-transition-plan.md`](../legal/association-ess-transition-plan.md), [`../legal/README.md`](../legal/README.md), [`../architecture/data-governance.md`](../architecture/data-governance.md), [`../security/authz-authn-regles.md`](../security/authz-authn-regles.md), [`SCIENTIFIC_PROTOCOL.md`](./SCIENTIFIC_PROTOCOL.md). Pour le cadrage à revalider : [Service-Public, cumul d'activités du micro-entrepreneur](https://entreprendre.service-public.fr/vosdroits/F33339), [Associations.gouv.fr, rémunération des dirigeants](https://associations.gouv.fr/faq/thematiques/dirigeants/remuneration) et [guide officiel sur les conflits d'intérêts](https://associations.gouv.fr/sites/default/files/2025-10/Investir-2.pdf).
 
 ## 11. Budget de fonctionnement à documenter
 

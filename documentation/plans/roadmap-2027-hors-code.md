@@ -26,6 +26,31 @@ Transformer CleanMyMap d'un service numérique développé autour d'un projet é
 - L'association loi 1901 et la trajectoire ESS sont des **cibles** ; le projet reste porté par une personne physique tant qu'aucune structure n'est créée et qu'aucun transfert n'est décidé.
 - Aucun contrat de prestation, vente, subvention encaissée ou partenariat financier n'est démontré par la seule roadmap ou les documents prévisionnels.
 
+### Modèle hybride à préparer (`PLAN / TARGET`)
+
+La décision stratégique est de préparer deux circuits indépendants, sans
+présenter l'une ou l'autre structure comme déjà créée :
+
+1. **Association loi 1901 CleanMyMap :** préparer la gouvernance, les statuts,
+   le budget, le compte, les assurances et les demandes de dons, cotisations,
+   subventions, appels à projets ou mécénat pour les cleanwalks citoyennes, les
+   ateliers scolaires, les événements bénévoles, la sensibilisation et
+   l'infrastructure associative.
+2. **Microentreprise personnelle du fondateur :** si cette activité est
+   retenue et effectivement déclarée, préparer les prestations de développement,
+   intégration, déploiement, maintenance et configuration, les adaptations
+   commandées pour des événements ou partenaires comme SPOGOMI, ainsi que les
+   cleanwalks, team buildings et ateliers commandés par des entreprises.
+3. **Séparation opérationnelle :** cartographier pour chaque flux le
+   cocontractant, le bénéficiaire économique, la structure porteuse, le compte,
+   le budget, la facture, la dépense, l'assurance et la responsabilité. Ne pas
+   attribuer un flux à une structure selon le seul nom du financeur.
+4. **Contrats entre portages :** étudier seulement les besoins réels, prix
+   justifiés, conventions écrites, décisions indépendantes, déclarations de
+   conflits et abstentions nécessaires. `LEGAL_REVIEW_REQUIRED` avant toute
+   signature ou paiement ; les heures déjà passées ne créent pas une dette
+   automatique de l'association.
+
 ## 2. Priorités annuelles
 
 | Rang | Chantier hors code | Période cible | Preuve de sortie / décision |
@@ -44,6 +69,15 @@ Transformer CleanMyMap d'un service numérique développé autour d'un projet é
 **Lecture :** les rangs n'impliquent pas un traitement strictement séquentiel. La prospection, le budget, la sécurité et la gouvernance progressent en parallèle des essais terrain ; seul le passage à des contrats, événements ou déploiements effectifs exige les dépendances correspondantes.
 
 ## 3. Déroulé opérationnel par phase
+
+### Séquence de structuration et de premières prestations
+
+| Période | Étapes concrètes | Preuve attendue |
+| --- | --- | --- |
+| Novembre–décembre 2026 | Inventorier flux, actifs, comptes, fournisseurs et responsabilités ; choisir les fondateurs disponibles ; distinguer les offres associatives des prestations professionnelles ; préparer les questions juridiques et fiscales | Carte des flux, liste des décisions ouvertes et dossier privé sans données sensibles |
+| T1 2027 | Rédiger puis relire les statuts et règles de gouvernance ; construire deux budgets ; décider si et quand l'association est constituée ; effectuer les formalités de l'activité professionnelle avant tout devis engageant si une microentreprise est retenue | Projet de statuts, budgets séparés, décision tracée, preuves administratives seulement si les formalités sont réellement exécutées |
+| T2 2027 | Déposer les demandes de financement associatif adaptées aux actions citoyennes ; négocier les premières propositions professionnelles (développement, intégration, maintenance, cleanwalk ou atelier entreprise) ; tester séparément une proposition SPOGOMI sans annoncer de partenariat | Dossiers déposés, devis et contrats réels, périmètre, prix, cocontractant et qualification du flux |
+| T3–T4 2027 | Livrer uniquement les engagements signés ; suivre recettes, dépenses, temps, assurance et responsabilités par structure ; revoir les conventions, la gouvernance et la décision de poursuite | Factures et pièces séparées, bilan d'activité, décisions et écarts documentés |
 
 ### Avant 2027 : novembre et décembre 2026
 
@@ -160,7 +194,15 @@ Les tarifs exploratoires, notamment la cleanwalk entreprise à 900 EUR comme **p
 
 ### D. Portage juridique et contraintes
 
-Avant une prestation facturée ou une action organisée au nom d'une structure, identifier l'organisateur et le contractant réel, assurance, conventions, traitement des données, responsabilité terrain, obligations fiscales et bancaire. Une association ne peut être présumée titulaire du logiciel, de la marque, des contrats ou des données avant une transition explicite et légale.
+Avant une prestation facturée ou une action organisée au nom d'une structure, identifier l'organisateur et le contractant réel, l'assurance, les conventions, le traitement des données, la responsabilité terrain et les obligations fiscales et bancaires. L'association et la microentreprise doivent garder des comptes, budgets, contrats, factures, recettes et dépenses distincts. Une association ne peut être présumée titulaire du logiciel, de la marque, des contrats ou des données avant une transition explicite et légale.
+
+Une prestation de la microentreprise à l'association reste conditionnelle à un
+besoin réel, un prix justifié, un écrit, une décision indépendante, la
+déclaration du conflit d'intérêts et l'abstention du fondateur ; `LEGAL_REVIEW_REQUIRED`
+avant signature. Les financements associatifs ne sont pas une réserve librement
+transférable vers l'activité commerciale. Pour SPOGOMI, négocier seulement un
+contrat professionnel éventuel de développement, configuration ou assistance,
+sans supposer partenariat signé, licence officielle ou revenu acquis.
 
 ## 7. Communication, réseaux sociaux et acquisition
 
