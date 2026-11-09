@@ -172,21 +172,44 @@ describe("SPOGOMI public identity and lifecycle", () => {
         { id: "world", event_id: "capacity", division_type: "world_cup", regulation_config: { registrationPolicy: { capacity: "01" } } },
       ],
     }) as never);
-    expect(event[0]?.divisions.map((division) => division.capacity)).toEqual([2, 2]);
+    expect(event[0]?.divisions.map((division) => division.capacity)).toEqual([2, null]);
+    expect(event[0]?.divisions.map((division) => division.capacityState)).toEqual(["bounded", "invalid"]);
     expect(event[0]?.divisions.map((division) => division.directRegistrationAvailable)).toEqual([false, false]);
+    expect(event[0]?.divisions.map((division) => division.registrationStatus)).toEqual(["open", "closed"]);
   });
 
-  it("derives direct registration from the canonical event policy for each selected division", async () => {
+  it("lets division policy override edition policy for every direct-registration capability", async () => {
     serviceMocks.organizers.mockResolvedValue(new Map([["action-1", null]]));
     const event = await listPublishedSpogomiEvents(makeSupabase([{
       id: "policy", event_slug: "policy", name: "Politique", location_label: "Paris", mode: "mixed", state: "registration_open",
       starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden", public_visibility: "published",
       regulation_config: { registrationPolicy: { directRegistrationOpen: true, externalTicketingRequired: false, worldCupDirectRegistrationAllowed: true } },
     }], { divisions: [
-      { id: "casual", event_id: "policy", division_type: "casual", regulation_config: { registrationPolicy: { directRegistrationOpen: false } } },
-      { id: "world", event_id: "policy", division_type: "world_cup", regulation_config: { registrationPolicy: {} } },
+      { id: "casual", event_id: "policy", division_type: "casual", regulation_config: { registrationPolicy: { directRegistrationOpen: false, externalTicketingRequired: true, capacity: "3" } } },
+      { id: "world", event_id: "policy", division_type: "world_cup", regulation_config: { registrationPolicy: { worldCupDirectRegistrationAllowed: false, capacity: "4" } } },
     ] }) as never);
-    expect(event[0]?.divisions.map((division) => division.directRegistrationAvailable)).toEqual([true, true]);
+    expect(event[0]?.divisions.map((division) => division.directRegistrationAvailable)).toEqual([false, false]);
+    expect(event[0]?.divisions.map((division) => division.capacity)).toEqual([3, 4]);
+    expect(event[0]?.divisions.map((division) => division.capacityState)).toEqual(["bounded", "bounded"]);
+  });
+
+  it.each([
+    [1, "bounded", "open"],
+    ["1", "bounded", "open"],
+    ["01", "invalid", "closed"],
+    ["0", "invalid", "closed"],
+    [2_147_483_647, "bounded", "open"],
+    [2_147_483_648, "invalid", "closed"],
+    [null, "unlimited", "open"],
+  ] as const)("distinguishes capacity %s in the public projection", async (capacity, capacityState, registrationStatus) => {
+    serviceMocks.organizers.mockResolvedValue(new Map([["action-1", null]]));
+    const event = await listPublishedSpogomiEvents(makeSupabase([{
+      id: `capacity-${String(capacity)}`, event_slug: `capacity-${String(capacity)}`, name: "Capacité", location_label: "Paris", mode: "casual", state: "registration_open",
+      starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden", public_visibility: "published",
+      regulation_config: { registrationPolicy: { capacity } },
+    }], { divisions: [{ id: "casual", event_id: `capacity-${String(capacity)}`, division_type: "casual", regulation_config: {} }] }) as never);
+    expect(event[0]?.divisions[0]).toMatchObject({ capacity: capacityState === "bounded" ? Number(capacity) : null, capacityState, registrationStatus });
+    expect(event[0]?.divisions[0]?.directRegistrationAvailable).toBe(false);
   });
 
   it("batches public registration and organizer reads across catalog editions", async () => {

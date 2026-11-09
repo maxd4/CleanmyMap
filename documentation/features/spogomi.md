@@ -202,10 +202,13 @@ vérification.
 La capacité est exprimée par un entier positif représentable par PostgreSQL
 (`1` à `2147483647`). Une chaîne décimale canonique telle que `"12"` est
 normalisée en nombre par la frontière serveur ; les chaînes à zéros initiaux,
-`0` et les valeurs hors plage sont refusées. La politique d'édition est
-canonique lorsqu'une même clé est présente aux deux niveaux ; cette même
-projection et ce même comptage par division sont réutilisés par la checklist,
-les demandes, les approbations et la fiche publique.
+`0` et les valeurs hors plage sont refusées. La politique d'édition fournit les
+valeurs héritées et la politique de division surcharge les mêmes clés ; cette
+même projection et ce même comptage par division sont réutilisés par la checklist,
+les demandes, les approbations et la fiche publique. Une capacité absente ou
+explicitement nulle est illimitée ; une capacité présente mais invalide est
+exposée comme invalide, rend la checklist incomplète et n'autorise jamais
+l'inscription directe.
 
 Chaque élément est affiché comme « Complet », « Incomplet » ou « Non vérifié »,
 avec un lien vers la zone de préparation concernée.

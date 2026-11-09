@@ -41,6 +41,7 @@ type SpogomiPublicDivision = {
   registrationStatus: SpogomiRegistrationStatus;
   registeredCount: number;
   capacity: number | null;
+  capacityState: "unlimited" | "bounded" | "invalid";
   directRegistrationAvailable?: boolean;
 };
 
@@ -130,12 +131,15 @@ function buildPublicRegistrationProjection(
   const eventPolicy = registrationPolicy(row.regulation_config);
   const projectedDivisions = divisions.map((division) => {
     // Keep the same precedence as spogomi_registration_policy_for_division:
-    // edition policy is canonical when both scopes define the same key.
-    const policy = { ...registrationPolicy(division.regulation_config), ...eventPolicy };
+    // the edition supplies defaults and the division overrides matching keys.
+    const policy = { ...eventPolicy, ...registrationPolicy(division.regulation_config) };
     const registeredCount = participants.filter((participant) => String(participant.division_id) === String(division.id)).length;
-    const capacity = capacityFromPolicy(policy);
-    const registrationStatus = classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity });
+    const capacityProjection = capacityFromPolicy(policy);
+    const registrationStatus = capacityProjection.state === "invalid"
+      ? "closed"
+      : classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity: capacityProjection.value });
     const directRegistrationAvailable = row.state === "registration_open"
+      && capacityProjection.state !== "invalid"
       && policy.directRegistrationOpen === true
       && policy.externalTicketingRequired !== true
       && (division.division_type !== "world_cup" || policy.worldCupDirectRegistrationAllowed === true)
@@ -145,15 +149,18 @@ function buildPublicRegistrationProjection(
       type: division.division_type,
       registrationStatus,
       registeredCount,
-      capacity,
+      capacity: capacityProjection.value,
+      capacityState: capacityProjection.state,
       directRegistrationAvailable,
     } satisfies SpogomiPublicDivision;
   });
   if (projectedDivisions.length) return { status: combineRegistrationStatuses(projectedDivisions.map((division) => division.registrationStatus)), divisions: projectedDivisions };
   const registeredCount = participants.length;
-  const capacity = capacityFromPolicy(eventPolicy);
+  const capacityProjection = capacityFromPolicy(eventPolicy);
   return {
-    status: classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity }),
+    status: capacityProjection.state === "invalid"
+      ? "closed"
+      : classifySpogomiRegistrationStatus({ state: row.state, registeredCount, capacity: capacityProjection.value }),
     divisions: [],
   };
 }
@@ -167,14 +174,19 @@ function registrationPolicy(config: unknown): Record<string, unknown> {
   return config.registrationPolicy;
 }
 
-function capacityFromPolicy(policy: Record<string, unknown>): number | null {
+function capacityFromPolicy(policy: Record<string, unknown>): { value: number | null; state: "unlimited" | "bounded" | "invalid" } {
+  if (!Object.prototype.hasOwnProperty.call(policy, "capacity") || policy.capacity === null || policy.capacity === undefined) {
+    return { value: null, state: "unlimited" };
+  }
   const value = policy.capacity;
-  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value !== "number" && typeof value !== "string") return { value: null, state: "invalid" };
   try {
     const normalized = normalizeSpogomiRegistrationCapacity(value);
-    return normalized !== null && normalized !== undefined && normalized <= SPOGOMI_POSTGRES_INTEGER_MAX ? normalized : null;
+    return normalized !== null && normalized !== undefined && normalized <= SPOGOMI_POSTGRES_INTEGER_MAX
+      ? { value: normalized, state: "bounded" }
+      : { value: null, state: "unlimited" };
   } catch {
-    return null;
+    return { value: null, state: "invalid" };
   }
 }
 
@@ -353,6 +365,7 @@ function mapEvent(
       registrationStatus: "not_open" as const,
       registeredCount: 0,
       capacity: null,
+      capacityState: "unlimited" as const,
     })),
     teams,
     route,

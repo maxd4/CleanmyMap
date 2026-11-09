@@ -5,6 +5,7 @@ const readinessMigration = readFileSync(new URL("../../../supabase/migrations/20
 const admissionMigration = readFileSync(new URL("../../../supabase/migrations/20261109000004_spogomi_admission_readiness_gate.sql", import.meta.url), "utf8");
 const alignmentMigration = readFileSync(new URL("../../../supabase/migrations/20261109141255_spogomi_registration_policy_alignment.sql", import.meta.url), "utf8");
 const capacityMigration = readFileSync(new URL("../../../supabase/migrations/20261109160000_spogomi_capacity_acl_and_normalization.sql", import.meta.url), "utf8");
+const readinessCapacityFixMigration = readFileSync(new URL("../../../supabase/migrations/20261109220000_spogomi_registration_readiness_capacity_contract.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI registration readiness STATIC_CONTRACT", () => {
   it("keeps the checklist and opening transition server-owned and revision-controlled", () => {
@@ -46,5 +47,12 @@ describe("SPOGOMI registration readiness STATIC_CONTRACT", () => {
     expect(capacityMigration).toContain("revoke all on function public.spogomi_registration_capacity_for_division(uuid, uuid) from public, anon, authenticated");
     expect(capacityMigration).toContain("grant execute on function public.spogomi_registration_capacity_for_division(uuid, uuid) to service_role");
     expect(capacityMigration).toContain("jsonb_set(v_patch, '{capacity}', to_jsonb(v_capacity), true)");
+  });
+
+  it("makes readiness consume the canonical capacity validity flag", () => {
+    expect(readinessCapacityFixMigration).toContain("create or replace function public.spogomi_registration_readiness");
+    expect(readinessCapacityFixMigration).toContain("coalesce((v_policy ->> 'capacityValid')::boolean, true)");
+    expect(readinessCapacityFixMigration).not.toContain("v_policy ->> 'capacity') ~ '^[1-9][0-9]*$'");
+    expect(readinessCapacityFixMigration).toMatch(/revoke all on function public\.spogomi_registration_readiness\(uuid\)[\s\S]+grant execute on function public\.spogomi_registration_readiness\(uuid\) to service_role/i);
   });
 });
