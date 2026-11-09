@@ -1,0 +1,61 @@
+{
+  "extension_ref": "SCENARIO-CACHAN-CLOSURE-SYNTHETIQUE-V1",
+  "status": "synthetic_final_only",
+  "official": false,
+  "synthetic_notice": "Toutes les valeurs de cette extension sont SYNTHETIQUES / NON OFFICIELLES. Elles ne constituent ni une certification, ni un classement, ni une donnée de production.",
+  "edition": {
+    "title": "SPOGOMI Cachan, démonstration CleanMyMap — simulation clôturée",
+    "date": "2026-09-20",
+    "timezone": "Europe/Paris",
+    "location_label": "Cachan — site générique de démonstration",
+    "state": "finished_synthetic",
+    "regulations_used": [
+      "FICTIONAL-WC-CACHAN-DEMO-V1",
+      "FICTIONAL-CASUAL-CACHAN-DEMO-V1"
+    ],
+    "chronology": [
+      { "step": "registration_closed", "at": "2026-09-18T18:00:00+02:00" },
+      { "step": "composition_verified", "at": "2026-09-19T18:00:00+02:00" },
+      { "step": "collection_started", "at": "2026-09-20T10:00:00+02:00" },
+      { "step": "collection_returned", "at": "2026-09-20T12:00:00+02:00" },
+      { "step": "sorting_and_weighing_completed", "at": "2026-09-20T13:30:00+02:00" },
+      { "step": "synthetic_results_finalized", "at": "2026-09-20T15:00:00+02:00" },
+      { "step": "synthetic_edition_closed", "at": "2026-09-20T16:00:00+02:00" }
+    ],
+    "closure_decisions": [
+      { "division_ref": "DIV-WORLD-CUP", "decision": "Classement de simulation déterminé par score décroissant puis masse totale croissante." },
+      { "division_ref": "DIV-CASUAL", "decision": "Classement de simulation déterminé par score décroissant puis masse totale croissante." },
+      { "division_ref": "ALL", "decision": "Aucune pénalité synthétique appliquée ; les deux divisions restent indépendantes." }
+    ]
+  },
+  "teams": [
+    { "team_ref": "WC-01", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-004", "PLACE-005", "PLACE-006"], "direct_cigarette_butt_count": 20 },
+    { "team_ref": "WC-02", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-007", "PLACE-008", "PLACE-009"], "direct_cigarette_butt_count": 40 },
+    { "team_ref": "WC-03", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-001", "PLACE-002", "PLACE-003"], "direct_cigarette_butt_count": 0 },
+    { "team_ref": "WC-04", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-014", "PLACE-015", "PLACE-016"], "direct_cigarette_butt_count": 30 },
+    { "team_ref": "WC-05", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-030", "PLACE-031", "PLACE-032"], "direct_cigarette_butt_count": 55 },
+    { "team_ref": "WC-06", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-033", "PLACE-034", "PLACE-035"], "direct_cigarette_butt_count": 8 },
+    { "team_ref": "CAS-01", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-010", "PLACE-011", "PLACE-012", "PLACE-013"], "direct_cigarette_butt_count": 80 },
+    { "team_ref": "CAS-02", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-017", "PLACE-018", "PLACE-019", "PLACE-020"], "direct_cigarette_butt_count": 55 },
+    { "team_ref": "CAS-03", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-022", "PLACE-023", "PLACE-024", "PLACE-025"], "direct_cigarette_butt_count": 32 },
+    { "team_ref": "CAS-04", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-026", "PLACE-027", "PLACE-028", "PLACE-029"], "direct_cigarette_butt_count": 10 },
+    { "team_ref": "CAS-05", "composition_status": "verified_synthetic", "attendance_status": "verified_synthetic", "present_place_ids": ["PLACE-021", "PLACE-036", "PLACE-037"], "direct_cigarette_butt_count": 7 }
+  ],
+  "additional_measurements": [
+    { "team_ref": "WC-04", "category_code": "recyclable", "mass_grams": 120, "provenance_ref": "scenario:closure:WC-04" },
+    { "team_ref": "WC-04", "category_code": "non_recyclable", "mass_grams": 80, "provenance_ref": "scenario:closure:WC-04" },
+    { "team_ref": "WC-04", "category_code": "glass", "mass_grams": 60, "provenance_ref": "scenario:closure:WC-04" },
+    { "team_ref": "WC-04", "category_code": "aluminum_steel", "mass_grams": 140, "provenance_ref": "scenario:closure:WC-04" },
+    { "team_ref": "WC-04", "category_code": "cigarette_butts", "mass_grams": 150, "provenance_ref": "scenario:closure:WC-04" },
+    { "team_ref": "WC-05", "category_code": "recyclable", "mass_grams": 90, "provenance_ref": "scenario:closure:WC-05" },
+    { "team_ref": "WC-05", "category_code": "non_recyclable", "mass_grams": 110, "provenance_ref": "scenario:closure:WC-05" },
+    { "team_ref": "WC-05", "category_code": "glass", "mass_grams": 50, "provenance_ref": "scenario:closure:WC-05" },
+    { "team_ref": "WC-05", "category_code": "aluminum_steel", "mass_grams": 80, "provenance_ref": "scenario:closure:WC-05" },
+    { "team_ref": "WC-05", "category_code": "cigarette_butts", "mass_grams": 250, "provenance_ref": "scenario:closure:WC-05" },
+    { "team_ref": "WC-06", "category_code": "recyclable", "mass_grams": 300, "provenance_ref": "scenario:closure:WC-06" },
+    { "team_ref": "WC-06", "category_code": "non_recyclable", "mass_grams": 50, "provenance_ref": "scenario:closure:WC-06" },
+    { "team_ref": "WC-06", "category_code": "glass", "mass_grams": 100, "provenance_ref": "scenario:closure:WC-06" },
+    { "team_ref": "WC-06", "category_code": "aluminum_steel", "mass_grams": 100, "provenance_ref": "scenario:closure:WC-06" },
+    { "team_ref": "WC-06", "category_code": "cigarette_butts", "mass_grams": 50, "provenance_ref": "scenario:closure:WC-06" }
+  ]
+}

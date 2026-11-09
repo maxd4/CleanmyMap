@@ -66,6 +66,14 @@ avec six trios World Cup et cinq équipes Casual (4, 4, 4, 4, 3). Ses règlement
 et scores sont explicitement fictifs et non officiels ; ils ne remplacent ni les
 compositions historiques ci-dessus ni le règlement runtime.
 
+L'extension de clôture
+[`fixtures/scenario_cachan_cleanmymap_mixed_closure_SYNTHETIQUE.json`](./fixtures/scenario_cachan_cleanmymap_mixed_closure_SYNTHETIQUE.json)
+ajoute seulement la chronologie fictive, les états finaux synthétiques, les
+présences, les comptages directs de mégots et les quinze mesures manquantes de
+WC-04 à WC-06. Les mesures du manifeste historique, dont le zéro explicite de
+WC-03, ne sont pas réécrites. Les nombres de mégots ne sont jamais déduits de
+la masse ; la projection Web les traite comme une mesure indépendante.
+
 ## 5. Pesée numérique — une mesure = une catégorie d'une version
 
 - Le formulaire lit les catégories actuelles du règlement de l'événement ; les trois nomenclatures du kit sont **observées, non fusionnées**.

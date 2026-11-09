@@ -19,10 +19,16 @@ describe("public SPOGOMI Cachan demonstration", () => {
     expect(markup).toContain("Démonstration fictive, données synthétiques, règlement non officiel");
     expect(markup).toContain("DIV-WORLD-CUP");
     expect(markup).toContain("DIV-CASUAL");
+    expect(markup).toContain("simulation clôturée");
+    expect(markup).toContain("Classements de simulation");
+    expect(markup).toContain("Bilan environnemental synthétique");
+    expect(markup).toContain("WC-05");
+    expect(markup).toContain("809,5 points");
+    expect(markup).toContain("37 / 37");
     for (const teamRef of ["WC-01", "WC-02", "WC-03", "WC-04", "WC-05", "WC-06", "CAS-01", "CAS-02", "CAS-03", "CAS-04", "CAS-05"]) {
       expect(markup).toContain(teamRef);
     }
-    expect(markup).toContain("aucune valeur publiée");
+    expect(markup).toContain("Score final de simulation");
     expect(markup).toContain("Elle ne crée aucune édition");
     expect(markup).not.toContain("Classement officiel");
   });

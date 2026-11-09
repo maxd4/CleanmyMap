@@ -11,7 +11,7 @@ par la présence de ce kit.
 
 ## Contenu intégré
 
-Le dossier contient 17 fichiers versionnés : ce README et 16 artefacts de
+Le dossier contient 18 fichiers versionnés : ce README et 17 artefacts de
 référence issus du kit conservé localement.
 
 - `CONTRATS_ET_MAPPING.md` — correspondance historique et décisions de
@@ -24,6 +24,11 @@ référence issus du kit conservé localement.
 - `fixtures/scenario_cachan_cleanmymap_mixed.json` — manifeste déterministe
   d'une démonstration mixed à une action parent et deux divisions, qui référence
   les 37 places existantes sans les recopier.
+- `fixtures/scenario_cachan_cleanmymap_mixed_closure_SYNTHETIQUE.json` — extension
+  additive de clôture : chronologie fictive Europe/Paris, présences et
+  compositions vérifiées synthétiques, comptages directs de mégots et mesures
+  complémentaires de WC-04 à WC-06. Elle ne recopie ni les places ni les
+  mesures historiques du manifeste canonique.
 - `schemas/` — contrat JSON du paquet de référence.
 - `templates/` — cinq trames CSV d’entrée ou de projection.
 - `visuels/` — modèle Excel et formulaire PDF vierges, conservés sans
@@ -88,6 +93,14 @@ ambiguë lors d'un changement d'heure. Les clés d'idempotence des soumissions
 sont déterministes, uniques par équipe et version, et respectent la longueur
 minimale de l'API. Une exécution réussie imprime un résultat par étape et le
 marqueur `EXECUTED_SPOGOMI_INTEGRATION`.
+
+La clôture fictive est ajoutée uniquement par
+[`fixtures/scenario_cachan_cleanmymap_mixed_closure_SYNTHETIQUE.json`](./fixtures/scenario_cachan_cleanmymap_mixed_closure_SYNTHETIQUE.json).
+La projection typée `apps/web/src/lib/spogomi/cachan-closure.ts` fusionne cette
+extension avec le manifeste historique, réutilise le moteur de scoring et
+calcule les classements sportifs, les ratios de mégots/participant et les
+agrégats environnementaux sans double comptage. Les scores sont présentés
+comme `synthetic_final` et ne constituent jamais une certification réelle.
 
 ## Limites d’usage
 
