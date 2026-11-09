@@ -15,6 +15,13 @@ declare
   v_user_id text := 'spogomi-quiz-db-user';
   v_definition jsonb;
   v_questions jsonb;
+  v_probe_options jsonb;
+  v_rotation_a jsonb;
+  v_rotation_b jsonb;
+  v_attack_correct_label text;
+  v_attack_incorrect_label text;
+  v_correct_first_a boolean;
+  v_correct_first_b boolean;
   v_answers jsonb := '{}'::jsonb;
   v_submission jsonb;
   v_repeat_submission jsonb;
@@ -110,6 +117,36 @@ begin
   end if;
   if (select public.spogomi_registration_quiz(v_event_id, v_division_id) #> '{questions,0,correctOptionId}') is not null then
     raise exception 'the public quiz projection exposed the answer key';
+  end if;
+
+  -- Regression proof: the former label-dependent seed let a client compare
+  -- both hidden associations. The new seed must produce the same correction
+  -- position for either association of the same public labels.
+  select candidate.correct_label, candidate.incorrect_label
+    into v_attack_correct_label, v_attack_incorrect_label
+    from (values ('safe', 'unsafe'), ('correct label', 'incorrect label'), ('A', 'B')) as candidate(correct_label, incorrect_label)
+   where get_byte(decode(md5(concat_ws(':', v_event_id::text, v_division_id::text, 'rotation-probe', candidate.correct_label, candidate.incorrect_label)), 'hex'), 0) % 2
+      <> get_byte(decode(md5(concat_ws(':', v_event_id::text, v_division_id::text, 'rotation-probe', candidate.incorrect_label, candidate.correct_label)), 'hex'), 0) % 2
+   limit 1;
+  if v_attack_correct_label is null then
+    raise exception 'the regression fixture did not expose the former label-dependent parity';
+  end if;
+  v_probe_options := jsonb_build_array(
+    jsonb_build_object('id', 'choice_a', 'label', v_attack_correct_label),
+    jsonb_build_object('id', 'choice_b', 'label', v_attack_incorrect_label)
+  );
+  v_rotation_a := public.spogomi_registration_quiz_rotate_options(
+    v_event_id, v_division_id,
+    jsonb_build_array(jsonb_build_object('id', 'rotation-probe', 'correctOptionId', 'choice_a', 'options', v_probe_options))
+  );
+  v_rotation_b := public.spogomi_registration_quiz_rotate_options(
+    v_event_id, v_division_id,
+    jsonb_build_array(jsonb_build_object('id', 'rotation-probe', 'correctOptionId', 'choice_b', 'options', v_probe_options))
+  );
+  v_correct_first_a := (v_rotation_a #>> '{0,options,0,label}') = v_attack_correct_label;
+  v_correct_first_b := (v_rotation_b #>> '{0,options,0,label}') = v_attack_incorrect_label;
+  if v_correct_first_a is distinct from v_correct_first_b then
+    raise exception 'quiz rotation still reveals correction association through parity';
   end if;
 
   select public.spogomi_submit_registration_quiz(

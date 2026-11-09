@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const quizMigration = readFileSync(new URL("../../../supabase/migrations/20261109000005_spogomi_registration_quiz.sql", import.meta.url), "utf8");
 const gateMigration = readFileSync(new URL("../../../supabase/migrations/20261109000006_spogomi_registration_quiz_admission_gate.sql", import.meta.url), "utf8");
 const fixMigration = readFileSync(new URL("../../../supabase/migrations/20261109143630_spogomi_registration_quiz_contract_fix.sql", import.meta.url), "utf8");
+const privacyMigration = readFileSync(new URL("../../../supabase/migrations/20261109170000_spogomi_registration_quiz_rotation_privacy.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI registration quiz migration contracts", () => {
   it("persists only a minimal account/event/division/version proof and revokes client RPC access", () => {
@@ -41,5 +42,16 @@ describe("SPOGOMI registration quiz migration contracts", () => {
     expect(fixMigration).toContain("v_contract_revision bigint");
     expect(fixMigration).not.toContain("correctOptionId', 'official'");
     expect(fixMigration).toMatch(/revoke all on function public\.spogomi_submit_registration_quiz[\s\S]+grant execute on function public\.spogomi_submit_registration_quiz[\s\S]+to service_role/i);
+  });
+
+  it("does not derive the rotation from public option labels", () => {
+    const leakedParity = (labelA: string, labelB: string) => {
+      const seed = (correct: string, incorrect: string) => `${correct}:${incorrect}`;
+      return [seed(labelA, labelB), seed(labelB, labelA)];
+    };
+    expect(leakedParity("safe", "unsafe")).toEqual(["safe:unsafe", "unsafe:safe"]);
+    expect(privacyMigration).toContain("v_seed := md5(concat_ws(':', p_event_id::text, p_division_id::text, v_question ->> 'id'));");
+    expect(privacyMigration).not.toContain("v_question ->> 'id', v_correct_label, v_incorrect_label");
+    expect(privacyMigration).toContain("public projection still strips the answer");
   });
 });

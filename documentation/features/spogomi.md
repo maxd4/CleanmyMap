@@ -243,9 +243,10 @@ Le questionnaire exige toutes les réponses correctes aux questions critiques et
 80 % au minimum sur les autres. Les tentatives sont illimitées et les erreurs
 sont expliquées. La question sur l'expérience de cleanwalk et son commentaire
 sont facultatifs et n'entrent pas dans le score. Les choix utilisent des
-identifiants génériques et un ordre stable pour une version donnée ; la clé de
-correction reste uniquement côté serveur et la définition publique ne la
-contient jamais.
+identifiants génériques et un ordre stable pour une version donnée ; la
+permutation serveur dépend de l'édition, de la division et de la question,
+jamais des libellés ou de l'association correcte. La clé de correction reste
+uniquement côté serveur et la définition publique ne la contient jamais.
 
 `spogomi_submit_registration_quiz` vérifie les réponses côté serveur et
 enregistre uniquement une preuve minimale liée au compte Clerk, à l'édition,
