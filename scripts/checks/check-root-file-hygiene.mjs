@@ -48,6 +48,7 @@ export const trackedCanonicalRootDirectories = [
 export const trackedTransitionalRootDirectories = [];
 
 export const localOnlyRootDirectories = [
+  ".bat",
   "artifacts",
   ".local",
   "backups",

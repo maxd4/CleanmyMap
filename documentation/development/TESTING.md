@@ -172,10 +172,10 @@ Ne jamais versionner une preuve dans `artifacts/` par commodité. Vérifier sa
 provenance, sa reproductibilité et son emplacement documentaire avant de la
 conserver.
 
-Les anciens lanceurs Windows peuvent être conservés localement sous
-`.local/root-wrappers/`. Ce dossier est ignoré et n'est pas une surface
-versionnée ; les commandes du workspace mobile restent la référence
-reproductible.
+Les lanceurs Windows locaux sont conservés directement sous `/.bat/`, dossier
+ignoré et jamais versionné. Aucun sous-dossier `root-wrappers` ni lanceur `.bat`
+à la racine Git n'est autorisé ; les commandes du workspace mobile restent la
+référence reproductible.
 
 Pour un nettoyage local ponctuel, utiliser `npm run clean:temp`. La variante
 `clean:temp:force` exige que les outils du dépôt soient fermés ; `npm run

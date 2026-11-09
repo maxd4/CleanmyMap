@@ -37,6 +37,7 @@ output/
 # CleanMyMap local validation workspaces and generated outputs.
 # Durable audits belong under documentation/; all local outputs share artifacts/.
 # Keep the former root ignored as a legacy safety net; no generator writes there.
+/.bat/
 /.artifacts/
 /.local/
 /artifacts/

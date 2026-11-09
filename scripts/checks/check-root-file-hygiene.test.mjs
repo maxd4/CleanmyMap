@@ -32,6 +32,7 @@ test("root directory contract accepts canonical directories", () => {
     [],
   );
   assert.ok(allowedRootDirectories.includes("artifacts"));
+  assert.ok(allowedRootDirectories.includes(".bat"));
   assert.ok(allowedRootDirectories.includes(".local"));
   assert.ok(allowedRootDirectories.includes("apps"));
   assert.equal(allowedRootDirectories.includes("companion-app"), false);
@@ -93,8 +94,10 @@ test("SonarQube configuration is allowed while unknown root files remain rejecte
   assert.deepEqual(filesystemResult.forbiddenTrackedPaths, []);
 });
 
-test("mobile launcher wrappers are rejected at the root and local wrappers use the ignored directory", () => {
+test("Windows launchers are rejected at the root and the canonical .bat directory is local-only", () => {
   const wrappers = [
+    ".aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat",
+    ".aLANCER_SITE_LOCAL_ROLE_MAX.bat",
     "LANCER_APP_MOBILE_WEB.bat",
     "LANCER_APP_MOBILE_ANDROID.bat",
     "INSTALLER_APP_MOBILE_ANDROID.bat",
@@ -110,7 +113,7 @@ test("mobile launcher wrappers are rejected at the root and local wrappers use t
   const result = validateRootFileHygiene(gitView);
   assert.deepEqual(result.forbidden, wrappers);
   assert.equal(wrappers.every((file) => versionableRootFiles.has(file)), false);
-  assert.deepEqual(findForbiddenRootDirectories([".local"]), []);
+  assert.deepEqual(findForbiddenRootDirectories([".bat", ".local"]), []);
 });
 
 test("root directory contract accepts local-only directories when untracked", () => {
@@ -134,6 +137,7 @@ test("local-only tracking guard rejects every local-only root directory", () => 
     findForbiddenTrackedPaths([
       "README.md",
       "artifacts/validation/report.json",
+      ".bat/TESTER_APP_MOBILE.bat",
       ".local/root-wrappers/TESTER_APP_MOBILE.bat",
       "backups/example.json",
       "scratch/tool.py",
@@ -147,6 +151,7 @@ test("local-only tracking guard rejects every local-only root directory", () => 
     ]),
     [
       "artifacts/validation/report.json",
+      ".bat/TESTER_APP_MOBILE.bat",
       ".local/root-wrappers/TESTER_APP_MOBILE.bat",
       "backups/example.json",
       "scratch/tool.py",
