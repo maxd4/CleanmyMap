@@ -18,6 +18,12 @@ describe("SPOGOMI registration quiz contract", () => {
     expect(parseSpogomiRegistrationQuizDefinition({ ...definition, questions: [{ ...definition.questions[0], correctOptionId: "official" }] })).toEqual(expect.objectContaining({ questions: expect.arrayContaining([expect.objectContaining({ id: "schedule" })]) }));
   });
 
+  it("accepts stable generic option identifiers without inferring a correction", () => {
+    const rotated = { ...definition, questions: [{ ...definition.questions[0], options: [{ id: "choice_a", label: "12:00" }, { id: "choice_b", label: "09:00" }] }] };
+    expect(parseSpogomiRegistrationQuizDefinition(rotated)?.questions[0]?.options.map((option) => option.id)).toEqual(["choice_a", "choice_b"]);
+    expect(parseSpogomiRegistrationQuizDefinition(rotated)).not.toHaveProperty("questions.0.correctOptionId");
+  });
+
   it("accepts a missing-information projection without inventing questions", () => {
     const parsed = parseSpogomiRegistrationQuizDefinition({ ...definition, available: false, questions: [], missing: [{ id: "safety", label: "Sécurité", status: "not_verified", href: "#safety" }] });
     expect(parsed).toMatchObject({ available: false, questions: [], missing: [{ id: "safety", status: "not_verified" }] });

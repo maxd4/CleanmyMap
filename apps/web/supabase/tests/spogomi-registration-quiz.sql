@@ -17,6 +17,7 @@ declare
   v_questions jsonb;
   v_answers jsonb := '{}'::jsonb;
   v_submission jsonb;
+  v_repeat_submission jsonb;
   v_revision bigint;
   v_question jsonb;
 begin
@@ -111,6 +112,15 @@ begin
     raise exception 'the public quiz projection exposed the answer key';
   end if;
 
+  select public.spogomi_submit_registration_quiz(
+    v_event_id, v_division_id, v_user_id, v_definition ->> 'quizVersion',
+    '{}'::jsonb
+  ) into v_submission;
+  if coalesce((v_submission ->> 'passed')::boolean, true) is true
+     or (v_submission ->> 'proofId') is not null then
+    raise exception 'a critical quiz failure created a proof';
+  end if;
+
   begin
     perform public.create_spogomi_admission_request(
       v_event_id, null, v_user_id, 'registration', v_division_id,
@@ -149,6 +159,16 @@ begin
   if coalesce((v_submission ->> 'passed')::boolean, false) is not true
      or (v_submission ->> 'proofId') is null then
     raise exception 'correct contextual quiz answers did not create a server proof';
+  end if;
+
+  select public.spogomi_submit_registration_quiz(
+    v_event_id, v_division_id, v_user_id, v_definition ->> 'quizVersion',
+    v_answers, 'yes', 'Retry idempotent du questionnaire.'
+  ) into v_repeat_submission;
+  if (v_repeat_submission ->> 'proofId') is null
+     or (select count(*) from public.spogomi_registration_quiz_proofs
+          where event_id = v_event_id and division_id = v_division_id and clerk_id = v_user_id) <> 1 then
+    raise exception 'repeated successful submission was not idempotent';
   end if;
 
   if not exists (

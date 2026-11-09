@@ -225,14 +225,18 @@ source de l'édition.
 Le questionnaire exige toutes les réponses correctes aux questions critiques et
 80 % au minimum sur les autres. Les tentatives sont illimitées et les erreurs
 sont expliquées. La question sur l'expérience de cleanwalk et son commentaire
-sont facultatifs et n'entrent pas dans le score. La définition publique ne
-contient jamais les réponses correctes.
+sont facultatifs et n'entrent pas dans le score. Les choix utilisent des
+identifiants génériques et un ordre stable pour une version donnée ; la clé de
+correction reste uniquement côté serveur et la définition publique ne la
+contient jamais.
 
 `spogomi_submit_registration_quiz` vérifie les réponses côté serveur et
 enregistre uniquement une preuve minimale liée au compte Clerk, à l'édition,
-à la division et à `quiz_version`. Une modification substantielle des sources
-produit une nouvelle version et invalide les anciennes preuves pour les
-nouvelles demandes, sans modifier les inscriptions déjà acceptées.
+à la division, à `quiz_version` et à la révision du contrat d'inscription.
+Une modification substantielle des sources produit une nouvelle version et
+invalide les anciennes preuves pour les nouvelles demandes, sans modifier les
+inscriptions déjà acceptées. Les soumissions réussies répétées restent
+idempotentes pour cette combinaison complète.
 
 Le gate final vit dans `create_spogomi_admission_request` et ne s'applique qu'à
 `request_kind = registration`, après les contrôles d'authentification,
