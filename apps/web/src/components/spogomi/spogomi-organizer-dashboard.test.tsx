@@ -1,6 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const refreshMock = vi.hoisted(() => vi.fn());
@@ -52,6 +52,10 @@ function getFormSubmit() {
   return { renderer, submit: renderer.root.findByType("form").props.onSubmit as (event: unknown) => void };
 }
 
+function textContent(node: ReactTestInstance): string {
+  return node.children.map((child) => typeof child === "string" ? child : textContent(child)).join("");
+}
+
 describe("SpogomiOrganizerDashboard creation flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -81,7 +85,7 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     renderer.unmount();
   });
 
-  it("keeps the form and idempotency payload across a retry, and blocks double submission", async () => {
+  it("renders multi-field 422 details and keeps the form and idempotency payload across a retry", async () => {
     const form = buildForm();
     let resolveFirst!: (response: Response) => void;
     const firstResponse = new Promise<Response>((resolve) => { resolveFirst = resolve; });
@@ -98,13 +102,28 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    resolveFirst(new Response(JSON.stringify({ error: "temporary failure" }), { status: 503 }));
+    resolveFirst(new Response(JSON.stringify({
+      error: "Certains champs doivent être corrigés avant de continuer.",
+      referenceCode: "VAL-RETRY",
+      details: {
+        name: ["Le nom est déjà utilisé."],
+        startsAt: ["La date doit être dans le futur."],
+      },
+    }), { status: 422 }));
     await act(async () => {
       await firstResponse;
       await Promise.resolve();
     });
     expect(form.reset).not.toHaveBeenCalled();
     expect(form.values.name).toBe(validValues.name);
+    expect(renderer.root.findByProps({ id: "spogomi-create-name" }).props["aria-invalid"]).toBe(true);
+    expect(renderer.root.findByProps({ id: "spogomi-create-name" }).props["aria-describedby"]).toBe("spogomi-create-name-error");
+    expect(renderer.root.findByProps({ id: "spogomi-create-startsAt" }).props["aria-invalid"]).toBe(true);
+    expect(textContent(renderer.root.findByProps({ id: "spogomi-create-error-summary" }))).toContain("VAL-RETRY");
+    expect(renderer.root.findAllByType("li").map((item) => item.children.join(" "))).toEqual(expect.arrayContaining([
+      "Le nom est déjà utilisé.",
+      "La date doit être dans le futur.",
+    ]));
 
     await act(async () => {
       submit(event);
@@ -115,6 +134,33 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     const retryPayload = JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string);
     expect(retryPayload).toEqual(firstPayload);
     expect(form.reset).toHaveBeenCalledTimes(1);
+    renderer.unmount();
+  });
+
+  it("marks a client-side date validation error on the corresponding field", async () => {
+    const form = buildForm();
+    form.values.startsAt = "";
+    const { renderer, submit } = getFormSubmit();
+
+    await act(async () => { submit({ preventDefault: vi.fn(), currentTarget: form }); await Promise.resolve(); });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(renderer.root.findByProps({ id: "spogomi-create-startsAt" }).props["aria-invalid"]).toBe(true);
+    expect(renderer.root.findByProps({ id: "spogomi-create-startsAt" }).props["aria-describedby"]).toBe("spogomi-create-startsAt-error");
+    expect(textContent(renderer.root.findByProps({ id: "spogomi-create-startsAt-error" }))).toContain("Saisissez une date de début valide.");
+    renderer.unmount();
+  });
+
+  it("keeps a server reference code visible for non-validation failures", async () => {
+    const form = buildForm();
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "Une erreur serveur est survenue.", referenceCode: "ERR-SPOGOMI-1" }), { status: 500 }));
+    const { renderer, submit } = getFormSubmit();
+
+    await act(async () => { submit({ preventDefault: vi.fn(), currentTarget: form }); await Promise.resolve(); });
+
+    expect(textContent(renderer.root.findByProps({ id: "spogomi-create-error-summary" }))).toContain("ERR-SPOGOMI-1");
+    expect(renderer.root.findByProps({ id: "spogomi-create-name" }).props["aria-invalid"]).toBe(false);
+    expect(form.reset).not.toHaveBeenCalled();
     renderer.unmount();
   });
 

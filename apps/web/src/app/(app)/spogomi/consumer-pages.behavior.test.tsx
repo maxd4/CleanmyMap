@@ -134,9 +134,9 @@ describe("SPOGOMI consumer pages", () => {
     expect(missingContext).toContain("lien privé et contextualisé");
     expect(missingContext).toContain("/spogomi#spogomi-assistance");
     expect(missingContext).not.toContain("event-1:secret-token");
-    mocks.requireAdminAccess.mockResolvedValueOnce({ ok: false, status: 401 });
+    mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: false, status: 401 });
     await expect(SpogomiOrganizerDashboardPage()).rejects.toThrow("redirect:/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements");
-    mocks.requireAdminAccess.mockResolvedValueOnce({ ok: true, userId: "organizer-1" });
+    mocks.requireAuthenticatedAccess.mockResolvedValueOnce({ ok: true, userId: "organizer-1" });
     await expect(SpogomiOrganizerDashboardPage()).rejects.toThrow("redirect:/spogomi/mes-evenements");
   });
 });

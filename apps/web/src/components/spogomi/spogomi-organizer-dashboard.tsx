@@ -27,15 +27,37 @@ function inputClassName() {
   return "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200";
 }
 
-function errorMessage(value: unknown, fallback: string): string {
-  if (typeof value !== "object" || value === null) return fallback;
+type CreationField = "name" | "locationLabel" | "mode" | "startsAt" | "endsAt";
+type FieldErrors = Partial<Record<CreationField, string[]>>;
+type ParsedCreationError = { message: string; fieldErrors: FieldErrors; referenceCode: string | null };
+
+const FIELD_LABELS: Record<CreationField, string> = {
+  name: "Nom",
+  locationLabel: "Lieu",
+  mode: "Mode",
+  startsAt: "Début",
+  endsAt: "Fin",
+};
+
+function parseCreationError(value: unknown, fallback: string): ParsedCreationError {
+  const result: ParsedCreationError = { message: fallback, fieldErrors: {}, referenceCode: null };
+  if (typeof value !== "object" || value === null) return result;
   const record = value as Record<string, unknown>;
+  if (typeof record.error === "string") result.message = record.error;
+  if (typeof record.referenceCode === "string") result.referenceCode = record.referenceCode;
   if (typeof record.details === "object" && record.details !== null) {
-    const details = Object.entries(record.details as Record<string, unknown>)
-      .flatMap(([field, messages]) => Array.isArray(messages) ? messages.filter((message): message is string => typeof message === "string").map((message) => `${field}: ${message}`) : []);
-    if (details.length) return details.join("\n");
+    for (const [field, messages] of Object.entries(record.details as Record<string, unknown>)) {
+      if (!Object.hasOwn(FIELD_LABELS, field) || !Array.isArray(messages)) continue;
+      const safeMessages = messages.filter((message): message is string => typeof message === "string");
+      if (safeMessages.length) result.fieldErrors[field as CreationField] = safeMessages;
+    }
   }
-  return typeof record.error === "string" ? record.error : fallback;
+  return result;
+}
+
+function FieldError({ field, messages }: { field: CreationField; messages?: readonly string[] }) {
+  if (!messages?.length) return null;
+  return <div id={`spogomi-create-${field}-error`} className="text-sm font-semibold text-red-700"><ul className="list-disc pl-5">{messages.map((message) => <li key={message}>{message}</li>)}</ul></div>;
 }
 
 export type SpogomiOrganizerDashboardView = "all" | "events" | "create";
@@ -53,6 +75,8 @@ export function SpogomiOrganizerDashboard({
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [referenceCode, setReferenceCode] = useState<string | null>(null);
   const creationAttemptRef = useRef<SpogomiCreationAttempt | null>(null);
   const submissionInFlightRef = useRef(false);
 
@@ -65,17 +89,21 @@ export function SpogomiOrganizerDashboard({
     setPending(true);
     setMessage(null);
     setError(null);
+    setFieldErrors({});
+    setReferenceCode(null);
     const form = new FormData(formElement);
     const startsAt = String(form.get("startsAt") ?? "");
     const endsAt = String(form.get("endsAt") ?? "");
     if (!startsAt) {
       setError("Saisissez une date de début valide et, si nécessaire, une date de fin valide.");
+      setFieldErrors({ startsAt: ["Saisissez une date de début valide."] });
       submissionInFlightRef.current = false;
       setPending(false);
       return;
     }
     if (endsAt && endsAt < startsAt) {
       setError("La date de fin doit être postérieure ou égale au début.");
+      setFieldErrors({ endsAt: ["La date de fin doit être postérieure ou égale au début."] });
       submissionInFlightRef.current = false;
       setPending(false);
       return;
@@ -105,7 +133,13 @@ export function SpogomiOrganizerDashboard({
         }),
       });
       const body: unknown = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(errorMessage(body, "La compétition n’a pas pu être créée."));
+      if (!response.ok) {
+        const parsedError = parseCreationError(body, "La compétition n’a pas pu être créée.");
+        setError(parsedError.message);
+        setFieldErrors(parsedError.fieldErrors);
+        setReferenceCode(parsedError.referenceCode);
+        return;
+      }
       const eventSlug = typeof body === "object" && body !== null && "eventSlug" in body && typeof body.eventSlug === "string" ? body.eventSlug : null;
       creationAttemptRef.current = null;
       formElement.reset();
@@ -114,6 +148,8 @@ export function SpogomiOrganizerDashboard({
       else router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "La compétition n’a pas pu être créée.");
+      setFieldErrors({});
+      setReferenceCode(null);
     } finally {
       submissionInFlightRef.current = false;
       setPending(false);
@@ -134,11 +170,16 @@ export function SpogomiOrganizerDashboard({
           </div>
         </div>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ createEvent(event); }}>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Nom<input className={inputClassName()} name="name" required maxLength={160} /></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Lieu<input className={inputClassName()} name="locationLabel" required maxLength={200} /></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Début<input className={inputClassName()} name="startsAt" type="datetime-local" required /></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input className={inputClassName()} name="endsAt" type="datetime-local" /></label>
+          {error ? <div id="spogomi-create-error-summary" role="alert" aria-live="assertive" tabIndex={-1} className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 md:col-span-2">
+            <p className="font-black">{error}</p>
+            {Object.entries(fieldErrors).length ? <ul className="list-disc space-y-1 pl-5">{Object.entries(fieldErrors).map(([field, messages]) => <li key={field}><a className="font-bold underline" href={`#spogomi-create-${field}`}>{FIELD_LABELS[field as CreationField] ?? field} : {messages?.join(" ")}</a></li>)}</ul> : null}
+            {referenceCode ? <p>Référence de suivi : <code className="font-bold">{referenceCode}</code></p> : null}
+          </div> : null}
+          <label htmlFor="spogomi-create-name" className="space-y-1 text-sm font-bold text-slate-800">Nom<input id="spogomi-create-name" className={inputClassName()} name="name" required maxLength={160} aria-invalid={Boolean(fieldErrors.name?.length)} aria-describedby={fieldErrors.name?.length ? "spogomi-create-name-error" : undefined} /><FieldError field="name" messages={fieldErrors.name} /></label>
+          <label htmlFor="spogomi-create-locationLabel" className="space-y-1 text-sm font-bold text-slate-800">Lieu<input id="spogomi-create-locationLabel" className={inputClassName()} name="locationLabel" required maxLength={200} aria-invalid={Boolean(fieldErrors.locationLabel?.length)} aria-describedby={fieldErrors.locationLabel?.length ? "spogomi-create-locationLabel-error" : undefined} /><FieldError field="locationLabel" messages={fieldErrors.locationLabel} /></label>
+          <label htmlFor="spogomi-create-mode" className="space-y-1 text-sm font-bold text-slate-800">Mode<select id="spogomi-create-mode" className={inputClassName()} name="mode" defaultValue="casual" aria-invalid={Boolean(fieldErrors.mode?.length)} aria-describedby={fieldErrors.mode?.length ? "spogomi-create-mode-error" : undefined}><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select><FieldError field="mode" messages={fieldErrors.mode} /></label>
+          <label htmlFor="spogomi-create-startsAt" className="space-y-1 text-sm font-bold text-slate-800">Début<input id="spogomi-create-startsAt" className={inputClassName()} name="startsAt" type="datetime-local" required aria-invalid={Boolean(fieldErrors.startsAt?.length)} aria-describedby={fieldErrors.startsAt?.length ? "spogomi-create-startsAt-error" : undefined} /><FieldError field="startsAt" messages={fieldErrors.startsAt} /></label>
+          <label htmlFor="spogomi-create-endsAt" className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input id="spogomi-create-endsAt" className={inputClassName()} name="endsAt" type="datetime-local" aria-invalid={Boolean(fieldErrors.endsAt?.length)} aria-describedby={fieldErrors.endsAt?.length ? "spogomi-create-endsAt-error" : undefined} /><FieldError field="endsAt" messages={fieldErrors.endsAt} /></label>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">
             <CmmButton type="submit" tone="primary" loading={pending}><Plus size={16} />Créer en privé</CmmButton>
             {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
