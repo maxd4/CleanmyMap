@@ -81,6 +81,26 @@ et ne participe pas à cette hiérarchie. Une session anonyme peut consulter la
 fiche et ses informations publiques ; les étapes nécessitant un compte indiquent
 `Accès requis` et redirigent vers la connexion sans divulguer d'état privé.
 
+Les retours Clerk utilisent uniquement des routes internes construites par
+`navigation-intent.ts`. Les paramètres publics facultatifs sont limités à une
+intention d'interface allowlistée (`focus`) et à un type de division public
+(`casual` ou `world_cup`) ; la fiche vérifie que la division appartient à
+l'édition avant de l'utiliser. Le hash ramène l'utilisateur à l'ancre de
+l'action demandée. Aucun code d'identité, secret, roster, tiers ou preuve
+d'habilitation n'est placé dans `redirect_url`, et `resolveSafeAuthRedirect`
+refuse les destinations externes, protocol-relative ou malformées.
+
+Le chargement du catalogue mutualise les lectures publiques d'inscriptions et
+d'organisateurs pour toutes les éditions de la requête. Une projection complète
+des résultats reste dans son owner canonique lorsqu'une politique de résultats
+est visible, car la publication doit être vérifiée par les snapshots sources ;
+elle est évitée lorsque `public_results_visibility = hidden`, qui est déjà
+indisponible publiquement. Le catalogue ne charge aucune donnée privée et son
+tri reste effectué après projection : éditions à venir/en cours, puis terminées
+par `starts_at` décroissant. Une pagination produit n'est pas ajoutée sans
+mesure de croissance ou de coût démontrée ; la décision devra être réévaluée si
+le volume public rend la projection complète mesurablement coûteuse.
+
 ```text
 Édition parente SPOGOMI (casual | world_cup | mixed)
   ├── Division(s) typée(s) (casual et/ou world_cup)

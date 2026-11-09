@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { SpogomiPersonalRelation } from "./personal-events-service";
 import {
   buildSpogomiCatalogHref,
+  buildSpogomiEventHref,
+  buildSpogomiEventSignInHref,
   buildSpogomiEventSpaceHref,
+  parseSpogomiEventIntent,
   parseSpogomiCatalogIntent,
 } from "./navigation-intent";
 
@@ -33,5 +36,13 @@ describe("SPOGOMI navigation intent", () => {
     expect(buildSpogomiEventSpaceHref(space(["organizer"]), "organizers", "bilan")).toBe("/spogomi/edition/espace#bilan");
     expect(buildSpogomiEventSpaceHref({ ...space(["participant"]), links: { public: "/spogomi/edition", space: "/spogomi/edition/espace" } }, "volunteers")).toBeNull();
     expect(buildSpogomiEventSpaceHref({ ...space(["organizer", "participant"]) }, "volunteers")).toBeNull();
+  });
+
+  it("keeps only allowlisted event focus and division intent across Clerk", () => {
+    expect(parseSpogomiEventIntent({ focus: "registration", division: "world_cup" })).toEqual({ focus: "registration", division: "world_cup" });
+    expect(parseSpogomiEventIntent({ focus: "javascript:alert(1)", division: "division-secret" })).toEqual({ focus: null, division: null });
+    expect(parseSpogomiEventIntent({ focus: ["team", "identity"], division: ["casual"] })).toEqual({ focus: null, division: null });
+    expect(buildSpogomiEventHref("paris-2026", { focus: "registration", division: "world_cup" })).toBe("/spogomi/paris-2026?focus=registration&division=world_cup#spogomi-sports-registration");
+    expect(buildSpogomiEventSignInHref("paris-2026", { focus: "team", division: "casual" })).toBe("/sign-in?redirect_url=%2Fspogomi%2Fparis-2026%3Ffocus%3Dteam%26division%3Dcasual%23spogomi-teams");
   });
 });

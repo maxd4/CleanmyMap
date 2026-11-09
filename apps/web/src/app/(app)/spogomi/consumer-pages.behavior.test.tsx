@@ -85,6 +85,19 @@ describe("SPOGOMI consumer pages", () => {
     expect(markup).not.toContain("requesterClerkId");
   });
 
+  it("preserves a validated division and action focus in the Clerk return target", async () => {
+    renderToStaticMarkup(await SpogomiPublicEventPage({
+      params: Promise.resolve({ eventSlug: "paris-2026" }),
+      searchParams: Promise.resolve({ focus: "registration", division: "world_cup" }),
+    }));
+    expect(mocks.loadSpogomiEventJourney).toHaveBeenCalledWith(expect.objectContaining({
+      signInHref: "/sign-in?redirect_url=%2Fspogomi%2Fparis-2026%3Ffocus%3Dquiz%26division%3Dworld_cup%23spogomi-sports-registration",
+      signInHrefByStep: expect.objectContaining({
+        registration: "/sign-in?redirect_url=%2Fspogomi%2Fparis-2026%3Ffocus%3Dregistration%26division%3Dworld_cup%23spogomi-sports-registration",
+      }),
+    }));
+  });
+
   it("discloses the synthetic Cachan scenario when it is actually published", async () => {
     mocks.loadPublishedSpogomiEventBySlug.mockResolvedValueOnce({ ...event, name: "SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL" });
     const markup = renderToStaticMarkup(await SpogomiPublicEventPage({ params: Promise.resolve({ eventSlug: "cachan-demo" }) }));

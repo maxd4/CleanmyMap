@@ -33,11 +33,13 @@ export function SpogomiAdmissionRequestCard({
   eventId,
   lifecycle,
   divisions,
+  initialDivisionId,
   signInHref,
 }: {
   eventId: string;
   lifecycle: "upcoming" | "in_progress" | "finished" | "cancelled" | "postponed";
   divisions: Division[];
+  initialDivisionId?: string;
   signInHref: string;
 }) {
   const { isLoaded, isSignedIn } = useAuth();
@@ -45,7 +47,7 @@ export function SpogomiAdmissionRequestCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [context, setContext] = useState("");
-  const [divisionId, setDivisionId] = useState(divisions[0]?.id ?? "");
+  const [divisionId, setDivisionId] = useState(initialDivisionId && divisions.some((division) => division.id === initialDivisionId) ? initialDivisionId : divisions[0]?.id ?? "");
   const [kind, setKind] = useState<RequestKind>(lifecycle === "in_progress" ? "presence_regularization" : "registration");
   const [quizProofs, setQuizProofs] = useState<Record<string, string>>({});
 

@@ -1,4 +1,5 @@
 import type { SpogomiPersonalEvent, SpogomiPersonalRelation } from "./personal-events-service";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 export const SPOGOMI_CATALOG_JOURNEYS = ["volunteers", "referees", "organizers"] as const;
 export type SpogomiCatalogJourney = (typeof SPOGOMI_CATALOG_JOURNEYS)[number];
@@ -24,6 +25,44 @@ export type SpogomiCatalogIntent = {
   focus: SpogomiCatalogFocus | null;
 };
 
+export const SPOGOMI_EVENT_FOCUSES = [
+  "quiz",
+  "registration",
+  "team",
+  "identity",
+  "assistance",
+  "volunteer-help",
+  "practical",
+  "results",
+  "contributions",
+  "attestations",
+] as const;
+export type SpogomiEventFocus = (typeof SPOGOMI_EVENT_FOCUSES)[number];
+export type SpogomiEventDivisionType = "casual" | "world_cup";
+
+type RawEventIntent = {
+  focus?: string | string[];
+  division?: string | string[];
+};
+
+export type SpogomiEventIntent = {
+  focus: SpogomiEventFocus | null;
+  division: SpogomiEventDivisionType | null;
+};
+
+const EVENT_FOCUS_ANCHORS: Record<SpogomiEventFocus, string> = {
+  quiz: "spogomi-sports-registration",
+  registration: "spogomi-sports-registration",
+  team: "spogomi-teams",
+  identity: "spogomi-identity",
+  assistance: "spogomi-identity",
+  "volunteer-help": "spogomi-volunteer-help",
+  practical: "spogomi-practical-information",
+  results: "spogomi-public-results",
+  contributions: "spogomi-contributions",
+  attestations: "spogomi-contributions",
+};
+
 const JOURNEY_FOCUSES: Record<SpogomiCatalogJourney, readonly SpogomiCatalogFocus[]> = {
   volunteers: [],
   referees: ["attendance", "operations", "results", "arbitration"],
@@ -40,6 +79,42 @@ function isJourney(value: string | undefined): value is SpogomiCatalogJourney {
 
 function isFocus(value: string | undefined): value is SpogomiCatalogFocus {
   return value !== undefined && (SPOGOMI_CATALOG_FOCUSES as readonly string[]).includes(value);
+}
+
+function isEventFocus(value: string | undefined): value is SpogomiEventFocus {
+  return value !== undefined && (SPOGOMI_EVENT_FOCUSES as readonly string[]).includes(value);
+}
+
+function isEventDivision(value: string | undefined): value is SpogomiEventDivisionType {
+  return value === "casual" || value === "world_cup";
+}
+
+export function parseSpogomiEventIntent(params: RawEventIntent | undefined): SpogomiEventIntent {
+  const focusValue = single(params?.focus);
+  const divisionValue = single(params?.division);
+  return {
+    focus: isEventFocus(focusValue) ? focusValue : null,
+    division: isEventDivision(divisionValue) ? divisionValue : null,
+  };
+}
+
+export function buildSpogomiEventHref(
+  slug: string,
+  options: { focus?: SpogomiEventFocus; division?: SpogomiEventDivisionType } = {},
+): string {
+  const params = new URLSearchParams();
+  if (options.focus) params.set("focus", options.focus);
+  if (options.division) params.set("division", options.division);
+  const query = params.toString();
+  const hash = options.focus ? `#${EVENT_FOCUS_ANCHORS[options.focus]}` : "";
+  return `/spogomi/${encodeURIComponent(slug)}${query ? `?${query}` : ""}${hash}`;
+}
+
+export function buildSpogomiEventSignInHref(
+  slug: string,
+  options: { focus?: SpogomiEventFocus; division?: SpogomiEventDivisionType } = {},
+): string {
+  return buildSignInRedirectHref(buildSpogomiEventHref(slug, options));
 }
 
 export function parseSpogomiCatalogIntent(params: RawCatalogIntent | undefined): SpogomiCatalogIntent {

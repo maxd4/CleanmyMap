@@ -10,7 +10,7 @@ import { loadSpogomiIdentityState } from "./identity-link";
 import { loadSpogomiRegistrationQuiz, loadSpogomiRegistrationQuizProofsForUser } from "./preparation/registration-quiz-service";
 import { loadSpogomiVolunteerSummaryForUser } from "./volunteer";
 
-function emptyInput(event: SpogomiPublicEvent, signInHref: string): SpogomiEventJourneyInput {
+function emptyInput(event: SpogomiPublicEvent, signInHref: string, signInHrefByStep?: SpogomiEventJourneyInput["signInHrefByStep"]): SpogomiEventJourneyInput {
   return {
     isAuthenticated: false,
     lifecycle: event.lifecycle,
@@ -27,6 +27,7 @@ function emptyInput(event: SpogomiPublicEvent, signInHref: string): SpogomiEvent
     refereeSpaceHref: null,
     refereeCapabilities: [],
     signInHref,
+    signInHrefByStep,
   };
 }
 
@@ -73,8 +74,9 @@ export async function loadSpogomiEventJourney(params: {
   event: SpogomiPublicEvent;
   userId: string | null;
   signInHref: string;
+  signInHrefByStep?: SpogomiEventJourneyInput["signInHrefByStep"];
 }) {
-  const base = emptyInput(params.event, params.signInHref);
+  const base = emptyInput(params.event, params.signInHref, params.signInHrefByStep);
   if (!params.userId) return buildSpogomiEventJourney(base);
 
   const supabase = getSupabaseServerClient(true);

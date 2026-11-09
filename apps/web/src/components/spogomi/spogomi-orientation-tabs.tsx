@@ -23,6 +23,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmIcon } from "@/components/ui/cmm-icon";
 import { buildSpogomiCatalogHref } from "@/lib/spogomi/navigation-intent";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { cn } from "@/lib/utils";
 import { SpogomiActionInfo } from "./spogomi-action-info";
 import type { SpogomiOrientationProgressKey, SpogomiOrientationProgressProof } from "@/lib/spogomi/orientation-progress";
@@ -332,7 +333,7 @@ export function SpogomiOrientationTabs({ isAuthenticated, progress = [] }: { isA
 
   function actionHref(action: OrientationAction): string {
     return action.requiresAuthentication && !isAuthenticated
-      ? `/sign-in?redirect_url=${encodeURIComponent(action.href)}`
+      ? buildSignInRedirectHref(action.href)
       : action.href;
   }
 

@@ -90,6 +90,38 @@ export async function loadSpogomiOrganizerForAction(params: {
   });
 }
 
+export async function loadSpogomiPublicOrganizersForActions(params: {
+  supabase: SupabaseClient;
+  actionIds: readonly string[];
+  eventTerritories: ReadonlyMap<string, string>;
+}): Promise<Map<string, SpogomiPublicOrganizer | null>> {
+  const actionIds = [...new Set(params.actionIds)];
+  if (!actionIds.length) return new Map();
+  const actionResult = await params.supabase
+    .from("actions")
+    .select("id, organizer_id, organizer_name, status, published_at, moderation_visibility")
+    .in("id", actionIds);
+  if (actionResult.error) throw actionResult.error;
+  const partnerEntries = await loadAcceptedPartnerEntries();
+  const organizers = new Map<string, SpogomiPublicOrganizer | null>();
+  for (const actionId of actionIds) {
+    const action = (actionResult.data ?? []).find((candidate) => String(candidate.id) === actionId) as ActionRow | undefined;
+    const partnerEntry = partnerEntries.find(
+      (entry) =>
+        entry.publicationStatus === "accepted" &&
+        entry.verificationStatus === "verifie" &&
+        entry.organizerDirectoryId === action?.organizer_id,
+    );
+    organizers.set(actionId, buildSpogomiPublicOrganizer({
+      organizerId: action?.organizer_id,
+      organizerName: action?.organizer_name,
+      eventTerritory: params.eventTerritories.get(actionId) ?? "",
+      partnerEntry: partnerEntry ? { id: partnerEntry.id, websiteUrl: partnerEntry.websiteUrl } : null,
+    }));
+  }
+  return organizers;
+}
+
 async function loadParticipantIdentityFacts(
   supabase: SupabaseClient,
   eventIds: string[],

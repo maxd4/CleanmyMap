@@ -3,11 +3,12 @@ vi.mock("server-only", () => ({}));
 
 const serviceMocks = vi.hoisted(() => ({
   organizer: vi.fn(),
+  organizers: vi.fn(),
   gallery: vi.fn(),
   projection: vi.fn(),
 }));
 
-vi.mock("./partner-impact-service", () => ({ loadSpogomiOrganizerForAction: serviceMocks.organizer }));
+vi.mock("./partner-impact-service", () => ({ loadSpogomiOrganizerForAction: serviceMocks.organizer, loadSpogomiPublicOrganizersForActions: serviceMocks.organizers }));
 vi.mock("./photo-gallery-service", () => ({ loadPublishedSpogomiGalleryForAction: serviceMocks.gallery }));
 vi.mock("./results/results-projection-service", () => ({ loadSpogomiResultsProjection: serviceMocks.projection }));
 
@@ -22,7 +23,9 @@ import {
 } from "./public-service";
 
 function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
+  const calls: string[] = [];
   const from = vi.fn((table: string) => {
+    calls.push(table);
     let selectValue = "";
     const defaultRow = {
       id: "event-1",
@@ -63,7 +66,7 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
     void selectValue;
     return query;
   });
-  return { from };
+  return { from, calls };
 }
 
 describe("SPOGOMI public identity and lifecycle", () => {
@@ -91,6 +94,7 @@ describe("SPOGOMI public identity and lifecycle", () => {
   it("loads the published event projections without exposing unpublished actions", async () => {
     const supabase = makeSupabase();
     serviceMocks.organizer.mockResolvedValue({ name: "Association Clean" });
+    serviceMocks.organizers.mockResolvedValue(new Map([["action-1", { name: "Association Clean" }]]));
     serviceMocks.gallery.mockResolvedValue([{ id: "photo-1" }]);
     serviceMocks.projection.mockResolvedValue({ results: { visibility: "certified" } });
 
@@ -119,10 +123,30 @@ describe("SPOGOMI public identity and lifecycle", () => {
       { id: "cancelled", event_slug: "cancelled", name: "Annulée", location_label: "Lille", mode: "casual", state: "cancelled", starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden" },
     ];
     serviceMocks.organizer.mockResolvedValue(null);
+    serviceMocks.organizers.mockResolvedValue(new Map([["action-1", null]]));
+    serviceMocks.projection.mockClear();
     serviceMocks.projection.mockResolvedValue({ results: { lifecycleStatus: "unavailable" } });
 
     const events = await listPublishedSpogomiEvents(makeSupabase(rows) as never);
     expect(events.map((event) => event.slug)).toEqual(["in-progress", "upcoming", "finished-new", "finished-old"]);
     expect(events.every((event) => event.state !== "cancelled")).toBe(true);
+    expect(serviceMocks.projection).not.toHaveBeenCalled();
+  });
+
+  it("batches public registration and organizer reads across catalog editions", async () => {
+    serviceMocks.organizers.mockClear();
+    const supabase = makeSupabase([
+      { id: "event-1", event_slug: "paris", name: "Paris", location_label: "Paris", mode: "casual", state: "active", starts_at: "2026-11-08T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden" },
+      { id: "event-2", event_slug: "lyon", name: "Lyon", location_label: "Lyon", mode: "casual", state: "active", starts_at: "2026-12-08T08:00:00.000Z", ends_at: null, action_id: "action-2", public_results_visibility: "hidden" },
+    ]);
+    serviceMocks.organizers.mockResolvedValue(new Map([["action-1", null], ["action-2", null]]));
+    serviceMocks.projection.mockResolvedValue({ results: { lifecycleStatus: "unavailable" } });
+
+    await listPublishedSpogomiEvents(supabase as never);
+
+    expect(supabase.calls.filter((table) => table === "spogomi_divisions")).toHaveLength(1);
+    expect(supabase.calls.filter((table) => table === "spogomi_participants")).toHaveLength(1);
+    expect(serviceMocks.organizers).toHaveBeenCalledTimes(1);
+    expect(serviceMocks.organizers.mock.calls[0]?.[0]).toMatchObject({ actionIds: ["action-1", "action-2"] });
   });
 });

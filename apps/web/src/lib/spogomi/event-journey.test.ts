@@ -65,4 +65,16 @@ describe("SPOGOMI event journey", () => {
     expect(journey.next).toMatchObject({ key: "quiz", status: "access_required", href: "/sign-in?redirect_url=%2Fspogomi%2Fparis" });
     expect(journey.steps.find((step) => step.key === "practical")).toMatchObject({ status: "todo", href: "#spogomi-practical-information" });
   });
+
+  it("uses the step-specific Clerk return target instead of losing the requested action", () => {
+    const journey = buildSpogomiEventJourney(input({
+      isAuthenticated: false,
+      signInHrefByStep: {
+        quiz: "/sign-in?redirect_url=%2Fspogomi%2Fparis%3Ffocus%3Dquiz%23spogomi-sports-registration",
+        team: "/sign-in?redirect_url=%2Fspogomi%2Fparis%3Ffocus%3Dteam%26division%3Dcasual%23spogomi-teams",
+      },
+    }));
+    expect(journey.steps.find((step) => step.key === "quiz")?.href).toContain("focus%3Dquiz");
+    expect(journey.steps.find((step) => step.key === "team")?.href).toContain("focus%3Dteam");
+  });
 });

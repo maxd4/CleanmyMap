@@ -48,6 +48,7 @@ export type SpogomiEventJourneyInput = {
   refereeSpaceHref: string | null;
   refereeCapabilities: readonly ("attendance" | "operations" | "arbitration" | "results")[];
   signInHref: string;
+  signInHrefByStep?: Partial<Record<SpogomiJourneyStepKey, string>>;
 };
 
 export function journeyStatusLabel(status: SpogomiJourneyStatus): string {
@@ -59,8 +60,8 @@ export function journeyStatusLabel(status: SpogomiJourneyStatus): string {
   return "Indéterminé";
 }
 
-function sportsHref(input: SpogomiEventJourneyInput, anchor: string): string {
-  return input.isAuthenticated ? anchor : input.signInHref;
+function sportsHref(input: SpogomiEventJourneyInput, key: SpogomiJourneyStepKey, anchor: string): string {
+  return input.isAuthenticated ? anchor : input.signInHrefByStep?.[key] ?? input.signInHref;
 }
 
 function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
@@ -104,15 +105,15 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
       : input.hasActiveAttestation ? "todo" : "later";
 
   return [
-    { key: "quiz", title: "Valider le quiz obligatoire", description: "Lire le règlement applicable puis répondre au quiz de la division et à sa version en vigueur.", status: quizStatus, href: sportsHref(input, "#spogomi-sports-registration") },
-    { key: "registration", title: "Demander son inscription sportive", description: "Envoyer une nouvelle demande uniquement après validation du quiz et si les inscriptions sont autorisées.", status: registrationStatus, href: sportsHref(input, "#spogomi-sports-registration") },
-    { key: "admission", title: "Suivre sa demande d’admission", description: "La décision de l’organisation ne réserve pas de place et reste distincte du rattachement à une équipe.", status: admissionStatus, href: sportsHref(input, "#spogomi-sports-registration") },
-    { key: "identity", title: "Rattacher son compte", description: "Saisir le code individuel remis par l’organisation lorsque l’admission est vérifiée.", status: identityStatus, href: sportsHref(input, "#spogomi-identity") },
-    { key: "team", title: "Rejoindre ou retrouver son équipe", description: "Utiliser une équipe publiée ou une invitation autorisée ; le roster reste privé.", status: teamStatus, href: sportsHref(input, "#spogomi-teams") },
+    { key: "quiz", title: "Valider le quiz obligatoire", description: "Lire le règlement applicable puis répondre au quiz de la division et à sa version en vigueur.", status: quizStatus, href: sportsHref(input, "quiz", "#spogomi-sports-registration") },
+    { key: "registration", title: "Demander son inscription sportive", description: "Envoyer une nouvelle demande uniquement après validation du quiz et si les inscriptions sont autorisées.", status: registrationStatus, href: sportsHref(input, "registration", "#spogomi-sports-registration") },
+    { key: "admission", title: "Suivre sa demande d’admission", description: "La décision de l’organisation ne réserve pas de place et reste distincte du rattachement à une équipe.", status: admissionStatus, href: sportsHref(input, "admission", "#spogomi-sports-registration") },
+    { key: "identity", title: "Rattacher son compte", description: "Saisir le code individuel remis par l’organisation lorsque l’admission est vérifiée.", status: identityStatus, href: sportsHref(input, "identity", "#spogomi-identity") },
+    { key: "team", title: "Rejoindre ou retrouver son équipe", description: "Utiliser une équipe publiée ou une invitation autorisée ; le roster reste privé.", status: teamStatus, href: sportsHref(input, "team", "#spogomi-teams") },
     { key: "practical", title: "Lire les informations pratiques", description: "Retrouver le lieu, les horaires, le parcours et les consignes vérifiées avant l’épreuve.", status: practicalStatus, href: "#spogomi-practical-information" },
     { key: "results", title: "Consulter les résultats publics", description: "Accéder uniquement aux classements effectivement publiés par l’organisation.", status: resultsStatus, href: "#spogomi-public-results" },
-    { key: "contributions", title: "Consulter ses contributions", description: "Voir les missions rattachées au compte lorsqu’elles sont certifiées par une preuve serveur.", status: contributionsStatus, href: sportsHref(input, "#spogomi-contributions") },
-    { key: "attestations", title: "Télécharger ses attestations", description: "Télécharger une attestation seulement lorsqu’une certification active existe.", status: attestationsStatus, href: sportsHref(input, "#spogomi-contributions") },
+    { key: "contributions", title: "Consulter ses contributions", description: "Voir les missions rattachées au compte lorsqu’elles sont certifiées par une preuve serveur.", status: contributionsStatus, href: sportsHref(input, "contributions", "#spogomi-contributions") },
+    { key: "attestations", title: "Télécharger ses attestations", description: "Télécharger une attestation seulement lorsqu’une certification active existe.", status: attestationsStatus, href: sportsHref(input, "attestations", "#spogomi-contributions") },
   ];
 }
 
