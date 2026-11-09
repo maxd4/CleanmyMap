@@ -34,6 +34,8 @@ export const contractedApiFamilies = new Set([
 // widening this inventory to the whole family.
 export const contractedApiRoutes = new Set([
   "gamification/territorial-leaderboard/overview",
+  "spogomi/events/[eventId]/volunteer-help-proposals",
+  "spogomi/events/[eventId]/volunteer-help-proposals/review",
 ]);
 
 export const apiRoot = dirname(fileURLToPath(import.meta.url));

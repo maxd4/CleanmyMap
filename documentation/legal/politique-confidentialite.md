@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 20 septembre 2026**
+**Dernière mise à jour : 9 novembre 2026**
 
 Cette politique décrit les traitements de données personnelles mis en œuvre
 par CleanMyMap au regard du code et de la configuration du service web. Les
@@ -41,6 +41,11 @@ Selon les parcours utilisés, CleanMyMap traite notamment :
   onboarding partenaire et demandes RGPD, notamment l'email, le type de
   demande, le message, la page d'origine, l'identifiant de compte lorsqu'il
   est disponible et l'état de notification ;
+- **Proposition d'aide SPOGOMI** : nom, prénom, e-mail ou téléphone, type d'aide,
+  motivations, compétences utiles et expérience en cleanwalks lorsqu'un compte
+  authentifié propose son aide à l'organisation d'une édition. Ces données sont
+  visibles uniquement par le demandeur et l'organisation habilitée de cette
+  édition ; elles ne créent pas une participation sportive.
 - **Notifications de contenu** : URL exacte, motif circonstancié, type ou
   identifiant technique facultatif, nom/email lorsqu'ils sont fournis, motif
   d'exception d'identité, identifiant de suivi et états de traitement. Le
@@ -76,6 +81,7 @@ parrainage ou un contenu.
 | Analytics et mesure d'audience | Mesurer les parcours après accord | Consentement |
 | Sentry | Détecter, diagnostiquer et prévenir les erreurs, abus et incidents | Intérêt légitime de sécurité et de fonctionnement |
 | Parrainage et progression | Relier une invitation et fournir les éléments de progression | Exécution du service ; intérêt légitime d'animation |
+| Proposition d'aide SPOGOMI | Recevoir, examiner et suivre une proposition privée pour une édition choisie | Mesures précontractuelles et exécution du service demandées ; intérêt légitime de sécurité |
 | Classement public sur opt-in | Afficher une projection publique limitée du profil lorsque la personne active son choix | Consentement ou choix explicite de la personne ; retrait possible depuis `/reglages` |
 
 Les traitements facultatifs reposant sur le consentement, notamment analytics,
@@ -190,6 +196,12 @@ runtime :
   audits suivent le besoin du service, les paramètres de publication et les
   nécessités de sécurité ou de preuve. Aucune durée générique non vérifiée
   n'est annoncée ;
+- les propositions d'aide SPOGOMI portent une borne `retention_until` de 24 mois
+  après leur création, prolongée de 24 mois après une décision. Cette borne
+  rend la suppression éligible et vérifiable ; le dépôt ne prouve pas encore
+  l'exécution planifiée d'un job de purge. L'accès, la rectification et
+  l'effacement peuvent être demandés via le contact RGPD ; aucune coordonnée
+  n'est publiée.
 - les faits de paiement et événements Stripe persistés dans les tables serveur
   suivent les besoins de confirmation, de remboursement, de prévention de la
   fraude et de traçabilité applicable. Aucun mécanisme de purge ni durée fixe

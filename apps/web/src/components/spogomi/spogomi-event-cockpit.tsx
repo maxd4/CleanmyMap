@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ClipboardCheck, Eye, FileText, Leaf, Settings2, ShieldCheck, Trophy, Users } from "lucide-react";
+import { CalendarDays, ClipboardCheck, Eye, FileText, HandHelping, Leaf, Settings2, ShieldCheck, Trophy, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,8 +14,9 @@ import { SpogomiClosureSummary } from "./spogomi-closure-summary";
 import type { SpogomiFieldOperationsCapability } from "@/lib/spogomi/field-operations-service";
 import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
 import { SpogomiSyntheticDemoNotice } from "./spogomi-synthetic-demo-notice";
+import { SpogomiVolunteerHelpProposalsPanel } from "./spogomi-volunteer-help-proposals-panel";
 
-type CockpitSection = "presentation" | "operations" | SpogomiPreparationWorkspaceSection;
+type CockpitSection = "presentation" | "operations" | "help_proposals" | SpogomiPreparationWorkspaceSection;
 type SpogomiReviewerRole = "observer" | "referee" | "checkin";
 
 type CockpitEvent = {
@@ -39,6 +40,7 @@ const sectionLabels: Record<CockpitSection, string> = {
   bilan: "Bilan",
   settings: "Paramètres",
   operations: "Opérations terrain",
+  help_proposals: "Propositions d’aide",
 };
 
 const sectionIcons = {
@@ -50,6 +52,7 @@ const sectionIcons = {
   bilan: Leaf,
   settings: Settings2,
   operations: ClipboardCheck,
+  help_proposals: HandHelping,
 } satisfies Record<CockpitSection, typeof FileText>;
 
 function dateLabel(value: string | null, timeZone: string | null | undefined): string {
@@ -93,7 +96,7 @@ function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: rea
 function buildCockpitSections(organizer: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean): CockpitSection[] {
   const next = new Set<CockpitSection>(["presentation"]);
   if (organizer) {
-    for (const section of ["teams", "attendance", "operations", "results", "arbitration", "bilan", "settings"] as const) next.add(section);
+    for (const section of ["teams", "attendance", "operations", "help_proposals", "results", "arbitration", "bilan", "settings"] as const) next.add(section);
   }
   else {
     if (reviewerRoles.has("checkin")) next.add("attendance");
@@ -130,6 +133,7 @@ function CockpitSectionView(props: CockpitSectionProps) {
     case "arbitration": return cockpitWorkspaceSection(props, "Arbitrage", props.organizer ? <SpogomiPreparationWorkspace eventId={props.event.id} section="arbitration" showHeader={false} /> : <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiResultReviewPanel eventId={props.event.id} allowMutations={props.referee} allowDivisionSelection /></CmmCard>);
     case "bilan": return cockpitWorkspaceSection(props, "Bilan", <SpogomiPreparationWorkspace eventId={props.event.id} section="bilan" showHeader={false} />);
     case "settings": return cockpitWorkspaceSection(props, "Paramètres", <SpogomiPreparationWorkspace eventId={props.event.id} section="settings" showHeader={false} showAdminTeamJoinRequests={props.showAdminTeamJoinRequests} />);
+    case "help_proposals": return cockpitWorkspaceSection(props, "Propositions d’aide", <SpogomiVolunteerHelpProposalsPanel eventId={props.event.id} />);
   }
 }
 

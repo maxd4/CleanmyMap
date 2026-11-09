@@ -198,6 +198,38 @@ requise. La confirmation explicite est disponible par
 ne transforme jamais une notification en admission et n'annule aucun droit
 existant.
 
+### Proposition d'aide à l'organisation
+
+La fiche publique d'une édition publiée et à venir propose, pour un compte
+authentifié, un formulaire distinct de l'inscription sportive. Il collecte les
+coordonnées de contact (nom, prénom et au moins un e-mail ou téléphone valide),
+le type d'aide, les motivations, les compétences utiles et, facultativement,
+l'expérience en cleanwalks. Le quiz sportif n'est pas requis.
+
+La proposition est persistée dans `spogomi_volunteer_help_proposals`, liée au
+`userId` Clerk et à `event_id`, avec les statuts `pending`, `accepted`,
+`rejected` et `withdrawn`. Une clé d'idempotence rejoue la même soumission et
+un verrou transactionnel empêche deux propositions actives du même compte pour
+une édition. Aucun statut ne crée une participation, une mission certifiée, une
+habilitation ou une inscription sportive ; aucun e-mail, message ou
+notification n'est déclenché.
+
+La lecture de suivi est limitée au compte demandeur. La file de traitement est
+une projection privée réservée à l'organisateur/coorganisateur réellement
+habilité de cette édition, recontrôlée par l'API et la RPC PostgreSQL ; elle
+contient les coordonnées, motivations, compétences et expérience nécessaires au
+traitement. Les événements, les données anonymes et les coordonnées ne sont
+jamais projetés publiquement.
+
+La table et son historique sont service-only sous RLS. Les contrôles serveur
+refusent une édition non publiée, annulée, archivée ou dont la date de début est
+passée. Les soumissions sont limitées par compte authentifié et rate limiting ;
+un honeypot et une validation serveur complètent l'anti-spam. La durée maximale
+configurée est de 24 mois après la création, puis après la dernière décision via
+`retention_until`. Cette colonne rend l'éligibilité à la suppression vérifiable;
+le dépôt ne prétend pas qu'un job de purge est planifié. Les demandes d'accès,
+rectification et suppression passent par le contact RGPD existant.
+
 ## Index des modules
 
 - [Données, import et règlements](./spogomi-donnees-regles.md)

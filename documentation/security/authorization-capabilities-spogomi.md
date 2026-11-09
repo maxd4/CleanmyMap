@@ -29,6 +29,9 @@ referee + événement
 organizer/coorganizer + événement
 → gestion de l'événement et attribution/révocation d'accès
 
+organizer/coorganizer + événement
+→ lecture et traitement privés des propositions d'aide de cette édition
+
 admin/max actif + capacité globale consommée
 → supervision selon la capacité existante, sans élargissement implicite
 ```
@@ -38,6 +41,12 @@ projection de gestion peut lire le roster nominatif après son garde scoped ;
 elle ne doit jamais être réutilisée par l'observateur. Toute habilitation est
 bornée à un événement et toute tentative de mutation est revalidée côté
 serveur, même si l'interface masque l'action.
+
+Les propositions d'aide utilisent une projection privée dédiée. Le demandeur
+ne lit que ses propres lignes ; la file organisateur exige la capacité `manage`
+de l'événement et la RPC revalide le créateur ou la relation
+`action_organizers`. Cette frontière ne réutilise pas les demandes d'admission
+sportive et ne donne accès ni au roster ni aux résultats.
 
 ## 16. Checklist de conception
 

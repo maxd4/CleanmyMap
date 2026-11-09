@@ -31,11 +31,19 @@ function navigationSections(markup: string): string[] {
 describe("SpogomiEventCockpit", () => {
   it("keeps a persistent direct-link navigation and exposes all organizer sections", () => {
     const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage", "observe", "arbitrate", "assign_event_access"]} />);
-    for (const section of ["presentation", "teams", "attendance", "results", "arbitration", "bilan", "settings"]) {
+    for (const section of ["presentation", "teams", "attendance", "results", "arbitration", "bilan", "settings", "help_proposals"]) {
       expect(markup).toContain(`href="#${section}"`);
       expect(markup).toContain(`id="${section}"`);
     }
     expect(markup).toContain('aria-current="page"');
+  });
+
+  it("keeps help proposals organizer-only and separate from sports admissions", () => {
+    const organizer = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage"]} />);
+    const referee = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="referee" capabilities={["observe", "arbitrate"]} reviewerRoles={["referee"]} />);
+    expect(organizer).toContain('href="#help_proposals"');
+    expect(organizer).toContain("Propositions d’aide");
+    expect(referee).not.toContain('href="#help_proposals"');
   });
 
   it("keeps referee arbitration in the read/write section and does not expose organizer-only sections", () => {
