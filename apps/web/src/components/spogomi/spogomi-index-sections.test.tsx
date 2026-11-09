@@ -119,4 +119,59 @@ describe("SpogomiPublicEvents", () => {
     expect(markup).toContain("Résultats indisponibles");
     expect(markup).toContain("Édition publiée · données de l’organisateur");
   });
+
+  it("opens the published competition card information panel through the shared portal", () => {
+    const event = {
+      id: "published-card",
+      slug: "published-card",
+      name: "SPOGOMI publiée",
+      locationLabel: "Paris",
+      mode: "casual",
+      state: "published",
+      lifecycle: "upcoming",
+      calendarStatus: "upcoming",
+      registrationStatus: "open",
+      resultsStatus: "unavailable",
+      provenance: "published_event",
+      startsAt: "2026-12-08T08:00:00.000Z",
+      endsAt: null,
+      officialTimezone: "Europe/Paris",
+      actionHref: "/spogomi/published-card",
+      divisions: [],
+      teams: [],
+      route: null,
+      results: null,
+      organizer: null,
+      gallery: [],
+    } as Parameters<typeof SpogomiPublicEvents>[0]["events"][number];
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root: ReturnType<typeof createRoot>;
+
+    act(() => {
+      root = createRoot(container);
+      root.render(<SpogomiPublicEvents events={[event]} loadError={false} />);
+    });
+
+    const trigger = container.querySelector<HTMLButtonElement>('button[aria-label="Informations sur SPOGOMI publiée"]');
+    expect(trigger).not.toBeNull();
+
+    act(() => {
+      trigger?.click();
+    });
+
+    const panel = document.body.querySelector<HTMLElement>('#spogomi-event-info-published-card');
+    expect(panel?.parentElement).toBe(document.body);
+    expect(panel?.getAttribute("role")).toBe("dialog");
+    expect(panel?.getAttribute("aria-labelledby")).toBe("spogomi-event-info-published-card-title");
+    expect(panel?.textContent).toContain("Ouvrir la fiche publique de cette compétition");
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(document.body.querySelector('#spogomi-event-info-published-card')).toBeNull();
+
+    act(() => root.unmount());
+    container.remove();
+  });
 });
