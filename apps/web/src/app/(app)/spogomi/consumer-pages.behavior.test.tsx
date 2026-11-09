@@ -144,8 +144,11 @@ vi.mock("@/components/spogomi/spogomi-team-join-button", () => ({
     React.createElement("span", { "data-team-id": teamId }),
 }));
 vi.mock("@/components/spogomi/spogomi-admission-request-card", () => ({
-  SpogomiAdmissionRequestCard: () =>
-    React.createElement("div", { "data-testid": "admission" }),
+  SpogomiAdmissionRequestCard: ({ signInHref }: { signInHref: string }) =>
+    React.createElement("div", {
+      "data-testid": "admission",
+      "data-sign-in-href": signInHref,
+    }),
 }));
 vi.mock("@/components/spogomi/spogomi-volunteer-help-proposal-form", () => ({
   SpogomiVolunteerHelpProposalForm: () =>
@@ -361,8 +364,8 @@ describe("SPOGOMI consumer pages", () => {
       }),
     );
     expect(markup).toContain("division World Cup");
-    expect(markup).toContain("focus=quiz&amp;division=world_cup");
-    expect(markup).toContain("focus=registration&amp;division=world_cup");
+    expect(markup).toContain("division=world_cup");
+    expect(markup).toContain("focus%3Dregistration");
   });
 
   it("discloses the synthetic Cachan scenario when it is actually published", async () => {

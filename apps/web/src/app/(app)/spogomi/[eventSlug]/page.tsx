@@ -188,9 +188,9 @@ export default async function SpogomiPublicEventPage({
           <SpogomiEventPathChooser
             eventSlug={event.slug}
             isAuthenticated={Boolean(userId)}
+            divisionTypes={event.divisions.map((division) => division.type)}
             selectedDivisionType={selectedDivisionType}
             journey={journey}
-            lifecycle={event.lifecycle}
           />
           <SpogomiEventJourneyPanel
             journey={journey}

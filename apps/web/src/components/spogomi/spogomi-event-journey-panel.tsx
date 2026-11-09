@@ -54,6 +54,10 @@ function StepRow({
   step: SpogomiJourneyStep;
   readOnly: boolean;
 }) {
+  const canOpen =
+    step.status === "todo" ||
+    step.status === "pending" ||
+    step.status === "access_required";
   const content = (
     <>
       <div className="min-w-0 flex-1">
@@ -63,7 +67,7 @@ function StepRow({
         </p>
       </div>
       <StatusBadge status={step.status} />
-      {step.href && step.status !== "validated" ? (
+      {step.href && canOpen ? (
         <ArrowRight
           size={16}
           className="shrink-0 text-emerald-700"
@@ -72,7 +76,7 @@ function StepRow({
       ) : null}
     </>
   );
-  return step.href && step.status !== "validated" && !readOnly ? (
+  return step.href && canOpen && !readOnly ? (
     <a
       href={step.href}
       className="flex min-w-0 items-start gap-3 rounded-xl border border-black/10 bg-white/70 p-3 transition hover:border-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"

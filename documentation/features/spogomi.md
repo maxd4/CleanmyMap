@@ -63,11 +63,18 @@ OFFICIEL` ; elle ne rejoint aucune projection ou persistance SPOGOMI.
 
 ### Hiérarchie des prochaines actions sur une fiche
 
-La fiche publique `/spogomi/[eventSlug]` conserve les cartes et destinations
-existantes. Après l’en-tête, elle expose « Choisir mon parcours » avec les
-parcours Bénévoles, Arbitres et Organisateurs, tous contextualisés à l’édition
-et à la division sélectionnée. La projection serveur « Votre prochaine étape »
-reste unique et vient ensuite.
+La fiche publique `/spogomi/[eventSlug]` conserve les destinations existantes.
+Après l’en-tête, elle expose « Choisir mon parcours » sous la forme d’un
+sélecteur accessible entre Bénévoles, Arbitres et Organisateurs. Le parcours
+Bénévoles affiche les étapes issues de `SpogomiEventJourney` : une étape `later`
+ou `indeterminate` n’est jamais transformée en CTA. Pendant l’épreuve, le quiz
+reste donc absent ; après clôture, les résultats, contributions et attestations
+disponibles sont prioritaires et aucune inscription n’est proposée. Pour une
+édition `mixed`, Casual et World Cup sont sélectionnables publiquement et la
+division est conservée dans les liens et retours Clerk. Les espaces privés
+n’apparaissent que lorsqu’une projection serveur fournit l’habilitation
+correspondante ; un parcours d’interface ne constitue une permission. La
+projection serveur « Votre prochaine étape » reste unique et vient ensuite.
 Elle est reconstruite à chaque requête depuis les demandes d'admission, les
 preuves du quiz applicables à l'édition et à la division sélectionnée, la
 révision courante du contrat d'inscription et la liaison de
