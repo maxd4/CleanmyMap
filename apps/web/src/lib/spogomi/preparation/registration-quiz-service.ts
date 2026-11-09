@@ -73,19 +73,20 @@ export async function loadSpogomiRegistrationQuizProofsForUser(params: {
   eventId: string;
   userId: string;
   quizVersions: ReadonlyMap<string, string>;
+  registrationContractRevision: number;
 }): Promise<Set<string>> {
   const divisionIds = [...params.quizVersions.keys()];
   if (!divisionIds.length) return new Set();
   const result = await params.supabase
     .from("spogomi_registration_quiz_proofs")
-    .select("division_id, quiz_version")
+    .select("division_id, quiz_version, registration_contract_revision")
     .eq("event_id", params.eventId)
     .eq("clerk_id", params.userId)
     .in("division_id", divisionIds);
-  if (result.error) throw result.error;
+  if (result.error) throw new SpogomiRegistrationQuizError("Les preuves du quiz SPOGOMI ne sont pas disponibles.", "unavailable");
   return new Set(
     (result.data ?? [])
-      .filter((row) => params.quizVersions.get(String(row.division_id)) === String(row.quiz_version))
+      .filter((row) => params.quizVersions.get(String(row.division_id)) === String(row.quiz_version) && Number(row.registration_contract_revision) === params.registrationContractRevision)
       .map((row) => String(row.division_id)),
   );
 }

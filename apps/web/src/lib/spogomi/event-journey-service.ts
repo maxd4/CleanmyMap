@@ -7,14 +7,19 @@ import { listSpogomiAdmissionRequestsForRequester } from "./admission-requests";
 import { resolveSpogomiEventAccessBySlug } from "./authorization";
 import { loadSpogomiFieldOperationsAccess } from "./field-operations-service";
 import { loadSpogomiIdentityState } from "./identity-link";
-import { loadSpogomiRegistrationQuiz, loadSpogomiRegistrationQuizProofsForUser } from "./preparation/registration-quiz-service";
+import { loadSpogomiRegistrationQuiz, loadSpogomiRegistrationQuizProofsForUser, SpogomiRegistrationQuizError } from "./preparation/registration-quiz-service";
 import { loadSpogomiVolunteerSummaryForUser } from "./volunteer";
 
-function emptyInput(event: SpogomiPublicEvent, signInHref: string, signInHrefByStep?: SpogomiEventJourneyInput["signInHrefByStep"]): SpogomiEventJourneyInput {
+function selectedDivision(event: SpogomiPublicEvent, selectedDivisionId?: string | null) {
+  return event.divisions.find((division) => division.id === selectedDivisionId) ?? event.divisions[0] ?? null;
+}
+
+function emptyInput(event: SpogomiPublicEvent, selectedDivisionId: string | null | undefined, signInHref: string, signInHrefByStep?: SpogomiEventJourneyInput["signInHrefByStep"]): SpogomiEventJourneyInput {
+  const division = selectedDivision(event, selectedDivisionId);
   return {
     isAuthenticated: false,
     lifecycle: event.lifecycle,
-    registrationStatus: event.registrationStatus,
+    registrationStatus: division?.registrationStatus ?? event.registrationStatus,
     resultsStatus: event.resultsStatus,
     quizStatus: "unavailable",
     admissionStatus: "none",
@@ -32,28 +37,32 @@ function emptyInput(event: SpogomiPublicEvent, signInHref: string, signInHrefByS
 }
 
 function admissionStatus(
-  requests: readonly { requestKind: string; status: string }[],
+  requests: readonly { requestKind: string; status: string; divisionId: string }[],
+  selectedDivisionId: string | null,
 ): SpogomiEventJourneyInput["admissionStatus"] {
-  const registrations = requests.filter((request) => request.requestKind === "registration");
+  const registrations = requests.filter((request) => request.requestKind === "registration" && request.divisionId === selectedDivisionId);
   if (!registrations.length) return "none";
   if (registrations.some((request) => request.status === "pending")) return "pending";
   if (registrations.some((request) => request.status === "approved")) return "approved";
   return registrations[0]?.status === "rejected" ? "rejected" : "cancelled";
 }
 
-async function quizStatus(event: SpogomiPublicEvent, userId: string, supabase: ReturnType<typeof getSupabaseServerClient>): Promise<SpogomiEventJourneyInput["quizStatus"]> {
-  if (!event.divisions.length) return "unavailable";
-  const definitions = await Promise.all(event.divisions.map(async (division) => {
-    try {
-      return await loadSpogomiRegistrationQuiz({ supabase, eventId: event.id, divisionId: division.id });
-    } catch {
-      return null;
-    }
-  }));
-  if (definitions.some((definition) => !definition || !definition.available)) return "unavailable";
-  const versions = new Map(definitions.map((definition, index) => [event.divisions[index]!.id, definition!.quizVersion]));
-  const proofs = await loadSpogomiRegistrationQuizProofsForUser({ supabase, eventId: event.id, userId, quizVersions: versions });
-  return proofs.size === versions.size ? "passed" : "missing";
+async function loadRegistrationContractRevision(eventId: string, supabase: ReturnType<typeof getSupabaseServerClient>): Promise<number> {
+  const result = await supabase.from("spogomi_events").select("registration_contract_revision").eq("id", eventId).maybeSingle();
+  if (result.error || !result.data || !Number.isInteger(Number(result.data.registration_contract_revision))) {
+    throw new SpogomiRegistrationQuizError("La révision du contrat d’inscription est indisponible.", "unavailable");
+  }
+  return Number(result.data.registration_contract_revision);
+}
+
+async function quizStatus(event: SpogomiPublicEvent, divisionId: string | null, userId: string, supabase: ReturnType<typeof getSupabaseServerClient>): Promise<SpogomiEventJourneyInput["quizStatus"]> {
+  if (!divisionId) return "unavailable";
+  const definition = await loadSpogomiRegistrationQuiz({ supabase, eventId: event.id, divisionId });
+  if (!definition.available) return "unavailable";
+  const versions = new Map([[divisionId, definition.quizVersion]]);
+  const registrationContractRevision = await loadRegistrationContractRevision(event.id, supabase);
+  const proofs = await loadSpogomiRegistrationQuizProofsForUser({ supabase, eventId: event.id, userId, quizVersions: versions, registrationContractRevision });
+  return proofs.has(divisionId) ? "passed" : "missing";
 }
 
 function roleSpaceInputs(event: SpogomiPublicEvent, slug: string, eventAccess: Awaited<ReturnType<typeof resolveSpogomiEventAccessBySlug>>, fieldAccess: Awaited<ReturnType<typeof loadSpogomiFieldOperationsAccess>>) {
@@ -73,22 +82,24 @@ function roleSpaceInputs(event: SpogomiPublicEvent, slug: string, eventAccess: A
 export async function loadSpogomiEventJourney(params: {
   event: SpogomiPublicEvent;
   userId: string | null;
+  selectedDivisionId?: string | null;
   signInHref: string;
   signInHrefByStep?: SpogomiEventJourneyInput["signInHrefByStep"];
 }) {
-  const base = emptyInput(params.event, params.signInHref, params.signInHrefByStep);
+  const division = selectedDivision(params.event, params.selectedDivisionId);
+  const base = emptyInput(params.event, division?.id, params.signInHref, params.signInHrefByStep);
   if (!params.userId) return buildSpogomiEventJourney(base);
 
   const supabase = getSupabaseServerClient(true);
   const input: SpogomiEventJourneyInput = { ...base, isAuthenticated: true, privateProofStatus: "available" };
   try {
     const requests = await listSpogomiAdmissionRequestsForRequester(supabase, { eventId: params.event.id, requesterClerkId: params.userId });
-    input.admissionStatus = admissionStatus(requests);
+    input.admissionStatus = admissionStatus(requests, division?.id ?? null);
   } catch {
     input.admissionStatus = "unavailable";
   }
   try {
-    input.quizStatus = await quizStatus(params.event, params.userId, supabase);
+    input.quizStatus = await quizStatus(params.event, division?.id ?? null, params.userId, supabase);
   } catch {
     input.quizStatus = "unavailable";
   }

@@ -65,7 +65,8 @@ OFFICIEL` ; elle ne rejoint aucune projection ou persistance SPOGOMI.
 La fiche publique `/spogomi/[eventSlug]` conserve les cartes et destinations
 existantes, mais expose en tête une projection serveur « Votre prochaine étape ».
 Elle est reconstruite à chaque requête depuis les demandes d'admission, les
-preuves du quiz applicables à l'édition et à la division, la liaison de
+preuves du quiz applicables à l'édition et à la division sélectionnée, la
+révision courante du contrat d'inscription et la liaison de
 participation, les preuves privées de contribution/attestation et les
 habilitations événementielles du compte courant. Elle ne crée pas de table de
 progression parallèle et toutes les lectures privées restent bornées à
@@ -74,9 +75,14 @@ progression parallèle et toutes les lectures privées restent bornées à
 Les états d'affichage sont `À faire`, `En attente`, `Validée`, `Plus tard`,
 `Accès requis` et `Indéterminé`. `Indéterminé` signale une preuve indisponible ;
 il ne vaut ni refus ni autorisation. Avant une demande d'inscription, le quiz
-et le règlement applicable sont prioritaires ; après un quiz réussi, la demande
-est prioritaire uniquement si les inscriptions sont ouvertes. Une demande en
-attente ne réaffiche pas un CTA d'inscription. Une admission approuvée oriente
+et le règlement applicable de cette division sont prioritaires ; une preuve
+issue d'une autre division ou d'une ancienne révision du contrat ne valide pas
+la demande courante. Après un quiz réussi, la demande est prioritaire uniquement
+si les inscriptions de la division sont ouvertes. Une demande en attente ne
+réaffiche pas un CTA d'inscription ; une demande rejetée ou annulée peut ouvrir
+une nouvelle demande si cette division est encore ouverte. Pendant l'épreuve,
+le parcours propose uniquement la régularisation de présence disponible dans
+le formulaire, jamais un quiz d'inscription. Une admission approuvée oriente
 vers la liaison de compte puis l'équipe, tandis qu'une participation liée met
 en avant les informations pratiques. Après l'épreuve, les résultats, les
 contributions et les attestations ne sont proposés que selon leurs preuves

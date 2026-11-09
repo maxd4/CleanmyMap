@@ -52,6 +52,7 @@ export default async function SpogomiPublicEventPage({ params, searchParams }: P
   const journey = await loadSpogomiEventJourney({
     event,
     userId,
+    selectedDivisionId: requestedDivision?.id ?? event.divisions[0]?.id ?? null,
     signInHref,
     signInHrefByStep: {
       quiz: signInHrefFor("quiz"),

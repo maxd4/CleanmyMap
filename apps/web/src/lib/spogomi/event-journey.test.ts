@@ -77,4 +77,19 @@ describe("SPOGOMI event journey", () => {
     expect(journey.steps.find((step) => step.key === "quiz")?.href).toContain("focus%3Dquiz");
     expect(journey.steps.find((step) => step.key === "team")?.href).toContain("focus%3Dteam");
   });
+
+  it("does not offer the quiz during an in-progress event when the available action is presence regularization", () => {
+    const journey = buildSpogomiEventJourney(input({ lifecycle: "in_progress", quizStatus: "missing" }));
+    expect(journey.next).toMatchObject({ key: "registration", status: "todo" });
+    expect(journey.steps.find((step) => step.key === "quiz")).toMatchObject({ status: "later" });
+    expect(journey.steps.find((step) => step.key === "registration")).toMatchObject({ title: "Signaler une présence à régulariser" });
+  });
+
+  it.each(["rejected", "cancelled"] as const)("allows a new registration after a %s request when registration is open", (admissionStatus) => {
+    expect(buildSpogomiEventJourney(input({ quizStatus: "passed", admissionStatus })).next).toMatchObject({ key: "registration", status: "todo" });
+  });
+
+  it("does not offer a new registration when the selected division is closed", () => {
+    expect(buildSpogomiEventJourney(input({ quizStatus: "passed", admissionStatus: "rejected", registrationStatus: "closed" })).next).toMatchObject({ key: "practical" });
+  });
 });

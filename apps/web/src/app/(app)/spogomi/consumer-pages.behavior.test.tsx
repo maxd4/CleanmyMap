@@ -91,6 +91,7 @@ describe("SPOGOMI consumer pages", () => {
       searchParams: Promise.resolve({ focus: "registration", division: "world_cup" }),
     }));
     expect(mocks.loadSpogomiEventJourney).toHaveBeenCalledWith(expect.objectContaining({
+      selectedDivisionId: "division-world",
       signInHref: "/sign-in?redirect_url=%2Fspogomi%2Fparis-2026%3Ffocus%3Dquiz%26division%3Dworld_cup%23spogomi-sports-registration",
       signInHrefByStep: expect.objectContaining({
         registration: "/sign-in?redirect_url=%2Fspogomi%2Fparis-2026%3Ffocus%3Dregistration%26division%3Dworld_cup%23spogomi-sports-registration",

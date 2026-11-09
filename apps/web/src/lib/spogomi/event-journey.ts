@@ -77,11 +77,12 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
             : "todo";
   const registrationStatus: SpogomiJourneyStatus = !input.isAuthenticated
     ? "access_required"
-    : input.admissionStatus === "pending" ? "pending"
-      : input.admissionStatus === "approved" ? "validated"
-      : input.quizStatus === "unavailable" ? "indeterminate"
-        : input.quizStatus !== "passed" ? "later"
-          : input.registrationStatus === "open" ? "todo" : "later";
+    : input.lifecycle === "in_progress" && input.admissionStatus !== "pending" && input.admissionStatus !== "approved" ? "todo"
+      : input.admissionStatus === "pending" ? "pending"
+        : input.admissionStatus === "approved" ? "validated"
+        : input.quizStatus === "unavailable" ? "indeterminate"
+          : input.quizStatus !== "passed" ? "later"
+            : input.registrationStatus === "open" ? "todo" : "later";
   const identityStatus: SpogomiJourneyStatus = !input.isAuthenticated
     ? "access_required"
     : input.admissionStatus !== "approved" ? "later"
@@ -105,8 +106,8 @@ function buildSteps(input: SpogomiEventJourneyInput): SpogomiJourneyStep[] {
       : input.hasActiveAttestation ? "todo" : "later";
 
   return [
-    { key: "quiz", title: "Valider le quiz obligatoire", description: "Lire le règlement applicable puis répondre au quiz de la division et à sa version en vigueur.", status: quizStatus, href: sportsHref(input, "quiz", "#spogomi-sports-registration") },
-    { key: "registration", title: "Demander son inscription sportive", description: "Envoyer une nouvelle demande uniquement après validation du quiz et si les inscriptions sont autorisées.", status: registrationStatus, href: sportsHref(input, "registration", "#spogomi-sports-registration") },
+    { key: "quiz", title: "Valider le quiz obligatoire", description: "Lire le règlement applicable puis répondre au quiz de la division et à sa version en vigueur.", status: input.lifecycle === "in_progress" ? "later" : quizStatus, href: sportsHref(input, "quiz", "#spogomi-sports-registration") },
+    { key: "registration", title: input.lifecycle === "in_progress" ? "Signaler une présence à régulariser" : "Demander son inscription sportive", description: input.lifecycle === "in_progress" ? "Transmettre une régularisation de présence pendant l’épreuve." : "Envoyer une nouvelle demande uniquement après validation du quiz et si les inscriptions sont autorisées.", status: registrationStatus, href: sportsHref(input, "registration", "#spogomi-sports-registration") },
     { key: "admission", title: "Suivre sa demande d’admission", description: "La décision de l’organisation ne réserve pas de place et reste distincte du rattachement à une équipe.", status: admissionStatus, href: sportsHref(input, "admission", "#spogomi-sports-registration") },
     { key: "identity", title: "Rattacher son compte", description: "Saisir le code individuel remis par l’organisation lorsque l’admission est vérifiée.", status: identityStatus, href: sportsHref(input, "identity", "#spogomi-identity") },
     { key: "team", title: "Rejoindre ou retrouver son équipe", description: "Utiliser une équipe publiée ou une invitation autorisée ; le roster reste privé.", status: teamStatus, href: sportsHref(input, "team", "#spogomi-teams") },
@@ -127,9 +128,10 @@ function nextCompetitorStep(input: SpogomiEventJourneyInput, steps: readonly Spo
   if (input.admissionStatus === "approved" && input.identityStatus === "identity_unlinked") return byKey.get("identity")!;
   if (input.admissionStatus === "approved" && !input.teamLinked) return byKey.get("team")!;
   if (!input.isAuthenticated) return byKey.get("quiz")!;
+  if (input.lifecycle === "in_progress") return byKey.get("registration")!;
   if (input.quizStatus !== "passed") return byKey.get("quiz")!;
-  if (input.admissionStatus === "none" && input.registrationStatus === "open") return byKey.get("registration")!;
-  if (input.admissionStatus === "none" && input.registrationStatus !== "open") return byKey.get("practical")!;
+  if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus === "open") return byKey.get("registration")!;
+  if (["none", "rejected", "cancelled"].includes(input.admissionStatus) && input.registrationStatus !== "open") return byKey.get("practical")!;
   return byKey.get("practical")!;
 }
 
