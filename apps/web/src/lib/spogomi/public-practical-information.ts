@@ -19,6 +19,8 @@ export type SpogomiPublicPracticalInformation = {
   recommendedMaterials: string[];
   materialsProvided: string[];
   safetyInstructions: string | null;
+  /** Public action guidance, kept separate from verified SPOGOMI competition instructions. */
+  actionSafetyInstructions?: string | null;
   organizationContact: string | null;
   assistanceProcedure: string | null;
   schedules: SpogomiPublicSchedule[];
@@ -119,7 +121,8 @@ export function buildSpogomiPublicPracticalInformation(params: {
       actionInfo.materialsProvided,
       ...actionInfo.equipmentProvided,
     ]),
-    safetyInstructions: verifiedPolicyText(policy, "safetyInstructions", "safetyInstructionsVerified") ?? actionInfo.safetyInstructions,
+    safetyInstructions: verifiedPolicyText(policy, "safetyInstructions", "safetyInstructionsVerified"),
+    actionSafetyInstructions: actionInfo.safetyInstructions,
     organizationContact: verifiedPolicyText(policy, "organizationContact", "organizationContactVerified"),
     assistanceProcedure: verifiedPolicyText(policy, "assistanceProcedure", "assistanceProcedureVerified"),
     schedules,

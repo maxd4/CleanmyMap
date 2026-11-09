@@ -203,11 +203,14 @@ matériel issu de la projection publique d'action. Une ligne d'horaires
 incomplète ou rattachée à une division inconnue n'est pas affichée comme un
 horaire officiel.
 
-Les consignes de sécurité, le contact public et la procédure d'assistance issus
-de `registrationPolicy` ne sont rendus que lorsque leur indicateur de
-vérification est vrai. Les informations absentes restent explicitement
-signalées comme non communiquées. Les coordonnées ou consignes réservées aux
-participants admis ne sont jamais chargées dans cette projection publique ;
+Les consignes de sécurité SPOGOMI, le contact public et la procédure
+d'assistance issus de `registrationPolicy` ne sont rendus que lorsque leur
+indicateur de vérification est vrai. Les consignes de sécurité de l'action
+associée, lorsqu'elles sont publiques, sont affichées dans un champ et un
+libellé de provenance distincts ; elles ne remplacent jamais une consigne
+SPOGOMI vérifiée. Les informations absentes restent explicitement signalées
+comme non communiquées. Les coordonnées ou consignes réservées aux participants
+admis ne sont jamais chargées dans cette projection publique ;
 aucune saisie ou référentiel événementiel parallèle n'est créé pour ce bloc.
 
 ### Quiz pédagogique obligatoire avant inscription

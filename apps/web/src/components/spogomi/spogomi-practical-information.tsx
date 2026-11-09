@@ -47,6 +47,7 @@ export function SpogomiPracticalInformation({
     recommendedMaterials: [],
     materialsProvided: [],
     safetyInstructions: null,
+    actionSafetyInstructions: null,
     organizationContact: null,
     assistanceProcedure: null,
     schedules: [],
@@ -69,7 +70,8 @@ export function SpogomiPracticalInformation({
       <Detail icon={<MapPin size={17} aria-hidden="true" />} title="Zone de ramassage"><p>{information.collectionZone ?? "Non communiquée sur cette fiche."}</p></Detail>
       <Detail icon={<PackageCheck size={17} aria-hidden="true" />} title="Matériel conseillé"><ListOrFallback values={information.recommendedMaterials} fallback="Non communiqué sur cette fiche." /></Detail>
       <Detail icon={<PackageCheck size={17} aria-hidden="true" />} title="Matériel fourni"><ListOrFallback values={information.materialsProvided} fallback="Non communiqué sur cette fiche." /></Detail>
-      <Detail icon={<ShieldCheck size={17} aria-hidden="true" />} title="Consignes de sécurité"><p>{information.safetyInstructions ?? "Consignes détaillées non communiquées sur cette fiche."}</p></Detail>
+      <Detail icon={<ShieldCheck size={17} aria-hidden="true" />} title="Consignes de sécurité SPOGOMI"><p>{information.safetyInstructions ?? "Consignes détaillées non communiquées sur cette fiche."}</p></Detail>
+      {information.actionSafetyInstructions ? <Detail icon={<ShieldCheck size={17} aria-hidden="true" />} title="Consignes de l’action associée"><p>{information.actionSafetyInstructions}</p><p className="cmm-text-small mt-1">Provenance : action associée, distincte des consignes SPOGOMI vérifiées.</p></Detail> : null}
       <Detail icon={<Phone size={17} aria-hidden="true" />} title="Contact de l’organisation"><p>{information.organizationContact ?? "Contact public non communiqué sur cette fiche."}</p></Detail>
       <Detail icon={<LifeBuoy size={17} aria-hidden="true" />} title="Assistance"><p>{information.assistanceProcedure ?? "Procédure d’assistance non communiquée sur cette fiche."}</p></Detail>
       {information.unfoldingMessage ? <Detail icon={<Clock3 size={17} aria-hidden="true" />} title="Déroulement"><p className="whitespace-pre-wrap">{information.unfoldingMessage}</p></Detail> : null}

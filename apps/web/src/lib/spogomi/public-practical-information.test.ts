@@ -13,6 +13,7 @@ describe("SPOGOMI public practical information", () => {
         pointDeRendezVous: "Entrée nord du parc",
         zoneCiblePrevue: "Berges délimitées par l’organisation",
         participantMessage: "Briefing à l’arrivée, puis collecte et tri.",
+        safetyInstructions: "Consigne publique de l’action associée.",
         recommendedMaterials: "Gants adaptés",
         materialsProvided: "Pinces sur place",
         suggestedMaterials: ["grabbers"],
@@ -40,6 +41,7 @@ describe("SPOGOMI public practical information", () => {
       collectionZone: "Berges délimitées par l’organisation",
       unfoldingMessage: "Briefing à l’arrivée, puis collecte et tri.",
       safetyInstructions: "Rester en binôme et suivre le périmètre.",
+      actionSafetyInstructions: "Consigne publique de l’action associée.",
       organizationContact: "Contact public vérifié",
       assistanceProcedure: "Signaler tout incident au point d’accueil.",
     });
@@ -69,6 +71,26 @@ describe("SPOGOMI public practical information", () => {
     expect(result.organizationContact).toBeNull();
     expect(result.assistanceProcedure).toBeNull();
     expect(result.safetyInstructions).toBeNull();
+  });
+
+  it("keeps action guidance separate when SPOGOMI instructions are unverified or absent", () => {
+    const unverified = buildSpogomiPublicPracticalInformation({
+      actionPreparationData: { safetyInstructions: "Consigne publique de l’action associée." },
+      registrationConfig: { registrationPolicy: { safetyInstructions: "Consigne compétition non vérifiée.", safetyInstructionsVerified: false } },
+      divisions,
+      operations: [],
+    });
+    const absent = buildSpogomiPublicPracticalInformation({
+      actionPreparationData: { safetyInstructions: "Consigne publique de l’action associée." },
+      registrationConfig: { registrationPolicy: {} },
+      divisions,
+      operations: [],
+    });
+
+    expect(unverified.safetyInstructions).toBeNull();
+    expect(unverified.actionSafetyInstructions).toBe("Consigne publique de l’action associée.");
+    expect(absent.safetyInstructions).toBeNull();
+    expect(absent.actionSafetyInstructions).toBe("Consigne publique de l’action associée.");
   });
 
   it("keeps complete official schedules by division and drops partial or unknown divisions", () => {
