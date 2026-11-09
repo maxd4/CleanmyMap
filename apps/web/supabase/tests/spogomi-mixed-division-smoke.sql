@@ -22,6 +22,11 @@ declare
   v_count integer;
   v_decision_id uuid;
   v_metadata jsonb;
+  v_sqlstate text;
+  v_sqlerrm text;
+  v_before_config jsonb;
+  v_before_revision bigint;
+  v_before_history_count bigint;
 begin
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, spogomi_total_mass_grams, spogomi_megots_mass_grams, spogomi_megots_count, spogomi_projection_source_hash, spogomi_projection_version, notes)
   values (v_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI smoke', 12.5, 42, 7, 12500, 10, 42, repeat('a', 64), 'smoke-v1', 'owned by SPOGOMI');
@@ -84,14 +89,27 @@ begin
     if position('casual team-size bounds' in lower(sqlerrm)) = 0 then raise; end if;
   end;
   begin
+    select team_size_config, composition_revision
+      into v_before_config, v_before_revision
+      from public.spogomi_events
+     where id = v_event_id;
+    select count(*) into v_before_history_count
+      from public.spogomi_event_change_history
+     where event_id = v_event_id;
     perform public.spogomi_update_event_metadata(
       v_event_id, 0, 'spogomi-db-smoke', 'invalid casual order', 'SPOGOMI smoke', now(), null,
       'mixed', '{"casual":{"minMembers":4,"maxMembers":2}}'::jsonb, 'private', 'hidden'
     );
     raise exception 'mixed RPC accepted incoherent Casual bounds';
-  exception when others then
-    if position('casual team-size bounds' in lower(sqlerrm)) = 0 then raise; end if;
+  exception when check_violation then
+    get stacked diagnostics v_sqlstate = returned_sqlstate, v_sqlerrm = message_text;
+    if v_sqlstate <> '23514' or v_sqlerrm <> 'Casual team-size bounds are invalid' then raise; end if;
   end;
+  if (select team_size_config from public.spogomi_events where id = v_event_id) <> v_before_config
+     or (select composition_revision from public.spogomi_events where id = v_event_id) <> v_before_revision
+     or (select count(*) from public.spogomi_event_change_history where event_id = v_event_id) <> v_before_history_count then
+    raise exception 'intrinsically invalid Casual bounds mutated event or history';
+  end if;
   select public.spogomi_update_event_metadata(
     v_event_id, 0, 'spogomi-db-smoke', 'SPOGOMI mixed bounded', 'SPOGOMI smoke', now(), null,
     'mixed', '{"casual":{"minMembers":2,"maxMembers":4}}'::jsonb, 'private', 'hidden'
@@ -223,16 +241,26 @@ begin
     (v_participant_casual_two, v_event_id, v_casual_id, v_team_casual, 'smoke-participant-two', 'registered', 'present');
 
   begin
+    select team_size_config, composition_revision
+      into v_before_config, v_before_revision
+      from public.spogomi_events
+     where id = v_event_id;
+    select count(*) into v_before_history_count
+      from public.spogomi_event_change_history
+     where event_id = v_event_id;
     perform public.spogomi_update_event_metadata(
       v_event_id, 1, 'spogomi-db-smoke', 'invalid bounded Casual', 'SPOGOMI smoke', now(), null,
-      'mixed', '{"casual":{"minMembers":2,"maxMembers":1}}'::jsonb, 'private', 'hidden'
+      'mixed', '{"casual":{"minMembers":1,"maxMembers":1}}'::jsonb, 'private', 'hidden'
     );
     raise exception 'metadata RPC accepted a Casual bound smaller than an existing team';
   exception when check_violation then
-    if position('casual team is outside the event bounds' in lower(sqlerrm)) = 0 then raise; end if;
+    get stacked diagnostics v_sqlstate = returned_sqlstate, v_sqlerrm = message_text;
+    if v_sqlstate <> '23514' or v_sqlerrm <> 'A Casual team is outside the event bounds' then raise; end if;
   end;
-  if (select team_size_config #>> '{casual,maxMembers}' from public.spogomi_events where id = v_event_id) <> '4' then
-    raise exception 'a rejected Casual bound update mutated the event';
+  if (select team_size_config from public.spogomi_events where id = v_event_id) <> v_before_config
+     or (select composition_revision from public.spogomi_events where id = v_event_id) <> v_before_revision
+     or (select count(*) from public.spogomi_event_change_history where event_id = v_event_id) <> v_before_history_count then
+    raise exception 'a rejected Casual bound update mutated the event or history';
   end if;
 
   select public.spogomi_update_event_metadata(
