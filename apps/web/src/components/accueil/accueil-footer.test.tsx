@@ -17,12 +17,16 @@ describe("HomeFooter", () => {
     expect(html).toContain("cmm-ribbon-frame");
     expect(html).toContain("cmm-ribbon-text");
     expect(html).toContain('aria-label="Pied de page"');
-    expect(html).not.toContain('role="region"');
+    expect(html).toContain("Informations");
+    expect(html).toContain('aria-label="Contacter CleanMyMap"');
+    expect(html).toContain('aria-label="Instagram CleanMyMap"');
+    expect(html).toContain('aria-label="GitHub CleanMyMap"');
+    expect(html).not.toMatch(/<footer[^>]*role="region"/);
     expect(html).not.toContain("cmm-footer-scroll");
     expect(html).not.toContain("tabindex=");
   });
 
-  it("uses a wrap-safe responsive layout without a horizontal scroll contract", () => {
+  it("uses one desktop/tablet row with a container-driven compact contract", () => {
     const html = renderToStaticMarkup(<HomeFooter />);
     const getFooterClass = (html: string) =>
       html.match(/<footer[^>]*class="([^"]+)"/)?.[1];
@@ -41,10 +45,12 @@ describe("HomeFooter", () => {
     expect(html.match(/cmm-footer-contact-link/g)).toHaveLength(3);
     expect(html).toContain('href="https://github.com/maxd4/CleanMyMap"');
     expect(layoutCss).toContain(".cmm-footer-row");
-    expect(layoutCss).toContain("grid-template-columns: minmax(17rem");
-    expect(layoutCss).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
-    expect(layoutCss).toContain("grid-template-columns: minmax(0, 1fr)");
-    expect(layoutCss).toContain("flex-wrap: wrap");
+    expect(layoutCss).toContain("flex-wrap: nowrap");
+    expect(layoutCss).toContain("container-type: inline-size");
+    expect(layoutCss).toContain("@container (max-width: 90rem)");
+    expect(layoutCss).toContain(".cmm-footer-information");
+    expect(layoutCss).toContain("list-style: none");
+    expect(layoutCss).toContain("@media (max-width: 639px)");
     expect(layoutCss).not.toContain("min-width: max-content");
     expect(layoutCss).not.toContain("overflow-x: auto");
     expect(layoutCss).not.toContain(".cmm-footer-scroll");

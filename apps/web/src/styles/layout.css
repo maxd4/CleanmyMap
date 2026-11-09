@@ -188,19 +188,21 @@
 
 .cmm-footer-contact-actions {
   display: flex;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 
 .cmm-footer-contact-link {
   box-sizing: border-box;
   display: flex;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  flex: 1 1 9rem;
   align-items: center;
   min-height: var(--cmm-button-height-md);
   justify-content: center;
@@ -210,7 +212,7 @@
   font-size: var(--cmm-ribbon-text-size);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
-  white-space: normal;
+  white-space: nowrap;
   overflow-wrap: anywhere;
 }
 
@@ -220,28 +222,31 @@
 }
 
 .cmm-footer-row {
-  display: grid;
+  display: flex;
+  flex-wrap: nowrap;
   min-width: 0;
-  grid-template-columns: minmax(17rem, 1.2fr) minmax(18rem, 2fr) minmax(20rem, 2.2fr) minmax(10rem, auto);
+  container-type: inline-size;
   align-items: center;
-  gap: clamp(0.75rem, 1.35vw, 2rem);
+  gap: clamp(0.5rem, 1.2vw, 1.5rem);
 }
 
 .cmm-footer-brand {
+  flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
-  flex-wrap: wrap;
-  white-space: normal;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .cmm-footer-legal-links {
   display: flex;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .cmm-footer-legal-links > :not(:first-child) {
@@ -250,9 +255,84 @@
   border-inline-start: 1px solid rgba(148, 163, 184, 0.55);
 }
 
+.cmm-footer-information {
+  display: none;
+  position: relative;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.cmm-footer-information > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.cmm-footer-information > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cmm-footer-information-trigger {
+  display: inline-flex;
+  min-height: var(--cmm-button-height-md);
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.375rem 0.625rem;
+  white-space: nowrap;
+}
+
+.cmm-footer-information-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  z-index: 70;
+  width: min(18rem, calc(100vw - 1rem));
+  border: 1px solid rgba(71, 85, 105, 0.8);
+  border-radius: 0.75rem;
+  background: rgba(3, 7, 18, 0.98);
+  box-shadow: 0 1.5rem 3rem -1.5rem rgba(2, 6, 23, 0.8);
+  color: var(--text-inverse);
+}
+
+.cmm-footer-information-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+.cmm-footer-information-link,
+.cmm-footer-information-links button {
+  display: block;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.625rem;
+  color: var(--text-inverse);
+  font-size: var(--cmm-ribbon-text-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  text-align: left;
+  text-decoration: none;
+  white-space: normal;
+}
+
+.cmm-footer-information-link:hover,
+.cmm-footer-information-links button:hover {
+  background: rgba(51, 65, 85, 0.65);
+}
+
+.cmm-footer-information-link:focus-visible,
+.cmm-footer-information-links button:focus-visible {
+  outline: 2px solid rgba(226, 232, 240, 0.88);
+  outline-offset: -2px;
+}
+
 .cmm-footer-signature {
   min-width: 0;
   max-width: 100%;
+  flex: 0 1 auto;
+  margin-inline-start: auto;
   justify-self: end;
   padding-inline-start: clamp(0.75rem, 1.2vw, 1.5rem);
   border-inline-start: 1px solid rgba(148, 163, 184, 0.55);
@@ -260,31 +340,115 @@
   text-align: right;
 }
 
-@media (max-width: 1100px) {
-  .cmm-footer-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@container (max-width: 90rem) {
+  .cmm-footer-brand-logo {
+    height: 2rem;
+    max-width: 8rem;
+  }
+
+  .cmm-footer-brand {
+    flex: 0 1 auto;
+    gap: 0.5rem;
+  }
+
+  .cmm-footer-brand > a {
+    width: 2.25rem;
+    height: 2.25rem;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .cmm-footer-brand > a .cmm-footer-contact-separator,
+  .cmm-footer-brand > a .cmm-footer-contact-label,
+  .cmm-footer-contact-actions .cmm-footer-contact-label {
+    display: none;
+  }
+
+  .cmm-footer-contact-actions {
+    flex: 0 0 auto;
+    gap: 0.25rem;
+  }
+
+  .cmm-footer-contact-link {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    padding: 0.25rem;
+  }
+
+  .cmm-footer-legal-links {
+    display: none;
+  }
+
+  .cmm-footer-information {
+    display: block;
+  }
+
+  .cmm-footer-information-trigger {
+    gap: 0.3rem;
+    padding-inline: 0.5rem;
+  }
+
+  .cmm-footer-signature {
+    padding-inline-start: 0.5rem;
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 639px) {
   .cmm-footer-row {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
 
   .cmm-footer-brand {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
     justify-content: center;
+    white-space: normal;
+  }
+
+  .cmm-footer-brand-logo {
+    height: 2.5rem;
+    max-width: 12rem;
+  }
+
+  .cmm-footer-brand > a {
+    width: auto;
+    height: auto;
+    justify-content: initial;
+    gap: 0.5rem;
+  }
+
+  .cmm-footer-brand > a .cmm-footer-contact-separator,
+  .cmm-footer-brand > a .cmm-footer-contact-label {
+    display: inline;
   }
 
   .cmm-footer-contact-actions {
     display: grid;
+    flex: 0 1 auto;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
   }
 
+  .cmm-footer-contact-link {
+    width: auto;
+    height: auto;
+    min-height: var(--cmm-button-height-md);
+    flex: 0 1 auto;
+    padding: 0.375rem 0.625rem;
+  }
+
+  .cmm-footer-contact-actions .cmm-footer-contact-label {
+    display: inline;
+  }
+
   .cmm-footer-legal-links {
+    display: flex;
+    flex-wrap: wrap;
     justify-content: center;
+    white-space: normal;
   }
 
   .cmm-footer-legal-links > :not(:first-child) {
@@ -293,8 +457,14 @@
     border-inline-start: 0;
   }
 
+  .cmm-footer-information {
+    display: none;
+  }
+
   .cmm-footer-signature {
     justify-self: stretch;
+    flex: 0 1 auto;
+    margin-inline-start: 0;
     padding-inline-start: 0;
     border-inline-start: 0;
     text-align: center;

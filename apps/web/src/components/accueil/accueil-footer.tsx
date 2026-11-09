@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GitBranch, Mail } from "lucide-react";
+import { ChevronDown, GitBranch, Info, Mail, MessageCircle } from "lucide-react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { CookiePreferencesButton } from "./cookie-preferences-button";
@@ -48,15 +48,17 @@ export function HomeFooter() {
             <BrandLogo
               variant="darkSurface"
               alt="CleanMyMap"
-              className="h-10 w-auto max-w-[12rem] shrink-0 object-contain object-left"
+              className="cmm-footer-brand-logo h-10 w-auto max-w-[12rem] shrink-0 object-contain object-left"
               sizes="12rem"
             />
             <Link
               href="/contact"
+              aria-label="Contacter CleanMyMap"
               className="cmm-ribbon-text group inline-flex min-w-0 shrink items-center gap-2 font-bold uppercase tracking-[0.16em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
-              <span className="h-px w-4 bg-slate-400/50" />
-              <span className="break-words text-white transition group-hover:text-white group-hover:underline">
+              <MessageCircle className="cmm-footer-brand-contact-icon h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+              <span className="cmm-footer-contact-separator h-px w-4 bg-slate-400/50" />
+              <span className="cmm-footer-contact-label break-words text-white transition group-hover:text-white group-hover:underline">
                 Contact
               </span>
             </Link>
@@ -65,17 +67,19 @@ export function HomeFooter() {
           <div className="cmm-footer-contact-actions">
             <a
               href={`mailto:${contactEmail}`}
+              aria-label={`Écrire à ${contactEmail}`}
               className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
                 <Mail className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white transition-colors group-hover:text-white">
+              <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white">
                 {contactEmail}
               </span>
             </a>
             <a
               href="https://instagram.com/cleanmymap.fr"
+              aria-label="Instagram CleanMyMap"
               target="_blank"
               rel="noopener noreferrer"
               className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
@@ -83,12 +87,13 @@ export function HomeFooter() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
                 <InstagramMark size={18} className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white transition-colors group-hover:text-white">
+              <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white">
                 @cleanmymap.fr
               </span>
             </a>
             <a
               href="https://github.com/maxd4/CleanMyMap"
+              aria-label="GitHub CleanMyMap"
               target="_blank"
               rel="noopener noreferrer"
               className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
@@ -96,7 +101,7 @@ export function HomeFooter() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
                 <GitBranch className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white transition-colors group-hover:text-white">
+              <span className="cmm-footer-contact-label text-white transition-colors group-hover:text-white">
                 GitHub
               </span>
             </a>
@@ -129,6 +134,38 @@ export function HomeFooter() {
             </Link>
             <CookiePreferencesButton />
           </nav>
+
+          <details className="cmm-footer-information">
+            <summary className="cmm-footer-information-trigger cmm-ribbon-text rounded-xl border border-slate-700/80 bg-slate-950/55 font-semibold uppercase tracking-[0.1em] text-white transition hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
+              <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Informations</span>
+              <ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </summary>
+            <div
+              className="cmm-footer-information-panel"
+              role="region"
+              aria-label="Informations"
+            >
+              <nav
+                aria-label="Informations légales et préférences cookies"
+                className="cmm-footer-information-links"
+              >
+                <Link href="/mentions-legales" className="cmm-footer-information-link">
+                  Mentions légales
+                </Link>
+                <Link href="/conditions-generales-utilisation" className="cmm-footer-information-link">
+                  CGU
+                </Link>
+                <Link href="/politique-confidentialite" className="cmm-footer-information-link">
+                  Confidentialité
+                </Link>
+                <Link href="/politique-cookies" className="cmm-footer-information-link">
+                  Politique cookies
+                </Link>
+                <CookiePreferencesButton />
+              </nav>
+            </div>
+          </details>
 
           <div className="cmm-footer-signature cmm-ribbon-text shrink-0 whitespace-nowrap text-center text-white">
             <p className="font-bold">Cultivons l&apos;entraide</p>
