@@ -21,10 +21,10 @@ import {
   normalizeSpogomiEventSlug,
 } from "./public-service";
 
-function makeSupabase() {
+function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
   const from = vi.fn((table: string) => {
     let selectValue = "";
-    const row = {
+    const defaultRow = {
       id: "event-1",
       event_slug: "paris-2026",
       name: "SPOGOMI Paris",
@@ -36,10 +36,12 @@ function makeSupabase() {
       action_id: "action-1",
       public_results_visibility: "certified",
     };
+    const rows = inputRows ?? [defaultRow];
+    const excludedStates = new Set<string>();
     const query = {
       select: vi.fn((value: string) => { selectValue = value; return query; }),
       eq: vi.fn(() => query),
-      neq: vi.fn(() => query),
+      neq: vi.fn((column: string, value: unknown) => { if (table === "spogomi_events" && column === "state") excludedStates.add(String(value)); return query; }),
       not: vi.fn(() => query),
       in: vi.fn(() => query),
       order: vi.fn(() => query),
@@ -48,11 +50,11 @@ function makeSupabase() {
         if (table === "spogomi_event_routes") {
           return { data: { source: "official_reference", file_name: "route.gpx", point_count: 3, reference_distance_km: 2.5, inferred_topology: "loop", geometry_geojson: { coordinates: [[2.3, 48.8], [2.4, 48.9]] } }, error: null };
         }
-        if (table === "spogomi_events") return { data: row, error: null };
+        if (table === "spogomi_events") return { data: rows[0] ?? null, error: null };
         return { data: null, error: null };
       }),
       then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
-        if (table === "spogomi_events") return Promise.resolve({ data: [row], error: null }).then(resolve, reject);
+        if (table === "spogomi_events") return Promise.resolve({ data: rows.filter((candidate) => !excludedStates.has(String(candidate.state))), error: null }).then(resolve, reject);
         if (table === "actions") return Promise.resolve({ data: [{ id: "action-1", status: "approved", published_at: "2026-09-01", moderation_visibility: "public" }], error: null }).then(resolve, reject);
         if (table === "spogomi_teams") return Promise.resolve({ data: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha", composition_state: "locked" }], error: null }).then(resolve, reject);
         return Promise.resolve({ data: [], error: null }).then(resolve, reject);
@@ -106,5 +108,21 @@ describe("SPOGOMI public identity and lifecycle", () => {
     });
     await expect(loadPublishedSpogomiEventResultsBySlug("paris-2026", supabase as never)).resolves.toEqual({ visibility: "certified" });
     await expect(loadPublishedSpogomiEventForAction("action-1", supabase as never)).resolves.toEqual({ slug: "paris-2026", name: "SPOGOMI Paris" });
+  });
+
+  it("keeps active editions first, sorts finished editions newest-first, and excludes cancellations", async () => {
+    const rows = [
+      { id: "in-progress", event_slug: "in-progress", name: "En cours", location_label: "Paris", mode: "casual", state: "active", starts_at: "2026-11-08T08:00:00.000Z", ends_at: "2026-11-10T12:00:00.000Z", action_id: "action-1", public_results_visibility: "hidden" },
+      { id: "upcoming", event_slug: "upcoming", name: "À venir", location_label: "Lyon", mode: "world_cup", state: "draft", starts_at: "2026-12-01T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden" },
+      { id: "finished-new", event_slug: "finished-new", name: "Terminée récente", location_label: "Nice", mode: "casual", state: "active", starts_at: "2026-10-10T08:00:00.000Z", ends_at: "2026-10-10T12:00:00.000Z", action_id: "action-1", public_results_visibility: "hidden" },
+      { id: "finished-old", event_slug: "finished-old", name: "Terminée ancienne", location_label: "Bordeaux", mode: "casual", state: "active", starts_at: "2026-09-10T08:00:00.000Z", ends_at: "2026-09-10T12:00:00.000Z", action_id: "action-1", public_results_visibility: "hidden" },
+      { id: "cancelled", event_slug: "cancelled", name: "Annulée", location_label: "Lille", mode: "casual", state: "cancelled", starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden" },
+    ];
+    serviceMocks.organizer.mockResolvedValue(null);
+    serviceMocks.projection.mockResolvedValue({ results: { lifecycleStatus: "unavailable" } });
+
+    const events = await listPublishedSpogomiEvents(makeSupabase(rows) as never);
+    expect(events.map((event) => event.slug)).toEqual(["in-progress", "upcoming", "finished-new", "finished-old"]);
+    expect(events.every((event) => event.state !== "cancelled")).toBe(true);
   });
 });

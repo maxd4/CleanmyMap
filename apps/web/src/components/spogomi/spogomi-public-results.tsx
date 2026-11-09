@@ -37,7 +37,7 @@ export function SpogomiPublicResults({ eventSlug, initial }: { eventSlug: string
   // refresh every 60 seconds only while the tab is visible and results remain public;
   // pause while hidden or inactive to avoid background traffic.
   useEffect(() => { if (document.visibilityState === "hidden" || results?.visibility === "hidden") return; const timer = window.setInterval(() => { if (document.visibilityState !== "hidden") void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ refresh().catch(() => undefined); }, 60_000); return () => window.clearInterval(timer); }, [refresh, results?.visibility]);
-  if (!results || results.visibility === "hidden") return <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><h2 className="font-black text-slate-900">Classements et résultats</h2><p className="mt-2 text-sm text-slate-700">Les résultats restent masqués jusqu’à publication par l’organisateur.</p></CmmCard>;
+  if (!results || results.visibility === "hidden" || results.lifecycleStatus === "unavailable") return <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><h2 className="font-black text-slate-900">Classements et résultats</h2><p className="mt-2 text-sm text-slate-700">{results?.visibility === "hidden" ? "Les résultats restent masqués jusqu’à publication par l’organisateur." : "Aucun résultat public n’est disponible pour cette édition."}</p></CmmCard>;
   const activeDivision = results.divisions?.find((division) => division.id === divisionId) ?? results.divisions?.[0] ?? null;
   return <PublicResultsContent results={results} activeDivision={activeDivision} busy={busy} error={error} refresh={refresh} setDivisionId={(id) => setDivisionId(id)} />;
 }

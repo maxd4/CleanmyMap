@@ -63,7 +63,7 @@ describe("/spogomi public and private navigation", () => {
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain('role="tabpanel"');
     expect(markup).not.toContain("<main");
-    expect(markup.indexOf("spogomi-events")).toBeLessThan(markup.indexOf("understanding.title"));
+    expect(markup.indexOf("understanding.title")).toBeLessThan(markup.indexOf("spogomi-events"));
     expect(markup).toContain('id="spogomi-international"');
     expect(markup).toContain('href="/sign-in?redirect_url=%2Fspogomi%2Fmes-evenements%3Fparcours%3Dorganizers"');
     expect(mocks.listPublishedSpogomiEvents).toHaveBeenCalledTimes(1);

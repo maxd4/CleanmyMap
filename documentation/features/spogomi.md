@@ -36,9 +36,19 @@ supplémentaire n'est persisté :
 La projection non persistée est centralisée dans `public-service.ts` et la
 projection canonique des résultats ; elle filtre toujours les éditions
 privées, ne renvoie aucune donnée nominative et conserve les divisions Casual /
-World Cup. Une édition annulée explicitement publiée reste visible comme
-annulée, tandis que les brouillons et éditions privées restent absents du
-catalogue public.
+World Cup. Les éditions annulées restent absentes du catalogue public, comme
+les brouillons et éditions privées ; la fiche publique conserve donc uniquement
+les éditions publiées non annulées.
+
+Le catalogue public `/spogomi` place les éditions à venir et en cours avant les
+éditions terminées ; ces dernières sont triées par `starts_at` décroissant. Les
+cartes distinguent le calendrier, les inscriptions, la disponibilité des
+résultats et la provenance `published_event`. Une édition terminée sans
+projection publique reste consultable mais affiche l'indisponibilité des
+résultats. La démonstration Cachan est une destination séparée,
+`/spogomi/demonstration/cachan`, alimentée uniquement par la fixture
+`scenario_cachan_cleanmymap_mixed.json` et marquée `DEMONSTRATION / NON
+OFFICIEL` ; elle ne rejoint aucune projection ou persistance SPOGOMI.
 
 ```text
 Édition parente SPOGOMI (casual | world_cup | mixed)
@@ -75,7 +85,7 @@ catalogue public.
 
 ### Déroulé UI de la démonstration Cachan
 
-Le scénario synthétique `SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL` n’est présent dans `/spogomi/mes-evenements?parcours=organizers` que si l’édition existe réellement dans le catalogue filtré par la relation organisateur du compte courant. Depuis `/spogomi`, l’onglet **Organisateurs** conserve cette intention puis le catalogue ouvre le cockpit canonique `/spogomi/[eventSlug]/espace#teams`. Aucun événement ou résultat de secours n’est fabriqué par l’interface.
+Le scénario synthétique `SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL` reste une fixture documentaire et n’est jamais une édition CleanMyMap créée en base. Le catalogue public propose un accès séparé, en lecture seule, vers `/spogomi/demonstration/cachan` ; cette route lit la fixture canonique, affiche ses deux divisions et ses onze équipes, et ne fabrique ni événement, ni action, ni résultat officiel, ni statistique environnementale, ni progression. L’onglet **Organisateurs** conserve en parallèle son intention privée et n’est pas remplacé par cette démonstration.
 
 Dans le cockpit, le sélecteur de divisions permet de parcourir séparément Casual et World Cup ; les catégories, équipes, saisies, décisions et classements sont chargés par les sections existantes et restent bornés par `division_id`. La carte de démonstration distingue les configurations persistées (règlement, politique de visibilité des résultats, visibilité de l’édition) des états constatés (composition verrouillée, préparation observée) et renvoie aux contrats de clôture pour les certifications, classements et blocages métier. Une politique « certifiés uniquement » ne constitue donc pas une preuve de certification, et une édition privée n’est pas présentée comme bloquée par principe. Un règlement fictif et un résultat synthétique ne deviennent jamais officiels par leur affichage.
 

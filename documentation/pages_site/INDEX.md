@@ -233,6 +233,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 ## Agir
 
 | `/spogomi` | [Découverte SPOGOMI](./routes/02-agir/spogomi/spogomi-README.md) | `public-visible` ; événements explicitement publiés | agir | `apps/web/src/app/(app)/spogomi/page.tsx` |
+| `/spogomi/demonstration/cachan` | [Démonstration SPOGOMI Cachan](./routes/02-agir/spogomi-demonstration/spogomi-demonstration-README.md) | `public-visible` ; fixture synthétique en lecture seule, non officielle | agir | `apps/web/src/app/(app)/spogomi/demonstration/cachan/page.tsx` |
 | `/spogomi/[eventSlug]` | [Événement SPOGOMI](./routes/02-agir/spogomi-event/spogomi-event-README.md) | `public-visible` ; projection publiée bornée | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx` |
 | `/spogomi/mes-evenements` | [Mes événements SPOGOMI](./routes/02-agir/spogomi-events/spogomi-events-README.md) | `protected` ; événements filtrés par les relations événementielles vérifiées et un parcours strictement validé | agir | `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` |
 | `/spogomi/nouveau` | [Nouvelle compétition SPOGOMI](./routes/02-agir/spogomi-new/spogomi-new-README.md) | `protected` ; création privée | agir | `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` |

@@ -152,7 +152,9 @@ describe("SPOGOMI consumer components", () => {
     expect(readiness).toContain("places non affectées : 1");
     expect(readiness).toContain("Zone officielle : non renseignée");
 
-    const hidden = renderToStaticMarkup(<SpogomiPublicResults eventSlug="paris-2026" initial={null} />);
+    const unavailable = renderToStaticMarkup(<SpogomiPublicResults eventSlug="paris-2026" initial={null} />);
+    expect(unavailable).toContain("Aucun résultat public n’est disponible");
+    const hidden = renderToStaticMarkup(<SpogomiPublicResults eventSlug="paris-2026" initial={{ ...publishedResults, visibility: "hidden" }} />);
     expect(hidden).toContain("restent masqués");
     const published = renderToStaticMarkup(<SpogomiPublicResults eventSlug="paris-2026" initial={publishedResults} />);
     expect(published).toContain("Classement sportif");

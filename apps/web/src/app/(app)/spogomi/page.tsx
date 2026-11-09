@@ -34,8 +34,8 @@ export default async function SpogomiIndexPage() {
           subtitle="Trouvez votre rôle et rejoignez une compétition publiée."
         />
         <SpogomiOrientationTabs isAuthenticated={Boolean(userId)} progress={orientationProgress} />
-        <SpogomiPublicEvents events={events} loadError={loadError} />
         <SpogomiUnderstanding locale={locale} t={t} />
+        <SpogomiPublicEvents events={events} loadError={loadError} />
       </CmmPageLayout>
     </div>
   );

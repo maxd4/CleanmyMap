@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { SpogomiUnderstanding } from "./spogomi-index-sections";
+import { SpogomiPublicEvents, SpogomiUnderstanding } from "./spogomi-index-sections";
 
 const copy: Record<string, string> = {
   "understanding.title": "Comprendre SPOGOMI",
@@ -99,5 +99,24 @@ describe("SpogomiUnderstanding", () => {
       expect(container.querySelectorAll('[data-cmm-card-tone="slate"]')).toHaveLength(1);
       expect(container.textContent).toContain("40 pays et régions annoncés");
     });
+  });
+});
+
+describe("SpogomiPublicEvents", () => {
+  it("groups active editions before finished editions and exposes a separate Cachan demonstration", () => {
+    const events = [
+      { id: "active", slug: "active", name: "SPOGOMI en cours", locationLabel: "Paris", mode: "casual", state: "in_progress", lifecycle: "in_progress", calendarStatus: "in_progress", registrationStatus: "open", resultsStatus: "unavailable", provenance: "published_event", startsAt: "2026-11-08T08:00:00.000Z", endsAt: null, officialTimezone: "Europe/Paris", actionHref: null, divisions: [], teams: [], route: null, results: null, organizer: null, gallery: [] },
+      { id: "finished", slug: "finished", name: "SPOGOMI terminée", locationLabel: "Nice", mode: "world_cup", state: "in_progress", lifecycle: "finished", calendarStatus: "finished", registrationStatus: "closed", resultsStatus: "unavailable", provenance: "published_event", startsAt: "2026-10-08T08:00:00.000Z", endsAt: "2026-10-08T12:00:00.000Z", officialTimezone: "Europe/Paris", actionHref: null, divisions: [], teams: [], route: null, results: null, organizer: null, gallery: [] },
+    ] as Parameters<typeof SpogomiPublicEvents>[0]["events"];
+    const markup = renderToStaticMarkup(<SpogomiPublicEvents events={events} loadError={false} />);
+
+    expect(markup).toContain("À venir et en cours");
+    expect(markup).toContain("Éditions terminées");
+    expect(markup.indexOf("À venir et en cours")).toBeLessThan(markup.indexOf("Éditions terminées"));
+    expect(markup.match(/data-testid="spogomi-published-event-card"/g)).toHaveLength(2);
+    expect(markup).toContain("Voir la démonstration Cachan");
+    expect(markup).toContain("/spogomi/demonstration/cachan");
+    expect(markup).toContain("Résultats indisponibles");
+    expect(markup).toContain("Édition publiée · données de l’organisateur");
   });
 });

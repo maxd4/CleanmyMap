@@ -19,6 +19,7 @@ import { loadPublishedSpogomiGalleryForAction } from "./photo-gallery-service";
 import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
 
 export type SpogomiPublicLifecycle = SpogomiCalendarStatus;
+export type SpogomiPublicDataProvenance = "published_event";
 
 type SpogomiPublicTeam = {
   id: string;
@@ -57,6 +58,7 @@ export type SpogomiPublicEvent = {
   calendarStatus: SpogomiCalendarStatus;
   registrationStatus: SpogomiRegistrationStatus;
   resultsStatus: SpogomiResultsStatus;
+  provenance: SpogomiPublicDataProvenance;
   startsAt: string;
   endsAt: string | null;
   officialTimezone: string;
@@ -247,9 +249,10 @@ function mapEvent(
   gallery: SpogomiPublicGalleryPhoto[] = [],
   registration: PublicRegistrationProjection = { status: "not_open", divisions: [] },
   resultsStatus: SpogomiResultsStatus = results?.lifecycleStatus ?? "unavailable",
+  now = new Date(),
 ): SpogomiPublicEvent | null {
   if (!row.event_slug) return null;
-  const calendarStatus = classifySpogomiCalendarStatus({ startsAt: row.starts_at, endsAt: row.ends_at, state: row.state });
+  const calendarStatus = classifySpogomiCalendarStatus({ startsAt: row.starts_at, endsAt: row.ends_at, state: row.state, now });
   return {
     id: row.id,
     slug: row.event_slug,
@@ -261,6 +264,7 @@ function mapEvent(
     calendarStatus,
     registrationStatus: registration.status,
     resultsStatus,
+    provenance: "published_event",
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     officialTimezone: row.official_timezone || "Europe/Paris",
@@ -286,8 +290,8 @@ async function loadPublishedRows(supabase: SupabaseClient, slug?: string): Promi
     .from("spogomi_events")
     .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, official_timezone, action_id, regulation_config, public_visibility, public_results_visibility")
     .eq("public_visibility", "published")
-    .not("event_slug", "is", null)
-    .order("starts_at", { ascending: true });
+    .neq("state", "cancelled")
+    .not("event_slug", "is", null);
   if (slug) query = query.eq("event_slug", slug);
   const result = await query;
   if (result.error) throw result.error;
@@ -298,6 +302,7 @@ export async function listPublishedSpogomiEvents(
   supabase = getSupabaseServerClient(true),
 ): Promise<SpogomiPublicEvent[]> {
   const rows = await loadPublishedRows(supabase);
+  const now = new Date();
   const actionIds = await loadPublicActionHrefs(supabase, rows.map((row) => row.action_id));
   const mapped = await Promise.all(rows.map(async (row) => {
     const [registration, projection, organizer] = await Promise.all([
@@ -305,9 +310,18 @@ export async function listPublishedSpogomiEvents(
       loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
       loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
     ]);
-    return mapEvent(row, actionIds, [], [], null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable");
+    return mapEvent(row, actionIds, [], [], null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable", now);
   }));
-  return mapped.filter((event): event is SpogomiPublicEvent => Boolean(event));
+  return mapped
+    .filter((event): event is SpogomiPublicEvent => Boolean(event))
+    .sort((left, right) => {
+      const leftFinished = left.calendarStatus === "finished";
+      const rightFinished = right.calendarStatus === "finished";
+      if (leftFinished !== rightFinished) return leftFinished ? 1 : -1;
+      const leftTime = Date.parse(left.startsAt);
+      const rightTime = Date.parse(right.startsAt);
+      return leftFinished ? rightTime - leftTime : leftTime - rightTime;
+    });
 }
 
 export async function loadPublishedSpogomiEventBySlug(
