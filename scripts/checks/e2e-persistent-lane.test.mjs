@@ -13,7 +13,7 @@ const read = (relativePath) => readFileSync(path.join(root, relativePath), "utf8
 
 test("persistent E2E workflow is hosted, ephemeral, and never targets production Supabase", () => {
   const workflow = read(".github/workflows/e2e-supabase.yml");
-  assert.match(workflow, /runs-on:\s+ubuntu-latest/);
+  assert.match(workflow, /runs-on:\s+ubuntu-(?:latest|22\.04)/);
   assert.match(workflow, /supabase start --workdir apps\/web --yes/);
   assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes/);
   assert.doesNotMatch(workflow, /--workdir apps\/web\/supabase/);

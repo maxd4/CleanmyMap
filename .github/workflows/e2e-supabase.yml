@@ -76,7 +76,10 @@ env:
 jobs:
   persistent-e2e:
     name: Persistent E2E on ephemeral Supabase
-    runs-on: ubuntu-latest
+    # ubuntu-latest repeatedly failed before Supabase creation with a missing
+    # Docker network; keep the same isolated lane while using a distinct hosted
+    # runner image for the infrastructure retry.
+    runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
       contents: read
