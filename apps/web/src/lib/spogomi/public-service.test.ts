@@ -22,7 +22,7 @@ import {
   normalizeSpogomiEventSlug,
 } from "./public-service";
 
-function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
+function makeSupabase(inputRows?: Array<Record<string, unknown>>, options: { divisions?: Array<Record<string, unknown>>; participants?: Array<Record<string, unknown>> } = {}) {
   const calls: string[] = [];
   const from = vi.fn((table: string) => {
     calls.push(table);
@@ -65,6 +65,8 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>) {
       then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
         if (table === "spogomi_events") return Promise.resolve({ data: rows.filter((candidate) => (!requestedSlug || candidate.event_slug === requestedSlug) && (!requestedVisibility || candidate.public_visibility === requestedVisibility || candidate.public_visibility === undefined) && !excludedStates.has(String(candidate.state))), error: null }).then(resolve, reject);
         if (table === "actions") return Promise.resolve({ data: [{ id: "action-1", status: "approved", published_at: "2026-09-01", moderation_visibility: "public" }], error: null }).then(resolve, reject);
+        if (table === "spogomi_divisions") return Promise.resolve({ data: options.divisions ?? [], error: null }).then(resolve, reject);
+        if (table === "spogomi_participants") return Promise.resolve({ data: options.participants ?? [], error: null }).then(resolve, reject);
         if (table === "spogomi_teams") return Promise.resolve({ data: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha", composition_state: "locked" }], error: null }).then(resolve, reject);
         return Promise.resolve({ data: [], error: null }).then(resolve, reject);
       },
@@ -156,6 +158,21 @@ describe("SPOGOMI public identity and lifecycle", () => {
     }]);
     await expect(listPublishedSpogomiEvents(supabase as never)).resolves.toEqual([]);
     await expect(loadPublishedSpogomiEventBySlug("private", supabase as never)).resolves.toBeNull();
+  });
+
+  it("uses the same bounded capacity parser for inherited and division-specific public policies", async () => {
+    serviceMocks.organizers.mockResolvedValue(new Map([["action-1", null]]));
+    const event = await listPublishedSpogomiEvents(makeSupabase([{
+      id: "capacity", event_slug: "capacity", name: "Capacité", location_label: "Paris", mode: "mixed", state: "registration_open",
+      starts_at: "2026-12-20T08:00:00.000Z", ends_at: null, action_id: "action-1", public_results_visibility: "hidden",
+      regulation_config: { registrationPolicy: { capacity: "2" } }, public_visibility: "published",
+    }], {
+      divisions: [
+        { id: "casual", event_id: "capacity", division_type: "casual", regulation_config: {} },
+        { id: "world", event_id: "capacity", division_type: "world_cup", regulation_config: { registrationPolicy: { capacity: "01" } } },
+      ],
+    }) as never);
+    expect(event[0]?.divisions.map((division) => division.capacity)).toEqual([2, null]);
   });
 
   it("batches public registration and organizer reads across catalog editions", async () => {

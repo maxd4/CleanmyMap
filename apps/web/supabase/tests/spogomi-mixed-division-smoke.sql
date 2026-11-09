@@ -28,6 +28,21 @@ declare
   v_before_revision bigint;
   v_before_history_count bigint;
 begin
+  if has_function_privilege('anon', 'public.spogomi_registration_policy_for_division(uuid,uuid)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.spogomi_registration_policy_for_division(uuid,uuid)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.spogomi_registration_policy_for_division(uuid,uuid)', 'EXECUTE') then
+    raise exception 'registration policy helper ACL is not service-only';
+  end if;
+  if has_function_privilege('anon', 'public.spogomi_registration_capacity_value(jsonb)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.spogomi_registration_capacity_value(jsonb)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.spogomi_registration_capacity_value(jsonb)', 'EXECUTE') then
+    raise exception 'registration capacity parser ACL is not service-only';
+  end if;
+  if has_function_privilege('anon', 'public.spogomi_registration_capacity_for_division(uuid,uuid)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.spogomi_registration_capacity_for_division(uuid,uuid)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.spogomi_registration_capacity_for_division(uuid,uuid)', 'EXECUTE') then
+    raise exception 'registration capacity helper ACL is not service-only';
+  end if;
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, spogomi_total_mass_grams, spogomi_megots_mass_grams, spogomi_megots_count, spogomi_projection_source_hash, spogomi_projection_version, notes)
   values (v_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI smoke', 12.5, 42, 7, 12500, 10, 42, repeat('a', 64), 'smoke-v1', 'owned by SPOGOMI');
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, notes)

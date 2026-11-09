@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { parseSpogomiRegistrationReadiness, readinessStatusLabel } from "./registration-readiness";
+import { normalizeSpogomiRegistrationCapacity, parseSpogomiRegistrationReadiness, readinessStatusLabel } from "./registration-readiness";
 
 const item = (id: string, status: "complete" | "incomplete" | "not_verified") => ({ id, label: id, status, required: true, href: "#settings" });
 
 describe("SPOGOMI registration readiness contract", () => {
+  it.each([[1, 1], ["1", 1], ["2147483647", 2147483647]] as const)("normalizes valid capacity %s", (input, expected) => {
+    expect(normalizeSpogomiRegistrationCapacity(input)).toBe(expected);
+  });
+
+  it.each(["0", "01", "2147483648"])("rejects non-canonical capacity %s", (input) => {
+    expect(() => normalizeSpogomiRegistrationCapacity(input)).toThrow("représentable");
+  });
+
   it("keeps mixed divisions independent and distinguishes incomplete from not verified", () => {
     const result = parseSpogomiRegistrationReadiness({
       eventId: "event-1",

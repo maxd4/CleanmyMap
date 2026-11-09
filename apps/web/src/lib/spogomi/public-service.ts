@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SpogomiEventMode, SpogomiEventState } from "./types";
+import { normalizeSpogomiRegistrationCapacity, SPOGOMI_POSTGRES_INTEGER_MAX } from "./registration-readiness";
 import { readAllSpogomiPages } from "./pagination";
 import {
   classifySpogomiCalendarStatus,
@@ -158,9 +159,13 @@ function registrationPolicy(config: unknown): Record<string, unknown> {
 
 function capacityFromPolicy(policy: Record<string, unknown>): number | null {
   const value = policy.capacity;
-  if (typeof value === "number" && Number.isInteger(value) && value >= 1) return value;
-  if (typeof value === "string" && /^\d+$/.test(value)) return Number(value);
-  return null;
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  try {
+    const normalized = normalizeSpogomiRegistrationCapacity(value);
+    return normalized !== null && normalized !== undefined && normalized <= SPOGOMI_POSTGRES_INTEGER_MAX ? normalized : null;
+  } catch {
+    return null;
+  }
 }
 
 function combineRegistrationStatuses(statuses: readonly SpogomiRegistrationStatus[]): SpogomiRegistrationStatus {

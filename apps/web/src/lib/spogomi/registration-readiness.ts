@@ -36,6 +36,17 @@ export type SpogomiRegistrationReadiness = {
   }>;
 };
 
+export const SPOGOMI_POSTGRES_INTEGER_MAX = 2_147_483_647;
+
+export function normalizeSpogomiRegistrationCapacity(value: number | string | null | undefined): number | null | undefined {
+  if (value === undefined || value === null) return value;
+  const text = String(value);
+  if (!/^[1-9][0-9]*$/.test(text) || text.length > 10) throw new Error("Validation: la capacité doit être un entier positif représentable.");
+  const normalized = Number(text);
+  if (!Number.isSafeInteger(normalized) || normalized > SPOGOMI_POSTGRES_INTEGER_MAX) throw new Error("Validation: la capacité doit être un entier positif représentable.");
+  return normalized;
+}
+
 const STATUSES = new Set<SpogomiRegistrationReadinessStatus>(["complete", "incomplete", "not_verified"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

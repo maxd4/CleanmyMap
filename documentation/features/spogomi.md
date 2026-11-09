@@ -191,6 +191,14 @@ consignes de sécurité, le contact d'organisation, la procédure d'assistance e
 la déclaration d'applicabilité des mineurs avec leurs indicateurs de
 vérification.
 
+La capacité est exprimée par un entier positif représentable par PostgreSQL
+(`1` à `2147483647`). Une chaîne décimale canonique telle que `"12"` est
+normalisée en nombre par la frontière serveur ; les chaînes à zéros initiaux,
+`0` et les valeurs hors plage sont refusées. La politique d'édition est la
+valeur héritée et la politique de division la valeur spécifique ; cette même
+projection et ce même comptage par division sont réutilisés par la checklist,
+les demandes, les approbations et la fiche publique.
+
 Chaque élément est affiché comme « Complet », « Incomplet » ou « Non vérifié »,
 avec un lien vers la zone de préparation concernée.
 spogomi_open_registration refuse une transition depuis draft tant que toutes
