@@ -166,6 +166,38 @@ déjà rejouables, les régularisations de présence, les opérations administra
 et les circuits externes non contrôlés par CleanMyMap ne sont pas verrouillés
 par ce quiz.
 
+### Cycle de vie et changements substantiels
+
+La matrice serveur `spogomi_admission_transition_allowed` est la référence des
+demandes : une demande `pending` peut devenir `approved`, `rejected` ou
+`cancelled`, puis son état terminal est immuable (un rejeu du même état reste
+idempotent). L'approbation `registration` crée ou réactive uniquement la ligne
+du compte dans la division demandée ; l'approbation `team_join` vérifie et lie
+une ligne de roster existante ; `presence_regularization` ne crée aucun
+participant. Une nouvelle demande `registration` ne peut être créée qu'après
+un désistement d'une inscription directe et la validation d'un nouveau quiz.
+Les imports organisateur et les invitations anticipées conservent leur source
+et leur propriétaire ; ils ne passent pas par une seconde inscription.
+
+Le désistement authentifié passe par `withdraw_spogomi_participant` et conserve
+la trace append-only dans `spogomi_participant_lifecycle_events`. Une
+réinscription directe réutilise cette même ligne uniquement si elle est
+`withdrawn`, issue de `direct_registration` et dans la même division ; un
+participant importé ou déjà `registered` n'est jamais dupliqué ni réactivé par
+ce parcours.
+
+Les changements de date, lieu, règlement, éligibilité, mode ou bornes d'équipe
+font progresser `registration_contract_revision` et sont enregistrés dans
+`spogomi_event_change_history`. Les preuves du quiz portent cette révision :
+elles deviennent obsolètes pour les nouvelles demandes, tandis que les
+admissions déjà approuvées et les participants existants restent inchangés.
+Les participants enregistrés et demandeurs actifs reçoivent une notification
+privée idempotente indiquant les champs concernés et si une confirmation est
+requise. La confirmation explicite est disponible par
+`acknowledge_spogomi_event_change` uniquement pour les comptes concernés ; elle
+ne transforme jamais une notification en admission et n'annule aucun droit
+existant.
+
 ## Index des modules
 
 - [Données, import et règlements](./spogomi-donnees-regles.md)
