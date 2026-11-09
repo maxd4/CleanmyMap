@@ -117,13 +117,18 @@ function DivisionSelector({
         {divisionTypes.map((divisionType) => (
           <CmmButton
             key={divisionType}
-            href={buildSpogomiEventHref(eventSlug, { division: divisionType })}
+            asChild
             tone={selectedDivisionType === divisionType ? "primary" : "secondary"}
             size="sm"
             variant="pill"
             ariaLabel={`Afficher la division ${divisionLabel[divisionType]}`}
           >
-            {divisionLabel[divisionType]}
+            <a
+              href={buildSpogomiEventHref(eventSlug, { division: divisionType })}
+              aria-current={selectedDivisionType === divisionType ? "page" : undefined}
+            >
+              {divisionLabel[divisionType]}
+            </a>
           </CmmButton>
         ))}
       </div>
