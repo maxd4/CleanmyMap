@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
 vi.mock("next/headers", () => ({ cookies: mocks.cookies }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
-vi.mock("lucide-react", () => ({ ArrowLeft: () => null, ArrowRight: () => null, BookOpen: () => null, CalendarDays: () => null, Globe2: () => null, MapPin: () => null, ShieldCheck: () => null }));
+vi.mock("lucide-react", () => ({ ArrowLeft: () => null, ArrowRight: () => null, BookOpen: () => null, CalendarDays: () => null, Clock3: () => null, Globe2: () => null, LifeBuoy: () => null, MapPin: () => null, Navigation: () => null, PackageCheck: () => null, Phone: () => null, ShieldCheck: () => null }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("div", props, children) }));
 vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ children, href, ...props }: React.PropsWithChildren<Record<string, unknown>>) => href ? React.createElement("a", { ...props, href }, children) : React.createElement("button", props, children), CmmButtonGroup: ({ children }: React.PropsWithChildren) => React.createElement("div", null, children) }));
 vi.mock("@/components/ui/cmm-disclosure", () => ({ CmmDisclosure: ({ children, summary }: React.PropsWithChildren<{ summary: React.ReactNode }>) => React.createElement("details", null, React.createElement("summary", null, summary), children) }));
@@ -35,6 +35,7 @@ vi.mock("@/components/spogomi/spogomi-public-results", () => ({ SpogomiPublicRes
 vi.mock("@/components/spogomi/spogomi-photo-gallery", () => ({ SpogomiPhotoGallery: () => React.createElement("div", { "data-testid": "gallery" }) }));
 vi.mock("@/components/spogomi/spogomi-team-join-button", () => ({ SpogomiTeamJoinButton: ({ teamId }: { teamId: string }) => React.createElement("span", { "data-team-id": teamId }) }));
 vi.mock("@/components/spogomi/spogomi-admission-request-card", () => ({ SpogomiAdmissionRequestCard: () => React.createElement("div", { "data-testid": "admission" }) }));
+vi.mock("@/components/spogomi/spogomi-volunteer-help-proposal-form", () => ({ SpogomiVolunteerHelpProposalForm: () => React.createElement("div", { "data-testid": "volunteer-help" }) }));
 vi.mock("@/components/spogomi/spogomi-team-result-form", () => ({ SpogomiTeamResultForm: ({ form }: { form: { team: { publicName: string } } }) => React.createElement("div", { "data-team-form": form.team.publicName }) }));
 vi.mock("@/components/spogomi/spogomi-identity-assistance-invitation", () => ({ SpogomiIdentityAssistanceInvitation: ({ eventId, token }: { eventId: string; token: string }) => React.createElement("div", { "data-assistance": `${eventId}:${token}` }) }));
 
@@ -48,7 +49,7 @@ const event = {
   startsAt: "2026-06-01T10:00:00.000Z", endsAt: "2026-06-01T14:00:00.000Z", locationLabel: "Paris",
   actionHref: "/actions/action-1", organizer: { verifiedName: "Association synthétique", territory: "Paris", officialSiteUrl: null, partnerProfileHref: null },
   teams: [{ id: "team-1", divisionId: "division-casual", divisionType: "casual", teamNumber: 1, publicName: "Alpha" }, { id: "team-2", divisionId: "division-world", divisionType: "world_cup", teamNumber: 2, publicName: "Bravo" }],
-  divisions: [{ id: "division-casual", type: "casual" }, { id: "division-world", type: "world_cup" }], route: { fileName: "route.gpx", referenceDistanceKm: 2.4, coordinates: [[2.3, 48.8]] }, results: null, gallery: [],
+  divisions: [{ id: "division-casual", type: "casual" }, { id: "division-world", type: "world_cup" }], route: { fileName: "route.gpx", referenceDistanceKm: 2.4, coordinates: [[2.3, 48.8]] }, practicalInformation: { meetingPoint: "Entrée nord", collectionZone: "Berges délimitées", unfoldingMessage: "Briefing puis collecte et tri.", recommendedMaterials: ["Gants"], materialsProvided: ["Pinces"], safetyInstructions: "Rester en binôme.", organizationContact: "Contact public vérifié", assistanceProcedure: "Signaler un incident.", schedules: [{ divisionId: "division-casual", divisionType: "casual", timezoneName: "Europe/Paris", officialStartAt: "2026-06-01T10:00:00.000Z", collectionLimitAt: "2026-06-01T10:40:00.000Z", sortingLimitAt: "2026-06-01T11:00:00.000Z", weighingStartAt: "2026-06-01T11:00:00.000Z", weighingEndAt: "2026-06-01T11:20:00.000Z" }] }, results: null, gallery: [],
 };
 
 describe("SPOGOMI consumer pages", () => {
@@ -68,6 +69,10 @@ describe("SPOGOMI consumer pages", () => {
     expect(markup).toContain("Association synthétique");
     expect(markup).toContain("route.gpx");
     expect(markup).toContain("Alpha");
+    expect(markup).toContain("Informations pratiques");
+    expect(markup).toContain("Entrée nord");
+    expect(markup).toContain("Contact public vérifié");
+    expect(markup).toContain("Horaires officiels par division");
     expect(markup).not.toContain("external_reference");
     expect(markup).not.toContain("requesterClerkId");
   });

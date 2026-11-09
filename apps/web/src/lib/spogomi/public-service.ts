@@ -17,6 +17,10 @@ import { loadSpogomiOrganizerForAction } from "./partner-impact-service";
 import type { SpogomiPublicOrganizer } from "./partner-impact";
 import { loadPublishedSpogomiGalleryForAction } from "./photo-gallery-service";
 import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
+import {
+  buildSpogomiPublicPracticalInformation,
+  type SpogomiPublicPracticalInformation,
+} from "./public-practical-information";
 
 export type SpogomiPublicLifecycle = SpogomiCalendarStatus;
 export type SpogomiPublicDataProvenance = "published_event";
@@ -66,6 +70,7 @@ export type SpogomiPublicEvent = {
   divisions: SpogomiPublicDivision[];
   teams: SpogomiPublicTeam[];
   route: SpogomiPublicRoute | null;
+  practicalInformation?: SpogomiPublicPracticalInformation | null;
   results: SpogomiPublicResults | null;
   organizer: SpogomiPublicOrganizer | null;
   gallery: SpogomiPublicGalleryPhoto[];
@@ -86,6 +91,17 @@ type PublicEventRow = {
   public_visibility: "private" | "published";
   public_results_visibility: "hidden" | "provisional" | "certified";
 };
+
+async function loadPublicActionPreparation(
+  supabase: SupabaseClient,
+  actionId: string,
+  publishableActionIds: Set<string>,
+): Promise<unknown | null> {
+  if (!publishableActionIds.has(actionId)) return null;
+  const result = await supabase.from("actions").select("preparation_data").eq("id", actionId).maybeSingle();
+  if (result.error) throw result.error;
+  return result.data?.preparation_data ?? null;
+}
 
 type PublicDivisionRegistrationRow = {
   id: string;
@@ -244,6 +260,7 @@ function mapEvent(
   teams: SpogomiPublicTeam[] = [],
   divisions: Array<Pick<SpogomiPublicDivision, "id" | "type">> = [],
   route: SpogomiPublicRoute | null = null,
+  practicalInformation: SpogomiPublicPracticalInformation | null = null,
   results: SpogomiPublicResults | null = null,
   organizer: SpogomiPublicOrganizer | null = null,
   gallery: SpogomiPublicGalleryPhoto[] = [],
@@ -279,6 +296,7 @@ function mapEvent(
     })),
     teams,
     route,
+    practicalInformation,
     results,
     organizer,
     gallery,
@@ -310,7 +328,7 @@ export async function listPublishedSpogomiEvents(
       loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
       loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
     ]);
-    return mapEvent(row, actionIds, [], [], null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable", now);
+    return mapEvent(row, actionIds, [], [], null, null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable", now);
   }));
   return mapped
     .filter((event): event is SpogomiPublicEvent => Boolean(event))
@@ -332,7 +350,7 @@ export async function loadPublishedSpogomiEventBySlug(
   const row = rows[0];
   if (!row) return null;
   const actionIds = await loadPublicActionHrefs(supabase, [row.action_id]);
-  const [divisionsResult, teamsResult, routeResult, projection] = await Promise.all([
+  const [divisionsResult, teamsResult, routeResult, projection, actionPreparation, operationsResult] = await Promise.all([
     supabase.from("spogomi_divisions").select("id, division_type, regulation_config").eq("event_id", row.id).order("division_type"),
     supabase
       .from("spogomi_teams")
@@ -345,10 +363,16 @@ export async function loadPublishedSpogomiEventBySlug(
       .eq("event_id", row.id)
       .maybeSingle(),
     loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
+    loadPublicActionPreparation(supabase, row.action_id, actionIds),
+    supabase
+      .from("spogomi_field_operations")
+      .select("division_id, timezone_name, official_start_at, collection_limit_at, sorting_limit_at, weighing_start_at, weighing_end_at")
+      .eq("event_id", row.id),
   ]);
   if (divisionsResult.error) throw divisionsResult.error;
   if (teamsResult.error) throw teamsResult.error;
   if (routeResult.error) throw routeResult.error;
+  if (operationsResult.error) throw operationsResult.error;
   const routeData = routeResult.data as {
     source: "official_reference";
     file_name: string;
@@ -367,6 +391,16 @@ export async function loadPublishedSpogomiEventBySlug(
         coordinates: routeData.geometry_geojson.coordinates,
       }
     : null;
+  const divisions = (divisionsResult.data ?? []).map((division) => ({
+    id: String(division.id),
+    type: division.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
+  }));
+  const practicalInformation = buildSpogomiPublicPracticalInformation({
+    actionPreparationData: actionPreparation as Parameters<typeof buildSpogomiPublicPracticalInformation>[0]["actionPreparationData"],
+    registrationConfig: row.regulation_config,
+    divisions,
+    operations: (operationsResult.data ?? []) as Parameters<typeof buildSpogomiPublicPracticalInformation>[0]["operations"],
+  });
   const mapped = mapEvent(
     row,
     actionIds,
@@ -378,11 +412,9 @@ export async function loadPublishedSpogomiEventBySlug(
       publicName: String(team.public_name),
       compositionState: String(team.composition_state),
     })),
-    (divisionsResult.data ?? []).map((division) => ({
-      id: String(division.id),
-      type: division.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
-    })),
+    divisions,
     route,
+    practicalInformation,
     projection?.results ?? null,
     await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
     await loadPublishedSpogomiGalleryForAction({ supabase, actionId: row.action_id }),

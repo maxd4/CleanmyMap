@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -15,10 +15,10 @@ import { SpogomiVolunteerHelpProposalForm } from "@/components/spogomi/spogomi-v
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
-import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 import { buildPageMetadata } from "@/lib/metadata";
 import { isSpogomiCachanDemoEvent } from "@/lib/spogomi/demo-scenario";
 import { SpogomiSyntheticDemoNotice } from "@/components/spogomi/spogomi-synthetic-demo-notice";
+import { SpogomiPracticalInformation } from "@/components/spogomi/spogomi-practical-information";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -33,10 +33,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: `Informations publiques de la compétition SPOGOMI ${event.name}.`,
     robots: { index: true, follow: true },
   });
-}
-
-function formatDate(value: string, timeZone: string) {
-  return formatDateTimeInTimeZone(value, timeZone, { dateStyle: "long", timeStyle: "short" });
 }
 
 export default async function SpogomiPublicEventPage({ params }: Props) {
@@ -57,10 +53,8 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
         {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Cette fiche publique éventuelle présente uniquement une simulation. Les résultats restent non officiels et la publication de chaque division dépend des contrôles de certification.</p></SpogomiSyntheticDemoNotice> : null}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <div className="space-y-6">
+            <SpogomiPracticalInformation startsAt={event.startsAt} endsAt={event.endsAt} officialTimezone={event.officialTimezone} locationLabel={event.locationLabel} lifecycleLabel={lifecycleLabel} registrationLabel={registrationLabel} resultsLabel={resultsLabel} practicalInformation={event.practicalInformation} />
             <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
-              <h2 className="text-xl font-black text-emerald-950">Informations pratiques</h2>
-              <p className="flex items-center gap-2 text-sm text-slate-700"><CalendarDays size={16} className="text-emerald-700" aria-hidden="true" />{formatDate(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${formatDate(event.endsAt, event.officialTimezone)}` : ""}</p>
-              <p className="flex items-center gap-2 text-sm text-slate-700"><MapPin size={16} className="text-emerald-700" aria-hidden="true" />{event.locationLabel}</p>
               {event.actionHref ? <CmmButton href={event.actionHref} tone="primary" size="sm" variant="pill">Voir l’action CleanMyMap associée</CmmButton> : <p className="text-sm text-slate-600">L’action CleanMyMap associée n’est pas publiée dans cette vue.</p>}
               <CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary" size="sm" variant="pill">Discuter avec la communauté</CmmButton>
               <p className="cmm-text-small text-slate-700">Ce salon est une discussion communautaire. Le règlement et les résultats officiels sont ceux publiés par l’organisateur habilité.</p>

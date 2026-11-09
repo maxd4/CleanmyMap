@@ -132,6 +132,23 @@ complètes. La création directe d'une nouvelle demande recontrôle cette
 projection côté serveur ; les demandes existantes, les participations déjà
 enregistrées et les opérations administratives restent hors de ce verrou.
 
+### Informations pratiques de la fiche publique
+
+La fiche `/spogomi/[eventSlug]` compose un bloc compact à partir des mêmes
+owners : date, lieu et fuseau de `spogomi_events`, horaires complets de
+`spogomi_field_operations` par division, périmètre et point de rendez-vous de
+la préparation publique de l'action liée, parcours `official_reference`, et
+matériel issu de la projection publique d'action. Une ligne d'horaires
+incomplète ou rattachée à une division inconnue n'est pas affichée comme un
+horaire officiel.
+
+Les consignes de sécurité, le contact public et la procédure d'assistance issus
+de `registrationPolicy` ne sont rendus que lorsque leur indicateur de
+vérification est vrai. Les informations absentes restent explicitement
+signalées comme non communiquées. Les coordonnées ou consignes réservées aux
+participants admis ne sont jamais chargées dans cette projection publique ;
+aucune saisie ou référentiel événementiel parallèle n'est créé pour ce bloc.
+
 ### Quiz pédagogique obligatoire avant inscription
 
 Une nouvelle demande `registration` envoyée par CleanMyMap doit disposer d'une
