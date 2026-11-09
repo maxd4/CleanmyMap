@@ -142,6 +142,8 @@ export function evaluateReleaseGate({
     && typeof evidence.baseRef === "string"
     && evidence.baseRef.length > 0
     && validSha(evidence.baseSha)
+    && validSha(evidence.productionBaseSha ?? evidence.baseSha)
+    && validSha(evidence.publicationBaseSha ?? evidence.baseSha)
     && validSha(evidence.candidateTreeSha)
     && validSha(evidence.completionTreeSha)
     && evidence.candidateTreeSha === evidence.completionTreeSha
@@ -159,6 +161,8 @@ export function evaluateReleaseGate({
     && deployScope?.valid === true
     && deployScope.candidateTreeSha === evidence.candidateTreeSha
     && deployScope.baseSha === evidence.baseSha
+    && (deployScope.productionBaseSha ?? deployScope.baseSha) === (evidence.productionBaseSha ?? evidence.baseSha)
+    && (deployScope.publicationBaseSha ?? deployScope.baseSha) === (evidence.publicationBaseSha ?? evidence.baseSha)
     && sameItems(deployScope.changedFiles, evidence.changedFiles));
   const provenanceVerified = Boolean(
     provenance?.repository === CANONICAL_REPOSITORY

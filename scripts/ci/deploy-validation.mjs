@@ -319,6 +319,8 @@ export async function resolveDeployCandidate({
     candidateTreeSha: "",
     baseRef: baseRef || "",
     baseSha: "",
+    productionBaseSha: "",
+    publicationBaseSha: "",
     changedFiles: [],
     webChangedFiles: [],
     unsupportedFiles: [],
@@ -367,6 +369,19 @@ export async function resolveDeployCandidate({
     return result;
   }
 
+  const publicationBaseSha = git(repositoryRoot, ["rev-parse", "--verify", "refs/remotes/origin/main"], { allowFailure: true });
+  if (!SHA_PATTERN.test(publicationBaseSha)) {
+    result.reason = "DEPLOY_PUBLICATION_BASE_UNVERIFIED";
+    return result;
+  }
+  try {
+    git(repositoryRoot, ["merge-base", "--is-ancestor", publicationBaseSha, requestedSha]);
+  } catch {
+    result.reason = "DEPLOY_PUBLICATION_BASE_NOT_ANCESTOR";
+    return result;
+  }
+  result.publicationBaseSha = publicationBaseSha;
+
   const publication = verifyPublicationReference({
     repositoryRoot,
     candidateSha: requestedSha,
@@ -383,6 +398,7 @@ export async function resolveDeployCandidate({
     return result;
   }
   result.baseSha = verifiedPublication.reference.sha;
+  result.productionBaseSha = result.baseSha;
   result.baseRef = verifiedPublication.reference.sha;
 
   result.changedFiles = listDiffFiles(repositoryRoot, result.baseSha, result.candidateTreeSha);
@@ -424,6 +440,8 @@ export function printDeployCandidateResult(result, { log = console.log, error = 
   log(`DEPLOY_CANDIDATE_SHA: ${result.candidateSha || "MISSING"}`);
   log(`DEPLOY_BASE_REF: ${result.baseRef || "MISSING"}`);
   log(`DEPLOY_BASE_SHA: ${result.baseSha || "MISSING"}`);
+  log(`DEPLOY_PRODUCTION_BASE_SHA: ${result.productionBaseSha || result.baseSha || "MISSING"}`);
+  log(`DEPLOY_PUBLICATION_BASE_SHA: ${result.publicationBaseSha || "MISSING"}`);
   log(`DEPLOY_CHANGED_FILES: ${result.changedFiles.length}`);
   log(`DEPLOY_WEB_CHANGED_FILES: ${result.webChangedFiles.length}`);
   log(`DEPLOY_PUBLICATION_REFERENCE: ${result.publicationReference?.sha || "MISSING"}`);

@@ -15,6 +15,7 @@ import {
   removePathWithRetry,
   VALIDATION_EVIDENCE_RELATIVE_ROOT,
 } from "./validation-evidence.mjs";
+import { captureWorktreeCandidate, commitCandidate } from "./publish-main.mjs";
 import {
   resolveValidationCommand,
   resolveWindowsSystemExecutable,
@@ -214,6 +215,7 @@ test("DEPLOY propagates the publication proof path through the runner to deploy-
     fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default function Page() { return null; }\n");
     execFileSync("git", ["add", "--", "."], { cwd: root, stdio: "ignore" });
     withAmbientGitIdentityUnset(() => initializeGitFixture(root));
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", "HEAD"], { cwd: root, stdio: "ignore" });
     const proofPath = path.join(root, "vercel-proof.json");
     fs.writeFileSync(proofPath, JSON.stringify({
       version: 1,
@@ -837,6 +839,7 @@ function publicationFixture() {
   execFileSync("git", ["remote", "add", "origin", "https://github.com/maxd4/CleanmyMap.git"], { cwd: root });
   execFileSync("git", ["add", "--", "."], { cwd: root });
   execFileSync("git", ["commit", "--quiet", "-m", "baseline"], { cwd: root });
+  execFileSync("git", ["update-ref", "refs/remotes/origin/main", "HEAD"], { cwd: root });
   return root;
 }
 
@@ -856,7 +859,7 @@ function publicationProof(baseSha) {
   };
 }
 
-function publicationRuntime(root, { runCheck, publishMain = async () => "published", coverageGate = async () => {} } = {}) {
+function publicationRuntime(root, { runCheck, publishMain = async () => "published", coverageGate = async () => {}, releaseGate = async () => {}, commitCandidate: commitCandidateImpl, log = () => {} } = {}) {
   return {
     repositoryRoot: root,
     interactive: false,
@@ -883,34 +886,114 @@ function publicationRuntime(root, { runCheck, publishMain = async () => "publish
       },
     }),
     runPreCommit: false,
-    releaseGate: async () => {},
+    releaseGate,
     coverageGate,
     publishMain,
-    log: () => {},
+    commitCandidate: commitCandidateImpl,
+    log,
   };
 }
 
-async function runAutoPublicationFixture({ runCheck, createRunCheck, publishMain } = {}) {
+async function runAutoPublicationFixture({ runCheck, createRunCheck, publishMain, releaseGate, commitCandidate: commitCandidateImpl, productionLag = false, log } = {}) {
   const root = publicationFixture();
+  const productionSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  if (productionLag) {
+    fs.writeFileSync(path.join(root, "README.md"), "baseline advanced before candidate\n");
+    execFileSync("git", ["add", "--", "README.md"], { cwd: root });
+    execFileSync("git", ["commit", "--quiet", "-m", "advance publication base"], { cwd: root });
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", "HEAD"], { cwd: root });
+  }
   const page = path.join(root, "apps", "web", "src", "page.tsx");
   fs.writeFileSync(page, "export default null;\n");
   const baseSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
   const proofPath = path.join(root, "vercel-proof.json");
-  fs.writeFileSync(proofPath, JSON.stringify(publicationProof(baseSha)));
+  fs.writeFileSync(proofPath, JSON.stringify(publicationProof(productionLag ? productionSha : baseSha)));
   const effectiveRunCheck = createRunCheck?.(root) ?? runCheck ?? (async () => ({ status: "PASS", exitCode: 0 }));
   const result = await runValidationMode({
     mode: "DEPLOY",
     autoPublish: true,
     candidateFiles: ["apps/web/src/page.tsx"],
-    deploymentReferenceSha: baseSha,
+    deploymentReferenceSha: productionLag ? productionSha : baseSha,
     deploymentProofPath: proofPath,
     maxParallel: 1,
   }, publicationRuntime(root, {
     runCheck: effectiveRunCheck,
     publishMain,
+    releaseGate,
+    commitCandidate: commitCandidateImpl,
+    log,
   }));
-  return { root, result, baseSha, proofPath };
+  return { root, result, baseSha, productionSha: productionLag ? productionSha : baseSha, proofPath };
 }
+
+test("publishes a candidate based on origin/main when Production Vercel is older", async () => {
+  let releaseBaseSha = "";
+  let publishBaseSha = "";
+  const fixture = await runAutoPublicationFixture({
+    productionLag: true,
+    releaseGate: async ({ publicationBaseSha }) => { releaseBaseSha = publicationBaseSha; },
+    publishMain: async ({ expectedRemoteSha }) => { publishBaseSha = expectedRemoteSha; return "published"; },
+  });
+  try {
+    assert.equal(fixture.result, 0);
+    assert.equal(releaseBaseSha, fixture.baseSha);
+    assert.equal(publishBaseSha, fixture.baseSha);
+    assert.notEqual(fixture.productionSha, fixture.baseSha);
+  } finally {
+    removeFixture(fixture.root);
+  }
+});
+
+test("refuses publication when origin/main advances after the validated capture", async () => {
+  let published = false;
+  const fixture = await runAutoPublicationFixture({
+    commitCandidate: async (options) => {
+      const committed = commitCandidate(options);
+      const advanced = execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture@cleanmymap.local", "commit-tree", `${committed.commitSha}^{tree}`, "-p", committed.commitSha, "-m", "concurrent remote"], { cwd: options.repositoryRoot, encoding: "utf8" }).trim();
+      execFileSync("git", ["update-ref", "refs/remotes/origin/main", advanced], { cwd: options.repositoryRoot });
+      return committed;
+    },
+    publishMain: async () => { published = true; return "never"; },
+  });
+  try {
+    // The race is installed after the validated candidate has been committed.
+    assert.equal(fixture.result, 1);
+    assert.equal(published, false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+});
+
+test("restores the caller Git index and removes the temporary index after preflight failure", async () => {
+  const root = publicationFixture();
+  const previous = path.join(root, "caller-index");
+  const missingProof = path.join(root, "missing-proof.json");
+  const page = path.join(root, "apps", "web", "src", "page.tsx");
+  fs.writeFileSync(page, "export default null;\n");
+  const before = process.env.GIT_INDEX_FILE;
+  process.env.GIT_INDEX_FILE = previous;
+  let captured;
+  try {
+    await assert.rejects(runValidationMode({
+      mode: "DEPLOY",
+      autoPublish: true,
+      candidateFiles: ["apps/web/src/page.tsx"],
+      deploymentProofPath: missingProof,
+    }, {
+      repositoryRoot: root,
+      captureCandidate: (options) => {
+        captured = captureWorktreeCandidate(options);
+        return captured;
+      },
+    }), /publication proof could not be read/);
+    assert.equal(process.env.GIT_INDEX_FILE, previous);
+    assert.equal(fs.existsSync(captured.indexPath), false);
+  } finally {
+    if (before === undefined) delete process.env.GIT_INDEX_FILE;
+    else process.env.GIT_INDEX_FILE = before;
+    removeFixture(root);
+  }
+});
 
 test("auto-publishes only after a completely green DEPLOY candidate", async () => {
   let published = false;

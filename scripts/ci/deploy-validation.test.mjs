@@ -22,6 +22,7 @@ function makeRepository(marker = "baseline") {
   fs.writeFileSync(path.join(root, "README.md"), `${marker}\n`);
   git(root, ["add", "--", "."]);
   git(root, ["commit", "--quiet", "-m", "baseline"]);
+  git(root, ["update-ref", "refs/remotes/origin/main", "HEAD"]);
   return root;
 }
 
@@ -128,6 +129,8 @@ test("DEPLOY uses the verified Production SHA and includes the cumulative Web di
     });
     assert.equal(result.valid, true);
     assert.equal(result.baseSha, productionSha);
+    assert.equal(result.productionBaseSha, productionSha);
+    assert.equal(result.publicationBaseSha, productionSha);
     assert.deepEqual(result.webChangedFiles, ["apps/web/src/first.tsx", "apps/web/src/second.tsx"]);
   } finally {
     removePathWithRetry(root, { recursive: true });
@@ -148,6 +151,27 @@ test("DEPLOY refuses an arbitrary newer base that would omit an unpublished Web 
     });
     assert.equal(result.valid, false);
     assert.equal(result.reason, "DEPLOY_BASE_REF_NOT_PUBLICATION_REFERENCE");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("DEPLOY refuses a candidate that does not descend from origin/main", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    commitWebChange(root);
+    const candidateSha = git(root, ["rev-parse", "HEAD"]);
+    const foreignBase = execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture@cleanmymap.local", "commit-tree", `${productionSha}^{tree}`, "-m", "foreign base"], { cwd: root, encoding: "utf8" }).trim();
+    git(root, ["update-ref", "refs/remotes/origin/main", foreignBase]);
+    const result = await resolveDeployCandidate({
+      repositoryRoot: root,
+      candidateSha,
+      deploymentReference: { sha: productionSha },
+      deploymentProof: proof(productionSha),
+    });
+    assert.equal(result.valid, false);
+    assert.equal(result.reason, "DEPLOY_PUBLICATION_BASE_NOT_ANCESTOR");
   } finally {
     removePathWithRetry(root, { recursive: true });
   }

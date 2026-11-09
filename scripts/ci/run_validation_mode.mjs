@@ -119,14 +119,14 @@ function readDeploymentProof(proofPath) {
   }
 }
 
-function runPendingReleaseGate({ repositoryRoot, candidateSha, baseSha, target = "production" }) {
+function runPendingReleaseGate({ repositoryRoot, candidateSha, publicationBaseSha, target = "production" }) {
   const result = spawnSync(process.execPath, [
     "scripts/ci/release-gate.mjs",
     `--sha=${candidateSha}`,
     `--target=${target}`,
     "--profile=deploy",
     "--pending-publish",
-    `--base-sha=${baseSha}`,
+    `--base-sha=${publicationBaseSha}`,
   ], {
     cwd: repositoryRoot,
     env: process.env,
@@ -451,62 +451,8 @@ export async function runValidationMode(
   }
   let publicationCandidate = null;
   let previousIndexFile;
-  if (options.autoPublish) {
-    publicationCandidate = (runtime.captureCandidate ?? captureWorktreeCandidate)({
-      repositoryRoot,
-      candidateFiles: options.candidateFiles,
-      excludedFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
-    });
-    previousIndexFile = process.env.GIT_INDEX_FILE;
-    process.env.GIT_INDEX_FILE = publicationCandidate.indexPath;
-  }
-  const effectiveOptions = options.autoPublish
-    ? { ...options, candidateScope: "STAGED" }
-    : options;
-  const candidateSha = getCandidateSha(repositoryRoot);
-  const deploymentProof = effectiveOptions.mode === "DEPLOY"
-    ? readDeploymentProof(options.deploymentProofPath)
-    : null;
-  const deployScope = effectiveOptions.mode === "DEPLOY"
-    ? await resolveDeployCandidate({
-      repositoryRoot,
-      candidateSha,
-      baseRef: options.baseRef,
-      deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
-      deploymentProof,
-      candidateTreeSha: publicationCandidate?.candidateTreeSha,
-      allowDirtyCandidate: Boolean(publicationCandidate),
-      allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
-      vercelClient: runtime.vercelClient,
-    })
-    : null;
-  const changedFiles = effectiveOptions.mode === "DEPLOY"
-    ? deployScope?.changedFiles ?? []
-    : effectiveOptions.changedFiles.length > 0
-      ? effectiveOptions.changedFiles
-      : getCandidateFiles(effectiveOptions.candidateScope, repositoryRoot);
-  const plan = createModeValidationPlan({
-    ...effectiveOptions,
-    candidateSha,
-    changedFiles,
-    baseRef: deployScope?.baseRef ?? options.baseRef,
-    publicationReference: deployScope?.publicationReference
-      ?? (options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null),
-    publicationProofPath: options.deploymentProofPath,
-    dependencyGraphChanged: deployScope?.dependencyGraphChanged,
-    candidateTreeSha: publicationCandidate?.candidateTreeSha,
-    allowDirtyCandidate: Boolean(publicationCandidate),
-  });
-  const candidateFingerprint = createCandidateFingerprint({
-    repositoryRoot,
-    candidateScope: plan.candidateScope,
-    changedFiles,
-    candidateSha,
-  });
-  const releaseFullValidationLock = plan.mode === "FULL"
-    ? acquireFullValidationLock({ repositoryRoot, candidateSha })
-    : () => {};
-  let publicationIndexRestored = !publicationCandidate;
+  let publicationIndexRestored = true;
+  let releaseFullValidationLock = () => {};
   const restorePublicationIndex = () => {
     if (publicationIndexRestored) return;
     if (previousIndexFile === undefined) delete process.env.GIT_INDEX_FILE;
@@ -515,6 +461,62 @@ export async function runValidationMode(
   };
 
   try {
+    if (options.autoPublish) {
+      previousIndexFile = process.env.GIT_INDEX_FILE;
+      publicationCandidate = (runtime.captureCandidate ?? captureWorktreeCandidate)({
+        repositoryRoot,
+        candidateFiles: options.candidateFiles,
+        excludedFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
+      });
+      process.env.GIT_INDEX_FILE = publicationCandidate.indexPath;
+      publicationIndexRestored = false;
+    }
+    const effectiveOptions = options.autoPublish
+      ? { ...options, candidateScope: "STAGED" }
+      : options;
+    const candidateSha = getCandidateSha(repositoryRoot);
+    const deploymentProof = effectiveOptions.mode === "DEPLOY"
+      ? readDeploymentProof(options.deploymentProofPath)
+      : null;
+    const deployScope = effectiveOptions.mode === "DEPLOY"
+      ? await resolveDeployCandidate({
+        repositoryRoot,
+        candidateSha,
+        baseRef: options.baseRef,
+        deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
+        deploymentProof,
+        candidateTreeSha: publicationCandidate?.candidateTreeSha,
+        allowDirtyCandidate: Boolean(publicationCandidate),
+        allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
+        vercelClient: runtime.vercelClient,
+      })
+      : null;
+    const changedFiles = effectiveOptions.mode === "DEPLOY"
+      ? deployScope?.changedFiles ?? []
+      : effectiveOptions.changedFiles.length > 0
+        ? effectiveOptions.changedFiles
+        : getCandidateFiles(effectiveOptions.candidateScope, repositoryRoot);
+    const plan = createModeValidationPlan({
+      ...effectiveOptions,
+      candidateSha,
+      changedFiles,
+      baseRef: deployScope?.baseRef ?? options.baseRef,
+      publicationReference: deployScope?.publicationReference
+        ?? (options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null),
+      publicationProofPath: options.deploymentProofPath,
+      dependencyGraphChanged: deployScope?.dependencyGraphChanged,
+      candidateTreeSha: publicationCandidate?.candidateTreeSha,
+      allowDirtyCandidate: Boolean(publicationCandidate),
+    });
+    const candidateFingerprint = createCandidateFingerprint({
+      repositoryRoot,
+      candidateScope: plan.candidateScope,
+      changedFiles,
+      candidateSha,
+    });
+    releaseFullValidationLock = plan.mode === "FULL"
+      ? acquireFullValidationLock({ repositoryRoot, candidateSha })
+      : () => {};
     const fastEvidence = plan.mode === "FULL"
       ? readFastValidationEvidence({ repositoryRoot, candidateFingerprint })
       : new Map();
@@ -681,6 +683,8 @@ export async function runValidationMode(
           deployScope?.valid
             && completionDeployScope?.valid
             && completionDeployScope.baseSha === deployScope.baseSha
+            && completionDeployScope.productionBaseSha === deployScope.productionBaseSha
+            && completionDeployScope.publicationBaseSha === deployScope.publicationBaseSha
             && completionDeployScope.publicationReference?.sha === deployScope.publicationReference?.sha
             && completionSha === candidateSha
             && completionFingerprint === candidateFingerprint
@@ -731,7 +735,10 @@ export async function runValidationMode(
           vercelClient: runtime.vercelClient,
         });
         const finalTreeSha = getCandidateTreeSha(repositoryRoot, committed.commitSha);
-        if (!finalScope.valid || finalTreeSha !== publicationCandidate.candidateTreeSha) {
+        if (!finalScope.valid
+          || finalScope.productionBaseSha !== deployScope.productionBaseSha
+          || finalScope.publicationBaseSha !== deployScope.publicationBaseSha
+          || finalTreeSha !== publicationCandidate.candidateTreeSha) {
           throw new Error(
             `DEPLOY_PUBLICATION_FINAL_CANDIDATE_INVALID: scope=${finalScope.reason}; tree=${finalTreeSha}.`,
           );
@@ -754,6 +761,8 @@ export async function runValidationMode(
           plan: finalPlan,
           baseRef: finalScope.baseRef,
           baseSha: finalScope.baseSha,
+          productionBaseSha: finalScope.productionBaseSha,
+          publicationBaseSha: finalScope.publicationBaseSha,
           publicationReference: finalScope.publicationReference,
           dependencyGraphChanged: Boolean(finalScope.dependencyGraphChanged),
           changedFiles: finalScope.changedFiles,
@@ -770,19 +779,19 @@ export async function runValidationMode(
         await releaseGate({
           repositoryRoot,
           candidateSha: committed.commitSha,
-          baseSha: finalScope.baseSha,
+          publicationBaseSha: finalScope.publicationBaseSha,
           target: "production",
         });
         const coverageGate = runtime.coverageGate ?? runCoveragePublicationGate;
         await coverageGate({
           repositoryRoot,
           candidateSha: committed.commitSha,
-          baseRef: finalScope.baseSha,
+          baseRef: finalScope.productionBaseSha,
           currentRef: committed.commitSha,
           changedFiles: finalScope.changedFiles,
         });
         const publishedSha = await (runtime.publishMain ?? publishMain)({
-          expectedRemoteSha: finalScope.baseSha,
+          expectedRemoteSha: finalScope.publicationBaseSha,
         });
         log(`PUBLISHED_MAIN_SHA: ${publishedSha}`);
         log(`PUBLISHED_TREE_SHA: ${finalTreeSha}`);
@@ -825,6 +834,8 @@ export async function runValidationMode(
         plan,
         baseRef: deployScope?.baseRef ?? options.baseRef,
         baseSha: deployScope?.baseSha ?? "",
+        productionBaseSha: deployScope?.productionBaseSha ?? deployScope?.baseSha ?? "",
+        publicationBaseSha: deployScope?.publicationBaseSha ?? "",
         publicationReference: deployScope?.publicationReference ?? null,
         dependencyGraphChanged: Boolean(deployScope?.dependencyGraphChanged),
         changedFiles,
