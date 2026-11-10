@@ -32,6 +32,8 @@ const copy: Record<string, string> = {
   "understanding.casualComposition": "Casual, deux à cinq.",
   "understanding.casualProcess": "Collecte puis tri.",
   "understanding.casualPoints": "Points selon l’édition.",
+  "understanding.casualDifference": "Événement non officiel avec un règlement allégé",
+  "understanding.worldCupDifference": "Événement compétitif officiel issu du programme SPOGOMI World Cup avec règlement strict",
   "understanding.worldCupComposition": "World Cup, trois.",
   "understanding.worldCupProcess": "Collecte puis tri compétitif.",
   "understanding.worldCupPoints": "Points selon les catégories.",
@@ -94,6 +96,11 @@ describe("SpogomiUnderstanding", () => {
     expect(markup).toContain('data-testid="spogomi-format-card-casual"');
     expect(markup).toContain('data-testid="spogomi-format-card-world-cup"');
     expect(markup.match(/data-testid="spogomi-format-metrics"/g)).toHaveLength(2);
+    expect(markup.match(/<details open=""/g)).toHaveLength(2);
+    expect(markup).toContain("Événement non officiel avec un règlement allégé");
+    expect(markup).toContain("Événement compétitif officiel issu du programme SPOGOMI World Cup avec règlement strict");
+    expect(markup).not.toContain("repère général");
+    expect(markup).not.toContain("circuit compétitif");
   });
 
   it("keeps the international content in its own secondary section", () => {

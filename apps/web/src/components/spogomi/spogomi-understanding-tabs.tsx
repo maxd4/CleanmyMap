@@ -44,7 +44,6 @@ export type SpogomiUnderstandingCopy = {
   casualTeamSize: string;
   casualCollection: string;
   casualSorting: string;
-  casualMeta: string;
   casualDifference: string;
   worldCupTitle: string;
   worldCupDescription: string;
@@ -54,7 +53,6 @@ export type SpogomiUnderstandingCopy = {
   worldCupTeamSize: string;
   worldCupCollection: string;
   worldCupSorting: string;
-  worldCupMeta: string;
   worldCupDifference: string;
   commonRulesTitle: string;
   rulesDescription: string;
@@ -144,7 +142,6 @@ export function SpogomiUnderstandingTabs({ copy }: { copy: SpogomiUnderstandingC
             collection={copy.casualCollection}
             sorting={copy.casualSorting}
             difference={copy.casualDifference}
-            meta={copy.casualMeta}
             metricTeamSize={copy.metricTeamSize}
             metricCollection={copy.metricCollection}
             metricSorting={copy.metricSorting}
@@ -167,7 +164,6 @@ export function SpogomiUnderstandingTabs({ copy }: { copy: SpogomiUnderstandingC
             collection={copy.worldCupCollection}
             sorting={copy.worldCupSorting}
             difference={copy.worldCupDifference}
-            meta={copy.worldCupMeta}
             metricTeamSize={copy.metricTeamSize}
             metricCollection={copy.metricCollection}
             metricSorting={copy.metricSorting}
@@ -221,7 +217,6 @@ function FormatBlock({
   collection,
   sorting,
   difference,
-  meta,
   metricTeamSize,
   metricCollection,
   metricSorting,
@@ -243,7 +238,6 @@ function FormatBlock({
   collection: string;
   sorting: string;
   difference: string;
-  meta: string;
   metricTeamSize: string;
   metricCollection: string;
   metricSorting: string;
@@ -266,7 +260,6 @@ function FormatBlock({
         </span>
         <div className="min-w-0">
           <h3 className="text-xl font-black text-emerald-950">{title}</h3>
-          <p className="mt-1 text-sm font-semibold text-slate-700">{meta}</p>
         </div>
       </div>
       <dl className="grid grid-cols-3 gap-2" data-testid="spogomi-format-metrics">
@@ -277,7 +270,7 @@ function FormatBlock({
       <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
         <span className="font-black">{differenceLabel} :</span> {difference}
       </p>
-      <CmmDisclosure summary={detailsLabel} tone="emerald" size="sm">
+      <CmmDisclosure summary={detailsLabel} tone="emerald" size="sm" defaultOpen>
         <div className="space-y-3 text-sm leading-6 text-slate-900">
           <p>{description}</p>
           <dl className="space-y-2">
