@@ -41,6 +41,8 @@ type CompositionLabelResult = {
   compositionRevision: number;
 };
 
+type CompositionDraftSaveResult = { already_processed: boolean; divisionId: string; compositionRevision: number };
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -104,6 +106,11 @@ function parseCompositionLabelResult(value: unknown): CompositionLabelResult {
     throw new Error("La réponse de modification de place SPOGOMI est invalide.");
   }
   return { already_processed: value.already_processed, participantId: value.participantId, displayName: value.displayName, compositionRevision: value.compositionRevision };
+}
+
+function parseCompositionDraftSaveResult(value: unknown): CompositionDraftSaveResult {
+  if (!isRecord(value) || typeof value.already_processed !== "boolean" || typeof value.divisionId !== "string" || !finiteNumber(value.compositionRevision)) throw new Error("La réponse d’enregistrement de composition SPOGOMI est invalide.");
+  return { already_processed: value.already_processed, divisionId: value.divisionId, compositionRevision: value.compositionRevision };
 }
 
 export class SpogomiCompositionProtectionError extends Error {
@@ -234,4 +241,25 @@ export async function updateSpogomiParticipantPrivateLabel(params: {
   });
   if (result.error) throw compositionRpcError(result.error);
   return parseCompositionLabelResult(result.data);
+}
+
+export async function saveSpogomiCompositionDraft(params: {
+  supabase: SupabaseClient;
+  event: EventForCompositionMutation;
+  divisionId: string;
+  expectedRevision: number;
+  teams: Array<{ id: string | null; clientKey: string | null; publicName: string; expectedPublicName: string | null }>;
+  participants: Array<{ id: string | null; clientKey: string | null; privateLabel: string | null; teamKey: string | null }>;
+  actorClerkId: string;
+}) {
+  const result = await params.supabase.rpc("spogomi_save_team_composition_draft_for_division", {
+    p_event_id: params.event.id,
+    p_division_id: params.divisionId,
+    p_expected_revision: params.expectedRevision,
+    p_teams: params.teams,
+    p_participants: params.participants,
+    p_actor_clerk_id: params.actorClerkId,
+  });
+  if (result.error) throw compositionRpcError(result.error);
+  return parseCompositionDraftSaveResult(result.data);
 }

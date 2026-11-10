@@ -20,6 +20,7 @@ const mixedEventMetadataMigration = readFileSync(new URL("../../../../supabase/m
 const mixedCasualBoundsMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000002_spogomi_mixed_casual_bounds.sql", import.meta.url), "utf8");
 const parentModeDivisionCoherenceMigration = readFileSync(new URL("../../../../supabase/migrations/20261109000002_spogomi_parent_mode_division_coherence.sql", import.meta.url), "utf8");
 const manualTeamCompositionMigration = readFileSync(new URL("../../../../supabase/migrations/20261110000002_spogomi_manual_team_composition.sql", import.meta.url), "utf8");
+const groupedDraftMigration = readFileSync(new URL("../../../../supabase/migrations/20261110000003_spogomi_grouped_team_draft_save.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -214,6 +215,22 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(manualTeamCompositionMigration).toMatch(/grant execute on function public\.spogomi_create_team_for_division[\s\S]+to service_role/i);
     expect(manualTeamCompositionMigration).toMatch(/grant execute on function public\.spogomi_create_manual_place_for_division[\s\S]+to service_role/i);
     expect(manualTeamCompositionMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants)/i);
+  });
+
+  it("saves one division draft atomically without deleting persisted rows", () => {
+    expect(groupedDraftMigration).toContain("spogomi_save_team_composition_draft_for_division");
+    expect(groupedDraftMigration).toContain("p_expected_revision");
+    expect(groupedDraftMigration).toContain("p_teams jsonb");
+    expect(groupedDraftMigration).toContain("p_participants jsonb");
+    expect(groupedDraftMigration).toContain("for update");
+    expect(groupedDraftMigration).toContain("manual_batch_save");
+    expect(groupedDraftMigration).toContain("expectedPublicName");
+    expect(groupedDraftMigration).toContain("A team public name changed since the page was loaded");
+    expect(groupedDraftMigration).toContain("admin_operations_audit");
+    expect(groupedDraftMigration).toContain("cannot silently remove");
+    expect(groupedDraftMigration).toContain("state not in ('draft', 'registration_open')");
+    expect(groupedDraftMigration).toMatch(/revoke all on function public\.spogomi_save_team_composition_draft_for_division[\s\S]+grant execute on function public\.spogomi_save_team_composition_draft_for_division[\s\S]+to service_role/i);
+    expect(groupedDraftMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants)/i);
   });
 
   it("enforces normalized public-name uniqueness for creation and rename paths", () => {

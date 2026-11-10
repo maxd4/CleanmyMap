@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   createSpogomiTeam: vi.fn(),
   createSpogomiManualPlace: vi.fn(),
   updateSpogomiParticipantPrivateLabel: vi.fn(),
+  saveSpogomiCompositionDraft: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
@@ -28,6 +29,7 @@ vi.mock("@/lib/spogomi/preparation-service", () => ({
   updateSpogomiParticipantPrivateLabel: mocks.updateSpogomiParticipantPrivateLabel,
 }));
 vi.mock("@/lib/spogomi/route-auth", () => ({ loadAuthorizedSpogomiEvent: mocks.loadAuthorizedSpogomiEvent }));
+vi.mock("@/lib/spogomi/preparation/composition-mutation-service", () => ({ saveSpogomiCompositionDraft: mocks.saveSpogomiCompositionDraft }));
 
 const eventContext = { params: Promise.resolve({ eventId: "event-1" }) };
 const participantContext = { params: Promise.resolve({ eventId: "event-1", participantId: "participant-1" }) };
@@ -53,6 +55,7 @@ describe("SPOGOMI manual composition routes", () => {
     mocks.createSpogomiTeam.mockResolvedValue({ team: { id: "team-1" }, compositionRevision: 5 });
     mocks.createSpogomiManualPlace.mockResolvedValue({ participant: { id: "participant-1" }, compositionRevision: 5 });
     mocks.updateSpogomiParticipantPrivateLabel.mockResolvedValue({ participantId: "participant-1", displayName: "Ada", compositionRevision: 5 });
+    mocks.saveSpogomiCompositionDraft.mockResolvedValue({ divisionId, compositionRevision: 5, already_processed: false });
   });
 
   it("refuses anonymous requests before loading the event or mutating composition", async () => {
@@ -88,5 +91,22 @@ describe("SPOGOMI manual composition routes", () => {
     expect(mocks.createSpogomiManualPlace).toHaveBeenCalledWith(expect.objectContaining({ actorClerkId: "organizer-1", divisionId, privateLabel: "Ada", expectedRevision: 4 }));
     expect((await updateRoute.PATCH(request({ divisionId, expectedRevision: 4, expectedPrivateLabel: null, privateLabel: "Ada corrigée" }, "PATCH"), participantContext)).status).toBe(200);
     expect(mocks.updateSpogomiParticipantPrivateLabel).toHaveBeenCalledWith(expect.objectContaining({ actorClerkId: "organizer-1", participantId: "participant-1", divisionId, expectedPrivateLabel: null, privateLabel: "Ada corrigée", expectedRevision: 4 }));
+  });
+
+  it("authenticates one grouped division draft and keeps its local keys in one payload", async () => {
+    const route = await import("./events/[eventId]/teams/draft/route");
+    expect((await route.POST(request({ divisionId, expectedRevision: 4, teams: [{ id: null, clientKey: "local-team-1", publicName: "Équipe locale", expectedPublicName: null }], participants: [{ id: null, clientKey: "local-place-1", privateLabel: "Place locale", teamKey: "local-team-1" }] }), eventContext)).status).toBe(200);
+    expect(mocks.saveSpogomiCompositionDraft).toHaveBeenCalledWith({
+      supabase: { id: "server-client" },
+      event: { id: "event-1", composition_revision: 4 },
+      actorClerkId: "organizer-1",
+      divisionId,
+      expectedRevision: 4,
+      teams: [{ id: null, clientKey: "local-team-1", publicName: "Équipe locale", expectedPublicName: null }],
+      participants: [{ id: null, clientKey: "local-place-1", privateLabel: "Place locale", teamKey: "local-team-1" }],
+    });
+    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: false, status: 401 });
+    expect((await route.POST(request({ divisionId, expectedRevision: 4, teams: [], participants: [] }), eventContext)).status).toBe(401);
+    expect(mocks.saveSpogomiCompositionDraft).toHaveBeenCalledTimes(1);
   });
 });

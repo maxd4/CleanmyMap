@@ -6,18 +6,20 @@ const view = readFileSync(new URL("./spogomi-preparation-workspace-view.tsx", im
 const contract = readFileSync(new URL("./spogomi-preparation-workspace-contract.ts", import.meta.url), "utf8");
 const spacePage = readFileSync(new URL("../../app/(app)/spogomi/[eventSlug]/espace/page.tsx", import.meta.url), "utf8");
 
-describe("SPOGOMI organizer team-name editor STATIC_CONTRACT", () => {
-  it("edits the canonical public name without exposing composition controls", () => {
-    expect(component).toContain("public_name");
-    expect(contract).toContain("Équipe {team.team_number} — {team.public_name}");
-    expect(view).toContain("publicTeamNameTemplate.replace");
-    expect(component).toContain("expectedPublicName");
-    expect(component).toContain("/teams/${team.id}");
-    expect(view).toContain("teamEditorLabels.edit");
-    expect(view).toContain("teamEditorLabels.save");
-    expect(view).toContain("teamEditorLabels.cancel");
+describe("SPOGOMI organizer team editor STATIC_CONTRACT", () => {
+  it("keeps local draft editing separate from the grouped server save", () => {
+    expect(component).toContain("createSpogomiCompositionDraft");
+    expect(contract).toContain("WorkspaceData");
+    expect(component).toContain("serializeSpogomiCompositionDraft");
+    expect(component).toContain("/teams/draft");
+    expect(component).toContain("beforeunload");
+    expect(view).toContain("Enregistrer les modifications");
+    expect(view).toContain("Annuler les modifications");
+    expect(view).toContain("draftStatus");
+    expect(view).toContain("onRenameTeam");
+    expect(component).not.toContain("expectedPublicName");
+    expect(component).not.toContain("/teams/${team.id}");
     expect(component).toContain("maxLength={60}");
-    expect(component).not.toContain("setTeamNameDraft(\"Équipe\")");
   });
 
   it("keeps explicit returns to the organizer space and public index", () => {

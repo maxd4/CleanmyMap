@@ -205,14 +205,18 @@ hors ligne automatique n’est prétendue.
 L'onglet Équipes expose aussi « Former les équipes » : l'organisateur peut créer
 une équipe sans import, ajouter une place manuelle, modifier son libellé privé,
 renommer publiquement l'équipe et affecter/désaffecter/déplacer les places dans
-la division active. Les mutations passent par les RPC server-only
-`spogomi_create_team_for_division`, `spogomi_create_manual_place_for_division`
-et `spogomi_update_participant_private_label`, avec AuthZ d'événement, révision
-optimiste et audit append-only. Casual signale les bornes configurées sans
-bloquer le brouillon ; World Cup signale toute équipe différente de trois places
-sans bloquer l'édition ni l'enregistrement préparatoire. Le verrouillage et la
-certification conservent leurs contrôles officiels côté serveur, et aucune place
-ou équipe persistée n'est supprimée ou recréée silencieusement.
+la division active. Ces éditions restent en mémoire React et sont enregistrées
+explicitement par division via une seule mutation métier
+`spogomi_save_team_composition_draft_for_division`, protégée par
+`composition_revision`, AuthZ d'événement et audit append-only. Une erreur ou un
+conflit conserve le brouillon ; aucun stockage navigateur ne contient les noms
+privés. Casual signale les bornes configurées sans bloquer le brouillon ; World
+Cup signale toute équipe différente de trois places sans bloquer l'édition ni
+l'enregistrement préparatoire. Le verrouillage et la certification conservent
+leurs contrôles officiels côté serveur, et aucune place ou équipe persistée n'est
+supprimée ou recréée silencieusement. Les RPC unitaires historiques restent
+disponibles pour leurs consommateurs existants, mais l'éditeur transactionnel
+utilise le contrat groupé.
 
 ### Verrouillage effectif des compositions
 

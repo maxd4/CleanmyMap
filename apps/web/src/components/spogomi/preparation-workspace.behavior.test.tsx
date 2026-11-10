@@ -142,6 +142,62 @@ describe("SPOGOMI preparation workspace", () => {
     renderer.unmount();
   });
 
+  it("keeps twenty local edits free of intermediate mutations and sends one division-scoped save", async () => {
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const callsBeforeEdits = fetchCalls().length;
+    for (let index = 0; index < 20; index += 1) {
+      const rename = renderer.root.findAllByType("button").find((button) => button.props.children === "Renommer");
+      act(() => { rename?.props.onClick?.(); });
+      const input = renderer.root.findAllByType("input").find((candidate) => String(candidate.props["aria-label"]).startsWith("Nom public de l’équipe"));
+      act(() => { input?.props.onChange?.({ target: { value: `Alpha ${index + 1}` } }); });
+      const apply = renderer.root.findAllByType("button").find((button) => button.props.children === "Appliquer");
+      act(() => { apply?.props.onClick?.(); });
+    }
+    expect(fetchCalls().length).toBe(callsBeforeEdits);
+    const save = renderer.root.findAllByType("button").find((button) => button.props.children === "Enregistrer les modifications");
+    expect(save?.props.disabled).toBe(false);
+    await act(async () => { await save?.props.onClick?.(); await Promise.resolve(); await Promise.resolve(); });
+    const draftCalls = fetchCalls().filter(([input, init]) => String(input).includes("/teams/draft") && init?.method === "POST");
+    expect(draftCalls).toHaveLength(1);
+    expect(jsonBody(draftCalls[0])).toEqual(expect.objectContaining({ divisionId: "division-casual", expectedRevision: 2 }));
+    expect(fetchCalls().filter(([input]) => String(input).includes("/teams/move") || String(input).includes("/participants/participant-1"))).toHaveLength(0);
+    renderer.unmount();
+  });
+
+  it("keeps a dirty division local until cancel and preserves it on a revision conflict", async () => {
+    let renderer!: ReturnType<typeof create>;
+    fetchMock.mockImplementation((input: RequestInfo | URL) => String(input).includes("/teams/draft")
+      ? Promise.resolve(new Response(JSON.stringify({ error: "La donnée a changé entre-temps." }), { status: 409 }))
+      : Promise.resolve(new Response(JSON.stringify(body), { status: 200 })));
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const rename = renderer.root.findAllByType("button").find((button) => button.props.children === "Renommer");
+    act(() => { rename?.props.onClick?.(); });
+    const input = renderer.root.findAllByType("input").find((candidate) => String(candidate.props["aria-label"]).startsWith("Nom public de l’équipe"));
+    act(() => { input?.props.onChange?.({ target: { value: "Brouillon local" } }); });
+    act(() => { renderer.root.findAllByType("button").find((button) => button.props.children === "Appliquer")?.props.onClick?.(); });
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { worldTab?.props.onClick?.(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Enregistrez ou annulez les modifications");
+    const cancel = renderer.root.findAllByType("button").find((button) => button.props.children === "Annuler les modifications");
+    act(() => { cancel?.props.onClick?.(); });
+    expect(JSON.stringify(renderer.toJSON())).not.toContain("Brouillon local");
+    const casualTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "Casual");
+    act(() => { casualTab?.props.onClick?.(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const renameAgain = renderer.root.findAllByType("button").find((button) => button.props.children === "Renommer");
+    act(() => { renameAgain?.props.onClick?.(); });
+    const inputAgain = renderer.root.findAllByType("input").find((candidate) => String(candidate.props["aria-label"]).startsWith("Nom public de l’équipe"));
+    act(() => { inputAgain?.props.onChange?.({ target: { value: "Conflit conservé" } }); });
+    act(() => { renderer.root.findAllByType("button").find((button) => button.props.children === "Appliquer")?.props.onClick?.(); });
+    await act(async () => { await renderer.root.findAllByType("button").find((button) => button.props.children === "Enregistrer les modifications")?.props.onClick?.(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Conflit : le brouillon est conservé");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Conflit conservé");
+    renderer.unmount();
+  });
+
 
   it("renders the results publication guard and sends only the scoped action", async () => {
     let renderer!: ReturnType<typeof create>;
