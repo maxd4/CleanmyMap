@@ -27,6 +27,7 @@ type CockpitEvent = {
   state: string;
   startsAt: string;
   endsAt: string | null;
+  compositionRevision?: number;
   officialTimezone?: string | null;
   publicVisibility: string;
 };
@@ -93,10 +94,14 @@ function accessLabel(role: SpogomiEventAccessRole | null, fieldCapabilities: rea
   return "Accès événementiel limité";
 }
 
-function buildCockpitSections(organizer: boolean, proposalManager: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean): CockpitSection[] {
+function buildCockpitSections(organizer: boolean, proposalManager: boolean, reviewerRoles: ReadonlySet<SpogomiReviewerRole>, hasFieldOperations: boolean, eventState: string): CockpitSection[] {
   const next = new Set<CockpitSection>(["presentation"]);
   if (organizer) {
-    for (const section of ["teams", "attendance", "operations", "results", "arbitration", "bilan", "settings"] as const) next.add(section);
+    const fieldFinished = ["judging", "certified", "archived"].includes(eventState);
+    const organizerSections: CockpitSection[] = fieldFinished
+      ? ["teams", "results", "arbitration", "bilan", "settings"]
+      : ["teams", "attendance", "operations", "results", "arbitration", "bilan", "settings"];
+    for (const section of organizerSections) next.add(section);
   }
   if (proposalManager) next.add("help_proposals");
   else {
@@ -118,7 +123,7 @@ function CockpitNavigation({ sections, activeSection, setActiveSection }: { sect
   return <nav aria-label="Sections de l’espace événementiel" className="sticky top-2 z-10 overflow-x-auto rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur"><ul className="flex min-w-max gap-2">{sections.map((section) => { const Icon = sectionIcons[section]; return <li key={section}><a href={`#${section}`} aria-current={activeSection === section ? "page" : undefined} onClick={() => setActiveSection(section)} className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${activeSection === section ? "bg-emerald-700 text-white" : "text-slate-800 hover:bg-emerald-50 hover:text-emerald-900"}`}><Icon size={16} aria-hidden="true" />{sectionLabels[section]}</a></li>; })}</ul></nav>;
 }
 
-type CockpitSectionProps = { section: CockpitSection; activeSection: CockpitSection; event: CockpitEvent; organizer: boolean; referee: boolean; showAdminTeamJoinRequests: boolean; fieldCapabilities: readonly SpogomiFieldOperationsCapability[] };
+type CockpitSectionProps = { section: CockpitSection; activeSection: CockpitSection; event: CockpitEvent; organizer: boolean; referee: boolean; showAdminTeamJoinRequests: boolean; fieldCapabilities: readonly SpogomiFieldOperationsCapability[]; lifecycleRole: boolean };
 
 function cockpitWorkspaceSection(props: CockpitSectionProps, title: string, content: ReactNode) {
   return <section id={props.section} hidden={props.activeSection !== props.section} aria-labelledby={`spogomi-${props.section}-title`}><h2 id={`spogomi-${props.section}-title`} className="sr-only">{title}</h2>{props.activeSection === props.section ? content : null}</section>;
@@ -126,7 +131,7 @@ function cockpitWorkspaceSection(props: CockpitSectionProps, title: string, cont
 
 function CockpitSectionView(props: CockpitSectionProps) {
   switch (props.section) {
-    case "presentation": return <section id="presentation" hidden={props.activeSection !== props.section} aria-labelledby="spogomi-presentation-title"><CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><h2 id="spogomi-presentation-title" className="cmm-text-h3">Présentation</h2><dl className="grid gap-3 text-sm text-slate-800 sm:grid-cols-2"><div><dt className="font-bold">Statut</dt><dd>{props.event.state}</dd></div><div><dt className="font-bold">Mode</dt><dd>{modeLabel(props.event.mode)}</dd></div><div><dt className="font-bold">Début</dt><dd>{dateLabel(props.event.startsAt, props.event.officialTimezone)}</dd></div><div><dt className="font-bold">Fin</dt><dd>{dateLabel(props.event.endsAt, props.event.officialTimezone)}</dd></div></dl>{props.event.eventSlug && props.event.publicVisibility === "published" ? <a className="inline-flex min-h-11 items-center gap-2 font-black text-emerald-800 hover:underline" href={`/spogomi/${encodeURIComponent(props.event.eventSlug)}`}>Voir la fiche publique <Eye size={16} aria-hidden="true" /></a> : null}</CmmCard>{props.organizer ? <SpogomiClosureSummary eventId={props.event.id} /> : null}</section>;
+    case "presentation": return <section id="presentation" hidden={props.activeSection !== props.section} aria-labelledby="spogomi-presentation-title"><CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><h2 id="spogomi-presentation-title" className="cmm-text-h3">Présentation</h2><dl className="grid gap-3 text-sm text-slate-800 sm:grid-cols-2"><div><dt className="font-bold">Statut</dt><dd>{props.event.state}</dd></div><div><dt className="font-bold">Mode</dt><dd>{modeLabel(props.event.mode)}</dd></div><div><dt className="font-bold">Début</dt><dd>{dateLabel(props.event.startsAt, props.event.officialTimezone)}</dd></div><div><dt className="font-bold">Fin</dt><dd>{dateLabel(props.event.endsAt, props.event.officialTimezone)}</dd></div></dl>{props.event.eventSlug && props.event.publicVisibility === "published" ? <a className="inline-flex min-h-11 items-center gap-2 font-black text-emerald-800 hover:underline" href={`/spogomi/${encodeURIComponent(props.event.eventSlug)}`}>Voir la fiche publique <Eye size={16} aria-hidden="true" /></a> : null}</CmmCard>{props.organizer ? <SpogomiClosureSummary eventId={props.event.id} eventState={props.event.state} compositionRevision={props.event.compositionRevision ?? 0} canManageLifecycle={props.lifecycleRole} /> : null}</section>;
     case "teams": return cockpitWorkspaceSection(props, "Équipes", props.organizer ? <SpogomiPreparationWorkspace eventId={props.event.id} section="teams" showHeader={false} /> : <SpogomiObserverCockpitPanel eventId={props.event.id} view="teams" />);
     case "attendance": return cockpitWorkspaceSection(props, "Accueil et présences", props.organizer ? <SpogomiPreparationWorkspace eventId={props.event.id} section="attendance" showHeader={false} /> : <SpogomiAttendancePanel eventId={props.event.id} />);
     case "operations": return cockpitWorkspaceSection(props, "Opérations terrain", <SpogomiFieldOperationsPanel eventId={props.event.id} capabilities={props.fieldCapabilities} />);
@@ -164,8 +169,9 @@ export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, 
   const referee = verifiedReviewerRoles.has("referee");
   const hasFieldOperations = fieldCapabilities.length > 0;
   const showAdminTeamJoinRequests = activeRole === "admin" || activeRole === "max";
+  const lifecycleRole = organizer && (activeRole === "admin" || activeRole === "max");
   const [activeSection, setActiveSection] = useState<CockpitSection>("presentation");
-  const sections = useMemo(() => buildCockpitSections(organizer, proposalManager, verifiedReviewerRoles, hasFieldOperations), [hasFieldOperations, organizer, proposalManager, verifiedReviewerRoles]);
+  const sections = useMemo(() => buildCockpitSections(organizer, proposalManager, verifiedReviewerRoles, hasFieldOperations, event.state), [event.state, hasFieldOperations, organizer, proposalManager, verifiedReviewerRoles]);
 
   useEffect(() => {
     const syncFromHash = () => {
@@ -183,7 +189,7 @@ export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, 
       {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Les divisions Casual et World Cup restent séparées : leurs catégories, équipes, saisies et classements sont lus dans leur propre section du cockpit. Les données affichées restent synthétiques et ne valent ni règlement ni résultat officiel.</p></SpogomiSyntheticDemoNotice> : null}
       <CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700"><CalendarDays size={17} aria-hidden="true" />{dateLabel(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${dateLabel(event.endsAt, event.officialTimezone)}` : " · durée ouverte"}<span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-800">{accessLabel(role, fieldCapabilities)}</span></div><p className="text-sm text-slate-700">Cet espace adapte ses vues aux habilitations vérifiées de cet événement. Chaque lecture et chaque action restent contrôlées par le serveur.</p></CmmCard>
       <CockpitNavigation sections={sections} activeSection={activeSection} setActiveSection={setActiveSection} />
-      <CockpitSections sections={sections} activeSection={activeSection} event={event} organizer={organizer} referee={referee} showAdminTeamJoinRequests={showAdminTeamJoinRequests} fieldCapabilities={fieldCapabilities} />
+      <CockpitSections sections={sections} activeSection={activeSection} event={event} organizer={organizer} referee={referee} showAdminTeamJoinRequests={showAdminTeamJoinRequests} fieldCapabilities={fieldCapabilities} lifecycleRole={lifecycleRole} />
     </div>
   </main>;
 }

@@ -27,6 +27,7 @@ export type SpogomiFieldOperationsAccess = {
     official_timezone: string;
     public_visibility: string;
     public_results_visibility: string;
+    composition_revision: number;
   };
   userId: string;
   isOrganizer: boolean;
@@ -48,7 +49,7 @@ type OperationalCertificationRow = {
   certified_at: string;
 };
 
-const EVENT_SELECT = "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
+const EVENT_SELECT = "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility, composition_revision";
 const OPERATIONAL_ROLES = ["timekeeper", "weigher", "data_entry", "arbiter", "certifier"] as const;
 
 export function spogomiFieldCapabilitiesForRoles(roles: string[], isOrganizer: boolean): Set<SpogomiFieldOperationsCapability> {

@@ -57,7 +57,7 @@ describe("SpogomiClosureSummary", () => {
     await act(async () => { await Promise.resolve(); });
     const rendered = textOf(renderer);
     expect(rendered).toContain("Récapitulatif de clôture");
-    expect(rendered).toContain("Clôture bloquée : 1 point(s) à traiter.");
+    expect(rendered).toContain("1 point(s) à traiter après le terrain.");
     expect(rendered).toContain("résultat contesté");
     expect(rendered).toContain("Certifications restantes");
     expect(rendered).toContain('"Certifications restantes : ","2"');
@@ -76,7 +76,7 @@ describe("SpogomiClosureSummary", () => {
     await act(async () => { renderer = create(<SpogomiClosureSummary eventId="event-2" />); await Promise.resolve(); });
 
     const rendered = textOf(renderer);
-    expect(rendered).toContain("Aucun blocage de clôture détecté.");
+    expect(rendered).toContain("Aucun blocage de certification détecté.");
     expect(rendered).not.toContain("Certifications restantes");
   });
 

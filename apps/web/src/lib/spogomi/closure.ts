@@ -69,6 +69,24 @@ export type SpogomiClosureSummary = {
   }>;
 };
 
+export type SpogomiClosureDiagnosticIssue = {
+  kind: "missing" | "inconsistent" | "unverified" | "certification_blocker";
+  code: string;
+  message: string;
+  provenance: string[];
+};
+
+export type SpogomiClosureSnapshot = {
+  id: string;
+  eventId: string;
+  eventState: "judging";
+  closedAt: string;
+  actorClerkId: string;
+  eventRevision: number;
+  snapshotVersion: number;
+  snapshot: Record<string, unknown> & { anomalies?: SpogomiClosureDiagnosticIssue[] };
+};
+
 const explicitNonParticipants = new Set<SpogomiTeamClosureStatus>(["absent", "forfeit"]);
 
 export function defaultSpogomiTeamClosureDecision(team: Pick<SpogomiClosureTeamInput, "teamId" | "divisionId" | "certifiedSubmission">): SpogomiTeamClosureDecision {

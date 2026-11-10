@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
-import type { SpogomiClosureSummary as SpogomiClosureSummaryData } from "@/lib/spogomi/closure";
+import type { SpogomiClosureSnapshot, SpogomiClosureSummary as SpogomiClosureSummaryData } from "@/lib/spogomi/closure";
 import { SpogomiClosureDecisionsPanel } from "./spogomi-closure-decisions-panel";
+import { SpogomiEventLifecycleControls } from "./spogomi-event-lifecycle-controls";
 
 type Summary = SpogomiClosureSummaryData;
 
@@ -61,20 +62,33 @@ function isSummary(value: unknown): value is Summary {
     && value.divisions.every(isDivision);
 }
 
+function isSnapshot(value: unknown): value is SpogomiClosureSnapshot {
+  return isRecord(value)
+    && typeof value.id === "string"
+    && typeof value.eventId === "string"
+    && value.eventState === "judging"
+    && typeof value.closedAt === "string"
+    && typeof value.actorClerkId === "string"
+    && typeof value.eventRevision === "number"
+    && typeof value.snapshotVersion === "number"
+    && isRecord(value.snapshot);
+}
+
 function errorMessage(value: unknown, fallback: string): string {
   return isRecord(value) && typeof value.error === "string" ? value.error : fallback;
 }
 
-async function fetchClosureSummary(eventId: string): Promise<Summary> {
+async function fetchClosureSummary(eventId: string): Promise<{ summary: Summary; snapshot: SpogomiClosureSnapshot | null }> {
   const response = await fetch(`/api/spogomi/events/${eventId}/closure`, { cache: "no-store" });
   const body: unknown = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(errorMessage(body, "Récapitulatif de clôture indisponible."));
   if (!isRecord(body) || !isSummary(body.summary)) throw new Error("Le récapitulatif de clôture est invalide.");
-  return body.summary;
+  return { summary: body.summary, snapshot: isSnapshot(body.snapshot) ? body.snapshot : null };
 }
 
-export function SpogomiClosureSummary({ eventId }: { eventId: string }) {
+export function SpogomiClosureSummary({ eventId, eventState, compositionRevision = 0, canManageLifecycle = false }: { eventId: string; eventState?: string; compositionRevision?: number; canManageLifecycle?: boolean }) {
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [snapshot, setSnapshot] = useState<SpogomiClosureSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const latestRequestRef = useRef(0);
   const hasSummaryRef = useRef(false);
@@ -82,9 +96,10 @@ export function SpogomiClosureSummary({ eventId }: { eventId: string }) {
     const requestId = latestRequestRef.current + 1;
     latestRequestRef.current = requestId;
     try {
-      const nextSummary = await fetchClosureSummary(eventId);
+      const result = await fetchClosureSummary(eventId);
       if (requestId !== latestRequestRef.current) return;
-      setSummary(nextSummary);
+      setSummary(result.summary);
+      setSnapshot(result.snapshot);
       hasSummaryRef.current = true;
       setError(null);
     } catch (cause) {
@@ -97,9 +112,10 @@ export function SpogomiClosureSummary({ eventId }: { eventId: string }) {
     hasSummaryRef.current = false;
     const requestId = latestRequestRef.current + 1;
     latestRequestRef.current = requestId;
-    void fetchClosureSummary(eventId).then((nextSummary) => {
+    void fetchClosureSummary(eventId).then((result) => {
       if (requestId !== latestRequestRef.current) return;
-      setSummary(nextSummary);
+      setSummary(result.summary);
+      setSnapshot(result.snapshot);
       hasSummaryRef.current = true;
       setError(null);
     }).catch((cause: unknown) => {
@@ -124,11 +140,15 @@ export function SpogomiClosureSummary({ eventId }: { eventId: string }) {
     const reason = blocker.slice(separator + 1);
     return `${division ? `Division ${division.type === "world_cup" ? "World Cup" : "Casual"}` : "Division"} : ${blockerLabels[reason] ?? reason}`;
   };
+  const snapshotIssues = Array.isArray(snapshot?.snapshot.anomalies) ? snapshot.snapshot.anomalies : [];
   return <CmmCard tone="slate" variant="glass" className="space-y-3 p-5" data-testid="spogomi-closure-summary">
     <div><h2 className="cmm-text-h3">Récapitulatif de clôture</h2><p className="cmm-text-small">Les décisions sportives, environnementales et de publication restent indépendantes.</p></div>
     <dl className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">{(Object.keys(labels) as Array<keyof typeof labels>).map((key) => <div key={key} className="rounded-xl bg-white/75 p-3"><dt className="font-bold text-slate-700">{labels[key]}</dt><dd className="font-black text-slate-950">{summary[key]}</dd></div>)}</dl>
-    <div className={summary.blockers.length ? "rounded-xl bg-amber-50 p-3 text-sm text-amber-950" : "rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900"}><p>{summary.blockers.length ? `Clôture bloquée : ${summary.blockers.length} point(s) à traiter.` : "Aucun blocage de clôture détecté."}</p>{summary.blockers.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{summary.blockers.map((blocker) => <li key={blocker}>{blockerText(blocker)}</li>)}</ul> : null}</div>
+    <div className={summary.blockers.length ? "rounded-xl bg-amber-50 p-3 text-sm text-amber-950" : "rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900"}><p>{summary.blockers.length ? `${summary.blockers.length} point(s) à traiter après le terrain.` : "Aucun blocage de certification détecté."}</p>{summary.blockers.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{summary.blockers.map((blocker) => <li key={blocker}>{blockerText(blocker)}</li>)}</ul> : null}</div>
+    {snapshotIssues.length ? <div className="rounded-xl bg-slate-100 p-3 text-sm text-slate-900"><p className="font-bold">Diagnostic privé de clôture</p><ul className="mt-2 list-disc space-y-1 pl-5">{snapshotIssues.map((issue, index) => <li key={`${issue.code}-${index}`}>{issue.message}</li>)}</ul></div> : null}
+    {snapshot ? <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700"><span>Diagnostic figé le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(snapshot.closedAt))} · version {snapshot.snapshotVersion}</span><a className="font-black text-emerald-800 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600" href={`/api/spogomi/events/${eventId}/closure?format=json`} download>Télécharger le JSON</a></div> : null}
     {summary.certificationsRemaining > 0 ? <p className="text-sm text-slate-700">Certifications restantes : {summary.certificationsRemaining}</p> : null}
+    {eventState ? <SpogomiEventLifecycleControls eventId={eventId} eventState={eventState} expectedRevision={compositionRevision} canManage={canManageLifecycle} summary={summary} hasSnapshot={Boolean(snapshot)} onCompleted={loadSummary} /> : null}
     <SpogomiClosureDecisionsPanel eventId={eventId} summary={summary} onSaved={loadSummary} />
   </CmmCard>;
 }

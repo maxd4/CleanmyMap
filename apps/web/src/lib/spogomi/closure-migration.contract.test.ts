@@ -6,8 +6,27 @@ const consolidationMigration = readFileSync(new URL("../../../supabase/migration
 const rankingMigration = readFileSync(new URL("../../../supabase/migrations/20261015000028_spogomi_ranking_closure_guard.sql", import.meta.url), "utf8");
 const correctionMigration = readFileSync(new URL("../../../supabase/migrations/20261015000029_spogomi_closure_republication_safety.sql", import.meta.url), "utf8");
 const admissionNotificationMigration = readFileSync(new URL("../../../supabase/migrations/20261015000030_spogomi_admission_decision_notifications.sql", import.meta.url), "utf8");
+const eventClosureMigration = readFileSync(new URL("../../../supabase/migrations/20261110000005_spogomi_event_closure_snapshot.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI closure STATIC_CONTRACT", () => {
+  it("keeps the field transition explicit, versioned, idempotent and private", () => {
+    expect(eventClosureMigration).toContain("create table public.spogomi_event_closure_snapshots");
+    expect(eventClosureMigration).toContain("spogomi_transition_event");
+    expect(eventClosureMigration).toContain("for update");
+    expect(eventClosureMigration).toContain("p_expected_revision");
+    expect(eventClosureMigration).toContain("p_transition not in ('start', 'close')");
+    expect(eventClosureMigration).toContain("state = 'judging'");
+    expect(eventClosureMigration).toContain("ends_at = v_closed_at");
+    expect(eventClosureMigration).toContain("action_phase = 'post_action_draft'");
+    expect(eventClosureMigration).toContain("clock_timestamp()");
+    expect(eventClosureMigration).toContain("set_config('spogomi.change_actor', btrim(p_actor_clerk_id), true)");
+    expect(eventClosureMigration).toContain("spogomi_event_closure_snapshots_immutable");
+    expect(eventClosureMigration).toContain("revoke all on table public.spogomi_event_closure_snapshots from public, anon, authenticated");
+    expect(eventClosureMigration).toContain("grant execute on function public.spogomi_transition_event");
+    expect(eventClosureMigration).not.toContain("state = 'certified'");
+    expect(eventClosureMigration).not.toContain("public_results_visibility = 'certified'");
+  });
+
   it("keeps explicit statuses, independent environmental eligibility and append-only replay", () => {
     expect(decisionsMigration).toContain("present_measured");
     expect(decisionsMigration).toContain("result_missing");

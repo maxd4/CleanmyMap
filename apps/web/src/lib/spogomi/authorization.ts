@@ -19,7 +19,7 @@ export type SpogomiEventAccessRole = "organizer" | "referee" | "observer" | "che
 type SpogomiAssignedAccessRole = Exclude<SpogomiEventAccessRole, "organizer" | "participant">;
 
 export type SpogomiEventAccessDecision = {
-  event: Pick<EventRow, "id" | "action_id" | "created_by_clerk_id" | "name" | "event_slug" | "mode" | "state" | "starts_at" | "ends_at" | "official_timezone" | "public_visibility" | "public_results_visibility">;
+  event: Pick<EventRow, "id" | "action_id" | "created_by_clerk_id" | "name" | "event_slug" | "mode" | "state" | "starts_at" | "ends_at" | "official_timezone" | "public_visibility" | "public_results_visibility" | "composition_revision">;
   userId: string;
   role: SpogomiEventAccessRole | null;
   isOrganizer: boolean;
@@ -29,7 +29,7 @@ export type SpogomiEventAccessDecision = {
 };
 
 const EVENT_ACCESS_SELECT =
-  "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility";
+  "id, action_id, created_by_clerk_id, name, event_slug, mode, state, starts_at, ends_at, official_timezone, public_visibility, public_results_visibility, composition_revision";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -42,6 +42,7 @@ type EventAccessIdentity = Record<string, unknown> & {
   name: string;
   event_slug: string | null;
   state: string;
+  composition_revision: number;
 };
 
 type EventAccessSchedule = Record<string, unknown> & {
@@ -62,7 +63,8 @@ function isEventAccessIdentity(value: Record<string, unknown>): value is EventAc
     typeof value.created_by_clerk_id === "string" &&
     typeof value.name === "string" &&
     (value.event_slug === null || typeof value.event_slug === "string") &&
-    typeof value.state === "string";
+    typeof value.state === "string" &&
+    typeof value.composition_revision === "number" && Number.isInteger(value.composition_revision) && value.composition_revision >= 0;
 }
 
 function isEventAccessSchedule(value: Record<string, unknown>): value is EventAccessSchedule {
@@ -94,6 +96,7 @@ function parseEventAccessRow(value: unknown): SpogomiEventAccessDecision["event"
     official_timezone: value.official_timezone,
     public_visibility: value.public_visibility,
     public_results_visibility: value.public_results_visibility,
+    composition_revision: value.composition_revision,
   };
 }
 

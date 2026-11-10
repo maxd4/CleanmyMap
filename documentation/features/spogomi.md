@@ -31,8 +31,26 @@ Une édition possède une division `casual`, une division `world_cup`, ou les de
 ### Projection CURRENT du cycle de vie
 
 Le catalogue public et la fiche publique dérivent trois dimensions indépendantes
-depuis les colonnes et projections existantes ; aucun état de cycle de vie
-supplémentaire n'est persisté :
+depuis les colonnes et projections existantes. La transition terrain reste
+portée par `spogomi_events.state` : depuis `composition_locked`, un compte dont
+l'`ACTIVE_ROLE` vaut `admin` ou `max` et qui possède la gestion de l'édition
+peut démarrer explicitement l'épreuve (`in_progress`), puis la clôturer
+explicitement (`judging`). La clôture prend `ends_at` sur l'horloge serveur,
+place l'action canonique en `post_action_draft` et ne certifie, ne consolide ni
+ne publie aucun résultat.
+
+La clôture crée dans la même transaction un unique snapshot privé et immuable
+dans `spogomi_event_closure_snapshots`. Il conserve l'édition, les divisions,
+parcours, équipes, présences, décisions, soumissions, mesures, certifications,
+classements, consolidation et références de provenance disponibles au moment
+de la bascule. Ses anomalies sont distinguées en données manquantes,
+incohérences démontrées, éléments non vérifiés et blocages de certification ;
+un point non bloquant ne fait pas échouer la fin du terrain. Le snapshot est
+consultable et téléchargeable en JSON uniquement depuis l'espace organisateur
+autorisé. La transition est verrouillée par ligne, contrôlée par
+`composition_revision` et idempotente en cas de rejeu.
+
+La projection publique conserve ensuite trois dimensions indépendantes :
 
 - **calendrier** : `upcoming`, `in_progress`, `finished`, `cancelled` ; les
   dates `timestamptz` sont comparées comme des instants et `cancelled` reste

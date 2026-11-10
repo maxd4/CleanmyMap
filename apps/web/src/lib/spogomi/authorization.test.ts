@@ -38,6 +38,7 @@ function supabaseFor(fixture: Fixture) {
            official_timezone: "Europe/Paris",
           public_visibility: "private",
           public_results_visibility: "hidden",
+          composition_revision: 0,
         } : table === "spogomi_participants"
           ? fixture.participants.find((participant) => participant.clerk_id === filters.clerk_id && participant.account_link_status === "verified") ?? null
           : null, error: null }),

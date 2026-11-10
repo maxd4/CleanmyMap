@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { deriveSpogomiClosureSummary, type SpogomiClosureSummary, type SpogomiEnvironmentalEligibility, type SpogomiTeamClosureDecision, type SpogomiTeamClosureStatus } from "./closure";
+import { deriveSpogomiClosureSummary, type SpogomiClosureSnapshot, type SpogomiClosureSummary, type SpogomiEnvironmentalEligibility, type SpogomiTeamClosureDecision, type SpogomiTeamClosureStatus } from "./closure";
 import { readAllSpogomiPages } from "./pagination";
 
 type ClosureDecisionRow = {
@@ -75,6 +75,51 @@ export async function loadSpogomiClosureSummary(params: { supabase: SupabaseClie
       }),
     })),
   });
+}
+
+export async function loadSpogomiClosureSnapshot(params: { supabase: SupabaseClient; eventId: string }): Promise<SpogomiClosureSnapshot | null> {
+  const result = await params.supabase
+    .from("spogomi_event_closure_snapshots")
+    .select("id, event_id, event_state, closed_at, actor_clerk_id, event_revision, snapshot_version, snapshot")
+    .eq("event_id", params.eventId)
+    .maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) return null;
+  const row = result.data as Record<string, unknown>;
+  if (typeof row.id !== "string" || typeof row.event_id !== "string" || row.event_state !== "judging" || typeof row.closed_at !== "string" || typeof row.actor_clerk_id !== "string" || typeof row.event_revision !== "number" || typeof row.snapshot_version !== "number" || typeof row.snapshot !== "object" || row.snapshot === null || Array.isArray(row.snapshot)) {
+    throw new Error("Le snapshot privé de clôture SPOGOMI est invalide.");
+  }
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    eventState: "judging",
+    closedAt: row.closed_at,
+    actorClerkId: row.actor_clerk_id,
+    eventRevision: row.event_revision,
+    snapshotVersion: row.snapshot_version,
+    snapshot: row.snapshot as Record<string, unknown>,
+  };
+}
+
+export async function transitionSpogomiEvent(params: {
+  supabase: SupabaseClient;
+  eventId: string;
+  transition: "start" | "close";
+  expectedRevision: number;
+  actorClerkId: string;
+}): Promise<Record<string, unknown>> {
+  const result = await params.supabase.rpc("spogomi_transition_event", {
+    p_event_id: params.eventId,
+    p_transition: params.transition,
+    p_expected_revision: params.expectedRevision,
+    p_actor_clerk_id: params.actorClerkId,
+  });
+  if (result.error) {
+    if (result.error.code === "40001" || result.error.code === "23505") throw new Error("Conflict: l’événement a changé entre-temps. Rechargez le cockpit avant de réessayer.");
+    throw result.error;
+  }
+  if (!result.data || typeof result.data !== "object" || Array.isArray(result.data)) throw new Error("La transition SPOGOMI est invalide.");
+  return result.data as Record<string, unknown>;
 }
 
 export async function setSpogomiTeamClosureDecision(params: {

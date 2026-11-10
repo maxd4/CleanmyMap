@@ -173,4 +173,13 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).toContain('href="#teams"');
     expect(markup).toContain('href="#results"');
   });
+
+  it("hides field-entry sections after explicit closure while retaining review sections", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={{ ...event, state: "judging" }} role="organizer" capabilities={["manage"]} activeRole="admin" />);
+    expect(markup).toContain('href="#results"');
+    expect(markup).toContain('href="#arbitration"');
+    expect(markup).toContain('href="#bilan"');
+    expect(markup).not.toContain('href="#attendance"');
+    expect(markup).not.toContain('href="#operations"');
+  });
 });
