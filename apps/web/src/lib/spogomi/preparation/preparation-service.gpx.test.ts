@@ -5,7 +5,7 @@ vi.mock("@/lib/actions/geometry/gpx", () => ({
   parseGpxFile: vi.fn(async () => ({
     drawing: {
       kind: "polyline",
-      coordinates: [[2.31, 48.79], [2.32, 48.8]],
+      coordinates: [[48.79, 2.31], [48.8, 2.32]],
     },
     metadata: {
       fileName: "synthetic-official.gpx",
@@ -27,8 +27,10 @@ describe("SPOGOMI official GPX synchronization", () => {
         eventId: "event-1",
         actionId: "action-1",
         routeId: "route-1",
+        divisionId: null,
+        routeVersion: 1,
         compositionRevision: 8,
-        source: "official_reference",
+        source: "gpx_reference",
         fileName: "synthetic-official.gpx",
         pointCount: 2,
         referenceDistanceKm: 1.25,
@@ -41,9 +43,10 @@ describe("SPOGOMI official GPX synchronization", () => {
       event: spogomiPreparationEvent({ state: "in_progress" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      correctionReason: "Correction de parcours",
     });
 
-    expect(rpc).toHaveBeenCalledWith("spogomi_attach_official_gpx", expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith("spogomi_upsert_planned_route", expect.objectContaining({
       p_event_id: "event-1",
       p_expected_revision: 7,
       p_actor_clerk_id: "organizer-1",
@@ -54,8 +57,10 @@ describe("SPOGOMI official GPX synchronization", () => {
       eventId: "event-1",
       actionId: "action-1",
       routeId: "route-1",
+      divisionId: null,
+      routeVersion: 1,
       compositionRevision: 8,
-      source: "official_reference",
+      source: "gpx_reference",
       fileName: "synthetic-official.gpx",
       pointCount: 2,
       referenceDistanceKm: 1.25,
@@ -71,8 +76,10 @@ describe("SPOGOMI official GPX synchronization", () => {
         eventId: "event-1",
         actionId: "action-1",
         routeId: "route-1",
+        divisionId: null,
+        routeVersion: 1,
         compositionRevision: 8,
-        source: "official_reference",
+        source: "gpx_reference",
         fileName: "synthetic-official.gpx",
         pointCount: 2,
         referenceDistanceKm: 1.25,
@@ -86,6 +93,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       event: spogomiPreparationEvent({ state: "in_progress" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      correctionReason: "Correction de parcours",
     });
 
     expect(result.synchronization).toMatchObject({ already_processed: true, inferredTopology: "loop" });
@@ -94,11 +102,11 @@ describe("SPOGOMI official GPX synchronization", () => {
 
   it.each([
     { already_processed: false, eventId: "event-1" },
-    { alreadyProcessed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
-    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: Number.NaN, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
-    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "imported", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
-    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: "2", referenceDistanceKm: 1, inferredTopology: "loop" },
-    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", compositionRevision: 8, source: "official_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: Number.POSITIVE_INFINITY, inferredTopology: "loop" },
+    { alreadyProcessed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", divisionId: null, routeVersion: 1, compositionRevision: 8, source: "gpx_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", divisionId: null, routeVersion: Number.NaN, compositionRevision: 8, source: "gpx_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", divisionId: null, routeVersion: 1, compositionRevision: 8, source: "imported", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", divisionId: null, routeVersion: 1, compositionRevision: 8, source: "gpx_reference", fileName: "route.gpx", pointCount: "2", referenceDistanceKm: 1, inferredTopology: "loop" },
+    { already_processed: false, eventId: "event-1", actionId: "action-1", routeId: "route-1", divisionId: null, routeVersion: 1, compositionRevision: 8, source: "gpx_reference", fileName: "route.gpx", pointCount: 2, referenceDistanceKm: Number.POSITIVE_INFINITY, inferredTopology: "loop" },
   ])("rejects a malformed GPX synchronization DTO: %j", async (data) => {
     const rpc = vi.fn().mockResolvedValue({ data, error: null });
 
@@ -107,6 +115,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       event: spogomiPreparationEvent({ state: "in_progress" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      correctionReason: "Correction de parcours",
     })).rejects.toThrow(/synchronisation.*invalide/i);
   });
 
@@ -119,6 +128,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       event: spogomiPreparationEvent({ state: "in_progress" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
+      correctionReason: "Correction de parcours",
     })).rejects.toBe(rpcError);
   });
 
@@ -129,7 +139,7 @@ describe("SPOGOMI official GPX synchronization", () => {
       event: spogomiPreparationEvent({ state: "composition_locked" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
-    })).rejects.toThrow(/après verrouillage/i);
+    })).rejects.toThrow(/verrouillage/i);
     expect(rpc).not.toHaveBeenCalled();
   });
 });

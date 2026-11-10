@@ -470,6 +470,20 @@
       "reason": "Consentement territorial distinct, privé par défaut, contrôlé par la barrière d'âge et révocable sans réutiliser le consentement du leaderboard XP.",
       "costContract": "GET/PATCH bornés au compte Clerk courant, réponse private/no-store, payload Zod strict et une seule ligne de consentement ; l'activation écrit une borne non rétroactive.",
       "reviewedAt": "2026-11-03"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/routes/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Éditeur authentifié des parcours prévus SPOGOMI, avec séparation par division, révision optimiste et distinction stricte des géométries prévues et observées.",
+      "costContract": "POST borné à un événement, une division facultative et 400 points maximum ; AuthZ organisateur, état de l'événement, motif de correction et révision attendue sont revalidés par la RPC service_role, sans projection publique ni modification des mesures terrain.",
+      "reviewedAt": "2026-11-10"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/routes/reference-media/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Association authentifiée d'une image de référence privée au parcours prévu SPOGOMI, sans dérivation automatique de géométrie ou de distance.",
+      "costContract": "POST limité à un mediaId déjà finalisé et rattaché à la même action ; AuthZ organisateur et révision du parcours sont revalidées côté serveur, la réponse reste privée et l'image n'est jamais publiée dans la projection publique.",
+      "reviewedAt": "2026-11-10"
     }
   ],
   "apiRoutes": [
@@ -681,6 +695,8 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/route-gpx/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/routes/reference-media/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/routes/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/team-join-requests/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/teams/[teamId]/join-request/route.ts",

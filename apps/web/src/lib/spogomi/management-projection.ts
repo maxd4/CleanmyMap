@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isCachanTicketCompositionEligible } from "./ticket-reconciliation";
 import type { EventRow } from "./preparation/preparation-service";
 import { loadSpogomiRegistrationReadiness } from "./preparation/registration-readiness-service";
+import { selectSpogomiRouteForDivision } from "./route-types";
+import type { SpogomiRouteProjection } from "./route-types";
 
 function mapManagementParticipants(participants: Array<Record<string, unknown>>) {
   return participants.map((participant) => ({ ...participant, composition_eligible: isCachanTicketCompositionEligible({ sourceSystem: participant.source_system as string | null, ticketStatus: participant.ticket_status as string | null, ticketDeleted: Boolean(participant.ticket_deleted), registrationStatus: String(participant.registration_status) }) }));
@@ -41,14 +43,14 @@ export async function loadSpogomiManagementProjection(params: {
     teamsQuery = teamsQuery.eq("division_id", divisionId);
   }
 
-  const [participants, teams, route, eventAccess, categoryRules, environmentMappings, registrationReadiness] = await Promise.all([
+  const [participants, teams, routes, eventAccess, categoryRules, environmentMappings, registrationReadiness] = await Promise.all([
     participantsQuery,
     teamsQuery,
     supabase
       .from("spogomi_event_routes")
-      .select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson")
+      .select("id, event_id, action_id, division_id, source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson, route_version, last_change_reason, reference_media_id, updated_at, created_at")
       .eq("event_id", event.id)
-      .maybeSingle(),
+      .order("division_id", { ascending: true, nullsFirst: true }),
     supabase
       .from("spogomi_event_reviewers")
       .select("role, revoked_at")
@@ -66,7 +68,7 @@ export async function loadSpogomiManagementProjection(params: {
   ]);
   if (participants.error) throw participants.error;
   if (teams.error) throw teams.error;
-  if (route.error) throw route.error;
+  if (routes.error) throw routes.error;
   if (eventAccess.error) throw eventAccess.error;
   if (categoryRules.error) throw categoryRules.error;
   if (environmentMappings.error) throw environmentMappings.error;
@@ -76,7 +78,8 @@ export async function loadSpogomiManagementProjection(params: {
     divisions: divisions.data ?? [],
     participants: mapManagementParticipants((participants.data ?? []) as Array<Record<string, unknown>>),
     teams: teams.data ?? [],
-    route: route.data ?? null,
+    routes: (routes.data ?? []) as SpogomiRouteProjection[],
+    route: selectSpogomiRouteForDivision((routes.data ?? []) as SpogomiRouteProjection[], divisionId ?? null),
     eventAccess: eventAccess.data ?? [],
     categoryRules: categoryRules.data ?? [],
     environmentMappings: environmentMappings.data ?? [],

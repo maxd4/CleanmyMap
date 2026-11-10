@@ -122,6 +122,7 @@ function asRoute(value: unknown): SpogomiOfficialRouteReference | null {
   if (!value || typeof value !== "object") return null;
   const row = value as {
     source?: unknown;
+    division_id?: unknown;
     file_name?: unknown;
     point_count?: unknown;
     reference_distance_km?: unknown;
@@ -137,7 +138,7 @@ function asRoute(value: unknown): SpogomiOfficialRouteReference | null {
       )
     : [];
   if (
-    row.source !== "official_reference" ||
+    !["official_reference", "gpx_reference", "manual_reference"].includes(String(row.source)) ||
     typeof row.file_name !== "string" ||
     typeof row.point_count !== "number" ||
     typeof row.reference_distance_km !== "number" ||
@@ -146,7 +147,8 @@ function asRoute(value: unknown): SpogomiOfficialRouteReference | null {
     coordinates.length < 2
   ) return null;
   return {
-    source: "official_reference",
+    divisionId: row.division_id == null ? null : String(row.division_id),
+    source: row.source as SpogomiOfficialRouteReference["source"],
     fileName: row.file_name,
     pointCount: row.point_count,
     referenceDistanceKm: row.reference_distance_km,
@@ -180,7 +182,7 @@ function resolveSPOGOMIFranceOrganizer(action: ActionRow): SpogomiConsolidationI
   return null;
 }
 
-function buildConsolidationSourceSnapshot(event: EventRow, action: ActionRow, categoryRows: CategoryRow[], mappings: unknown[], teams: unknown[], submissions: unknown[], rawItems: Array<Record<string, unknown>>, participants: unknown[], decisions: ClosureDecisionRow[], route: { id: unknown; updated_at: unknown } | null): SpogomiConsolidationSourceSnapshot {
+function buildConsolidationSourceSnapshot(event: EventRow, action: ActionRow, categoryRows: CategoryRow[], mappings: unknown[], teams: unknown[], submissions: unknown[], rawItems: Array<Record<string, unknown>>, participants: unknown[], decisions: ClosureDecisionRow[], routes: Array<{ id: unknown; division_id?: unknown; updated_at: unknown }> ): SpogomiConsolidationSourceSnapshot {
   return {
     event: { id: event.id, updatedAt: event.updated_at, name: event.name, locationLabel: event.location_label, startsAt: event.starts_at, endsAt: event.ends_at, mappingVersion: event.environmental_mapping_version },
     action: { id: event.action_id, updatedAt: String(action.updated_at), organizerId: action.organizer_id, organizerName: action.organizer_name, organizerType: action.organizer_type },
@@ -191,7 +193,8 @@ function buildConsolidationSourceSnapshot(event: EventRow, action: ActionRow, ca
     items: rawItems.map((row) => ({ id: String(row.id), divisionId: row.division_id ? String(row.division_id) : undefined, updatedAt: String(row.updated_at) })),
     participants: participants.map((row) => { const value = row as { id: unknown; division_id?: unknown; updated_at?: unknown }; return { id: String(value.id), divisionId: value.division_id ? String(value.division_id) : undefined, updatedAt: String(value.updated_at) }; }),
     decisions: decisions.map((row) => ({ id: String(row.id), divisionId: String(row.division_id), teamId: String(row.team_id), status: row.status, sportEligible: Boolean(row.sport_eligible), environmentalEligibility: row.environmental_eligibility, decisionVersion: Number(row.decision_version), updatedAt: String(row.updated_at ?? "") })),
-    route: route ? { id: String(route.id), updatedAt: String(route.updated_at) } : null,
+    route: routes[0] ? { id: String(routes[0].id), updatedAt: String(routes[0].updated_at) } : null,
+    routes: routes.map((route) => ({ id: String(route.id), divisionId: route.division_id == null ? undefined : String(route.division_id), updatedAt: String(route.updated_at) })),
   };
 }
 
@@ -216,7 +219,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     readAllSpogomiPages("consolidation result items", (from, to) => supabase.from("spogomi_result_items").select("id, division_id, submission_id, category_rule_id, quantity, mass_grams, object_count, provenance, measurement_method, source_reference, updated_at").eq("event_id", event.id).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("consolidation participants", (from, to) => supabase.from("spogomi_participants").select("id, division_id, team_id, attendance_status, registration_status, updated_at").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
     readAllSpogomiPages("consolidation closure decisions", (from, to) => supabase.from("spogomi_team_closure_decisions").select("id, team_id, division_id, status, sport_eligible, environmental_eligibility, decision_version, reason, created_at, updated_at").eq("event_id", event.id).eq("is_current", true).order("division_id", { ascending: true }).order("team_id", { ascending: true }).range(from, to)),
-    supabase.from("spogomi_event_routes").select("id, source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson, updated_at").eq("event_id", event.id).maybeSingle(),
+    supabase.from("spogomi_event_routes").select("id, division_id, source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson, updated_at").eq("event_id", event.id).order("division_id", { ascending: true, nullsFirst: true }),
   ]);
   for (const result of [actionResult, routeResult]) if (result.error) throw result.error;
   const action = actionResult.data as ActionRow;
@@ -286,7 +289,8 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     attendanceStatus: String(participant.attendance_status),
     registrationStatus: String(participant.registration_status),
   }));
-  const sourceSnapshot = buildConsolidationSourceSnapshot(event, action, categoryRows, mappings ?? [], teams ?? [], submissions ?? [], rawItems, participants ?? [], (decisions ?? []) as unknown as ClosureDecisionRow[], routeResult.data as { id: unknown; updated_at: unknown } | null);
+  const routeRows = (Array.isArray(routeResult.data) ? routeResult.data : routeResult.data ? [routeResult.data] : []) as Array<{ id: unknown; division_id?: unknown; updated_at: unknown }>;
+  const sourceSnapshot = buildConsolidationSourceSnapshot(event, action, categoryRows, mappings ?? [], teams ?? [], submissions ?? [], rawItems, participants ?? [], (decisions ?? []) as unknown as ClosureDecisionRow[], routeRows);
   const input: SpogomiConsolidationInput = {
     eventId: event.id,
     actionId: event.action_id,
@@ -294,7 +298,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     mappings: mappingRows,
     teams: teamRows,
     participants: participantRows,
-    officialRoute: asRoute(routeResult.data),
+    officialRoute: asRoute(routeRows[0]),
     organizer: resolveSPOGOMIFranceOrganizer(action),
     eventMetadata: { name: event.name, locationLabel: event.location_label, startsAt: event.starts_at, endsAt: event.ends_at },
     actionMetadata: { organizerId: action.organizer_id, organizerName: action.organizer_name, organizerType: action.organizer_type },

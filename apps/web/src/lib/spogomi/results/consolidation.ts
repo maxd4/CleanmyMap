@@ -93,10 +93,12 @@ export type SpogomiConsolidationSourceSnapshot = {
   participants: SpogomiSourceRowSnapshot[];
   decisions?: Array<SpogomiSourceRowSnapshot & { teamId: string; status: string; sportEligible: boolean; environmentalEligibility: string; decisionVersion: number }>;
   route: SpogomiSourceRowSnapshot | null;
+  routes?: SpogomiSourceRowSnapshot[];
 };
 
 export type SpogomiOfficialRouteReference = {
-  source: "official_reference";
+  divisionId?: string | null;
+  source: "official_reference" | "gpx_reference" | "manual_reference";
   fileName: string;
   pointCount: number;
   referenceDistanceKm: number;

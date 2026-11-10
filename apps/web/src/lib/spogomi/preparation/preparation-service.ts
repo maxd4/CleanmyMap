@@ -19,7 +19,7 @@ export {
   updateSpogomiParticipantPrivateLabel,
 } from "./composition-mutation-service";
 export { createSpogomiEvent } from "./preparation-creation-service";
-export { attachOfficialGpx } from "./preparation-gpx-service";
+export { attachOfficialGpx, buildManualRouteInput, upsertPlannedRoute } from "./preparation-route-service";
 export { updateSpogomiEvent } from "./preparation-event-service";
 export { loadSpogomiRegistrationReadiness, openSpogomiRegistration, updateSpogomiRegistrationPolicy } from "./registration-readiness-service";
 export { canManageEvent, loadSpogomiEventForOrganizer, loadSpogomiEventBySlugForOrganizer, loadSpogomiEventBySlugForCurrentOrganizer, SPOGOMI_ORGANIZER_EVENT_SELECT } from "./preparation-event-access";

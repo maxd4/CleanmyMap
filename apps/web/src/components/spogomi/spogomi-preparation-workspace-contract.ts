@@ -1,9 +1,11 @@
 import type { SpogomiDivisionType } from "@/lib/spogomi/types";
 import type { SpogomiRegistrationReadiness } from "@/lib/spogomi/registration-readiness";
+import type { SpogomiRouteProjection } from "@/lib/spogomi/route-types";
 
 export type WorkspaceData = {
   event: {
     id: string;
+    action_id: string;
     event_slug: string | null;
     public_visibility: "private" | "published";
     public_results_visibility: "hidden" | "provisional" | "certified";
@@ -52,11 +54,8 @@ export type WorkspaceData = {
     public_name: string;
     composition_state: string;
   }>;
-  route: {
-    file_name: string;
-    reference_distance_km: number;
-    geometry_geojson: { coordinates: [number, number][] };
-  } | null;
+  route: SpogomiRouteProjection | null;
+  routes: SpogomiRouteProjection[];
   categoryRules: Array<{
     id: string;
     event_id: string;

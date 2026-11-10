@@ -57,7 +57,7 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>, options: { div
       range: vi.fn(() => query),
       maybeSingle: vi.fn(async () => {
         if (table === "spogomi_event_routes") {
-          return { data: { source: "official_reference", file_name: "route.gpx", point_count: 3, reference_distance_km: 2.5, inferred_topology: "loop", geometry_geojson: { coordinates: [[2.3, 48.8], [2.4, 48.9]] } }, error: null };
+          return { data: { division_id: null, source: "official_reference", file_name: "route.gpx", point_count: 3, reference_distance_km: 2.5, inferred_topology: "loop", geometry_geojson: { coordinates: [[2.3, 48.8], [2.4, 48.9]] } }, error: null };
         }
         if (table === "spogomi_events") return { data: rows.find((candidate) => (!requestedSlug || candidate.event_slug === requestedSlug) && (!requestedVisibility || candidate.public_visibility === requestedVisibility || candidate.public_visibility === undefined) && !excludedStates.has(String(candidate.state))) ?? null, error: null };
         return { data: null, error: null };
@@ -67,6 +67,7 @@ function makeSupabase(inputRows?: Array<Record<string, unknown>>, options: { div
         if (table === "actions") return Promise.resolve({ data: [{ id: "action-1", status: "approved", published_at: "2026-09-01", moderation_visibility: "public" }], error: null }).then(resolve, reject);
         if (table === "spogomi_divisions") return Promise.resolve({ data: options.divisions ?? [], error: null }).then(resolve, reject);
         if (table === "spogomi_participants") return Promise.resolve({ data: options.participants ?? [], error: null }).then(resolve, reject);
+        if (table === "spogomi_event_routes") return Promise.resolve({ data: [{ division_id: null, source: "official_reference", file_name: "route.gpx", point_count: 3, reference_distance_km: 2.5, inferred_topology: "loop", geometry_geojson: { coordinates: [[2.3, 48.8], [2.4, 48.9]] } }], error: null }).then(resolve, reject);
         if (table === "spogomi_teams") return Promise.resolve({ data: [{ id: "team-1", division_id: "division-1", team_number: 1, public_name: "Alpha", composition_state: "locked" }], error: null }).then(resolve, reject);
         return Promise.resolve({ data: [], error: null }).then(resolve, reject);
       },

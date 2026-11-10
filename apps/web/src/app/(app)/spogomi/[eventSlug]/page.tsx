@@ -129,6 +129,7 @@ export default async function SpogomiPublicEventPage({
       : event.mode === "world_cup"
         ? "World Cup — équipes de trois"
         : "Casual — taille configurée pour l’événement";
+  const publishedRoutes = event.routes ?? (event.route ? [event.route] : []);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
@@ -388,23 +389,17 @@ export default async function SpogomiPublicEventPage({
               className="scroll-mt-6"
               aria-labelledby="spogomi-route-title"
             >
-              {event.route ? (
-                <CmmCard tone="amber" variant="glass" className="space-y-3 p-5">
-                  <h2
-                    id="spogomi-route-title"
-                    className="text-xl font-black text-amber-950"
-                  >
-                    Parcours officiel de référence
-                  </h2>
-                  <p className="cmm-text-body text-slate-900">
-                    {event.route.fileName} · {event.route.referenceDistanceKm}{" "}
-                    km calculés depuis le fichier. Cette géométrie ne constitue
-                    pas une trace réellement parcourue.
-                  </p>
-                  <SpogomiPublicRouteMap
-                    coordinates={event.route.coordinates}
-                  />
-                </CmmCard>
+              {publishedRoutes.length ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {publishedRoutes.map((route) => {
+                    const division = event.divisions.find((candidate) => candidate.id === route.divisionId);
+                    return <CmmCard key={`${route.divisionId ?? "shared"}-${route.fileName}`} tone="amber" variant="glass" className="space-y-3 p-5">
+                      <h2 id={`spogomi-route-title-${route.divisionId ?? "shared"}`} className="text-xl font-black text-amber-950">Parcours prévu{division ? ` · ${division.type === "world_cup" ? "World Cup" : "Casual"}` : " partagé"}</h2>
+                      <p className="cmm-text-body text-slate-900">{route.fileName} · {route.referenceDistanceKm} km calculés depuis la référence. Cette géométrie ne constitue pas une trace réellement parcourue.</p>
+                      <SpogomiPublicRouteMap coordinates={route.coordinates} />
+                    </CmmCard>;
+                  })}
+                </div>
               ) : (
                 <CmmCard
                   tone="slate"

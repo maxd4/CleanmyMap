@@ -233,7 +233,7 @@ une nouvelle demande d'inscription.
 La RPC spogomi_registration_readiness centralise la checklist par édition et
 par division. Elle réutilise la version et l'état du règlement, les catégories
 et barèmes, les horaires de spogomi_field_operations, le parcours de
-spogomi_event_routes, le lieu de l'édition, la capacité de
+  spogomi_event_routes, le lieu de l'édition, la capacité de
 registrationPolicy et les conditions d'éligibilité existantes. Les seules
 informations complémentaires persistées dans registrationPolicy sont les
 consignes de sécurité, le contact d'organisation, la procédure d'assistance et
@@ -265,7 +265,10 @@ La fiche `/spogomi/[eventSlug]` compose un bloc compact à partir des mêmes
 owners : date, lieu et fuseau de `spogomi_events`, horaires complets de
 `spogomi_field_operations` par division, périmètre et point de rendez-vous de
 la préparation publique de l'action liée, parcours `official_reference`, et
-matériel issu de la projection publique d'action. Une ligne d'horaires
+  matériel issu de la projection publique d'action. Le parcours prévu peut
+  rester partagé pour l'historique ou être distinct par division ; ses sources
+  sont explicitement versionnées (`official_reference`, `gpx_reference` ou
+  `manual_reference`) et ne constituent jamais une trace observée. Une ligne d'horaires
 incomplète ou rattachée à une division inconnue n'est pas affichée comme un
 horaire officiel.
 

@@ -46,7 +46,8 @@ type SpogomiPublicDivision = {
 };
 
 type SpogomiPublicRoute = {
-  source: "official_reference";
+  divisionId: string | null;
+  source: "official_reference" | "gpx_reference" | "manual_reference";
   fileName: string;
   pointCount: number;
   referenceDistanceKm: number;
@@ -73,6 +74,7 @@ export type SpogomiPublicEvent = {
   divisions: SpogomiPublicDivision[];
   teams: SpogomiPublicTeam[];
   route: SpogomiPublicRoute | null;
+  routes?: SpogomiPublicRoute[];
   practicalInformation?: SpogomiPublicPracticalInformation | null;
   results: SpogomiPublicResults | null;
   organizer: SpogomiPublicOrganizer | null;
@@ -332,6 +334,7 @@ function mapEvent(
   teams: SpogomiPublicTeam[] = [],
   divisions: Array<Pick<SpogomiPublicDivision, "id" | "type">> = [],
   route: SpogomiPublicRoute | null = null,
+  routes: SpogomiPublicRoute[] = route ? [route] : [],
   practicalInformation: SpogomiPublicPracticalInformation | null = null,
   results: SpogomiPublicResults | null = null,
   organizer: SpogomiPublicOrganizer | null = null,
@@ -369,6 +372,7 @@ function mapEvent(
     })),
     teams,
     route,
+    routes,
     practicalInformation,
     results,
     organizer,
@@ -410,7 +414,7 @@ export async function listPublishedSpogomiEvents(
       : await loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true });
     const organizer = organizers.get(row.action_id) ?? null;
     const registration = registrations.get(row.id) ?? { status: "not_open" as const, divisions: [] };
-    return mapEvent(row, actionIds, [], [], null, null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable", now);
+    return mapEvent(row, actionIds, [], [], null, [], null, null, organizer, [], registration, projection?.results.lifecycleStatus ?? "unavailable", now);
   }));
   return mapped
     .filter((event): event is SpogomiPublicEvent => Boolean(event))
@@ -441,9 +445,9 @@ export async function loadPublishedSpogomiEventBySlug(
       .order("team_number", { ascending: true }),
     supabase
       .from("spogomi_event_routes")
-      .select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson")
+      .select("division_id, source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson")
       .eq("event_id", row.id)
-      .maybeSingle(),
+      .order("division_id", { ascending: true, nullsFirst: true }),
     loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true }),
     row.state === "cancelled" ? Promise.resolve(null) : loadPublicActionPreparation(supabase, row.action_id, actionIds),
     supabase
@@ -455,24 +459,27 @@ export async function loadPublishedSpogomiEventBySlug(
   if (teamsResult.error) throw teamsResult.error;
   if (routeResult.error) throw routeResult.error;
   if (operationsResult.error) throw operationsResult.error;
-  const routeData = routeResult.data as {
-    source: "official_reference";
+  const routeRows = Array.isArray(routeResult.data) ? routeResult.data : routeResult.data ? [routeResult.data] : [];
+  const routeData = routeRows as Array<{
+    division_id: string | null;
+    source: "official_reference" | "gpx_reference" | "manual_reference";
     file_name: string;
     point_count: number;
     reference_distance_km: number;
     inferred_topology: "loop" | "point_to_point";
     geometry_geojson: { coordinates?: [number, number][] };
-  } | null;
-  const route = routeData?.geometry_geojson.coordinates
-    ? {
-        source: "official_reference" as const,
-        fileName: routeData.file_name,
-        pointCount: routeData.point_count,
-        referenceDistanceKm: Number(routeData.reference_distance_km),
-        inferredTopology: routeData.inferred_topology,
-        coordinates: routeData.geometry_geojson.coordinates,
-      }
-    : null;
+  }>;
+  const routes = routeData.flatMap((item) => item.geometry_geojson.coordinates ? [{
+    divisionId: item.division_id,
+    source: item.source,
+    fileName: item.file_name,
+    pointCount: item.point_count,
+    referenceDistanceKm: Number(item.reference_distance_km),
+    inferredTopology: item.inferred_topology,
+    // GeoJSON is [longitude, latitude]; Leaflet's public map consumes [latitude, longitude].
+    coordinates: item.geometry_geojson.coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number]),
+  }] : []);
+  const route = routes.length ? routes[0] : null;
   const divisions = (divisionsResult.data ?? []).map((division) => ({
     id: String(division.id),
     type: division.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
@@ -496,6 +503,7 @@ export async function loadPublishedSpogomiEventBySlug(
     })),
     divisions,
     route,
+    routes,
     practicalInformation,
     projection?.results ?? null,
     await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
