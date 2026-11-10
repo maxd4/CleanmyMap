@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpogomiPublicResults as SpogomiPublicResultsData } from "@/lib/spogomi/results-projection";
 import type { SpogomiPublicGalleryPhoto } from "@/lib/spogomi/photo-gallery";
 
-const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false }));
+const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false, userId: "user-1" }));
 const fetchMock = vi.hoisted(() => vi.fn());
 const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
 const intervalMock = vi.hoisted(() => vi.fn(() => 1));
@@ -64,6 +64,7 @@ async function flushEffects(): Promise<void> {
 }
 
 import { SpogomiAdmissionRequestCard } from "./spogomi-admission-request-card";
+import { SpogomiRegistrationQuiz } from "./spogomi-registration-quiz";
 import { SpogomiAdmissionRequestsPanel } from "./spogomi-admission-requests-panel";
 import { SpogomiContextLink } from "./spogomi-context-link";
 import { SpogomiCountdown } from "./spogomi-countdown";
@@ -177,6 +178,93 @@ describe("SPOGOMI consumer components", () => {
     expect(renderer.root.findAllByType("select")[1]?.props.value).toBe("world");
     expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(0);
     renderer.unmount();
+  });
+
+  it("reconciles a new server proof without remounting and submits with the same proof", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === "POST"
+        ? Promise.resolve(jsonResponse({ request: { id: "registration-1", requestKind: "registration", divisionId: "casual", status: "pending", providedContext: "", decisionMessage: null, createdAt: "2026-10-01T08:00:00Z" } }))
+        : Promise.resolve(jsonResponse({ requests: [] })),
+    );
+    let renderer!: ReturnType<typeof create>;
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} />);
+      await flushEffects();
+    });
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v2" }} />);
+      await flushEffects();
+    });
+
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(1);
+    const submitButton = findButton(renderer, "Demander à intégrer l’équipe");
+    expect(propsOf<{ disabled?: boolean }>(submitButton).disabled).toBe(false);
+    await act(async () => { await propsOf<ButtonProps>(submitButton).onClick(); });
+    expect(fetchMock).toHaveBeenCalledWith("/api/spogomi/events/event-1/admission-requests", expect.objectContaining({ method: "POST", body: JSON.stringify({ requestKind: "registration", divisionId: "casual", providedContext: "" }) }));
+    renderer.unmount();
+  });
+
+  it("reopens the quiz when a refreshed server projection removes the proof", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    let renderer!: ReturnType<typeof create>;
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v1" }} />);
+      await flushEffects();
+    });
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} />);
+      await flushEffects();
+    });
+
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(0);
+    expect(renderer.root.findAllByType(SpogomiRegistrationQuiz)).toHaveLength(1);
+    const submitButton = findButton(renderer, "Demander à intégrer l’équipe");
+    expect(propsOf<{ disabled?: boolean }>(submitButton).disabled).toBe(true);
+    await act(async () => { await propsOf<ButtonProps>(submitButton).onClick(); });
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/spogomi/events/event-1/admission-requests", expect.objectContaining({ method: "POST" }));
+    renderer.unmount();
+  });
+
+  it("keeps a local quiz success immediately usable until a new server projection arrives", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    let renderer!: ReturnType<typeof create>;
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} />);
+      await flushEffects();
+    });
+    const quiz = renderer.root.findByType(SpogomiRegistrationQuiz);
+    await act(async () => { propsOf<{ onPassed: (version: string) => void }>(quiz).onPassed("quiz-local"); });
+
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(1);
+    expect(propsOf<{ disabled?: boolean }>(findButton(renderer, "Demander à intégrer l’équipe")).disabled).toBe(false);
+    renderer.unmount();
+  });
+
+  it("drops a proof when the account or event proof context changes", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    let renderer!: ReturnType<typeof create>;
+    const props = { eventId: "event-1", lifecycle: "upcoming" as const, initialDivisionId: "casual", signInHref: "/sign-in", registrationReadinessReady: true, divisions: [{ id: "casual", type: "casual" as const, directRegistrationAvailable: true }] };
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{ casual: "quiz-v1" }} />);
+      await flushEffects();
+    });
+    authState.userId = "user-2";
+    await act(async () => {
+      renderer.update(<SpogomiAdmissionRequestCard {...props} initialQuizProofs={{}} />);
+      await flushEffects();
+    });
+
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(0);
+    expect(renderer.root.findAllByType(SpogomiRegistrationQuiz)).toHaveLength(1);
+    renderer.unmount();
+    authState.userId = "user-1";
   });
 
   it("fails closed when registration readiness is unavailable", async () => {
