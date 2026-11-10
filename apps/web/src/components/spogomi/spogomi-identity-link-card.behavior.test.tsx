@@ -584,6 +584,79 @@ describe("SpogomiIdentityLinkCard behavior", () => {
     expect(findText(renderer, "Équipe Beta · Équipe 7")).toBeTruthy();
   });
 
+  it("does not reuse account A private data across sign-out and the same account reconnect", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ state: "identity_verified", recognition: { status: "available", awards: [{ id: "award-old", badgeTypeId: "badge-old", eventYear: 2026, eventLocalDate: "2026-10-20", status: "active" }] }, team: richTeam }));
+    const renderer = renderCard("event-same-account");
+    activeRenderers.push(renderer);
+    await settleTimers();
+    expect(findText(renderer, "Équipe Alpha · Équipe 7")).toBeTruthy();
+    expect(findText(renderer, "Badge synthétique")).toBeTruthy();
+
+    authState.isSignedIn = false;
+    act(() => { renderer.update(<SpogomiIdentityLinkCard eventId="event-same-account" signInHref="/sign-in" />); });
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+    expect(renderer.root.findAllByProps({ children: "Badge synthétique" })).toHaveLength(0);
+
+    const reconnect = deferred<Response>();
+    authState.isSignedIn = true;
+    fetchMock.mockReturnValueOnce(reconnect.promise);
+    act(() => { renderer.update(<SpogomiIdentityLinkCard eventId="event-same-account" signInHref="/sign-in" />); });
+    await settleTimers();
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+    expect(renderer.root.findAllByProps({ children: "Badge synthétique" })).toHaveLength(0);
+    expect(findText(renderer, "Vérification de votre liaison…")).toBeTruthy();
+
+    reconnect.resolve(jsonResponse({ state: "identity_verified", recognition: null, team: { ...richTeam, publicName: "Équipe Révoquée" } }));
+    await act(async () => { await flushPromises(); });
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+    expect(findText(renderer, "Équipe Révoquée · Équipe 7")).toBeTruthy();
+    expect(renderer.root.findAllByProps({ children: "Badge synthétique" })).toHaveLength(0);
+  });
+
+  it("shows unavailable verification after the same account reconnects with a failed GET", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ state: "identity_verified", recognition: null, team: richTeam }));
+    const renderer = renderCard("event-same-account-error");
+    activeRenderers.push(renderer);
+    await settleTimers();
+    expect(findText(renderer, "Équipe Alpha · Équipe 7")).toBeTruthy();
+
+    authState.isSignedIn = false;
+    act(() => { renderer.update(<SpogomiIdentityLinkCard eventId="event-same-account-error" signInHref="/sign-in" />); });
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Nouvelle lecture indisponible" }, 503));
+    act(() => { renderer.update(<SpogomiIdentityLinkCard eventId="event-same-account-error" signInHref="/sign-in" />); });
+    await settleTimers();
+
+    expect(renderer.root.findByProps({ role: "alert" }).props.children).toBe("Nouvelle lecture indisponible");
+    expect(findText(renderer, "Vérification indisponible")).toBeTruthy();
+    expect(renderer.root.findAllByProps({ children: "Accès autorisé" })).toHaveLength(0);
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+  });
+
+  it("requires a fresh GET when returning from event E2 to event E1", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ state: "identity_verified", recognition: null, team: richTeam }));
+    const renderer = renderCard("event-e1");
+    activeRenderers.push(renderer);
+    await settleTimers();
+    expect(findText(renderer, "Équipe Alpha · Équipe 7")).toBeTruthy();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ state: "identity_unlinked", recognition: null, team: null }));
+    act(() => { renderer.update(<SpogomiIdentityLinkCard eventId="event-e2" signInHref="/sign-in" />); });
+    await settleTimers();
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+
+    const e1Refresh = deferred<Response>();
+    fetchMock.mockReturnValueOnce(e1Refresh.promise);
+    act(() => { renderer.update(<SpogomiIdentityLinkCard eventId="event-e1" signInHref="/sign-in" />); });
+    await settleTimers();
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+    expect(findText(renderer, "Vérification de votre liaison…")).toBeTruthy();
+    e1Refresh.resolve(jsonResponse({ state: "identity_verified", recognition: null, team: { ...richTeam, publicName: "Équipe E1 fraîche" } }));
+    await act(async () => { await flushPromises(); });
+    expect(findText(renderer, "Équipe E1 fraîche · Équipe 7")).toBeTruthy();
+    expect(renderer.root.findAllByProps({ children: "Équipe Alpha · Équipe 7" })).toHaveLength(0);
+  });
+
   it("ignores a late response from account A after account B becomes current", async () => {
     const accountA = deferred<Response>();
     const accountB = deferred<Response>();

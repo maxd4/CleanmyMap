@@ -42,7 +42,7 @@ export function useSpogomiIdentityLinkActions({ eventId, isLoaded, isSignedIn, u
       return;
     }
     const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadState().catch(() => undefined); }, 0);
-    return () => { window.clearTimeout(timer); stateRequestId.current += 1; };
+    return () => { window.clearTimeout(timer); stateRequestId.current += 1; setEventStates({}); };
   }, [isLoaded, isSignedIn, loadState, userId]);
   const submitRequest = useCallback(async (body: Record<string, unknown>, fallback: string, update: (payload: LinkResponse) => Partial<Omit<EventScopedState, "eventId">>) => {
     const requestId = ++stateRequestId.current;
