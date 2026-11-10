@@ -22,6 +22,7 @@ describe("SpogomiIdentityLinkCard", () => {
     expect(markup).toContain("J’ai participé à cet événement");
     expect(markup).toContain("Créez ou ouvrez votre compte");
     expect(markup).toContain("Se connecter");
+    expect(markup).toContain("Connexion requise");
     expect(markup).not.toContain("roster nominatif");
   });
 });

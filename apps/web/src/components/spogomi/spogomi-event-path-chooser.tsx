@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { SpogomiActionStateHeader } from "@/components/spogomi/spogomi-action-state";
 import {
   buildSpogomiEventHref,
   buildSpogomiEventSignInHref,
@@ -212,15 +213,18 @@ function AuthorizedPath({
   space,
   isAuthenticated,
   signInHref,
+  accessResolution,
 }: {
   title: string;
   description: string;
   space?: SpogomiAuthorizedSpace;
   isAuthenticated: boolean;
   signInHref: string;
+  accessResolution: "known" | "unknown";
 }) {
+  const authenticatedState = accessResolution === "unknown" ? "unknown" : "permission_denied";
   return (
-    <CmmCard tone="slate" variant="glass" className="space-y-4 p-5">
+    <CmmCard tone={isAuthenticated && !space ? (authenticatedState === "permission_denied" ? "red" : "slate") : "slate"} variant="glass" className={`space-y-4 border-2 p-5 ${isAuthenticated && !space ? authenticatedState === "permission_denied" ? "border-rose-300 bg-rose-50/75" : "border-slate-300 bg-white/80" : ""}`}>
       <div>
         <h3 className="text-xl font-black text-slate-950">{title}</h3>
         <p className="cmm-text-body mt-1 text-slate-900">
@@ -232,9 +236,12 @@ function AuthorizedPath({
           Ouvrir l’espace autorisé
         </CmmButton>
       ) : isAuthenticated ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white/60 p-3 text-sm font-bold text-slate-700">
-          Aucune habilitation active pour cette édition.
-        </p>
+        <div className="space-y-3">
+          <SpogomiActionStateHeader state={authenticatedState} />
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white/70 p-3 text-sm font-bold text-slate-700">
+            {authenticatedState === "permission_denied" ? "Aucune habilitation active pour cette édition." : "La vérification de cette habilitation est momentanément indisponible."}
+          </p>
+        </div>
       ) : (
         <CmmButton href={signInHref} tone="secondary" size="sm" variant="pill">
           <LockKeyhole size={15} aria-hidden="true" />
@@ -306,6 +313,7 @@ export function SpogomiEventPathChooser({
               focus: "practical",
               division: selectedDivisionType,
             })}
+            accessResolution={journey.accessResolution ?? "known"}
           />
         ) : (
           <AuthorizedPath
@@ -317,6 +325,7 @@ export function SpogomiEventPathChooser({
               focus: "practical",
               division: selectedDivisionType,
             })}
+            accessResolution={journey.accessResolution ?? "known"}
           />
         )}
       </div>

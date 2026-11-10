@@ -11,7 +11,7 @@ vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithC
 vi.mock("next/dynamic", () => ({ default: () => function DynamicComponent() { return React.createElement("div", { "data-dynamic": true }); } }));
 vi.mock("next/image", () => ({ default: (props: Record<string, unknown>) => React.createElement("img", props) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock("lucide-react", () => ({ Link2: () => null, Users: () => null }));
+vi.mock("lucide-react", () => ({ Link2: () => null, Users: () => null, BadgeCheck: () => null, CircleHelp: () => null, Clock3: () => null, KeyRound: () => null, LockKeyhole: () => null, LogIn: () => null }));
 vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ children, href, ...props }: React.PropsWithChildren<Record<string, unknown>>) => href ? React.createElement("a", { ...props, href }, children) : React.createElement("button", props, children) }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("div", props, children) }));
 vi.mock("@/components/ui/cmm-field", () => ({ CmmField: ({ children, label }: React.PropsWithChildren<{ label: string }>) => React.createElement("label", null, label, children), CmmInput: (props: Record<string, unknown>) => React.createElement("input", props), CmmTextarea: (props: Record<string, unknown>) => React.createElement("textarea", props) }));

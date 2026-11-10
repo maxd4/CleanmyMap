@@ -30,6 +30,8 @@ export type SpogomiEventJourney = {
   next: SpogomiJourneyStep;
   steps: readonly SpogomiJourneyStep[];
   authorizedSpaces: readonly SpogomiAuthorizedSpace[];
+  /** Distinguishes a known empty authorization projection from a failed read. */
+  accessResolution?: "known" | "unknown";
 };
 
 export type SpogomiEventJourneyInput = {
@@ -51,6 +53,7 @@ export type SpogomiEventJourneyInput = {
   refereeCapabilities: readonly ("attendance" | "operations" | "arbitration" | "results")[];
   signInHref: string;
   signInHrefByStep?: Partial<Record<SpogomiJourneyStepKey, string>>;
+  accessResolution?: "known" | "unknown";
 };
 
 export function journeyStatusLabel(status: SpogomiJourneyStatus): string {
@@ -154,5 +157,5 @@ function buildAuthorizedSpaces(input: SpogomiEventJourneyInput): SpogomiAuthoriz
 
 export function buildSpogomiEventJourney(input: SpogomiEventJourneyInput): SpogomiEventJourney {
   const steps = buildSteps(input);
-  return { next: nextCompetitorStep(input, steps), steps, authorizedSpaces: buildAuthorizedSpaces(input) };
+  return { next: nextCompetitorStep(input, steps), steps, authorizedSpaces: buildAuthorizedSpaces(input), accessResolution: input.accessResolution ?? "known" };
 }

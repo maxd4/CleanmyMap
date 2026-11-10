@@ -147,6 +147,7 @@ export async function loadSpogomiEventJourney(params: {
     input.organizerSpaceHref = null;
     input.refereeSpaceHref = null;
     input.refereeCapabilities = [];
+    input.accessResolution = "unknown";
   }
   return { ...buildSpogomiEventJourney(input), registrationReadinessReady, quizProofs };
 }

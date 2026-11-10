@@ -10,7 +10,7 @@ vi.mock("next/link", () => ({
   default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
     React.createElement("a", props, children),
 }));
-vi.mock("lucide-react", () => ({ Link2: () => null, Users: () => null }));
+vi.mock("lucide-react", () => ({ Link2: () => null, Users: () => null, BadgeCheck: () => null, CircleHelp: () => null, Clock3: () => null, KeyRound: () => null, LockKeyhole: () => null, LogIn: () => null }));
 vi.mock("@/components/ui/cmm-button", () => ({
   CmmButton: ({ children, href, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
     href ? React.createElement("a", { ...props, href }, children) : React.createElement("button", props, children),

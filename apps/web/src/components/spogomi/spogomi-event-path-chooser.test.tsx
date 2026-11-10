@@ -43,8 +43,9 @@ function journey(
   next: SpogomiJourneyStep,
   steps: readonly SpogomiJourneyStep[],
   authorizedSpaces: SpogomiEventJourney["authorizedSpaces"] = [],
+  accessResolution: SpogomiEventJourney["accessResolution"] = "known",
 ): SpogomiEventJourney {
-  return { next, steps, authorizedSpaces };
+  return { next, steps, authorizedSpaces, accessResolution };
 }
 
 const upcomingJourney = journey(
@@ -207,5 +208,31 @@ describe("SpogomiEventPathChooser", () => {
     expect(container.innerHTML).toContain("espace#settings");
     expect(tabs()[2].getAttribute("aria-selected")).toBe("true");
     act(() => root.unmount());
+  });
+
+  it("renders an authenticated empty projection as a non-interactive denial", () => {
+    const container = document.createElement("div");
+    act(() => {
+      createRoot(container).render(<SpogomiEventPathChooser eventSlug="paris-2026" isAuthenticated journey={journey(upcomingJourney.next, upcomingJourney.steps, [], "known")} />);
+    });
+    act(() => container.querySelectorAll<HTMLElement>('[role="tab"]')[1].click());
+    const markup = container.innerHTML;
+
+    expect(markup).toContain("Accès non autorisé");
+    expect(markup).toContain("Aucune habilitation active pour cette édition.");
+    expect(markup).not.toContain('href="/spogomi/paris-2026/espace');
+  });
+
+  it("keeps an authorization read failure distinct from an explicit denial", () => {
+    const container = document.createElement("div");
+    act(() => {
+      createRoot(container).render(<SpogomiEventPathChooser eventSlug="paris-2026" isAuthenticated journey={journey(upcomingJourney.next, upcomingJourney.steps, [], "unknown")} />);
+    });
+    act(() => container.querySelectorAll<HTMLElement>('[role="tab"]')[1].click());
+    const markup = container.innerHTML;
+
+    expect(markup).toContain("Vérification indisponible");
+    expect(markup).not.toContain("Accès non autorisé");
+    expect(markup).not.toContain('href="/spogomi/paris-2026/espace');
   });
 });
