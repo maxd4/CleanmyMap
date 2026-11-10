@@ -145,17 +145,21 @@ function buildCompetitionInput(team: BaseTeam, division: BaseDivision, closureTe
   return { regulation, items, presentParticipants: closureTeam.present_place_ids.length, submissionStatus: "certified" };
 }
 
-function rankTeams(teams: CachanSyntheticTeamResult[], value: (team: CachanSyntheticTeamResult) => number, order: "desc" | "asc"): CachanSyntheticRankEntry[] {
-  return [...teams]
-    .sort((left, right) => (order === "desc" ? value(right) - value(left) : value(left) - value(right)) || left.massGrams - right.massGrams || left.teamRef.localeCompare(right.teamRef))
-    .map((team, index) => ({
-      rank: index + 1,
+function rankTeams(teams: CachanSyntheticTeamResult[], value: (team: CachanSyntheticTeamResult) => number, order: "desc" | "asc", preserveTies = false): CachanSyntheticRankEntry[] {
+  const sorted = [...teams].sort((left, right) => (order === "desc" ? value(right) - value(left) : value(left) - value(right)) || left.massGrams - right.massGrams || left.teamRef.localeCompare(right.teamRef));
+  let previousRank = 0;
+  return sorted.map((team, index) => {
+    const rank = preserveTies && index > 0 && value(sorted[index - 1]) === value(team) ? previousRank : index + 1;
+    previousRank = rank;
+    return {
+      rank,
       teamRef: team.teamRef,
       score: team.score,
       massGrams: team.massGrams,
       directCigaretteButtCount: team.directCigaretteButtCount,
       value: value(team),
-    }));
+    };
+  });
 }
 
 function buildTeamResult(team: BaseTeam, division: BaseDivision): CachanSyntheticTeamResult {
@@ -220,7 +224,7 @@ export function getSpogomiCachanDemoClosureProjection(): CachanSyntheticClosureP
       regulationRef: division.regulation_ref,
       teams,
       sportRanking: rankTeams(teams, (team) => team.score, "desc"),
-      buttsPerParticipantRanking: rankTeams(teams, (team) => team.buttsPerParticipant, "asc"),
+      buttsPerParticipantRanking: rankTeams(teams, (team) => team.buttsPerParticipant, "desc", true),
     };
   });
   const allResults = divisions.flatMap((division) => division.teams);

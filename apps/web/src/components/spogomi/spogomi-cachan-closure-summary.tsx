@@ -228,8 +228,8 @@ function DivisionRanking({
                   {entry.rank}. {entry.teamRef}
                 </span>
                 <br />
-                {numberLabel(entry.value)} mégots ·{" "}
-                {entry.directCigaretteButtCount} comptés
+                {numberLabel(entry.value)} mégots/participant ·{" "}
+                {entry.directCigaretteButtCount} mégots comptés directement
               </li>
             ))}
           </ol>

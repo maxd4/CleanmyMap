@@ -32,10 +32,27 @@ describe("SPOGOMI Cachan synthetic closure projection", () => {
     const projection = getSpogomiCachanDemoClosureProjection();
     expect(division(projection, "DIV-WORLD-CUP").sportRanking.map((entry) => entry.teamRef)).toEqual(["WC-05", "WC-02", "WC-04", "WC-01", "WC-06", "WC-03"]);
     expect(division(projection, "DIV-CASUAL").sportRanking.map((entry) => entry.teamRef)).toEqual(["CAS-01", "CAS-02", "CAS-03", "CAS-04", "CAS-05"]);
-    expect(division(projection, "DIV-WORLD-CUP").buttsPerParticipantRanking.map((entry) => entry.teamRef)).toEqual(["WC-03", "WC-06", "WC-01", "WC-04", "WC-02", "WC-05"]);
-    expect(division(projection, "DIV-CASUAL").buttsPerParticipantRanking.map((entry) => entry.teamRef)).toEqual(["CAS-05", "CAS-04", "CAS-03", "CAS-02", "CAS-01"]);
+    const worldCupButtsRanking = division(projection, "DIV-WORLD-CUP").buttsPerParticipantRanking;
+    const casualButtsRanking = division(projection, "DIV-CASUAL").buttsPerParticipantRanking;
+    expect(worldCupButtsRanking.map((entry) => entry.teamRef)).toEqual(["WC-05", "WC-02", "WC-04", "WC-01", "WC-06", "WC-03"]);
+    expect(casualButtsRanking.map((entry) => entry.teamRef)).toEqual(["CAS-01", "CAS-02", "CAS-03", "CAS-04", "CAS-05"]);
+    expect(worldCupButtsRanking.map((entry) => entry.rank)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(casualButtsRanking.map((entry) => entry.rank)).toEqual([1, 2, 3, 4, 5]);
+    expect(worldCupButtsRanking.at(-1)).toMatchObject({ teamRef: "WC-03", rank: 6, value: 0 });
     expect(division(projection, "DIV-WORLD-CUP").teams.find((team) => team.teamRef === "WC-03")?.directCigaretteButtCount).toBe(0);
     expect(division(projection, "DIV-WORLD-CUP").teams.find((team) => team.teamRef === "WC-03")?.cigaretteButtMassGrams).toBe(0);
+  });
+
+  it("keeps equal ratios on the same rank while stabilizing their display order", () => {
+    const projection = getSpogomiCachanDemoClosureProjection();
+    for (const currentDivision of projection.divisions) {
+      const ranking = currentDivision.buttsPerParticipantRanking;
+      for (let index = 1; index < ranking.length; index += 1) {
+        if (ranking[index].value === ranking[index - 1].value) {
+          expect(ranking[index].rank).toBe(ranking[index - 1].rank);
+        }
+      }
+    }
   });
 
   it("consolidates environmental totals once and retains units and provenance boundaries", () => {
