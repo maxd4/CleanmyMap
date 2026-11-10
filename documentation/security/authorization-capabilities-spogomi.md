@@ -10,13 +10,19 @@ organisateur/coorganisateur ; `spogomi_event_reviewers` porte les habilitations
 `observer` et `referee`, chacune contrainte par `event_id`, révocable et auditée
 dans `spogomi_event_access_audit`.
 
-Une nouvelle attribution `referee` doit en plus référencer une candidature
+Une nouvelle attribution événementielle doit en plus référencer une candidature
 `spogomi_referee_applications` à l’état `habilitated`. Cet état exige la preuve
 distincte du quiz arbitre versionné, la confirmation pratique versionnée et la
-décision explicite d’un organisateur habilité. Une candidature ou une preuve
-théorique ne crée jamais une capacité ; les anciennes habilitations sont
-préservées jusqu’à une révocation explicite. Les tables de candidature, de
-preuves, de tentatives, de confirmations et d’audit sont service-only.
+décision explicite d’un organisateur habilité. Le quiz comporte 12 questions
+critiques et 10 générales ; sa correction utilise une clé HMAC service-only et
+sa définition publique ne contient jamais la clé. Une candidature ou une preuve
+théorique ne crée jamais une capacité. Dans une édition mixte, une attribution
+événementielle exige une preuve courante pour chaque division concernée ; une
+qualification Casual seule ne couvre donc pas World Cup. Les anciennes
+habilitations sont préservées jusqu’à une révocation explicite. Une révocation
+partielle ne révoque pas toute la candidature ; un refus post-habilitation
+retire les accès actifs. Les tables de candidature, de preuves, de tentatives,
+de confirmations et d’audit sont service-only.
 
 Le serveur refuse le chevauchement compétiteur/arbitre actif pour une même
 édition, y compris lorsqu’une inscription sportive est créée par une autre

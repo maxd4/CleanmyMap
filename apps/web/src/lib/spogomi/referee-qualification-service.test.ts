@@ -22,6 +22,7 @@ const application = {
   regulationVersion: "regulation-v1",
   theoryQualified: false,
   practicalConfirmed: false,
+  qualificationCurrent: true,
 };
 
 describe("SPOGOMI referee qualification service", () => {
@@ -33,24 +34,24 @@ describe("SPOGOMI referee qualification service", () => {
     expect(supabase.rpc).toHaveBeenCalledWith("spogomi_create_referee_application", { p_event_id: "event-1", p_division_id: "division-1", p_clerk_id: "user-1" });
   });
 
-  it("keeps correct answers out of the public quiz contract and accepts a 20-question definition", async () => {
+  it("keeps correct answers out of the public quiz contract and accepts a 22-question definition", async () => {
     const quiz = {
       eventId: "event-1", divisionId: "division-1", regulationVersion: "regulation-v1", quizVersion: "quiz-v1", available: true, sourceReference: "rulebook#v1", missing: [],
-      questions: Array.from({ length: 20 }, (_, index) => ({ id: `question-${index}`, prompt: `Question ${index}`, critical: index < 12, options: [{ id: "official", label: "Réponse réglementaire" }, { id: "wrong", label: "Réponse incorrecte" }] })),
+      questions: Array.from({ length: 22 }, (_, index) => ({ id: `question-${index}`, prompt: `Question ${index}`, critical: index < 12, options: [{ id: "choice_a", label: "Réponse réglementaire" }, { id: "choice_b", label: "Réponse incorrecte" }] })),
     };
     const supabase = supabaseFor({ data: quiz });
     const result = await loadSpogomiRefereeQuiz({ supabase, eventId: "event-1", divisionId: "division-1" });
-    expect(result.questions).toHaveLength(20);
+    expect(result.questions).toHaveLength(22);
     expect(result.questions[0]).not.toHaveProperty("correctOptionId");
     expect(result.questions[0]).not.toHaveProperty("explanation");
     expect(supabase.rpc).toHaveBeenCalledWith("spogomi_referee_quiz_definition", { p_event_id: "event-1", p_division_id: "division-1" });
   });
 
   it("submits answers through the server RPC and returns pedagogical errors without granting access", async () => {
-    const evaluation = { passed: false, quizVersion: "quiz-v1", score: 85, totalQuestions: 20, criticalCorrect: 11, criticalTotal: 12, otherCorrect: 8, otherTotal: 8, errors: [{ questionId: "safety", explanation: "Relisez la consigne." }], proofId: null };
+    const evaluation = { passed: false, quizVersion: "quiz-v1", score: 86, totalQuestions: 22, criticalCorrect: 11, criticalTotal: 12, otherCorrect: 8, otherTotal: 10, errors: [{ questionId: "q01", explanation: "Relisez la consigne." }], proofId: null };
     const supabase = supabaseFor({ data: evaluation });
-    await expect(submitSpogomiRefereeQuiz({ supabase, eventId: "event-1", divisionId: "division-1", userId: "user-1", quizVersion: "quiz-v1", answers: { safety: "wrong" } })).resolves.toEqual(evaluation);
-    expect(supabase.rpc).toHaveBeenCalledWith("spogomi_submit_referee_quiz", expect.objectContaining({ p_user_id: "user-1", p_answers: { safety: "wrong" } }));
+    await expect(submitSpogomiRefereeQuiz({ supabase, eventId: "event-1", divisionId: "division-1", userId: "user-1", quizVersion: "quiz-v1", answers: { q01: "choice_b" } })).resolves.toEqual(evaluation);
+    expect(supabase.rpc).toHaveBeenCalledWith("spogomi_submit_referee_quiz", expect.objectContaining({ p_user_id: "user-1", p_answers: { q01: "choice_b" } }));
   });
 
   it("maps stale, abuse and authorization failures without weakening the boundary", async () => {

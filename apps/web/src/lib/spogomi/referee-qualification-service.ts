@@ -20,6 +20,7 @@ export type SpogomiRefereeApplication = {
   regulationVersion: string;
   theoryQualified: boolean;
   practicalConfirmed: boolean;
+  qualificationCurrent: boolean;
 };
 
 export type SpogomiRefereeQuizQuestion = {
@@ -73,7 +74,7 @@ const evaluationSchema = z.object({
   errors: z.array(z.object({ questionId: z.string(), explanation: z.string() })),
 });
 const applicationSchema = z.object({
-  applicationId: z.string(), eventId: z.string(), divisionId: z.string(), status: z.enum(["candidate", "theory_qualified", "practical_pending", "habilitated", "refused", "revoked"]), quizVersion: z.string().nullable(), regulationVersion: z.string(), theoryQualified: z.boolean(), practicalConfirmed: z.boolean(),
+  applicationId: z.string(), eventId: z.string(), divisionId: z.string(), status: z.enum(["candidate", "theory_qualified", "practical_pending", "habilitated", "refused", "revoked"]), quizVersion: z.string().nullable(), regulationVersion: z.string(), theoryQualified: z.boolean(), practicalConfirmed: z.boolean(), qualificationCurrent: z.boolean().optional().default(true),
 });
 
 function mapError(error: unknown): SpogomiRefereeQualificationError {
@@ -102,7 +103,10 @@ export async function loadSpogomiRefereeApplication(params: { supabase: Supabase
   const result = await params.supabase.from("spogomi_referee_applications").select("id, event_id, division_id, status, quiz_version, regulation_version, theory_proof_id, practical_confirmation_version").eq("event_id", params.eventId).eq("division_id", params.divisionId).eq("clerk_id", params.clerkId).maybeSingle();
   if (result.error) throw new SpogomiRefereeQualificationError("Le statut de candidature n’est pas disponible.", "unavailable");
   if (!result.data) return null;
-  return parseApplication({ applicationId: String(result.data.id), eventId: String(result.data.event_id), divisionId: String(result.data.division_id), status: result.data.status, quizVersion: result.data.quiz_version ? String(result.data.quiz_version) : null, regulationVersion: String(result.data.regulation_version), theoryQualified: Boolean(result.data.theory_proof_id), practicalConfirmed: Boolean(result.data.practical_confirmation_version) });
+  const application = parseApplication({ applicationId: String(result.data.id), eventId: String(result.data.event_id), divisionId: String(result.data.division_id), status: result.data.status, quizVersion: result.data.quiz_version ? String(result.data.quiz_version) : null, regulationVersion: String(result.data.regulation_version), theoryQualified: Boolean(result.data.theory_proof_id), practicalConfirmed: Boolean(result.data.practical_confirmation_version) });
+  if (!["theory_qualified", "practical_pending", "habilitated"].includes(application.status)) return application;
+  const currentQuiz = await loadSpogomiRefereeQuiz({ supabase: params.supabase, eventId: params.eventId, divisionId: params.divisionId });
+  return { ...application, qualificationCurrent: currentQuiz.available && application.regulationVersion === currentQuiz.regulationVersion && application.quizVersion === currentQuiz.quizVersion };
 }
 
 export async function loadSpogomiRefereeQuiz(params: { supabase: SupabaseClient; eventId: string; divisionId: string }): Promise<SpogomiRefereeQuizDefinition> {

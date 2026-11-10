@@ -350,22 +350,33 @@ Les preuves et tentatives sont stockées dans les tables dédiées
 `spogomi_referee_quiz_proofs` et `spogomi_referee_quiz_attempts`, jamais dans la
 preuve du quiz participant.
 
-Le quiz arbitre comporte vingt questions de mise en situation. Les questions
+Le quiz arbitre comporte vingt-deux questions de mise en situation, dont douze
+critiques et dix générales. Les questions
 critiques couvrent notamment sécurité, accidents, déchets interdits, sanctions,
 retard, périmètre, conflits, catégories, pesée, formulaire et publication ; les
-autres couvrent horaires, unités, preuves, relais et scope. La définition
-publique ne contient ni correction ni explication. Le serveur exige 100 % des
+autres couvrent horaires, unités, preuves, relais et scope. Les options utilisent
+des identifiants neutres et une permutation stable dérivée d’une clé HMAC privée
+au serveur ; la définition publique ne contient ni correction ni explication.
+Le serveur exige 100 % des
 questions critiques et au moins 90 % des autres, conserve les corrections des
 erreurs et limite les tentatives à dix par heure. La version du quiz et la
 version du règlement de la division sont enregistrées avec la preuve ; une
 version obsolète est refusée.
 
-Une réussite théorique ne donne aucune capacité. La validation pratique est
+Une réussite théorique ne donne aucune capacité. La preuve doit correspondre au
+`quizVersion` et au `regulationVersion` courants de la division. Après un
+changement de règlement, le parcours repasse par `candidate` et une nouvelle
+preuve. La validation pratique est
 une confirmation organisateur versionnée pour la pesée, le tri, les formulaires
 et les consignes de sécurité. Une décision organisateur explicite est ensuite
-requise avant l’état `habilitated`. La RPC d’attribution `referee` refuse toute
-nouvelle attribution sans cette chaîne ; les habilitations historiques ne sont
-pas révoquées rétroactivement. Toute révocation reste immédiate et auditée.
+requise avant l’état `habilitated`. Toute nouvelle attribution événementielle
+refuse une qualification partielle dans une édition mixte : la preuve courante
+doit couvrir toutes les divisions concernées, afin qu’une qualification Casual
+ne puisse pas ouvrir une capacité World Cup. Les habilitations historiques ne
+sont pas révoquées rétroactivement. Une révocation partielle retire uniquement
+la capacité ciblée ; la candidature n’est révoquée que lorsque toutes les
+capacités correspondantes sont retirées. Un refus post-habilitation révoque
+également les accès actifs et chaque transition reste auditée.
 Les triggers et RPC empêchent également qu’un compte soit compétiteur et
 arbitre actif de la même édition, y compris via une autre voie d’admission.
 
