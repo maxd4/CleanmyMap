@@ -5,41 +5,45 @@ import type { SpogomiLinkedTeam } from "@/lib/spogomi/identity-link-contract";
 import { stateMessage, type IdentityState, type SpogomiAssistanceRequest, type SpogomiEventRecognition } from "./spogomi-identity-link-card-view";
 
 type LinkResponse = { error?: string; state?: IdentityState; recognition?: SpogomiEventRecognition | null; team?: SpogomiLinkedTeam | null; assistance?: SpogomiAssistanceRequest | null; request?: SpogomiAssistanceRequest | null };
-type EventScopedState = { eventId: string; identityState: IdentityState | null; recognition: SpogomiEventRecognition | null; team: SpogomiLinkedTeam | null; assistanceRequest: SpogomiAssistanceRequest | null; message: string | null; error: string | null; isSubmitting: boolean; isLoadingState: boolean; code: string; assistanceMode: boolean; assistanceContext: string };
-type Props = { eventId: string; isLoaded: boolean; isSignedIn: boolean | undefined };
+type EventScopedState = { eventId: string; accountId: string | null | undefined; identityState: IdentityState | null; recognition: SpogomiEventRecognition | null; team: SpogomiLinkedTeam | null; assistanceRequest: SpogomiAssistanceRequest | null; message: string | null; error: string | null; isSubmitting: boolean; isLoadingState: boolean; code: string; assistanceMode: boolean; assistanceContext: string };
+type Props = { eventId: string; isLoaded: boolean; isSignedIn: boolean | undefined; userId: string | null | undefined };
 
-function emptyEventScopedState(eventId: string): EventScopedState {
-  return { eventId, identityState: null, recognition: null, team: null, assistanceRequest: null, message: null, error: null, isSubmitting: false, isLoadingState: false, code: "", assistanceMode: false, assistanceContext: "" };
+function emptyEventScopedState(eventId: string, accountId: string | null | undefined, isLoadingState = false): EventScopedState {
+  return { eventId, accountId, identityState: null, recognition: null, team: null, assistanceRequest: null, message: null, error: null, isSubmitting: false, isLoadingState, code: "", assistanceMode: false, assistanceContext: "" };
 }
 
-export function useSpogomiIdentityLinkActions({ eventId, isLoaded, isSignedIn }: Props) {
+export function useSpogomiIdentityLinkActions({ eventId, isLoaded, isSignedIn, userId }: Props) {
   const [eventStates, setEventStates] = useState<Record<string, EventScopedState>>({});
   const stateRequestId = useRef(0);
-  const current = eventStates[eventId] ?? emptyEventScopedState(eventId);
+  const storedState = eventStates[eventId];
+  const current = storedState && storedState.accountId === userId ? storedState : emptyEventScopedState(eventId, userId, Boolean(isLoaded && isSignedIn));
   const updateEventState = useCallback((targetEventId: string, update: Partial<Omit<EventScopedState, "eventId">>) => {
-    setEventStates((states) => { const state = states[targetEventId] ?? emptyEventScopedState(targetEventId); return { ...states, [targetEventId]: { ...state, ...update } }; });
-  }, []);
+    setEventStates((states) => { const stored = states[targetEventId]; const state = stored && stored.accountId === userId ? stored : emptyEventScopedState(targetEventId, userId); return { ...states, [targetEventId]: { ...state, accountId: userId, ...update } }; });
+  }, [userId]);
   const loadState = useCallback(async () => {
     if (!isLoaded || !isSignedIn) return;
     const requestId = ++stateRequestId.current;
-    updateEventState(eventId, { isLoadingState: true });
+    updateEventState(eventId, { isLoadingState: true, identityState: null, recognition: null, team: null, assistanceRequest: null, message: null, error: null });
     try {
       const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-link`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as LinkResponse;
       if (!response.ok) throw new Error(payload.error ?? "L’état de la liaison n’a pas pu être chargé.");
       if (requestId !== stateRequestId.current) return;
-      updateEventState(eventId, { identityState: payload.state ?? "identity_unlinked", recognition: payload.recognition ?? null, team: payload.team ?? null, assistanceRequest: payload.assistance ?? null });
+      updateEventState(eventId, { identityState: payload.state ?? "identity_unlinked", recognition: payload.recognition ?? null, team: payload.team ?? null, assistanceRequest: payload.assistance ?? null, error: null });
     } catch (reason) {
-      if (requestId === stateRequestId.current) updateEventState(eventId, { error: reason instanceof Error ? reason.message : "L’état de la liaison n’a pas pu être chargé." });
+      if (requestId === stateRequestId.current) updateEventState(eventId, { identityState: null, recognition: null, team: null, assistanceRequest: null, error: reason instanceof Error ? reason.message : "L’état de la liaison n’a pas pu être chargé." });
     } finally {
       if (requestId === stateRequestId.current) updateEventState(eventId, { isLoadingState: false });
     }
   }, [eventId, isLoaded, isSignedIn, updateEventState]);
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
+    if (!isLoaded || !isSignedIn) {
+      stateRequestId.current += 1;
+      return;
+    }
     const timer = window.setTimeout(() => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ loadState().catch(() => undefined); }, 0);
     return () => { window.clearTimeout(timer); stateRequestId.current += 1; };
-  }, [isLoaded, isSignedIn, loadState]);
+  }, [isLoaded, isSignedIn, loadState, userId]);
   const submitRequest = useCallback(async (body: Record<string, unknown>, fallback: string, update: (payload: LinkResponse) => Partial<Omit<EventScopedState, "eventId">>) => {
     const requestId = ++stateRequestId.current;
     updateEventState(eventId, { isSubmitting: true, error: null, message: null });

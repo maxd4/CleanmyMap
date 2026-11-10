@@ -384,13 +384,13 @@ describe("SPOGOMI deep consumer states", () => {
     renderer.unmount();
   });
 
-  it("keeps identity linking unauthenticated and verifies a linked state without PII", () => {
+  it("keeps identity linking unauthenticated and fails closed while verifying without PII", () => {
     const anonymous = renderIdentity();
     expect(anonymous).toContain("J’ai participé à cet événement");
     expect(anonymous).toContain("Se connecter");
     authState.isSignedIn = true;
     const linked = renderIdentity();
-    expect(linked).toContain("Relier le compte");
+    expect(linked).toContain("Vérification de votre liaison");
     expect(linked).not.toContain("email");
   });
 
