@@ -2,6 +2,7 @@
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import { LogIn, UserPlus } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import type { UserIdentity } from "@/lib/authz";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
@@ -10,6 +11,12 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import type { ActivityStatus } from "@/lib/account/activity-status";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
+import {
+  buildCurrentInternalRoute,
+  buildSignInRedirectHref,
+  buildSignUpRedirectHref,
+  resolveSafeAuthRedirect,
+} from "@/lib/auth/redirect-url";
 
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import type { RibbonActivityState } from "./app-navigation-ribbon-activity";
@@ -119,15 +126,30 @@ export function RibbonAccountActions({
   user: ClerkUserLike | null;
   activity: RibbonActivityState;
 }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentRoute = buildCurrentInternalRoute(
+    pathname,
+    searchParams?.toString() ?? "",
+    typeof window === "undefined" ? "" : window.location.hash,
+  );
+  const authPageReturnRoute = pathname === "/sign-in" || pathname?.startsWith("/sign-in/") || pathname === "/sign-up" || pathname?.startsWith("/sign-up/")
+    ? resolveSafeAuthRedirect(searchParams?.get("redirect_url") ?? undefined)
+    : undefined;
+  const returnRoute = authPageReturnRoute ?? currentRoute;
+  const referralCode = pathname === "/sign-up" || pathname?.startsWith("/sign-up/") ? searchParams?.get("ref") ?? undefined : undefined;
+  const signInHref = buildSignInRedirectHref(returnRoute, { referralCode });
+  const signUpHref = buildSignUpRedirectHref(returnRoute, { referralCode });
+
   return (
     <div className="flex min-w-0 items-center gap-2 lg:gap-3">
             {!isAuthenticated ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <CmmButton
-                  href="/sign-in"
+                  href={signInHref}
                   prefetch={false}
                   ariaLabel={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
-                  onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
+                  onClick={() => onTrackNavigation(signInHref, locale === "fr" ? "Se connecter" : "Sign in", null)}
                   tone="critical"
                   variant="pill"
                   className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 xl:h-10 xl:min-h-0 xl:w-auto xl:px-3"
@@ -138,10 +160,10 @@ export function RibbonAccountActions({
                   </span>
                 </CmmButton>
                 <CmmButton
-                  href="/sign-up"
+                  href={signUpHref}
                   prefetch={false}
                   ariaLabel={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
-                  onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
+                  onClick={() => onTrackNavigation(signUpHref, locale === "fr" ? "S'inscrire" : "Sign up", null)}
                   tone="primary"
                   variant="pill"
                   className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 px-0 font-bold max-[380px]:h-10 max-[380px]:min-h-10 max-[380px]:w-10 xl:h-10 xl:min-h-0 xl:w-auto xl:px-4"

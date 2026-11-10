@@ -13,6 +13,11 @@
 - **Contexte nécessaire** : Page d'entrée d'authentification ou de configuration initiale
 - **Objectif utilisateur principal** : Authentifier un compte existant et retrouver son espace d'action.
 - **Action principale attendue** : Se connecter via Clerk ou basculer vers `/sign-up` pour créer un compte.
+- **Retour contextuel** : `redirect_url` est accepté uniquement lorsqu'il est
+  interne et sûr ; il conserve le pathname, les paramètres et le hash de la
+  page d'origine après connexion, y compris après OAuth. Sans destination
+  valide, Clerk utilise l'accueil. Le lien vers l'inscription conserve le même
+  contexte.
 - **Palette attendue** : canvas emerald clair lumineux, halos emerald discrets,
   panneau éditorial emerald sombre et surface Clerk claire structurée
 - **Scope** : shell Auth & Onboarding partagé, surface Clerk de connexion, retour vers l'accueil et bascule vers l'inscription.
@@ -52,7 +57,8 @@ est prioritaire et le panneau éditorial disparaît au profit d'une identité
 CleanMyMap compacte.
 
 Le composant Clerk natif conserve le formulaire, les OAuth, la validation, les
-erreurs et les redirections existantes. Le titre Clerk reste la hiérarchie
+erreurs et la redirection contextuelle validée par la primitive auth commune.
+Le titre Clerk reste la hiérarchie
 principale du panneau d’authentification ; aucun titre de connexion redondant
 n’est ajouté autour du formulaire.
 

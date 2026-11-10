@@ -24,11 +24,13 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import type { AgeBand } from "@/lib/minor-consent";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 export type { AccountSetupFormProps } from "@/components/account/use-account-setup-controller";
 
 export function AccountSetupForm(props: AccountSetupFormProps) {
   const controller = useAccountSetupController(props);
+  const signInHref = buildSignInRedirectHref(props.nextPath ?? "/onboarding");
 
   if (!controller.isLoaded) {
     if (!controller.clerkReachable) {
@@ -39,7 +41,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
           <SystemStateTitle variant="offline">Session Clerk indisponible</SystemStateTitle>
           <SystemStateDescription variant="offline">La configuration initiale nécessite une session Clerk valide. Vérifiez votre connexion puis réessayez.</SystemStateDescription>
           <SystemStateAction>
-            <CmmButton href="/sign-in" tone="primary">Se reconnecter</CmmButton>
+            <CmmButton href={signInHref} tone="primary">Se reconnecter</CmmButton>
           </SystemStateAction>
         </SystemStateLayout>
       );

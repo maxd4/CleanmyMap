@@ -2,8 +2,14 @@
 
 import type { ReactNode } from "react";
 import { Lock, WifiOff } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import {
+  buildCurrentInternalRoute,
+  buildSignInRedirectHref,
+  buildSignUpRedirectHref,
+} from "@/lib/auth/redirect-url";
 import {
   SystemStateAction,
   SystemStateDescription,
@@ -100,15 +106,25 @@ export function ClerkRequiredGate({
   title = "Connexion requise",
   description = "Connectez-vous ou inscrivez-vous pour accéder à cette fonctionnalité.",
   mode = "blur",
-  signInHref = "/sign-in",
+  signInHref,
   signInLabel = "Se connecter",
-  signUpHref = "/sign-up",
+  signUpHref,
   signUpLabel = "S'inscrire",
   badge = "Accès au compte",
   stateHeadingLevel = "h1",
   lockedPreview,
   children,
 }: ClerkRequiredGateProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentRoute = buildCurrentInternalRoute(
+    pathname,
+    searchParams?.toString() ?? "",
+    typeof window === "undefined" ? "" : window.location.hash,
+  );
+  const resolvedSignInHref = signInHref ?? buildSignInRedirectHref(currentRoute);
+  const resolvedSignUpHref = signUpHref ?? buildSignUpRedirectHref(currentRoute);
+
   if (isAuthenticated) {
     return children;
   }
@@ -131,7 +147,7 @@ export function ClerkRequiredGate({
             n&apos;est pas considéré comme déconnecté.
           </SystemStateDescription>
           <SystemStateAction>
-            <CmmButton href={signInHref} tone="primary">
+            <CmmButton href={resolvedSignInHref} tone="primary">
               Réessayer
             </CmmButton>
           </SystemStateAction>
@@ -153,9 +169,9 @@ export function ClerkRequiredGate({
           <AuthGateCard
             badge={badge}
             description={description}
-            signInHref={signInHref}
+            signInHref={resolvedSignInHref}
             signInLabel={signInLabel}
-            signUpHref={signUpHref}
+            signUpHref={resolvedSignUpHref}
             signUpLabel={signUpLabel}
             stateHeadingLevel={stateHeadingLevel}
             title={title}
@@ -178,9 +194,9 @@ export function ClerkRequiredGate({
         <AuthGateCard
           badge={badge}
           description={description}
-          signInHref={signInHref}
+          signInHref={resolvedSignInHref}
           signInLabel={signInLabel}
-          signUpHref={signUpHref}
+          signUpHref={resolvedSignUpHref}
           signUpLabel={signUpLabel}
           stateHeadingLevel={stateHeadingLevel}
           title={title}

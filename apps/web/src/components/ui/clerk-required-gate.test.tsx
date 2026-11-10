@@ -1,5 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/sections/route",
+  useSearchParams: () => new URLSearchParams("tab=history&filter=water"),
+}));
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { ClerkRequiredGate } from "./clerk-required-gate";
 

@@ -48,6 +48,7 @@ export const AUTH_CLERK_APPEARANCE = {
 type AuthPageShellProps = {
   children: ReactNode;
   variant: AuthPageVariant;
+  switchHref?: string;
 };
 
 type AuthCopy = {
@@ -119,7 +120,7 @@ const AUTH_COPY: Record<AuthPageVariant, AuthCopy> = {
   },
 };
 
-export function AuthPageShell({ children, variant }: AuthPageShellProps) {
+export function AuthPageShell({ children, variant, switchHref }: AuthPageShellProps) {
   const copy = AUTH_COPY[variant];
 
   return (
@@ -208,7 +209,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
               <p className="cmm-text-small cmm-text-secondary mt-4 text-center">
                 {copy.switchPrompt}{" "}
                 <Link
-                  href={copy.switchHref}
+                  href={switchHref ?? copy.switchHref}
                   className="font-semibold text-emerald-800 underline-offset-4 transition-colors hover:text-emerald-950 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   {copy.switchLabel}

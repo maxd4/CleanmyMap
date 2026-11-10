@@ -4,6 +4,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 type Props = { searchParams: Promise<{ eventId?: string; token?: string }> };
 
@@ -31,5 +32,5 @@ export default async function SpogomiIdentityAssistancePage({ searchParams }: Pr
       </main>
     );
   }
-  return <SpogomiIdentityAssistanceInvitation eventId={eventId} token={token} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/assistance?eventId=${eventId}&token=${token}`)}`} />;
+  return <SpogomiIdentityAssistanceInvitation eventId={eventId} token={token} signInHref={buildSignInRedirectHref(`/spogomi/assistance?eventId=${eventId}&token=${token}`)} />;
 }

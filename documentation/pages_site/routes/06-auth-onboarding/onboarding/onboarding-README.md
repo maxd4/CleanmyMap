@@ -8,9 +8,11 @@
 - **Type fonctionnel** : onboarding
 - **Famille / bloc fonctionnel** : Auth & Onboarding (hors bloc)
 - **Statut** : auth
-- **Contexte nécessaire** : Compte authentifié ; redirection vers `/sign-in` si la session ou l'identité n'est pas disponible.
+- **Contexte nécessaire** : Compte authentifié ; redirection vers `/sign-in` avec
+  une destination interne sûre vers `/onboarding` si la session ou l'identité
+  n'est pas disponible.
 - **Objectif utilisateur principal** : Compléter progressivement la configuration initiale du compte avec l'identité publique, le parcours actif, la localisation facultative et les préférences d'affichage.
-- **Action principale attendue** : Parcourir les étapes Identité, Utilisation et Localisation, enregistrer la configuration puis reprendre la route demandée, ou revenir au profil par défaut si la destination est invalide.
+- **Action principale attendue** : Parcourir les étapes Identité, Utilisation et Localisation, enregistrer la configuration puis reprendre la route demandée avec ses paramètres et son hash, ou revenir au profil par défaut si la destination est invalide.
 - **Palette attendue** : surface claire lavande/menthe, panneaux slate/indigo
 - **Scope** : parcours authentifié de complétion initiale, prise en compte d'un code de parrainage et redirection sûre vers la destination après enregistrement. L'espace Compte mobile peut compléter les informations Clerk et les préférences de localisation via `/api/mobile/account`, sans créer un second onboarding métier.
 - **Terminée** : oui pour le parcours actuellement livré

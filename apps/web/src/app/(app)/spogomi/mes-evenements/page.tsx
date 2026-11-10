@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiPersonalEventsList } from "@/components/spogomi/spogomi-personal-events-list";
 import { getCurrentUserActiveRole, requireAuthenticatedAccess } from "@/lib/authz";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { listSpogomiEventChangesForCurrentUser, listSpogomiEventsForCurrentUser } from "@/lib/spogomi/personal-events-service";
 import { buildSpogomiCatalogHref, parseSpogomiCatalogIntent } from "@/lib/spogomi/navigation-intent";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -19,7 +20,7 @@ export default async function SpogomiPersonalEventsPage({ searchParams }: Props 
   const intent = parseSpogomiCatalogIntent(await searchParams);
   const catalogPath = intent.journey ? buildSpogomiCatalogHref(intent.journey, intent.focus ?? undefined) : "/spogomi/mes-evenements";
   const access = await requireAuthenticatedAccess();
-  if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent(catalogPath)}`);
+  if (!access.ok) redirect(buildSignInRedirectHref(catalogPath));
   const [events, changes] = await Promise.all([
     listSpogomiEventsForCurrentUser(access.userId),
     listSpogomiEventChangesForCurrentUser(access.userId),

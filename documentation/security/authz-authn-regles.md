@@ -79,6 +79,16 @@ flowchart LR
 
 Clerk est le fournisseur d'identité principal du web.
 
+Les entrées Web d'authentification utilisent une destination interne de retour
+unique, portée par `redirect_url` et validée par
+`apps/web/src/lib/auth/redirect-url.ts`. La validation conserve pathname,
+paramètres de requête et hash, refuse les URL externes et les routes
+d'authentification qui créeraient une boucle, puis applique l'accueil comme
+repli lorsqu'aucune destination utilisable n'est fournie. L'inscription ne
+contourne jamais la configuration initiale : sa destination est conservée dans
+`/onboarding/localisation?next=...` jusqu'à la fin de l'onboarding. Les rôles,
+permissions et contrôles serveur restent indépendants de cette navigation.
+
 Les profils Supabase servent aux jointures et aux règles métier.
 
 Préserver la distinction entre :

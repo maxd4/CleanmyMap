@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiOrganizerDashboard } from "@/components/spogomi/spogomi-organizer-dashboard";
 import { requireAdminAccess } from "@/lib/authz";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export default async function NewSpogomiEventPage() {
   const access = await requireAdminAccess();
   if (!access.ok) {
-    if (access.status === 401) redirect(`/sign-in?redirect_url=${encodeURIComponent("/spogomi/nouveau")}`);
+    if (access.status === 401) redirect(buildSignInRedirectHref("/spogomi/nouveau"));
     return (
       <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
         <div className="cmm-page-width space-y-4">

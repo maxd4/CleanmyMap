@@ -1,20 +1,16 @@
 import { redirect } from "next/navigation";
+import { resolveSafeAuthRedirect } from "@/lib/auth/redirect-url";
 
 type LocalisationOnboardingPageProps = {
   searchParams: Promise<{ next?: string; ref?: string }>;
 };
 
 function sanitizeNextPath(nextParam: string | undefined): string {
-  if (!nextParam) {
+  const safeNextPath = resolveSafeAuthRedirect(nextParam);
+  if (!safeNextPath || safeNextPath.startsWith("/onboarding")) {
     return "/onboarding";
   }
-  if (!nextParam.startsWith("/") || nextParam.startsWith("//")) {
-    return "/onboarding";
-  }
-  if (nextParam.startsWith("/onboarding/localisation")) {
-    return "/onboarding";
-  }
-  return nextParam;
+  return safeNextPath;
 }
 
 export default async function LocalisationOnboardingPage({

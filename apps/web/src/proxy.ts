@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { isDevAuthBypassEnabled } from "@/lib/auth/dev-auth";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   buildSeoRedirectTarget,
   getPublicNoindexSectionRoutes,
@@ -240,8 +241,8 @@ function clerkUnavailableResponse(req: NextRequest): NextResponse {
     );
   }
 
-  const signInUrl = new URL("/sign-in", req.url);
-  signInUrl.searchParams.set("redirect_url", req.url);
+  const currentRoute = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+  const signInUrl = new URL(buildSignInRedirectHref(currentRoute), req.url);
   return NextResponse.redirect(signInUrl);
 }
 

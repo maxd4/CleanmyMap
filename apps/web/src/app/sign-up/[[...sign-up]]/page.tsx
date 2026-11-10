@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { ClerkLoaded, ClerkLoading, SignUp } from "@clerk/nextjs";
 import { AUTH_CLERK_APPEARANCE, AuthPageShell } from "@/components/auth/auth-page-shell";
 import { ClerkHydrationGate } from "@/components/auth/clerk-hydration-gate";
+import {
+  buildSignInRedirectHref,
+  buildSignUpCompletionRedirectHref,
+  resolveSafeAuthRedirect,
+} from "@/lib/auth/redirect-url";
 
 export const metadata: Metadata = {
   title: "Créer un compte",
@@ -24,18 +29,23 @@ function SignUpLoadingState() {
 }
 
 type SignUpPageProps = {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{
+    ref?: string | string[];
+    redirect_url?: string | string[];
+  }>;
 };
 
 export default async function SignUpPage({ searchParams }: SignUpPageProps) {
-  const { ref } = await searchParams;
-  const referralQuery = ref?.trim()
-    ? `?ref=${encodeURIComponent(ref.trim())}`
-    : "";
-  const fallbackRedirectUrl = `/onboarding/localisation${referralQuery}`;
+  const params = await searchParams;
+  const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
+  const requestedRoute = resolveSafeAuthRedirect(params.redirect_url);
+  const completionRedirectUrl = buildSignUpCompletionRedirectHref(requestedRoute, {
+    referralCode,
+  });
+  const signInHref = buildSignInRedirectHref(requestedRoute, { referralCode });
 
   return (
-    <AuthPageShell variant="sign-up">
+    <AuthPageShell variant="sign-up" switchHref={signInHref}>
       <ClerkHydrationGate fallback={<SignUpLoadingState />}>
         <ClerkLoading>
           <SignUpLoadingState />
@@ -46,8 +56,9 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
             path="/sign-up"
             routing="path"
             oauthFlow="redirect"
-            fallbackRedirectUrl={fallbackRedirectUrl}
-            signInUrl="/sign-in"
+            forceRedirectUrl={completionRedirectUrl}
+            fallbackRedirectUrl={completionRedirectUrl}
+            signInUrl={signInHref}
             appearance={AUTH_CLERK_APPEARANCE}
           />
         </ClerkLoaded>

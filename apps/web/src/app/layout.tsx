@@ -8,7 +8,7 @@ import { HomeFooter } from "@/components/accueil/accueil-footer";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { metadata as appMetadata } from "@/lib/metadata";
 import "./globals.css";
-import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { HOME_ROUTE } from "@/lib/home-routes";
 import {
   DEFAULT_DISPLAY_MODE,
   DEFAULT_LOCALE,
@@ -46,7 +46,7 @@ export default async function RootLayout({
           <ClerkLocalizationProvider
             signInUrl="/sign-in"
             signUpUrl="/sign-up"
-            signInFallbackRedirectUrl={PROFIL_ROUTE}
+            signInFallbackRedirectUrl={HOME_ROUTE}
             signUpFallbackRedirectUrl="/onboarding/localisation"
             afterSignOutUrl="/"
             publishableKey={clerkRuntime.publishableKey}

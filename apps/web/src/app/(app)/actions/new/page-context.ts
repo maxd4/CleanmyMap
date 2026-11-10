@@ -11,7 +11,7 @@ import {
   type ActionCreationTab,
 } from "@/lib/actions/action-creation-routes";
 import { resolveActionResumePhase } from "@/lib/actions/action-resume";
-import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { buildSignInRedirectHref, buildSignUpRedirectHref } from "@/lib/auth/redirect-url";
 import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
@@ -117,7 +117,6 @@ export async function resolveNewActionPageContext(
     pageTemplateV2Enabled,
   };
 }
-
 async function resolveActionCreationRoute({
   actionId,
   duplicateFromActionId,
@@ -218,8 +217,4 @@ function buildActionReturnUrl({
   if (from) returnParams.set("from", from);
   const query = returnParams.toString();
   return query ? `/actions/new?${query}` : "/actions/new";
-}
-
-function buildSignUpRedirectHref(returnUrl: string): string {
-  return `/sign-up?redirect_url=${encodeURIComponent(returnUrl)}`;
 }

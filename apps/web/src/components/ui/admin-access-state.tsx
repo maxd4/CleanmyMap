@@ -8,6 +8,7 @@ import {
   SystemStateMeta,
   SystemStateTitle,
 } from "@/components/ui/system-state";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 type AdminAccessStateProps = {
   signInHref?: string;
@@ -17,7 +18,7 @@ type AdminAccessStateProps = {
 };
 
 export function AdminAccessState({
-  signInHref = "/sign-in",
+  signInHref = buildSignInRedirectHref("/admin"),
   dashboardHref = "/dashboard",
   authUnavailable = false,
   className,

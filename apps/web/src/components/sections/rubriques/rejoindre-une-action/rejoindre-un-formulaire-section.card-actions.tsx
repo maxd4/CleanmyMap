@@ -3,6 +3,7 @@ import type { JoinableActionItem } from "@/lib/actions/participation/group-parti
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.status";
 import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 function ActionCardLeaveButton({
   item,
@@ -111,7 +112,7 @@ function ActionCardPrimaryAction({
   }
   if (!authenticated) {
     return (
-      <CmmButton href="/sign-in" tone="primary" variant="pill" className="min-w-[12rem] px-5">
+      <CmmButton href={buildSignInRedirectHref("/sections/rejoindre-une-action")} tone="primary" variant="pill" className="min-w-[12rem] px-5">
         <span className="flex items-center gap-2">
           <ClipboardList size={14} />
           {fr ? "Se connecter" : "Sign in"}

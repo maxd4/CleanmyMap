@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SpogomiEventCockpit } from "@/components/spogomi/spogomi-event-cockpit";
 import { getCurrentUserActiveRole, requireAuthenticatedAccess } from "@/lib/authz";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSpogomiCapability, resolveSpogomiEventAccessBySlug } from "@/lib/spogomi/authorization";
 import { loadSpogomiFieldOperationsAccess } from "@/lib/spogomi/field-operations-service";
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 export default async function SpogomiEventSpacePage({ params }: Props) {
   const { eventSlug } = await params;
   const access = await requireAuthenticatedAccess();
-  if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${eventSlug}/espace`)}`);
+  if (!access.ok) redirect(buildSignInRedirectHref(`/spogomi/${eventSlug}/espace`));
   const eventAccess = await resolveSpogomiEventAccessBySlug({
     supabase: getSupabaseServerClient(true),
     eventSlug,

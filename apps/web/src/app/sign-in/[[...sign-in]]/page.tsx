@@ -5,7 +5,10 @@ import {
   AuthPageShell,
 } from "@/components/auth/auth-page-shell";
 import { ClerkHydrationGate } from "@/components/auth/clerk-hydration-gate";
-import { resolveSafeAuthRedirect } from "@/lib/auth/redirect-url";
+import {
+  buildSignUpRedirectHref,
+  resolveSafeAuthRedirect,
+} from "@/lib/auth/redirect-url";
 import { HOME_ROUTE } from "@/lib/home-routes";
 
 export const metadata: Metadata = {
@@ -29,15 +32,20 @@ function SignInLoadingState() {
 }
 
 type SignInPageProps = {
-  searchParams?: Promise<{ redirect_url?: string | string[] }>;
+  searchParams?: Promise<{
+    redirect_url?: string | string[];
+    ref?: string | string[];
+  }>;
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const forceRedirectUrl = resolveSafeAuthRedirect(params?.redirect_url);
+  const referralCode = Array.isArray(params?.ref) ? params.ref[0] : params?.ref;
+  const signUpHref = buildSignUpRedirectHref(forceRedirectUrl, { referralCode });
 
   return (
-    <AuthPageShell variant="sign-in">
+    <AuthPageShell variant="sign-in" switchHref={signUpHref}>
       <ClerkHydrationGate fallback={<SignInLoadingState />}>
         <ClerkLoading>
           <SignInLoadingState />
@@ -50,7 +58,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             oauthFlow="redirect"
             forceRedirectUrl={forceRedirectUrl}
             fallbackRedirectUrl={HOME_ROUTE}
-            signUpUrl="/sign-up"
+            signUpUrl={signUpHref}
             appearance={AUTH_CLERK_APPEARANCE}
           />
         </ClerkLoaded>

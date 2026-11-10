@@ -6,7 +6,7 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { buildSignInRedirectHref, buildSignUpRedirectHref } from "@/lib/auth/redirect-url";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { resolveSignalementCoordinate } from "./signalement-page.utils";
@@ -69,7 +69,7 @@ export default async function SignalementPage({
               initialLocation={initialLocation}
               isAuthenticated={Boolean(userId)}
               signInHref={buildSignInRedirectHref("/signalement")}
-              signUpHref={`/sign-up?redirect_url=${encodeURIComponent("/signalement")}`}
+              signUpHref={buildSignUpRedirectHref("/signalement")}
             />
             </FamilyRubriqueCard>
           </div>

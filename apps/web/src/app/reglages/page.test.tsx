@@ -7,7 +7,7 @@ describe("/reglages canonical settings contract", () => {
   it("keeps the page protected and redirects anonymous visitors", () => {
     expect(pageSource).toContain("getSafeAuthSession");
     expect(pageSource).toContain("if (!userId)");
-    expect(pageSource).toContain('redirect("/sign-in")');
+    expect(pageSource).toContain('redirect(buildSignInRedirectHref("/reglages"))');
   });
 
   it("renders the canonical editable preferences and account controls", () => {

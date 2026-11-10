@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BarChart3, Megaphone, Paperclip, Plus, Send, X } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent, RefObject } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CHAT_ATTACHMENT_ACCEPT, getChatAttachmentSizeError, getChatAttachmentUnsupportedMessage, isChatImageFile, isSupportedChatAttachmentFile } from "@/lib/chat/chat-attachments";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
+import { buildCurrentInternalRoute, buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
 import { ChatShareLinkAction } from "./ui/chat-share-link-action";
@@ -199,5 +201,8 @@ function ChatComposerTools({
 }
 
 export function ChatComposerGuestHint({ isLight, activeChannelType }: { isLight: boolean; activeChannelType: string }) {
-  return <p className={`mt-2 px-1 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{activeChannelType === "dm" ? "Vous consultez vos messages en mode invité. " : "Vous consultez cette discussion en mode invité. "}<Link href="/sign-in" className={isLight ? "font-semibold text-rose-600 underline underline-offset-2" : "font-semibold text-pink-300 underline underline-offset-2"}>Connectez-vous</Link>{" "}{activeChannelType === "dm" ? "pour envoyer un message." : "pour participer à la discussion."}</p>;
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const signInHref = buildSignInRedirectHref(buildCurrentInternalRoute(pathname, searchParams?.toString() ?? "", typeof window === "undefined" ? "" : window.location.hash));
+  return <p className={`mt-2 px-1 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{activeChannelType === "dm" ? "Vous consultez vos messages en mode invité. " : "Vous consultez cette discussion en mode invité. "}<Link href={signInHref} className={isLight ? "font-semibold text-rose-600 underline underline-offset-2" : "font-semibold text-pink-300 underline underline-offset-2"}>Connectez-vous</Link>{" "}{activeChannelType === "dm" ? "pour envoyer un message." : "pour participer à la discussion."}</p>;
 }

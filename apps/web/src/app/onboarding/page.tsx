@@ -8,6 +8,7 @@ import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { claimReferralInviteForUser } from "@/lib/gamification/referrals/referrals";
 import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
+import { buildSignInRedirectHref, resolveSafeAuthRedirect } from "@/lib/auth/redirect-url";
 
 export const metadata: Metadata = {
   title: "Configuration initiale",
@@ -25,16 +26,11 @@ type OnboardingPageProps = {
 };
 
 function sanitizeNextPath(nextParam: string | undefined): string {
-  if (!nextParam) {
+  const safeNextPath = resolveSafeAuthRedirect(nextParam);
+  if (!safeNextPath || safeNextPath.startsWith("/onboarding")) {
     return PROFIL_ROUTE;
   }
-  if (!nextParam.startsWith("/") || nextParam.startsWith("//")) {
-    return PROFIL_ROUTE;
-  }
-  if (nextParam.startsWith("/onboarding")) {
-    return PROFIL_ROUTE;
-  }
-  return nextParam;
+  return safeNextPath;
 }
 
 export default async function OnboardingPage({
@@ -43,12 +39,12 @@ export default async function OnboardingPage({
   const { userId, clerkReachable } = await getSafeAuthSession();
 
   if (!userId) {
-    redirect("/sign-in");
+    redirect(buildSignInRedirectHref("/onboarding"));
   }
 
   const identity = await getCurrentUserIdentity({ userId });
   if (!identity) {
-    redirect("/sign-in");
+    redirect(buildSignInRedirectHref("/onboarding"));
   }
 
   const resolvedSearchParams = await searchParams;

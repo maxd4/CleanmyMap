@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 type InviteProjection = {
   title: string;
@@ -60,7 +61,7 @@ export function PrivateActionInvitePage({ token }: { token: string }) {
         participationSource?: string | null;
       } | null;
       if (response.status === 401) {
-        router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`);
+        router.push(buildSignInRedirectHref(redirectUrl));
         return;
       }
       if (!response.ok) {

@@ -14,6 +14,7 @@ import { HOME_ROUTE } from "@/lib/home-routes";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { getUserOptionalConsentEligibility } from "@/lib/minor-consent-server";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 
 const REGLAGES_COPY = {
   fr: {
@@ -129,7 +130,7 @@ async function loadReglagesPageContent(userId: string) {
 export default async function ReglagesPage() {
   const { userId } = await getSafeAuthSession();
   if (!userId) {
-    redirect("/sign-in");
+    redirect(buildSignInRedirectHref("/reglages"));
   }
   const data = await loadReglagesPageContent(userId);
   return <ReglagesPageContent {...data} />;
