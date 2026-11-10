@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, LockKeyhole } from "lucide-react";
+import { ArrowRight, Gavel, LockKeyhole, Trophy } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { SpogomiActionStateHeader } from "@/components/spogomi/spogomi-action-state";
@@ -292,6 +292,16 @@ export function SpogomiEventPathChooser({
         divisionTypes={divisionTypes}
         selectedDivisionType={selectedDivisionType}
       />
+      <div className="grid gap-3 md:grid-cols-2" aria-label="Choix principal du parcours">
+        <a href="#spogomi-sports-registration" className="group flex min-w-0 items-start gap-3 rounded-2xl border-2 border-emerald-200 bg-emerald-50/80 p-4 transition hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
+          <Trophy className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
+          <span className="min-w-0"><span className="block font-black text-emerald-950">Participer à la compétition</span><span className="mt-1 block text-sm text-slate-700">Quiz participant, demande d’inscription et équipe restent dans le parcours sportif.</span><span className="mt-2 inline-flex text-sm font-bold text-emerald-800 group-hover:underline">Ouvrir le parcours participant <ArrowRight size={15} className="ml-1" aria-hidden="true" /></span></span>
+        </a>
+        <a href="#spogomi-referee-application" className="group flex min-w-0 items-start gap-3 rounded-2xl border-2 border-sky-200 bg-sky-50/80 p-4 transition hover:border-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600">
+          <Gavel className="mt-0.5 shrink-0 text-sky-700" aria-hidden="true" />
+          <span className="min-w-0"><span className="block font-black text-sky-950">Devenir arbitre</span><span className="mt-1 block text-sm text-slate-700">Candidature individuelle, quiz avancé, validation pratique et décision organisateur.</span><span className="mt-2 inline-flex text-sm font-bold text-sky-800 group-hover:underline">Ouvrir le parcours arbitre <ArrowRight size={15} className="ml-1" aria-hidden="true" /></span></span>
+        </a>
+      </div>
       <PathTabs selectedPath={selectedPath} onSelect={setSelectedPath} />
       <div
         id={panelId}

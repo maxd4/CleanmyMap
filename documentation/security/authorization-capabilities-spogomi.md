@@ -10,6 +10,18 @@ organisateur/coorganisateur ; `spogomi_event_reviewers` porte les habilitations
 `observer` et `referee`, chacune contrainte par `event_id`, révocable et auditée
 dans `spogomi_event_access_audit`.
 
+Une nouvelle attribution `referee` doit en plus référencer une candidature
+`spogomi_referee_applications` à l’état `habilitated`. Cet état exige la preuve
+distincte du quiz arbitre versionné, la confirmation pratique versionnée et la
+décision explicite d’un organisateur habilité. Une candidature ou une preuve
+théorique ne crée jamais une capacité ; les anciennes habilitations sont
+préservées jusqu’à une révocation explicite. Les tables de candidature, de
+preuves, de tentatives, de confirmations et d’audit sont service-only.
+
+Le serveur refuse le chevauchement compétiteur/arbitre actif pour une même
+édition, y compris lorsqu’une inscription sportive est créée par une autre
+voie. Aucun rôle Clerk global supplémentaire n’est introduit.
+
 ```txt
 public
 → projection effectivement publiée

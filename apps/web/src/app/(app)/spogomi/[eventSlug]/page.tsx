@@ -20,6 +20,7 @@ import { SpogomiPracticalInformation } from "@/components/spogomi/spogomi-practi
 import { SpogomiEventJourneyPanel } from "@/components/spogomi/spogomi-event-journey-panel";
 import { SpogomiEventPathChooser } from "@/components/spogomi/spogomi-event-path-chooser";
 import { SpogomiPublicEventNavigation } from "@/components/spogomi/spogomi-public-event-navigation";
+import { SpogomiRefereeApplicationCard } from "@/components/spogomi/spogomi-referee-application-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadSpogomiEventJourney } from "@/lib/spogomi/event-journey-service";
 import {
@@ -450,6 +451,17 @@ export default async function SpogomiPublicEventPage({
                     signInHref={signInHrefFor("registration")}
                   />
                 </CmmCard>
+              </div>
+            ) : null}
+            {event.lifecycle !== "finished" && event.lifecycle !== "cancelled" ? (
+              <div id="spogomi-referee-application">
+                <SpogomiRefereeApplicationCard
+                  eventId={event.id}
+                  isAuthenticated={Boolean(userId)}
+                  divisions={event.divisions}
+                  initialDivisionId={selectedDivision?.id}
+                  signInHref={signInHrefFor("practical")}
+                />
               </div>
             ) : null}
             {!isSpogomiCachanDemoEvent(event) &&

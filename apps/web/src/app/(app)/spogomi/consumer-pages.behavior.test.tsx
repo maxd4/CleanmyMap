@@ -40,9 +40,13 @@ vi.mock("lucide-react", () => ({
   BookOpen: () => null,
   CalendarDays: () => null,
   CircleAlert: () => null,
+  CircleHelp: () => null,
   Clock3: () => null,
   Globe2: () => null,
+  Gavel: () => null,
   LifeBuoy: () => null,
+  KeyRound: () => null,
+  LogIn: () => null,
   ListChecks: () => null,
   LockKeyhole: () => null,
   MapPin: () => null,
@@ -50,6 +54,7 @@ vi.mock("lucide-react", () => ({
   PackageCheck: () => null,
   Phone: () => null,
   ShieldCheck: () => null,
+  Trophy: () => null,
 }));
 vi.mock("@/components/ui/cmm-card", () => ({
   CmmCard: ({

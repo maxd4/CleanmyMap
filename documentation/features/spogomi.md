@@ -64,8 +64,11 @@ OFFICIEL` ; elle ne rejoint aucune projection ou persistance SPOGOMI.
 ### Hiérarchie des prochaines actions sur une fiche
 
 La fiche publique `/spogomi/[eventSlug]` conserve les destinations existantes.
-Après l’en-tête, elle expose « Choisir mon parcours » sous la forme d’un
-sélecteur accessible entre Bénévoles, Arbitres et Organisateurs. Le parcours
+Après l’en-tête, elle expose deux choix explicites : « Participer à la
+compétition » et « Devenir arbitre ». Le premier reste ancré sur le parcours
+sportif et le second sur la candidature individuelle de l’édition/division.
+Le sélecteur complémentaire Bénévoles, Arbitres et Organisateurs reste
+accessible pour les capacités historiques déjà attribuées. Le parcours
 Bénévoles affiche les étapes issues de `SpogomiEventJourney` : une étape `later`
 ou `indeterminate` n’est jamais transformée en CTA. Pendant l’épreuve, le quiz
 reste donc absent ; après clôture, les résultats, contributions et attestations
@@ -297,6 +300,36 @@ pas une nouvelle entrée sportive. Les consultations publiques, les demandes
 déjà rejouables, les régularisations de présence, les opérations administratives
 et les circuits externes non contrôlés par CleanMyMap ne sont pas verrouillés
 par ce quiz.
+
+### Candidature arbitre et qualification renforcée `CURRENT`
+
+Le parcours « Devenir arbitre » est séparé de l’inscription sportive. Une
+candidature est liée au compte Clerk, à l’édition et à la division ; elle ne
+crée ni participant, ni équipe, ni place sportive et n’ajoute aucun rôle Clerk.
+Les états sont `candidate` (candidature reçue, quiz à passer),
+`theory_qualified`, `practical_pending`, `habilitated`, `refused` et `revoked`.
+Les preuves et tentatives sont stockées dans les tables dédiées
+`spogomi_referee_quiz_proofs` et `spogomi_referee_quiz_attempts`, jamais dans la
+preuve du quiz participant.
+
+Le quiz arbitre comporte vingt questions de mise en situation. Les questions
+critiques couvrent notamment sécurité, accidents, déchets interdits, sanctions,
+retard, périmètre, conflits, catégories, pesée, formulaire et publication ; les
+autres couvrent horaires, unités, preuves, relais et scope. La définition
+publique ne contient ni correction ni explication. Le serveur exige 100 % des
+questions critiques et au moins 90 % des autres, conserve les corrections des
+erreurs et limite les tentatives à dix par heure. La version du quiz et la
+version du règlement de la division sont enregistrées avec la preuve ; une
+version obsolète est refusée.
+
+Une réussite théorique ne donne aucune capacité. La validation pratique est
+une confirmation organisateur versionnée pour la pesée, le tri, les formulaires
+et les consignes de sécurité. Une décision organisateur explicite est ensuite
+requise avant l’état `habilitated`. La RPC d’attribution `referee` refuse toute
+nouvelle attribution sans cette chaîne ; les habilitations historiques ne sont
+pas révoquées rétroactivement. Toute révocation reste immédiate et auditée.
+Les triggers et RPC empêchent également qu’un compte soit compétiteur et
+arbitre actif de la même édition, y compris via une autre voie d’admission.
 
 ### Cycle de vie et changements substantiels
 
