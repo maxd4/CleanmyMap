@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const createPlaceSchema = z.object({
   divisionId: z.string().uuid(),
-  expectedRevision: z.number().int().nonnegative().optional(),
+  expectedRevision: z.number().int().nonnegative(),
   privateLabel: z.string().trim().min(1).max(160),
 }).strict();
 

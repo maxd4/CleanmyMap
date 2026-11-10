@@ -329,6 +329,41 @@ describe("SPOGOMI preparation", () => {
     expect(new Set(preview.rows.map((row) => row.externalReference)).size).toBe(37);
   });
 
+  it.each([159, 160])("reserves space for Weezevent numbering with a %s-character name", async (nameLength) => {
+    const csv = [
+      "N. Billet;N. de commande;Statut du billet;Supprimé;Nom",
+      `T-2;ORDER-LONG;Payé;0;${"A".repeat(nameLength)}`,
+      `T-1;ORDER-LONG;Payé;0;${"A".repeat(nameLength)}`,
+    ].join("\n");
+    const preview = await previewRosterFile(new File([csv], `long-${nameLength}.csv`, { type: "text/csv" }));
+    const names = preview.rows.map((row) => row.name).sort();
+
+    expect(names).toEqual([`${"A".repeat(158)} 1`, `${"A".repeat(158)} 2`]);
+    expect(names.every((name) => name?.length === 160)).toBe(true);
+    expect(new Set(names).size).toBe(2);
+  });
+
+  it("keeps deterministic distinct labels beyond nine tickets regardless of import row order", async () => {
+    const rows = [10, 2, 1, 11, 3, 12, 4, 5, 6, 7, 8, 9].map((ticket) =>
+      `T-${ticket};ORDER-MANY;Payé;0;Nom réservé`,
+    );
+    const file = new File(["N. Billet;N. de commande;Statut du billet;Supprimé;Nom\n", rows.join("\n")], "many-tickets.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file);
+    const labels = preview.rows.map((row) => row.name);
+
+    const labelsByReference = new Map(preview.rows.map((row) => [row.externalReference, row.name]));
+    expect([...labelsByReference.values()].sort((left, right) => String(left).localeCompare(String(right), "fr", { numeric: true }))).toEqual([
+      "Nom réservé 1", "Nom réservé 2", "Nom réservé 3", "Nom réservé 4", "Nom réservé 5", "Nom réservé 6",
+      "Nom réservé 7", "Nom réservé 8", "Nom réservé 9", "Nom réservé 10", "Nom réservé 11", "Nom réservé 12",
+    ]);
+    expect(new Set(labels).size).toBe(12);
+    expect(labelsByReference).toEqual(new Map([
+      ["T-1", "Nom réservé 1"], ["T-2", "Nom réservé 2"], ["T-3", "Nom réservé 3"], ["T-4", "Nom réservé 4"],
+      ["T-5", "Nom réservé 5"], ["T-6", "Nom réservé 6"], ["T-7", "Nom réservé 7"], ["T-8", "Nom réservé 8"],
+      ["T-9", "Nom réservé 9"], ["T-10", "Nom réservé 10"], ["T-11", "Nom réservé 11"], ["T-12", "Nom réservé 12"],
+    ]));
+  });
+
   it("detects preambles, multiline quoted cells, Windows-1252 and ambiguous mappings without guessing", async () => {
     const utf8 = "Rapport Weezevent\r\nExport du jour\r\nN. Billet;N. de commande;Statut du billet;Supprimé;Nom\r\nT-1;O-1;Payé;0;\"Déclaré\nà revoir\"\r\n";
     const preview = await previewRosterFile(new File([utf8], "tickets.csv", { type: "text/csv" }));

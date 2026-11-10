@@ -188,12 +188,12 @@ export async function createSpogomiTeam(params: {
   divisionId: string;
   publicName?: string;
   actorClerkId: string;
-  expectedRevision?: number;
+  expectedRevision: number;
 }) {
   const result = await params.supabase.rpc("spogomi_create_team_for_division", {
     p_event_id: params.event.id,
     p_division_id: params.divisionId,
-    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_expected_revision: params.expectedRevision,
     p_public_name: params.publicName ?? null,
     p_actor_clerk_id: params.actorClerkId,
   });
@@ -207,12 +207,12 @@ export async function createSpogomiManualPlace(params: {
   divisionId: string;
   privateLabel: string;
   actorClerkId: string;
-  expectedRevision?: number;
+  expectedRevision: number;
 }) {
   const result = await params.supabase.rpc("spogomi_create_manual_place_for_division", {
     p_event_id: params.event.id,
     p_division_id: params.divisionId,
-    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_expected_revision: params.expectedRevision,
     p_private_label: params.privateLabel,
     p_actor_clerk_id: params.actorClerkId,
   });
@@ -228,13 +228,13 @@ export async function updateSpogomiParticipantPrivateLabel(params: {
   expectedPrivateLabel: string | null;
   privateLabel: string;
   actorClerkId: string;
-  expectedRevision?: number;
+  expectedRevision: number;
 }) {
   const result = await params.supabase.rpc("spogomi_update_participant_private_label", {
     p_event_id: params.event.id,
     p_division_id: params.divisionId,
     p_participant_id: params.participantId,
-    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_expected_revision: params.expectedRevision,
     p_expected_private_label: params.expectedPrivateLabel,
     p_private_label: params.privateLabel,
     p_actor_clerk_id: params.actorClerkId,

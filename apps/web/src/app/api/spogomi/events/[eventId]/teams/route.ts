@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const createTeamSchema = z.object({
   divisionId: z.string().uuid(),
-  expectedRevision: z.number().int().nonnegative().optional(),
+  expectedRevision: z.number().int().nonnegative(),
   publicName: z.string().max(60).optional(),
 }).strict();
 

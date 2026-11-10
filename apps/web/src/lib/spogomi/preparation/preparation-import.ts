@@ -283,7 +283,8 @@ function applyDeterministicTicketPlaceLabels(rows: SpogomiRosterRow[]): SpogomiR
     );
     ordered.forEach((row, index) => {
       const baseName = row.name?.trim() || "Place réservée";
-      row.name = `${baseName} ${index + 1}`.slice(0, MAX_NAME_LENGTH);
+      const suffix = ` ${index + 1}`;
+      row.name = `${baseName.slice(0, MAX_NAME_LENGTH - suffix.length)}${suffix}`;
       row.sourceFingerprint = fingerprint(row);
     });
   }

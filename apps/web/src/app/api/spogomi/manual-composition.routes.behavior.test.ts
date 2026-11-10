@@ -67,6 +67,19 @@ describe("SPOGOMI manual composition routes", () => {
     expect(mocks.createSpogomiTeam).not.toHaveBeenCalled();
   });
 
+  it("rejects every new manual mutation when the draft revision is absent", async () => {
+    const teamRoute = await import("./events/[eventId]/teams/route");
+    const createRoute = await import("./events/[eventId]/participants/manual/route");
+    const updateRoute = await import("./events/[eventId]/participants/[participantId]/route");
+
+    expect((await teamRoute.POST(request({ divisionId, publicName: "Équipe Ada" }), eventContext)).status).toBe(422);
+    expect((await createRoute.POST(request({ divisionId, privateLabel: "Ada" }), eventContext)).status).toBe(422);
+    expect((await updateRoute.PATCH(request({ divisionId, expectedPrivateLabel: null, privateLabel: "Ada corrigée" }, "PATCH"), participantContext)).status).toBe(422);
+    expect(mocks.createSpogomiTeam).not.toHaveBeenCalled();
+    expect(mocks.createSpogomiManualPlace).not.toHaveBeenCalled();
+    expect(mocks.updateSpogomiParticipantPrivateLabel).not.toHaveBeenCalled();
+  });
+
   it("validates and binds team creation to the authenticated organizer and division", async () => {
     const route = await import("./events/[eventId]/teams/route");
 
