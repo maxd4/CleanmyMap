@@ -38,9 +38,11 @@ Le stockage suit la durée de vie et la valeur de la donnée : le contenu durabl
 reste versionné dans Git, les préférences et brouillons non critiques peuvent
 rester locaux, les données métier et les agrégats persistés appartiennent à
 Supabase, et les fichiers réutilisables relèvent de Storage avec les seules
-métadonnées nécessaires en base. Un cache, une ISR, un snapshot ou une
-projection publique est toujours recalculable et ne devient pas une seconde
-source de vérité.
+métadonnées nécessaires en base. La règle de décision détaillée pour conserver
+localement, sauvegarder explicitement ou synchroniser immédiatement est
+centralisée dans la [politique globale de persistance économe](../development/persistence-economy-policy.md).
+Un cache, une ISR, un snapshot ou une projection publique est toujours
+recalculable et ne devient pas une seconde source de vérité.
 
 `public.public_surface_snapshots` est l'owner des snapshots publics dérivés.
 Une génération plus ancienne ne remplace jamais une ligne plus récente ; une

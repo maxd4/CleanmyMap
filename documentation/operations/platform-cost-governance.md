@@ -21,6 +21,7 @@ sont conservés dans [`audits/`](./audits/) ; les rapports reproductibles sous
 Sources complémentaires :
 
 - [Gouvernance des données](../architecture/data-governance.md) : sources de vérité et cycle de vie.
+- [Politique globale de persistance économe](../development/persistence-economy-policy.md) : état local, sauvegarde groupée et synchronisation immédiate.
 - [Capacités d'autorisation](../security/authorization-capabilities.md) : AuthN, AuthZ, RLS et scopes.
 - [Playbook Supabase](../database/supabase-table-optimization-playbook.md) : plans d'exécution, index et requêtes.
 - [Découpage client/serveur](../architecture/frontend-backend-boundaries.md) : frontières Next.js et poids du navigateur.

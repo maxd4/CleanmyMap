@@ -16,6 +16,7 @@ Statut : `CURRENT` (routage). La gouvernance applicable est celle de la racine e
 | Modularisation | [`conventions-modularisation.md`](./conventions-modularisation.md) | Règles avant extraction |
 | Nommage | [`file-naming-conventions.md`](./file-naming-conventions.md) | Convention des nouveaux fichiers |
 | TypeScript | [`typescript-precision-policy.md`](./typescript-precision-policy.md) | Entrées non fiables, casts, frontières |
+| Persistance Web/Mobile et économie de requêtes | [`persistence-economy-policy.md`](./persistence-economy-policy.md) | CURRENT ; état local, sauvegarde groupée et synchronisation immédiate |
 | Lint / diagnostic statique | [`lint-refactor-playbook.md`](./lint-refactor-playbook.md) | Playbook de correction |
 | Versions runtime/outillage | [`runtime-version-matrix.md`](./runtime-version-matrix.md) | Instantané explicatif ; manifestes font foi |
 | Environnement host et Git | [`host-environment.md`](./host-environment.md) | Diagnostic local spécialisé |
