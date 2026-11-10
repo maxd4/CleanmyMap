@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { SpogomiActionStateHeader } from "@/components/spogomi/spogomi-action-state";
 import {
   journeyStatusLabel,
   type SpogomiEventJourney,
@@ -99,6 +100,9 @@ export function SpogomiEventJourneyPanel({
   showAuthorizedSpaces?: boolean;
   readOnly?: boolean;
 }) {
+  const privateAccessState = journey.accessResolution === "unknown" ? "unknown" : "permission_denied";
+  const shouldShowPrivateAccessState = journey.authorizedSpaces.length === 0 && journey.next.status !== "access_required";
+
   return (
     <section
       aria-labelledby="spogomi-event-journey-title"
@@ -141,6 +145,14 @@ export function SpogomiEventJourneyPanel({
           ))}
         </div>
       </CmmCard>
+      {showAuthorizedSpaces && shouldShowPrivateAccessState ? (
+        <CmmCard tone={privateAccessState === "permission_denied" ? "red" : "slate"} variant="glass" className={`space-y-3 border-2 p-5 ${privateAccessState === "permission_denied" ? "border-rose-300 bg-rose-50/75" : "border-slate-300 bg-white/80"}`}>
+          <SpogomiActionStateHeader state={privateAccessState} />
+          <p className="text-sm font-bold text-slate-800">
+            {privateAccessState === "permission_denied" ? "Aucune habilitation privée n’est active pour cette édition." : "La vérification des habilitations privées est momentanément indisponible."}
+          </p>
+        </CmmCard>
+      ) : null}
       {showAuthorizedSpaces && journey.authorizedSpaces.length ? (
         <CmmCard
           tone="slate"

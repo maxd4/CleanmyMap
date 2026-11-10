@@ -39,4 +39,16 @@ describe("SpogomiEventJourneyPanel", () => {
     expect(markup).toContain("/spogomi/paris/espace#operations");
     expect(markup).not.toContain("href=\"#spogomi-sports-registration\" aria");
   });
+
+  it("labels an authenticated empty private projection as a non-interactive denial", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventJourneyPanel journey={buildSpogomiEventJourney(baseInput)} />);
+    expect(markup).toContain("Accès non autorisé");
+    expect(markup).toContain("Aucune habilitation privée n’est active");
+  });
+
+  it("does not turn an unavailable private projection into a denial", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventJourneyPanel journey={buildSpogomiEventJourney({ ...baseInput, accessResolution: "unknown" })} />);
+    expect(markup).toContain("Vérification indisponible");
+    expect(markup).not.toContain("Accès non autorisé");
+  });
 });
