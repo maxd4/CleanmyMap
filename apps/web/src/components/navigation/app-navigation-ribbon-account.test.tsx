@@ -7,8 +7,12 @@ vi.mock("@clerk/nextjs", () => ({
   UserButton: () => null,
   useUser: () => ({ user: null }),
 }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/actions/history",
+  useSearchParams: () => new URLSearchParams("tab=history&filter=water"),
+}));
 
-import { AccountUserBubble } from "./app-navigation-ribbon-account";
+import { AccountUserBubble, RibbonAccountActions } from "./app-navigation-ribbon-account";
 
 describe("AccountUserBubble", () => {
   it("shows the application handle when Clerk username is absent", () => {
@@ -34,5 +38,27 @@ describe("AccountUserBubble", () => {
 
     expect(markup).toContain("user_public");
     expect(markup).not.toContain("private@example.org");
+  });
+
+  it("preserves the current query in the global authentication actions", () => {
+    const markup = renderToStaticMarkup(
+      <RibbonAccountActions
+        locale="fr"
+        isAuthenticated={false}
+        onTrackNavigation={() => undefined}
+        ribbonChrome={{} as never}
+        effectiveIdentity={null}
+        identityForBubble={null}
+        user={null}
+        activity={{
+          activityStatus: "active",
+          isUpdatingActivityStatus: false,
+          activityStatusError: null,
+          handleActivityStatusToggle: async () => undefined,
+        }}
+      />,
+    );
+
+    expect(markup).toContain("redirect_url=%2Factions%2Fhistory%3Ftab%3Dhistory%26filter%3Dwater");
   });
 });

@@ -17,6 +17,7 @@ import {
   buildSignUpRedirectHref,
   resolveSafeAuthRedirect,
 } from "@/lib/auth/redirect-url";
+import { useLocationHash } from "@/lib/auth/use-location-hash";
 
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import type { RibbonActivityState } from "./app-navigation-ribbon-activity";
@@ -102,21 +103,7 @@ export function AccountUserBubble({
   );
 }
 
-export function RibbonAccountActions({
-  locale,
-  isAuthenticated,
-  onTrackNavigation,
-  ribbonChrome,
-  effectiveIdentity,
-  identityForBubble,
-  user,
-  activity: {
-    activityStatus,
-    isUpdatingActivityStatus,
-    activityStatusError,
-    handleActivityStatusToggle,
-  },
-}: {
+type RibbonAccountActionsProps = {
   locale: Locale;
   isAuthenticated: boolean;
   onTrackNavigation: RibbonNavigationTracker;
@@ -125,19 +112,30 @@ export function RibbonAccountActions({
   identityForBubble: UserIdentity | null;
   user: ClerkUserLike | null;
   activity: RibbonActivityState;
-}) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const currentRoute = buildCurrentInternalRoute(
-    pathname,
-    searchParams?.toString() ?? "",
-    typeof window === "undefined" ? "" : window.location.hash,
-  );
-  const authPageReturnRoute = pathname === "/sign-in" || pathname?.startsWith("/sign-in/") || pathname === "/sign-up" || pathname?.startsWith("/sign-up/")
-    ? resolveSafeAuthRedirect(searchParams?.get("redirect_url") ?? undefined)
-    : undefined;
-  const returnRoute = authPageReturnRoute ?? currentRoute;
-  const referralCode = pathname === "/sign-up" || pathname?.startsWith("/sign-up/") ? searchParams?.get("ref") ?? undefined : undefined;
+};
+
+type RibbonAccountActionsViewProps = RibbonAccountActionsProps & {
+  returnRoute: string;
+  referralCode?: string;
+};
+
+function RibbonAccountActionsView({
+  locale,
+  isAuthenticated,
+  onTrackNavigation,
+  ribbonChrome,
+  effectiveIdentity,
+  identityForBubble,
+  user,
+  returnRoute,
+  referralCode,
+  activity: {
+    activityStatus,
+    isUpdatingActivityStatus,
+    activityStatusError,
+    handleActivityStatusToggle,
+  },
+}: RibbonAccountActionsViewProps) {
   const signInHref = buildSignInRedirectHref(returnRoute, { referralCode });
   const signUpHref = buildSignUpRedirectHref(returnRoute, { referralCode });
 
@@ -196,4 +194,29 @@ export function RibbonAccountActions({
             ) : null}
     </div>
   );
+}
+
+export function RibbonAccountActions(props: RibbonAccountActionsProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const hash = useLocationHash();
+  const currentRoute = buildCurrentInternalRoute(
+    pathname,
+    searchParams?.toString() ?? "",
+    hash,
+  );
+  const isAuthPage = pathname === "/sign-in" || pathname?.startsWith("/sign-in/") || pathname === "/sign-up" || pathname?.startsWith("/sign-up/");
+  const authPageReturnRoute = isAuthPage
+    ? resolveSafeAuthRedirect(searchParams?.get("redirect_url") ?? undefined)
+    : undefined;
+  const referralCode = isAuthPage ? searchParams?.get("ref") ?? undefined : undefined;
+
+  return <RibbonAccountActionsView {...props} returnRoute={authPageReturnRoute ?? currentRoute} referralCode={referralCode} />;
+}
+
+export function RibbonAccountActionsFallback({
+  pathname,
+  ...props
+}: RibbonAccountActionsProps & { pathname: string }) {
+  return <RibbonAccountActionsView {...props} returnRoute={buildCurrentInternalRoute(pathname, "", "")} />;
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, Suspense, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatUser } from "./chat-types";
 import type { ChatRelatedEvent, CommunityAnnouncementTemplateKey } from "@/lib/chat/announcements";
 import { ChatComposerModePanels } from "./chat-composer-mode-panels";
-import { ChatComposerAttachmentPreview, ChatComposerGuestHint, ChatComposerInputBar, ChatComposerMentions, handleChatComposerFileSelection } from "./chat-composer-input";
+import { ChatComposerAttachmentPreview, ChatComposerGuestHint, ChatComposerGuestHintFallback, ChatComposerInputBar, ChatComposerMentions, handleChatComposerFileSelection } from "./chat-composer-input";
 
 type ChatComposerMode = "message" | "announcement" | "poll";
 
@@ -123,6 +124,7 @@ export const ChatComposer = memo(function ChatComposer({
   composerModes = ["message", "announcement", "poll"],
 }: ChatComposerProps) {
   const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const pathname = usePathname();
   const { isLight, placeholder, canAttach, canChooseAnnouncement, canChoosePoll } = getChatComposerViewState({ tone, composerMode, composerPlaceholder, userId, isSending, isUploading, showModeTabs, composerModes });
   const selectComposerMode = (mode: ChatComposerMode) => selectChatComposerMode(mode, onComposerModeChange, () => setIsToolsOpen(false));
 
@@ -132,6 +134,6 @@ export const ChatComposer = memo(function ChatComposer({
     {composerMode !== "poll" && file ? <ChatComposerAttachmentPreview file={file} isLight={isLight} onRemove={() => onFileChange(null)} /> : null}
     <ChatComposerModePanels isLight={isLight} showModeTabs={showModeTabs} composerModes={composerModes} composerMode={composerMode} pollOptions={pollOptions} onPollOptionsChange={onPollOptionsChange} announcementTemplate={announcementTemplate} onAnnouncementTemplateChange={onAnnouncementTemplateChange} relatedEvent={relatedEvent} announcementEventRequested={announcementEventRequested} announcementEventLoading={announcementEventLoading} announcementEventError={announcementEventError} />
     <ChatComposerInputBar activeChannelType={activeChannelType} canAttach={canAttach} canChooseAnnouncement={canChooseAnnouncement} canChoosePoll={canChoosePoll} composerMode={composerMode} fileInputRef={fileInputRef} isLight={isLight} isSending={isSending} isToolsOpen={isToolsOpen} isUploading={isUploading} message={message} onFileSelection={(event) => handleChatComposerFileSelection({ event, onFileChange, fileInputRef })} onInsertLink={onInsertLink} onKeyDown={(event) => handleChatComposerKeyDown(event, canSubmit)} onMessageChange={onMessageChange} onOpenFileInput={() => { setIsToolsOpen(false); fileInputRef.current?.click(); }} onSelectMode={selectComposerMode} onToggleTools={() => setIsToolsOpen(toggleChatComposerTools)} placeholder={placeholder} selectedRecipient={selectedRecipient} userId={userId} canSubmit={canSubmit} />
-    {!userId ? <ChatComposerGuestHint isLight={isLight} activeChannelType={activeChannelType} /> : null}
+    {!userId ? <Suspense fallback={<ChatComposerGuestHintFallback isLight={isLight} activeChannelType={activeChannelType} pathname={pathname} />}><ChatComposerGuestHint isLight={isLight} activeChannelType={activeChannelType} /></Suspense> : null}
   </form>;
 });

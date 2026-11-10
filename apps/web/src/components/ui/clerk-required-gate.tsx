@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { Lock, WifiOff } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
@@ -10,6 +11,7 @@ import {
   buildSignInRedirectHref,
   buildSignUpRedirectHref,
 } from "@/lib/auth/redirect-url";
+import { useLocationHash } from "@/lib/auth/use-location-hash";
 import {
   SystemStateAction,
   SystemStateDescription,
@@ -116,14 +118,84 @@ export function ClerkRequiredGate({
   children,
 }: ClerkRequiredGateProps) {
   const pathname = usePathname();
+
+  return (
+    <Suspense
+      fallback={
+        <ClerkRequiredGatePresentation
+          isAuthenticated={isAuthenticated}
+          authUnavailable={authUnavailable}
+          title={title}
+          description={description}
+          mode={mode}
+          signInHref={signInHref ?? buildSignInRedirectHref(pathname ?? "/")}
+          signInLabel={signInLabel}
+          signUpHref={signUpHref ?? buildSignUpRedirectHref(pathname ?? "/")}
+          signUpLabel={signUpLabel}
+          badge={badge}
+          stateHeadingLevel={stateHeadingLevel}
+          lockedPreview={lockedPreview}
+          resolvedSignInHref={signInHref ?? buildSignInRedirectHref(pathname ?? "/")}
+          resolvedSignUpHref={signUpHref ?? buildSignUpRedirectHref(pathname ?? "/")}
+        >
+          {children}
+        </ClerkRequiredGatePresentation>
+      }
+    >
+      <ClerkRequiredGateContent
+        isAuthenticated={isAuthenticated}
+        authUnavailable={authUnavailable}
+        title={title}
+        description={description}
+        mode={mode}
+        signInHref={signInHref}
+        signInLabel={signInLabel}
+        signUpHref={signUpHref}
+        signUpLabel={signUpLabel}
+        badge={badge}
+        stateHeadingLevel={stateHeadingLevel}
+        lockedPreview={lockedPreview}
+      >
+        {children}
+      </ClerkRequiredGateContent>
+    </Suspense>
+  );
+}
+
+function ClerkRequiredGateContent(props: ClerkRequiredGateProps) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hash = useLocationHash();
   const currentRoute = buildCurrentInternalRoute(
     pathname,
     searchParams?.toString() ?? "",
-    typeof window === "undefined" ? "" : window.location.hash,
+    hash,
   );
-  const resolvedSignInHref = signInHref ?? buildSignInRedirectHref(currentRoute);
-  const resolvedSignUpHref = signUpHref ?? buildSignUpRedirectHref(currentRoute);
+
+  return (
+    <ClerkRequiredGatePresentation
+      {...props}
+      resolvedSignInHref={props.signInHref ?? buildSignInRedirectHref(currentRoute)}
+      resolvedSignUpHref={props.signUpHref ?? buildSignUpRedirectHref(currentRoute)}
+    />
+  );
+}
+
+function ClerkRequiredGatePresentation({
+  isAuthenticated,
+  authUnavailable = false,
+  title = "Connexion requise",
+  description = "Connectez-vous ou inscrivez-vous pour accéder à cette fonctionnalité.",
+  mode = "blur",
+  signInLabel = "Se connecter",
+  signUpLabel = "S'inscrire",
+  badge = "Accès au compte",
+  stateHeadingLevel = "h1",
+  lockedPreview,
+  children,
+  resolvedSignInHref,
+  resolvedSignUpHref,
+}: ClerkRequiredGateProps & { resolvedSignInHref: string; resolvedSignUpHref: string }) {
 
   if (isAuthenticated) {
     return children;

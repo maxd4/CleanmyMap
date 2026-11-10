@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import useSWR from "swr";
 import Link from "next/link";
@@ -30,6 +30,7 @@ import { BrandLogo } from "@/components/brand/brand-logo";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import {
   RibbonAccountActions,
+  RibbonAccountActionsFallback,
   type AppNavigationRibbonProps,
   type ClerkUserLike,
 } from "./app-navigation-ribbon-account";
@@ -234,16 +235,32 @@ function AppNavigationRibbonFrame({
               } as React.ComponentProps<typeof RibbonMenus>)}
             />
 
-            <RibbonAccountActions
-              locale={locale}
-              isAuthenticated={isAuthenticated}
-              onTrackNavigation={onTrackNavigation}
-              ribbonChrome={ribbonChrome}
-              effectiveIdentity={effectiveIdentity}
-              identityForBubble={identityForBubble}
-              user={user}
-              activity={ribbonActivity}
-            />
+            <Suspense
+              fallback={
+                <RibbonAccountActionsFallback
+                  pathname={pathname}
+                  locale={locale}
+                  isAuthenticated={isAuthenticated}
+                  onTrackNavigation={onTrackNavigation}
+                  ribbonChrome={ribbonChrome}
+                  effectiveIdentity={effectiveIdentity}
+                  identityForBubble={identityForBubble}
+                  user={user}
+                  activity={ribbonActivity}
+                />
+              }
+            >
+              <RibbonAccountActions
+                locale={locale}
+                isAuthenticated={isAuthenticated}
+                onTrackNavigation={onTrackNavigation}
+                ribbonChrome={ribbonChrome}
+                effectiveIdentity={effectiveIdentity}
+                identityForBubble={identityForBubble}
+                user={user}
+                activity={ribbonActivity}
+              />
+            </Suspense>
           </div>
         </div>
       </nav>
