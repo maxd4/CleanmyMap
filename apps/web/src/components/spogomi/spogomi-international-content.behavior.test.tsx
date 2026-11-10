@@ -1,16 +1,21 @@
 // @vitest-environment jsdom
 
 import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SpogomiInternationalContent } from "./spogomi-international-content";
-import { SPOGOMI_INTERNATIONAL_NEWS } from "@/lib/spogomi/international-content";
+import {
+  SPOGOMI_EXTERNAL_EVENTS,
+  SPOGOMI_INTERNATIONAL_NEWS,
+} from "@/lib/spogomi/international-content";
 
 const copy = {
   worldTitle: "SPOGOMI worldwide",
   worldDescription: "Movement overview.",
   cleanMyMapRole: "CleanMyMap local role.",
+  worldDetails: "View CleanMyMap's role and sources",
   officialSources: "Verified official references",
   verifiedOn: "Verified on",
   newsTitle: "Official news",
@@ -72,5 +77,38 @@ describe("SpogomiInternationalContent hydration", () => {
       root?.unmount();
       consoleError.mockRestore();
     }
+  });
+
+  it("keeps the country filter usable while rendering editorial event cards", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <SpogomiInternationalContent
+          locale="fr"
+          sources={[]}
+          news={[]}
+          externalEvents={SPOGOMI_EXTERNAL_EVENTS}
+          visibleSections={["events"]}
+          copy={copy}
+        />,
+      );
+    });
+
+    expect(container.querySelectorAll("article")).toHaveLength(2);
+    const country = container.querySelector<HTMLSelectElement>('select[aria-label="Country"]');
+    expect(country).not.toBeNull();
+    await act(async () => {
+      if (!country) return;
+      country.value = "France";
+      country.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    expect(container.querySelectorAll("article")).toHaveLength(1);
+    expect(container.textContent).toContain("Qualification française World Cup 2027");
+    expect(container.textContent).not.toContain("SPOGOMI World Cup 2027");
+    root.unmount();
   });
 });

@@ -1,4 +1,12 @@
-import { ArrowRight, CalendarDays, MapPin, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Layers3,
+  MapPin,
+  MapPinned,
+  Plus,
+  Users,
+} from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
@@ -11,7 +19,13 @@ import {
   SpogomiInternationalContent,
   type SpogomiInternationalContentProps,
 } from "./spogomi-international-content";
-import { SPOGOMI_CACHAN_DEMO_ROUTE } from "@/lib/spogomi/demo-scenario";
+import {
+  getSpogomiCachanDemoScenario,
+  SPOGOMI_CACHAN_DEMO_MARKER,
+  SPOGOMI_CACHAN_DEMO_NOTICE,
+  SPOGOMI_CACHAN_DEMO_ROUTE,
+  SPOGOMI_CACHAN_DEMO_SCENARIO_NAME,
+} from "@/lib/spogomi/demo-scenario";
 import {
   SPOGOMI_EXTERNAL_EVENTS,
   SPOGOMI_HISTORICAL_EXAMPLES,
@@ -24,6 +38,13 @@ import type { Locale } from "@/lib/ui/preferences";
 
 type PublishedEvents = Awaited<ReturnType<typeof listPublishedSpogomiEvents>>;
 type Translate = (key: string) => string;
+
+const CACHAN_DEMO_SCENARIO = getSpogomiCachanDemoScenario();
+const CACHAN_DEMO_STATS = {
+  divisions: CACHAN_DEMO_SCENARIO.divisions.length,
+  teams: CACHAN_DEMO_SCENARIO.teams.length,
+  places: new Set(CACHAN_DEMO_SCENARIO.teams.flatMap((team) => team.place_ids)).size,
+} as const;
 
 function formatDate(value: string, timeZone: string) {
   return formatDateTimeInTimeZone(value, timeZone, { dateStyle: "long" });
@@ -167,41 +188,66 @@ function DemoCatalogCard() {
     <CmmCard
       tone="amber"
       variant="glass"
-      className="space-y-3 border-amber-300 bg-amber-50/80"
+      className="space-y-5 border-amber-300 bg-gradient-to-br from-amber-50 via-white to-emerald-50/80 p-5"
       data-testid="spogomi-cachan-demo-card"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="cmm-text-small font-black uppercase tracking-[0.15em] text-amber-900">
-            Démonstration · lecture seule
-          </p>
-          <h3 className="text-xl font-black text-amber-950">
-            SPOGOMI Cachan, démonstration CleanMyMap
-          </h3>
-          <p className="mt-1 text-sm text-amber-950">
-            Deux divisions, onze équipes et 37 places issus de la fixture
-            canonique.
-          </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-200 text-amber-950 shadow-sm">
+            <MapPinned size={25} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="cmm-text-small font-black uppercase tracking-[0.15em] text-amber-900">
+              Démonstration · lecture seule
+            </p>
+            <h3 className="text-xl font-black text-amber-950">
+              {SPOGOMI_CACHAN_DEMO_SCENARIO_NAME}
+            </h3>
+          </div>
         </div>
         <span className="cmm-text-small rounded-full border border-amber-300 bg-white/70 px-3 py-1 font-bold text-amber-950">
-          DEMONSTRATION / NON OFFICIEL
+          {SPOGOMI_CACHAN_DEMO_MARKER}
         </span>
       </div>
-      <p className="text-sm leading-6 text-amber-950">
-        Les mesures, compositions et scores attendus sont synthétiques. Rien
-        n’est créé dans Supabase, les statistiques environnementales, les
-        classements officiels ou la gamification.
-      </p>
-      <CmmButton
-        href={SPOGOMI_CACHAN_DEMO_ROUTE}
-        tone="secondary"
-        size="sm"
-        variant="pill"
-      >
-        Voir la démonstration Cachan
-        <ArrowRight size={16} aria-hidden="true" />
-      </CmmButton>
+      <dl className="grid grid-cols-3 gap-2" data-testid="spogomi-cachan-demo-stats">
+        <DemoStat icon={Layers3} value={CACHAN_DEMO_STATS.divisions} label="Divisions" />
+        <DemoStat icon={Users} value={CACHAN_DEMO_STATS.teams} label="Équipes" />
+        <DemoStat icon={MapPin} value={CACHAN_DEMO_STATS.places} label="Places" />
+      </dl>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="max-w-2xl text-sm leading-6 text-amber-950">
+          {SPOGOMI_CACHAN_DEMO_NOTICE}. Les mesures, compositions et scores
+          attendus restent synthétiques ; rien n’est créé dans Supabase.
+        </p>
+        <CmmButton
+          href={SPOGOMI_CACHAN_DEMO_ROUTE}
+          tone="primary"
+          size="sm"
+          variant="pill"
+        >
+          Voir la démonstration Cachan
+          <ArrowRight size={16} aria-hidden="true" />
+        </CmmButton>
+      </div>
     </CmmCard>
+  );
+}
+
+function DemoStat({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: typeof Layers3;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-white/80 px-3 py-3 text-center">
+      <Icon size={18} className="mx-auto text-amber-800" aria-hidden="true" />
+      <dt className="mt-1 text-2xl font-black leading-none text-amber-950">{value}</dt>
+      <dd className="mt-1 text-xs font-black uppercase tracking-[0.1em] text-slate-700">{label}</dd>
+    </div>
   );
 }
 
@@ -321,6 +367,7 @@ function buildInternational(
       worldTitle: t("international.worldTitle"),
       worldDescription: t("international.worldDescription"),
       cleanMyMapRole: t("international.cleanMyMapRole"),
+      worldDetails: t("international.worldDetails"),
       officialSources: t("international.officialSources"),
       verifiedOn: t("international.verifiedOn"),
       newsTitle: t("international.newsTitle"),
@@ -361,16 +408,33 @@ function buildUnderstandingCopy(
     compositionLabel: t("understanding.compositionLabel"),
     processLabel: t("understanding.processLabel"),
     pointsLabel: t("understanding.pointsLabel"),
+    metricTeamSize: t("understanding.metricTeamSize"),
+    metricCollection: t("understanding.metricCollection"),
+    metricSorting: t("understanding.metricSorting"),
+    metricMinutes: t("understanding.metricMinutes"),
+    metricPeople: t("understanding.metricPeople"),
+    formatDifferenceLabel: t("understanding.formatDifferenceLabel"),
+    formatDetailsLabel: t("understanding.formatDetailsLabel"),
     casualTitle: t("international.casualTitle"),
     casualDescription: t("international.casualDescription"),
     casualComposition: t("understanding.casualComposition"),
     casualProcess: t("understanding.casualProcess"),
     casualPoints: t("understanding.casualPoints"),
+    casualTeamSize: t("understanding.casualTeamSize"),
+    casualCollection: t("understanding.casualCollection"),
+    casualSorting: t("understanding.casualSorting"),
+    casualMeta: t("understanding.casualMeta"),
+    casualDifference: t("understanding.casualDifference"),
     worldCupTitle: t("international.worldCupTitle"),
     worldCupDescription: t("international.worldCupDescription"),
     worldCupComposition: t("understanding.worldCupComposition"),
     worldCupProcess: t("understanding.worldCupProcess"),
     worldCupPoints: t("understanding.worldCupPoints"),
+    worldCupTeamSize: t("understanding.worldCupTeamSize"),
+    worldCupCollection: t("understanding.worldCupCollection"),
+    worldCupSorting: t("understanding.worldCupSorting"),
+    worldCupMeta: t("understanding.worldCupMeta"),
+    worldCupDifference: t("understanding.worldCupDifference"),
     commonRulesTitle: t("understanding.commonRulesTitle"),
     rulesDescription: t("understanding.rulesDescription"),
     rulesCasual: t("understanding.rulesCasual"),

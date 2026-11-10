@@ -7,6 +7,7 @@ const copy = {
   worldTitle: "SPOGOMI dans le monde",
   worldDescription: "Présentation du mouvement.",
   cleanMyMapRole: "Rôle local de CleanMyMap.",
+  worldDetails: "Voir le rôle de CleanMyMap et les sources",
   officialSources: "Références officielles vérifiées",
   verifiedOn: "Vérifié le",
   newsTitle: "Actualités officielles",
@@ -35,9 +36,11 @@ describe("SpogomiInternationalContent", () => {
       />,
     );
 
-    expect(markup.match(/<div data-cmm-card-tone="slate"/g)).toHaveLength(3);
-    expect(markup).not.toContain("<details");
-    expect(markup).not.toContain("<summary");
+    expect(markup.match(/data-cmm-card-tone="slate"/g)).toHaveLength(3);
+    expect(markup).toContain("<details");
+    expect(markup).toContain("Voir le rôle de CleanMyMap et les sources");
+    expect(markup).toContain('data-testid="spogomi-international-news-list"');
+    expect(markup).toContain('data-testid="spogomi-international-events-list"');
     expect(markup).toContain("https://spogomi.or.jp/");
     expect(markup).toContain("2026-11-08");
     expect(markup).toContain("Règles générales japonaises");

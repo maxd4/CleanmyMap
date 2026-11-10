@@ -89,7 +89,11 @@ describe("SpogomiUnderstanding", () => {
     expect(markup.indexOf("spogomi-how-it-works")).toBeLessThan(
       markup.indexOf("spogomi-formats-rules"),
     );
-    expect(markup.match(/data-cmm-card-tone="emerald"/g)).toHaveLength(2);
+    expect(markup).toContain('data-testid="spogomi-process-timeline"');
+    expect(markup.match(/data-testid="spogomi-process-step-/g)).toHaveLength(5);
+    expect(markup).toContain('data-testid="spogomi-format-card-casual"');
+    expect(markup).toContain('data-testid="spogomi-format-card-world-cup"');
+    expect(markup.match(/data-testid="spogomi-format-metrics"/g)).toHaveLength(2);
   });
 
   it("keeps the international content in its own secondary section", () => {
@@ -171,6 +175,10 @@ describe("SpogomiPublicEvents", () => {
     ).toHaveLength(2);
     expect(markup).toContain("Voir la démonstration Cachan");
     expect(markup).toContain("/spogomi/demonstration/cachan");
+    expect(markup).toContain('data-testid="spogomi-cachan-demo-stats"');
+    expect(markup).toContain(">2</dt>");
+    expect(markup).toContain(">11</dt>");
+    expect(markup).toContain(">37</dt>");
     expect(markup).toContain("Résultats indisponibles");
     expect(markup).toContain("Édition publiée · données de l’organisateur");
   });
