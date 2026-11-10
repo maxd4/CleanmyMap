@@ -25,7 +25,7 @@ export function parseTeamPreview(value: unknown): SpogomiTeamCompositionPreview 
 }
 
 export function countAssignedParticipants(data: WorkspaceData | null): number {
-  return data?.participants.filter((participant) => participant.team_id).length ?? 0;
+  return data?.participants.filter((participant) => participant.registration_status === "registered" && participant.team_id).length ?? 0;
 }
 
 export function getValidRosterRows(preview: SpogomiRosterPreview | null): SpogomiRosterPreview["rows"] {

@@ -1,11 +1,12 @@
 "use client";
 
 import { CalendarDays, ClipboardCheck, Eye, FileText, HandHelping, Leaf, Settings2, ShieldCheck, Trophy, Users } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import type { SpogomiCapability, SpogomiEventAccessRole } from "@/lib/spogomi/authorization";
-import { SpogomiPreparationWorkspace, type SpogomiPreparationWorkspaceSection } from "./spogomi-preparation-workspace";
+import { SpogomiPreparationWorkspace, type SpogomiCompositionDraftControls, type SpogomiPreparationWorkspaceSection } from "./spogomi-preparation-workspace";
 import { SpogomiObserverCockpitPanel } from "./spogomi-observer-cockpit-panel";
 import { SpogomiResultReviewPanel } from "./spogomi-result-review-panel";
 import { SpogomiAttendancePanel } from "./spogomi-attendance-panel";
@@ -18,6 +19,11 @@ import { SpogomiVolunteerHelpProposalsPanel } from "./spogomi-volunteer-help-pro
 
 type CockpitSection = "presentation" | "operations" | "help_proposals" | SpogomiPreparationWorkspaceSection;
 type SpogomiReviewerRole = "observer" | "referee" | "checkin";
+const preparationSections = new Set<SpogomiPreparationWorkspaceSection>(["teams", "attendance", "results", "arbitration", "bilan", "settings"]);
+
+function isPreparationSection(section: CockpitSection): section is SpogomiPreparationWorkspaceSection {
+  return preparationSections.has(section as SpogomiPreparationWorkspaceSection);
+}
 
 type CockpitEvent = {
   id: string;
@@ -119,8 +125,8 @@ function buildCockpitSections(organizer: boolean, proposalManager: boolean, revi
   return [...next];
 }
 
-function CockpitNavigation({ sections, activeSection, setActiveSection }: { sections: CockpitSection[]; activeSection: CockpitSection; setActiveSection: (section: CockpitSection) => void }) {
-  return <nav aria-label="Sections de l’espace événementiel" className="sticky top-2 z-10 overflow-x-auto rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur"><ul className="flex min-w-max gap-2">{sections.map((section) => { const Icon = sectionIcons[section]; return <li key={section}><a href={`#${section}`} aria-current={activeSection === section ? "page" : undefined} onClick={() => setActiveSection(section)} className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${activeSection === section ? "bg-emerald-700 text-white" : "text-slate-800 hover:bg-emerald-50 hover:text-emerald-900"}`}><Icon size={16} aria-hidden="true" />{sectionLabels[section]}</a></li>; })}</ul></nav>;
+function CockpitNavigation({ sections, activeSection, onSelectSection }: { sections: CockpitSection[]; activeSection: CockpitSection; onSelectSection: (section: CockpitSection) => void }) {
+  return <nav aria-label="Sections de l’espace événementiel" className="sticky top-2 z-10 overflow-x-auto rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur"><ul className="flex min-w-max gap-2">{sections.map((section) => { const Icon = sectionIcons[section]; return <li key={section}><a href={`#${section}`} aria-current={activeSection === section ? "page" : undefined} onClick={(event) => { event.preventDefault(); onSelectSection(section); }} className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${activeSection === section ? "bg-emerald-700 text-white" : "text-slate-800 hover:bg-emerald-50 hover:text-emerald-900"}`}><Icon size={16} aria-hidden="true" />{sectionLabels[section]}</a></li>; })}</ul></nav>;
 }
 
 type CockpitSectionProps = { section: CockpitSection; activeSection: CockpitSection; event: CockpitEvent; organizer: boolean; referee: boolean; showAdminTeamJoinRequests: boolean; fieldCapabilities: readonly SpogomiFieldOperationsCapability[]; lifecycleRole: boolean };
@@ -143,8 +149,20 @@ function CockpitSectionView(props: CockpitSectionProps) {
   }
 }
 
-function CockpitSections(props: Omit<Parameters<typeof CockpitSectionView>[0], "section"> & { sections: CockpitSection[] }) {
-  return <>{props.sections.map((section) => <CockpitSectionView key={section} {...props} section={section} />)}</>;
+function OrganizerPreparationWorkspace({ props, onDraftStateChange }: { props: Omit<Parameters<typeof CockpitSectionView>[0], "section"> & { sections: CockpitSection[] }; onDraftStateChange: (controls: SpogomiCompositionDraftControls) => void }) {
+  const activePreparationSection = isPreparationSection(props.activeSection) ? props.activeSection : "teams";
+  const visible = isPreparationSection(props.activeSection);
+  return <>
+    {props.sections.filter(isPreparationSection).map((section) => <section key={section} id={section} hidden={props.activeSection !== section} aria-labelledby={`spogomi-${section}-title`}><h2 id={`spogomi-${section}-title`} className="sr-only">{sectionLabels[section]}</h2></section>)}
+    <div hidden={!visible} aria-hidden={!visible}>
+      <SpogomiPreparationWorkspace eventId={props.event.id} section={activePreparationSection} showHeader={false} showAdminTeamJoinRequests={props.showAdminTeamJoinRequests} onDraftStateChange={onDraftStateChange} />
+    </div>
+  </>;
+}
+
+function CockpitSections(props: Omit<Parameters<typeof CockpitSectionView>[0], "section"> & { sections: CockpitSection[]; onDraftStateChange: (controls: SpogomiCompositionDraftControls) => void }) {
+  const sections = props.sections.filter((section) => !(props.organizer && isPreparationSection(section)));
+  return <>{sections.map((section) => <CockpitSectionView key={section} {...props} section={section} />)}{props.organizer ? <OrganizerPreparationWorkspace props={props} onDraftStateChange={props.onDraftStateChange} /> : null}</>;
 }
 
 export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, fieldCapabilities = [], activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; reviewerRoles?: readonly SpogomiReviewerRole[]; fieldCapabilities?: readonly SpogomiFieldOperationsCapability[]; activeRole?: string | null }) {
@@ -171,25 +189,72 @@ export function SpogomiEventCockpit({ event, role, capabilities, reviewerRoles, 
   const showAdminTeamJoinRequests = activeRole === "admin" || activeRole === "max";
   const lifecycleRole = organizer && (activeRole === "admin" || activeRole === "max");
   const [activeSection, setActiveSection] = useState<CockpitSection>("presentation");
+  const [pendingSection, setPendingSection] = useState<CockpitSection | null>(null);
+  const [draftControls, setDraftControls] = useState<SpogomiCompositionDraftControls>({ dirty: false, save: async () => false, cancel: () => undefined });
+  const activeSectionRef = useRef(activeSection);
+  const draftControlsRef = useRef(draftControls);
+  useEffect(() => { activeSectionRef.current = activeSection; }, [activeSection]);
+  useEffect(() => { draftControlsRef.current = draftControls; }, [draftControls]);
   const sections = useMemo(() => buildCockpitSections(organizer, proposalManager, verifiedReviewerRoles, hasFieldOperations, event.state), [event.state, hasFieldOperations, organizer, proposalManager, verifiedReviewerRoles]);
 
+  const acceptSection = useCallback((section: CockpitSection, pushHistory: boolean) => {
+    setPendingSection(null);
+    setActiveSection(section);
+    if (typeof window !== "undefined" && window.location.hash !== `#${section}`) {
+      const url = `${window.location.pathname}${window.location.search}#${section}`;
+      if (pushHistory) window.history.pushState(null, "", url);
+      else window.history.replaceState(null, "", url);
+    }
+  }, []);
+  const requestSectionChange = useCallback((section: CockpitSection) => {
+    if (section === activeSectionRef.current) return;
+    if (draftControlsRef.current.dirty) {
+      setPendingSection(section);
+      if (typeof window !== "undefined") window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${activeSectionRef.current}`);
+      return;
+    }
+    acceptSection(section, true);
+  }, [acceptSection]);
+
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const syncFromHash = () => {
       const hash = window.location.hash.slice(1) as CockpitSection;
-      if (sections.includes(hash)) setActiveSection(hash);
+      if (!sections.includes(hash) || hash === activeSectionRef.current) return;
+      if (draftControlsRef.current.dirty) {
+        setPendingSection(hash);
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${activeSectionRef.current}`);
+        return;
+      }
+      acceptSection(hash, false);
     };
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
-    return () => window.removeEventListener("hashchange", syncFromHash);
-  }, [sections]);
+    window.addEventListener("popstate", syncFromHash);
+    return () => { window.removeEventListener("hashchange", syncFromHash); window.removeEventListener("popstate", syncFromHash); };
+  }, [acceptSection, sections]);
+
+  const confirmPendingNavigation = async () => {
+    const target = pendingSection;
+    if (!target) return;
+    const saved = await draftControlsRef.current.save();
+    if (saved) acceptSection(target, true);
+  };
+  const cancelPendingNavigation = () => {
+    const target = pendingSection;
+    if (!target) return;
+    draftControlsRef.current.cancel();
+    acceptSection(target, true);
+  };
 
   return <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 px-4 py-10">
     <div className="cmm-page-width space-y-6">
       <PageHeader tone="stone" title={event.name} subtitle={`${modeLabel(event.mode)} · ${event.publicVisibility === "published" ? "publication publique" : "édition privée"}`} />
       {isSpogomiCachanDemoEvent(event) ? <SpogomiSyntheticDemoNotice><p>Les divisions Casual et World Cup restent séparées : leurs catégories, équipes, saisies et classements sont lus dans leur propre section du cockpit. Les données affichées restent synthétiques et ne valent ni règlement ni résultat officiel.</p></SpogomiSyntheticDemoNotice> : null}
       <CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700"><CalendarDays size={17} aria-hidden="true" />{dateLabel(event.startsAt, event.officialTimezone)}{event.endsAt ? ` → ${dateLabel(event.endsAt, event.officialTimezone)}` : " · durée ouverte"}<span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-800">{accessLabel(role, fieldCapabilities)}</span></div><p className="text-sm text-slate-700">Cet espace adapte ses vues aux habilitations vérifiées de cet événement. Chaque lecture et chaque action restent contrôlées par le serveur.</p></CmmCard>
-      <CockpitNavigation sections={sections} activeSection={activeSection} setActiveSection={setActiveSection} />
-      <CockpitSections sections={sections} activeSection={activeSection} event={event} organizer={organizer} referee={referee} showAdminTeamJoinRequests={showAdminTeamJoinRequests} fieldCapabilities={fieldCapabilities} lifecycleRole={lifecycleRole} />
+      <CockpitNavigation sections={sections} activeSection={activeSection} onSelectSection={requestSectionChange} />
+      {pendingSection ? <div role="alert"><CmmCard tone="amber" variant="glass" className="space-y-3 p-4"><p className="font-bold">Des modifications d’équipe ne sont pas enregistrées. Que souhaitez-vous faire avant de quitter cette rubrique&nbsp;?</p><div className="flex flex-wrap gap-2"><CmmButton type="button" tone="secondary" onClick={() => setPendingSection(null)}>Rester ici</CmmButton><CmmButton type="button" tone="important" onClick={cancelPendingNavigation}>Annuler les modifications</CmmButton><CmmButton type="button" tone="primary" onClick={() => void confirmPendingNavigation()}>Enregistrer puis continuer</CmmButton></div></CmmCard></div> : null}
+      <CockpitSections sections={sections} activeSection={activeSection} event={event} organizer={organizer} referee={referee} showAdminTeamJoinRequests={showAdminTeamJoinRequests} fieldCapabilities={fieldCapabilities} lifecycleRole={lifecycleRole} onDraftStateChange={setDraftControls} />
     </div>
   </main>;
 }

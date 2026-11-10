@@ -22,7 +22,7 @@ export function createSpogomiCompositionDraft(data: WorkspaceData, divisionId: s
     divisionId,
     baseRevision: data.event.composition_revision ?? 0,
     teams: data.teams.filter((team) => team.division_id === divisionId).map((team) => ({ ...team, basePublicName: team.public_name })),
-    participants: data.participants.filter((participant) => participant.division_id === divisionId),
+    participants: data.participants.filter((participant) => participant.division_id === divisionId && participant.registration_status === "registered"),
   };
 }
 
@@ -30,13 +30,13 @@ export function applySpogomiCompositionDraft(data: WorkspaceData, draft: Spogomi
   return {
     ...data,
     teams: [...data.teams.filter((team) => team.division_id !== draft.divisionId), ...draft.teams],
-    participants: [...data.participants.filter((participant) => participant.division_id !== draft.divisionId), ...draft.participants],
+    participants: [...data.participants.filter((participant) => participant.division_id !== draft.divisionId || participant.registration_status !== "registered"), ...draft.participants],
   };
 }
 
 export function isSpogomiCompositionDraftDirty(data: WorkspaceData, draft: SpogomiCompositionDraft): boolean {
   const serverTeams = data.teams.filter((team) => team.division_id === draft.divisionId);
-  const serverParticipants = data.participants.filter((participant) => participant.division_id === draft.divisionId);
+  const serverParticipants = data.participants.filter((participant) => participant.division_id === draft.divisionId && participant.registration_status === "registered");
   if (serverTeams.length !== draft.teams.length || serverParticipants.length !== draft.participants.length) return true;
   return draft.teams.some((team) => {
     const serverTeam = serverTeams.find((candidate) => candidate.id === team.id);

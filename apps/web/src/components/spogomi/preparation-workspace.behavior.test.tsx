@@ -44,7 +44,7 @@ import { SpogomiPreparationWorkspace } from "./spogomi-preparation-workspace";
 const body = {
   event: { id: "event-1", event_slug: "paris-2026", public_visibility: "private", public_results_visibility: "hidden", name: "SPOGOMI Cachan, démonstration CleanMyMap — DEMONSTRATION / NON OFFICIEL", location_label: "Paris", mode: "mixed", state: "draft", starts_at: "2026-06-01", ends_at: null, composition_revision: 2, team_size_config: { casual: { minMembers: 2, maxMembers: 3 } } },
   divisions: [{ id: "division-casual", event_id: "event-1", division_type: "casual", division_key: "casual", regulation_status: "incomplete", regulation_version: "rules-casual", regulation_source_reference: "fixture" }, { id: "division-world", event_id: "event-1", division_type: "world_cup", division_key: "world_cup", regulation_status: "incomplete", regulation_version: "rules-world" }],
-  participants: [{ id: "participant-1", division_id: "division-casual", display_name: null, external_reference: "P-1", group_preference: null, team_id: null, attendance_status: "unknown", account_link_status: "unlinked", composition_eligible: false }],
+  participants: [{ id: "participant-1", division_id: "division-casual", display_name: null, registration_status: "registered", external_reference: "P-1", group_preference: null, team_id: null, attendance_status: "unknown", account_link_status: "unlinked", composition_eligible: false }],
   teams: [{ id: "team-1", division_id: "division-casual", team_number: 1, public_name: "Alpha", composition_state: "draft" }],
   route: null, categoryRules: [], eventAccess: [],
 };

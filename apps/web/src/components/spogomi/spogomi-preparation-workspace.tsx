@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { spogomiModeLabel, type SpogomiRosterPreview, type SpogomiTeamFormation } from "@/lib/spogomi/types";
 import type { SpogomiTeamCompositionPreview } from "@/lib/spogomi/preparation-service";
 import {
@@ -25,6 +25,7 @@ import { applySpogomiCompositionDraft, createSpogomiCompositionDraft, isSpogomiC
 
 type DivisionScopedPreview<T> = { divisionId: string; value: T };
 type DivisionScopedWorkspaceData = { eventId: string; divisionId: string | null; value: WorkspaceData };
+export type SpogomiCompositionDraftControls = { dirty: boolean; save: () => Promise<boolean>; cancel: () => void };
 
 export {
   ROSTER_MAPPING_FIELDS,
@@ -47,7 +48,7 @@ export function buildSpogomiCompositionRevision(data: WorkspaceData): { expected
   return { expectedRevision: data.event.composition_revision ?? 0 };
 }
 
-export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHeader = true, showAdminTeamJoinRequests = false }: { eventId: string; section?: SpogomiPreparationWorkspaceSection; showHeader?: boolean; showAdminTeamJoinRequests?: boolean }) {
+export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHeader = true, showAdminTeamJoinRequests = false, onDraftStateChange }: { eventId: string; section?: SpogomiPreparationWorkspaceSection; showHeader?: boolean; showAdminTeamJoinRequests?: boolean; onDraftStateChange?: (controls: SpogomiCompositionDraftControls) => void }) {
   const [data, setData] = useState<DivisionScopedWorkspaceData | null>(null);
   const [activeDivisionId, setActiveDivisionId] = useState<string | null>(null);
   const [preview, setPreview] = useState<DivisionScopedPreview<SpogomiRosterPreview> | null>(null);
@@ -65,19 +66,20 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   const [compositionDraft, setCompositionDraft] = useState<SpogomiCompositionDraft | null>(null);
   const [draftStatus, setDraftStatus] = useState<"unchanged" | "modified" | "saving" | "saved" | "error" | "conflict">("unchanged");
   const draftSequence = useRef(0);
+  const draftControlsRef = useRef<Pick<SpogomiCompositionDraftControls, "save" | "cancel">>({ save: async () => false, cancel: () => undefined });
   const [loadAttempt, setLoadAttempt] = useState(0);
   const pendingChecklistNavigation = useRef<{ anchor: string; divisionId?: string } | null>(null);
   const activeDivisionIdRef = useRef<string | null>(null);
   const requestSequence = useRef(0);
-  const beginRequest = () => ({ id: ++requestSequence.current });
-  const isCurrentRequest = (request: { id: number }) => request.id === requestSequence.current;
-  const refresh = async (request: { id: number }) => {
+  const beginRequest = useCallback(() => ({ id: ++requestSequence.current }), []);
+  const isCurrentRequest = useCallback((request: { id: number }) => request.id === requestSequence.current, []);
+  const refresh = useCallback(async (request: { id: number }) => {
     const divisionId = activeDivisionIdRef.current;
     const nextData = await fetchWorkspaceData(eventId, divisionId);
     if (isCurrentRequest(request)) setData({ eventId, divisionId, value: nextData });
     return isCurrentRequest(request) ? nextData : null;
-  };
-  async function runWorkspaceRequest<T, R>(request: { id: number }, operation: () => Promise<T>, onSuccess: (value: T) => Promise<R> | R, fallback: string, onFailure?: (reason: unknown) => void): Promise<R | null> {
+  }, [eventId, isCurrentRequest]);
+  const runWorkspaceRequest = useCallback(async function runWorkspaceRequest<T, R>(request: { id: number }, operation: () => Promise<T>, onSuccess: (value: T) => Promise<R> | R, fallback: string, onFailure?: (reason: unknown) => void): Promise<R | null> {
     try {
       const value = await operation();
       if (!isCurrentRequest(request)) return null;
@@ -91,7 +93,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     } finally {
       if (isCurrentRequest(request)) setBusy(false);
     }
-  }
+  }, [isCurrentRequest]);
   useEffect(() => {
     activeDivisionIdRef.current = activeDivisionId;
     const request = { id: ++requestSequence.current };
@@ -107,7 +109,7 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
     return () => {
       requestSequence.current += 1;
     };
-  }, [eventId, activeDivisionId, loadAttempt]);
+  }, [activeDivisionId, eventId, isCurrentRequest, loadAttempt]);
   const currentData = data?.eventId === eventId && data.divisionId === activeDivisionId ? data.value : null;
   const activeDraft = currentData && activeDivisionId ? compositionDraft?.divisionId === activeDivisionId ? compositionDraft : createSpogomiCompositionDraft(currentData, activeDivisionId) : null;
   const draftDirty = Boolean(currentData && activeDraft && isSpogomiCompositionDraftDirty(currentData, activeDraft));
@@ -146,14 +148,14 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
   function createPlaceDraft(privateLabel: string) {
     updateDraft((draft) => {
       const clientKey = `local-place-${++draftSequence.current}`;
-      return { ...draft, participants: [...draft.participants, { id: clientKey, clientKey, division_id: draft.divisionId, display_name: privateLabel.trim(), external_reference: null, group_preference: null, team_id: null, attendance_status: "unknown", account_link_status: "unlinked", source_system: "manual_roster", ticket_status: null, ticket_deleted: false, composition_eligible: true }] };
+      return { ...draft, participants: [...draft.participants, { id: clientKey, clientKey, division_id: draft.divisionId, display_name: privateLabel.trim(), registration_status: "registered", external_reference: null, group_preference: null, team_id: null, attendance_status: "unknown", account_link_status: "unlinked", source_system: "manual_roster", ticket_status: null, ticket_deleted: false, composition_eligible: true }] };
     });
   }
   function renameTeamDraft(teamId: string, publicName: string) { updateDraft((draft) => ({ ...draft, teams: draft.teams.map((team) => team.id === teamId ? { ...team, public_name: publicName.trim() } : team) })); }
   function changePrivateLabelDraft(participantId: string, privateLabel: string) { updateDraft((draft) => ({ ...draft, participants: draft.participants.map((participant) => participant.id === participantId ? { ...participant, display_name: privateLabel.trim() } : participant) })); }
   function assignParticipantDraft(participantId: string, teamId: string | null) { updateDraft((draft) => ({ ...draft, participants: draft.participants.map((participant) => participant.id === participantId ? { ...participant, team_id: teamId } : participant) })); }
-  async function saveCompositionDraft() {
-    if (!currentData || !activeDraft || !draftDirty || draftStatus === "saving") return;
+  const saveCompositionDraft = useCallback(async (): Promise<boolean> => {
+    if (!currentData || !activeDraft || !draftDirty || draftStatus === "saving") return false;
     const divisionId = activeDraft.divisionId;
     const request = beginRequest();
     setDraftStatus("saving");
@@ -168,9 +170,16 @@ export function SpogomiPreparationWorkspace({ eventId, section = "teams", showHe
       const text = reason instanceof Error ? reason.message : "";
       setDraftStatus(/conflit|changed|concurrent|entre-temps/i.test(text) ? "conflict" : "error");
     });
-    if (result) { setCompositionDraft(null); setDraftStatus("saved"); }
-  }
-  function cancelCompositionDraft() { if (!draftDirty) return; setCompositionDraft(null); setDraftStatus("unchanged"); setMessage("Modifications annulées."); setError(null); }
+    if (result) { setCompositionDraft(null); setDraftStatus("saved"); return true; }
+    return false;
+  }, [activeDraft, beginRequest, currentData, draftDirty, draftStatus, eventId, isCurrentRequest, refresh, runWorkspaceRequest]);
+  const cancelCompositionDraft = useCallback(() => { if (!draftDirty) return; setCompositionDraft(null); setDraftStatus("unchanged"); setMessage("Modifications annulées."); setError(null); }, [draftDirty]);
+  useEffect(() => {
+    draftControlsRef.current = { save: saveCompositionDraft, cancel: cancelCompositionDraft };
+  }, [cancelCompositionDraft, saveCompositionDraft]);
+  useEffect(() => {
+    onDraftStateChange?.({ dirty: draftDirty, save: () => draftControlsRef.current.save(), cancel: () => draftControlsRef.current.cancel() });
+  }, [draftDirty, onDraftStateChange]);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const warn = (event: BeforeUnloadEvent) => { if (draftDirty) { event.preventDefault(); event.returnValue = ""; } };

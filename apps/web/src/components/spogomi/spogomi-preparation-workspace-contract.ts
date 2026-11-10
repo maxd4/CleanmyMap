@@ -37,6 +37,7 @@ export type WorkspaceData = {
     id: string;
     division_id: string;
     display_name: string | null;
+    registration_status: "registered" | "withdrawn";
     external_reference: string | null;
     group_preference: string | null;
     team_id: string | null;
