@@ -453,7 +453,7 @@ begin
      and key_usage.table_name = 'spogomi_registration_quiz_proofs'
      and table_constraint.constraint_type = 'UNIQUE'
    group by key_usage.constraint_name
-  having array_agg(key_usage.column_name order by key_usage.ordinal_position) = array['event_id', 'division_id', 'clerk_id', 'quiz_version']::text[]
+  having array_agg(key_usage.column_name::text order by key_usage.ordinal_position) = array['event_id', 'division_id', 'clerk_id', 'quiz_version']::text[]
    limit 1;
   if v_constraint is not null then
     execute format('alter table public.spogomi_registration_quiz_proofs drop constraint %I', v_constraint);

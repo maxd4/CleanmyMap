@@ -381,6 +381,33 @@ ni application distante implicite. La convergence doit être vérifiée par
 éphémère de reconstruction et de contrat RPC. Aucune mutation du projet lié
 n'a été effectuée pour établir cette preuve.
 
+## Exception syntaxique bornée — `20261109000007`
+
+Le projet Supabase canonique `trktzkgujgpgsgkoyndn` est enregistré jusqu'à
+`20261109000006`; la migration `20261109000007` n'est donc pas encore
+appliquée sur cette cible. La première expression de sa détection de l'ancienne
+contrainte quiz a été reproduite en lecture seule sur le schéma lié et échoue
+avec `SQLSTATE 42883` : `information_schema.sql_identifier[]` ne peut pas
+être comparé directement à `text[]`.
+
+La correction est strictement syntaxique : `key_usage.column_name` est casté
+en `text` avant `array_agg`. Elle ne modifie ni la contrainte recherchée, ni
+les colonnes, les révisions de contrat, les preuves par division, les verrous,
+les RLS, les grants ou les fonctions métier. Elle rend rejouable la première
+migration absente sans autoriser `migration repair`, DDL manuelle ou mutation
+distante implicite.
+
+```text
+20261109000007_BEFORE_HASH: dc6c2e33d0efd41e9f8ac6721323335299d2035506dca7485c9c2ab3a85a01c9
+20261109000007_AFTER_HASH:  4c4c97b463e167e67cc0889d82fa00c9bba1e0a936db05e0e6b98f545e60f297
+```
+
+Après publication, l'application devra rester précédée de `migration list
+--linked` et `db push --dry-run`, puis être explicitement autorisée. La preuve
+PostgreSQL du contrat final, des fonctions et des Advisors reste distincte des
+contrôles statiques et `DB_SEMANTICS_NOT_EXECUTED` tant qu'aucun replay sur une
+base éphémère n'est disponible.
+
 ## Exception syntaxique bornée — replay territorial 00003–00007
 
 Lors de la première application autorisée de la série territoriale sur le

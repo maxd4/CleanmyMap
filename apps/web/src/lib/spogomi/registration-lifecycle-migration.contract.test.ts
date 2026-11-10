@@ -17,6 +17,7 @@ describe("SPOGOMI registration lifecycle migration STATIC_CONTRACT", () => {
     expect(migration).toContain("spogomi_event_change_history");
     expect(migration).toContain("requires_confirmation");
     expect(migration).toContain("proof.registration_contract_revision = v_event.registration_contract_revision");
+    expect(migration).toContain("array_agg(key_usage.column_name::text order by key_usage.ordinal_position)");
     expect(migration).toContain("app_notifications_spogomi_event_change_unique_idx");
     expect(migration).toContain("acknowledge_spogomi_event_change");
   });
