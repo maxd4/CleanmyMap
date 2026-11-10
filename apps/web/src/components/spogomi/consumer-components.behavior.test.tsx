@@ -155,6 +155,30 @@ describe("SPOGOMI consumer components", () => {
     renderer.unmount();
   });
 
+  it("rehydrates a valid server quiz proof and keeps it aligned with the selected division", async () => {
+    authState.isSignedIn = true;
+    fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpogomiAdmissionRequestCard eventId="event-1" lifecycle="upcoming" initialDivisionId="casual" initialQuizProofs={{ casual: "quiz-v1" }} signInHref="/sign-in" registrationReadinessReady divisions={[{ id: "casual", type: "casual", directRegistrationAvailable: true }, { id: "world", type: "world_cup", directRegistrationAvailable: true }]} />);
+      await flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Chargement du quiz applicable"))).toHaveLength(0);
+    expect(propsOf<{ disabled?: boolean }>(findButton(renderer, "Demander à intégrer l’équipe")).disabled).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const divisionSelect = renderer.root.findAllByType("select")[1]!;
+    await act(async () => {
+      propsOf<SelectProps>(divisionSelect).onChange({ target: { value: "world" } });
+      await flushEffects();
+    });
+    expect(renderer.root.findAllByType("select")[1]?.props.value).toBe("world");
+    expect(renderer.root.findAll((node) => node.type === "p" && nodeText(node).includes("Quiz validé pour cette version du règlement"))).toHaveLength(0);
+    renderer.unmount();
+  });
+
   it("fails closed when registration readiness is unavailable", async () => {
     authState.isSignedIn = true;
     fetchMock.mockResolvedValueOnce(jsonResponse({ requests: [] }));

@@ -446,6 +446,7 @@ export default async function SpogomiPublicEventPage({
                     registrationReadinessReady={
                       journey.registrationReadinessReady === true
                     }
+                    initialQuizProofs={journey.quizProofs}
                     signInHref={signInHrefFor("registration")}
                   />
                 </CmmCard>

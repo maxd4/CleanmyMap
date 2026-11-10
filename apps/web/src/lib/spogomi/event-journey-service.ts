@@ -61,14 +61,16 @@ async function loadRegistrationContractRevision(eventId: string, supabase: Retur
   return Number(result.data.registration_contract_revision);
 }
 
-async function quizStatus(event: SpogomiPublicEvent, divisionId: string | null, userId: string, supabase: ReturnType<typeof getSupabaseServerClient>): Promise<SpogomiEventJourneyInput["quizStatus"]> {
-  if (!divisionId) return "unavailable";
+async function quizProjection(event: SpogomiPublicEvent, divisionId: string | null, userId: string, supabase: ReturnType<typeof getSupabaseServerClient>): Promise<{ status: SpogomiEventJourneyInput["quizStatus"]; proofVersion: string | null }> {
+  if (!divisionId) return { status: "unavailable", proofVersion: null };
   const definition = await loadSpogomiRegistrationQuiz({ supabase, eventId: event.id, divisionId });
-  if (!definition.available) return "unavailable";
+  if (!definition.available) return { status: "unavailable", proofVersion: null };
   const versions = new Map([[divisionId, definition.quizVersion]]);
   const registrationContractRevision = await loadRegistrationContractRevision(event.id, supabase);
   const proofs = await loadSpogomiRegistrationQuizProofsForUser({ supabase, eventId: event.id, userId, quizVersions: versions, registrationContractRevision });
-  return proofs.has(divisionId) ? "passed" : "missing";
+  return proofs.has(divisionId)
+    ? { status: "passed", proofVersion: definition.quizVersion }
+    : { status: "missing", proofVersion: null };
 }
 
 function roleSpaceInputs(event: SpogomiPublicEvent, slug: string, eventAccess: Awaited<ReturnType<typeof resolveSpogomiEventAccessBySlug>>, fieldAccess: Awaited<ReturnType<typeof loadSpogomiFieldOperationsAccess>>) {
@@ -102,9 +104,10 @@ export async function loadSpogomiEventJourney(params: {
   }
   const base = emptyInput(params.event, division?.id, params.signInHref, params.signInHrefByStep);
   base.directRegistrationAvailable = base.directRegistrationAvailable && registrationReadinessReady;
-  if (!params.userId) return { ...buildSpogomiEventJourney(base), registrationReadinessReady };
+  if (!params.userId) return { ...buildSpogomiEventJourney(base), registrationReadinessReady, quizProofs: {} };
 
   const input: SpogomiEventJourneyInput = { ...base, isAuthenticated: true, privateProofStatus: "available" };
+  const quizProofs: Record<string, string> = {};
   try {
     const requests = await listSpogomiAdmissionRequestsForRequester(supabase, { eventId: params.event.id, requesterClerkId: params.userId });
     input.admissionStatus = admissionStatus(requests, division?.id ?? null);
@@ -113,7 +116,9 @@ export async function loadSpogomiEventJourney(params: {
     input.admissionStatus = "unavailable";
   }
   try {
-    input.quizStatus = await quizStatus(params.event, division?.id ?? null, params.userId, supabase);
+    const projection = await quizProjection(params.event, division?.id ?? null, params.userId, supabase);
+    input.quizStatus = projection.status;
+    if (projection.proofVersion && division?.id) quizProofs[division.id] = projection.proofVersion;
   } catch {
     input.quizStatus = "unavailable";
   }
@@ -143,5 +148,5 @@ export async function loadSpogomiEventJourney(params: {
     input.refereeSpaceHref = null;
     input.refereeCapabilities = [];
   }
-  return { ...buildSpogomiEventJourney(input), registrationReadinessReady };
+  return { ...buildSpogomiEventJourney(input), registrationReadinessReady, quizProofs };
 }
