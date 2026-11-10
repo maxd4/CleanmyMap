@@ -5,6 +5,23 @@
 >
 > **Périmètre :** événements SPOGOMI organisés avec CleanMyMap, modes `casual`, `world_cup` et `mixed` (`Casual & World Cup`), inscriptions importées, équipes, mesures, classements par division, action canonique agrégée et participations confirmées.
 
+## Création d’une édition — localisation et clôture
+
+La création privée depuis `/spogomi/nouveau` réutilise la géolocalisation de
+l’action CleanMyMap canonique. Le formulaire conserve un libellé de lieu pour
+l’affichage, mais ne valide pas ce libellé seul : une adresse sélectionnée, un
+lien Google Maps interprété ou un point choisi/déplacé sur la carte doit fournir
+une paire WGS84 `latitude` / `longitude`. Cette paire est transmise à la
+création de l’action unique liée à l’édition ; aucune seconde géolocalisation
+SPOGOMI n’est créée.
+
+Une nouvelle édition transmet `endsAt: null`. La colonne `ends_at` reste
+nullable et continue d’être lue par les projections historiques et les
+contrats de clôture ; aucune durée ni heure de fin n’est déduite au moment de
+la création. L’empreinte d’idempotence inclut les coordonnées sélectionnées,
+tandis que les empreintes historiques sans coordonnées restent reconnues pour
+la reprise des éditions déjà persistées.
+
 ## 1. Décision centrale
 
 Une édition parentale SPOGOMI possède des données sportives par équipe, mais produit **une seule action environnementale canonique CleanMyMap**. Dans le schéma courant, `spogomi_events` est cette édition parente : `action_id` reste unique et aucune division ne crée une action supplémentaire.

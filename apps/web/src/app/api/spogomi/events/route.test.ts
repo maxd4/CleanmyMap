@@ -24,6 +24,8 @@ const validBody = {
   idempotencyKey: "spogomi-route-test",
   name: "Edition test",
   locationLabel: "Paris",
+  latitude: 48.8566,
+  longitude: 2.3522,
   mode: "mixed",
   startsAt: "2099-01-01T10:00:00.000Z",
   endsAt: null,
@@ -59,11 +61,26 @@ describe("POST /api/spogomi/events authorization and validation boundary", () =>
     expect(payload.details.mode).toEqual(expect.arrayContaining([expect.any(String)]));
   });
 
+  it("requires a bounded coordinate pair and rejects a creation end date", async () => {
+    mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: "admin-1" });
+    const missingCoordinates = await POST(request({ ...validBody, latitude: undefined, longitude: undefined }));
+    expect(missingCoordinates.status).toBe(422);
+    expect((await missingCoordinates.json()).details.latitude).toEqual(expect.arrayContaining([expect.any(String)]));
+
+    const invalidCoordinates = await POST(request({ ...validBody, latitude: 91 }));
+    expect(invalidCoordinates.status).toBe(422);
+
+    const endDate = await POST(request({ ...validBody, endsAt: "2099-01-01T12:00:00.000Z" }));
+    expect(endDate.status).toBe(422);
+    expect(mocks.createSpogomiEvent).not.toHaveBeenCalled();
+  });
+
   it.each(["admin", "max"])("passes an authorized %s request to the service", async (activeRole) => {
     mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: `${activeRole}-1` });
     const response = await POST(request(validBody));
     expect(response.status).toBe(201);
     expect(await response.json()).toMatchObject({ eventId: "event-1", eventSlug: "edition-test" });
     expect(mocks.createSpogomiEvent).toHaveBeenCalledWith(expect.objectContaining({ userId: `${activeRole}-1`, input: expect.objectContaining({ mode: "mixed" }) }));
+    expect(mocks.createSpogomiEvent.mock.calls[0]?.[0].input).toMatchObject({ latitude: 48.8566, longitude: 2.3522, endsAt: null });
   });
 });

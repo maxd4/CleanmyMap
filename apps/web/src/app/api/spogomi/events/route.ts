@@ -6,6 +6,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createSpogomiEvent, SpogomiCreationValidationError } from "@/lib/spogomi/preparation-service";
 import { isDateTimeLocalValue } from "@/lib/time/civil-date";
+import { locationCoordinatesSchema } from "@/lib/validation/action-geometry";
 
 export const runtime = "nodejs";
 // Justification Vercel: event management reads authenticated mutable SPOGOMI state.
@@ -15,9 +16,11 @@ const createSchema = z.object({
   idempotencyKey: z.string().min(8).max(128).regex(/^[a-zA-Z0-9:_-]+$/),
   name: z.string().trim().min(1).max(160),
   locationLabel: z.string().trim().min(1).max(200),
+  latitude: locationCoordinatesSchema.shape.latitude,
+  longitude: locationCoordinatesSchema.shape.longitude,
   mode: z.enum(["casual", "world_cup", "mixed"]),
   startsAt: z.string().refine((value) => z.string().datetime().safeParse(value).success || isDateTimeLocalValue(value), "Date d’événement invalide."),
-  endsAt: z.string().nullable().optional().refine((value) => value === undefined || value === null || z.string().datetime().safeParse(value).success || isDateTimeLocalValue(value), "Date de fin invalide."),
+  endsAt: z.null().optional().default(null),
 });
 
 export async function POST(request: Request) {

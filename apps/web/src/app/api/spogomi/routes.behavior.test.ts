@@ -373,6 +373,8 @@ describe("SPOGOMI persistence routes", () => {
       idempotencyKey: "idempotency-1",
       name: "SPOGOMI Paris",
       locationLabel: "Paris",
+      latitude: 48.8566,
+      longitude: 2.3522,
       mode: "casual",
       startsAt: "2026-06-01T08:00:00.000Z",
       casualTeamSize: 3,
@@ -385,6 +387,8 @@ describe("SPOGOMI persistence routes", () => {
       idempotencyKey: "idempotency-local-1",
       name: "SPOGOMI Lyon",
       locationLabel: "Lyon",
+      latitude: 45.7640,
+      longitude: 4.8357,
       mode: "casual",
       startsAt: "2026-07-14T10:30",
     }));

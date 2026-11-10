@@ -1,6 +1,8 @@
 export type SpogomiCreationPayload = {
   name: string;
   locationLabel: string;
+  latitude: number;
+  longitude: number;
   mode: "casual" | "world_cup" | "mixed";
   startsAt: string;
   endsAt: string | null;

@@ -7,6 +7,8 @@ import {
 const payload: SpogomiCreationPayload = {
   name: "Compétition test",
   locationLabel: "Paris",
+  latitude: 48.8566,
+  longitude: 2.3522,
   mode: "casual",
   startsAt: "2026-10-13T10:00:00.000Z",
   endsAt: null,

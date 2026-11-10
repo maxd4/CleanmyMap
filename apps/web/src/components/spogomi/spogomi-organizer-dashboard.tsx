@@ -6,6 +6,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CalendarDays, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import type { ActionLocationCoordinates } from "@/lib/actions/types";
 import type { EventRow } from "@/lib/spogomi/preparation-service";
 import { formatDateTimeInTimeZone } from "@/lib/time/civil-date";
 import {
@@ -13,6 +14,7 @@ import {
   type SpogomiCreationAttempt,
   type SpogomiCreationPayload,
 } from "./spogomi-organizer-dashboard.creation";
+import { SpogomiLocationPicker } from "./spogomi-location-picker";
 
 function formatDate(value: string | null, timeZone: string | null | undefined) {
   if (!value) return "Date à préciser";
@@ -27,7 +29,7 @@ function inputClassName() {
   return "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200";
 }
 
-type CreationField = "name" | "locationLabel" | "mode" | "startsAt" | "endsAt";
+type CreationField = "name" | "locationLabel" | "mode" | "startsAt";
 type FieldErrors = Partial<Record<CreationField, string[]>>;
 type ParsedCreationError = { message: string; fieldErrors: FieldErrors; referenceCode: string | null };
 
@@ -36,7 +38,6 @@ const FIELD_LABELS: Record<CreationField, string> = {
   locationLabel: "Lieu",
   mode: "Mode",
   startsAt: "Début",
-  endsAt: "Fin",
 };
 
 function parseCreationError(value: unknown, fallback: string): ParsedCreationError {
@@ -77,6 +78,8 @@ export function SpogomiOrganizerDashboard({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [referenceCode, setReferenceCode] = useState<string | null>(null);
+  const [locationLabel, setLocationLabel] = useState("");
+  const [locationCoordinates, setLocationCoordinates] = useState<ActionLocationCoordinates | null>(null);
   const creationAttemptRef = useRef<SpogomiCreationAttempt | null>(null);
   const submissionInFlightRef = useRef(false);
 
@@ -93,17 +96,16 @@ export function SpogomiOrganizerDashboard({
     setReferenceCode(null);
     const form = new FormData(formElement);
     const startsAt = String(form.get("startsAt") ?? "");
-    const endsAt = String(form.get("endsAt") ?? "");
     if (!startsAt) {
-      setError("Saisissez une date de début valide et, si nécessaire, une date de fin valide.");
+      setError("Saisissez une date de début valide.");
       setFieldErrors({ startsAt: ["Saisissez une date de début valide."] });
       submissionInFlightRef.current = false;
       setPending(false);
       return;
     }
-    if (endsAt && endsAt < startsAt) {
-      setError("La date de fin doit être postérieure ou égale au début.");
-      setFieldErrors({ endsAt: ["La date de fin doit être postérieure ou égale au début."] });
+    if (!locationCoordinates) {
+      setError("Sélectionnez une localisation précise sur la carte avant de créer la compétition.");
+      setFieldErrors({ locationLabel: ["Une adresse sélectionnée avec des coordonnées est obligatoire."] });
       submissionInFlightRef.current = false;
       setPending(false);
       return;
@@ -111,10 +113,12 @@ export function SpogomiOrganizerDashboard({
 
     const payload: SpogomiCreationPayload = {
       name: String(form.get("name") ?? ""),
-      locationLabel: String(form.get("locationLabel") ?? ""),
+      locationLabel: String(form.get("locationLabel") ?? locationLabel),
+      latitude: locationCoordinates.latitude,
+      longitude: locationCoordinates.longitude,
       mode: String(form.get("mode") ?? "casual") as SpogomiCreationPayload["mode"],
       startsAt,
-      endsAt: endsAt || null,
+      endsAt: null,
     };
     const attempt = reuseOrCreateSpogomiCreationAttempt(
       creationAttemptRef.current,
@@ -143,6 +147,8 @@ export function SpogomiOrganizerDashboard({
       const eventSlug = typeof body === "object" && body !== null && "eventSlug" in body && typeof body.eventSlug === "string" ? body.eventSlug : null;
       creationAttemptRef.current = null;
       formElement.reset();
+      setLocationLabel("");
+      setLocationCoordinates(null);
       setMessage("Compétition créée en privé. Vous pouvez maintenant ouvrir son espace de préparation.");
       if (eventSlug) router.push(`/spogomi/${encodeURIComponent(eventSlug)}/espace`);
       else router.refresh();
@@ -180,11 +186,7 @@ export function SpogomiOrganizerDashboard({
             <input id="spogomi-create-name" className={inputClassName()} name="name" required maxLength={160} aria-invalid={Boolean(fieldErrors.name?.length)} aria-describedby={fieldErrors.name?.length ? "spogomi-create-name-error" : undefined} />
             <FieldError field="name" messages={fieldErrors.name} />
           </div>
-          <div className="space-y-1 text-sm font-bold text-slate-800">
-            <label htmlFor="spogomi-create-locationLabel">Lieu</label>
-            <input id="spogomi-create-locationLabel" className={inputClassName()} name="locationLabel" required maxLength={200} aria-invalid={Boolean(fieldErrors.locationLabel?.length)} aria-describedby={fieldErrors.locationLabel?.length ? "spogomi-create-locationLabel-error" : undefined} />
-            <FieldError field="locationLabel" messages={fieldErrors.locationLabel} />
-          </div>
+          <SpogomiLocationPicker value={locationLabel} coordinates={locationCoordinates} onChange={(nextLabel, nextCoordinates) => { setLocationLabel(nextLabel); setLocationCoordinates(nextCoordinates); }} error={fieldErrors.locationLabel} />
           <div className="space-y-1 text-sm font-bold text-slate-800">
             <label htmlFor="spogomi-create-mode">Mode</label>
             <select id="spogomi-create-mode" className={inputClassName()} name="mode" defaultValue="casual" aria-invalid={Boolean(fieldErrors.mode?.length)} aria-describedby={fieldErrors.mode?.length ? "spogomi-create-mode-error" : undefined}><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select>
@@ -194,11 +196,6 @@ export function SpogomiOrganizerDashboard({
             <label htmlFor="spogomi-create-startsAt">Début</label>
             <input id="spogomi-create-startsAt" className={inputClassName()} name="startsAt" type="datetime-local" required aria-invalid={Boolean(fieldErrors.startsAt?.length)} aria-describedby={fieldErrors.startsAt?.length ? "spogomi-create-startsAt-error" : undefined} />
             <FieldError field="startsAt" messages={fieldErrors.startsAt} />
-          </div>
-          <div className="space-y-1 text-sm font-bold text-slate-800">
-            <label htmlFor="spogomi-create-endsAt">Fin (facultative)</label>
-            <input id="spogomi-create-endsAt" className={inputClassName()} name="endsAt" type="datetime-local" aria-invalid={Boolean(fieldErrors.endsAt?.length)} aria-describedby={fieldErrors.endsAt?.length ? "spogomi-create-endsAt-error" : undefined} />
-            <FieldError field="endsAt" messages={fieldErrors.endsAt} />
           </div>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">
             <CmmButton type="submit" tone="primary" loading={pending}><Plus size={16} />Créer en privé</CmmButton>

@@ -160,6 +160,8 @@ function input(overrides: Partial<Parameters<typeof createSpogomiEvent>[0]["inpu
     idempotencyKey: "spogomi-test-key",
     name: "Compétition test",
     locationLabel: "Paris",
+    latitude: 48.8566,
+    longitude: 2.3522,
     mode: "casual" as const,
     startsAt: "2026-10-13T12:00:00.000Z",
     endsAt: null,
@@ -230,7 +232,24 @@ describe("SPOGOMI event creation contract", () => {
 
     expect(result.eventId).toBe("event-1");
     expect(store.events[0]).toMatchObject({ starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(), public_visibility: "private" });
+    expect(store.actions[0]).toMatchObject({ latitude: 48.8566, longitude: 2.3522 });
     expect(store.events[0]).not.toHaveProperty("team_size_config.casual");
+  });
+
+  it("treats a coordinate change as a different idempotency intent", async () => {
+    const store = new CreationStore();
+    installActionFactory(store);
+    const value = input({ idempotencyKey: "spogomi-coordinate-fingerprint" });
+
+    await createSpogomiEvent({ supabase: store as never, userId: "user-1", input: value });
+
+    await expect(createSpogomiEvent({
+      supabase: store as never,
+      userId: "user-1",
+      input: { ...value, latitude: 48.9 },
+    })).rejects.toThrow(/empreinte historique inconnue/i);
+    expect(store.actionInsertCount).toBe(1);
+    expect(store.eventInsertCount).toBe(1);
   });
 
   it("refuses creation when the active role is insufficient, even if the identity is otherwise valid", async () => {

@@ -7,12 +7,14 @@ import { useActionAddressAutocomplete } from "./hooks/use-action-address-autocom
 
 export type ActionAddressAutocompleteProps = {
   id: string;
+  name?: string;
   icon?: React.ElementType;
   label: React.ReactNode;
   placeholder: string;
   value: string;
   onChange: (value: string, coordinates?: ActionLocationCoordinates | null) => void;
   optional?: boolean;
+  required?: boolean;
   helperText: string;
   ariaInvalid?: boolean;
   ariaDescribedBy?: string;
@@ -21,12 +23,14 @@ export type ActionAddressAutocompleteProps = {
 
 export function ActionAddressAutocomplete({
   id,
+  name,
   icon: Icon = MapPin,
   label,
   placeholder,
   value,
   onChange,
   optional,
+  required,
   helperText,
   ariaInvalid,
   ariaDescribedBy,
@@ -44,11 +48,13 @@ export function ActionAddressAutocomplete({
         <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-900/30"><Icon size={15} /></div>
         <input
           id={id}
+          name={name}
           type="text"
           autoComplete="off"
           placeholder={placeholder}
           className="h-11 w-full rounded-xl border border-emerald-200/70 bg-[#F3FBF6] pl-9 pr-10 text-sm font-medium text-emerald-950 outline-none transition placeholder:text-emerald-700/35 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
           value={value}
+          required={required}
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={behavior.hasVisibleSuggestions}

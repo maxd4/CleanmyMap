@@ -16,6 +16,8 @@ type CreationInput = {
   idempotencyKey: string;
   name: string;
   locationLabel: string;
+  latitude: number;
+  longitude: number;
   mode: SpogomiEventMode;
   startsAt: string;
   endsAt?: string | null;
@@ -102,9 +104,14 @@ function canonicalCreationInput(input: CreationInput) {
   const startsAt = parseCreationDate(input.startsAt, "début");
   const endsAt = input.endsAt ? parseCreationDate(input.endsAt, "fin") : null;
   if (endsAt && endsAt < startsAt) throw new SpogomiCreationValidationError("Validation: la fin doit être postérieure au début.", { endsAt: ["La date de fin doit être postérieure ou égale au début."] });
+  if (!Number.isFinite(input.latitude) || input.latitude < -90 || input.latitude > 90 || !Number.isFinite(input.longitude) || input.longitude < -180 || input.longitude > 180) {
+    throw new SpogomiCreationValidationError("Validation: la localisation cartographique est obligatoire.", { locationLabel: ["Sélectionnez une adresse ou un point cartographique valide."] });
+  }
   return {
     name: input.name.trim(),
     locationLabel: input.locationLabel.trim(),
+    latitude: Math.round(input.latitude * 1e7) / 1e7,
+    longitude: Math.round(input.longitude * 1e7) / 1e7,
     mode: input.mode,
     startsAt: startsAt.toISOString(),
     endsAt: endsAt?.toISOString() ?? null,
@@ -116,10 +123,30 @@ function creationFingerprint(input: CreationInput): string {
 }
 
 function legacyCreationFingerprint(input: CreationInput, casualTeamSize: number | null): string {
+  const canonical = canonicalCreationInput(input);
+  const legacyInput = {
+    name: canonical.name,
+    locationLabel: canonical.locationLabel,
+    mode: canonical.mode,
+    startsAt: canonical.startsAt,
+    endsAt: canonical.endsAt,
+  };
   return createHash("sha256").update(JSON.stringify({
-    ...canonicalCreationInput(input),
+    ...legacyInput,
     casualTeamSize,
   })).digest("hex");
+}
+
+function historicalCreationFingerprint(input: CreationInput): string {
+  const canonical = canonicalCreationInput(input);
+  const historicalInput = {
+    name: canonical.name,
+    locationLabel: canonical.locationLabel,
+    mode: canonical.mode,
+    startsAt: canonical.startsAt,
+    endsAt: canonical.endsAt,
+  };
+  return createHash("sha256").update(JSON.stringify(historicalInput)).digest("hex");
 }
 
 type CreationFingerprintProof = {
@@ -134,6 +161,7 @@ function legacyTeamSizes(): Array<number | null> {
 
 function fingerprintProof(input: CreationInput, fingerprint: string): CreationFingerprintProof | null {
   if (fingerprint === creationFingerprint(input)) return { fingerprint, source: "current" };
+  if (fingerprint === historicalCreationFingerprint(input)) return { fingerprint, source: "current" };
   for (const casualTeamSize of legacyTeamSizes()) {
     if (fingerprint === legacyCreationFingerprint(input, casualTeamSize)) {
       return { fingerprint, source: "legacy", casualTeamSize };
@@ -357,6 +385,8 @@ async function createSpogomiAction(params: {
       actorName: displayName,
       actionDate: formatCivilDateInTimeZone(canonical.startsAt, SPOGOMI_DEFAULT_TIME_ZONE),
       locationLabel: canonical.locationLabel,
+      latitude: canonical.latitude,
+      longitude: canonical.longitude,
       actionPhase: "pre_action",
       preparationData: { interventionMode: createActionInterventionMode("fixed_area"), spogomiCreationKey: input.idempotencyKey, spogomiCreationFingerprint: proof.fingerprint },
       wasteKg: null, cigaretteButts: null, volunteersCount: 0, durationMinutes: 0,

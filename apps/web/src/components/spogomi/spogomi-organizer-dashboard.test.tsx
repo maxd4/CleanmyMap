@@ -16,6 +16,16 @@ vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithC
 vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("button", props, children) }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("div", props, children) }));
 vi.mock("lucide-react", () => ({ ArrowRight: () => null, CalendarDays: () => null, MapPin: () => null, Plus: () => null, ShieldCheck: () => null }));
+vi.mock("./spogomi-location-picker", () => ({
+  SpogomiLocationPicker: ({ value, onChange, error }: { value: string; onChange: (value: string, coordinates: { latitude: number; longitude: number } | null) => void; error?: string[] }) => {
+    return React.createElement("label", null,
+      React.createElement("span", null, "Lieu"),
+      React.createElement("input", { id: "spogomi-create-locationLabel", name: "locationLabel", value, onChange: (event: React.ChangeEvent<HTMLInputElement>) => onChange(event.target.value, { latitude: 48.8566, longitude: 2.3522 }) }),
+      React.createElement("button", { type: "button", "data-testid": "select-location", onClick: () => onChange(value || "Paris", { latitude: 48.8566, longitude: 2.3522 }) }, "Sélectionner le lieu"),
+      error?.map((message) => React.createElement("p", { key: message }, message)),
+    );
+  },
+}));
 
 vi.stubGlobal("fetch", fetchMock);
 
@@ -55,7 +65,6 @@ const validValues = {
   locationLabel: "Paris",
   mode: "casual",
   startsAt: "2026-10-13T12:00",
-  endsAt: "",
 };
 
 function buildForm() {
@@ -67,6 +76,7 @@ function getFormSubmit() {
   act(() => {
     renderer = create(<SpogomiOrganizerDashboard initialEvents={[]} canCreate />);
   });
+  act(() => { renderer.root.findByProps({ "data-testid": "select-location" }).props.onClick(); });
   return { renderer, submit: renderer.root.findByType("form").props.onSubmit as (event: unknown) => void };
 }
 
@@ -100,6 +110,7 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
 
     expect(form.reset).toHaveBeenCalledTimes(1);
     expect(pushMock).toHaveBeenCalledWith("/spogomi/event-1/espace");
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toMatchObject({ latitude: 48.8566, longitude: 2.3522, endsAt: null });
     renderer.unmount();
   });
 
@@ -167,6 +178,7 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
       root = createRoot(container);
       root.render(<SpogomiOrganizerDashboard initialEvents={[]} canCreate />);
     });
+    await domAct(async () => { (container.querySelector('[data-testid="select-location"]') as HTMLButtonElement).click(); });
 
     const form = container.querySelector("form")!;
     (container.querySelector('[name="name"]') as HTMLInputElement).value = validValues.name;
@@ -191,7 +203,7 @@ describe("SpogomiOrganizerDashboard creation flow", () => {
     });
 
     const labels = [...container.querySelectorAll("label")];
-    expect(labels).toHaveLength(5);
+    expect(labels).toHaveLength(4);
     expect(labels.every((label) => !label.querySelector("ul"))).toBe(true);
     for (const label of labels) {
       const control = label.control;
