@@ -170,14 +170,12 @@ function PublicResultsContent({
   busy,
   error,
   refresh,
-  setDivisionId,
 }: {
   results: SpogomiPublicResults;
   activeDivision: NonNullable<SpogomiPublicResults["divisions"]>[number] | null;
   busy: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  setDivisionId: (id: string) => void;
 }) {
   const sport = activeDivision?.sport ?? results.sport;
   const butts = activeDivision?.butts ?? results.butts;
@@ -199,6 +197,11 @@ function PublicResultsContent({
               new Date(results.refreshedAt),
             )}
           </p>
+          {activeDivision ? (
+            <p className="cmm-text-small mt-1 font-black text-emerald-800">
+              Division affichée : {activeDivision.type === "world_cup" ? "World Cup" : "Casual"}
+            </p>
+          ) : null}
         </div>
         <CmmButton
           type="button"
@@ -219,26 +222,6 @@ function PublicResultsContent({
           {error}
         </p>
       ) : null}
-      {results.divisions?.length ? (
-        <div
-          className="flex flex-wrap gap-2"
-          role="tablist"
-          aria-label="Classements par division"
-        >
-          {results.divisions.map((division) => (
-            <button
-              key={division.id}
-              type="button"
-              role="tab"
-              aria-selected={division.id === activeDivision?.id}
-              className={`min-h-11 rounded-xl px-4 py-2 text-sm font-black ${division.id === activeDivision?.id ? "bg-emerald-700 text-white" : "border border-slate-300 bg-white text-slate-800"}`}
-              onClick={() => setDivisionId(division.id)}
-            >
-              {division.type === "world_cup" ? "World Cup" : "Casual"}
-            </button>
-          ))}
-        </div>
-      ) : null}
       <Ranking
         title="Classement sportif"
         description="Points calculés avec la version du règlement publiée pour cette division. Les équipes de l’autre division ne sont pas incluses."
@@ -258,17 +241,16 @@ export function SpogomiPublicResults({
   eventSlug,
   initial,
   initialDivisionId,
+  active = true,
 }: {
   eventSlug: string;
   initial: SpogomiPublicResults | null;
   initialDivisionId?: string;
+  active?: boolean;
 }) {
   const [results, setResults] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [divisionId, setDivisionId] = useState<string | null>(
-    initialDivisionId ?? initial?.divisions?.[0]?.id ?? null,
-  );
   const refresh = useCallback(async () => {
     setBusy(true);
     setError(null);
@@ -302,15 +284,17 @@ export function SpogomiPublicResults({
       setBusy(false);
     }
   }, [eventSlug]);
-  // Justification polling: public provisional results may change after arbitration;
-  // refresh every 60 seconds only while the tab is visible and results remain public;
-  // pause while hidden or inactive to avoid background traffic.
   useEffect(() => {
     if (
-      document.visibilityState === "hidden" ||
-      results?.visibility === "hidden"
+      !active ||
+      !results ||
+      results.visibility === "hidden" ||
+      results.lifecycleStatus === "unavailable" ||
+      document.visibilityState === "hidden"
     )
       return;
+    // Justification polling: public provisional results may change after arbitration;
+    // refresh every 60 seconds only while the rankings anchor is active and visible.
     const timer = window.setInterval(() => {
       if (document.visibilityState !== "hidden")
         void (
@@ -320,7 +304,7 @@ export function SpogomiPublicResults({
         );
     }, 60_000);
     return () => window.clearInterval(timer);
-  }, [refresh, results?.visibility]);
+  }, [active, refresh, results]);
   if (
     !results ||
     results.visibility === "hidden" ||
@@ -340,8 +324,9 @@ export function SpogomiPublicResults({
         </CmmCard>
       </section>
     );
+  const activeDivisionId = initialDivisionId ?? results.divisions?.[0]?.id ?? null;
   const activeDivision =
-    results.divisions?.find((division) => division.id === divisionId) ??
+    results.divisions?.find((division) => division.id === activeDivisionId) ??
     results.divisions?.[0] ??
     null;
   return (
@@ -351,7 +336,6 @@ export function SpogomiPublicResults({
       busy={busy}
       error={error}
       refresh={refresh}
-      setDivisionId={(id) => setDivisionId(id)}
     />
   );
 }

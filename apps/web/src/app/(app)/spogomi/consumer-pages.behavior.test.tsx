@@ -336,6 +336,17 @@ describe("SPOGOMI consumer pages", () => {
     expect(markup).not.toContain("Rejoindre une équipe");
   });
 
+  it("uses Casual as the visible and filtered Cachan division when the URL is silent", async () => {
+    const markup = renderToStaticMarkup(
+      await SpogomiCachanDemonstrationPage({
+        searchParams: Promise.resolve({}),
+      }),
+    );
+    expect(markup).toContain("division=casual");
+    expect(markup).toContain("CAS-01");
+    expect(markup).not.toContain(">WC-01<");
+  });
+
   it("preserves a validated division and action focus in the Clerk return target", async () => {
     renderToStaticMarkup(
       await SpogomiPublicEventPage({

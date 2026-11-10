@@ -8,6 +8,7 @@ import type { SpogomiPublicGalleryPhoto } from "@/lib/spogomi/photo-gallery";
 const authState = vi.hoisted(() => ({ isLoaded: true, isSignedIn: false }));
 const fetchMock = vi.hoisted(() => vi.fn());
 const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
+const intervalMock = vi.hoisted(() => vi.fn(() => 1));
 
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => authState }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
@@ -27,7 +28,7 @@ vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children, ...props }: R
 vi.mock("@/components/ui/cmm-field", () => ({ CmmField: ({ children, label }: React.PropsWithChildren<{ label: string }>) => React.createElement("label", null, label, children), CmmInput: (props: Record<string, unknown>) => React.createElement("input", props), CmmTextarea: (props: Record<string, unknown>) => React.createElement("textarea", props) }));
 
 vi.stubGlobal("fetch", fetchMock);
-vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn(), setTimeout, clearTimeout, location: { pathname: "/spogomi/paris-2026", search: "" } });
+vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn(), setTimeout, clearTimeout, setInterval: intervalMock, clearInterval: vi.fn(), location: { pathname: "/spogomi/paris-2026", search: "" } });
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 type ButtonProps = { onClick: () => void | Promise<void> };
@@ -241,6 +242,49 @@ describe("SPOGOMI consumer components", () => {
     expect(published).toContain("Casual");
     expect(published).toContain("Bilan environnemental global");
     expect(published).not.toContain("requesterClerkId");
+  });
+
+  it("keeps the URL-selected division after a public results refresh and has no internal division widget", async () => {
+    const refreshed = {
+      ...publishedResults,
+      refreshedAt: "2026-06-01T12:01:00.000Z",
+      divisions: [
+        publishedResults.divisions![0]!,
+        {
+          id: "division-world",
+          type: "world_cup" as const,
+          regulationVersion: "rules-world",
+          regulationComplete: true,
+          sport: publishedResults.divisions![0]!.sport,
+          butts: publishedResults.divisions![0]!.butts,
+        },
+      ],
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse({ results: refreshed }));
+    let renderer!: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(
+        <SpogomiPublicResults
+          eventSlug="paris-2026"
+          initial={refreshed}
+          initialDivisionId="division-world"
+          active={false}
+        />,
+      );
+      await flushEffects();
+    });
+
+    expect(JSON.stringify(renderer.toJSON())).toContain("World Cup");
+    expect(renderer.root.findAllByProps({ role: "tablist" })).toHaveLength(0);
+    expect(renderer.root.findAllByProps({ role: "tab" })).toHaveLength(0);
+    expect(intervalMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      findButton(renderer, "Actualiser").props.onClick();
+      await flushEffects();
+    });
+    expect(JSON.stringify(renderer.toJSON())).toContain("World Cup");
+    renderer.unmount();
   });
 
   it("covers gallery navigation and a share fallback without personal data", async () => {

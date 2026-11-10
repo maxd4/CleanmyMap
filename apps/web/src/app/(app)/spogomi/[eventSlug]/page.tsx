@@ -68,8 +68,8 @@ export default async function SpogomiPublicEventPage({
   const requestedDivision =
     event.divisions.find((division) => division.type === intent.division) ??
     null;
-  const selectedDivisionType =
-    requestedDivision?.type ?? event.divisions[0]?.type;
+  const selectedDivision = requestedDivision ?? event.divisions[0] ?? null;
+  const selectedDivisionType = selectedDivision?.type;
   const visibleTeams = selectedDivisionType
     ? event.teams.filter((team) => team.divisionType === selectedDivisionType)
     : event.teams;
@@ -83,7 +83,7 @@ export default async function SpogomiPublicEventPage({
   const journey = await loadSpogomiEventJourney({
     event,
     userId,
-    selectedDivisionId: requestedDivision?.id ?? event.divisions[0]?.id ?? null,
+    selectedDivisionId: selectedDivision?.id ?? null,
     signInHref,
     signInHrefByStep: {
       quiz: signInHrefFor("quiz"),
@@ -377,7 +377,8 @@ export default async function SpogomiPublicEventPage({
                 <SpogomiPublicResults
                   eventSlug={event.slug}
                   initial={event.results}
-                  initialDivisionId={requestedDivision?.id}
+                  initialDivisionId={selectedDivision?.id}
+                  active={intent.tab === "rankings"}
                 />
               </div>
             </section>
@@ -441,7 +442,7 @@ export default async function SpogomiPublicEventPage({
                     eventId={event.id}
                     lifecycle={event.lifecycle}
                     divisions={event.divisions}
-                    initialDivisionId={requestedDivision?.id}
+                    initialDivisionId={selectedDivision?.id}
                     registrationReadinessReady={
                       journey.registrationReadinessReady === true
                     }

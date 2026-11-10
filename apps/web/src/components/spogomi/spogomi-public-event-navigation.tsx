@@ -148,16 +148,13 @@ export function SpogomiPublicEventNavigation({
       <nav
         className="overflow-x-auto border-b border-slate-200"
         aria-label="Navigation de l’édition"
-        role="tablist"
       >
-        <div className="flex min-w-max gap-1" role="presentation">
+        <div className="flex min-w-max gap-1">
           {(Object.keys(TAB_LABELS) as SpogomiEventTab[]).map((tab) => (
             <Link
               key={tab}
               href={hrefFor(baseHref, tab, selectedDivisionType)}
-              role="tab"
-              aria-selected={activeTab === tab}
-              aria-current={activeTab === tab ? "page" : undefined}
+              aria-current={activeTab === tab ? "location" : undefined}
               className={`inline-flex min-h-12 items-center border-b-2 px-4 text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${activeTab === tab ? "border-emerald-700 text-emerald-800" : "border-transparent text-slate-700 hover:border-emerald-300 hover:text-emerald-800"}`}
             >
               {TAB_LABELS[tab]}

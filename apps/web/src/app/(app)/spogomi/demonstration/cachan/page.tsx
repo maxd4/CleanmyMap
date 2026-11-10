@@ -40,15 +40,19 @@ export default async function SpogomiCachanDemonstrationPage({
   const scenario = getSpogomiCachanDemoScenario();
   const closure = getSpogomiCachanDemoClosureProjection();
   const intent = parseSpogomiEventIntent(await searchParams);
-  const selectedDivision = closure.divisions.find(
-    (division) => division.divisionType === intent.division,
-  );
-  const selectedDivisionType = selectedDivision?.divisionType ?? "casual";
+  const selectedDivision =
+    closure.divisions.find(
+      (division) => division.divisionType === intent.division,
+    ) ??
+    closure.divisions.find((division) => division.divisionType === "casual") ??
+    closure.divisions[0] ??
+    null;
+  const selectedDivisionType = selectedDivision?.divisionType;
   const visibleTeams = selectedDivision
     ? scenario.teams.filter(
         (team) => team.division_ref === selectedDivision.divisionRef,
       )
-    : scenario.teams;
+    : [];
   return (
     <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
       <div className="cmm-page-width space-y-6">

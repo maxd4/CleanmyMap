@@ -19,6 +19,8 @@ export const metadata: Metadata = buildPageMetadata("/spogomi", {
     "Découvrir les événements SPOGOMI publiés et leurs actions CleanMyMap associées.",
   robots: { index: true, follow: true },
 });
+// Justification force-dynamic: the public catalog resolves the active role and
+// published events on every request, so personalized creation controls are not cached between users.
 export const dynamic = "force-dynamic";
 
 export default async function SpogomiIndexPage() {

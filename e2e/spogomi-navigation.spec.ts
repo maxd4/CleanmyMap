@@ -183,12 +183,34 @@ test.describe("SPOGOMI public navigation", () => {
     const demoResponse = await page.goto("/spogomi/demonstration/cachan");
     expect(demoResponse?.status()).toBe(200);
     await expect(page.getByText("Démonstration fictive, données synthétiques, règlement non officiel", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "DIV-WORLD-CUP", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "DIV-CASUAL", exact: true })).toBeVisible();
-    for (const teamRef of ["WC-01", "WC-02", "WC-03", "WC-04", "WC-05", "WC-06", "CAS-01", "CAS-02", "CAS-03", "CAS-04", "CAS-05"]) {
+    await expect(page.getByRole("heading", { name: "WC-01", exact: true })).toHaveCount(0);
+    for (const teamRef of ["CAS-01", "CAS-02", "CAS-03", "CAS-04", "CAS-05"]) {
       await expect(page.getByRole("heading", { name: teamRef, exact: true })).toBeVisible();
     }
     await expect(page.getByText("aucune valeur publiée", { exact: false }).first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390 + 1);
+
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/spogomi/demonstration/cachan?division=world_cup&tab=rankings");
+      const eventNavigation = page.getByRole("navigation", { name: "Navigation de l’édition" });
+      await expect(eventNavigation.getByRole("link")).toHaveCount(5);
+      await expect(eventNavigation.getByRole("link", { name: "Classements" })).toHaveAttribute("aria-current", "location");
+      await expect(page.locator('[role="tablist"]')).toHaveCount(0);
+      await expect(page.locator('[role="tab"]')).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "DIV-WORLD-CUP", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "WC-01", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "CAS-01", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Classement sportif", exact: true })).toBeVisible();
+      await eventNavigation.getByRole("link", { name: "Casual", exact: true }).click();
+      await expect(page).toHaveURL(/division=casual/);
+      await expect(page.getByRole("heading", { name: "CAS-01", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "WC-01", exact: true })).toHaveCount(0);
+      await eventNavigation.getByRole("link", { name: "World Cup", exact: true }).click();
+      await expect(page).toHaveURL(/division=world_cup/);
+      await expect(page.getByRole("heading", { name: "WC-01", exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+    }
   });
 });
