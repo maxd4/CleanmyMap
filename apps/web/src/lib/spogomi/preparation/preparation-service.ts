@@ -10,7 +10,14 @@ import { teamCompositionFingerprint } from "./team-composition";
 import { verifyImportedRosterCompleteness, verifyImportedRosterSelection } from "./import-completeness";
 import { assertSelectedImportRowsAllowed, importMappingMatches, selectImportRows } from "./preparation-import-selection";
 export { verifyImportedRosterCompleteness, verifyImportedRosterSelection } from "./import-completeness";
-export { SpogomiCompositionProtectionError, lockSpogomiTeams, moveParticipantToTeam } from "./composition-mutation-service";
+export {
+  SpogomiCompositionProtectionError,
+  createSpogomiManualPlace,
+  createSpogomiTeam,
+  lockSpogomiTeams,
+  moveParticipantToTeam,
+  updateSpogomiParticipantPrivateLabel,
+} from "./composition-mutation-service";
 export { createSpogomiEvent } from "./preparation-creation-service";
 export { attachOfficialGpx } from "./preparation-gpx-service";
 export { updateSpogomiEvent } from "./preparation-event-service";

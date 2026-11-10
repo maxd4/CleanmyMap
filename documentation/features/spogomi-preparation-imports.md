@@ -103,9 +103,14 @@ Fichiers principaux :
 
 Le cockpit organisateur accepte désormais le mapping synthétique de billetterie
 Cachan Weezevent : chaque `N. Billet` devient une place distincte, chaque `N. de commande`
-reste un regroupement privé, et l'absence de nom devient l'état explicite
-« place à identifier ». Les doublons d'acheteur ne fusionnent donc jamais des
-places. Les statuts et suppressions sont conservés comme état de billet ; une
+reste un regroupement privé, et `Prénom participant` + `Nom participant` composent
+le libellé privé de la place. Lorsque plusieurs billets d'une même commande
+portent le même nom, les libellés déterministes `Prénom Nom 1`, `Prénom Nom 2`, etc.
+sont ordonnés par référence de billet ; une commande ne fusionne jamais des
+places et un homonyme d'une autre commande ne déclenche aucune numérotation.
+Une absence de nom devient « place à identifier » ou « Place réservée N » lorsque
+la commande contient plusieurs places anonymes. Ces libellés décrivent des places
+réservées et ne constituent jamais une identité physique vérifiée. Les statuts et suppressions sont conservés comme état de billet ; une
 place annulée est marquée comme telle sans être supprimée. Si une présence,
 une identité, une liaison ou une décision de participation existe déjà, le
 réimport signale un conflit et ne révoque pas cette décision.
@@ -196,6 +201,18 @@ composition officielle ; après verrouillage, la route ordinaire de déplacement
 reste refusée. En cas de réseau indisponible, seule une feuille ou un export
 privé minimal suivi d’une ressaisie contrôlée est prévu : aucune synchronisation
 hors ligne automatique n’est prétendue.
+
+L'onglet Équipes expose aussi « Former les équipes » : l'organisateur peut créer
+une équipe sans import, ajouter une place manuelle, modifier son libellé privé,
+renommer publiquement l'équipe et affecter/désaffecter/déplacer les places dans
+la division active. Les mutations passent par les RPC server-only
+`spogomi_create_team_for_division`, `spogomi_create_manual_place_for_division`
+et `spogomi_update_participant_private_label`, avec AuthZ d'événement, révision
+optimiste et audit append-only. Casual signale les bornes configurées sans
+bloquer le brouillon ; World Cup signale toute équipe différente de trois places
+sans bloquer l'édition ni l'enregistrement préparatoire. Le verrouillage et la
+certification conservent leurs contrôles officiels côté serveur, et aucune place
+ou équipe persistée n'est supprimée ou recréée silencieusement.
 
 ### Verrouillage effectif des compositions
 

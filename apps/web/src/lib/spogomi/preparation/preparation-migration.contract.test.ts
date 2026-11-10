@@ -19,6 +19,7 @@ const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../../supa
 const mixedEventMetadataMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000001_spogomi_mixed_event_metadata_update.sql", import.meta.url), "utf8");
 const mixedCasualBoundsMigration = readFileSync(new URL("../../../../supabase/migrations/20261108000002_spogomi_mixed_casual_bounds.sql", import.meta.url), "utf8");
 const parentModeDivisionCoherenceMigration = readFileSync(new URL("../../../../supabase/migrations/20261109000002_spogomi_parent_mode_division_coherence.sql", import.meta.url), "utf8");
+const manualTeamCompositionMigration = readFileSync(new URL("../../../../supabase/migrations/20261110000002_spogomi_manual_team_composition.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -198,6 +199,21 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(teamPublicNameMigration).toMatch(/after insert or delete or update of event_id, team_number, composition_state, certified_submission_id/i);
     expect(teamPublicNameMigration).not.toMatch(/set\s+composition_revision\s*=/i);
     expect(teamPublicNameMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants|result_submissions)/i);
+  });
+
+  it("keeps manual teams and reserved places division-scoped, audited and provisional", () => {
+    expect(manualTeamCompositionMigration).toContain("spogomi_create_team_for_division");
+    expect(manualTeamCompositionMigration).toContain("spogomi_create_manual_place_for_division");
+    expect(manualTeamCompositionMigration).toContain("spogomi_update_participant_private_label");
+    expect(manualTeamCompositionMigration).toContain("spogomi_team_composition_mutation_audit");
+    expect(manualTeamCompositionMigration).toContain("team_create");
+    expect(manualTeamCompositionMigration).toContain("manual_place_create");
+    expect(manualTeamCompositionMigration).toContain("private_label_edit");
+    expect(manualTeamCompositionMigration).toContain("state not in ('draft', 'registration_open')");
+    expect(manualTeamCompositionMigration).toContain("auth.role(), '') <> 'service_role'");
+    expect(manualTeamCompositionMigration).toMatch(/grant execute on function public\.spogomi_create_team_for_division[\s\S]+to service_role/i);
+    expect(manualTeamCompositionMigration).toMatch(/grant execute on function public\.spogomi_create_manual_place_for_division[\s\S]+to service_role/i);
+    expect(manualTeamCompositionMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants)/i);
   });
 
   it("enforces normalized public-name uniqueness for creation and rename paths", () => {

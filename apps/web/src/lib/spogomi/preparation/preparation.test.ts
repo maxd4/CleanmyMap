@@ -104,7 +104,8 @@ describe("SPOGOMI preparation", () => {
     expect(preview.sourceSystem).toBe("cachan_ticketing");
     expect(preview.rows).toHaveLength(37);
     expect(new Set(preview.rows.map((row) => row.externalReference)).size).toBe(37);
-    expect(preview.rows.filter((row) => row.name === null)).toHaveLength(37);
+    expect(preview.rows.filter((row) => row.name === null)).toHaveLength(1);
+    expect(preview.rows.filter((row) => row.name?.startsWith("Place réservée "))).toHaveLength(36);
     expect(preview.errors).toEqual([]);
     expect(preview.cancelledRowNumbers).toEqual([]);
   });
@@ -193,7 +194,7 @@ describe("SPOGOMI preparation", () => {
     const preview = await previewRosterFile(file);
     expect(preview.sourceSystem).toBe("cachan_ticketing");
     expect(preview.rows).toHaveLength(3);
-    expect(preview.rows.map((row) => row.name)).toEqual([null, null, null]);
+    expect(preview.rows.map((row) => row.name)).toEqual(["Place réservée 1", "Place réservée 2", "Place réservée 3"]);
     expect(preview.cancelledRowNumbers).toEqual([4]);
     expect(preview.errors.filter((error) => error.code === "ticket_reference_collision")).toHaveLength(2);
   });
@@ -246,7 +247,7 @@ describe("SPOGOMI preparation", () => {
     });
     expect(preview.rows.map((row) => row.externalReference)).toEqual(["TICKET-1", "TICKET-2"]);
     expect(preview.rows.map((row) => row.orderAlternativeReference)).toEqual(["ADV-1", "ADV-1"]);
-    expect(preview.rows.every((row) => row.name === null)).toBe(true);
+    expect(preview.rows.map((row) => row.name)).toEqual(["Un Déclaré", "Deux Déclaré"]);
     expect(preview.probableDuplicateRowNumbers).toEqual([]);
     expect(preview.errors).toEqual([]);
   });
@@ -293,6 +294,39 @@ describe("SPOGOMI preparation", () => {
       expect(preview.errors).toEqual([]);
     }
     expect(new Set(previews.flatMap((preview) => preview.rows.map((row) => row.externalReference))).size).toBe(2);
+  });
+
+  it("assembles Weezevent participant names and numbers reserved places by order and ticket", async () => {
+    const headers = Array.from({ length: 55 }, (_, index) => `Colonne ${index + 1}`);
+    headers[0] = "N. Billet";
+    headers[1] = "N. de commande";
+    headers[2] = "Prénom participant";
+    headers[3] = "Nom participant";
+    headers[4] = "Statut du billet";
+    headers[5] = "Supprimé";
+    const reservations = [1, 2, 3, 4, 6, 1, 2, 3, 4, 6, 5];
+    let ticket = 1;
+    const rows = reservations.flatMap((count, orderIndex) => Array.from({ length: count }, () => {
+      const row = Array.from({ length: 55 }, () => "");
+      row[0] = `TICKET-${String(ticket).padStart(2, "0")}`;
+      row[1] = `ORDER-${String(orderIndex + 1).padStart(2, "0")}`;
+      row[2] = "Ada";
+      row[3] = "Lefevre";
+      row[4] = "Payé";
+      row[5] = "0";
+      ticket += 1;
+      return row;
+    }));
+    const csv = [headers, ...rows].map((row) => row.join(";")).join("\n");
+    const file = new File([csv], "weezevent-synthetic-55-columns.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file);
+    expect(preview.rows).toHaveLength(37);
+    expect(preview.rows.filter((row) => row.orderReference === "ORDER-02").map((row) => row.name)).toEqual(["Ada Lefevre 1", "Ada Lefevre 2"]);
+    expect(preview.rows.filter((row) => row.orderReference === "ORDER-05").map((row) => row.name)).toEqual(["Ada Lefevre 1", "Ada Lefevre 2", "Ada Lefevre 3", "Ada Lefevre 4", "Ada Lefevre 5", "Ada Lefevre 6"]);
+    expect(preview.rows.find((row) => row.orderReference === "ORDER-01")?.name).toBe("Ada Lefevre");
+    const replay = await previewRosterFile(file);
+    expect(replay.rows.map((row) => [row.externalReference, row.name])).toEqual(preview.rows.map((row) => [row.externalReference, row.name]));
+    expect(new Set(preview.rows.map((row) => row.externalReference)).size).toBe(37);
   });
 
   it("detects preambles, multiline quoted cells, Windows-1252 and ambiguous mappings without guessing", async () => {

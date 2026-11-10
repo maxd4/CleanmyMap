@@ -22,6 +22,25 @@ type CompositionMoveResult = {
   compositionRevision: number;
 };
 
+type CompositionTeamResult = {
+  already_processed: boolean;
+  team: { id: string; divisionId: string; teamNumber: number; publicName: string; compositionState: string };
+  compositionRevision: number;
+};
+
+type CompositionPlaceResult = {
+  already_processed: boolean;
+  participant: { id: string; divisionId: string; displayName: string; teamId: string | null };
+  compositionRevision: number;
+};
+
+type CompositionLabelResult = {
+  already_processed: boolean;
+  participantId: string;
+  displayName: string;
+  compositionRevision: number;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -60,6 +79,31 @@ function parseCompositionMoveResult(value: unknown): CompositionMoveResult {
     compositionRevision: value.compositionRevision,
     ...(typeof value.divisionId === "string" ? { divisionId: value.divisionId } : {}),
   };
+}
+
+function parseCompositionTeamResult(value: unknown): CompositionTeamResult {
+  if (!isRecord(value) || typeof value.already_processed !== "boolean" || !isRecord(value.team) ||
+    typeof value.team.id !== "string" || typeof value.team.divisionId !== "string" || typeof value.team.teamNumber !== "number" ||
+    typeof value.team.publicName !== "string" || typeof value.team.compositionState !== "string" || !finiteNumber(value.compositionRevision)) {
+    throw new Error("La réponse de création d'équipe SPOGOMI est invalide.");
+  }
+  return { already_processed: value.already_processed, team: { id: value.team.id, divisionId: value.team.divisionId, teamNumber: value.team.teamNumber, publicName: value.team.publicName, compositionState: value.team.compositionState }, compositionRevision: value.compositionRevision };
+}
+
+function parseCompositionPlaceResult(value: unknown): CompositionPlaceResult {
+  if (!isRecord(value) || typeof value.already_processed !== "boolean" || !isRecord(value.participant) ||
+    typeof value.participant.id !== "string" || typeof value.participant.divisionId !== "string" || typeof value.participant.displayName !== "string" ||
+    (value.participant.teamId !== null && typeof value.participant.teamId !== "string") || !finiteNumber(value.compositionRevision)) {
+    throw new Error("La réponse de création de place SPOGOMI est invalide.");
+  }
+  return { already_processed: value.already_processed, participant: { id: value.participant.id, divisionId: value.participant.divisionId, displayName: value.participant.displayName, teamId: value.participant.teamId }, compositionRevision: value.compositionRevision };
+}
+
+function parseCompositionLabelResult(value: unknown): CompositionLabelResult {
+  if (!isRecord(value) || typeof value.already_processed !== "boolean" || typeof value.participantId !== "string" || typeof value.displayName !== "string" || !finiteNumber(value.compositionRevision)) {
+    throw new Error("La réponse de modification de place SPOGOMI est invalide.");
+  }
+  return { already_processed: value.already_processed, participantId: value.participantId, displayName: value.displayName, compositionRevision: value.compositionRevision };
 }
 
 export class SpogomiCompositionProtectionError extends Error {
@@ -129,4 +173,65 @@ export async function moveParticipantToTeam(params: {
   });
   if (result.error) throw compositionRpcError(result.error);
   return parseCompositionMoveResult(result.data);
+}
+
+export async function createSpogomiTeam(params: {
+  supabase: SupabaseClient;
+  event: EventForCompositionMutation;
+  divisionId: string;
+  publicName?: string;
+  actorClerkId: string;
+  expectedRevision?: number;
+}) {
+  const result = await params.supabase.rpc("spogomi_create_team_for_division", {
+    p_event_id: params.event.id,
+    p_division_id: params.divisionId,
+    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_public_name: params.publicName ?? null,
+    p_actor_clerk_id: params.actorClerkId,
+  });
+  if (result.error) throw compositionRpcError(result.error);
+  return parseCompositionTeamResult(result.data);
+}
+
+export async function createSpogomiManualPlace(params: {
+  supabase: SupabaseClient;
+  event: EventForCompositionMutation;
+  divisionId: string;
+  privateLabel: string;
+  actorClerkId: string;
+  expectedRevision?: number;
+}) {
+  const result = await params.supabase.rpc("spogomi_create_manual_place_for_division", {
+    p_event_id: params.event.id,
+    p_division_id: params.divisionId,
+    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_private_label: params.privateLabel,
+    p_actor_clerk_id: params.actorClerkId,
+  });
+  if (result.error) throw compositionRpcError(result.error);
+  return parseCompositionPlaceResult(result.data);
+}
+
+export async function updateSpogomiParticipantPrivateLabel(params: {
+  supabase: SupabaseClient;
+  event: EventForCompositionMutation;
+  divisionId: string;
+  participantId: string;
+  expectedPrivateLabel: string | null;
+  privateLabel: string;
+  actorClerkId: string;
+  expectedRevision?: number;
+}) {
+  const result = await params.supabase.rpc("spogomi_update_participant_private_label", {
+    p_event_id: params.event.id,
+    p_division_id: params.divisionId,
+    p_participant_id: params.participantId,
+    p_expected_revision: params.expectedRevision ?? Number(params.event.composition_revision ?? 0),
+    p_expected_private_label: params.expectedPrivateLabel,
+    p_private_label: params.privateLabel,
+    p_actor_clerk_id: params.actorClerkId,
+  });
+  if (result.error) throw compositionRpcError(result.error);
+  return parseCompositionLabelResult(result.data);
 }

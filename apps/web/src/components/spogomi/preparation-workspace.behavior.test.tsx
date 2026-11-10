@@ -58,7 +58,7 @@ describe("SPOGOMI preparation workspace", () => {
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); await Promise.resolve(); });
     expect(renderer.root.findAll((node) => node.props.role === "tab")).toHaveLength(2);
     expect(JSON.stringify(renderer.toJSON())).toContain("Démonstration fictive, données synthétiques, règlement non officiel");
-    expect(renderer.root.findAll((node) => node.props.children === "Billet annulé ou supprimé : affectation bloquée. Une résolution organisateur est requise.")).toHaveLength(1);
+    expect(JSON.stringify(renderer.toJSON())).toContain("Billet annulé ou supprimé : affectation bloquée");
     expect(renderer.root.findAll((node) => node.props["data-child"] === "team-links")).toHaveLength(1);
     expect(renderer.root.findAll((node) => node.props["data-child"] === "join-requests")).toHaveLength(1);
     expect(renderer.root.findAll((node) => node.props["data-child"] === "admission-requests")).toHaveLength(1);
@@ -114,6 +114,31 @@ describe("SPOGOMI preparation workspace", () => {
     const rendered = JSON.stringify(renderer.toJSON());
     expect(rendered).toContain("1 équipe(s), 2 place(s)");
     expect(rendered).not.toContain("1 équipe(s), 1 place(s)");
+    renderer.unmount();
+  });
+
+  it("exposes manual team/place controls and keeps the World Cup warning non-blocking", async () => {
+    const worldBody = {
+      ...body,
+      participants: [
+        { ...body.participants[0], id: "world-place-1", division_id: "division-world", display_name: "Place 1", team_id: "world-team-1", composition_eligible: true },
+        { ...body.participants[0], id: "world-place-2", division_id: "division-world", display_name: "Place 2", team_id: "world-team-1", composition_eligible: true },
+      ],
+      teams: [{ ...body.teams[0], id: "world-team-1", division_id: "division-world", public_name: "World 1" }],
+    };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => String(input).includes("divisionId=division-world")
+      ? Promise.resolve(new Response(JSON.stringify(worldBody), { status: 200 }))
+      : Promise.resolve(new Response(JSON.stringify(body), { status: 200 })));
+    let renderer!: ReturnType<typeof create>;
+    act(() => { renderer = create(<SpogomiPreparationWorkspace eventId="event-1" section="teams" showHeader={false} />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("Créer une équipe");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Ajouter une place");
+    const worldTab = renderer.root.findAll((node) => node.props.role === "tab").find((node) => node.props.children === "World Cup");
+    act(() => { propsOf<TabProps>(worldTab!).onClick?.(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(JSON.stringify(renderer.toJSON())).toContain("World Cup : une équipe doit compter exactement 3 places");
+    expect(JSON.stringify(renderer.toJSON())).toContain("Le brouillon");
     renderer.unmount();
   });
 

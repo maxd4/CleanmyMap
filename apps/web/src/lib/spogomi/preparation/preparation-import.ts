@@ -231,6 +231,8 @@ function validateRowShape(rowNumber: number, values: string[], formulaRows: numb
 
 type ParsedRowFields = {
   name: string | null;
+  participantFirstName: string;
+  participantLastName: string;
   group: string;
   sourceRowId: string;
   externalReference: string;
@@ -242,8 +244,13 @@ type ParsedRowFields = {
 
 function readRowFields(values: string[], indexes: RowIndexes): ParsedRowFields {
   const rawName = readRowValue(values, indexes, "name");
+  const participantFirstName = readRowValue(values, indexes, "participantFirstName");
+  const participantLastName = readRowValue(values, indexes, "participantLastName");
+  const assembledName = [participantFirstName, participantLastName].filter(Boolean).join(" ").trim();
   return {
-    name: rawName || null,
+    name: assembledName || rawName || null,
+    participantFirstName,
+    participantLastName,
     group: readRowValue(values, indexes, "group"),
     sourceRowId: readRowValue(values, indexes, "sourceRowId"),
     externalReference: readRowValue(values, indexes, "ticketReference"),
@@ -252,6 +259,35 @@ function readRowFields(values: string[], indexes: RowIndexes): ParsedRowFields {
     ticketStatus: readRowValue(values, indexes, "ticketStatus"),
     rawDeletedValue: readRowValue(values, indexes, "ticketDeleted"),
   };
+}
+
+function deterministicPlaceLabelKey(row: SpogomiRosterRow): string | null {
+  if (row.sourceSystem !== "cachan_ticketing" || !row.orderReference) return null;
+  return `${normalizeHeader(row.orderReference)}|${normalizeHeader(row.name ?? "")}`;
+}
+
+function applyDeterministicTicketPlaceLabels(rows: SpogomiRosterRow[]): SpogomiRosterRow[] {
+  const grouped = new Map<string, SpogomiRosterRow[]>();
+  for (const row of rows) {
+    const key = deterministicPlaceLabelKey(row);
+    if (key) grouped.set(key, [...(grouped.get(key) ?? []), row]);
+  }
+  for (const groupedRows of grouped.values()) {
+    if (groupedRows.length < 2) continue;
+    const ordered = groupedRows.slice().sort((left, right) =>
+      (left.externalReference ?? left.sourceRowId ?? String(left.rowNumber)).localeCompare(
+        right.externalReference ?? right.sourceRowId ?? String(right.rowNumber),
+        "en",
+        { numeric: true },
+      ),
+    );
+    ordered.forEach((row, index) => {
+      const baseName = row.name?.trim() || "Place réservée";
+      row.name = `${baseName} ${index + 1}`.slice(0, MAX_NAME_LENGTH);
+      row.sourceFingerprint = fingerprint(row);
+    });
+  }
+  return rows;
 }
 
 function ticketDeletionValue(rawDeletedValue: string, indexes: RowIndexes, ticketImport: boolean): { classification: ReturnType<typeof classifyCachanTicketDeletion>; value: boolean | null } {
@@ -336,7 +372,7 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, mal
     if (built.row) rows.push(built.row);
   }
   if (rawRows.length - 1 > MAX_ROWS) errors.push({ rowNumber: MAX_ROWS + 2, code: "row_excluded", message: `Les lignes au-delà de ${MAX_ROWS} sont exclues par la limite d’import.` });
-  return { headers, rows, errors, ignoredRowNumbers };
+  return { headers, rows: ticketImport ? applyDeterministicTicketPlaceLabels(rows) : rows, errors, ignoredRowNumbers };
 }
 
 function extensionOf(fileName: string): SpogomiImportFormat | null {

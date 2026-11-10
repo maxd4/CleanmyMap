@@ -11,7 +11,7 @@
 - **Accès / SEO** : `protected` ; session puis relation événementielle active (organisateur, arbitre, accueil, opérations terrain ou observation) vérifiée côté serveur ; `NOINDEX`, `INTERNAL_ONLY`, `NONE`
 - **Entrée** : `/spogomi/mes-evenements` liste les événements réellement accessibles par l'identité courante et renvoie vers la section compatible avec la capacité choisie ; la route canonique revalide ensuite l'autorisation côté serveur
 - **Démonstration mixed** : l’édition synthétique Cachan, lorsqu’elle est réellement présente, affiche son marquage non officiel dans le cockpit. Casual et World Cup restent séparées par les onglets et les sections existantes ; les cartes d’état exposent les données persistées et signalent préparation, règlement incomplet, résultats non certifiés ou publication bloquée sans créer de statut métier côté UI.
-- **Parcours réutilisés** : consultation/publication de l'événement, visibilité publique des résultats, import CSV/XLSX, composition et verrouillage des équipes, édition auditée des pseudonymes publics (`spogomi_teams.public_name`) sans changement d'effectif, configuration complète du règlement de la division active depuis Paramètres (bornes Casual, source/version, catégories, unités, coefficients non présumés officiels, arrondis, éligibilité, départages et correspondances environnementales), génération volontaire puis ouverture directe du lien temporaire de saisie équipe, révocation, revue et certification des versions, publication des classements officiels, consultation et rattachement du GPX officiel, aperçu et publication explicite du bilan environnemental dans l'action cible, export XLSX authentifié
+- **Parcours réutilisés** : consultation/publication de l'événement, visibilité publique des résultats, import CSV/XLSX, formation manuelle ou proposition automatique des équipes, création d'une équipe sans import, ajout/édition de places privées et affectation dans la division active, verrouillage des équipes, édition auditée des pseudonymes publics (`spogomi_teams.public_name`) sans changement d'effectif, configuration complète du règlement de la division active depuis Paramètres (bornes Casual, source/version, catégories, unités, coefficients non présumés officiels, arrondis, éligibilité, départages et correspondances environnementales), génération volontaire puis ouverture directe du lien temporaire de saisie équipe, révocation, revue et certification des versions, publication des classements officiels, consultation et rattachement du GPX officiel, aperçu et publication explicite du bilan environnemental dans l'action cible, export XLSX authentifié
 - **Confidentialité** : roster et opérations restent dans les routes API protégées ; aucun rôle global ni paramètre client ne suffit
 - **Refus d'accès** : l'autorisation reste vérifiée avant le chargement des données privées. Un compte authentifié sans capacité événementielle reçoit une réponse HTTP 404 et l'état CleanMyMap « Cette page n'est pas accessible », sans contenu privé transmis au client ; une session absente conserve la redirection Clerk.
 - **Export** : `GET /api/spogomi/events/[eventId]/export.xlsx` reste réservé à l'organisateur habilité. Le classeur contient `Synthèse`, `Équipes`, `Catégories` et `Traçabilité`; les valeurs brutes non certifiées sont exclues des données exportées.
@@ -30,5 +30,14 @@ les collisions dans l'événement et refuse une écriture concurrente fondée su
 une valeur obsolète. Le numéro, l'identifiant, les accès, les participants,
 les soumissions et les classements ne sont jamais recréés ou modifiés par ce
 parcours ; un refus doit être rechargé depuis l'état canonique courant.
+
+La section « Former les équipes » conserve les places non affectées et les
+compteurs par équipe. Une place importée reste identifiée par son `N. Billet` ;
+un libellé prénom/nom ou une place créée manuellement est une donnée de roster
+privée et non une identité Clerk. Les avertissements d'effectif Casual/World Cup
+restent visibles dans le brouillon sans transformer une composition incomplète
+en conformité officielle. La création, l'affectation et l'édition des libellés
+utilisent les RPC de composition versionnées et auditées, strictement bornées à
+la division active ; les projections publiques ne lisent pas ces libellés.
 
 Le contrat métier est [`documentation/features/spogomi.md`](../../../../features/spogomi.md).
