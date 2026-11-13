@@ -16,9 +16,30 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
 }));
 
 import { PresidentialEnvironmentalArchive } from "./presidential-environmental-archive";
-import { getPublicPresidentialArchive } from "@/lib/learning/policies/presidential-environmental-corpus";
+import { getPublicPresidentialArchive, PRESIDENTIAL_ENVIRONMENTAL_CORPUS, type PresidentialEnvironmentalClassification, type PresidentialPublicCommitment } from "@/lib/learning/policies/presidential-environmental-corpus";
 
 const presidentialArchive = getPublicPresidentialArchive();
+const classifiedArchive = {
+  ...presidentialArchive,
+  validatedCommitments: (["favorable", "unfavorable", "mixed", "neutral", "undetermined"] as PresidentialEnvironmentalClassification[]).map((classification, index) => {
+    const publicCommitment = { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments[index] };
+    Reflect.deleteProperty(publicCommitment, "validation");
+    return {
+      ...publicCommitment,
+      id: `${publicCommitment.id}-classified-${classification}`,
+      deduplicationKey: `${publicCommitment.deduplicationKey}-classified-${classification}`,
+      environmentalAssessment: {
+        overallClassification: classification,
+        intent: { fr: "Intention revue", en: "Reviewed intent" },
+        expectedEffect: { fr: "Effet attendu documenté", en: "Documented expected effect" },
+        observedEffect: null,
+        reviewedAt: "2026-11-13",
+        reviewedBy: "Human editor",
+        domains: {},
+      },
+    } as PresidentialPublicCommitment;
+  }),
+};
 
 describe("PresidentialEnvironmentalArchive", () => {
   it("shows both official rosters and their source origin without leaking unreviewed measures", () => {
@@ -60,6 +81,22 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("Elected");
     expect(markup).not.toContain("Élu");
     testLocale.value = "fr";
+  });
+
+  it("renders transparent classification sections without merging the five categories", () => {
+    const markup = renderToStaticMarkup(<PresidentialEnvironmentalArchive {...classifiedArchive} />);
+
+    expect(markup).toContain("Effets favorables");
+    expect(markup).toContain("Effets défavorables");
+    expect(markup).toContain("Effets mixtes");
+    expect(markup).toContain("Effets neutres");
+    expect(markup).toContain("Effets non déterminés");
+    expect(markup).toContain("Effet favorable");
+    expect(markup).toContain("Effet défavorable");
+    expect(markup).toContain("Effets mixtes");
+    expect(markup).toContain("Effet neutre");
+    expect(markup).toContain("Effet non déterminé");
+    expect(markup).toContain("Méthodologie et analyse environnementale");
   });
 
   it("keeps 2027 empty and explicitly preparatory", async () => {

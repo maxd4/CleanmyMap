@@ -1,6 +1,7 @@
 import type {
   PresidentialCommitmentDocumentationStatus,
   PresidentialComparisonView,
+  PresidentialEnvironmentalClassification,
   PresidentialPublicCommitment,
   PresidentialElectionYear,
 } from "./presidential-environmental-corpus";
@@ -29,4 +30,16 @@ export function sortPresidentialCommitments(
     const rightPrimary = view === "theme" ? right.theme[locale] : right.candidateName[locale];
     return leftPrimary.localeCompare(rightPrimary, locale) || left.candidateName[locale].localeCompare(right.candidateName[locale], locale) || left.id.localeCompare(right.id);
   });
+}
+
+export function groupPresidentialCommitmentsByClassification(commitments: PresidentialPublicCommitment[]): Record<PresidentialEnvironmentalClassification, PresidentialPublicCommitment[]> {
+  const groups: Record<PresidentialEnvironmentalClassification, PresidentialPublicCommitment[]> = {
+    favorable: [],
+    unfavorable: [],
+    mixed: [],
+    neutral: [],
+    undetermined: [],
+  };
+  for (const commitment of commitments) groups[commitment.environmentalAssessment?.overallClassification ?? "undetermined"].push(commitment);
+  return groups;
 }

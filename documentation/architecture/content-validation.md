@@ -162,7 +162,16 @@ engagements passent toujours par `getValidatedPresidentialCommitments` ; cette p
 rejette aussi toute échéance `PolicyDate` mal formée et conserve une durée
 annoncée dans `announcedUnits` sans la convertir en année civile. Une source
 secondaire, un discours ou un programme sans revue humaine effective ne peut
-donc pas fuir dans l'interface. La comparaison historique réutilise exactement
+donc pas fuir dans l'interface. La classification environnementale future
+s’inspire des principes du Budget vert français sans reproduire sa cotation
+officielle ni produire un score : elle sépare intention, effet attendu et effet
+observé, et décrit les domaines climat, biodiversité, eau, pollution, ressources
+et déchets. Une classification affichable exige une source primaire vérifiée,
+justification, mécanisme, hypothèses, limites, incertitudes, niveau de preuve
+et date/relecteur humain ; les valeurs ambiguës restent `undetermined`, les
+effets divergents restent `mixed`, et une clé de dédoublonnage écarte les
+reformulations identiques. Les fiches actuellement préparatoires restent sans
+classification publiée. La comparaison historique réutilise exactement
 les mêmes IDs en vue par thème ou par candidature, expose le niveau de
 documentation et garde le suivi `realized`/`in_progress`/`modified`/`abandoned`
 distinct du statut juridique et du résultat d’impact ; les fiches actuelles

@@ -15,6 +15,33 @@ export type PresidentialHistoryAction = "first_collected" | "substantive_amendme
 export type PresidentialCommitmentFollowUpStatus = "realized" | "in_progress" | "modified" | "abandoned" | "not_documented";
 export type PresidentialComparisonView = "theme" | "candidate";
 export type PresidentialMandateStatus = "completed" | "ongoing";
+export type PresidentialEnvironmentalClassification = "favorable" | "unfavorable" | "mixed" | "neutral" | "undetermined";
+export type PresidentialEnvironmentalDomain = "climate" | "biodiversity" | "water" | "pollution" | "resources" | "waste";
+export type PresidentialAssessmentEvidenceLevel = "limited" | "moderate" | "strong";
+
+export const PRESIDENTIAL_ENVIRONMENTAL_DOMAINS: PresidentialEnvironmentalDomain[] = ["climate", "biodiversity", "water", "pollution", "resources", "waste"];
+const PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS: PresidentialEnvironmentalClassification[] = ["favorable", "unfavorable", "mixed", "neutral", "undetermined"];
+
+export type PresidentialEnvironmentalDomainAssessment = {
+  classification: PresidentialEnvironmentalClassification;
+  source: PresidentialSource;
+  justification: LocalizedText;
+  mechanism: LocalizedText;
+  hypotheses: LocalizedText;
+  limitations: LocalizedText;
+  uncertainties: LocalizedText;
+  evidenceLevel: PresidentialAssessmentEvidenceLevel;
+};
+
+export type PresidentialEnvironmentalAssessment = {
+  overallClassification: PresidentialEnvironmentalClassification;
+  intent: LocalizedText;
+  expectedEffect: LocalizedText;
+  observedEffect: LocalizedText | null;
+  reviewedAt: string;
+  reviewedBy: string;
+  domains: Partial<Record<PresidentialEnvironmentalDomain, PresidentialEnvironmentalDomainAssessment>>;
+};
 
 export type PresidentialMandatePeriod = {
   start: PolicyDate;
@@ -92,6 +119,8 @@ export type PresidentialEnvironmentalCommitment = {
   documentationStatus: PresidentialCommitmentDocumentationStatus;
   versions: PresidentialCommitmentVersion[];
   history: PresidentialCommitmentHistoryEntry[];
+  deduplicationKey: string;
+  environmentalAssessment: PresidentialEnvironmentalAssessment | null;
   validation: ContentValidationRecord;
 };
 
@@ -351,6 +380,8 @@ type CommitmentInput = {
   documentationStatus?: PresidentialCommitmentDocumentationStatus;
   limitations?: LocalizedText[];
   followUpStatus?: PresidentialCommitmentFollowUpStatus;
+  deduplicationKey?: string;
+  environmentalAssessment?: PresidentialEnvironmentalAssessment | null;
 };
 
 const hollandeSecondarySource = sourceRef({
@@ -487,6 +518,8 @@ const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment
     documentationStatus: status,
     versions: [{ id: `${input.id}-initial`, recordedAt: COLLECTED_AT, sourceVersion: source.version, changeNote: localized("Entrée initiale issue du corpus de préparation ; elle reste à vérifier.", "Initial entry from the preparation corpus; it remains to be checked.") }],
     history: [{ id: `${input.id}-first-collected`, recordedAt: COLLECTED_AT, action: "first_collected", sourceVersion: source.version, note: localized("Collecte préparatoire sans validation humaine de la mesure.", "Preparation collection without human validation of the measure.") }],
+    deduplicationKey: input.deduplicationKey ?? input.id,
+    environmentalAssessment: input.environmentalAssessment ?? null,
     validation: validationDraft(`${input.id}-validation`, source, localized(`Engagement attribué à ${input.candidateName} à vérifier individuellement : ${input.formulation}`, `Commitment attributed to ${input.candidateName} to be checked individually: ${input.formulation}`)),
   };
 };
@@ -544,17 +577,34 @@ export function getPresidentialCommitments(year?: PresidentialElectionYear, corp
 }
 
 export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialEnvironmentalCommitment[] {
-  return corpus.commitments.filter((commitmentRecord) => {
+  const validated = corpus.commitments.filter((commitmentRecord) => {
     try {
       assertPublishedContent(commitmentRecord.validation);
       return commitmentRecord.documentationStatus === "validated"
         && commitmentRecord.source.status === "verified"
         && Boolean(commitmentRecord.source.url)
         && isValidPolicyDate(commitmentRecord.deadline)
-        && Boolean(commitmentRecord.lastCheckedAt);
+        && Boolean(commitmentRecord.lastCheckedAt)
+        && isCompleteEnvironmentalAssessment(commitmentRecord.environmentalAssessment);
     } catch {
       return false;
     }
+  });
+  const keyCounts = new Map<string, number>();
+  for (const commitmentRecord of validated) keyCounts.set(commitmentRecord.deduplicationKey, (keyCounts.get(commitmentRecord.deduplicationKey) ?? 0) + 1);
+  return validated.filter((commitmentRecord) => keyCounts.get(commitmentRecord.deduplicationKey) === 1);
+}
+
+const isNonEmptyLocalizedText = (value: LocalizedText): boolean => Boolean(value.fr.trim() && value.en.trim());
+
+function isCompleteEnvironmentalAssessment(assessment: PresidentialEnvironmentalAssessment | null): boolean {
+  if (!assessment || !PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS.includes(assessment.overallClassification) || !isValidPolicyDate({ value: assessment.reviewedAt, precision: "day" }) || !assessment.reviewedBy.trim() || !isNonEmptyLocalizedText(assessment.intent) || !isNonEmptyLocalizedText(assessment.expectedEffect)) return false;
+  if (assessment.observedEffect !== null && !isNonEmptyLocalizedText(assessment.observedEffect)) return false;
+  if (!PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.every((domain) => assessment.domains[domain])) return false;
+  return PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.every((domain) => {
+    const domainAssessment = assessment.domains[domain];
+    if (!domainAssessment || !PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS.includes(domainAssessment.classification) || !isNonEmptyLocalizedText(domainAssessment.justification) || !isNonEmptyLocalizedText(domainAssessment.mechanism) || !isNonEmptyLocalizedText(domainAssessment.hypotheses) || !isNonEmptyLocalizedText(domainAssessment.limitations) || !isNonEmptyLocalizedText(domainAssessment.uncertainties)) return false;
+    return ["SOURCE_PRIMAIRE_OFFICIELLE", "SOURCE_PRIMAIRE_ARCHIVEE", "PRIMARY_ARCHIVED", "PRIMARY_PARTY_PROGRAM"].includes(domainAssessment.source.type) && domainAssessment.source.status === "verified" && Boolean(domainAssessment.source.url) && Boolean(domainAssessment.source.version) && ["limited", "moderate", "strong"].includes(domainAssessment.evidenceLevel);
   });
 }
 

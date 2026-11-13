@@ -8,9 +8,36 @@ import {
   getPresidentialElection,
   getPublicPresidentialArchive,
   getValidatedPresidentialCommitments,
+  PRESIDENTIAL_ENVIRONMENTAL_DOMAINS,
   PRESIDENTIAL_ENVIRONMENTAL_CORPUS,
+  type PresidentialEnvironmentalAssessment,
+  type PresidentialEnvironmentalClassification,
   sortPresidentialCommitments,
 } from "./presidential-environmental-corpus";
+import { groupPresidentialCommitmentsByClassification } from "./presidential-environmental-filtering";
+
+const reviewedAssessment = (source: (typeof PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments)[number]["source"], overallClassification: PresidentialEnvironmentalAssessment["overallClassification"] = "undetermined"): PresidentialEnvironmentalAssessment => {
+  const primarySource = { ...source, type: "SOURCE_PRIMAIRE_OFFICIELLE" as const, status: "verified" as const, url: "https://example.test/primary", documentNature: "proposal" as const, version: "PRIMARY-REVIEWED-1" };
+  const domainAssessment = {
+    classification: overallClassification,
+    source: primarySource,
+    justification: { fr: "Les éléments disponibles ne permettent pas de conclure.", en: "The available evidence does not support a conclusion." },
+    mechanism: { fr: "Mécanisme à préciser.", en: "Mechanism to be specified." },
+    hypotheses: { fr: "Hypothèses explicitées dans la revue.", en: "Assumptions are stated in the review." },
+    limitations: { fr: "Portée limitée aux éléments contrôlés.", en: "Scope is limited to the checked evidence." },
+    uncertainties: { fr: "Incertitude conservée et révisable.", en: "Uncertainty is retained and revisable." },
+    evidenceLevel: "limited" as const,
+  };
+  return {
+    overallClassification,
+    intent: { fr: "Intention du programme documentée.", en: "Documented programme intent." },
+    expectedEffect: { fr: "Effet attendu non déterminé.", en: "Expected effect is undetermined." },
+    observedEffect: null,
+    reviewedAt: "2026-11-13",
+    reviewedBy: "Human editor",
+    domains: Object.fromEntries(PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.map((domain) => [domain, domainAssessment])),
+  } as PresidentialEnvironmentalAssessment;
+};
 
 describe("presidential environmental preparation corpus", () => {
   it("keeps the official candidate perimeter separate by election and party", () => {
@@ -155,6 +182,7 @@ describe("presidential environmental preparation corpus", () => {
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => ["source_insufficient", "draft"].includes(commitment.documentationStatus) && commitment.lastCheckedAt === null)).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.followUpStatus === "not_documented")).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => !commitment.validation.lastReviewedAt && !commitment.validation.reviewedBy)).toBe(true);
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.environmentalAssessment === null)).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.formulationAttributed.fr.length > 0 && commitment.mechanism.fr.length > 0)).toBe(true);
   });
 
@@ -170,6 +198,7 @@ describe("presidential environmental preparation corpus", () => {
     const sourceCommitment = getPresidentialCommitments(2022).find((commitment) => commitment.id === "2022-jean-luc-melenchon-renewables")!;
     const publicationCandidate = {
       ...sourceCommitment,
+      environmentalAssessment: reviewedAssessment(sourceCommitment.source),
       documentationStatus: "validated" as const,
       source: { ...sourceCommitment.source, status: "verified" as const, url: "https://example.test/source", publishedAt: { value: "2022-04-01", precision: "day" as const } },
       lastCheckedAt: "2026-11-13",
@@ -191,6 +220,42 @@ describe("presidential environmental preparation corpus", () => {
     ]) {
       expect(getValidatedPresidentialCommitments({ ...validCorpus, commitments: [{ ...publicationCandidate, deadline }] })).toEqual([]);
     }
+  });
+
+  it("requires a reviewed primary-backed environmental assessment for every displayed classification", () => {
+    const sourceCommitment = getPresidentialCommitments(2022).find((commitment) => commitment.id === "2022-jean-luc-melenchon-renewables")!;
+    const makePublished = (classification: PresidentialEnvironmentalAssessment["overallClassification"], suffix: string) => ({
+      ...sourceCommitment,
+      id: `${sourceCommitment.id}-${suffix}`,
+      deduplicationKey: `${sourceCommitment.id}-${suffix}`,
+      documentationStatus: "validated" as const,
+      source: { ...sourceCommitment.source, status: "verified" as const, url: "https://example.test/commitment", publishedAt: { value: "2022-04-01", precision: "day" as const } },
+      environmentalAssessment: reviewedAssessment(sourceCommitment.source, classification),
+      lastCheckedAt: "2026-11-13",
+      validation: { ...sourceCommitment.validation, status: "published" as const, lastReviewedAt: "2026-11-13", reviewedBy: "Human editor", source: { ...sourceCommitment.validation.source, url: "https://example.test/commitment", date: "2022-04-01", datePrecision: "day" as const } },
+    });
+
+    for (const classification of ["favorable", "unfavorable", "mixed", "neutral", "undetermined"] as const) {
+      const published = getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [makePublished(classification, classification)] });
+      expect(published).toHaveLength(1);
+      expect(published[0].environmentalAssessment?.overallClassification).toBe(classification);
+    }
+
+    const mixed = makePublished("mixed", "mixed");
+    const grouped = groupPresidentialCommitmentsByClassification([mixed as typeof sourceCommitment]);
+    expect(grouped.mixed).toHaveLength(1);
+    expect(grouped.favorable).toHaveLength(0);
+    expect(grouped.unfavorable).toHaveLength(0);
+
+    const missingPrimarySource = reviewedAssessment(sourceCommitment.source, "favorable");
+    missingPrimarySource.domains.climate = { ...missingPrimarySource.domains.climate!, source: { ...missingPrimarySource.domains.climate!.source, url: null } };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [{ ...makePublished("favorable", "missing-source"), environmentalAssessment: missingPrimarySource }] })).toEqual([]);
+
+    const duplicate = makePublished("neutral", "duplicate");
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [duplicate, { ...duplicate, id: `${duplicate.id}-copy` }] })).toEqual([]);
+
+    const invalidClassification = makePublished("favorable", "invalid-classification");
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [{ ...invalidClassification, environmentalAssessment: { ...invalidClassification.environmentalAssessment!, overallClassification: "not-a-category" as PresidentialEnvironmentalClassification } }] })).toEqual([]);
   });
 
   it("does not confuse an absence of collection with an absence of engagement", () => {
