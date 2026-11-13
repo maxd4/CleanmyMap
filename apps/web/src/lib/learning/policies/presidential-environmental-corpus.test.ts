@@ -388,10 +388,11 @@ describe("presidential environmental preparation corpus", () => {
       financialRecord({ id: "exclusive-envelope", aggregationKey: "exclusive-envelope", aggregationMode: "exclusive", amountMin: 3, amountMax: 4 }),
       financialRecord({ id: "direct-announcement", aggregationKey: "direct-announcement", isEstimate: false, estimateMethod: null }),
     ] };
+    const sameCandidateSecondCommitment = { ...aggregateCandidate, id: "same-candidate-second-commitment", financialRecords: [financialRecord({ id: "envelope-1", aggregationKey: "  same-envelope-3  ", amountMin: 8, amountMax: 9, horizon: { precision: "year", value: "2025" }, scope: { en: "National scope", fr: "Périmètre national" } })] };
     const secondCandidate = { ...aggregateCandidate, id: "second-candidate", candidateId: "2022-jean-luc-melenchon", financialRecords: [financialRecord({ id: "envelope-1", aggregationKey: "candidate-local-id", isEstimate: false, estimateMethod: null })] };
-    const aggregateChart = buildPresidentialChartData([aggregateCandidate, secondCandidate], getPresidentialCandidates(2022), 2022);
+    const aggregateChart = buildPresidentialChartData([aggregateCandidate, sameCandidateSecondCommitment, secondCandidate], getPresidentialCandidates(2022), 2022);
     expect(aggregateChart.financialRows).toHaveLength(4);
-    expect(aggregateChart.financialRows.find((row) => row.candidateId === "2022-emmanuel-macron" && row.isEstimate)?.amountMin).toBe(15);
+    expect(aggregateChart.financialRows.find((row) => row.candidateId === "2022-emmanuel-macron" && row.isEstimate)?.amountMin).toBe(23);
     expect(aggregateChart.financialRows.find((row) => row.candidateId === "2022-emmanuel-macron" && row.isEstimate)?.amountMax).toBeNull();
     expect(aggregateChart.financialRows.some((row) => row.candidateId === "2022-jean-luc-melenchon")).toBe(true);
     expect(aggregateChart.financialExclusions.duplicateEnvelope).toBe(1);
