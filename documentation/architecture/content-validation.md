@@ -170,13 +170,18 @@ et déchets. Une classification affichable exige une source primaire vérifiée,
 justification, mécanisme, hypothèses, limites, incertitudes, niveau de preuve
 et date/relecteur humain ; les valeurs ambiguës restent `undetermined`, les
 effets divergents restent `mixed`, et une clé de dédoublonnage écarte les
-reformulations identiques. Les fiches actuellement préparatoires restent sans
+reformulations identiques. La classification globale doit être cohérente avec
+les six domaines : une preuve insuffisante impose `undetermined`, des effets
+divergents imposent `mixed` et une justification globale est conservée. La
+date de revue est vérifiée comme date civile valide. Les fiches actuellement préparatoires restent sans
 classification publiée. La comparaison historique réutilise exactement
 les mêmes IDs en vue par thème ou par candidature, expose le niveau de
 documentation et garde le suivi `realized`/`partially_realized`/`in_progress`/`modified`/`abandoned`
 distinct du statut juridique et du résultat d’impact ; les fiches actuelles
 restent `not_documented`. Le squelette 2027 affiche un état préparatoire vide,
-sans candidature officielle ni politique imputée. Un bilan publiable sépare
+sans candidature officielle ni politique imputée. Un engagement validé peut
+être publié sans bilan de mandat ; le bilan est facultatif et ne doit jamais
+être fabriqué pour un candidat non élu. Lorsqu’il est présent, il sépare
 l’objectif initial, la décision juridique ou budgétaire, la mise en œuvre
 administrative et financière et le résultat observé ; un texte adopté n’est
 jamais traité comme un objectif atteint. Un écart n’est renseigné que pour des

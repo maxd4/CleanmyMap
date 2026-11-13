@@ -30,6 +30,7 @@ const classifiedArchive = {
       deduplicationKey: `${publicCommitment.deduplicationKey}-classified-${classification}`,
       environmentalAssessment: {
         overallClassification: classification,
+        overallJustification: { fr: "Synthèse documentée.", en: "Documented synthesis." },
         intent: { fr: "Intention revue", en: "Reviewed intent" },
         expectedEffect: { fr: "Effet attendu documenté", en: "Documented expected effect" },
         observedEffect: null,

@@ -41,6 +41,7 @@ export type PresidentialEnvironmentalDomainAssessment = {
 
 export type PresidentialEnvironmentalAssessment = {
   overallClassification: PresidentialEnvironmentalClassification;
+  overallJustification: LocalizedText;
   intent: LocalizedText;
   expectedEffect: LocalizedText;
   observedEffect: LocalizedText | null;
@@ -229,19 +230,25 @@ function isValidPolicyDate(date: PolicyDate): boolean {
 
 const isNonEmptyLocalizedText = (value: LocalizedText): boolean => Boolean(value.fr.trim() && value.en.trim());
 
+const isVerifiedPrimarySource = (source: PresidentialSource): boolean => ["SOURCE_PRIMAIRE_OFFICIELLE", "SOURCE_PRIMAIRE_ARCHIVEE", "PRIMARY_ARCHIVED", "PRIMARY_PARTY_PROGRAM", "DISCOURS_OFFICIEL"].includes(source.type)
+  && source.status === "verified"
+  && Boolean(source.url)
+  && Boolean(source.version);
+
 function isCompleteOutcomeStage(stage: PresidentialOutcomeStage | null): boolean {
-  if (!stage || !isNonEmptyLocalizedText(stage.summary) || !isValidPolicyDate(stage.date) || !isNonEmptyLocalizedText(stage.institution) || !stage.source.url || stage.source.status !== "verified" || !stage.source.version) return false;
+  if (!stage || !isNonEmptyLocalizedText(stage.summary) || !isValidPolicyDate(stage.date) || !isNonEmptyLocalizedText(stage.institution) || !isVerifiedPrimarySource(stage.source)) return false;
   if (stage.policyIdentity === "confirmed") return Boolean(stage.policyId && ENVIRONMENTAL_POLICY_REGISTRY.some((policy) => policy.id === stage.policyId));
   if (stage.policyIdentity === "not_confirmed") return stage.policyId === null || ENVIRONMENTAL_POLICY_REGISTRY.some((policy) => policy.id === stage.policyId) === false;
   return stage.policyId === null;
 }
 
 function isCompletePresidentialOutcome(outcome: PresidentialCommitmentOutcome | null): boolean {
-  if (!outcome || !["realized", "partially_realized", "in_progress", "modified", "abandoned", "not_documented"].includes(outcome.status) || typeof outcome.provisional !== "boolean" || !isNonEmptyLocalizedText(outcome.objective) || !isValidPolicyDate(outcome.initialDeadline) || !isNonEmptyLocalizedText(outcome.externalFactors) || !isNonEmptyLocalizedText(outcome.hypotheses) || !isNonEmptyLocalizedText(outcome.causalAttributionLimits) || !isNonEmptyLocalizedText(outcome.limitations) || !/^\d{4}-\d{2}-\d{2}$/.test(outcome.reviewedAt) || !outcome.reviewedBy.trim()) return false;
+  if (!outcome || !["realized", "partially_realized", "in_progress", "modified", "abandoned", "not_documented"].includes(outcome.status) || typeof outcome.provisional !== "boolean" || !isNonEmptyLocalizedText(outcome.objective) || !isValidPolicyDate(outcome.initialDeadline) || !isNonEmptyLocalizedText(outcome.externalFactors) || !isNonEmptyLocalizedText(outcome.hypotheses) || !isNonEmptyLocalizedText(outcome.causalAttributionLimits) || !isNonEmptyLocalizedText(outcome.limitations) || !isValidPolicyDate({ value: outcome.reviewedAt, precision: "day" }) || !outcome.reviewedBy.trim()) return false;
   if (outcome.legalDecision && !isCompleteOutcomeStage(outcome.legalDecision)) return false;
   if (outcome.implementation && !isCompleteOutcomeStage(outcome.implementation)) return false;
-  if (outcome.observedResult && (!isNonEmptyLocalizedText(outcome.observedResult.summary) || !isNonEmptyLocalizedText(outcome.observedResult.unit) || !isValidPolicyDate(outcome.observedResult.period) || outcome.observedResult.source.status !== "verified" || !outcome.observedResult.source.url || !outcome.observedResult.source.version)) return false;
+  if (outcome.observedResult && (!isNonEmptyLocalizedText(outcome.observedResult.summary) || !isNonEmptyLocalizedText(outcome.observedResult.unit) || !isValidPolicyDate(outcome.observedResult.period) || !isVerifiedPrimarySource(outcome.observedResult.source))) return false;
   if (outcome.objectiveResultGap && (!isNonEmptyLocalizedText(outcome.objectiveResultGap.summary) || typeof outcome.objectiveResultGap.comparableIndicators !== "boolean")) return false;
+  if (["realized", "partially_realized", "modified", "abandoned"].includes(outcome.status) && !outcome.legalDecision && !outcome.implementation && !outcome.observedResult) return false;
   return true;
 }
 
@@ -734,7 +741,7 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
         && isValidPolicyDate(commitmentRecord.deadline)
         && Boolean(commitmentRecord.lastCheckedAt)
         && isCompleteEnvironmentalAssessment(commitmentRecord.environmentalAssessment)
-        && isCompletePresidentialOutcome(commitmentRecord.outcome)
+        && (!commitmentRecord.outcome || isCompletePresidentialOutcome(commitmentRecord.outcome))
         && new Set(commitmentRecord.financialRecords.map((record) => record.id)).size === commitmentRecord.financialRecords.length
         && commitmentRecord.financialRecords.every(isCompleteFinancialRecord);
     } catch {
@@ -747,14 +754,18 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
 }
 
 function isCompleteEnvironmentalAssessment(assessment: PresidentialEnvironmentalAssessment | null): boolean {
-  if (!assessment || !PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS.includes(assessment.overallClassification) || !isValidPolicyDate({ value: assessment.reviewedAt, precision: "day" }) || !assessment.reviewedBy.trim() || !isNonEmptyLocalizedText(assessment.intent) || !isNonEmptyLocalizedText(assessment.expectedEffect)) return false;
+  if (!assessment || !PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS.includes(assessment.overallClassification) || !isNonEmptyLocalizedText(assessment.overallJustification) || !isValidPolicyDate({ value: assessment.reviewedAt, precision: "day" }) || !assessment.reviewedBy.trim() || !isNonEmptyLocalizedText(assessment.intent) || !isNonEmptyLocalizedText(assessment.expectedEffect)) return false;
   if (assessment.observedEffect !== null && !isNonEmptyLocalizedText(assessment.observedEffect)) return false;
   if (!PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.every((domain) => assessment.domains[domain])) return false;
-  return PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.every((domain) => {
+  const domainsValid = PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.every((domain) => {
     const domainAssessment = assessment.domains[domain];
     if (!domainAssessment || !PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS.includes(domainAssessment.classification) || !isNonEmptyLocalizedText(domainAssessment.justification) || !isNonEmptyLocalizedText(domainAssessment.mechanism) || !isNonEmptyLocalizedText(domainAssessment.hypotheses) || !isNonEmptyLocalizedText(domainAssessment.limitations) || !isNonEmptyLocalizedText(domainAssessment.uncertainties)) return false;
-    return ["SOURCE_PRIMAIRE_OFFICIELLE", "SOURCE_PRIMAIRE_ARCHIVEE", "PRIMARY_ARCHIVED", "PRIMARY_PARTY_PROGRAM"].includes(domainAssessment.source.type) && domainAssessment.source.status === "verified" && Boolean(domainAssessment.source.url) && Boolean(domainAssessment.source.version) && ["limited", "moderate", "strong"].includes(domainAssessment.evidenceLevel);
+    return isVerifiedPrimarySource(domainAssessment.source) && ["limited", "moderate", "strong"].includes(domainAssessment.evidenceLevel);
   });
+  if (!domainsValid) return false;
+  const domainClassifications = new Set(PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.map((domain) => assessment.domains[domain]!.classification));
+  const expectedOverall = domainClassifications.has("undetermined") ? "undetermined" : domainClassifications.size > 1 ? "mixed" : [...domainClassifications][0];
+  return assessment.overallClassification === expectedOverall;
 }
 
 export function getPublicPresidentialArchive(corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialPublicArchive {
