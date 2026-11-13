@@ -512,8 +512,25 @@ revue humaine effective n'a pas été enregistrée. L'interface de
 `/learn/comprendre` affiche désormais, pour 2012, 2017 et 2022, le millésime, les
 candidatures officielles et l'origine de la source de liste ; les engagements
 non validés, les seules sources secondaires, les discours non revus et les
-programmes non contrôlés restent absents de la vue publique. Aucun comparateur,
-score ou route distincte n'est créé.
+programmes non contrôlés restent absents de la vue publique. Aucun comparateur
+électoral, score, classement ou route distincte n'est créé.
+
+## N ter. Comparaison historique et préparation 2027
+
+Le même registre présidentiel permet une lecture documentaire par millésime
+2012, 2017 et 2022, puis par thème ou par candidature avec conservation des IDs
+identiques. Un filtre de niveau de documentation et le détail de chaque source
+(version, date, page, consultation et limites) rendent visibles les différences
+entre document primaire, discours, source secondaire et fiche validée. Le suivi
+`réalisé`, `en cours`, `modifié`, `abandonné` ou `non documenté` est distinct du
+statut juridique d'un texte et d'un résultat d'impact ; aucune relation
+engagement → mesure adoptée n'est ajoutée sans preuve juridique et analyse
+causale propres. Le corpus actuel laisse ce suivi `non documenté`.
+
+Le millésime 2027 est un squelette vide : aucune candidature officielle,
+politique ou probabilité n'est préremplie. Les documents futurs seront ajoutés
+seulement après publication et contrôle, en distinguant candidatures déclarées,
+potentielles et officielles selon les preuves disponibles.
 
 # O. Focus territorial — politiques environnementales de la Ville de Paris
 

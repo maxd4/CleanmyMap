@@ -9,6 +9,8 @@ export type PresidentialSourceType = "SOURCE_PRIMAIRE_OFFICIELLE" | "SOURCE_PRIM
 export type PresidentialSourceStatus = "verified" | "needs_review" | "insufficient" | "missing";
 export type PresidentialDocumentNature = "candidate_list" | "programme" | "profession_de_foi" | "speech" | "proposal" | "secondary_summary" | "unknown";
 export type PresidentialHistoryAction = "first_collected" | "substantive_amendment" | "withdrawn" | "rechecked";
+export type PresidentialCommitmentFollowUpStatus = "realized" | "in_progress" | "modified" | "abandoned" | "not_documented";
+export type PresidentialComparisonView = "theme" | "candidate";
 
 export type PresidentialSource = {
   type: PresidentialSourceType;
@@ -70,6 +72,7 @@ export type PresidentialEnvironmentalCommitment = {
   announcedUnits: string | null;
   mechanism: LocalizedText;
   limitations: LocalizedText[];
+  followUpStatus: PresidentialCommitmentFollowUpStatus;
   firstCollectedAt: string;
   lastCheckedAt: string | null;
   documentationStatus: PresidentialCommitmentDocumentationStatus;
@@ -252,6 +255,7 @@ type CommitmentInput = {
   source?: PresidentialSource;
   documentationStatus?: PresidentialCommitmentDocumentationStatus;
   limitations?: LocalizedText[];
+  followUpStatus?: PresidentialCommitmentFollowUpStatus;
 };
 
 const hollandeSecondarySource = sourceRef({
@@ -382,6 +386,7 @@ const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment
     announcedUnits: input.announcedUnits ?? null,
     mechanism: localized(`${input.mechanism} Formulation à vérifier individuellement.`, `${input.mechanism} Wording requires individual verification.`),
     limitations: input.limitations ?? [localized("La source primaire et la formulation exacte ne sont pas encore contrôlées ; aucune conclusion sur l’effet environnemental n’est produite.", "The primary source and exact wording have not been checked; no environmental conclusion is produced.")],
+    followUpStatus: input.followUpStatus ?? "not_documented",
     firstCollectedAt: COLLECTED_AT,
     lastCheckedAt: null,
     documentationStatus: status,
@@ -445,13 +450,26 @@ export function getPresidentialCommitments(year?: PresidentialElectionYear, corp
 
 export function filterPresidentialCommitments(
   commitments: PresidentialEnvironmentalCommitment[],
-  filters: { year: PresidentialElectionYear | "all"; theme: string; candidateId?: string; locale: keyof LocalizedText },
+  filters: { year: PresidentialElectionYear | "all"; theme: string; candidateId?: string; documentationStatus?: PresidentialCommitmentDocumentationStatus | "all"; locale: keyof LocalizedText },
 ): PresidentialEnvironmentalCommitment[] {
   return commitments.filter((commitmentRecord) => {
     const matchesYear = filters.year === "all" || commitmentRecord.electionYear === filters.year;
     const matchesTheme = filters.theme === "all" || commitmentRecord.theme[filters.locale] === filters.theme;
     const matchesCandidate = !filters.candidateId || commitmentRecord.candidateId === filters.candidateId;
-    return matchesYear && matchesTheme && matchesCandidate;
+    const matchesDocumentation = !filters.documentationStatus || filters.documentationStatus === "all" || commitmentRecord.documentationStatus === filters.documentationStatus;
+    return matchesYear && matchesTheme && matchesCandidate && matchesDocumentation;
+  });
+}
+
+export function sortPresidentialCommitments(
+  commitments: PresidentialEnvironmentalCommitment[],
+  view: PresidentialComparisonView,
+  locale: keyof LocalizedText,
+): PresidentialEnvironmentalCommitment[] {
+  return [...commitments].sort((left, right) => {
+    const leftPrimary = view === "theme" ? left.theme[locale] : left.candidateName[locale];
+    const rightPrimary = view === "theme" ? right.theme[locale] : right.candidateName[locale];
+    return leftPrimary.localeCompare(rightPrimary, locale) || left.candidateName[locale].localeCompare(right.candidateName[locale], locale) || left.id.localeCompare(right.id);
   });
 }
 

@@ -14,7 +14,12 @@ Ce dossier contient les modules de domaine, contrats et règles partagées par l
   leur provenance. Le corpus 2022 conserve les pages et liens directs des PDF
   CNCCEP pour les sept candidatures dépouillées, sans compléter les cinq
   candidatures restantes. La page `/learn/comprendre` n'en projette
-  publiquement que les candidatures officielles et les engagements validés.
+  publiquement que les candidatures officielles et les engagements validés. La
+  comparaison historique propose le même corpus par thème ou candidature, avec
+  un filtre de niveau de documentation ; le statut de suivi reste
+  `not_documented` tant qu’aucune preuve propre n’établit une réalisation, une
+  modification, un abandon ou une mise en œuvre. Le millésime 2027 reste vide,
+  sans candidature officielle ni politique préremplie.
 - `practice/themes.ts` contient le contrat neutre et l'ordre des thèmes de pratique.
 - Les autres fichiers à la racine portent les primitives Learning transverses, le progrès global, les ressources, le compost ou les ordres de grandeur lorsqu'ils ne forment pas une famille plus étroite.
 

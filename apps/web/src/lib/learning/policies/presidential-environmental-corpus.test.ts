@@ -7,6 +7,7 @@ import {
   getPresidentialElection,
   getValidatedPresidentialCommitments,
   PRESIDENTIAL_ENVIRONMENTAL_CORPUS,
+  sortPresidentialCommitments,
 } from "./presidential-environmental-corpus";
 
 describe("presidential environmental preparation corpus", () => {
@@ -91,6 +92,18 @@ describe("presidential environmental preparation corpus", () => {
     expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: 2012, theme: "Énergie", locale: "fr" })).toHaveLength(2);
     expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: "all", theme: "all", locale: "fr" })).toHaveLength(29);
     expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: 2022, theme: "Énergie", candidateId: "2022-emmanuel-macron", locale: "fr" })).toHaveLength(1);
+    expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: 2022, theme: "all", documentationStatus: "draft", locale: "fr" })).toHaveLength(16);
+  });
+
+  it("keeps comparison views deterministic and ID-equivalent", () => {
+    const commitments = getPresidentialCommitments(2022);
+    const byTheme = sortPresidentialCommitments(commitments, "theme", "fr");
+    const byCandidate = sortPresidentialCommitments(commitments, "candidate", "fr");
+
+    expect(byTheme.map((commitment) => commitment.id).sort()).toEqual(byCandidate.map((commitment) => commitment.id).sort());
+    expect(new Set(byTheme.map((commitment) => commitment.id)).size).toBe(commitments.length);
+    expect(byTheme[0].theme.fr.localeCompare(byTheme[1].theme.fr, "fr")).toBeLessThanOrEqual(0);
+    expect(byCandidate[0].candidateName.fr.localeCompare(byCandidate[1].candidateName.fr, "fr")).toBeLessThanOrEqual(0);
   });
 
   it("preserves the requested work corpus while keeping every measure unverified", () => {
@@ -99,6 +112,7 @@ describe("presidential environmental preparation corpus", () => {
     expect(getPresidentialCommitments(2022)).toHaveLength(16);
     expect(getPresidentialCommitments(2027)).toEqual([]);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => ["source_insufficient", "draft"].includes(commitment.documentationStatus) && commitment.lastCheckedAt === null)).toBe(true);
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.followUpStatus === "not_documented")).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => !commitment.validation.lastReviewedAt && !commitment.validation.reviewedBy)).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.formulationAttributed.fr.length > 0 && commitment.mechanism.fr.length > 0)).toBe(true);
   });
