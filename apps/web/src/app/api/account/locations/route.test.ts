@@ -102,6 +102,28 @@ describe("PATCH /api/account/locations", () => {
     });
   });
 
+  it("rejects French arrondissement fields on a foreign selection", async () => {
+    const clerk = await clerkClientMock();
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/account/locations", {
+      method: "PATCH",
+      body: JSON.stringify({
+        residence: {
+          country: "CA",
+          level: "province",
+          label: "Paris, Ontario",
+          subtitle: "Ontario",
+          arrondissement: 5,
+          arrondissementCity: "Paris",
+        },
+      }),
+    }));
+
+    expect(response.status).toBe(422);
+    expect(clerk.users.updateUserMetadata).not.toHaveBeenCalled();
+    expect(syncMock).not.toHaveBeenCalled();
+  });
+
   it("rejects an unauthenticated request before reading Clerk", async () => {
     accessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
     const { PATCH } = await import("./route");

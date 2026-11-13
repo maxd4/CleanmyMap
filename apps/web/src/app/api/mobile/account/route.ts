@@ -113,6 +113,19 @@ function updateLocationSelection(
   return current;
 }
 
+function hasCountryChangeWithoutReplacement(
+  current: TerritoryLocationSelection | null,
+  label: string | null | undefined,
+  country: string | undefined,
+): boolean {
+  return Boolean(
+    current &&
+      country !== undefined &&
+      label === undefined &&
+      parseCountryCode(country) !== current.country,
+  );
+}
+
 function locationPayloadFromMetadata(metadata: Record<string, unknown> | null | undefined): LocationPayload {
   const preferences = extractLocationPreferencesFromMetadata(metadata);
   return { residence: preferences.residence, work: preferences.work };
@@ -252,6 +265,24 @@ export async function PATCH(request: Request) {
     const clerk = await clerkClient();
     const currentUser = await clerk.users.getUser(access.userId);
     const currentUnsafeMetadata = (currentUser.unsafeMetadata ?? {}) as Record<string, unknown>;
+    const currentLocations = locationPayloadFromMetadata(currentUnsafeMetadata);
+    if (
+      hasCountryChangeWithoutReplacement(
+        currentLocations.residence,
+        parsed.data.residenceLabel,
+        parsed.data.residenceCountry,
+      ) ||
+      hasCountryChangeWithoutReplacement(
+        currentLocations.work,
+        parsed.data.workLabel,
+        parsed.data.workCountry,
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Un changement de pays doit être accompagné d'un nouveau lieu." },
+        { status: 400 },
+      );
+    }
     let updatedUser = currentUser;
     const identityUpdate: {
       firstName?: string;
@@ -270,7 +301,6 @@ export async function PATCH(request: Request) {
       parsed.data.workCountry !== undefined ||
       parsed.data.completeOnboarding
     ) {
-      const currentLocations = locationPayloadFromMetadata(currentUnsafeMetadata);
       const locations = {
         residence: updateLocationSelection(
           currentLocations.residence,

@@ -184,6 +184,82 @@ describe("/api/mobile/account", () => {
     });
   });
 
+  it("rejects a country-only change instead of retaining French administrative fields", async () => {
+    const clerk = await clerkClientMock();
+    const getUser = clerk.users.getUser as Mock;
+    getUser.mockResolvedValue({
+      id: "user-1",
+      firstName: "Ada",
+      lastName: "Curie",
+      unsafeMetadata: {
+        territoryPreferences: {
+          residence: {
+            country: "FR",
+            level: "arrondissement",
+            label: "Paris 15e",
+            subtitle: "Paris",
+            arrondissement: 15,
+            arrondissementCity: "Paris",
+          },
+          work: null,
+        },
+      },
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      body: JSON.stringify({ residenceCountry: "CA" }),
+    }));
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain("nouveau lieu");
+    expect(clerk.users.updateUserMetadata).not.toHaveBeenCalled();
+    expect(syncMock).not.toHaveBeenCalled();
+  });
+
+  it("replaces a French selection completely when a new foreign label accompanies the country", async () => {
+    const clerk = await clerkClientMock();
+    const getUser = clerk.users.getUser as Mock;
+    getUser.mockResolvedValue({
+      id: "user-1",
+      firstName: "Ada",
+      lastName: "Curie",
+      unsafeMetadata: {
+        territoryPreferences: {
+          residence: {
+            country: "FR",
+            level: "arrondissement",
+            label: "Paris 15e",
+            subtitle: "Paris",
+            arrondissement: 15,
+            arrondissementCity: "Paris",
+          },
+          work: null,
+        },
+      },
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      body: JSON.stringify({ residenceCountry: "SN", residenceLabel: "Dakar" }),
+    }));
+
+    expect(response.status).toBe(200);
+    const metadataCall = clerk.users.updateUserMetadata.mock.calls.at(-1);
+    expect(metadataCall?.[1].unsafeMetadata).toMatchObject({
+      territoryPreferences: {
+        residence: {
+          country: "SN",
+          level: "commune",
+          label: "Dakar",
+          arrondissement: null,
+          arrondissementCity: null,
+        },
+        work: null,
+      },
+    });
+  });
+
   it("rejects arbitrary role metadata fields before a Clerk mutation", async () => {
     const clerk = await clerkClientMock();
     const { PATCH } = await import("./route");

@@ -173,19 +173,27 @@ function parseCanonicalSelection(value: unknown): TerritoryLocationSelection | n
   }
 
   const administrativeCode = normalizeLabel(value.administrativeCode);
+  const isFrenchTerritory = country === DEFAULT_COUNTRY_CODE;
   return {
     country,
     level,
     label,
     subtitle: normalizeLabel(value.subtitle) || null,
-    arrondissement:
-      parseTerritoryArrondissement(value.arrondissement) ??
-      parseTerritoryArrondissement(label),
-    arrondissementCity:
-      parseTerritoryArrondissementCity(value.arrondissementCity) ??
-      inferArrondissementCityFromLabel(label),
+    arrondissement: isFrenchTerritory
+      ? parseTerritoryArrondissement(value.arrondissement) ??
+        parseTerritoryArrondissement(label)
+      : null,
+    arrondissementCity: isFrenchTerritory
+      ? parseTerritoryArrondissementCity(value.arrondissementCity) ??
+        inferArrondissementCityFromLabel(label)
+      : null,
     ...(administrativeCode ? { administrativeCode } : {}),
   };
+}
+
+export function hasCanonicalLocationPreferences(metadata: ClerkMetadata): boolean {
+  const raw = metadata?.[TERRITORY_PREFERENCES_METADATA_KEY];
+  return isRecord(raw) && "residence" in raw && "work" in raw;
 }
 
 function readCanonicalLocationPreferences(
@@ -210,10 +218,12 @@ function inferTerritoryLevel(metadata: ClerkMetadata, label: string): TerritoryL
     return explicitLevel;
   }
 
-  const arrondissement =
-    parseTerritoryArrondissement(metadata?.["territoryArrondissement"]) ??
-    parseTerritoryArrondissement(metadata?.["parisArrondissement"]) ??
-    parseTerritoryArrondissement(label);
+  const country = parseCountryCode(metadata?.["territoryCountry"]) ?? DEFAULT_COUNTRY_CODE;
+  const arrondissement = country === DEFAULT_COUNTRY_CODE
+    ? parseTerritoryArrondissement(metadata?.["territoryArrondissement"]) ??
+      parseTerritoryArrondissement(metadata?.["parisArrondissement"]) ??
+      parseTerritoryArrondissement(label)
+    : null;
   if (arrondissement) {
     return "arrondissement";
   }
@@ -247,9 +257,11 @@ function buildTerritorySelectionFromMetadata(
     return null;
   }
 
+  const country = parseCountryCode(metadata["territoryCountry"]) ?? DEFAULT_COUNTRY_CODE;
+  const isFrenchTerritory = country === DEFAULT_COUNTRY_CODE;
   const administrativeCode = normalizeLabel(metadata["territoryAdministrativeCode"]);
   return {
-    country: parseCountryCode(metadata["territoryCountry"]) ?? DEFAULT_COUNTRY_CODE,
+    country,
     level: inferTerritoryLevel(metadata, label),
     label,
     subtitle:
@@ -257,16 +269,18 @@ function buildTerritorySelectionFromMetadata(
       normalizeLabel(metadata["zoneDepartment"]) ||
       normalizeLabel(metadata["zoneAreaType"]) ||
       null,
-    arrondissement:
-      parseTerritoryArrondissement(metadata["territoryArrondissement"]) ??
-      parseTerritoryArrondissement(metadata["parisArrondissement"]) ??
-      parseTerritoryArrondissement(label),
-    arrondissementCity:
-      parseTerritoryArrondissementCity(metadata["territoryArrondissementCity"]) ??
-      parseTerritoryArrondissementCity(metadata["zoneCity"]) ??
-      inferArrondissementCityFromLabel(label) ??
-      inferArrondissementCityFromLabel(normalizeLabel(metadata["zoneName"])) ??
-      (parseTerritoryArrondissement(metadata["parisArrondissement"]) ? "Paris" : null),
+    arrondissement: isFrenchTerritory
+      ? parseTerritoryArrondissement(metadata["territoryArrondissement"]) ??
+        parseTerritoryArrondissement(metadata["parisArrondissement"]) ??
+        parseTerritoryArrondissement(label)
+      : null,
+    arrondissementCity: isFrenchTerritory
+      ? parseTerritoryArrondissementCity(metadata["territoryArrondissementCity"]) ??
+        parseTerritoryArrondissementCity(metadata["zoneCity"]) ??
+        inferArrondissementCityFromLabel(label) ??
+        inferArrondissementCityFromLabel(normalizeLabel(metadata["zoneName"])) ??
+        (parseTerritoryArrondissement(metadata["parisArrondissement"]) ? "Paris" : null)
+      : null,
     ...(administrativeCode ? { administrativeCode } : {}),
     locationType,
   };
@@ -286,8 +300,9 @@ function readLegacyLocationPreferences(metadata: ClerkMetadata): UserLocationPre
     : null;
 
   if (!selection && locationType) {
+    const country = parseCountryCode(metadata["territoryCountry"]) ?? DEFAULT_COUNTRY_CODE;
     const arrondissement = parseTerritoryArrondissement(metadata["parisArrondissement"]);
-    if (arrondissement) {
+    if (country === DEFAULT_COUNTRY_CODE && arrondissement) {
       const parisSelection: TerritoryLocationSelection = {
         country: DEFAULT_COUNTRY_CODE,
         level: "arrondissement",
@@ -317,7 +332,9 @@ function readLegacyLocationPreferences(metadata: ClerkMetadata): UserLocationPre
 export function extractLocationPreferencesFromMetadata(
   metadata: ClerkMetadata,
 ): UserLocationPreferences {
-  return readCanonicalLocationPreferences(metadata) ?? readLegacyLocationPreferences(metadata);
+  return hasCanonicalLocationPreferences(metadata)
+    ? readCanonicalLocationPreferences(metadata) ?? { residence: null, work: null }
+    : readLegacyLocationPreferences(metadata);
 }
 
 export function extractUserLocationPreferenceFromMetadata(
@@ -383,18 +400,23 @@ export function createTerritoryLocationMetadata(
   selection: TerritoryLocationSelection,
   locationType: UserLocationType,
 ): Record<string, unknown> {
+  const isFrenchTerritory = parseCountryCode(selection.country) === DEFAULT_COUNTRY_CODE;
   return {
     territoryCountry: selection.country,
     territoryLevel: selection.level,
     territoryLabel: selection.label,
     territorySubtitle: selection.subtitle,
-    territoryArrondissement: selection.arrondissement,
-    territoryArrondissementCity: selection.arrondissementCity,
+    ...(isFrenchTerritory
+      ? {
+          territoryArrondissement: selection.arrondissement,
+          territoryArrondissementCity: selection.arrondissementCity,
+        }
+      : {}),
     ...(selection.administrativeCode
       ? { territoryAdministrativeCode: selection.administrativeCode }
       : {}),
     territoryLocationType: locationType,
-    ...(selection.arrondissement && selection.arrondissementCity === "Paris"
+    ...(isFrenchTerritory && selection.arrondissement && selection.arrondissementCity === "Paris"
       ? {
           parisArrondissement: selection.arrondissement,
           parisLocationType: locationType,
@@ -421,11 +443,15 @@ export function createTerritoryLocationMetadataFromLabel(
   }
 
   const arrondissement =
-    parseTerritoryArrondissement(options.arrondissement) ??
-    parseTerritoryArrondissement(normalizedLabel);
+    parseCountryCode(options.country ?? DEFAULT_COUNTRY_CODE) === DEFAULT_COUNTRY_CODE
+      ? parseTerritoryArrondissement(options.arrondissement) ??
+        parseTerritoryArrondissement(normalizedLabel)
+      : null;
   const arrondissementCity =
-    parseTerritoryArrondissementCity(options.arrondissementCity) ??
-    inferArrondissementCityFromLabel(normalizedLabel);
+    parseCountryCode(options.country ?? DEFAULT_COUNTRY_CODE) === DEFAULT_COUNTRY_CODE
+      ? parseTerritoryArrondissementCity(options.arrondissementCity) ??
+        inferArrondissementCityFromLabel(normalizedLabel)
+      : null;
 
   return createTerritoryLocationMetadata(
     {

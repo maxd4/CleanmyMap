@@ -8,8 +8,12 @@ import {
 } from "@/lib/geo/paris-arrondissements";
 import {
   DEFAULT_COUNTRY_CODE,
+  clearLocationPreferenceMetadata,
+  createLocationPreferencesMetadata,
   createTerritoryLocationMetadataFromLabel,
+  extractLocationPreferencesFromMetadata,
   extractTerritoryLocationPreferenceFromMetadata,
+  hasCanonicalLocationPreferences,
 } from "@/lib/user-location-preference";
 
 export type ProfileRow = {
@@ -42,6 +46,7 @@ function extractProfileMetadataFromSource(metadata: MetadataSource): ProfileMeta
     "territorySubtitle",
     "territoryArrondissement",
     "territoryArrondissementCity",
+    "territoryAdministrativeCode",
     "territoryLocationType",
     "territoryRegion",
     "territoryDepartment",
@@ -81,10 +86,28 @@ export function extractProfileMetadata(user: User): Record<string, unknown> {
   return merged;
 }
 
+export function hasCanonicalProfilePreferences(
+  profileMetadata: Record<string, unknown>,
+): boolean {
+  return hasCanonicalLocationPreferences(profileMetadata);
+}
+
 export function resolveProfileArrondissement(
   profileMetadata: Record<string, unknown>,
 ): number | null {
+  const hasCanonicalPreferences = hasCanonicalLocationPreferences(profileMetadata);
   const primaryLocation = extractTerritoryLocationPreferenceFromMetadata(profileMetadata);
+  if (hasCanonicalPreferences && !primaryLocation) {
+    return null;
+  }
+  if (
+    primaryLocation &&
+    (primaryLocation.country !== DEFAULT_COUNTRY_CODE ||
+      (primaryLocation.arrondissementCity !== null &&
+        primaryLocation.arrondissementCity !== "Paris"))
+  ) {
+    return null;
+  }
   const rawArrondissement =
     profileMetadata["territoryArrondissement"] ??
     profileMetadata["parisArrondissement"] ??
@@ -162,8 +185,10 @@ function buildTerritoryCompatibilityMetadata(
   existingParisArrondissement: number | null | undefined,
 ): Record<string, unknown> | null {
   const primaryLocation = extractTerritoryLocationPreferenceFromMetadata(mergedMetadata);
+  const hasCanonicalPreferences = hasCanonicalLocationPreferences(mergedMetadata);
   const resolvedArrondissement =
-    resolveProfileArrondissement(mergedMetadata) ?? existingParisArrondissement ?? null;
+    resolveProfileArrondissement(mergedMetadata) ??
+    (hasCanonicalPreferences ? null : existingParisArrondissement ?? null);
   const resolvedParisArrondissement = parseParisArrondissement(resolvedArrondissement);
   const resolvedLocationType = normalizeUserLocationType(
     readFirstMeaningfulMetadataString(mergedMetadata, [
@@ -211,9 +236,15 @@ function buildTerritoryCompatibilityMetadata(
     ...(primaryLocation?.administrativeCode
       ? { territoryAdministrativeCode: primaryLocation.administrativeCode }
       : {}),
-    ...(resolvedArrondissement !== null && isParisArrondissementLabel(resolvedLabel)
-      ? { parisArrondissement: resolvedArrondissement }
-      : {}),
+    ...(
+      resolvedArrondissement !== null &&
+      isParisArrondissementLabel(resolvedLabel) &&
+      (!primaryLocation ||
+        (primaryLocation.country === DEFAULT_COUNTRY_CODE &&
+          primaryLocation.arrondissementCity === "Paris"))
+        ? { parisArrondissement: resolvedArrondissement }
+        : {}
+    ),
     parisLocationType: resolvedLocationType,
   };
 }
@@ -222,6 +253,21 @@ export function buildCompatibilityProfileMetadata(
   existingProfile: ProfileRow | null,
   profileMetadata: Record<string, unknown>,
 ): Record<string, unknown> {
+  if (hasCanonicalLocationPreferences(profileMetadata)) {
+    const canonicalPreferences = createLocationPreferencesMetadata(
+      extractLocationPreferencesFromMetadata(profileMetadata),
+    );
+    const mergedMetadata = {
+      ...clearLocationPreferenceMetadata(existingProfile?.metadata ?? {}),
+      ...clearLocationPreferenceMetadata(profileMetadata),
+      ...canonicalPreferences,
+    };
+    return {
+      ...mergedMetadata,
+      ...(buildTerritoryCompatibilityMetadata(mergedMetadata, null) ?? {}),
+    };
+  }
+
   const mergedMetadata = normalizeProfileMetadataRecord(existingProfile?.metadata);
   mergeMissingMetadataValues(mergedMetadata, profileMetadata);
   mergeMissingMetadataValues(

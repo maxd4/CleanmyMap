@@ -4,6 +4,7 @@ import { resolveSyncRoleContext } from "./sync-role-context";
 import {
   buildCompatibilityProfileMetadata,
   extractProfileMetadata,
+  hasCanonicalProfilePreferences,
   resolveProfileArrondissement,
 } from "./sync-profile-metadata";
 import {
@@ -35,6 +36,7 @@ export async function syncClerkUserToSupabase(
   const profileMetadata = extractProfileMetadata(user);
   const existingProfile = await loadExistingProfile(supabase, user.id);
   const metadata = buildCompatibilityProfileMetadata(existingProfile, profileMetadata);
+  const hasCanonicalPreferences = hasCanonicalProfilePreferences(profileMetadata);
   const avatarUrl = await prepareProfileAvatarUrl({
     supabase,
     userId: user.id,
@@ -53,6 +55,8 @@ export async function syncClerkUserToSupabase(
     activeRole,
     avatarUrl: avatarUrl ?? user.imageUrl,
     profileMetadata: metadata,
-    parisArrondissement: resolveProfileArrondissement(metadata) ?? existingProfile?.paris_arrondissement ?? null,
+    parisArrondissement:
+      resolveProfileArrondissement(metadata) ??
+      (hasCanonicalPreferences ? null : existingProfile?.paris_arrondissement ?? null),
   });
 }

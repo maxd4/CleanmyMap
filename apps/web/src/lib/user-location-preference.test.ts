@@ -278,3 +278,41 @@ it("keeps country-specific administrative levels without French fields", () => {
     arrondissementCity: null,
   });
 });
+
+it("does not infer French arrondissement fields from a foreign label", () => {
+  expect(
+    extractLocationPreferencesFromMetadata({
+      territoryPreferences: {
+        residence: {
+          country: "CA",
+          level: "province",
+          label: "Paris, Ontario",
+          subtitle: "Ontario",
+          arrondissement: 5,
+          arrondissementCity: "Paris",
+          administrativeCode: "CA-ON",
+        },
+        work: null,
+      },
+    }).residence,
+  ).toEqual({
+    country: "CA",
+    level: "province",
+    label: "Paris, Ontario",
+    subtitle: "Ontario",
+    arrondissement: null,
+    arrondissementCity: null,
+    administrativeCode: "CA-ON",
+  });
+});
+
+it("does not fall back to legacy French fields when canonical preferences are empty", () => {
+  expect(
+    extractLocationPreferencesFromMetadata({
+      territoryPreferences: { residence: null, work: null },
+      territoryLabel: "Paris 11e",
+      territoryLocationType: "residence",
+      parisArrondissement: 11,
+    }),
+  ).toEqual({ residence: null, work: null });
+});

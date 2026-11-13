@@ -1,12 +1,13 @@
 import { mobileRequest } from '../../shared/lib/mobile-api-client'
 
 type MobileAccountLocation = {
-  country: 'France'
-  level: 'country' | 'region' | 'department' | 'commune' | 'arrondissement'
+  country: string
+  level: string
   label: string
   subtitle: string | null
   arrondissement: number | null
   arrondissementCity: 'Paris' | 'Lyon' | 'Marseille' | null
+  administrativeCode?: string | null
 } | null
 
 type MobileAccountHistoryItem = {

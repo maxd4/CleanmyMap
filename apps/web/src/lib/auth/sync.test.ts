@@ -416,6 +416,73 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
+  it("updates the Supabase projection and clears Paris after a canonical foreign change", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: {
+        id: "user_international",
+        handle: "international",
+        display_name_mode: null,
+        metadata: {
+          territoryPreferences: {
+            residence: {
+              country: "FR",
+              level: "arrondissement",
+              label: "Paris 15e",
+              subtitle: "Paris",
+              arrondissement: 15,
+              arrondissementCity: "Paris",
+            },
+            work: null,
+          },
+          territoryCountry: "FR",
+          territoryLabel: "Paris 15e",
+          territoryArrondissement: 15,
+          parisArrondissement: 15,
+          unrelatedPreference: "keep",
+        },
+        paris_arrondissement: 15,
+      },
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_international",
+        username: "international",
+        unsafeMetadata: {
+          territoryPreferences: {
+            residence: {
+              country: "CA",
+              level: "province",
+              label: "Québec",
+              subtitle: "Canada",
+              arrondissement: null,
+              arrondissementCity: null,
+              administrativeCode: "QC",
+            },
+            work: null,
+          },
+        },
+      }) as never,
+    );
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paris_arrondissement: null,
+        metadata: expect.objectContaining({
+          territoryCountry: "CA",
+          territoryLabel: "Québec",
+          territoryAdministrativeCode: "QC",
+          unrelatedPreference: "keep",
+        }),
+      }),
+      { onConflict: "id" },
+    );
+    const [payload] = upsert.mock.calls.at(-1) as unknown as [Record<string, unknown>];
+    expect(payload.metadata).not.toHaveProperty("parisArrondissement");
+    expect(payload.metadata).not.toHaveProperty("territoryArrondissement");
+  });
+
   it("preserves a pseudo display preference during sync", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: {

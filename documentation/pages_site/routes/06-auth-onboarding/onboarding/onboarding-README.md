@@ -160,6 +160,16 @@ formulaire conserve les étapes réussies pour permettre une reprise idempotente
 il n'effectue pas de rollback fictif et l'utilisateur peut toujours différer ou
 reprendre la configuration depuis les réglages du compte.
 
+`territoryPreferences` dans les métadonnées Clerk reste la source canonique des
+choix de résidence et de travail. La projection de compatibilité Supabase est
+recalculée depuis sa dernière valeur, y compris lors d'un changement ou d'une
+suppression ; les anciens champs territoriaux ne peuvent donc pas réintroduire
+un arrondissement parisien devenu invalide. Les comptes français historiques
+sans préférence canonique restent lisibles par compatibilité. Dans le PATCH
+mobile, un changement de pays doit être accompagné d'un nouveau libellé de lieu
+afin de ne pas conserver silencieusement les attributs administratifs du pays
+précédent.
+
 ## Références legacy
 
 - Aucun fichier legacy dédié.

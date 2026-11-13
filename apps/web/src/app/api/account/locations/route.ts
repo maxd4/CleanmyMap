@@ -31,7 +31,18 @@ const selectionSchema = z.object({
   arrondissement: z.number().int().min(1).max(20).transform((value) => value as ParisArrondissement).nullable(),
   arrondissementCity: z.enum(["Paris", "Lyon", "Marseille"]).nullable(),
   administrativeCode: z.string().trim().max(160).nullable().optional(),
-}).strict() satisfies z.ZodType<TerritoryLocationSelection>;
+}).strict().superRefine((selection, context) => {
+  if (
+    selection.country !== "FR" &&
+    (selection.arrondissement !== null || selection.arrondissementCity !== null)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["arrondissement"],
+      message: "Les champs d’arrondissement français exigent le pays FR.",
+    });
+  }
+}) satisfies z.ZodType<TerritoryLocationSelection>;
 
 const locationsSchema = z.object({
   residence: selectionSchema.nullable().optional(),
