@@ -7,6 +7,7 @@ import { EnvironmentalPolicyExplorer } from "@/components/learn/environmental-po
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { EnvironmentalPolicyRecord } from "@/lib/learning/policies/environmental-policy-registry";
+import type { PresidentialPublicArchive } from "@/lib/learning/policies/presidential-environmental-corpus";
 import {
   LearnDeepDiveSection,
   LearnDirectPathSection,
@@ -17,9 +18,10 @@ import {
 
 type LearnComprendrePageContentProps = {
   publishedPolicies: EnvironmentalPolicyRecord[];
+  presidentialArchive: PresidentialPublicArchive;
 };
 
-export default function LearnComprendrePageContent({ publishedPolicies }: LearnComprendrePageContentProps) {
+export default function LearnComprendrePageContent({ publishedPolicies, presidentialArchive }: LearnComprendrePageContentProps) {
   const { locale } = useSitePreferences();
   const understandCard = LEARN_OVERVIEW_CARDS[locale][0];
 
@@ -64,7 +66,7 @@ export default function LearnComprendrePageContent({ publishedPolicies }: LearnC
           }}
           className="border-amber-200 bg-white/88"
         />
-        <EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} />
+        <EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />
         <LearnDirectPathSection locale={locale} />
         <LearnReadingFlowSection locale={locale} />
         <LearnScaleSection locale={locale} />

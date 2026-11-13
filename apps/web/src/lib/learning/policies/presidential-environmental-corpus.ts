@@ -1,5 +1,8 @@
+import "server-only";
 import { assertPublishedContent, type ContentValidationRecord } from "@/lib/content/content-validation";
 import type { LocalizedText, PolicyDate } from "./environmental-policy-registry";
+
+export { filterPresidentialCommitments, sortPresidentialCommitments } from "./presidential-environmental-filtering";
 
 export type PresidentialElectionYear = 2012 | 2017 | 2022 | 2027;
 export type PresidentialCandidateStatus = "official" | "not_published";
@@ -85,6 +88,14 @@ export type PresidentialEnvironmentalCorpus = {
   elections: PresidentialElectionRecord[];
   candidates: PresidentialCandidateRecord[];
   commitments: PresidentialEnvironmentalCommitment[];
+};
+
+export type PresidentialPublicCandidate = Omit<PresidentialCandidateRecord, "validation">;
+export type PresidentialPublicCommitment = Omit<PresidentialEnvironmentalCommitment, "validation">;
+export type PresidentialPublicArchive = {
+  elections: PresidentialElectionRecord[];
+  candidates: PresidentialPublicCandidate[];
+  validatedCommitments: PresidentialPublicCommitment[];
 };
 
 const COLLECTED_AT = "2026-11-13";
@@ -459,31 +470,6 @@ export function getPresidentialCommitments(year?: PresidentialElectionYear, corp
   return corpus.commitments.filter((commitmentRecord) => year === undefined || commitmentRecord.electionYear === year);
 }
 
-export function filterPresidentialCommitments(
-  commitments: PresidentialEnvironmentalCommitment[],
-  filters: { year: PresidentialElectionYear | "all"; theme: string; candidateId?: string; documentationStatus?: PresidentialCommitmentDocumentationStatus | "all"; locale: keyof LocalizedText },
-): PresidentialEnvironmentalCommitment[] {
-  return commitments.filter((commitmentRecord) => {
-    const matchesYear = filters.year === "all" || commitmentRecord.electionYear === filters.year;
-    const matchesTheme = filters.theme === "all" || commitmentRecord.theme[filters.locale] === filters.theme;
-    const matchesCandidate = !filters.candidateId || commitmentRecord.candidateId === filters.candidateId;
-    const matchesDocumentation = !filters.documentationStatus || filters.documentationStatus === "all" || commitmentRecord.documentationStatus === filters.documentationStatus;
-    return matchesYear && matchesTheme && matchesCandidate && matchesDocumentation;
-  });
-}
-
-export function sortPresidentialCommitments(
-  commitments: PresidentialEnvironmentalCommitment[],
-  view: PresidentialComparisonView,
-  locale: keyof LocalizedText,
-): PresidentialEnvironmentalCommitment[] {
-  return [...commitments].sort((left, right) => {
-    const leftPrimary = view === "theme" ? left.theme[locale] : left.candidateName[locale];
-    const rightPrimary = view === "theme" ? right.theme[locale] : right.candidateName[locale];
-    return leftPrimary.localeCompare(rightPrimary, locale) || left.candidateName[locale].localeCompare(right.candidateName[locale], locale) || left.id.localeCompare(right.id);
-  });
-}
-
 export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialEnvironmentalCommitment[] {
   return corpus.commitments.filter((commitmentRecord) => {
     try {
@@ -497,4 +483,23 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
       return false;
     }
   });
+}
+
+export function getPublicPresidentialArchive(corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialPublicArchive {
+  return {
+    elections: corpus.elections,
+    candidates: corpus.candidates
+      .filter((candidateRecord) => candidateRecord.status === "official")
+      .map((candidateRecord) => {
+        const publicCandidate = { ...candidateRecord };
+        Reflect.deleteProperty(publicCandidate, "validation");
+        return publicCandidate as PresidentialPublicCandidate;
+      }),
+    validatedCommitments: getValidatedPresidentialCommitments(corpus)
+      .map((commitmentRecord) => {
+        const publicCommitment = { ...commitmentRecord };
+        Reflect.deleteProperty(publicCommitment, "validation");
+        return publicCommitment as PresidentialPublicCommitment;
+      }),
+  };
 }

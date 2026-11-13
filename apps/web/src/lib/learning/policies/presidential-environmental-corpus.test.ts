@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { validateContentRecord } from "@/lib/content/content-validation";
 import {
   filterPresidentialCommitments,
   getPresidentialCandidates,
   getPresidentialCommitments,
   getPresidentialElection,
+  getPublicPresidentialArchive,
   getValidatedPresidentialCommitments,
   PRESIDENTIAL_ENVIRONMENTAL_CORPUS,
   sortPresidentialCommitments,
@@ -150,6 +152,10 @@ describe("presidential environmental preparation corpus", () => {
     const validCorpus = { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [publicationCandidate] };
 
     expect(getValidatedPresidentialCommitments(validCorpus)).toHaveLength(1);
+    const publicArchive = getPublicPresidentialArchive(validCorpus);
+    expect(publicArchive.validatedCommitments).toHaveLength(1);
+    expect(publicArchive.validatedCommitments[0]).not.toHaveProperty("validation");
+    expect(publicArchive.candidates.every((candidate) => !Object.hasOwn(candidate, "validation"))).toBe(true);
     for (const deadline of [
       { value: "20", precision: "year" as const },
       { value: "2022-13", precision: "month" as const },

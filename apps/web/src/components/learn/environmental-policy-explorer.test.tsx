@@ -10,6 +10,9 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
 
 import { EnvironmentalPolicyExplorer } from "./environmental-policy-explorer";
 import { ENVIRONMENTAL_POLICY_REGISTRY, getPublishedEnvironmentalPolicies } from "@/lib/learning/policies/environmental-policy-registry";
+import { getPublicPresidentialArchive } from "@/lib/learning/policies/presidential-environmental-corpus";
+
+const presidentialArchive = getPublicPresidentialArchive();
 
 const reviewed = (record: (typeof ENVIRONMENTAL_POLICY_REGISTRY)[number]) => ({
   ...record,
@@ -21,7 +24,7 @@ const reviewed = (record: (typeof ENVIRONMENTAL_POLICY_REGISTRY)[number]) => ({
 
 describe("EnvironmentalPolicyExplorer", () => {
   it("renders the priority world view, filters and the honest empty state", () => {
-    const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={[]} />);
+    const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={[]} presidentialArchive={presidentialArchive} />);
 
     expect(markup).toContain("Politiques environnementales");
     expect(markup).toContain("Monde");
@@ -37,7 +40,7 @@ describe("EnvironmentalPolicyExplorer", () => {
   it("renders records supplied by the server boundary", () => {
     const record = ENVIRONMENTAL_POLICY_REGISTRY.find((candidate) => candidate.id === "eu-packaging-packaging-waste-regulation")!;
     const publishedPolicies = getPublishedEnvironmentalPolicies([reviewed(record)]);
-    const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} />);
+    const markup = renderToStaticMarkup(<EnvironmentalPolicyExplorer publishedPolicies={publishedPolicies} presidentialArchive={presidentialArchive} />);
 
     expect(markup).toContain(record.title.fr);
     expect(markup).toContain(record.measure.fr);

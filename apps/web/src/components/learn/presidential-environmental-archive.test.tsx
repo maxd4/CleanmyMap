@@ -1,19 +1,26 @@
 /** @vitest-environment jsdom */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
 }));
 
 import { PresidentialEnvironmentalArchive } from "./presidential-environmental-archive";
+import { getPublicPresidentialArchive } from "@/lib/learning/policies/presidential-environmental-corpus";
+
+const presidentialArchive = getPublicPresidentialArchive();
 
 describe("PresidentialEnvironmentalArchive", () => {
   it("shows both official rosters and their source origin without leaking unreviewed measures", () => {
-    const markup = renderToStaticMarkup(<PresidentialEnvironmentalArchive />);
+    const markup = renderToStaticMarkup(<PresidentialEnvironmentalArchive {...presidentialArchive} />);
 
     expect(markup).toContain("Archives présidentielles");
     expect(markup).toContain("2012");
@@ -39,7 +46,7 @@ describe("PresidentialEnvironmentalArchive", () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<PresidentialEnvironmentalArchive />);
+      root.render(<PresidentialEnvironmentalArchive {...presidentialArchive} />);
     });
     const yearButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.trim() === "2027");
     expect(yearButton).toBeDefined();
@@ -53,5 +60,14 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(container.textContent).toContain("Aucun engagement validé n’est affiché pour ce millésime.");
     root.unmount();
     container.remove();
+  });
+
+  it("does not import the complete corpus or select publication in the client component", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/learn/presidential-environmental-archive.tsx"), "utf8");
+
+    expect(source).not.toContain("PRESIDENTIAL_ENVIRONMENTAL_CORPUS");
+    expect(source).not.toContain("getPresidentialCandidates");
+    expect(source).not.toContain("getPresidentialElection");
+    expect(source).not.toContain("getValidatedPresidentialCommitments");
   });
 });

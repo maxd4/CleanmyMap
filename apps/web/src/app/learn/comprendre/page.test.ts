@@ -20,7 +20,7 @@ type JourneyProps = {
 
 const introCalls: IntroProps[] = [];
 const journeyCalls: JourneyProps[] = [];
-const explorerCalls: Array<{ publishedPolicies: unknown[] }> = [];
+const explorerCalls: Array<{ publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }> = [];
 
 vi.mock("@/components/ui/site-preferences-provider", async () => {
   const helpers = await import("@/app/learn/test-helpers");
@@ -72,7 +72,7 @@ vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
 }));
 
 vi.mock("@/components/learn/environmental-policy-explorer", () => ({
-  EnvironmentalPolicyExplorer: (props: { publishedPolicies: unknown[] }) => {
+  EnvironmentalPolicyExplorer: (props: { publishedPolicies: unknown[]; presidentialArchive: { candidates: unknown[]; validatedCommitments: unknown[] } }) => {
     explorerCalls.push(props);
     return React.createElement("section", { "data-testid": "environmental-policies" });
   },
@@ -147,5 +147,7 @@ describe("LearnVulgarisationPage", () => {
     expect(journeyCalls[0].compact).toBe(true);
     expect(explorerCalls).toHaveLength(1);
     expect(explorerCalls[0].publishedPolicies).toEqual([]);
+    expect(explorerCalls[0].presidentialArchive.candidates).toHaveLength(33);
+    expect(explorerCalls[0].presidentialArchive.validatedCommitments).toEqual([]);
   });
 });
