@@ -8,6 +8,8 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
   DEFAULT_COUNTRY_CODE,
+  isCountryCode,
+  parseCountryCode,
   extractLocationPreferencesFromMetadata,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
@@ -30,7 +32,15 @@ const accountPatchSchema = z.object({
   firstName: z.string().trim().min(1).max(80).optional(),
   lastName: z.string().trim().min(1).max(80).optional(),
   residenceLabel: z.string().trim().max(160).nullable().optional(),
+  residenceCountry: z.preprocess(
+    (value) => value === "France" ? "FR" : value,
+    z.string().trim().toUpperCase().refine(isCountryCode).optional(),
+  ),
   workLabel: z.string().trim().max(160).nullable().optional(),
+  workCountry: z.preprocess(
+    (value) => value === "France" ? "FR" : value,
+    z.string().trim().toUpperCase().refine(isCountryCode).optional(),
+  ),
   completeOnboarding: z.boolean().optional(),
 }).strict();
 
@@ -73,17 +83,34 @@ type CreatedActionProjection = {
   createdAt: string;
 };
 
-function selectionFromLabel(label: string | null): TerritoryLocationSelection | null {
+function selectionFromLabel(
+  label: string | null,
+  country: string | undefined,
+): TerritoryLocationSelection | null {
   const normalized = label?.trim() ?? "";
   if (!normalized) return null;
   return {
-    country: DEFAULT_COUNTRY_CODE,
+    country: parseCountryCode(country) ?? DEFAULT_COUNTRY_CODE,
     level: "commune",
     label: normalized,
     subtitle: null,
     arrondissement: null,
     arrondissementCity: null,
   };
+}
+
+function updateLocationSelection(
+  current: TerritoryLocationSelection | null,
+  label: string | null | undefined,
+  country: string | undefined,
+): TerritoryLocationSelection | null {
+  if (label !== undefined) {
+    return selectionFromLabel(label, country ?? current?.country);
+  }
+  if (country !== undefined && current) {
+    return { ...current, country: parseCountryCode(country) ?? DEFAULT_COUNTRY_CODE };
+  }
+  return current;
 }
 
 function locationPayloadFromMetadata(metadata: Record<string, unknown> | null | undefined): LocationPayload {
@@ -236,15 +263,25 @@ export async function PATCH(request: Request) {
       updatedUser = await clerk.users.updateUser(access.userId, identityUpdate);
     }
 
-    if (parsed.data.residenceLabel !== undefined || parsed.data.workLabel !== undefined || parsed.data.completeOnboarding) {
+    if (
+      parsed.data.residenceLabel !== undefined ||
+      parsed.data.residenceCountry !== undefined ||
+      parsed.data.workLabel !== undefined ||
+      parsed.data.workCountry !== undefined ||
+      parsed.data.completeOnboarding
+    ) {
       const currentLocations = locationPayloadFromMetadata(currentUnsafeMetadata);
       const locations = {
-        residence: parsed.data.residenceLabel === undefined
-          ? currentLocations.residence
-          : selectionFromLabel(parsed.data.residenceLabel),
-        work: parsed.data.workLabel === undefined
-          ? currentLocations.work
-          : selectionFromLabel(parsed.data.workLabel),
+        residence: updateLocationSelection(
+          currentLocations.residence,
+          parsed.data.residenceLabel,
+          parsed.data.residenceCountry,
+        ),
+        work: updateLocationSelection(
+          currentLocations.work,
+          parsed.data.workLabel,
+          parsed.data.workCountry,
+        ),
       } satisfies LocationPayload;
       const nextMetadata = { ...currentUnsafeMetadata };
       delete nextMetadata.profileSetupDeferred;

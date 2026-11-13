@@ -167,6 +167,23 @@ describe("/api/mobile/account", () => {
     expect(syncMock).toHaveBeenCalledTimes(1);
   });
 
+  it("preserves a foreign country when the mobile account updates a location label", async () => {
+    const clerk = await clerkClientMock();
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      body: JSON.stringify({ residenceLabel: "Québec", residenceCountry: "CA" }),
+    }));
+
+    expect(response.status).toBe(200);
+    const metadataCall = clerk.users.updateUserMetadata.mock.calls.at(-1);
+    expect(metadataCall?.[1].unsafeMetadata).toMatchObject({
+      territoryPreferences: {
+        residence: { label: "Québec", country: "CA" },
+      },
+    });
+  });
+
   it("rejects arbitrary role metadata fields before a Clerk mutation", async () => {
     const clerk = await clerkClientMock();
     const { PATCH } = await import("./route");
