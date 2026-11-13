@@ -429,6 +429,29 @@ contrat `CURRENT`. Détails, registre et commande de contrôle :
 
 ## Documentation et validation
 
+### Contexte d'exécution des commandes Web
+
+Les commandes Web qui chargent Vitest, Vite, les alias TypeScript (`@/*`) ou
+la configuration ESLint doivent être exécutées dans le workspace `apps/web`.
+Depuis la racine du dépôt, préférer les scripts npm workspace (`npm run test
+-w apps/web -- ...`, `npm run test:coverage -w apps/web -- ...`,
+`npm run lint -w apps/web` et `npm run typecheck -w apps/web`) ; pour une
+invocation directe de `vitest`, `vite`, `eslint` ou d'un outil équivalent,
+utiliser explicitement `apps/web` comme répertoire courant.
+
+Avant une mesure de couverture ou un test direct Web, vérifier le contexte avec
+`Get-Location`/`pwd` et confirmer la présence de `apps/web/package.json` et de
+`apps/web/vitest.config.mts`. Les chemins `--coverage.include` sont relatifs à
+`apps/web`. Ne jamais lancer `npx vitest`, `npx vite` ou `npx eslint` pour le
+Web depuis la racine en prétendant que la commande couvre le workspace.
+
+Une erreur telle que `Cannot find package '@/...'`, l'absence de configuration
+ou un résultat de couverture sans les fichiers ciblés indique d'abord un
+contexte de commande invalide : classer cette tentative `BLOCKED`/`NOT_RUN`,
+ne pas la diagnostiquer comme un échec du code, puis relancer la commande dans
+`apps/web` ou via le script npm workspace canonique. Une mesure obtenue depuis
+un mauvais répertoire ne peut jamais être utilisée comme preuve de couverture.
+
 Une règle durable = une source canonique. Mettre à jour uniquement les documents
 `CURRENT` affectés, avec la bonne distinction `CURRENT`, `PLAN`, `AUDIT`,
 `HISTORY`, `SNAPSHOT`, `ADR`, `GENERATED`. Les documents fournis restent
