@@ -1,6 +1,7 @@
 import type { ActionGeometryKind, ActionGeometryOrigin, ActionMapItem } from "../types";
 import { resolveGeometryOriginFromConfidence } from "./derived-geometry";
 import { resolveObservedCoverageGeometry } from "@/lib/actions/map/observed-coverage";
+import { isActionRouteVersioning } from "@/lib/route/route-active-version";
 
 type GeometryPresentationVariant =
   | "observed"
@@ -123,8 +124,19 @@ function buildFallbackPointPresentation(
 function hasDemonstratedNetworkRoute(item: ActionMapItem): boolean {
   const preparationData = item.contract?.metadata.preparationData;
   const provider = preparationData?.routeGeometryProvider;
-  return preparationData?.routeGeometryMode === "network" &&
-    (provider === "osrm" || provider === "fossgis-osrm");
+  if (
+    preparationData?.routeGeometryMode !== "network" ||
+    (provider !== "osrm" && provider !== "fossgis-osrm")
+  ) {
+    return false;
+  }
+
+  const activeVersion = preparationData.routeVersioning;
+  const hasServerAppliedVersion =
+    isActionRouteVersioning(activeVersion) &&
+    typeof activeVersion.active.calculation?.snapshotHash === "string" &&
+    Boolean(activeVersion.active.operationalRoute);
+  return hasServerAppliedVersion;
 }
 
 function isUnprovenCompletedRoutedGeometry(

@@ -22,10 +22,8 @@ import {
   resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
-import {
-  hasVerifiedPlannerRouteInPreparation,
-  resolvePersistedRouteGeometrySource,
-} from "@/lib/route/route-provenance";
+import { resolvePersistedRouteGeometrySource } from "@/lib/route/route-provenance";
+import { hasCryptographicallyVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance-server";
 import { inferGpxTopology } from "@/lib/actions/geometry/gpx";
 import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 import { sanitizeAdministrativeRequirementsForCreation } from "../administrative-requirements";
@@ -122,7 +120,7 @@ function isTrustedNetworkRouteForCreation(params: {
   }
   if (!structurallyEqual(operationalGeometry, routeGeometry)) return false;
 
-  return hasVerifiedPlannerRouteInPreparation(params.payload.preparationData);
+  return hasCryptographicallyVerifiedPlannerRouteInPreparation(params.payload.preparationData);
 }
 
 export function buildCreateActionGeometry(
@@ -272,7 +270,7 @@ function resolveInsertPreparationData(
         ? params.payload.geometrySource
         : null,
     operationalRoute: inputPreparation.operationalRoute,
-    operationalRouteVerified: hasVerifiedPlannerRouteInPreparation(inputPreparation),
+    operationalRouteVerified: hasCryptographicallyVerifiedPlannerRouteInPreparation(inputPreparation),
   });
   const normalized = routeTopology === undefined
     ? normalizeActionPreparationData({

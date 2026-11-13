@@ -66,6 +66,7 @@ export function promoteVerifiedPlannerContext(
       proofVersion: payload.plannerSnapshotProof.proofVersion,
       snapshotHash: verification.snapshotHash,
       verifiedAt: now.toISOString(),
+      proof: structuredClone(payload.plannerSnapshotProof),
     },
   });
   return {

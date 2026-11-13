@@ -15,6 +15,7 @@ import {
   geometryRepresentativeCoordinates,
 } from "./action-observed-geometry";
 import { resolveActionTemporalInstants } from "./temporal";
+import { preserveServerManagedRouteMetadata } from "./action-update-preparation";
 
 function hasOwnField(value: object, field: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, field);
@@ -83,7 +84,9 @@ function buildPhaseAndPreparationFields(
     const currentPreparationData = normalizeActionPreparationData(current.preparation_data ?? {});
     const nextPreparationData = prepareDurationMetadataForUpdate(
       currentPreparationData,
-      normalizeActionPreparationData(body.preparationData ?? {}),
+      normalizeActionPreparationData(
+        preserveServerManagedRouteMetadata(currentPreparationData, body.preparationData ?? {}),
+      ),
       body,
     );
     const resolvedTarget = resolveRouteTargetDistance({

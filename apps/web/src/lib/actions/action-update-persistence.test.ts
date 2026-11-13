@@ -236,6 +236,76 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
   });
 
+});
+
+describe("server-managed route provenance boundary", () => {
+  it("does not let a user PATCH create network-provider metadata", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({ actionTitle: "Avant" }),
+      parsedBody: ({
+        preparationData: {
+          actionTitle: "Après",
+          routeNetworkDistanceKm: 4.2,
+          routeGeometryMode: "network",
+          routeGeometryProvider: "fossgis-osrm",
+          routeCalibrationContext: { version: "action-route-calibration-v3" },
+        },
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({ actionTitle: "Après" });
+    expect(prepared.updateData.preparation_data).not.toHaveProperty("routeNetworkDistanceKm");
+    expect(prepared.updateData.preparation_data).not.toHaveProperty("routeGeometryMode");
+    expect(prepared.updateData.preparation_data).not.toHaveProperty("routeGeometryProvider");
+    expect(prepared.updateData.preparation_data).not.toHaveProperty("routeCalibrationContext");
+  });
+
+  it("keeps existing provider metadata unchanged when a form echoes it", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const currentRouteMetadata = {
+      routeNetworkDistanceKm: 2.7,
+      routeGeometryMode: "network" as const,
+      routeGeometryProvider: "osrm" as const,
+    };
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({ ...currentRouteMetadata, actionTitle: "Avant" } as never),
+      parsedBody: ({
+        preparationData: {
+          actionTitle: "Après",
+          ...currentRouteMetadata,
+        },
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject(currentRouteMetadata);
+  });
+
+  it("refuses to rewrite an existing planner context", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const currentContext = { version: "action-route-calibration-v3", marker: "server" };
+    await expect(prepareActionUpdate({
+      current: buildCurrent({ routeCalibrationContext: currentContext } as never),
+      parsedBody: ({
+        preparationData: {
+          routeCalibrationContext: { ...currentContext, marker: "forged" },
+        },
+      } as unknown as ActionUpdateInput),
+    })).rejects.toThrow("ne peut pas être réécrit");
+  });
+});
+
+describe("prepareActionUpdate administrative requirements continuation", () => {
+
   it("allows retrospective completion while requirements remain pending", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDuplicatePrefill } from "./action-duplication";
 import type { ActionRow } from "@/types/database";
+import {
+  buildRoutePlannerSnapshot,
+  buildVerifiedRouteCalibrationContext,
+} from "@/lib/route/route-calibration";
+import { createRoutePlannerProof } from "@/lib/route/route-planner-proof";
+import { createRoutePlannerSnapshotInput } from "@/lib/route/route-calibration-test-fixtures";
+import { createOperationalRouteFromRecommendation } from "@/lib/route/route-operational";
 
 function action(overrides: Partial<ActionRow> = {}): ActionRow {
   return {
@@ -68,5 +75,48 @@ describe("action duplication contract", () => {
     }));
     expect(prefill.routeTopology).toBeUndefined();
     expect(prefill.operationalRoute).toBeNull();
+  });
+
+  it("reuses only a signed planner route that exactly matches its snapshot", () => {
+    const snapshot = buildRoutePlannerSnapshot(createRoutePlannerSnapshotInput(1.2));
+    const proof = createRoutePlannerProof({
+      snapshot,
+      now: new Date("2026-09-01T09:00:00.000Z"),
+    });
+    const context = buildVerifiedRouteCalibrationContext({
+      generatedAt: snapshot.generatedAt,
+      routeEngineVersion: snapshot.engineVersion,
+      volunteersExpected: snapshot.parameters.volunteers,
+      groupCount: snapshot.parameters.groupCount,
+      candidates: [],
+      plannerSnapshot: snapshot,
+      plannerSnapshotIntegrity: {
+        status: "server_verified",
+        proofVersion: proof.proofVersion,
+        snapshotHash: proof.snapshotHash,
+        verifiedAt: snapshot.generatedAt,
+        proof,
+      },
+    });
+    const operationalRoute = createOperationalRouteFromRecommendation({
+      generatedAt: snapshot.generatedAt,
+      groupCount: snapshot.parameters.groupCount,
+      routeGeometry: snapshot.geometry,
+      stops: [],
+      groupRoutes: [],
+    });
+    const source = action({
+      preparation_data: { operationalRoute, routeCalibrationContext: context },
+    });
+    expect(buildActionDuplicatePrefill(source).operationalRoute).toEqual(operationalRoute);
+
+    const mismatched = structuredClone(operationalRoute);
+    mismatched.routes[0]!.geometry = {
+      ...mismatched.routes[0]!.geometry,
+      distanceKm: mismatched.routes[0]!.geometry.distanceKm + 0.1,
+    };
+    expect(buildActionDuplicatePrefill(action({
+      preparation_data: { operationalRoute: mismatched, routeCalibrationContext: context },
+    })).operationalRoute).toBeNull();
   });
 });

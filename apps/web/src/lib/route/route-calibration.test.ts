@@ -12,6 +12,7 @@ import {
   type RouteCalibrationContext,
 } from "./route-calibration";
 import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
+import { createRoutePlannerProof } from "./route-planner-proof";
 import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
 import { buildRoutePollutionPotential } from "./route-pollution-potential";
 import { evaluateRoutePollutionRelevance } from "./route-pollution-relevance";
@@ -185,6 +186,10 @@ describe("route calibration context and validation", () => {
         proofVersion: "route-planner-proof-v1",
         snapshotHash: hashRoutePlannerSnapshot(plannerSnapshot),
         verifiedAt: plannerSnapshot.generatedAt,
+        proof: createRoutePlannerProof({
+          snapshot: plannerSnapshot,
+          now: new Date(plannerSnapshot.generatedAt),
+        }),
       },
     });
     expect(isRouteCalibrationContext(legacy)).toBe(true);
@@ -266,6 +271,30 @@ describe("route calibration context and validation", () => {
         },
       } },
     )).toThrow("ne peut pas être réécrit");
+
+    const hashOnly = {
+      ...verified,
+      plannerSnapshotIntegrity: {
+        ...verified.plannerSnapshotIntegrity!,
+        proof: undefined,
+      },
+    } as unknown as RouteCalibrationContext;
+    expect(isRouteCalibrationContext(hashOnly)).toBe(true);
+    expect(isServerVerifiedPlannerSnapshotContext(hashOnly)).toBe(false);
+    expect(buildCalibrationDataset([{
+      id: "hash-only",
+      status: "approved",
+      actionDate: "2026-09-05",
+      locationLabel: "Paris",
+      wasteKg: null,
+      cigaretteButts: null,
+      volunteersCount: null,
+      durationMinutes: 90,
+      preparationData: { routeCalibrationContext: hashOnly },
+    }]).exclusions[0]).toMatchObject({
+      actionId: "hash-only",
+      reason: "unverified_historical_context",
+    });
   });
 });
 
@@ -493,27 +522,11 @@ describe("route calibration dataset and measurements", () => {
       },
     }], { requireVerifiedPlannerProvenance: false });
 
-    expect(dataset.samples[0]?.plannerSnapshot?.distance.totalKm).toBe(1.5);
-    expect(dataset.samples[0]?.operationalRoute?.routes[0]?.geometry.distanceKm).toBe(2.25);
-    expect(dataset.samples[0]?.distance).toEqual({
-      plannerRecommendedKm: 1.5,
-      operationalRouteKm: 2.25,
-    });
-    expect(dataset.samples[0]?.duration).toMatchObject({
-      totalMinutes: 90,
-      definition: "walking_plus_collection_sorting_weighing",
-      source: "action.duration_minutes",
-      components: {
-        walkingMinutes: null,
-        collectionMinutes: null,
-        sortingMinutes: null,
-        weighingMinutes: null,
-      },
-    });
-    expect(dataset.samples[0]?.contractVersions).toMatchObject({
-      routeCalibration: "action-route-calibration-v2",
-      plannerSnapshot: "route-planner-snapshot-v1",
-      operationalRoute: "operational-route-v1",
+    expect(dataset.samples).toEqual([]);
+    expect(dataset.exclusions).toContainEqual({
+      status: "excluded",
+      actionId: "traceable-action",
+      reason: "operational_route_snapshot_mismatch",
     });
   });
 

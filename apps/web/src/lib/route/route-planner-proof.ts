@@ -52,6 +52,27 @@ export function verifyRoutePlannerProof(input: {
   snapshot: RoutePlannerSnapshot;
   now?: Date;
 }): RoutePlannerProofVerification {
+  const signatureVerification = verifyRoutePlannerProofSignature(input);
+  if (!signatureVerification.ok) return signatureVerification;
+
+  const proof = input.proof as RoutePlannerProof;
+  const now = input.now ?? new Date();
+  if (Date.parse(proof.expiresAt) <= now.getTime()) {
+    return { ok: false, reason: "expired" };
+  }
+  return signatureVerification;
+}
+
+/**
+ * Verifies the server signature and the snapshot binding without applying the
+ * short-lived planner handoff expiry. Persisted calibration contexts are
+ * historical evidence; their authenticity must remain checkable after the
+ * browser handoff has expired.
+ */
+export function verifyRoutePlannerProofSignature(input: {
+  proof: unknown;
+  snapshot: RoutePlannerSnapshot;
+}): RoutePlannerProofVerification {
   if (input.proof === null || input.proof === undefined) {
     return { ok: false, reason: "missing" };
   }
@@ -84,10 +105,6 @@ export function verifyRoutePlannerProof(input: {
     return { ok: false, reason: "invalid" };
   }
 
-  const now = input.now ?? new Date();
-  if (Date.parse(proof.expiresAt) <= now.getTime()) {
-    return { ok: false, reason: "expired" };
-  }
   const snapshotHash = hashRoutePlannerSnapshot(input.snapshot);
   if (snapshotHash !== proof.snapshotHash) {
     return { ok: false, reason: "snapshot_mismatch" };

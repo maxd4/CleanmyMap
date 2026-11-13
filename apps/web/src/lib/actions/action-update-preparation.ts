@@ -10,6 +10,29 @@ import {
   preserveFormalitiesContextWhenOmitted,
 } from "./formalities/workflow";
 
+const SERVER_MANAGED_ROUTE_FIELDS = [
+  "routeNetworkDistanceKm",
+  "routeGeometryMode",
+  "routeGeometryProvider",
+] as const;
+
+/** Route-provider metadata and planner evidence are server-owned projections. */
+export function preserveServerManagedRouteMetadata(
+  current: ActionPreparationData | null | undefined,
+  incoming: ActionPreparationData | null | undefined,
+): ActionPreparationData {
+  const preserved = preserveHistoricalRouteCalibrationContext(current, incoming);
+  const next = { ...preserved } as Record<string, unknown>;
+  const currentRecord = (current ?? {}) as Record<string, unknown>;
+  for (const field of SERVER_MANAGED_ROUTE_FIELDS) {
+    delete next[field];
+    if (Object.prototype.hasOwnProperty.call(currentRecord, field)) {
+      next[field] = structuredClone(currentRecord[field]);
+    }
+  }
+  return next as ActionPreparationData;
+}
+
 export function prepareActionUpdateBody(
   current: ActionRow,
   parsedBody: ActionUpdateInput,
@@ -20,10 +43,7 @@ export function prepareActionUpdateBody(
 
   const preservedAdministrativeRequirements = preserveCanonicalAdministrativeRequirements(
     current.preparation_data,
-    preserveHistoricalRouteCalibrationContext(
-      current.preparation_data,
-      parsedBody.preparationData,
-    ),
+    preserveServerManagedRouteMetadata(current.preparation_data, parsedBody.preparationData),
   );
   const withFormalitiesWorkflow = preserveCanonicalFormalitiesWorkflow(
     current.preparation_data,

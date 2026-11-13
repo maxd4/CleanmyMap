@@ -18,8 +18,9 @@ import {
 } from "./route-calibration-helpers";
 import {
   isRouteCalibrationContext,
-  isServerVerifiedPlannerSnapshotContext,
 } from "./route-calibration-validation";
+import { operationalRouteMatchesPlannerSnapshot } from "./route-provenance";
+import { isCryptographicallyVerifiedPlannerSnapshotContext } from "./route-calibration-server-validation";
 import type {
   ApprovedActionForCalibration,
   RouteCalibrationDataset,
@@ -40,6 +41,7 @@ export {
   isRouteCalibrationContext,
   isServerVerifiedPlannerSnapshotContext,
 } from "./route-calibration-validation";
+export { hasVerifiedPlannerOperationalRoute } from "./route-provenance";
 export {
   buildRouteCalibrationContext,
   buildRoutePlannerSnapshot,
@@ -105,7 +107,7 @@ function buildCalibrationDatasetEntry(
     options.requireVerifiedPlannerProvenance ?? true;
   if (
     requireVerifiedPlannerProvenance &&
-    !isServerVerifiedPlannerSnapshotContext(context)
+    !isCryptographicallyVerifiedPlannerSnapshotContext(context)
   ) {
     return {
       status: "excluded",
@@ -123,6 +125,17 @@ function buildCalibrationDatasetEntry(
   const operationalRoute = preparationData?.operationalRoute
     ? structuredClone(preparationData.operationalRoute)
     : null;
+  if (
+    operationalRoute &&
+    plannerSnapshot &&
+    !operationalRouteMatchesPlannerSnapshot(operationalRoute, plannerSnapshot)
+  ) {
+    return {
+      status: "excluded",
+      actionId: action.id,
+      reason: "operational_route_snapshot_mismatch",
+    };
+  }
   const volunteerInput = action.volunteerParticipation ??
     preparationData?.volunteerParticipation ??
     null;

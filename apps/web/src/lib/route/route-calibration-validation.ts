@@ -12,6 +12,7 @@ import type {
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 import { ROUTE_PLANNER_PROOF_VERSION } from "./route-planner-proof-contract";
+import { isRoutePlannerProofShape } from "./route-planner-proof-contract";
 import { sameStringSet } from "./route-calibration-helpers";
 
 export function isRouteCalibrationContext(value: unknown): value is RouteCalibrationContext {
@@ -60,7 +61,9 @@ export function isServerVerifiedPlannerSnapshotContext(
     integrity.proofVersion === ROUTE_PLANNER_PROOF_VERSION &&
     /^[a-f0-9]{64}$/.test(integrity.snapshotHash) &&
     isIsoDate(integrity.verifiedAt) &&
-    hashRoutePlannerSnapshot(context.plannerSnapshot) === integrity.snapshotHash
+    hashRoutePlannerSnapshot(context.plannerSnapshot) === integrity.snapshotHash &&
+    isRoutePlannerProofShape(integrity.proof) &&
+    integrity.proof.snapshotHash === integrity.snapshotHash
   );
 }
 
@@ -75,7 +78,8 @@ function isCalibrationVersionIntegrityCoherent(
         integrity.status === "server_verified" &&
         integrity.proofVersion === ROUTE_PLANNER_PROOF_VERSION &&
         /^[a-f0-9]{64}$/.test(integrity.snapshotHash) &&
-        isIsoDate(integrity.verifiedAt),
+        isIsoDate(integrity.verifiedAt) &&
+        (integrity.proof === undefined || isRoutePlannerProofShape(integrity.proof)),
     );
   }
   return context.plannerSnapshotIntegrity === undefined;

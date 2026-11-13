@@ -8,8 +8,10 @@ export function preserveHistoricalRouteCalibrationContext(
   const currentVersioning = current?.routeVersioning;
   const next = incoming ?? {};
   if (!currentContext) {
+    const withoutIncomingContext = { ...next };
+    delete withoutIncomingContext.routeCalibrationContext;
     return {
-      ...next,
+      ...withoutIncomingContext,
       ...(current?.operationalRoute && next.operationalRoute === undefined
         ? { operationalRoute: structuredClone(current.operationalRoute) }
         : {}),

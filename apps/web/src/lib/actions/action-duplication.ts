@@ -2,7 +2,8 @@ import type { ActionRow } from "@/types/database";
 import type { ActionPreparationData } from "./types";
 import type { ActionContext } from "./action-context";
 import { normalizeActionPreparationData, normalizeOperationalRoute } from "@/lib/route/route-operational";
-import { isRouteCalibrationContext, isServerVerifiedPlannerSnapshotContext } from "@/lib/route/route-calibration";
+import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
+import { hasCryptographicallyVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance-server";
 
 export type ActionDuplicatePrefill = {
   title: string;
@@ -53,8 +54,16 @@ function reusableRoute(preparation: ActionPreparationData): Pick<ActionDuplicate
     preparation.routeVersioning?.active?.operationalRoute ?? preparation.operationalRoute,
   );
   const context = preparation.routeCalibrationContext;
-  if (!operationalRoute || !context || !isRouteCalibrationContext(context) || !isServerVerifiedPlannerSnapshotContext(context)) {
-  return { operationalRoute: null, routeCalibrationContext: null };
+  if (
+    !operationalRoute ||
+    !context ||
+    !isRouteCalibrationContext(context) ||
+    !hasCryptographicallyVerifiedPlannerRouteInPreparation({
+      operationalRoute,
+      routeCalibrationContext: context,
+    })
+  ) {
+    return { operationalRoute: null, routeCalibrationContext: null };
   }
   return {
     operationalRoute,

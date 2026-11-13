@@ -5,6 +5,7 @@ import {
 } from "./route-calibration";
 import {
   createRoutePlannerProof,
+  verifyRoutePlannerProofSignature,
   verifyRoutePlannerProof,
 } from "./route-planner-proof";
 import { isRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
@@ -60,6 +61,20 @@ describe("route planner proof v1", () => {
       ok: false,
       reason: "missing",
     });
+  });
+
+  it("keeps the HMAC binding verifiable after the handoff expiry", () => {
+    const original = snapshot();
+    const proof = createRoutePlannerProof({ snapshot: original, now: issuedAt });
+
+    expect(verifyRoutePlannerProofSignature({
+      proof,
+      snapshot: original,
+    })).toEqual({ ok: true, snapshotHash: proof.snapshotHash });
+    expect(verifyRoutePlannerProofSignature({
+      proof: { ...proof, token: `${proof.token}tampered` },
+      snapshot: original,
+    })).toEqual({ ok: false, reason: "invalid" });
   });
 
   it("validates the versioned snapshot invariants and keeps v1 dispatch explicit", () => {

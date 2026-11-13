@@ -144,6 +144,7 @@ export function buildVerifiedProofCalibrationContext(
       proofVersion: plannerProof.proofVersion,
       snapshotHash: plannerProof.snapshotHash,
       verifiedAt: context.generatedAt,
+      proof: structuredClone(plannerProof),
     },
   });
 }

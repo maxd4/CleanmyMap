@@ -22,7 +22,7 @@ import {
 } from "@/lib/actions/route-topology";
 import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import type { RouteGeometry } from "@/lib/route/route-contract";
-import { hasVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance";
+import { hasCryptographicallyVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance-server";
 import {
   persistResolvedRouteTargetDistance,
   resolveRouteTargetDistance,
@@ -227,7 +227,7 @@ function resolveActiveCreateActionGeometry(
         ? payload.geometrySource
         : null,
     operationalRoute: payload.preparationData?.operationalRoute,
-    operationalRouteVerified: hasVerifiedPlannerRouteInPreparation(payload.preparationData),
+    operationalRouteVerified: hasCryptographicallyVerifiedPlannerRouteInPreparation(payload.preparationData),
   });
 }
 
@@ -343,7 +343,7 @@ async function resolveCreateActionPersistenceContext(
     resolvedDrawing.geometrySource === "routed" &&
       resolvedDrawing.routeGeometry &&
       (!payloadWithCoordinates.preparationData?.operationalRoute ||
-        hasVerifiedPlannerRouteInPreparation(payloadWithCoordinates.preparationData)),
+        hasCryptographicallyVerifiedPlannerRouteInPreparation(payloadWithCoordinates.preparationData)),
   );
   const persistedGeometry = buildCreateActionGeometry(
     payloadWithCoordinates,

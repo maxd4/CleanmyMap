@@ -1,4 +1,5 @@
 import { ROUTE_PLANNER_PROOF_VERSION } from "./route-planner-proof-contract";
+import type { RoutePlannerProof } from "./route-planner-proof-contract";
 
 export const ROUTE_CLEANUP_DURATION_CONTRACT_VERSION =
   "route-cleanup-duration-v1" as const;
@@ -25,4 +26,6 @@ export type RoutePlannerSnapshotIntegrity = {
   proofVersion: typeof ROUTE_PLANNER_PROOF_VERSION;
   snapshotHash: string;
   verifiedAt: string;
+  /** Signed server attestation retained for historical verification. */
+  proof: RoutePlannerProof;
 };

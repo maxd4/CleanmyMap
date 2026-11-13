@@ -274,9 +274,18 @@ distances recommandées, l’allocation prévue des groupes et la provenance de 
 réponse. Les deux pressions restent individuelles : elles ne sont ni sommées
 ni moyennées.
 
+La version v3 conserve aussi l’attestation planner signée par le serveur ; le
+hash du snapshot seul ne constitue pas une preuve d’origine. Les contextes
+historiques sans attestation restent lisibles pour compatibilité, mais ne sont
+pas réutilisables pour la duplication ou la calibration. Toute réutilisation
+exige en outre que la géométrie `operationalRoute` corresponde exactement aux
+géométries du snapshot de référence.
+
 `preparation_data` demeure la source canonique. La création valide strictement
-le contexte ; une édition ordinaire conserve le snapshot historique et une
-tentative explicite de le remplacer est refusée. Le snapshot
+le contexte ; une édition ordinaire conserve le snapshot historique, les
+métadonnées réseau et les versions de route gérées par le serveur. Un PATCH
+utilisateur ne peut pas créer ou promouvoir ces champs, et une tentative
+explicite de remplacer le snapshot historique est refusée. Le snapshot
 `route-planner-snapshot-v1` est donc
 immuable après la création de l’action : une modification ultérieure du
 formulaire, de la localisation ou de l’itinéraire opérationnel ne le réécrit jamais.

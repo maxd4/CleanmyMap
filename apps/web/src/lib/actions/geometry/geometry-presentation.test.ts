@@ -42,6 +42,14 @@ describe("geometry presentation provenance", () => {
     expect(getGeometryPresentation(buildItem("routed", "polyline", {
       routeGeometryMode: "network",
       routeGeometryProvider: "fossgis-osrm",
+      routeVersioning: {
+        schemaVersion: "action-route-versioning-v1",
+        active: {
+          calculation: { snapshotHash: "a".repeat(64) },
+          operationalRoute: {},
+        },
+        history: [],
+      } as never,
     }, "post_action_complete"))).toMatchObject({
       reality: "planned",
       strokeStyle: "dashed",
@@ -55,6 +63,18 @@ describe("geometry presentation provenance", () => {
       reality: "location_only",
       strokeStyle: "point",
       variant: "point",
+    });
+  });
+
+  it("does not treat client-declarative network metadata as proof", () => {
+    expect(getGeometryPresentation(buildItem("routed", "polyline", {
+      routeGeometryMode: "network",
+      routeGeometryProvider: "osrm",
+      routeNetworkDistanceKm: 1.4,
+    }, "post_action_complete"))).toMatchObject({
+      label: "Localisation seule · itinéraire non démontré",
+      reality: "location_only",
+      strokeStyle: "point",
     });
   });
 

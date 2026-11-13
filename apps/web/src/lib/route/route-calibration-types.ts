@@ -267,6 +267,7 @@ export type RouteCalibrationDatasetEntry =
         | "missing_historical_context"
         | "invalid_historical_context"
         | "unverified_historical_context"
+        | "operational_route_snapshot_mismatch"
         | "duration_unavailable";
     };
 
