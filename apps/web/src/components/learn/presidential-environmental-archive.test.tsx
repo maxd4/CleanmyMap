@@ -83,7 +83,7 @@ const displayFinancialRecord: PresidentialFinancialRecord = {
 
 const financialArchive = {
   ...classifiedArchive,
-  validatedCommitments: classifiedArchive.validatedCommitments.map((commitment, index) => index === 0 ? { ...commitment, financialRecords: [displayFinancialRecord, { ...displayFinancialRecord, id: "display-finance-source-2", source: { ...displayFinancialRecord.source, url: "https://example.test/financial-source-2", page: 7, version: "FIN-DISPLAY-2" } }] } : commitment),
+  validatedCommitments: classifiedArchive.validatedCommitments.map((commitment, index) => index === 0 ? { ...commitment, financialRecords: [displayFinancialRecord, { ...displayFinancialRecord, id: "display-finance-source-2", source: { ...displayFinancialRecord.source, url: "https://example.test/financial-source-2", page: 7, version: "FIN-DISPLAY-2" } }, { ...displayFinancialRecord, id: "display-finance-divergent-99", amountMin: 99, amountMax: 99, source: { ...displayFinancialRecord.source, url: "https://example.test/financial-source-divergent", page: 8, version: "FIN-DIVERGENT-99" } }, { ...displayFinancialRecord, id: "display-finance-divergent-101", amountMin: 101, amountMax: 101, source: { ...displayFinancialRecord.source, url: "https://example.test/financial-source-divergent", page: 8, version: "FIN-DIVERGENT-101" } }] } : commitment),
 };
 
 describe("PresidentialEnvironmentalArchive", () => {
@@ -186,6 +186,11 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(frMarkup).toContain("p. 3");
     expect(frMarkup).toContain("https://example.test/financial-source-2");
     expect(frMarkup).toContain("vFIN-DISPLAY-2");
+    expect(frMarkup).toContain("Sources corroborant l’enveloppe");
+    expect(frMarkup).toContain("Contradiction de montant");
+    expect(frMarkup).toContain("montant divergent de l’enveloppe affichée");
+    expect(frMarkup).toContain("99 EUR");
+    expect(frMarkup).toContain("101 EUR");
     expect(frMarkup).toContain("Périmètre national");
     expect(frMarkup).toContain("Méthode et hypothèses de l’estimation");
     expect(frMarkup).toContain("Valeurs des montants environnementaux par candidat");
@@ -195,6 +200,11 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(enMarkup).toContain("CleanMyMap estimate");
     expect(enMarkup).toContain("upper bound unknown");
     expect(enMarkup).toContain("National scope");
+    expect(enMarkup).toContain("Sources corroborating the envelope");
+    expect(enMarkup).toContain("Amount contradiction");
+    expect(enMarkup).toContain("amount diverges from the displayed envelope");
+    expect(enMarkup).toContain("99 EUR");
+    expect(enMarkup).toContain("101 EUR");
     expect(enMarkup).toContain("https://example.test/financial-source-2");
   });
 

@@ -400,6 +400,7 @@ describe("presidential environmental preparation corpus", () => {
 
     const provenanceCandidate = { ...aggregateCandidate, id: "provenance-candidate", financialRecords: [
       financialRecord({ id: "provenance-main", aggregationKey: "same-provenance-envelope", source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-a", page: 2, version: "PROVENANCE-A" } }),
+      financialRecord({ id: "provenance-reference-a-copy", aggregationKey: "same-provenance-envelope", source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-c", page: 6, version: "PROVENANCE-C" } }),
       financialRecord({ id: "provenance-reference-b", aggregationKey: "same-provenance-envelope", amountMin: 99, amountMax: 99, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-b", page: 8, version: "PROVENANCE-B" } }),
       financialRecord({ id: "provenance-reference-b-copy", aggregationKey: "same-provenance-envelope", amountMin: 101, amountMax: 101, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/provenance-b", page: 8, version: "PROVENANCE-B" } }),
     ] };
@@ -407,8 +408,11 @@ describe("presidential environmental preparation corpus", () => {
     const provenanceRow = provenanceChart.financialRows[0];
     expect(provenanceRow).toMatchObject({ amountMin: 10, amountMax: 20, recordCount: 1 });
     expect(provenanceRow.sources).toHaveLength(2);
-    expect(provenanceRow.sources.map((source) => source.url)).toEqual(["https://example.test/provenance-a", "https://example.test/provenance-b"]);
-    expect(provenanceChart.financialExclusions.duplicateEnvelope).toBe(2);
+    expect(provenanceRow.sources.map((source) => source.url)).toEqual(["https://example.test/provenance-a", "https://example.test/provenance-c"]);
+    expect(provenanceRow.divergentSources).toHaveLength(2);
+    expect(provenanceRow.divergentSources.map((source) => source.amountMin)).toEqual([99, 101]);
+    expect(provenanceRow.divergentSources.map((source) => source.url)).toEqual(["https://example.test/provenance-b", "https://example.test/provenance-b"]);
+    expect(provenanceChart.financialExclusions.duplicateEnvelope).toBe(3);
   });
 
   it("keeps financial record identity local to each candidate at the validated boundary", () => {

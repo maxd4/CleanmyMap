@@ -19,6 +19,18 @@ export type PresidentialClassificationChartRow = {
   neutral: number;
 };
 
+export type PresidentialFinancialChartSource = {
+  name: LocalizedText;
+  url: string;
+  page: number | null;
+  version: string;
+};
+
+export type PresidentialFinancialDivergentSource = PresidentialFinancialChartSource & {
+  amountMin: number;
+  amountMax: number | null;
+};
+
 export type PresidentialFinancialChartRow = {
   candidateId: string;
   candidateName: LocalizedText;
@@ -34,7 +46,8 @@ export type PresidentialFinancialChartRow = {
   amountMax: number | null;
   recordCount: number;
   aggregationKeys: string[];
-  sources: Array<{ name: LocalizedText; url: string; page: number | null; version: string }>;
+  sources: PresidentialFinancialChartSource[];
+  divergentSources: PresidentialFinancialDivergentSource[];
   budgetReductionBaselines: LocalizedText[];
   estimateMethods: PresidentialFinancialEstimateMethod[];
 };
@@ -64,6 +77,12 @@ const addSource = (row: PresidentialFinancialChartRow, record: PresidentialFinan
   if (!row.sources.some((source) => source.url === record.source.url && source.page === record.source.page && source.version === record.source.version)) row.sources.push({ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version });
   if (record.budgetReductionBaseline && !row.budgetReductionBaselines.some((baseline) => baseline.fr === record.budgetReductionBaseline!.fr && baseline.en === record.budgetReductionBaseline!.en)) row.budgetReductionBaselines.push(record.budgetReductionBaseline);
 };
+
+const addDivergentSource = (row: PresidentialFinancialChartRow, record: PresidentialFinancialRecord) => {
+  if (!row.divergentSources.some((source) => source.url === record.source.url && source.page === record.source.page && source.version === record.source.version && source.amountMin === record.amountMin && source.amountMax === record.amountMax)) row.divergentSources.push({ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version, amountMin: record.amountMin, amountMax: record.amountMax });
+};
+
+const corroboratesEnvelope = (row: PresidentialFinancialChartRow, record: PresidentialFinancialRecord) => row.amountMin === record.amountMin && row.amountMax === record.amountMax;
 
 export function buildPresidentialChartData(commitments: PresidentialPublicCommitment[], candidates: PresidentialPublicCandidate[], year: PresidentialElectionYear): PresidentialChartData {
   const yearCommitments = commitments.filter((commitment) => commitment.electionYear === year);
@@ -104,7 +123,8 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
       const existingEnvelopeRow = seenEnvelopeRows.get(envelopeKey);
       if (existingEnvelopeRow) {
         financialExclusions.duplicateEnvelope += 1;
-        addSource(existingEnvelopeRow, record);
+        if (corroboratesEnvelope(existingEnvelopeRow, record)) addSource(existingEnvelopeRow, record);
+        else addDivergentSource(existingEnvelopeRow, record);
         continue;
       }
       const aggregationKey = record.aggregationMode === "exclusive" ? `${compatibilityKey}|exclusive|${normalizedAggregationKey}` : `${compatibilityKey}|additive`;
@@ -118,7 +138,7 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
         if (record.estimateMethod) existing.estimateMethods.push(record.estimateMethod);
         seenEnvelopeRows.set(envelopeKey, existing);
       } else {
-        const row = { candidateId: commitment.candidateId, candidateName: candidate.name, instrument: record.instrument, currency: record.currency, priceYear: record.priceYear, horizon: record.horizon.value ?? "unknown", cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate, amountMin: record.amountMin, amountMax: record.amountMax, recordCount: 1, aggregationKeys: [normalizedAggregationKey], sources: [{ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version }], budgetReductionBaselines: record.budgetReductionBaseline ? [record.budgetReductionBaseline] : [], estimateMethods: record.estimateMethod ? [record.estimateMethod] : [] };
+        const row = { candidateId: commitment.candidateId, candidateName: candidate.name, instrument: record.instrument, currency: record.currency, priceYear: record.priceYear, horizon: record.horizon.value ?? "unknown", cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate, amountMin: record.amountMin, amountMax: record.amountMax, recordCount: 1, aggregationKeys: [normalizedAggregationKey], sources: [{ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version }], divergentSources: [], budgetReductionBaselines: record.budgetReductionBaseline ? [record.budgetReductionBaseline] : [], estimateMethods: record.estimateMethod ? [record.estimateMethod] : [] };
         financialRows.set(aggregationKey, row);
         seenEnvelopeRows.set(envelopeKey, row);
       }
