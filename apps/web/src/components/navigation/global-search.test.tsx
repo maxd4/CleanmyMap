@@ -64,13 +64,15 @@ describe("GlobalSearch", () => {
   beforeEach(() => {
     mocks.pathname = "/sections/map";
     mocks.router.push.mockReset();
+    mocks.preferences.locale = "fr";
+    mocks.preferences.displayMode = "exhaustif";
   });
 
-  function renderSearch() {
+  function renderSearch(currentProfile: "benevole" | "admin" = "benevole") {
     let renderer!: ReactTestRenderer;
     const focus = vi.fn();
     act(() => {
-      renderer = create(<GlobalSearch currentProfile="benevole" />, {
+      renderer = create(<GlobalSearch currentProfile={currentProfile} />, {
         createNodeMock: (element) =>
           element.type === "input" || element.type === "button"
             ? { focus }
@@ -81,7 +83,9 @@ describe("GlobalSearch", () => {
   }
 
   function openSearch(renderer: ReactTestRenderer) {
-    const trigger = renderer.root.findByProps({ "aria-label": "Rechercher" });
+    const trigger = renderer.root.findByProps({
+      "aria-label": mocks.preferences.locale === "fr" ? "Rechercher" : "Search",
+    });
     act(() => {
       trigger.props.onClick();
     });
@@ -93,6 +97,12 @@ describe("GlobalSearch", () => {
       input.props.onChange({ target: { value } });
     });
     return input;
+  }
+
+  function expectRenderedText(renderer: ReactTestRenderer, text: string) {
+    expect(
+      renderer.root.findAll((node) => node.children.length === 1 && node.children[0] === text),
+    ).not.toHaveLength(0);
   }
 
   it("uses the shared non-modal dropdown without a viewport overlay", () => {
@@ -161,15 +171,37 @@ describe("GlobalSearch", () => {
     expect(itemIdsFor("admin")).toContain("admin");
   });
 
-  it("keeps the French footer and restrained result interaction", () => {
-    expect(searchSource).toContain(">Entrée</span>");
-    expect(searchSource).toContain(">Échap</span>");
-    expect(searchSource).toContain("Rubrique");
+  it("keeps localized section and shortcut labels with restrained result interaction", () => {
+    expect(searchSource).toContain("GLOBAL_SEARCH_COPY");
+    expect(searchSource).toContain('fr: { sectionLabel: "Rubrique", enterKey: "Entrée", escapeKey: "Échap" }');
+    expect(searchSource).toContain('en: { sectionLabel: "Section", enterKey: "Enter", escapeKey: "Esc" }');
     expect(searchSource).toContain("item.spaceLabel");
     expect(searchSource).toContain("item.description[locale]");
     expect(searchSource).toContain("focus-visible:ring-2 focus-visible:ring-emerald-300");
     expect(searchSource).not.toContain("translate-x-1");
     expect(searchSource).not.toContain("scale-110");
+  });
+
+  it("renders French and English section and shortcut labels", () => {
+    const french = renderSearch();
+    openSearch(french.renderer);
+    changeQuery(french.renderer, "carte");
+    expectRenderedText(french.renderer, "Rubrique");
+    expectRenderedText(french.renderer, "Entrée");
+    expectRenderedText(french.renderer, "Échap");
+    french.renderer.unmount();
+
+    mocks.preferences.locale = "en";
+    const english = renderSearch();
+    openSearch(english.renderer);
+    const firstEnglishItem = getNavigationSpacesForProfile("benevole", "exhaustif", "en")
+      .flatMap((space) => space.items)[0];
+    expect(firstEnglishItem).toBeDefined();
+    changeQuery(english.renderer, firstEnglishItem?.label.en ?? "map");
+    expectRenderedText(english.renderer, "Section");
+    expectRenderedText(english.renderer, "Enter");
+    expectRenderedText(english.renderer, "Esc");
+    english.renderer.unmount();
   });
 
   it("covers the empty, filtered and no-result states from the rendered index", () => {
@@ -189,7 +221,10 @@ describe("GlobalSearch", () => {
 
   it("keeps keyboard selection, Enter navigation, focus and explicit close working", () => {
     const { renderer, focus } = renderSearch();
-    openSearch(renderer);
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }));
+    });
+    expect(renderer.root.findByProps({ "data-dropdown-open": "true" })).toBeTruthy();
     expect(focus).toHaveBeenCalled();
 
     changeQuery(renderer, "carte");
@@ -210,6 +245,35 @@ describe("GlobalSearch", () => {
       closeButton.props.onClick();
     });
     expect(renderer.root.findByProps({ "data-dropdown-open": "false" })).toBeTruthy();
+    renderer.unmount();
+  });
+
+  it.each([
+    ["Ctrl", { ctrlKey: true }],
+    ["Cmd", { metaKey: true }],
+  ])("opens from the %s+K shortcut and restores focus", (_label, modifier) => {
+    const { renderer, focus } = renderSearch();
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ...modifier }));
+    });
+
+    expect(renderer.root.findByProps({ "data-dropdown-open": "true" })).toBeTruthy();
+    expect(focus).toHaveBeenCalled();
+    renderer.unmount();
+  });
+
+  it("refreshes the accessible search index when the profile changes", () => {
+    const { renderer } = renderSearch();
+    openSearch(renderer);
+    changeQuery(renderer, "admin");
+    expect(renderer.root.findByProps({ children: "Aucun résultat pour cette recherche" })).toBeTruthy();
+
+    act(() => {
+      renderer.update(<GlobalSearch currentProfile="admin" />);
+    });
+
+    expect(renderer.root.findAllByType("a").length).toBeGreaterThan(0);
     renderer.unmount();
   });
 

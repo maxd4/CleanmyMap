@@ -53,6 +53,21 @@ vérité supérieure au runtime ou aux contrats UI.
 - Cette navigation non modale suit sa sémantique propre et ne devient pas un
   `CmmDialog`.
 
+## Recherche globale
+
+La recherche globale réutilise `CmmDropdown` et l'index de navigation autorisé
+par profil et mode d'affichage. Elle expose le raccourci réellement actif
+`Ctrl K / ⌘ K`, la navigation par flèches, l'ouverture par `Entrée` et la
+fermeture par `Échap` en français ; en anglais, les touches affichées sont
+respectivement `Enter` et `Esc`. Le libellé générique de catégorie est
+`Rubrique` en français et `Section` en anglais, suivi du nom localisé de
+`spaceLabel` : cette seconde information reste nécessaire pour distinguer la
+provenance de l'entrée.
+
+Les indices de touches et les libellés de catégorie suivent la locale active.
+Ils ne doivent pas être remplacés par des chaînes françaises fixes ni par une
+seconde palette de commandes.
+
 ## Références
 
 - Primitive et placement des dropdowns :

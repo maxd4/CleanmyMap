@@ -20,8 +20,15 @@ type GlobalSearchProps = {
 
 type SearchItem = GlobalSearchItem;
 
+const GLOBAL_SEARCH_COPY: Record<Locale, { sectionLabel: string; enterKey: string; escapeKey: string }> = {
+  fr: { sectionLabel: "Rubrique", enterKey: "Entrée", escapeKey: "Échap" },
+  en: { sectionLabel: "Section", enterKey: "Enter", escapeKey: "Esc" },
+};
+
 function GlobalSearchFooter({ locale }: { locale: Locale }) {
-  return <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-800 bg-slate-950/40 px-4 py-3 sm:px-6"><div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400"><span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">↑↓</span>{locale === "fr" ? "Parcourir" : "Browse"}</div><div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400"><span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">Entrée</span>{locale === "fr" ? "Ouvrir" : "Open"}</div><div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400"><span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">Échap</span>{locale === "fr" ? "Fermer" : "Close"}</div></div>;
+  const copy = GLOBAL_SEARCH_COPY[locale];
+
+  return <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-800 bg-slate-950/40 px-4 py-3 sm:px-6"><div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400"><span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">↑↓</span>{locale === "fr" ? "Parcourir" : "Browse"}</div><div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400"><span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">{copy.enterKey}</span>{locale === "fr" ? "Ouvrir" : "Open"}</div><div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400"><span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">{copy.escapeKey}</span>{locale === "fr" ? "Fermer" : "Close"}</div></div>;
 }
 
 function GlobalSearchTrigger({ locale, triggerProps }: { locale: Locale; triggerProps: ComponentProps<"button"> }) {
@@ -58,6 +65,8 @@ function useGlobalSearchKeyboardNavigation({ isOpen, filteredItems, selectedInde
 }
 
 function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedItems, filteredItems, selectedIndex, setSelectedIndex, setIsOpen }: { locale: Locale; query: string; setQuery: (value: string) => void; searchInputRef: import("react").RefObject<HTMLInputElement | null>; suggestedItems: SearchItem[]; filteredItems: SearchItem[]; selectedIndex: number; setSelectedIndex: (index: number) => void; setIsOpen: (open: boolean) => void }) {
+  const copy = GLOBAL_SEARCH_COPY[locale];
+
   return (
 <div className="overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 shadow-2xl">
   <div className="flex items-center border-b border-slate-800 px-4 py-3 sm:px-6 sm:py-4">
@@ -140,7 +149,7 @@ function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedI
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 cmm-text-caption">
                   <span className="font-bold uppercase tracking-widest text-emerald-300/80">
-                    Rubrique
+                    {copy.sectionLabel}
                   </span>
                   <span className="h-1 w-1 rounded-full bg-slate-600" aria-hidden="true" />
                   <span className="font-bold uppercase tracking-widest text-slate-400">
@@ -159,7 +168,7 @@ function GlobalSearchPanel({ locale, query, setQuery, searchInputRef, suggestedI
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               {selectedIndex === index ? (
                 <div className="cmm-text-caption hidden items-center gap-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-0.5 font-bold text-slate-300 sm:flex">
-                  <CornerDownLeft size={12} aria-hidden="true" /> Entrée
+                  <CornerDownLeft size={12} aria-hidden="true" /> {copy.enterKey}
                 </div>
               ) : null}
               <ArrowRight
