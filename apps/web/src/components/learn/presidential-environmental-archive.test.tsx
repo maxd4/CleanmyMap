@@ -74,7 +74,10 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("6 mai 2012");
     expect(markup).toContain("Publication de l’archive documentaire");
     expect(markup).toContain("Non précisée");
-    expect(markup).toContain("Proclamation du résultat");
+    expect(markup).toContain("Décision de proclamation");
+    expect(markup).toContain("Publication au Journal officiel");
+    expect(markup).toContain("11 mai 2012");
+    expect(markup).toContain("https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000025844007");
     expect(markup).toContain("10 mai 2012");
     expect(markup).toContain("Mandat 2012–2017 · Mandat terminé");
     expect(markup).toContain("Élu");
@@ -105,6 +108,9 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("6 May 2012");
     expect(markup).toContain("Publication of the documentary archive");
     expect(markup).toContain("Not specified");
+    expect(markup).toContain("Official Journal publication");
+    expect(markup).toContain("11 May 2012");
+    expect(markup).toContain("https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000025844007");
     expect(markup).toContain("Term 2012–2017 · Term completed");
     expect(markup).toContain("Elected");
     expect(markup).not.toContain("Élu");
