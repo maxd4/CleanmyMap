@@ -143,6 +143,31 @@ describe("actions map geometry utils", () => {
     expect(geometry.metrics.label).toContain("distances individuelles conservées");
   });
 
+  it("shows only the action location when a completed routed line has no network proof", () => {
+    const geometry = resolveActionMapGeometryViewModel(
+      buildContractMapItem({ geometrySource: "routed" }),
+    );
+
+    expect(geometry.renderMode).toBe("point");
+    expect(geometry.positions).toEqual([[48.85, 2.35]]);
+    expect(geometry.presentation.label).toBe("Localisation seule · itinéraire non démontré");
+  });
+
+  it("keeps a routed line when the public contract carries network provenance", () => {
+    const geometry = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "routed",
+        preparationData: {
+          routeGeometryMode: "network",
+          routeGeometryProvider: "fossgis-osrm",
+        },
+      }),
+    );
+
+    expect(geometry.renderMode).toBe("drawing");
+    expect(geometry.presentation.variant).toBe("network");
+  });
+
   it("recovers public MultiLineString coverage when metadata is absent", () => {
     const item = buildMultiTraceMapItem("public-multi-trace-action", "Parc public");
 
@@ -627,6 +652,8 @@ describe("actions map geometry utils", () => {
       buildContractMapItem({
         geometrySource: "routed",
         preparationData: {
+          routeGeometryMode: "network",
+          routeGeometryProvider: "osrm",
           routeNetworkDistanceKm: 2.1,
         },
       }),

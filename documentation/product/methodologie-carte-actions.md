@@ -853,8 +853,11 @@ couleur de la carte :
 - `reference` = géométrie connue d'une emprise identifiable, notamment un parc,
   jardin, campus, place ou autre espace clos lorsqu'une emprise fiable existe ;
   elle reste un repère contextuel et ne constitue pas une couverture nettoyée ;
-- `routed` = parcours reconstruit sur le réseau piéton ; c'est une hypothèse
-  géographique, jamais un trajet réellement observé ;
+- `routed` = parcours reconstruit sur le réseau piéton par un fournisseur
+  réseau identifié (`osrm` ou `fossgis-osrm`) et marqué non estimé ; c'est une
+  hypothèse géographique, jamais un trajet réellement observé. Une ligne
+  persistée comme `routed` sans cette preuve n'est pas une géométrie publique
+  exploitable ;
 - `estimated_route` = reconstruction plus incertaine ou fallback géodésique ;
   elle reste explicitement hypothétique ;
 - `fallback_point` = localisation seule, utilisée lorsqu'aucune représentation
@@ -873,7 +876,7 @@ La carte publique expose les libellés de provenance suivants :
 | `gpx_import` | `Trace GPX fournie` | trajectoire observée fournie puis validée |
 | plusieurs observations | `Couverture observée multi-traces` | traces conservées séparément, sans concaténation |
 | `manual` | `Parcours déclaré` ou `Zone d’action` | géométrie déclarée par l’utilisateur |
-| `routed` / `estimated_route` | `Itinéraire prévu sur le réseau` ou `Itinéraire prévu estimé` | hypothèse de planification, jamais observation |
+| `routed` / `estimated_route` | `Itinéraire prévu sur le réseau` ou `Itinéraire prévu estimé` | hypothèse de planification, jamais observation ; un `routed` sans mode/provider réseau démontré devient un point |
 | `reference` / `estimated_area` | `Repère géographique indicatif` ou `Zone indicative` | contexte spatial, jamais couverture terrain |
 | fallback direct après action | `Parcours non documenté` | point de localisation, sans faux trajet public |
 | `fallback_point` | `Localisation seule` | aucune géométrie exploitable |
@@ -884,6 +887,14 @@ tooltips, le journal et l’export GeoJSON. L’itinéraire opérationnel prévu
 pas superposé par défaut à une trace observée. Une référence historique peut
 rester persistée pour compatibilité et audit, mais elle n’est pas publiée comme
 un faux parcours nettoyé.
+
+Pour une action terminée sans couverture GPS/GPX et sans preuve réseau cohérente
+avec la géométrie persistée, la carte, les popups, les tooltips et l'export
+GeoJSON affichent uniquement le point de localisation avec la provenance
+`Localisation seule · itinéraire non démontré`. La ligne historique reste
+conservée pour l'audit ; elle n'est ni effacée ni présentée comme un trajet
+réseau. Une reconstruction FOSSGIS/OSRM candidate est un itinéraire
+géographique proposé, jamais une observation de nettoyage.
 
 La hiérarchie de résolution canonique cible est :
 
@@ -944,6 +955,17 @@ auditable, pas une nouvelle résolution cartographique. Le script
 défaut et classe chaque ligne `PRESERVE`, `SAFE_UPDATE`, `AMBIGUOUS` ou
 `INVALID`. `--apply` n'applique que les corrections `SAFE_UPDATE` ; une ligne
 `AMBIGUOUS` reste inchangée.
+
+Les polylignes historiques synthétiques identifiées par un état
+`approved/post_action_complete`, une source `routed`, trois points et l'absence
+de preuve GPS/GPX font l'objet d'un audit séparé, strictement en lecture seule,
+via `apps/web/scripts/audit-historical-route-remediation.mjs`. Le rapport
+conserve l'identifiant, le libellé, le point de localisation, la géométrie
+originale, les extrémités historiques, la géométrie FOSSGIS candidate, le
+fournisseur, le mode, la longueur, les écarts d'extrémité et les motifs de
+rejet. Le script ne possède volontairement pas de chemin `--apply` : une
+remédiation future devra être validée explicitement et rester idempotente,
+auditable et additive, sans réécrire une observation GPS/GPX.
 
 La confiance (`geometry_confidence`) n'est jamais une preuve d'origine. Une
 reclassification exige une évidence persistée et déterministe : source forte

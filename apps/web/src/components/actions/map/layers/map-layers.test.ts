@@ -434,7 +434,9 @@ describe("ShapeLayers", () => {
         },
         geometryConfidence: overrides.geometryConfidence,
         geometrySource: overrides.geometrySource,
-        preparationData: overrides.preparationData,
+        preparationData: overrides.preparationData ?? (overrides.geometrySource === "routed"
+          ? { routeGeometryMode: "network", routeGeometryProvider: "osrm" }
+          : undefined),
       }),
     );
   }

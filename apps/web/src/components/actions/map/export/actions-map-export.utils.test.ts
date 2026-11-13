@@ -117,6 +117,10 @@ describe("actions map export utils", () => {
       durationMinutes: 75,
       notes: "Export",
       geometrySource: "routed",
+      preparationData: {
+        routeGeometryMode: "network",
+        routeGeometryProvider: "osrm",
+      },
       manualDrawing: {
         kind: "polyline",
         coordinates: [
@@ -136,6 +140,36 @@ describe("actions map export utils", () => {
       geometry_kind: "polyline",
       geometry_source: "routed",
       historical_geometry_kind: "polyline",
+      historical_geometry_source: "routed",
+    });
+  });
+
+  it("exports an unproven completed routed geometry as its location point", () => {
+    const contract = buildActionDataContract({
+      id: "action-unproven-routed",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Boulevard test",
+      latitude: 48.85,
+      longitude: 2.34,
+      geometrySource: "routed",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [[48.85, 2.34], [48.851, 2.341]],
+      },
+    });
+
+    const item = toActionMapItem(contract);
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([item])) as {
+      features: Array<{ geometry: { type: string }; properties: Record<string, unknown> }>;
+    };
+
+    expect(geojson.features[0]?.geometry.type).toBe("Point");
+    expect(geojson.features[0]?.properties).toMatchObject({
+      geometry_kind: "point",
+      geometry_source: "fallback_point",
       historical_geometry_source: "routed",
     });
   });

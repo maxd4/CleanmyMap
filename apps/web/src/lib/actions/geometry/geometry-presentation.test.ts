@@ -39,10 +39,22 @@ function buildItem(
 
 describe("geometry presentation provenance", () => {
   it("presents routed geometry as planned and dashed", () => {
-    expect(getGeometryPresentation(buildItem("routed"))).toMatchObject({
+    expect(getGeometryPresentation(buildItem("routed", "polyline", {
+      routeGeometryMode: "network",
+      routeGeometryProvider: "fossgis-osrm",
+    }, "post_action_complete"))).toMatchObject({
       reality: "planned",
       strokeStyle: "dashed",
       variant: "network",
+    });
+  });
+
+  it("does not present an unproven completed route as a line", () => {
+    expect(getGeometryPresentation(buildItem("routed", "polyline", null, "post_action_complete"))).toMatchObject({
+      label: "Localisation seule · itinéraire non démontré",
+      reality: "location_only",
+      strokeStyle: "point",
+      variant: "point",
     });
   });
 

@@ -108,14 +108,34 @@ function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentatio
   );
 }
 
-function buildFallbackPointPresentation(): GeometryPresentation {
+function buildFallbackPointPresentation(
+  label = "Localisation seule",
+): GeometryPresentation {
   return buildPresentation(
     "fallback_point",
     "location_only",
-    "Localisation seule",
+    label,
     "point",
     "point",
   );
+}
+
+function hasDemonstratedNetworkRoute(item: ActionMapItem): boolean {
+  const preparationData = item.contract?.metadata.preparationData;
+  const provider = preparationData?.routeGeometryProvider;
+  return preparationData?.routeGeometryMode === "network" &&
+    (provider === "osrm" || provider === "fossgis-osrm");
+}
+
+function isUnprovenCompletedRoutedGeometry(
+  item: ActionMapItem,
+  origin: ActionGeometryOrigin,
+  kind: ActionGeometryKind | null,
+): boolean {
+  return item.contract?.metadata.actionPhase !== "pre_action" &&
+    origin === "routed" &&
+    kind === "polyline" &&
+    !hasDemonstratedNetworkRoute(item);
 }
 
 /** Uses only the effective fallback representation when historical geometry is unavailable. */
@@ -235,6 +255,9 @@ export function getGeometryPresentation(
     (origin === "gps_tracking" || origin === "gpx_import")
   ) {
     return buildFallbackPointPresentation();
+  }
+  if (isUnprovenCompletedRoutedGeometry(item, origin, kind)) {
+    return buildFallbackPointPresentation("Localisation seule · itinéraire non démontré");
   }
   return getOriginPresentation(item, origin, kind);
 }

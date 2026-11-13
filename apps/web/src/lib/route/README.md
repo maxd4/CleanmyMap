@@ -19,6 +19,11 @@ pour produire une décision de planner contrainte et explicable.
   planner attendue ; un fallback, une estimation ou une indication client
   isolée reste `estimated_route` (confiance 0,6). Les dessins manuels et les
   traces GPS/GPX conservent leurs provenances distinctes.
+- Une action terminée sans trace observée et sans métadonnées réseau cohérentes
+  avec sa géométrie ne publie pas sa ligne historique : la carte et le GeoJSON
+  retombent sur son point avec `Localisation seule · itinéraire non démontré`.
+  La ligne persistée reste disponible pour l’audit et la remédiation, sans
+  être effacée ni assimilée à un parcours réellement observé.
 - `pedestrian-network.ts`, `pedestrian-network-store.ts` et
   `../../scripts/import-pedestrian-network.mjs` : représentation versionnée du
   graphe OSM piéton, import borné Panthéon/Jardin des Plantes et lecture
