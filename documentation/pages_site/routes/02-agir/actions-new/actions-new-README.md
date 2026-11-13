@@ -198,7 +198,7 @@ regroupement.
 Le briefing `Jour J` est une projection fraîche des informations pratiques
 autorisées de l'action. Il peut être copié, imprimé depuis le navigateur ou
 exporté vers un fichier iCalendar. L'export utilise l'identifiant stable de
-l'action, le fuseau IANA validé pour les heures confirmées et un événement
+  l'action, le fuseau IANA validé pour les heures confirmées et un événement
 toute la journée lorsqu'aucune heure n'est enregistrée ; aucune heure exemple
 ne doit être inventée et aucune invitation externe n'est envoyée.
 

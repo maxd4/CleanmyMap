@@ -977,6 +977,19 @@ rejet. Le script ne possède volontairement pas de chemin `--apply` : une
 remédiation future devra être validée explicitement et rester idempotente,
 auditable et additive, sans réécrire une observation GPS/GPX.
 
+Pour le recalcul historique multi-groupes, le même audit lit uniquement les
+cinq actions ciblées et vérifie leurs effectifs et durées actuels avant tout
+routage. Il répartit les bénévoles avec la politique déterministe existante,
+réutilise les deux extrémités démontrées et ignore l'ancien point intermédiaire
+synthétique. Chaque groupe reçoit la durée complète de l'action et une cible
+`3 km/h`; le rapport expose séparément les longueurs simulées, leur somme, les
+écarts aux cibles, les recouvrements de corridors et les écarts d'extrémité.
+La longueur réseau dédoublonnée et la distance observée restent nulles tant
+qu'une preuve de déduplication ou une observation GPS/GPX n'existe pas. La
+sortie `mapPreview` est une `FeatureCollection` de lignes pointillées portant
+`estimated_route`, `estimated` et `hypothetical`; même un résultat réseau
+FOSSGIS valide ne peut être promu en trace ou en distance de collecte.
+
 La confiance (`geometry_confidence`) n'est jamais une preuve d'origine. Une
 reclassification exige une évidence persistée et déterministe : source forte
 déjà déclarée, marqueur de dessin, metadata GPX, géométrie de route persistée

@@ -14,6 +14,17 @@ const FOSSGIS_USER_AGENT = "CleanMyMap historical route audit (https://cleanmyma
 const ROUTED_CONFIDENCE = 0.78;
 const SYNTHETIC_ROUTE_POINT_COUNT = 3;
 const MAX_ENDPOINT_DISTANCE_KM = 0.25;
+const HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR = 3;
+const MAX_HYPOTHESES_PER_GROUP = 8;
+const OVERLAP_CORRIDOR_KM = 0.05;
+
+export const HISTORICAL_RECONSTRUCTION_TARGETS = Object.freeze([
+  Object.freeze({ id: "da367653-530f-4554-9e9b-164519336f52", volunteers: 10, durationMinutes: 60 }),
+  Object.freeze({ id: "b1f71234-21e2-4954-8526-f45f238249ae", volunteers: 15, durationMinutes: 90 }),
+  Object.freeze({ id: "f92499c2-aa14-4a51-8b56-c835a7d436f6", volunteers: 10, durationMinutes: 60 }),
+  Object.freeze({ id: "e168fb7a-034c-4b22-9b5f-b138188bf1e2", volunteers: 20, durationMinutes: 90 }),
+  Object.freeze({ id: "15ee0be8-3747-48c8-9de0-c12b40e79eb9", volunteers: 10, durationMinutes: 90 }),
+]);
 
 export const HISTORICAL_ACTION_SELECT = [
   "id",
@@ -29,6 +40,8 @@ export const HISTORICAL_ACTION_SELECT = [
   "derived_geometry_geojson",
   "geometry_confidence",
   "geometry_source",
+  "volunteers_count",
+  "duration_minutes",
 ].join(", ");
 
 function parseDotEnv(content) {
@@ -163,6 +176,32 @@ export function resolveHistoricalRouteStops(row) {
   return { coordinates: [origin, ...(midpoint ? [midpoint] : []), arrival], reason: null };
 }
 
+/**
+ * Historical audit boundary: old three-point drawings may contain a synthetic
+ * midpoint. Only persisted departure/arrival endpoints are allowed here.
+ */
+export function resolveHistoricalEndpointStops(row) {
+  const preparationData = parsePreparationData(row.preparation_data);
+  const drawing = parseStoredDrawing(row);
+  const syntheticEndpoints = drawing?.coordinates.length === SYNTHETIC_ROUTE_POINT_COUNT
+    ? [drawing.coordinates[0], drawing.coordinates.at(-1)]
+    : null;
+  const origin = coordinate(preparationData.departureCoordinates) ??
+    syntheticEndpoints?.[0] ??
+    coordinate([row.latitude, row.longitude]);
+  const arrival = coordinate(preparationData.arrivalCoordinates) ?? syntheticEndpoints?.[1] ?? null;
+  if (!origin) return { coordinates: null, reason: "missing_departure_coordinates", ignoredMidpoint: null };
+  if (!arrival) return { coordinates: null, reason: "missing_arrival_coordinates", ignoredMidpoint: null };
+  return {
+    coordinates: [origin, arrival],
+    reason: null,
+    ignoredMidpoint: coordinate(preparationData.midRouteCoordinates) ?? drawing?.coordinates?.[1] ?? null,
+    endpointSource: preparationData.departureCoordinates || preparationData.arrivalCoordinates
+      ? "persisted_endpoint_coordinates"
+      : "original_persisted_geometry_endpoints",
+  };
+}
+
 function haversineDistanceKm(from, to) {
   const radians = Math.PI / 180;
   const latitudeFrom = from[0] * radians;
@@ -236,6 +275,355 @@ export async function fetchNetworkRoute(coordinates, fetchImpl = fetch) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function resolveHypotheticalGroupCounts(participants) {
+  if (!Number.isInteger(participants) || participants < 5) return null;
+  if (participants === 9) return { counts: [5, 4], policy: "explicit_exception" };
+  for (let groupCount = 1; groupCount <= 12; groupCount += 1) {
+    const base = Math.floor(participants / groupCount);
+    const remainder = participants % groupCount;
+    const counts = Array.from({ length: groupCount }, (_, index) =>
+      base + (index < remainder ? 1 : 0),
+    );
+    if (counts.every((count) => count >= 5 && count <= 8)) {
+      return { counts, policy: "preferred_5_to_8" };
+    }
+  }
+  return null;
+}
+
+function targetDistanceKm(durationMinutes) {
+  return Number(((durationMinutes / 60) * HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR).toFixed(3));
+}
+
+function interpolatePoint(start, end, ratio) {
+  return [
+    start[0] + (end[0] - start[0]) * ratio,
+    start[1] + (end[1] - start[1]) * ratio,
+  ];
+}
+
+function offsetPoint(point, northMeters, eastMeters) {
+  return [
+    point[0] + northMeters / 111_320,
+    point[1] + eastMeters / (111_320 * Math.max(0.1, Math.cos((point[0] * Math.PI) / 180))),
+  ];
+}
+
+function buildOpenRouteHypotheses(endpoints, targetKm, groupIndex) {
+  const [origin, arrival] = endpoints;
+  const directKm = Math.max(directDistanceKm(endpoints), 0.1);
+  const excessMeters = Math.max(100, (targetKm - directKm) * 300);
+  const latitudeMeters = (arrival[0] - origin[0]) * 111_320;
+  const longitudeMeters = (arrival[1] - origin[1]) * 111_320 * Math.cos((origin[0] * Math.PI) / 180);
+  const lengthMeters = Math.max(1, Math.hypot(latitudeMeters, longitudeMeters));
+  const normalNorth = -longitudeMeters / lengthMeters;
+  const normalEast = latitudeMeters / lengthMeters;
+  const patterns = [[1, -1], [-1, 1], [1, 1], [-1, -1]];
+  const [firstSign, secondSign] = patterns[groupIndex % patterns.length];
+  return [0.25, 0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.3]
+    .slice(0, MAX_HYPOTHESES_PER_GROUP)
+    .map((factor) => {
+    const radius = Math.min(2_500, excessMeters * factor);
+    const first = offsetPoint(
+      interpolatePoint(origin, arrival, 1 / 3),
+      normalNorth * radius * firstSign,
+      normalEast * radius * firstSign,
+    );
+    const second = offsetPoint(
+      interpolatePoint(origin, arrival, 2 / 3),
+      normalNorth * radius * secondSign,
+      normalEast * radius * secondSign,
+    );
+    return [origin, first, second, arrival];
+  });
+}
+
+function routeSegments(coordinates) {
+  return coordinates.slice(0, -1).map((start, index) => {
+    const end = coordinates[index + 1];
+    return {
+      midpoint: [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2],
+      distanceKm: haversineDistanceKm(start, end),
+    };
+  });
+}
+
+function sharedCorridorDistanceKm(left, right) {
+  const rightSegments = routeSegments(right);
+  return routeSegments(left).reduce((total, segment) =>
+    rightSegments.some((other) => haversineDistanceKm(segment.midpoint, other.midpoint) <= OVERLAP_CORRIDOR_KM)
+      ? total + segment.distanceKm
+      : total,
+  0);
+}
+
+function pairwiseOverlap(left, right) {
+  const sharedKm = Math.max(
+    sharedCorridorDistanceKm(left.coordinates, right.coordinates),
+    sharedCorridorDistanceKm(right.coordinates, left.coordinates),
+  );
+  return {
+    sharedCorridorDistanceKm: Number(sharedKm.toFixed(3)),
+    ratio: Number((sharedKm / Math.max(0.001, Math.min(left.distanceKm, right.distanceKm))).toFixed(3)),
+  };
+}
+
+function multiRouteOverlap(routes) {
+  const pairs = [];
+  for (let left = 0; left < routes.length; left += 1) {
+    for (let right = left + 1; right < routes.length; right += 1) {
+      const overlap = pairwiseOverlap(routes[left], routes[right]);
+      pairs.push({
+        leftGroupIndex: routes[left].groupIndex,
+        rightGroupIndex: routes[right].groupIndex,
+        ...overlap,
+      });
+    }
+  }
+  return {
+    pairs,
+    maxPairwiseOverlapRatio: pairs.length > 0 ? Math.max(...pairs.map(({ ratio }) => ratio)) : 0,
+    sharedCorridorDistanceKm: Number(pairs.reduce((total, pair) => total + pair.sharedCorridorDistanceKm, 0).toFixed(3)),
+    sharedNetworkDistanceKm: null,
+    sharedNetworkDistanceReason: "FOSSGIS ne fournit pas d'identité stable de segments ; la longueur réseau dédoublonnée reste inconnue.",
+  };
+}
+
+async function selectHypotheticalGroupRoute(endpoints, targetKm, groupIndex, selectedRoutes, options) {
+  const hypotheses = buildOpenRouteHypotheses(endpoints, targetKm, groupIndex);
+  const candidates = [];
+  const failures = [];
+  for (const [hypothesisIndex, hypothesis] of hypotheses.entries()) {
+    await options.beforeRequest?.();
+    const result = await options.routeFetcher(hypothesis, options.fetchImpl ?? fetch);
+    if (!result.candidate) {
+      failures.push({ hypothesisIndex, reason: result.reason });
+      continue;
+    }
+    const candidate = result.candidate;
+    if (candidate.mode !== "network" || candidate.provider !== FOSSGIS_PROVIDER || candidate.estimated !== false) {
+      failures.push({ hypothesisIndex, reason: "provider_result_not_verified_network" });
+      continue;
+    }
+    const pairwise = selectedRoutes.map((route) => pairwiseOverlap(candidate, route));
+    const maxOverlap = pairwise.length > 0 ? Math.max(...pairwise.map(({ ratio }) => ratio)) : 0;
+    if (maxOverlap > 0.75) {
+      failures.push({ hypothesisIndex, reason: "route_overlap_above_75_percent", maxOverlap });
+      continue;
+    }
+    const distanceErrorKm = Number((candidate.distanceKm - targetKm).toFixed(3));
+    candidates.push({
+      ...candidate,
+      groupIndex,
+      hypothesisIndex,
+      targetDistanceKm: targetKm,
+      distanceErrorKm,
+      absoluteDistanceErrorKm: Math.abs(distanceErrorKm),
+      maxPairwiseOverlapRatio: maxOverlap,
+      pairwiseOverlap: pairwise,
+      providerEvidence: { mode: candidate.mode, provider: candidate.provider, estimated: candidate.estimated },
+      geometrySource: "estimated_route",
+      provenance: "estimated",
+      status: "hypothetical",
+    });
+  }
+  if (candidates.length === 0) {
+    return { route: null, reason: "no_coherent_network_hypothesis", failures };
+  }
+  candidates.sort((left, right) =>
+    (left.absoluteDistanceErrorKm / Math.max(targetKm, 0.1) + left.maxPairwiseOverlapRatio * 4) -
+    (right.absoluteDistanceErrorKm / Math.max(targetKm, 0.1) + right.maxPairwiseOverlapRatio * 4) ||
+    left.hypothesisIndex - right.hypothesisIndex,
+  );
+  return { route: candidates[0], reason: null, failures };
+}
+
+function historicalTargetVerification(row, target) {
+  const volunteers = asNumber(row.volunteers_count);
+  const durationMinutes = asNumber(row.duration_minutes);
+  return {
+    volunteersMatch: volunteers === target.volunteers,
+    durationMatch: durationMinutes === target.durationMinutes,
+    volunteers,
+    durationMinutes,
+  };
+}
+
+function historicalMapFeature(actionId, route) {
+  return {
+    type: "Feature",
+    id: `${actionId}-group-${route.groupIndex}`,
+    geometry: {
+      type: "LineString",
+      coordinates: route.coordinates.map(([latitude, longitude]) => [longitude, latitude]),
+    },
+    properties: {
+      actionId,
+      groupIndex: route.groupIndex,
+      groupParticipantCount: route.groupParticipantCount,
+      targetDistanceKm: route.targetDistanceKm,
+      simulatedDistanceKm: route.distanceKm,
+      distanceErrorKm: route.distanceErrorKm,
+      geometrySource: "estimated_route",
+      provenance: "estimated",
+      status: "hypothetical",
+      observed: false,
+    },
+  };
+}
+
+export async function buildHistoricalMultigroupAudit(rows, options = {}) {
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  const reports = [];
+  const mapFeatures = [];
+  let providerRequests = 0;
+  let lastRequestAt = 0;
+  const routeFetcher = options.routeFetcher ?? fetchNetworkRoute;
+  for (const target of HISTORICAL_RECONSTRUCTION_TARGETS) {
+    const row = rowsById.get(target.id);
+    if (!row) {
+      reports.push({ actionId: target.id, status: "MISSING_CURRENT_ROW", target, reasons: ["action_not_returned_by_current_read"] });
+      continue;
+    }
+    const verification = historicalTargetVerification(row, target);
+    const preparationData = parsePreparationData(row.preparation_data);
+    const drawing = parseStoredDrawing(row);
+    const observed = hasObservedEvidence(row, preparationData);
+    const endpointStops = resolveHistoricalEndpointStops(row);
+    const groupPlan = resolveHypotheticalGroupCounts(target.volunteers);
+    const reasons = [];
+    if (!verification.volunteersMatch || !verification.durationMatch) reasons.push("current_row_does_not_match_requested_target");
+    if (!isHistoricalSyntheticRouteCandidate(row)) reasons.push("current_row_is_not_an_unobserved_three_point_routed_candidate");
+    if (observed) reasons.push("observed_gps_or_gpx_evidence_preserved");
+    if (!endpointStops.coordinates) reasons.push(endpointStops.reason);
+    if (!groupPlan) reasons.push("participant_count_has_no_valid_hypothetical_partition");
+    const selectedRoutes = [];
+    const groupReports = [];
+    if (reasons.length === 0) {
+      const targetKm = targetDistanceKm(target.durationMinutes);
+      for (const [groupOffset, groupParticipantCount] of groupPlan.counts.entries()) {
+        const selection = await selectHypotheticalGroupRoute(
+          endpointStops.coordinates,
+          targetKm,
+          groupOffset + 1,
+          selectedRoutes,
+          {
+            routeFetcher: async (hypothesis, fetchImpl) => {
+              providerRequests += 1;
+              const result = await routeFetcher(hypothesis, fetchImpl);
+              if (result.candidate) result.candidate.groupParticipantCount = groupParticipantCount;
+              return result;
+            },
+            fetchImpl: options.fetchImpl,
+            beforeRequest: async () => {
+              const waitMs = Math.max(0, FOSSGIS_MIN_INTERVAL_MS - (Date.now() - lastRequestAt));
+              if (waitMs > 0 && options.sleep !== false) await new Promise((resolve) => setTimeout(resolve, waitMs));
+              lastRequestAt = Date.now();
+            },
+          },
+        );
+        if (!selection.route) {
+          groupReports.push({
+            groupIndex: groupOffset + 1,
+            groupParticipantCount,
+            targetDistanceKm: targetKm,
+            status: "UNAVAILABLE",
+            reason: selection.reason,
+            failures: selection.failures,
+          });
+          continue;
+        }
+        selectedRoutes.push(selection.route);
+        groupReports.push({
+          groupIndex: selection.route.groupIndex,
+          groupParticipantCount,
+          targetDistanceKm: targetKm,
+          simulatedDistanceKm: selection.route.distanceKm,
+          distanceErrorKm: selection.route.distanceErrorKm,
+          endpointDistancesKm: selection.route.endpointDistances,
+          maxPairwiseOverlapRatio: selection.route.maxPairwiseOverlapRatio,
+          hypothesisIndex: selection.route.hypothesisIndex,
+          geometrySource: selection.route.geometrySource,
+          provenance: selection.route.provenance,
+          status: selection.route.status,
+          providerEvidence: selection.route.providerEvidence,
+          coordinates: selection.route.coordinates,
+        });
+        mapFeatures.push(historicalMapFeature(row.id, selection.route));
+      }
+    }
+    const overlap = multiRouteOverlap(selectedRoutes);
+    const totalSimulatedDistanceKm = Number(selectedRoutes.reduce((total, route) => total + route.distanceKm, 0).toFixed(3));
+    const status = reasons.length > 0
+      ? "NOT_CALCULATED"
+      : selectedRoutes.length === groupPlan.counts.length
+        ? "NETWORK_CANDIDATES_NOT_APPLIED"
+        : "PARTIAL_NETWORK_CANDIDATES_NOT_APPLIED";
+    reports.push({
+      actionId: row.id,
+      actionDate: row.action_date,
+      status,
+      target: {
+        ...target,
+        groupParticipantCounts: groupPlan?.counts ?? null,
+        groupSizePolicy: groupPlan?.policy ?? null,
+        targetDistanceKm: targetDistanceKm(target.durationMinutes),
+      },
+      currentVerification: {
+        ...verification,
+        candidateStatus: isHistoricalSyntheticRouteCandidate(row),
+        observedEvidence: observed,
+        originalGeometryPreserved: true,
+        originalGeometry: drawing,
+      },
+      endpointAudit: {
+        requestedCoordinates: endpointStops.coordinates,
+        endpointSource: endpointStops.endpointSource ?? null,
+        ignoredHistoricalMidpoint: endpointStops.ignoredMidpoint,
+        syntheticIntermediateUsed: false,
+        departureLabel: historicalEndpointLabels(row.location_label).departure,
+        arrivalLabel: historicalEndpointLabels(row.location_label).arrival,
+      },
+      groups: groupReports,
+      metrics: {
+        targetDistancePerGroupKm: targetDistanceKm(target.durationMinutes),
+        totalSimulatedDistanceKm,
+        uniqueNetworkDistanceKm: null,
+        observedDistanceKm: null,
+        distanceErrorsKm: groupReports
+          .filter((group) => typeof group.distanceErrorKm === "number")
+          .map(({ groupIndex, distanceErrorKm }) => ({ groupIndex, distanceErrorKm })),
+        ...overlap,
+        endpointDeviationMaxKm: Number(Math.max(0, ...selectedRoutes.flatMap((route) => route.endpointDistances)).toFixed(3)),
+      },
+      provenance: {
+        geometrySource: "estimated_route",
+        provenance: "estimated",
+        status: "hypothetical",
+        providerNetworkResultsRemainHypothetical: true,
+        noObservationPromotion: true,
+      },
+      proposedUpdate: null,
+      reasons,
+    });
+  }
+  return {
+    dryRun: true,
+    writesApplied: 0,
+    targetCount: HISTORICAL_RECONSTRUCTION_TARGETS.length,
+    routeCount: mapFeatures.length,
+    providerRequests,
+    speedKmPerHour: HYPOTHETICAL_WALKING_SPEED_KM_PER_HOUR,
+    provider: { name: FOSSGIS_PROVIDER, mode: "network", estimated: false, minIntervalMs: FOSSGIS_MIN_INTERVAL_MS },
+    reports,
+    mapPreview: {
+      type: "FeatureCollection",
+      features: mapFeatures,
+      properties: { geometrySource: "estimated_route", provenance: "estimated", status: "hypothetical" },
+    },
+  };
 }
 
 function geoJson(candidate) {
@@ -345,9 +733,12 @@ export async function buildHistoricalRouteAudit(rows, options = {}) {
   };
 }
 
-async function fetchAllActions(supabase) {
-  const result = await supabase.from("actions").select(HISTORICAL_ACTION_SELECT).eq("status", "approved").eq("action_phase", "post_action_complete");
-  if (result.error) throw new Error(`actions select failed: ${result.error.message}`);
+async function fetchHistoricalReconstructionActions(supabase) {
+  const result = await supabase
+    .from("actions")
+    .select(HISTORICAL_ACTION_SELECT)
+    .in("id", HISTORICAL_RECONSTRUCTION_TARGETS.map(({ id }) => id));
+  if (result.error) throw new Error(`target actions select failed: ${result.error.message}`);
   return result.data ?? [];
 }
 
@@ -360,8 +751,8 @@ async function main() {
   const serviceRoleKey = envValue("SUPABASE_SERVICE_ROLE_KEY", fileEnv);
   if (!supabaseUrl || !serviceRoleKey) throw new Error("Missing Supabase credentials.");
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const rows = await fetchAllActions(supabase);
-  const report = await buildHistoricalRouteAudit(rows);
+  const rows = await fetchHistoricalReconstructionActions(supabase);
+  const report = await buildHistoricalMultigroupAudit(rows);
   console.log(JSON.stringify(report, null, 2));
 }
 
