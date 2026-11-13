@@ -12,16 +12,19 @@ import {
 
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
+const ADMIN_IMPORT_SNAPSHOT_PATH = join(APP_DIR, "data", "raw", "google-sheet-admin-import.json");
 const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
 const META_PREFIX = "[cmm-meta]";
 const BATCH_SIZE = 200;
 const SAMPLE_SIZE = 5;
+const SYNTHETIC_ADMIN_IMPORT_CORRECTION =
+  "classify_admin_sheet_synthetic_route_as_estimated_route";
 
 export const BACKFILL_TARGETS = [
   {
     table: "actions",
     select:
-      "id, location_label, latitude, longitude, notes, preparation_data, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source",
+      "id, action_date, location_label, latitude, longitude, notes, preparation_data, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source",
     kind: "action",
   },
   {
@@ -358,6 +361,41 @@ function currentSource(row) {
     : null;
 }
 
+export function buildSyntheticAdminImportEvidence(items) {
+  return (Array.isArray(items) ? items : [])
+    .filter(
+      (item) =>
+        item?.geometrySource === "estimated_route" &&
+        item?.manualDrawing?.kind === "polyline" &&
+        Array.isArray(item.manualDrawing.coordinates),
+    )
+    .map((item) => ({
+      source: "apps/web/data/raw/google-sheet-admin-import.json",
+      actionDate: normalizeLabel(item.actionDate),
+      locationLabel: normalizeLabel(item.locationLabel),
+      departureLocationLabel: normalizeLabel(item.departureLocationLabel),
+      arrivalLocationLabel: normalizeLabel(item.arrivalLocationLabel),
+      drawing: item.manualDrawing,
+    }));
+}
+
+function matchSyntheticAdminImportEvidence(row, drawing, evidenceCatalog) {
+  if (
+    currentSource(row) !== "routed" ||
+    drawing?.kind !== "polyline" ||
+    !Array.isArray(evidenceCatalog)
+  ) {
+    return null;
+  }
+
+  return evidenceCatalog.find(
+    (candidate) =>
+      candidate.actionDate === normalizeLabel(row.action_date) &&
+      candidate.locationLabel === normalizeLabel(row.location_label) &&
+      coordinatesEqual(drawing.coordinates, candidate.drawing.coordinates),
+  ) ?? null;
+}
+
 function sourceAcceptsKind(source, kind) {
   switch (source) {
     case "gpx_import":
@@ -397,7 +435,14 @@ function buildUpdate(drawing, source, { replaceDrawing = false } = {}) {
   return update;
 }
 
-function decision(row, table, classification, correction = "none", update = null) {
+function decision(
+  row,
+  table,
+  classification,
+  correction = "none",
+  update = null,
+  evidence = null,
+) {
   return {
     table,
     id: row.id,
@@ -405,10 +450,11 @@ function decision(row, table, classification, correction = "none", update = null
     currentSource: currentSource(row) ?? "missing",
     correction,
     update,
+    ...(evidence ? { evidence } : {}),
   };
 }
 
-function classifyAction(row) {
+function classifyAction(row, { syntheticAdminImportRoutes = [] } = {}) {
   const source = currentSource(row);
   const stored = readStoredGeometry(row);
   const drawing = stored.drawing;
@@ -431,6 +477,28 @@ function classifyAction(row) {
       row,
       "actions",
       stored.invalidStoredGeometry || stored.metadataMismatch ? "INVALID" : "AMBIGUOUS",
+    );
+  }
+  const syntheticAdminImport = matchSyntheticAdminImportEvidence(
+    row,
+    drawing,
+    syntheticAdminImportRoutes,
+  );
+  if (syntheticAdminImport) {
+    return decision(
+      row,
+      "actions",
+      "SAFE_UPDATE",
+      SYNTHETIC_ADMIN_IMPORT_CORRECTION,
+      buildUpdate(drawing, "estimated_route"),
+      {
+        source: syntheticAdminImport.source,
+        match: "exact_action_date_location_label_geometry",
+        actionDate: syntheticAdminImport.actionDate,
+        locationLabel: syntheticAdminImport.locationLabel,
+        departureLocationLabel: syntheticAdminImport.departureLocationLabel,
+        arrivalLocationLabel: syntheticAdminImport.arrivalLocationLabel,
+      },
     );
   }
   if (source && drawing && sourceAcceptsKind(source, drawing.kind)) {
@@ -561,11 +629,16 @@ function classifySignalement(row) {
   return decision(row, "trash_spotter_spots", "AMBIGUOUS");
 }
 
-export function classifyGeometryRow(row, kind = "action") {
-  return kind === "signalement" ? classifySignalement(row) : classifyAction(row);
+export function classifyGeometryRow(row, kind = "action", options = {}) {
+  return kind === "signalement"
+    ? classifySignalement(row)
+    : classifyAction(row, options);
 }
 
-function buildReport(decisions, { dryRun, recomputeAll }) {
+function buildReport(
+  decisions,
+  { dryRun, recomputeAll, syntheticAdminImportEvidenceCount = 0 },
+) {
   const classifications = { PRESERVE: 0, SAFE_UPDATE: 0, AMBIGUOUS: 0, INVALID: 0 };
   const currentProvenance = {};
   const proposedCorrections = {};
@@ -582,6 +655,7 @@ function buildReport(decisions, { dryRun, recomputeAll }) {
         table: item.table,
         id: item.id,
         correction: item.correction,
+        ...(item.evidence ? { evidence: item.evidence } : {}),
       });
     }
   }
@@ -593,19 +667,34 @@ function buildReport(decisions, { dryRun, recomputeAll }) {
     currentProvenance,
     classifications,
     proposedCorrections,
+    syntheticAdminImportEvidenceCount,
+    targetedSyntheticAdminImportCorrections: decisions
+      .filter((item) => item.correction === SYNTHETIC_ADMIN_IMPORT_CORRECTION)
+      .map((item) => ({ id: item.id, evidence: item.evidence })),
     samples,
   };
 }
 
-export function buildBackfillPlan({ actions, signalements, recomputeAll = false }) {
+export function buildBackfillPlan({
+  actions,
+  signalements,
+  recomputeAll = false,
+  syntheticAdminImportRoutes = [],
+}) {
   const decisions = [
-    ...actions.map((row) => classifyGeometryRow(row, "action")),
+    ...actions.map((row) =>
+      classifyGeometryRow(row, "action", { syntheticAdminImportRoutes }),
+    ),
     ...signalements.map((row) => classifyGeometryRow(row, "signalement")),
   ];
   const safeUpdates = decisions.filter((item) => item.classification === "SAFE_UPDATE");
   return {
     decisions,
-    report: buildReport(decisions, { dryRun: true, recomputeAll }),
+    report: buildReport(decisions, {
+      dryRun: true,
+      recomputeAll,
+      syntheticAdminImportEvidenceCount: syntheticAdminImportRoutes.length,
+    }),
     actionUpdates: safeUpdates
       .filter((item) => item.table === "actions")
       .map((item) => ({ id: item.id, ...item.update })),
@@ -625,6 +714,15 @@ async function fetchAllRows(supabase, table, select) {
     rows.push(...batch);
     if (batch.length < 1000) return rows;
     from += 1000;
+  }
+}
+
+async function loadSyntheticAdminImportEvidence() {
+  try {
+    const payload = JSON.parse(await readFile(ADMIN_IMPORT_SNAPSHOT_PATH, "utf8"));
+    return buildSyntheticAdminImportEvidence(payload?.items);
+  } catch {
+    return [];
   }
 }
 
@@ -674,7 +772,13 @@ async function main() {
   const [actions, signalements] = await Promise.all(
     BACKFILL_TARGETS.map((target) => fetchAllRows(supabase, target.table, target.select)),
   );
-  const plan = buildBackfillPlan({ actions, signalements, recomputeAll: args.recomputeAll });
+  const syntheticAdminImportRoutes = await loadSyntheticAdminImportEvidence();
+  const plan = buildBackfillPlan({
+    actions,
+    signalements,
+    recomputeAll: args.recomputeAll,
+    syntheticAdminImportRoutes,
+  });
 
   if (args.apply) {
     await applyUpdates(supabase, "actions", plan.actionUpdates);

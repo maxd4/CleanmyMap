@@ -213,8 +213,8 @@ test("main transforms rows, routes, associations, quantities and deduplicated cl
           [2.353, 48.857],
         ],
       }),
-      geometryConfidence: 0.78,
-      geometrySource: "routed",
+      geometryConfidence: 0.6,
+      geometrySource: "estimated_route",
       placeType: "Parc",
       cleanPlaceFlag: true,
       megotsKg: 1.2,
@@ -225,7 +225,7 @@ test("main transforms rows, routes, associations, quantities and deduplicated cl
       cigaretteButts: 2100,
       volunteersCount: 1,
       durationMinutes: 1,
-      notes: "Collecte principale || Type de lieu: Parc | Ville: Paris | Lieu propre: oui | Qualité mégots: humide",
+      notes: "Collecte principale || Type de lieu: Parc | Ville: Paris | Lieu propre: oui | Qualité mégots: humide\n[cmm-meta]{\"departureLocationLabel\":\"48.8566 2.3522\",\"arrivalLocationLabel\":\"48.8570 2.3530\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}",
       status: "approved",
     });
     assert.equal(payload.items[1].associationName, "Entreprise - Acme");

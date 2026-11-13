@@ -89,7 +89,7 @@ export function buildCreateActionGeometry(
     ? finalGeometrySource ?? payload.geometrySource ?? (payload.manualDrawing
       ? "manual"
       : finalDrawing.kind === "polyline"
-        ? "routed"
+        ? "estimated_route"
         : "manual")
     : "fallback_point";
 

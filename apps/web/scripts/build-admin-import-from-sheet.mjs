@@ -20,7 +20,10 @@ import {
   toNullableNumber,
 } from "./lib/sheet-ingestion-core.mjs";
 import { assertGoogleSheetUrl, buildGoogleSheetCsvCandidates } from "./lib/google-sheet-source.mjs";
-import { normalizeLabel } from "../src/lib/actions/geometry/geometry-core.ts";
+import {
+  GEOMETRY_CONFIDENCE,
+  normalizeLabel,
+} from "../src/lib/actions/geometry/geometry-core.ts";
 import { resolveBestGeometry } from "../src/lib/actions/geometry/geometry-resolution.ts";
 
 const DEFAULT_SHEET_URL =
@@ -507,13 +510,26 @@ async function main(options = {}) {
     const associationFallbackNote = associationNormalized.originalAssociationName
       ? `Original association: ${associationNormalized.originalAssociationName}`
       : "";
-    const notes =
-      [rawNotes, systemNotes, associationFallbackNote]
-        .filter(Boolean)
-        .join(" || ") || undefined;
-
     const hasRoute = Boolean(departureLocationLabel && arrivalLocationLabel);
     const routeStyle = hasRoute ? "souple" : null;
+    const routeAdjustmentMessage = hasRoute
+      ? "Itinéraire reconstitué depuis les colonnes Départ / Arrivée"
+      : null;
+    const routeMetadata = serializeActionMeta({
+      departureLocationLabel,
+      arrivalLocationLabel,
+      routeStyle,
+      routeAdjustmentMessage,
+    });
+    const notes =
+      [
+        [rawNotes, systemNotes, associationFallbackNote]
+          .filter(Boolean)
+          .join(" || "),
+        routeMetadata,
+      ]
+        .filter(Boolean)
+        .join("\n") || undefined;
     const routeDrawing =
       hasRoute &&
       departureCoordinates.latitude !== null &&
@@ -552,8 +568,8 @@ async function main(options = {}) {
             coordinates: routeDrawing.coordinates.map(([lat, lng]) => [lng, lat]),
           })
         : null,
-      confidence: routeDrawing ? 0.78 : null,
-      geometrySourceHint: routeDrawing ? "routed" : null,
+      confidence: routeDrawing ? GEOMETRY_CONFIDENCE.ESTIMATED_ROUTE : null,
+      geometrySourceHint: routeDrawing ? "estimated_route" : null,
       latitude: representativeCoordinates.latitude,
       longitude: representativeCoordinates.longitude,
       locationLabel,
@@ -573,9 +589,7 @@ async function main(options = {}) {
       departureLocationLabel: departureLocationLabel || undefined,
       arrivalLocationLabel: arrivalLocationLabel || undefined,
       routeStyle: routeStyle ?? undefined,
-      routeAdjustmentMessage: hasRoute
-        ? "Itinéraire reconstitué depuis les colonnes Départ / Arrivée"
-        : undefined,
+      routeAdjustmentMessage: routeAdjustmentMessage ?? undefined,
       manualDrawing:
         resolvedGeometry.kind === "point"
           ? undefined

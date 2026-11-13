@@ -400,12 +400,13 @@ describe("buildCreateActionGeometry", () => {
     expect(geometry.geometrySource).not.toBe("manual");
   });
 
-  it("marks a final automatically constructed route as routed", () => {
+  it("marks a final polyline without network provenance as estimated", () => {
     const drawing = polylineDrawing();
 
     const geometry = buildCreateActionGeometry(buildPayload(), drawing);
 
-    expect(geometry.geometrySource).toBe("routed");
+    expect(geometry.geometrySource).toBe("estimated_route");
+    expect(geometry.confidence).toBe(0.6);
   });
 
   it("keeps a local route-provider fallback explicitly estimated", () => {

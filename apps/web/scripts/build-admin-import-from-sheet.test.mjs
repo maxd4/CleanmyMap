@@ -33,6 +33,14 @@ assert.deepEqual(
   ],
 );
 
+const syntheticRoutes = artifact.items.filter(
+  (item) => item.manualDrawing?.kind === "polyline",
+);
+assert.equal(syntheticRoutes.length, 5);
+assert.ok(syntheticRoutes.every((item) => item.geometrySource === "estimated_route"));
+assert.ok(syntheticRoutes.every((item) => item.geometryConfidence === 0.6));
+assert.ok(syntheticRoutes.every((item) => item.notes?.includes("[cmm-meta]")));
+
 assert.doesNotMatch(
   importerSource,
   /writeFile\(RAW_PATH,\s*csvText/,

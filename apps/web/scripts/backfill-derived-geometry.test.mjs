@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
   buildBackfillPlan,
+  buildSyntheticAdminImportEvidence,
   classifyGeometryRow,
   parseDrawingFromGeoJson,
 } from "./backfill-derived-geometry.mjs";
@@ -15,6 +17,7 @@ function geojson(type, coordinates) {
 function row(overrides = {}) {
   return {
     id: "geometry-fixture",
+    action_date: null,
     location_label: null,
     latitude: null,
     longitude: null,
@@ -27,6 +30,96 @@ function row(overrides = {}) {
     ...overrides,
   };
 }
+
+test("reclassifies only an exact synthetic admin-import fingerprint", () => {
+  const sourceItem = {
+    actionDate: "2026-04-22",
+    locationLabel: "Rue A → Rue B",
+    departureLocationLabel: "Rue A",
+    arrivalLocationLabel: "Rue B",
+    geometrySource: "estimated_route",
+    manualDrawing: {
+      kind: "polyline",
+      coordinates: [[48.8, 2.3], [48.81, 2.31], [48.82, 2.32]],
+    },
+  };
+  const evidence = buildSyntheticAdminImportEvidence([sourceItem]);
+  const exact = classifyGeometryRow(
+    row({
+      id: "historical-synthetic",
+      action_date: "2026-04-22",
+      location_label: "Rue A → Rue B",
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson: geojson("LineString", [
+        [2.3, 48.8],
+        [2.31, 48.81],
+        [2.32, 48.82],
+      ]),
+      geometry_source: "routed",
+    }),
+    "action",
+    { syntheticAdminImportRoutes: evidence },
+  );
+
+  assert.equal(exact.classification, "SAFE_UPDATE");
+  assert.equal(exact.correction, "classify_admin_sheet_synthetic_route_as_estimated_route");
+  assert.deepEqual(exact.update, {
+    geometry_source: "estimated_route",
+    geometry_confidence: 0.6,
+  });
+  assert.equal(exact.evidence.match, "exact_action_date_location_label_geometry");
+
+  const nearMiss = classifyGeometryRow(
+    row({
+      id: "unrelated-routed",
+      action_date: "2026-04-22",
+      location_label: "Rue A → Rue B",
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson: geojson("LineString", [
+        [2.3, 48.8],
+        [2.31, 48.81],
+        [2.33, 48.83],
+      ]),
+      geometry_source: "routed",
+    }),
+    "action",
+    { syntheticAdminImportRoutes: evidence },
+  );
+  assert.equal(nearMiss.classification, "PRESERVE");
+  assert.equal(nearMiss.update, null);
+});
+
+test("plans the five known historical sheet routes without changing their geometry", async () => {
+  const artifact = JSON.parse(
+    await readFile(new URL("../data/raw/google-sheet-admin-import.json", import.meta.url), "utf8"),
+  );
+  const evidence = buildSyntheticAdminImportEvidence(artifact.items);
+  const plan = buildBackfillPlan({
+    actions: artifact.items.map((item) =>
+      row({
+        id: `historical-${item.actionDate}`,
+        action_date: item.actionDate,
+        location_label: item.locationLabel,
+        derived_geometry_kind: item.derivedGeometryKind,
+        derived_geometry_geojson: item.derivedGeometryGeoJson,
+        geometry_source: "routed",
+      }),
+    ),
+    signalements: [],
+    syntheticAdminImportRoutes: evidence,
+  });
+
+  assert.equal(evidence.length, 5);
+  assert.equal(plan.actionUpdates.length, 5);
+  assert.deepEqual(
+    plan.actionUpdates.map(({ id, ...update }) => [id, update]),
+    artifact.items.map((item) => [
+      `historical-${item.actionDate}`,
+      { geometry_source: "estimated_route", geometry_confidence: 0.6 },
+    ]),
+  );
+  assert.equal(plan.report.targetedSyntheticAdminImportCorrections.length, 5);
+});
 
 test("distinguishes observed GeoJSON LineString and Polygon types with strict comparisons", () => {
   const line = parseDrawingFromGeoJson(geojson("LineString", [[2.3, 48.8], [2.4, 48.9]]));

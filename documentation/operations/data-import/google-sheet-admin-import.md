@@ -101,18 +101,45 @@ Sorties:
 - CSV lieux propres (logique `clean_place`): `apps/web/data/raw/google-sheet-clean-places-form-like.csv`
 
 ## Import vers le backend admin
-Le payload généré est compatible avec `/api/actions/import` (dry-run puis confirmation)
-et conserve les métadonnees de trajet dans `notes` pour que la carte puisse
-reconstruire une polyline lorsqu'un trajet Depart/Arrivee est present.
+Le payload généré conserve les métadonnées Départ / Arrivée dans `notes` et
+expose la géométrie dérivée dans les champs `manualDrawing` et
+`derivedGeometry*`. Lorsque les deux coordonnées sont disponibles, la polyline
+produite par `buildRouteDrawingFromCoordinates` est une estimation locale : elle
+est persistée avec `geometrySource: "estimated_route"` et ne constitue jamais une
+preuve de routage FOSSGIS/OSRM.
+
+Le payload de base reste compatible avec `/api/actions/import` (dry-run puis
+confirmation). Cette route d'import ne persiste toutefois pas les champs de
+géométrie étendus ; un import qui doit conserver la polyline et sa provenance
+doit passer par le chemin de création d'action qui accepte `manualDrawing` et
+`geometrySource`. La provenance réseau n'est attribuée qu'après une réponse
+valide d'un moteur de routage.
 
 Remarque:
 - `association_name` est persisté avec la même normalisation que le formulaire.
 - Pour les lignes entreprise: renseigner `enterprise_name` pour éviter de fusionner tous les cas RSE.
 - Les associations hors référentiel sont automatiquement rabattues sur `Action spontanee` avec traçabilité dans `notes` (`Original association: ...`).
 - La colonne `liste lieux propres` est traitée séparément et exportée en objets `clean_place` (logique site dédiée, distincte des actions).
-- Les trajets `Depart / Arrivee` sont géocodés puis stockés avec une géométrie
-  de ligne dans les notes techniques, ce qui permet d'afficher les actions sur la
-  carte du site meme sans colonnes lat/lon dans le sheet.
+- Les trajets `Départ / Arrivée` sont géocodés puis stockés avec leurs libellés
+  dans les notes techniques et une géométrie dérivée explicitement estimée.
+  `buildRouteDrawingFromCoordinates` ne contacte aucun moteur réseau : la sortie
+  porte `geometrySource: "estimated_route"` et ne constitue jamais une preuve de
+  routage FOSSGIS/OSRM. Elle reste distincte d'un parcours prévu et d'une trace
+  GPS/GPX observée.
+
+## Remédiation des anciennes provenances
+Le plan de correction est en lecture seule par défaut. Il ne cible que les
+lignes dont la date, le libellé et la géométrie correspondent exactement au
+snapshot versionné de l'import synthétique ; il ne modifie ni les coordonnées,
+ni les géométries, ni les observations GPS/GPX.
+
+```bash
+npm --prefix apps/web run data:geometry:backfill
+```
+
+La sortie JSON constitue le rapport auditable. Une écriture ne peut être
+déclenchée qu'explicitement avec `--apply`, après revue du rapport et validation
+du périmètre ; aucune correction historique n'est appliquée par défaut.
 
 ## Sync direct vers Supabase (carte web)
 Flux désactivé.

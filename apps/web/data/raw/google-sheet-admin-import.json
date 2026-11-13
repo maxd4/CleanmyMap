@@ -35,8 +35,8 @@
       },
       "derivedGeometryKind": "polyline",
       "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.392384,48.864464],[2.393613,48.865464],[2.394842,48.865814],[2.396071,48.865464],[2.3973,48.865452]]}",
-      "geometryConfidence": 0.58,
-      "geometrySource": "routed",
+      "geometryConfidence": 0.6,
+      "geometrySource": "estimated_route",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": 1.5,
@@ -46,7 +46,7 @@
       "cigaretteButts": 3750,
       "volunteersCount": 15,
       "durationMinutes": 90,
-      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris",
+      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris\n[cmm-meta]{\"departureLocationLabel\":\"Mairie du 20ᵉ arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris\",\"arrivalLocationLabel\":\"Pl. Martin Nadaud, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}",
       "status": "approved"
     },
     {
@@ -84,8 +84,8 @@
       },
       "derivedGeometryKind": "polyline",
       "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.401535,48.871002],[2.402765,48.872002],[2.403994,48.872352],[2.405223,48.872002],[2.406452,48.87199]]}",
-      "geometryConfidence": 0.58,
-      "geometrySource": "routed",
+      "geometryConfidence": 0.6,
+      "geometrySource": "estimated_route",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": 0.3,
@@ -95,7 +95,7 @@
       "cigaretteButts": 750,
       "volunteersCount": 10,
       "durationMinutes": 90,
-      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris",
+      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris\n[cmm-meta]{\"departureLocationLabel\":\"Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris\",\"arrivalLocationLabel\":\"Pl. Saint-Fargeau, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}",
       "status": "approved"
     },
     {
@@ -133,8 +133,8 @@
       },
       "derivedGeometryKind": "polyline",
       "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.404032,48.875761],[2.405261,48.876761],[2.40649,48.877111],[2.407719,48.876761],[2.408949,48.876749]]}",
-      "geometryConfidence": 0.58,
-      "geometrySource": "routed",
+      "geometryConfidence": 0.6,
+      "geometrySource": "estimated_route",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": 2.5,
@@ -144,7 +144,7 @@
       "cigaretteButts": 6250,
       "volunteersCount": 20,
       "durationMinutes": 90,
-      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris",
+      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris\n[cmm-meta]{\"departureLocationLabel\":\"Porte des Lilas, 75020 Paris\",\"arrivalLocationLabel\":\"Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}",
       "status": "approved"
     },
     {
@@ -182,8 +182,8 @@
       },
       "derivedGeometryKind": "polyline",
       "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.406686,48.866275],[2.407915,48.867275],[2.409144,48.867625],[2.410373,48.867275],[2.411602,48.867263]]}",
-      "geometryConfidence": 0.58,
-      "geometrySource": "routed",
+      "geometryConfidence": 0.6,
+      "geometrySource": "estimated_route",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": 0.75,
@@ -193,7 +193,7 @@
       "cigaretteButts": 1875,
       "volunteersCount": 10,
       "durationMinutes": 60,
-      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris",
+      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris\n[cmm-meta]{\"departureLocationLabel\":\"Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris\",\"arrivalLocationLabel\":\"Saveurs en Partage, 38 Bd Mortier, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}",
       "status": "approved"
     },
     {
@@ -223,8 +223,8 @@
       },
       "derivedGeometryKind": "polyline",
       "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.371046,48.8715141],[2.375217,48.869332],[2.3793982,48.8671692]]}",
-      "geometryConfidence": 0.78,
-      "geometrySource": "routed",
+      "geometryConfidence": 0.6,
+      "geometrySource": "estimated_route",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": 0.5,
@@ -234,7 +234,7 @@
       "cigaretteButts": 1250,
       "volunteersCount": 10,
       "durationMinutes": 60,
-      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris",
+      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non || Original association: La Brigade Verte Paris\n[cmm-meta]{\"departureLocationLabel\":\"Rue Jacques Louvel-Tessier, 75010 Paris\",\"arrivalLocationLabel\":\"Rue Marguerite Moret, 75011 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}",
       "status": "approved"
     }
   ]
