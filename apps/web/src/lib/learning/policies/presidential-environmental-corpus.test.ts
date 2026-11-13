@@ -13,9 +13,11 @@ import {
   type PresidentialEnvironmentalAssessment,
   type PresidentialEnvironmentalClassification,
   type PresidentialCommitmentOutcome,
+  type PresidentialFinancialRecord,
   sortPresidentialCommitments,
 } from "./presidential-environmental-corpus";
 import { groupPresidentialCommitmentsByClassification } from "./presidential-environmental-filtering";
+import { buildPresidentialChartData } from "./presidential-environmental-charting";
 
 const reviewedAssessment = (source: (typeof PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments)[number]["source"], overallClassification: PresidentialEnvironmentalAssessment["overallClassification"] = "undetermined"): PresidentialEnvironmentalAssessment => {
   const primarySource = { ...source, type: "SOURCE_PRIMAIRE_OFFICIELLE" as const, status: "verified" as const, url: "https://example.test/primary", documentNature: "proposal" as const, version: "PRIMARY-REVIEWED-1" };
@@ -300,6 +302,25 @@ describe("presidential environmental preparation corpus", () => {
       statusCandidate.outcome = reviewedOutcome(status);
       expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [statusCandidate] })).toHaveLength(1);
     }
+
+    const financialRecord = (overrides: Partial<PresidentialFinancialRecord> = {}): PresidentialFinancialRecord => ({
+      id: "finance-1", instrument: "investment", amountMin: 10, amountMax: 20, currency: "EUR", priceYear: 2022,
+      horizon: { value: "2025", precision: "year" }, scope: { fr: "Périmètre national", en: "National scope" }, cadence: "multiannual",
+      source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/finance", version: "FIN-1" }, status: "announced", isEstimate: true,
+      estimateMethod: { formula: { fr: "a × b", en: "a × b" }, variables: { fr: "a et b", en: "a and b" }, units: { fr: "EUR", en: "EUR" }, assumptions: { fr: "Hypothèse", en: "Assumption" }, references: { fr: "Référence", en: "Reference" }, exclusions: { fr: "Exclusion", en: "Exclusion" }, uncertainty: { fr: "Fourchette", en: "Range" } },
+      budgetReductionBaseline: null, ...overrides,
+    });
+    const invalidNegative = makePublished("neutral", "invalid-negative");
+    invalidNegative.financialRecords = [financialRecord({ amountMin: -10, amountMax: -5 })];
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [invalidNegative] })).toEqual([]);
+    const validReduction = makePublished("neutral", "valid-reduction");
+    validReduction.financialRecords = [financialRecord({ id: "finance-reduction", instrument: "spending_reduction", amountMin: -10, amountMax: -5, budgetReductionBaseline: { fr: "Budget de référence 2022", en: "2022 baseline budget" } })];
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [validReduction] })).toHaveLength(1);
+    const chartCommitment = { ...validReduction, id: "chart-commitment", candidateId: "2022-emmanuel-macron", environmentalAssessment: reviewedAssessment(sourceCommitment.source, "favorable"), financialRecords: [financialRecord({ id: "chart-finance-1" }), financialRecord({ id: "chart-finance-2", horizon: { value: "2030", precision: "year" } }), financialRecord({ id: "chart-finance-voted", status: "voted" })] };
+    const chart = buildPresidentialChartData([chartCommitment], getPresidentialCandidates(2022), 2022);
+    expect(chart.classificationRows[0]).toMatchObject({ favorable: 1, unfavorable: 0, mixed: 0, undetermined: 0 });
+    expect(chart.financialRows).toHaveLength(2);
+    expect(chart.excludedFinancialRecords).toBe(1);
   });
 
   it("does not confuse an absence of collection with an absence of engagement", () => {

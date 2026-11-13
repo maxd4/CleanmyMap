@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { PresidentialEnvironmentalCharts } from "./presidential-environmental-charts";
 import { formatPolicyDate } from "@/lib/learning/policies/environmental-policy-filtering";
 import { filterPresidentialCommitments, groupPresidentialCommitmentsByClassification, sortPresidentialCommitments } from "@/lib/learning/policies/presidential-environmental-filtering";
 import type { PresidentialCommitmentDocumentationStatus, PresidentialCommitmentOutcome, PresidentialComparisonView, PresidentialEnvironmentalClassification, PresidentialEnvironmentalDomain, PresidentialEnvironmentalDomainAssessment, PresidentialPublicArchive, PresidentialPublicCommitment, PresidentialSourceType } from "@/lib/learning/policies/presidential-environmental-corpus";
@@ -33,6 +34,7 @@ const documentationStatusLabels: Record<PresidentialCommitmentDocumentationStatu
 const comparisonViewLabels: Record<PresidentialComparisonView, { fr: string; en: string }> = {
   theme: { fr: "Par thème", en: "By theme" },
   candidate: { fr: "Par candidature", en: "By candidate" },
+  charts: { fr: "Graphiques", en: "Charts" },
 };
 
 const followUpStatusLabels = {
@@ -81,7 +83,7 @@ function PresidentialCommitmentCard({ commitment, locale, text, isElectedCandida
   </li>;
 }
 
-export function PresidentialEnvironmentalArchive({ elections, candidates, validatedCommitments }: PresidentialPublicArchive) {
+export function PresidentialEnvironmentalArchive({ elections, candidates, validatedCommitments, coverage }: PresidentialPublicArchive) {
   const { locale } = useSitePreferences();
   const [year, setYear] = useState<ArchiveYear>(2012);
   const [theme, setTheme] = useState("all");
@@ -134,6 +136,7 @@ export function PresidentialEnvironmentalArchive({ elections, candidates, valida
       </div>
 
       <div id="presidential-environmental-archive-results" className="space-y-4">
+        {comparisonView === "charts" ? <PresidentialEnvironmentalCharts archive={{ elections, candidates, validatedCommitments, coverage }} year={year} locale={locale} text={text} /> : null}
         {candidateListSource || resultSource ? (
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-amber-100 bg-amber-50/30 p-4 text-sm text-slate-700">
@@ -157,12 +160,12 @@ export function PresidentialEnvironmentalArchive({ elections, candidates, valida
 
         {year === 2027 ? <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-center" role="status"><p className="font-black text-slate-900">{text("Présidentielle 2027 : dossier en préparation", "2027 presidential election: preparation file")}</p><p className="mt-1 text-sm text-slate-700">{text("Aucune candidature officielle ni politique n’est préremplie. Les documents seront ajoutés seulement après publication et contrôle.", "No official candidacy or policy is prefilled. Documents will be added only after publication and review.")}</p></div> : null}
 
-        <div className="rounded-2xl border border-amber-100 bg-white p-4">
+        {comparisonView !== "charts" ? <div className="rounded-2xl border border-amber-100 bg-white p-4">
           <div className="flex flex-col gap-1 text-slate-800 sm:flex-row sm:items-baseline sm:justify-between"><h4 className="text-lg font-black text-slate-950">{text(`Candidatures officielles ${year}`, `Official candidacies ${year}`)}</h4><span className="text-sm text-slate-800">{yearCandidates.length} {text("candidats recensés", "candidates listed")}</span></div>
           <ol className="mt-4 grid gap-2 sm:grid-cols-2" aria-label={text(`Candidats officiels ${year}`, `Official candidates ${year}`)}>{yearCandidates.map((candidate) => <li key={candidate.id} className={`rounded-xl border p-3 ${candidate.id === election?.electedCandidateId ? "border-blue-400 bg-blue-50/70" : "border-amber-100 bg-amber-50/30"}`}>{candidate.id === election?.electedCandidateId ? <p className="mb-1 text-xs font-black uppercase tracking-wide text-blue-800">{text("Élu", "Elected")}</p> : null}<p className="font-black text-slate-950">{candidate.name[locale]}</p><p className="text-sm text-slate-700">{candidate.partyOrCoalition}</p><p className="mt-1 text-xs font-bold uppercase tracking-wide text-amber-800">{candidate.documentationStatus === "not_collected" ? text("Corpus non encore collecté", "Corpus not yet collected") : text("Engagements en brouillon", "Commitments in draft")}</p></li>)}</ol>
-        </div>
+        </div> : null}
 
-        {visibleCommitments.length === 0 ? <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-center" role="status"><p className="font-black text-slate-900">{text("Aucun engagement validé n’est affiché pour ce millésime.", "No validated commitment is displayed for this election year.")}</p><p className="mt-1 text-sm text-slate-600">{text("Les sources secondaires, les discours et les programmes non revus restent hors de la vue publique ; l’absence d’extrait ne signifie pas l’absence de position.", "Secondary sources, speeches and unreviewed programmes stay out of the public view; an absent extract does not mean an absent position.")}</p></div> : <>
+        {comparisonView !== "charts" && (visibleCommitments.length === 0 ? <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-center" role="status"><p className="font-black text-slate-900">{text("Aucun engagement validé n’est affiché pour ce millésime.", "No validated commitment is displayed for this election year.")}</p><p className="mt-1 text-sm text-slate-600">{text("Les sources secondaires, les discours et les programmes non revus restent hors de la vue publique ; l’absence d’extrait ne signifie pas l’absence de position.", "Secondary sources, speeches and unreviewed programmes stay out of the public view; an absent extract does not mean an absent position.")}</p></div> : <>
           <div className="grid gap-4 md:grid-cols-2">
             <section aria-labelledby="presidential-effects-favorable"><h4 id="presidential-effects-favorable" className="mb-2 text-lg font-black text-emerald-900">{text("Effets favorables", "Favorable effects")}</h4>{renderCommitmentList(classificationGroups.favorable, text("Engagements à effets favorables", "Commitments with favorable effects"))}</section>
             <section aria-labelledby="presidential-effects-unfavorable"><h4 id="presidential-effects-unfavorable" className="mb-2 text-lg font-black text-rose-900">{text("Effets défavorables", "Unfavorable effects")}</h4>{renderCommitmentList(classificationGroups.unfavorable, text("Engagements à effets défavorables", "Commitments with unfavorable effects"))}</section>
@@ -170,7 +173,7 @@ export function PresidentialEnvironmentalArchive({ elections, candidates, valida
           <section aria-labelledby="presidential-effects-mixed"><h4 id="presidential-effects-mixed" className="mb-2 text-lg font-black text-amber-900">{text("Effets mixtes", "Mixed effects")}</h4>{renderCommitmentList(classificationGroups.mixed, text("Engagements à effets mixtes", "Commitments with mixed effects"))}</section>
           <section aria-labelledby="presidential-effects-neutral"><h4 id="presidential-effects-neutral" className="mb-2 text-lg font-black text-slate-900">{text("Effets neutres", "Neutral effects")}</h4>{renderCommitmentList(classificationGroups.neutral, text("Engagements à effets neutres", "Commitments with neutral effects"))}</section>
           <section aria-labelledby="presidential-effects-undetermined"><h4 id="presidential-effects-undetermined" className="mb-2 text-lg font-black text-slate-900">{text("Effets non déterminés", "Undetermined effects")}</h4>{renderCommitmentList(classificationGroups.undetermined, text("Engagements à effets non déterminés", "Commitments with undetermined effects"))}</section>
-        </>}
+        </>)}
       </div>
     </section>
   );

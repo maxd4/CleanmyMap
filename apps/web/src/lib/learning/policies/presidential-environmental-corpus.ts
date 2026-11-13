@@ -2,6 +2,8 @@ import "server-only";
 import { assertPublishedContent, type ContentValidationRecord } from "@/lib/content/content-validation";
 import { ENVIRONMENTAL_POLICY_REGISTRY, type LocalizedText, type PolicyDate } from "./environmental-policy-registry";
 
+export type { LocalizedText } from "./environmental-policy-registry";
+
 export { filterPresidentialCommitments, sortPresidentialCommitments } from "./presidential-environmental-filtering";
 
 export type PresidentialElectionYear = 2012 | 2017 | 2022 | 2027;
@@ -14,7 +16,10 @@ export type PresidentialDocumentNature = "candidate_list" | "election_result" | 
 export type PresidentialHistoryAction = "first_collected" | "substantive_amendment" | "withdrawn" | "rechecked";
 export type PresidentialCommitmentFollowUpStatus = "realized" | "partially_realized" | "in_progress" | "modified" | "abandoned" | "not_documented";
 export type PresidentialPolicyIdentityStatus = "confirmed" | "not_confirmed" | "not_applicable";
-export type PresidentialComparisonView = "theme" | "candidate";
+export type PresidentialFinancialInstrument = "investment" | "spending_reduction" | "tax_revenue" | "other";
+export type PresidentialFinancialStatus = "announced" | "voted" | "executed";
+export type PresidentialFinancialCadence = "annual" | "multiannual" | "one_off" | "unknown";
+export type PresidentialComparisonView = "theme" | "candidate" | "charts";
 export type PresidentialMandateStatus = "completed" | "ongoing";
 export type PresidentialEnvironmentalClassification = "favorable" | "unfavorable" | "mixed" | "neutral" | "undetermined";
 export type PresidentialEnvironmentalDomain = "climate" | "biodiversity" | "water" | "pollution" | "resources" | "waste";
@@ -77,6 +82,33 @@ export type PresidentialCommitmentOutcome = {
   limitations: LocalizedText;
   reviewedAt: string;
   reviewedBy: string;
+};
+
+export type PresidentialFinancialEstimateMethod = {
+  formula: LocalizedText;
+  variables: LocalizedText;
+  units: LocalizedText;
+  assumptions: LocalizedText;
+  references: LocalizedText;
+  exclusions: LocalizedText;
+  uncertainty: LocalizedText;
+};
+
+export type PresidentialFinancialRecord = {
+  id: string;
+  instrument: PresidentialFinancialInstrument;
+  amountMin: number;
+  amountMax: number | null;
+  currency: string;
+  priceYear: number;
+  horizon: PolicyDate;
+  scope: LocalizedText;
+  cadence: PresidentialFinancialCadence;
+  source: PresidentialSource;
+  status: PresidentialFinancialStatus;
+  isEstimate: boolean;
+  estimateMethod: PresidentialFinancialEstimateMethod | null;
+  budgetReductionBaseline: LocalizedText | null;
 };
 
 export type PresidentialMandatePeriod = {
@@ -160,6 +192,7 @@ export type PresidentialEnvironmentalCommitment = {
   deduplicationKey: string;
   environmentalAssessment: PresidentialEnvironmentalAssessment | null;
   outcome: PresidentialCommitmentOutcome | null;
+  financialRecords: PresidentialFinancialRecord[];
   validation: ContentValidationRecord;
 };
 
@@ -175,6 +208,7 @@ export type PresidentialPublicArchive = {
   elections: PresidentialElectionRecord[];
   candidates: PresidentialPublicCandidate[];
   validatedCommitments: PresidentialPublicCommitment[];
+  coverage: Record<PresidentialElectionYear, { examined: number; collected: number; missing: number }>;
 };
 
 const COLLECTED_AT = "2026-11-13";
@@ -208,6 +242,17 @@ function isCompletePresidentialOutcome(outcome: PresidentialCommitmentOutcome | 
   if (outcome.implementation && !isCompleteOutcomeStage(outcome.implementation)) return false;
   if (outcome.observedResult && (!isNonEmptyLocalizedText(outcome.observedResult.summary) || !isNonEmptyLocalizedText(outcome.observedResult.unit) || !isValidPolicyDate(outcome.observedResult.period) || outcome.observedResult.source.status !== "verified" || !outcome.observedResult.source.url || !outcome.observedResult.source.version)) return false;
   if (outcome.objectiveResultGap && (!isNonEmptyLocalizedText(outcome.objectiveResultGap.summary) || typeof outcome.objectiveResultGap.comparableIndicators !== "boolean")) return false;
+  return true;
+}
+
+function isCompleteFinancialRecord(record: PresidentialFinancialRecord): boolean {
+  if (!record.id || !["investment", "spending_reduction", "tax_revenue", "other"].includes(record.instrument) || !Number.isFinite(record.amountMin) || (record.amountMax !== null && (!Number.isFinite(record.amountMax) || record.amountMax < record.amountMin)) || !record.currency.trim() || !Number.isInteger(record.priceYear) || !isValidPolicyDate(record.horizon) || !isNonEmptyLocalizedText(record.scope) || !["annual", "multiannual", "one_off", "unknown"].includes(record.cadence) || record.source.status !== "verified" || !record.source.url || !record.source.version || !["announced", "voted", "executed"].includes(record.status) || typeof record.isEstimate !== "boolean") return false;
+  if (record.amountMin < 0 && (record.instrument !== "spending_reduction" || !record.budgetReductionBaseline || !isNonEmptyLocalizedText(record.budgetReductionBaseline))) return false;
+  if (record.instrument === "spending_reduction" && record.amountMin < 0 && !record.budgetReductionBaseline) return false;
+  if (record.isEstimate) {
+    const method = record.estimateMethod;
+    if (!method || !Object.values(method).every((value) => isNonEmptyLocalizedText(value))) return false;
+  }
   return true;
 }
 
@@ -482,6 +527,7 @@ type CommitmentInput = {
   deduplicationKey?: string;
   environmentalAssessment?: PresidentialEnvironmentalAssessment | null;
   outcome?: PresidentialCommitmentOutcome | null;
+  financialRecords?: PresidentialFinancialRecord[];
 };
 
 const hollandeSecondarySource = sourceRef({
@@ -621,6 +667,7 @@ const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment
     deduplicationKey: input.deduplicationKey ?? input.id,
     environmentalAssessment: input.environmentalAssessment ?? null,
     outcome: input.outcome ?? null,
+    financialRecords: input.financialRecords ?? [],
     validation: validationDraft(`${input.id}-validation`, source, localized(`Engagement attribué à ${input.candidateName} à vérifier individuellement : ${input.formulation}`, `Commitment attributed to ${input.candidateName} to be checked individually: ${input.formulation}`)),
   };
 };
@@ -687,7 +734,9 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
         && isValidPolicyDate(commitmentRecord.deadline)
         && Boolean(commitmentRecord.lastCheckedAt)
         && isCompleteEnvironmentalAssessment(commitmentRecord.environmentalAssessment)
-        && isCompletePresidentialOutcome(commitmentRecord.outcome);
+        && isCompletePresidentialOutcome(commitmentRecord.outcome)
+        && new Set(commitmentRecord.financialRecords.map((record) => record.id)).size === commitmentRecord.financialRecords.length
+        && commitmentRecord.financialRecords.every(isCompleteFinancialRecord);
     } catch {
       return false;
     }
@@ -709,6 +758,11 @@ function isCompleteEnvironmentalAssessment(assessment: PresidentialEnvironmental
 }
 
 export function getPublicPresidentialArchive(corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialPublicArchive {
+  const collectedByYear = Object.fromEntries(([2012, 2017, 2022, 2027] as PresidentialElectionYear[]).map((year) => {
+    const collected = corpus.commitments.filter((commitment) => commitment.electionYear === year).length;
+    const examined = corpus.commitments.filter((commitment) => commitment.electionYear === year && commitment.environmentalAssessment !== null).length;
+    return [year, { examined, collected, missing: Math.max(0, collected - examined) }];
+  })) as PresidentialPublicArchive["coverage"];
   return {
     elections: corpus.elections,
     candidates: corpus.candidates
@@ -724,5 +778,6 @@ export function getPublicPresidentialArchive(corpus = PRESIDENTIAL_ENVIRONMENTAL
         Reflect.deleteProperty(publicCommitment, "validation");
         return publicCommitment as PresidentialPublicCommitment;
       }),
+    coverage: collectedByYear,
   };
 }

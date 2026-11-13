@@ -128,6 +128,22 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("Objectif annoncé");
   });
 
+  it("opens the accessible charts view with an explicit empty state", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => { root.render(<PresidentialEnvironmentalArchive {...presidentialArchive} />); });
+    const chartsButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.trim() === "Graphiques");
+    expect(chartsButton).toBeDefined();
+    await act(async () => { chartsButton?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(container.textContent).toContain("Montants annoncés comparables");
+    expect(container.textContent).toContain("Aucune classification validée comparable");
+    expect(container.textContent).toContain("Aucun montant annoncé comparable");
+    expect(container.querySelector('[role="img"][aria-label="Histogramme des classifications par candidat"]')).toBeNull();
+    root.unmount();
+    container.remove();
+  });
+
   it("keeps 2027 empty and explicitly preparatory", async () => {
     const container = document.createElement("div");
     document.body.append(container);

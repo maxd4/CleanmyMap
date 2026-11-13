@@ -187,5 +187,15 @@ existant et une identité confirmée ; les autres rapprochements restent non
 confirmés. Les mandats achevés peuvent recevoir un bilan documenté, tandis que
 2022–2027 reste un suivi provisoire daté. Aucun bilan n’est actuellement
 publié.
+La vue `Graphiques` de l’archive présidentielle ne consomme que cette
+projection validée. Elle sépare les cinq classifications et n’additionne les
+montants annoncés que pour des enregistrements partageant devise, année des
+prix, horizon, périmètre et cadence. Un montant financier conserve son
+instrument, son statut `announced`/`voted`/`executed`, sa source et sa nature
+annuelle ou pluriannuelle ; une estimation porte sa formule, variables,
+unités, hypothèses, références, exclusions et incertitude. Une réduction
+négative exige une base budgétaire documentée. Les données manquantes,
+doublons et incompatibilités sont exclues des agrégats et comptées dans la
+couverture ; elles ne deviennent jamais zéro ni classement écologique.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.
