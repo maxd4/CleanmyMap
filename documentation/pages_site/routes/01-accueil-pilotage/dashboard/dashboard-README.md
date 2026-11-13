@@ -25,6 +25,10 @@
 - cartes métriques
 - CTA de navigation
 - indicateurs prioritaires
+- Le résumé KPI conserve la période, les unités et les limites de comparabilité ;
+  ses libellés, états, CTA et interprétations suivent la locale active.
+- Les interprétations `positive`, `negative` et `neutral` sont distinctes ;
+  `neutral` ne porte pas de signal visuel de régression.
 - **Textes à réduire ou supprimer** :
 - Rappels redondants
 - badges de contexte répétés

@@ -24,6 +24,10 @@
 - cartes métriques
 - CTA de navigation
 - indicateurs prioritaires
+- Le résumé KPI partagé conserve période, unités, provenance et états de
+  comparabilité ; ses textes sont rendus selon la locale `fr`/`en` du consommateur.
+- Les interprétations `positive`, `negative` et `neutral` ont chacune un
+  traitement distinct ; `neutral` n'est jamais rendu comme une baisse.
 - **Textes à réduire ou supprimer** :
 - Rappels redondants
 - badges de contexte répétés

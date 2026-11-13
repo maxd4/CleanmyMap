@@ -23,6 +23,15 @@ description et footer sans recréer la surface de carte.
 - Les valeurs numériques alignées utilisent `tabular-nums` si la comparaison visuelle en bénéficie. Le titre, l'unité et la valeur doivent rester lisibles après reflow sans être tronqués de façon silencieuse.
 - Une carte standard conserve les dimensions de `StatCard` et `CmmCard`, non un padding/radius supplémentaire propre au Dashboard, Pilotage ou Reports.
 - La couleur d'accent représente une identité ou une catégorie documentée ; elle ne crée pas seule un niveau, une gravité ou une signification scientifique.
+- Le résumé décisionnel partagé (`ThirtySecondsSummary`) transmet la `locale` du
+  consommateur et présente les interprétations `positive`, `negative` et
+  `neutral` avec des marqueurs distincts. `neutral` n'utilise jamais la flèche
+  descendante ni le ton de régression ; une valeur absente ou non comparable
+  reste explicitement affichée comme telle.
+- Les cartes de ce résumé réutilisent `CmmCard`, `CmmButton` et
+  `tabular-nums`. Leur grille repasse en une colonne sans tronquer les valeurs,
+  et les textes de statut, de comparaison, d'action et d'état vide suivent la
+  locale `fr`/`en` fournie par la surface.
 
 ## Tables runtime
 

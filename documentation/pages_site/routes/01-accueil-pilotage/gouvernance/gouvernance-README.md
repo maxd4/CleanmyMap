@@ -22,6 +22,8 @@
 - titre de page
 - repères de gouvernance
 - CTA de bascule vers le pilotage
+- synthèse KPI, période de lecture et états de données dans la locale active
+- neutralité rendue sans flèche descendante ni couleur de régression
 - **Textes à réduire ou supprimer** :
 - doublons de KPI
 - rappels trop longs

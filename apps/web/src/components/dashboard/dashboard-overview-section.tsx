@@ -114,6 +114,7 @@ export async function DashboardOverviewSection({
   return (
     <div data-gsap-reveal className="space-y-4">
       <ThirtySecondsSummary
+        locale={locale}
         kpis={overview.summary.kpis}
         alert={overview.summary.alert}
         recommendedAction={{
