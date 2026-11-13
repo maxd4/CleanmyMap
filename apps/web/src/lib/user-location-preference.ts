@@ -349,6 +349,9 @@ export function extractLocationPreferencesFromMetadataSources(
     if (hasCanonicalLocationPreferences(source)) {
       return extractLocationPreferencesFromMetadata(source);
     }
+  }
+
+  for (const source of sources) {
     const preferences = extractLocationPreferencesFromMetadata(source);
     if (preferences.residence || preferences.work) {
       return preferences;

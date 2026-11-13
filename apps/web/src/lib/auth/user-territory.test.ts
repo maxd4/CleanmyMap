@@ -55,6 +55,39 @@ describe("getCurrentUserTerritoryLocationPreference", () => {
     await expect(getCurrentUserTerritoryLocationPreference()).resolves.toBeNull();
   });
 
+  it("uses a private canonical preference after unsafe legacy metadata", async () => {
+    mocks.auth.mockResolvedValue({ userId: "user-1" });
+    mocks.clerkClient.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          unsafeMetadata: { territoryLabel: "Paris 11e", territoryLocationType: "residence", parisArrondissement: 11 },
+          publicMetadata: {},
+          privateMetadata: {
+            territoryPreferences: {
+              residence: {
+                country: "SN",
+                level: "district",
+                label: "Dakar",
+                subtitle: "Sénégal",
+                arrondissement: null,
+                arrondissementCity: null,
+                administrativeCode: "SN-DAK",
+              },
+              work: null,
+            },
+          },
+        }),
+      },
+    });
+
+    await expect(getCurrentUserTerritoryLocationPreference()).resolves.toMatchObject({
+      country: "SN",
+      label: "Dakar",
+      administrativeCode: "SN-DAK",
+      locationType: "residence",
+    });
+  });
+
   it("fails closed when the provider cannot be read", async () => {
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.clerkClient.mockRejectedValue(new Error("provider unavailable"));

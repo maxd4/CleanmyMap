@@ -168,6 +168,34 @@ describe("useWeatherData asynchronous location lifecycle", () => {
     expect(mocks.useSuggestions).not.toHaveBeenCalledWith("Paris 11e", "FR");
   });
 
+  it("uses a public canonical country instead of an unsafe legacy Paris label", () => {
+    mocks.useUser.mockReturnValue({
+      isLoaded: true,
+      user: {
+        unsafeMetadata: { territoryLabel: "Paris 11e", territoryLocationType: "residence", parisArrondissement: 11 },
+        publicMetadata: {
+          territoryPreferences: {
+            residence: {
+              country: "BE",
+              level: "country",
+              label: "Belgique",
+              subtitle: "Vue nationale",
+              arrondissement: null,
+              arrondissementCity: null,
+            },
+            work: null,
+          },
+        },
+        privateMetadata: {},
+      },
+    });
+
+    renderHook({ contextReady: true });
+
+    expect(mocks.useSuggestions).toHaveBeenCalledWith("Belgique", "BE");
+    expect(mocks.useSuggestions).not.toHaveBeenCalledWith("Paris 11e", "FR");
+  });
+
   it("resolves a draft location before Clerk is loaded", async () => {
     mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
     const request = deferred<Response>();

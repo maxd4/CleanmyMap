@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   clearLocationPreferenceMetadata,
   createTerritoryLocationSelectionFromLegacyArrondissement,
@@ -10,6 +10,7 @@ import {
   extractResidenceLocationPreferenceFromMetadata,
   extractUserLocationPreferenceFromMetadata,
   extractLocationPreferencesFromMetadata,
+  extractLocationPreferencesFromMetadataSources,
   parseCountryCode,
 } from "./user-location-preference";
 
@@ -315,4 +316,102 @@ it("does not fall back to legacy French fields when canonical preferences are em
       parisArrondissement: 11,
     }),
   ).toEqual({ residence: null, work: null });
+});
+
+describe("metadata source precedence", () => {
+  const legacyParis = {
+    territoryLabel: "Paris 11e",
+    territoryLocationType: "residence",
+    parisArrondissement: 11,
+  };
+
+  const canadaResidence = {
+    country: "CA",
+    level: "province",
+    label: "Québec",
+    subtitle: "Canada",
+    arrondissement: null,
+    arrondissementCity: null,
+    administrativeCode: "CA-QC",
+  };
+
+  it("does not let unsafe legacy metadata mask a cleared public preference", () => {
+    expect(
+      extractLocationPreferencesFromMetadataSources([
+        legacyParis,
+        { territoryPreferences: { residence: null, work: null } },
+        null,
+      ]),
+    ).toEqual({ residence: null, work: null });
+  });
+
+  it("uses a foreign public canonical preference over unsafe legacy metadata", () => {
+    expect(
+      extractLocationPreferencesFromMetadataSources([
+        legacyParis,
+        { territoryPreferences: { residence: canadaResidence, work: null } },
+      ]),
+    ).toEqual({
+      residence: canadaResidence,
+      work: null,
+    });
+  });
+
+  it("finds a private canonical preference before applying any legacy fallback", () => {
+    expect(
+      extractLocationPreferencesFromMetadataSources([
+        legacyParis,
+        {},
+        { territoryPreferences: { residence: canadaResidence, work: null } },
+      ]),
+    ).toEqual({ residence: canadaResidence, work: null });
+  });
+
+  it("keeps the first canonical layer authoritative when canonical layers disagree", () => {
+    expect(
+      extractLocationPreferencesFromMetadataSources([
+        { territoryPreferences: { residence: canadaResidence, work: null } },
+        {
+          territoryPreferences: {
+            residence: {
+              ...canadaResidence,
+              country: "SN",
+              level: "district",
+              label: "Dakar",
+              subtitle: "Sénégal",
+              administrativeCode: "SN-DAK",
+            },
+            work: null,
+          },
+        },
+      ]),
+    ).toEqual({ residence: canadaResidence, work: null });
+  });
+
+  it("preserves the historical first-valid legacy fallback when no canonical object exists", () => {
+    expect(
+      extractLocationPreferencesFromMetadataSources([
+        { territoryLabel: "", territoryLocationType: "residence" },
+        legacyParis,
+        { territoryLabel: "Paris 4e", territoryLocationType: "work", parisArrondissement: 4 },
+      ]),
+    ).toMatchObject({ residence: expect.objectContaining({ label: "Paris 11e" }), work: null });
+  });
+
+  it("keeps a work-only foreign preference and its administrative code", () => {
+    expect(
+      extractLocationPreferencesFromMetadataSources([
+        legacyParis,
+        {
+          territoryPreferences: {
+            residence: null,
+            work: { ...canadaResidence, label: "Montréal", administrativeCode: "CA-QC-MTL" },
+          },
+        },
+      ]),
+    ).toEqual({
+      residence: null,
+      work: { ...canadaResidence, label: "Montréal", administrativeCode: "CA-QC-MTL" },
+    });
+  });
 });

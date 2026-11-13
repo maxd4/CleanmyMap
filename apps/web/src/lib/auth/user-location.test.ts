@@ -85,6 +85,37 @@ describe("current user location preferences", () => {
     await expect(getCurrentUserLocationPreference()).resolves.toBeNull();
   });
 
+  it("prefers a public canonical foreign preference over unsafe legacy metadata", async () => {
+    mocks.auth.mockResolvedValue({ userId: "user-1" });
+    mocks.clerkClient.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          unsafeMetadata: { territoryLabel: "Paris 11e", territoryLocationType: "residence", parisArrondissement: 11 },
+          publicMetadata: {
+            territoryPreferences: {
+              residence: {
+                country: "CA",
+                level: "province",
+                label: "Québec",
+                subtitle: "Canada",
+                arrondissement: null,
+                arrondissementCity: null,
+                administrativeCode: "CA-QC",
+              },
+              work: null,
+            },
+          },
+          privateMetadata: {},
+        }),
+      },
+    });
+
+    await expect(getCurrentUserLocationPreferences()).resolves.toMatchObject({
+      residence: { country: "CA", label: "Québec", administrativeCode: "CA-QC" },
+      work: null,
+    });
+  });
+
   it("fails closed when Clerk is unavailable", async () => {
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.clerkClient.mockRejectedValue(new Error("Clerk unavailable"));
