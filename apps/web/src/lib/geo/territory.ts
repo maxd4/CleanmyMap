@@ -86,9 +86,15 @@ export function matchesPhotonCountry(result: unknown, countryCode: string): bool
   if (!result || typeof result !== "object" || Array.isArray(result)) return false;
   const properties = (result as { properties?: { countrycode?: unknown } }).properties;
   const resultCountry = properties?.countrycode;
-  return typeof resultCountry !== "string"
-    || resultCountry.trim() === ""
-    || resultCountry.trim().toLowerCase() === countryCode.trim().toLowerCase();
+  const expectedCountry = countryCode.trim().toLowerCase();
+  if (typeof resultCountry === "string" && resultCountry.trim()) {
+    return resultCountry.trim().toLowerCase() === expectedCountry;
+  }
+
+  // France keeps the historical provider compatibility: the local parser
+  // independently constrains coordinates to the French provider path. A
+  // foreign request has no safe fallback without explicit country metadata.
+  return expectedCountry === "fr";
 }
 
 export function buildTerritoryNominatimSearchUrl(query: string): string | null {

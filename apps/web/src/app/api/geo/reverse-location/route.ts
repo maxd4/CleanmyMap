@@ -214,8 +214,12 @@ async function loadGeoplateformeReverseLocation(
     if (!response.ok) return null;
     const payload = (await response.json()) as { features?: GeoplateformeReverseFeature[] };
     for (const feature of payload.features ?? []) {
+      const postcode = cleanPart(feature.properties?.postcode);
       const location = formatReverseLocation(feature);
-      if (location && isNearRequestedPoint(location, latitude, longitude)) {
+      // The official French provider plus a French five-digit postcode is a
+      // territorial signal. The bbox only decides whether to probe; it never
+      // authorizes a result on its own.
+      if (location && /^\d{5}$/.test(postcode) && isNearRequestedPoint(location, latitude, longitude)) {
         return location;
       }
     }
@@ -265,19 +269,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    // The bbox only decides whether Geoplateforme is worth probing. Photon
-    // country metadata remains the required France check before its result is
-    // accepted as the metropolitan reverse provider.
+    // The bbox only decides whether Geoplateforme is worth probing. A valid
+    // nearby Geoplateforme address with a French postcode is sufficient; Photon
+    // remains a fallback and must expose country metadata when used.
     const shouldProbeGeoplateforme = isWithinFranceTerritoryBounds(lat, lon);
     const geoplateformeLocation = shouldProbeGeoplateforme
       ? await loadGeoplateformeReverseLocation(lat, lon)
       : null;
+    if (geoplateformeLocation) {
+      return NextResponse.json({
+        status: "ok",
+        location: geoplateformeLocation,
+      }, {
+        headers: REVERSE_LOCATION_CACHE_HEADERS,
+      });
+    }
+
     const photonLookup = await loadPhotonReverseLocation(lat, lon);
-    const location = !shouldProbeGeoplateforme
-      ? photonLookup?.location ?? null
-      : photonLookup?.countryCode === "fr"
-        ? geoplateformeLocation ?? photonLookup.location
-        : photonLookup?.location ?? null;
+    const location = photonLookup?.countryCode ? photonLookup.location : null;
 
     return NextResponse.json({
       status: "ok",

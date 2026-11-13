@@ -36,15 +36,6 @@ describe("/api/geo/reverse-location", () => {
             },
           }],
         }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          features: [{
-            geometry: { coordinates: [2.3522, 48.8566] },
-            properties: { name: "Paris", countrycode: "fr" },
-          }],
-        }),
       });
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
@@ -64,8 +55,7 @@ describe("/api/geo/reverse-location", () => {
 
     expect(body.status).toBe("ok");
     expect(response.headers.get("cache-control")).toContain("private");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/reverse");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[1]).toEqual(
       expect.objectContaining({
         method: "GET",
@@ -158,7 +148,7 @@ describe("/api/geo/reverse-location", () => {
         json: async () => ({
           features: [{
             geometry: { coordinates: [2.3522, 48.8566] },
-            properties: { name: "Paris", country: "France" },
+            properties: { name: "Paris", country: "France", countrycode: "fr" },
           }],
         }),
       });
@@ -208,7 +198,7 @@ describe("/api/geo/reverse-location", () => {
     expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/reverse");
   });
 
-  it("uses Geoplateforme only after Photon confirms metropolitan France", async () => {
+  it("accepts a coherent Geoplateforme French address without probing Photon", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({
         ok: true,
@@ -216,15 +206,6 @@ describe("/api/geo/reverse-location", () => {
           features: [{
             geometry: { coordinates: [2.3522, 48.8566] },
             properties: { city: "Paris", postcode: "75001", score: 0.98 },
-          }],
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          features: [{
-            geometry: { coordinates: [2.3522, 48.8566] },
-            properties: { name: "Paris Photon", countrycode: "fr" },
           }],
         }),
       });
@@ -235,6 +216,26 @@ describe("/api/geo/reverse-location", () => {
     );
 
     expect((await response.json()).location).toMatchObject({ label: "Paris", subtitle: "75001 Paris" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed when Photon has no country evidence after a French provider miss", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ features: [] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { name: "Paris sans pays" },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(new Request("http://localhost/api/geo/reverse-location?lat=48.8566&lon=2.3522"));
+
+    expect((await response.json()).location).toBeNull();
   });
 
   it.each([

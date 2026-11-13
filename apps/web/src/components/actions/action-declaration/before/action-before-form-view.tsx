@@ -15,6 +15,7 @@ import type { ActiveRole } from "@/lib/domain-language";
 import type { CountryCode } from "@/lib/user-location-preference";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { ActionBeforePersistenceStatus, type BeforeActionPersistenceStatus } from "./persistence-status";
+import { ActionSearchCountryField } from "./action-search-country-field";
 
 export function ActionBeforeFormView({
   activeSection,
@@ -24,6 +25,7 @@ export function ActionBeforeFormView({
   validationIssueFields,
   errorMessage,
   countryCode,
+  onCountryCodeChange,
   userMetadata,
   updateField,
   updateFields,
@@ -48,6 +50,7 @@ export function ActionBeforeFormView({
   validationIssueFields: readonly string[];
   errorMessage: string | null;
   countryCode?: CountryCode;
+  onCountryCodeChange: (countryCode: CountryCode) => void;
   userMetadata: {
     userId: string;
     activeRole?: ActiveRole;
@@ -81,6 +84,7 @@ export function ActionBeforeFormView({
         <ActionBeforePersistenceStatus status={persistenceStatus} onRetry={onRetryDraftLoad} />
         {sectioned ? null : <CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><h2 className="text-3xl font-black tracking-tight text-emerald-950">Préparer une action future</h2></div></CmmCard>}
         <form onSubmit={(event) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ handleSubmit(event); }} className="space-y-6">
+          <ActionSearchCountryField countryCode={countryCode} onChange={onCountryCodeChange} />
           {sectioned ? (
             <ActionBeforeSectionedContent
               activeSection={activeSection}

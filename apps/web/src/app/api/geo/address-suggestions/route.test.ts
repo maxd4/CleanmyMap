@@ -364,6 +364,25 @@ describe("/api/geo/address-suggestions", () => {
     );
   });
 
+  it("rejects an international Photon result without country evidence", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        features: [{
+          geometry: { coordinates: [-73.5674, 45.5019] },
+          properties: { name: "Montréal sans pays" },
+        }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Montréal&limit=3&country=CA"),
+    );
+
+    expect((await response.json()).items).toEqual([]);
+  });
+
   it("keeps Paris on the Geoplateforme France path", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

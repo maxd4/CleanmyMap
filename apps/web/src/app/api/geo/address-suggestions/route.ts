@@ -7,6 +7,7 @@ import {
 import {
   buildPhotonSearchUrl,
   isWithinFranceTerritoryBounds,
+  matchesPhotonCountry,
   parsePhotonCoordinates,
 } from "@/lib/geo/territory";
 import { DEFAULT_COUNTRY_CODE, parseCountryCode, type CountryCode } from "@/lib/user-location-preference";
@@ -241,11 +242,8 @@ async function loadPhotonAddressSuggestions(
     if (!response.ok) return [];
 
     const payload = (await response.json()) as { features?: PhotonFeature[] };
-    const expectedCountry = countryCode.toLowerCase();
-
     return (payload.features ?? []).flatMap((result) => {
-      const resultCountry = result.properties?.countrycode;
-      if (typeof resultCountry === "string" && resultCountry.toLowerCase() !== expectedCountry) {
+      if (!matchesPhotonCountry(result, countryCode)) {
         return [];
       }
       const coordinates = parsePhotonCoordinates(result);

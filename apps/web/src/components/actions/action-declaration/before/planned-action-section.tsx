@@ -15,6 +15,7 @@ export function PlannedActionSection({
   hasAttemptedSubmit,
   validationIssueFields,
   updateFields,
+  countryCode,
 }: BaseSectionProps) {
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
@@ -28,6 +29,7 @@ export function PlannedActionSection({
           updateFields={updateFields}
           hasAttemptedSubmit={hasAttemptedSubmit}
           validationIssueFields={validationIssueFields}
+          countryCode={countryCode}
         />
         <PlannedActionVolunteerSection form={form} updateField={updateField} validationIssueFields={validationIssueFields} />
       </div>

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getCurrentUserIdentity: vi.fn(),
   isFeatureEnabled: vi.fn(() => true),
   resolveActionResumePhase: vi.fn(),
+  getCurrentUserTerritoryLocationPreference: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -29,6 +30,9 @@ vi.mock("@/lib/feature-flags", () => ({
 vi.mock("@/lib/actions/action-resume", () => ({
   resolveActionResumePhase: mocks.resolveActionResumePhase,
 }));
+vi.mock("@/lib/auth/user-territory", () => ({
+  getCurrentUserTerritoryLocationPreference: mocks.getCurrentUserTerritoryLocationPreference,
+}));
 
 vi.mock("@/components/actions/action-creation-shell", () => ({
   ActionCreationShell: (props: Record<string, unknown>) =>
@@ -42,6 +46,7 @@ vi.mock("@/components/actions/action-creation-shell", () => ({
       "data-initial-section": String(props.initialSection ?? ""),
       "data-sign-in-href": String(props.signInHref ?? ""),
       "data-sign-up-href": String(props.signUpHref ?? ""),
+      "data-country-code": String(props.countryCode ?? ""),
     }),
 }));
 
@@ -59,6 +64,7 @@ describe("action creation entry point", () => {
     });
     mocks.getCurrentUserIdentity.mockResolvedValue(null);
     mocks.resolveActionResumePhase.mockResolvedValue("post_action_draft");
+    mocks.getCurrentUserTerritoryLocationPreference.mockResolvedValue(null);
   });
 
   it("does not expose the former clean-place mode", () => {
@@ -111,6 +117,15 @@ describe("action creation entry point", () => {
       displayName: "Admin test",
       username: "admin-test",
     });
+    mocks.getCurrentUserTerritoryLocationPreference.mockResolvedValue({
+      country: "BE",
+      level: "country",
+      label: "Belgique",
+      subtitle: null,
+      arrondissement: null,
+      arrondissementCity: null,
+      locationType: "residence",
+    });
 
     const html = renderToStaticMarkup(
       await NewActionPage({
@@ -126,6 +141,7 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-event-id="event-42"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain('data-initial-tab="after"');
+    expect(html).toContain('data-country-code="BE"');
     expect(html).not.toContain("public-preview");
     expect(html).not.toContain("Aperçu public");
   });

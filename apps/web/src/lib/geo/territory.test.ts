@@ -4,6 +4,7 @@ import {
   buildTerritoryLeafletBounds,
   isWithinFranceTerritoryBounds,
   isWithinTerritoryBounds,
+  matchesPhotonCountry,
   parsePhotonCoordinates,
 } from "./territory";
 
@@ -29,5 +30,12 @@ describe("territory geography", () => {
     expect(parsePhotonCoordinates({ geometry: { coordinates: [null, ""] } })).toBeNull();
     expect(parsePhotonCoordinates({ geometry: { coordinates: ["", "0"] } })).toBeNull();
     expect(parsePhotonCoordinates({ geometry: { coordinates: [0, 0] } })).toEqual({ latitude: 0, longitude: 0 });
+  });
+
+  it("requires country evidence for foreign Photon searches while preserving justified France compatibility", () => {
+    expect(matchesPhotonCountry({ properties: {} }, "CA")).toBe(false);
+    expect(matchesPhotonCountry({ properties: { countrycode: "ca" } }, "CA")).toBe(true);
+    expect(matchesPhotonCountry({ properties: {} }, "FR")).toBe(true);
+    expect(matchesPhotonCountry({ properties: { countrycode: "be" } }, "FR")).toBe(false);
   });
 });
