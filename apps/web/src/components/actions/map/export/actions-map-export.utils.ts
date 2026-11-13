@@ -344,6 +344,7 @@ function buildFeatureProperties(
   item: ActionMapItem,
   resolved: ResolvedExportGeometry,
 ): Record<string, unknown> {
+  const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
   return {
     id: item.id,
     created_at: resolveCreatedAt(item),
@@ -367,6 +368,12 @@ function buildFeatureProperties(
     geometry_variant: resolved.presentation.variant ?? null,
     observed_trace_count: resolved.observedCoverage?.traceCount ?? null,
     simulated_group_count: resolved.simulatedGroupCount,
+    simulated_group_size_policy: simulated?.groupSizePolicy ?? null,
+    simulated_target_distance_km: simulated?.targetDistanceKm ?? null,
+    simulated_individual_distances_km: simulated?.individualSimulatedDistancesKm ?? null,
+    simulated_total_distance_km: simulated?.totalSimulatedDistanceKm ?? null,
+    simulated_unique_network_distance_km: simulated?.uniqueNetworkDistanceKm ?? null,
+    simulated_observed_distance_km: simulated?.observedDistanceKm ?? null,
     historical_geometry_kind: resolved.historicalKind,
     historical_geometry_confidence: resolved.historicalConfidence,
     historical_geometry_source: resolved.historicalSource,

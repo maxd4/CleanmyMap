@@ -140,9 +140,14 @@ describe("actions map geometry utils", () => {
             [[48.85, 2.35], [48.849, 2.349]],
           ],
           groupCount: 2,
+          groupSizePolicy: "preferred_5_to_8",
           groupParticipantCounts: [5, 5],
           durationMinutes: 60,
           targetDistanceKm: 3,
+          individualSimulatedDistancesKm: [3, 3],
+          totalSimulatedDistanceKm: 6,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
           speedKmPerHour: 3,
           geometrySource: "estimated_route",
           provenance: "estimated",
@@ -156,6 +161,10 @@ describe("actions map geometry utils", () => {
     expect(model.multiLinePositions).toHaveLength(2);
     expect(model.presentation.label).toBe("Parcours hypothétique estimé");
     expect(model.presentation.strokeStyle).toBe("dashed");
+    expect(model.metrics.label).toContain("Distance cible par groupe · 3,0 km");
+    expect(model.metrics.label).toContain("Somme des distances simulées · 6,0 km");
+    expect(model.metrics.label).toContain("réseau unique inconnu");
+    expect(model.metrics.label).toContain("distance observée non disponible");
   });
 
   it("renders an official park reference as a filled continuous estimated zone", () => {
@@ -191,6 +200,7 @@ describe("actions map geometry utils", () => {
     expect(geometry.coverageTraceCount).toBe(2);
     expect(geometry.presentation.label).toBe("Couverture observée multi-traces");
     expect(geometry.metrics.label).toContain("distances individuelles conservées");
+    expect(geometry.metrics.label).toContain("réseau unique non calculé");
   });
 
   it("shows only the action location when a completed routed line has no network proof", () => {

@@ -47,12 +47,20 @@ const ROUTE_GROUP_CORRIDOR_OVERLAP_RADIUS_KM = 0.35;
 
 export type HypotheticalGroupPlan =
   | { kind: "compatible"; counts: number[] }
+  | { kind: "exception"; counts: number[]; reason: string }
   | { kind: "incompatible"; reason: string };
 
 /** Chooses the smallest number of hypothetical teams with 5–8 participants each. */
 export function resolveHypotheticalGroupPlan(participants: number): HypotheticalGroupPlan {
   if (!Number.isInteger(participants) || participants < 5) {
     return { kind: "incompatible", reason: "Effectif connu inférieur à 5 participants." };
+  }
+  if (participants === 9) {
+    return {
+      kind: "exception",
+      counts: [5, 4],
+      reason: "Effectif de 9 participants réparti en [5,4] : un groupe de 4 est une exception explicite.",
+    };
   }
   for (let groupCount = 1; groupCount <= MAX_ROUTE_GROUP_COUNT; groupCount += 1) {
     const base = Math.floor(participants / groupCount);

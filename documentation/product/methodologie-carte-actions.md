@@ -947,6 +947,16 @@ remplace visuellement le repère contextuel ; le polygone historique reste
 persisté et auditable sans être publié comme preuve terrain. Une observation
 ajoutée est append-only et idempotente.
 
+Pour une action historique sans trace terrain, une reconstruction multi-groupes
+reste explicitement hypothétique, même lorsque chaque ligne a été calculée par
+FOSSGIS/OSRM. Le contrat conserve séparément la durée complète de l'action, la
+distance cible de chaque groupe à `3 km/h`, les longueurs simulées retournées
+par le routage et leur somme. Cette somme ne représente ni la longueur unique
+du réseau couvert, qui reste inconnue sans déduplication défendable, ni une
+distance observée. Une distance réellement parcourue n'est renseignée qu'avec
+une preuve GPS/GPX admissible. La projection publique conserve donc la
+provenance `estimated_route`, les pointillés et la priorité des traces terrain.
+
 ### Remédiation des géométries historiques
 
 La convergence des anciennes lignes vers cette grammaire est une remédiation

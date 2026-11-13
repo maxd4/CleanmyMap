@@ -86,6 +86,10 @@ describe("server-side action route reconstruction", () => {
       groupParticipantCounts,
       durationMinutes,
       targetDistanceKm,
+      individualSimulatedDistancesKm: [targetDistanceKm, targetDistanceKm],
+      totalSimulatedDistanceKm: targetDistanceKm * 2,
+      uniqueNetworkDistanceKm: null,
+      observedDistanceKm: null,
       speedKmPerHour: 3,
       geometrySource: "estimated_route",
       provenance: "estimated",
@@ -95,8 +99,12 @@ describe("server-side action route reconstruction", () => {
     expect(result?.geometrySource).toBe("routed");
   });
 
-  it("records an explicit exception instead of simulating nine participants", async () => {
-    routeProviderMock.mockResolvedValue(networkGeometry);
+  it("simulates nine participants with the explicit [5,4] exception", async () => {
+    routeProviderMock.mockImplementation(async (waypoints: [number, number][]) => ({
+      ...networkGeometry,
+      coordinates: waypoints,
+      distanceKm: 3,
+    }));
     const result = await reconstructActionRoute({
       latitude: 48.85,
       longitude: 2.35,
@@ -104,8 +112,30 @@ describe("server-side action route reconstruction", () => {
       durationMinutes: 60,
       participantsCount: 9,
     });
+    expect(result?.simulatedRouteCoverage).toMatchObject({
+      groupParticipantCounts: [5, 4],
+      groupSizePolicy: "explicit_exception",
+      targetDistanceKm: 3,
+      totalSimulatedDistanceKm: 6,
+    });
+  });
+
+  it("refuses a multi-group reconstruction when the routed alternatives overlap", async () => {
+    routeProviderMock.mockResolvedValue({
+      ...networkGeometry,
+      distanceKm: 3,
+    });
+
+    const result = await reconstructActionRoute({
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      durationMinutes: 60,
+      participantsCount: 10,
+    });
+
     expect(result?.simulatedRouteCoverage).toBeUndefined();
-    expect(result?.simulationUnavailableReason).toContain("incompatible");
+    expect(result?.simulationUnavailableReason).toContain("recouvrent trop");
   });
 
   it("uses the explicit target without changing the measured provider distance", async () => {

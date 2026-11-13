@@ -14,12 +14,20 @@ import { ROUTE_TERRITORIAL_GUIDED_VERSION } from "./route-planning-mode";
 
 describe("hypothetical historical group sizing", () => {
   it.each([
-    [5, [5]], [8, [8]], [10, [5, 5]], [12, [6, 6]], [15, [8, 7]], [20, [7, 7, 6]],
+    [5, [5]], [6, [6]], [8, [8]], [10, [5, 5]], [12, [6, 6]], [15, [8, 7]], [20, [7, 7, 6]],
   ])("keeps %s participants in groups of 5 to 8", (participants, counts) => {
     expect(resolveHypotheticalGroupPlan(participants)).toEqual({ kind: "compatible", counts });
   });
 
-  it.each([9, 4, 97])("marks %s participants as an explicit exception", (participants) => {
+  it("keeps nine participants as the explicit [5,4] exception", () => {
+    expect(resolveHypotheticalGroupPlan(9)).toEqual({
+      kind: "exception",
+      counts: [5, 4],
+      reason: expect.stringContaining("exception explicite"),
+    });
+  });
+
+  it.each([4, 97])("marks %s participants as incompatible without forcing a split", (participants) => {
     expect(resolveHypotheticalGroupPlan(participants)).toMatchObject({ kind: "incompatible" });
   });
 });

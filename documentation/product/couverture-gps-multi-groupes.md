@@ -397,6 +397,15 @@ ne doit jamais être libellée « distance du parcours de l’action ».
 La distance de couverture unique doit rester `NA` tant que l’union spatiale
 n’est pas défendable.
 
+Pour les reconstructions historiques, cette distinction est matérialisée par
+`simulatedRouteCoverage` : `targetDistanceKm` est la cible par groupe,
+`individualSimulatedDistancesKm` et `totalSimulatedDistanceKm` décrivent
+uniquement les itinéraires hypothétiques, tandis que
+`uniqueNetworkDistanceKm` et `observedDistanceKm` restent `null`.
+La répartition vise des groupes équilibrés de 5 à 8 personnes lorsque c'est
+possible ; neuf bénévoles donnent explicitement `[5,4]` et les effectifs
+incompatibles restent signalés sans forcer une répartition artificielle.
+
 ## 10. Gamification de la contribution cartographique
 
 ### 10.1. Intention produit

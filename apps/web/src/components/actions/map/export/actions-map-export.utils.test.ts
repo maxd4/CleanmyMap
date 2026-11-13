@@ -32,9 +32,14 @@ describe("actions map export utils", () => {
             [[48.85, 2.34], [48.849, 2.339]],
           ],
           groupCount: 2,
+          groupSizePolicy: "preferred_5_to_8",
           groupParticipantCounts: [5, 5],
           durationMinutes: 60,
           targetDistanceKm: 3,
+          individualSimulatedDistancesKm: [3, 3],
+          totalSimulatedDistanceKm: 6,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
           speedKmPerHour: 3,
           geometrySource: "estimated_route",
           provenance: "estimated",
@@ -51,6 +56,12 @@ describe("actions map export utils", () => {
       geometry_source: "estimated_route",
       geometry_reality: "planned",
       simulated_group_count: 2,
+      simulated_group_size_policy: "preferred_5_to_8",
+      simulated_target_distance_km: 3,
+      simulated_individual_distances_km: [3, 3],
+      simulated_total_distance_km: 6,
+      simulated_unique_network_distance_km: null,
+      simulated_observed_distance_km: null,
     });
   });
 

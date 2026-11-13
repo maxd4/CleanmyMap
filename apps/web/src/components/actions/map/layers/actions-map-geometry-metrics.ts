@@ -255,14 +255,27 @@ function resolvePolygonMetric(
 
 function resolveMultiLineMetric(
   item: ActionMapItem,
+  presentation: GeometryPresentation,
 ): ActionMapGeometryMetric {
+  const simulated = item.contract?.metadata.preparationData?.simulatedRouteCoverage;
+  if (simulated?.status === "hypothetical") {
+    const targetLabel = `Distance cible par groupe · ${formatDistanceValue(simulated.targetDistanceKm)}`;
+    const totalLabel = typeof simulated.totalSimulatedDistanceKm === "number"
+      ? `Somme des distances simulées · ${formatDistanceValue(simulated.totalSimulatedDistanceKm)}`
+      : "Somme des distances simulées · non disponible";
+    return {
+      kind: null,
+      value: null,
+      label: `${presentation.label} · ${simulated.groupCount} groupes · ${targetLabel} · ${totalLabel} · réseau unique inconnu · distance observée non disponible`,
+    };
+  }
   const coverage = item.contract?.metadata.preparationData?.observedCoverage;
   const traceCount = Math.max(0, Math.trunc(Number(coverage?.traceCount) || 0));
   return {
     kind: null,
     value: null,
     label: traceCount > 0
-      ? `Couverture observée · ${traceCount} traces · distances individuelles conservées`
+      ? `Couverture observée · ${traceCount} traces · distances individuelles conservées · réseau unique non calculé`
       : "Couverture observée · distance cumulée non calculée",
   };
 }
@@ -277,7 +290,7 @@ export function resolveGeometryMetric(
     return resolvePolylineMetric(coordinates, item, presentation);
   }
   if (kind === "multiline") {
-    return resolveMultiLineMetric(item);
+    return resolveMultiLineMetric(item, presentation);
   }
   if (kind === "polygon") {
     return resolvePolygonMetric(coordinates, presentation);

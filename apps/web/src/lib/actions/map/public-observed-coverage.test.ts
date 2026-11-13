@@ -54,26 +54,70 @@ describe("public map preparation projection", () => {
             [[48.85, 2.35], [48.849, 2.349]],
           ],
           groupCount: 2,
+          groupSizePolicy: "preferred_5_to_8",
           groupParticipantCounts: [5, 5],
           durationMinutes: 60,
           targetDistanceKm: 3,
+          individualSimulatedDistancesKm: [3, 3],
+          totalSimulatedDistanceKm: 6,
+          uniqueNetworkDistanceKm: null,
           speedKmPerHour: 3,
           geometrySource: "estimated_route",
           provenance: "estimated",
           status: "hypothetical",
-          coverageVersion: "simulated-routes-v1",
+          coverageVersion: "simulated-routes-v2",
           observedDistanceKm: 99,
         },
       },
     });
     expect(preparation?.simulatedRouteCoverage).toMatchObject({
       groupCount: 2,
+      groupSizePolicy: "preferred_5_to_8",
       targetDistanceKm: 3,
+      individualSimulatedDistancesKm: [3, 3],
+      totalSimulatedDistanceKm: 6,
+      uniqueNetworkDistanceKm: null,
+      observedDistanceKm: null,
       speedKmPerHour: 3,
       provenance: "estimated",
     });
     expect(preparation?.observedCoverage).toBeUndefined();
-    expect(JSON.stringify(preparation)).not.toContain("observedDistanceKm");
+    expect(preparation?.simulatedRouteCoverage?.observedDistanceKm).toBeNull();
+  });
+
+  it("projects the explicit nine-person grouping exception without making it observed", () => {
+    const preparation = parsePublicObservedPreparationData({
+      public_preparation_data: {
+        simulatedRouteCoverage: {
+          type: "MultiLineString",
+          coordinates: [
+            [[48.85, 2.35], [48.851, 2.351]],
+            [[48.85, 2.35], [48.849, 2.349]],
+          ],
+          groupCount: 2,
+          groupSizePolicy: "explicit_exception",
+          groupParticipantCounts: [5, 4],
+          durationMinutes: 90,
+          targetDistanceKm: 4.5,
+          individualSimulatedDistancesKm: [4.4, 4.6],
+          totalSimulatedDistanceKm: 9,
+          uniqueNetworkDistanceKm: null,
+          observedDistanceKm: null,
+          speedKmPerHour: 3,
+          geometrySource: "estimated_route",
+          provenance: "estimated",
+          status: "hypothetical",
+          coverageVersion: "simulated-routes-v2",
+        },
+      },
+    });
+
+    expect(preparation?.simulatedRouteCoverage).toMatchObject({
+      groupSizePolicy: "explicit_exception",
+      groupParticipantCounts: [5, 4],
+      targetDistanceKm: 4.5,
+      observedDistanceKm: null,
+    });
   });
 
   it("keeps official park attribution in the bounded public allowlist", () => {

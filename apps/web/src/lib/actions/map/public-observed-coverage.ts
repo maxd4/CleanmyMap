@@ -34,30 +34,51 @@ function parseSimulatedRouteCoverage(raw: unknown): ActionSimulatedRouteCoverage
   const candidate = raw as Record<string, unknown>;
   if (candidate.type !== "MultiLineString" || candidate.geometrySource !== "estimated_route" ||
       candidate.provenance !== "estimated" || candidate.status !== "hypothetical" ||
-      candidate.speedKmPerHour !== 3 || candidate.coverageVersion !== "simulated-routes-v1") return undefined;
+      candidate.speedKmPerHour !== 3 ||
+      (candidate.coverageVersion !== "simulated-routes-v1" && candidate.coverageVersion !== "simulated-routes-v2")) return undefined;
   const coordinates = parseCoverageCoordinates(candidate.coordinates)
     ?.map((line) => line.map(([longitude, latitude]) => [latitude, longitude] as [number, number]));
   const groupCount = finiteInteger(candidate.groupCount, 1, 12);
   const durationMinutes = finitePositive(candidate.durationMinutes);
   const targetDistanceKm = finiteNonNegativeNumber(candidate.targetDistanceKm);
+  const groupSizePolicy = candidate.groupSizePolicy === "explicit_exception"
+    ? "explicit_exception"
+    : candidate.groupSizePolicy === "preferred_5_to_8"
+      ? "preferred_5_to_8"
+      : undefined;
   const counts = Array.isArray(candidate.groupParticipantCounts)
-    ? candidate.groupParticipantCounts.filter((count): count is number => finiteInteger(count, 5, 8) !== undefined)
+    ? candidate.groupParticipantCounts.filter((count): count is number =>
+        finiteInteger(count, groupSizePolicy === "explicit_exception" ? 1 : 5, 8) !== undefined,
+      )
     : [];
+  const individualSimulatedDistancesKm = Array.isArray(candidate.individualSimulatedDistancesKm)
+    ? candidate.individualSimulatedDistancesKm.filter(
+        (distance): distance is number => finiteNonNegativeNumber(distance) !== undefined,
+      )
+    : undefined;
+  const totalSimulatedDistanceKm = finiteNonNegativeNumber(candidate.totalSimulatedDistanceKm);
+  const isCurrentVersion = candidate.coverageVersion === "simulated-routes-v2";
   if (!coordinates || groupCount === undefined || durationMinutes === undefined ||
       targetDistanceKm === undefined || counts.length !== groupCount || coordinates.length !== groupCount ||
-      coordinates.some((line) => line.length < 2)) return undefined;
+      coordinates.some((line) => line.length < 2) ||
+      (isCurrentVersion && (groupSizePolicy === undefined || individualSimulatedDistancesKm?.length !== groupCount ||
+        totalSimulatedDistanceKm === undefined))) return undefined;
   return {
     type: "MultiLineString",
     coordinates,
     groupCount,
+    ...(groupSizePolicy ? { groupSizePolicy } : {}),
     groupParticipantCounts: counts,
     durationMinutes,
     targetDistanceKm,
+    ...(individualSimulatedDistancesKm ? { individualSimulatedDistancesKm } : {}),
+    ...(totalSimulatedDistanceKm === undefined ? {} : { totalSimulatedDistanceKm }),
+    ...(isCurrentVersion ? { uniqueNetworkDistanceKm: null, observedDistanceKm: null } : {}),
     speedKmPerHour: 3,
     geometrySource: "estimated_route",
     provenance: "estimated",
     status: "hypothetical",
-    coverageVersion: "simulated-routes-v1",
+    coverageVersion: candidate.coverageVersion,
   };
 }
 

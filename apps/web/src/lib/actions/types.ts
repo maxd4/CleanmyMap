@@ -137,14 +137,25 @@ export type ActionSimulatedRouteCoverage = {
   /** Leaflet order: [latitude, longitude]. These are estimated, not observed traces. */
   coordinates: [number, number][][];
   groupCount: number;
+  /** Preferred 5–8 grouping, or a bounded explicit exception such as [5,4]. */
+  groupSizePolicy?: "preferred_5_to_8" | "explicit_exception";
   groupParticipantCounts: number[];
   durationMinutes: number;
+  /** Target distance for each hypothetical group, never an observed distance. */
   targetDistanceKm: number;
+  /** Provider-reported lengths of the hypothetical routes, one per group. */
+  individualSimulatedDistancesKm?: number[];
+  /** Sum of the hypothetical route lengths; not a unique covered-network length. */
+  totalSimulatedDistanceKm?: number;
+  /** Requires a defensible spatial union, which is not computed by this version. */
+  uniqueNetworkDistanceKm?: null;
+  /** Never populated by reconstruction; requires a field observation. */
+  observedDistanceKm?: null;
   speedKmPerHour: 3;
   geometrySource: "estimated_route";
   provenance: "estimated";
   status: "hypothetical";
-  coverageVersion: "simulated-routes-v1";
+  coverageVersion: "simulated-routes-v1" | "simulated-routes-v2";
 };
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =
