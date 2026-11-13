@@ -34,7 +34,8 @@ export type PresidentialFinancialChartRow = {
   amountMax: number | null;
   recordCount: number;
   aggregationKeys: string[];
-  sources: Array<{ name: LocalizedText; url: string }>;
+  sources: Array<{ name: LocalizedText; url: string; page: number | null; version: string }>;
+  budgetReductionBaselines: LocalizedText[];
   estimateMethods: PresidentialFinancialEstimateMethod[];
 };
 
@@ -58,7 +59,8 @@ const financialInstruments: PresidentialFinancialInstrument[] = ["investment", "
 const financialCompatibilityKey = (record: PresidentialFinancialRecord): string => JSON.stringify({ currency: record.currency, priceYear: record.priceYear, horizon: record.horizon, cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate });
 
 const addSource = (row: PresidentialFinancialChartRow, record: PresidentialFinancialRecord) => {
-  if (!row.sources.some((source) => source.url === record.source.url)) row.sources.push({ name: record.source.name, url: record.source.url! });
+  if (!row.sources.some((source) => source.url === record.source.url && source.page === record.source.page && source.version === record.source.version)) row.sources.push({ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version });
+  if (record.budgetReductionBaseline && !row.budgetReductionBaselines.some((baseline) => baseline.fr === record.budgetReductionBaseline!.fr && baseline.en === record.budgetReductionBaseline!.en)) row.budgetReductionBaselines.push(record.budgetReductionBaseline);
 };
 
 export function buildPresidentialChartData(commitments: PresidentialPublicCommitment[], candidates: PresidentialPublicCandidate[], year: PresidentialElectionYear): PresidentialChartData {
@@ -111,7 +113,7 @@ export function buildPresidentialChartData(commitments: PresidentialPublicCommit
         addSource(existing, record);
         if (record.estimateMethod) existing.estimateMethods.push(record.estimateMethod);
       } else {
-        financialRows.set(aggregationKey, { candidateId: commitment.candidateId, candidateName: candidate.name, instrument: record.instrument, currency: record.currency, priceYear: record.priceYear, horizon: record.horizon.value ?? "unknown", cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate, amountMin: record.amountMin, amountMax: record.amountMax, recordCount: 1, aggregationKeys: [record.aggregationKey], sources: [{ name: record.source.name, url: record.source.url! }], estimateMethods: record.estimateMethod ? [record.estimateMethod] : [] });
+        financialRows.set(aggregationKey, { candidateId: commitment.candidateId, candidateName: candidate.name, instrument: record.instrument, currency: record.currency, priceYear: record.priceYear, horizon: record.horizon.value ?? "unknown", cadence: record.cadence, scope: record.scope, status: record.status, isEstimate: record.isEstimate, amountMin: record.amountMin, amountMax: record.amountMax, recordCount: 1, aggregationKeys: [record.aggregationKey], sources: [{ name: record.source.name, url: record.source.url!, page: record.source.page, version: record.source.version }], budgetReductionBaselines: record.budgetReductionBaseline ? [record.budgetReductionBaseline] : [], estimateMethods: record.estimateMethod ? [record.estimateMethod] : [] });
       }
       if (record.aggregationMode === "exclusive") nonAggregatedFinancialRecords += 1;
     }

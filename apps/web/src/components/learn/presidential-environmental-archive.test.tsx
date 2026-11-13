@@ -64,21 +64,21 @@ const displayFinancialRecord: PresidentialFinancialRecord = {
   id: "display-finance",
   aggregationKey: "display-envelope",
   aggregationMode: "additive",
-  instrument: "investment",
-  amountMin: 100,
+  instrument: "spending_reduction",
+  amountMin: -100,
   amountMax: null,
   currency: "EUR",
   priceYear: 2022,
   horizon: { value: "2027", precision: "year" },
   scope: { fr: "Périmètre national", en: "National scope" },
   cadence: "multiannual",
-  source: { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments[0].source, status: "verified", url: "https://example.test/financial-source", version: "FIN-DISPLAY-1" },
+  source: { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments[0].source, status: "verified", url: "https://example.test/financial-source", version: "FIN-DISPLAY-1", page: 3 },
   status: "announced",
   isEstimate: true,
   estimateMethod: {
     formula: { fr: "a × b", en: "a × b" }, variables: { fr: "a et b", en: "a and b" }, units: { fr: "EUR", en: "EUR" }, assumptions: { fr: "Hypothèse documentée", en: "Documented assumption" }, references: { fr: "Référence primaire", en: "Primary reference" }, exclusions: { fr: "Exclusions documentées", en: "Documented exclusions" }, uncertainty: { fr: "Borne supérieure inconnue", en: "Upper bound unknown" },
   },
-  budgetReductionBaseline: null,
+  budgetReductionBaseline: { fr: "Budget 2022 documenté", en: "Documented 2022 budget" },
 };
 
 const financialArchive = {
@@ -181,7 +181,9 @@ describe("PresidentialEnvironmentalArchive", () => {
   it("renders financial provenance, estimates and unknown upper bounds accessibly in both locales", () => {
     const frMarkup = renderToStaticMarkup(<PresidentialEnvironmentalCharts archive={financialArchive} year={2012} locale="fr" text={(fr) => fr} />);
     expect(frMarkup).toContain("Estimation CleanMyMap");
-    expect(frMarkup).toContain("borne supérieure inconnue");
+    expect(frMarkup).toContain("Budget 2022 documenté");
+    expect(frMarkup).toContain("vFIN-DISPLAY-1");
+    expect(frMarkup).toContain("p. 3");
     expect(frMarkup).toContain("Périmètre national");
     expect(frMarkup).toContain("Méthode et hypothèses de l’estimation");
     expect(frMarkup).toContain("Valeurs des montants environnementaux par candidat");
