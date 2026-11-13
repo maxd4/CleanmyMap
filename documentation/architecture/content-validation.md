@@ -152,7 +152,9 @@ conserve 16 mesures de travail issues de sept PDF CNCCEP avec leurs pages et
 URLs directes, tandis que cinq candidatures restent `not_collected`. 2027 ne
 contient aucune candidature ni mesure. Le consommateur public de
 `/learn/comprendre` n'expose que les listes officielles 2012/2017/2022 et des
-engagements passés par `getValidatedPresidentialCommitments` ; une source
+engagements passés par `getValidatedPresidentialCommitments` ; cette projection
+rejette aussi toute échéance `PolicyDate` mal formée et conserve une durée
+annoncée dans `announcedUnits` sans la convertir en année civile. Une source
 secondaire, un discours ou un programme sans revue humaine effective ne peut
 donc pas fuir dans l'interface. La comparaison historique réutilise exactement
 les mêmes IDs en vue par thème ou par candidature, expose le niveau de

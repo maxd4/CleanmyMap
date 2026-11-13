@@ -29,6 +29,12 @@ describe("presidential environmental preparation corpus", () => {
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => candidatesById.get(commitment.candidateId)?.electionYear === commitment.electionYear)).toBe(true);
   });
 
+  it("keeps historical party names tied to each election year", () => {
+    expect(getPresidentialCandidates(2012).find((candidate) => candidate.id === "2012-nicolas-dupont-aignan")?.partyOrCoalition).toBe("Debout la République");
+    expect(getPresidentialCandidates(2017).find((candidate) => candidate.id === "2017-nicolas-dupont-aignan")?.partyOrCoalition).toBe("Debout la France");
+    expect(getPresidentialCandidates(2022).find((candidate) => candidate.id === "2022-nicolas-dupont-aignan")?.partyOrCoalition).toBe("Debout la France");
+  });
+
   it("matches the official 2012 and 2017 candidate rosters", () => {
     expect(getPresidentialCandidates(2012).map((candidate) => candidate.name.fr)).toEqual(expect.arrayContaining([
       "Nathalie Arthaud", "François Bayrou", "Jacques Cheminade", "Nicolas Dupont-Aignan", "Eva Joly",
@@ -69,6 +75,13 @@ describe("presidential environmental preparation corpus", () => {
     expect(commitments2022.find((commitment) => commitment.id === "2022-jean-luc-melenchon-renewables")?.deadline).toEqual({ value: "2050", precision: "year" });
     expect(commitments2022.find((commitment) => commitment.id === "2022-anne-hidalgo-renewables")?.deadline).toEqual({ value: null, precision: "unknown" });
     expect(commitments2022.find((commitment) => commitment.id === "2022-fabien-roussel-renovation")?.limitations[0].fr).toContain("fréquence annuelle");
+  });
+
+  it("keeps a duration separate from an unknown calendar deadline", () => {
+    const evaJoly = getPresidentialCommitments(2012).find((commitment) => commitment.id === "2012-eva-joly-nuclear-exit");
+
+    expect(evaJoly?.deadline).toEqual({ value: null, precision: "unknown" });
+    expect(evaJoly?.announcedUnits).toBe("durée annoncée : 20 ans");
   });
 
   it("keeps B1 source origins distinct from the election year", () => {
@@ -123,6 +136,29 @@ describe("presidential environmental preparation corpus", () => {
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => !validateContentRecord(commitment.validation).readyForPublication)).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.some((commitment) => commitment.electionYear === 2027)).toBe(false);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.elections.find((election) => election.year === 2027)?.candidateIds).toEqual([]);
+  });
+
+  it("rejects malformed calendar deadlines from the validated projection", () => {
+    const sourceCommitment = getPresidentialCommitments(2022).find((commitment) => commitment.id === "2022-jean-luc-melenchon-renewables")!;
+    const publicationCandidate = {
+      ...sourceCommitment,
+      documentationStatus: "validated" as const,
+      source: { ...sourceCommitment.source, status: "verified" as const, url: "https://example.test/source", publishedAt: { value: "2022-04-01", precision: "day" as const } },
+      lastCheckedAt: "2026-11-13",
+      validation: { ...sourceCommitment.validation, status: "published" as const, lastReviewedAt: "2026-11-13", reviewedBy: "Human editor", source: { ...sourceCommitment.validation.source, url: "https://example.test/source", date: "2022-04-01", datePrecision: "day" as const } },
+    };
+    const validCorpus = { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [publicationCandidate] };
+
+    expect(getValidatedPresidentialCommitments(validCorpus)).toHaveLength(1);
+    for (const deadline of [
+      { value: "20", precision: "year" as const },
+      { value: "2022-13", precision: "month" as const },
+      { value: "2022-02-30", precision: "day" as const },
+      { value: "2022", precision: "unknown" as const },
+      { value: null, precision: "year" as const },
+    ]) {
+      expect(getValidatedPresidentialCommitments({ ...validCorpus, commitments: [{ ...publicationCandidate, deadline }] })).toEqual([]);
+    }
   });
 
   it("does not confuse an absence of collection with an absence of engagement", () => {

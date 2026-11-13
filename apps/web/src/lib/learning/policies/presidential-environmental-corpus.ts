@@ -92,6 +92,17 @@ const UNKNOWN_DATE: PolicyDate = { value: null, precision: "unknown" };
 
 const localized = (fr: string, en = fr): LocalizedText => ({ fr, en });
 
+function isValidPolicyDate(date: PolicyDate): boolean {
+  if (date.precision === "unknown") return date.value === null;
+  if (!date.value) return false;
+  if (date.precision === "year") return /^\d{4}$/.test(date.value);
+  if (date.precision === "month") return /^\d{4}-(0[1-9]|1[0-2])$/.test(date.value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) return false;
+
+  const parsed = new Date(`${date.value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date.value;
+}
+
 function validationDraft(id: string, source: PresidentialSource, claim: LocalizedText): ContentValidationRecord {
   return {
     id,
@@ -193,7 +204,7 @@ const candidateRecords: PresidentialCandidateRecord[] = [
   candidate(2012, "marine-le-pen", "Marine Le Pen", "Front national"),
   candidate(2012, "francois-bayrou", "François Bayrou", "Mouvement démocrate"),
   candidate(2012, "jean-luc-melenchon", "Jean-Luc Mélenchon", "Front de gauche"),
-  candidate(2012, "nicolas-dupont-aignan", "Nicolas Dupont-Aignan", "Debout la France"),
+  candidate(2012, "nicolas-dupont-aignan", "Nicolas Dupont-Aignan", "Debout la République"),
   candidate(2012, "philippe-poutou", "Philippe Poutou", "Nouveau Parti anticapitaliste"),
   candidate(2012, "nathalie-arthaud", "Nathalie Arthaud", "Lutte ouvrière"),
   candidate(2012, "jacques-cheminade", "Jacques Cheminade", "Solidarité et progrès"),
@@ -401,7 +412,7 @@ const commitmentRecords: PresidentialEnvironmentalCommitment[] = [
   commitment({ id: "2012-francois-hollande-fessenheim", electionYear: 2012, candidateId: "francois-hollande", candidateName: "François Hollande", partyOrCoalition: "Parti socialiste", theme: localized("Énergie", "Energy"), formulation: "Position sur la centrale de Fessenheim.", mechanism: "Décision concernant une installation nucléaire", }),
   commitment({ id: "2012-francois-hollande-climate-border", electionYear: 2012, candidateId: "francois-hollande", candidateName: "François Hollande", partyOrCoalition: "Parti socialiste", theme: localized("Climat et commerce", "Climate and trade"), formulation: "Contribution climat-énergie aux frontières européennes.", mechanism: "Signal-prix appliqué aux échanges extérieurs", }),
   commitment({ id: "2012-nicolas-sarkozy-fessenheim", electionYear: 2012, candidateId: "nicolas-sarkozy", candidateName: "Nicolas Sarkozy", partyOrCoalition: "Union pour un mouvement populaire", theme: localized("Énergie", "Energy"), formulation: "Position sur Fessenheim.", mechanism: "Position sur la durée d’exploitation d’une centrale", }),
-  commitment({ id: "2012-eva-joly-nuclear-exit", electionYear: 2012, candidateId: "eva-joly", candidateName: "Eva Joly", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Énergie et climat", "Energy and climate"), formulation: "Sortie du nucléaire sur 20 ans.", deadline: { value: "20", precision: "year" }, announcedUnits: "durée annoncée : 20 ans", mechanism: "Remplacement progressif de capacités nucléaires", }),
+  commitment({ id: "2012-eva-joly-nuclear-exit", electionYear: 2012, candidateId: "eva-joly", candidateName: "Eva Joly", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Énergie et climat", "Energy and climate"), formulation: "Sortie du nucléaire sur 20 ans.", announcedUnits: "durée annoncée : 20 ans", mechanism: "Remplacement progressif de capacités nucléaires", }),
 
   commitment({ id: "2017-jean-luc-melenchon-green-rule", electionYear: 2017, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Ressources et climat", "Resources and climate"), formulation: "Règle verte.", mechanism: "Contrainte de soutenabilité appliquée aux décisions publiques", }),
   commitment({ id: "2017-jean-luc-melenchon-renewables", electionYear: 2017, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Énergie", "Energy"), formulation: "Transition vers les énergies renouvelables et sortie du nucléaire.", mechanism: "Transformation du mix énergétique", }),
@@ -480,6 +491,7 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
       return commitmentRecord.documentationStatus === "validated"
         && commitmentRecord.source.status === "verified"
         && Boolean(commitmentRecord.source.url)
+        && isValidPolicyDate(commitmentRecord.deadline)
         && Boolean(commitmentRecord.lastCheckedAt);
     } catch {
       return false;
