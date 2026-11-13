@@ -143,7 +143,7 @@ describe("GPX create-action priority", () => {
     expect(routeProviderMock).not.toHaveBeenCalled();
   });
 
-  it("keeps a valid generator route as the selected geometry", async () => {
+  it("keeps an unverified client generator route explicitly estimated", async () => {
     routeProviderMock.mockClear();
     const generatorRoute = {
       routes: [{
@@ -157,16 +157,19 @@ describe("GPX create-action priority", () => {
         plannerTechnicalStops: [],
       }],
     } as never;
-    const result = await resolveCreateActionDrawing(buildGpxPayload({
+    const payload = buildGpxPayload({
       manualDrawing: undefined,
       geometrySource: undefined,
       preparationData: { geometryMethod: "generator", operationalRoute: generatorRoute },
-    }));
+    });
+    const result = await resolveCreateActionDrawing(payload);
 
     expect(result).toMatchObject({
-      geometrySource: "routed",
+      geometrySource: "estimated_route",
       drawing: { kind: "polyline", coordinates: [[48.7, 2.2], [48.71, 2.21]] },
     });
+    const persisted = buildCreateActionGeometry(payload, result.drawing, result.geometrySource, result.routeGeometry);
+    expect(persisted).toMatchObject({ geometrySource: "estimated_route", confidence: 0.6 });
     expect(routeProviderMock).not.toHaveBeenCalled();
   });
 
@@ -185,6 +188,17 @@ describe("GPX create-action priority", () => {
       origin: gpxDrawing.coordinates[0],
     });
     expect(routeProviderMock).not.toHaveBeenCalled();
+  });
+
+  it("normalizes a client-declared routed drawing to manual at creation", async () => {
+    const payload = buildGpxPayload({
+      geometrySource: "routed",
+      preparationData: { geometryMethod: "manual" },
+    });
+
+    const result = await resolveCreateActionDrawing(payload);
+
+    expect(result).toMatchObject({ drawing: gpxDrawing, geometrySource: "manual" });
   });
 
   it("uses the imported trace and never calls the routing provider", async () => {

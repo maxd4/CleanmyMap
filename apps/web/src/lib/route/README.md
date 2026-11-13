@@ -14,6 +14,11 @@ pour produire une décision de planner contrainte et explicable.
   réseau et fallback explicitement estimé. L’API reçoit une séquence adaptée à
   la topologie : `origine → stops → origine` pour une boucle, ou
   `origine → stops → arrivée` pour un trajet ouvert.
+- La provenance d’action `routed` est réservée à une géométrie `network` d’un
+  fournisseur réseau cohérent, marquée `estimated: false` et liée à la preuve
+  planner attendue ; un fallback, une estimation ou une indication client
+  isolée reste `estimated_route` (confiance 0,6). Les dessins manuels et les
+  traces GPS/GPX conservent leurs provenances distinctes.
 - `pedestrian-network.ts`, `pedestrian-network-store.ts` et
   `../../scripts/import-pedestrian-network.mjs` : représentation versionnée du
   graphe OSM piéton, import borné Panthéon/Jardin des Plantes et lecture

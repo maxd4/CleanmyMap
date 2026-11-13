@@ -22,6 +22,10 @@ import {
   resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
+import {
+  hasVerifiedPlannerRouteInPreparation,
+  resolvePersistedRouteGeometrySource,
+} from "@/lib/route/route-provenance";
 import { inferGpxTopology } from "@/lib/actions/geometry/gpx";
 import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 import { sanitizeAdministrativeRequirementsForCreation } from "../administrative-requirements";
@@ -77,22 +81,71 @@ function confidenceForGeometrySource(source: ActionGeometrySource): number | nul
   }
 }
 
+function structurallyEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => structurallyEqual(value, right[index]));
+  }
+  if (!left || !right || typeof left !== "object" || typeof right !== "object") {
+    return false;
+  }
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord).sort();
+  const rightKeys = Object.keys(rightRecord).sort();
+  return leftKeys.length === rightKeys.length &&
+    leftKeys.every((key, index) => key === rightKeys[index] && structurallyEqual(leftRecord[key], rightRecord[key]));
+}
+
+function isTrustedNetworkRouteForCreation(params: {
+  payload: CreateActionPayload;
+  finalDrawing: ActionDrawing;
+  routeGeometry?: RouteGeometry | null;
+  routeGeometryVerified: boolean;
+}): boolean {
+  const routeGeometry = params.routeGeometry;
+  if (!params.routeGeometryVerified || !routeGeometry || resolvePersistedRouteGeometrySource(routeGeometry) !== "routed") {
+    return false;
+  }
+  if (params.finalDrawing.kind !== "polyline" ||
+      !structurallyEqual(params.finalDrawing.coordinates, routeGeometry.coordinates)) {
+    return false;
+  }
+
+  const operationalGeometry = params.payload.preparationData?.operationalRoute?.routes[0]?.geometry;
+  if (!operationalGeometry) {
+    // Route reconstruction is performed server-side and returns its verified
+    // provider result directly to this persistence boundary.
+    return true;
+  }
+  if (!structurallyEqual(operationalGeometry, routeGeometry)) return false;
+
+  return hasVerifiedPlannerRouteInPreparation(params.payload.preparationData);
+}
+
 export function buildCreateActionGeometry(
   payload: CreateActionPayload,
   finalDrawing: ActionDrawing | null,
   finalGeometrySource?: ActionGeometrySource | null,
+  routeGeometry?: RouteGeometry | null,
+  routeGeometryVerified = false,
 ) {
   if (finalGeometrySource === "gps_tracking" || payload.geometrySource === "gps_tracking") {
     throw new Error("La provenance gps_tracking est réservée à la promotion serveur d'une mission.");
   }
 
-  const geometrySource: ActionGeometrySource = finalDrawing
-    ? finalGeometrySource ?? payload.geometrySource ?? (payload.manualDrawing
-      ? "manual"
-      : finalDrawing.kind === "polyline"
-        ? "estimated_route"
-        : "manual")
-    : "fallback_point";
+  const requestedSource = finalGeometrySource ?? payload.geometrySource ?? (payload.manualDrawing
+    ? "manual"
+    : finalDrawing?.kind === "polyline"
+      ? "estimated_route"
+      : "manual");
+  const geometrySource: ActionGeometrySource = !finalDrawing
+    ? "fallback_point"
+    : requestedSource === "routed" && !isTrustedNetworkRouteForCreation({ payload, finalDrawing, routeGeometry, routeGeometryVerified })
+      ? (payload.manualDrawing && structurallyEqual(payload.manualDrawing, finalDrawing) ? "manual" : "estimated_route")
+      : requestedSource;
 
   return buildPersistedGeometry({
     drawing: finalDrawing,
@@ -214,8 +267,12 @@ function resolveInsertPreparationData(
     gpxDrawing: inputPreparation.gpxImport ? params.payload.manualDrawing : null,
     gpxImport: inputPreparation.gpxImport,
     manualDrawing: params.payload.manualDrawing,
-    manualDrawingSource: params.payload.geometrySource,
+    manualDrawingSource:
+      params.payload.geometrySource === "manual" || params.payload.geometrySource === "gpx_import"
+        ? params.payload.geometrySource
+        : null,
     operationalRoute: inputPreparation.operationalRoute,
+    operationalRouteVerified: hasVerifiedPlannerRouteInPreparation(inputPreparation),
   });
   const normalized = routeTopology === undefined
     ? normalizeActionPreparationData({

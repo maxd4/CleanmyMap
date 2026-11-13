@@ -71,6 +71,25 @@ function snapshot(
   });
 }
 
+function networkSnapshot(
+  generatedAt: string,
+  distanceKm: number,
+) {
+  const current = snapshot(generatedAt, distanceKm);
+  const networkGeometry = {
+    ...current.geometry,
+    provider: "osrm" as const,
+    profile: "foot" as const,
+    mode: "network" as const,
+    estimated: false,
+  };
+  return {
+    ...current,
+    geometry: networkGeometry,
+    groups: current.groups.map((group) => ({ ...group, routeGeometry: networkGeometry })),
+  };
+}
+
 function guidedSnapshot(
   generatedAt: string,
   volunteers: number,
@@ -389,13 +408,28 @@ describe("POST /api/actions/:actionId/route-version", () => {
         operationalRoute: nextOperationalRoute,
         customPreparationKey: "preserve-me",
       },
-      geometry_source: "routed",
+      geometry_confidence: 0.6,
+      geometry_source: "estimated_route",
     });
     if (!isRecord(updateCall) || !isRecord(updateCall.preparation_data) || !isRecord(updateCall.preparation_data.routeVersioning)) {
       throw new Error("Expected route versioning data in the update payload");
     }
     expect(Array.isArray(updateCall.preparation_data.routeVersioning.history)).toBe(true);
     expect(supabase.chain.eq).toHaveBeenCalledWith("updated_at", current.updated_at);
+  });
+
+  it("persists routed only when the signed snapshot carries verified network geometry", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const nextSnapshot = networkSnapshot("2026-09-27T09:00:00.000Z", 3);
+    const { supabase } = preparePostScenario(currentSnapshot);
+
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(200);
+    expect(firstMockArgument(supabase.chain.update)).toMatchObject({
+      geometry_confidence: 0.78,
+      geometry_source: "routed",
+    });
   });
 
   it("keeps event-centered refreshes on the historical parameter comparison", async () => {

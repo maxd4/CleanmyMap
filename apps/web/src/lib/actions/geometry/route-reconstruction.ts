@@ -20,6 +20,7 @@ import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
 import { areCoordinatesClose } from "@/lib/geo/coordinate-comparison";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import type { RouteGeometry } from "@/lib/route/route-contract";
+import { resolvePersistedRouteGeometrySource } from "@/lib/route/route-provenance";
 import { resolveRouteTargetDistance } from "../route-target-distance";
 
 type GeoPoint = {
@@ -441,7 +442,7 @@ export async function reconstructActionRoute(
 
   return {
     drawing: { kind: "polyline", coordinates: routeGeometry.coordinates },
-    geometrySource: routeGeometry.mode === "network" ? "routed" : "estimated_route",
+    geometrySource: resolvePersistedRouteGeometrySource(routeGeometry),
     routeGeometry,
     origin: originPair,
   };

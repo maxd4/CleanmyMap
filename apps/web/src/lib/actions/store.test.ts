@@ -353,7 +353,7 @@ describe("route topology persistence", () => {
 });
 
 describe("buildCreateActionGeometry", () => {
-  it("persists a routed final drawing as estimated geometry", () => {
+  it("does not promote a client-declared routed drawing beyond manual provenance", () => {
     const drawing = polylineDrawing();
 
     const geometry = buildCreateActionGeometry(
@@ -364,8 +364,8 @@ describe("buildCreateActionGeometry", () => {
       drawing,
     );
 
-    expect(geometry.geometrySource).toBe("routed");
-    expect(geometry.confidence).toBe(0.78);
+    expect(geometry.geometrySource).toBe("manual");
+    expect(geometry.confidence).toBe(1);
   });
 
   it("persists a manual final drawing as real geometry", () => {

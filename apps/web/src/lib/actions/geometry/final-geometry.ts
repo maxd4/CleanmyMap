@@ -9,6 +9,7 @@ import {
   type OperationalRoute,
 } from "@/lib/route/route-operational";
 import type { MeetingPointProjection } from "@/lib/route/route-response-contract";
+import { resolvePersistedRouteGeometrySource } from "@/lib/route/route-provenance";
 import { isRenderableDrawing } from "./geometry-resolution";
 
 export type FinalActionGeometry = {
@@ -32,6 +33,8 @@ export type FinalActionGeometryInput = {
   manualDrawing?: ActionDrawing | null;
   manualDrawingSource?: ActionGeometrySource | null;
   operationalRoute?: OperationalRoute | null;
+  /** False when the route is client-provided but not bound to a verified snapshot. */
+  operationalRouteVerified?: boolean;
   /** Existing reconstruction/reference/fallback output; never recomputed here. */
   reconstructedDrawing?: ActionDrawing | null;
   reconstructedSource?: ActionGeometrySource | null;
@@ -143,6 +146,7 @@ function hydratedTrackingState(
 
 function routeDrawing(
   operationalRoute: OperationalRoute,
+  operationalRouteVerified = true,
 ): Pick<FinalActionGeometry, "drawing" | "source"> | null {
   const route = operationalRoute.routes[0];
   if (!route || route.geometry.coordinates.length < 2) return null;
@@ -153,9 +157,9 @@ function routeDrawing(
       coordinates: route.geometry.coordinates,
     },
     source:
-      route.geometry.mode === "fallback" || route.geometry.estimated
-        ? "estimated_route"
-        : "routed",
+      operationalRouteVerified
+        ? resolvePersistedRouteGeometrySource(route.geometry)
+        : "estimated_route",
   };
 }
 
@@ -169,7 +173,9 @@ function resolveOperationalCandidate(input: FinalActionGeometryInput): {
       : null;
   return {
     route,
-    candidate: route ? routeDrawing(route) : null,
+    candidate: route
+      ? routeDrawing(route, input.operationalRouteVerified !== false)
+      : null,
   };
 }
 

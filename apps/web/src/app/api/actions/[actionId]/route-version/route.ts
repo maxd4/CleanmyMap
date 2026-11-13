@@ -21,6 +21,10 @@ import { verifyRoutePlannerProof } from "@/lib/route/route-planner-proof";
 import { isRoutePlannerProofShape } from "@/lib/route/route-planner-proof-contract";
 import { isRoutePlannerSnapshot } from "@/lib/route/route-planner-snapshot-validation";
 import { isOperationalRoute, type OperationalRoute } from "@/lib/route/route-operational";
+import {
+  operationalRouteMatchesPlannerSnapshot,
+  resolvePersistedRouteGeometrySource,
+} from "@/lib/route/route-provenance";
 import type { RoutePlannerSnapshot } from "@/lib/route/route-calibration-types";
 import {
   balancedVolunteerCounts,
@@ -230,24 +234,6 @@ function routeParametersMatchActiveVersion(
   ));
 }
 
-function operationalRouteMatchesSnapshot(
-  operationalRoute: OperationalRoute,
-  snapshot: RoutePlannerSnapshot,
-): boolean {
-  if (
-    operationalRoute.plannerGroupCount !== snapshot.parameters.groupCount ||
-    operationalRoute.routes.length !== snapshot.groups.length
-  ) {
-    return false;
-  }
-  const expected = new Map(
-    snapshot.groups.map((group) => [group.groupIndex, JSON.stringify(group.routeGeometry)]),
-  );
-  return operationalRoute.routes.every(
-    (route) => expected.get(route.groupIndex) === JSON.stringify(route.geometry),
-  );
-}
-
 function initialVersioning(current: {
   preparation_data: {
     routeCalibrationContext?: { plannerSnapshot?: Parameters<typeof buildActionRouteVersioning>[0]["snapshot"] };
@@ -378,7 +364,7 @@ function validateRouteVersionProposal(params: {
       currentGuidedGroupCounts,
       nextGuidedGroupCounts,
     ) ||
-    !operationalRouteMatchesSnapshot(params.proposal.operationalRoute, params.proposal.plannerSnapshot)
+    !operationalRouteMatchesPlannerSnapshot(params.proposal.operationalRoute, params.proposal.plannerSnapshot)
   ) {
     return conflict("La proposition ne correspond pas aux paramètres de l'itinéraire actif.");
   }
@@ -516,9 +502,11 @@ export async function POST(
       appliedByUserId: access.userId,
     });
     const preparationData = current.preparation_data ?? {};
+    const routeGeometry = parsed.data.operationalRoute.routes[0]!.geometry;
+    const geometrySource = resolvePersistedRouteGeometrySource(routeGeometry);
     const persistedGeometry = buildPersistedGeometry({
-      drawing: { kind: "polyline", coordinates: parsed.data.operationalRoute.routes[0]!.geometry.coordinates },
-      geometrySourceHint: "routed",
+      drawing: { kind: "polyline", coordinates: routeGeometry.coordinates },
+      geometrySourceHint: geometrySource,
       latitude: current.latitude,
       longitude: current.longitude,
       locationLabel: current.location_label,
@@ -540,7 +528,7 @@ export async function POST(
         derived_geometry_kind: persistedGeometry.kind,
         derived_geometry_geojson: persistedGeometry.geojson,
         geometry_confidence: persistedGeometry.confidence,
-        geometry_source: "routed",
+        geometry_source: persistedGeometry.geometrySource,
       },
     });
     if (persistenceConflict) return persistenceConflict;

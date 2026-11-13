@@ -103,6 +103,34 @@ describe("resolveFinalActionGeometry", () => {
     expect(result?.drawing.coordinates).toEqual(operationalRoute.routes[0]?.geometry.coordinates);
   });
 
+  it("keeps an operational route without verified planner provenance estimated", () => {
+    const result = resolveFinalActionGeometry({
+      operationalRoute,
+      operationalRouteVerified: false,
+    });
+
+    expect(result).toMatchObject({ source: "estimated_route", operationalRoute });
+  });
+
+  it("keeps a fallback operational geometry estimated", () => {
+    const fallbackRoute: OperationalRoute = {
+      ...operationalRoute,
+      routes: [{
+        ...operationalRoute.routes[0]!,
+        geometry: {
+          ...operationalRoute.routes[0]!.geometry,
+          provider: "none",
+          profile: null,
+          mode: "fallback",
+          estimated: true,
+        },
+      }],
+    };
+
+    expect(resolveFinalActionGeometry({ operationalRoute: fallbackRoute })?.source)
+      .toBe("estimated_route");
+  });
+
   it("honors an explicit creation source while preserving observed priority", () => {
     expect(resolveFinalActionGeometry({
       geometryMethod: "location_only",

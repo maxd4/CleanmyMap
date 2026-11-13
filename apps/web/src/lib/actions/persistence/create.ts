@@ -22,6 +22,7 @@ import {
 } from "@/lib/actions/route-topology";
 import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import type { RouteGeometry } from "@/lib/route/route-contract";
+import { hasVerifiedPlannerRouteInPreparation } from "@/lib/route/route-provenance";
 import {
   persistResolvedRouteTargetDistance,
   resolveRouteTargetDistance,
@@ -221,8 +222,12 @@ function resolveActiveCreateActionGeometry(
     gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
     gpxImport: payload.preparationData?.gpxImport,
     manualDrawing: payload.manualDrawing,
-    manualDrawingSource: payload.geometrySource,
+    manualDrawingSource:
+      payload.geometrySource === "manual" || payload.geometrySource === "gpx_import"
+        ? payload.geometrySource
+        : null,
     operationalRoute: payload.preparationData?.operationalRoute,
+    operationalRouteVerified: hasVerifiedPlannerRouteInPreparation(payload.preparationData),
   });
 }
 
@@ -334,7 +339,19 @@ async function resolveCreateActionPersistenceContext(
     longitude: payload.longitude ?? resolvedDrawing.origin?.[1],
   };
   const finalDrawing = resolvedDrawing.drawing;
-  const persistedGeometry = buildCreateActionGeometry(payloadWithCoordinates, finalDrawing, resolvedDrawing.geometrySource);
+  const routeGeometryVerified = Boolean(
+    resolvedDrawing.geometrySource === "routed" &&
+      resolvedDrawing.routeGeometry &&
+      (!payloadWithCoordinates.preparationData?.operationalRoute ||
+        hasVerifiedPlannerRouteInPreparation(payloadWithCoordinates.preparationData)),
+  );
+  const persistedGeometry = buildCreateActionGeometry(
+    payloadWithCoordinates,
+    finalDrawing,
+    resolvedDrawing.geometrySource,
+    resolvedDrawing.routeGeometry,
+    routeGeometryVerified,
+  );
   const department = await resolveCreateActionDepartment(params, payloadWithCoordinates, persistedGeometry);
   const payloadWithDepartment: CreateActionPayload = {
     ...payloadWithCoordinates,
