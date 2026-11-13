@@ -55,7 +55,8 @@ describe("public recommendation query scope", () => {
     expect(imatchCalls).toEqual([["location_label", "^[[:space:]]*(?:11e|12e)[[:space:]]*$"]]);
     expect(statusInCalls).toContainEqual(["status", ["approved", "pending"]]);
     expect(eqCalls).toContainEqual(["action_phase", "pre_action"]);
-    expect(gteCalls).toEqual([["action_date", expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)]]);
+    const expectedStart = expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/);
+    expect(gteCalls).toEqual([["event_start_at", expectedStart]]);
     expect(orCalls).not.toContainEqual([expect.stringContaining("action_phase.neq.pre_action")]);
     expect(rangeCalls).toEqual([[0, 999]]);
   });

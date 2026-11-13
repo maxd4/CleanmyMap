@@ -200,18 +200,25 @@ function validateActionUpdateInput(params: {
     throw new ActionUpdateValidationError("manualDrawing", "Un dessin manuel ne peut pas remplacer un tracé GPX ou GPS déjà observé.");
   }
   validateEffectiveActionDate(current, body, nextActionPhase);
-  try {
-    resolveActionTemporalInstants({
-      actionDate: body.actionDate ?? current.action_date,
-      actionTimezone: body.actionTimezone !== undefined ? body.actionTimezone : current.action_timezone,
-      eventStartTime: body.eventStartTime !== undefined ? body.eventStartTime : current.event_start_time,
-      eventEndTime: body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
-    });
-  } catch (error) {
-    throw new ActionUpdateValidationError(
-      "actionTimezone",
-      error instanceof Error ? error.message : "Les horaires locaux sont invalides pour ce fuseau.",
-    );
+  const temporalFieldsChanged =
+    body.actionDate !== undefined ||
+    body.actionTimezone !== undefined ||
+    body.eventStartTime !== undefined ||
+    body.eventEndTime !== undefined;
+  if (temporalFieldsChanged) {
+    try {
+      resolveActionTemporalInstants({
+        actionDate: body.actionDate ?? current.action_date,
+        actionTimezone: body.actionTimezone !== undefined ? body.actionTimezone : current.action_timezone,
+        eventStartTime: body.eventStartTime !== undefined ? body.eventStartTime : current.event_start_time,
+        eventEndTime: body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
+      });
+    } catch (error) {
+      throw new ActionUpdateValidationError(
+        "actionTimezone",
+        error instanceof Error ? error.message : "Les horaires locaux sont invalides pour ce fuseau.",
+      );
+    }
   }
   validateEffectiveActionCoordinates(current, body);
   validateEffectiveWasteCharacterization({ current, body, currentMetadata });

@@ -49,6 +49,39 @@ function buildCurrent(
 }
 
 describe("prepareActionUpdate administrative requirements boundary", () => {
+  it("allows an independent PATCH when a legacy row has no temporal fields", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, {
+        action_date: "",
+        action_timezone: null,
+        event_start_time: null,
+        event_end_time: null,
+      } as Partial<ActionRow>),
+      parsedBody: ({ notes: "Matériel vérifié" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.notes).toContain("Matériel vérifié");
+    expect(prepared.updateData).not.toHaveProperty("event_start_at");
+    expect(prepared.updateData).not.toHaveProperty("event_end_at");
+  });
+
+  it("validates the complete resulting window when a temporal field changes", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}, { action_date: "2026-03-08" }),
+        parsedBody: ({ actionTimezone: "America/Montreal", eventStartTime: "02:30" } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toThrow(/inexist|ambig|DST|time/i);
+  });
+
   it("recalculates a derived target when duration changes", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
