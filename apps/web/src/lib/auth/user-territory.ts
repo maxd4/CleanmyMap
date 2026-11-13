@@ -1,6 +1,6 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import {
-  extractResidenceLocationPreferenceFromMetadata,
+  extractTerritoryLocationPreferenceFromMetadataSources,
   type TerritoryLocationPreference,
 } from "@/lib/user-location-preference";
 
@@ -13,10 +13,11 @@ export async function getCurrentUserTerritoryLocationPreference(): Promise<Terri
   try {
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    const preference =
-      extractResidenceLocationPreferenceFromMetadata(user.unsafeMetadata) ??
-      extractResidenceLocationPreferenceFromMetadata(user.publicMetadata) ??
-      extractResidenceLocationPreferenceFromMetadata(user.privateMetadata);
+    const preference = extractTerritoryLocationPreferenceFromMetadataSources([
+      user.unsafeMetadata,
+      user.publicMetadata,
+      user.privateMetadata,
+    ]);
 
     return preference;
   } catch (error) {

@@ -40,6 +40,21 @@ describe("getCurrentUserTerritoryLocationPreference", () => {
     });
   });
 
+  it("stops at an explicit canonical removal instead of reading a legacy public location", async () => {
+    mocks.auth.mockResolvedValue({ userId: "user-1" });
+    mocks.clerkClient.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          unsafeMetadata: { territoryPreferences: { residence: null, work: null } },
+          publicMetadata: { territoryLabel: "Paris 11e", territoryLocationType: "residence", parisArrondissement: 11 },
+          privateMetadata: {},
+        }),
+      },
+    });
+
+    await expect(getCurrentUserTerritoryLocationPreference()).resolves.toBeNull();
+  });
+
   it("fails closed when the provider cannot be read", async () => {
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.clerkClient.mockRejectedValue(new Error("provider unavailable"));

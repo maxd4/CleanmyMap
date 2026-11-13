@@ -30,7 +30,7 @@ import {
   getDisplayNameModeCookieOverride,
 } from "@/lib/account/display-name-mode-store";
 import {
-  extractUserLocationPreferenceFromMetadata,
+  extractUserLocationPreferenceFromMetadataSources,
   type UserLocationPreference,
 } from "@/lib/user-location-preference";
 import {
@@ -300,11 +300,11 @@ export function resolveIdentityActiveRole(user: User, role: Role): ActiveRole {
 /** @deprecated Navigation now follows ACTIVE_ROLE. */
 
 function resolveIdentityLocationPreference(user: User) {
-  return (
-    extractUserLocationPreferenceFromMetadata(user.unsafeMetadata) ??
-    extractUserLocationPreferenceFromMetadata(user.publicMetadata) ??
-    extractUserLocationPreferenceFromMetadata(user.privateMetadata)
-  );
+  return extractUserLocationPreferenceFromMetadataSources([
+    user.unsafeMetadata,
+    user.publicMetadata,
+    user.privateMetadata,
+  ]);
 }
 
 function buildResolvedIdentity(params: {

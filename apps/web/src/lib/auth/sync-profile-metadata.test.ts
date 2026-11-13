@@ -34,6 +34,35 @@ const existingProfile = (overrides: Partial<ProfileRow> = {}): ProfileRow => ({
 });
 
 describe("territory compatibility projection", () => {
+  it("projects a work-only canonical preference with its type and foreign administrative code", () => {
+    const result = buildCompatibilityProfileMetadata(existingProfile(), {
+      territoryPreferences: {
+        residence: null,
+        work: {
+          country: "CA",
+          level: "province",
+          label: "Québec",
+          subtitle: "Québec",
+          arrondissement: null,
+          arrondissementCity: null,
+          administrativeCode: "CA-QC",
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      territoryLocationType: "work",
+      zoneLocationType: "work",
+      territoryCountry: "CA",
+      territoryLevel: "province",
+      territoryLabel: "Québec",
+      territoryAdministrativeCode: "CA-QC",
+    });
+    expect(result).not.toHaveProperty("parisArrondissement");
+    expect(result).not.toHaveProperty("parisLocationType");
+    expect(result).not.toHaveProperty("territoryArrondissement");
+  });
+
   it("projects the latest canonical foreign preference over stale Supabase metadata", () => {
     const result = buildCompatibilityProfileMetadata(existingProfile(), {
       territoryPreferences: {

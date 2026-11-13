@@ -102,6 +102,21 @@ describe("server identity resolution", () => {
     );
   });
 
+  it("does not resurrect a legacy territory after canonical preferences are cleared", async () => {
+    mocks.auth.mockResolvedValue({ userId: "user-1" });
+    mocks.clerkClient.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue(clerkUser({
+          unsafeMetadata: { territoryPreferences: { residence: null, work: null } },
+          publicMetadata: { territoryLabel: "Paris 11e", territoryLocationType: "residence", parisArrondissement: 11 },
+          privateMetadata: {},
+        })),
+      },
+    });
+
+    await expect(getCurrentUserIdentity()).resolves.toMatchObject({ locationPreference: null });
+  });
+
   it("keeps an incomplete Clerk/profile read fail-closed with a fallback identity", async () => {
     mocks.auth.mockResolvedValue({ userId: "user-incomplete" });
     mocks.clerkClient.mockResolvedValue({

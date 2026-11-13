@@ -191,11 +191,12 @@ function buildTerritoryCompatibilityMetadata(
     (hasCanonicalPreferences ? null : existingParisArrondissement ?? null);
   const resolvedParisArrondissement = parseParisArrondissement(resolvedArrondissement);
   const resolvedLocationType = normalizeUserLocationType(
-    readFirstMeaningfulMetadataString(mergedMetadata, [
-      "territoryLocationType",
-      "zoneLocationType",
-      "parisLocationType",
-    ]) ??
+    primaryLocation?.locationType ??
+      readFirstMeaningfulMetadataString(mergedMetadata, [
+        "territoryLocationType",
+        "zoneLocationType",
+        "parisLocationType",
+      ]) ??
     "residence",
   );
   const resolvedSubtitle =
@@ -207,6 +208,12 @@ function buildTerritoryCompatibilityMetadata(
     primaryLocation?.subtitle;
   const resolvedLabel = resolveTerritoryLabel(mergedMetadata, resolvedParisArrondissement);
   if (!resolvedLabel) return null;
+  const isParisCompatibilityLocation =
+    resolvedArrondissement !== null &&
+    isParisArrondissementLabel(resolvedLabel) &&
+    (!primaryLocation ||
+      (primaryLocation.country === DEFAULT_COUNTRY_CODE &&
+        primaryLocation.arrondissementCity === "Paris"));
 
   const territoryMetadata = createTerritoryLocationMetadataFromLabel(
     resolvedLabel,
@@ -236,16 +243,12 @@ function buildTerritoryCompatibilityMetadata(
     ...(primaryLocation?.administrativeCode
       ? { territoryAdministrativeCode: primaryLocation.administrativeCode }
       : {}),
-    ...(
-      resolvedArrondissement !== null &&
-      isParisArrondissementLabel(resolvedLabel) &&
-      (!primaryLocation ||
-        (primaryLocation.country === DEFAULT_COUNTRY_CODE &&
-          primaryLocation.arrondissementCity === "Paris"))
-        ? { parisArrondissement: resolvedArrondissement }
-        : {}
-    ),
-    parisLocationType: resolvedLocationType,
+    ...(isParisCompatibilityLocation
+      ? {
+          parisArrondissement: resolvedArrondissement,
+          parisLocationType: resolvedLocationType,
+        }
+      : {}),
   };
 }
 

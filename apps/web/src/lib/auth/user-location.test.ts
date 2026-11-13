@@ -69,6 +69,22 @@ describe("current user location preferences", () => {
     });
   });
 
+  it("does not resurrect legacy metadata after canonical preferences are cleared", async () => {
+    mocks.auth.mockResolvedValue({ userId: "user-1" });
+    mocks.clerkClient.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          unsafeMetadata: { territoryPreferences: { residence: null, work: null } },
+          publicMetadata: { territoryLabel: "Paris 11e", territoryLocationType: "residence", parisArrondissement: 11 },
+          privateMetadata: {},
+        }),
+      },
+    });
+
+    await expect(getCurrentUserLocationPreferences()).resolves.toEqual({ residence: null, work: null });
+    await expect(getCurrentUserLocationPreference()).resolves.toBeNull();
+  });
+
   it("fails closed when Clerk is unavailable", async () => {
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.clerkClient.mockRejectedValue(new Error("Clerk unavailable"));

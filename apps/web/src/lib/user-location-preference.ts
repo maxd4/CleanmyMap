@@ -337,6 +337,26 @@ export function extractLocationPreferencesFromMetadata(
     : readLegacyLocationPreferences(metadata);
 }
 
+/**
+ * Read Clerk metadata layers in authority order. An explicit canonical object
+ * is authoritative even when both preferences are null; legacy layers are
+ * consulted only for accounts that have no canonical preference object.
+ */
+export function extractLocationPreferencesFromMetadataSources(
+  sources: readonly ClerkMetadata[],
+): UserLocationPreferences {
+  for (const source of sources) {
+    if (hasCanonicalLocationPreferences(source)) {
+      return extractLocationPreferencesFromMetadata(source);
+    }
+    const preferences = extractLocationPreferencesFromMetadata(source);
+    if (preferences.residence || preferences.work) {
+      return preferences;
+    }
+  }
+  return { residence: null, work: null };
+}
+
 export function extractUserLocationPreferenceFromMetadata(
   metadata: ClerkMetadata,
 ): UserLocationPreference | null {
@@ -352,10 +372,38 @@ export function extractUserLocationPreferenceFromMetadata(
   return null;
 }
 
+export function extractUserLocationPreferenceFromMetadataSources(
+  sources: readonly ClerkMetadata[],
+): UserLocationPreference | null {
+  const preferences = extractLocationPreferencesFromMetadataSources(sources);
+  for (const [locationType, selection] of [
+    ["residence", preferences.residence],
+    ["work", preferences.work],
+  ] as const) {
+    if (selection?.arrondissement) {
+      return { arrondissement: selection.arrondissement, locationType };
+    }
+  }
+  return null;
+}
+
 export function extractTerritoryLocationPreferenceFromMetadata(
   metadata: ClerkMetadata,
 ): TerritoryLocationPreference | null {
   const preferences = extractLocationPreferencesFromMetadata(metadata);
+  if (preferences.residence) {
+    return { ...preferences.residence, locationType: "residence" };
+  }
+  if (preferences.work) {
+    return { ...preferences.work, locationType: "work" };
+  }
+  return null;
+}
+
+export function extractTerritoryLocationPreferenceFromMetadataSources(
+  sources: readonly ClerkMetadata[],
+): TerritoryLocationPreference | null {
+  const preferences = extractLocationPreferencesFromMetadataSources(sources);
   if (preferences.residence) {
     return { ...preferences.residence, locationType: "residence" };
   }

@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
-import { DEFAULT_COUNTRY_CODE, extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
+import {
+  DEFAULT_COUNTRY_CODE,
+  extractTerritoryLocationPreferenceFromMetadataSources,
+} from "@/lib/user-location-preference";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { fetchOpenMeteoForecast } from "@/lib/weather/open-meteo-client";
@@ -107,8 +110,10 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
     && !draftLocationLabel
     && !hasCanonicalActionLocation;
   const locationPreference = useMemo(
-    () => extractTerritoryLocationPreferenceFromMetadata(user?.unsafeMetadata)
-      ?? extractTerritoryLocationPreferenceFromMetadata(user?.publicMetadata),
+    () => extractTerritoryLocationPreferenceFromMetadataSources([
+      user?.unsafeMetadata,
+      user?.publicMetadata,
+    ]),
     [user?.publicMetadata, user?.unsafeMetadata],
   );
   const initialLocation = buildInitialWeatherLocation({

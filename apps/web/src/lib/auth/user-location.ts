@@ -1,7 +1,6 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import {
-  extractLocationPreferencesFromMetadata,
-  TERRITORY_PREFERENCES_METADATA_KEY,
+  extractLocationPreferencesFromMetadataSources,
   type UserLocationPreferences,
   type UserLocationPreference,
 } from "@/lib/user-location-preference";
@@ -15,21 +14,11 @@ export async function getCurrentUserLocationPreferences(): Promise<UserLocationP
   try {
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    for (const metadata of [
+    return extractLocationPreferencesFromMetadataSources([
       user.unsafeMetadata,
       user.publicMetadata,
       user.privateMetadata,
-    ]) {
-      const preferences = extractLocationPreferencesFromMetadata(metadata);
-      if (
-        preferences.residence ||
-        preferences.work ||
-        Object.prototype.hasOwnProperty.call(metadata ?? {}, TERRITORY_PREFERENCES_METADATA_KEY)
-      ) {
-        return preferences;
-      }
-    }
-    return { residence: null, work: null };
+    ]);
   } catch (error) {
     console.error("Current user location preference resolution failed", error);
     return { residence: null, work: null };
