@@ -197,12 +197,18 @@ publié.
 La vue `Graphiques` de l’archive présidentielle ne consomme que cette
 projection validée. Elle sépare les cinq classifications et n’additionne les
 montants annoncés que pour des enregistrements partageant devise, année des
-prix, horizon, périmètre et cadence. Un montant financier conserve son
-instrument, son statut `announced`/`voted`/`executed`, sa source et sa nature
-annuelle ou pluriannuelle ; une estimation porte sa formule, variables,
-unités, hypothèses, références, exclusions et incertitude. Une réduction
-négative exige une base budgétaire documentée. Les données manquantes,
-doublons et incompatibilités sont exclues des agrégats et comptées dans la
-couverture ; elles ne deviennent jamais zéro ni classement écologique.
+prix, horizon, périmètre, cadence, statut et provenance directe/estimation.
+Une identité économique (`aggregationKey`) et un mode (`additive`/`exclusive`)
+empêchent de compter deux fois une même enveloppe ; les montants exclusifs
+restent séparés. Un montant financier conserve son instrument, son statut
+`announced`/`voted`/`executed`, sa source et sa nature annuelle ou pluriannuelle ;
+une estimation exige explicitement formule, variables, unités, hypothèses,
+références, exclusions et incertitude et porte le libellé `Estimation CleanMyMap`.
+Une réduction négative exige une base budgétaire documentée. Les données
+manquantes, doublons, statuts non annoncés et incompatibilités sont comptés
+dans la couverture ; une borne supérieure inconnue reste une borne inconnue et
+ne devient jamais un montant exact, zéro ou classement écologique. Les valeurs
+textuelles et leurs catégories restent disponibles aux technologies
+d’assistance en complément des barres.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.

@@ -15,6 +15,7 @@ import {
   type PresidentialCommitmentOutcome,
   type PresidentialPolicyIdentityStatus,
   type PresidentialFinancialRecord,
+  type PresidentialFinancialEstimateMethod,
   sortPresidentialCommitments,
 } from "./presidential-environmental-corpus";
 import { groupPresidentialCommitmentsByClassification } from "./presidential-environmental-filtering";
@@ -359,7 +360,7 @@ describe("presidential environmental preparation corpus", () => {
     expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [insufficient] })).toEqual([]);
 
     const financialRecord = (overrides: Partial<PresidentialFinancialRecord> = {}): PresidentialFinancialRecord => ({
-      id: "finance-1", instrument: "investment", amountMin: 10, amountMax: 20, currency: "EUR", priceYear: 2022,
+      id: "finance-1", aggregationKey: "finance-1", aggregationMode: "additive", instrument: "investment", amountMin: 10, amountMax: 20, currency: "EUR", priceYear: 2022,
       horizon: { value: "2025", precision: "year" }, scope: { fr: "Périmètre national", en: "National scope" }, cadence: "multiannual",
       source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/finance", version: "FIN-1" }, status: "announced", isEstimate: true,
       estimateMethod: { formula: { fr: "a × b", en: "a × b" }, variables: { fr: "a et b", en: "a and b" }, units: { fr: "EUR", en: "EUR" }, assumptions: { fr: "Hypothèse", en: "Assumption" }, references: { fr: "Référence", en: "Reference" }, exclusions: { fr: "Exclusion", en: "Exclusion" }, uncertainty: { fr: "Fourchette", en: "Range" } },
@@ -371,11 +372,30 @@ describe("presidential environmental preparation corpus", () => {
     const validReduction = makePublished("neutral", "valid-reduction");
     validReduction.financialRecords = [financialRecord({ id: "finance-reduction", instrument: "spending_reduction", amountMin: -10, amountMax: -5, budgetReductionBaseline: { fr: "Budget de référence 2022", en: "2022 baseline budget" } })];
     expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [validReduction] })).toHaveLength(1);
+    const incompleteEstimate = makePublished("neutral", "incomplete-estimate");
+    incompleteEstimate.financialRecords = [financialRecord({ estimateMethod: { formula: { fr: "a × b", en: "a × b" } } as PresidentialFinancialEstimateMethod })];
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [incompleteEstimate] })).toEqual([]);
     const chartCommitment = { ...validReduction, id: "chart-commitment", candidateId: "2022-emmanuel-macron", environmentalAssessment: reviewedAssessment(sourceCommitment.source, "favorable"), financialRecords: [financialRecord({ id: "chart-finance-1" }), financialRecord({ id: "chart-finance-2", horizon: { value: "2030", precision: "year" } }), financialRecord({ id: "chart-finance-voted", status: "voted" })] };
     const chart = buildPresidentialChartData([chartCommitment], getPresidentialCandidates(2022), 2022);
     expect(chart.classificationRows[0]).toMatchObject({ favorable: 1, unfavorable: 0, mixed: 0, undetermined: 0 });
     expect(chart.financialRows).toHaveLength(2);
     expect(chart.excludedFinancialRecords).toBe(1);
+
+    const aggregateCandidate = { ...chartCommitment, id: "aggregate-candidate", financialRecords: [
+      financialRecord({ id: "envelope-1", aggregationKey: "same-envelope-1", amountMin: 10, amountMax: null }),
+      financialRecord({ id: "envelope-2", aggregationKey: "same-envelope-2", amountMin: 5, amountMax: 7 }),
+      financialRecord({ id: "envelope-duplicate", aggregationKey: "same-envelope-1", amountMin: 99, amountMax: 99 }),
+      financialRecord({ id: "exclusive-envelope", aggregationKey: "exclusive-envelope", aggregationMode: "exclusive", amountMin: 3, amountMax: 4 }),
+      financialRecord({ id: "direct-announcement", aggregationKey: "direct-announcement", isEstimate: false, estimateMethod: null }),
+    ] };
+    const secondCandidate = { ...aggregateCandidate, id: "second-candidate", candidateId: "2022-jean-luc-melenchon", financialRecords: [financialRecord({ id: "envelope-1", aggregationKey: "candidate-local-id", isEstimate: false, estimateMethod: null })] };
+    const aggregateChart = buildPresidentialChartData([aggregateCandidate, secondCandidate], getPresidentialCandidates(2022), 2022);
+    expect(aggregateChart.financialRows).toHaveLength(4);
+    expect(aggregateChart.financialRows.find((row) => row.candidateId === "2022-emmanuel-macron" && row.isEstimate)?.amountMin).toBe(15);
+    expect(aggregateChart.financialRows.find((row) => row.candidateId === "2022-emmanuel-macron" && row.isEstimate)?.amountMax).toBeNull();
+    expect(aggregateChart.financialRows.some((row) => row.candidateId === "2022-jean-luc-melenchon")).toBe(true);
+    expect(aggregateChart.financialExclusions.duplicateEnvelope).toBe(1);
+    expect(aggregateChart.nonAggregatedFinancialRecords).toBe(1);
   });
 
   it("does not confuse an absence of collection with an absence of engagement", () => {

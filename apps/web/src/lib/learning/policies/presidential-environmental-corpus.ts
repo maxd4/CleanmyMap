@@ -19,6 +19,7 @@ export type PresidentialPolicyIdentityStatus = "confirmed" | "not_confirmed" | "
 export type PresidentialFinancialInstrument = "investment" | "spending_reduction" | "tax_revenue" | "other";
 export type PresidentialFinancialStatus = "announced" | "voted" | "executed";
 export type PresidentialFinancialCadence = "annual" | "multiannual" | "one_off" | "unknown";
+export type PresidentialFinancialAggregationMode = "additive" | "exclusive";
 export type PresidentialComparisonView = "theme" | "candidate" | "charts";
 export type PresidentialMandateStatus = "completed" | "ongoing";
 export type PresidentialEnvironmentalClassification = "favorable" | "unfavorable" | "mixed" | "neutral" | "undetermined";
@@ -97,6 +98,8 @@ export type PresidentialFinancialEstimateMethod = {
 
 export type PresidentialFinancialRecord = {
   id: string;
+  aggregationKey: string;
+  aggregationMode: PresidentialFinancialAggregationMode;
   instrument: PresidentialFinancialInstrument;
   amountMin: number;
   amountMax: number | null;
@@ -255,13 +258,13 @@ function isCompletePresidentialOutcome(outcome: PresidentialCommitmentOutcome | 
 }
 
 function isCompleteFinancialRecord(record: PresidentialFinancialRecord): boolean {
-  if (!record.id || !["investment", "spending_reduction", "tax_revenue", "other"].includes(record.instrument) || !Number.isFinite(record.amountMin) || (record.amountMax !== null && (!Number.isFinite(record.amountMax) || record.amountMax < record.amountMin)) || !record.currency.trim() || !Number.isInteger(record.priceYear) || !isValidPolicyDate(record.horizon) || !isNonEmptyLocalizedText(record.scope) || !["annual", "multiannual", "one_off", "unknown"].includes(record.cadence) || record.source.status !== "verified" || !record.source.url || !record.source.version || !["announced", "voted", "executed"].includes(record.status) || typeof record.isEstimate !== "boolean") return false;
+  if (!record.id || !record.aggregationKey.trim() || !["additive", "exclusive"].includes(record.aggregationMode) || !["investment", "spending_reduction", "tax_revenue", "other"].includes(record.instrument) || !Number.isFinite(record.amountMin) || (record.amountMax !== null && (!Number.isFinite(record.amountMax) || record.amountMax < record.amountMin)) || !record.currency.trim() || !Number.isInteger(record.priceYear) || !isValidPolicyDate(record.horizon) || !isNonEmptyLocalizedText(record.scope) || !["annual", "multiannual", "one_off", "unknown"].includes(record.cadence) || record.source.status !== "verified" || !record.source.url || !record.source.version || !["announced", "voted", "executed"].includes(record.status) || typeof record.isEstimate !== "boolean") return false;
   if (record.amountMin < 0 && (record.instrument !== "spending_reduction" || !record.budgetReductionBaseline || !isNonEmptyLocalizedText(record.budgetReductionBaseline))) return false;
   if (record.instrument === "spending_reduction" && record.amountMin < 0 && !record.budgetReductionBaseline) return false;
   if (record.isEstimate) {
     const method = record.estimateMethod;
-    if (!method || !Object.values(method).every((value) => isNonEmptyLocalizedText(value))) return false;
-  }
+    if (!method || !isNonEmptyLocalizedText(method.formula) || !isNonEmptyLocalizedText(method.variables) || !isNonEmptyLocalizedText(method.units) || !isNonEmptyLocalizedText(method.assumptions) || !isNonEmptyLocalizedText(method.references) || !isNonEmptyLocalizedText(method.exclusions) || !isNonEmptyLocalizedText(method.uncertainty)) return false;
+  } else if (record.estimateMethod !== null) return false;
   return true;
 }
 

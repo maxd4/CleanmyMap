@@ -16,7 +16,8 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
 }));
 
 import { PresidentialEnvironmentalArchive } from "./presidential-environmental-archive";
-import { getPublicPresidentialArchive, PRESIDENTIAL_ENVIRONMENTAL_CORPUS, type PresidentialEnvironmentalClassification, type PresidentialPublicCommitment } from "@/lib/learning/policies/presidential-environmental-corpus";
+import { PresidentialEnvironmentalCharts } from "./presidential-environmental-charts";
+import { getPublicPresidentialArchive, PRESIDENTIAL_ENVIRONMENTAL_CORPUS, type PresidentialEnvironmentalClassification, type PresidentialFinancialRecord, type PresidentialPublicCommitment } from "@/lib/learning/policies/presidential-environmental-corpus";
 
 const presidentialArchive = getPublicPresidentialArchive();
 const classifiedArchive = {
@@ -57,6 +58,32 @@ const classifiedArchive = {
       } : null,
     } as PresidentialPublicCommitment;
   }),
+};
+
+const displayFinancialRecord: PresidentialFinancialRecord = {
+  id: "display-finance",
+  aggregationKey: "display-envelope",
+  aggregationMode: "additive",
+  instrument: "investment",
+  amountMin: 100,
+  amountMax: null,
+  currency: "EUR",
+  priceYear: 2022,
+  horizon: { value: "2027", precision: "year" },
+  scope: { fr: "Périmètre national", en: "National scope" },
+  cadence: "multiannual",
+  source: { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments[0].source, status: "verified", url: "https://example.test/financial-source", version: "FIN-DISPLAY-1" },
+  status: "announced",
+  isEstimate: true,
+  estimateMethod: {
+    formula: { fr: "a × b", en: "a × b" }, variables: { fr: "a et b", en: "a and b" }, units: { fr: "EUR", en: "EUR" }, assumptions: { fr: "Hypothèse documentée", en: "Documented assumption" }, references: { fr: "Référence primaire", en: "Primary reference" }, exclusions: { fr: "Exclusions documentées", en: "Documented exclusions" }, uncertainty: { fr: "Borne supérieure inconnue", en: "Upper bound unknown" },
+  },
+  budgetReductionBaseline: null,
+};
+
+const financialArchive = {
+  ...classifiedArchive,
+  validatedCommitments: classifiedArchive.validatedCommitments.map((commitment, index) => index === 0 ? { ...commitment, financialRecords: [displayFinancialRecord] } : commitment),
 };
 
 describe("PresidentialEnvironmentalArchive", () => {
@@ -149,6 +176,21 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(container.querySelector('[role="img"][aria-label="Histogramme des classifications par candidat"]')).toBeNull();
     root.unmount();
     container.remove();
+  });
+
+  it("renders financial provenance, estimates and unknown upper bounds accessibly in both locales", () => {
+    const frMarkup = renderToStaticMarkup(<PresidentialEnvironmentalCharts archive={financialArchive} year={2012} locale="fr" text={(fr) => fr} />);
+    expect(frMarkup).toContain("Estimation CleanMyMap");
+    expect(frMarkup).toContain("borne supérieure inconnue");
+    expect(frMarkup).toContain("Périmètre national");
+    expect(frMarkup).toContain("Méthode et hypothèses de l’estimation");
+    expect(frMarkup).toContain("Valeurs des montants environnementaux par candidat");
+    expect(frMarkup).not.toContain('role="img"');
+
+    const enMarkup = renderToStaticMarkup(<PresidentialEnvironmentalCharts archive={financialArchive} year={2012} locale="en" text={(_, en) => en} />);
+    expect(enMarkup).toContain("CleanMyMap estimate");
+    expect(enMarkup).toContain("upper bound unknown");
+    expect(enMarkup).toContain("National scope");
   });
 
   it("keeps 2027 empty and explicitly preparatory", async () => {
