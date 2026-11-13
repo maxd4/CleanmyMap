@@ -185,7 +185,7 @@
   },
   "homepage": "https://github.com/maxd4/CleanMyMap#readme",
   "devDependencies": {
-    "@clerk/backend": "^3.26.1",
+    "@clerk/backend": "^3.26.6",
     "@clerk/testing": "2.2.50",
     "@playwright/test": "^1.64.1",
     "@stryker-mutator/core": "10.0.0",
