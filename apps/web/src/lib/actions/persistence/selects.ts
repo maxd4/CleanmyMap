@@ -31,6 +31,9 @@ const ACTION_BASE_SELECT_FIELDS = [
   "duration_minutes",
   "event_start_time",
   "event_end_time",
+  "action_timezone",
+  "event_start_at",
+  "event_end_at",
   "notes",
   "status",
   "review_state",
@@ -77,6 +80,9 @@ const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
       field !== "cancelled_by_clerk_id" &&
       field !== "cancellation_reason" &&
       field !== "cancelled_from_status" &&
+      field !== "action_timezone" &&
+      field !== "event_start_at" &&
+      field !== "event_end_at" &&
       field !== "children_count" &&
       field !== "adult_count" &&
       field !== "retired_count" &&
@@ -92,6 +98,9 @@ const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
       field !== "department_name" &&
       field !== "event_start_time" &&
       field !== "event_end_time" &&
+      field !== "action_timezone" &&
+      field !== "event_start_at" &&
+      field !== "event_end_at" &&
       field !== "published_at" &&
       field !== "public_visibility_started_at" &&
       field !== "results_published_at" &&
@@ -131,6 +140,9 @@ const ACTION_COLUMN_MARKERS = [
   "department_name",
   "event_start_time",
   "event_end_time",
+  "action_timezone",
+  "event_start_at",
+  "event_end_at",
   "published_at",
   "public_visibility_started_at",
   "results_published_at",

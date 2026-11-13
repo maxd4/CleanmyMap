@@ -59,6 +59,7 @@ const FORM_STATE_KEYS = [
   "shortDescription",
   "communeZoneLabel",
   "actionDate",
+  "actionTimezone",
   "meetingTime",
   "departureTime",
   "locationLabel",

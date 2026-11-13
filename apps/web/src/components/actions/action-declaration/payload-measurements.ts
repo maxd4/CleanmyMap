@@ -143,6 +143,7 @@ export function buildCreateActionPayloadMeasurementFields(
     durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
     eventStartTime: form.eventStartTime.trim() || null,
     eventEndTime: form.eventEndTime.trim() || null,
+    actionTimezone: form.actionTimezone.trim() || null,
     wasteMeasurementMethod: form.wasteMeasurementMethod || undefined,
     wasteBreakdown: {
       recyclablesKg: toOptionalNumber(form.wasteRecyclablesKg) ?? null,

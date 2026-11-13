@@ -96,7 +96,7 @@ export function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     });
   }
 
-  if (isActionDateInFuture(form.actionDate)) {
+  if (isActionDateInFuture(form.actionDate, new Date(), form.actionTimezone || undefined)) {
     issues.push({
       field: "actionDate",
       message: "Une déclaration finale doit concerner une date déjà passée ou aujourd’hui.",

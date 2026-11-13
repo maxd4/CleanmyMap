@@ -53,6 +53,7 @@ export type FormState = {
  shortDescription: string;
  communeZoneLabel: string;
  actionDate: string;
+ actionTimezone: string;
  meetingTime: string;
  departureTime: string;
  locationLabel: string;
@@ -178,6 +179,7 @@ export const initialState: FormState = {
  shortDescription:"",
  communeZoneLabel:"",
  actionDate:"",
+ actionTimezone:"Europe/Paris",
  meetingTime:"",
  departureTime:"",
  locationLabel:"",

@@ -46,7 +46,7 @@ function areAdjacentLocalHours(start: string, end: string): boolean {
   const endParts = localTimeParts(end);
   if (!startParts || !endParts || startParts.date !== endParts.date) return false;
 
-  // Open-Meteo returns local civil times for the requested Europe/Paris
+  // Open-Meteo returns local civil times for the requested action timezone
   // timezone. A repeated local hour can occur at the autumn DST transition;
   // the ordered provider rows are still adjacent in that case.
   return endParts.minutes === startParts.minutes || endParts.minutes - startParts.minutes === 60;

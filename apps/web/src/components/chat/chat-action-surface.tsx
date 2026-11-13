@@ -3,6 +3,7 @@
 import { CalendarDays, MapPin, MessageCircle } from "lucide-react";
 import type { ActionListItem } from "@/lib/actions/types";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
+import { normalizeIanaTimeZone } from "@/lib/time/civil-date";
 
 function titleFor(item: ActionListItem): string {
   return item.contract?.metadata.preparationData?.actionTitle?.trim() || item.location_label;
@@ -14,11 +15,17 @@ export function getChatActionDisplayState(
   item: ActionListItem,
   now = new Date(),
 ): ChatActionDisplayState {
-  if (isActionStartInFuture({ action_date: item.action_date, event_start_time: item.contract?.dates.eventStartTime ?? null }, now)) {
+  const timeZone = normalizeIanaTimeZone(item.contract?.dates.actionTimezone);
+  if (isActionStartInFuture({
+    action_date: item.action_date,
+    event_start_time: item.contract?.dates.eventStartTime ?? null,
+    action_timezone: timeZone,
+    event_start_at: item.contract?.dates.eventStartAt,
+  }, now)) {
     return "upcoming";
   }
-  const currentDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(now);
-  const currentTime = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
+  const currentDate = new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
+  const currentTime = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
   const start = item.contract?.dates.eventStartTime ?? "00:00";
   const end = item.contract?.dates.eventEndTime ?? null;
   if (

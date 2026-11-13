@@ -14,6 +14,7 @@ import {
   getAcceptedActionDrawing,
   geometryRepresentativeCoordinates,
 } from "./action-observed-geometry";
+import { resolveActionTemporalInstants } from "./temporal";
 
 function hasOwnField(value: object, field: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, field);
@@ -184,6 +185,23 @@ function buildTimingFields(
   }
   if (body.eventStartTime !== undefined) updateData["event_start_time"] = body.eventStartTime;
   if (body.eventEndTime !== undefined) updateData["event_end_time"] = body.eventEndTime;
+  if (body.actionTimezone !== undefined) updateData["action_timezone"] = body.actionTimezone;
+  if (
+    body.actionDate !== undefined ||
+    body.actionTimezone !== undefined ||
+    body.eventStartTime !== undefined ||
+    body.eventEndTime !== undefined
+  ) {
+    const temporal = resolveActionTemporalInstants({
+      actionDate: body.actionDate ?? current.action_date,
+      actionTimezone: body.actionTimezone !== undefined ? body.actionTimezone : current.action_timezone,
+      eventStartTime: body.eventStartTime !== undefined ? body.eventStartTime : current.event_start_time,
+      eventEndTime: body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
+    });
+    updateData["action_timezone"] = temporal.timeZone;
+    updateData["event_start_at"] = temporal.startAt.toISOString();
+    updateData["event_end_at"] = temporal.endAt?.toISOString() ?? null;
+  }
   if (body.organizerType !== undefined) updateData["organizer_type"] = body.organizerType;
   if (body.organizerId !== undefined) updateData["organizer_id"] = body.organizerId;
   if (body.organizerName !== undefined) updateData["organizer_name"] = body.organizerName?.trim() || null;

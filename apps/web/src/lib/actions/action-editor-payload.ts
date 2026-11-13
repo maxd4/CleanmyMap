@@ -53,6 +53,7 @@ function buildEditorMeasurementFields(row: ActionRow, metadata: ActionEditorMeta
     durationMinutes: row.duration_minutes,
     eventStartTime: normalizeClockTime(row.event_start_time),
     eventEndTime: normalizeClockTime(row.event_end_time),
+    actionTimezone: row.action_timezone ?? "Europe/Paris",
     notes: metadata.cleanNotes,
     submissionMode: metadata.submissionMode,
   };

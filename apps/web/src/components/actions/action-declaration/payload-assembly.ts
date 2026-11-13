@@ -26,6 +26,7 @@ function buildCreateActionPayloadResult(
   parts: CreateActionPayloadParts,
 ): CreateActionPayload {
   return {
+    actionTimezone: params.form.actionTimezone.trim() || null,
     ...buildCreateActionPayloadIdentityFields(params, parts),
     ...buildCreateActionPayloadMeasurementFields(params.form, parts, params.declarationMode),
     ...buildCreateActionPayloadGeometryFields(params, parts, buildPreparationDataFromForm),

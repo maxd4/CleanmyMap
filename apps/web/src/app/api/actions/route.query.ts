@@ -159,6 +159,8 @@ function isFutureActionContract(contract: ActionDataContract): boolean {
     isActionStartInFuture({
       action_date: contract.dates.observedAt,
       event_start_time: contract.dates.eventStartTime,
+      action_timezone: contract.dates.actionTimezone,
+      event_start_at: contract.dates.eventStartAt,
     })
   );
 }

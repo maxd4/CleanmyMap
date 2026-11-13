@@ -49,6 +49,28 @@ function sameDateTimeParts(left: ZonedDateTimeParts, right: ZonedDateTimeParts):
     left.hour === right.hour && left.minute === right.minute && left.second === right.second;
 }
 
+export const DEFAULT_ACTION_TIME_ZONE = "Europe/Paris" as const;
+
+/** Returns whether the runtime accepts the value as an IANA timezone. */
+export function isValidIanaTimeZone(value: string | null | undefined): value is string {
+  if (typeof value !== "string" || value.trim() === "") return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value.trim() }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Resolves legacy rows and omitted form values to the historical French timezone. */
+export function normalizeIanaTimeZone(
+  value: string | null | undefined,
+  fallback: string = DEFAULT_ACTION_TIME_ZONE,
+): string {
+  const normalized = value?.trim();
+  return normalized && isValidIanaTimeZone(normalized) ? normalized : fallback;
+}
+
 /** Formats an instant as the civil date observed in an explicit IANA timezone. */
 export function formatCivilDateInTimeZone(
   value: string | Date,
@@ -125,6 +147,7 @@ export function parseDateTimeLocalInTimeZone(
       const parts = dateTimePartsInTimeZone(candidate, timeZone);
       return sameDateTimeParts(parts, target) && candidate.getUTCMilliseconds() === milliseconds;
     });
+
   if (candidates.length === 0) throw new RangeError("Nonexistent local time in timezone.");
   if (candidates.length > 1) throw new RangeError("Ambiguous local time in timezone.");
   return candidates[0]!;

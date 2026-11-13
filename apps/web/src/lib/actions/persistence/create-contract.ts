@@ -35,6 +35,7 @@ import {
 } from "@/lib/actions/volunteer-participation";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { resolveActionContext } from "@/lib/actions/action-context";
+import { resolveActionTemporalInstants } from "@/lib/actions/temporal";
 
 function stripLegacyPreparationState(
   preparationData: ActionPreparationData,
@@ -243,6 +244,12 @@ function buildActionInsertRecord(
   routeTopology: ReturnType<typeof resolveCreateActionRouteTopology>["routeTopology"],
   preparationData: ActionPreparationData,
 ) {
+  const temporal = resolveActionTemporalInstants({
+    actionDate: params.payload.actionDate,
+    eventStartTime: params.payload.eventStartTime,
+    eventEndTime: params.payload.eventEndTime,
+    actionTimezone: params.payload.actionTimezone,
+  });
   const persistedPayload = {
     ...params.payload,
     arrivalLocationLabel: recordType === "action" && routeTopology === "loop" ? undefined : params.payload.arrivalLocationLabel,
@@ -307,6 +314,9 @@ function buildActionInsertRecord(
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
+    action_timezone: temporal.timeZone,
+    event_start_at: temporal.startAt.toISOString(),
+    event_end_at: temporal.endAt?.toISOString() ?? null,
     published_at: null,
     preparation_data: preparationData,
     access_mode: params.payload.accessMode ?? "public",

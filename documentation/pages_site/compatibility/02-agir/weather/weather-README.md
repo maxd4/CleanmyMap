@@ -42,7 +42,7 @@ conditions réelles.
 
 La météo courante reste distincte du jour prévisionnel sélectionné. Les
 fenêtres et recommandations visibles utilisent uniquement les heures locales
-`Europe/Paris` correspondant à ce jour et à ce lieu vérifié ; une localisation
+le fuseau IANA validé de l’action correspondant à ce jour et à ce lieu vérifié ; une localisation
 non géocodée ou une date hors horizon conserve un état explicite sans météo de
 fallback.
 

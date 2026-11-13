@@ -44,6 +44,7 @@ export type ActionContractCreatePayload = {
   };
   dates: {
     observedAt: string;
+    actionTimezone?: string | null;
     eventStartTime?: string | null;
     eventEndTime?: string | null;
   };
@@ -116,6 +117,7 @@ function buildContractGeometry(
 function buildContractDates(payload: CreateActionPayload): ActionContractCreatePayload["dates"] {
   return {
     observedAt: payload.actionDate,
+    actionTimezone: payload.actionTimezone ?? null,
     eventStartTime: payload.eventStartTime ?? null,
     eventEndTime: payload.eventEndTime ?? null,
   };
@@ -302,6 +304,7 @@ function buildNormalizedIdentityFields(
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     participantAccounts: payload.metadata.participantAccounts ?? undefined,
     actionDate: payload.dates.observedAt,
+    actionTimezone: payload.dates.actionTimezone ?? null,
     recordType: payload.type,
   };
 }

@@ -45,6 +45,7 @@ export type ActionEditorRecord = {
   createdByClerkId: string | null;
   actorName: string | null;
   actionDate: string;
+  actionTimezone?: string | null;
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
@@ -60,6 +61,8 @@ export type ActionEditorRecord = {
   durationMinutes: number;
   eventStartTime?: string | null;
   eventEndTime?: string | null;
+  eventStartAt?: string | null;
+  eventEndAt?: string | null;
   notes: string | null;
   submissionMode: "quick" | "complete" | null;
   associationName: string | null;

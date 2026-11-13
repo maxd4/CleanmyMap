@@ -53,6 +53,19 @@ export function ScheduleFields({
         >
           <CmmInput type="date" value={form.actionDate} onChange={(event) => updateField("actionDate", event.target.value)} />
         </CmmField>
+        <CmmField
+          id="before-action-timezone"
+          label="Fuseau horaire (IANA)"
+          hint="Ex. Europe/Paris, America/Montreal"
+        >
+          <CmmInput
+            type="text"
+            autoComplete="off"
+            value={form.actionTimezone}
+            onChange={(event) => updateField("actionTimezone", event.target.value)}
+            placeholder="Europe/Paris"
+          />
+        </CmmField>
         <TimeField
           id="before-meeting-time"
           label="Heure de rendez-vous"

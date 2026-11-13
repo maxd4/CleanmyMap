@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { formatCivilDateInLocale, formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, parseActionDateAsUtc, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
+import { formatCivilDateInLocale, formatCivilDateInTimeZone, formatDateTimeInTimeZone, isCivilDate, isValidIanaTimeZone, parseActionDateAsUtc, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
 
 describe("civil date adapter", () => {
   it.each(["America/Los_Angeles", "Europe/Paris"])(
@@ -119,5 +119,22 @@ describe("civil date adapter", () => {
     } finally {
       hostOffset.mockRestore();
     }
+  });
+
+  it.each([
+    ["Paris", "Europe/Paris", "2026-07-14T10:30", "2026-07-14T08:30:00.000Z"],
+    ["Montréal", "America/Montreal", "2026-07-14T10:30", "2026-07-14T14:30:00.000Z"],
+    ["Dakar", "Africa/Dakar", "2026-07-14T10:30", "2026-07-14T10:30:00.000Z"],
+    ["Nouméa", "Pacific/Noumea", "2026-07-15T00:30", "2026-07-14T13:30:00.000Z"],
+    ["Papeete", "Pacific/Tahiti", "2026-07-14T00:30", "2026-07-14T10:30:00.000Z"],
+  ])("resolves the %s action wall clock without host timezone state", (_label, timezone, local, instant) => {
+    expect(parseDateTimeLocalInTimeZone(local, timezone).toISOString()).toBe(instant);
+  });
+
+  it("validates IANA identifiers at the application boundary", () => {
+    expect(isValidIanaTimeZone("America/Montreal")).toBe(true);
+    expect(isValidIanaTimeZone("Pacific/Noumea")).toBe(true);
+    expect(isValidIanaTimeZone("not/a-timezone")).toBe(false);
+    expect(isValidIanaTimeZone(" ")).toBe(false);
   });
 });

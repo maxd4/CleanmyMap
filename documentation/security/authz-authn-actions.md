@@ -26,7 +26,7 @@ passager, puis relire l'action et la relation canonique
 `action_registrations.registration_status = confirmed`. Le rôle UX seul ne
 crée aucun droit.
 
-L'action doit être `pre_action`, future selon le prédicat Europe/Paris,
+L'action doit être `pre_action`, future selon son instant de début UTC dérivé du fuseau IANA validé,
 explicitement publiée, visible, publique et compatible avec la revue. Le
 départ doit être cohérent avec l'heure de début de l'action ; une heure de
 début absente ne permet pas de valider le trajet. Un conducteur ne peut pas
@@ -198,7 +198,7 @@ pré-action créée ou seulement `pret_a_partager` conserve `published_at = NULL
 et reste privée. Seule la commande authentifiée `Publier cette action`, après
 contrôle d'ownership/co-organisateur autorisé, renseigne ce champ. Une action
 future est ensuite une propriété dérivée : pré-action publiée et début local
-Europe/Paris strictement postérieur à l'instant courant.
+le début local de l'action, converti en instant UTC, strictement postérieur à l'instant courant.
 
 Pour une nouvelle pré-action associative (`organizer_type = association` ou
 `student_association`), `review_state` est une frontière indépendante :

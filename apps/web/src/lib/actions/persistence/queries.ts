@@ -3,7 +3,7 @@ import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
-import { getActionParisDate, isPublishedFuturePreAction } from "../temporal";
+import { isPublishedFuturePreAction } from "../temporal";
 import {
   ACTION_SELECT_FIELDS_LEGACY_WITHOUT_ACCESS_MODE,
   ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT_AND_ACCESS_MODE,
@@ -18,6 +18,8 @@ const ACTION_RESUME_SELECT_FIELDS = [
   "created_by_clerk_id",
   "action_date",
   "event_start_time",
+  "action_timezone",
+  "event_start_at",
   "status",
   "review_state",
   "published_at",
@@ -31,6 +33,8 @@ export type ActionResumeRow = Pick<
   | "created_by_clerk_id"
   | "action_date"
   | "event_start_time"
+  | "action_timezone"
+  | "event_start_at"
   | "status"
   | "review_state"
   | "published_at"
@@ -75,12 +79,12 @@ function applyActionStatusFilter(
       .in("status", ["approved", "pending"])
       .eq("action_phase", "pre_action")
       .not("published_at", "is", null)
-      .gte("action_date", getActionParisDate());
+      .gte("event_start_at", new Date().toISOString());
   }
   if (params.includeFuturePublicActions && params.status === "approved") {
-    const today = getActionParisDate();
+    const now = new Date().toISOString();
     return query.or(
-      `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),action_date.gte.${today})`,
+      `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),event_start_at.gte.${now})`,
     );
   }
   if (params.status === "approved" && selectFields.includes("action_phase")) {

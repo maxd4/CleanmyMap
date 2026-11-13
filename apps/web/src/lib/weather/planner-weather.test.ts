@@ -108,6 +108,26 @@ describe("planner weather context", () => {
     expect(isPlannerWeatherContextCompatible(context, { ...request!, now: new Date("2026-09-14T15:00:00.000Z") })).toBe(false);
   });
 
+  it("keeps an international action window in its selected timezone", async () => {
+    const request = buildPlannerWeatherRequest({
+      latitude: 45.5017,
+      longitude: -73.5673,
+      actionDate: "2026-09-15",
+      scheduledStartTime: "10:00",
+      scheduledEndTime: "12:00",
+      timeZone: "America/Montreal",
+      now: NOW,
+    });
+    expect(request?.timezone).toBe("America/Montreal");
+    const context = await fetchPlannerWeatherContext({
+      ...request!,
+      client: { fetcher: async () => response(forecast()) },
+    });
+    expect(context.location.timezone).toBe("America/Montreal");
+    expect(isPlannerWeatherContextCompatible(context, request)).toBe(true);
+    expect(isPlannerWeatherContextCompatible(context, { ...request!, timezone: "Europe/Paris" })).toBe(false);
+  });
+
   it("keeps a missing metric null instead of manufacturing a zero", async () => {
     const context = await fetchPlannerWeatherContext({
       latitude: 48.8566,

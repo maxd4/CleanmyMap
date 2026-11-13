@@ -62,6 +62,18 @@ export function ActionTimeSection({
             />
           </label>
         </div>
+        <label htmlFor="action-timezone" className="block space-y-1">
+          <span className="block text-xs font-semibold text-emerald-900/75">Fuseau horaire (IANA)</span>
+          <input
+            id="action-timezone"
+            type="text"
+            autoComplete="off"
+            className={compactInputCls}
+            value={form.actionTimezone}
+            onChange={(event) => updateField("actionTimezone", event.target.value)}
+            placeholder="Europe/Paris"
+          />
+        </label>
         <TimeStatus event={event} organization={organization} compact />
       </div>
     );
@@ -92,6 +104,19 @@ export function ActionTimeSection({
           />
         </Field>
       </div>
+      <label htmlFor="action-timezone" className="mt-3 block max-w-xl space-y-1">
+        <span className="block text-xs font-semibold text-emerald-900/75">Fuseau horaire (IANA)</span>
+        <input
+          id="action-timezone"
+          type="text"
+          autoComplete="off"
+          aria-label="Fuseau horaire de l’action"
+          value={form.actionTimezone}
+          onChange={(event) => updateField("actionTimezone", event.target.value)}
+          placeholder="Europe/Paris"
+          className={inputCls}
+        />
+      </label>
       <TimeStatus event={event} organization={organization} />
     </div>
   );

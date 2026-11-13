@@ -44,6 +44,8 @@ export type ActionPreviewRow = Pick<
   | "action_phase"
   | "published_at"
   | "event_start_time"
+  | "action_timezone"
+  | "event_start_at"
   | "cancelled_at"
   | "cancelled_by_clerk_id"
   | "cancellation_reason"
@@ -54,6 +56,8 @@ export type ActionPreviewRow = Pick<
   latitude?: number | null;
   longitude?: number | null;
   event_end_time?: string | null;
+  action_timezone?: string | null;
+  event_start_at?: string | null;
   waste_kg?: number | null;
   cigarette_butts?: number | null;
 };
@@ -86,9 +90,9 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, updated_at, action_date, event_start_time, event_end_time, location_label, latitude, longitude, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, review_state, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
+  "id, created_at, updated_at, action_date, event_start_time, event_end_time, action_timezone, event_start_at, location_label, latitude, longitude, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, review_state, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, access_mode, preparation_data";
 const ACTION_PARTICIPATION_COLUMNS =
-  "status, review_state, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at, access_mode";
+  "status, review_state, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, action_timezone, event_start_at, cancelled_at, access_mode";
 
 export type JoinableActionMetadata = {
   groupJoinEnabled: boolean;
@@ -136,6 +140,7 @@ export function buildActionWeatherRequest(action: ActionPreviewRow) {
     actionDate: action.action_date,
     scheduledStartTime: action.event_start_time ?? preparation?.meetingTime ?? preparation?.departureTime,
     scheduledEndTime: action.event_end_time,
+    timeZone: action.action_timezone,
   });
 }
 

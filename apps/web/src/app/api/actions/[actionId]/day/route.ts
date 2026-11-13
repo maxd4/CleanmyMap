@@ -82,6 +82,7 @@ function buildDayPayload(
     actionDate: action.action_date,
     scheduledStartTime: action.event_start_time ?? preparation.meetingTime ?? preparation.departureTime,
     scheduledEndTime: action.event_end_time,
+    timeZone: action.action_timezone,
   });
   const projectedPracticalInfo = buildPublicActionPracticalInformation(preparation, {
     confirmedParticipants,

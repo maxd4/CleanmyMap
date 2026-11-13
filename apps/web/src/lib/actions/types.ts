@@ -396,6 +396,9 @@ export type ActionListItem = {
       validatedAt: string | null;
       eventStartTime?: string | null;
       eventEndTime?: string | null;
+      actionTimezone?: string | null;
+      eventStartAt?: string | null;
+      eventEndAt?: string | null;
     };
     metadata: {
       actorName: string | null;
@@ -476,6 +479,7 @@ export type CreateActionPayload = {
   /** Ephemeral HMAC proof; consumed by the server and never persisted. */
   plannerSnapshotProof?: RoutePlannerProof | null;
   actionDate: string;
+  actionTimezone?: string | null;
   locationLabel: string;
   departmentCode?: string | null;
   departmentName?: string | null;

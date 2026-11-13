@@ -6,7 +6,8 @@ import {
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
 import { getTimeContractValidationIssues, isValidClockTime } from "@/lib/actions/time-contract";
-import { isActionDateInFuture } from "@/lib/actions/temporal";
+import { isActionDateInFuture, resolveActionTemporalInstants } from "@/lib/actions/temporal";
+import { isValidIanaTimeZone } from "@/lib/time/civil-date";
 import {
   actionInputGeometrySourceSchema,
   addGpxImportIssue,
@@ -43,6 +44,14 @@ const eventTimeSchema = z
   .nullable()
   .optional();
 
+const actionTimezoneSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .refine(isValidIanaTimeZone, "Le fuseau doit être un identifiant IANA valide.")
+  .nullable()
+  .optional();
+
 function addTemporalContractIssue(
   value: {
     durationMinutes?: number | null;
@@ -76,18 +85,39 @@ function addTemporalContractIssue(
 }
 
 function addCompletedActionFutureDateIssue(
-  value: { actionDate?: string; actionPhase?: string; submissionMode?: string },
+  value: { actionDate?: string; actionTimezone?: string | null; actionPhase?: string; submissionMode?: string },
   ctx: z.RefinementCtx,
   path: (string | number)[] = ["actionDate"],
 ) {
   if (
     (value.actionPhase === "post_action_complete" || value.submissionMode === "complete") &&
-    isActionDateInFuture(value.actionDate)
+    isActionDateInFuture(value.actionDate, new Date(), value.actionTimezone ?? undefined)
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path,
       message: "Une déclaration finale doit concerner une date déjà passée ou aujourd’hui.",
+    });
+  }
+}
+
+function addActionTemporalIssue(
+  value: {
+    actionDate: string;
+    actionTimezone?: string | null;
+    eventStartTime?: string | null;
+    eventEndTime?: string | null;
+  },
+  ctx: z.RefinementCtx,
+  path: (string | number)[],
+) {
+  try {
+    resolveActionTemporalInstants(value);
+  } catch (error) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path,
+      message: error instanceof Error ? error.message : "Les horaires locaux sont invalides pour ce fuseau.",
     });
   }
 }
@@ -155,6 +185,7 @@ const createActionLegacyBaseSchema = z.object({
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
+  actionTimezone: actionTimezoneSchema,
   eventStartTime: eventTimeSchema,
   eventEndTime: eventTimeSchema,
   locationLabel: z.string().min(2).max(200),
@@ -186,6 +217,7 @@ const createActionLegacySchema = createActionLegacyBaseSchema
   .extend({ plannerSnapshotProof: routePlannerProofSchema })
   .superRefine((value, ctx) => {
     addCompletedActionFutureDateIssue(value, ctx);
+    addActionTemporalIssue(value, ctx, ["actionDate"]);
     addTemporalContractIssue(value, ctx);
     addRouteTopologyIssue(value, ctx);
     addGpxImportIssue(value, ctx);
@@ -207,6 +239,7 @@ const createActionContractSchema = z.object({
   geometry: contractGeometrySchema.optional(),
   dates: z.object({
     observedAt: z.string().date(),
+    actionTimezone: actionTimezoneSchema,
     eventStartTime: eventTimeSchema,
     eventEndTime: eventTimeSchema,
   }),
@@ -236,9 +269,16 @@ const createActionContractSchema = z.object({
 }).superRefine((value, ctx) => {
   addCompletedActionFutureDateIssue({
     actionDate: value.dates.observedAt,
+    actionTimezone: value.dates.actionTimezone,
     actionPhase: value.metadata.actionPhase,
     submissionMode: value.metadata.submissionMode,
   }, ctx, ["dates", "observedAt"]);
+  addActionTemporalIssue({
+    actionDate: value.dates.observedAt,
+    actionTimezone: value.dates.actionTimezone,
+    eventStartTime: value.dates.eventStartTime,
+    eventEndTime: value.dates.eventEndTime,
+  }, ctx, ["dates", "actionTimezone"]);
   addTemporalContractIssue({
     durationMinutes: value.metadata.durationMinutes,
     eventStartTime: value.dates.eventStartTime,

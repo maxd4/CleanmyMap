@@ -125,6 +125,7 @@ function formatWeather(source: PublicationSummarySource): string {
       ? source.eventStartTime ?? preparation.meetingTime ?? preparation.departureTime
       : preparation.meetingTime ?? preparation.departureTime,
     scheduledEndTime: "eventEndTime" in source ? source.eventEndTime : null,
+    timeZone: "actionTimezone" in source ? source.actionTimezone : null,
   });
   if (!isPlannerWeatherContextCompatible(weather, weatherRequest)) {
     return "Non disponible dans les données canoniques de cette action";

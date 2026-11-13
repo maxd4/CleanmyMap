@@ -102,7 +102,7 @@ status ∈ {approved, pending}
 moderation_visibility = visible
 review_state ∈ {not_required, approved}
 published_at != null
-date/heure de début future selon Europe/Paris
+date/heure de début future selon le fuseau IANA validé de l’action
 access_mode != invite_link
 ```
 

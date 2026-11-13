@@ -13,7 +13,7 @@
   - l'ancien chemin `/sections/rejoindre-un-formulaire` redirige en conservant sa query string ;
   - l'onglet futur consomme les pré-actions ouvertes à la participation ;
   - l'onglet passé consomme une lecture publique dédiée des actions `post_action_complete`, sans `historyItems`, et permet un claim rétroactif séparé ;
-  - seules les actions satisfaisant `isJoinableFuturePreAction(...)` remontent dans la liste : phase `pre_action`, statut `pending` ou `approved`, `moderation_visibility = visible`, `published_at != null`, début futur selon Europe/Paris et `groupJoinEnabled === true` ;
+  - seules les actions satisfaisant `isJoinableFuturePreAction(...)` remontent dans la liste : phase `pre_action`, statut `pending` ou `approved`, `moderation_visibility = visible`, `published_at != null`, instant de début UTC futur dérivé du fuseau IANA de l’action et `groupJoinEnabled === true` ;
   - une action masquée par modération reste absente de la liste et du lien direct public ;
   - la gestion des demandes ne s'ouvre qu'après sélection explicite d'une action via `actionId` et confirmation des droits de revue par le serveur ;
   - le CTA principal oriente vers une demande d'inscription future, pas vers une création de rubrique distincte ;

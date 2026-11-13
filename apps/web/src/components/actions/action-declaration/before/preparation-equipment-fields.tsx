@@ -140,6 +140,7 @@ export function PreparationEquipmentFields({ form, updateField }: BaseSectionPro
     scheduledEndTime: form.eventEndTime,
     latitude: form.latitude,
     longitude: form.longitude,
+    timeZone: form.actionTimezone,
   });
   const weather = useActionPreparationWeather({
     contextId: null,

@@ -49,6 +49,8 @@ async function resolveAction(supabase: ReturnType<typeof getSupabaseServerClient
     !isActionStartInFuture({
       action_date: publicItem.action_date,
       event_start_time: publicItem.contract.dates.eventStartTime ?? null,
+      action_timezone: publicItem.contract.dates.actionTimezone,
+      event_start_at: publicItem.contract.dates.eventStartAt,
     })
     ? publicItem
     : null;

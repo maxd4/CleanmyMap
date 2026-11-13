@@ -60,7 +60,7 @@ Une fois la localisation définie, la page affiche :
 
 La sélection d'une date du pré-formulaire ne réutilise jamais le risque météo
 courant. Les recommandations de préparation, les fenêtres et la durée
-indicative proviennent de la même sélection horaire locale `Europe/Paris` et
+indicative proviennent de la même sélection horaire locale dans le fuseau IANA de l’action et
 ne traversent pas artificiellement minuit. Une date hors de l'horizon
 Open-Meteo conserve l'état `Prévision indisponible`.
 

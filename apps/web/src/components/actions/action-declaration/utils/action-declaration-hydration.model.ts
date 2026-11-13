@@ -260,6 +260,7 @@ export function buildActionEditorFormState(
     ...buildWasteFields(preparedForm, action, storedBreakdown),
     eventStartTime: action.eventStartTime ?? preparedForm.eventStartTime,
     eventEndTime: action.eventEndTime ?? preparedForm.eventEndTime,
+    actionTimezone: action.actionTimezone ?? preparedForm.actionTimezone,
   };
   applyDerivedHydrationFields(nextForm, action);
   return nextForm;

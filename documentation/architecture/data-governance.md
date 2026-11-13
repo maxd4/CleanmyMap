@@ -162,7 +162,7 @@ absolue d'absence de donnée personnelle ; l'interface doit prévenir l'auteur.
 Les deux tables sont RLS et grants server-only. Un conducteur ou passager doit
 avoir une session Clerk valide, une inscription `action_registrations.confirmed`
 à l'action et une action `pre_action` future, publiée, visible, publique et
-compatible avec sa revue. Le départ doit être le même jour local Europe/Paris
+compatible avec sa revue. Le départ doit être le même jour local dans le fuseau IANA validé de l’action
 et précéder l'heure de début déclarée ; en l'absence d'heure de début, la
 validation est fail-closed. Une demande sur son propre trajet ou une demande
 active du même passager et trajet est refusée.

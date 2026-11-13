@@ -57,6 +57,28 @@ function buildGpxPayload(overrides: Partial<CreateActionPayload> = {}): CreateAc
 }
 
 describe("GPX create-action priority", () => {
+  it("persists the selected local wall-clock as canonical UTC instants", () => {
+    const payload = buildGpxPayload({
+      actionDate: "2026-07-14",
+      actionTimezone: "America/Montreal",
+      eventStartTime: "10:30",
+      eventEndTime: "11:30",
+    });
+    const geometry = buildCreateActionGeometry(payload, gpxDrawing, "gpx_import");
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload,
+      persistedGeometry: geometry,
+      finalDrawing: gpxDrawing,
+      routeGeometry: null,
+      status: "pending",
+    });
+
+    expect(row.action_timezone).toBe("America/Montreal");
+    expect(row.event_start_at).toBe("2026-07-14T14:30:00.000Z");
+    expect(row.event_end_at).toBe("2026-07-14T15:30:00.000Z");
+  });
+
   it("keeps location_only as a point-only choice and never reconstructs", async () => {
     routeProviderMock.mockClear();
     const result = await resolveCreateActionDrawing(buildGpxPayload({

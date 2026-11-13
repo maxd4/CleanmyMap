@@ -9,7 +9,7 @@ import {
   WEATHER_OPERATIONAL_RULE_VERSION,
   type WeatherRiskLevel,
 } from "./ops-weather";
-import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
+import { normalizeIanaTimeZone, parseCivilDateAsUtc } from "@/lib/time/civil-date";
 import {
   hasCompleteHourlyCoverage,
   selectWindowPoints,
@@ -80,7 +80,7 @@ export type PlannerWeatherContext = {
   location: {
     latitude: number;
     longitude: number;
-    timezone: typeof PLANNER_WEATHER_TIMEZONE;
+    timezone: string;
   };
   hourly: PlannerWeatherHourlyPoint[];
   summary: PlannerWeatherSummary | null;
@@ -93,13 +93,14 @@ export type PlannerWeatherRequest = {
   longitude: number;
   scheduledStartAt?: string;
   scheduledEndAt?: string;
+  timezone?: string;
   now?: Date;
   client?: OpenMeteoClientOptions;
 };
 
 export type PlannerWeatherContextRequest = Pick<
   PlannerWeatherRequest,
-  "latitude" | "longitude" | "scheduledStartAt" | "scheduledEndAt"
+  "latitude" | "longitude" | "scheduledStartAt" | "scheduledEndAt" | "timezone"
 > & { now?: Date };
 
 const LOCAL_DATE_TIME_PATTERN = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/;
@@ -138,6 +139,7 @@ export function buildPlannerWeatherRequest(input: {
   actionDate: unknown;
   scheduledStartTime: unknown;
   scheduledEndTime: unknown;
+  timeZone?: string | null;
   now?: Date;
 }): PlannerWeatherContextRequest | null {
   const latitude = typeof input.latitude === "number"
@@ -155,12 +157,19 @@ export function buildPlannerWeatherRequest(input: {
   const scheduledStartAt = normalizedScheduledDateTime(input.actionDate, input.scheduledStartTime);
   const scheduledEndAt = normalizedScheduledDateTime(input.actionDate, input.scheduledEndTime);
   if (!scheduledStartAt || !scheduledEndAt) return null;
-  return { latitude, longitude, scheduledStartAt, scheduledEndAt, now: input.now };
+  return {
+    latitude,
+    longitude,
+    scheduledStartAt,
+    scheduledEndAt,
+    timezone: normalizeIanaTimeZone(input.timeZone),
+    now: input.now,
+  };
 }
 
-function toLocalDateTime(value: Date): string {
+function toLocalDateTime(value: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: PLANNER_WEATHER_TIMEZONE,
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -191,8 +200,8 @@ function normalizeWindow(
   return endKey > startKey ? { startAt: startKey, endAt: endKey } : null;
 }
 
-function isWithinForecastHorizon(window: PlannerWeatherWindow, now: Date): boolean {
-  const localNow = toLocalDateTime(now);
+function isWithinForecastHorizon(window: PlannerWeatherWindow, now: Date, timeZone: string): boolean {
+  const localNow = toLocalDateTime(now, timeZone);
   const today = localNow.slice(0, 10);
   const latestForecastDate = addDays(today, PLANNER_WEATHER_FORECAST_DAYS - 1);
   return window.endAt >= localNow &&
@@ -217,7 +226,7 @@ function unavailableContext(
     location: {
       latitude: request.latitude,
       longitude: request.longitude,
-      timezone: PLANNER_WEATHER_TIMEZONE,
+      timezone: request.timezone ?? PLANNER_WEATHER_TIMEZONE,
     },
     hourly: [],
     summary: null,
@@ -290,7 +299,7 @@ export function isPlannerWeatherContext(value: unknown): value is PlannerWeather
     (context.status === "available" || context.status === "unavailable") &&
     context.status === context.weatherStatus &&
     Boolean(context.location && Number.isFinite(context.location.latitude) && Number.isFinite(context.location.longitude)) &&
-    context.location?.timezone === PLANNER_WEATHER_TIMEZONE &&
+    typeof context.location?.timezone === "string" &&
     Array.isArray(context.hourly) &&
     (context.summary === null || typeof context.summary === "object") &&
     (context.operationalRisk === undefined || isPlannerWeatherOperationalAssessment(context.operationalRisk));
@@ -321,7 +330,8 @@ function isCompatibleWeatherLocation(
   request: PlannerWeatherContextRequest,
 ): boolean {
   return Math.abs(context.location.latitude - request.latitude) <= PLANNER_WEATHER_COORDINATE_TOLERANCE &&
-    Math.abs(context.location.longitude - request.longitude) <= PLANNER_WEATHER_COORDINATE_TOLERANCE;
+    Math.abs(context.location.longitude - request.longitude) <= PLANNER_WEATHER_COORDINATE_TOLERANCE &&
+    context.location.timezone === (request.timezone ?? PLANNER_WEATHER_TIMEZONE);
 }
 
 function isFreshWeatherContext(
@@ -332,7 +342,7 @@ function isFreshWeatherContext(
   const fetchedAt = Date.parse(context.fetchedAt);
   const nowAt = now.getTime();
   if (!Number.isFinite(fetchedAt) || fetchedAt > nowAt || nowAt - fetchedAt > PLANNER_WEATHER_CONTEXT_MAX_AGE_MS) return false;
-  if (!isWithinForecastHorizon(window, now)) return false;
+  if (!isWithinForecastHorizon(window, now, context.location.timezone)) return false;
   return context.hourly.length > 0 && hasCompleteHourlyCoverage(context.hourly, window) &&
     context.hourly.every((point) => typeof point.time === "string" && point.time.length > 0);
 }
@@ -373,7 +383,8 @@ export async function fetchPlannerWeatherContext(
     return unavailableContext(request, fetchedAt, "invalid_window", null);
   }
 
-  if (!isWithinForecastHorizon(window, request.now ?? new Date())) {
+  const timezone = normalizeIanaTimeZone(request.timezone);
+  if (!isWithinForecastHorizon(window, request.now ?? new Date(), timezone)) {
     return unavailableContext(request, fetchedAt, "outside_forecast_horizon", window);
   }
 
@@ -383,7 +394,7 @@ export async function fetchPlannerWeatherContext(
         latitude: request.latitude,
         longitude: request.longitude,
         forecastDays: PLANNER_WEATHER_FORECAST_DAYS,
-        timezone: PLANNER_WEATHER_TIMEZONE,
+        timezone,
         hourly: [
           "temperature_2m",
           "apparent_temperature",
@@ -411,7 +422,7 @@ export async function fetchPlannerWeatherContext(
       location: {
         latitude: request.latitude,
         longitude: request.longitude,
-        timezone: PLANNER_WEATHER_TIMEZONE,
+        timezone,
       },
       hourly: points,
       summary: summarize(points),

@@ -26,6 +26,8 @@ function isCancellablePreviewItem(item: ActionListItem): boolean {
   return isFutureActionCancellationEligible({
     action_date: item.action_date,
     event_start_time: item.contract?.dates.eventStartTime ?? null,
+    action_timezone: item.contract?.dates.actionTimezone,
+    event_start_at: item.contract?.dates.eventStartAt,
     action_phase: actionPhase ?? "post_action_complete",
     status: item.status,
     published_at: item.published_at ?? null,

@@ -19,10 +19,14 @@ export function mergePublishedActionItems(
     const leftFuture = isActionStartInFuture({
       action_date: left.action_date,
       event_start_time: left.contract?.dates.eventStartTime ?? null,
+      action_timezone: left.contract?.dates.actionTimezone,
+      event_start_at: left.contract?.dates.eventStartAt,
     });
     const rightFuture = isActionStartInFuture({
       action_date: right.action_date,
       event_start_time: right.contract?.dates.eventStartTime ?? null,
+      action_timezone: right.contract?.dates.actionTimezone,
+      event_start_at: right.contract?.dates.eventStartAt,
     });
     if (leftFuture !== rightFuture) return leftFuture ? -1 : 1;
     return right.action_date.localeCompare(left.action_date);

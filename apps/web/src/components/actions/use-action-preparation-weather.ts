@@ -34,6 +34,7 @@ function requestKey(request: PlannerWeatherContextRequest | null | undefined, co
     request.longitude,
     request.scheduledStartAt ?? "",
     request.scheduledEndAt ?? "",
+    request.timezone ?? "",
   ].join("|");
 }
 
@@ -43,6 +44,7 @@ export function createActionPreparationWeatherRequest(fields: {
   scheduledEndTime: unknown;
   latitude: unknown;
   longitude: unknown;
+  timeZone?: string | null;
   now?: Date;
 }): PlannerWeatherContextRequest | null {
   return buildPlannerWeatherRequest(fields);

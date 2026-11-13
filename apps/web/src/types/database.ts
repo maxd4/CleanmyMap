@@ -141,6 +141,11 @@ export type ActionRow = {
   duration_minutes: number;
   event_start_time?: string | null;
   event_end_time?: string | null;
+  /** IANA timezone for the action's local wall-clock fields. Legacy rows default to Europe/Paris. */
+  action_timezone?: string | null;
+  /** Canonical UTC instants derived from action_date and local event times. */
+  event_start_at?: string | null;
+  event_end_at?: string | null;
   notes: string | null;
   status: "pending" | "approved" | "rejected" | "cancelled";
   review_state?:

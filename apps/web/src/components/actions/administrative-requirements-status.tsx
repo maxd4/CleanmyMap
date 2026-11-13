@@ -28,6 +28,8 @@ function PublishedActionRouteRefresh({ action }: { action: ActionEditorRecord })
     isActionStartInFuture({
       action_date: action.actionDate,
       event_start_time: action.eventStartTime,
+      action_timezone: action.actionTimezone,
+      event_start_at: action.eventStartAt,
     });
   return eligible ? <ActionRouteRefreshPanel action={action} /> : null;
 }

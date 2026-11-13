@@ -52,6 +52,9 @@ type ActionDataDates = {
   validatedAt: string | null;
   eventStartTime?: string | null;
   eventEndTime?: string | null;
+  actionTimezone?: string | null;
+  eventStartAt?: string | null;
+  eventEndAt?: string | null;
 };
 
 type ActionDataMetadata = {
@@ -136,6 +139,9 @@ export type BuildActionContractParams = {
   durationMinutes?: number | null;
   eventStartTime?: string | null;
   eventEndTime?: string | null;
+  actionTimezone?: string | null;
+  eventStartAt?: string | null;
+  eventEndAt?: string | null;
   actorName?: string | null;
   associationName?: string | null;
   organizerType?: OrganizerType | null;
@@ -224,6 +230,9 @@ function buildActionDates(params: BuildActionContractParams): ActionDataDates {
     validatedAt: params.validatedAt ?? null,
     eventStartTime: normalizeClockTime(params.eventStartTime),
     eventEndTime: normalizeClockTime(params.eventEndTime),
+    actionTimezone: params.actionTimezone ?? "Europe/Paris",
+    eventStartAt: params.eventStartAt ?? null,
+    eventEndAt: params.eventEndAt ?? null,
   };
 }
 

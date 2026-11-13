@@ -36,6 +36,7 @@ export type ActionChangeSource = Pick<
   | "geometry_source"
   | "event_start_time"
   | "event_end_time"
+  | "action_timezone"
   | "preparation_data"
 >;
 
@@ -155,8 +156,10 @@ function hasScheduleChange(
   const eventWindowChanged =
     normalizeClockTime(nextStart) !== normalizeClockTime(current.event_start_time) ||
     normalizeClockTime(nextEnd) !== normalizeClockTime(current.event_end_time);
+  const timezoneChanged = hasUpdateField(updateData, "action_timezone") &&
+    updateData.action_timezone !== current.action_timezone;
   const preparationChanges = operationalPreparationChanged(preparation.current, preparation.next);
-  return dateChanged || eventWindowChanged || preparationChanges.schedule;
+  return dateChanged || eventWindowChanged || timezoneChanged || preparationChanges.schedule;
 }
 
 function hasMeetingPointChange(

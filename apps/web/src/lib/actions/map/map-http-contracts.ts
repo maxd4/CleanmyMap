@@ -41,6 +41,10 @@ export type ActionsMapFeedRow = {
   updated_at: string | null;
   status: string;
   observed_at: string;
+  action_timezone?: string | null;
+  event_start_at?: string | null;
+  event_start_time?: string | null;
+  event_end_time?: string | null;
   location_label: string;
   department_code?: string | null;
   department_name?: string | null;
@@ -148,6 +152,11 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     sourceStatus: row.status,
     createdByClerkId: null,
     observedAt: row.observed_at,
+    actionTimezone: row.action_timezone ?? "Europe/Paris",
+    eventStartAt: row.event_start_at ?? null,
+    eventEndAt: null,
+    eventStartTime: row.event_start_time ?? null,
+    eventEndTime: row.event_end_time ?? null,
     createdAt: row.created_at,
     importedAt: row.updated_at,
     locationLabel: row.location_label,

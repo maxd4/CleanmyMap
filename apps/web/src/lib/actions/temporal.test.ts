@@ -3,6 +3,8 @@ import {
   getActionParisDate,
   isActionDateInFuture,
   isActionStartInFuture,
+  getActionDateInTimeZone,
+  resolveActionTemporalInstants,
   isJoinableFuturePreAction,
   isPublishedFuturePreAction,
 } from "./temporal";
@@ -47,6 +49,49 @@ describe("action temporal contract", () => {
         new Date("2026-01-01T23:00:00.000Z"),
       ),
     ).toBe(false);
+  });
+
+  it.each([
+    ["Paris", "Europe/Paris", "2026-09-14T22:30:00.000Z", "2026-09-15"],
+    ["Montréal", "America/Montreal", "2026-09-15T03:30:00.000Z", "2026-09-14"],
+    ["Dakar", "Africa/Dakar", "2026-09-14T23:30:00.000Z", "2026-09-14"],
+    ["Nouméa", "Pacific/Noumea", "2026-09-14T13:30:00.000Z", "2026-09-15"],
+    ["Papeete", "Pacific/Tahiti", "2026-09-15T09:30:00.000Z", "2026-09-14"],
+  ])("uses the %s local calendar day", (_label, timezone, instant, expected) => {
+    expect(getActionDateInTimeZone(new Date(instant), timezone)).toBe(expected);
+  });
+
+  it("compares international near-midnight starts by their UTC instant", () => {
+    const now = new Date("2026-09-15T03:30:00.000Z");
+    expect(isActionStartInFuture({
+      action_date: "2026-09-14",
+      event_start_time: "23:45",
+      action_timezone: "America/Montreal",
+    }, now)).toBe(true);
+    expect(isActionStartInFuture({
+      action_date: "2026-09-15",
+      event_start_time: "00:15",
+      action_timezone: "Pacific/Noumea",
+    }, now)).toBe(false);
+  });
+
+  it("persists local wall clocks as unambiguous instants and rejects DST gaps/folds", () => {
+    expect(resolveActionTemporalInstants({
+      actionDate: "2026-07-14",
+      eventStartTime: "10:30",
+      eventEndTime: "11:30",
+      actionTimezone: "America/Montreal",
+    }).startAt.toISOString()).toBe("2026-07-14T14:30:00.000Z");
+    expect(() => resolveActionTemporalInstants({
+      actionDate: "2026-03-08",
+      eventStartTime: "02:30",
+      actionTimezone: "America/Montreal",
+    })).toThrow(/Nonexistent/);
+    expect(() => resolveActionTemporalInstants({
+      actionDate: "2026-11-01",
+      eventStartTime: "01:30",
+      actionTimezone: "America/Montreal",
+    })).toThrow(/Ambiguous/);
   });
 
   it("requires explicit publication and pre-action phase", () => {

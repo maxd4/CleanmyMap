@@ -5,7 +5,6 @@ import {
   type ActionQuery,
 } from "@/lib/actions/query";
 import {
-  getActionParisDate,
   isJoinableFuturePreAction,
   isPublishedFuturePreAction,
 } from "@/lib/actions/temporal";
@@ -59,6 +58,8 @@ export function isVisibleInGroupForms(
     ActionPreviewRow,
     | "action_date"
     | "event_start_time"
+    | "action_timezone"
+    | "event_start_at"
     | "action_phase"
     | "status"
     | "review_state"
@@ -78,6 +79,8 @@ function isVisibleInFutureActions(
     ActionPreviewRow,
     | "action_date"
     | "event_start_time"
+    | "action_timezone"
+    | "event_start_at"
     | "action_phase"
     | "status"
     | "review_state"
@@ -103,7 +106,7 @@ function configureJoinableActionQuery(
     .in("status", ["approved", "pending"])
     .in("review_state", ["not_required", "approved"])
     .not("published_at", "is", null)
-    .gte("action_date", getActionParisDate(now));
+    .gte("event_start_at", now.toISOString());
 
   if (actionId) {
     nextQuery = nextQuery.eq("id", actionId);

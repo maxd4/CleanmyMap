@@ -56,6 +56,8 @@ async function loadPastActions(supabase: ReturnType<typeof getSupabaseServerClie
       !isActionStartInFuture({
         action_date: contract.dates.observedAt,
         event_start_time: contract.dates.eventStartTime ?? null,
+        action_timezone: contract.dates.actionTimezone,
+        event_start_at: contract.dates.eventStartAt,
       }),
     )
     .map((contract) => toPublicActionListItem(contract))

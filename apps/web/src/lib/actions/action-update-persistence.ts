@@ -2,7 +2,7 @@ import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { extractActionMetadataFromNotes } from "./metadata";
-import { isActionDateInFuture } from "./temporal";
+import { isActionDateInFuture, resolveActionTemporalInstants } from "./temporal";
 import { getTimeContractValidationMessage } from "./time-contract";
 import { prepareActionUpdateBody } from "./action-update-preparation";
 import { buildActionUpdateFields, getExplicitDrawing } from "./action-update-fields";
@@ -113,7 +113,11 @@ function validateEffectiveActionDate(
     body.actionDate !== undefined;
   if (
     (isNewFinalization(current, nextActionPhase) || isCompletedActionDateChange) &&
-    isActionDateInFuture(body.actionDate ?? current.action_date)
+    isActionDateInFuture(
+      body.actionDate ?? current.action_date,
+      new Date(),
+      body.actionTimezone !== undefined ? body.actionTimezone ?? undefined : current.action_timezone ?? undefined,
+    )
   ) {
     throw new ActionUpdateValidationError(
       "actionDate",
@@ -196,6 +200,19 @@ function validateActionUpdateInput(params: {
     throw new ActionUpdateValidationError("manualDrawing", "Un dessin manuel ne peut pas remplacer un tracé GPX ou GPS déjà observé.");
   }
   validateEffectiveActionDate(current, body, nextActionPhase);
+  try {
+    resolveActionTemporalInstants({
+      actionDate: body.actionDate ?? current.action_date,
+      actionTimezone: body.actionTimezone !== undefined ? body.actionTimezone : current.action_timezone,
+      eventStartTime: body.eventStartTime !== undefined ? body.eventStartTime : current.event_start_time,
+      eventEndTime: body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
+    });
+  } catch (error) {
+    throw new ActionUpdateValidationError(
+      "actionTimezone",
+      error instanceof Error ? error.message : "Les horaires locaux sont invalides pour ce fuseau.",
+    );
+  }
   validateEffectiveActionCoordinates(current, body);
   validateEffectiveWasteCharacterization({ current, body, currentMetadata });
   if (body.accessMode === "invite_link" && nextActionPhase !== "pre_action") {
