@@ -68,6 +68,10 @@ vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
   LearnPageVisitTracker: () => null,
 }));
 
+vi.mock("@/components/learn/environmental-policy-explorer", () => ({
+  EnvironmentalPolicyExplorer: () => React.createElement("section", { "data-testid": "environmental-policies" }),
+}));
+
 import Page from "./page";
 
 describe("LearnVulgarisationPage", () => {
@@ -92,6 +96,7 @@ describe("LearnVulgarisationPage", () => {
     const markup = renderToStaticMarkup(React.createElement(Page));
 
     expect(markup).toContain("data-testid=\"intro\"");
+    expect(markup).toContain("data-testid=\"environmental-policies\"");
     expect(markup).toContain("Chemin direct");
     expect(markup).toContain("Passer au quiz");
     expect(markup).toContain("Voir la méthodologie");
@@ -111,6 +116,8 @@ describe("LearnVulgarisationPage", () => {
     expect(markup).toContain("data-testid=\"journey\"");
 
     expect(markup.indexOf("data-testid=\"path\"")).toBeLessThan(markup.indexOf("data-testid=\"comparator\""));
+    expect(markup.indexOf("data-testid=\"intro\"")).toBeLessThan(markup.indexOf("data-testid=\"environmental-policies\""));
+    expect(markup.indexOf("data-testid=\"environmental-policies\"")).toBeLessThan(markup.indexOf("data-testid=\"path\""));
     expect(markup.indexOf("Chemin direct")).toBeLessThan(markup.indexOf("data-testid=\"path\""));
     expect(markup.indexOf("data-testid=\"path\"")).toBeLessThan(markup.indexOf("À retenir"));
     expect(markup.indexOf("À retenir")).toBeLessThan(markup.indexOf("data-testid=\"comparator\""));
