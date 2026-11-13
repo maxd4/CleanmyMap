@@ -95,6 +95,10 @@ const SUMMARY_TEXT_COPY: Record<string, SummaryCopy> = {
     fr: "Pas de signal territorial suffisamment robuste sur la fenêtre courante.",
     en: "No sufficiently robust territorial signal was found in the current window.",
   },
+  "La zone combine impact eleve et pression recurrente sur la periode recente.": {
+    fr: "La zone combine impact élevé et pression récurrente sur la période récente.",
+    en: "The area combines high impact with recurring pressure over the recent period.",
+  },
   "Renforcer la preuve spatiale": {
     fr: "Renforcer la preuve spatiale",
     en: "Strengthen spatial evidence",
@@ -119,44 +123,76 @@ const SUMMARY_TEXT_COPY: Record<string, SummaryCopy> = {
     fr: "Nettoyage du registre de données",
     en: "Clean the data register",
   },
-  "Détection de ": { fr: "Détection de ", en: "Detected " },
-  " anomalies de saisie (Impact suspect ou date manquante).": {
-    fr: " anomalies de saisie (Impact suspect ou date manquante).",
-    en: " data-entry anomalies (suspected impact or missing date).",
-  },
   "Le pilotage ne detecte pas d'urgence immediate sur la fenetre courante.": {
     fr: "Le pilotage ne détecte pas d'urgence immédiate sur la fenêtre courante.",
     en: "No immediate urgency was detected in the current window.",
   },
+  "Aucune degradation majeure detectee sur qualite, couverture ou moderation.": {
+    fr: "Aucune dégradation majeure détectée sur qualité, couverture ou modération.",
+    en: "No major deterioration was detected in quality, coverage, or moderation.",
+  },
+  "Aucune degradation majeure detectee sur qualite ou couverture; moderation indisponible avec la source actuelle.": {
+    fr: "Aucune dégradation majeure détectée sur qualité ou couverture ; modération indisponible avec la source actuelle.",
+    en: "No major deterioration was detected in quality or coverage; moderation is unavailable from the current source.",
+  },
 };
 
-const SUMMARY_PHRASES: Array<[string, SummaryCopy]> = [
-  ["renseigné", { fr: "renseigné", en: "reported" }],
-  ["Delai moderation en degradation", { fr: "Délai de modération en dégradation", en: "Moderation delay worsening" }],
-  ["actuels", { fr: "actuels", en: "current" }],
-  ["Qualite data en baisse", { fr: "Qualité des données en baisse", en: "Data quality is down" }],
-  ["score actuel", { fr: "score actuel", en: "current score" }],
-  ["Couverture geoloc en degradation", { fr: "Couverture géoloc en dégradation", en: "Geographic coverage worsening" }],
-  ["couverture actuelle", { fr: "couverture actuelle", en: "current coverage" }],
-  ["Prioriser ", { fr: "Prioriser ", en: "Prioritize " }],
-  ["Aucune degradation majeure detectee", { fr: "Aucune dégradation majeure détectée", en: "No major deterioration detected" }],
-  ["moderation indisponible avec la source actuelle", { fr: "modération indisponible avec la source actuelle", en: "moderation is unavailable from the current source" }],
-  ["L'IUR est indisponible pour une décision métier : seulement ", { fr: "L'IUR est indisponible pour une décision métier : seulement ", en: "IUR is unavailable for a business decision: only " }],
-  ["des actions ont une masse renseignée.", { fr: "des actions ont une masse renseignée.", en: "of actions have reported mass." }],
-];
+type SummaryTemplate = {
+  pattern: RegExp;
+  render: (match: RegExpMatchArray, locale: Locale) => string;
+};
 
-function replaceKnownPhrase(text: string, locale: Locale): string {
-  const replaced = SUMMARY_PHRASES.reduce(
-    (result, [phrase, copy]) => result.replaceAll(phrase, copy[locale]),
-    text,
-  );
-  return locale === "en" ? replaced.replaceAll(" j", " d") : replaced;
-}
+const SUMMARY_TEMPLATES: SummaryTemplate[] = [
+  {
+    pattern: /^([+-]?\d+(?:[.,]\d+)?) kg \(([+-]?\d+(?:[.,]\d+)?)% renseigné\)$/,
+    render: (match, locale) => locale === "fr"
+      ? `${match[1]} kg (${match[2]}% renseigné)`
+      : `${match[1]} kg (${match[2]}% reported)`,
+  },
+  {
+    pattern: /^Prioriser (.+)$/,
+    render: (match, locale) => locale === "fr" ? `Prioriser ${match[1]}` : `Prioritize ${match[1]}`,
+  },
+  {
+    pattern: /^Delai moderation en degradation \(([+-]?\d+(?:[.,]\d+)?) j, ([+-]?\d+(?:[.,]\d+)?) j actuels\)\.$/,
+    render: (match, locale) => locale === "fr"
+      ? `Délai de modération en dégradation (${match[1]} j, ${match[2]} j actuels).`
+      : `Moderation delay is worsening (${match[1]} d, ${match[2]} d currently).`,
+  },
+  {
+    pattern: /^Qualite data en baisse \(([+-]?\d+(?:[.,]\d+)?) pt, score actuel ([+-]?\d+(?:[.,]\d+)?)%\)\.$/,
+    render: (match, locale) => locale === "fr"
+      ? `Qualité des données en baisse (${match[1]} pt, score actuel ${match[2]}%).`
+      : `Data quality is down (${match[1]} pt, current score ${match[2]}%).`,
+  },
+  {
+    pattern: /^Couverture geoloc en degradation \(([+-]?\d+(?:[.,]\d+)?) pt, couverture actuelle ([+-]?\d+(?:[.,]\d+)?)%\)\.$/,
+    render: (match, locale) => locale === "fr"
+      ? `Couverture géoloc en dégradation (${match[1]} pt, couverture actuelle ${match[2]}%).`
+      : `Geographic coverage is worsening (${match[1]} pt, current coverage ${match[2]}%).`,
+  },
+  {
+    pattern: /^L'IUR est indisponible pour une décision métier : seulement ([+-]?\d+(?:[.,]\d+)?)% des actions ont une masse renseignée\.$/,
+    render: (match, locale) => locale === "fr"
+      ? `L'IUR est indisponible pour une décision métier : seulement ${match[1]}% des actions ont une masse renseignée.`
+      : `The IUR is unavailable for a business decision: only ${match[1]}% of actions have reported mass.`,
+  },
+  {
+    pattern: /^Détection de (\d+) anomalies de saisie \(Impact suspect ou date manquante\)\.$/,
+    render: (match, locale) => locale === "fr"
+      ? `Détection de ${match[1]} anomalies de saisie (Impact suspect ou date manquante).`
+      : `Detected ${match[1]} data-entry anomalies (suspected impact or missing date).`,
+  },
+];
 
 export function localizeSummaryText(text: string | undefined, locale: Locale): string | undefined {
   if (text === undefined) return undefined;
   const exactCopy = SUMMARY_TEXT_COPY[text];
-  return exactCopy ? exactCopy[locale] : replaceKnownPhrase(text, locale);
+  if (exactCopy) return exactCopy[locale];
+
+  const template = SUMMARY_TEMPLATES.find(({ pattern }) => pattern.test(text));
+  const match = template ? text.match(template.pattern) : null;
+  return template && match ? template.render(match, locale) : text;
 }
 
 export function localizeSummaryKpi(kpi: SummaryKpi, locale: Locale): SummaryKpi {

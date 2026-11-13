@@ -27,6 +27,9 @@
 - indicateurs prioritaires
 - Le résumé KPI conserve la période, les unités et les limites de comparabilité ;
   ses libellés, états, CTA et interprétations suivent la locale active.
+- Les alertes, justifications et CTA dynamiques du résumé sont localisés par
+  message complet avec paramètres ; un texte inconnu reste intact et ne doit
+  jamais être altéré par remplacement de fragment.
 - Les interprétations `positive`, `negative` et `neutral` sont distinctes ;
   `neutral` ne porte pas de signal visuel de régression.
 - **Textes à réduire ou supprimer** :

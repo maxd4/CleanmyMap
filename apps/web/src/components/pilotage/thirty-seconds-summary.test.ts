@@ -6,11 +6,17 @@ import { describe, expect, it } from "vitest";
 import {
   getSummaryInterpretationStyles,
   localizeSummaryKpi,
+  localizeSummaryText,
   normalizeThirtySecondsSummaryProps,
   ThirtySecondsSummary,
   type ThirtySecondsSummaryProps,
 } from "./thirty-seconds-summary";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { buildActionDataContract } from "@/lib/actions/data-contract";
+import { buildSummary } from "@/lib/pilotage/overview.summary";
+import { buildZones } from "@/lib/pilotage/overview.zones";
+import { computePilotageComparison } from "@/lib/pilotage/metrics";
+import { buildOperationalPriorities } from "@/lib/pilotage/prioritization";
 
 const kpis = [
   {
@@ -38,6 +44,31 @@ const kpis = [
     interpretation: "neutral" as const,
   },
 ];
+
+function buildProducerSummary() {
+  const now = new Date("2026-04-10T00:00:00.000Z");
+  const contracts = [
+    buildActionDataContract({
+      id: "producer-approved",
+      type: "action",
+      status: "approved",
+      source: "test",
+      observedAt: "2026-04-09",
+      createdAt: "2026-04-08T10:00:00.000Z",
+      locationLabel: "Paris 10e",
+      latitude: 48.87,
+      longitude: 2.35,
+      wasteKg: 10,
+      volunteersCount: 4,
+    }),
+  ];
+  const comparison = computePilotageComparison(contracts, 30, now, {
+    moderationAvailability: "unavailable",
+  });
+  const zones = buildZones(contracts, 30, now, "unavailable");
+  const priorities = buildOperationalPriorities({ comparison, zones });
+  return { summary: buildSummary(comparison, priorities), priorities };
+}
 
 describe("normalizeThirtySecondsSummaryProps", () => {
   it("falls back to flat props when summary is undefined", () => {
@@ -198,6 +229,78 @@ describe("ThirtySecondsSummary rendering", () => {
     expect(markup).not.toContain("Résorber le backlog de modération");
   });
 
+  it("localizes complete producer messages without fragment replacement corruption", () => {
+    const { summary, priorities } = buildProducerSummary();
+    const territorial = priorities.find((priority) => priority.id.startsWith("territorial-"));
+
+    expect(territorial).toBeDefined();
+    expect(localizeSummaryText(territorial?.reason, "en")).toBe(
+      "The area combines high impact with recurring pressure over the recent period.",
+    );
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ThirtySecondsSummary, {
+        locale: "en",
+        summary: {
+          ...summary,
+          alert: {
+            severity: territorial!.severity,
+            title: territorial!.title,
+            detail: territorial!.reason,
+          },
+        },
+      }),
+    );
+
+    expect(markup).toContain("Prioritize 10e");
+    expect(markup).toContain("The area combines high impact with recurring pressure over the recent period.");
+    expect(markup).toContain("reported");
+    expect(markup).not.toContain("impact eleve");
+  });
+
+  it.each([
+    [
+      "Delai moderation en degradation (+4.0 j, 9.0 j actuels).",
+      "Délai de modération en dégradation (+4.0 j, 9.0 j actuels).",
+      "Moderation delay is worsening (+4.0 d, 9.0 d currently).",
+    ],
+    [
+      "Qualite data en baisse (-2.0 pt, score actuel 75.0%).",
+      "Qualité des données en baisse (-2.0 pt, score actuel 75.0%).",
+      "Data quality is down (-2.0 pt, current score 75.0%).",
+    ],
+    [
+      "Couverture geoloc en degradation (-12.0 pt, couverture actuelle 58.0%).",
+      "Couverture géoloc en dégradation (-12.0 pt, couverture actuelle 58.0%).",
+      "Geographic coverage is worsening (-12.0 pt, current coverage 58.0%).",
+    ],
+    [
+      "L'IUR est indisponible pour une décision métier : seulement 75.0% des actions ont une masse renseignée.",
+      "L'IUR est indisponible pour une décision métier : seulement 75.0% des actions ont une masse renseignée.",
+      "The IUR is unavailable for a business decision: only 75.0% of actions have reported mass.",
+    ],
+    [
+      "Détection de 3 anomalies de saisie (Impact suspect ou date manquante).",
+      "Détection de 3 anomalies de saisie (Impact suspect ou date manquante).",
+      "Detected 3 data-entry anomalies (suspected impact or missing date).",
+    ],
+  ])("localizes the full dynamic producer message: %s", (source, french, english) => {
+    expect(localizeSummaryText(source, "en")).toBe(english);
+    expect(localizeSummaryText(source, "fr")).toBe(french);
+  });
+
+  it("leaves unknown messages intact instead of translating fragments", () => {
+    const unknown = "Un message non référencé renseigné et renseignée.";
+
+    expect(localizeSummaryText(unknown, "en")).toBe(unknown);
+    expect(localizeSummaryText("75.0% des actions ont une masse renseignée.", "en")).toBe(
+      "75.0% des actions ont une masse renseignée.",
+    );
+    expect(localizeSummaryText("75.0% des actions ont une masse renseigné.", "en")).toBe(
+      "75.0% des actions ont une masse renseigné.",
+    );
+  });
+
   it("renders the honest empty state in both locales", () => {
     const french = renderToStaticMarkup(
       React.createElement(ThirtySecondsSummary, { locale: "fr" }),
@@ -222,6 +325,7 @@ describe("ThirtySecondsSummary rendering", () => {
     expect(markup).toContain("tabular-nums");
     expect(source).not.toContain("framer-motion");
     expect(source).not.toContain("animate-pulse");
+    expect(source).not.toContain("replaceAll");
   });
 });
 

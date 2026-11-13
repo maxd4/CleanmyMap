@@ -23,6 +23,8 @@
 - repères de gouvernance
 - CTA de bascule vers le pilotage
 - synthèse KPI, période de lecture et états de données dans la locale active
+- titres, justifications et recommandations dynamiques du résumé localisés par
+  message complet, sans corruption des valeurs ni remplacement de fragments
 - neutralité rendue sans flèche descendante ni couleur de régression
 - **Textes à réduire ou supprimer** :
 - doublons de KPI
