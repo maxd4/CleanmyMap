@@ -499,14 +499,17 @@ Le corpus de préparation est porté par
 Il recense les listes officielles des candidatures 2012, 2017 et 2022 à partir
 des sources institutionnelles archivées ou officielles, conserve les partis ou
 coalitions dans un champ distinct, prépare la structure 2027 sans candidature
-préremplie et garde les engagements à vérifier individuellement. Les états de
-collecte sont distincts d'une absence d'engagement : `not_collected`,
+préremplie et garde les engagements à vérifier individuellement. Pour 2022,
+sept candidatures disposent désormais d'engagements de travail issus des PDF
+CNCCEP officiels, avec page et URL directe ; les cinq autres restent
+explicitement non dépouillées. Les états de collecte sont distincts d'une
+absence d'engagement : `not_collected`,
 `no_measure_identified_after_review`, `not_quantified`,
 `deadline_unspecified` et `source_insufficient`. Les engagements préparatoires
 réutilisent `ContentValidationRecord`, ont une version et un historique de
 modification, et restent exclus de toute projection publique tant qu'une
 revue humaine effective n'a pas été enregistrée. L'interface de
-`/learn/comprendre` affiche désormais, pour 2012 et 2017, le millésime, les
+`/learn/comprendre` affiche désormais, pour 2012, 2017 et 2022, le millésime, les
 candidatures officielles et l'origine de la source de liste ; les engagements
 non validés, les seules sources secondaires, les discours non revus et les
 programmes non contrôlés restent absents de la vue publique. Aucun comparateur,

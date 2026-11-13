@@ -14,11 +14,14 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("Archives présidentielles");
     expect(markup).toContain("2012");
     expect(markup).toContain("2017");
+    expect(markup).toContain("2022");
     expect(markup).toContain("Source de la liste officielle");
     expect(markup).toContain("Ministère de l’Intérieur");
+    expect(markup).toContain("Filtrer les engagements par candidat");
     expect(markup).toContain("Corpus non encore collecté");
     expect(markup).toContain("Aucun engagement validé n’est affiché");
     expect(markup).toContain("ne signifie pas l’absence de position");
     expect(markup).not.toContain("Porter la part du nucléaire à 50 % en 2025");
+    expect(markup).not.toContain("100 % d’énergies renouvelables dès que possible");
   });
 });

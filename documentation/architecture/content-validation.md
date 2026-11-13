@@ -138,9 +138,11 @@ officielles courantes, les discours, les sources secondaires et les preuves en
 attente, et conserve les états `not_collected`,
 `no_measure_identified_after_review`, `not_quantified`,
 `deadline_unspecified` et `source_insufficient`. Les engagements 2012, 2017 et
-2022 sont actuellement des entrées préparatoires non publiables ; 2027 ne
+2022 sont actuellement des entrées préparatoires non publiables ; le lot 2022
+conserve 16 mesures de travail issues de sept PDF CNCCEP avec leurs pages et
+URLs directes, tandis que cinq candidatures restent `not_collected`. 2027 ne
 contient aucune candidature ni mesure. Le consommateur public de
-`/learn/comprendre` n'expose que les listes officielles 2012/2017 et des
+`/learn/comprendre` n'expose que les listes officielles 2012/2017/2022 et des
 engagements passés par `getValidatedPresidentialCommitments` ; une source
 secondaire, un discours ou un programme sans revue humaine effective ne peut
 donc pas fuir dans l'interface.

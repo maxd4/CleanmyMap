@@ -44,6 +44,7 @@ describe("presidential environmental preparation corpus", () => {
     expect(sourceTypes).toEqual(new Set(["SOURCE_PRIMAIRE_ARCHIVEE", "SOURCE_PRIMAIRE_OFFICIELLE", "EN_ATTENTE_DE_PREUVE"]));
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.elections.find((election) => election.year === 2012)?.candidateListSource.url).toContain("archives-resultats-elections");
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.elections.find((election) => election.year === 2017)?.candidateListSource.publishedAt).toEqual({ value: "2017-03-23", precision: "day" });
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.elections.find((election) => election.year === 2022)?.candidateListSource.url).toBe("https://www.cnccep.fr/candidats.html");
 
     for (const commitment of PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments) {
       expect(commitment.source.documentNature).toBeDefined();
@@ -54,6 +55,19 @@ describe("presidential environmental preparation corpus", () => {
       expect(commitment.versions.length).toBeGreaterThan(0);
       expect(commitment.history.every((entry) => entry.sourceVersion === commitment.source.version)).toBe(true);
     }
+  });
+
+  it("records the seven CNCCEP 2022 source families with page-level provenance", () => {
+    const commitments2022 = getPresidentialCommitments(2022);
+    expect(commitments2022).toHaveLength(16);
+    expect(commitments2022.every((commitment) => commitment.source.type === "SOURCE_PRIMAIRE_OFFICIELLE")).toBe(true);
+    expect(commitments2022.every((commitment) => commitment.source.status === "verified" && commitment.source.checkedAt === "2026-11-13")).toBe(true);
+    expect(commitments2022.every((commitment) => commitment.documentationStatus === "draft" && commitment.lastCheckedAt === null && !commitment.validation.lastReviewedAt && !commitment.validation.reviewedBy)).toBe(true);
+    expect(new Set(commitments2022.map((commitment) => commitment.source.url)).size).toBe(7);
+    expect(commitments2022.every((commitment) => commitment.source.url?.startsWith("https://www.cnccep.fr/pdfs/Candidat-") && commitment.source.page !== null)).toBe(true);
+    expect(commitments2022.find((commitment) => commitment.id === "2022-jean-luc-melenchon-renewables")?.deadline).toEqual({ value: "2050", precision: "year" });
+    expect(commitments2022.find((commitment) => commitment.id === "2022-anne-hidalgo-renewables")?.deadline).toEqual({ value: null, precision: "unknown" });
+    expect(commitments2022.find((commitment) => commitment.id === "2022-fabien-roussel-renovation")?.limitations[0].fr).toContain("fréquence annuelle");
   });
 
   it("keeps B1 source origins distinct from the election year", () => {
@@ -75,15 +89,16 @@ describe("presidential environmental preparation corpus", () => {
     expect(filtered.length).toBe(3);
     expect(filtered.every((commitment) => commitment.electionYear === 2017 && commitment.theme.fr === "Énergie")).toBe(true);
     expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: 2012, theme: "Énergie", locale: "fr" })).toHaveLength(2);
-    expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: "all", theme: "all", locale: "fr" })).toHaveLength(27);
+    expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: "all", theme: "all", locale: "fr" })).toHaveLength(29);
+    expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: 2022, theme: "Énergie", candidateId: "2022-emmanuel-macron", locale: "fr" })).toHaveLength(1);
   });
 
   it("preserves the requested work corpus while keeping every measure unverified", () => {
     expect(getPresidentialCommitments(2012)).toHaveLength(5);
     expect(getPresidentialCommitments(2017)).toHaveLength(8);
-    expect(getPresidentialCommitments(2022)).toHaveLength(14);
+    expect(getPresidentialCommitments(2022)).toHaveLength(16);
     expect(getPresidentialCommitments(2027)).toEqual([]);
-    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.documentationStatus === "source_insufficient" && commitment.lastCheckedAt === null)).toBe(true);
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => ["source_insufficient", "draft"].includes(commitment.documentationStatus) && commitment.lastCheckedAt === null)).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => !commitment.validation.lastReviewedAt && !commitment.validation.reviewedBy)).toBe(true);
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => commitment.formulationAttributed.fr.length > 0 && commitment.mechanism.fr.length > 0)).toBe(true);
   });
@@ -98,7 +113,9 @@ describe("presidential environmental preparation corpus", () => {
 
   it("does not confuse an absence of collection with an absence of engagement", () => {
     const uncollectedCandidates = PRESIDENTIAL_ENVIRONMENTAL_CORPUS.candidates.filter((candidate) => candidate.documentationStatus === "not_collected");
-    expect(uncollectedCandidates.length).toBe(33);
+    expect(uncollectedCandidates.length).toBe(26);
+    expect(getPresidentialCandidates(2022).filter((candidate) => candidate.documentationStatus === "not_collected")).toHaveLength(5);
+    expect(getPresidentialCandidates(2022).filter((candidate) => candidate.documentationStatus === "draft")).toHaveLength(7);
     expect(uncollectedCandidates.some((candidate) => candidate.id === "2022-eric-zemmour")).toBe(true);
     expect(getPresidentialCommitments(2022).some((commitment) => commitment.candidateId === "2022-eric-zemmour")).toBe(false);
   });

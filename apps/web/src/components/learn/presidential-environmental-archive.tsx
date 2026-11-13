@@ -10,7 +10,7 @@ import {
   type PresidentialSourceType,
 } from "@/lib/learning/policies/presidential-environmental-corpus";
 
-type ArchiveYear = 2012 | 2017;
+type ArchiveYear = 2012 | 2017 | 2022;
 
 const sourceTypeLabels: Record<PresidentialSourceType, { fr: string; en: string }> = {
   SOURCE_PRIMAIRE_OFFICIELLE: { fr: "Source primaire officielle", en: "Official primary source" },
@@ -22,17 +22,18 @@ const sourceTypeLabels: Record<PresidentialSourceType, { fr: string; en: string 
   EN_ATTENTE_DE_PREUVE: { fr: "Preuve à retrouver", en: "Evidence to be found" },
 };
 
-const archiveYears: ArchiveYear[] = [2012, 2017];
+const archiveYears: ArchiveYear[] = [2012, 2017, 2022];
 
 export function PresidentialEnvironmentalArchive() {
   const { locale } = useSitePreferences();
   const [year, setYear] = useState<ArchiveYear>(2012);
   const [theme, setTheme] = useState("all");
+  const [candidateId, setCandidateId] = useState("all");
   const isFrench = locale === "fr";
   const text = (fr: string, en: string) => (isFrench ? fr : en);
   const election = getPresidentialElection(year);
   const candidates = getPresidentialCandidates(year);
-  const validatedCommitments = useMemo(() => filterPresidentialCommitments(getValidatedPresidentialCommitments(), { year, theme, locale }), [locale, theme, year]);
+  const validatedCommitments = useMemo(() => filterPresidentialCommitments(getValidatedPresidentialCommitments(), { year, theme, candidateId: candidateId === "all" ? undefined : candidateId, locale }), [candidateId, locale, theme, year]);
   const validatedThemes = useMemo(() => Array.from(new Set(getValidatedPresidentialCommitments().filter((commitment) => commitment.electionYear === year).map((commitment) => commitment.theme[locale]))).sort(), [locale, year]);
   const source = election?.candidateListSource;
 
@@ -46,14 +47,15 @@ export function PresidentialEnvironmentalArchive() {
 
       <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label={text("Année du scrutin", "Election year")}>
         {archiveYears.map((archiveYear) => (
-          <button key={archiveYear} type="button" role="tab" aria-selected={year === archiveYear} aria-controls="presidential-environmental-archive-results" className={`rounded-full px-4 py-2 text-sm font-black transition ${year === archiveYear ? "bg-amber-500 text-white" : "text-amber-900 hover:bg-amber-100"}`} onClick={() => { setYear(archiveYear); setTheme("all"); }}>
+          <button key={archiveYear} type="button" role="tab" aria-selected={year === archiveYear} aria-controls="presidential-environmental-archive-results" className={`rounded-full px-4 py-2 text-sm font-black transition ${year === archiveYear ? "bg-amber-500 text-white" : "text-amber-900 hover:bg-amber-100"}`} onClick={() => { setYear(archiveYear); setTheme("all"); setCandidateId("all"); }}>
             {archiveYear}
           </button>
         ))}
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 p-4 md:grid-cols-2">
+      <div className="grid gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 p-4 md:grid-cols-3">
         <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Thème des engagements validés", "Validated commitment theme")}</span><select aria-label={text("Filtrer les engagements par thème", "Filter commitments by theme")} value={theme} onChange={(event) => setTheme(event.target.value)} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les thèmes validés", "All validated themes")}</option>{validatedThemes.map((validatedTheme) => <option key={validatedTheme} value={validatedTheme}>{validatedTheme}</option>)}</select></label>
+        <label className="space-y-1 text-sm font-bold text-slate-800"><span>{text("Candidat (vue secondaire)", "Candidate (secondary view)")}</span><select aria-label={text("Filtrer les engagements par candidat", "Filter commitments by candidate")} value={candidateId} onChange={(event) => setCandidateId(event.target.value)} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 font-normal outline-none ring-amber-400 focus:ring-2"><option value="all">{text("Tous les candidats", "All candidates")}</option>{candidates.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name[locale]}</option>)}</select></label>
         <div className="rounded-xl border border-amber-100 bg-white px-3 py-2 text-sm text-slate-700"><p className="font-black text-slate-900">{text("Périmètre", "Scope")}</p><p>{text("Candidatures officielles du scrutin", "Official candidacies for the election")}</p></div>
       </div>
 
@@ -62,7 +64,7 @@ export function PresidentialEnvironmentalArchive() {
 
         <div className="rounded-2xl border border-amber-100 bg-white p-4">
           <div className="flex flex-col gap-1 text-slate-800 sm:flex-row sm:items-baseline sm:justify-between"><h4 className="text-lg font-black text-slate-950">{text(`Candidatures officielles ${year}`, `Official candidacies ${year}`)}</h4><span className="text-sm text-slate-800">{candidates.length} {text("candidats recensés", "candidates listed")}</span></div>
-          <ol className="mt-4 grid gap-2 sm:grid-cols-2" aria-label={text(`Candidats officiels ${year}`, `Official candidates ${year}`)}>{candidates.map((candidate) => <li key={candidate.id} className="rounded-xl border border-amber-100 bg-amber-50/30 p-3"><p className="font-black text-slate-950">{candidate.name[locale]}</p><p className="text-sm text-slate-700">{candidate.partyOrCoalition}</p><p className="mt-1 text-xs font-bold uppercase tracking-wide text-amber-800">{text("Corpus non encore collecté", "Corpus not yet collected")}</p></li>)}</ol>
+          <ol className="mt-4 grid gap-2 sm:grid-cols-2" aria-label={text(`Candidats officiels ${year}`, `Official candidates ${year}`)}>{candidates.map((candidate) => <li key={candidate.id} className="rounded-xl border border-amber-100 bg-amber-50/30 p-3"><p className="font-black text-slate-950">{candidate.name[locale]}</p><p className="text-sm text-slate-700">{candidate.partyOrCoalition}</p><p className="mt-1 text-xs font-bold uppercase tracking-wide text-amber-800">{candidate.documentationStatus === "not_collected" ? text("Corpus non encore collecté", "Corpus not yet collected") : text("Engagements en brouillon", "Commitments in draft")}</p></li>)}</ol>
         </div>
 
         {validatedCommitments.length === 0 ? <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-center" role="status"><p className="font-black text-slate-900">{text("Aucun engagement validé n’est affiché pour ce millésime.", "No validated commitment is displayed for this election year.")}</p><p className="mt-1 text-sm text-slate-600">{text("Les sources secondaires, les discours et les programmes non revus restent hors de la vue publique ; l’absence d’extrait ne signifie pas l’absence de position.", "Secondary sources, speeches and unreviewed programmes stay out of the public view; an absent extract does not mean an absent position.")}</p></div> : <ol className="space-y-3" aria-label={text("Engagements environnementaux validés", "Validated environmental commitments")}>{validatedCommitments.map((commitment) => <li key={commitment.id} className="rounded-2xl border border-amber-100 bg-amber-50/30 p-4"><div className="flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide text-amber-800"><span>{commitment.electionYear}</span><span aria-hidden="true">·</span><span>{commitment.theme[locale]}</span></div><h4 className="mt-1 text-lg font-black text-slate-950">{commitment.candidateName[locale]}</h4><p className="mt-2 cmm-text-body">{commitment.formulationAttributed[locale]}</p><p className="mt-3 text-sm text-slate-700">{text("Source d’origine", "Source of record")}: {commitment.source.name[locale]} · {sourceTypeLabels[commitment.source.type][locale]}</p>{commitment.source.url ? <a href={commitment.source.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-black text-amber-800 underline">{text("Consulter la source", "Consult source")}</a> : null}</li>)}</ol>}

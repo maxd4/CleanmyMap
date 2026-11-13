@@ -3,7 +3,7 @@ import type { LocalizedText, PolicyDate } from "./environmental-policy-registry"
 
 export type PresidentialElectionYear = 2012 | 2017 | 2022 | 2027;
 export type PresidentialCandidateStatus = "official" | "not_published";
-export type PresidentialCandidateDocumentationStatus = "not_collected" | "reviewed_no_measure_identified" | "source_insufficient" | "validated";
+export type PresidentialCandidateDocumentationStatus = "not_collected" | "draft" | "reviewed_no_measure_identified" | "source_insufficient" | "validated";
 export type PresidentialCommitmentDocumentationStatus = "not_collected" | "no_measure_identified_after_review" | "not_quantified" | "deadline_unspecified" | "source_insufficient" | "draft" | "validated";
 export type PresidentialSourceType = "SOURCE_PRIMAIRE_OFFICIELLE" | "SOURCE_PRIMAIRE_ARCHIVEE" | "PRIMARY_ARCHIVED" | "PRIMARY_PARTY_PROGRAM" | "DISCOURS_OFFICIEL" | "SOURCE_SECONDAIRE" | "EN_ATTENTE_DE_PREUVE";
 export type PresidentialSourceStatus = "verified" | "needs_review" | "insufficient" | "missing";
@@ -18,6 +18,7 @@ export type PresidentialSource = {
   documentNature: PresidentialDocumentNature;
   version: string;
   publishedAt: PolicyDate;
+  page: number | null;
   checkedAt: string | null;
   note: LocalizedText;
 };
@@ -121,6 +122,7 @@ function sourceRef(input: Partial<PresidentialSource> & Pick<PresidentialSource,
     documentNature: input.documentNature,
     version: input.version,
     publishedAt: input.publishedAt ?? UNKNOWN_DATE,
+    page: input.page ?? null,
     checkedAt: input.checkedAt ?? null,
     note: input.note ?? localized("Point d’entrée documentaire à contrôler avant toute publication.", "Documentary entry point to be checked before publication."),
   };
@@ -167,7 +169,7 @@ const officialListSources: Record<PresidentialElectionYear, PresidentialSource> 
   }),
 };
 
-const candidate = (electionYear: PresidentialElectionYear, id: string, frName: string, partyOrCoalition: string): PresidentialCandidateRecord => {
+const candidate = (electionYear: PresidentialElectionYear, id: string, frName: string, partyOrCoalition: string, documentationStatus: PresidentialCandidateDocumentationStatus = "not_collected"): PresidentialCandidateRecord => {
   const source = officialListSources[electionYear];
   return {
     id: `${electionYear}-${id}`,
@@ -175,7 +177,7 @@ const candidate = (electionYear: PresidentialElectionYear, id: string, frName: s
     name: localized(frName),
     partyOrCoalition,
     status: "official",
-    documentationStatus: "not_collected",
+    documentationStatus,
     candidateListSource: source,
     validation: validationDraft(`${electionYear}-${id}-candidate-validation`, source, localized(`Candidature officielle de ${frName} à documenter dans le corpus environnemental.`, `Official candidacy of ${frName} to be documented in the environmental corpus.`)),
   };
@@ -205,15 +207,15 @@ const candidateRecords: PresidentialCandidateRecord[] = [
   candidate(2017, "francois-fillon", "François Fillon", "Les Républicains"),
   candidate(2022, "nathalie-arthaud", "Nathalie Arthaud", "Lutte ouvrière"),
   candidate(2022, "nicolas-dupont-aignan", "Nicolas Dupont-Aignan", "Debout la France"),
-  candidate(2022, "anne-hidalgo", "Anne Hidalgo", "Parti socialiste"),
-  candidate(2022, "yannick-jadot", "Yannick Jadot", "Europe Écologie Les Verts"),
+  candidate(2022, "anne-hidalgo", "Anne Hidalgo", "Parti socialiste", "draft"),
+  candidate(2022, "yannick-jadot", "Yannick Jadot", "Europe Écologie Les Verts", "draft"),
   candidate(2022, "jean-lassalle", "Jean Lassalle", "Résistons !"),
-  candidate(2022, "marine-le-pen", "Marine Le Pen", "Rassemblement national"),
-  candidate(2022, "emmanuel-macron", "Emmanuel Macron", "La République en marche"),
-  candidate(2022, "jean-luc-melenchon", "Jean-Luc Mélenchon", "La France insoumise"),
-  candidate(2022, "valerie-pecresse", "Valérie Pécresse", "Les Républicains"),
+  candidate(2022, "marine-le-pen", "Marine Le Pen", "Rassemblement national", "draft"),
+  candidate(2022, "emmanuel-macron", "Emmanuel Macron", "La République en marche", "draft"),
+  candidate(2022, "jean-luc-melenchon", "Jean-Luc Mélenchon", "La France insoumise", "draft"),
+  candidate(2022, "valerie-pecresse", "Valérie Pécresse", "Les Républicains", "draft"),
   candidate(2022, "philippe-poutou", "Philippe Poutou", "Nouveau Parti anticapitaliste"),
-  candidate(2022, "fabien-roussel", "Fabien Roussel", "Parti communiste français"),
+  candidate(2022, "fabien-roussel", "Fabien Roussel", "Parti communiste français", "draft"),
   candidate(2022, "eric-zemmour", "Éric Zemmour", "Reconquête !"),
 ];
 
@@ -248,6 +250,8 @@ type CommitmentInput = {
   announcedUnits?: string | null;
   mechanism: string;
   source?: PresidentialSource;
+  documentationStatus?: PresidentialCommitmentDocumentationStatus;
+  limitations?: LocalizedText[];
 };
 
 const hollandeSecondarySource = sourceRef({
@@ -309,6 +313,28 @@ const leMondeSecondarySource = sourceRef({
   note: localized("Synthèse secondaire ; les programmes originaux doivent être inspectés avant toute approbation.", "Secondary summary; the original programmes must be inspected before any approval."),
 });
 
+const CNCCEP_PDFS_URL = "https://www.cnccep.fr/pdfs/";
+const cnccpProfessionSource = (candidateName: string, fileName: string, page: number, version: string): PresidentialSource => sourceRef({
+  type: "SOURCE_PRIMAIRE_OFFICIELLE",
+  status: "verified",
+  name: localized(`CNCCEP — profession de foi officielle de ${candidateName}`, `CNCCEP — ${candidateName}'s official statement`),
+  url: `${CNCCEP_PDFS_URL}${fileName}`,
+  documentNature: "profession_de_foi",
+  version,
+  publishedAt: UNKNOWN_DATE,
+  page,
+  checkedAt: COLLECTED_AT,
+  note: localized(`PDF officiel CNCCEP, page ${page} ; la fiche reste en brouillon jusqu’à la revue éditoriale de l’attribution et de la formulation.`, `Official CNCCEP PDF, page ${page}; the record remains a draft until editorial review of attribution and wording.`),
+});
+
+const hidalgoSource = cnccpProfessionSource("Anne Hidalgo", "Candidat-03-Anne-Hidalgo-Declaration.pdf", 3, "CNCCEP-2022-03-HIDALGO");
+const jadotSource = cnccpProfessionSource("Yannick Jadot", "Candidat-04-Yannick-Jadot-Declaration-accessible.pdf", 3, "CNCCEP-2022-04-JADOT");
+const lePen2022Source = cnccpProfessionSource("Marine Le Pen", "Candidat-06-Marine-Le-Pen-Declaration-accessible.pdf", 2, "CNCCEP-2022-06-LE-PEN");
+const macronSource = cnccpProfessionSource("Emmanuel Macron", "Candidat-07-Emmanuel-Macron-Declaration.pdf", 2, "CNCCEP-2022-07-MACRON");
+const melenchon2022Source = cnccpProfessionSource("Jean-Luc Mélenchon", "Candidat-08-Jean-Luc-Melenchon-Declaration-accessible.pdf", 3, "CNCCEP-2022-08-MELENCHON");
+const pecresseSource = cnccpProfessionSource("Valérie Pécresse", "Candidat-09-Valerie-Pecresse-Declaration-accessible.pdf", 3, "CNCCEP-2022-09-PECRESSE");
+const rousselSource = cnccpProfessionSource("Fabien Roussel", "Candidat-11-Fabien-Roussel-Declaration-accessible.pdf", 2, "CNCCEP-2022-11-ROUSSEL");
+
 const commitmentSources: Record<string, PresidentialSource> = {
   "2012-francois-hollande-nuclear-share": hollandeSecondarySource,
   "2012-francois-hollande-fessenheim": hollandeSecondarySource,
@@ -322,11 +348,27 @@ const commitmentSources: Record<string, PresidentialSource> = {
   "2017-benoit-hamon-diesel": leMondeSecondarySource,
   "2017-benoit-hamon-nuclear": leMondeSecondarySource,
   "2017-francois-fillon-carbon-price": leMondeSecondarySource,
+  "2022-anne-hidalgo-renewables": hidalgoSource,
+  "2022-anne-hidalgo-renovation": hidalgoSource,
+  "2022-yannick-jadot-plastics": jadotSource,
+  "2022-yannick-jadot-glyphosate": jadotSource,
+  "2022-yannick-jadot-transport": jadotSource,
+  "2022-marine-le-pen-energy-taxation": lePen2022Source,
+  "2022-emmanuel-macron-nuclear": macronSource,
+  "2022-emmanuel-macron-renewables": macronSource,
+  "2022-emmanuel-macron-carbon-border": macronSource,
+  "2022-jean-luc-melenchon-renewables": melenchon2022Source,
+  "2022-jean-luc-melenchon-nuclear-exit": melenchon2022Source,
+  "2022-jean-luc-melenchon-glyphosate": melenchon2022Source,
+  "2022-valerie-pecresse-carbon-neutrality": pecresseSource,
+  "2022-fabien-roussel-rail": rousselSource,
+  "2022-fabien-roussel-public-transit": rousselSource,
+  "2022-fabien-roussel-renovation": rousselSource,
 };
 
 const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment => {
   const source = input.source ?? commitmentSources[input.id] ?? pendingCommitmentSource(input.electionYear, input.candidateName);
-  const status: PresidentialCommitmentDocumentationStatus = "source_insufficient";
+  const status: PresidentialCommitmentDocumentationStatus = input.documentationStatus ?? "source_insufficient";
   return {
     id: input.id,
     electionYear: input.electionYear,
@@ -339,7 +381,7 @@ const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment
     deadline: input.deadline ?? UNKNOWN_DATE,
     announcedUnits: input.announcedUnits ?? null,
     mechanism: localized(`${input.mechanism} Formulation à vérifier individuellement.`, `${input.mechanism} Wording requires individual verification.`),
-    limitations: [localized("La source primaire et la formulation exacte ne sont pas encore contrôlées ; aucune conclusion sur l’effet environnemental n’est produite.", "The primary source and exact wording have not been checked; no environmental conclusion is produced.")],
+    limitations: input.limitations ?? [localized("La source primaire et la formulation exacte ne sont pas encore contrôlées ; aucune conclusion sur l’effet environnemental n’est produite.", "The primary source and exact wording have not been checked; no environmental conclusion is produced.")],
     firstCollectedAt: COLLECTED_AT,
     lastCheckedAt: null,
     documentationStatus: status,
@@ -365,20 +407,22 @@ const commitmentRecords: PresidentialEnvironmentalCommitment[] = [
   commitment({ id: "2017-benoit-hamon-nuclear", electionYear: 2017, candidateId: "benoit-hamon", candidateName: "Benoît Hamon", partyOrCoalition: "Parti socialiste", theme: localized("Énergie", "Energy"), formulation: "Position sur le nucléaire.", mechanism: "Évolution du mix énergétique", }),
   commitment({ id: "2017-francois-fillon-carbon-price", electionYear: 2017, candidateId: "francois-fillon", candidateName: "François Fillon", partyOrCoalition: "Les Républicains", theme: localized("Climat et fiscalité", "Climate and taxation"), formulation: "Prix plancher du carbone.", mechanism: "Signal-prix sur les émissions de carbone", }),
 
-  commitment({ id: "2022-anne-hidalgo-renewables", electionYear: 2022, candidateId: "anne-hidalgo", candidateName: "Anne Hidalgo", partyOrCoalition: "Parti socialiste", theme: localized("Énergie", "Energy"), formulation: "Développement des énergies renouvelables.", mechanism: "Transformation du mix énergétique", }),
-  commitment({ id: "2022-anne-hidalgo-renovation", electionYear: 2022, candidateId: "anne-hidalgo", candidateName: "Anne Hidalgo", partyOrCoalition: "Parti socialiste", theme: localized("Bâtiments", "Buildings"), formulation: "Rénovation énergétique.", mechanism: "Réduction de la demande énergétique des bâtiments", }),
-  commitment({ id: "2022-yannick-jadot-glyphosate", electionYear: 2022, candidateId: "yannick-jadot", candidateName: "Yannick Jadot", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Agriculture et biodiversité", "Agriculture and biodiversity"), formulation: "Sortie du glyphosate.", mechanism: "Restriction d’un intrant agricole", }),
-  commitment({ id: "2022-yannick-jadot-plastics", electionYear: 2022, candidateId: "yannick-jadot", candidateName: "Yannick Jadot", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Déchets et ressources", "Waste and resources"), formulation: "Mesures sur les plastiques.", mechanism: "Prévention, réduction ou transformation des usages de plastique", }),
-  commitment({ id: "2022-yannick-jadot-transport", electionYear: 2022, candidateId: "yannick-jadot", candidateName: "Yannick Jadot", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Transports", "Transport"), formulation: "Mesures sur les transports.", mechanism: "Report modal et évolution des mobilités", }),
-  commitment({ id: "2022-marine-le-pen-energy-taxation", electionYear: 2022, candidateId: "marine-le-pen", candidateName: "Marine Le Pen", partyOrCoalition: "Rassemblement national", theme: localized("Énergie et fiscalité", "Energy and taxation"), formulation: "Fiscalité énergétique.", mechanism: "Modification des prélèvements sur l’énergie", }),
-  commitment({ id: "2022-emmanuel-macron-nuclear", electionYear: 2022, candidateId: "emmanuel-macron", candidateName: "Emmanuel Macron", partyOrCoalition: "La République en marche", theme: localized("Énergie", "Energy"), formulation: "Engagements sur le nucléaire.", mechanism: "Évolution du parc et de la production nucléaire", }),
-  commitment({ id: "2022-emmanuel-macron-renewables", electionYear: 2022, candidateId: "emmanuel-macron", candidateName: "Emmanuel Macron", partyOrCoalition: "La République en marche", theme: localized("Énergie", "Energy"), formulation: "Engagements sur les énergies renouvelables.", mechanism: "Développement de capacités renouvelables", }),
-  commitment({ id: "2022-emmanuel-macron-carbon-border", electionYear: 2022, candidateId: "emmanuel-macron", candidateName: "Emmanuel Macron", partyOrCoalition: "La République en marche", theme: localized("Climat et commerce", "Climate and trade"), formulation: "Mécanisme carbone aux frontières.", mechanism: "Prise en compte du contenu carbone des importations", }),
-  commitment({ id: "2022-jean-luc-melenchon-renewables", electionYear: 2022, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Énergie", "Energy"), formulation: "Développement des énergies renouvelables.", mechanism: "Transformation du mix énergétique", }),
-  commitment({ id: "2022-jean-luc-melenchon-glyphosate", electionYear: 2022, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Agriculture et biodiversité", "Agriculture and biodiversity"), formulation: "Sortie du glyphosate.", mechanism: "Restriction d’un intrant agricole", }),
-  commitment({ id: "2022-valerie-pecresse-carbon-neutrality", electionYear: 2022, candidateId: "valerie-pecresse", candidateName: "Valérie Pécresse", partyOrCoalition: "Les Républicains", theme: localized("Climat", "Climate"), formulation: "Neutralité carbone.", mechanism: "Réduction des émissions et compensation ou absorption résiduelle", }),
-  commitment({ id: "2022-fabien-roussel-rail", electionYear: 2022, candidateId: "fabien-roussel", candidateName: "Fabien Roussel", partyOrCoalition: "Parti communiste français", theme: localized("Transports", "Transport"), formulation: "Développement du rail.", mechanism: "Report modal vers le transport ferroviaire", }),
-  commitment({ id: "2022-fabien-roussel-renovation", electionYear: 2022, candidateId: "fabien-roussel", candidateName: "Fabien Roussel", partyOrCoalition: "Parti communiste français", theme: localized("Bâtiments", "Buildings"), formulation: "Rénovation énergétique.", mechanism: "Réduction de la demande énergétique des bâtiments", }),
+  commitment({ id: "2022-anne-hidalgo-renewables", electionYear: 2022, candidateId: "anne-hidalgo", candidateName: "Anne Hidalgo", partyOrCoalition: "Parti socialiste", theme: localized("Énergie", "Energy"), formulation: "Atteindre 100 % d’énergies renouvelables dès que possible.", announcedUnits: "100 % d’énergies renouvelables", mechanism: "Transformation du mix énergétique", documentationStatus: "draft" }),
+  commitment({ id: "2022-anne-hidalgo-renovation", electionYear: 2022, candidateId: "anne-hidalgo", candidateName: "Anne Hidalgo", partyOrCoalition: "Parti socialiste", theme: localized("Bâtiments", "Buildings"), formulation: "Permettre la rénovation énergétique des logements sans avance de frais.", mechanism: "Financement de la rénovation énergétique", documentationStatus: "draft" }),
+  commitment({ id: "2022-yannick-jadot-glyphosate", electionYear: 2022, candidateId: "yannick-jadot", candidateName: "Yannick Jadot", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Agriculture et biodiversité", "Agriculture and biodiversity"), formulation: "Interdiction immédiate du glyphosate.", mechanism: "Interdiction d’un intrant agricole", documentationStatus: "draft" }),
+  commitment({ id: "2022-yannick-jadot-plastics", electionYear: 2022, candidateId: "yannick-jadot", candidateName: "Yannick Jadot", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Déchets et ressources", "Waste and resources"), formulation: "Fin des plastiques à usage unique.", mechanism: "Interdiction ou réduction des usages de plastique", documentationStatus: "draft" }),
+  commitment({ id: "2022-yannick-jadot-transport", electionYear: 2022, candidateId: "yannick-jadot", candidateName: "Yannick Jadot", partyOrCoalition: "Europe Écologie Les Verts", theme: localized("Mobilité et fiscalité", "Mobility and taxation"), formulation: "TVA à 5,5 % sur les transports collectifs.", announcedUnits: "TVA : 5,5 %", mechanism: "Fiscalité appliquée aux transports collectifs", documentationStatus: "draft" }),
+  commitment({ id: "2022-marine-le-pen-energy-taxation", electionYear: 2022, candidateId: "marine-le-pen", candidateName: "Marine Le Pen", partyOrCoalition: "Rassemblement national", theme: localized("Énergie et fiscalité", "Energy and taxation"), formulation: "Réduction des taxes sur les carburants et l’énergie.", mechanism: "Modification des prélèvements sur l’énergie", limitations: [localized("La mesure est formulée dans un objectif de pouvoir d’achat ; aucun effet environnemental net n’est conclu.", "The measure is framed as a purchasing-power objective; no net environmental effect is concluded.")], documentationStatus: "draft" }),
+  commitment({ id: "2022-emmanuel-macron-nuclear", electionYear: 2022, candidateId: "emmanuel-macron", candidateName: "Emmanuel Macron", partyOrCoalition: "La République en marche", theme: localized("Énergie", "Energy"), formulation: "Investir dans les énergies renouvelables et le nucléaire.", mechanism: "Investissement dans les capacités énergétiques", documentationStatus: "draft" }),
+  commitment({ id: "2022-emmanuel-macron-renewables", electionYear: 2022, candidateId: "emmanuel-macron", candidateName: "Emmanuel Macron", partyOrCoalition: "La République en marche", theme: localized("Mobilité et énergie", "Mobility and energy"), formulation: "Investir dans les batteries et les véhicules électriques.", mechanism: "Investissement dans les technologies et véhicules électriques", documentationStatus: "draft" }),
+  commitment({ id: "2022-emmanuel-macron-carbon-border", electionYear: 2022, candidateId: "emmanuel-macron", candidateName: "Emmanuel Macron", partyOrCoalition: "La République en marche", theme: localized("Climat et commerce", "Climate and trade"), formulation: "Mettre en place une taxe carbone écologique aux frontières de l’Europe.", mechanism: "Signal-prix appliqué aux échanges extérieurs", documentationStatus: "draft" }),
+  commitment({ id: "2022-jean-luc-melenchon-renewables", electionYear: 2022, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Énergie", "Energy"), formulation: "Choisir 100 % d’énergies renouvelables dès 2050.", deadline: { value: "2050", precision: "year" }, announcedUnits: "100 % d’énergies renouvelables", mechanism: "Transformation du mix énergétique", documentationStatus: "draft" }),
+  commitment({ id: "2022-jean-luc-melenchon-nuclear-exit", electionYear: 2022, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Énergie", "Energy"), formulation: "Sortir du nucléaire.", mechanism: "Évolution du parc de production électrique", documentationStatus: "draft" }),
+  commitment({ id: "2022-jean-luc-melenchon-glyphosate", electionYear: 2022, candidateId: "jean-luc-melenchon", candidateName: "Jean-Luc Mélenchon", partyOrCoalition: "La France insoumise", theme: localized("Agriculture et biodiversité", "Agriculture and biodiversity"), formulation: "Interdiction du glyphosate.", mechanism: "Interdiction d’un intrant agricole", documentationStatus: "draft" }),
+  commitment({ id: "2022-valerie-pecresse-carbon-neutrality", electionYear: 2022, candidateId: "valerie-pecresse", candidateName: "Valérie Pécresse", partyOrCoalition: "Les Républicains", theme: localized("Climat", "Climate"), formulation: "Respecter une trajectoire zéro carbone à l’horizon 2050 grâce à une ambition énergétique nucléaire et renouvelable.", deadline: { value: "2050", precision: "year" }, announcedUnits: "zéro carbone à l’horizon 2050", mechanism: "Réduction des émissions par un mix nucléaire et renouvelable", documentationStatus: "draft" }),
+  commitment({ id: "2022-fabien-roussel-rail", electionYear: 2022, candidateId: "fabien-roussel", candidateName: "Fabien Roussel", partyOrCoalition: "Parti communiste français", theme: localized("Transports", "Transport"), formulation: "Réouverture des petites lignes SNCF.", mechanism: "Report modal vers le transport ferroviaire", documentationStatus: "draft" }),
+  commitment({ id: "2022-fabien-roussel-public-transit", electionYear: 2022, candidateId: "fabien-roussel", candidateName: "Fabien Roussel", partyOrCoalition: "Parti communiste français", theme: localized("Transports", "Transport"), formulation: "Gratuité des transports publics urbains.", mechanism: "Accès tarifaire aux transports collectifs", documentationStatus: "draft" }),
+  commitment({ id: "2022-fabien-roussel-renovation", electionYear: 2022, candidateId: "fabien-roussel", candidateName: "Fabien Roussel", partyOrCoalition: "Parti communiste français", theme: localized("Bâtiments", "Buildings"), formulation: "Rénovation thermique de 700 000 logements.", announcedUnits: "700 000 logements ; fréquence annuelle non explicitée dans l’extrait contrôlé", mechanism: "Réduction de la demande énergétique des bâtiments", limitations: [localized("Le PDF CNCCEP consulté mentionne 700 000 logements sans préciser une fréquence annuelle ; aucune cadence supplémentaire n’est déduite.", "The consulted CNCCEP PDF mentions 700,000 homes without specifying an annual frequency; no additional cadence is inferred.")], documentationStatus: "draft" }),
 ];
 
 export const PRESIDENTIAL_ENVIRONMENTAL_CORPUS: PresidentialEnvironmentalCorpus = {
@@ -401,12 +445,13 @@ export function getPresidentialCommitments(year?: PresidentialElectionYear, corp
 
 export function filterPresidentialCommitments(
   commitments: PresidentialEnvironmentalCommitment[],
-  filters: { year: PresidentialElectionYear | "all"; theme: string; locale: keyof LocalizedText },
+  filters: { year: PresidentialElectionYear | "all"; theme: string; candidateId?: string; locale: keyof LocalizedText },
 ): PresidentialEnvironmentalCommitment[] {
   return commitments.filter((commitmentRecord) => {
     const matchesYear = filters.year === "all" || commitmentRecord.electionYear === filters.year;
     const matchesTheme = filters.theme === "all" || commitmentRecord.theme[filters.locale] === filters.theme;
-    return matchesYear && matchesTheme;
+    const matchesCandidate = !filters.candidateId || commitmentRecord.candidateId === filters.candidateId;
+    return matchesYear && matchesTheme && matchesCandidate;
   });
 }
 
