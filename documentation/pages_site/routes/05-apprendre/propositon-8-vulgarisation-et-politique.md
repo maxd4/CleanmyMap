@@ -505,8 +505,12 @@ collecte sont distincts d'une absence d'engagement : `not_collected`,
 `deadline_unspecified` et `source_insufficient`. Les engagements préparatoires
 réutilisent `ContentValidationRecord`, ont une version et un historique de
 modification, et restent exclus de toute projection publique tant qu'une
-revue humaine effective n'a pas été enregistrée. Ce socle ne crée encore ni
-comparateur, ni route, ni composant d'interface.
+revue humaine effective n'a pas été enregistrée. L'interface de
+`/learn/comprendre` affiche désormais, pour 2012 et 2017, le millésime, les
+candidatures officielles et l'origine de la source de liste ; les engagements
+non validés, les seules sources secondaires, les discours non revus et les
+programmes non contrôlés restent absents de la vue publique. Aucun comparateur,
+score ou route distincte n'est créé.
 
 # O. Focus territorial — politiques environnementales de la Ville de Paris
 

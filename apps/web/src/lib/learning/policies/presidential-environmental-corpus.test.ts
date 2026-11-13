@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validateContentRecord } from "@/lib/content/content-validation";
 import {
+  filterPresidentialCommitments,
   getPresidentialCandidates,
   getPresidentialCommitments,
   getPresidentialElection,
@@ -27,6 +28,17 @@ describe("presidential environmental preparation corpus", () => {
     expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.every((commitment) => candidatesById.get(commitment.candidateId)?.electionYear === commitment.electionYear)).toBe(true);
   });
 
+  it("matches the official 2012 and 2017 candidate rosters", () => {
+    expect(getPresidentialCandidates(2012).map((candidate) => candidate.name.fr)).toEqual(expect.arrayContaining([
+      "Nathalie Arthaud", "François Bayrou", "Jacques Cheminade", "Nicolas Dupont-Aignan", "Eva Joly",
+      "Marine Le Pen", "Jean-Luc Mélenchon", "Philippe Poutou", "Nicolas Sarkozy", "François Hollande",
+    ]));
+    expect(getPresidentialCandidates(2017).map((candidate) => candidate.name.fr)).toEqual(expect.arrayContaining([
+      "Nicolas Dupont-Aignan", "Marine Le Pen", "Emmanuel Macron", "Benoît Hamon", "Nathalie Arthaud",
+      "Philippe Poutou", "Jacques Cheminade", "Jean Lassalle", "Jean-Luc Mélenchon", "François Asselineau", "François Fillon",
+    ]));
+  });
+
   it("keeps the source taxonomy and document metadata explicit", () => {
     const sourceTypes = new Set(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.elections.map((election) => election.candidateListSource.type));
     expect(sourceTypes).toEqual(new Set(["SOURCE_PRIMAIRE_ARCHIVEE", "SOURCE_PRIMAIRE_OFFICIELLE", "EN_ATTENTE_DE_PREUVE"]));
@@ -42,6 +54,28 @@ describe("presidential environmental preparation corpus", () => {
       expect(commitment.versions.length).toBeGreaterThan(0);
       expect(commitment.history.every((entry) => entry.sourceVersion === commitment.source.version)).toBe(true);
     }
+  });
+
+  it("keeps B1 source origins distinct from the election year", () => {
+    const hollande = getPresidentialCommitments(2012).filter((commitment) => commitment.candidateId === "2012-francois-hollande");
+    expect(hollande.every((commitment) => commitment.source.type === "SOURCE_SECONDAIRE")).toBe(true);
+    expect(hollande.every((commitment) => commitment.source.version === "LEPARISIEN-2012-01-26")).toBe(true);
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.find((commitment) => commitment.id === "2012-nicolas-sarkozy-fessenheim")?.source.type).toBe("DISCOURS_OFFICIEL");
+
+    const melenchon = PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.find((commitment) => commitment.id === "2017-jean-luc-melenchon-green-rule");
+    expect(melenchon?.source.type).toBe("PRIMARY_PARTY_PROGRAM");
+    expect(melenchon?.source.publishedAt).toEqual({ value: "2016-10-18", precision: "day" });
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.find((commitment) => commitment.id === "2017-marine-le-pen-wind-moratorium")?.source.type).toBe("PRIMARY_ARCHIVED");
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.find((commitment) => commitment.id === "2017-emmanuel-macron-electricity-mix")?.source.type).toBe("SOURCE_SECONDAIRE");
+    expect(PRESIDENTIAL_ENVIRONMENTAL_CORPUS.commitments.find((commitment) => commitment.id === "2017-emmanuel-macron-electricity-mix")?.source.publishedAt).toEqual({ value: "2017-03-20", precision: "day" });
+  });
+
+  it("filters the same environmental taxonomy by election year and theme", () => {
+    const filtered = filterPresidentialCommitments(getPresidentialCommitments(), { year: 2017, theme: "Énergie", locale: "fr" });
+    expect(filtered.length).toBe(3);
+    expect(filtered.every((commitment) => commitment.electionYear === 2017 && commitment.theme.fr === "Énergie")).toBe(true);
+    expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: 2012, theme: "Énergie", locale: "fr" })).toHaveLength(2);
+    expect(filterPresidentialCommitments(getPresidentialCommitments(), { year: "all", theme: "all", locale: "fr" })).toHaveLength(27);
   });
 
   it("preserves the requested work corpus while keeping every measure unverified", () => {

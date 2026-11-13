@@ -11,7 +11,8 @@ Ce dossier contient les modules de domaine, contrats et règles partagées par l
   `presidential-environmental-corpus.ts` est un corpus préparatoire séparé du
   registre des décisions juridiques : il conserve les candidatures officielles
   2012, 2017 et 2022, une structure 2027 vide, les engagements à vérifier et
-  leur provenance sans alimenter de route publique.
+  leur provenance. La page `/learn/comprendre` n'en projette publiquement que
+  les candidatures officielles 2012/2017 et les engagements validés.
 - `practice/themes.ts` contient le contrat neutre et l'ordre des thèmes de pratique.
 - Les autres fichiers à la racine portent les primitives Learning transverses, le progrès global, les ressources, le compost ou les ordres de grandeur lorsqu'ils ne forment pas une famille plus étroite.
 

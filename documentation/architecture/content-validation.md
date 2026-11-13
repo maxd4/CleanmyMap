@@ -139,8 +139,10 @@ attente, et conserve les états `not_collected`,
 `no_measure_identified_after_review`, `not_quantified`,
 `deadline_unspecified` et `source_insufficient`. Les engagements 2012, 2017 et
 2022 sont actuellement des entrées préparatoires non publiables ; 2027 ne
-contient aucune candidature ni mesure. Ce module n’a pas de consommateur public
-dans ce lot et ne doit pas être traité comme une fonctionnalité exposée de
-`/learn/comprendre`.
+contient aucune candidature ni mesure. Le consommateur public de
+`/learn/comprendre` n'expose que les listes officielles 2012/2017 et des
+engagements passés par `getValidatedPresidentialCommitments` ; une source
+secondaire, un discours ou un programme sans revue humaine effective ne peut
+donc pas fuir dans l'interface.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.

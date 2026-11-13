@@ -5,7 +5,7 @@ export type PresidentialElectionYear = 2012 | 2017 | 2022 | 2027;
 export type PresidentialCandidateStatus = "official" | "not_published";
 export type PresidentialCandidateDocumentationStatus = "not_collected" | "reviewed_no_measure_identified" | "source_insufficient" | "validated";
 export type PresidentialCommitmentDocumentationStatus = "not_collected" | "no_measure_identified_after_review" | "not_quantified" | "deadline_unspecified" | "source_insufficient" | "draft" | "validated";
-export type PresidentialSourceType = "SOURCE_PRIMAIRE_OFFICIELLE" | "SOURCE_PRIMAIRE_ARCHIVEE" | "DISCOURS_OFFICIEL" | "SOURCE_SECONDAIRE" | "EN_ATTENTE_DE_PREUVE";
+export type PresidentialSourceType = "SOURCE_PRIMAIRE_OFFICIELLE" | "SOURCE_PRIMAIRE_ARCHIVEE" | "PRIMARY_ARCHIVED" | "PRIMARY_PARTY_PROGRAM" | "DISCOURS_OFFICIEL" | "SOURCE_SECONDAIRE" | "EN_ATTENTE_DE_PREUVE";
 export type PresidentialSourceStatus = "verified" | "needs_review" | "insufficient" | "missing";
 export type PresidentialDocumentNature = "candidate_list" | "programme" | "profession_de_foi" | "speech" | "proposal" | "secondary_summary" | "unknown";
 export type PresidentialHistoryAction = "first_collected" | "substantive_amendment" | "withdrawn" | "rechecked";
@@ -247,10 +247,85 @@ type CommitmentInput = {
   deadline?: PolicyDate;
   announcedUnits?: string | null;
   mechanism: string;
+  source?: PresidentialSource;
+};
+
+const hollandeSecondarySource = sourceRef({
+  type: "SOURCE_SECONDAIRE",
+  status: "insufficient",
+  name: localized("Le Parisien — 60 engagements de François Hollande", "Le Parisien — François Hollande's 60 commitments"),
+  url: "https://www.leparisien.fr/elections/presidentielle/les-60-engagements-pour-la-france-de-francois-hollande-26-01-2012-1830405.php",
+  documentNature: "secondary_summary",
+  version: "LEPARISIEN-2012-01-26",
+  publishedAt: { value: "2012-01-26", precision: "day" },
+  note: localized("Reproduction secondaire à confronter au programme original avant publication ; elle ne vaut pas approbation éditoriale.", "Secondary reproduction to be checked against the original programme before publication; it is not editorial approval."),
+});
+
+const sarkozySpeechSource = sourceRef({
+  type: "DISCOURS_OFFICIEL",
+  status: "needs_review",
+  name: localized("Élysée — déclaration de Nicolas Sarkozy à Fessenheim", "Élysée — Nicolas Sarkozy's Fessenheim statement"),
+  url: "https://www.elysee.fr/nicolas-sarkozy/2012/02/09/declaration-de-m-nicolas-sarkozy-president-de-la-republique-sur-la-surete-et-perennite-de-la-filiere-nucleaire-a-fessenheim-haut-rhin-le-9-fevrier-2012",
+  documentNature: "speech",
+  version: "ELYSEE-2012-02-09",
+  publishedAt: { value: "2012-02-09", precision: "day" },
+  note: localized("Discours institutionnel : il ne doit pas être présenté comme un programme écrit sans document complémentaire.", "Institutional speech: it must not be presented as a written programme without a complementary document."),
+});
+
+const melenchonProgramSource = sourceRef({
+  type: "PRIMARY_PARTY_PROGRAM",
+  status: "needs_review",
+  name: localized("La France insoumise — L’Avenir en commun", "La France insoumise — L'Avenir en commun"),
+  url: "https://lafranceinsoumise.fr/2016/10/18/dix-mesures-emblematiques-de-lavenir-commun/",
+  documentNature: "programme",
+  version: "LFI-2016-10-18",
+  publishedAt: { value: "2016-10-18", precision: "day" },
+  note: localized("Texte du mouvement daté du 18 octobre 2016 ; la formulation exacte de chaque mesure reste à valider individuellement.", "Movement text dated 18 October 2016; the exact wording of each measure still requires individual validation."),
+});
+
+const lePenArchivedProgramSource = sourceRef({
+  type: "PRIMARY_ARCHIVED",
+  status: "needs_review",
+  name: localized("Projet présidentiel de Marine Le Pen — copie archivée par un tiers", "Marine Le Pen presidential project — third-party archived copy"),
+  url: "https://www.connaissancedesenergies.org/sites/connaissancedesenergies.org/files/pdf-actualites/projet-presidentiel-marine-le-pen.pdf",
+  documentNature: "programme",
+  version: "MARINE-2017-PROJET-PRESIDENTIEL",
+  publishedAt: UNKNOWN_DATE,
+  note: localized("Copie primaire archivée hébergée par un tiers ; à recontrôler avant toute publication.", "Archived primary copy hosted by a third party; it must be rechecked before publication."),
+});
+
+const leMondeSecondarySource = sourceRef({
+  type: "SOURCE_SECONDAIRE",
+  status: "insufficient",
+  name: localized("Le Monde — synthèse des programmes de 2017", "Le Monde — 2017 programme summary"),
+  url: [
+    "https://www.lemonde.fr/election-presidentielle-2017/article/2017/03/20/",
+    "presidentielle-quels-sont-les-programmes-des-cinq-principaux-",
+    "candidats_5097681_4854003.html",
+  ].join(""),
+  documentNature: "secondary_summary",
+  version: "LEMONDE-2017-03-20",
+  publishedAt: { value: "2017-03-20", precision: "day" },
+  note: localized("Synthèse secondaire ; les programmes originaux doivent être inspectés avant toute approbation.", "Secondary summary; the original programmes must be inspected before any approval."),
+});
+
+const commitmentSources: Record<string, PresidentialSource> = {
+  "2012-francois-hollande-nuclear-share": hollandeSecondarySource,
+  "2012-francois-hollande-fessenheim": hollandeSecondarySource,
+  "2012-francois-hollande-climate-border": hollandeSecondarySource,
+  "2012-nicolas-sarkozy-fessenheim": sarkozySpeechSource,
+  "2017-jean-luc-melenchon-green-rule": melenchonProgramSource,
+  "2017-jean-luc-melenchon-renewables": melenchonProgramSource,
+  "2017-marine-le-pen-wind-moratorium": lePenArchivedProgramSource,
+  "2017-marine-le-pen-nuclear": lePenArchivedProgramSource,
+  "2017-emmanuel-macron-electricity-mix": leMondeSecondarySource,
+  "2017-benoit-hamon-diesel": leMondeSecondarySource,
+  "2017-benoit-hamon-nuclear": leMondeSecondarySource,
+  "2017-francois-fillon-carbon-price": leMondeSecondarySource,
 };
 
 const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment => {
-  const source = pendingCommitmentSource(input.electionYear, input.candidateName);
+  const source = input.source ?? commitmentSources[input.id] ?? pendingCommitmentSource(input.electionYear, input.candidateName);
   const status: PresidentialCommitmentDocumentationStatus = "source_insufficient";
   return {
     id: input.id,
@@ -322,6 +397,17 @@ export function getPresidentialCandidates(year: PresidentialElectionYear, corpus
 
 export function getPresidentialCommitments(year?: PresidentialElectionYear, corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialEnvironmentalCommitment[] {
   return corpus.commitments.filter((commitmentRecord) => year === undefined || commitmentRecord.electionYear === year);
+}
+
+export function filterPresidentialCommitments(
+  commitments: PresidentialEnvironmentalCommitment[],
+  filters: { year: PresidentialElectionYear | "all"; theme: string; locale: keyof LocalizedText },
+): PresidentialEnvironmentalCommitment[] {
+  return commitments.filter((commitmentRecord) => {
+    const matchesYear = filters.year === "all" || commitmentRecord.electionYear === filters.year;
+    const matchesTheme = filters.theme === "all" || commitmentRecord.theme[filters.locale] === filters.theme;
+    return matchesYear && matchesTheme;
+  });
 }
 
 export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRONMENTAL_CORPUS): PresidentialEnvironmentalCommitment[] {
