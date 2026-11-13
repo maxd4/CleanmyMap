@@ -492,6 +492,22 @@ Chaque fiche conserve :
 
 Après l'élection, le dossier Présidentielle 2027 devient une archive documentaire datée et n'est plus présenté comme un contenu politique actuel.
 
+## N bis. Socle préparatoire historique
+
+Le corpus de préparation est porté par
+`apps/web/src/lib/learning/policies/presidential-environmental-corpus.ts`.
+Il recense les listes officielles des candidatures 2012, 2017 et 2022 à partir
+des sources institutionnelles archivées ou officielles, conserve les partis ou
+coalitions dans un champ distinct, prépare la structure 2027 sans candidature
+préremplie et garde les engagements à vérifier individuellement. Les états de
+collecte sont distincts d'une absence d'engagement : `not_collected`,
+`no_measure_identified_after_review`, `not_quantified`,
+`deadline_unspecified` et `source_insufficient`. Les engagements préparatoires
+réutilisent `ContentValidationRecord`, ont une version et un historique de
+modification, et restent exclus de toute projection publique tant qu'une
+revue humaine effective n'a pas été enregistrée. Ce socle ne crée encore ni
+comparateur, ni route, ni composant d'interface.
+
 # O. Focus territorial — politiques environnementales de la Ville de Paris
 
 Ajouter un volet indépendant des échéances présidentielles consacré aux **mesures environnementales portées par la Ville de Paris**. Il doit suivre les politiques effectivement annoncées ou mises en œuvre dans des domaines comme la mobilité, la végétalisation, l'adaptation climatique, les déchets, l'économie circulaire, l'énergie, la qualité de l'air, l'eau ou la biodiversité.

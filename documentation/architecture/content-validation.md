@@ -130,5 +130,17 @@ décision. `getPublishedEnvironmentalPolicies` bloque aussi une fiche dont une
 source est retirée, dont un événement reste `needs_review` ou dont l’historique
 ne peut plus relier ses sources. L’état juridique n’est jamais déduit de la
 seule date de publication d’un avis.
+Le corpus présidentiel préparatoire est distinct de ce registre juridique et
+reste dans `apps/web/src/lib/learning/policies/presidential-environmental-corpus.ts`.
+Il réutilise `ContentValidationRecord` pour chaque candidature et chaque
+engagement, distingue les sources officielles archivées, les sources
+officielles courantes, les discours, les sources secondaires et les preuves en
+attente, et conserve les états `not_collected`,
+`no_measure_identified_after_review`, `not_quantified`,
+`deadline_unspecified` et `source_insufficient`. Les engagements 2012, 2017 et
+2022 sont actuellement des entrées préparatoires non publiables ; 2027 ne
+contient aucune candidature ni mesure. Ce module n’a pas de consommateur public
+dans ce lot et ne doit pas être traité comme une fonctionnalité exposée de
+`/learn/comprendre`.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.
