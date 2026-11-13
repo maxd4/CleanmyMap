@@ -7,12 +7,13 @@ import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getNavigationSpacesForProfile } from "../../lib/navigation";
+import type { Locale } from "../../lib/ui/preferences";
 import { GlobalSearch } from "./global-search";
 
 const mocks = vi.hoisted(() => ({
   pathname: "/sections/map",
   router: { push: vi.fn() },
-  preferences: { locale: "fr" as const, displayMode: "exhaustif" as const },
+  preferences: { locale: "fr" as Locale, displayMode: "exhaustif" as const },
 }));
 
 vi.mock("next/navigation", () => ({
