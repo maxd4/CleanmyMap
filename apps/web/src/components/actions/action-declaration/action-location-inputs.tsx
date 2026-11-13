@@ -170,6 +170,7 @@ export function ActionLocationInputs({
   gpsStatus,
   gpsMessage,
   onAutofillGps,
+  countryCode,
   manualDrawingSource,
   routePreviewSource,
   gpxImport,
@@ -184,6 +185,7 @@ export function ActionLocationInputs({
       label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"}
       placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
       value={form.departureLocationLabel}
+      countryCode={countryCode}
       onChange={(value, coordinates) => {
         updateFields({
           departureLocationLabel: value,
@@ -207,6 +209,7 @@ export function ActionLocationInputs({
             label={pointToPoint ? "Départ" : "Départ et arrivée"}
             placeholder={pointToPoint ? "DÉPART · Ex. Rue de Rivoli, Paris" : "DÉPART ET ARRIVÉE · Ex. Rue de Rivoli, Paris"}
             value={form.departureLocationLabel}
+            countryCode={countryCode}
             onChange={(value, coordinates) => {
               updateFields({
                 departureLocationLabel: value,
@@ -224,6 +227,7 @@ export function ActionLocationInputs({
               label="Arrivée"
               placeholder="ARRIVÉE · Ex. Place de la République, Paris"
               value={form.arrivalLocationLabel}
+              countryCode={countryCode}
               onChange={(value, coordinates) => updateFields({ arrivalLocationLabel: value, arrivalCoordinates: coordinates ?? null })}
               helperText="Adresse exacte de l’arrivée"
               hideLabel
@@ -250,6 +254,7 @@ export function ActionLocationInputs({
           label="Mi-parcours"
           placeholder="Zone intermédiaire (optionnel)"
           value={form.midRouteLocationLabel ?? ""}
+          countryCode={countryCode}
           onChange={(value, coordinates) => {
             updateFields({
               midRouteLocationLabel: value,
@@ -266,6 +271,7 @@ export function ActionLocationInputs({
             label={isCleanPlaceMode ? "Complément" : "Arrivée"}
             placeholder={isCleanPlaceMode ? "Précision (optionnel)" : "Ex : Place de la République"}
             value={form.arrivalLocationLabel}
+            countryCode={countryCode}
             onChange={(value, coordinates) => {
               updateFields({
                 arrivalLocationLabel: value,

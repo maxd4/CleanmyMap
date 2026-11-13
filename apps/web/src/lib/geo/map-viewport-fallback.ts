@@ -1,4 +1,8 @@
-import { buildPhotonSearchUrl, parsePhotonCoordinates } from "./territory";
+import {
+  buildPhotonSearchUrl,
+  matchesPhotonCountry,
+  parsePhotonCoordinates,
+} from "./territory";
 import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
@@ -101,11 +105,17 @@ async function geocodeTerritoryLabel(label: string, countryCode: string): Promis
       return null;
     }
 
-    const coordinates = parsePhotonCoordinates((payload as { features: unknown[] }).features[0]);
-    return coordinates ? {
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
-    } : null;
+    for (const feature of (payload as { features: unknown[] }).features) {
+      if (!matchesPhotonCountry(feature, countryCode)) continue;
+      const coordinates = parsePhotonCoordinates(feature);
+      if (coordinates) {
+        return {
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+        };
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -140,7 +150,7 @@ async function resolvePreferencePoint(
     return geocoded;
   }
 
-  return preference.arrondissement !== null && preference.arrondissementCity
+  return preference.country === "FR" && preference.arrondissement !== null && preference.arrondissementCity
     ? (() => {
         const cityCenter = getArrondissementCityCenter(
           preference.arrondissementCity as ArrondissementCity,

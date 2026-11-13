@@ -3,6 +3,7 @@
 import { Loader2, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ActionLocationCoordinates } from "@/lib/actions/types";
+import type { CountryCode } from "@/lib/user-location-preference";
 import { useActionAddressAutocomplete } from "./hooks/use-action-address-autocomplete";
 
 export type ActionAddressAutocompleteProps = {
@@ -19,6 +20,7 @@ export type ActionAddressAutocompleteProps = {
   ariaInvalid?: boolean;
   ariaDescribedBy?: string;
   hideLabel?: boolean;
+  countryCode?: CountryCode;
 };
 
 export function ActionAddressAutocomplete({
@@ -35,8 +37,9 @@ export function ActionAddressAutocomplete({
   ariaInvalid,
   ariaDescribedBy,
   hideLabel = false,
+  countryCode,
 }: ActionAddressAutocompleteProps) {
-  const behavior = useActionAddressAutocomplete({ value, onChange });
+  const behavior = useActionAddressAutocomplete({ value, onChange, countryCode });
 
   return (
     <label className="block space-y-1.5">

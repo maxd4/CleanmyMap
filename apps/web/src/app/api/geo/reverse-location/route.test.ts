@@ -83,9 +83,37 @@ describe("/api/geo/reverse-location", () => {
     expect(body.location).toBeNull();
   });
 
+  it.each([
+    "?lat=48.8566",
+    "?lon=2.3522",
+    "?lat=&lon=2.3522",
+  ])("rejects incomplete or blank coordinate parameters: %s", async (search) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(new Request(`http://localhost/api/geo/reverse-location${search}`));
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts zero as a valid coordinate", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ features: [] }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/reverse-location?lat=0&lon=0"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("photon.komoot.io/reverse");
+  });
+
   it("falls back to Photon for a non-metropolitan coordinate", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ features: [] }) })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -111,7 +139,32 @@ describe("/api/geo/reverse-location", () => {
       latitude: -17.5516,
       longitude: -149.5585,
     });
-    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/reverse");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("photon.komoot.io/reverse");
+  });
+
+  it("falls back to Photon after a Geoplateforme exception with a fresh signal", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error("Geoplateforme unavailable"))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { name: "Paris", country: "France" },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/reverse-location?lat=48.8566&lon=2.3522"),
+    );
+    const body = await response.json();
+
+    expect(body.location).toMatchObject({ label: "Paris", latitude: 48.8566, longitude: 2.3522 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).not.toBe(fetchMock.mock.calls[1]?.[1]?.signal);
   });
 
   it.each([
@@ -154,14 +207,18 @@ describe("/api/geo/reverse-location", () => {
 
   it("aborts a slow external geocoder request after four seconds", async () => {
     vi.useFakeTimers();
-    let signal: AbortSignal | undefined;
+    const signals: AbortSignal[] = [];
     const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
-      signal = init?.signal ?? undefined;
-      return new Promise<Response>((_resolve, reject) => {
-        signal?.addEventListener("abort", () => reject(new Error("aborted")), {
-          once: true,
+      const signal = init?.signal as AbortSignal;
+      signals.push(signal);
+      if (signals.length === 1) {
+        return new Promise<Response>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new Error("aborted")), {
+            once: true,
+          });
         });
-      });
+      }
+      return Promise.resolve({ ok: false } as Response);
     });
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
@@ -172,7 +229,9 @@ describe("/api/geo/reverse-location", () => {
     const response = await responsePromise;
     const body = (await response.json()) as { location: unknown };
 
-    expect(signal?.aborted).toBe(true);
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]).toBeDefined();
+    expect(signals[0]).not.toBe(signals[1]);
     expect(body.location).toBeNull();
   });
 });

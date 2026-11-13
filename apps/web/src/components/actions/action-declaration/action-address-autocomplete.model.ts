@@ -3,6 +3,7 @@ import {
   mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/user-location-preference";
 
 type AddressSuggestionsResponse = {
   status: "ok";
@@ -13,21 +14,24 @@ type AddressSuggestionsResponse = {
 export async function loadRemoteAddressSuggestions({
   query,
   localSuggestions,
+  countryCode = DEFAULT_COUNTRY_CODE,
   signal,
   fetcher = fetch,
 }: {
   query: string;
   localSuggestions: GeoAddressSuggestion[];
+  countryCode?: CountryCode;
   signal: AbortSignal;
   fetcher?: typeof fetch;
 }): Promise<GeoAddressSuggestion[] | null> {
-  if (localSuggestions.length >= 6) {
-    return localSuggestions;
+  const effectiveLocalSuggestions = countryCode === DEFAULT_COUNTRY_CODE ? localSuggestions : [];
+  if (effectiveLocalSuggestions.length >= 6) {
+    return effectiveLocalSuggestions;
   }
 
   try {
     const response = await fetcher(
-      `/api/geo/address-suggestions?q=${encodeURIComponent(query)}&limit=6`,
+      `/api/geo/address-suggestions?q=${encodeURIComponent(query)}&limit=6&country=${encodeURIComponent(countryCode)}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -35,7 +39,7 @@ export async function loadRemoteAddressSuggestions({
       },
     );
     if (!response.ok) {
-      return localSuggestions;
+      return effectiveLocalSuggestions;
     }
 
     const data = (await response.json()) as AddressSuggestionsResponse;
@@ -43,9 +47,9 @@ export async function loadRemoteAddressSuggestions({
       return null;
     }
 
-    return mergeGeoAddressSuggestions(localSuggestions, data.items ?? [], 6);
+    return mergeGeoAddressSuggestions(effectiveLocalSuggestions, data.items ?? [], 6);
   } catch {
-    return signal.aborted ? null : localSuggestions;
+    return signal.aborted ? null : effectiveLocalSuggestions;
   }
 }
 

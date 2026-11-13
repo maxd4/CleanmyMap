@@ -179,6 +179,89 @@ describe("/api/geo/address-suggestions", () => {
     expect((await nonSuccess.json()).items).toEqual([]);
   });
 
+  it("falls back to Photon when Geoplateforme throws", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error("Geoplateforme unavailable"))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{
+            geometry: { coordinates: [2.3522, 48.8566] },
+            properties: { name: "Paris", countrycode: "fr" },
+          }],
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Unknown%20Paris&limit=3&country=FR"),
+    );
+
+    expect((await response.json()).items).toEqual([
+      expect.objectContaining({ label: "Paris", latitude: 48.8566, longitude: 2.3522 }),
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("photon.komoot.io/api");
+  });
+
+  it("rejects Photon results whose exposed country contradicts the requested country", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        features: [
+          { geometry: { coordinates: [2.35, 48.85] }, properties: { name: "Paris", countrycode: "fr" } },
+          { geometry: { coordinates: [4.3528, 50.8466] }, properties: { name: "Bruxelles", countrycode: "be" } },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Bruxelles&limit=3&country=BE"),
+    );
+
+    expect((await response.json()).items).toEqual([
+      expect.objectContaining({ label: "Bruxelles", latitude: 50.8466, longitude: 4.3528 }),
+    ]);
+  });
+
+  it.each([
+    [null, ""],
+    ["", ""],
+    ["not-a-number", "2.35"],
+    ["91", "2.35"],
+  ])("does not turn malformed provider coordinates (%s, %s) into a point", async (latitude, longitude) => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        features: [{ geometry: { coordinates: [longitude, latitude] }, properties: { name: "Invalide", countrycode: "ca" } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Invalide&limit=3&country=CA"),
+    );
+
+    expect((await response.json()).items).toEqual([]);
+  });
+
+  it("keeps a valid zero coordinate instead of treating it as missing", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        features: [{ geometry: { coordinates: [0, 0] }, properties: { name: "Équateur", countrycode: "GH" } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Équateur&limit=3&country=GH"),
+    );
+
+    expect((await response.json()).items[0]).toMatchObject({ latitude: 0, longitude: 0 });
+  });
+
   it("uses the requested country for an international suggestion", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

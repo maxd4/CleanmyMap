@@ -115,6 +115,17 @@ export function buildFallbackWeatherLocation(label: string, subtitle: string | n
   };
 }
 
+export function buildUnavailableWeatherLocation(label: string, subtitle: string | null): WeatherLocation {
+  return {
+    label: label.trim() || "Localisation indisponible",
+    subtitle: subtitle?.trim() || "Coordonnées indisponibles",
+    latitude: Number.NaN,
+    longitude: Number.NaN,
+    importance: null,
+    resolution: "unresolved",
+  };
+}
+
 function parseCoordinate(value: string | number | undefined, minimum: number, maximum: number): number | null {
   const numeric = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
   return Number.isFinite(numeric) && numeric >= minimum && numeric <= maximum ? numeric : null;

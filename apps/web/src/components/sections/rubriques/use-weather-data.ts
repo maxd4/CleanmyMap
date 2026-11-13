@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
-import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
+import { DEFAULT_COUNTRY_CODE, extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { fetchOpenMeteoForecast } from "@/lib/weather/open-meteo-client";
@@ -14,6 +14,7 @@ import {
   buildForecastDays,
   buildHourlyPoints,
   buildInitialWeatherLocation,
+  buildUnavailableWeatherLocation,
   buildWeatherLocationFromCoordinates,
   canApplyDraftWeatherLocation,
   evaluateCurrentWeatherRisk,
@@ -105,26 +106,36 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
   const preparationContextWithoutLocation = draftContext?.contextReady === true
     && !draftLocationLabel
     && !hasCanonicalActionLocation;
+  const locationPreference = useMemo(
+    () => extractTerritoryLocationPreferenceFromMetadata(user?.unsafeMetadata)
+      ?? extractTerritoryLocationPreferenceFromMetadata(user?.publicMetadata),
+    [user?.publicMetadata, user?.unsafeMetadata],
+  );
   const initialLocation = buildInitialWeatherLocation({
     contextReady,
     actionLocation,
     draftLocationLabel,
     preparationContextWithoutLocation,
   });
-  const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(initialLocation);
+  const initialPreferenceLocation = !actionLocation
+    && !draftLocationLabel
+    && locationPreference
+    && locationPreference.country !== DEFAULT_COUNTRY_CODE
+    ? buildUnavailableWeatherLocation(locationPreference.label, locationPreference.subtitle)
+    : initialLocation;
+  const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(initialPreferenceLocation);
   const [locationQuery, setLocationQuery] = useState(
-    actionLocation?.label || draftLocationLabel || (preparationContextWithoutLocation ? "" : "France"),
+    actionLocation?.label
+      || draftLocationLabel
+      || (locationPreference?.country !== DEFAULT_COUNTRY_CODE && locationPreference
+        ? locationPreference.label
+        : preparationContextWithoutLocation ? "" : "France"),
   );
   const { locationSuggestions, locationSuggestionsError } =
-    useWeatherLocationSuggestions(locationQuery);
+    useWeatherLocationSuggestions(locationQuery, locationPreference?.country);
   const currentLocationSuggestions = locationSuggestions.data?.query === locationQuery.trim()
     ? locationSuggestions.data.items
     : [];
-  const locationPreference = useMemo(
-    () => extractTerritoryLocationPreferenceFromMetadata(user?.unsafeMetadata)
-      ?? extractTerritoryLocationPreferenceFromMetadata(user?.publicMetadata),
-    [user?.publicMetadata, user?.unsafeMetadata],
-  );
 
   const { data, isLoading, error } = useSWR<Awaited<ReturnType<typeof fetchOpenMeteoForecast>>, unknown>(
     contextReady && selectedLocation.resolution === "resolved"
@@ -214,6 +225,7 @@ export function useWeatherData(draftContext?: WeatherDraftContext) {
       draftLocationLabel,
       storedLocation,
       preference: locationPreference,
+      countryCode: locationPreference?.country,
       geolocationAvailable,
       signal: controller.signal,
     }).then((location) => {

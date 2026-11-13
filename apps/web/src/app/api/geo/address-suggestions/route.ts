@@ -116,55 +116,54 @@ async function loadCachedRemoteAddressSuggestions(
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ADDRESS_SUGGESTIONS_TIMEOUT_MS);
-  let response: Response;
   try {
-    response = await fetch(geoplateformeUrl, {
+    const response = await fetch(geoplateformeUrl, {
       headers: {
         Accept: "application/json",
       },
       signal: controller.signal,
     });
+    if (!response.ok) {
+      return [];
+    }
+    const data = (await response.json()) as { results?: GeoplateformeCompletionResult[] };
+    const seen = new Set<string>();
+    const items: GeoAddressSuggestion[] = [];
+
+    for (const item of data.results ?? []) {
+      if (
+        typeof item.x !== "number" ||
+        typeof item.y !== "number" ||
+        !Number.isFinite(item.x) ||
+        !Number.isFinite(item.y) ||
+        !isWithinFranceTerritoryBounds(item.y, item.x)
+      ) {
+        continue;
+      }
+
+      const label = formatGeoplateformeLabel(item);
+      const normalizedLabel = label.toLowerCase();
+      if (seen.has(normalizedLabel)) {
+        continue;
+      }
+      seen.add(normalizedLabel);
+
+      items.push({
+        label,
+        subtitle: formatGeoplateformeSubtitle(item),
+        latitude: item.y,
+        longitude: item.x,
+        importance: formatGeoplateformeImportance(item),
+      });
+    }
+
+    items.sort((left, right) => (right.importance ?? 0) - (left.importance ?? 0));
+    return items;
+  } catch {
+    return [];
   } finally {
     clearTimeout(timeout);
   }
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const data = (await response.json()) as { results?: GeoplateformeCompletionResult[] };
-  const seen = new Set<string>();
-  const items: GeoAddressSuggestion[] = [];
-
-  for (const item of data.results ?? []) {
-    if (
-      typeof item.x !== "number" ||
-      typeof item.y !== "number" ||
-      !Number.isFinite(item.x) ||
-      !Number.isFinite(item.y) ||
-      !isWithinFranceTerritoryBounds(item.y, item.x)
-    ) {
-      continue;
-    }
-
-    const label = formatGeoplateformeLabel(item);
-    const normalizedLabel = label.toLowerCase();
-    if (seen.has(normalizedLabel)) {
-      continue;
-    }
-    seen.add(normalizedLabel);
-
-    items.push({
-      label,
-      subtitle: formatGeoplateformeSubtitle(item),
-      latitude: item.y,
-      longitude: item.x,
-      importance: formatGeoplateformeImportance(item),
-    });
-  }
-
-  items.sort((left, right) => (right.importance ?? 0) - (left.importance ?? 0));
-  return items;
 }
 
 type PhotonFeature = {

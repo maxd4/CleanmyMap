@@ -2,10 +2,15 @@ import {
   getLocalGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
+import {
+  DEFAULT_COUNTRY_CODE,
+  extractTerritoryLocationPreferenceFromMetadata,
+  type CountryCode,
+} from "@/lib/user-location-preference";
 import { TERRITORY_CENTER } from "@/lib/geo/territory";
-import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
 import {
   buildFallbackWeatherLocation,
+  buildUnavailableWeatherLocation,
   type WeatherLocationSource,
 } from "./weather-data.model";
 import type { WeatherLocation } from "./weather-types";
@@ -50,10 +55,15 @@ function createLinkedAbortController(parentSignal?: AbortSignal) {
 async function resolveWeatherLocationFromLabel(
   label: string,
   subtitle: string | null,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
   parentSignal?: AbortSignal,
 ): Promise<WeatherLocation> {
-  const fallback = buildFallbackWeatherLocation(label, subtitle);
-  const localSuggestion = getLocalGeoAddressSuggestions(label, 1)[0];
+  const fallback = countryCode === DEFAULT_COUNTRY_CODE
+    ? buildFallbackWeatherLocation(label, subtitle)
+    : buildUnavailableWeatherLocation(label, subtitle);
+  const localSuggestion = countryCode === DEFAULT_COUNTRY_CODE
+    ? getLocalGeoAddressSuggestions(label, 1)[0]
+    : undefined;
   if (localSuggestion) {
     return { ...localSuggestion, resolution: "resolved" };
   }
@@ -64,7 +74,7 @@ async function resolveWeatherLocationFromLabel(
   const request = createLinkedAbortController(parentSignal);
   try {
     const response = await fetch(
-      `/api/geo/address-suggestions?q=${encodeURIComponent(label)}&limit=1`,
+      `/api/geo/address-suggestions?q=${encodeURIComponent(label)}&limit=1&country=${encodeURIComponent(countryCode)}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -94,6 +104,14 @@ async function resolveWeatherLocationFromPreference(
   parentSignal?: AbortSignal,
 ): Promise<WeatherLocation> {
   if (preference.level === "country") {
+    if (preference.country !== DEFAULT_COUNTRY_CODE) {
+      return resolveWeatherLocationFromLabel(
+        preference.label,
+        preference.subtitle ?? "Vue nationale",
+        preference.country,
+        parentSignal,
+      );
+    }
     return {
       label: preference.label,
       subtitle: preference.subtitle ?? "Vue nationale",
@@ -107,6 +125,7 @@ async function resolveWeatherLocationFromPreference(
   return resolveWeatherLocationFromLabel(
     preference.label,
     preference.subtitle ?? "Localisation choisie",
+    preference.country,
     parentSignal,
   );
 }
@@ -170,6 +189,7 @@ export type WeatherLocationResolutionRequest = {
   draftLocationLabel: string;
   storedLocation: { label: string; subtitle: string } | null;
   preference: TerritoryLocationPreference | null;
+  countryCode?: CountryCode;
   geolocationAvailable: boolean;
   signal: AbortSignal;
 };
@@ -179,15 +199,16 @@ export async function resolveWeatherLocationRequest({
   draftLocationLabel,
   storedLocation,
   preference,
+  countryCode = DEFAULT_COUNTRY_CODE,
   geolocationAvailable,
   signal,
 }: WeatherLocationResolutionRequest): Promise<WeatherLocation | null> {
   switch (source) {
     case "draft":
-      return resolveWeatherLocationFromLabel(draftLocationLabel, "Lieu du pré-formulaire", signal);
+      return resolveWeatherLocationFromLabel(draftLocationLabel, "Lieu du pré-formulaire", countryCode, signal);
     case "stored":
       return storedLocation
-        ? resolveWeatherLocationFromLabel(storedLocation.label, storedLocation.subtitle, signal)
+        ? resolveWeatherLocationFromLabel(storedLocation.label, storedLocation.subtitle, countryCode, signal)
         : null;
     case "preference":
       return preference ? resolveWeatherLocationFromPreference(preference, signal) : null;

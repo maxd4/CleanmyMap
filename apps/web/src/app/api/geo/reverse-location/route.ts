@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { withServerRateLimit } from "@/lib/rate-limit/server";
-import { buildPhotonReverseUrl } from "@/lib/geo/territory";
+import {
+  buildPhotonReverseUrl,
+  isWithinFranceTerritoryBounds,
+  parsePhotonCoordinates,
+} from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
 const REVERSE_LOCATION_CACHE_HEADERS = {
@@ -50,7 +54,8 @@ type PhotonReverseFeature = {
 };
 
 function parseCoordinate(value: string | null): number | null {
-  const parsed = Number(value ?? "");
+  if (value === null || value.trim() === "") return null;
+  const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return null;
   }
@@ -84,7 +89,12 @@ function buildReverseUrl(lat: number, lon: number): string {
 function formatReverseLocation(feature: GeoplateformeReverseFeature): ReverseLocation | null {
   const lon = feature.geometry?.coordinates?.[0];
   const lat = feature.geometry?.coordinates?.[1];
-  if (typeof lon !== "number" || typeof lat !== "number") {
+  if (
+    typeof lon !== "number" ||
+    typeof lat !== "number" ||
+    !isValidLatitude(lat) ||
+    !isValidLongitude(lon)
+  ) {
     return null;
   }
 
@@ -110,11 +120,8 @@ function formatReverseLocation(feature: GeoplateformeReverseFeature): ReverseLoc
 }
 
 function formatPhotonReverseLocation(feature: PhotonReverseFeature): ReverseLocation | null {
-  const coordinates = feature.geometry?.coordinates;
-  if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
-  const longitude = Number(coordinates[0]);
-  const latitude = Number(coordinates[1]);
-  if (!isValidLatitude(latitude) || !isValidLongitude(longitude)) return null;
+  const coordinates = parsePhotonCoordinates(feature);
+  if (!coordinates) return null;
 
   const properties = feature.properties ?? {};
   const street = [properties.housenumber, properties.street]
@@ -132,24 +139,52 @@ function formatPhotonReverseLocation(feature: PhotonReverseFeature): ReverseLoca
     cleanPart(String(properties.country ?? "")),
   ].filter(Boolean).join(" · ") || "Lieu géocodé";
 
-  return { label, subtitle, latitude, longitude, importance: null };
+  return {
+    label,
+    subtitle,
+    latitude: coordinates.latitude,
+    longitude: coordinates.longitude,
+    importance: null,
+  };
 }
 
-async function loadPhotonReverseLocation(
-  latitude: number,
-  longitude: number,
-  signal: AbortSignal,
-): Promise<ReverseLocation | null> {
+async function loadPhotonReverseLocation(latitude: number, longitude: number): Promise<ReverseLocation | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REVERSE_LOCATION_TIMEOUT_MS);
   try {
     const response = await fetch(buildPhotonReverseUrl(latitude, longitude), {
       headers: { Accept: "application/json" },
-      signal,
+      signal: controller.signal,
     });
     if (!response.ok) return null;
     const payload = (await response.json()) as { features?: PhotonReverseFeature[] };
     return payload.features?.map(formatPhotonReverseLocation).find(Boolean) ?? null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function loadGeoplateformeReverseLocation(
+  latitude: number,
+  longitude: number,
+): Promise<ReverseLocation | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REVERSE_LOCATION_TIMEOUT_MS);
+  try {
+    const response = await fetch(buildReverseUrl(latitude, longitude), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { features?: GeoplateformeReverseFeature[] };
+    return payload.features?.map(formatReverseLocation).find(Boolean) ?? null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -159,21 +194,28 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const rawLat = url.searchParams.get("lat");
   const rawLon = url.searchParams.get("lon");
-  const lat = parseCoordinate(rawLat);
-  const lon = parseCoordinate(rawLon);
-
-  if (lat === null || lon === null) {
-    if (rawLat !== null || rawLon !== null) {
-      return NextResponse.json(
-        { error: "Invalid latitude or longitude" },
-        { status: 400 },
-      );
-    }
-
+  if (rawLat === null && rawLon === null) {
     return NextResponse.json({
       status: "ok",
       location: null,
     });
+  }
+
+  if (rawLat === null || rawLon === null) {
+    return NextResponse.json(
+      { error: "Latitude and longitude are required together" },
+      { status: 400 },
+    );
+  }
+
+  const lat = parseCoordinate(rawLat);
+  const lon = parseCoordinate(rawLon);
+
+  if (lat === null || lon === null) {
+    return NextResponse.json(
+      { error: "Invalid latitude or longitude" },
+      { status: 400 },
+    );
   }
 
   if (!isValidLatitude(lat) || !isValidLongitude(lon)) {
@@ -183,19 +225,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REVERSE_LOCATION_TIMEOUT_MS);
   try {
-    const response = await fetch(buildReverseUrl(lat, lon), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    });
-    const geoplateformeLocation = response.ok
-      ? ((await response.json()) as { features?: GeoplateformeReverseFeature[] })
-          .features?.map(formatReverseLocation).find(Boolean) ?? null
+    const geoplateformeLocation = isWithinFranceTerritoryBounds(lat, lon)
+      ? await loadGeoplateformeReverseLocation(lat, lon)
       : null;
-    const location = geoplateformeLocation ?? await loadPhotonReverseLocation(lat, lon, controller.signal);
+    const location = geoplateformeLocation ?? await loadPhotonReverseLocation(lat, lon);
 
     return NextResponse.json({
       status: "ok",
@@ -210,8 +244,6 @@ export async function GET(request: Request) {
     }, {
       headers: REVERSE_LOCATION_CACHE_HEADERS,
     });
-  } finally {
-    clearTimeout(timeout);
   }
   });
 }

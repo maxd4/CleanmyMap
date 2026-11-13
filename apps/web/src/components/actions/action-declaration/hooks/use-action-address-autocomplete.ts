@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import type { ActionLocationCoordinates } from "@/lib/actions/types";
 import type { GeoAddressSuggestion } from "@/lib/geo/address-suggestions";
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/user-location-preference";
 import { parseActionCoordinateInput } from "../action-coordinate-input";
 import {
   getAddressSuggestionHighlightIndex,
@@ -11,9 +12,10 @@ import {
 type UseActionAddressAutocompleteProps = {
   value: string;
   onChange: (value: string, coordinates?: ActionLocationCoordinates | null) => void;
+  countryCode?: CountryCode;
 };
 
-export function useActionAddressAutocomplete({ value, onChange }: UseActionAddressAutocompleteProps) {
+export function useActionAddressAutocomplete({ value, onChange, countryCode = DEFAULT_COUNTRY_CODE }: UseActionAddressAutocompleteProps) {
   const listboxId = useId();
   const [suggestions, setSuggestions] = useState<GeoAddressSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -31,11 +33,18 @@ export function useActionAddressAutocomplete({ value, onChange }: UseActionAddre
     abortRef.current = controller;
     const loadSuggestions = async () => {
       setIsLoading(true);
-      const localSuggestions = getLocalGeoAddressSuggestions(trimmedValue, 6);
+      const localSuggestions = countryCode === DEFAULT_COUNTRY_CODE
+        ? getLocalGeoAddressSuggestions(trimmedValue, 6)
+        : [];
       setSuggestions(localSuggestions);
       setHighlightedIndex(0);
       try {
-        const nextSuggestions = await loadRemoteAddressSuggestions({ query: trimmedValue, localSuggestions, signal: controller.signal });
+        const nextSuggestions = await loadRemoteAddressSuggestions({
+          query: trimmedValue,
+          localSuggestions,
+          countryCode,
+          signal: controller.signal,
+        });
         if (nextSuggestions !== null) setSuggestions(nextSuggestions);
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -48,7 +57,7 @@ export function useActionAddressAutocomplete({ value, onChange }: UseActionAddre
       clearTimeout(timer);
       controller.abort();
     };
-  }, [hasVisibleSuggestions, trimmedValue]);
+  }, [countryCode, hasVisibleSuggestions, trimmedValue]);
 
   useEffect(() => () => {
     if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);

@@ -43,12 +43,31 @@ describe("action address autocomplete model", () => {
     });
 
     expect(fetcher).toHaveBeenCalledWith(
-      "/api/geo/address-suggestions?q=rue%20de&limit=6",
+      "/api/geo/address-suggestions?q=rue%20de&limit=6&country=FR",
       expect.objectContaining({ method: "GET", headers: { Accept: "application/json" } }),
     );
     expect(result).toHaveLength(6);
     expect(result?.[0]).toEqual(localSuggestion);
     expect(result?.filter((suggestion) => suggestion.label === localSuggestion.label)).toHaveLength(1);
+  });
+
+  it("sends an international country and does not mix local French suggestions", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok", query: "Bruxelles", items: [] }), { status: 200 }),
+    );
+
+    await expect(loadRemoteAddressSuggestions({
+      query: "Bruxelles",
+      localSuggestions: [localSuggestion],
+      countryCode: "BE",
+      signal: new AbortController().signal,
+      fetcher,
+    })).resolves.toEqual([]);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/api/geo/address-suggestions?q=Bruxelles&limit=6&country=BE",
+      expect.anything(),
+    );
   });
 
   it("falls back locally on network failure and stops quietly when aborted", async () => {

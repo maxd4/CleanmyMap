@@ -4,6 +4,7 @@ import {
   buildTerritoryLeafletBounds,
   isWithinFranceTerritoryBounds,
   isWithinTerritoryBounds,
+  parsePhotonCoordinates,
 } from "./territory";
 
 describe("territory geography", () => {
@@ -22,5 +23,11 @@ describe("territory geography", () => {
     expect(url).toContain("https://photon.komoot.io/api/");
     expect(url).toContain("q=Bruxelles%2C+Belgium");
     expect(url).not.toContain("viewbox");
+  });
+
+  it("distinguishes absent provider coordinates from a valid zero", () => {
+    expect(parsePhotonCoordinates({ geometry: { coordinates: [null, ""] } })).toBeNull();
+    expect(parsePhotonCoordinates({ geometry: { coordinates: ["", "0"] } })).toBeNull();
+    expect(parsePhotonCoordinates({ geometry: { coordinates: [0, 0] } })).toEqual({ latitude: 0, longitude: 0 });
   });
 });

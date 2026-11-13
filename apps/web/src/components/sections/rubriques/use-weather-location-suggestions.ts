@@ -8,6 +8,7 @@ import {
   mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/user-location-preference";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 
 export const WEATHER_LOCATION_SUGGESTION_DEBOUNCE_MS = 220;
@@ -50,13 +51,17 @@ function useWeatherLocationDebounce(params: {
   }, [abortActiveRequest, abortedQueryRef, generationRef, lastQueryRef, normalizedQuery, setDebouncedQuery, setPendingRevalidationQuery]);
 }
 
-export function useWeatherLocationSuggestions(locationQuery: string) {
+export function useWeatherLocationSuggestions(
+  locationQuery: string,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+) {
   const locationSuggestionsAbortRef = useRef<AbortController | null>(null);
   const activeRequestQueryRef = useRef<string | null>(null);
   const abortedQueryRef = useRef<Set<string>>(new Set());
   const locationQueryGenerationRef = useRef(0);
   const normalizedLocationQuery = locationQuery.trim();
   const lastNormalizedLocationQueryRef = useRef(normalizedLocationQuery);
+  const lastCountryCodeRef = useRef(countryCode);
   const [debouncedLocationQuery, setDebouncedLocationQuery] = useState(normalizedLocationQuery);
   const [pendingRevalidationQuery, setPendingRevalidationQuery] = useState<string | null>(null);
 
@@ -69,9 +74,16 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
     }
   }, []);
 
+  useEffect(() => {
+    if (lastCountryCodeRef.current === countryCode) return;
+    lastCountryCodeRef.current = countryCode;
+    locationQueryGenerationRef.current += 1;
+    abortActiveLocationRequest();
+  }, [abortActiveLocationRequest, countryCode]);
+
   const locationSuggestions = useSWR<AddressSuggestionsResponse>(
     debouncedLocationQuery.length >= 3
-      ? ["section-weather-location-suggestions", debouncedLocationQuery]
+      ? ["section-weather-location-suggestions", countryCode, debouncedLocationQuery]
       : null,
     async () => {
       abortActiveLocationRequest();
@@ -81,7 +93,9 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
       abortedQueryRef.current.delete(debouncedLocationQuery);
       const requestQueryGeneration = locationQueryGenerationRef.current;
       const timeout = window.setTimeout(() => controller.abort(), 8_000);
-      const localSuggestions = getLocalGeoAddressSuggestions(debouncedLocationQuery, 6);
+      const localSuggestions = countryCode === DEFAULT_COUNTRY_CODE
+        ? getLocalGeoAddressSuggestions(debouncedLocationQuery, 6)
+        : [];
 
       const isStaleRequest = () => controller.signal.aborted
         || requestQueryGeneration !== locationQueryGenerationRef.current;
@@ -97,7 +111,7 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
 
       try {
         const response = await fetch(
-          `/api/geo/address-suggestions?q=${encodeURIComponent(debouncedLocationQuery)}&limit=6`,
+          `/api/geo/address-suggestions?q=${encodeURIComponent(debouncedLocationQuery)}&limit=6&country=${encodeURIComponent(countryCode)}`,
           {
             method: "GET",
             headers: { Accept: "application/json" },
@@ -171,7 +185,7 @@ export function useWeatherLocationSuggestions(locationQuery: string) {
       // SWR owns the visible error state; this handler only prevents an
       // effect-triggered retry from becoming an unhandled rejection.
     });
-  }, [debouncedLocationQuery, pendingRevalidationQuery, revalidateLocationSuggestions]);
+  }, [countryCode, debouncedLocationQuery, pendingRevalidationQuery, revalidateLocationSuggestions]);
 
   useWeatherLocationDebounce({ normalizedQuery: normalizedLocationQuery, lastQueryRef: lastNormalizedLocationQueryRef, generationRef: locationQueryGenerationRef, abortedQueryRef, abortActiveRequest: abortActiveLocationRequest, setDebouncedQuery: setDebouncedLocationQuery, setPendingRevalidationQuery });
 

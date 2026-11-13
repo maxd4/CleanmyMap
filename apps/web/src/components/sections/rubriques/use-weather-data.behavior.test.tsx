@@ -127,6 +127,31 @@ describe("useWeatherData asynchronous location lifecycle", () => {
     expect(hook.current.locationSuggestions).toEqual([]);
   });
 
+  it("propagates the selected Clerk country to weather suggestions", () => {
+    mocks.useUser.mockReturnValue({
+      isLoaded: true,
+      user: {
+        unsafeMetadata: {
+          territoryPreferences: {
+            residence: {
+              country: "BE",
+              level: "country",
+              label: "Belgique",
+              subtitle: "Vue nationale",
+              arrondissement: null,
+              arrondissementCity: null,
+            },
+            work: null,
+          },
+        },
+      },
+    });
+
+    renderHook({ contextReady: true });
+
+    expect(mocks.useSuggestions).toHaveBeenCalledWith("Belgique", "BE");
+  });
+
   it("resolves a draft location before Clerk is loaded", async () => {
     mocks.useUser.mockReturnValue({ isLoaded: false, user: null });
     const request = deferred<Response>();
@@ -136,7 +161,7 @@ describe("useWeatherData asynchronous location lifecycle", () => {
     const hook = renderHook({ locationLabel: "Paris 15e", contextReady: true });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/geo/address-suggestions?q=Paris%2015e&limit=1",
+      "/api/geo/address-suggestions?q=Paris%2015e&limit=1&country=FR",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
 

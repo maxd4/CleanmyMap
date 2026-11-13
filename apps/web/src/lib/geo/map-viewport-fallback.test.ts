@@ -56,4 +56,59 @@ describe("map viewport fallback", () => {
       global.fetch = originalFetch;
     }
   });
+
+  it("skips a contradictory Photon result before accepting the selected country", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        features: [
+          { geometry: { coordinates: [2.3522, 48.8566] }, properties: { countrycode: "fr" } },
+          { geometry: { coordinates: [-73.5674, 45.5019] }, properties: { countrycode: "ca" } },
+        ],
+      }),
+    }));
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const preference: TerritoryLocationPreference = {
+      country: "CA",
+      level: "locality",
+      label: "Montréal",
+      subtitle: "Québec",
+      arrondissement: null,
+      arrondissementCity: null,
+      locationType: "residence",
+    };
+
+    try {
+      const viewport = await resolveMapViewportFallback(preference);
+      expect(viewport?.center).toEqual([45.5019, -73.5674]);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("does not invent a French city center for an unresolved foreign preference", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ features: [] }),
+    })) as unknown as typeof fetch;
+
+    const preference: TerritoryLocationPreference = {
+      country: "CA",
+      level: "administrative_area",
+      label: "Québec introuvable",
+      subtitle: null,
+      arrondissement: null,
+      arrondissementCity: "Paris",
+      locationType: "work",
+    };
+
+    try {
+      await expect(resolveMapViewportFallback(preference)).resolves.toBeNull();
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

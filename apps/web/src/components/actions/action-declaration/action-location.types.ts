@@ -4,6 +4,7 @@ import type {
   ActionGpxImportMetadata,
   ActionGpxImportRemovalTarget,
 } from "@/lib/actions/types";
+import type { CountryCode } from "@/lib/user-location-preference";
 import type { FormState } from "./model";
 import type { UpdateFormField } from "./types";
 
@@ -30,6 +31,7 @@ export type ActionStepLocationProps = {
   gpsMessage: string | null;
   onAutofillGps: () => void;
   mode?: "all" | "primary" | "details";
+  countryCode?: CountryCode;
 };
 
 export type ActionLocationGeometryInput = Pick<
@@ -66,6 +68,7 @@ export type ActionLocationInputProps = Pick<
   | "gpsMessage"
   | "onAutofillGps"
   | "mode"
+  | "countryCode"
 > & {
   manualDrawingSource?: ActionGeometrySource | null;
   routePreviewSource?: ActionGeometrySource | null;

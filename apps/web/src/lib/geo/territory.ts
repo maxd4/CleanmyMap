@@ -65,11 +65,30 @@ export function parsePhotonCoordinates(
   const geometry = (result as { geometry?: { coordinates?: unknown } }).geometry;
   const coordinates = geometry?.coordinates;
   if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
-  const longitude = Number(coordinates[0]);
-  const latitude = Number(coordinates[1]);
+  const longitude = parseCoordinateComponent(coordinates[0]);
+  const latitude = parseCoordinateComponent(coordinates[1]);
+  if (latitude === null || longitude === null) return null;
   return isWithinTerritoryBounds(latitude, longitude)
     ? { latitude, longitude }
     : null;
+}
+
+function parseCoordinateComponent(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function matchesPhotonCountry(result: unknown, countryCode: string): boolean {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return false;
+  const properties = (result as { properties?: { countrycode?: unknown } }).properties;
+  const resultCountry = properties?.countrycode;
+  return typeof resultCountry !== "string"
+    || resultCountry.trim() === ""
+    || resultCountry.trim().toLowerCase() === countryCode.trim().toLowerCase();
 }
 
 export function buildTerritoryNominatimSearchUrl(query: string): string | null {
@@ -250,10 +269,10 @@ export function parseTerritoryCoordinates(
   }
 
   const candidate = result as { lat?: unknown; lon?: unknown };
-  const latitude = Number(candidate.lat);
-  const longitude = Number(candidate.lon);
+  const latitude = parseCoordinateComponent(candidate.lat);
+  const longitude = parseCoordinateComponent(candidate.lon);
 
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  if (latitude === null || longitude === null) {
     return null;
   }
 
