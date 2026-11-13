@@ -118,3 +118,25 @@ acceptation et annulation pertinente utilisent `app_notifications` de type
 `app_messages` et vérifie le match `action_buddy_requests` au moment de
 l'envoi via `buddyRequestId`; `action_share_contact_requests` reste réservé au
 partage d'action.
+
+### CURRENT — visibilité publique et décisions UTC des actions
+
+La lecture publique de `public.actions` exige une action `access_mode =
+'public'`, visible et autorisée par `review_state`; le créateur et
+`service_role` conservent leurs branches d'accès dédiées. Les actions
+`invite_link` ne sont donc pas exposées par la policy publique. La fonction
+publique historique `can_insert_action_message_reference(uuid)` reste
+réservée à `service_role`; la policy de `app_messages` utilise son helper
+privé authentifié, avec le même filtre public, de revue et de disponibilité
+fondé sur `event_start_at`.
+
+Les besoins ouverts, l'acceptation buddy et les transitions de trajets
+utilisent l'instant UTC persistant de l'action. Pour un trajet, `departure_at`
+doit être strictement antérieur à `event_start_at` et appartenir à la même
+date civile dans `action_timezone`; les changements d'heure sont donc traités
+par le fuseau IANA de l'action sans reconstruction Europe/Paris. Les signatures,
+verrous, contrôles d'acteur, états terminaux et droits `service_role` restent
+inchangés. Les contrats pgTAP et les tests statiques sont versionnés ; leur
+présence ne prouve pas une exécution PostgreSQL distante et doit rester
+qualifiée `DB_SEMANTICS_NOT_EXECUTED` tant qu'une instance isolée ou staging
+n'a pas exécuté ces scénarios.

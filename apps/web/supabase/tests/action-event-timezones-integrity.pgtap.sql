@@ -2,7 +2,7 @@ begin;
 
 -- This fixture is executed by the isolated/staging Supabase SQL-proof runner.
 -- It intentionally does not seed production data or apply migrations.
-select plan(23);
+select plan(33);
 
 reset role;
 set local role anon;
@@ -44,6 +44,20 @@ select ok(
   'public action RLS retains the review-state predicate'
 );
 select ok(
+  position('access_mode' in coalesce((select pg_get_expr(polqual, polrelid) from pg_policy where polname = 'actions_select_public_or_owner'), '')) > 0,
+  'public action RLS excludes invitation-link actions'
+);
+select is(
+  has_function_privilege('authenticated', 'public.can_insert_action_message_reference(uuid)', 'execute'),
+  false,
+  'the exposed message-reference RPC remains closed to authenticated clients'
+);
+select is(
+  has_function_privilege('service_role', 'public.can_insert_action_message_reference(uuid)', 'execute'),
+  true,
+  'the exposed message-reference RPC remains available to service_role'
+);
+select ok(
   position('cleanmymap.action_creation_provenance' in pg_get_functiondef('public.create_action_with_relations(jsonb,jsonb,jsonb,text,text,text,boolean)'::regprocedure)) > 0,
   'creation wrapper sets the server provenance marker'
 );
@@ -66,6 +80,35 @@ select ok(
 select ok(
   position('review_state' in pg_get_functiondef('public.can_insert_action_message_reference(uuid)'::regprocedure)) > 0,
   'message references retain review-state gating'
+);
+select ok(
+  position('is_public_future_pre_action_v2' in pg_get_functiondef('private.can_insert_action_message_reference(uuid)'::regprocedure)) > 0,
+  'the private message-reference policy helper uses persisted UTC'
+);
+select is(
+  position('is_public_future_pre_action(' in pg_get_functiondef('private.can_insert_action_message_reference(uuid)'::regprocedure)),
+  0,
+  'the private message-reference policy helper no longer calls the Paris predicate'
+);
+select ok(
+  position('is_public_future_pre_action_v2' in pg_get_functiondef('public.is_public_open_action_need(uuid)'::regprocedure)) > 0,
+  'open action needs use persisted UTC'
+);
+select ok(
+  position('is_public_future_pre_action_v2' in pg_get_functiondef('public.accept_action_buddy_proposal(uuid)'::regprocedure)) > 0,
+  'buddy acceptance uses persisted UTC'
+);
+select ok(
+  position('(p_departure_at at time zone a.action_timezone)::date' in pg_get_functiondef('public.is_action_ride_departure_eligible(uuid,timestamptz)'::regprocedure)) > 0,
+  'ride departures use the action local civil date'
+);
+select ok(
+  position('is_public_future_pre_action_v2' in pg_get_functiondef('public.accept_action_ride_request(uuid,text)'::regprocedure)) > 0,
+  'ride acceptance uses persisted UTC'
+);
+select ok(
+  position('is_public_future_pre_action_v2' in pg_get_functiondef('public.update_action_ride_details(uuid,text,text,timestamptz,smallint,text)'::regprocedure)) > 0,
+  'ride updates use persisted UTC'
 );
 select ok(
   position('action_timezone' in pg_get_functiondef('public.emit_action_j1_reminders(timestamptz)'::regprocedure)) > 0,
