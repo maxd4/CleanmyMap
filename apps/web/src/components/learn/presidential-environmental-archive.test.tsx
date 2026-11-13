@@ -37,6 +37,23 @@ const classifiedArchive = {
         reviewedBy: "Human editor",
         domains: {},
       },
+      outcome: index === 0 ? {
+        status: "realized",
+        provisional: false,
+        objective: { fr: "Objectif annoncé", en: "Announced objective" },
+        objectiveQuantity: null,
+        initialDeadline: { value: "2017", precision: "year" },
+        legalDecision: null,
+        implementation: null,
+        observedResult: null,
+        objectiveResultGap: null,
+        externalFactors: { fr: "Facteurs externes documentés", en: "Documented external factors" },
+        hypotheses: { fr: "Hypothèses documentées", en: "Documented assumptions" },
+        causalAttributionLimits: { fr: "Attribution causale limitée", en: "Causal attribution limited" },
+        limitations: { fr: "Limites documentées", en: "Documented limitations" },
+        reviewedAt: "2026-11-13",
+        reviewedBy: "Human editor",
+      } : null,
     } as PresidentialPublicCommitment;
   }),
 };
@@ -107,6 +124,8 @@ describe("PresidentialEnvironmentalArchive", () => {
     expect(markup).toContain("Effet neutre");
     expect(markup).toContain("Effet non déterminé");
     expect(markup).toContain("Méthodologie et analyse environnementale");
+    expect(markup).toContain("Bilan documenté du mandat");
+    expect(markup).toContain("Objectif annoncé");
   });
 
   it("keeps 2027 empty and explicitly preparatory", async () => {

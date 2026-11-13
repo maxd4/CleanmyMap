@@ -1,6 +1,6 @@
 import "server-only";
 import { assertPublishedContent, type ContentValidationRecord } from "@/lib/content/content-validation";
-import type { LocalizedText, PolicyDate } from "./environmental-policy-registry";
+import { ENVIRONMENTAL_POLICY_REGISTRY, type LocalizedText, type PolicyDate } from "./environmental-policy-registry";
 
 export { filterPresidentialCommitments, sortPresidentialCommitments } from "./presidential-environmental-filtering";
 
@@ -12,7 +12,8 @@ export type PresidentialSourceType = "SOURCE_PRIMAIRE_OFFICIELLE" | "SOURCE_PRIM
 export type PresidentialSourceStatus = "verified" | "needs_review" | "insufficient" | "missing";
 export type PresidentialDocumentNature = "candidate_list" | "election_result" | "programme" | "profession_de_foi" | "speech" | "proposal" | "secondary_summary" | "unknown";
 export type PresidentialHistoryAction = "first_collected" | "substantive_amendment" | "withdrawn" | "rechecked";
-export type PresidentialCommitmentFollowUpStatus = "realized" | "in_progress" | "modified" | "abandoned" | "not_documented";
+export type PresidentialCommitmentFollowUpStatus = "realized" | "partially_realized" | "in_progress" | "modified" | "abandoned" | "not_documented";
+export type PresidentialPolicyIdentityStatus = "confirmed" | "not_confirmed" | "not_applicable";
 export type PresidentialComparisonView = "theme" | "candidate";
 export type PresidentialMandateStatus = "completed" | "ongoing";
 export type PresidentialEnvironmentalClassification = "favorable" | "unfavorable" | "mixed" | "neutral" | "undetermined";
@@ -41,6 +42,41 @@ export type PresidentialEnvironmentalAssessment = {
   reviewedAt: string;
   reviewedBy: string;
   domains: Partial<Record<PresidentialEnvironmentalDomain, PresidentialEnvironmentalDomainAssessment>>;
+};
+
+export type PresidentialOutcomeStage = {
+  summary: LocalizedText;
+  date: PolicyDate;
+  institution: LocalizedText;
+  source: PresidentialSource;
+  budgetOrAmount: LocalizedText | null;
+  policyId: string | null;
+  policyIdentity: PresidentialPolicyIdentityStatus;
+};
+
+export type PresidentialObservedResult = {
+  summary: LocalizedText;
+  unit: LocalizedText;
+  period: PolicyDate;
+  source: PresidentialSource;
+};
+
+export type PresidentialCommitmentOutcome = {
+  status: PresidentialCommitmentFollowUpStatus;
+  provisional: boolean;
+  objective: LocalizedText;
+  objectiveQuantity: LocalizedText | null;
+  initialDeadline: PolicyDate;
+  legalDecision: PresidentialOutcomeStage | null;
+  implementation: PresidentialOutcomeStage | null;
+  observedResult: PresidentialObservedResult | null;
+  objectiveResultGap: { summary: LocalizedText; comparableIndicators: boolean } | null;
+  externalFactors: LocalizedText;
+  hypotheses: LocalizedText;
+  causalAttributionLimits: LocalizedText;
+  limitations: LocalizedText;
+  reviewedAt: string;
+  reviewedBy: string;
 };
 
 export type PresidentialMandatePeriod = {
@@ -123,6 +159,7 @@ export type PresidentialEnvironmentalCommitment = {
   history: PresidentialCommitmentHistoryEntry[];
   deduplicationKey: string;
   environmentalAssessment: PresidentialEnvironmentalAssessment | null;
+  outcome: PresidentialCommitmentOutcome | null;
   validation: ContentValidationRecord;
 };
 
@@ -154,6 +191,24 @@ function isValidPolicyDate(date: PolicyDate): boolean {
 
   const parsed = new Date(`${date.value}T00:00:00Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date.value;
+}
+
+const isNonEmptyLocalizedText = (value: LocalizedText): boolean => Boolean(value.fr.trim() && value.en.trim());
+
+function isCompleteOutcomeStage(stage: PresidentialOutcomeStage | null): boolean {
+  if (!stage || !isNonEmptyLocalizedText(stage.summary) || !isValidPolicyDate(stage.date) || !isNonEmptyLocalizedText(stage.institution) || !stage.source.url || stage.source.status !== "verified" || !stage.source.version) return false;
+  if (stage.policyIdentity === "confirmed") return Boolean(stage.policyId && ENVIRONMENTAL_POLICY_REGISTRY.some((policy) => policy.id === stage.policyId));
+  if (stage.policyIdentity === "not_confirmed") return stage.policyId === null || ENVIRONMENTAL_POLICY_REGISTRY.some((policy) => policy.id === stage.policyId) === false;
+  return stage.policyId === null;
+}
+
+function isCompletePresidentialOutcome(outcome: PresidentialCommitmentOutcome | null): boolean {
+  if (!outcome || !["realized", "partially_realized", "in_progress", "modified", "abandoned", "not_documented"].includes(outcome.status) || typeof outcome.provisional !== "boolean" || !isNonEmptyLocalizedText(outcome.objective) || !isValidPolicyDate(outcome.initialDeadline) || !isNonEmptyLocalizedText(outcome.externalFactors) || !isNonEmptyLocalizedText(outcome.hypotheses) || !isNonEmptyLocalizedText(outcome.causalAttributionLimits) || !isNonEmptyLocalizedText(outcome.limitations) || !/^\d{4}-\d{2}-\d{2}$/.test(outcome.reviewedAt) || !outcome.reviewedBy.trim()) return false;
+  if (outcome.legalDecision && !isCompleteOutcomeStage(outcome.legalDecision)) return false;
+  if (outcome.implementation && !isCompleteOutcomeStage(outcome.implementation)) return false;
+  if (outcome.observedResult && (!isNonEmptyLocalizedText(outcome.observedResult.summary) || !isNonEmptyLocalizedText(outcome.observedResult.unit) || !isValidPolicyDate(outcome.observedResult.period) || outcome.observedResult.source.status !== "verified" || !outcome.observedResult.source.url || !outcome.observedResult.source.version)) return false;
+  if (outcome.objectiveResultGap && (!isNonEmptyLocalizedText(outcome.objectiveResultGap.summary) || typeof outcome.objectiveResultGap.comparableIndicators !== "boolean")) return false;
+  return true;
 }
 
 function validationDraft(id: string, source: PresidentialSource, claim: LocalizedText): ContentValidationRecord {
@@ -426,6 +481,7 @@ type CommitmentInput = {
   followUpStatus?: PresidentialCommitmentFollowUpStatus;
   deduplicationKey?: string;
   environmentalAssessment?: PresidentialEnvironmentalAssessment | null;
+  outcome?: PresidentialCommitmentOutcome | null;
 };
 
 const hollandeSecondarySource = sourceRef({
@@ -564,6 +620,7 @@ const commitment = (input: CommitmentInput): PresidentialEnvironmentalCommitment
     history: [{ id: `${input.id}-first-collected`, recordedAt: COLLECTED_AT, action: "first_collected", sourceVersion: source.version, note: localized("Collecte préparatoire sans validation humaine de la mesure.", "Preparation collection without human validation of the measure.") }],
     deduplicationKey: input.deduplicationKey ?? input.id,
     environmentalAssessment: input.environmentalAssessment ?? null,
+    outcome: input.outcome ?? null,
     validation: validationDraft(`${input.id}-validation`, source, localized(`Engagement attribué à ${input.candidateName} à vérifier individuellement : ${input.formulation}`, `Commitment attributed to ${input.candidateName} to be checked individually: ${input.formulation}`)),
   };
 };
@@ -629,7 +686,8 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
         && Boolean(commitmentRecord.source.url)
         && isValidPolicyDate(commitmentRecord.deadline)
         && Boolean(commitmentRecord.lastCheckedAt)
-        && isCompleteEnvironmentalAssessment(commitmentRecord.environmentalAssessment);
+        && isCompleteEnvironmentalAssessment(commitmentRecord.environmentalAssessment)
+        && isCompletePresidentialOutcome(commitmentRecord.outcome);
     } catch {
       return false;
     }
@@ -638,8 +696,6 @@ export function getValidatedPresidentialCommitments(corpus = PRESIDENTIAL_ENVIRO
   for (const commitmentRecord of validated) keyCounts.set(commitmentRecord.deduplicationKey, (keyCounts.get(commitmentRecord.deduplicationKey) ?? 0) + 1);
   return validated.filter((commitmentRecord) => keyCounts.get(commitmentRecord.deduplicationKey) === 1);
 }
-
-const isNonEmptyLocalizedText = (value: LocalizedText): boolean => Boolean(value.fr.trim() && value.en.trim());
 
 function isCompleteEnvironmentalAssessment(assessment: PresidentialEnvironmentalAssessment | null): boolean {
   if (!assessment || !PRESIDENTIAL_ENVIRONMENTAL_CLASSIFICATIONS.includes(assessment.overallClassification) || !isValidPolicyDate({ value: assessment.reviewedAt, precision: "day" }) || !assessment.reviewedBy.trim() || !isNonEmptyLocalizedText(assessment.intent) || !isNonEmptyLocalizedText(assessment.expectedEffect)) return false;

@@ -12,6 +12,7 @@ import {
   PRESIDENTIAL_ENVIRONMENTAL_CORPUS,
   type PresidentialEnvironmentalAssessment,
   type PresidentialEnvironmentalClassification,
+  type PresidentialCommitmentOutcome,
   sortPresidentialCommitments,
 } from "./presidential-environmental-corpus";
 import { groupPresidentialCommitmentsByClassification } from "./presidential-environmental-filtering";
@@ -38,6 +39,24 @@ const reviewedAssessment = (source: (typeof PRESIDENTIAL_ENVIRONMENTAL_CORPUS.co
     domains: Object.fromEntries(PRESIDENTIAL_ENVIRONMENTAL_DOMAINS.map((domain) => [domain, domainAssessment])),
   } as PresidentialEnvironmentalAssessment;
 };
+
+const reviewedOutcome = (status: PresidentialCommitmentOutcome["status"] = "not_documented"): PresidentialCommitmentOutcome => ({
+  status,
+  provisional: status === "in_progress",
+  objective: { fr: "Objectif annoncé documenté.", en: "Documented announced objective." },
+  objectiveQuantity: null,
+  initialDeadline: { value: null, precision: "unknown" },
+  legalDecision: null,
+  implementation: null,
+  observedResult: null,
+  objectiveResultGap: null,
+  externalFactors: { fr: "Facteurs externes non isolés.", en: "External factors not isolated." },
+  hypotheses: { fr: "Hypothèses explicitées.", en: "Assumptions are stated." },
+  causalAttributionLimits: { fr: "Aucune attribution causale n’est conclue.", en: "No causal attribution is concluded." },
+  limitations: { fr: "Données limitées à la revue disponible.", en: "Data is limited to the available review." },
+  reviewedAt: "2026-11-13",
+  reviewedBy: "Human editor",
+});
 
 describe("presidential environmental preparation corpus", () => {
   it("keeps the official candidate perimeter separate by election and party", () => {
@@ -211,6 +230,7 @@ describe("presidential environmental preparation corpus", () => {
       documentationStatus: "validated" as const,
       source: { ...sourceCommitment.source, status: "verified" as const, url: "https://example.test/source", publishedAt: { value: "2022-04-01", precision: "day" as const } },
       lastCheckedAt: "2026-11-13",
+      outcome: reviewedOutcome(),
       validation: { ...sourceCommitment.validation, status: "published" as const, lastReviewedAt: "2026-11-13", reviewedBy: "Human editor", source: { ...sourceCommitment.validation.source, url: "https://example.test/source", date: "2022-04-01", datePrecision: "day" as const } },
     };
     const validCorpus = { ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [publicationCandidate] };
@@ -241,6 +261,7 @@ describe("presidential environmental preparation corpus", () => {
       source: { ...sourceCommitment.source, status: "verified" as const, url: "https://example.test/commitment", publishedAt: { value: "2022-04-01", precision: "day" as const } },
       environmentalAssessment: reviewedAssessment(sourceCommitment.source, classification),
       lastCheckedAt: "2026-11-13",
+      outcome: reviewedOutcome(),
       validation: { ...sourceCommitment.validation, status: "published" as const, lastReviewedAt: "2026-11-13", reviewedBy: "Human editor", source: { ...sourceCommitment.validation.source, url: "https://example.test/commitment", date: "2022-04-01", datePrecision: "day" as const } },
     });
 
@@ -265,6 +286,20 @@ describe("presidential environmental preparation corpus", () => {
 
     const invalidClassification = makePublished("favorable", "invalid-classification");
     expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [{ ...invalidClassification, environmentalAssessment: { ...invalidClassification.environmentalAssessment!, overallClassification: "not-a-category" as PresidentialEnvironmentalClassification } }] })).toEqual([]);
+
+    const invalidPolicyLink = makePublished("favorable", "invalid-policy-link");
+    invalidPolicyLink.outcome = { ...reviewedOutcome(), legalDecision: { summary: { fr: "Décision contrôlée.", en: "Checked decision." }, date: { value: "2023-01-01", precision: "day" }, institution: { fr: "Institution publique", en: "Public institution" }, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/legal", version: "LEGAL-1" }, budgetOrAmount: null, policyId: "unknown-policy", policyIdentity: "confirmed" } };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [invalidPolicyLink] })).toEqual([]);
+
+    const validPolicyLink = makePublished("favorable", "valid-policy-link");
+    validPolicyLink.outcome = { ...reviewedOutcome("realized"), legalDecision: { summary: { fr: "Décision contrôlée.", en: "Checked decision." }, date: { value: "2023-01-01", precision: "day" }, institution: { fr: "Institution publique", en: "Public institution" }, source: { ...sourceCommitment.source, status: "verified", url: "https://example.test/legal", version: "LEGAL-1" }, budgetOrAmount: null, policyId: "eu-carbon-border-adjustment-mechanism", policyIdentity: "confirmed" } };
+    expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [validPolicyLink] })).toHaveLength(1);
+
+    for (const status of ["realized", "partially_realized", "modified", "abandoned", "not_documented"] as const) {
+      const statusCandidate = makePublished("neutral", `status-${status}`);
+      statusCandidate.outcome = reviewedOutcome(status);
+      expect(getValidatedPresidentialCommitments({ ...PRESIDENTIAL_ENVIRONMENTAL_CORPUS, commitments: [statusCandidate] })).toHaveLength(1);
+    }
   });
 
   it("does not confuse an absence of collection with an absence of engagement", () => {

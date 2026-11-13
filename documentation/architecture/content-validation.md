@@ -173,9 +173,19 @@ effets divergents restent `mixed`, et une clé de dédoublonnage écarte les
 reformulations identiques. Les fiches actuellement préparatoires restent sans
 classification publiée. La comparaison historique réutilise exactement
 les mêmes IDs en vue par thème ou par candidature, expose le niveau de
-documentation et garde le suivi `realized`/`in_progress`/`modified`/`abandoned`
+documentation et garde le suivi `realized`/`partially_realized`/`in_progress`/`modified`/`abandoned`
 distinct du statut juridique et du résultat d’impact ; les fiches actuelles
 restent `not_documented`. Le squelette 2027 affiche un état préparatoire vide,
-sans candidature officielle ni politique imputée.
+sans candidature officielle ni politique imputée. Un bilan publiable sépare
+l’objectif initial, la décision juridique ou budgétaire, la mise en œuvre
+administrative et financière et le résultat observé ; un texte adopté n’est
+jamais traité comme un objectif atteint. Un écart n’est renseigné que pour des
+indicateurs comparables. Chaque bilan porte les institutions responsables,
+facteurs externes, hypothèses, limites d’attribution causale, sources et date
+de revue. Un rapprochement vers le registre juridique exige un identifiant
+existant et une identité confirmée ; les autres rapprochements restent non
+confirmés. Les mandats achevés peuvent recevoir un bilan documenté, tandis que
+2022–2027 reste un suivi provisoire daté. Aucun bilan n’est actuellement
+publié.
 Les ressources territoriales du Mode École sont validées par
 `apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.
